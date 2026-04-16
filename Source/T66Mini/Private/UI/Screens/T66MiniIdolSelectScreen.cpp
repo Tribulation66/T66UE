@@ -2,12 +2,15 @@
 
 #include "UI/Screens/T66MiniIdolSelectScreen.h"
 
+#include "Core/T66MiniCircusSubsystem.h"
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
 #include "Core/T66MiniRunStateSubsystem.h"
 #include "Core/T66MiniRuntimeSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Data/T66MiniDataTypes.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "Engine/Texture2D.h"
 #include "Save/T66MiniRunSaveGame.h"
 #include "Save/T66MiniSaveSubsystem.h"
@@ -28,7 +31,7 @@
 
 namespace
 {
-	FName T66MiniResolveUnlockedCompanionID(const UT66MiniDataSubsystem* DataSubsystem, const UT66MiniSaveSubsystem* SaveSubsystem)
+	FName T66MiniIdolResolveUnlockedCompanionID(const UT66MiniDataSubsystem* DataSubsystem, const UT66MiniSaveSubsystem* SaveSubsystem)
 	{
 		return SaveSubsystem ? SaveSubsystem->GetFirstUnlockedCompanionID(DataSubsystem) : NAME_None;
 	}
@@ -83,9 +86,27 @@ void UT66MiniIdolSelectScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniIdolSelectScreen::HandleSessionStateChanged);
+			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniIdolSelect, true);
+		}
+	}
+
 	UT66MiniDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	if (SessionSubsystem)
+	{
+		SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
+	}
+	const bool bOnlineMiniParty = LobbyProfiles.Num() > 1;
+	const bool bIsPartyHost = !SessionSubsystem || SessionSubsystem->IsLocalPlayerPartyHost();
+	const bool bLocalReady = SessionSubsystem && SessionSubsystem->IsLocalLobbyReady();
 
 	if (DataSubsystem && FrontendState && SaveSubsystem)
 	{
@@ -96,7 +117,7 @@ void UT66MiniIdolSelectScreen::OnScreenActivated_Implementation()
 
 		if (!FrontendState->HasSelectedCompanion() || !SaveSubsystem->IsCompanionUnlocked(FrontendState->GetSelectedCompanionID(), DataSubsystem))
 		{
-			if (const FName DefaultCompanionID = T66MiniResolveUnlockedCompanionID(DataSubsystem, SaveSubsystem); DefaultCompanionID != NAME_None)
+			if (const FName DefaultCompanionID = T66MiniIdolResolveUnlockedCompanionID(DataSubsystem, SaveSubsystem); DefaultCompanionID != NAME_None)
 			{
 				FrontendState->SelectCompanion(DefaultCompanionID);
 			}
@@ -111,11 +132,88 @@ void UT66MiniIdolSelectScreen::OnScreenActivated_Implementation()
 	T66MiniEnsureIdolOffers(DataSubsystem, FrontendState);
 }
 
+void UT66MiniIdolSelectScreen::OnScreenDeactivated_Implementation()
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+		}
+	}
+
+	SessionStateChangedHandle.Reset();
+	Super::OnScreenDeactivated_Implementation();
+}
+
+void UT66MiniIdolSelectScreen::NativeDestruct()
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+		}
+	}
+
+	SessionStateChangedHandle.Reset();
+	Super::NativeDestruct();
+}
+
+void UT66MiniIdolSelectScreen::HandleSessionStateChanged()
+{
+	SyncToSharedPartyScreen();
+	ForceRebuildSlate();
+}
+
+void UT66MiniIdolSelectScreen::SyncToSharedPartyScreen()
+{
+	if (!UIManager)
+	{
+		return;
+	}
+
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	if (!SessionSubsystem || !SessionSubsystem->IsPartyLobbyContextActive() || SessionSubsystem->IsLocalPlayerPartyHost())
+	{
+		return;
+	}
+
+	const ET66ScreenType DesiredScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
+	switch (DesiredScreen)
+	{
+	case ET66ScreenType::MiniMainMenu:
+	case ET66ScreenType::MiniSaveSlots:
+	case ET66ScreenType::MiniCharacterSelect:
+	case ET66ScreenType::MiniCompanionSelect:
+	case ET66ScreenType::MiniDifficultySelect:
+	case ET66ScreenType::MiniIdolSelect:
+	case ET66ScreenType::MiniShop:
+	case ET66ScreenType::MiniRunSummary:
+		if (UIManager->GetCurrentScreenType() != DesiredScreen)
+		{
+			UIManager->ShowScreen(DesiredScreen);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 {
 	UT66MiniDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	if (SessionSubsystem)
+	{
+		SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
+	}
+	const bool bOnlineMiniParty = LobbyProfiles.Num() > 1;
+	const bool bIsPartyHost = !SessionSubsystem || SessionSubsystem->IsLocalPlayerPartyHost();
+	const bool bLocalReady = SessionSubsystem && SessionSubsystem->IsLocalLobbyReady();
 
 	if (DataSubsystem && FrontendState && SaveSubsystem)
 	{
@@ -126,7 +224,7 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 
 		if (!FrontendState->HasSelectedCompanion() || !SaveSubsystem->IsCompanionUnlocked(FrontendState->GetSelectedCompanionID(), DataSubsystem))
 		{
-			if (const FName DefaultCompanionID = T66MiniResolveUnlockedCompanionID(DataSubsystem, SaveSubsystem); DefaultCompanionID != NAME_None)
+			if (const FName DefaultCompanionID = T66MiniIdolResolveUnlockedCompanionID(DataSubsystem, SaveSubsystem); DefaultCompanionID != NAME_None)
 			{
 				FrontendState->SelectCompanion(DefaultCompanionID);
 			}
@@ -369,7 +467,16 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 		StatusMetrics->AddSlot(0, 2)[MakeMetricChip(TEXT("Companion"), SelectedCompanion ? SelectedCompanion->DisplayName : FString(TEXT("--")), T66MiniUI::AccentGold())];
 		StatusMetrics->AddSlot(1, 2)[MakeMetricChip(TEXT("Heal / Sec"), FString::Printf(TEXT("%.1f"), CompanionHealingPerSecond), FLinearColor::White)];
 		StatusMetrics->AddSlot(0, 3)[MakeMetricChip(TEXT("Unity"), FString::Printf(TEXT("%d / %d"), CompanionUnityStages, UT66MiniSaveSubsystem::CompanionUnityTierHyperStages), FLinearColor::White)];
+		StatusMetrics->AddSlot(1, 3)[MakeMetricChip(TEXT("Party"), bOnlineMiniParty ? FString::Printf(TEXT("%d / 2"), LobbyProfiles.Num()) : FString(TEXT("SOLO")), bOnlineMiniParty ? T66MiniUI::AccentGreen() : FLinearColor::White)];
 	}
+
+	const FText ContinueLabel = bOnlineMiniParty
+		? (bIsPartyHost
+			? NSLOCTEXT("T66Mini.IdolSelect", "StartPartyRun", "START PARTY RUN")
+			: (bLocalReady
+				? NSLOCTEXT("T66Mini.IdolSelect", "Unready", "UNREADY")
+				: NSLOCTEXT("T66Mini.IdolSelect", "Ready", "READY")))
+		: NSLOCTEXT("T66Mini.IdolSelect", "Continue", "CONTINUE");
 
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
@@ -518,7 +625,7 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 				.ButtonColorAndOpacity(T66MiniUI::AccentGreen())
 				[
 					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66Mini.IdolSelect", "Continue", "CONTINUE"))
+					.Text(ContinueLabel)
 					.Font(T66MiniUI::BoldFont(20))
 					.ColorAndOpacity(T66MiniUI::ButtonTextDark())
 					.Justification(ETextJustify::Center)
@@ -576,11 +683,20 @@ FReply UT66MiniIdolSelectScreen::HandleContinueClicked()
 	UT66MiniRunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
 	UT66MiniRuntimeSubsystem* RuntimeSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniRuntimeSubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	if (!FrontendState || !RunState || !SaveSubsystem || !RuntimeSubsystem)
 	{
 		SetStatus(NSLOCTEXT("T66Mini.IdolSelect", "MissingSystems", "Mini launch failed because one or more mini subsystems are missing."));
 		return FReply::Handled();
 	}
+
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	if (SessionSubsystem)
+	{
+		SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
+	}
+	const bool bOnlineMiniParty = LobbyProfiles.Num() > 1;
+	const bool bIsPartyHost = !SessionSubsystem || SessionSubsystem->IsLocalPlayerPartyHost();
 
 	if (FrontendState->GetSelectedIdolIDs().Num() <= 0)
 	{
@@ -590,6 +706,7 @@ FReply UT66MiniIdolSelectScreen::HandleContinueClicked()
 
 	if (FrontendState->IsIntermissionFlow())
 	{
+		UT66MiniCircusSubsystem* CircusSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniCircusSubsystem>() : nullptr;
 		UT66MiniRunSaveGame* ActiveRun = RunState->GetActiveRun();
 		if (!ActiveRun)
 		{
@@ -597,9 +714,48 @@ FReply UT66MiniIdolSelectScreen::HandleContinueClicked()
 			return FReply::Handled();
 		}
 
+		if (bOnlineMiniParty)
+		{
+			FString CompatibilityFailure;
+			if (!SaveSubsystem->IsRunCompatibleWithCurrentParty(ActiveRun, &CompatibilityFailure))
+			{
+				SetStatus(FText::FromString(CompatibilityFailure));
+				return FReply::Handled();
+			}
+
+			if (!bIsPartyHost)
+			{
+				if (SessionSubsystem && SessionSubsystem->IsLocalLobbyReady())
+				{
+					SessionSubsystem->SetLocalLobbyReady(false);
+					SetStatus(NSLOCTEXT("T66Mini.IdolSelect", "IntermissionReadyCancelled", "Mini intermission ready state cleared. Adjust your idols and ready up again when you are done."));
+					ForceRebuildSlate();
+					return FReply::Handled();
+				}
+
+				if (SessionSubsystem)
+				{
+					SessionSubsystem->SetLocalLobbyReady(true);
+				}
+				SetStatus(NSLOCTEXT("T66Mini.IdolSelect", "IntermissionReadyWaiting", "Mini intermission loadout locked. Waiting for the host to launch the next wave."));
+				ForceRebuildSlate();
+				return FReply::Handled();
+			}
+
+			FString FailureReason;
+			if (SessionSubsystem && !SessionSubsystem->AreAllPartyMembersReadyForMiniGameplay(&FailureReason))
+			{
+				SetStatus(FText::FromString(FailureReason));
+				return FReply::Handled();
+			}
+
+			SaveSubsystem->SyncPartyPlayerSnapshotsFromLobby(ActiveRun, FrontendState);
+			SaveSubsystem->MirrorLocalPartyPlayerSnapshotToLegacyFields(ActiveRun);
+		}
+
 		ActiveRun->EquippedIdolIDs = FrontendState->GetSelectedIdolIDs();
 		ActiveRun->WaveIndex = FMath::Clamp(ActiveRun->WaveIndex + 1, 1, 5);
-		ActiveRun->WaveSecondsRemaining = 180.f;
+		ActiveRun->WaveSecondsRemaining = 60.f;
 		ActiveRun->bHasMidWaveSnapshot = false;
 		ActiveRun->bPendingShopIntermission = false;
 		ActiveRun->bHasPlayerLocation = false;
@@ -610,16 +766,68 @@ FReply UT66MiniIdolSelectScreen::HandleContinueClicked()
 		ActiveRun->PendingBossSpawnLocation = FVector::ZeroVector;
 		ActiveRun->EnemySpawnAccumulator = 0.f;
 		ActiveRun->InteractableSpawnAccumulator = 0.f;
+		ActiveRun->TrapSpawnAccumulator = 0.f;
 		ActiveRun->PostBossDelayRemaining = 0.f;
 		ActiveRun->EnemySnapshots.Reset();
 		ActiveRun->PickupSnapshots.Reset();
 		ActiveRun->InteractableSnapshots.Reset();
+		ActiveRun->TrapSnapshots.Reset();
 		FrontendState->ExitIntermissionFlow();
 		FrontendState->WriteIntermissionStateToRunSave(ActiveRun);
+		if (CircusSubsystem)
+		{
+			CircusSubsystem->WriteToRunSave(ActiveRun);
+		}
 		SaveSubsystem->SaveRunToSlot(RunState->GetActiveSaveSlot(), ActiveRun);
+		if (SessionSubsystem)
+		{
+			SessionSubsystem->SetLocalLobbyReady(false);
+		}
 		if (DataSubsystem)
 		{
 			FrontendState->RefreshIdolOffers(DataSubsystem);
+		}
+	}
+	else if (bOnlineMiniParty)
+	{
+		if (bIsPartyHost)
+		{
+			FString FailureReason;
+			if (SessionSubsystem && !SessionSubsystem->AreAllPartyMembersReadyForMiniGameplay(&FailureReason))
+			{
+				SetStatus(FText::FromString(FailureReason));
+				return FReply::Handled();
+			}
+
+			if (!RunState->HasActiveRun() && !RunState->BootstrapOnlineRunFromFrontend(FrontendState, SaveSubsystem))
+			{
+				SetStatus(FText::FromString(RunState->GetLastBootstrapStatus()));
+				return FReply::Handled();
+			}
+		}
+		else
+		{
+			if (SessionSubsystem && SessionSubsystem->IsLocalLobbyReady())
+			{
+				SessionSubsystem->SetLocalLobbyReady(false);
+				SetStatus(NSLOCTEXT("T66Mini.IdolSelect", "ReadyCancelled", "Mini party ready state cleared. Adjust your loadout and ready up again when you are done."));
+				ForceRebuildSlate();
+				return FReply::Handled();
+			}
+
+			if (!RunState->HasActiveRun() && !RunState->BootstrapOnlineRunFromFrontend(FrontendState, SaveSubsystem))
+			{
+				SetStatus(FText::FromString(RunState->GetLastBootstrapStatus()));
+				return FReply::Handled();
+			}
+
+			if (SessionSubsystem)
+			{
+				SessionSubsystem->SetLocalLobbyReady(true);
+			}
+			SetStatus(NSLOCTEXT("T66Mini.IdolSelect", "ReadyWaiting", "Mini loadout locked. Waiting for the host to start the party run."));
+			ForceRebuildSlate();
+			return FReply::Handled();
 		}
 	}
 	else if (!RunState->BootstrapRunFromFrontend(FrontendState, SaveSubsystem))

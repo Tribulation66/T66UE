@@ -8,6 +8,15 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Text/STextBlock.h"
 
+void UT66LoadingScreenWidget::SetLoadingText(const FText& InLoadingText)
+{
+	LoadingTextOverride = InLoadingText;
+	if (LoadingTextBlock.IsValid())
+	{
+		LoadingTextBlock->SetText(LoadingTextOverride);
+	}
+}
+
 TSharedRef<SWidget> UT66LoadingScreenWidget::RebuildWidget()
 {
 	UT66LocalizationSubsystem* Loc = nullptr;
@@ -16,7 +25,9 @@ TSharedRef<SWidget> UT66LoadingScreenWidget::RebuildWidget()
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
 
-	FText LoadingText = Loc ? Loc->GetText_Loading() : NSLOCTEXT("T66.Loading", "Loading", "LOADING...");
+	const FText LoadingText = LoadingTextOverride.IsEmpty()
+		? (Loc ? Loc->GetText_Loading() : NSLOCTEXT("T66.Loading", "Loading", "LOADING..."))
+		: LoadingTextOverride;
 
 	const FLinearColor BgColor = FT66Style::Tokens::Bg;
 	const FLinearColor TextColor = FT66Style::Tokens::Text;
@@ -27,7 +38,7 @@ TSharedRef<SWidget> UT66LoadingScreenWidget::RebuildWidget()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
 		[
-			SNew(STextBlock)
+			SAssignNew(LoadingTextBlock, STextBlock)
 				.Text(LoadingText)
 				.Font(FT66Style::Tokens::FontTitle())
 				.ColorAndOpacity(FSlateColor(TextColor))

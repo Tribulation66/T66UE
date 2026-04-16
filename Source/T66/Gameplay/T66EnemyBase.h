@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Gameplay/Enemies/T66EnemyFamilyTypes.h"
 #include "Gameplay/T66CombatTargetTypes.h"
 #include "T66EnemyBase.generated.h"
 
@@ -31,6 +32,9 @@ public:
 	/** Touch damage to player in hearts (scaled by difficulty). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 TouchDamageHearts = 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	ET66EnemyFamily EnemyFamily = ET66EnemyFamily::Melee;
 
 	/** Enemy armor: damage reduction fraction (0.0 = none, 0.5 = 50% reduction). Reduced by Taunt procs. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat")
@@ -125,6 +129,7 @@ public:
 	virtual bool TakeDamageFromHero(int32 Damage, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
 
 	virtual bool TakeDamageFromHeroHitZone(int32 Damage, const FT66CombatTargetHandle& TargetHandle, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
+	virtual bool TakeDamageFromEnvironment(int32 Damage, AActor* DamageCauser = nullptr, FName EventType = NAME_None);
 
 	/** Briefly shove the enemy back when hit by a hero auto attack. */
 	void ApplyAutoAttackKnockback(const FVector& HitOrigin, float StrengthScale = 1.f);
@@ -174,6 +179,9 @@ public:
 	/** Apply difficulty scaling using a scalar (e.g. 1.1, 1.2, ...). HP/Armor are skipped if ApplyStageScaling was used. */
 	void ApplyDifficultyScalar(float Scalar);
 
+	/** Apply stage-within-difficulty progression on top of the base stage + difficulty tuning. */
+	void ApplyProgressionEnemyScalar(float Scalar);
+
 	/** Extra end-of-difficulty survival scaling layered on top of the normal stage + difficulty tuning. */
 	void ApplyFinaleScaling(float Scalar);
 
@@ -209,6 +217,10 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void ResetFamilyState();
+	virtual void TickFamilyBehavior(APawn* PlayerPawn, float DeltaSeconds, float Dist2DToPlayer, bool bShouldRunAwayFromPlayer);
+	virtual EMovementMode GetDefaultMovementMode() const { return MOVE_Walking; }
+	float GetBaseWalkSpeed() const { return BaseMaxWalkSpeed; }
 
 	/** Called when HP reaches 0: notify director, spawn pickup, return to pool */
 	virtual void OnDeath();
@@ -222,6 +234,8 @@ protected:
 	static constexpr float TouchDamageCooldown = 0.5f;
 
 private:
+	bool ApplyResolvedDamage(int32 Damage, bool bCreditHeroKill, FName DamageSourceID, FName EventType);
+	void RebuildScaledCombatStats(bool bResetCurrentHPToMax);
 	void RefreshCombatHitZoneState();
 	ET66HitZoneType ResolveHitZoneType(const UPrimitiveComponent* HitComponent, ET66HitZoneType PreferredZone) const;
 	float GetHitZoneDamageMultiplier(ET66HitZoneType HitZoneType) const;
@@ -245,6 +259,9 @@ private:
 	int32 BaseTouchDamageHearts = 0;
 	int32 BasePointValue = 0;
 	float BaseArmor = 0.f;
+	float DifficultyScalarApplied = 1.0f;
+	float ProgressionEnemyScalarApplied = 1.0f;
+	float FinaleScalarApplied = 1.0f;
 
 	// Persist mini-boss multipliers so difficulty changes can re-apply cleanly.
 	float MiniBossHPScalarApplied = 1.0f;

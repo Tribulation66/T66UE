@@ -1,5 +1,5 @@
----,InteractableID,DisplayName,Type,VisualID,LifetimeSeconds,SpawnWeight,MaterialReward,GoldReward,ExperienceReward,HealAmount
-Interactable_TreasureChest,TreasureChest,Treasure Chest,TreasureChest,TreasureChest,14,1.2,0,42,10,0
-Interactable_Fountain,Fountain,Fountain,Fountain,Fountain,14,0.9,0,0,0,30
-Interactable_LootCrate,LootCrate,Loot Crate,LootCrate,LootCrate,14,1.0,0,0,12,0
-Interactable_QuickReviveMachine,QuickReviveMachine,Quick Revive,QuickReviveMachine,QuickReviveMachine,14,0.6,0,0,0,9999
+---,InteractableID,DisplayName,Type,VisualID,LifetimeSeconds,SpawnWeight,MaterialReward,GoldReward,ExperienceReward,HealAmount,bRequiresManualInteract
+Interactable_TreasureChest,TreasureChest,Treasure Chest,TreasureChest,TreasureChest,14,1.2,0,42,10,0,false
+Interactable_Fountain,Fountain,Fountain,Fountain,Fountain,14,0.9,0,0,0,30,false
+Interactable_LootCrate,LootCrate,Loot Crate,LootCrate,LootCrate,14,1.0,0,0,12,0,false
+Interactable_QuickReviveMachine,QuickReviveMachine,Quick Revive,QuickReviveMachine,QuickReviveMachine,14,0.6,0,0,0,9999,true

@@ -15,12 +15,15 @@
 #include "Serialization/JsonWriter.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Misc/App.h"
+#include "Misc/CommandLine.h"
 #include "Misc/DateTime.h"
 #include "Misc/EngineVersion.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "GameFramework/GameStateBase.h"
 #include "Engine/World.h"
+#include "GenericPlatform/GenericPlatformHttp.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
 
@@ -137,6 +140,32 @@ namespace
 			&& bValidFilter
 			&& OutIdentity.Party == TEXT("solo")
 			&& OutIdentity.Difficulty == TEXT("easy");
+	}
+
+	bool T66ShouldUseDevelopmentDummyLeaderboards()
+	{
+#if UE_BUILD_SHIPPING
+		return false;
+#else
+		static const bool bUseDummyLeaderboards = []()
+		{
+			bool bEnabledFromConfig = false;
+			if (GConfig)
+			{
+				GConfig->GetBool(
+					TEXT("T66.Online"),
+					TEXT("bEnableDevelopmentDummyLeaderboards"),
+					bEnabledFromConfig,
+					GGameIni);
+			}
+
+			return GIsEditor
+				|| bEnabledFromConfig
+				|| FParse::Param(FCommandLine::Get(), TEXT("T66EnableDummyLeaderboards"));
+		}();
+
+		return bUseDummyLeaderboards;
+#endif
 	}
 
 	FString T66GetDummyPlayerName(const FString& Filter, const int32 Index)
@@ -323,6 +352,14 @@ void UT66BackendSubsystem::Deinitialize()
 		PendingCoopSubmitTickerHandle.Reset();
 	}
 
+	if (TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> PendingInviteRequest = PendingPartyInvitePollRequest.Pin())
+	{
+		PendingInviteRequest->OnProcessRequestComplete().Unbind();
+		PendingInviteRequest->CancelRequest();
+		PendingPartyInvitePollRequest.Reset();
+	}
+
+	bPartyInvitePollInFlight = false;
 	PendingPartyInvites.Reset();
 	PendingCoopSubmitRequests.Reset();
 	PendingPartyInvitesChanged.Clear();
@@ -413,6 +450,7 @@ void UT66BackendSubsystem::PollPendingPartyInvites(bool bForce)
 	bPartyInvitePollInFlight = true;
 
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), TEXT("/api/party-invite/pending"));
+	PendingPartyInvitePollRequest = Request;
 	SetAuthHeaders(Request);
 	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnPendingPartyInvitesResponseReceived);
 	Request->ProcessRequest();
@@ -449,6 +487,11 @@ void UT66BackendSubsystem::SeedDevelopmentDummyLeaderboardsIfNeeded()
 #if UE_BUILD_SHIPPING
 	return;
 #else
+	if (!T66ShouldUseDevelopmentDummyLeaderboards())
+	{
+		return;
+	}
+
 	if (IsBackendConfigured())
 	{
 		return;
@@ -481,6 +524,11 @@ bool UT66BackendSubsystem::TryPopulateDevelopmentDummyLeaderboard(const FString&
 #if UE_BUILD_SHIPPING
 	return false;
 #else
+	if (!T66ShouldUseDevelopmentDummyLeaderboards())
+	{
+		return false;
+	}
+
 	if (const FCachedLeaderboard* Existing = LeaderboardCache.Find(Key))
 	{
 		if (Existing->Entries.Num() > 0)
@@ -1803,6 +1851,31 @@ void UT66BackendSubsystem::SubmitBugReport(
 	Request->ProcessRequest();
 }
 
+void UT66BackendSubsystem::FetchClientLaunchPolicy(int32 LocalSteamBuildId, const FString& SteamAppId, const FString& SteamBetaName)
+{
+	if (!IsBackendConfigured())
+	{
+		LastClientLaunchPolicyMessage.Reset();
+		LastRequiredSteamBuildId = 0;
+		LastLatestSteamBuildId = 0;
+		bLastClientLaunchPolicyRequiresUpdate = false;
+		ClientLaunchPolicyResponse.Broadcast(false, false, 0, 0, FString());
+		return;
+	}
+
+	const FString EncodedAppId = FGenericPlatformHttp::UrlEncode(SteamAppId.IsEmpty() ? FString(TEXT("0")) : SteamAppId);
+	const FString EncodedBetaName = FGenericPlatformHttp::UrlEncode(SteamBetaName.IsEmpty() ? FString(TEXT("default")) : SteamBetaName);
+	const FString Endpoint = FString::Printf(
+		TEXT("/api/client-config?app_id=%s&beta_name=%s&local_build_id=%d"),
+		*EncodedAppId,
+		*EncodedBetaName,
+		LocalSteamBuildId);
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnClientLaunchPolicyResponseReceived, LocalSteamBuildId);
+	Request->ProcessRequest();
+}
+
 void UT66BackendSubsystem::OnRunReportResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
 {
 	if (!bConnectedSuccessfully || !Response.IsValid())
@@ -1885,6 +1958,73 @@ void UT66BackendSubsystem::OnBugReportResponseReceived(FHttpRequestPtr Request, 
 	}
 
 	OnBugReportComplete.Broadcast(false, ExtractResponseMessage(Json, TEXT("Bug report failed.")));
+}
+
+void UT66BackendSubsystem::OnClientLaunchPolicyResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, int32 LocalSteamBuildId)
+{
+	if (!bConnectedSuccessfully || !Response.IsValid() || Response->GetResponseCode() != 200)
+	{
+		LastClientLaunchPolicyMessage.Reset();
+		LastRequiredSteamBuildId = 0;
+		LastLatestSteamBuildId = 0;
+		bLastClientLaunchPolicyRequiresUpdate = false;
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: client-config unavailable for local build %d."), LocalSteamBuildId);
+		ClientLaunchPolicyResponse.Broadcast(false, false, 0, 0, FString());
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
+	{
+		LastClientLaunchPolicyMessage.Reset();
+		LastRequiredSteamBuildId = 0;
+		LastLatestSteamBuildId = 0;
+		bLastClientLaunchPolicyRequiresUpdate = false;
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: failed to parse client-config response."));
+		ClientLaunchPolicyResponse.Broadcast(false, false, 0, 0, FString());
+		return;
+	}
+
+	bool bUpdateRequired = false;
+	Json->TryGetBoolField(TEXT("update_required"), bUpdateRequired);
+
+	if (Json->HasTypedField<EJson::Number>(TEXT("required_steam_build_id")))
+	{
+		LastRequiredSteamBuildId = static_cast<int32>(Json->GetNumberField(TEXT("required_steam_build_id")));
+	}
+	else
+	{
+		LastRequiredSteamBuildId = 0;
+	}
+
+	if (Json->HasTypedField<EJson::Number>(TEXT("latest_steam_build_id")))
+	{
+		LastLatestSteamBuildId = static_cast<int32>(Json->GetNumberField(TEXT("latest_steam_build_id")));
+	}
+	else
+	{
+		LastLatestSteamBuildId = LastRequiredSteamBuildId;
+	}
+
+	LastClientLaunchPolicyMessage = ExtractResponseMessage(Json, FString());
+	bLastClientLaunchPolicyRequiresUpdate = bUpdateRequired;
+
+	UE_LOG(
+		LogT66Backend,
+		Log,
+		TEXT("Backend: client-config local=%d required=%d latest=%d update_required=%s"),
+		LocalSteamBuildId,
+		LastRequiredSteamBuildId,
+		LastLatestSteamBuildId,
+		bUpdateRequired ? TEXT("true") : TEXT("false"));
+
+	ClientLaunchPolicyResponse.Broadcast(
+		true,
+		bUpdateRequired,
+		LastRequiredSteamBuildId,
+		LastLatestSteamBuildId,
+		LastClientLaunchPolicyMessage);
 }
 
 // ── Health Check ─────────────────────────────────────────────
@@ -1970,6 +2110,11 @@ void UT66BackendSubsystem::OnSendPartyInviteResponseReceived(FHttpRequestPtr Req
 void UT66BackendSubsystem::OnPendingPartyInvitesResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
 {
 	bPartyInvitePollInFlight = false;
+	if (TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> PendingInviteRequest = PendingPartyInvitePollRequest.Pin();
+		PendingInviteRequest.Get() == Request.Get())
+	{
+		PendingPartyInvitePollRequest.Reset();
+	}
 
 	if (!bConnectedSuccessfully || !Response.IsValid())
 	{

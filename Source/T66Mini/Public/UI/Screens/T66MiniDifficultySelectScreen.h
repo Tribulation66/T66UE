@@ -19,13 +19,18 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
+	virtual void OnScreenDeactivated_Implementation() override;
+	virtual void NativeDestruct() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
 	FReply HandleBackClicked();
 	FReply HandleContinueClicked();
 	FReply HandleDifficultyClicked(FName DifficultyID);
+	void HandleSessionStateChanged();
+	void SyncToSharedPartyScreen();
 	void RefreshSelectedHeroBrush(const FT66MiniHeroDefinition* Hero);
 
 	TSharedPtr<FSlateBrush> SelectedHeroBrush;
+	FDelegateHandle SessionStateChangedHandle;
 };

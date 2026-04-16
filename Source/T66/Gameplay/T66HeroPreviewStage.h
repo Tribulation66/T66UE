@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Data/T66DataTypes.h"
+#include "Gameplay/T66PreviewStageEnvironment.h"
 #include "T66HeroPreviewStage.generated.h"
 
 class AT66HeroBase;
@@ -56,8 +56,13 @@ public:
 	/** Update preview dressing for the active difficulty. */
 	void SetPreviewDifficulty(ET66Difficulty Difficulty);
 
+	/** Toggle selection-scene dressing vs run-summary capture mode. */
+	void SetPreviewStageMode(ET66PreviewStageMode NewPreviewStageMode);
+
 	/** Show or hide the entire stage (platform + hero + companion pawns). */
 	void SetStageVisible(bool bVisible);
+
+	bool IsStageVisible() const { return bStageVisible; }
 
 	/** Clear cached orbit framing so next FrameCameraToPreview recalculates (e.g. after stage was moved). */
 	void ResetFramingCache();
@@ -87,9 +92,6 @@ protected:
 	/** Simple platform so the hero looks grounded (same level lighting as gameplay). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UStaticMeshComponent> PreviewPlatform;
-
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> EasyPreviewProps;
 
 	/** Hero pawn class (same as gameplay - unified hero) */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
@@ -155,6 +157,8 @@ protected:
 
 	UPROPERTY(Transient)
 	ET66Difficulty PreviewDifficulty = ET66Difficulty::Easy;
+
+	ET66PreviewStageMode PreviewStageMode = ET66PreviewStageMode::Selection;
 
 	UPROPERTY(Transient)
 	bool bStageVisible = true;

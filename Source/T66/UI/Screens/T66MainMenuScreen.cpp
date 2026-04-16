@@ -955,8 +955,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		})
 	];
 
-	const bool bCanLeaveParty = SessionSubsystem
-		&& (SessionSubsystem->IsPartySessionActive() || (PartySubsystem && PartySubsystem->HasRemotePartyMembers()));
+	const bool bCanLeaveParty = (SessionSubsystem && SessionSubsystem->IsPartyLobbyContextActive())
+		|| (PartySubsystem && PartySubsystem->HasRemotePartyMembers());
 
 	auto MakePartyMemberSlot = [LeaderSlotAccent, PartySlotAccent](const FMenuPartyEntry* Member) -> TSharedRef<SWidget>
 	{
@@ -1495,7 +1495,7 @@ void UT66MainMenuScreen::SyncToSharedPartyScreen()
 	}
 
 	UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>();
-	if (!SessionSubsystem || !SessionSubsystem->IsPartySessionActive() || SessionSubsystem->IsLocalPlayerPartyHost())
+	if (!SessionSubsystem || !SessionSubsystem->IsPartyLobbyContextActive() || SessionSubsystem->IsLocalPlayerPartyHost())
 	{
 		return;
 	}
@@ -1679,12 +1679,12 @@ void UT66MainMenuScreen::OnNewGameClicked()
 	{
 		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
 		{
-			if (SessionSubsystem->IsPartySessionActive() && !SessionSubsystem->IsLocalPlayerPartyHost())
+			if (SessionSubsystem->IsPartyLobbyContextActive() && !SessionSubsystem->IsLocalPlayerPartyHost())
 			{
 				return;
 			}
 
-			if (SessionSubsystem->IsPartySessionActive())
+			if (SessionSubsystem->IsPartyLobbyContextActive())
 			{
 				SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::HeroSelection, true);
 			}
@@ -1705,7 +1705,7 @@ void UT66MainMenuScreen::OnLoadGameClicked()
 	{
 		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
 		{
-			if (SessionSubsystem->IsPartySessionActive() && !SessionSubsystem->IsLocalPlayerPartyHost())
+			if (SessionSubsystem->IsPartyLobbyContextActive() && !SessionSubsystem->IsLocalPlayerPartyHost())
 			{
 				return;
 			}

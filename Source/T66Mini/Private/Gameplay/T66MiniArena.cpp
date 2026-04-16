@@ -11,7 +11,7 @@
 
 namespace
 {
-	UStaticMesh* T66MiniLoadPlaneMesh()
+	UStaticMesh* T66MiniArenaLoadPlaneMesh()
 	{
 		static TWeakObjectPtr<UStaticMesh> Cached;
 		if (!Cached.IsValid())
@@ -33,7 +33,7 @@ namespace
 		return Cached.Get();
 	}
 
-	UMaterialInterface* T66MiniLoadArenaMaterial()
+	UMaterialInterface* T66MiniArenaLoadArenaMaterial()
 	{
 		static TWeakObjectPtr<UMaterialInterface> Cached;
 		if (!Cached.IsValid())
@@ -62,7 +62,7 @@ namespace
 			return;
 		}
 
-		UMaterialInterface* BaseMaterial = T66MiniLoadArenaMaterial();
+		UMaterialInterface* BaseMaterial = T66MiniArenaLoadArenaMaterial();
 		if (!BaseMaterial)
 		{
 			return;
@@ -101,13 +101,13 @@ AT66MiniArena::AT66MiniArena()
 	FloorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Floor"));
 	FloorMesh->SetupAttachment(SceneRoot);
 	FloorMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	FloorMesh->SetStaticMesh(T66MiniLoadPlaneMesh());
+	FloorMesh->SetStaticMesh(T66MiniArenaLoadPlaneMesh());
 	FloorMesh->SetCastShadow(false);
 
 	BackdropMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Backdrop"));
 	BackdropMesh->SetupAttachment(SceneRoot);
 	BackdropMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	BackdropMesh->SetStaticMesh(T66MiniLoadPlaneMesh());
+	BackdropMesh->SetStaticMesh(T66MiniArenaLoadPlaneMesh());
 	BackdropMesh->SetCastShadow(false);
 
 	for (int32 Index = 0; Index < 4; ++Index)

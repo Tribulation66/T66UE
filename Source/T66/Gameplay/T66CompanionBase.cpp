@@ -18,6 +18,9 @@
 
 namespace
 {
+	static const FVector T66CompanionGameplayPlaceholderScale(0.42f, 0.42f, 1.00f);
+	static const FVector T66CompanionPreviewPlaceholderScale(0.78f, 0.78f, 1.32f);
+
 	APawn* T66ResolveCompanionFollowHero(const AActor* CompanionActor)
 	{
 		if (!CompanionActor)
@@ -70,9 +73,8 @@ AT66CompanionBase::AT66CompanionBase()
 		PlaceholderMesh->SetStaticMesh(CylinderFinder.Object);
 		// Placeholder cylinder (used when no character visual exists).
 		// NOTE: actor origin is treated as ground contact point in gameplay.
-		const FVector GameplayScale(0.42f, 0.42f, 0.95f);
-		PlaceholderMesh->SetRelativeScale3D(GameplayScale);
-		PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, 50.f * GameplayScale.Z));
+		PlaceholderMesh->SetRelativeScale3D(T66CompanionGameplayPlaceholderScale);
+		PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, 50.f * T66CompanionGameplayPlaceholderScale.Z));
 	}
 
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
@@ -81,6 +83,23 @@ AT66CompanionBase::AT66CompanionBase()
 	SkeletalMesh->SetVisibility(false, true);
 
 	ApplyCompanionScale();
+}
+
+float AT66CompanionBase::GetHealingPerSecondForUnionStages(const int32 UnionStagesCleared)
+{
+	if (UnionStagesCleared >= UT66AchievementsSubsystem::UnionTier_HyperStages)
+	{
+		return 20.f;
+	}
+	if (UnionStagesCleared >= UT66AchievementsSubsystem::UnionTier_MediumStages)
+	{
+		return 20.f;
+	}
+	if (UnionStagesCleared >= UT66AchievementsSubsystem::UnionTier_GoodStages)
+	{
+		return 10.f;
+	}
+	return 5.f;
 }
 
 void AT66CompanionBase::BeginPlay()
@@ -195,9 +214,7 @@ void AT66CompanionBase::SetPreviewMode(bool bPreview)
 	// Make preview easier to see in UI (only affects placeholder).
 	if (PlaceholderMesh && PlaceholderMesh->IsVisible())
 	{
-		const FVector GameplayScale(0.42f, 0.42f, 0.95f);
-		const FVector PreviewScale(0.78f, 0.78f, 1.25f);
-		const FVector NewScale = bIsPreviewMode ? PreviewScale : GameplayScale;
+		const FVector NewScale = bIsPreviewMode ? T66CompanionPreviewPlaceholderScale : T66CompanionGameplayPlaceholderScale;
 		PlaceholderMesh->SetRelativeScale3D(NewScale);
 		PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, 50.f * NewScale.Z));
 	}
@@ -332,19 +349,12 @@ void AT66CompanionBase::Tick(float DeltaTime)
 	}
 
 	// Heal the hero over time (numerical HP/s by Union tier: 5/10/20/20).
-	float HealHPPerSecond = 5.f;
-	if (CachedAchievementsSubsystem)
-	{
-		const int32 Stages = CachedUnionStagesCleared;
-		if (Stages >= UT66AchievementsSubsystem::UnionTier_HyperStages) HealHPPerSecond = 20.f;
-		else if (Stages >= UT66AchievementsSubsystem::UnionTier_MediumStages) HealHPPerSecond = 20.f;
-		else if (Stages >= UT66AchievementsSubsystem::UnionTier_GoodStages) HealHPPerSecond = 10.f;
-	}
+	const float HealHPPerSecond = GetHealingPerSecondForUnionStages(CachedUnionStagesCleared);
 	if (CachedRunStateSubsystem)
 	{
 		if (CachedRunStateSubsystem->GetCurrentHP() < CachedRunStateSubsystem->GetMaxHP() && HealHPPerSecond > 0.f)
 		{
-			CachedRunStateSubsystem->HealHP(HealHPPerSecond * DeltaTime);
+			CachedRunStateSubsystem->HealHPFromCompanion(HealHPPerSecond * DeltaTime);
 		}
 	}
 }

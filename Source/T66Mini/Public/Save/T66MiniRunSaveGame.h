@@ -84,6 +84,93 @@ struct FT66MiniInteractableSnapshot
 	float LifetimeRemaining = 0.f;
 };
 
+USTRUCT(BlueprintType)
+struct FT66MiniTrapSnapshot
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	FVector Location = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float Radius = 260.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float DamagePerPulse = 8.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float PulseInterval = 0.55f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float WarmupRemaining = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float ActiveRemaining = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float LifetimeRemaining = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	int32 TrapVariant = 0;
+};
+
+USTRUCT(BlueprintType)
+struct FT66MiniPartyPlayerSnapshot
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	FString SteamId;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	FString DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	FName HeroID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	FName CompanionID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	TArray<FName> EquippedIdolIDs;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	TArray<FName> OwnedItemIDs;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	int32 HeroLevel = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float CurrentHealth = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float MaxHealth = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	int32 Materials = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	int32 Gold = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float Experience = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float UltimateCooldownRemaining = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	bool bEnduranceCheatUsedThisWave = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	bool bQuickReviveReady = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	bool bHasPlayerLocation = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	FVector PlayerLocation = FVector::ZeroVector;
+};
+
 UCLASS()
 class T66MINI_API UT66MiniRunSaveGame : public USaveGame
 {
@@ -92,6 +179,24 @@ class T66MINI_API UT66MiniRunSaveGame : public USaveGame
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	int32 SaveSlotIndex = INDEX_NONE;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	bool bOnlinePartyRun = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	FString OnlineHostSteamId;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	FString OnlineHostDisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	TArray<FString> OnlinePartyMemberIds;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	TArray<FString> OnlinePartyMemberDisplayNames;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	TArray<FT66MiniPartyPlayerSnapshot> PartyPlayerSnapshots;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	FName HeroID = NAME_None;
@@ -136,6 +241,15 @@ public:
 	float Experience = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float UltimateCooldownRemaining = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	bool bEnduranceCheatUsedThisWave = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	bool bQuickReviveReady = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	float TotalRunSeconds = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
@@ -178,6 +292,9 @@ public:
 	float PostBossDelayRemaining = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float TrapSpawnAccumulator = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	TArray<FT66MiniEnemySnapshot> EnemySnapshots;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
@@ -185,6 +302,21 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	TArray<FT66MiniInteractableSnapshot> InteractableSnapshots;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	TArray<FT66MiniTrapSnapshot> TrapSnapshots;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	int32 CircusDebt = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	float CircusAnger01 = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	TArray<FName> CircusBuybackItemIDs;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	int32 CircusVendorRerollCount = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	FString LastUpdatedUtc;

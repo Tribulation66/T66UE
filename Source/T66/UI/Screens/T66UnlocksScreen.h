@@ -61,7 +61,7 @@ private:
 
 	FReply HandleCategoryClicked(EUnlockCategory Category);
 	FReply HandleBackClicked();
-	FReply HandleOpenSnakeClicked();
+	FReply HandleOpenMiniChadpocalypseClicked();
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);

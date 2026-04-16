@@ -17,6 +17,7 @@ public:
 	explicit FT66SteamJoinRequestBridge(UT66SteamHelper& InOwner)
 		: Owner(InOwner)
 	{
+		LobbyJoinRequestedCallback.Register(this, &FT66SteamJoinRequestBridge::OnLobbyJoinRequested);
 		RichPresenceJoinRequestedCallback.Register(this, &FT66SteamJoinRequestBridge::OnRichPresenceJoinRequested);
 		WebApiTicketResponseCallback.Register(this, &FT66SteamJoinRequestBridge::OnWebApiTicketResponse);
 	}
@@ -28,6 +29,7 @@ public:
 
 	void Unregister()
 	{
+		LobbyJoinRequestedCallback.Unregister();
 		RichPresenceJoinRequestedCallback.Unregister();
 		WebApiTicketResponseCallback.Unregister();
 	}
@@ -35,6 +37,7 @@ public:
 private:
 	UT66SteamHelper& Owner;
 
+	STEAM_CALLBACK_MANUAL(FT66SteamJoinRequestBridge, OnLobbyJoinRequested, GameLobbyJoinRequested_t, LobbyJoinRequestedCallback);
 	STEAM_CALLBACK_MANUAL(FT66SteamJoinRequestBridge, OnRichPresenceJoinRequested, GameRichPresenceJoinRequested_t, RichPresenceJoinRequestedCallback);
 	STEAM_CALLBACK_MANUAL(FT66SteamJoinRequestBridge, OnWebApiTicketResponse, GetTicketForWebApiResponse_t, WebApiTicketResponseCallback);
 };
@@ -137,6 +140,18 @@ namespace
 	}
 }
 
+void FT66SteamJoinRequestBridge::OnLobbyJoinRequested(GameLobbyJoinRequested_t* Param)
+{
+	if (!Param)
+	{
+		return;
+	}
+
+	Owner.HandleSteamLobbyJoinRequested(
+		FString::Printf(TEXT("%llu"), Param->m_steamIDFriend.ConvertToUint64()),
+		FString::Printf(TEXT("%llu"), Param->m_steamIDLobby.ConvertToUint64()));
+}
+
 void FT66SteamJoinRequestBridge::OnRichPresenceJoinRequested(GameRichPresenceJoinRequested_t* Param)
 {
 	if (!Param)
@@ -188,6 +203,16 @@ FString UT66SteamHelper::GetActiveSteamAppId() const
 
 	const int32 ConfiguredAppId = T66ReadConfiguredSteamAppId();
 	return ConfiguredAppId > 0 ? FString::FromInt(ConfiguredAppId) : FString();
+}
+
+int32 UT66SteamHelper::GetActiveSteamBuildId() const
+{
+	if (ISteamApps* Apps = SteamApps())
+	{
+		return Apps->GetAppBuildId();
+	}
+
+	return 0;
 }
 
 FString UT66SteamHelper::GetCurrentSteamBetaName() const
@@ -572,6 +597,17 @@ void UT66SteamHelper::HandleSteamJoinRequested(const FString& FriendSteamId)
 
 	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: received Steam join request from friend %s."), *FriendSteamId);
 	SteamJoinRequested.Broadcast(FriendSteamId);
+}
+
+void UT66SteamHelper::HandleSteamLobbyJoinRequested(const FString& FriendSteamId, const FString& LobbySteamId)
+{
+	if (FriendSteamId.IsEmpty() || LobbySteamId.IsEmpty())
+	{
+		return;
+	}
+
+	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: received Steam lobby join request from friend %s for lobby %s."), *FriendSteamId, *LobbySteamId);
+	SteamLobbyJoinRequested.Broadcast(FriendSteamId, LobbySteamId);
 }
 
 void UT66SteamHelper::HandleWebApiTicketReady(uint32 InTicketHandle, bool bSuccess, const uint8* TicketBytes, int32 TicketByteCount)

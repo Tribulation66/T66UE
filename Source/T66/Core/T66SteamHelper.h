@@ -14,6 +14,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	const FString&, TicketHex);
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnT66SteamJoinRequested, const FString& /*FriendSteamId*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnT66SteamLobbyJoinRequested, const FString& /*FriendSteamId*/, const FString& /*LobbySteamId*/);
 
 USTRUCT(BlueprintType)
 struct T66_API FT66SteamFriendInfo
@@ -81,6 +82,9 @@ public:
 	FString GetActiveSteamAppId() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
+	int32 GetActiveSteamBuildId() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
 	FString GetCurrentSteamBetaName() const;
 
 	/** Get friend SteamIDs (for leaderboard friends tab). */
@@ -116,7 +120,9 @@ public:
 	FOnSteamTicketReady OnSteamTicketReady;
 
 	FOnT66SteamJoinRequested& OnSteamJoinRequested() { return SteamJoinRequested; }
+	FOnT66SteamLobbyJoinRequested& OnSteamLobbyJoinRequested() { return SteamLobbyJoinRequested; }
 	void HandleSteamJoinRequested(const FString& FriendSteamId);
+	void HandleSteamLobbyJoinRequested(const FString& FriendSteamId, const FString& LobbySteamId);
 	void HandleWebApiTicketReady(uint32 InTicketHandle, bool bSuccess, const uint8* TicketBytes, int32 TicketByteCount);
 
 private:
@@ -139,6 +145,7 @@ private:
 	uint32 TicketHandle = 0;
 	class FT66SteamJoinRequestBridge* SteamJoinRequestBridge = nullptr;
 	FOnT66SteamJoinRequested SteamJoinRequested;
+	FOnT66SteamLobbyJoinRequested SteamLobbyJoinRequested;
 
 	void ObtainTicket();
 	void CollectFriendsList();

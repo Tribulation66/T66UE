@@ -355,6 +355,18 @@ void UT66CasinoOverlayWidget::NativeDestruct()
 		RunState->BossChanged.RemoveDynamic(this, &UT66CasinoOverlayWidget::HandleBossChanged);
 	}
 
+	if (VendorTabWidget)
+	{
+		VendorTabWidget->RemoveFromParent();
+		VendorTabWidget = nullptr;
+	}
+
+	if (GamblerTabWidget)
+	{
+		GamblerTabWidget->RemoveFromParent();
+		GamblerTabWidget = nullptr;
+	}
+
 	Super::NativeDestruct();
 }
 

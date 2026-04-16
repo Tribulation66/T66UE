@@ -15,6 +15,18 @@ class UT66LeaderboardRunSummarySaveGame;
  */
 namespace T66StatsPanelSlate
 {
+	struct FT66SnapshotStatsPanelOptions
+	{
+		float WidthOverride = 320.f;
+		bool bExtended = false;
+		int32 FontSizeAdjustment = 0;
+		int32 HeadingFontSizeAdjustment = 0;
+		bool bShowAdjectiveSummaries = false;
+		bool bIncludeHeader = true;
+		bool bIncludeLevel = true;
+		float ScrollHeightOverride = 400.f;
+	};
+
 	struct FT66LiveStatsPanel
 	{
 		TArray<TSharedPtr<class STextBlock>> PrimaryLines;
@@ -33,7 +45,8 @@ namespace T66StatsPanelSlate
 		float WidthOverride = 320.f,
 		bool bExtended = false,
 		int32 FontSizeAdjustment = 0,
-		int32 HeadingFontSizeAdjustment = 0);
+		int32 HeadingFontSizeAdjustment = 0,
+		bool bShowAdjectiveSummaries = false);
 
 	/** Build the standard stats panel with stable text widgets that can be updated in place. */
 	TSharedRef<class SWidget> MakeLiveEssentialStatsPanel(
@@ -50,4 +63,10 @@ namespace T66StatsPanelSlate
 		UT66LocalizationSubsystem* Loc,
 		float WidthOverride = 320.f,
 		int32 FontSizeAdjustment = 0);
+
+	/** Build the same stats panel from snapshot/static data with layout options for preview-style UI. */
+	TSharedRef<class SWidget> MakeEssentialStatsPanelFromSnapshotWithOptions(
+		UT66LeaderboardRunSummarySaveGame* Snapshot,
+		UT66LocalizationSubsystem* Loc,
+		const FT66SnapshotStatsPanelOptions& Options = FT66SnapshotStatsPanelOptions());
 }

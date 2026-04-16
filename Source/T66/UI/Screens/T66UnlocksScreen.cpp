@@ -273,10 +273,12 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 
-	const FText TitleText = NSLOCTEXT("T66.MiniGames", "Title", "MINIGAMES");
-	const FText SnakeButtonText = NSLOCTEXT("T66.MiniGames", "SnakeButtonTitle", "SNAKE GAME");
-	const FText SnakeBodyText = NSLOCTEXT("T66.MiniGames", "SnakeBody", "Launch a quick arcade run in a live modal.");
-	const FText SnakeHintText = NSLOCTEXT("T66.MiniGames", "SnakeHint", "Click the title to play. Use arrow keys or WASD to steer.");
+	const FText ActiveSliceTitle = NSLOCTEXT("T66.MiniGames", "SliceActiveTitle", "CHADPOCALYPSE MINI");
+	const FText ActiveSliceBody = NSLOCTEXT("T66.MiniGames", "SliceActiveBody", "Launch the current 2D survivor mini-game shell with its own saves, heroes, idols, enemies, and progression.");
+	const FText ActiveSliceTag = NSLOCTEXT("T66.MiniGames", "SliceActiveTag", "AVAILABLE NOW");
+	const FText ComingSoonTitle = NSLOCTEXT("T66.MiniGames", "SliceComingSoonTitle", "COMING SOON");
+	const FText ComingSoonBody = NSLOCTEXT("T66.MiniGames", "SliceComingSoonBody", "Reserved slot for future mini-game releases.");
+	const FText ComingSoonTag = NSLOCTEXT("T66.MiniGames", "SliceComingSoonTag", "IN DEVELOPMENT");
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
 	const float TopBarOverlapPx = 22.f;
@@ -295,6 +297,82 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 		return FT66Style::GetSafePadding(FMargin(20.f, 0.f, 0.f, 20.f));
 	});
 
+	const auto MakeSlicePanel = [&](const FText& Title, const FText& Body, const FText& Tag, const FLinearColor& Accent, const bool bClickable) -> TSharedRef<SWidget>
+	{
+		TSharedRef<SWidget> SliceContent =
+			SNew(SBox)
+			.HeightOverride(132.f)
+			[
+				FT66Style::MakePanel(
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.01f, 0.015f, 0.022f, 0.90f))
+						.Padding(FMargin(26.f, 18.f))
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot()
+							.FillWidth(1.f)
+							.VAlign(VAlign_Center)
+							[
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot()
+								.AutoHeight()
+								[
+									SNew(STextBlock)
+									.Text(Title)
+									.Font(FT66Style::Tokens::FontBold(30))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
+								]
+								+ SVerticalBox::Slot()
+								.AutoHeight()
+								.Padding(0.f, 8.f, 40.f, 0.f)
+								[
+									SNew(STextBlock)
+									.Text(Body)
+									.Font(FT66Style::Tokens::FontRegular(18))
+									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+									.AutoWrapText(true)
+								]
+							]
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.VAlign(VAlign_Center)
+							.HAlign(HAlign_Right)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(bClickable ? Accent : FLinearColor(0.18f, 0.20f, 0.24f, 1.f))
+								.Padding(FMargin(16.f, 8.f))
+								[
+									SNew(STextBlock)
+									.Text(Tag)
+									.Font(FT66Style::Tokens::FontBold(14))
+									.ColorAndOpacity(bClickable ? FLinearColor(0.05f, 0.06f, 0.07f, 1.f) : FT66Style::Tokens::Text)
+								]
+							]
+						]
+					],
+					FT66PanelParams(ET66PanelType::Panel)
+						.SetColor(FLinearColor(0.018f, 0.020f, 0.026f, 1.0f))
+						.SetPadding(FMargin(3.f)))
+			];
+
+		if (!bClickable)
+		{
+			return SliceContent;
+		}
+
+		return SNew(SButton)
+			.ButtonStyle(FCoreStyle::Get(), "NoBorder")
+			.OnClicked(FOnClicked::CreateUObject(this, &UT66UnlocksScreen::HandleOpenMiniChadpocalypseClicked))
+			[
+				SliceContent
+			];
+	};
+
 	return SNew(SBox)
 		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
 		[
@@ -308,78 +386,42 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 					[
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot()
-						.AutoHeight()
+						.FillHeight(1.f)
 						.HAlign(HAlign_Center)
-						.Padding(0.f, 14.f, 0.f, 0.f)
+						.VAlign(VAlign_Center)
+						.Padding(0.f, 18.f, 0.f, 18.f)
 						[
 							SNew(SBox)
-							.WidthOverride(760.f)
+							.WidthOverride(1120.f)
 							[
 								FT66Style::MakePanel(
 									SNew(SVerticalBox)
 									+ SVerticalBox::Slot()
 									.AutoHeight()
-									.HAlign(HAlign_Center)
-									.Padding(18.f, 8.f, 18.f, 0.f)
+									.Padding(0.f, 0.f, 0.f, 18.f)
 									[
-										SNew(STextBlock)
-										.Text(TitleText)
-										.Font(FT66Style::Tokens::FontBold(44))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
-										.Justification(ETextJustify::Center)
+										MakeSlicePanel(ActiveSliceTitle, ActiveSliceBody, ActiveSliceTag, FT66Style::Success(), true)
 									]
 									+ SVerticalBox::Slot()
 									.AutoHeight()
-									.Padding(18.f, 18.f, 18.f, 0.f)
+									.Padding(0.f, 0.f, 0.f, 18.f)
 									[
-										SNew(SBorder)
-										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-										.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.94f))
-										.Padding(FMargin(20.f, 22.f))
-										[
-											SNew(SVerticalBox)
-											+ SVerticalBox::Slot()
-											.AutoHeight()
-											.HAlign(HAlign_Center)
-											[
-												FT66Style::MakeButton(
-													FT66ButtonParams(
-														SnakeButtonText,
-														FOnClicked::CreateUObject(this, &UT66UnlocksScreen::HandleOpenSnakeClicked),
-														ET66ButtonType::Primary)
-													.SetMinWidth(580.f)
-													.SetHeight(84.f)
-													.SetFontSize(30))
-											]
-											+ SVerticalBox::Slot()
-											.AutoHeight()
-											.HAlign(HAlign_Center)
-											.Padding(10.f, 16.f, 10.f, 0.f)
-											[
-												SNew(STextBlock)
-												.Text(SnakeBodyText)
-												.Font(FT66Style::Tokens::FontRegular(22))
-												.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-												.Justification(ETextJustify::Center)
-												.AutoWrapText(true)
-											]
-											+ SVerticalBox::Slot()
-											.AutoHeight()
-											.HAlign(HAlign_Center)
-											.Padding(10.f, 10.f, 10.f, 0.f)
-											[
-												SNew(STextBlock)
-												.Text(SnakeHintText)
-												.Font(FT66Style::Tokens::FontRegular(18))
-												.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-												.Justification(ETextJustify::Center)
-												.AutoWrapText(true)
-											]
-										]
+										MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
+									]
+									+ SVerticalBox::Slot()
+									.AutoHeight()
+									.Padding(0.f, 0.f, 0.f, 18.f)
+									[
+										MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
+									]
+									+ SVerticalBox::Slot()
+									.AutoHeight()
+									[
+										MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
 									],
 									FT66PanelParams(ET66PanelType::Panel)
 										.SetColor(T66UnlocksInsetFill())
-										.SetPadding(FMargin(30.f, 28.f)))
+										.SetPadding(FMargin(26.f)))
 							]
 						]
 					]
@@ -539,9 +581,9 @@ FReply UT66UnlocksScreen::HandleBackClicked()
 	return FReply::Handled();
 }
 
-FReply UT66UnlocksScreen::HandleOpenSnakeClicked()
+FReply UT66UnlocksScreen::HandleOpenMiniChadpocalypseClicked()
 {
-	ShowModal(ET66ScreenType::SnakeGame);
+	NavigateTo(ET66ScreenType::MiniMainMenu);
 	return FReply::Handled();
 }
 

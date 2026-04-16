@@ -17,12 +17,18 @@ public:
 	UT66MiniSaveSlotsScreen(const FObjectInitializer& ObjectInitializer);
 
 protected:
+	virtual void OnScreenActivated_Implementation() override;
+	virtual void OnScreenDeactivated_Implementation() override;
+	virtual void NativeDestruct() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
 	FReply HandleBackClicked();
 	FReply HandleLoadSlotClicked(int32 SlotIndex);
+	void HandleSessionStateChanged();
+	void SyncToSharedPartyScreen();
 	void SetStatus(const FText& InText);
 
 	TSharedPtr<STextBlock> StatusTextBlock;
+	FDelegateHandle SessionStateChangedHandle;
 };

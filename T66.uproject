@@ -47,6 +47,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "SocketSubsystemSteamIP",
+			"Enabled": true
+		},
+		{
 			"Name": "ProceduralMeshComponent",
 			"Enabled": true
 		}

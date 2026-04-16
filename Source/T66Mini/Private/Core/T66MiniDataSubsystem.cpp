@@ -185,6 +185,10 @@ namespace
 
 	ET66MiniEnemyBehaviorProfile T66MiniToBehaviorProfile(const FString& Value)
 	{
+		if (Value.Equals(TEXT("HumanoidBalanced"), ESearchCase::IgnoreCase))
+		{
+			return ET66MiniEnemyBehaviorProfile::HumanoidBalanced;
+		}
 		if (Value.Equals(TEXT("RoostPress"), ESearchCase::IgnoreCase))
 		{
 			return ET66MiniEnemyBehaviorProfile::RoostPress;
@@ -215,6 +219,81 @@ namespace
 		}
 
 		return ET66MiniEnemyBehaviorProfile::Balanced;
+	}
+
+	ET66MiniEnemyFamily T66MiniToEnemyFamily(const FString& Value, const ET66MiniEnemyBehaviorProfile BehaviorProfile, const bool bIsBoss)
+	{
+		if (bIsBoss)
+		{
+			return ET66MiniEnemyFamily::Boss;
+		}
+
+		if (Value.Equals(TEXT("Ranged"), ESearchCase::IgnoreCase))
+		{
+			return ET66MiniEnemyFamily::Ranged;
+		}
+		if (Value.Equals(TEXT("Rushing"), ESearchCase::IgnoreCase))
+		{
+			return ET66MiniEnemyFamily::Rushing;
+		}
+		if (Value.Equals(TEXT("Boss"), ESearchCase::IgnoreCase))
+		{
+			return ET66MiniEnemyFamily::Boss;
+		}
+
+		if (BehaviorProfile == ET66MiniEnemyBehaviorProfile::Sharpshooter)
+		{
+			return ET66MiniEnemyFamily::Ranged;
+		}
+		if (BehaviorProfile == ET66MiniEnemyBehaviorProfile::GoatCharger || BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist)
+		{
+			return ET66MiniEnemyFamily::Rushing;
+		}
+
+		return ET66MiniEnemyFamily::Melee;
+	}
+
+	ET66UltimateType T66MiniToUltimateType(const FString& Value)
+	{
+		if (Value.Equals(TEXT("SpearStorm"), ESearchCase::IgnoreCase)) return ET66UltimateType::SpearStorm;
+		if (Value.Equals(TEXT("MeteorStrike"), ESearchCase::IgnoreCase)) return ET66UltimateType::MeteorStrike;
+		if (Value.Equals(TEXT("ChainLightning"), ESearchCase::IgnoreCase)) return ET66UltimateType::ChainLightning;
+		if (Value.Equals(TEXT("PlagueCloud"), ESearchCase::IgnoreCase)) return ET66UltimateType::PlagueCloud;
+		if (Value.Equals(TEXT("PrecisionStrike"), ESearchCase::IgnoreCase)) return ET66UltimateType::PrecisionStrike;
+		if (Value.Equals(TEXT("FanTheHammer"), ESearchCase::IgnoreCase)) return ET66UltimateType::FanTheHammer;
+		if (Value.Equals(TEXT("Deadeye"), ESearchCase::IgnoreCase)) return ET66UltimateType::Deadeye;
+		if (Value.Equals(TEXT("Discharge"), ESearchCase::IgnoreCase)) return ET66UltimateType::Discharge;
+		if (Value.Equals(TEXT("Juiced"), ESearchCase::IgnoreCase)) return ET66UltimateType::Juiced;
+		if (Value.Equals(TEXT("DeathSpiral"), ESearchCase::IgnoreCase)) return ET66UltimateType::DeathSpiral;
+		if (Value.Equals(TEXT("Shockwave"), ESearchCase::IgnoreCase)) return ET66UltimateType::Shockwave;
+		if (Value.Equals(TEXT("TidalWave"), ESearchCase::IgnoreCase)) return ET66UltimateType::TidalWave;
+		if (Value.Equals(TEXT("GoldRush"), ESearchCase::IgnoreCase)) return ET66UltimateType::GoldRush;
+		if (Value.Equals(TEXT("MiasmaBomb"), ESearchCase::IgnoreCase)) return ET66UltimateType::MiasmaBomb;
+		if (Value.Equals(TEXT("RabidFrenzy"), ESearchCase::IgnoreCase)) return ET66UltimateType::RabidFrenzy;
+		if (Value.Equals(TEXT("Blizzard"), ESearchCase::IgnoreCase)) return ET66UltimateType::Blizzard;
+		if (Value.Equals(TEXT("ScopedSniper"), ESearchCase::IgnoreCase)) return ET66UltimateType::ScopedSniper;
+		return ET66UltimateType::None;
+	}
+
+	ET66PassiveType T66MiniToPassiveType(const FString& Value)
+	{
+		if (Value.Equals(TEXT("IronWill"), ESearchCase::IgnoreCase)) return ET66PassiveType::IronWill;
+		if (Value.Equals(TEXT("RallyingBlow"), ESearchCase::IgnoreCase)) return ET66PassiveType::RallyingBlow;
+		if (Value.Equals(TEXT("ArcaneAmplification"), ESearchCase::IgnoreCase)) return ET66PassiveType::ArcaneAmplification;
+		if (Value.Equals(TEXT("MarksmanFocus"), ESearchCase::IgnoreCase)) return ET66PassiveType::MarksmanFocus;
+		if (Value.Equals(TEXT("ToxinStacking"), ESearchCase::IgnoreCase)) return ET66PassiveType::ToxinStacking;
+		if (Value.Equals(TEXT("QuickDraw"), ESearchCase::IgnoreCase)) return ET66PassiveType::QuickDraw;
+		if (Value.Equals(TEXT("Headshot"), ESearchCase::IgnoreCase)) return ET66PassiveType::Headshot;
+		if (Value.Equals(TEXT("StaticCharge"), ESearchCase::IgnoreCase)) return ET66PassiveType::StaticCharge;
+		if (Value.Equals(TEXT("Overclock"), ESearchCase::IgnoreCase)) return ET66PassiveType::Overclock;
+		if (Value.Equals(TEXT("ChaosTheory"), ESearchCase::IgnoreCase)) return ET66PassiveType::ChaosTheory;
+		if (Value.Equals(TEXT("Endurance"), ESearchCase::IgnoreCase)) return ET66PassiveType::Endurance;
+		if (Value.Equals(TEXT("BrawlersFury"), ESearchCase::IgnoreCase)) return ET66PassiveType::BrawlersFury;
+		if (Value.Equals(TEXT("Unflinching"), ESearchCase::IgnoreCase)) return ET66PassiveType::Unflinching;
+		if (Value.Equals(TEXT("TreasureHunter"), ESearchCase::IgnoreCase)) return ET66PassiveType::TreasureHunter;
+		if (Value.Equals(TEXT("Evasive"), ESearchCase::IgnoreCase)) return ET66PassiveType::Evasive;
+		if (Value.Equals(TEXT("Frostbite"), ESearchCase::IgnoreCase)) return ET66PassiveType::Frostbite;
+		return ET66PassiveType::None;
 	}
 
 	ET66MiniInteractableType T66MiniToInteractableType(const FString& Value)
@@ -413,6 +492,8 @@ void UT66MiniDataSubsystem::LoadHeroes()
 		Definition.BaseArmor = T66MiniToFloat(T66MiniGetValue(Row, TEXT("BaseArmor")));
 		Definition.BaseLuck = T66MiniToFloat(T66MiniGetValue(Row, TEXT("BaseLuck")));
 		Definition.BaseSpeed = T66MiniToFloat(T66MiniGetValue(Row, TEXT("BaseSpeed")));
+		Definition.UltimateType = T66MiniToUltimateType(T66MiniGetValue(Row, TEXT("UltimateType")));
+		Definition.PassiveType = T66MiniToPassiveType(T66MiniGetValue(Row, TEXT("PassiveType")));
 		Definition.bUnlockedByDefault = T66MiniToBool(T66MiniGetValue(Row, TEXT("bUnlockedByDefault")), true);
 
 		if (Definition.HeroID != NAME_None)
@@ -522,12 +603,17 @@ void UT66MiniDataSubsystem::LoadEnemies()
 		Definition.DisplayName = T66MiniGetValue(Row, TEXT("DisplayName"));
 		Definition.VisualID = T66MiniGetValue(Row, TEXT("VisualID"));
 		Definition.BehaviorProfile = T66MiniToBehaviorProfile(T66MiniGetValue(Row, TEXT("BehaviorProfile")));
+		Definition.Family = T66MiniToEnemyFamily(T66MiniGetValue(Row, TEXT("Family")), Definition.BehaviorProfile, false);
 		Definition.BaseHealth = T66MiniToFloat(T66MiniGetValue(Row, TEXT("BaseHealth")), 30.0f);
 		Definition.BaseSpeed = T66MiniToFloat(T66MiniGetValue(Row, TEXT("BaseSpeed")), 260.0f);
 		Definition.BaseTouchDamage = T66MiniToFloat(T66MiniGetValue(Row, TEXT("BaseTouchDamage")), 8.0f);
 		Definition.BaseMaterials = T66MiniToInt(T66MiniGetValue(Row, TEXT("BaseMaterials")), 4);
 		Definition.BaseExperience = T66MiniToFloat(T66MiniGetValue(Row, TEXT("BaseExperience")), 5.0f);
 		Definition.SpawnWeight = T66MiniToFloat(T66MiniGetValue(Row, TEXT("SpawnWeight")), 1.0f);
+		Definition.FireIntervalSeconds = T66MiniToFloat(T66MiniGetValue(Row, TEXT("FireIntervalSeconds")), Definition.Family == ET66MiniEnemyFamily::Ranged ? 1.7f : 2.2f);
+		Definition.ProjectileSpeed = T66MiniToFloat(T66MiniGetValue(Row, TEXT("ProjectileSpeed")), 980.0f);
+		Definition.ProjectileDamage = T66MiniToFloat(T66MiniGetValue(Row, TEXT("ProjectileDamage")), Definition.BaseTouchDamage * 0.9f);
+		Definition.PreferredRange = T66MiniToFloat(T66MiniGetValue(Row, TEXT("PreferredRange")), Definition.Family == ET66MiniEnemyFamily::Ranged ? 900.0f : 220.0f);
 
 		if (Definition.EnemyID != NAME_None)
 		{
@@ -548,12 +634,16 @@ void UT66MiniDataSubsystem::LoadBosses()
 		Definition.DisplayName = Definition.BossID.ToString().Replace(TEXT("_"), TEXT(" "));
 		Definition.VisualID = T66MiniBossProfileToVisualID(BossProfile);
 		Definition.BehaviorProfile = T66MiniToBehaviorProfile(BossProfile);
+		Definition.Family = ET66MiniEnemyFamily::Boss;
 		Definition.MaxHealth = T66MiniToFloat(T66MiniGetValue(Row, TEXT("MaxHP")), 1500.0f);
 		Definition.MoveSpeed = T66MiniToFloat(T66MiniGetValue(Row, TEXT("MoveSpeed")), 360.0f);
 		Definition.TouchDamage = FMath::Max(16.0f, T66MiniToFloat(T66MiniGetValue(Row, TEXT("ProjectileDamageHearts")), 1.0f) * 14.0f);
 		Definition.MaterialReward = FMath::Max(20, T66MiniToInt(T66MiniGetValue(Row, TEXT("PointValue")), 500) / 40);
 		Definition.ExperienceReward = FMath::Max(18.0f, T66MiniToFloat(T66MiniGetValue(Row, TEXT("PointValue")), 500.0f) / 55.0f);
 		Definition.TelegraphSeconds = 1.15f;
+		Definition.FireIntervalSeconds = T66MiniToFloat(T66MiniGetValue(Row, TEXT("FireIntervalSeconds")), 1.8f);
+		Definition.ProjectileSpeed = T66MiniToFloat(T66MiniGetValue(Row, TEXT("ProjectileSpeed")), 1000.0f);
+		Definition.ProjectileDamage = FMath::Max(18.0f, T66MiniToFloat(T66MiniGetValue(Row, TEXT("ProjectileDamageHearts")), 1.0f) * 16.0f);
 
 		if (Definition.BossID != NAME_None)
 		{
@@ -571,7 +661,7 @@ void UT66MiniDataSubsystem::LoadWaves()
 		FT66MiniWaveDefinition Definition;
 		Definition.DifficultyID = T66MiniToName(Row, TEXT("DifficultyID"));
 		Definition.WaveIndex = T66MiniToInt(T66MiniGetValue(Row, TEXT("WaveIndex")), 1);
-		Definition.DurationSeconds = T66MiniToFloat(T66MiniGetValue(Row, TEXT("DurationSeconds")), 180.0f);
+		Definition.DurationSeconds = T66MiniToFloat(T66MiniGetValue(Row, TEXT("DurationSeconds")), 60.0f);
 		Definition.BossID = T66MiniToName(Row, TEXT("BossID"));
 		Definition.EnemyIDs = T66MiniSplitNameList(T66MiniGetValue(Row, TEXT("EnemyIDs")));
 		Definition.SpawnInterval = T66MiniToFloat(T66MiniGetValue(Row, TEXT("SpawnInterval")), 1.2f);
@@ -604,6 +694,7 @@ void UT66MiniDataSubsystem::LoadInteractables()
 		Definition.GoldReward = T66MiniToInt(T66MiniGetValue(Row, TEXT("GoldReward")), 0);
 		Definition.ExperienceReward = T66MiniToFloat(T66MiniGetValue(Row, TEXT("ExperienceReward")), 0.0f);
 		Definition.HealAmount = T66MiniToFloat(T66MiniGetValue(Row, TEXT("HealAmount")), 0.0f);
+		Definition.bRequiresManualInteract = T66MiniToBool(T66MiniGetValue(Row, TEXT("bRequiresManualInteract")), Definition.Type == ET66MiniInteractableType::QuickReviveMachine);
 
 		if (Definition.InteractableID != NAME_None)
 		{

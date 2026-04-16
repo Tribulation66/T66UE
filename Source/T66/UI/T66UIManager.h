@@ -62,6 +62,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void GoBack();
 
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	bool CanGoBack() const { return NavigationHistory.Num() > 0; }
+
 	/**
 	 * Get the currently active screen type
 	 */

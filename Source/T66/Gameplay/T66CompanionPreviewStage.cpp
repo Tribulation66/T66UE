@@ -46,20 +46,20 @@ void AT66CompanionPreviewStage::PostInitializeComponents()
 		PreviewDifficulty = GI->SelectedDifficulty;
 	}
 
-	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewFloor, PreviewDifficulty);
+	T66PreviewStageEnvironment::EnsurePreviewEnvironmentBuilt(this, RootComponent);
+	T66PreviewStageEnvironment::ApplyPreviewEnvironment(this, PreviewFloor, PreviewDifficulty, PreviewStageMode, bStageVisible);
 }
 
 void AT66CompanionPreviewStage::BeginPlay()
 {
 	Super::BeginPlay();
 
-	T66PreviewStageEnvironment::CreateEasyFarmPreviewProps(this, RootComponent, EasyPreviewProps);
+	T66PreviewStageEnvironment::EnsurePreviewEnvironmentBuilt(this, RootComponent);
 
 	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		PreviewDifficulty = GI->SelectedDifficulty;
 	}
-	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewFloor, PreviewDifficulty);
 	RefreshPreviewEnvironment();
 }
 
@@ -88,7 +88,17 @@ void AT66CompanionPreviewStage::SetPreviewCompanion(FName CompanionID, FName Ski
 void AT66CompanionPreviewStage::SetPreviewDifficulty(ET66Difficulty Difficulty)
 {
 	PreviewDifficulty = Difficulty;
-	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewFloor, PreviewDifficulty);
+	RefreshPreviewEnvironment();
+}
+
+void AT66CompanionPreviewStage::SetPreviewStageMode(ET66PreviewStageMode NewPreviewStageMode)
+{
+	if (PreviewStageMode == NewPreviewStageMode)
+	{
+		return;
+	}
+
+	PreviewStageMode = NewPreviewStageMode;
 	RefreshPreviewEnvironment();
 }
 
@@ -290,13 +300,5 @@ void AT66CompanionPreviewStage::ResetFramingCache()
 
 void AT66CompanionPreviewStage::RefreshPreviewEnvironment()
 {
-	if (PreviewFloor)
-	{
-		PreviewFloor->SetVisibility(bStageVisible, true);
-		PreviewFloor->SetHiddenInGame(!bStageVisible, true);
-	}
-
-	T66PreviewStageEnvironment::SetPreviewPropsVisibility(
-		EasyPreviewProps,
-		bStageVisible && T66PreviewStageEnvironment::ShouldShowEasyProps(PreviewDifficulty));
+	T66PreviewStageEnvironment::ApplyPreviewEnvironment(this, PreviewFloor, PreviewDifficulty, PreviewStageMode, bStageVisible);
 }

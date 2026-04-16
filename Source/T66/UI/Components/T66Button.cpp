@@ -192,6 +192,7 @@ void UT66Button::ExecuteAction()
 		if (GameInstance && !HeroID.IsNone())
 		{
 			GameInstance->SelectedHeroID = HeroID;
+			GameInstance->PersistRememberedSelectionDefaults();
 		}
 		break;
 
@@ -199,6 +200,7 @@ void UT66Button::ExecuteAction()
 		if (GameInstance)
 		{
 			GameInstance->SelectedCompanionID = CompanionID; // Can be NAME_None for "No Companion"
+			GameInstance->PersistRememberedSelectionDefaults();
 		}
 		break;
 

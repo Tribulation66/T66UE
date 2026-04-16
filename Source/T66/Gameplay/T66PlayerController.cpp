@@ -28,6 +28,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
+#include "UI/T66LoadingScreenWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
@@ -71,6 +72,9 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66ItemPickup.h"
+#include "Gameplay/T66MainMapTerrain.h"
+#include "Gameplay/T66TowerMapTerrain.h"
+#include "Gameplay/T66WorldVisualSetup.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
@@ -99,6 +103,15 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
 #include "Styling/CoreStyle.h"
+
+namespace
+{
+	constexpr int32 T66GameplayViewTargetRetryBudget = 20;
+	constexpr float T66GameplayViewTargetRetryDelaySeconds = 0.05f;
+	constexpr int32 T66ClientGameplayWorldSetupRetryBudget = 60;
+	constexpr float T66ClientGameplayWorldSetupRetryDelaySeconds = 0.10f;
+	const FName T66MainMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
+}
 
 
 AT66PlayerController::AT66PlayerController()
@@ -133,7 +146,19 @@ void AT66PlayerController::BeginPlay()
 
 	if (IsGameplayLevel())
 	{
+		if (!IsLocalController())
+		{
+			UE_LOG(LogT66PlayerController, Verbose, TEXT("PlayerController: Skipping gameplay UI init for non-local controller"));
+			return;
+		}
+
 		SetupGameplayMode();
+		GameplayViewTargetRetriesRemaining = T66GameplayViewTargetRetryBudget;
+		RefreshGameplayViewTarget(true);
+		bClientGameplayWorldSetupComplete = false;
+		bReceivedGameplayRunSettingsFromServer = false;
+		ClientGameplayWorldSetupRetriesRemaining = T66ClientGameplayWorldSetupRetryBudget;
+		EnsureClientGameplayWorldSetup(true);
 		SetupGameplayHUD();
 		CachedJumpVFXNiagara = JumpVFXNiagara.LoadSynchronous();
 		CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
@@ -146,10 +171,41 @@ void AT66PlayerController::BeginPlay()
 			RunState->OnPlayerDied.AddDynamic(this, &AT66PlayerController::OnPlayerDied);
 			RunState->QuickReviveChanged.AddDynamic(this, &AT66PlayerController::HandleQuickReviveStateChanged);
 		}
+
+		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI); T66GI && T66GI->bSaveSlotPreviewMode)
+		{
+			SetPause(true);
+			EnsureGameplayUIManager();
+			if (UIManager)
+			{
+				UIManager->ShowModal(ET66ScreenType::SavePreview);
+			}
+
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+			bEnableClickEvents = true;
+			bEnableMouseOverEvents = true;
+			if (GameplayHUDWidget)
+			{
+				GameplayHUDWidget->SetInteractive(true);
+				GameplayHUDWidget->MarkHUDDirty();
+			}
+		}
+
 		UE_LOG(LogT66PlayerController, Log, TEXT("PlayerController: Gameplay mode initialized"));
 	}
 	else
 	{
+		if (!IsLocalController())
+		{
+			UE_LOG(LogT66PlayerController, Verbose, TEXT("PlayerController: Skipping frontend UI init for non-local controller"));
+			return;
+		}
+
+		EndHeroOneScopedUlt();
+
 		// Frontend mode: UI input, show cursor, initialize UI
 		FInputModeUIOnly InputMode;
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
@@ -158,36 +214,31 @@ void AT66PlayerController::BeginPlay()
 
 		if (bAutoShowInitialScreen)
 		{
-			// Immediately cover the viewport with a black curtain so the 3D frontend level
-			// (platform, hero) is never visible before the main menu UI is ready.
-			TSharedPtr<SBorder> BlackCurtain;
-			if (GEngine && GEngine->GameViewport)
-			{
-				SAssignNew(BlackCurtain, SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor::Black);
-				GEngine->GameViewport->AddViewportWidgetContent(
-					SNew(SWeakWidget).PossiblyNullContent(BlackCurtain), 9999);
-			}
-
 			// Defer UI init by a short delay so the PIE viewport can stabilize its resolution.
 			// Without this, the first frame renders at a transient viewport size, causing a brief
 			// "zoomed-in" flash before snapping to the correct resolution. The delay also gives
 			// GameInstance async texture preloads more time to complete, reducing sync load fallbacks.
 			FTimerHandle DeferHandle;
-			GetWorld()->GetTimerManager().SetTimer(DeferHandle, FTimerDelegate::CreateWeakLambda(this, [this, BlackCurtain]()
+			GetWorld()->GetTimerManager().SetTimer(DeferHandle, FTimerDelegate::CreateWeakLambda(this, [this]()
 			{
 				InitializeUI();
-
-				// Remove the black curtain now that the main menu is fully painted.
-				if (GEngine && GEngine->GameViewport && BlackCurtain.IsValid())
-				{
-					GEngine->GameViewport->RemoveViewportWidgetContent(BlackCurtain.ToSharedRef());
-				}
 			}), 0.1f, false);
 		}
 		UE_LOG(LogT66PlayerController, Log, TEXT("PlayerController: Frontend mode initialized (UI deferred)"));
 	}
+}
+
+void AT66PlayerController::BeginPlayingState()
+{
+	Super::BeginPlayingState();
+
+	if (!IsGameplayLevel())
+	{
+		return;
+	}
+
+	GameplayViewTargetRetriesRemaining = T66GameplayViewTargetRetryBudget;
+	RefreshGameplayViewTarget(true);
 }
 
 void AT66PlayerController::OnPossess(APawn* InPawn)
@@ -208,6 +259,35 @@ void AT66PlayerController::OnPossess(APawn* InPawn)
 
 	SetControlRotation(DesiredRotation);
 	ClientSetRotation(DesiredRotation, true);
+
+	GameplayViewTargetRetriesRemaining = T66GameplayViewTargetRetryBudget;
+	RefreshGameplayViewTarget(true);
+}
+
+void AT66PlayerController::ClientRestart_Implementation(APawn* NewPawn)
+{
+	Super::ClientRestart_Implementation(NewPawn);
+
+	if (!IsGameplayLevel())
+	{
+		return;
+	}
+
+	GameplayViewTargetRetriesRemaining = T66GameplayViewTargetRetryBudget;
+	RefreshGameplayViewTarget(true);
+}
+
+void AT66PlayerController::OnRep_Pawn()
+{
+	Super::OnRep_Pawn();
+
+	if (!IsGameplayLevel())
+	{
+		return;
+	}
+
+	GameplayViewTargetRetriesRemaining = T66GameplayViewTargetRetryBudget;
+	RefreshGameplayViewTarget(true);
 }
 
 
@@ -216,6 +296,8 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(DeathVFXTimerHandle);
+		World->GetTimerManager().ClearTimer(GameplayViewTargetRetryTimerHandle);
+		World->GetTimerManager().ClearTimer(ClientGameplayWorldSetupRetryTimerHandle);
 	}
 
 	UWorld* World = GetWorld();
@@ -228,7 +310,255 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	UnbindPartyInviteEvents();
 
+	if (FrontendLaunchPolicyResponseHandle.IsValid())
+	{
+		if (UGameInstance* CurrentGameInstance = GetGameInstance())
+		{
+			if (UT66BackendSubsystem* Backend = CurrentGameInstance->GetSubsystem<UT66BackendSubsystem>())
+			{
+				Backend->OnClientLaunchPolicyResponse().Remove(FrontendLaunchPolicyResponseHandle);
+			}
+		}
+
+		FrontendLaunchPolicyResponseHandle.Reset();
+	}
+
+	GetWorldTimerManager().ClearTimer(FrontendLaunchPolicyTimeoutTimerHandle);
+	HideFrontendStartupOverlay();
+	bClientGameplayWorldSetupComplete = false;
+	bReceivedGameplayRunSettingsFromServer = false;
+
 	Super::EndPlay(EndPlayReason);
+}
+
+void AT66PlayerController::RefreshGameplayViewTarget(bool bAllowRetry)
+{
+	if (!IsLocalController() || !IsGameplayLevel())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	APawn* ControlledPawn = GetPawn();
+	if (!ControlledPawn)
+	{
+		if (bAllowRetry && GameplayViewTargetRetriesRemaining > 0)
+		{
+			--GameplayViewTargetRetriesRemaining;
+			World->GetTimerManager().SetTimer(
+				GameplayViewTargetRetryTimerHandle,
+				FTimerDelegate::CreateWeakLambda(this, [this]()
+				{
+					RefreshGameplayViewTarget(true);
+				}),
+				T66GameplayViewTargetRetryDelaySeconds,
+				false);
+		}
+		return;
+	}
+
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(ControlledPawn))
+	{
+		Hero->SetPreviewMode(false);
+		if (Hero->FollowCamera && !Hero->FollowCamera->IsActive())
+		{
+			Hero->FollowCamera->SetActive(true);
+		}
+	}
+
+	World->GetTimerManager().ClearTimer(GameplayViewTargetRetryTimerHandle);
+	GameplayViewTargetRetriesRemaining = 0;
+	AutoManageActiveCameraTarget(ControlledPawn);
+
+	if (GetViewTarget() != ControlledPawn)
+	{
+		SetViewTarget(ControlledPawn);
+		UE_LOG(LogT66PlayerController, Log, TEXT("PlayerController: restored gameplay view target to %s"), *GetNameSafe(ControlledPawn));
+	}
+
+	if (World->GetNetMode() == NM_Client)
+	{
+		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+		{
+			T66GI->HidePersistentGameplayTransitionCurtain();
+		}
+	}
+}
+
+bool AT66PlayerController::ApplyHostPartyRunSettingsToGameInstance() const
+{
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	if (!T66GI)
+	{
+		return false;
+	}
+
+	UT66SessionSubsystem* SessionSubsystem = T66GI->GetSubsystem<UT66SessionSubsystem>();
+	if (!SessionSubsystem)
+	{
+		return false;
+	}
+
+	FT66LobbyPlayerInfo HostLobbyInfo;
+	if (!SessionSubsystem->GetHostLobbyProfile(HostLobbyInfo))
+	{
+		return false;
+	}
+
+	if (HostLobbyInfo.RunSeed == 0)
+	{
+		return false;
+	}
+
+	T66GI->RunSeed = HostLobbyInfo.RunSeed;
+	T66GI->SelectedDifficulty = HostLobbyInfo.LobbyDifficulty;
+	T66GI->CurrentMainMapLayoutVariant = HostLobbyInfo.MainMapLayoutVariant;
+	return true;
+}
+
+void AT66PlayerController::EnsureClientGameplayWorldSetup(bool bAllowRetry)
+{
+	if (!IsLocalController() || !IsGameplayLevel())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() != NM_Client)
+	{
+		return;
+	}
+
+	if (bClientGameplayWorldSetupComplete)
+	{
+		return;
+	}
+
+	int32 ExistingTerrainVisualCount = 0;
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		if (AActor* Actor = *It; Actor && Actor->ActorHasTag(T66MainMapTerrainVisualTag))
+		{
+			++ExistingTerrainVisualCount;
+		}
+	}
+
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	const bool bHasRunSettings = T66GI && (bReceivedGameplayRunSettingsFromServer || ApplyHostPartyRunSettingsToGameInstance());
+	if (!T66GI || !bHasRunSettings)
+	{
+		if (bAllowRetry && ClientGameplayWorldSetupRetriesRemaining > 0)
+		{
+			--ClientGameplayWorldSetupRetriesRemaining;
+			World->GetTimerManager().SetTimer(
+				ClientGameplayWorldSetupRetryTimerHandle,
+				FTimerDelegate::CreateWeakLambda(this, [this]()
+				{
+					EnsureClientGameplayWorldSetup(true);
+				}),
+				T66ClientGameplayWorldSetupRetryDelaySeconds,
+				false);
+		}
+		else if (ClientGameplayWorldSetupRetriesRemaining <= 0)
+		{
+			UE_LOG(LogT66PlayerController, Warning, TEXT("PlayerController: client gameplay setup timed out waiting for host run settings."));
+		}
+		return;
+	}
+
+	FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(World);
+
+	if (T66GI->CurrentMainMapLayoutVariant != ET66MainMapLayoutVariant::Tower)
+	{
+		World->GetTimerManager().ClearTimer(ClientGameplayWorldSetupRetryTimerHandle);
+		ClientGameplayWorldSetupRetriesRemaining = 0;
+		bClientGameplayWorldSetupComplete = true;
+		return;
+	}
+
+	if (ExistingTerrainVisualCount >= 10)
+	{
+		World->GetTimerManager().ClearTimer(ClientGameplayWorldSetupRetryTimerHandle);
+		ClientGameplayWorldSetupRetriesRemaining = 0;
+		bClientGameplayWorldSetupComplete = true;
+		RefreshGameplayViewTarget(true);
+		return;
+	}
+
+	if (ExistingTerrainVisualCount > 0)
+	{
+		TArray<AActor*> TerrainActorsToDestroy;
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			if (AActor* Actor = *It; Actor && Actor->ActorHasTag(T66MainMapTerrainVisualTag))
+			{
+				TerrainActorsToDestroy.Add(Actor);
+			}
+		}
+
+		for (AActor* Actor : TerrainActorsToDestroy)
+		{
+			if (Actor)
+			{
+				Actor->Destroy();
+			}
+		}
+	}
+
+	const FT66MapPreset Preset = T66MainMapTerrain::BuildPresetForDifficulty(T66GI->SelectedDifficulty, T66GI->RunSeed);
+	T66TowerMapTerrain::FLayout Layout;
+	if (!T66TowerMapTerrain::BuildLayout(Preset, Layout))
+	{
+		UE_LOG(LogT66PlayerController, Warning, TEXT("PlayerController: failed to build client tower layout for run seed %d"), T66GI->RunSeed);
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	bool bCollisionReady = false;
+	if (!T66TowerMapTerrain::Spawn(World, Layout, T66GI->SelectedDifficulty, SpawnParams, bCollisionReady))
+	{
+		UE_LOG(LogT66PlayerController, Warning, TEXT("PlayerController: failed to spawn client tower terrain for run seed %d"), T66GI->RunSeed);
+		return;
+	}
+
+	UE_LOG(
+		LogT66PlayerController,
+		Log,
+		TEXT("PlayerController: spawned client-side gameplay tower terrain (seed=%d, difficulty=%d, collisionReady=%d)"),
+		T66GI->RunSeed,
+		static_cast<int32>(T66GI->SelectedDifficulty),
+		bCollisionReady ? 1 : 0);
+
+	World->GetTimerManager().ClearTimer(ClientGameplayWorldSetupRetryTimerHandle);
+	ClientGameplayWorldSetupRetriesRemaining = 0;
+	bClientGameplayWorldSetupComplete = true;
+	RefreshGameplayViewTarget(true);
+}
+
+void AT66PlayerController::ClientApplyGameplayRunSettings_Implementation(int32 InRunSeed, ET66Difficulty InDifficulty, ET66MainMapLayoutVariant InLayoutVariant)
+{
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		T66GI->RunSeed = InRunSeed;
+		T66GI->SelectedDifficulty = InDifficulty;
+		T66GI->CurrentMainMapLayoutVariant = InLayoutVariant;
+	}
+
+	bReceivedGameplayRunSettingsFromServer = true;
+
+	if (IsGameplayLevel())
+	{
+		bClientGameplayWorldSetupComplete = false;
+		ClientGameplayWorldSetupRetriesRemaining = T66ClientGameplayWorldSetupRetryBudget;
+		EnsureClientGameplayWorldSetup(true);
+	}
 }
 
 void AT66PlayerController::PushLobbyProfileToServer(const FT66LobbyPlayerInfo& LobbyInfo)
@@ -276,7 +606,20 @@ void AT66PlayerController::ServerSubmitLobbyProfile_Implementation(const FT66Lob
 {
 	if (AT66SessionPlayerState* SessionPlayerState = GetPlayerState<AT66SessionPlayerState>())
 	{
-		SessionPlayerState->ApplyLobbyInfo(LobbyInfo);
+		FT66LobbyPlayerInfo SanitizedInfo = LobbyInfo;
+		const FT66LobbyPlayerInfo& ExistingInfo = SessionPlayerState->GetLobbyInfo();
+		if (!ExistingInfo.SteamId.IsEmpty())
+		{
+			SanitizedInfo.SteamId = ExistingInfo.SteamId;
+		}
+		if (SanitizedInfo.DisplayName.IsEmpty())
+		{
+			SanitizedInfo.DisplayName = ExistingInfo.DisplayName.IsEmpty() ? SessionPlayerState->GetPlayerName() : ExistingInfo.DisplayName;
+		}
+
+		// Remote clients never get to self-assign host authority.
+		SanitizedInfo.bPartyHost = false;
+		SessionPlayerState->ApplyLobbyInfo(SanitizedInfo);
 	}
 }
 
@@ -295,6 +638,17 @@ void AT66PlayerController::ServerSubmitPartyRunSummary_Implementation(const FStr
 			{
 				SessionSubsystem->StorePartyRunSummaryForSteamId(RequestKey, SessionPlayerState->GetSteamId(), RunSummaryJson);
 			}
+		}
+	}
+}
+
+void AT66PlayerController::ServerRequestPartySaveAndReturnToFrontend_Implementation()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->SaveCurrentRunAndReturnToFrontend();
 		}
 	}
 }
@@ -434,6 +788,8 @@ bool AT66PlayerController::IsGameplayLevel() const
 
 void AT66PlayerController::SetupGameplayMode()
 {
+	const bool bHadScopedState = bHeroOneScopedUltActive || bHeroOneScopeViewEnabled;
+	EndHeroOneScopedUlt();
 	RestoreGameplayInputMode();
-	UE_LOG(LogT66PlayerController, Log, TEXT("PlayerController: Gameplay input mode set, cursor hidden"));
+	UE_LOG(LogT66PlayerController, Log, TEXT("PlayerController: Gameplay input mode set, cursor hidden (scoped state reset=%d)"), bHadScopedState ? 1 : 0);
 }

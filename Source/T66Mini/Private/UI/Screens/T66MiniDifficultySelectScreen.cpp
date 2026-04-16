@@ -4,12 +4,14 @@
 
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Data/T66MiniDataTypes.h"
 #include "Engine/Texture2D.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Styling/SlateBrush.h"
 #include "UI/T66MiniUIStyle.h"
+#include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -24,7 +26,7 @@
 
 namespace
 {
-	FName T66MiniResolveUnlockedCompanionID(const UT66MiniDataSubsystem* DataSubsystem, const UT66MiniSaveSubsystem* SaveSubsystem)
+	FName T66MiniDifficultyResolveUnlockedCompanionID(const UT66MiniDataSubsystem* DataSubsystem, const UT66MiniSaveSubsystem* SaveSubsystem)
 	{
 		return SaveSubsystem ? SaveSubsystem->GetFirstUnlockedCompanionID(DataSubsystem) : NAME_None;
 	}
@@ -41,9 +43,23 @@ void UT66MiniDifficultySelectScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniDifficultySelectScreen::HandleSessionStateChanged);
+			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniDifficultySelect, true);
+		}
+	}
+
 	UT66MiniDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	const bool bDifficultyLockedToHost = SessionSubsystem
+		&& SessionSubsystem->IsPartySessionActive()
+		&& SessionSubsystem->GetMaxPartyMembers() > 1
+		&& !SessionSubsystem->IsLocalPlayerPartyHost();
 	if (!DataSubsystem || !FrontendState || !SaveSubsystem)
 	{
 		return;
@@ -56,7 +72,7 @@ void UT66MiniDifficultySelectScreen::OnScreenActivated_Implementation()
 
 	if (!FrontendState->HasSelectedCompanion() || !SaveSubsystem->IsCompanionUnlocked(FrontendState->GetSelectedCompanionID(), DataSubsystem))
 	{
-		if (const FName DefaultCompanionID = T66MiniResolveUnlockedCompanionID(DataSubsystem, SaveSubsystem); DefaultCompanionID != NAME_None)
+		if (const FName DefaultCompanionID = T66MiniDifficultyResolveUnlockedCompanionID(DataSubsystem, SaveSubsystem); DefaultCompanionID != NAME_None)
 		{
 			FrontendState->SelectCompanion(DefaultCompanionID);
 		}
@@ -68,11 +84,84 @@ void UT66MiniDifficultySelectScreen::OnScreenActivated_Implementation()
 	}
 }
 
+void UT66MiniDifficultySelectScreen::OnScreenDeactivated_Implementation()
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+		}
+	}
+
+	SessionStateChangedHandle.Reset();
+	Super::OnScreenDeactivated_Implementation();
+}
+
+void UT66MiniDifficultySelectScreen::NativeDestruct()
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+		}
+	}
+
+	SessionStateChangedHandle.Reset();
+	Super::NativeDestruct();
+}
+
+void UT66MiniDifficultySelectScreen::HandleSessionStateChanged()
+{
+	SyncToSharedPartyScreen();
+	ForceRebuildSlate();
+}
+
+void UT66MiniDifficultySelectScreen::SyncToSharedPartyScreen()
+{
+	if (!UIManager)
+	{
+		return;
+	}
+
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	if (!SessionSubsystem || !SessionSubsystem->IsPartyLobbyContextActive() || SessionSubsystem->IsLocalPlayerPartyHost())
+	{
+		return;
+	}
+
+	const ET66ScreenType DesiredScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
+	switch (DesiredScreen)
+	{
+	case ET66ScreenType::MiniMainMenu:
+	case ET66ScreenType::MiniSaveSlots:
+	case ET66ScreenType::MiniCharacterSelect:
+	case ET66ScreenType::MiniCompanionSelect:
+	case ET66ScreenType::MiniDifficultySelect:
+	case ET66ScreenType::MiniIdolSelect:
+	case ET66ScreenType::MiniShop:
+	case ET66ScreenType::MiniRunSummary:
+		if (UIManager->GetCurrentScreenType() != DesiredScreen)
+		{
+			UIManager->ShowScreen(DesiredScreen);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 {
 	UT66MiniDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	const bool bDifficultyLockedToHost = SessionSubsystem
+		&& SessionSubsystem->IsPartySessionActive()
+		&& SessionSubsystem->GetMaxPartyMembers() > 1
+		&& !SessionSubsystem->IsLocalPlayerPartyHost();
 
 	if (DataSubsystem && FrontendState && SaveSubsystem)
 	{
@@ -83,7 +172,7 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 
 		if (!FrontendState->HasSelectedCompanion() || !SaveSubsystem->IsCompanionUnlocked(FrontendState->GetSelectedCompanionID(), DataSubsystem))
 		{
-			if (const FName DefaultCompanionID = T66MiniResolveUnlockedCompanionID(DataSubsystem, SaveSubsystem); DefaultCompanionID != NAME_None)
+			if (const FName DefaultCompanionID = T66MiniDifficultyResolveUnlockedCompanionID(DataSubsystem, SaveSubsystem); DefaultCompanionID != NAME_None)
 			{
 				FrontendState->SelectCompanion(DefaultCompanionID);
 			}
@@ -227,6 +316,7 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 			.HeightOverride(116.f)
 			[
 				SNew(SButton)
+				.IsEnabled(!bDifficultyLockedToHost)
 				.OnClicked(FOnClicked::CreateLambda([this, DifficultyID = Difficulty.DifficultyID]()
 				{
 					return HandleDifficultyClicked(DifficultyID);
@@ -489,6 +579,16 @@ FReply UT66MiniDifficultySelectScreen::HandleContinueClicked()
 
 FReply UT66MiniDifficultySelectScreen::HandleDifficultyClicked(const FName DifficultyID)
 {
+	if (UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr)
+	{
+		if (SessionSubsystem->IsPartySessionActive()
+			&& SessionSubsystem->GetMaxPartyMembers() > 1
+			&& !SessionSubsystem->IsLocalPlayerPartyHost())
+		{
+			return FReply::Handled();
+		}
+	}
+
 	if (UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr)
 	{
 		FrontendState->SelectDifficulty(DifficultyID);

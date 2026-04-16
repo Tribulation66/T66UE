@@ -123,6 +123,7 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void RestartPlayer(AController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
 	virtual APawn* SpawnDefaultPawnFor_Implementation(AController* NewPlayer, AActor* StartSpot) override;
 	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
 
@@ -233,7 +234,13 @@ protected:
 	void HandleStageTimerChanged();
 
 	UFUNCTION()
+	void HandleStageChanged();
+
+	UFUNCTION()
 	void HandleDifficultyChanged();
+
+	void RefreshProgressionDrivenSystems(bool bRescaleLiveEnemies);
+	void ApplyStageProgressionVisuals();
 
 	void TrySpawnLoanSharkIfNeeded();
 
@@ -242,7 +249,7 @@ public:
 	// The Lab: spawn / reset (only used when IsLabLevel())
 	// ============================================
 
-	/** Spawn one mob in the Lab (CharacterVisualID: RegularEnemy, GoblinThief, UniqueEnemy). Returns spawned actor or null. */
+	/** Spawn one mob in the Lab (Cow, Pig, Goat, Roost, GoblinThief, UniqueEnemy). Returns spawned actor or null. */
 	UFUNCTION(BlueprintCallable, Category = "Lab")
 	AActor* SpawnLabMob(FName CharacterVisualID);
 
@@ -323,6 +330,7 @@ private:
 	void UpdateBossBeaconTransform(bool bForceSpawnIfMissing);
 	void DestroyBossBeacon();
 	void SyncTowerBossEntryState();
+	void SyncTowerTrapActivation(bool bForce = false);
 	void SnapPlayersToTerrain();
 	void MaintainPlayerTerrainSafety();
 	void TryActivateMainMapCombat();
@@ -347,6 +355,9 @@ private:
 	T66TowerMapTerrain::FLayout CachedTowerMainMapLayout;
 	bool bTowerBossEntryTriggered = false;
 	bool bTowerBossEntryApplied = false;
+	float TowerTerrainSafetyAccumulator = 0.f;
+	float TowerTrapActivationAccumulator = 0.f;
+	int32 ActiveTowerTrapFloorNumber = INDEX_NONE;
 
 	// Coliseum: async-load boss classes before spawning.
 	bool bColiseumBossesAsyncLoadInFlight = false;

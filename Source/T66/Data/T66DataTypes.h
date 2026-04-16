@@ -1683,6 +1683,14 @@ struct T66_API FSkinData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	bool bIsDefault = false;
 
+	/** Optional portrait override for this skin. Falls back to the owning entity portrait when unset. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> Portrait;
+
+	/** Optional selection/info portrait override for this skin. Falls back to Portrait or the owning entity selection portrait when unset. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> SelectionPortrait;
+
 	FSkinData()
 		: SkinID(NAME_None)
 		, OwnerID(NAME_None)

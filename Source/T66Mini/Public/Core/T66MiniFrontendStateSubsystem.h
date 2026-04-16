@@ -69,6 +69,7 @@ public:
 private:
 	void GenerateIdolOffers(const UT66MiniDataSubsystem* DataSubsystem, bool bCountAsReroll);
 	void GenerateShopOffers(const UT66MiniDataSubsystem* DataSubsystem, bool bCountAsReroll);
+	void SyncSharedLobbyState(bool bResetLobbyReady);
 
 	UPROPERTY()
 	FName SelectedHeroID = NAME_None;

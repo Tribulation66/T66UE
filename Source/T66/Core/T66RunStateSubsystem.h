@@ -225,6 +225,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetMaxHP() const { return MaxHP; }
 
+	/** Actual HP restored by the current companion during this run. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetCompanionHealingDoneThisRun() const { return CompanionHealingDoneThisRun; }
+
 	/** Highest heart display tier across the 5 slots (0=red, 1=blue, 2=green, 3=purple, 4=gold). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetHeartDisplayTier() const;
@@ -611,6 +615,9 @@ public:
 	/** Heal HP (clamped by MaxHP). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void HealHP(float Amount);
+
+	/** Heal HP and attribute the applied amount to the current companion's lifetime total. */
+	void HealHPFromCompanion(float Amount);
 
 	/** Legacy: heal hearts (1 heart = 20 HP). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -1408,6 +1415,9 @@ private:
 
 	UPROPERTY()
 	float MaxHP = DefaultMaxHP;
+
+	UPROPERTY()
+	float CompanionHealingDoneThisRun = 0.f;
 
 	UPROPERTY()
 	TArray<uint8> HeartSlotTiers;

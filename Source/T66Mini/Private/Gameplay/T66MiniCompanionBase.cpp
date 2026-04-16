@@ -13,11 +13,14 @@
 #include "Gameplay/Components/T66MiniSpritePresentationComponent.h"
 #include "Gameplay/T66MiniGameMode.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
+#include "Net/UnrealNetwork.h"
 #include "Save/T66MiniSaveSubsystem.h"
 
 AT66MiniCompanionBase::AT66MiniCompanionBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -47,10 +50,15 @@ void AT66MiniCompanionBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (!FollowTarget.IsValid())
-	{
-		FollowTarget = GetWorld() ? Cast<AT66MiniPlayerPawn>(GetWorld()->GetFirstPlayerController() ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr;
-	}
+	RefreshVisuals();
+}
+
+void AT66MiniCompanionBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AT66MiniCompanionBase, CompanionID);
+	DOREPLIFETIME(AT66MiniCompanionBase, CompanionVisualID);
 }
 
 void AT66MiniCompanionBase::InitializeCompanion(const FT66MiniCompanionDefinition& InDefinition, AT66MiniPlayerPawn* InFollowTarget)
@@ -86,11 +94,15 @@ void AT66MiniCompanionBase::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	AT66MiniPlayerPawn* PlayerPawn = FollowTarget.Get();
 	if (!PlayerPawn)
 	{
-		PlayerPawn = GetWorld() ? Cast<AT66MiniPlayerPawn>(GetWorld()->GetFirstPlayerController() ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr;
-		FollowTarget = PlayerPawn;
+		return;
 	}
 
 	if (!PlayerPawn)
@@ -142,10 +154,15 @@ void AT66MiniCompanionBase::Tick(const float DeltaSeconds)
 	}
 }
 
+void AT66MiniCompanionBase::OnRep_CompanionVisualState()
+{
+	RefreshVisuals();
+}
+
 void AT66MiniCompanionBase::RefreshVisuals()
 {
 	UT66MiniVisualSubsystem* VisualSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr;
-	if (!VisualSubsystem)
+	if (!VisualSubsystem || CompanionVisualID.IsEmpty())
 	{
 		return;
 	}

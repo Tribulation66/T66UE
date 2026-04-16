@@ -5,17 +5,20 @@
 #include "Components/BillboardComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Core/T66MiniVisualSubsystem.h"
 #include "Core/T66MiniVFXSubsystem.h"
+#include "EngineUtils.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
 #include "Gameplay/Components/T66MiniShadowComponent.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "Net/UnrealNetwork.h"
 
 namespace
 {
-	UStaticMesh* T66MiniLoadPlaneMesh()
+	UStaticMesh* T66MiniPickupLoadPlaneMesh()
 	{
 		static TWeakObjectPtr<UStaticMesh> Cached;
 		if (!Cached.IsValid())
@@ -26,7 +29,7 @@ namespace
 		return Cached.Get();
 	}
 
-	UMaterialInterface* T66MiniLoadArenaMaterial()
+	UMaterialInterface* T66MiniPickupLoadArenaMaterial()
 	{
 		static TWeakObjectPtr<UMaterialInterface> Cached;
 		if (!Cached.IsValid())
@@ -37,14 +40,14 @@ namespace
 		return Cached.Get();
 	}
 
-	void T66MiniConfigureIndicator(UStaticMeshComponent* MeshComponent, UObject* Outer, const FLinearColor& Tint)
+	void T66MiniPickupConfigureIndicator(UStaticMeshComponent* MeshComponent, UObject* Outer, const FLinearColor& Tint)
 	{
 		if (!MeshComponent)
 		{
 			return;
 		}
 
-		UMaterialInterface* BaseMaterial = T66MiniLoadArenaMaterial();
+		UMaterialInterface* BaseMaterial = T66MiniPickupLoadArenaMaterial();
 		if (!BaseMaterial)
 		{
 			return;
@@ -77,6 +80,8 @@ namespace
 AT66MiniPickup::AT66MiniPickup()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -100,11 +105,11 @@ AT66MiniPickup::AT66MiniPickup()
 	IndicatorMesh->SetupAttachment(SceneRoot);
 	IndicatorMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	IndicatorMesh->SetCastShadow(false);
-	IndicatorMesh->SetStaticMesh(T66MiniLoadPlaneMesh());
+	IndicatorMesh->SetStaticMesh(T66MiniPickupLoadPlaneMesh());
 	IndicatorMesh->SetRelativeLocation(FVector(0.f, 0.f, 3.f));
 	IndicatorMesh->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
 	IndicatorMesh->SetRelativeScale3D(FVector(0.28f, 0.28f, 1.0f));
-	T66MiniConfigureIndicator(IndicatorMesh, this, FLinearColor(0.96f, 0.84f, 0.28f, 0.42f));
+	T66MiniPickupConfigureIndicator(IndicatorMesh, this, FLinearColor(0.96f, 0.84f, 0.28f, 0.42f));
 
 	ShadowComponent = CreateDefaultSubobject<UT66MiniShadowComponent>(TEXT("Shadow"));
 	ShadowComponent->InitializeShadow(SceneRoot, FVector(0.f, 0.f, 1.f), FVector(0.18f, 0.18f, 1.f), FLinearColor(0.f, 0.f, 0.f, 0.12f));
@@ -113,8 +118,23 @@ AT66MiniPickup::AT66MiniPickup()
 void AT66MiniPickup::BeginPlay()
 {
 	Super::BeginPlay();
-	CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AT66MiniPickup::HandleOverlap);
+	if (HasAuthority())
+	{
+		CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AT66MiniPickup::HandleOverlap);
+	}
 	HoverPhase = FMath::FRandRange(0.f, UE_TWO_PI);
+	RefreshVisuals();
+}
+
+void AT66MiniPickup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AT66MiniPickup, MaterialValue);
+	DOREPLIFETIME(AT66MiniPickup, ExperienceValue);
+	DOREPLIFETIME(AT66MiniPickup, HealValue);
+	DOREPLIFETIME(AT66MiniPickup, VisualID);
+	DOREPLIFETIME(AT66MiniPickup, GrantedItemID);
 }
 
 void AT66MiniPickup::InitializePickup(
@@ -136,11 +156,20 @@ void AT66MiniPickup::InitializePickup(
 	{
 		SpriteComponent->SetSprite(InTexture);
 	}
+	else
+	{
+		RefreshVisuals();
+	}
 }
 
 void AT66MiniPickup::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (!HasAuthority())
+	{
+		return;
+	}
 
 	LifetimeRemaining -= DeltaSeconds;
 	if (LifetimeRemaining <= 0.f)
@@ -152,8 +181,17 @@ void AT66MiniPickup::Tick(const float DeltaSeconds)
 	HoverPhase += DeltaSeconds * 2.5f;
 	SpriteComponent->SetRelativeLocation(FVector(0.f, 0.f, 40.f + (FMath::Sin(HoverPhase) * 8.f)));
 	IndicatorMesh->SetRelativeScale3D(FVector(0.24f + (FMath::Sin(HoverPhase * 1.5f) * 0.04f), 0.24f + (FMath::Sin(HoverPhase * 1.5f) * 0.04f), 1.0f));
+	if (LifetimeRemaining <= 2.0f)
+	{
+		const bool bBlinkVisible = FMath::Fmod(GetWorld()->GetTimeSeconds() * 9.0f, 1.0f) > 0.30f;
+		SpriteComponent->SetVisibility(bBlinkVisible, true);
+	}
+	else
+	{
+		SpriteComponent->SetVisibility(true, true);
+	}
 
-	if (AT66MiniPlayerPawn* PlayerPawn = GetMiniPlayerPawn())
+	if (AT66MiniPlayerPawn* PlayerPawn = FindClosestPlayerPawn(true))
 	{
 		const FVector ToPlayer = PlayerPawn->GetActorLocation() - GetActorLocation();
 		const float Distance = ToPlayer.Size2D();
@@ -191,7 +229,7 @@ void AT66MiniPickup::HandleOverlap(
 
 void AT66MiniPickup::CollectPickup(AT66MiniPlayerPawn* PlayerPawn)
 {
-	if (!PlayerPawn || bCollected)
+	if (!HasAuthority() || !PlayerPawn || bCollected)
 	{
 		return;
 	}
@@ -212,7 +250,48 @@ void AT66MiniPickup::CollectPickup(AT66MiniPlayerPawn* PlayerPawn)
 	Destroy();
 }
 
-AT66MiniPlayerPawn* AT66MiniPickup::GetMiniPlayerPawn() const
+AT66MiniPlayerPawn* AT66MiniPickup::FindClosestPlayerPawn(const bool bRequireAlive) const
 {
-	return GetWorld() ? Cast<AT66MiniPlayerPawn>(GetWorld()->GetFirstPlayerController() ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr;
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	AT66MiniPlayerPawn* BestPawn = nullptr;
+	float BestDistanceSq = TNumericLimits<float>::Max();
+	for (TActorIterator<AT66MiniPlayerPawn> It(World); It; ++It)
+	{
+		AT66MiniPlayerPawn* Candidate = *It;
+		if (!Candidate || (bRequireAlive && !Candidate->IsHeroAlive()))
+		{
+			continue;
+		}
+
+		const float DistanceSq = FVector::DistSquared2D(GetActorLocation(), Candidate->GetActorLocation());
+		if (DistanceSq < BestDistanceSq)
+		{
+			BestDistanceSq = DistanceSq;
+			BestPawn = Candidate;
+		}
+	}
+
+	return BestPawn;
+}
+
+void AT66MiniPickup::RefreshVisuals()
+{
+	UT66MiniVisualSubsystem* VisualSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr;
+	if (!VisualID.IsEmpty() && VisualSubsystem)
+	{
+		if (UTexture2D* PickupTexture = VisualSubsystem->LoadInteractableTexture(VisualID))
+		{
+			SpriteComponent->SetSprite(PickupTexture);
+		}
+	}
+}
+
+void AT66MiniPickup::OnRep_VisualState()
+{
+	RefreshVisuals();
 }

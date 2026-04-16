@@ -3,8 +3,11 @@
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66CircusInteractable.h"
+#include "Gameplay/Enemies/T66EnemyFamilyResolver.h"
+#include "Gameplay/Enemies/T66MeleeEnemy.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
+#include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66TowerMapTerrain.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Core/T66GameplayLayout.h"
@@ -13,6 +16,7 @@
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66StageProgressionSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
@@ -26,6 +30,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66EnemyDirector, Log, All);
 
 namespace
 {
+	static constexpr bool T66EnableTowerEnemySpawns = true;
+
 	static void T66ResolveStageMobIDs(UGameInstance* GI, const int32 StageNum, TArray<FName>& OutMobIDs)
 	{
 		FName MobA = FName(*FString::Printf(TEXT("Mob_Stage%02d_A"), StageNum));
@@ -49,7 +55,7 @@ namespace
 AT66EnemyDirector::AT66EnemyDirector()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	EnemyClass = AT66EnemyBase::StaticClass();
+	EnemyClass = AT66MeleeEnemy::StaticClass();
 	GoblinThiefClass = AT66GoblinThiefEnemy::StaticClass();
 }
 
@@ -60,12 +66,13 @@ void AT66EnemyDirector::BeginPlay()
 	// Cache base counts (used for difficulty scaling).
 	BaseEnemiesPerWave = FMath::Max(1, EnemiesPerWave);
 	BaseMaxAliveEnemies = FMath::Max(1, MaxAliveEnemies);
+	BaseSpawnIntervalSeconds = FMath::Max(0.10f, SpawnIntervalSeconds);
 
 	if (AT66GameMode* GameMode = GetWorld() ? Cast<AT66GameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
 	{
-		if (GameMode->IsUsingTowerMainMapLayout())
+		if (T66EnableTowerEnemySpawns && GameMode->IsUsingTowerMainMapLayout())
 		{
-			SpawnInitialTowerPopulation();
+			SpawnInitialPopulationForStage();
 		}
 	}
 
@@ -101,7 +108,7 @@ void AT66EnemyDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void AT66EnemyDirector::SpawnInitialTowerPopulation()
+void AT66EnemyDirector::SpawnInitialPopulationForStage()
 {
 	UWorld* World = GetWorld();
 	if (!World)
@@ -123,12 +130,21 @@ void AT66EnemyDirector::SpawnInitialTowerPopulation()
 
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66StageProgressionSubsystem* StageProgression = GI ? GI->GetSubsystem<UT66StageProgressionSubsystem>() : nullptr;
 	const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
+	if (StageProgression)
+	{
+		StageProgression->RefreshSnapshot(false);
+	}
+
+	const FT66StageProgressionSnapshot Snapshot = StageProgression
+		? StageProgression->GetCurrentSnapshot()
+		: FT66StageProgressionSnapshot{};
 
 	TSubclassOf<AT66EnemyBase> RegularClass = EnemyClass;
-	if (!RegularClass || RegularClass->IsChildOf(AT66GoblinThiefEnemy::StaticClass()))
+	if (!RegularClass)
 	{
-		RegularClass = AT66EnemyBase::StaticClass();
+		RegularClass = AT66MeleeEnemy::StaticClass();
 	}
 
 	TArray<FName> MobIDs;
@@ -157,7 +173,11 @@ void AT66EnemyDirector::SpawnInitialTowerPopulation()
 			continue;
 		}
 
-		for (int32 SpawnIndex = 0; SpawnIndex < FMath::Max(0, InitialTowerEnemiesPerGameplayFloor); ++SpawnIndex)
+		const int32 InitialPopulationCount = FMath::Clamp(
+			FMath::RoundToInt(static_cast<float>(FMath::Max(0, InitialTowerEnemiesPerGameplayFloor)) * Snapshot.InitialPopulationScalar * Snapshot.DifficultyScalar),
+			0,
+			64);
+		for (int32 SpawnIndex = 0; SpawnIndex < InitialPopulationCount; ++SpawnIndex)
 		{
 			FVector SpawnLoc = FVector::ZeroVector;
 			bool bFoundLocation = false;
@@ -183,9 +203,10 @@ void AT66EnemyDirector::SpawnInitialTowerPopulation()
 			}
 
 			const FName MobID = MobIDs[Rng.RandRange(0, MobIDs.Num() - 1)];
+			const TSubclassOf<AT66EnemyBase> MobClass = FT66EnemyFamilyResolver::ResolveEnemyClass(MobID, RegularClass);
 			const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
 			AT66EnemyBase* Enemy = World->SpawnActorDeferred<AT66EnemyBase>(
-				RegularClass,
+				MobClass,
 				SpawnTransform,
 				this,
 				nullptr,
@@ -202,6 +223,7 @@ void AT66EnemyDirector::SpawnInitialTowerPopulation()
 			{
 				Enemy->ApplyStageScaling(StageNum);
 				Enemy->ApplyDifficultyScalar(RunState->GetDifficultyScalar());
+				Enemy->ApplyProgressionEnemyScalar(Snapshot.EnemyStatScalar);
 				Enemy->ApplyFinaleScaling(RunState->GetFinalSurvivalEnemyScalar());
 			}
 
@@ -247,6 +269,43 @@ void AT66EnemyDirector::SetSpawningPaused(bool bPaused)
 	HandleStageTimerChanged();
 }
 
+void AT66EnemyDirector::RefreshSpawningFromProgression()
+{
+	UWorld* World = GetWorld();
+	if (!World || bSpawningPaused || !bSpawningArmed)
+	{
+		return;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66StageProgressionSubsystem* StageProgression = GI ? GI->GetSubsystem<UT66StageProgressionSubsystem>() : nullptr;
+	if (!RunState || !RunState->GetStageTimerActive())
+	{
+		return;
+	}
+
+	if (StageProgression)
+	{
+		StageProgression->RefreshSnapshot(false);
+	}
+
+	const FT66StageProgressionSnapshot Snapshot = StageProgression
+		? StageProgression->GetCurrentSnapshot()
+		: FT66StageProgressionSnapshot{};
+	const float RuntimeSpawnInterval = FMath::Max(
+		0.15f,
+		(BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
+
+	World->GetTimerManager().ClearTimer(SpawnTimerHandle);
+	World->GetTimerManager().SetTimer(
+		SpawnTimerHandle,
+		this,
+		&AT66EnemyDirector::SpawnRuntimeTrickleWave,
+		RuntimeSpawnInterval,
+		true);
+}
+
 void AT66EnemyDirector::HandleStageTimerChanged()
 {
 	UWorld* World = GetWorld();
@@ -255,15 +314,37 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
+	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	if (!T66EnableTowerEnemySpawns && GameMode && GameMode->IsUsingTowerMainMapLayout())
+	{
+		bSpawningArmed = false;
+		World->GetTimerManager().ClearTimer(SpawnTimerHandle);
+		World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
+		PendingSpawns.Empty();
+		return;
+	}
 
 	if (!bSpawningPaused && RunState->GetStageTimerActive())
 	{
 		if (!bSpawningArmed)
 		{
+			UT66StageProgressionSubsystem* StageProgression = GI ? GI->GetSubsystem<UT66StageProgressionSubsystem>() : nullptr;
+			if (StageProgression)
+			{
+				StageProgression->RefreshSnapshot(false);
+			}
+
+			const FT66StageProgressionSnapshot Snapshot = StageProgression
+				? StageProgression->GetCurrentSnapshot()
+				: FT66StageProgressionSnapshot{};
+			const float RuntimeSpawnInterval = FMath::Max(
+				0.15f,
+				(BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
+
 			bSpawningArmed = true;
-			SpawnWave();
+			SpawnRuntimeTrickleWave();
 			World->GetTimerManager().ClearTimer(SpawnTimerHandle);
-			World->GetTimerManager().SetTimer(SpawnTimerHandle, this, &AT66EnemyDirector::SpawnWave, SpawnIntervalSeconds, true);
+			World->GetTimerManager().SetTimer(SpawnTimerHandle, this, &AT66EnemyDirector::SpawnRuntimeTrickleWave, RuntimeSpawnInterval, true);
 		}
 	}
 	else
@@ -276,7 +357,7 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 	}
 }
 
-void AT66EnemyDirector::SpawnWave()
+void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 {
 	if (bSpawningPaused) return;
 
@@ -289,7 +370,7 @@ void AT66EnemyDirector::SpawnWave()
 		return;
 	}
 
-	FLagScopedScope LagScope(GetWorld(), TEXT("EnemyDirector::SpawnWave"));
+	FLagScopedScope LagScope(GetWorld(), TEXT("EnemyDirector::SpawnRuntimeTrickleWave"));
 
 	TArray<APawn*> PlayerPawns;
 	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
@@ -309,14 +390,28 @@ void AT66EnemyDirector::SpawnWave()
 	if (!PlayerPawn) return;
 
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66StageProgressionSubsystem* StageProgression = GI ? GI->GetSubsystem<UT66StageProgressionSubsystem>() : nullptr;
 	// Only start spawning once the stage timer is active (i.e. after the main-area entrance trigger).
 	if (!RunState || !RunState->GetStageTimerActive())
 	{
 		return;
 	}
 
+	if (StageProgression)
+	{
+		StageProgression->RefreshSnapshot(false);
+	}
+
+	const FT66StageProgressionSnapshot Snapshot = StageProgression
+		? StageProgression->GetCurrentSnapshot()
+		: FT66StageProgressionSnapshot{};
+
 	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
 	const bool bTowerLayout = GameMode && GameMode->IsUsingTowerMainMapLayout();
+	if (bTowerLayout && !T66EnableTowerEnemySpawns)
+	{
+		return;
+	}
 
 	// Global density pass: triple combat spawns on top of the existing difficulty scalar.
 	static constexpr float SpawnDensityMultiplier = 3.0f;
@@ -324,7 +419,7 @@ void AT66EnemyDirector::SpawnWave()
 	// Difficulty scaling affects enemy count (waves + max alive).
 	const float Scalar = RunState->GetDifficultyScalar();
 	const float FinaleScalar = RunState->GetFinalSurvivalEnemyScalar();
-	const float SpawnScalar = Scalar * FinaleScalar;
+	const float SpawnScalar = Scalar * FinaleScalar * Snapshot.RuntimeTrickleCountScalar;
 	int32 EffectivePerWave = FMath::Clamp(
 		FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseEnemiesPerWave)) * SpawnScalar * SpawnDensityMultiplier),
 		1,
@@ -420,17 +515,9 @@ void AT66EnemyDirector::SpawnWave()
 
 	// Robust fallback: if EnemyClass is unset or misconfigured to a special enemy, use base enemy for the "regular" slot.
 	TSubclassOf<AT66EnemyBase> RegularClass = EnemyClass;
-	if (!RegularClass
-		|| RegularClass->IsChildOf(AT66GoblinThiefEnemy::StaticClass()))
+	if (!RegularClass)
 	{
-		static bool bWarnedEnemyClass = false;
-		if (!bWarnedEnemyClass)
-		{
-			bWarnedEnemyClass = true;
-			const FString BadName = RegularClass ? RegularClass->GetName() : FString(TEXT("None"));
-			UE_LOG(LogT66EnemyDirector, Warning, TEXT("EnemyDirector: EnemyClass is '%s' (invalid for regular). Falling back to AT66EnemyBase for regular spawns."), *BadName);
-		}
-		RegularClass = AT66EnemyBase::StaticClass();
+		RegularClass = AT66MeleeEnemy::StaticClass();
 	}
 
 	// Stage mobs: pull exact roster from DT_Stages (EnemyA/B/C). Fallback is deterministic IDs.
@@ -821,9 +908,13 @@ void AT66EnemyDirector::SpawnWave()
 			}
 		}
 
-		const bool bIsMob = (ClassToSpawn == RegularClass);
+		const bool bIsMob = (ClassToSpawn != GoblinThiefClass);
 		const bool bIsMiniBossSlot = bIsMob && (MiniBossIndex == i);
 		const FName MobID = bIsMob ? MobIDs[RngSub ? RngSub->RunRandRange(0, MobIDs.Num() - 1) : Rng.RandRange(0, MobIDs.Num() - 1)] : NAME_None;
+		if (bIsMob)
+		{
+			ClassToSpawn = FT66EnemyFamilyResolver::ResolveEnemyClass(MobID, RegularClass);
+		}
 
 		FPendingEnemySpawn Slot;
 		Slot.GroundLocation = SpawnLoc;
@@ -833,8 +924,10 @@ void AT66EnemyDirector::SpawnWave()
 		Slot.bSpawnFromWall = bTowerLayout;
 		Slot.DifficultyScalar = Scalar;
 		Slot.FinaleScalar = FinaleScalar;
+		Slot.EnemyProgressionScalar = Snapshot.EnemyStatScalar;
 		Slot.StageNum = RunState ? RunState->GetCurrentStage() : 1;
 		Slot.WallNormal = SpawnWallNormal;
+		Slot.Channel = ET66EnemySpawnChannel::RuntimeTrickle;
 		PendingSpawns.Add(Slot);
 	}
 
@@ -866,7 +959,7 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 		const FPendingEnemySpawn Slot = PendingSpawns[ProcessedCount];
 		++ProcessedCount;
 
-		const bool bIsMob = (Slot.ClassToSpawn == EnemyClass);
+		const bool bIsMob = !Slot.MobID.IsNone();
 		AT66EnemyBase* Enemy = nullptr;
 
 		if (bIsMob)
@@ -932,6 +1025,7 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 			{
 				Enemy->ApplyStageScaling(Slot.StageNum);
 				Enemy->ApplyDifficultyScalar(Slot.DifficultyScalar);
+				Enemy->ApplyProgressionEnemyScalar(Slot.EnemyProgressionScalar);
 			}
 			if (Slot.bIsMiniBoss)
 			{

@@ -18,16 +18,34 @@
 AT66WallArrowTrap::AT66WallArrowTrap()
 {
 	TrapTypeID = FName(TEXT("WallArrow"));
+	TrapFamilyID = FName(TEXT("WallProjectile"));
 
 	TrapMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrapMesh"));
 	TrapMesh->SetupAttachment(SceneRoot);
 	TrapMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TrapMesh->SetCastShadow(false);
-	TrapMesh->SetRelativeScale3D(FVector(0.32f));
+	TrapMesh->SetRelativeScale3D(TrapVisualScale);
 
 	ProjectileSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectileSpawnPoint"));
 	ProjectileSpawnPoint->SetupAttachment(SceneRoot);
 	ProjectileSpawnPoint->SetRelativeLocation(FVector(72.f, 0.f, 0.f));
+}
+
+void AT66WallArrowTrap::UpdateTrapVisuals()
+{
+	if (!TrapMesh)
+	{
+		return;
+	}
+
+	FVector ResolvedScale = TrapVisualScale;
+	if (TrapMesh->GetStaticMesh() == FT66VisualUtil::GetBasicShapeCone())
+	{
+		ResolvedScale *= FVector(0.75f, 0.75f, 1.35f);
+	}
+
+	TrapMesh->SetRelativeScale3D(ResolvedScale);
+	FT66VisualUtil::ApplyT66Color(TrapMesh, this, TrapTint);
 }
 
 void AT66WallArrowTrap::OnConstruction(const FTransform& Transform)
@@ -46,15 +64,18 @@ void AT66WallArrowTrap::OnConstruction(const FTransform& Transform)
 	else if (UStaticMesh* FallbackMesh = FT66VisualUtil::GetBasicShapeCone())
 	{
 		TrapMesh->SetStaticMesh(FallbackMesh);
-		TrapMesh->SetRelativeScale3D(FVector(0.24f, 0.24f, 0.42f));
-		FT66VisualUtil::ApplyT66Color(TrapMesh, this, FLinearColor(0.95f, 0.78f, 0.20f, 1.f));
 	}
+
+	UpdateTrapVisuals();
 }
 
 void AT66WallArrowTrap::BeginPlay()
 {
 	Super::BeginPlay();
-	ScheduleNextFireCycle(InitialFireDelaySeconds);
+	if (UsesTimedActivation())
+	{
+		ScheduleNextFireCycle(InitialFireDelaySeconds);
+	}
 }
 
 void AT66WallArrowTrap::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -76,8 +97,28 @@ void AT66WallArrowTrap::ScheduleNextFireCycle(const float DelaySeconds)
 			FireCycleTimerHandle,
 			this,
 			&AT66WallArrowTrap::HandleFireCycleStart,
-			FMath::Max(DelaySeconds, 0.05f),
+			FMath::Max(ScaleTrapDuration(DelaySeconds), 0.05f),
 			false);
+	}
+}
+
+void AT66WallArrowTrap::HandleTrapEnabledChanged()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(FireCycleTimerHandle);
+	}
+
+	PendingTargetHero.Reset();
+	PendingAimDirection = GetActorForwardVector();
+
+	if (bTrapEnabled && UsesTimedActivation())
+	{
+		ScheduleNextFireCycle(0.15f);
+	}
+	else
+	{
+		ResetTriggerLock();
 	}
 }
 
@@ -147,7 +188,7 @@ void AT66WallArrowTrap::SpawnWindupBurst(const FVector& Direction) const
 
 		PixelVFX->SpawnPixelAtLocation(
 			MuzzleLocation + Offset,
-			FLinearColor(1.f, 0.80f, 0.25f, 1.f),
+			WindupColor,
 			FVector2D(3.2f, 3.2f),
 			ET66PixelVFXPriority::Low);
 	}
@@ -177,7 +218,8 @@ void AT66WallArrowTrap::HandleFireCycleStart()
 	}
 
 	SpawnWindupBurst(PendingAimDirection);
-	if (WindupDurationSeconds <= KINDA_SMALL_NUMBER)
+	const float WindupSeconds = ScaleTrapDuration(WindupDurationSeconds);
+	if (WindupSeconds <= KINDA_SMALL_NUMBER)
 	{
 		FireProjectile();
 		return;
@@ -189,7 +231,7 @@ void AT66WallArrowTrap::HandleFireCycleStart()
 			FireCycleTimerHandle,
 			this,
 			&AT66WallArrowTrap::FireProjectile,
-			WindupDurationSeconds,
+			WindupSeconds,
 			false);
 	}
 }
@@ -227,7 +269,12 @@ void AT66WallArrowTrap::FireProjectile()
 		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (Projectile)
 	{
-		Projectile->InitializeProjectile(AimDirection, DamageHP, ProjectileSpeed);
+		Projectile->InitializeProjectile(
+			AimDirection,
+			DamageHP,
+			ProjectileSpeed * GetProgressionSpeedScalar(),
+			ProjectileTint,
+			ProjectileTrailColor);
 		Projectile->FinishSpawning(SpawnTransform);
 	}
 

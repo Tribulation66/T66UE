@@ -40,11 +40,29 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap")
 	int32 DamageHP = 10;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
+	bool bUseFireNiagaraVFX = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
+	FLinearColor IdleMarkerColor = FLinearColor(0.15f, 0.04f, 0.02f, 1.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
+	FLinearColor WarningColor = FLinearColor(1.f, 0.26f, 0.08f, 0.8f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
+	FLinearColor ActiveColor = FLinearColor(1.f, 0.42f, 0.10f, 0.95f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
+	FLinearColor BurstColor = FLinearColor(1.f, 0.42f, 0.10f, 0.95f);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void HandleTrapEnabledChanged() override;
+	virtual bool CanAcceptExternalTrigger() const override;
+	virtual bool HandleTrapTriggered(AActor* TriggeringActor) override;
 
 private:
 	void BeginWarningCycle();
@@ -53,6 +71,8 @@ private:
 	void ApplyDamagePulse();
 	void ScheduleNextCycle(float DelaySeconds);
 	void SpawnActivationBurst() const;
+	void SpawnActivePulseBurst() const;
+	bool ShouldUseFireNiagara() const;
 	void UpdateMarkerVisuals();
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
@@ -75,4 +95,5 @@ private:
 	bool bFlamesActive = false;
 	float WarningElapsed = 0.f;
 	float WarningVFXAccum = 0.f;
+	float ActiveVFXAccum = 0.f;
 };

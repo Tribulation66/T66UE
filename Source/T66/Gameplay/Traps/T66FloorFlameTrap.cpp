@@ -2,9 +2,9 @@
 
 #include "Gameplay/Traps/T66FloorFlameTrap.h"
 
+#include "Gameplay/Traps/T66TrapDamageUtils.h"
+
 #include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66RunStateSubsystem.h"
-#include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -31,6 +31,7 @@ namespace
 AT66FloorFlameTrap::AT66FloorFlameTrap()
 {
 	TrapTypeID = FName(TEXT("FloorFlame"));
+	TrapFamilyID = FName(TEXT("FloorBurst"));
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
@@ -76,7 +77,19 @@ void AT66FloorFlameTrap::UpdateMarkerVisuals()
 
 	MarkerMesh->SetRelativeLocation(FVector(0.f, 0.f, -10.f));
 	MarkerMesh->SetRelativeScale3D(FVector(Radius / 50.f, Radius / 50.f, 0.04f));
-	FT66VisualUtil::ApplyT66Color(MarkerMesh, this, FLinearColor(0.15f, 0.04f, 0.02f, 1.f));
+
+	FLinearColor MarkerColor = IdleMarkerColor;
+	if (bFlamesActive)
+	{
+		MarkerColor = ActiveColor;
+	}
+	else if (bWarningActive)
+	{
+		const float Progress = FMath::Clamp(WarningElapsed / FMath::Max(ScaleTrapDuration(WarningDurationSeconds), 0.05f), 0.f, 1.f);
+		MarkerColor = FMath::Lerp(IdleMarkerColor, WarningColor, Progress);
+	}
+
+	FT66VisualUtil::ApplyT66Color(MarkerMesh, this, MarkerColor);
 }
 
 void AT66FloorFlameTrap::BeginPlay()
@@ -84,8 +97,11 @@ void AT66FloorFlameTrap::BeginPlay()
 	Super::BeginPlay();
 
 	UpdateMarkerVisuals();
-	CachedFireSystem = LoadFloorFlameSystem();
-	ScheduleNextCycle(InitialCycleDelaySeconds);
+	CachedFireSystem = bUseFireNiagaraVFX ? LoadFloorFlameSystem() : nullptr;
+	if (UsesTimedActivation())
+	{
+		ScheduleNextCycle(InitialCycleDelaySeconds);
+	}
 }
 
 void AT66FloorFlameTrap::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -114,8 +130,44 @@ void AT66FloorFlameTrap::ScheduleNextCycle(const float DelaySeconds)
 			WarningTimerHandle,
 			this,
 			&AT66FloorFlameTrap::BeginWarningCycle,
-			FMath::Max(DelaySeconds, 0.05f),
+			FMath::Max(ScaleTrapDuration(DelaySeconds), 0.05f),
 			false);
+	}
+}
+
+void AT66FloorFlameTrap::HandleTrapEnabledChanged()
+{
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		World->GetTimerManager().ClearTimer(WarningTimerHandle);
+		World->GetTimerManager().ClearTimer(ActiveTimerHandle);
+		World->GetTimerManager().ClearTimer(DamageTimerHandle);
+	}
+
+	bWarningActive = false;
+	bFlamesActive = false;
+	WarningElapsed = 0.f;
+	WarningVFXAccum = 0.f;
+	ActiveVFXAccum = 0.f;
+	SetActorTickEnabled(false);
+
+	if (ActiveFireComponent)
+	{
+		ActiveFireComponent->Deactivate();
+		ActiveFireComponent->DestroyComponent();
+		ActiveFireComponent = nullptr;
+	}
+
+	UpdateMarkerVisuals();
+
+	if (bTrapEnabled && UsesTimedActivation())
+	{
+		ScheduleNextCycle(0.15f);
+	}
+	else
+	{
+		ResetTriggerLock();
 	}
 }
 
@@ -123,7 +175,14 @@ void AT66FloorFlameTrap::BeginWarningCycle()
 {
 	if (!IsTrapEnabled())
 	{
-		ScheduleNextCycle(CooldownDurationSeconds);
+		if (UsesTimedActivation())
+		{
+			ScheduleNextCycle(CooldownDurationSeconds);
+		}
+		else
+		{
+			ResetTriggerLock();
+		}
 		return;
 	}
 
@@ -131,7 +190,9 @@ void AT66FloorFlameTrap::BeginWarningCycle()
 	bFlamesActive = false;
 	WarningElapsed = 0.f;
 	WarningVFXAccum = 0.f;
+	ActiveVFXAccum = 0.f;
 	SetActorTickEnabled(true);
+	UpdateMarkerVisuals();
 
 	if (UWorld* World = GetWorld())
 	{
@@ -139,7 +200,7 @@ void AT66FloorFlameTrap::BeginWarningCycle()
 			ActiveTimerHandle,
 			this,
 			&AT66FloorFlameTrap::ActivateFlames,
-			FMath::Max(WarningDurationSeconds, 0.05f),
+			FMath::Max(ScaleTrapDuration(WarningDurationSeconds), 0.05f),
 			false);
 	}
 }
@@ -148,9 +209,12 @@ void AT66FloorFlameTrap::ActivateFlames()
 {
 	bWarningActive = false;
 	bFlamesActive = true;
-	SetActorTickEnabled(false);
+	ActiveVFXAccum = 0.f;
+	const bool bUseNiagaraThisCycle = ShouldUseFireNiagara();
+	SetActorTickEnabled(!bUseNiagaraThisCycle);
+	UpdateMarkerVisuals();
 
-	if (CachedFireSystem && GetWorld())
+	if (bUseNiagaraThisCycle && GetWorld())
 	{
 		ActiveFireComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
@@ -173,15 +237,15 @@ void AT66FloorFlameTrap::ActivateFlames()
 			DamageTimerHandle,
 			this,
 			&AT66FloorFlameTrap::ApplyDamagePulse,
-			FMath::Max(DamageIntervalSeconds, 0.05f),
+			FMath::Max(ScaleTrapDuration(DamageIntervalSeconds), 0.05f),
 			true,
-			FMath::Max(DamageIntervalSeconds, 0.05f));
+			FMath::Max(ScaleTrapDuration(DamageIntervalSeconds), 0.05f));
 
 		World->GetTimerManager().SetTimer(
 			ActiveTimerHandle,
 			this,
 			&AT66FloorFlameTrap::DeactivateFlames,
-			FMath::Max(ActiveDurationSeconds, 0.05f),
+			FMath::Max(ScaleTrapDuration(ActiveDurationSeconds), 0.05f),
 			false);
 	}
 }
@@ -202,7 +266,16 @@ void AT66FloorFlameTrap::DeactivateFlames()
 		ActiveFireComponent = nullptr;
 	}
 
-	ScheduleNextCycle(CooldownDurationSeconds);
+	SetActorTickEnabled(false);
+	UpdateMarkerVisuals();
+	if (UsesTimedActivation())
+	{
+		ScheduleNextCycle(CooldownDurationSeconds);
+	}
+	else
+	{
+		ResetTriggerLock();
+	}
 }
 
 void AT66FloorFlameTrap::ApplyDamagePulse()
@@ -212,24 +285,16 @@ void AT66FloorFlameTrap::ApplyDamagePulse()
 		return;
 	}
 
-	UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-	UT66RunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!RunState || !DamageZone)
+	if (!DamageZone)
 	{
 		return;
 	}
 
-	TArray<AActor*> OverlappingActors;
-	DamageZone->GetOverlappingActors(OverlappingActors, AT66HeroBase::StaticClass());
-	for (AActor* OverlappingActor : OverlappingActors)
-	{
-		AT66HeroBase* Hero = Cast<AT66HeroBase>(OverlappingActor);
-		if (!IsHeroTargetable(Hero))
-		{
-			continue;
-		}
+	FT66TrapDamageUtils::ApplyTrapDamageToOverlaps(this, DamageZone, DamageHP);
 
-		RunState->ApplyDamage(DamageHP, this);
+	if (!ShouldUseFireNiagara())
+	{
+		SpawnActivePulseBurst();
 	}
 }
 
@@ -254,28 +319,70 @@ void AT66FloorFlameTrap::SpawnActivationBurst() const
 
 		PixelVFX->SpawnPixelAtLocation(
 			SpawnLocation,
-			FLinearColor(1.f, 0.42f, 0.10f, 0.95f),
+			BurstColor,
 			FVector2D(4.f, 4.f),
 			ET66PixelVFXPriority::Medium);
 	}
+}
+
+void AT66FloorFlameTrap::SpawnActivePulseBurst() const
+{
+	UT66PixelVFXSubsystem* PixelVFX = GetWorld() ? GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>() : nullptr;
+	if (!PixelVFX)
+	{
+		return;
+	}
+
+	const FVector Origin = GetActorLocation();
+	for (int32 Index = 0; Index < 16; ++Index)
+	{
+		const float Angle = (static_cast<float>(Index) / 16.f) * 2.f * PI;
+		const float Dist = Radius * FMath::FRandRange(0.15f, 0.90f);
+		const FVector SpawnLocation(
+			Origin.X + FMath::Cos(Angle) * Dist,
+			Origin.Y + FMath::Sin(Angle) * Dist,
+			Origin.Z + FMath::FRandRange(15.f, 95.f));
+
+		PixelVFX->SpawnPixelAtLocation(
+			SpawnLocation,
+			ActiveColor,
+			FVector2D(3.6f, 3.6f),
+			ET66PixelVFXPriority::Low);
+	}
+}
+
+bool AT66FloorFlameTrap::ShouldUseFireNiagara() const
+{
+	return bUseFireNiagaraVFX && CachedFireSystem != nullptr;
 }
 
 void AT66FloorFlameTrap::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!bWarningActive)
+	if (!bWarningActive && !(bFlamesActive && !ShouldUseFireNiagara()))
 	{
 		return;
 	}
 
-	WarningElapsed += DeltaSeconds;
-	WarningVFXAccum += DeltaSeconds;
-	if (WarningVFXAccum < 0.08f)
+	if (bWarningActive)
+	{
+		WarningElapsed += DeltaSeconds;
+		WarningVFXAccum += DeltaSeconds;
+		UpdateMarkerVisuals();
+	}
+
+	if (bFlamesActive && !ShouldUseFireNiagara())
+	{
+		ActiveVFXAccum += DeltaSeconds;
+	}
+
+	const bool bEmitWarning = bWarningActive && WarningVFXAccum >= 0.08f;
+	const bool bEmitActive = bFlamesActive && !ShouldUseFireNiagara() && ActiveVFXAccum >= 0.08f;
+	if (!bEmitWarning && !bEmitActive)
 	{
 		return;
 	}
-	WarningVFXAccum = 0.f;
 
 	UT66PixelVFXSubsystem* PixelVFX = GetWorld() ? GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>() : nullptr;
 	if (!PixelVFX)
@@ -283,23 +390,65 @@ void AT66FloorFlameTrap::Tick(float DeltaSeconds)
 		return;
 	}
 
-	const float Progress = FMath::Clamp(WarningElapsed / FMath::Max(WarningDurationSeconds, 0.05f), 0.f, 1.f);
-	const float PulseScale = 1.f + 0.08f * FMath::Sin(WarningElapsed * FMath::Lerp(3.f, 8.f, Progress) * PI);
-	const float RingRadius = Radius * PulseScale;
 	const FVector Origin = GetActorLocation();
 
-	for (int32 Index = 0; Index < 10; ++Index)
+	if (bEmitWarning)
 	{
-		const float Angle = (static_cast<float>(Index) / 10.f) * 2.f * PI + (WarningElapsed * 1.4f);
-		const FVector SpawnLocation(
-			Origin.X + FMath::Cos(Angle) * RingRadius,
-			Origin.Y + FMath::Sin(Angle) * RingRadius,
-			Origin.Z + 4.f);
+		WarningVFXAccum = 0.f;
+		const float Progress = FMath::Clamp(WarningElapsed / FMath::Max(ScaleTrapDuration(WarningDurationSeconds), 0.05f), 0.f, 1.f);
+		const float PulseScale = 1.f + 0.08f * FMath::Sin(WarningElapsed * FMath::Lerp(3.f, 8.f, Progress) * PI);
+		const float RingRadius = Radius * PulseScale;
 
-		PixelVFX->SpawnPixelAtLocation(
-			SpawnLocation,
-			FLinearColor(1.f, 0.26f, 0.08f, 0.8f),
-			FVector2D(3.4f, 3.4f),
-			ET66PixelVFXPriority::Low);
+		for (int32 Index = 0; Index < 10; ++Index)
+		{
+			const float Angle = (static_cast<float>(Index) / 10.f) * 2.f * PI + (WarningElapsed * 1.4f);
+			const FVector SpawnLocation(
+				Origin.X + FMath::Cos(Angle) * RingRadius,
+				Origin.Y + FMath::Sin(Angle) * RingRadius,
+				Origin.Z + 4.f);
+
+			PixelVFX->SpawnPixelAtLocation(
+				SpawnLocation,
+				WarningColor,
+				FVector2D(3.4f, 3.4f),
+				ET66PixelVFXPriority::Low);
+		}
 	}
+
+	if (bEmitActive)
+	{
+		ActiveVFXAccum = 0.f;
+		for (int32 Index = 0; Index < 8; ++Index)
+		{
+			const float Angle = (static_cast<float>(Index) / 8.f) * 2.f * PI + (GetWorld()->TimeSeconds * 1.8f);
+			const FVector SpawnLocation(
+				Origin.X + FMath::Cos(Angle) * Radius * 0.65f,
+				Origin.Y + FMath::Sin(Angle) * Radius * 0.65f,
+				Origin.Z + FMath::FRandRange(15.f, 90.f));
+
+			PixelVFX->SpawnPixelAtLocation(
+				SpawnLocation,
+				ActiveColor,
+				FVector2D(3.2f, 3.2f),
+				ET66PixelVFXPriority::Low);
+		}
+	}
+}
+
+bool AT66FloorFlameTrap::CanAcceptExternalTrigger() const
+{
+	return AT66TrapBase::CanAcceptExternalTrigger() && !bWarningActive && !bFlamesActive;
+}
+
+bool AT66FloorFlameTrap::HandleTrapTriggered(AActor* TriggeringActor)
+{
+	(void)TriggeringActor;
+
+	if (bWarningActive || bFlamesActive)
+	{
+		return false;
+	}
+
+	BeginWarningCycle();
+	return true;
 }

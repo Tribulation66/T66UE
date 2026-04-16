@@ -2,7 +2,9 @@
 
 #include "Core/T66MiniFrontendStateSubsystem.h"
 
+#include "Core/T66GameInstance.h"
 #include "Core/T66MiniDataSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Save/T66MiniRunSaveGame.h"
 
 void UT66MiniFrontendStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -26,6 +28,7 @@ void UT66MiniFrontendStateSubsystem::ResetRunSetup()
 	bLoadFlow = false;
 	bIntermissionFlow = false;
 	bSkipNextShopPrime = false;
+	SyncSharedLobbyState(true);
 }
 
 void UT66MiniFrontendStateSubsystem::BeginNewRun()
@@ -52,21 +55,25 @@ void UT66MiniFrontendStateSubsystem::SeedFromRunSave(const UT66MiniRunSaveGame* 
 	ShopRerollCount = FMath::Max(0, RunSave->ShopRerollCount);
 	bLoadFlow = true;
 	bIntermissionFlow = RunSave->bPendingShopIntermission;
+	SyncSharedLobbyState(true);
 }
 
 void UT66MiniFrontendStateSubsystem::SelectHero(const FName HeroID)
 {
 	SelectedHeroID = HeroID;
+	SyncSharedLobbyState(true);
 }
 
 void UT66MiniFrontendStateSubsystem::SelectCompanion(const FName CompanionID)
 {
 	SelectedCompanionID = CompanionID;
+	SyncSharedLobbyState(true);
 }
 
 void UT66MiniFrontendStateSubsystem::SelectDifficulty(const FName DifficultyID)
 {
 	SelectedDifficultyID = DifficultyID;
+	SyncSharedLobbyState(true);
 }
 
 void UT66MiniFrontendStateSubsystem::SetPendingSaveSlot(const int32 SlotIndex)
@@ -102,6 +109,7 @@ bool UT66MiniFrontendStateSubsystem::AddIdolToLoadout(const FName IdolID)
 
 	SelectedIdolIDs.Add(IdolID);
 	CurrentIdolOfferIDs.Remove(IdolID);
+	SyncSharedLobbyState(true);
 	return true;
 }
 
@@ -110,18 +118,21 @@ void UT66MiniFrontendStateSubsystem::EnterIntermissionFlow(const UT66MiniDataSub
 	bIntermissionFlow = true;
 	bSkipNextShopPrime = false;
 	PrimeShopOffers(DataSubsystem);
+	SyncSharedLobbyState(false);
 }
 
 void UT66MiniFrontendStateSubsystem::ResumeIntermissionFlow()
 {
 	bIntermissionFlow = true;
 	bSkipNextShopPrime = true;
+	SyncSharedLobbyState(false);
 }
 
 void UT66MiniFrontendStateSubsystem::ExitIntermissionFlow()
 {
 	bIntermissionFlow = false;
 	ClearTransientShopState();
+	SyncSharedLobbyState(false);
 }
 
 void UT66MiniFrontendStateSubsystem::PrimeShopOffers(const UT66MiniDataSubsystem* DataSubsystem)
@@ -190,6 +201,38 @@ void UT66MiniFrontendStateSubsystem::WriteIntermissionStateToRunSave(UT66MiniRun
 	RunSave->LockedShopOfferIDs = LockedShopOfferIDs;
 	RunSave->ShopRerollCount = ShopRerollCount;
 	RunSave->bPendingShopIntermission = bIntermissionFlow;
+}
+
+void UT66MiniFrontendStateSubsystem::SyncSharedLobbyState(const bool bResetLobbyReady)
+{
+	if (UT66GameInstance* GameInstance = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		GameInstance->MiniSelectedHeroID = SelectedHeroID;
+		GameInstance->MiniSelectedCompanionID = SelectedCompanionID;
+		GameInstance->MiniSelectedDifficultyID = SelectedDifficultyID;
+		GameInstance->MiniSelectedIdolIDs = SelectedIdolIDs;
+		GameInstance->bMiniLoadFlow = bLoadFlow;
+		GameInstance->bMiniIntermissionFlow = bIntermissionFlow;
+		if (!bIntermissionFlow)
+		{
+			GameInstance->MiniIntermissionStateRevision = 0;
+			GameInstance->MiniIntermissionStateJson.Reset();
+			GameInstance->MiniIntermissionRequestRevision = 0;
+			GameInstance->MiniIntermissionRequestJson.Reset();
+		}
+
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			if (bResetLobbyReady)
+			{
+				SessionSubsystem->SetLocalLobbyReady(false);
+			}
+			else
+			{
+				SessionSubsystem->SyncLocalLobbyProfile();
+			}
+		}
+	}
 }
 
 void UT66MiniFrontendStateSubsystem::GenerateIdolOffers(const UT66MiniDataSubsystem* DataSubsystem, const bool bCountAsReroll)

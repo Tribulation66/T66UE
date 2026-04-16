@@ -18,6 +18,7 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
+#include "UI/Screens/T66SavePreviewScreen.h"
 #include "UI/Screens/T66ShopScreen.h"
 #include "UI/Screens/T66LeaderboardScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
@@ -102,7 +103,7 @@
 
 void AT66PlayerController::SetupGameplayHUD()
 {
-	if (!IsGameplayLevel()) return;
+	if (!IsGameplayLevel() || !IsLocalController()) return;
 	UClass* HUDClass = ResolveGameplayHUDClass();
 	if (!HUDClass) return;
 	GameplayHUDWidget = CreateWidget<UT66GameplayHUDWidget>(this, HUDClass);
@@ -651,7 +652,7 @@ void AT66PlayerController::HandleQuickReviveStateChanged()
 
 void AT66PlayerController::EnsureGameplayUIManager()
 {
-	if (UIManager || !IsGameplayLevel()) return;
+	if (UIManager || !IsGameplayLevel() || !IsLocalController()) return;
 
 	UIManager = NewObject<UT66UIManager>(this, UT66UIManager::StaticClass());
 	if (!UIManager) return;
@@ -680,6 +681,10 @@ void AT66PlayerController::EnsureGameplayUIManager()
 	if (TSubclassOf<UT66ScreenBase> SummaryPickerClass = ResolveScreenClass(ET66ScreenType::PlayerSummaryPicker))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, SummaryPickerClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> SavePreviewClass = ResolveScreenClass(ET66ScreenType::SavePreview))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::SavePreview, SavePreviewClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> ShopClass = ResolveScreenClass(ET66ScreenType::PowerUp))
 	{
@@ -716,6 +721,18 @@ void AT66PlayerController::HandleEscapePressed()
 		return;
 	}
 #endif
+
+	if (IsPaused()
+		&& UIManager
+		&& UIManager->IsModalActive()
+		&& UIManager->GetCurrentModalType() == ET66ScreenType::SavePreview)
+	{
+		if (UT66SavePreviewScreen* SavePreviewScreen = Cast<UT66SavePreviewScreen>(UIManager->GetCurrentModal()))
+		{
+			SavePreviewScreen->OnBackClicked();
+		}
+		return;
+	}
 
 	// Esc as back: close Media Viewer before other UI.
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)

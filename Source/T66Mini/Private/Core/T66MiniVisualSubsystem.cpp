@@ -4,6 +4,7 @@
 
 #include "Engine/Texture2D.h"
 #include "ImageUtils.h"
+#include "Misc/PackageName.h"
 #include "Misc/Paths.h"
 
 namespace
@@ -100,6 +101,11 @@ UTexture2D* UT66MiniVisualSubsystem::LoadHeroProjectileTexture(const FString& He
 UTexture2D* UT66MiniVisualSubsystem::LoadCompanionTexture(const FString& CompanionVisualID)
 {
 	const FString VisualId = T66MiniSanitizeVisualId(CompanionVisualID);
+	if (VisualId.IsEmpty())
+	{
+		return nullptr;
+	}
+
 	return LoadImportedOrLooseTexture(
 		FString::Printf(TEXT("Companion:%s"), *VisualId),
 		FString::Printf(TEXT("/Game/Mini/Sprites/Companions/%s.%s"), *VisualId, *VisualId),
@@ -109,6 +115,11 @@ UTexture2D* UT66MiniVisualSubsystem::LoadCompanionTexture(const FString& Compani
 UTexture2D* UT66MiniVisualSubsystem::LoadCompanionAnimationTexture(const FString& CompanionVisualID, const FString& FrameKey)
 {
 	const FString VisualId = T66MiniSanitizeVisualId(CompanionVisualID);
+	if (VisualId.IsEmpty())
+	{
+		return nullptr;
+	}
+
 	return LoadCachedTextureFromCandidates(
 		FString::Printf(TEXT("CompanionAnimation:%s:%s"), *VisualId, *FrameKey),
 		{
@@ -155,6 +166,22 @@ UTexture2D* UT66MiniVisualSubsystem::LoadInteractableTexture(const FString& Inte
 		FString::Printf(TEXT("Interactable:%s"), *VisualId),
 		FString::Printf(TEXT("/Game/Mini/Sprites/Interactables/%s.%s"), *VisualId, *VisualId),
 		FString::Printf(TEXT("SourceAssets/Mini/Interactables/Singles/%s.png"), *VisualId));
+}
+
+UTexture2D* UT66MiniVisualSubsystem::LoadEffectTexture(const FString& EffectName)
+{
+	const FString VisualId = T66MiniSanitizeVisualId(EffectName);
+	return LoadCachedTexture(
+		FString::Printf(TEXT("Effect:%s"), *VisualId),
+		FString::Printf(TEXT("SourceAssets/Mini/Effects/%s.png"), *VisualId));
+}
+
+UTexture2D* UT66MiniVisualSubsystem::LoadHudTexture(const FString& TextureName)
+{
+	const FString VisualId = T66MiniSanitizeVisualId(TextureName);
+	return LoadCachedTexture(
+		FString::Printf(TEXT("Hud:%s"), *VisualId),
+		FString::Printf(TEXT("SourceAssets/Mini/HUD/%s.png"), *VisualId));
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadItemTexture(const FName ItemID, const FString& IconPath)
@@ -210,11 +237,36 @@ FString UT66MiniVisualSubsystem::BuildAbsoluteProjectPath(const FString& Relativ
 	return FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / RelativePath);
 }
 
+FString UT66MiniVisualSubsystem::GetPackagePathFromObjectPath(const FString& AssetPath)
+{
+	if (AssetPath.IsEmpty())
+	{
+		return FString();
+	}
+
+	return FPackageName::ObjectPathToPackageName(AssetPath);
+}
+
 UTexture2D* UT66MiniVisualSubsystem::LoadImportedTexture(const FString& AssetPath)
 {
 	if (AssetPath.IsEmpty())
 	{
 		return nullptr;
+	}
+
+	const FString PackagePath = GetPackagePathFromObjectPath(AssetPath);
+	if (!PackagePath.IsEmpty())
+	{
+		if (MissingImportedPackages.Contains(PackagePath))
+		{
+			return nullptr;
+		}
+
+		if (!FPackageName::DoesPackageExist(PackagePath))
+		{
+			MissingImportedPackages.Add(PackagePath);
+			return nullptr;
+		}
 	}
 
 	return Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), nullptr, *AssetPath));

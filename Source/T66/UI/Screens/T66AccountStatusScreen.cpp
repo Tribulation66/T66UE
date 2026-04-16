@@ -7,6 +7,7 @@
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
@@ -598,6 +599,51 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		return Out;
 	};
 
+	TMap<FString, FName> PBHeroIdBySlot;
+	auto ResolvePBHeroID = [&PBHeroIdBySlot](const FString& SlotName) -> FName
+	{
+		if (SlotName.IsEmpty())
+		{
+			return NAME_None;
+		}
+
+		if (const FName* CachedHeroID = PBHeroIdBySlot.Find(SlotName))
+		{
+			return *CachedHeroID;
+		}
+
+		FName HeroID = NAME_None;
+		if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+		{
+			if (USaveGame* SaveGame = UGameplayStatics::LoadGameFromSlot(SlotName, 0))
+			{
+				if (const UT66LeaderboardRunSummarySaveGame* Summary = Cast<UT66LeaderboardRunSummarySaveGame>(SaveGame))
+				{
+					HeroID = Summary->HeroID;
+				}
+			}
+		}
+
+		PBHeroIdBySlot.Add(SlotName, HeroID);
+		return HeroID;
+	};
+
+	auto HeroText = [T66GI, Loc](FName HeroID) -> FText
+	{
+		if (HeroID.IsNone())
+		{
+			return FText::GetEmpty();
+		}
+
+		FHeroData HeroData;
+		if (T66GI && T66GI->GetHeroData(HeroID, HeroData))
+		{
+			return Loc ? Loc->GetText_HeroName(HeroID) : HeroData.DisplayName;
+		}
+
+		return FText::FromName(HeroID);
+	};
+
 	auto GetHeroHistoryFilterText = [this, WeakT66GI, WeakLoc]() -> FText
 	{
 		if (HistoryHeroFilter.IsNone())
@@ -1105,6 +1151,12 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		{
 			const FPersonalBestDisplay PB = bTime ? MakePBTime(Difficulty) : MakePBScore(Difficulty);
 			const bool bCanOpen = PB.bHasRecord && !PB.RunSummarySlotName.IsEmpty();
+			const FName PBHeroID = PB.bHasRecord ? ResolvePBHeroID(PB.RunSummarySlotName) : NAME_None;
+			const FText HeroName = PB.bHasRecord
+				? (PBHeroID.IsNone()
+					? NSLOCTEXT("T66.Account", "PBUnknownHero", "Unknown")
+					: HeroText(PBHeroID))
+				: FText::GetEmpty();
 			const FText Value = PB.bHasRecord ? (bTime ? FormatDurationText(PB.Seconds) : FText::AsNumber(PB.Score)) : NSLOCTEXT("T66.Account", "NoRecord", "No Record");
 			const FText Date = PB.bHasRecord && PB.AchievedAtUtc.GetTicks() > 0 ? FText::FromString(PB.AchievedAtUtc.ToString(TEXT("%m/%d/%Y"))) : FText::GetEmpty();
 			FText RankText = FText::GetEmpty();
@@ -1147,10 +1199,11 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 					.SetContent(
 						MakeAccountPanel(
 							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().FillWidth(0.95f).VAlign(VAlign_Center)[SNew(STextBlock).Text(DifficultyText(Difficulty)).Font(AccountBoldFont(12)).ColorAndOpacity(AccountText())]
-							+ SHorizontalBox::Slot().FillWidth(1.05f).VAlign(VAlign_Center)[SNew(STextBlock).Text(Date).Font(AccountRegularFont(10)).ColorAndOpacity(AccountMutedText())]
+							+ SHorizontalBox::Slot().FillWidth(0.90f).VAlign(VAlign_Center)[SNew(STextBlock).Text(DifficultyText(Difficulty)).Font(AccountBoldFont(12)).ColorAndOpacity(AccountText())]
+							+ SHorizontalBox::Slot().FillWidth(1.00f).VAlign(VAlign_Center)[SNew(STextBlock).Text(HeroName).Font(AccountRegularFont(10)).ColorAndOpacity(PB.bHasRecord ? AccountText() : AccountMutedText())]
+							+ SHorizontalBox::Slot().FillWidth(0.95f).VAlign(VAlign_Center)[SNew(STextBlock).Text(Date).Font(AccountRegularFont(10)).ColorAndOpacity(AccountMutedText())]
 							+ SHorizontalBox::Slot().FillWidth(0.95f).VAlign(VAlign_Center)[SNew(STextBlock).Text(ThirdColumnText).Font(ThirdColumnFont).ColorAndOpacity(ThirdColumnColor)]
-							+ SHorizontalBox::Slot().FillWidth(1.05f).VAlign(VAlign_Center)[SNew(STextBlock).Text(FourthColumnText).Font(FourthColumnFont).ColorAndOpacity(FourthColumnColor)],
+							+ SHorizontalBox::Slot().FillWidth(1.00f).VAlign(VAlign_Center)[SNew(STextBlock).Text(FourthColumnText).Font(FourthColumnFont).ColorAndOpacity(FourthColumnColor)],
 							ET66PanelType::Panel2, AccountRowFill(), FMargin(8.f, 7.f, 8.f, 6.f))))
 			];
 		}
@@ -1161,10 +1214,11 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			[
 				MakeAccountPanel(
 					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(0.95f)[SNew(STextBlock).Text(NSLOCTEXT("T66.Account", "PBColDifficulty", "DIFFICULTY")).Font(AccountBoldFont(10)).ColorAndOpacity(AccountGold())]
-					+ SHorizontalBox::Slot().FillWidth(1.05f)[SNew(STextBlock).Text(NSLOCTEXT("T66.Account", "PBColDate", "DATE")).Font(AccountBoldFont(10)).ColorAndOpacity(AccountGold())]
+					+ SHorizontalBox::Slot().FillWidth(0.90f)[SNew(STextBlock).Text(NSLOCTEXT("T66.Account", "PBColDifficulty", "DIFFICULTY")).Font(AccountBoldFont(10)).ColorAndOpacity(AccountGold())]
+					+ SHorizontalBox::Slot().FillWidth(1.00f)[SNew(STextBlock).Text(NSLOCTEXT("T66.Account", "PBColHero", "HERO")).Font(AccountBoldFont(10)).ColorAndOpacity(AccountGold())]
+					+ SHorizontalBox::Slot().FillWidth(0.95f)[SNew(STextBlock).Text(NSLOCTEXT("T66.Account", "PBColDate", "DATE")).Font(AccountBoldFont(10)).ColorAndOpacity(AccountGold())]
 					+ SHorizontalBox::Slot().FillWidth(0.95f)[SNew(STextBlock).Text(bRankInThirdColumn ? RankHeaderText : ValueHeaderText).Font(AccountBoldFont(10)).ColorAndOpacity(AccountGold())]
-					+ SHorizontalBox::Slot().FillWidth(1.05f)[SNew(STextBlock).Text(bRankInThirdColumn ? ValueHeaderText : RankHeaderText).Font(AccountBoldFont(10)).ColorAndOpacity(AccountGold())],
+					+ SHorizontalBox::Slot().FillWidth(1.00f)[SNew(STextBlock).Text(bRankInThirdColumn ? ValueHeaderText : RankHeaderText).Font(AccountBoldFont(10)).ColorAndOpacity(AccountGold())],
 					ET66PanelType::Panel2, AccountHeaderFill(), FMargin(8.f, 6.f, 8.f, 5.f))
 			]
 			+ SVerticalBox::Slot().AutoHeight()[Rows],
@@ -1173,7 +1227,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 	TSharedRef<SWidget> OverviewContent =
 		SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot().FillWidth(0.58f).Padding(0.f, 0.f, 12.f, 0.f)
+		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 12.f, 0.f)
 		[
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
@@ -1244,7 +1298,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 					ET66PanelType::Panel, AccountPanelFill(), FMargin(14.f))
 			]
 		]
-		+ SHorizontalBox::Slot().FillWidth(0.42f)
+		+ SHorizontalBox::Slot().FillWidth(1.f)
 		[
 			MakeAccountPanel(
 				SNew(SVerticalBox)
@@ -1421,73 +1475,9 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		AccountPanelFill(),
 		FMargin(14.f));
 
-	TSharedRef<SWidget> RewardsContent = MakeAccountPanel(
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeSectionHeader(NSLOCTEXT("T66.Account", "RewardsHdr", "REWARDS INBOX"))]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
-		[
-			SNew(STextBlock)
-			.Text(NSLOCTEXT("T66.Account", "RewardsSub", "Leaderboard placements, special gifts, and other one-time account rewards will appear here once they are granted."))
-			.Font(AccountRegularFont(12))
-			.ColorAndOpacity(AccountMutedText())
-			.AutoWrapText(true)
-		]
-		+ SVerticalBox::Slot().AutoHeight()
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
-			[
-				MakeAccountPanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Account", "ClaimableTitle", "CLAIMABLE"))
-						.Font(AccountBoldFont(12))
-						.ColorAndOpacity(AccountGold())
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 5.f, 0.f, 0.f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Account", "ClaimableEmpty", "No rewards are waiting right now. When a placement reward or direct gift is added to your account, it will show up here ready to claim."))
-						.Font(AccountRegularFont(11))
-						.ColorAndOpacity(AccountText())
-						.AutoWrapText(true)
-					],
-					ET66PanelType::Panel2,
-					AccountRowFill(),
-					FMargin(10.f))
-			]
-			+ SHorizontalBox::Slot().FillWidth(1.f)
-			[
-				MakeAccountPanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Account", "ClaimedTitle", "CLAIMED"))
-						.Font(AccountBoldFont(12))
-						.ColorAndOpacity(AccountGold())
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 5.f, 0.f, 0.f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Account", "ClaimedEmpty", "Claimed rewards will remain listed here after they are collected."))
-						.Font(AccountRegularFont(11))
-						.ColorAndOpacity(AccountText())
-						.AutoWrapText(true)
-					],
-					ET66PanelType::Panel2,
-					AccountRowFill(),
-					FMargin(10.f))
-			]
-		],
-		ET66PanelType::Panel, AccountPanelFill(), FMargin(14.f));
-
 	const TSharedRef<SWidget> ActiveContent =
 		ActiveTab == EAccountTab::Suspension ? SuspensionContent
-		: (ActiveTab == EAccountTab::History ? HistoryContent
-		: (ActiveTab == EAccountTab::Rewards ? RewardsContent : OverviewContent));
+		: (ActiveTab == EAccountTab::History ? HistoryContent : OverviewContent);
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
 	TSharedRef<SWidget> Content =
@@ -1513,7 +1503,6 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(NSLOCTEXT("T66.Account", "OverviewTab", "OVERVIEW"), ActiveTab == EAccountTab::Overview, &UT66AccountStatusScreen::HandleOverviewTabClicked)]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(NSLOCTEXT("T66.Account", "HistoryTab", "HISTORY"), ActiveTab == EAccountTab::History, &UT66AccountStatusScreen::HandleHistoryTabClicked)]
-			+ SHorizontalBox::Slot().AutoWidth()[MakeTabButton(NSLOCTEXT("T66.Account", "RewardsTab", "REWARDS"), ActiveTab == EAccountTab::Rewards, &UT66AccountStatusScreen::HandleRewardsTabClicked)]
 			+ SHorizontalBox::Slot().FillWidth(1.f)[SNew(SSpacer)]
 		]
 		+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SScrollBox) + SScrollBox::Slot()[ActiveContent]]
@@ -1643,13 +1632,6 @@ FReply UT66AccountStatusScreen::HandleOverviewTabClicked()
 FReply UT66AccountStatusScreen::HandleHistoryTabClicked()
 {
 	ActiveTab = EAccountTab::History;
-	ForceRebuildSlate();
-	return FReply::Handled();
-}
-
-FReply UT66AccountStatusScreen::HandleRewardsTabClicked()
-{
-	ActiveTab = EAccountTab::Rewards;
 	ForceRebuildSlate();
 	return FReply::Handled();
 }

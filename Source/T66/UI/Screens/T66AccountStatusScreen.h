@@ -32,7 +32,6 @@ private:
 		Suspension,
 		Overview,
 		History,
-		Rewards,
 	};
 
 	enum class EHistoryCompletionFilter : uint8
@@ -68,7 +67,6 @@ private:
 	FReply HandleSuspensionTabClicked();
 	FReply HandleOverviewTabClicked();
 	FReply HandleHistoryTabClicked();
-	FReply HandleRewardsTabClicked();
 	FReply HandleOpenAppealClicked();
 	FReply HandleCancelAppealClicked();
 	FReply HandleSubmitAppealClicked();

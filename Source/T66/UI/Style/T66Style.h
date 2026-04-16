@@ -251,7 +251,7 @@ struct FT66DropdownParams
  * Note: This intentionally avoids requiring editor-created assets.
  * If we later want a custom font/icon set, we can load raw files from Content/Slate/ at runtime.
  */
-class FT66Style
+class T66_API FT66Style
 {
 public:
 	static void Initialize();

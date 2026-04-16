@@ -14,7 +14,7 @@ class UT66PlayerSettingsSubsystem;
 
 /**
  * Achievements Screen
- * Full-page achievement browser with separate Standard and Special sections.
+ * Full-page achievement browser with separate Achievements and Secret tabs.
  */
 UCLASS(Blueprintable)
 class T66_API UT66AchievementsScreen : public UT66ScreenBase
@@ -33,8 +33,15 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
+	enum class EAchievementTab : uint8
+	{
+		Achievements,
+		Secret,
+	};
+
 	TArray<FAchievementData> AllAchievements;
 	TSharedPtr<SVerticalBox> AchievementListBox;
+	EAchievementTab ActiveTab = EAchievementTab::Achievements;
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	UT66AchievementsSubsystem* GetAchievementsSubsystem() const;
@@ -50,6 +57,8 @@ private:
 
 	FReply HandleBackClicked();
 	FReply HandleClaimClicked(FName AchievementID);
+	FReply HandleAchievementsTabClicked();
+	FReply HandleSecretTabClicked();
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);

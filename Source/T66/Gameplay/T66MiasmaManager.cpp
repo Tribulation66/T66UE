@@ -3,15 +3,21 @@
 #include "Gameplay/T66MiasmaManager.h"
 #include "Gameplay/T66LavaShared.h"
 
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66GameplayLayout.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Data/T66DataTypes.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
+#include "Gameplay/T66CircusInteractable.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66GameMode.h"
+#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66LavaPatch.h"
 #include "Gameplay/T66MainMapTerrain.h"
 #include "Gameplay/T66TowerMapTerrain.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -23,6 +29,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66MiasmaManager, Log, All);
 
 namespace
 {
+	static constexpr bool T66EnableLegacyLavaPatches = false;
+
 	static bool T66ShouldUseMainBoardCoverage(const UWorld* World)
 	{
 		if (!World)
@@ -342,11 +350,271 @@ void AT66MiasmaManager::RebuildForCurrentStage()
 	TileCenters.Reset();
 	SpawnedTileCount = 0;
 	DamageTickAccumulator = 0.f;
+	ClearLegacyLavaPatches();
 
 	GenerateAnimationFrames();
 	EnsureVisualMaterial();
 	BuildGrid();
 	UpdateFromRunState();
+}
+
+int32 AT66MiasmaManager::SpawnLegacyStageLavaPatchesForCurrentStage()
+{
+	ClearLegacyLavaPatches();
+
+	if (!T66EnableLegacyLavaPatches)
+	{
+		return 0;
+	}
+
+	UWorld* World = GetWorld();
+	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+	if (!World || !GameMode || !RunState || !T66GI || !T66ShouldUseMainBoardCoverage(World) || GameMode->IsUsingTowerMainMapLayout() || T66GI->bStageCatchUpPending)
+	{
+		return 0;
+	}
+
+	const ET66Difficulty Difficulty = T66GI->SelectedDifficulty;
+	const int32 StageNum = RunState->GetCurrentStage();
+	int32 LavaPatchCount = 0;
+	switch (Difficulty)
+	{
+	case ET66Difficulty::Easy:       LavaPatchCount = 4;  break;
+	case ET66Difficulty::Medium:     LavaPatchCount = 5;  break;
+	case ET66Difficulty::Hard:       LavaPatchCount = 6;  break;
+	case ET66Difficulty::VeryHard:   LavaPatchCount = 7;  break;
+	case ET66Difficulty::Impossible: LavaPatchCount = 8;  break;
+	default:                         LavaPatchCount = 5;  break;
+	}
+
+	if (LavaPatchCount <= 0)
+	{
+		return 0;
+	}
+
+	const int32 RunSeed = (T66GI->RunSeed != 0) ? T66GI->RunSeed : FMath::Rand();
+	FRandomStream Rng(RunSeed + StageNum * 971 + 17);
+	UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
+
+	static constexpr float MainHalfExtent = 50000.f;
+	static constexpr float SpawnZ = 40.f;
+	static constexpr float SafeBubbleMargin = 350.f;
+	static constexpr float LavaExclusionRadius = 1800.f;
+
+	struct FUsedStageEffectLoc
+	{
+		FVector Loc = FVector::ZeroVector;
+		float ExclusionRadius = 0.f;
+	};
+
+	TArray<FUsedStageEffectLoc> UsedLocs;
+
+	auto IsInsideNoSpawnZone = [&](const FVector& Location) -> bool
+	{
+		if (T66GameplayLayout::IsInsideReservedTraversalZone2D(Location, 455.f))
+		{
+			return true;
+		}
+
+		static constexpr float ArenaHalf = 9091.f;
+		static constexpr float ArenaMargin = 682.f;
+		static constexpr float TutorialArenaHalf = 9091.f;
+		struct FArena2D { float X; float Y; float Half; };
+		static constexpr FArena2D Arenas[] = {
+			{ -22727.f, 34091.f, ArenaHalf },
+			{      0.f, 34091.f, ArenaHalf },
+			{      0.f, 61364.f, TutorialArenaHalf },
+		};
+
+		for (const FArena2D& Arena : Arenas)
+		{
+			if (FMath::Abs(Location.X - Arena.X) <= (Arena.Half + ArenaMargin)
+				&& FMath::Abs(Location.Y - Arena.Y) <= (Arena.Half + ArenaMargin))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	};
+
+	auto IsGoodLoc = [&](const FVector& Location, const float CandidateRadius) -> bool
+	{
+		if (IsInsideNoSpawnZone(Location))
+		{
+			return false;
+		}
+
+		for (const FUsedStageEffectLoc& Used : UsedLocs)
+		{
+			const float RequiredRadius = FMath::Max(CandidateRadius, Used.ExclusionRadius);
+			if (FVector::DistSquared2D(Location, Used.Loc) < (RequiredRadius * RequiredRadius))
+			{
+				return false;
+			}
+		}
+
+		if (Registry)
+		{
+			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			{
+				const AT66HouseNPCBase* NPC = WeakNPC.Get();
+				if (!NPC)
+				{
+					continue;
+				}
+
+				const float Radius = NPC->GetSafeZoneRadius() + SafeBubbleMargin + CandidateRadius * 0.35f;
+				if (FVector::DistSquared2D(Location, NPC->GetActorLocation()) < (Radius * Radius))
+				{
+					return false;
+				}
+			}
+
+			for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+			{
+				const AT66CircusInteractable* Circus = WeakCircus.Get();
+				if (!Circus)
+				{
+					continue;
+				}
+
+				const float Radius = Circus->GetSafeZoneRadius() + SafeBubbleMargin + CandidateRadius * 0.35f;
+				if (FVector::DistSquared2D(Location, Circus->GetActorLocation()) < (Radius * Radius))
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	};
+
+	auto NoteUsedLoc = [&](const FVector& Location, const float Radius)
+	{
+		UsedLocs.Add({ Location, Radius });
+	};
+
+	struct FStageLavaSpawnHit
+	{
+		FVector Location = FVector::ZeroVector;
+		bool bFound = false;
+	};
+
+	auto FindSpawnLoc = [&](const float CandidateRadius, const int32 MaxTries) -> FStageLavaSpawnHit
+	{
+		for (int32 TryIndex = 0; TryIndex < MaxTries; ++TryIndex)
+		{
+			const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+			const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+			FVector Location(X, Y, SpawnZ);
+
+			FHitResult Hit;
+			const FVector TraceStart = Location + FVector(0.f, 0.f, 2000.f);
+			const FVector TraceEnd = Location - FVector(0.f, 0.f, 6000.f);
+			if (!World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+			{
+				continue;
+			}
+
+			if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+			{
+				continue;
+			}
+
+			Location = Hit.ImpactPoint;
+			if (IsGoodLoc(Location, CandidateRadius))
+			{
+				return { Location, true };
+			}
+		}
+
+		return {};
+	};
+
+	auto GetLavaDamagePerTick = [&]() -> int32
+	{
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Easy:       return 6;
+		case ET66Difficulty::Medium:     return 8;
+		case ET66Difficulty::Hard:       return 10;
+		case ET66Difficulty::VeryHard:   return 12;
+		case ET66Difficulty::Impossible: return 14;
+		default:                         return 8;
+		}
+	};
+
+	auto ConfigureLavaPatch = [&](AT66LavaPatch* Lava)
+	{
+		if (!Lava)
+		{
+			return;
+		}
+
+		FVector2D Flow(Rng.FRandRange(-1.f, 1.f), Rng.FRandRange(-1.f, 1.f));
+		if (Flow.IsNearlyZero())
+		{
+			Flow = FVector2D(1.f, 0.f);
+		}
+		else
+		{
+			Flow.Normalize();
+		}
+
+		Lava->PatchSize = Rng.FRandRange(1400.f, 2400.f);
+		Lava->HoverHeight = 1.5f;
+		Lava->CollisionHeight = 160.f;
+		Lava->TextureResolution = 64;
+		Lava->AnimationFrames = 18;
+		Lava->AnimationFPS = 12.f;
+		Lava->WarpSpeed = Rng.FRandRange(0.90f, 1.25f);
+		Lava->WarpIntensity = Rng.FRandRange(0.10f, 0.15f);
+		Lava->WarpCloseness = Rng.FRandRange(1.80f, 2.40f);
+		Lava->FlowDir = Flow;
+		Lava->FlowSpeed = Rng.FRandRange(0.12f, 0.26f);
+		Lava->UVScale = Rng.FRandRange(3.60f, 5.40f);
+		Lava->CellDensity = Rng.FRandRange(5.20f, 7.40f);
+		Lava->EdgeContrast = Rng.FRandRange(6.40f, 8.80f);
+		Lava->Brightness = Rng.FRandRange(2.10f, 2.90f);
+		Lava->PatternOffset = FVector2D(Rng.FRandRange(-12.f, 12.f), Rng.FRandRange(-12.f, 12.f));
+		Lava->DamagePerTick = GetLavaDamagePerTick();
+		Lava->DamageIntervalSeconds = 0.45f;
+		Lava->bDamageHero = true;
+	};
+
+	int32 SpawnedLavaCount = 0;
+	for (int32 PatchIndex = 0; PatchIndex < LavaPatchCount; ++PatchIndex)
+	{
+		const FStageLavaSpawnHit SpawnHit = FindSpawnLoc(LavaExclusionRadius, 120);
+		if (!SpawnHit.bFound)
+		{
+			continue;
+		}
+
+		const FRotator LavaRotation(0.f, Rng.FRandRange(0.f, 360.f), 0.f);
+		AT66LavaPatch* Lava = World->SpawnActorDeferred<AT66LavaPatch>(
+			AT66LavaPatch::StaticClass(),
+			FTransform(LavaRotation, SpawnHit.Location),
+			this,
+			nullptr,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		if (!Lava)
+		{
+			continue;
+		}
+
+		ConfigureLavaPatch(Lava);
+		Lava->FinishSpawning(FTransform(LavaRotation, SpawnHit.Location));
+		LegacyLavaPatches.Add(Lava);
+		NoteUsedLoc(SpawnHit.Location, LavaExclusionRadius);
+		++SpawnedLavaCount;
+	}
+
+	return SpawnedLavaCount;
 }
 
 void AT66MiasmaManager::EnsureSpawnedCount(int32 DesiredCount)
@@ -582,4 +850,19 @@ void AT66MiasmaManager::ClearAllMiasma()
 	}
 	SpawnedTileCount = 0;
 	DamageTickAccumulator = 0.f;
+	ClearLegacyLavaPatches();
+}
+
+void AT66MiasmaManager::ClearLegacyLavaPatches()
+{
+	TArray<TWeakObjectPtr<AT66LavaPatch>> LavaPatchesToDestroy = LegacyLavaPatches;
+	LegacyLavaPatches.Reset();
+
+	for (const TWeakObjectPtr<AT66LavaPatch>& WeakLava : LavaPatchesToDestroy)
+	{
+		if (AT66LavaPatch* LavaPatch = WeakLava.Get())
+		{
+			LavaPatch->Destroy();
+		}
+	}
 }

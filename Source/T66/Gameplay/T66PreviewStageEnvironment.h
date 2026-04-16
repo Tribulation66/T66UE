@@ -9,18 +9,22 @@ class AActor;
 class USceneComponent;
 class UStaticMeshComponent;
 
+enum class ET66PreviewStageMode : uint8
+{
+	Selection,
+	RunSummary
+};
+
 namespace T66PreviewStageEnvironment
 {
-	void ApplyPreviewGroundMaterial(UStaticMeshComponent* GroundComponent, ET66Difficulty Difficulty);
-
-	void CreateEasyFarmPreviewProps(
+	void EnsurePreviewEnvironmentBuilt(
 		AActor* Owner,
-		USceneComponent* RootComponent,
-		TArray<TObjectPtr<UStaticMeshComponent>>& OutComponents);
+		USceneComponent* RootComponent);
 
-	void SetPreviewPropsVisibility(
-		const TArray<TObjectPtr<UStaticMeshComponent>>& Props,
+	void ApplyPreviewEnvironment(
+		AActor* Owner,
+		UStaticMeshComponent* GroundComponent,
+		ET66Difficulty Difficulty,
+		ET66PreviewStageMode PreviewStageMode,
 		bool bVisible);
-
-	bool ShouldShowEasyProps(ET66Difficulty Difficulty);
 }

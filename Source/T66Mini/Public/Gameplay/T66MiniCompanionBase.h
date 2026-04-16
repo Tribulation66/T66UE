@@ -23,6 +23,7 @@ public:
 	AT66MiniCompanionBase();
 
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void InitializeCompanion(const FT66MiniCompanionDefinition& InDefinition, class AT66MiniPlayerPawn* InFollowTarget);
 
@@ -37,6 +38,9 @@ protected:
 
 private:
 	void RefreshVisuals();
+
+	UFUNCTION()
+	void OnRep_CompanionVisualState();
 
 	UPROPERTY(VisibleAnywhere, Category = "Mini")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -60,8 +64,13 @@ private:
 	TObjectPtr<UTexture2D> StaticSpriteTexture;
 
 	TWeakObjectPtr<class AT66MiniPlayerPawn> FollowTarget;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CompanionVisualState)
 	FName CompanionID = NAME_None;
+
 	FString CompanionDisplayName;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CompanionVisualState)
 	FString CompanionVisualID;
 	FLinearColor PlaceholderColor = FLinearColor(0.48f, 0.38f, 0.22f, 1.0f);
 	float BaseHealingPerSecond = 5.0f;

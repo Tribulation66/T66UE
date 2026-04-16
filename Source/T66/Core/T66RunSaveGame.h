@@ -395,6 +395,9 @@ struct T66_API FT66SavedRunSnapshot
 	int32 PowerCrystalsEarnedThisRun = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float CompanionHealingDoneThisRun = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	bool bBossActive = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")

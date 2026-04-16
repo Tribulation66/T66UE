@@ -4,6 +4,7 @@
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
+#include "Gameplay/T66PreviewStageEnvironment.h"
 #include "Gameplay/T66WorldVisualSetup.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Core/T66GameInstance.h"
@@ -82,17 +83,20 @@ void AT66FrontendGameMode::BeginPlay()
 		{
 			bHasPreviewStage = true;
 			It->SetActorLocation(PreviewOrigin);
+			It->SetPreviewStageMode(ET66PreviewStageMode::Selection);
 			It->ResetFramingCache();
 			break;
 		}
 		if (!bHasPreviewStage)
 		{
-			World->SpawnActor<AT66HeroPreviewStage>(
+			if (AT66HeroPreviewStage* HeroStage = World->SpawnActor<AT66HeroPreviewStage>(
 				AT66HeroPreviewStage::StaticClass(),
 				PreviewOrigin,
 				FRotator::ZeroRotator,
-				SpawnParams
-			);
+				SpawnParams))
+			{
+				HeroStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+			}
 			UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Spawned HeroPreviewStage for in-world preview"));
 		}
 
@@ -101,6 +105,7 @@ void AT66FrontendGameMode::BeginPlay()
 		{
 			bHasCompanionPreview = true;
 			It->SetActorLocation(PreviewOrigin);
+			It->SetPreviewStageMode(ET66PreviewStageMode::Selection);
 			It->ResetFramingCache();
 			break;
 		}
@@ -113,7 +118,11 @@ void AT66FrontendGameMode::BeginPlay()
 				SpawnParams
 			);
 			// Start hidden; the hero preview is shown first.
-			if (CompStage) CompStage->SetStageVisible(false);
+			if (CompStage)
+			{
+				CompStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+				CompStage->SetStageVisible(false);
+			}
 			UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Spawned CompanionPreviewStage (hidden) for in-world preview"));
 		}
 
@@ -186,8 +195,18 @@ void AT66FrontendGameMode::PositionCameraForHeroPreview()
 	if (!World) return;
 
 	// Show hero, hide companion (they share the same platform location).
-	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It) { (*It)->SetStageVisible(true); break; }
-	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It) { (*It)->SetStageVisible(false); break; }
+	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+	{
+		(*It)->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		(*It)->SetStageVisible(true);
+		break;
+	}
+	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+	{
+		(*It)->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		(*It)->SetStageVisible(false);
+		break;
+	}
 
 	// Position camera using the hero stage's ideal transform.
 	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
@@ -213,8 +232,18 @@ void AT66FrontendGameMode::PositionCameraForCompanionPreview()
 	if (!World) return;
 
 	// Show companion, hide hero (they share the same platform location).
-	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It) { (*It)->SetStageVisible(true); break; }
-	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It) { (*It)->SetStageVisible(false); break; }
+	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+	{
+		(*It)->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		(*It)->SetStageVisible(true);
+		break;
+	}
+	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+	{
+		(*It)->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		(*It)->SetStageVisible(false);
+		break;
+	}
 
 	// Position camera using the companion stage's ideal transform.
 	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)

@@ -9,6 +9,13 @@
 class AT66EnemyBase;
 class UT66RunStateSubsystem;
 
+UENUM(BlueprintType)
+enum class ET66EnemySpawnChannel : uint8
+{
+	InitialPopulation UMETA(DisplayName = "Initial Population"),
+	RuntimeTrickle UMETA(DisplayName = "Runtime Trickle"),
+};
+
 /** One queued spawn for staggered spawning (1-2 at a time). */
 USTRUCT(BlueprintType)
 struct FPendingEnemySpawn
@@ -22,8 +29,10 @@ struct FPendingEnemySpawn
 	bool bSpawnFromWall = false;
 	float DifficultyScalar = 1.f;
 	float FinaleScalar = 1.f;
+	float EnemyProgressionScalar = 1.f;
 	int32 StageNum = 1;
 	FVector WallNormal = FVector::ZeroVector;
+	ET66EnemySpawnChannel Channel = ET66EnemySpawnChannel::RuntimeTrickle;
 };
 
 UCLASS(Blueprintable)
@@ -111,12 +120,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Director")
 	void SetSpawningPaused(bool bPaused);
 
+	UFUNCTION(BlueprintCallable, Category = "Director")
+	void RefreshSpawningFromProgression();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	void SpawnInitialTowerPopulation();
-	void SpawnWave();
+	void SpawnInitialPopulationForStage();
+	void SpawnRuntimeTrickleWave();
 
 	/** Spawns 1-2 from PendingSpawns, then re-arms timer if more remain. */
 	void SpawnNextStaggeredBatch();
@@ -136,4 +148,5 @@ protected:
 	// Cache base spawn counts so difficulty scaling doesn't compound.
 	int32 BaseEnemiesPerWave = 0;
 	int32 BaseMaxAliveEnemies = 0;
+	float BaseSpawnIntervalSeconds = 0.f;
 };

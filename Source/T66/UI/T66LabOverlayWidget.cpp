@@ -168,7 +168,15 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	TArray<FName> EnemyIDs = GetUnlockedEnemyIDs();
 
 	static const FName FountainID(TEXT("Fountain"));
-	static const TArray<FName> MobIDs = { FName(TEXT("RegularEnemy")), FName(TEXT("GoblinThief")) };
+	static const TArray<FName> MobIDs =
+	{
+		FName(TEXT("Cow")),
+		FName(TEXT("Pig")),
+		FName(TEXT("Goat")),
+		FName(TEXT("Roost")),
+		FName(TEXT("GoblinThief")),
+		FName(TEXT("UniqueEnemy"))
+	};
 	TArray<FName> NPCList;
 	NPCList.Add(FountainID);
 	TArray<FName> MobsList;

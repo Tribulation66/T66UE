@@ -1,5 +1,5 @@
----,EnemyID,DisplayName,VisualID,BehaviorProfile,BaseHealth,BaseSpeed,BaseTouchDamage,BaseMaterials,BaseExperience,SpawnWeight
-Enemy_Roost,Roost,Roost,Roost,RoostPress,24,340,8,4,5.0,1.25
-Enemy_Cow,Cow,Cow,Cow,CowBruiser,46,200,12,6,6.0,0.85
-Enemy_Goat,Goat,Goat,Goat,GoatCharger,34,280,10,5,5.5,1.0
-Enemy_Pig,Pig,Pig,Pig,PigEnrage,52,220,13,7,6.5,0.8
+---,EnemyID,DisplayName,VisualID,BehaviorProfile,Family,BaseHealth,BaseSpeed,BaseTouchDamage,BaseMaterials,BaseExperience,SpawnWeight,FireIntervalSeconds,ProjectileSpeed,ProjectileDamage,PreferredRange
+Enemy_Roost,Roost,Roost,Roost,Sharpshooter,Ranged,24,320,7,4,5.0,1.25,1.65,960,7,920
+Enemy_Cow,Cow,Cow,Cow,CowBruiser,Melee,46,200,12,6,6.0,0.85,2.4,900,10,260
+Enemy_Goat,Goat,Goat,Goat,GoatCharger,Rushing,34,280,10,5,5.5,1.0,2.2,980,9,280
+Enemy_Pig,Pig,Pig,Pig,PigEnrage,Melee,52,220,13,7,6.5,0.8,2.3,900,11,260

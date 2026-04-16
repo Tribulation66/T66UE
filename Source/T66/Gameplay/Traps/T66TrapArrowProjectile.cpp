@@ -2,10 +2,11 @@
 
 #include "Gameplay/Traps/T66TrapArrowProjectile.h"
 
+#include "Gameplay/Traps/T66TrapBase.h"
+#include "Gameplay/Traps/T66TrapDamageUtils.h"
+
 #include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66RunStateSubsystem.h"
 #include "Gameplay/T66ArthurSwordVisuals.h"
-#include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -29,6 +30,14 @@ namespace
 			CachedFallbackSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
 		}
 		return CachedSystem ? CachedSystem.Get() : CachedFallbackSystem.Get();
+	}
+}
+
+void AT66TrapArrowProjectile::UpdateVisuals()
+{
+	if (VisualMesh)
+	{
+		FT66VisualUtil::ApplyT66Color(VisualMesh, this, ProjectileTint);
 	}
 }
 
@@ -65,12 +74,21 @@ AT66TrapArrowProjectile::AT66TrapArrowProjectile()
 	ProjectileMovement->MaxSpeed = ProjectileSpeed;
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->ProjectileGravityScale = 0.f;
+
+	UpdateVisuals();
 }
 
-void AT66TrapArrowProjectile::InitializeProjectile(const FVector& Direction, int32 InDamageHP, float InProjectileSpeed)
+void AT66TrapArrowProjectile::InitializeProjectile(
+	const FVector& Direction,
+	const int32 InDamageHP,
+	const float InProjectileSpeed,
+	const FLinearColor& InProjectileTint,
+	const FLinearColor& InTrailColor)
 {
 	DamageHP = InDamageHP;
 	ProjectileSpeed = InProjectileSpeed;
+	ProjectileTint = InProjectileTint;
+	TrailColor = InTrailColor;
 
 	if (ProjectileMovement)
 	{
@@ -80,6 +98,7 @@ void AT66TrapArrowProjectile::InitializeProjectile(const FVector& Direction, int
 	}
 
 	SetActorRotation(Direction.Rotation());
+	UpdateVisuals();
 }
 
 void AT66TrapArrowProjectile::BeginPlay()
@@ -92,6 +111,7 @@ void AT66TrapArrowProjectile::BeginPlay()
 	}
 
 	CachedPixelVFX = LoadTrapPixelVFX();
+	UpdateVisuals();
 }
 
 void AT66TrapArrowProjectile::Tick(float DeltaSeconds)
@@ -114,7 +134,7 @@ void AT66TrapArrowProjectile::Tick(float DeltaSeconds)
 	{
 		PixelVFX->SpawnPixelAtLocation(
 			GetActorLocation(),
-			FLinearColor(1.f, 0.78f, 0.25f, 0.95f),
+			TrailColor,
 			FVector2D(3.2f, 3.2f),
 			ET66PixelVFXPriority::Low,
 			FRotator::ZeroRotator,
@@ -136,25 +156,13 @@ void AT66TrapArrowProjectile::OnSphereOverlap(
 		return;
 	}
 
-	AT66HeroBase* Hero = Cast<AT66HeroBase>(OtherActor);
-	if (!Hero)
-	{
-		return;
-	}
-
-	if (Hero->IsInSafeZone())
+	AT66TrapBase* OwningTrap = Cast<AT66TrapBase>(GetOwner());
+	if (!OwningTrap)
 	{
 		Destroy();
 		return;
 	}
 
-	if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
-	{
-		if (UT66RunStateSubsystem* RunState = GameInstance->GetSubsystem<UT66RunStateSubsystem>())
-		{
-			RunState->ApplyDamage(DamageHP, GetOwner() ? GetOwner() : this);
-		}
-	}
-
+	FT66TrapDamageUtils::ApplyTrapDamageToActor(OwningTrap, OtherActor, DamageHP);
 	Destroy();
 }

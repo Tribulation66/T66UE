@@ -2,6 +2,7 @@
 
 #include "UI/T66MiniBattleHUD.h"
 
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "CanvasItem.h"
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniRunStateSubsystem.h"
@@ -16,6 +17,7 @@
 #include "Gameplay/T66MiniGameState.h"
 #include "Gameplay/T66MiniPlayerController.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
+#include "GameFramework/InputSettings.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Save/T66MiniRunSaveGame.h"
 
@@ -152,6 +154,116 @@ namespace
 		T66MiniDrawBox(Canvas, X - 2.f, Y - 2.f, 24.f, 18.f, FLinearColor(0.98f, 0.78f, 0.24f, 0.96f));
 		T66MiniDrawText(Canvas, Font, FString::Printf(TEXT("x%d"), Count), X + 10.f, Y - 1.f, FLinearColor(0.08f, 0.08f, 0.10f), true);
 	}
+
+	void T66MiniDrawScaledText(
+		UCanvas* Canvas,
+		const UFont* Font,
+		const FString& Text,
+		const float X,
+		const float Y,
+		const FLinearColor& Color,
+		const float Scale = 1.f,
+		const bool bCenter = false)
+	{
+		if (!Canvas || !Font)
+		{
+			return;
+		}
+
+		FCanvasTextItem TextItem(FVector2D(X, Y), FText::FromString(Text), Font, Color);
+		TextItem.Scale = FVector2D(Scale, Scale);
+		TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.86f));
+		if (bCenter)
+		{
+			TextItem.bCentreX = true;
+		}
+		Canvas->DrawItem(TextItem);
+	}
+
+	void T66MiniDrawPanel(
+		UCanvas* Canvas,
+		const float X,
+		const float Y,
+		const float W,
+		const float H,
+		const FLinearColor& AccentColor,
+		const FLinearColor& FillColor = FLinearColor(0.03f, 0.04f, 0.06f, 0.90f))
+	{
+		T66MiniDrawBox(Canvas, X + 4.f, Y + 6.f, W, H, FLinearColor(0.f, 0.f, 0.f, 0.18f));
+		T66MiniDrawBox(Canvas, X, Y, W, H, FLinearColor(0.00f, 0.00f, 0.00f, 0.34f));
+		T66MiniDrawBox(Canvas, X + 1.f, Y + 1.f, W - 2.f, H - 2.f, FillColor);
+		T66MiniDrawBox(Canvas, X + 1.f, Y + 1.f, W - 2.f, 4.f, AccentColor);
+		T66MiniDrawBox(Canvas, X + 1.f, Y + 18.f, W - 2.f, 1.f, FLinearColor(1.f, 1.f, 1.f, 0.05f));
+	}
+
+	void T66MiniDrawInsetPanel(
+		UCanvas* Canvas,
+		const float X,
+		const float Y,
+		const float W,
+		const float H,
+		const FLinearColor& Tint)
+	{
+		T66MiniDrawBox(Canvas, X, Y, W, H, FLinearColor(0.02f, 0.03f, 0.04f, 0.84f));
+		T66MiniDrawBox(Canvas, X + 1.f, Y + 1.f, W - 2.f, H - 2.f, Tint);
+	}
+
+	FString T66MiniFormatSeconds(const float Seconds)
+	{
+		const int32 TotalSeconds = FMath::Max(0, FMath::CeilToInt(Seconds));
+		return FString::Printf(TEXT("%d:%02d"), TotalSeconds / 60, TotalSeconds % 60);
+	}
+
+	FString T66MiniReadableId(const FName Id, const FString& Prefix = FString())
+	{
+		FString Label = Id.ToString();
+		if (!Prefix.IsEmpty())
+		{
+			Label.RemoveFromStart(Prefix);
+		}
+		Label.ReplaceInline(TEXT("_"), TEXT(" "));
+		return Label;
+	}
+
+	FKey T66MiniFindActionKey(const FName ActionName, const FKey& DefaultKey)
+	{
+		if (const UInputSettings* Settings = UInputSettings::GetInputSettings())
+		{
+			for (const FInputActionKeyMapping& Mapping : Settings->GetActionMappings())
+			{
+				if (Mapping.ActionName == ActionName && Mapping.Key.IsValid() && !Mapping.Key.IsGamepadKey() && !Mapping.Key.IsTouch())
+				{
+					return Mapping.Key;
+				}
+			}
+		}
+
+		return DefaultKey;
+	}
+
+	FString T66MiniCompactKeyLabel(const FKey& Key)
+	{
+		if (Key == EKeys::LeftMouseButton)
+		{
+			return TEXT("LMB");
+		}
+
+		if (Key == EKeys::RightMouseButton)
+		{
+			return TEXT("RMB");
+		}
+
+		if (Key == EKeys::Escape)
+		{
+			return TEXT("ESC");
+		}
+
+		FString Label = Key.IsValid() ? Key.GetDisplayName().ToString().ToUpper() : FString(TEXT("-"));
+		Label.ReplaceInline(TEXT("LEFT MOUSE BUTTON"), TEXT("LMB"));
+		Label.ReplaceInline(TEXT("RIGHT MOUSE BUTTON"), TEXT("RMB"));
+		Label.ReplaceInline(TEXT("SPACE BAR"), TEXT("SPACE"));
+		return Label;
+	}
 }
 
 void AT66MiniBattleHUD::DrawHUD()
@@ -164,6 +276,7 @@ void AT66MiniBattleHUD::DrawHUD()
 	}
 
 	UGameInstance* GameInstance = GetGameInstance();
+	const UT66PlayerSettingsSubsystem* PlayerSettings = GameInstance ? GameInstance->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
 	const UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	const UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
@@ -181,111 +294,219 @@ void AT66MiniBattleHUD::DrawHUD()
 
 	const float ScreenW = Canvas->SizeX;
 	const float ScreenH = Canvas->SizeY;
-	const float LeftX = 20.f;
+	const float SafeMargin = 18.f;
 	const float TopY = 18.f;
-	const float CardW = 330.f;
-	const float CardH = 156.f;
-	const float TimerCardW = 240.f;
-	const float TimerCardH = 90.f;
-	const float TimerX = (ScreenW * 0.5f) - (TimerCardW * 0.5f);
-	const float RightCardW = 300.f;
-	const float RightCardH = 146.f;
-	const float RightX = ScreenW - RightCardW - 22.f;
-	const float RightY = 18.f;
+	UTexture2D* UltIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("Ult_Generic")) : nullptr;
+	UTexture2D* PassiveIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("Passive_Generic")) : nullptr;
+	UTexture2D* QuickReviveIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("QuickRevive")) : nullptr;
+	UTexture2D* MouseLeftIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("MouseLeft")) : nullptr;
+	UTexture2D* MouseRightIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("MouseRight")) : nullptr;
+	UTexture2D* InteractHandIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("Interact_Hand")) : nullptr;
+	const FT66MiniDifficultyDefinition* DifficultyDefinition = DataSubsystem ? DataSubsystem->FindDifficulty(MiniGameState->DifficultyID) : nullptr;
+	const FT66MiniHeroDefinition* HeroDefinition = DataSubsystem ? DataSubsystem->FindHero(PlayerPawn->GetHeroID()) : nullptr;
+	const FT66MiniCompanionDefinition* CompanionDefinition = DataSubsystem ? DataSubsystem->FindCompanion(PlayerPawn->GetSelectedCompanionID()) : nullptr;
+	const FT66MiniWaveDefinition* WaveDefinition = DataSubsystem ? DataSubsystem->FindWave(MiniGameState->DifficultyID, MiniGameState->WaveIndex) : nullptr;
+	const FString HeroName = PlayerPawn->GetHeroDisplayName().IsEmpty()
+		? T66MiniReadableId(MiniGameState->HeroID)
+		: PlayerPawn->GetHeroDisplayName();
+	const FString DifficultyName = DifficultyDefinition && !DifficultyDefinition->DisplayName.IsEmpty()
+		? DifficultyDefinition->DisplayName
+		: T66MiniReadableId(MiniGameState->DifficultyID);
+	const FString CompanionName = CompanionDefinition && !CompanionDefinition->DisplayName.IsEmpty()
+		? CompanionDefinition->DisplayName
+		: T66MiniReadableId(MiniGameState->CompanionID);
+	const float CompanionHealing = (SaveSubsystem && CompanionDefinition)
+		? SaveSubsystem->GetCompanionHealingPerSecond(CompanionDefinition->CompanionID, DataSubsystem)
+		: 0.0f;
+	const int32 CompanionUnity = (SaveSubsystem && CompanionDefinition)
+		? SaveSubsystem->GetCompanionUnityStagesCleared(CompanionDefinition->CompanionID, DataSubsystem)
+		: 0;
+	const float WaveDurationSeconds = WaveDefinition ? WaveDefinition->DurationSeconds : FMath::Max(60.f, MiniGameState->WaveSecondsRemaining);
+	const float WaveRemainingPct = WaveDurationSeconds > 0.f
+		? FMath::Clamp(MiniGameState->WaveSecondsRemaining / WaveDurationSeconds, 0.f, 1.f)
+		: 0.f;
+	const float XpPct = PlayerPawn->GetExperienceToNextLevel() > 0.f
+		? FMath::Clamp(PlayerPawn->GetExperience() / PlayerPawn->GetExperienceToNextLevel(), 0.f, 1.f)
+		: 0.f;
+	const float UltPct = PlayerPawn->GetUltimateCooldownDuration() > 0.f
+		? 1.f - (PlayerPawn->GetUltimateCooldownRemaining() / PlayerPawn->GetUltimateCooldownDuration())
+		: 1.f;
+	const FLinearColor DifficultyAccent = DifficultyDefinition ? DifficultyDefinition->AccentColor : FLinearColor(0.36f, 0.50f, 0.76f, 1.f);
+	const FLinearColor GoldAccent(0.98f, 0.84f, 0.30f, 1.f);
+	const FLinearColor TealAccent(0.46f, 0.86f, 0.94f, 1.f);
+	const FLinearColor GreenAccent(0.62f, 0.98f, 0.76f, 1.f);
+	const FLinearColor DangerAccent(1.00f, 0.42f, 0.34f, 1.f);
+	const FLinearColor MutedText(0.72f, 0.78f, 0.84f, 1.f);
+	const FLinearColor PrimaryText(0.96f, 0.97f, 1.00f, 1.f);
+	const FLinearColor PanelFill(0.03f, 0.04f, 0.06f, 0.82f);
+	const FLinearColor LowTimeColor = MiniGameState->WaveSecondsRemaining <= 12.f ? DangerAccent : GoldAccent;
+	const FKey PauseKey = T66MiniFindActionKey(FName(TEXT("MiniPause")), EKeys::Escape);
+	const FKey InteractKey = T66MiniFindActionKey(FName(TEXT("MiniInteract")), EKeys::LeftMouseButton);
+	const FKey UltimateKey = T66MiniFindActionKey(FName(TEXT("MiniUltimate")), EKeys::RightMouseButton);
 
-	T66MiniDrawBox(Canvas, LeftX, TopY, CardW, CardH, FLinearColor(0.04f, 0.05f, 0.07f, 0.86f));
-	if (DataSubsystem)
+	const auto DrawChip = [&](const float X, const float Y, const float W, const FString& Label, const FString& Value, const FLinearColor& Tint)
 	{
-		const FString HeroName = PlayerPawn->GetHeroDisplayName().IsEmpty() ? MiniGameState->HeroID.ToString() : PlayerPawn->GetHeroDisplayName();
-		if (const FT66MiniHeroDefinition* HeroDefinition = DataSubsystem->FindHero(PlayerPawn->GetHeroID()))
+		T66MiniDrawInsetPanel(Canvas, X, Y, W, 30.f, FLinearColor(Tint.R * 0.16f, Tint.G * 0.16f, Tint.B * 0.16f, 0.88f));
+		T66MiniDrawScaledText(Canvas, BodyFont, Label.ToUpper(), X + 8.f, Y + 4.f, MutedText, 0.78f);
+		T66MiniDrawScaledText(Canvas, BodyFont, Value, X + 8.f, Y + 15.f, Tint, 0.90f);
+	};
+
+	const auto DrawStatRow = [&](const float X, const float Y, const FString& LeftLabel, const FString& LeftValue, const FString& RightLabel, const FString& RightValue)
+	{
+		T66MiniDrawScaledText(Canvas, BodyFont, LeftLabel, X, Y, MutedText, 0.78f);
+		T66MiniDrawScaledText(Canvas, BodyFont, LeftValue, X + 4.f, Y + 12.f, PrimaryText, 0.94f);
+		T66MiniDrawScaledText(Canvas, BodyFont, RightLabel, X + 128.f, Y, MutedText, 0.78f);
+		T66MiniDrawScaledText(Canvas, BodyFont, RightValue, X + 132.f, Y + 12.f, PrimaryText, 0.94f);
+	};
+
+	const float HeroPanelX = SafeMargin;
+	const float HeroPanelY = TopY;
+	const float HeroPanelW = 330.f;
+	const float HeroPanelH = 154.f;
+	T66MiniDrawPanel(Canvas, HeroPanelX, HeroPanelY, HeroPanelW, HeroPanelH, DifficultyAccent, PanelFill);
+	T66MiniDrawInsetPanel(Canvas, HeroPanelX + 14.f, HeroPanelY + 16.f, 78.f, 78.f, FLinearColor(0.10f, 0.11f, 0.15f, 0.92f));
+	if (HeroDefinition)
+	{
+		T66MiniDrawTexture(Canvas, T66MiniLoadHudTexture(HeroDefinition->PortraitPath), HeroPanelX + 17.f, HeroPanelY + 19.f, 72.f, 72.f);
+	}
+	else
+	{
+		T66MiniDrawScaledText(Canvas, TitleFont, HeroName.Left(1).ToUpper(), HeroPanelX + 53.f, HeroPanelY + 28.f, PrimaryText, 1.05f, true);
+	}
+	T66MiniDrawScaledText(Canvas, TitleFont, HeroName.ToUpper(), HeroPanelX + 108.f, HeroPanelY + 14.f, PrimaryText, 0.92f);
+	T66MiniDrawScaledText(Canvas, BodyFont, DifficultyName.ToUpper(), HeroPanelX + 108.f, HeroPanelY + 44.f, DifficultyAccent, 0.90f);
+	T66MiniDrawInsetPanel(Canvas, HeroPanelX + 108.f, HeroPanelY + 66.f, 100.f, 22.f, FLinearColor(DifficultyAccent.R * 0.18f, DifficultyAccent.G * 0.18f, DifficultyAccent.B * 0.18f, 0.90f));
+	T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("WAVE %d / 5"), MiniGameState->WaveIndex), HeroPanelX + 118.f, HeroPanelY + 71.f, GoldAccent, 0.88f);
+	T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("HP %.0f / %.0f"), PlayerPawn->GetCurrentHealth(), PlayerPawn->GetMaxHealth()), HeroPanelX + 14.f, HeroPanelY + 100.f, PrimaryText, 0.92f);
+	T66MiniDrawScaledText(
+		Canvas,
+		BodyFont,
+		FString::Printf(TEXT("%s   HPS %.1f   UNITY %d"), *CompanionName.ToUpper(), CompanionHealing, CompanionUnity),
+		HeroPanelX + 14.f,
+		HeroPanelY + 118.f,
+		MutedText,
+		0.84f);
+	if (PlayerPawn->HasQuickReviveReady())
+	{
+		T66MiniDrawInsetPanel(Canvas, HeroPanelX + HeroPanelW - 118.f, HeroPanelY + 114.f, 104.f, 24.f, FLinearColor(0.10f, 0.18f, 0.12f, 0.92f));
+		if (QuickReviveIcon)
 		{
-			T66MiniDrawTexture(Canvas, T66MiniLoadHudTexture(HeroDefinition->PortraitPath), LeftX + 16.f, TopY + 16.f, 72.f, 72.f);
+			T66MiniDrawTexture(Canvas, QuickReviveIcon, HeroPanelX + HeroPanelW - 110.f, HeroPanelY + 118.f, 16.f, 16.f);
 		}
-		T66MiniDrawText(Canvas, TitleFont, HeroName.ToUpper(), LeftX + 100.f, TopY + 14.f, FLinearColor::White);
+		T66MiniDrawScaledText(Canvas, BodyFont, TEXT("REVIVE READY"), HeroPanelX + HeroPanelW - 88.f, HeroPanelY + 119.f, GreenAccent, 0.82f);
 	}
-
-	T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("Difficulty: %s"), *MiniGameState->DifficultyID.ToString()), LeftX + 100.f, TopY + 50.f, FLinearColor(0.84f, 0.88f, 0.94f));
-	T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("Wave %d / 5"), MiniGameState->WaveIndex), LeftX + 100.f, TopY + 72.f, FLinearColor(0.96f, 0.86f, 0.42f));
-	if (DataSubsystem)
-	{
-		const FT66MiniCompanionDefinition* CompanionDefinition = DataSubsystem->FindCompanion(MiniGameState->CompanionID);
-		const float CompanionHealing = (SaveSubsystem && CompanionDefinition)
-			? SaveSubsystem->GetCompanionHealingPerSecond(CompanionDefinition->CompanionID, DataSubsystem)
-			: 0.0f;
-		const int32 CompanionUnity = (SaveSubsystem && CompanionDefinition)
-			? SaveSubsystem->GetCompanionUnityStagesCleared(CompanionDefinition->CompanionID, DataSubsystem)
-			: 0;
-		T66MiniDrawText(
-			Canvas,
-			BodyFont,
-			FString::Printf(
-				TEXT("Companion: %s  HPS %.1f  Unity %d"),
-				CompanionDefinition ? *CompanionDefinition->DisplayName : *MiniGameState->CompanionID.ToString(),
-				CompanionHealing,
-				CompanionUnity),
-			LeftX + 16.f,
-			TopY + 110.f,
-			FLinearColor(0.78f, 0.92f, 0.80f, 1.0f));
-	}
-
-	T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("HP %.0f / %.0f"), PlayerPawn->GetCurrentHealth(), PlayerPawn->GetMaxHealth()), LeftX + 16.f, TopY + 88.f, FLinearColor::White);
 	const int32 MaxHearts = PlayerPawn->GetMaxHearts();
-	const float HeartSize = 22.f;
-	const float HeartSpacing = 6.f;
-	float HeartX = LeftX + 16.f;
-	const float HeartY = TopY + 128.f;
+	const float HeartSize = 20.f;
+	const float HeartSpacing = 5.f;
+	float HeartX = HeroPanelX + 14.f;
+	const float HeartY = HeroPanelY + 132.f;
 	for (int32 HeartIndex = 0; HeartIndex < MaxHearts && HeartIndex < 10; ++HeartIndex)
 	{
 		T66MiniDrawHeart(Canvas, HeartX, HeartY, HeartSize, PlayerPawn->GetHeartFill(HeartIndex));
 		HeartX += HeartSize + HeartSpacing;
 	}
 
-	T66MiniDrawBox(Canvas, TimerX, TopY, TimerCardW, TimerCardH, FLinearColor(0.04f, 0.05f, 0.07f, 0.86f));
-	T66MiniDrawText(Canvas, BodyFont, TEXT("WAVE TIMER"), ScreenW * 0.5f, TopY + 14.f, FLinearColor(0.82f, 0.86f, 0.92f), true);
-	T66MiniDrawText(Canvas, TitleFont, FString::Printf(TEXT("%.0f"), FMath::CeilToFloat(MiniGameState->WaveSecondsRemaining)), ScreenW * 0.5f, TopY + 34.f, FLinearColor::White, true);
-	T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("Materials %d   Gold %d   LV %d"), PlayerPawn->GetMaterials(), PlayerPawn->GetGold(), PlayerPawn->GetHeroLevel()), ScreenW * 0.5f, TopY + 66.f, FLinearColor(0.96f, 0.86f, 0.42f), true);
+	const float TimerPanelW = 252.f;
+	const float TimerPanelH = 112.f;
+	const float TimerPanelX = (ScreenW * 0.5f) - (TimerPanelW * 0.5f);
+	T66MiniDrawPanel(Canvas, TimerPanelX, TopY, TimerPanelW, TimerPanelH, LowTimeColor, PanelFill);
+	T66MiniDrawScaledText(Canvas, BodyFont, TEXT("STAGE TIMER"), ScreenW * 0.5f, TopY + 12.f, MutedText, 0.88f, true);
+	T66MiniDrawScaledText(Canvas, TitleFont, T66MiniFormatSeconds(MiniGameState->WaveSecondsRemaining), ScreenW * 0.5f, TopY + 32.f, PrimaryText, 1.18f, true);
+	T66MiniDrawBar(Canvas, TimerPanelX + 16.f, TopY + 62.f, TimerPanelW - 32.f, 12.f, WaveRemainingPct, LowTimeColor);
+	DrawChip(TimerPanelX + 16.f, TopY + 80.f, 66.f, TEXT("Wave"), FString::Printf(TEXT("%d/5"), MiniGameState->WaveIndex), PrimaryText);
+	DrawChip(TimerPanelX + 92.f, TopY + 80.f, 70.f, TEXT("Gold"), FString::FromInt(PlayerPawn->GetGold()), GoldAccent);
+	DrawChip(TimerPanelX + 172.f, TopY + 80.f, 64.f, TEXT("Mats"), FString::FromInt(PlayerPawn->GetMaterials()), TealAccent);
 
-	T66MiniDrawBox(Canvas, RightX, RightY, RightCardW, RightCardH, FLinearColor(0.04f, 0.05f, 0.07f, 0.86f));
-	T66MiniDrawText(Canvas, TitleFont, TEXT("COMBAT"), RightX + 16.f, RightY + 12.f, FLinearColor::White);
-	T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("DMG %.1f   ATK %.1f"), PlayerPawn->GetDamageStat(), PlayerPawn->GetAttackSpeedStat()), RightX + 16.f, RightY + 50.f, FLinearColor(0.90f, 0.92f, 0.96f));
-	T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("ARM %.1f   CRIT %.0f%%"), PlayerPawn->GetArmorStat(), PlayerPawn->GetCritChance() * 100.f), RightX + 16.f, RightY + 72.f, FLinearColor(0.90f, 0.92f, 0.96f));
-	T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("REGEN %.1f   EVADE %.0f%%"), PlayerPawn->GetPassiveRegenPerSecond(), PlayerPawn->GetEvasionChance() * 100.f), RightX + 16.f, RightY + 94.f, FLinearColor(0.90f, 0.92f, 0.96f));
-	T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("RANGE %.0f   LS %.0f%%"), PlayerPawn->GetAttackRange(), PlayerPawn->GetLifeStealChance() * 100.f), RightX + 16.f, RightY + 116.f, FLinearColor(0.90f, 0.92f, 0.96f));
+	const float CombatPanelW = 292.f;
+	const float CombatPanelH = 140.f;
+	const float CombatPanelX = ScreenW - CombatPanelW - SafeMargin;
+	const float CombatPanelY = TopY;
+	T66MiniDrawPanel(Canvas, CombatPanelX, CombatPanelY, CombatPanelW, CombatPanelH, FLinearColor(0.44f, 0.52f, 0.70f, 1.f), PanelFill);
+	T66MiniDrawScaledText(Canvas, TitleFont, TEXT("COMBAT"), CombatPanelX + 16.f, CombatPanelY + 10.f, PrimaryText, 0.92f);
+	DrawStatRow(CombatPanelX + 16.f, CombatPanelY + 38.f, TEXT("DMG"), FString::Printf(TEXT("%.1f"), PlayerPawn->GetDamageStat()), TEXT("ATK"), FString::Printf(TEXT("%.1f"), PlayerPawn->GetAttackSpeedStat()));
+	DrawStatRow(CombatPanelX + 16.f, CombatPanelY + 68.f, TEXT("ARM"), FString::Printf(TEXT("%.1f"), PlayerPawn->GetArmorStat()), TEXT("CRIT"), FString::Printf(TEXT("%.0f%%"), PlayerPawn->GetCritChance() * 100.f));
+	DrawStatRow(CombatPanelX + 16.f, CombatPanelY + 98.f, TEXT("REGEN"), FString::Printf(TEXT("%.1f"), PlayerPawn->GetPassiveRegenPerSecond()), TEXT("EVADE"), FString::Printf(TEXT("%.0f%%"), PlayerPawn->GetEvasionChance() * 100.f));
+	T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("RANGE %.0f   LIFE STEAL %.0f%%"), PlayerPawn->GetAttackRange(), PlayerPawn->GetLifeStealChance() * 100.f), CombatPanelX + 16.f, CombatPanelY + 124.f, MutedText, 0.82f);
 
-	const float XpPct = PlayerPawn->GetExperienceToNextLevel() > 0.f ? PlayerPawn->GetExperience() / PlayerPawn->GetExperienceToNextLevel() : 0.f;
-	const float XpBarW = 360.f;
-	const float XpBarX = (ScreenW * 0.5f) - (XpBarW * 0.5f);
-	const float XpBarY = ScreenH - 88.f;
-	T66MiniDrawBox(Canvas, XpBarX - 8.f, XpBarY - 8.f, XpBarW + 16.f, 54.f, FLinearColor(0.04f, 0.05f, 0.07f, 0.86f));
-	T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("LEVEL %d"), PlayerPawn->GetHeroLevel()), XpBarX, XpBarY - 2.f, FLinearColor::White);
-	T66MiniDrawBar(Canvas, XpBarX, XpBarY + 18.f, XpBarW, 14.f, XpPct, FLinearColor(0.22f, 0.62f, 0.96f, 1.f));
-
-	if (ActiveRun && DataSubsystem)
+	const float AbilityPanelY = CombatPanelY + CombatPanelH + 14.f;
+	T66MiniDrawPanel(Canvas, CombatPanelX, AbilityPanelY, CombatPanelW, 112.f, GoldAccent, PanelFill);
+	if (UltIcon)
 	{
-		float IdolX = (ScreenW * 0.5f) - 150.f;
-		const float IdolY = ScreenH - 150.f;
+		T66MiniDrawTexture(Canvas, UltIcon, CombatPanelX + 16.f, AbilityPanelY + 14.f, 22.f, 22.f);
+	}
+	T66MiniDrawScaledText(Canvas, TitleFont, TEXT("ULTIMATE"), CombatPanelX + (UltIcon ? 46.f : 16.f), AbilityPanelY + 10.f, PrimaryText, 0.90f);
+	if (MouseRightIcon)
+	{
+		T66MiniDrawTexture(Canvas, MouseRightIcon, CombatPanelX + CombatPanelW - 106.f, AbilityPanelY + 16.f, 18.f, 18.f);
+	}
+	T66MiniDrawScaledText(
+		Canvas,
+		BodyFont,
+		PlayerPawn->IsUltimateReady() ? TEXT("READY") : FString::Printf(TEXT("%.1fs"), PlayerPawn->GetUltimateCooldownRemaining()),
+		CombatPanelX + CombatPanelW - 80.f,
+		AbilityPanelY + 18.f,
+		PlayerPawn->IsUltimateReady() ? GreenAccent : MutedText,
+		0.92f);
+	T66MiniDrawScaledText(Canvas, BodyFont, PlayerPawn->GetUltimateLabel().ToUpper(), CombatPanelX + 16.f, AbilityPanelY + 42.f, GoldAccent, 0.92f);
+	T66MiniDrawBar(Canvas, CombatPanelX + 16.f, AbilityPanelY + 66.f, CombatPanelW - 32.f, 14.f, UltPct, GoldAccent);
+	if (PassiveIcon)
+	{
+		T66MiniDrawTexture(Canvas, PassiveIcon, CombatPanelX + 16.f, AbilityPanelY + 86.f, 16.f, 16.f);
+	}
+	T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("PASSIVE  %s"), *PlayerPawn->GetPassiveLabel().ToUpper()), CombatPanelX + 40.f, AbilityPanelY + 87.f, MutedText, 0.84f);
+	if (PlayerPawn->HasQuickReviveReady())
+	{
+		T66MiniDrawInsetPanel(Canvas, CombatPanelX + CombatPanelW - 118.f, AbilityPanelY + 82.f, 102.f, 22.f, FLinearColor(0.10f, 0.18f, 0.12f, 0.92f));
+		T66MiniDrawScaledText(Canvas, BodyFont, TEXT("REVIVE"), CombatPanelX + CombatPanelW - 90.f, AbilityPanelY + 87.f, GreenAccent, 0.84f);
+	}
+
+	const float LoadoutDockW = 428.f;
+	const float LoadoutDockH = 104.f;
+	const float LoadoutDockX = (ScreenW * 0.5f) - (LoadoutDockW * 0.5f);
+	const float LoadoutDockY = ScreenH - LoadoutDockH - 18.f;
+	T66MiniDrawPanel(Canvas, LoadoutDockX, LoadoutDockY, LoadoutDockW, LoadoutDockH, FLinearColor(0.32f, 0.62f, 0.96f, 1.f), PanelFill);
+	T66MiniDrawInsetPanel(Canvas, LoadoutDockX + 14.f, LoadoutDockY + 14.f, 76.f, 34.f, FLinearColor(0.10f, 0.14f, 0.20f, 0.94f));
+	T66MiniDrawScaledText(Canvas, BodyFont, TEXT("LEVEL"), LoadoutDockX + 24.f, LoadoutDockY + 18.f, MutedText, 0.78f);
+	T66MiniDrawScaledText(Canvas, TitleFont, FString::FromInt(PlayerPawn->GetHeroLevel()), LoadoutDockX + 64.f, LoadoutDockY + 16.f, PrimaryText, 0.88f, true);
+	T66MiniDrawScaledText(
+		Canvas,
+		BodyFont,
+		FString::Printf(TEXT("XP %.0f / %.0f"), PlayerPawn->GetExperience(), PlayerPawn->GetExperienceToNextLevel()),
+		LoadoutDockX + 104.f,
+		LoadoutDockY + 18.f,
+		MutedText,
+		0.82f);
+	T66MiniDrawBar(Canvas, LoadoutDockX + 104.f, LoadoutDockY + 34.f, LoadoutDockW - 120.f, 12.f, XpPct, FLinearColor(0.32f, 0.70f, 1.0f, 1.f));
+	if (DataSubsystem)
+	{
+		const TArray<FName>& EquippedIdolIDs = PlayerPawn->GetEquippedIdolIDs();
+		const float IdolSlotSize = 58.f;
+		const float IdolSpacing = 12.f;
+		float IdolX = LoadoutDockX + 104.f;
+		const float IdolY = LoadoutDockY + 54.f;
 		for (int32 Index = 0; Index < 4; ++Index)
 		{
-			T66MiniDrawBox(Canvas, IdolX, IdolY, 64.f, 64.f, FLinearColor(0.06f, 0.07f, 0.10f, 0.90f));
-			if (ActiveRun->EquippedIdolIDs.IsValidIndex(Index))
+			T66MiniDrawInsetPanel(Canvas, IdolX, IdolY, IdolSlotSize, IdolSlotSize, FLinearColor(0.08f, 0.09f, 0.13f, 0.96f));
+			if (EquippedIdolIDs.IsValidIndex(Index))
 			{
-				if (const FT66MiniIdolDefinition* IdolDefinition = DataSubsystem->FindIdol(ActiveRun->EquippedIdolIDs[Index]))
+				if (const FT66MiniIdolDefinition* IdolDefinition = DataSubsystem->FindIdol(EquippedIdolIDs[Index]))
 				{
-					T66MiniDrawTexture(Canvas, T66MiniLoadHudTexture(IdolDefinition->IconPath), IdolX + 8.f, IdolY + 8.f, 48.f, 48.f);
+					T66MiniDrawTexture(Canvas, T66MiniLoadHudTexture(IdolDefinition->IconPath), IdolX + 6.f, IdolY + 6.f, IdolSlotSize - 12.f, IdolSlotSize - 12.f);
 				}
 			}
-			IdolX += 76.f;
+			IdolX += IdolSlotSize + IdolSpacing;
 		}
 	}
 
-	if (ActiveRun && DataSubsystem)
+	if (DataSubsystem)
 	{
+		const TArray<FName>& OwnedItemIDs = PlayerPawn->GetOwnedItemIDs();
 		TArray<TPair<FName, int32>> InventoryStacks;
 		TMap<FName, int32> InventoryStackLookup;
-		const int32 MaxInventorySlots = 8;
-		for (int32 ItemIndex = ActiveRun->OwnedItemIDs.Num() - 1; ItemIndex >= 0; --ItemIndex)
+		const int32 MaxInventorySlots = 6;
+		for (int32 ItemIndex = OwnedItemIDs.Num() - 1; ItemIndex >= 0; --ItemIndex)
 		{
-			const FName ItemID = ActiveRun->OwnedItemIDs[ItemIndex];
+			const FName ItemID = OwnedItemIDs[ItemIndex];
 			if (ItemID.IsNone())
 			{
 				continue;
@@ -301,28 +522,20 @@ void AT66MiniBattleHUD::DrawHUD()
 			InventoryStacks.Emplace(ItemID, 1);
 		}
 
-		const float InventoryPanelW = 372.f;
-		const float InventoryPanelH = 224.f;
-		const float InventoryPanelX = ScreenW - InventoryPanelW - 18.f;
-		const float InventoryPanelY = ScreenH - InventoryPanelH - 92.f;
-		const float InventorySlotSize = 64.f;
+		const float InventoryPanelW = 292.f;
+		const float InventoryPanelH = 174.f;
+		const float InventoryPanelX = ScreenW - InventoryPanelW - SafeMargin;
+		const float InventoryPanelY = ScreenH - InventoryPanelH - 18.f;
+		const float InventorySlotSize = 54.f;
 		const float InventorySlotPadding = 10.f;
-		const int32 InventoryColumns = 4;
+		const int32 InventoryColumns = 3;
 		const float InventoryGridX = InventoryPanelX + 18.f;
-		const float InventoryGridY = InventoryPanelY + 104.f;
+		const float InventoryGridY = InventoryPanelY + 54.f;
 
-		T66MiniDrawBox(Canvas, InventoryPanelX, InventoryPanelY, InventoryPanelW, InventoryPanelH, FLinearColor(0.03f, 0.04f, 0.06f, 0.94f));
-		T66MiniDrawBox(Canvas, InventoryPanelX + 10.f, InventoryPanelY + 10.f, InventoryPanelW - 20.f, 34.f, FLinearColor(0.10f, 0.12f, 0.18f, 0.98f));
-		T66MiniDrawText(Canvas, TitleFont, TEXT("INVENTORY"), InventoryPanelX + 20.f, InventoryPanelY + 12.f, FLinearColor::White);
-		T66MiniDrawText(Canvas, BodyFont, TEXT("LATEST PICKUPS"), InventoryPanelX + 20.f, InventoryPanelY + 48.f, FLinearColor(0.78f, 0.82f, 0.88f));
-
-		const float PillY = InventoryPanelY + 72.f;
-		T66MiniDrawBox(Canvas, InventoryPanelX + 18.f, PillY, 98.f, 22.f, FLinearColor(0.18f, 0.14f, 0.05f, 0.92f));
-		T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("Gold %d"), PlayerPawn->GetGold()), InventoryPanelX + 26.f, PillY + 2.f, FLinearColor(0.98f, 0.84f, 0.30f));
-		T66MiniDrawBox(Canvas, InventoryPanelX + 124.f, PillY, 98.f, 22.f, FLinearColor(0.08f, 0.14f, 0.18f, 0.92f));
-		T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("Mats %d"), PlayerPawn->GetMaterials()), InventoryPanelX + 132.f, PillY + 2.f, FLinearColor(0.72f, 0.88f, 0.96f));
-		T66MiniDrawBox(Canvas, InventoryPanelX + 230.f, PillY, 124.f, 22.f, FLinearColor(0.16f, 0.10f, 0.18f, 0.92f));
-		T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("Items %d"), ActiveRun->OwnedItemIDs.Num()), InventoryPanelX + 238.f, PillY + 2.f, FLinearColor(0.96f, 0.82f, 0.98f));
+		T66MiniDrawPanel(Canvas, InventoryPanelX, InventoryPanelY, InventoryPanelW, InventoryPanelH, FLinearColor(0.76f, 0.58f, 0.88f, 1.f), PanelFill);
+		T66MiniDrawScaledText(Canvas, TitleFont, TEXT("BAG"), InventoryPanelX + 16.f, InventoryPanelY + 10.f, PrimaryText, 0.90f);
+		T66MiniDrawInsetPanel(Canvas, InventoryPanelX + InventoryPanelW - 110.f, InventoryPanelY + 12.f, 94.f, 24.f, FLinearColor(0.14f, 0.10f, 0.18f, 0.94f));
+		T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("%d STACKS"), InventoryStacks.Num()), InventoryPanelX + InventoryPanelW - 98.f, InventoryPanelY + 17.f, GoldAccent, 0.82f);
 
 		for (int32 SlotIndex = 0; SlotIndex < MaxInventorySlots; ++SlotIndex)
 		{
@@ -330,42 +543,38 @@ void AT66MiniBattleHUD::DrawHUD()
 			const int32 Row = SlotIndex / InventoryColumns;
 			const float SlotX = InventoryGridX + (Column * (InventorySlotSize + InventorySlotPadding));
 			const float SlotY = InventoryGridY + (Row * (InventorySlotSize + InventorySlotPadding));
-
 			const bool bFilledSlot = InventoryStacks.IsValidIndex(SlotIndex);
-			T66MiniDrawBox(Canvas, SlotX, SlotY, InventorySlotSize, InventorySlotSize, bFilledSlot ? FLinearColor(0.32f, 0.26f, 0.10f, 0.94f) : FLinearColor(0.06f, 0.07f, 0.10f, 0.92f));
-			T66MiniDrawBox(Canvas, SlotX + 2.f, SlotY + 2.f, InventorySlotSize - 4.f, InventorySlotSize - 4.f, bFilledSlot ? FLinearColor(0.10f, 0.10f, 0.14f, 1.0f) : FLinearColor(0.03f, 0.03f, 0.04f, 1.0f));
+			T66MiniDrawInsetPanel(Canvas, SlotX, SlotY, InventorySlotSize, InventorySlotSize, bFilledSlot ? FLinearColor(0.12f, 0.11f, 0.16f, 0.98f) : FLinearColor(0.05f, 0.06f, 0.08f, 0.88f));
 			if (!bFilledSlot)
 			{
 				continue;
 			}
 
 			const TPair<FName, int32>& Entry = InventoryStacks[SlotIndex];
-			const FName ItemID = Entry.Key;
-			if (const FT66MiniItemDefinition* ItemDefinition = DataSubsystem->FindItem(ItemID))
+			if (const FT66MiniItemDefinition* ItemDefinition = DataSubsystem->FindItem(Entry.Key))
 			{
 				UTexture2D* ItemTexture = VisualSubsystem
 					? VisualSubsystem->LoadItemTexture(ItemDefinition->ItemID, ItemDefinition->IconPath)
 					: T66MiniLoadHudTexture(ItemDefinition->IconPath);
 				if (ItemTexture)
 				{
-					T66MiniDrawTexture(Canvas, ItemTexture, SlotX + 8.f, SlotY + 8.f, InventorySlotSize - 16.f, InventorySlotSize - 16.f);
+					T66MiniDrawTexture(Canvas, ItemTexture, SlotX + 6.f, SlotY + 6.f, InventorySlotSize - 12.f, InventorySlotSize - 12.f);
 				}
 				else
 				{
-					T66MiniDrawText(Canvas, BodyFont, T66MiniInventoryLabelForItem(ItemID), SlotX + (InventorySlotSize * 0.5f), SlotY + 24.f, FLinearColor::White, true);
+					T66MiniDrawScaledText(Canvas, BodyFont, T66MiniInventoryLabelForItem(Entry.Key), SlotX + (InventorySlotSize * 0.5f), SlotY + 18.f, PrimaryText, 0.80f, true);
 				}
+				T66MiniDrawCountBadge(Canvas, BodyFont, Entry.Value, SlotX + InventorySlotSize - 24.f, SlotY + 4.f);
 			}
-
-			T66MiniDrawCountBadge(Canvas, BodyFont, Entry.Value, SlotX + InventorySlotSize - 26.f, SlotY + 6.f);
 		}
 
-		if (ActiveRun->OwnedItemIDs.Num() == 0)
+		if (OwnedItemIDs.Num() == 0)
 		{
-			T66MiniDrawText(Canvas, BodyFont, TEXT("Pick up item bags or loot crates to fill this inventory."), InventoryPanelX + 20.f, InventoryPanelY + 188.f, FLinearColor(0.78f, 0.82f, 0.88f));
+			T66MiniDrawScaledText(Canvas, BodyFont, TEXT("Loot bags and crates feed this bag."), InventoryPanelX + 16.f, InventoryPanelY + 150.f, MutedText, 0.82f);
 		}
 		else if (InventoryStacks.Num() > MaxInventorySlots)
 		{
-			T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("+%d more stacks"), InventoryStacks.Num() - MaxInventorySlots), InventoryPanelX + 20.f, InventoryPanelY + 188.f, FLinearColor(0.78f, 0.82f, 0.88f));
+			T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("+%d MORE"), InventoryStacks.Num() - MaxInventorySlots), InventoryPanelX + 16.f, InventoryPanelY + 150.f, MutedText, 0.82f);
 		}
 	}
 
@@ -382,22 +591,68 @@ void AT66MiniBattleHUD::DrawHUD()
 	if (BossEnemy)
 	{
 		const float BossPct = BossEnemy->GetMaxHealth() > 0.f ? BossEnemy->GetCurrentHealth() / BossEnemy->GetMaxHealth() : 0.f;
-		const float BossBarW = 440.f;
+		const float BossBarW = 452.f;
 		const float BossBarX = (ScreenW * 0.5f) - (BossBarW * 0.5f);
-		const float BossBarY = 116.f;
-		T66MiniDrawBox(Canvas, BossBarX - 10.f, BossBarY - 14.f, BossBarW + 20.f, 44.f, FLinearColor(0.10f, 0.03f, 0.03f, 0.86f));
-		T66MiniDrawText(Canvas, BodyFont, BossEnemy->GetEnemyID().ToString().ToUpper(), ScreenW * 0.5f, BossBarY - 10.f, FLinearColor(0.98f, 0.78f, 0.62f), true);
-		T66MiniDrawBar(Canvas, BossBarX, BossBarY + 10.f, BossBarW, 14.f, BossPct, FLinearColor(0.92f, 0.22f, 0.18f, 1.f));
+		const float BossBarY = 142.f;
+		T66MiniDrawPanel(Canvas, BossBarX - 10.f, BossBarY - 20.f, BossBarW + 20.f, 56.f, DangerAccent, FLinearColor(0.10f, 0.03f, 0.03f, 0.88f));
+		T66MiniDrawScaledText(Canvas, BodyFont, T66MiniReadableId(BossEnemy->GetEnemyID()).ToUpper(), ScreenW * 0.5f, BossBarY - 10.f, FLinearColor(1.0f, 0.84f, 0.70f), 0.88f, true);
+		T66MiniDrawBar(Canvas, BossBarX, BossBarY + 12.f, BossBarW, 14.f, BossPct, FLinearColor(0.94f, 0.24f, 0.20f, 1.f));
 	}
 	else if (MiniGameMode && MiniGameMode->HasBossTelegraphActive())
 	{
-		T66MiniDrawBox(Canvas, (ScreenW * 0.5f) - 170.f, 118.f, 340.f, 38.f, FLinearColor(0.30f, 0.06f, 0.04f, 0.82f));
-		T66MiniDrawText(Canvas, BodyFont, FString::Printf(TEXT("BOSS INBOUND  %.1fs"), MiniGameMode->GetBossTelegraphRemaining()), ScreenW * 0.5f, 126.f, FLinearColor(1.0f, 0.84f, 0.62f), true);
+		const float AlertW = 360.f;
+		T66MiniDrawPanel(Canvas, (ScreenW * 0.5f) - (AlertW * 0.5f), 142.f, AlertW, 42.f, DangerAccent, FLinearColor(0.20f, 0.04f, 0.04f, 0.82f));
+		T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("BOSS INBOUND  %.1fs"), MiniGameMode->GetBossTelegraphRemaining()), ScreenW * 0.5f, 154.f, FLinearColor(1.0f, 0.86f, 0.68f), 0.90f, true);
 	}
 
 	if (RunState)
 	{
-		T66MiniDrawText(Canvas, BodyFont, TEXT("ESC PAUSES  |  MINI AUTO-SAVES DURING BATTLE"), 24.f, ScreenH - 34.f, FLinearColor(0.78f, 0.82f, 0.88f));
+		const float ControlsX = SafeMargin;
+		const float ControlsY = ScreenH - 40.f;
+		const float ControlsW = 420.f;
+		T66MiniDrawInsetPanel(Canvas, ControlsX, ControlsY - 4.f, ControlsW, 28.f, FLinearColor(0.05f, 0.06f, 0.09f, 0.86f));
+		if (InteractKey == EKeys::LeftMouseButton && UltimateKey == EKeys::RightMouseButton && MouseLeftIcon && MouseRightIcon)
+		{
+			T66MiniDrawTexture(Canvas, MouseLeftIcon, ControlsX + 10.f, ControlsY - 2.f, 18.f, 18.f);
+			if (InteractHandIcon)
+			{
+				T66MiniDrawTexture(Canvas, InteractHandIcon, ControlsX + 32.f, ControlsY - 2.f, 18.f, 18.f);
+			}
+			T66MiniDrawScaledText(Canvas, BodyFont, TEXT("INTERACT"), ControlsX + 56.f, ControlsY, MutedText, 0.84f);
+			T66MiniDrawScaledText(Canvas, BodyFont, TEXT("|"), ControlsX + 122.f, ControlsY, FLinearColor(0.42f, 0.46f, 0.52f), 0.84f);
+			T66MiniDrawTexture(Canvas, MouseRightIcon, ControlsX + 138.f, ControlsY - 2.f, 18.f, 18.f);
+			if (UltIcon)
+			{
+				T66MiniDrawTexture(Canvas, UltIcon, ControlsX + 160.f, ControlsY - 2.f, 18.f, 18.f);
+			}
+			T66MiniDrawScaledText(Canvas, BodyFont, TEXT("ULTIMATE"), ControlsX + 182.f, ControlsY, MutedText, 0.84f);
+			T66MiniDrawScaledText(Canvas, BodyFont, TEXT("|"), ControlsX + 252.f, ControlsY, FLinearColor(0.42f, 0.46f, 0.52f), 0.84f);
+			T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("%s PAUSE"), *T66MiniCompactKeyLabel(PauseKey)), ControlsX + 268.f, ControlsY, MutedText, 0.84f);
+		}
+		else
+		{
+			const FString ControlsLabel = FString::Printf(
+				TEXT("%s INTERACT  |  %s ULTIMATE  |  %s PAUSE"),
+				*T66MiniCompactKeyLabel(InteractKey),
+				*T66MiniCompactKeyLabel(UltimateKey),
+				*T66MiniCompactKeyLabel(PauseKey));
+			T66MiniDrawScaledText(Canvas, BodyFont, ControlsLabel, ControlsX + 12.f, ControlsY, MutedText, 0.84f);
+		}
+	}
+
+	if (MiniGameMode && GetOwningPlayerController() && (!PlayerSettings || PlayerSettings->GetShowDamageNumbers()))
+	{
+		for (const FT66MiniCombatTextEntry& Entry : MiniGameMode->GetCombatTexts())
+		{
+			FVector2D ScreenPosition = FVector2D::ZeroVector;
+			if (!GetOwningPlayerController()->ProjectWorldLocationToScreen(Entry.WorldLocation, ScreenPosition))
+			{
+				continue;
+			}
+
+			const float Alpha = FMath::Clamp(Entry.RemainingTime / 0.9f, 0.f, 1.f);
+			T66MiniDrawText(Canvas, TitleFont, Entry.Label, ScreenPosition.X, ScreenPosition.Y, FLinearColor(Entry.Color.R, Entry.Color.G, Entry.Color.B, Alpha), true);
+		}
 	}
 
 	if (const AT66MiniPlayerController* MiniController = Cast<AT66MiniPlayerController>(GetOwningPlayerController()))

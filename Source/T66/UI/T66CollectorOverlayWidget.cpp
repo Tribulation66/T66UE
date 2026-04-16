@@ -237,7 +237,15 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	}
 	else if (CollectorTabIndex == 2)
 	{
-		static const TArray<FName> MobIDs = { FName(TEXT("RegularEnemy")), FName(TEXT("GoblinThief")) };
+		static const TArray<FName> MobIDs =
+		{
+			FName(TEXT("Cow")),
+			FName(TEXT("Pig")),
+			FName(TEXT("Goat")),
+			FName(TEXT("Roost")),
+			FName(TEXT("GoblinThief")),
+			FName(TEXT("UniqueEnemy"))
+		};
 		TArray<FName> EnemyIDs = GetUnlockedEnemyIDs();
 		for (const FName& M : MobIDs)
 			if (EnemyIDs.Contains(M))

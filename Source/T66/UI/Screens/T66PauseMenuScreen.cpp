@@ -9,6 +9,7 @@
 #include "Core/T66Rarity.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
@@ -152,171 +153,19 @@ void UT66PauseMenuScreen::OnSaveAndQuitClicked()
 	AT66PlayerController* PC = GetT66PlayerController();
 	if (!GI || !PC) return;
 
-	UT66SaveSubsystem* SaveSub = GI->GetSubsystem<UT66SaveSubsystem>();
-	if (!SaveSub) return;
+	PC->SetPause(false);
 
-	int32 SlotIndex = GI->CurrentSaveSlotIndex;
-	if (SlotIndex < 0 || SlotIndex >= UT66SaveSubsystem::MaxSlots)
+	if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
 	{
-		SlotIndex = SaveSub->FindFirstEmptySlot();
-		if (SlotIndex == INDEX_NONE)
+		if (UWorld* World = GetWorld(); World && World->GetNetMode() == NM_Client)
 		{
-			SlotIndex = SaveSub->FindOldestOccupiedSlot();
-			if (SlotIndex == INDEX_NONE) return;
-		}
-		GI->CurrentSaveSlotIndex = SlotIndex;
-	}
-
-	UT66RunSaveGame* SaveObj = NewObject<UT66RunSaveGame>(this);
-	if (!SaveObj) return;
-
-	SaveObj->HeroID = GI->SelectedHeroID;
-	SaveObj->HeroBodyType = GI->SelectedHeroBodyType;
-	SaveObj->CompanionID = GI->SelectedCompanionID;
-	SaveObj->Difficulty = GI->SelectedDifficulty;
-	SaveObj->PartySize = GI->SelectedPartySize;
-	SaveObj->MapName = GetWorld() ? UWorld::RemovePIEPrefix(GetWorld()->GetMapName()) : FString();
-	SaveObj->LastPlayedUtc = FDateTime::UtcNow().ToIso8601();
-	SaveObj->RunSeed = GI->RunSeed;
-	SaveObj->MainMapLayoutVariant = GI->CurrentMainMapLayoutVariant;
-	SaveObj->bRunIneligibleForLeaderboard = GI->bRunIneligibleForLeaderboard;
-
-	if (UT66RunStateSubsystem* LocalRunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-	{
-		SaveObj->StageReached = LocalRunState->GetCurrentStage();
-		LocalRunState->ExportSavedRunSnapshot(SaveObj->RunSnapshot);
-		if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
-		{
-			SaveObj->EquippedIdols = IdolManager->GetEquippedIdols();
-			SaveObj->EquippedIdolTiers = IdolManager->GetEquippedIdolTierValues();
+			PC->ServerRequestPartySaveAndReturnToFrontend();
 		}
 		else
 		{
-			SaveObj->EquippedIdols = LocalRunState->GetEquippedIdols();
-			SaveObj->EquippedIdolTiers = LocalRunState->GetEquippedIdolTierValues();
+			SessionSubsystem->SaveCurrentRunAndReturnToFrontend();
 		}
 	}
-
-	if (APawn* Pawn = PC->GetPawn())
-	{
-		SaveObj->PlayerTransform = Pawn->GetActorTransform();
-	}
-
-	const UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>();
-	SaveObj->OwnerPlayerId = !GI->CurrentRunOwnerPlayerId.IsEmpty()
-		? GI->CurrentRunOwnerPlayerId
-		: (PartySubsystem ? PartySubsystem->GetLocalPlayerId() : TEXT("local_player"));
-	SaveObj->OwnerDisplayName = !GI->CurrentRunOwnerDisplayName.IsEmpty()
-		? GI->CurrentRunOwnerDisplayName
-		: (PartySubsystem ? PartySubsystem->GetLocalDisplayName() : TEXT("You"));
-	SaveObj->PartyMemberIds = GI->CurrentRunPartyMemberIds.Num() > 0
-		? GI->CurrentRunPartyMemberIds
-		: (PartySubsystem ? PartySubsystem->GetCurrentPartyMemberIds() : TArray<FString>());
-	SaveObj->PartyMemberDisplayNames = GI->CurrentRunPartyMemberDisplayNames.Num() > 0
-		? GI->CurrentRunPartyMemberDisplayNames
-		: (PartySubsystem ? PartySubsystem->GetCurrentPartyMemberDisplayNames() : TArray<FString>());
-	if (SaveObj->PartyMemberIds.Num() == 0 && !SaveObj->OwnerPlayerId.IsEmpty())
-	{
-		SaveObj->PartyMemberIds.Add(SaveObj->OwnerPlayerId);
-	}
-	if (SaveObj->PartyMemberDisplayNames.Num() == 0 && !SaveObj->OwnerDisplayName.IsEmpty())
-	{
-		SaveObj->PartyMemberDisplayNames.Add(SaveObj->OwnerDisplayName);
-	}
-
-	SaveObj->SavedPartyPlayers.Reset();
-	if (UWorld* World = GetWorld())
-	{
-		if (AGameStateBase* GameState = World->GetGameState())
-		{
-			for (APlayerState* PlayerState : GameState->PlayerArray)
-			{
-				const AT66SessionPlayerState* SessionPlayerState = Cast<AT66SessionPlayerState>(PlayerState);
-				if (!SessionPlayerState)
-				{
-					continue;
-				}
-
-				const FT66LobbyPlayerInfo& LobbyInfo = SessionPlayerState->GetLobbyInfo();
-				if (LobbyInfo.SteamId.IsEmpty())
-				{
-					continue;
-				}
-
-				FT66SavedPartyPlayerState& SavedPlayer = SaveObj->SavedPartyPlayers.AddDefaulted_GetRef();
-				SavedPlayer.PlayerId = LobbyInfo.SteamId;
-				SavedPlayer.DisplayName = LobbyInfo.DisplayName;
-				SavedPlayer.HeroID = LobbyInfo.SelectedHeroID;
-				SavedPlayer.HeroBodyType = LobbyInfo.SelectedHeroBodyType;
-				SavedPlayer.HeroSkinID = LobbyInfo.SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : LobbyInfo.SelectedHeroSkinID;
-				SavedPlayer.CompanionID = LobbyInfo.SelectedCompanionID;
-				SavedPlayer.CompanionBodyType = LobbyInfo.SelectedCompanionBodyType;
-				SavedPlayer.bIsPartyHost = LobbyInfo.bPartyHost;
-			}
-		}
-	}
-
-	if (SaveObj->SavedPartyPlayers.Num() == 0)
-	{
-		FT66SavedPartyPlayerState& LocalSavedPlayer = SaveObj->SavedPartyPlayers.AddDefaulted_GetRef();
-		LocalSavedPlayer.PlayerId = SaveObj->OwnerPlayerId;
-		LocalSavedPlayer.DisplayName = SaveObj->OwnerDisplayName;
-		LocalSavedPlayer.HeroID = SaveObj->HeroID;
-		LocalSavedPlayer.HeroBodyType = SaveObj->HeroBodyType;
-		LocalSavedPlayer.HeroSkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
-		LocalSavedPlayer.CompanionID = SaveObj->CompanionID;
-		LocalSavedPlayer.PlayerTransform = SaveObj->PlayerTransform;
-		LocalSavedPlayer.bIsPartyHost = true;
-	}
-	else
-	{
-		for (FT66SavedPartyPlayerState& SavedPlayer : SaveObj->SavedPartyPlayers)
-		{
-			if (SavedPlayer.PlayerId == SaveObj->OwnerPlayerId)
-			{
-				SavedPlayer.PlayerTransform = SaveObj->PlayerTransform;
-				SavedPlayer.bIsPartyHost = true;
-				break;
-			}
-		}
-	}
-
-	SaveObj->PartyMemberIds.Reset();
-	SaveObj->PartyMemberDisplayNames.Reset();
-	for (const FT66SavedPartyPlayerState& SavedPlayer : SaveObj->SavedPartyPlayers)
-	{
-		if (!SavedPlayer.PlayerId.IsEmpty())
-		{
-			SaveObj->PartyMemberIds.AddUnique(SavedPlayer.PlayerId);
-		}
-		if (!SavedPlayer.DisplayName.IsEmpty())
-		{
-			SaveObj->PartyMemberDisplayNames.AddUnique(SavedPlayer.DisplayName);
-		}
-	}
-
-	switch (SaveObj->SavedPartyPlayers.Num())
-	{
-	case 4:
-		SaveObj->PartySize = ET66PartySize::Quad;
-		break;
-	case 3:
-		SaveObj->PartySize = ET66PartySize::Trio;
-		break;
-	case 2:
-		SaveObj->PartySize = ET66PartySize::Duo;
-		break;
-	case 1:
-	default:
-		SaveObj->PartySize = ET66PartySize::Solo;
-		break;
-	}
-
-	if (!SaveSub->SaveToSlot(SlotIndex, SaveObj)) return;
-
-	PC->SetPause(false);
-	GI->PendingFrontendScreen = ET66ScreenType::MainMenu;
-	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
 }
 
 void UT66PauseMenuScreen::OnRestartClicked()

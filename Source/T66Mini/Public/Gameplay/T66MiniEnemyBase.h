@@ -16,6 +16,7 @@ class UT66MiniDirectionResolverComponent;
 class UT66MiniHitFlashComponent;
 class UT66MiniShadowComponent;
 class UT66MiniSpritePresentationComponent;
+class AT66MiniEnemyProjectile;
 
 UCLASS()
 class T66MINI_API AT66MiniEnemyBase : public AActor
@@ -26,6 +27,7 @@ public:
 	AT66MiniEnemyBase();
 
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void InitializeEnemy(
 		FName InEnemyID,
@@ -37,11 +39,18 @@ public:
 		int32 InMaterialDrop,
 		float InExperienceDrop,
 		float InCurrentHealth = -1.f,
-		ET66MiniEnemyBehaviorProfile InBehaviorProfile = ET66MiniEnemyBehaviorProfile::Balanced);
+		ET66MiniEnemyBehaviorProfile InBehaviorProfile = ET66MiniEnemyBehaviorProfile::Balanced,
+		ET66MiniEnemyFamily InFamily = ET66MiniEnemyFamily::Melee,
+		float InFireIntervalSeconds = 1.8f,
+		float InProjectileSpeed = 980.f,
+		float InProjectileDamage = 10.f,
+		float InPreferredRange = 860.f);
 
 	void ApplyDamage(float InDamage);
 	void ApplyDot(float TickDamage, float TickInterval, float Duration);
 	void ApplyStun(float DurationSeconds);
+	bool HasActiveDot() const { return ActiveDots.Num() > 0; }
+	ET66MiniEnemyFamily GetEnemyFamily() const { return EnemyFamily; }
 
 	bool IsEnemyDead() const { return bDead; }
 	bool IsBossEnemy() const { return bIsBoss; }
@@ -65,8 +74,13 @@ private:
 		float TickAccumulator = 0.f;
 	};
 
-	class AT66MiniPlayerPawn* GetMiniPlayerPawn() const;
+	class AT66MiniPlayerPawn* FindBestTargetPawn() const;
 	void HandleDeath();
+	void FireProjectileAtPlayer(const FVector& PlayerLocation);
+	void RefreshPresentationFromState();
+
+	UFUNCTION()
+	void OnRep_EnemyPresentationState();
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -92,11 +106,19 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UT66MiniHitFlashComponent> HitFlashComponent;
 
+	UPROPERTY(ReplicatedUsing = OnRep_EnemyPresentationState)
 	FName EnemyID = NAME_None;
+
+	UPROPERTY(ReplicatedUsing = OnRep_EnemyPresentationState)
 	bool bIsBoss = false;
+
 	bool bDead = false;
 	ET66MiniEnemyBehaviorProfile BehaviorProfile = ET66MiniEnemyBehaviorProfile::Balanced;
+	ET66MiniEnemyFamily EnemyFamily = ET66MiniEnemyFamily::Melee;
+	UPROPERTY(Replicated)
 	float MaxHealth = 30.f;
+
+	UPROPERTY(Replicated)
 	float CurrentHealth = 30.f;
 	float MoveSpeed = 280.f;
 	float TouchDamage = 10.f;
@@ -106,6 +128,11 @@ private:
 	float NextDamageFeedbackTime = 0.f;
 	float ChargeCooldownRemaining = 0.f;
 	float ChargeDurationRemaining = 0.f;
+	float ProjectileCooldownRemaining = 0.f;
+	float FireIntervalSeconds = 1.8f;
+	float ProjectileSpeed = 980.f;
+	float ProjectileDamage = 10.f;
+	float PreferredRange = 860.f;
 	float StunRemaining = 0.f;
 	FVector ChargeDirection = FVector::ForwardVector;
 	TArray<FActiveDot> ActiveDots;

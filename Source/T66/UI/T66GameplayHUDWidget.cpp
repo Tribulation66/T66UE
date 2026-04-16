@@ -24,6 +24,10 @@
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66StageGate.h"
+#include "Gameplay/T66ChestInteractable.h"
+#include "Gameplay/T66CrateInteractable.h"
+#include "Gameplay/T66StageCatchUpLootInteractable.h"
+#include "Gameplay/T66OuroborosNPC.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroBase.h"
@@ -380,22 +384,80 @@ namespace
 		return Brush;
 	}
 
+	struct FT66LooseMinimapIconSpec
+	{
+		const TCHAR* RelativePath = nullptr;
+		FVector2D DrawSize = FVector2D(20.0f, 20.0f);
+	};
+
+	static const FT66LooseMinimapIconSpec* FindLooseMinimapIconSpec(const FName Key)
+	{
+		static const TMap<FName, FT66LooseMinimapIconSpec> Specs = {
+			{ FName(TEXT("NPC")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/npc.png"), FVector2D(22.f, 18.f) } },
+			{ FName(TEXT("Vendor")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/vendor.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("SupportVendor")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/support_vendor.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("Gambler")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/gambler.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("Saint")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/saint.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("Ouroboros")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/ouroboros.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("Collector")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/collector.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("Trickster")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/trickster.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("Gate")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/gate.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("Miasma")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/miasma.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("Chest")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/chest.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("Crate")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/crate.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("LootBag")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/loot_bag.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("CatchUpLoot")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/catch_up_loot.png"), FVector2D(20.f, 20.f) } },
+		};
+
+		return Specs.Find(Key);
+	}
+
+	static TSharedPtr<FSlateBrush> MakeLooseMinimapBrush(const FT66LooseMinimapIconSpec& Spec)
+	{
+		if (!Spec.RelativePath || !Spec.RelativePath[0])
+		{
+			return nullptr;
+		}
+
+		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+		Brush->DrawAs = ESlateBrushDrawType::Image;
+		Brush->Tiling = ESlateBrushTileType::NoTile;
+		Brush->ImageSize = Spec.DrawSize;
+		Brush->TintColor = FSlateColor(FLinearColor::White);
+		Brush->SetResourceObject(LoadRuntimeHudFileTexture(Spec.RelativePath, TextureFilter::TF_Trilinear));
+		return Brush->GetResourceObject() ? Brush : nullptr;
+	}
+
 	static const FSlateBrush* GetMinimapSymbolBrush(FName Key)
 	{
-		static bool bInitialized = false;
 		static TMap<FName, TSharedPtr<FSlateBrush>> Brushes;
 
-		if (!bInitialized)
+		if (const TSharedPtr<FSlateBrush>* Found = Brushes.Find(Key))
 		{
-			bInitialized = true;
+			return Found->IsValid() ? Found->Get() : nullptr;
+		}
+
+		if (const FT66LooseMinimapIconSpec* Spec = FindLooseMinimapIconSpec(Key))
+		{
+			if (TSharedPtr<FSlateBrush> LooseBrush = MakeLooseMinimapBrush(*Spec))
+			{
+				Brushes.Add(Key, LooseBrush);
+				return LooseBrush.Get();
+			}
+		}
+
+		static bool bAtlasInitialized = false;
+		if (!bAtlasInitialized)
+		{
+			bAtlasInitialized = true;
 			Brushes.Add(FName(TEXT("NPC")), MakeAtlasBrushFromPixels(95.f, 6.f, 30.f, 24.f, FVector2D(22.f, 18.f)));
 			Brushes.Add(FName(TEXT("Gate")), MakeAtlasBrushFromPixels(1.f, 41.f, 31.f, 31.f, FVector2D(20.f, 20.f)));
 			Brushes.Add(FName(TEXT("Miasma")), MakeAtlasBrushFromPixels(432.f, 57.f, 31.f, 31.f, FVector2D(20.f, 20.f)));
 		}
 
-		if (const TSharedPtr<FSlateBrush>* Found = Brushes.Find(Key))
+		if (const TSharedPtr<FSlateBrush>* AtlasBrush = Brushes.Find(Key))
 		{
-			return Found->IsValid() ? Found->Get() : nullptr;
+			return AtlasBrush->IsValid() ? AtlasBrush->Get() : nullptr;
 		}
 
 		if (const TSharedPtr<FSlateBrush>* Fallback = Brushes.Find(FName(TEXT("NPC"))))
@@ -404,6 +466,106 @@ namespace
 		}
 
 		return nullptr;
+	}
+
+	static FLinearColor GetMinimapMarkerTint(const FSlateBrush* Brush, const FLinearColor& MarkerColor, const bool bMinimap)
+	{
+		if (!Brush || !Brush->GetResourceObject())
+		{
+			return FLinearColor(MarkerColor.R, MarkerColor.G, MarkerColor.B, bMinimap ? 0.95f : 0.98f);
+		}
+
+		UTexture2D* Atlas = GetMinimapIconAtlas();
+		if (Atlas && Brush->GetResourceObject() == Atlas)
+		{
+			return FLinearColor(MarkerColor.R, MarkerColor.G, MarkerColor.B, bMinimap ? 0.95f : 0.98f);
+		}
+
+		return FLinearColor(1.f, 1.f, 1.f, bMinimap ? 0.95f : 0.98f);
+	}
+
+	struct FT66TowerMinimapArtStyle
+	{
+		FString RelativePath;
+		FLinearColor MapTint = FLinearColor::White;
+		FLinearColor WallFill = FLinearColor(0.14f, 0.11f, 0.09f, 1.0f);
+		FLinearColor WallStroke = FLinearColor(0.92f, 0.86f, 0.72f, 1.0f);
+	};
+
+	static FT66TowerMinimapArtStyle GetTowerMinimapArtStyle(const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme)
+	{
+		switch (Theme)
+		{
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Forest:
+			return {
+				TEXT("RuntimeDependencies/T66/UI/Minimap/Backgrounds/tower_forest_background.png"),
+				FLinearColor(0.95f, 1.00f, 0.95f, 1.0f),
+				FLinearColor(0.17f, 0.20f, 0.14f, 1.0f),
+				FLinearColor(0.78f, 0.88f, 0.58f, 1.0f)
+			};
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Ocean:
+			return {
+				TEXT("RuntimeDependencies/T66/UI/Minimap/Backgrounds/tower_ocean_background.png"),
+				FLinearColor(0.95f, 0.98f, 1.00f, 1.0f),
+				FLinearColor(0.11f, 0.15f, 0.18f, 1.0f),
+				FLinearColor(0.64f, 0.82f, 0.96f, 1.0f)
+			};
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Martian:
+			return {
+				TEXT("RuntimeDependencies/T66/UI/Minimap/Backgrounds/tower_martian_background.png"),
+				FLinearColor(1.00f, 0.97f, 0.95f, 1.0f),
+				FLinearColor(0.20f, 0.11f, 0.08f, 1.0f),
+				FLinearColor(0.94f, 0.64f, 0.48f, 1.0f)
+			};
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell:
+			return {
+				TEXT("RuntimeDependencies/T66/UI/Minimap/Backgrounds/tower_hell_background.png"),
+				FLinearColor(1.00f, 0.95f, 0.94f, 1.0f),
+				FLinearColor(0.18f, 0.07f, 0.06f, 1.0f),
+				FLinearColor(0.94f, 0.42f, 0.30f, 1.0f)
+			};
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon:
+		default:
+			return {
+				TEXT("RuntimeDependencies/T66/UI/Minimap/Backgrounds/tower_dungeon_background.png"),
+				FLinearColor(1.00f, 0.98f, 0.94f, 1.0f),
+				FLinearColor(0.15f, 0.12f, 0.10f, 1.0f),
+				FLinearColor(0.92f, 0.84f, 0.68f, 1.0f)
+			};
+		}
+	}
+
+	static const FSlateBrush* GetTowerMinimapBackgroundBrush(const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme)
+	{
+		static TMap<int32, TSharedPtr<FSlateBrush>> Brushes;
+
+		const int32 Key = static_cast<int32>(Theme);
+		if (const TSharedPtr<FSlateBrush>* Existing = Brushes.Find(Key))
+		{
+			return (Existing->IsValid() && (*Existing)->GetResourceObject()) ? Existing->Get() : nullptr;
+		}
+
+		const FT66TowerMinimapArtStyle Style = GetTowerMinimapArtStyle(Theme);
+		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+		Brush->DrawAs = ESlateBrushDrawType::Image;
+		Brush->Tiling = ESlateBrushTileType::NoTile;
+		Brush->ImageSize = FVector2D(1024.0f, 1024.0f);
+		Brush->TintColor = FSlateColor(FLinearColor::White);
+		Brush->SetResourceObject(LoadRuntimeHudFileTexture(Style.RelativePath, TextureFilter::TF_Trilinear));
+		Brushes.Add(Key, Brush);
+
+		return Brush->GetResourceObject() ? Brush.Get() : nullptr;
+	}
+
+	static float GetSquaredDistanceToBox2D(const FVector2D& Point, const FBox2D& Box)
+	{
+		const float Dx = (Point.X < Box.Min.X)
+			? (Box.Min.X - Point.X)
+			: ((Point.X > Box.Max.X) ? (Point.X - Box.Max.X) : 0.0f);
+		const float Dy = (Point.Y < Box.Min.Y)
+			? (Box.Min.Y - Point.Y)
+			: ((Point.Y > Box.Max.Y) ? (Point.Y - Box.Max.Y) : 0.0f);
+		return (Dx * Dx) + (Dy * Dy);
 	}
 
 	static constexpr float GT66BottomLeftHudScale = 0.70f;
@@ -1097,6 +1259,29 @@ public:
 		Invalidate(EInvalidateWidgetReason::Paint);
 	}
 
+	void SetThemedFloorArt(
+		const FSlateBrush* InBackgroundBrush,
+		const TArray<FBox2D>& InTowerMazeWallBoxes,
+		const FLinearColor& InMapArtTint,
+		const FLinearColor& InWallFillColor,
+		const FLinearColor& InWallStrokeColor)
+	{
+		BackgroundBrush = InBackgroundBrush;
+		TowerMazeWallBoxes = InTowerMazeWallBoxes;
+		MapArtTint = InMapArtTint;
+		MapWallFillColor = InWallFillColor;
+		MapWallStrokeColor = InWallStrokeColor;
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
+	void SetPlayerDirectionWorldXY(const FVector2D& InPlayerDirectionWorldXY)
+	{
+		PlayerDirectionWorldXY = InPlayerDirectionWorldXY.IsNearlyZero()
+			? FVector2D(1.0f, 0.0f)
+			: InPlayerDirectionWorldXY.GetSafeNormal();
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
 	virtual FVector2D ComputeDesiredSize(float) const override
 	{
 		return bMinimap ? FVector2D(228.f, 228.f) : FVector2D(1024.f, 640.f);
@@ -1161,7 +1346,10 @@ public:
 				FSlateLayoutTransform(FVector2f(static_cast<float>(Pos.X), static_cast<float>(Pos.Y))));
 		};
 
-		const FLinearColor MapBackgroundColor = bMinimap ? FT66Style::MinimapBackground() : FT66Style::Background();
+		const bool bUsingMapArt = BackgroundBrush && BackgroundBrush->GetResourceObject();
+		const FLinearColor MapBackgroundColor = (bUseRevealMask || bUsingMapArt)
+			? FLinearColor::Black
+			: (bMinimap ? FT66Style::MinimapBackground() : FT66Style::Background());
 		const FLinearColor MapTerrainColor = bUseRevealMask
 			? WithAlpha(FT66Style::MinimapTerrain(), bMinimap ? 0.08f : 0.06f)
 			: WithAlpha(FT66Style::MinimapTerrain(), bMinimap ? 0.42f : 0.22f);
@@ -1253,67 +1441,340 @@ public:
 				Thickness);
 		};
 
-		// Terrain tint and diagonal lane strokes so the minimap reads more like a finished surface than a debug grid.
+		auto DrawBackgroundTextureWorldRect = [&](const int32 DrawLayerId, const FVector2D& RectWorldMin, const FVector2D& RectWorldMax, const float Alpha)
 		{
-			if (bHasTowerPolygon)
+			if (!bUsingMapArt)
 			{
-				DrawTowerPolygonFill(LayerId + 1, MapTerrainColor);
+				return;
+			}
+
+			const FVector2D BackgroundWorldMin = FullWorldMin;
+			const FVector2D BackgroundWorldMax = FullWorldMax;
+			const FVector2D BackgroundWorldSpan = BackgroundWorldMax - BackgroundWorldMin;
+			if (BackgroundWorldSpan.X <= 1.0f || BackgroundWorldSpan.Y <= 1.0f)
+			{
+				return;
+			}
+
+			const FVector2D ClampedWorldMin(
+				FMath::Clamp(RectWorldMin.X, BackgroundWorldMin.X, BackgroundWorldMax.X),
+				FMath::Clamp(RectWorldMin.Y, BackgroundWorldMin.Y, BackgroundWorldMax.Y));
+			const FVector2D ClampedWorldMax(
+				FMath::Clamp(RectWorldMax.X, BackgroundWorldMin.X, BackgroundWorldMax.X),
+				FMath::Clamp(RectWorldMax.Y, BackgroundWorldMin.Y, BackgroundWorldMax.Y));
+			if (ClampedWorldMax.X <= ClampedWorldMin.X || ClampedWorldMax.Y <= ClampedWorldMin.Y)
+			{
+				return;
+			}
+
+			const FVector2D A = WorldToLocal(FVector2D(ClampedWorldMin.X, ClampedWorldMax.Y));
+			const FVector2D B = WorldToLocal(FVector2D(ClampedWorldMax.X, ClampedWorldMin.Y));
+			const FVector2D TL(FMath::Min(A.X, B.X), FMath::Min(A.Y, B.Y));
+			const FVector2D BR(FMath::Max(A.X, B.X), FMath::Max(A.Y, B.Y));
+			const FVector2D BoxSize = BR - TL;
+			if (BoxSize.X <= 1.0f || BoxSize.Y <= 1.0f)
+			{
+				return;
+			}
+
+			const float U0 = (ClampedWorldMin.X - BackgroundWorldMin.X) / BackgroundWorldSpan.X;
+			const float U1 = (ClampedWorldMax.X - BackgroundWorldMin.X) / BackgroundWorldSpan.X;
+			const float V0 = 1.0f - ((ClampedWorldMax.Y - BackgroundWorldMin.Y) / BackgroundWorldSpan.Y);
+			const float V1 = 1.0f - ((ClampedWorldMin.Y - BackgroundWorldMin.Y) / BackgroundWorldSpan.Y);
+
+			FSlateBrush LocalBrush = *BackgroundBrush;
+			LocalBrush.TintColor = FSlateColor(FLinearColor(MapArtTint.R, MapArtTint.G, MapArtTint.B, MapArtTint.A * Alpha));
+			LocalBrush.SetUVRegion(FBox2f(
+				FVector2f(U0, V0),
+				FVector2f(U1, V1)));
+
+			FSlateDrawElement::MakeBox(
+				OutDrawElements,
+				DrawLayerId,
+				ToPaintGeo(TL, BoxSize),
+				&LocalBrush,
+				ESlateDrawEffect::None,
+				FLinearColor::White);
+		};
+
+		auto DrawTowerPolygonTexture = [&](const int32 DrawLayerId, const float Alpha)
+		{
+			if (!bUsingMapArt || !bHasTowerPolygon || TowerPolygonWorldVertices.Num() < 3)
+			{
+				return;
+			}
+
+			float PolygonMinY = TNumericLimits<float>::Max();
+			float PolygonMaxY = TNumericLimits<float>::Lowest();
+			for (const FVector2D& Vertex : TowerPolygonWorldVertices)
+			{
+				PolygonMinY = FMath::Min(PolygonMinY, Vertex.Y);
+				PolygonMaxY = FMath::Max(PolygonMaxY, Vertex.Y);
+			}
+
+			static constexpr float PolygonBandHeightWorld = 320.0f;
+			for (float BandMinY = PolygonMinY; BandMinY < PolygonMaxY - 1.0f; BandMinY += PolygonBandHeightWorld)
+			{
+				const float BandMaxY = FMath::Min(BandMinY + PolygonBandHeightWorld, PolygonMaxY);
+				float BandMinX = 0.0f;
+				float BandMaxX = 0.0f;
+				if (!T66TowerMapTerrain::TryGetPolygonBandXRange(TowerPolygonWorldVertices, BandMinY, BandMaxY, BandMinX, BandMaxX))
+				{
+					continue;
+				}
+
+				DrawBackgroundTextureWorldRect(
+					DrawLayerId,
+					FVector2D(BandMinX, BandMinY),
+					FVector2D(BandMaxX, BandMaxY),
+					Alpha);
+			}
+		};
+
+		auto DrawRevealedMapArtCircle = [&](const int32 DrawLayerId, const FVector2D& RevealWorldPoint, const float RadiusWorld, const float Alpha)
+		{
+			if (!bUsingMapArt || RadiusWorld <= KINDA_SMALL_NUMBER)
+			{
+				return;
+			}
+
+			static constexpr int32 RevealBandCount = 12;
+			for (int32 BandIndex = 0; BandIndex < RevealBandCount; ++BandIndex)
+			{
+				const float T0 = static_cast<float>(BandIndex) / static_cast<float>(RevealBandCount);
+				const float T1 = static_cast<float>(BandIndex + 1) / static_cast<float>(RevealBandCount);
+				const float LocalMinY = FMath::Lerp(-RadiusWorld, RadiusWorld, T0);
+				const float LocalMaxY = FMath::Lerp(-RadiusWorld, RadiusWorld, T1);
+				const float SampleY = (LocalMinY + LocalMaxY) * 0.5f;
+				const float HalfWidth = FMath::Sqrt(FMath::Max(0.0f, (RadiusWorld * RadiusWorld) - (SampleY * SampleY)));
+				float SegmentMinX = RevealWorldPoint.X - HalfWidth;
+				float SegmentMaxX = RevealWorldPoint.X + HalfWidth;
+				if (bHasTowerPolygon)
+				{
+					float PolygonMinX = 0.0f;
+					float PolygonMaxX = 0.0f;
+					if (!T66TowerMapTerrain::TryGetPolygonBandXRange(
+						TowerPolygonWorldVertices,
+						RevealWorldPoint.Y + LocalMinY,
+						RevealWorldPoint.Y + LocalMaxY,
+						PolygonMinX,
+						PolygonMaxX))
+					{
+						continue;
+					}
+
+					SegmentMinX = FMath::Max(SegmentMinX, PolygonMinX);
+					SegmentMaxX = FMath::Min(SegmentMaxX, PolygonMaxX);
+					if (SegmentMaxX <= SegmentMinX)
+					{
+						continue;
+					}
+				}
+
+				DrawBackgroundTextureWorldRect(
+					DrawLayerId,
+					FVector2D(SegmentMinX, RevealWorldPoint.Y + LocalMinY),
+					FVector2D(SegmentMaxX, RevealWorldPoint.Y + LocalMaxY),
+					Alpha);
+			}
+		};
+
+		auto IsWorldBoxRevealed = [&](const FBox2D& WorldBox) -> bool
+		{
+			if (!bUseRevealMask || RevealWorldRadius <= KINDA_SMALL_NUMBER)
+			{
+				return true;
+			}
+
+			const float RevealRadiusSq = FMath::Square(RevealWorldRadius + 140.0f);
+			for (const FVector2D& RevealWorldPoint : RevealWorldPoints)
+			{
+				if (GetSquaredDistanceToBox2D(RevealWorldPoint, WorldBox) <= RevealRadiusSq)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		};
+
+		auto DrawTowerMazeWalls = [&](const int32 DrawLayerId)
+		{
+			if (TowerMazeWallBoxes.Num() <= 0)
+			{
+				return;
+			}
+
+			const FLinearColor WallFill = WithAlpha(MapWallFillColor, bUseRevealMask ? 0.96f : 0.88f);
+			const FLinearColor WallStroke = WithAlpha(MapWallStrokeColor, bUseRevealMask ? 0.92f : 0.82f);
+			for (const FBox2D& WallBox : TowerMazeWallBoxes)
+			{
+				if (!IsWorldBoxRevealed(WallBox))
+				{
+					continue;
+				}
+
+				const FVector2D A = WorldToLocal(FVector2D(WallBox.Min.X, WallBox.Max.Y));
+				const FVector2D B = WorldToLocal(FVector2D(WallBox.Max.X, WallBox.Min.Y));
+				const FVector2D TL(FMath::Min(A.X, B.X), FMath::Min(A.Y, B.Y));
+				const FVector2D BR(FMath::Max(A.X, B.X), FMath::Max(A.Y, B.Y));
+				const FVector2D BoxSize = BR - TL;
+				if (BoxSize.X <= 1.0f || BoxSize.Y <= 1.0f)
+				{
+					continue;
+				}
+
+				FSlateDrawElement::MakeBox(
+					OutDrawElements,
+					DrawLayerId,
+					ToPaintGeo(TL, BoxSize),
+					FCoreStyle::Get().GetBrush("WhiteBrush"),
+					ESlateDrawEffect::None,
+					WallFill);
+
+				const TArray<FVector2D> Outline = {
+					TL,
+					FVector2D(BR.X, TL.Y),
+					BR,
+					FVector2D(TL.X, BR.Y),
+					TL
+				};
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					DrawLayerId + 1,
+					AllottedGeometry.ToPaintGeometry(),
+					Outline,
+					ESlateDrawEffect::None,
+					WallStroke,
+					true,
+					bMinimap ? 1.0f : 1.4f);
+			}
+		};
+
+		// Terrain texture/fill. Tower floors can use dedicated map art that reveals out of black.
+		{
+			if (bUsingMapArt)
+			{
+				if (bUseRevealMask && RevealWorldRadius > KINDA_SMALL_NUMBER)
+				{
+					for (const FVector2D& RevealWorldPoint : RevealWorldPoints)
+					{
+						DrawRevealedMapArtCircle(LayerId + 1, RevealWorldPoint, RevealWorldRadius, bMinimap ? 0.98f : 0.94f);
+					}
+				}
+				else if (bHasTowerPolygon)
+				{
+					DrawTowerPolygonTexture(LayerId + 1, bMinimap ? 0.98f : 0.94f);
+				}
+				else
+				{
+					DrawBackgroundTextureWorldRect(LayerId + 1, FullWorldMin, FullWorldMax, bMinimap ? 0.98f : 0.94f);
+				}
 			}
 			else
 			{
-				const FVector2D Inset(6.f, 6.f);
-				FSlateDrawElement::MakeBox(
-					OutDrawElements,
-					LayerId + 1,
-					ToPaintGeo(Inset, Size - (Inset * 2.f)),
-					FCoreStyle::Get().GetBrush("WhiteBrush"),
-					ESlateDrawEffect::None,
-					MapTerrainColor
-				);
-			}
+				if (bHasTowerPolygon && !bUseRevealMask)
+				{
+					DrawTowerPolygonFill(LayerId + 1, MapTerrainColor);
+				}
+				else if (!bUseRevealMask)
+				{
+					const FVector2D Inset(6.f, 6.f);
+					FSlateDrawElement::MakeBox(
+						OutDrawElements,
+						LayerId + 1,
+						ToPaintGeo(Inset, Size - (Inset * 2.f)),
+						FCoreStyle::Get().GetBrush("WhiteBrush"),
+						ESlateDrawEffect::None,
+						MapTerrainColor
+					);
+				}
 
-			if (!bUseRevealMask && !bHasTowerPolygon)
-			{
-				const FLinearColor LaneColor = WithAlpha(FT66Style::MinimapTerrain() * FLinearColor(0.7f, 0.7f, 0.7f, 1.f), 0.75f);
-				const TArray<FVector2D> LaneA = {
-					FVector2D(Size.X * 0.08f, Size.Y * 0.78f),
-					FVector2D(Size.X * 0.24f, Size.Y * 0.62f),
-					FVector2D(Size.X * 0.40f, Size.Y * 0.46f),
-					FVector2D(Size.X * 0.58f, Size.Y * 0.30f),
-					FVector2D(Size.X * 0.84f, Size.Y * 0.12f)
-				};
-				const TArray<FVector2D> LaneB = {
-					FVector2D(Size.X * 0.16f, Size.Y * 0.16f),
-					FVector2D(Size.X * 0.34f, Size.Y * 0.30f),
-					FVector2D(Size.X * 0.52f, Size.Y * 0.48f),
-					FVector2D(Size.X * 0.72f, Size.Y * 0.68f),
-					FVector2D(Size.X * 0.90f, Size.Y * 0.84f)
-				};
-				FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), LaneA, ESlateDrawEffect::None, LaneColor, true, bMinimap ? 10.f : 16.f);
-				FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), LaneB, ESlateDrawEffect::None, WithAlpha(LaneColor, 0.50f), true, bMinimap ? 8.f : 12.f);
+				if (!bUseRevealMask && !bHasTowerPolygon)
+				{
+					const FLinearColor LaneColor = WithAlpha(FT66Style::MinimapTerrain() * FLinearColor(0.7f, 0.7f, 0.7f, 1.f), 0.75f);
+					const TArray<FVector2D> LaneA = {
+						FVector2D(Size.X * 0.08f, Size.Y * 0.78f),
+						FVector2D(Size.X * 0.24f, Size.Y * 0.62f),
+						FVector2D(Size.X * 0.40f, Size.Y * 0.46f),
+						FVector2D(Size.X * 0.58f, Size.Y * 0.30f),
+						FVector2D(Size.X * 0.84f, Size.Y * 0.12f)
+					};
+					const TArray<FVector2D> LaneB = {
+						FVector2D(Size.X * 0.16f, Size.Y * 0.16f),
+						FVector2D(Size.X * 0.34f, Size.Y * 0.30f),
+						FVector2D(Size.X * 0.52f, Size.Y * 0.48f),
+						FVector2D(Size.X * 0.72f, Size.Y * 0.68f),
+						FVector2D(Size.X * 0.90f, Size.Y * 0.84f)
+					};
+					FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), LaneA, ESlateDrawEffect::None, LaneColor, true, bMinimap ? 10.f : 16.f);
+					FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), LaneB, ESlateDrawEffect::None, WithAlpha(LaneColor, 0.50f), true, bMinimap ? 8.f : 12.f);
+				}
 			}
 		}
 
-		if (bUseRevealMask && RevealWorldRadius > KINDA_SMALL_NUMBER)
+		if (!bUsingMapArt && bUseRevealMask && RevealWorldRadius > KINDA_SMALL_NUMBER)
 		{
-			const FVector2D RevealDrawSize(
-				FMath::Max((RevealWorldRadius * 2.0f / WorldSpan.X) * Size.X, 8.0f),
-				FMath::Max((RevealWorldRadius * 2.0f / WorldSpan.Y) * Size.Y, 8.0f));
-
 			for (const FVector2D& RevealWorldPoint : RevealWorldPoints)
 			{
-				const FVector2D RevealLocalPoint = WorldToLocal(RevealWorldPoint);
-				FSlateDrawElement::MakeBox(
-					OutDrawElements,
-					LayerId + 2,
-					ToPaintGeo(RevealLocalPoint - (RevealDrawSize * 0.5f), RevealDrawSize),
-					FCoreStyle::Get().GetBrush("WhiteBrush"),
-					ESlateDrawEffect::None,
-					RevealedTerrainColor);
+				static constexpr int32 RevealBandCount = 12;
+				for (int32 BandIndex = 0; BandIndex < RevealBandCount; ++BandIndex)
+				{
+					const float T0 = static_cast<float>(BandIndex) / static_cast<float>(RevealBandCount);
+					const float T1 = static_cast<float>(BandIndex + 1) / static_cast<float>(RevealBandCount);
+					const float LocalMinY = FMath::Lerp(-RevealWorldRadius, RevealWorldRadius, T0);
+					const float LocalMaxY = FMath::Lerp(-RevealWorldRadius, RevealWorldRadius, T1);
+					const float SampleY = (LocalMinY + LocalMaxY) * 0.5f;
+					const float HalfWidth = FMath::Sqrt(FMath::Max(0.0f, (RevealWorldRadius * RevealWorldRadius) - (SampleY * SampleY)));
+					float SegmentMinX = RevealWorldPoint.X - HalfWidth;
+					float SegmentMaxX = RevealWorldPoint.X + HalfWidth;
+					if (bHasTowerPolygon)
+					{
+						float PolygonMinX = 0.0f;
+						float PolygonMaxX = 0.0f;
+						if (!T66TowerMapTerrain::TryGetPolygonBandXRange(
+							TowerPolygonWorldVertices,
+							RevealWorldPoint.Y + LocalMinY,
+							RevealWorldPoint.Y + LocalMaxY,
+							PolygonMinX,
+							PolygonMaxX))
+						{
+							continue;
+						}
+
+						SegmentMinX = FMath::Max(SegmentMinX, PolygonMinX);
+						SegmentMaxX = FMath::Min(SegmentMaxX, PolygonMaxX);
+						if (SegmentMaxX <= SegmentMinX)
+						{
+							continue;
+						}
+					}
+
+					const FVector2D A = WorldToLocal(FVector2D(SegmentMinX, RevealWorldPoint.Y + LocalMaxY));
+					const FVector2D B = WorldToLocal(FVector2D(SegmentMaxX, RevealWorldPoint.Y + LocalMinY));
+					const FVector2D TL(FMath::Min(A.X, B.X), FMath::Min(A.Y, B.Y));
+					const FVector2D BR(FMath::Max(A.X, B.X), FMath::Max(A.Y, B.Y));
+					const FVector2D BoxSize = BR - TL;
+					if (BoxSize.X <= 1.0f || BoxSize.Y <= 1.0f)
+					{
+						continue;
+					}
+
+					FSlateDrawElement::MakeBox(
+						OutDrawElements,
+						LayerId + 2,
+						ToPaintGeo(TL, BoxSize),
+						FCoreStyle::Get().GetBrush("WhiteBrush"),
+						ESlateDrawEffect::None,
+						RevealedTerrainColor);
+				}
 			}
 		}
 
+		DrawTowerMazeWalls(LayerId + 3);
+
 		// Background grid (subtle).
+		if (!bUsingMapArt && !bUseRevealMask)
 		{
 			static constexpr int32 GridLines = 6;
 			for (int32 i = 1; i < GridLines; ++i)
@@ -1336,7 +1797,7 @@ public:
 				FVector2D(0.f, 0.f) };
 			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 4, AllottedGeometry.ToPaintGeometry(),
 				Border, ESlateDrawEffect::None, OutlineColor, true, 2.f);
-			if (bHasTowerPolygon)
+			if (bHasTowerPolygon && !bUseRevealMask)
 			{
 				DrawTowerPolygonOutline(LayerId + 4, WithAlpha(OutlineColor, 0.78f), bMinimap ? 1.4f : 2.0f);
 			}
@@ -1396,31 +1857,35 @@ public:
 
 		if (bHasTowerHole)
 		{
-			const FVector2D HoleMin = WorldToLocal(TowerHoleCenter - TowerHoleHalfExtents);
-			const FVector2D HoleMax = WorldToLocal(TowerHoleCenter + TowerHoleHalfExtents);
-			const FVector2D TL(FMath::Min(HoleMin.X, HoleMax.X), FMath::Min(HoleMin.Y, HoleMax.Y));
-			const FVector2D BR(FMath::Max(HoleMin.X, HoleMax.X), FMath::Max(HoleMin.Y, HoleMax.Y));
-			const FVector2D HoleSize = BR - TL;
-			if (HoleSize.X > 1.0f && HoleSize.Y > 1.0f)
+			const FBox2D HoleWorldBox(TowerHoleCenter - TowerHoleHalfExtents, TowerHoleCenter + TowerHoleHalfExtents);
+			if (IsWorldBoxRevealed(HoleWorldBox))
 			{
-				FSlateDrawElement::MakeBox(
-					OutDrawElements,
-					LayerId + 4,
-					ToPaintGeo(TL, HoleSize),
-					FCoreStyle::Get().GetBrush("WhiteBrush"),
-					ESlateDrawEffect::None,
-					WithAlpha(MapBackgroundColor, bUseRevealMask ? 0.95f : 0.82f));
+				const FVector2D HoleMin = WorldToLocal(TowerHoleCenter - TowerHoleHalfExtents);
+				const FVector2D HoleMax = WorldToLocal(TowerHoleCenter + TowerHoleHalfExtents);
+				const FVector2D TL(FMath::Min(HoleMin.X, HoleMax.X), FMath::Min(HoleMin.Y, HoleMax.Y));
+				const FVector2D BR(FMath::Max(HoleMin.X, HoleMax.X), FMath::Max(HoleMin.Y, HoleMax.Y));
+				const FVector2D HoleSize = BR - TL;
+				if (HoleSize.X > 1.0f && HoleSize.Y > 1.0f)
+				{
+					FSlateDrawElement::MakeBox(
+						OutDrawElements,
+						LayerId + 4,
+						ToPaintGeo(TL, HoleSize),
+						FCoreStyle::Get().GetBrush("WhiteBrush"),
+						ESlateDrawEffect::None,
+						WithAlpha(MapBackgroundColor, bUseRevealMask ? 0.95f : 0.82f));
 
-				const TArray<FVector2D> HoleOutline = { TL, FVector2D(BR.X, TL.Y), BR, FVector2D(TL.X, BR.Y), TL };
-				FSlateDrawElement::MakeLines(
-					OutDrawElements,
-					LayerId + 5,
-					AllottedGeometry.ToPaintGeometry(),
-					HoleOutline,
-					ESlateDrawEffect::None,
-					WithAlpha(OutlineColor, 0.72f),
-					true,
-					bMinimap ? 1.5f : 2.0f);
+					const TArray<FVector2D> HoleOutline = { TL, FVector2D(BR.X, TL.Y), BR, FVector2D(TL.X, BR.Y), TL };
+					FSlateDrawElement::MakeLines(
+						OutDrawElements,
+						LayerId + 5,
+						AllottedGeometry.ToPaintGeometry(),
+						HoleOutline,
+						ESlateDrawEffect::None,
+						WithAlpha(OutlineColor, 0.72f),
+						true,
+						bMinimap ? 1.5f : 2.0f);
+				}
 			}
 		}
 
@@ -1436,10 +1901,49 @@ public:
 				FMath::Clamp(P.Y, 0.f, Size.Y));
 		};
 
-		// Player marker (portrait when available, else the old green diamond fallback).
+		// Player marker: directional arrow on the minimap, portrait/diamond fallback on the full map.
 		{
 			const FVector2D P = ClampToBounds(WorldToLocal(PlayerWorldXY));
-			if (PlayerBrush && PlayerBrush->GetResourceObject())
+			const FVector2D ScreenDirection = FVector2D(PlayerDirectionWorldXY.X, -PlayerDirectionWorldXY.Y).GetSafeNormal();
+			const FVector2D ScreenPerp(-ScreenDirection.Y, ScreenDirection.X);
+			if (bMinimap)
+			{
+				const float ArrowTipLength = 10.0f;
+				const float ArrowBackLength = 5.0f;
+				const float ArrowHalfWidth = 4.0f;
+				const FVector2D Tip = P + (ScreenDirection * ArrowTipLength);
+				const FVector2D Left = P - (ScreenDirection * ArrowBackLength) + (ScreenPerp * ArrowHalfWidth);
+				const FVector2D Right = P - (ScreenDirection * ArrowBackLength) - (ScreenPerp * ArrowHalfWidth);
+				const FVector2D Tail = P - (ScreenDirection * (ArrowBackLength + 4.0f));
+				const TArray<FVector2D> ArrowOutline = {
+					Tip,
+					Left,
+					Tail,
+					Right,
+					Tip
+				};
+
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId + 6,
+					AllottedGeometry.ToPaintGeometry(),
+					ArrowOutline,
+					ESlateDrawEffect::None,
+					FT66Style::PanelOuter(),
+					true,
+					4.0f);
+
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId + 7,
+					AllottedGeometry.ToPaintGeometry(),
+					ArrowOutline,
+					ESlateDrawEffect::None,
+					FT66Style::MinimapFriendly(),
+					true,
+					2.6f);
+			}
+			else if (PlayerBrush && PlayerBrush->GetResourceObject())
 			{
 				const float MarkerSize = bMinimap ? 18.f : 24.f;
 				const FVector2D TL = ClampToBounds(P - FVector2D(MarkerSize * 0.5f, MarkerSize * 0.5f));
@@ -1523,7 +2027,7 @@ public:
 					ToPaintGeo(TL, IconSize),
 					M.IconBrush,
 					ESlateDrawEffect::None,
-					FLinearColor(M.Color.R, M.Color.G, M.Color.B, bMinimap ? 0.95f : 0.98f));
+					GetMinimapMarkerTint(M.IconBrush, M.Color, bMinimap));
 			}
 			else
 			{
@@ -1561,7 +2065,7 @@ public:
 			}
 		}
 
-		return LayerId + 8;
+		return LayerId + 10;
 	}
 
 private:
@@ -1576,9 +2080,15 @@ private:
 	FVector2D FullWorldMax = FVector2D::ZeroVector;
 
 	FVector2D PlayerWorldXY = FVector2D::ZeroVector;
+	FVector2D PlayerDirectionWorldXY = FVector2D(1.0f, 0.0f);
 	TArray<FT66MapMarker> Markers;
 	TArray<FVector2D> RevealWorldPoints;
+	TArray<FBox2D> TowerMazeWallBoxes;
+	const FSlateBrush* BackgroundBrush = nullptr;
 	const FSlateBrush* PlayerBrush = nullptr;
+	FLinearColor MapArtTint = FLinearColor::White;
+	FLinearColor MapWallFillColor = FLinearColor(0.14f, 0.11f, 0.09f, 1.0f);
+	FLinearColor MapWallStrokeColor = FLinearColor(0.92f, 0.86f, 0.72f, 1.0f);
 
 	float MinimapHalfExtent = 2500.f;
 	float RevealWorldRadius = 0.0f;
@@ -1731,8 +2241,9 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseStatsPanel() const
 		GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr,
 		GT66MediaPanelW,
 		true,
-		-4,
-		-6);
+		-7,
+		-6,
+		true);
 }
 
 TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
@@ -1936,8 +2447,8 @@ void UT66GameplayHUDWidget::RefreshPausePresentation()
 
 	if (PauseAchievementsPanelBox.IsValid())
 	{
-		PauseAchievementsPanelBox->SetVisibility(bPausePresentationActive ? EVisibility::Visible : EVisibility::Collapsed);
-		PauseAchievementsPanelBox->SetContent(bPausePresentationActive ? BuildPauseAchievementsPanel() : StaticCastSharedRef<SWidget>(SNew(SSpacer)));
+		PauseAchievementsPanelBox->SetVisibility(EVisibility::Collapsed);
+		PauseAchievementsPanelBox->SetContent(StaticCastSharedRef<SWidget>(SNew(SSpacer)));
 	}
 }
 
@@ -3218,24 +3729,61 @@ void UT66GameplayHUDWidget::RefreshMapData()
 	FVector2D ActiveTowerFloorCenter = FVector2D::ZeroVector;
 	FVector2D ActiveTowerFloorHalfExtents = FVector2D::ZeroVector;
 	TArray<FVector2D> ActiveTowerPolygon;
+	TArray<FBox2D> ActiveTowerMazeWallBoxes;
 	FVector2D ActiveTowerHoleCenter = FVector2D::ZeroVector;
 	FVector2D ActiveTowerHoleHalfExtents = FVector2D::ZeroVector;
 	bool bHasActiveTowerHole = false;
 	static const TArray<FVector2D> EmptyRevealPoints;
 	static const TArray<FVector2D> EmptyTowerPolygon;
+	static const TArray<FBox2D> EmptyTowerMazeWallBoxes;
 	static constexpr float TowerMapRevealRadius = 2600.0f;
 	const TArray<FVector2D>* ActiveTowerRevealPoints = nullptr;
+	const FSlateBrush* ActiveTowerBackgroundBrush = nullptr;
+	FLinearColor ActiveTowerMapTint = FLinearColor::White;
+	FLinearColor ActiveTowerWallFillColor = FLinearColor(0.14f, 0.11f, 0.09f, 1.0f);
+	FLinearColor ActiveTowerWallStrokeColor = FLinearColor(0.92f, 0.86f, 0.72f, 1.0f);
+
+	FVector2D PlayerDirectionWorldXY(1.0f, 0.0f);
+	if (P)
+	{
+		const FVector PlayerVelocity = P->GetVelocity();
+		const FVector2D PlayerVelocityXY(PlayerVelocity.X, PlayerVelocity.Y);
+		if (PlayerVelocityXY.SizeSquared() > 25.0f)
+		{
+			PlayerDirectionWorldXY = PlayerVelocityXY.GetSafeNormal();
+		}
+		else
+		{
+			const FVector Forward = P->GetActorForwardVector();
+			const FVector2D ForwardXY(Forward.X, Forward.Y);
+			if (!ForwardXY.IsNearlyZero())
+			{
+				PlayerDirectionWorldXY = ForwardXY.GetSafeNormal();
+			}
+		}
+	}
 
 	if (bTowerLayout)
 	{
-		if (P)
-		{
-			UpdateTowerMapReveal(PL);
-		}
 		ActiveTowerFloorNumber = GameMode->GetTowerFloorIndexForLocation(PL);
 		if (ActiveTowerFloorNumber == INDEX_NONE)
 		{
 			ActiveTowerFloorNumber = GameMode->GetCurrentTowerFloorIndex();
+		}
+
+		if (ActiveTowerFloorNumber != INDEX_NONE)
+		{
+			if (LastTowerRevealFloorNumber != INDEX_NONE && ActiveTowerFloorNumber > LastTowerRevealFloorNumber)
+			{
+				TowerRevealPointsByFloor.FindOrAdd(ActiveTowerFloorNumber).Reset();
+			}
+
+			LastTowerRevealFloorNumber = ActiveTowerFloorNumber;
+		}
+
+		if (P)
+		{
+			UpdateTowerMapReveal(PL);
 		}
 
 		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
@@ -3249,17 +3797,28 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			ActiveTowerFloorCenter = FVector2D(Floor.Center.X, Floor.Center.Y);
 			ActiveTowerFloorHalfExtents = FVector2D(Floor.BoundsHalfExtent, Floor.BoundsHalfExtent);
 			T66TowerMapTerrain::TryGetFloorPolygon(TowerLayout, Floor.FloorNumber, ActiveTowerPolygon);
+			ActiveTowerMazeWallBoxes = Floor.MazeWallBoxes;
 			bHasActiveTowerHole = Floor.bHasDropHole;
 			ActiveTowerHoleCenter = FVector2D(Floor.HoleCenter.X, Floor.HoleCenter.Y);
 			ActiveTowerHoleHalfExtents = Floor.HoleHalfExtent;
+			const FT66TowerMinimapArtStyle TowerArtStyle = GetTowerMinimapArtStyle(Floor.Theme);
+			ActiveTowerBackgroundBrush = GetTowerMinimapBackgroundBrush(Floor.Theme);
+			ActiveTowerMapTint = TowerArtStyle.MapTint;
+			ActiveTowerWallFillColor = TowerArtStyle.WallFill;
+			ActiveTowerWallStrokeColor = TowerArtStyle.WallStroke;
 			break;
 		}
 
 		ActiveTowerRevealPoints = TowerRevealPointsByFloor.Find(ActiveTowerFloorNumber);
 	}
+	else
+	{
+		LastTowerRevealFloorNumber = INDEX_NONE;
+	}
 
 	if (MinimapWidget.IsValid())
 	{
+		MinimapWidget->SetPlayerDirectionWorldXY(PlayerDirectionWorldXY);
 		if (bTowerLayout && ActiveTowerFloor)
 		{
 			MinimapWidget->SetFullWorldBounds(
@@ -3269,6 +3828,12 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			MinimapWidget->SetRevealMask(true, ActiveTowerRevealPoints ? *ActiveTowerRevealPoints : EmptyRevealPoints, TowerMapRevealRadius);
 			MinimapWidget->SetTowerPolygon(ActiveTowerPolygon);
 			MinimapWidget->SetTowerHole(bHasActiveTowerHole, ActiveTowerHoleCenter, ActiveTowerHoleHalfExtents);
+			MinimapWidget->SetThemedFloorArt(
+				ActiveTowerBackgroundBrush,
+				ActiveTowerMazeWallBoxes,
+				ActiveTowerMapTint,
+				ActiveTowerWallFillColor,
+				ActiveTowerWallStrokeColor);
 			MinimapWidget->SetLockFullMapToBounds(true);
 		}
 		else
@@ -3277,12 +3842,14 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			MinimapWidget->SetRevealMask(false, EmptyRevealPoints, 0.0f);
 			MinimapWidget->SetTowerPolygon(EmptyTowerPolygon);
 			MinimapWidget->SetTowerHole(false);
+			MinimapWidget->SetThemedFloorArt(nullptr, EmptyTowerMazeWallBoxes, FLinearColor::White, FLinearColor::White, FLinearColor::White);
 			MinimapWidget->SetLockFullMapToBounds(false);
 		}
 	}
 
 	if (FullMapWidget.IsValid())
 	{
+		FullMapWidget->SetPlayerDirectionWorldXY(PlayerDirectionWorldXY);
 		if (bTowerLayout && ActiveTowerFloor)
 		{
 			FullMapWidget->SetFullWorldBounds(
@@ -3292,6 +3859,12 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			FullMapWidget->SetRevealMask(true, ActiveTowerRevealPoints ? *ActiveTowerRevealPoints : EmptyRevealPoints, TowerMapRevealRadius);
 			FullMapWidget->SetTowerPolygon(ActiveTowerPolygon);
 			FullMapWidget->SetTowerHole(bHasActiveTowerHole, ActiveTowerHoleCenter, ActiveTowerHoleHalfExtents);
+			FullMapWidget->SetThemedFloorArt(
+				ActiveTowerBackgroundBrush,
+				ActiveTowerMazeWallBoxes,
+				ActiveTowerMapTint,
+				ActiveTowerWallFillColor,
+				ActiveTowerWallStrokeColor);
 		}
 		else
 		{
@@ -3300,6 +3873,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			FullMapWidget->SetRevealMask(false, EmptyRevealPoints, 0.0f);
 			FullMapWidget->SetTowerPolygon(EmptyTowerPolygon);
 			FullMapWidget->SetTowerHole(false);
+			FullMapWidget->SetThemedFloorArt(nullptr, EmptyTowerMazeWallBoxes, FLinearColor::White, FLinearColor::White, FLinearColor::White);
 		}
 	}
 
@@ -3359,9 +3933,43 @@ void UT66GameplayHUDWidget::RefreshMapData()
 				MapCache.Add({ A, EMapCacheMarkerType::Miasma, FLinearColor(0.65f, 0.15f, 0.85f, 0.78f), FText::GetEmpty(), FName(TEXT("Miasma")) });
 			}
 
-			UE_LOG(LogT66HUD, Verbose, TEXT("[GOLD] RefreshMapData: used ActorRegistry (NPCs=%d, Gates=%d, Enemies=%d, Miasma=%d)"),
+			for (const TWeakObjectPtr<AT66WorldInteractableBase>& WeakInteractable : Registry->GetWorldInteractables())
+			{
+				AT66WorldInteractableBase* Interactable = WeakInteractable.Get();
+				if (!Interactable || Interactable->bConsumed)
+				{
+					continue;
+				}
+
+				if (Cast<AT66ChestInteractable>(Interactable))
+				{
+					MapCache.Add({ Interactable, EMapCacheMarkerType::POI, FT66Style::Accent2(), FText::GetEmpty(), FName(TEXT("Chest")) });
+				}
+				else if (Cast<AT66CrateInteractable>(Interactable))
+				{
+					MapCache.Add({ Interactable, EMapCacheMarkerType::POI, FT66Style::MinimapNeutral(), FText::GetEmpty(), FName(TEXT("Crate")) });
+				}
+				else if (Cast<AT66StageCatchUpLootInteractable>(Interactable))
+				{
+					MapCache.Add({ Interactable, EMapCacheMarkerType::POI, FT66Style::Accent2(), FText::GetEmpty(), FName(TEXT("CatchUpLoot")) });
+				}
+			}
+
+			for (const TWeakObjectPtr<AT66LootBagPickup>& WeakLootBag : Registry->GetLootBags())
+			{
+				AT66LootBagPickup* LootBag = WeakLootBag.Get();
+				if (!LootBag)
+				{
+					continue;
+				}
+
+				MapCache.Add({ LootBag, EMapCacheMarkerType::POI, FT66Style::Accent2(), FText::GetEmpty(), FName(TEXT("LootBag")) });
+			}
+
+			UE_LOG(LogT66HUD, Verbose, TEXT("[GOLD] RefreshMapData: used ActorRegistry (NPCs=%d, Gates=%d, Enemies=%d, Miasma=%d, Interactables=%d, LootBags=%d)"),
 				Registry->GetNPCs().Num(), Registry->GetStageGates().Num(),
-				Registry->GetEnemies().Num(), Registry->GetMiasmaBoundaries().Num());
+				Registry->GetEnemies().Num(), Registry->GetMiasmaBoundaries().Num(),
+				Registry->GetWorldInteractables().Num(), Registry->GetLootBags().Num());
 		}
 	}
 
@@ -3384,17 +3992,22 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		{
 		case EMapCacheMarkerType::NPC:
 			M.Visual = ET66MapMarkerVisual::Icon;
-			M.IconBrush = GetMinimapSymbolBrush(FName(TEXT("NPC")));
+			M.IconBrush = GetMinimapSymbolBrush(E.MarkerKey.IsNone() ? FName(TEXT("NPC")) : E.MarkerKey);
 			M.DrawSize = FVector2D(12.f, 12.f);
 			break;
 		case EMapCacheMarkerType::Gate:
 			M.Visual = ET66MapMarkerVisual::Icon;
-			M.IconBrush = GetMinimapSymbolBrush(FName(TEXT("Gate")));
+			M.IconBrush = GetMinimapSymbolBrush(E.MarkerKey.IsNone() ? FName(TEXT("Gate")) : E.MarkerKey);
 			M.DrawSize = FVector2D(12.f, 12.f);
 			break;
 		case EMapCacheMarkerType::Miasma:
 			M.Visual = ET66MapMarkerVisual::Icon;
-			M.IconBrush = GetMinimapSymbolBrush(FName(TEXT("Miasma")));
+			M.IconBrush = GetMinimapSymbolBrush(E.MarkerKey.IsNone() ? FName(TEXT("Miasma")) : E.MarkerKey);
+			M.DrawSize = FVector2D(12.f, 12.f);
+			break;
+		case EMapCacheMarkerType::POI:
+			M.Visual = ET66MapMarkerVisual::Icon;
+			M.IconBrush = GetMinimapSymbolBrush(E.MarkerKey);
 			M.DrawSize = FVector2D(12.f, 12.f);
 			break;
 		case EMapCacheMarkerType::Enemy:

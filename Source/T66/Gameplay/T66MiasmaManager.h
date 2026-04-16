@@ -7,6 +7,7 @@
 #include "T66MiasmaManager.generated.h"
 
 class AT66MiasmaTile;
+class AT66LavaPatch;
 class UInstancedStaticMeshComponent;
 class UMaterialInstanceDynamic;
 class UTexture2D;
@@ -106,6 +107,7 @@ public:
 	/** Clears all spawned miasma tiles. */
 	void ClearAllMiasma();
 	void RebuildForCurrentStage();
+	int32 SpawnLegacyStageLavaPatchesForCurrentStage();
 
 	/** Called when stage timer changes / starts; spawns additional tiles based on progress. */
 	void UpdateFromRunState();
@@ -127,6 +129,9 @@ private:
 	UPROPERTY()
 	TArray<FVector> TileCenters;
 
+	UPROPERTY()
+	TArray<TWeakObjectPtr<AT66LavaPatch>> LegacyLavaPatches;
+
 	int32 SpawnedTileCount = 0;
 	float DamageTickAccumulator = 0.f;
 	float AnimationStartTimeSeconds = 0.f;
@@ -139,6 +144,7 @@ private:
 	void TickDamageOverActiveTiles(float DeltaTime);
 	void EnsureVisualMaterial();
 	bool ShouldUseTowerBloodLook() const;
+	void ClearLegacyLavaPatches();
 	void GenerateAnimationFrames();
 	UTexture2D* BuildFrameTexture(int32 FrameIndex, int32 ClampedFrames, int32 Resolution) const;
 	FLinearColor SampleLavaColor(const FVector2D& BaseUV, float Phase) const;

@@ -45,6 +45,8 @@ namespace
 
 AT66UniqueDebuffEnemy::AT66UniqueDebuffEnemy()
 {
+	EnemyFamily = ET66EnemyFamily::Special;
+
 	// Unique enemy uses Enemy3 mesh from DT_CharacterVisuals (same as stage EnemyC).
 	CharacterVisualID = FName(TEXT("Enemy3"));
 

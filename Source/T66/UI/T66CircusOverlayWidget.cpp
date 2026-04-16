@@ -435,6 +435,18 @@ void UT66CircusOverlayWidget::NativeDestruct()
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleStageTimerChanged);
 	}
 
+	if (VendorTabWidget)
+	{
+		VendorTabWidget->RemoveFromParent();
+		VendorTabWidget = nullptr;
+	}
+
+	if (GamblerTabWidget)
+	{
+		GamblerTabWidget->RemoveFromParent();
+		GamblerTabWidget = nullptr;
+	}
+
 	Super::NativeDestruct();
 }
 

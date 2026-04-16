@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Data/T66DataTypes.h"
+#include "Gameplay/T66PreviewStageEnvironment.h"
 #include "T66CompanionPreviewStage.generated.h"
 
 class AT66CompanionBase;
@@ -49,6 +49,9 @@ public:
 	/** Update preview dressing for the active difficulty. */
 	void SetPreviewDifficulty(ET66Difficulty Difficulty);
 
+	/** Toggle selection-scene dressing vs run-summary capture mode. */
+	void SetPreviewStageMode(ET66PreviewStageMode NewPreviewStageMode);
+
 	/** Show or hide the entire stage (floor + companion pawn). */
 	void SetStageVisible(bool bVisible);
 
@@ -69,9 +72,6 @@ protected:
 	/** Simple floor so "ground level" is visible in preview (same level lighting as gameplay). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UStaticMeshComponent> PreviewFloor;
-
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> EasyPreviewProps;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
 	TSubclassOf<AT66CompanionBase> CompanionPawnClass;
@@ -117,6 +117,8 @@ protected:
 
 	UPROPERTY(Transient)
 	ET66Difficulty PreviewDifficulty = ET66Difficulty::Easy;
+
+	ET66PreviewStageMode PreviewStageMode = ET66PreviewStageMode::Selection;
 
 	UPROPERTY(Transient)
 	bool bStageVisible = true;

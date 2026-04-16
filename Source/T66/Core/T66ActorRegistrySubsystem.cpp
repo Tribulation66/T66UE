@@ -7,6 +7,8 @@
 #include "Gameplay/T66CircusInteractable.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66MiasmaBoundary.h"
+#include "Gameplay/T66WorldInteractableBase.h"
+#include "Gameplay/T66LootBagPickup.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66ActorRegistry, Log, All);
 
@@ -133,4 +135,36 @@ void UT66ActorRegistrySubsystem::UnregisterMiasmaBoundary(AT66MiasmaBoundary* Bo
 	if (!Boundary) return;
 	RemoveWeak(MiasmaBoundaries, Boundary);
 	UE_LOG(LogT66ActorRegistry, Log, TEXT("[GOLD] ActorRegistry: unregistered MiasmaBoundary %s (total: %d)"), *Boundary->GetName(), MiasmaBoundaries.Num());
+}
+
+// --------------- World Interactables ---------------
+
+void UT66ActorRegistrySubsystem::RegisterWorldInteractable(AT66WorldInteractableBase* Interactable)
+{
+	if (!Interactable) return;
+	AddUniqueWeak(WorldInteractables, Interactable);
+	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: registered WorldInteractable %s (total: %d)"), *Interactable->GetName(), WorldInteractables.Num());
+}
+
+void UT66ActorRegistrySubsystem::UnregisterWorldInteractable(AT66WorldInteractableBase* Interactable)
+{
+	if (!Interactable) return;
+	RemoveWeak(WorldInteractables, Interactable);
+	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: unregistered WorldInteractable %s (total: %d)"), *Interactable->GetName(), WorldInteractables.Num());
+}
+
+// --------------- Loot Bags ---------------
+
+void UT66ActorRegistrySubsystem::RegisterLootBag(AT66LootBagPickup* LootBag)
+{
+	if (!LootBag) return;
+	AddUniqueWeak(LootBags, LootBag);
+	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: registered LootBag %s (total: %d)"), *LootBag->GetName(), LootBags.Num());
+}
+
+void UT66ActorRegistrySubsystem::UnregisterLootBag(AT66LootBagPickup* LootBag)
+{
+	if (!LootBag) return;
+	RemoveWeak(LootBags, LootBag);
+	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: unregistered LootBag %s (total: %d)"), *LootBag->GetName(), LootBags.Num());
 }

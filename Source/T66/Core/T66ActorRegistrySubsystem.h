@@ -12,6 +12,8 @@ class AT66HouseNPCBase;
 class AT66CircusInteractable;
 class AT66StageGate;
 class AT66MiasmaBoundary;
+class AT66WorldInteractableBase;
+class AT66LootBagPickup;
 
 /**
  * [GOLD] Actor Registry: actors register on BeginPlay and unregister on EndPlay.
@@ -54,6 +56,16 @@ public:
 	void UnregisterMiasmaBoundary(AT66MiasmaBoundary* Boundary);
 	const TArray<TWeakObjectPtr<AT66MiasmaBoundary>>& GetMiasmaBoundaries() const { return MiasmaBoundaries; }
 
+	// --------------- World Interactables ---------------
+	void RegisterWorldInteractable(AT66WorldInteractableBase* Interactable);
+	void UnregisterWorldInteractable(AT66WorldInteractableBase* Interactable);
+	const TArray<TWeakObjectPtr<AT66WorldInteractableBase>>& GetWorldInteractables() const { return WorldInteractables; }
+
+	// --------------- Loot Bags ---------------
+	void RegisterLootBag(AT66LootBagPickup* LootBag);
+	void UnregisterLootBag(AT66LootBagPickup* LootBag);
+	const TArray<TWeakObjectPtr<AT66LootBagPickup>>& GetLootBags() const { return LootBags; }
+
 private:
 	TArray<TWeakObjectPtr<AT66EnemyBase>> Enemies;
 	TArray<TWeakObjectPtr<AT66BossBase>> Bosses;
@@ -61,4 +73,6 @@ private:
 	TArray<TWeakObjectPtr<AT66CircusInteractable>> Circuses;
 	TArray<TWeakObjectPtr<AT66StageGate>> StageGates;
 	TArray<TWeakObjectPtr<AT66MiasmaBoundary>> MiasmaBoundaries;
+	TArray<TWeakObjectPtr<AT66WorldInteractableBase>> WorldInteractables;
+	TArray<TWeakObjectPtr<AT66LootBagPickup>> LootBags;
 };

@@ -9,12 +9,17 @@
 #include "Core/T66SessionSubsystem.h"
 #include "Core/T66SkinSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66SteamHelper.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/T66StatsPanelSlate.h"
 #include "UI/T66TemporaryBuffUIUtils.h"
 #include "UI/Style/T66Style.h"
+#include "Gameplay/T66CompanionBase.h"
+#include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroPreviewStage.h"
+#include "Gameplay/T66CompanionPreviewStage.h"
 #include "Gameplay/T66FrontendGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
@@ -30,8 +35,10 @@
 #include "Widgets/SOverlay.h"
 #include "Widgets/Input/SComboBox.h"
 #include "Widgets/Images/SImage.h"
+#include "Widgets/Notifications/SProgressBar.h"
 #include "Widgets/SToolTip.h"
 #include "Brushes/SlateImageBrush.h"
+#include "Styling/CoreStyle.h"
 #include "Engine/Texture2D.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Input/Events.h"
@@ -47,6 +54,33 @@ namespace
 {
 	constexpr int32 HeroSelectionCarouselVisibleSlots = 7;
 	constexpr int32 HeroSelectionCarouselCenterIndex = HeroSelectionCarouselVisibleSlots / 2;
+
+	AT66PlayerController* T66GetLocalFrontendPlayerController(UObject* ContextObject)
+	{
+		return ContextObject ? Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(ContextObject, 0)) : nullptr;
+	}
+
+	void T66PositionHeroPreviewCamera(UObject* ContextObject)
+	{
+		if (!ContextObject)
+		{
+			return;
+		}
+
+		if (UWorld* World = ContextObject->GetWorld())
+		{
+			if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
+			{
+				GM->PositionCameraForHeroPreview();
+				return;
+			}
+		}
+
+		if (AT66PlayerController* PC = T66GetLocalFrontendPlayerController(ContextObject))
+		{
+			PC->PositionLocalFrontendCameraForHeroPreview();
+		}
+	}
 
 	float GetHeroSelectionCarouselBoxSize(const int32 Offset)
 	{
@@ -115,6 +149,57 @@ namespace
 		return FString();
 	}
 
+	TSoftObjectPtr<UTexture2D> ResolveHeroSelectionUltimateIcon(const FName HeroID, const ET66UltimateType UltimateType)
+	{
+		if (HeroID == FName(TEXT("Hero_1")) && UltimateType == ET66UltimateType::SpearStorm)
+		{
+			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Abilities/Hero_1/T_Hero_1_Ultimate.T_Hero_1_Ultimate")));
+		}
+
+		return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/ULTS/KnightULT.KnightULT")));
+	}
+
+	TSoftObjectPtr<UTexture2D> ResolveHeroSelectionPassiveIcon(const FName HeroID, const ET66PassiveType PassiveType)
+	{
+		if (HeroID == FName(TEXT("Hero_1")) && PassiveType == ET66PassiveType::IronWill)
+		{
+			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Abilities/Hero_1/T_Hero_1_Passive.T_Hero_1_Passive")));
+		}
+
+		return ResolveHeroSelectionUltimateIcon(HeroID, ET66UltimateType::None);
+	}
+
+	TSharedRef<SToolTip> MakeHeroSelectionAbilityTooltip(const FText& Title, const FText& Description, const int32 FontSizeAdjustment = 0)
+	{
+		return SNew(SToolTip)
+			[
+				FT66Style::MakePanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 0.f, 0.f, 4.f)
+					[
+						SNew(STextBlock)
+						.Text(Title)
+						.Font(FT66Style::Tokens::FontBold(FMath::Max(14 + FontSizeAdjustment, 10)))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(Description)
+						.Font(FT66Style::Tokens::FontRegular(FMath::Max(12 + FontSizeAdjustment, 9)))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+						.WrapTextAt(280.f)
+					],
+					FT66PanelParams(ET66PanelType::Panel)
+						.SetColor(FT66Style::Tokens::Panel2)
+						.SetPadding(FMargin(12.f, 10.f)))
+			];
+	}
+
 	FText HeroRecordMedalText(ET66AccountMedalTier Tier)
 	{
 		switch (Tier)
@@ -158,8 +243,15 @@ namespace
 	FText HeroRecordThirdMetricLabel(const bool bShowingCompanionInfo)
 	{
 		return bShowingCompanionInfo
-			? NSLOCTEXT("T66.HeroSelection", "CompanionRecordUnionLabel", "Union")
+			? NSLOCTEXT("T66.HeroSelection", "CompanionRecordHealingLabel", "Total Healing")
 			: NSLOCTEXT("T66.HeroSelection", "HeroRecordScoreLabel", "Cumulative Score");
+	}
+
+	FText FormatCompanionHealingPerSecondText(const float HealingPerSecond)
+	{
+		return FText::Format(
+			NSLOCTEXT("T66.HeroSelection", "CompanionHealingPerSecondFormat", "Heals / Second: {0}"),
+			FText::AsNumber(FMath::RoundToInt(HealingPerSecond)));
 	}
 
 	class ST66DragRotatePreview : public SCompoundWidget
@@ -224,13 +316,7 @@ namespace
 			if (Stage.IsValid())
 			{
 				Stage->AddPreviewZoom(MouseEvent.GetWheelDelta());
-				if (UWorld* World = Stage->GetWorld())
-				{
-					if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
-					{
-						GM->PositionCameraForHeroPreview();
-					}
-				}
+				T66PositionHeroPreviewCamera(Stage.Get());
 				return FReply::Handled();
 			}
 			return FReply::Unhandled();
@@ -774,7 +860,20 @@ void UT66HeroSelectionScreen::OnDifficultyChanged(TSharedPtr<FString> NewValue, 
 			CommitLocalSelectionsToLobby(true);
 			if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
 			{
+				PreviewStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
 				PreviewStage->SetPreviewDifficulty(SelectedDifficulty);
+			}
+			if (UWorld* World = GetWorld())
+			{
+				for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+				{
+					AT66CompanionPreviewStage* CompanionStage = *It;
+					CompanionStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+					CompanionStage->SetPreviewDifficulty(SelectedDifficulty);
+					break;
+				}
+
+				T66PositionHeroPreviewCamera(this);
 			}
 		}
 	}
@@ -819,6 +918,7 @@ void UT66HeroSelectionScreen::CommitLocalSelectionsToLobby(bool bResetReady)
 		GI->SelectedCompanionID = PreviewedCompanionID;
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->PersistRememberedSelectionDefaults();
 
 		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
 		{
@@ -863,15 +963,16 @@ void UT66HeroSelectionScreen::SyncToSharedPartyScreen()
 	SelectedDifficulty = SessionSubsystem->GetSharedLobbyDifficulty();
 	GI->SelectedDifficulty = SelectedDifficulty;
 
-	if (!SessionSubsystem->IsPartySessionActive() || SessionSubsystem->IsLocalPlayerPartyHost() || !UIManager)
+	if (!SessionSubsystem->IsPartyLobbyContextActive() || SessionSubsystem->IsLocalPlayerPartyHost() || !UIManager)
 	{
 		return;
 	}
 
 	const ET66ScreenType DesiredScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
-	if (DesiredScreen == ET66ScreenType::MainMenu && UIManager->GetCurrentScreenType() != ET66ScreenType::MainMenu)
+	if ((DesiredScreen == ET66ScreenType::HeroSelection || DesiredScreen == ET66ScreenType::MainMenu)
+		&& UIManager->GetCurrentScreenType() != DesiredScreen)
 	{
-		UIManager->ShowScreen(ET66ScreenType::MainMenu);
+		UIManager->ShowScreen(DesiredScreen);
 	}
 }
 
@@ -883,7 +984,15 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	RefreshCompanionList();
 	if (AllHeroIDs.Num() > 0 && PreviewedHeroID.IsNone())
 	{
-		PreviewedHeroID = AllHeroIDs[0];
+		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+			GI && !GI->SelectedHeroID.IsNone() && AllHeroIDs.Contains(GI->SelectedHeroID))
+		{
+			PreviewedHeroID = GI->SelectedHeroID;
+		}
+		else
+		{
+			PreviewedHeroID = AllHeroIDs[0];
+		}
 	}
 	if (PreviewedCompanionID.IsNone())
 	{
@@ -941,11 +1050,22 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	}
 	GeneratePlaceholderSkins();
 	EnsureHeroPreviewVideoResources();
+	if (!HeroUltimateIconBrush.IsValid())
+	{
+		HeroUltimateIconBrush = MakeShared<FSlateBrush>();
+		HeroUltimateIconBrush->DrawAs = ESlateBrushDrawType::Image;
+		HeroUltimateIconBrush->ImageSize = FVector2D(56.f, 56.f);
+	}
+	if (!HeroPassiveIconBrush.IsValid())
+	{
+		HeroPassiveIconBrush = MakeShared<FSlateBrush>();
+		HeroPassiveIconBrush->DrawAs = ESlateBrushDrawType::Image;
+		HeroPassiveIconBrush->ImageSize = FVector2D(56.f, 56.f);
+	}
 
 	// Get localized text
 	FText SkinsText = Loc ? Loc->GetText_Skins() : NSLOCTEXT("T66.HeroSelection", "Skins", "SKINS");
 	FText StatsText = Loc ? Loc->GetText_BaseStatsHeader() : NSLOCTEXT("T66.HeroSelection", "BaseStatsHeader", "STATS");
-	FText FullStatsText = NSLOCTEXT("T66.HeroSelection", "FullStats", "FULL STATS");
 	FText EnterText = Loc ? Loc->GetText_EnterTheTribulation() : NSLOCTEXT("T66.HeroSelection", "EnterTheTribulation", "ENTER THE TRIBULATION");
 	FText ReadyText = NSLOCTEXT("T66.HeroSelection", "Ready", "READY");
 	FText UnreadyText = NSLOCTEXT("T66.HeroSelection", "Unready", "UNREADY");
@@ -1014,11 +1134,16 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	{
 		SelectedDifficulty = SessionSubsystem->GetSharedLobbyDifficulty();
 	}
-	const int32 ActivePartySlots = PartySubsystem ? FMath::Clamp(PartySubsystem->GetPartyMemberCount(), 1, 4) : 1;
-	const bool bPartySessionActive = SessionSubsystem && SessionSubsystem->IsPartySessionActive();
-	const bool bHasRemotePartyMembers = PartySubsystem && PartySubsystem->HasRemotePartyMembers();
-	const bool bUsePartyReadyFlow = bPartySessionActive && bHasRemotePartyMembers;
 	const bool bIsLocalPartyHost = !SessionSubsystem || SessionSubsystem->IsLocalPlayerPartyHost();
+	const bool bPartyLobbyContextActive = SessionSubsystem && SessionSubsystem->IsPartyLobbyContextActive();
+	const int32 LobbyPlayerCount = SessionSubsystem ? SessionSubsystem->GetCurrentLobbyPlayerCount() : 0;
+	const int32 ActivePartySlots = bPartyLobbyContextActive
+		? FMath::Clamp(LobbyPlayerCount, 1, 4)
+		: (PartySubsystem ? FMath::Clamp(PartySubsystem->GetPartyMemberCount(), 1, 4) : 1);
+	const bool bHasRemotePartyMembers = bPartyLobbyContextActive
+		? LobbyPlayerCount > 1
+		: (PartySubsystem && PartySubsystem->HasRemotePartyMembers());
+	const bool bUsePartyReadyFlow = bPartyLobbyContextActive && (!bIsLocalPartyHost || bHasRemotePartyMembers);
 	const bool bCanEditDifficulty = !bUsePartyReadyFlow || bIsLocalPartyHost;
 	const bool bLocalReady = SessionSubsystem && SessionSubsystem->IsLocalLobbyReady();
 	const bool bCanStartPartyRun = !bUsePartyReadyFlow || !SessionSubsystem || SessionSubsystem->AreAllPartyMembersReadyForGameplay();
@@ -1062,6 +1187,39 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			ACBalanceIconBrush->SetResourceObject(T66SlateTexture::GetLoaded(SelectionTexPool, BalanceIconSoft));
 		}
 	}
+	if (!CompanionInfoPortraitBrush.IsValid())
+	{
+		CompanionInfoPortraitBrush = MakeShared<FSlateBrush>();
+		CompanionInfoPortraitBrush->DrawAs = ESlateBrushDrawType::Image;
+		CompanionInfoPortraitBrush->Tiling = ESlateBrushTileType::NoTile;
+		CompanionInfoPortraitBrush->ImageSize = FVector2D(320.f, 204.f);
+	}
+	if (CompanionInfoPortraitBrush.IsValid())
+	{
+		CompanionInfoPortraitBrush->SetResourceObject(nullptr);
+	}
+	if (SelectionTexPool && !PreviewedCompanionID.IsNone())
+	{
+		if (UT66SkinSubsystem* SkinSubsystem = T66GI ? T66GI->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		{
+			const FName EffectiveCompanionSkinID = GetEffectivePreviewedCompanionSkinID();
+			const TSoftObjectPtr<UTexture2D> CompanionPortraitSoft = SkinSubsystem->GetSkinPortrait(
+				ET66SkinEntityType::Companion,
+				PreviewedCompanionID,
+				EffectiveCompanionSkinID,
+				/*bSelectionPortrait*/ true);
+			if (!CompanionPortraitSoft.IsNull() && CompanionInfoPortraitBrush.IsValid())
+			{
+				T66SlateTexture::BindSharedBrushAsync(
+					SelectionTexPool,
+					CompanionPortraitSoft,
+					this,
+					CompanionInfoPortraitBrush,
+					FName(TEXT("HeroSelectionCompanionInfoPortrait")),
+					/*bClearWhileLoading*/ true);
+			}
+		}
+	}
 	const TArray<ET66SecondaryStatType> ActiveTempBuffSlots = TempBuffSubsystem ? TempBuffSubsystem->GetSelectedSingleUseBuffSlots() : TArray<ET66SecondaryStatType>{};
 	SelectedTemporaryBuffBrushes.Reset();
 	SelectedTemporaryBuffBrushes.SetNum(UT66BuffSubsystem::MaxSelectedSingleUseBuffs);
@@ -1069,7 +1227,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	{
 		const ET66SecondaryStatType SlotStat = ActiveTempBuffSlots.IsValidIndex(SlotIndex) ? ActiveTempBuffSlots[SlotIndex] : ET66SecondaryStatType::None;
 		SelectedTemporaryBuffBrushes[SlotIndex] = T66IsLiveSecondaryStatType(SlotStat)
-			? T66TemporaryBuffUI::CreateSecondaryBuffBrush(SelectionTexPool, this, SlotStat, FVector2D(30.f, 30.f))
+			? T66TemporaryBuffUI::CreateSecondaryBuffBrush(SelectionTexPool, this, SlotStat, FVector2D(26.f, 26.f))
 			: nullptr;
 	}
 
@@ -1087,8 +1245,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				FText::GetEmpty(),
 				FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTemporaryBuffSlotClicked, SlotIndex),
 				ET66ButtonType::Neutral)
-				.SetMinWidth(56.f)
-				.SetHeight(56.f)
+				.SetMinWidth(48.f)
+				.SetHeight(48.f)
 				.SetPadding(FMargin(0.f))
 				.SetColor(bOwnedForSlot ? FT66Style::Tokens::Panel : FLinearColor(0.14f, 0.07f, 0.07f, 1.0f))
 				.SetContent(
@@ -1120,7 +1278,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 						: StaticCastSharedRef<SWidget>(
 							SNew(STextBlock)
 							.Text(NSLOCTEXT("T66.HeroSelection", "TempBuffEmptySlot", "+"))
-							.Font(FT66Style::Tokens::FontBold(16))
+							.Font(FT66Style::Tokens::FontBold(14))
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted))
 					]
 				));
@@ -1439,12 +1597,20 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	auto MakeTemporaryBuffLoadoutPanel = [this,
 		bDotaTheme,
 		SelectionInsetFill,
-		TempBuffSubsystem,
 		SecondaryButtonFontSize,
 		&MakeSelectedTemporaryBuffSlot]() -> TSharedRef<SWidget>
 	{
 		return FT66Style::MakePanel(
 			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 8.f)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.HeroSelection", "BuffsHeader", "BUFFS"))
+				.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			[
@@ -1454,6 +1620,94 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 6.f, 0.f)[MakeSelectedTemporaryBuffSlot(2)]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 6.f, 0.f)[MakeSelectedTemporaryBuffSlot(3)]
 				+ SHorizontalBox::Slot().AutoWidth()[MakeSelectedTemporaryBuffSlot(4)]
+			],
+			FT66PanelParams(ET66PanelType::Panel)
+				.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
+				.SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3)));
+	};
+
+	auto MakeCompanionUnityPanel = [this,
+		bDotaTheme,
+		SelectionInsetFill,
+		SecondaryButtonFontSize,
+		BodyTextFontSize]() -> TSharedRef<SWidget>
+	{
+		return FT66Style::MakePanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 6.f)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.HeroSelection", "CompanionUnityHeader", "UNITY"))
+				.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 8.f)
+			[
+				SAssignNew(CompanionUnityTextWidget, STextBlock)
+				.Text(NSLOCTEXT("T66.HeroSelection", "CompanionUnityDefault", "Unity: 0 / 20"))
+				.Font(FT66Style::Tokens::FontRegular(BodyTextFontSize + 1))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(SBox)
+				.WidthOverride(180.f)
+				.HeightOverride(10.f)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SProgressBar)
+						.Percent_Lambda([this]() -> TOptional<float>
+						{
+							return FMath::Clamp(CompanionUnityProgress01, 0.f, 1.f);
+						})
+						.FillColorAndOpacity(FLinearColor(0.20f, 0.65f, 0.35f, 1.0f))
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Left)
+					.Padding(FMargin(180.f * 0.25f - 1.f, 0.f, 0.f, 0.f))
+					[
+						SNew(SBox)
+						.WidthOverride(2.f)
+						.HeightOverride(10.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
+						]
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Left)
+					.Padding(FMargin(180.f * 0.50f - 1.f, 0.f, 0.f, 0.f))
+					[
+						SNew(SBox)
+						.WidthOverride(2.f)
+						.HeightOverride(10.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
+						]
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Right)
+					[
+						SNew(SBox)
+						.WidthOverride(2.f)
+						.HeightOverride(10.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
+						]
+					]
+				]
 			],
 			FT66PanelParams(ET66PanelType::Panel)
 				.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
@@ -1753,6 +2007,31 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.SetMinWidth(HeroArrowButtonWidth)
 					.SetHeight(HeroArrowButtonHeight)
 					.SetFontSize(HeroArrowFontSize))
+			];
+	};
+
+	auto MakeCompanionStripHeader = [bDotaTheme, SelectionPanelFill, SecondaryButtonFontSize]() -> TSharedRef<SWidget>
+	{
+		const TSharedRef<SWidget> HeaderText =
+			SNew(SBox)
+			.HAlign(HAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.HeroSelection", "CompanionsHeader", "COMPANIONS"))
+				.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Justification(ETextJustify::Center)
+			];
+
+		return SNew(SBox)
+			.HAlign(HAlign_Center)
+			.WidthOverride(160.f)
+			[
+				FT66Style::MakePanel(
+					HeaderText,
+					FT66PanelParams(ET66PanelType::Panel)
+						.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
+						.SetPadding(FMargin(10.f, 6.f)))
 			];
 	};
 
@@ -2268,18 +2547,14 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			.AutoHeight()
 			.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.0f)
 				[
-					SNew(STextBlock)
-					.Text(FullStatsText)
-					.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					SNew(SBox)
 				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Right)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
 					FT66Style::MakeButton(
@@ -2298,10 +2573,9 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			+ SVerticalBox::Slot()
 			.FillHeight(1.0f)
 			[
-				SNew(SScrollBox)
-				+ SScrollBox::Slot()
+				SAssignNew(HeroFullStatsHost, SBox)
 				[
-					SAssignNew(HeroFullStatsWidget, STextBlock)
+					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroStatsHint", "Select a hero to view their full stats."))
 					.Font(FT66Style::Tokens::FontRegular(BodyTextFontSize))
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
@@ -2387,7 +2661,14 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.0f, TopBarBottomGap, 0.0f, 0.0f)
+		.Padding(0.0f, TopBarBottomGap, 0.0f, 6.0f)
+		.HAlign(HAlign_Center)
+		[
+			MakeCompanionStripHeader()
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.0f, 0.0f, 0.0f, 0.0f)
 		[
 			MakeSelectionBar(
 				SNew(SHorizontalBox)
@@ -2484,13 +2765,40 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					SNew(SOverlay)
 					+ SOverlay::Slot()
 					[
-						SAssignNew(HeroPreviewVideoImage, SImage)
-						.Image_Lambda([this]() -> const FSlateBrush*
+						SNew(SScaleBox)
+						.Stretch(EStretch::ScaleToFill)
+						[
+							SAssignNew(HeroPreviewVideoImage, SImage)
+							.Image_Lambda([this]() -> const FSlateBrush*
+							{
+								return HeroPreviewVideoBrush.IsValid() && ::IsValid(HeroPreviewMediaTexture)
+									? HeroPreviewVideoBrush.Get()
+									: nullptr;
+							})
+						]
+					]
+					+ SOverlay::Slot()
+					[
+						SNew(SScaleBox)
+						.Stretch(EStretch::ScaleToFill)
+						.Visibility_Lambda([this]() -> EVisibility
 						{
-							return HeroPreviewVideoBrush.IsValid() && ::IsValid(HeroPreviewMediaTexture)
-								? HeroPreviewVideoBrush.Get()
-								: nullptr;
+							return bShowingCompanionInfo
+								&& CompanionInfoPortraitBrush.IsValid()
+								&& ::IsValid(CompanionInfoPortraitBrush->GetResourceObject())
+								? EVisibility::Visible
+								: EVisibility::Collapsed;
 						})
+						[
+							SNew(SImage)
+							.Image_Lambda([this]() -> const FSlateBrush*
+							{
+								return CompanionInfoPortraitBrush.IsValid()
+									&& ::IsValid(CompanionInfoPortraitBrush->GetResourceObject())
+									? CompanionInfoPortraitBrush.Get()
+									: nullptr;
+							})
+						]
 					]
 					+ SOverlay::Slot()
 					.HAlign(HAlign_Center)
@@ -2498,6 +2806,28 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					[
 						SAssignNew(HeroPreviewPlaceholderText, STextBlock)
 						.Text(NSLOCTEXT("T66.HeroSelection", "VideoPreview", "[VIDEO PREVIEW]"))
+						.Font(FT66Style::Tokens::FontRegular(SecondaryButtonFontSize))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.Justification(ETextJustify::Center)
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						SAssignNew(CompanionPreviewPlaceholderText, STextBlock)
+						.Visibility_Lambda([this]() -> EVisibility
+						{
+							return bShowingCompanionInfo
+								&& (!CompanionInfoPortraitBrush.IsValid() || !::IsValid(CompanionInfoPortraitBrush->GetResourceObject()))
+								? EVisibility::Visible
+								: EVisibility::Collapsed;
+						})
+						.Text_Lambda([this]() -> FText
+						{
+							return PreviewedCompanionID.IsNone()
+								? NSLOCTEXT("T66.HeroSelection", "NoCompanionPortraitPlaceholder", "No companion selected.")
+								: NSLOCTEXT("T66.HeroSelection", "CompanionPortraitPlaceholder", "Companion portrait unavailable.");
+						})
 						.Font(FT66Style::Tokens::FontRegular(SecondaryButtonFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						.Justification(ETextJustify::Center)
@@ -2630,44 +2960,243 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
 		[
-			SNew(SScrollBox)
-			+ SScrollBox::Slot()
+			SNew(SWidgetSwitcher)
+			.WidgetIndex_Lambda([this]() -> int32 { return bShowingCompanionInfo ? 1 : 0; })
+			+ SWidgetSwitcher::Slot()
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.FillHeight(1.0f)
+				.Padding(0.0f, 2.0f, 0.0f, 0.0f)
+				[
+					FT66Style::MakeButton(
+						FT66ButtonParams(
+							FText::GetEmpty(),
+							FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleOpenStatsPanelClicked),
+							ET66ButtonType::Neutral)
+						.SetBorderVisual(ET66ButtonBorderVisual::None)
+						.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+						.SetMinWidth(0.f)
+						.SetPadding(FMargin(0.f))
+						.SetUseGlow(false)
+						.SetColor(TAttribute<FSlateColor>::CreateLambda([this]() -> FSlateColor
+						{
+							return FSlateColor(FLinearColor::Transparent);
+						}))
+						.SetContent(
+							FT66Style::MakePanel(
+								SNew(SHorizontalBox)
+								+ SHorizontalBox::Slot()
+								.FillWidth(1.0f)
+								.Padding(0.f, 0.f, 8.f, 0.f)
+								[
+									SAssignNew(HeroSummaryStatsHost, SBox)
+									[
+										SNew(STextBlock)
+										.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroDescriptionHint", "Select a hero to view their stats."))
+										.Font(FT66Style::Tokens::FontRegular(BodyTextFontSize - 2))
+										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+										.AutoWrapText(true)
+									]
+								]
+								+ SHorizontalBox::Slot()
+								.AutoWidth()
+								.VAlign(VAlign_Fill)
+								[
+									SNew(SBox)
+									.WidthOverride(1.f)
+									.HeightOverride(146.f)
+									[
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+										.BorderBackgroundColor(FLinearColor(0.30f, 0.34f, 0.42f, 0.9f))
+									]
+								]
+								+ SHorizontalBox::Slot()
+								.AutoWidth()
+								.Padding(10.f, 0.f, 0.f, 0.f)
+								[
+									SNew(SVerticalBox)
+									+ SVerticalBox::Slot()
+									.AutoHeight()
+									.Padding(0.f, 0.f, 0.f, 8.f)
+									[
+										SNew(SVerticalBox)
+										+ SVerticalBox::Slot()
+										.AutoHeight()
+										.HAlign(HAlign_Center)
+										.Padding(0.f, 0.f, 0.f, 4.f)
+										[
+											SNew(STextBlock)
+											.Text(NSLOCTEXT("T66.HeroSelection", "UltimateShortLabel", "ULT"))
+											.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize - 2))
+											.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+										]
+										+ SVerticalBox::Slot()
+										.AutoHeight()
+										.HAlign(HAlign_Center)
+										[
+											SNew(SBox)
+											.ToolTip(TAttribute<TSharedPtr<IToolTip>>::CreateLambda([this, Loc]() -> TSharedPtr<IToolTip>
+											{
+												FHeroData HeroData;
+												if (!GetPreviewedHeroData(HeroData))
+												{
+													return MakeHeroSelectionAbilityTooltip(
+														NSLOCTEXT("T66.HeroSelection", "UltimateTooltipFallbackTitle", "Ultimate"),
+														NSLOCTEXT("T66.HeroSelection", "UltimateTooltipFallbackBody", "Select a hero to inspect their ultimate."));
+												}
+
+												return MakeHeroSelectionAbilityTooltip(
+													Loc ? Loc->GetText_UltimateName(HeroData.UltimateType) : NSLOCTEXT("T66.HeroSelection", "UltimateFallbackName", "Ultimate"),
+													Loc ? Loc->GetText_UltimateDescription(HeroData.UltimateType) : FText::GetEmpty());
+											}))
+											[
+												FT66Style::MakeButton(
+													FT66ButtonParams(
+														FText::GetEmpty(),
+														FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleUltimatePreviewClicked),
+														ET66ButtonType::Neutral)
+													.SetMinWidth(60.f)
+													.SetHeight(60.f)
+													.SetPadding(FMargin(4.f))
+													.SetColor(TAttribute<FSlateColor>::CreateLambda([this]() -> FSlateColor
+													{
+														return SelectedHeroPreviewClip == EHeroPreviewClip::Ultimate
+															? FT66Style::ButtonPrimary()
+															: FT66Style::ButtonNeutral();
+													}))
+													.SetContent(
+														SNew(SBox)
+														.WidthOverride(38.f)
+														.HeightOverride(38.f)
+														[
+															SNew(SOverlay)
+															+ SOverlay::Slot()
+															[
+																SNew(SImage)
+																.Image_Lambda([this]() -> const FSlateBrush*
+																{
+																	return HeroUltimateIconBrush.IsValid() ? HeroUltimateIconBrush.Get() : nullptr;
+																})
+															]
+															+ SOverlay::Slot()
+															.HAlign(HAlign_Center)
+															.VAlign(VAlign_Center)
+															[
+																SNew(STextBlock)
+																.Visibility_Lambda([this]() -> EVisibility
+																{
+																	return HeroUltimateIconBrush.IsValid() && ::IsValid(HeroUltimateIconBrush->GetResourceObject())
+																		? EVisibility::Collapsed
+																		: EVisibility::Visible;
+																})
+																.Text(NSLOCTEXT("T66.HeroSelection", "UltimatePlaceholder", "?"))
+																.Font(FT66Style::Tokens::FontBold(BodyTextFontSize - 1))
+																.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+															]
+														]))
+											]
+										]
+									]
+									+ SVerticalBox::Slot()
+									.AutoHeight()
+									[
+										SNew(SVerticalBox)
+										+ SVerticalBox::Slot()
+										.AutoHeight()
+										.HAlign(HAlign_Center)
+										.Padding(0.f, 0.f, 0.f, 4.f)
+										[
+											SNew(STextBlock)
+											.Text(NSLOCTEXT("T66.HeroSelection", "PassiveShortLabel", "PASSIVE"))
+											.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize - 2))
+											.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+										]
+										+ SVerticalBox::Slot()
+										.AutoHeight()
+										.HAlign(HAlign_Center)
+										[
+											SNew(SBox)
+											.ToolTip(TAttribute<TSharedPtr<IToolTip>>::CreateLambda([this, Loc]() -> TSharedPtr<IToolTip>
+											{
+												FHeroData HeroData;
+												if (!GetPreviewedHeroData(HeroData))
+												{
+													return MakeHeroSelectionAbilityTooltip(
+														NSLOCTEXT("T66.HeroSelection", "PassiveTooltipFallbackTitle", "Passive"),
+														NSLOCTEXT("T66.HeroSelection", "PassiveTooltipFallbackBody", "Select a hero to inspect their passive."));
+												}
+
+												return MakeHeroSelectionAbilityTooltip(
+													Loc ? Loc->GetText_PassiveName(HeroData.PassiveType) : NSLOCTEXT("T66.HeroSelection", "PassiveFallbackName", "Passive"),
+													Loc ? Loc->GetText_PassiveDescription(HeroData.PassiveType) : FText::GetEmpty());
+											}))
+											[
+												FT66Style::MakeButton(
+													FT66ButtonParams(
+														FText::GetEmpty(),
+														FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandlePassivePreviewClicked),
+														ET66ButtonType::Neutral)
+													.SetMinWidth(60.f)
+													.SetHeight(60.f)
+													.SetPadding(FMargin(4.f))
+													.SetColor(TAttribute<FSlateColor>::CreateLambda([this]() -> FSlateColor
+													{
+														return SelectedHeroPreviewClip == EHeroPreviewClip::Passive
+															? FT66Style::ButtonPrimary()
+															: FT66Style::ButtonNeutral();
+													}))
+													.SetContent(
+														SNew(SBox)
+														.WidthOverride(38.f)
+														.HeightOverride(38.f)
+														[
+															SNew(SOverlay)
+															+ SOverlay::Slot()
+															[
+																SNew(SImage)
+																.Image_Lambda([this]() -> const FSlateBrush*
+																{
+																	return HeroPassiveIconBrush.IsValid() ? HeroPassiveIconBrush.Get() : nullptr;
+																})
+															]
+															+ SOverlay::Slot()
+															.HAlign(HAlign_Center)
+															.VAlign(VAlign_Center)
+															[
+																SNew(STextBlock)
+																.Visibility_Lambda([this]() -> EVisibility
+																{
+																	return HeroPassiveIconBrush.IsValid() && ::IsValid(HeroPassiveIconBrush->GetResourceObject())
+																		? EVisibility::Collapsed
+																		: EVisibility::Visible;
+																})
+																.Text(NSLOCTEXT("T66.HeroSelection", "PassivePlaceholder", "?"))
+																.Font(FT66Style::Tokens::FontBold(BodyTextFontSize - 1))
+																.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+															]
+														]))
+											]
+										]
+									]
+								],
+								FT66PanelParams(ET66PanelType::Panel)
+									.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
+									.SetPadding(FMargin(12.f, 10.f)))))
+				]
+			]
+			+ SWidgetSwitcher::Slot()
 			[
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(0.0f, 2.0f, 0.0f, 8.0f)
-				.HAlign(HAlign_Left)
+				.Padding(0.0f, 2.0f, 0.0f, 0.0f)
 				[
-					SNew(SBox)
-					.WidthOverride(118.f)
-					.Visibility_Lambda([this]() -> EVisibility
-					{
-						return bShowingCompanionInfo ? EVisibility::Collapsed : EVisibility::Visible;
-					})
-					[
-						FT66Style::MakeButton(
-							FT66ButtonParams(
-								StatsText,
-								FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleStatsClicked),
-								ET66ButtonType::Neutral)
-							.SetMinWidth(0.f)
-							.SetHeight(34.f)
-							.SetFontSize(SecondaryButtonFontSize)
-							.SetPadding(FMargin(6.f, 3.f, 6.f, 2.f))
-							.SetColor(TAttribute<FSlateColor>::CreateLambda([this]() -> FSlateColor
-							{
-								return bShowingStatsPanel ? FT66Style::ButtonPrimary() : FT66Style::ButtonNeutral();
-							})))
-					]
-				]
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				[
-					SAssignNew(HeroDescWidget, STextBlock)
-					.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroDescriptionHint", "Select a hero to view their stats."))
-					.Font(FT66Style::Tokens::FontRegular(BodyTextFontSize + 2))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					SAssignNew(CompanionHealsPerSecondWidget, STextBlock)
+					.Text(NSLOCTEXT("T66.HeroSelection", "CompanionHealsPerSecondDefault", "Heals / Second: 0"))
+					.Font(FT66Style::Tokens::FontRegular(BodyTextFontSize + 3))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 					.AutoWrapText(true)
 				]
 			]
@@ -2684,7 +3213,16 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		.AutoHeight()
 		.Padding(0.0f, 8.0f, 0.0f, 0.0f)
 		[
-			MakeTemporaryBuffLoadoutPanel()
+			SNew(SWidgetSwitcher)
+			.WidgetIndex_Lambda([this]() -> int32 { return bShowingCompanionInfo ? 1 : 0; })
+			+ SWidgetSwitcher::Slot()
+			[
+				MakeTemporaryBuffLoadoutPanel()
+			]
+			+ SWidgetSwitcher::Slot()
+			[
+				MakeCompanionUnityPanel()
+			]
 		],
 		FT66PanelParams(ET66PanelType::Panel)
 			.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
@@ -2822,6 +3360,46 @@ FReply UT66HeroSelectionScreen::HandleStatsClicked()
 	bShowingStatsPanel = !bShowingStatsPanel;
 	return FReply::Handled();
 }
+
+FReply UT66HeroSelectionScreen::HandleOpenStatsPanelClicked()
+{
+	if (bShowingCompanionInfo)
+	{
+		return FReply::Handled();
+	}
+
+	bShowingStatsPanel = true;
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandleUltimatePreviewClicked()
+{
+	if (bShowingCompanionInfo)
+	{
+		return FReply::Handled();
+	}
+
+	SelectedHeroPreviewClip = (SelectedHeroPreviewClip == EHeroPreviewClip::Ultimate)
+		? EHeroPreviewClip::Overview
+		: EHeroPreviewClip::Ultimate;
+	UpdateHeroPreviewVideo();
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandlePassivePreviewClicked()
+{
+	if (bShowingCompanionInfo)
+	{
+		return FReply::Handled();
+	}
+
+	SelectedHeroPreviewClip = (SelectedHeroPreviewClip == EHeroPreviewClip::Passive)
+		? EHeroPreviewClip::Overview
+		: EHeroPreviewClip::Passive;
+	UpdateHeroPreviewVideo();
+	return FReply::Handled();
+}
+
 FReply UT66HeroSelectionScreen::HandleEnterClicked() { OnEnterTribulationClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleBackClicked() { OnBackClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleBackToPartyClicked()
@@ -2856,147 +3434,122 @@ FReply UT66HeroSelectionScreen::HandleBodyTypeBClicked()
 	return FReply::Handled();
 }
 
-FText UT66HeroSelectionScreen::BuildHeroSummaryStatsText(const FHeroData& HeroData, const FT66HeroStatBlock& BaseStats, const FT66HeroStatBonuses& PermanentBuffBonuses) const
+void UT66HeroSelectionScreen::EnsureHeroStatsSnapshot()
 {
-	(void)HeroData;
-	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-	const FText NewLine = NSLOCTEXT("T66.Common", "NewLine", "\n");
-	const FText StatLineFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
-	const FText StatLineWithBonusFmt = NSLOCTEXT("T66.Stats", "StatLineWithBonus", "{0}: {1} + {2}");
-
-	TArray<FText> Lines;
-	Lines.Reserve(7);
-
-	auto AddStatLine = [&](const FText& Label, int32 BaseValue, int32 BonusValue)
+	if (!HeroStatsSnapshot)
 	{
-		const FText ValueText = (BonusValue > 0)
-			? FText::Format(StatLineWithBonusFmt, Label, FText::AsNumber(BaseValue), FText::AsNumber(BonusValue))
-			: FText::Format(StatLineFmt, Label, FText::AsNumber(BaseValue));
-		Lines.Add(ValueText);
-	};
-
-	AddStatLine(Loc ? Loc->GetText_Stat_Damage() : NSLOCTEXT("T66.Stats", "Damage", "Damage"), BaseStats.Damage, PermanentBuffBonuses.Damage);
-	AddStatLine(Loc ? Loc->GetText_Stat_AttackSpeed() : NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed"), BaseStats.AttackSpeed, PermanentBuffBonuses.AttackSpeed);
-	AddStatLine(Loc ? Loc->GetText_Stat_AttackScale() : NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale"), BaseStats.AttackScale, PermanentBuffBonuses.AttackScale);
-	AddStatLine(Loc ? Loc->GetText_Stat_Accuracy() : NSLOCTEXT("T66.Stats", "Accuracy", "Accuracy"), BaseStats.Accuracy, PermanentBuffBonuses.Accuracy);
-	AddStatLine(Loc ? Loc->GetText_Stat_Armor() : NSLOCTEXT("T66.Stats", "Armor", "Armor"), BaseStats.Armor, PermanentBuffBonuses.Armor);
-	AddStatLine(Loc ? Loc->GetText_Stat_Evasion() : NSLOCTEXT("T66.Stats", "Evasion", "Evasion"), BaseStats.Evasion, PermanentBuffBonuses.Evasion);
-	AddStatLine(Loc ? Loc->GetText_Stat_Luck() : NSLOCTEXT("T66.Stats", "Luck", "Luck"), BaseStats.Luck, PermanentBuffBonuses.Luck);
-
-	return FText::Join(NewLine, Lines);
+		HeroStatsSnapshot = NewObject<UT66LeaderboardRunSummarySaveGame>(this, UT66LeaderboardRunSummarySaveGame::StaticClass(), NAME_None, RF_Transient);
+	}
 }
 
-FText UT66HeroSelectionScreen::BuildHeroFullStatsText(const FHeroData& HeroData, const FT66HeroStatBlock& BaseStats, const FT66HeroPerLevelStatGains& PerLevelGains, const FT66HeroStatBonuses& PermanentBuffBonuses) const
+void UT66HeroSelectionScreen::PopulateHeroStatsSnapshot(const FHeroData& HeroData, const FT66HeroStatBlock& BaseStats, const FT66HeroStatBonuses& PermanentBuffBonuses)
+{
+	EnsureHeroStatsSnapshot();
+	if (!HeroStatsSnapshot)
+	{
+		return;
+	}
+	UT66LeaderboardRunSummarySaveGame* Snapshot = HeroStatsSnapshot.Get();
+	Snapshot->HeroID = HeroData.HeroID;
+	Snapshot->HeroLevel = 1;
+	Snapshot->DamageStat = BaseStats.Damage + PermanentBuffBonuses.Damage;
+	Snapshot->AttackSpeedStat = BaseStats.AttackSpeed + PermanentBuffBonuses.AttackSpeed;
+	Snapshot->AttackScaleStat = BaseStats.AttackScale + PermanentBuffBonuses.AttackScale;
+	Snapshot->AccuracyStat = BaseStats.Accuracy + PermanentBuffBonuses.Accuracy;
+	Snapshot->ArmorStat = BaseStats.Armor + PermanentBuffBonuses.Armor;
+	Snapshot->EvasionStat = BaseStats.Evasion + PermanentBuffBonuses.Evasion;
+	Snapshot->LuckStat = BaseStats.Luck + PermanentBuffBonuses.Luck;
+	Snapshot->SpeedStat = BaseStats.Speed;
+	Snapshot->SecondaryStatValues.Reset();
+
+	auto SetSecondaryValue = [Snapshot](const ET66SecondaryStatType Type, const float Value)
+	{
+		Snapshot->SecondaryStatValues.Add(Type, Value);
+	};
+
+	SetSecondaryValue(ET66SecondaryStatType::AoeDamage, static_cast<float>(HeroData.BaseAoeDmg + PermanentBuffBonuses.AoeDmg));
+	SetSecondaryValue(ET66SecondaryStatType::BounceDamage, static_cast<float>(HeroData.BaseBounceDmg + PermanentBuffBonuses.BounceDmg));
+	SetSecondaryValue(ET66SecondaryStatType::PierceDamage, static_cast<float>(HeroData.BasePierceDmg + PermanentBuffBonuses.PierceDmg));
+	SetSecondaryValue(ET66SecondaryStatType::DotDamage, static_cast<float>(HeroData.BaseDotDmg + PermanentBuffBonuses.DotDmg));
+	SetSecondaryValue(ET66SecondaryStatType::AoeSpeed, static_cast<float>(HeroData.BaseAoeAtkSpd + PermanentBuffBonuses.AoeAtkSpd));
+	SetSecondaryValue(ET66SecondaryStatType::BounceSpeed, static_cast<float>(HeroData.BaseBounceAtkSpd + PermanentBuffBonuses.BounceAtkSpd));
+	SetSecondaryValue(ET66SecondaryStatType::PierceSpeed, static_cast<float>(HeroData.BasePierceAtkSpd + PermanentBuffBonuses.PierceAtkSpd));
+	SetSecondaryValue(ET66SecondaryStatType::DotSpeed, static_cast<float>(HeroData.BaseDotAtkSpd + PermanentBuffBonuses.DotAtkSpd));
+	SetSecondaryValue(ET66SecondaryStatType::AoeScale, static_cast<float>(HeroData.BaseAoeAtkScale + PermanentBuffBonuses.AoeAtkScale));
+	SetSecondaryValue(ET66SecondaryStatType::BounceScale, static_cast<float>(HeroData.BaseBounceAtkScale + PermanentBuffBonuses.BounceAtkScale));
+	SetSecondaryValue(ET66SecondaryStatType::PierceScale, static_cast<float>(HeroData.BasePierceAtkScale + PermanentBuffBonuses.PierceAtkScale));
+	SetSecondaryValue(ET66SecondaryStatType::DotScale, static_cast<float>(HeroData.BaseDotAtkScale + PermanentBuffBonuses.DotAtkScale));
+	SetSecondaryValue(ET66SecondaryStatType::CritDamage, HeroData.BaseCritDamage);
+	SetSecondaryValue(ET66SecondaryStatType::CritChance, HeroData.BaseCritChance);
+	SetSecondaryValue(ET66SecondaryStatType::AttackRange, HeroData.BaseAttackRange);
+	SetSecondaryValue(ET66SecondaryStatType::Accuracy, HeroData.BaseAccuracy);
+	SetSecondaryValue(ET66SecondaryStatType::Taunt, HeroData.BaseTaunt);
+	SetSecondaryValue(ET66SecondaryStatType::DamageReduction, 0.f);
+	SetSecondaryValue(ET66SecondaryStatType::ReflectDamage, HeroData.BaseReflectDmg);
+	SetSecondaryValue(ET66SecondaryStatType::Crush, HeroData.BaseCrushChance);
+	SetSecondaryValue(ET66SecondaryStatType::EvasionChance, 0.f);
+	SetSecondaryValue(ET66SecondaryStatType::CounterAttack, HeroData.BaseCounterAttack);
+	SetSecondaryValue(ET66SecondaryStatType::Invisibility, HeroData.BaseInvisChance);
+	SetSecondaryValue(ET66SecondaryStatType::Assassinate, HeroData.BaseAssassinateChance);
+	SetSecondaryValue(ET66SecondaryStatType::TreasureChest, 0.f);
+	SetSecondaryValue(ET66SecondaryStatType::Cheating, HeroData.BaseCheatChance);
+	SetSecondaryValue(ET66SecondaryStatType::Stealing, HeroData.BaseStealChance);
+	SetSecondaryValue(ET66SecondaryStatType::LootCrate, 0.f);
+}
+
+void UT66HeroSelectionScreen::RefreshHeroStatsPanels()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-	const FText NewLine = NSLOCTEXT("T66.Common", "NewLine", "\n");
-	const FText StatLineFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
-	const FText StatLineWithBonusFmt = NSLOCTEXT("T66.Stats", "StatLineWithBonus", "{0}: {1} + {2}");
-	const FText RangeFmt = NSLOCTEXT("T66.Stats", "StatRangeFormat", "{0}: {1}-{2}");
 
-	TArray<FText> Lines;
-	Lines.Reserve(48);
-
-	const FText Quote = Loc ? Loc->GetText_HeroQuote(HeroData.HeroID) : FText::GetEmpty();
-	const FText Description = Loc ? Loc->GetText_HeroDescription(HeroData.HeroID) : HeroData.Description;
-	if (!Quote.IsEmpty())
+	if (HeroSummaryStatsHost.IsValid())
 	{
-		Lines.Add(Quote);
-	}
-	if (!Description.IsEmpty())
-	{
-		if (!Lines.IsEmpty())
+		if (HeroStatsSnapshot)
 		{
-			Lines.Add(FText::GetEmpty());
+			T66StatsPanelSlate::FT66SnapshotStatsPanelOptions SummaryOptions;
+			SummaryOptions.WidthOverride = 0.f;
+			SummaryOptions.bExtended = false;
+			SummaryOptions.bShowAdjectiveSummaries = true;
+			SummaryOptions.bIncludeHeader = false;
+			SummaryOptions.bIncludeLevel = false;
+			SummaryOptions.FontSizeAdjustment = -6;
+			HeroSummaryStatsHost->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithOptions(HeroStatsSnapshot, Loc, SummaryOptions));
 		}
-		Lines.Add(Description);
-	}
-
-	auto AddHeader = [&](const FText& Header)
-	{
-		if (!Lines.IsEmpty())
+		else
 		{
-			Lines.Add(FText::GetEmpty());
+			HeroSummaryStatsHost->SetContent(
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroSummaryStatsHint", "Select a hero to view their stats."))
+				.Font(FT66Style::Tokens::FontRegular(14))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.AutoWrapText(true));
 		}
-		Lines.Add(Header);
-	};
-
-	auto AddSimpleLine = [&](const FText& Label, const FText& Value)
-	{
-		Lines.Add(FText::Format(StatLineFmt, Label, Value));
-	};
-
-	auto AddStatLine = [&](const FText& Label, int32 BaseValue, int32 BonusValue)
-	{
-		const FText ValueText = (BonusValue > 0)
-			? FText::Format(StatLineWithBonusFmt, Label, FText::AsNumber(BaseValue), FText::AsNumber(BonusValue))
-			: FText::Format(StatLineFmt, Label, FText::AsNumber(BaseValue));
-		Lines.Add(ValueText);
-	};
-
-	auto AddRangeLine = [&](const FText& Label, const FT66HeroStatGainRange& Range)
-	{
-		Lines.Add(FText::Format(RangeFmt, Label, FText::AsNumber(Range.Min), FText::AsNumber(Range.Max)));
-	};
-
-	AddHeader(NSLOCTEXT("T66.HeroSelection", "FullStatsOverview", "OVERVIEW"));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "PrimaryCategoryLabel", "Primary Category"), Loc ? Loc->GetText_IdolCategoryName(HeroData.PrimaryCategory) : StaticEnum<ET66AttackCategory>()->GetDisplayNameTextByValue(static_cast<int64>(HeroData.PrimaryCategory)));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "PassiveLabel", "Passive"), Loc ? Loc->GetText_PassiveName(HeroData.PassiveType) : StaticEnum<ET66PassiveType>()->GetDisplayNameTextByValue(static_cast<int64>(HeroData.PassiveType)));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "UltimateLabel", "Ultimate"), Loc ? Loc->GetText_UltimateName(HeroData.UltimateType) : StaticEnum<ET66UltimateType>()->GetDisplayNameTextByValue(static_cast<int64>(HeroData.UltimateType)));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "MaxSpeedLabel", "Max Speed"), FText::AsNumber(FMath::RoundToInt(HeroData.MaxSpeed)));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "AccelerationLabel", "Acceleration"), FText::Format(NSLOCTEXT("T66.HeroSelection", "AccelerationValue", "{0}% / sec"), FText::AsNumber(FMath::RoundToInt(HeroData.AccelerationPercentPerSecond))));
-
-	AddHeader(NSLOCTEXT("T66.HeroSelection", "FullStatsBaseHeader", "BASE STATS"));
-	AddStatLine(Loc ? Loc->GetText_Stat_Damage() : NSLOCTEXT("T66.Stats", "Damage", "Damage"), BaseStats.Damage, PermanentBuffBonuses.Damage);
-	AddStatLine(Loc ? Loc->GetText_Stat_AttackSpeed() : NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed"), BaseStats.AttackSpeed, PermanentBuffBonuses.AttackSpeed);
-	AddStatLine(Loc ? Loc->GetText_Stat_AttackScale() : NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale"), BaseStats.AttackScale, PermanentBuffBonuses.AttackScale);
-	AddStatLine(Loc ? Loc->GetText_Stat_Accuracy() : NSLOCTEXT("T66.Stats", "Accuracy", "Accuracy"), BaseStats.Accuracy, PermanentBuffBonuses.Accuracy);
-	AddStatLine(Loc ? Loc->GetText_Stat_Armor() : NSLOCTEXT("T66.Stats", "Armor", "Armor"), BaseStats.Armor, PermanentBuffBonuses.Armor);
-	AddStatLine(Loc ? Loc->GetText_Stat_Evasion() : NSLOCTEXT("T66.Stats", "Evasion", "Evasion"), BaseStats.Evasion, PermanentBuffBonuses.Evasion);
-	AddStatLine(Loc ? Loc->GetText_Stat_Luck() : NSLOCTEXT("T66.Stats", "Luck", "Luck"), BaseStats.Luck, PermanentBuffBonuses.Luck);
-	AddSimpleLine(Loc ? Loc->GetText_Stat_Speed() : NSLOCTEXT("T66.Stats", "Speed", "Speed"), FText::AsNumber(BaseStats.Speed));
-
-	AddHeader(NSLOCTEXT("T66.HeroSelection", "FullStatsPerLevelHeader", "PER LEVEL"));
-	AddRangeLine(Loc ? Loc->GetText_Stat_Damage() : NSLOCTEXT("T66.Stats", "Damage", "Damage"), PerLevelGains.Damage);
-	AddRangeLine(Loc ? Loc->GetText_Stat_AttackSpeed() : NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed"), PerLevelGains.AttackSpeed);
-	AddRangeLine(Loc ? Loc->GetText_Stat_AttackScale() : NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale"), PerLevelGains.AttackScale);
-	AddRangeLine(Loc ? Loc->GetText_Stat_Accuracy() : NSLOCTEXT("T66.Stats", "Accuracy", "Accuracy"), PerLevelGains.Accuracy);
-	AddRangeLine(Loc ? Loc->GetText_Stat_Armor() : NSLOCTEXT("T66.Stats", "Armor", "Armor"), PerLevelGains.Armor);
-	AddRangeLine(Loc ? Loc->GetText_Stat_Evasion() : NSLOCTEXT("T66.Stats", "Evasion", "Evasion"), PerLevelGains.Evasion);
-	AddRangeLine(Loc ? Loc->GetText_Stat_Luck() : NSLOCTEXT("T66.Stats", "Luck", "Luck"), PerLevelGains.Luck);
-	AddSimpleLine(Loc ? Loc->GetText_Stat_Speed() : NSLOCTEXT("T66.Stats", "Speed", "Speed"), NSLOCTEXT("T66.HeroSelection", "SpeedPerLevel", "+1 per level"));
-
-	AddHeader(NSLOCTEXT("T66.HeroSelection", "FullStatsCategoryHeader", "CATEGORY STATS"));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "PierceDamageLabel", "Pierce Damage"), FText::AsNumber(HeroData.BasePierceDmg));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "PierceAttackSpeedLabel", "Pierce Attack Speed"), FText::AsNumber(HeroData.BasePierceAtkSpd));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "PierceAttackScaleLabel", "Pierce Attack Scale"), FText::AsNumber(HeroData.BasePierceAtkScale));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "BounceDamageLabel", "Bounce Damage"), FText::AsNumber(HeroData.BaseBounceDmg));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "BounceAttackSpeedLabel", "Bounce Attack Speed"), FText::AsNumber(HeroData.BaseBounceAtkSpd));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "BounceAttackScaleLabel", "Bounce Attack Scale"), FText::AsNumber(HeroData.BaseBounceAtkScale));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "AoeDamageLabel", "AOE Damage"), FText::AsNumber(HeroData.BaseAoeDmg));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "AoeAttackSpeedLabel", "AOE Attack Speed"), FText::AsNumber(HeroData.BaseAoeAtkSpd));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "AoeAttackScaleLabel", "AOE Attack Scale"), FText::AsNumber(HeroData.BaseAoeAtkScale));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "DotDamageLabel", "DOT Damage"), FText::AsNumber(HeroData.BaseDotDmg));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "DotAttackSpeedLabel", "DOT Attack Speed"), FText::AsNumber(HeroData.BaseDotAtkSpd));
-	AddSimpleLine(NSLOCTEXT("T66.HeroSelection", "DotAttackScaleLabel", "DOT Attack Scale"), FText::AsNumber(HeroData.BaseDotAtkScale));
-
-	AddHeader(NSLOCTEXT("T66.HeroSelection", "FullStatsPassiveHeader", "PASSIVE"));
-	Lines.Add(Loc ? Loc->GetText_PassiveName(HeroData.PassiveType) : StaticEnum<ET66PassiveType>()->GetDisplayNameTextByValue(static_cast<int64>(HeroData.PassiveType)));
-	const FText PassiveDescription = Loc ? Loc->GetText_PassiveDescription(HeroData.PassiveType) : FText::GetEmpty();
-	if (!PassiveDescription.IsEmpty())
-	{
-		Lines.Add(PassiveDescription);
 	}
 
-	AddHeader(NSLOCTEXT("T66.HeroSelection", "FullStatsUltimateHeader", "ULTIMATE"));
-	Lines.Add(Loc ? Loc->GetText_UltimateName(HeroData.UltimateType) : StaticEnum<ET66UltimateType>()->GetDisplayNameTextByValue(static_cast<int64>(HeroData.UltimateType)));
-	const FText UltimateDescription = Loc ? Loc->GetText_UltimateDescription(HeroData.UltimateType) : FText::GetEmpty();
-	if (!UltimateDescription.IsEmpty())
+	if (HeroFullStatsHost.IsValid())
 	{
-		Lines.Add(UltimateDescription);
+		if (HeroStatsSnapshot)
+		{
+			T66StatsPanelSlate::FT66SnapshotStatsPanelOptions FullOptions;
+			FullOptions.WidthOverride = 0.f;
+			FullOptions.bExtended = true;
+			FullOptions.bShowAdjectiveSummaries = true;
+			FullOptions.bIncludeHeader = true;
+			FullOptions.bIncludeLevel = true;
+			FullOptions.FontSizeAdjustment = -6;
+			FullOptions.HeadingFontSizeAdjustment = -6;
+			FullOptions.ScrollHeightOverride = FT66Style::Tokens::NPCStatsPanelContentHeight + 48.f;
+			HeroFullStatsHost->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithOptions(HeroStatsSnapshot, Loc, FullOptions));
+		}
+		else
+		{
+			HeroFullStatsHost->SetContent(
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroFullStatsHint", "Select a hero to view their full stats."))
+				.Font(FT66Style::Tokens::FontRegular(13))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.AutoWrapText(true));
+		}
 	}
-
-	return FText::Join(NewLine, Lines);
 }
 
 void UT66HeroSelectionScreen::UpdateHeroDisplay()
@@ -3097,6 +3650,53 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 
 	UpdateTargetOptions();
 
+	auto RefreshCompanionInfoPortrait = [this, T66GI]()
+	{
+		if (!CompanionInfoPortraitBrush.IsValid())
+		{
+			return;
+		}
+
+		CompanionInfoPortraitBrush->SetResourceObject(nullptr);
+		if (!T66GI || PreviewedCompanionID.IsNone())
+		{
+			return;
+		}
+
+		UT66UITexturePoolSubsystem* TexPool = T66GI->GetSubsystem<UT66UITexturePoolSubsystem>();
+		if (!TexPool)
+		{
+			return;
+		}
+
+		UT66SkinSubsystem* SkinSubsystem = T66GI->GetSubsystem<UT66SkinSubsystem>();
+		if (!SkinSubsystem)
+		{
+			return;
+		}
+
+		const FName EffectiveCompanionSkinID = GetEffectivePreviewedCompanionSkinID();
+		const TSoftObjectPtr<UTexture2D> PortraitSoft = SkinSubsystem->GetSkinPortrait(
+			ET66SkinEntityType::Companion,
+			PreviewedCompanionID,
+			EffectiveCompanionSkinID,
+			/*bSelectionPortrait*/ true);
+		if (PortraitSoft.IsNull())
+		{
+			return;
+		}
+
+		T66SlateTexture::BindSharedBrushAsync(
+			TexPool,
+			PortraitSoft,
+			this,
+			CompanionInfoPortraitBrush,
+			FName(TEXT("HeroSelectionCompanionInfoPortrait")),
+			/*bClearWhileLoading*/ true);
+	};
+
+	RefreshCompanionInfoPortrait();
+
 	FHeroData HeroData;
 	if (GetPreviewedHeroData(HeroData))
 	{
@@ -3107,10 +3707,10 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 		}
 
 		FT66HeroStatBlock BaseStats;
-		FT66HeroPerLevelStatGains PerLevelGains;
 		if (T66GI)
 		{
-			T66GI->GetHeroStatTuning(PreviewedHeroID, BaseStats, PerLevelGains);
+			FT66HeroPerLevelStatGains UnusedPerLevelGains;
+			T66GI->GetHeroStatTuning(PreviewedHeroID, BaseStats, UnusedPerLevelGains);
 		}
 
 		FT66HeroStatBonuses PermanentBuffBonuses;
@@ -3119,26 +3719,42 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 			PermanentBuffBonuses = Buffs->GetPermanentBuffStatBonuses();
 		}
 
-		if (HeroDescWidget.IsValid())
+		PopulateHeroStatsSnapshot(HeroData, BaseStats, PermanentBuffBonuses);
+		RefreshHeroStatsPanels();
+
+		if (HeroUltimateIconBrush.IsValid())
 		{
-			HeroDescWidget->SetText(BuildHeroSummaryStatsText(HeroData, BaseStats, PermanentBuffBonuses));
+			HeroUltimateIconBrush->SetResourceObject(nullptr);
 		}
-		if (HeroFullStatsWidget.IsValid())
+		if (HeroPassiveIconBrush.IsValid())
 		{
-			HeroFullStatsWidget->SetText(BuildHeroFullStatsText(HeroData, BaseStats, PerLevelGains, PermanentBuffBonuses));
+			HeroPassiveIconBrush->SetResourceObject(nullptr);
+		}
+		if (T66GI)
+		{
+			if (UT66UITexturePoolSubsystem* TexPool = T66GI->GetSubsystem<UT66UITexturePoolSubsystem>())
+			{
+				T66SlateTexture::BindSharedBrushAsync(
+					TexPool,
+					ResolveHeroSelectionUltimateIcon(HeroData.HeroID, HeroData.UltimateType),
+					this,
+					HeroUltimateIconBrush,
+					FName(TEXT("HeroSelectionUltimateIcon")),
+					/*bClearWhileLoading*/ true);
+				T66SlateTexture::BindSharedBrushAsync(
+					TexPool,
+					ResolveHeroSelectionPassiveIcon(HeroData.HeroID, HeroData.PassiveType),
+					this,
+					HeroPassiveIconBrush,
+					FName(TEXT("HeroSelectionPassiveIcon")),
+					/*bClearWhileLoading*/ true);
+			}
 		}
 
 		if (bShowingCompanionInfo)
 		{
 			FCompanionData CompanionData;
 			const bool bHasCompanion = GetPreviewedCompanionData(CompanionData);
-			const FText CompanionLoreText = bHasCompanion
-				? (Loc ? Loc->GetText_CompanionLore(PreviewedCompanionID) : CompanionData.LoreText)
-				: (Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.HeroSelection", "NoCompanionInfo", "No companion selected."));
-			if (HeroDescWidget.IsValid())
-			{
-				HeroDescWidget->SetText(CompanionLoreText);
-			}
 			const ET66AccountMedalTier MedalTier = (Achievements && bHasCompanion)
 				? Achievements->GetCompanionHighestMedal(PreviewedCompanionID)
 				: ET66AccountMedalTier::None;
@@ -3148,17 +3764,50 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 			const int32 UnionStages = (Achievements && bHasCompanion)
 				? Achievements->GetCompanionUnionStagesCleared(PreviewedCompanionID)
 				: 0;
+			const int32 TotalHealing = (Achievements && bHasCompanion)
+				? Achievements->GetCompanionTotalHealing(PreviewedCompanionID)
+				: 0;
+			const float HealingPerSecond = bHasCompanion
+				? AT66CompanionBase::GetHealingPerSecondForUnionStages(UnionStages)
+				: 0.f;
+			CompanionUnityStagesCleared = UnionStages;
+			CompanionUnityProgress01 = (Achievements && bHasCompanion)
+				? FMath::Clamp(Achievements->GetCompanionUnionProgress01(PreviewedCompanionID), 0.f, 1.f)
+				: 0.f;
+			if (CompanionHealsPerSecondWidget.IsValid())
+			{
+				CompanionHealsPerSecondWidget->SetText(
+					bHasCompanion
+						? FormatCompanionHealingPerSecondText(HealingPerSecond)
+						: (Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.HeroSelection", "NoCompanionInfo", "No companion selected.")));
+			}
+			if (CompanionUnityTextWidget.IsValid())
+			{
+				CompanionUnityTextWidget->SetText(
+					bHasCompanion
+						? FText::Format(
+							NSLOCTEXT("T66.HeroSelection", "CompanionUnityFormat", "Unity: {0} / {1}"),
+							FText::AsNumber(CompanionUnityStagesCleared),
+							FText::AsNumber(UT66AchievementsSubsystem::UnionTier_HyperStages))
+						: NSLOCTEXT("T66.HeroSelection", "CompanionUnityNoSelection", "Select a companion to view unity."));
+			}
 			SetRecordValues(
 				MedalTier,
 				GamesPlayed,
 				HeroRecordThirdMetricLabel(true),
-				FText::AsNumber(UnionStages));
+				FText::AsNumber(TotalHealing));
 		}
 		else
 		{
-			if (HeroDescWidget.IsValid())
+			if (CompanionHealsPerSecondWidget.IsValid())
 			{
-				HeroDescWidget->SetText(BuildHeroSummaryStatsText(HeroData, BaseStats, PermanentBuffBonuses));
+				CompanionHealsPerSecondWidget->SetText(NSLOCTEXT("T66.HeroSelection", "CompanionHealsPerSecondDefault", "Heals / Second: 0"));
+			}
+			CompanionUnityStagesCleared = 0;
+			CompanionUnityProgress01 = 0.f;
+			if (CompanionUnityTextWidget.IsValid())
+			{
+				CompanionUnityTextWidget->SetText(NSLOCTEXT("T66.HeroSelection", "CompanionUnityDefault", "Unity: 0 / 20"));
 			}
 			const ET66AccountMedalTier MedalTier = Achievements ? Achievements->GetHeroHighestMedal(PreviewedHeroID) : ET66AccountMedalTier::None;
 			const int32 GamesPlayed = Achievements ? Achievements->GetHeroGamesPlayed(PreviewedHeroID) : 0;
@@ -3178,19 +3827,14 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 				: PreviewSkinIDOverride;
 			if (EffectiveSkinID.IsNone()) EffectiveSkinID = FName(TEXT("Default"));
 			const FName EffectiveCompanionSkinID = GetEffectivePreviewedCompanionSkinID();
+			PreviewStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
 			PreviewStage->SetPreviewDifficulty(SelectedDifficulty);
 			UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] UpdateHeroDisplay: PreviewSkinIDOverride=%s, GI->SelectedHeroSkinID=%s, EffectiveSkinID=%s"),
 				*PreviewSkinIDOverride.ToString(), T66GI ? *T66GI->SelectedHeroSkinID.ToString() : TEXT("(null GI)"), *EffectiveSkinID.ToString());
 			UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] UpdateHeroDisplay: calling SetPreviewHero HeroID=%s BodyType=%d SkinID=%s"),
 				*PreviewedHeroID.ToString(), (int32)SelectedBodyType, *EffectiveSkinID.ToString());
 			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID, PreviewedCompanionID, EffectiveCompanionSkinID);
-			if (UWorld* World = GetWorld())
-			{
-				if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
-				{
-					GM->PositionCameraForHeroPreview();
-				}
-			}
+			T66PositionHeroPreviewCamera(this);
 		}
 		else if (HeroPreviewColorBox.IsValid())
 		{
@@ -3204,13 +3848,25 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 		{
 			HeroLoreWidget->SetText(FText::GetEmpty());
 		}
-		if (HeroFullStatsWidget.IsValid())
+		HeroStatsSnapshot = nullptr;
+		RefreshHeroStatsPanels();
+		if (HeroUltimateIconBrush.IsValid())
 		{
-			HeroFullStatsWidget->SetText(FText::GetEmpty());
+			HeroUltimateIconBrush->SetResourceObject(nullptr);
 		}
-		if (HeroDescWidget.IsValid())
+		if (HeroPassiveIconBrush.IsValid())
 		{
-			HeroDescWidget->SetText(FText::GetEmpty());
+			HeroPassiveIconBrush->SetResourceObject(nullptr);
+		}
+		if (CompanionHealsPerSecondWidget.IsValid())
+		{
+			CompanionHealsPerSecondWidget->SetText(NSLOCTEXT("T66.HeroSelection", "CompanionHealsPerSecondDefault", "Heals / Second: 0"));
+		}
+		CompanionUnityStagesCleared = 0;
+		CompanionUnityProgress01 = 0.f;
+		if (CompanionUnityTextWidget.IsValid())
+		{
+			CompanionUnityTextWidget->SetText(NSLOCTEXT("T66.HeroSelection", "CompanionUnityDefault", "Unity: 0 / 20"));
 		}
 		SetRecordValues(
 			ET66AccountMedalTier::None,
@@ -3224,14 +3880,10 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 				: PreviewSkinIDOverride;
 			if (EffectiveSkinID.IsNone()) EffectiveSkinID = FName(TEXT("Default"));
 			const FName EffectiveCompanionSkinID = GetEffectivePreviewedCompanionSkinID();
+			PreviewStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+			PreviewStage->SetPreviewDifficulty(SelectedDifficulty);
 			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID, PreviewedCompanionID, EffectiveCompanionSkinID);
-			if (UWorld* World = GetWorld())
-			{
-				if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
-				{
-					GM->PositionCameraForHeroPreview();
-				}
-			}
+			T66PositionHeroPreviewCamera(this);
 		}
 		else if (HeroPreviewColorBox.IsValid())
 		{
@@ -3509,11 +4161,7 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 			}
 		}
 	}
-	if (UWorld* World = GetWorld())
-	{
-		if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
-			GM->PositionCameraForHeroPreview();
-	}
+	T66PositionHeroPreviewCamera(this);
 
 	CommitLocalSelectionsToLobby(false);
 	SyncToSharedPartyScreen();
@@ -3600,6 +4248,7 @@ void UT66HeroSelectionScreen::PreviewHero(FName HeroID)
 	PreviewedHeroID = HeroID;
 	CurrentHeroIndex = AllHeroIDs.IndexOfByKey(HeroID);
 	if (CurrentHeroIndex == INDEX_NONE) CurrentHeroIndex = 0;
+	SelectedHeroPreviewClip = EHeroPreviewClip::Overview;
 	
 	// Clear any preview override when switching heroes (preview is hero-specific).
 	PreviewSkinIDOverride = NAME_None;
@@ -3754,11 +4403,12 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 		}
 	}
 
-	if (SessionSubsystem && SessionSubsystem->IsPartySessionActive() && GI)
+	if (SessionSubsystem && SessionSubsystem->IsPartyLobbyContextActive() && GI)
 	{
 		GI->SelectedDifficulty = SessionSubsystem->GetSharedLobbyDifficulty();
+		SessionSubsystem->SyncLocalLobbyProfile();
 
-		if (!SessionSubsystem->IsLocalPlayerPartyHost() && GI->GetSubsystem<UT66PartySubsystem>() && GI->GetSubsystem<UT66PartySubsystem>()->HasRemotePartyMembers())
+		if (!SessionSubsystem->IsLocalPlayerPartyHost())
 		{
 			SessionSubsystem->SetLocalLobbyReady(!SessionSubsystem->IsLocalLobbyReady());
 			ForceRebuildSlate();
@@ -3807,13 +4457,24 @@ void UT66HeroSelectionScreen::OnBackClicked()
 		}
 	}
 
-	NavigateBack();
+	if (UIManager && UIManager->CanGoBack())
+	{
+		NavigateBack();
+		return;
+	}
+
+	NavigateTo(ET66ScreenType::MainMenu);
 }
 
 AT66HeroPreviewStage* UT66HeroSelectionScreen::GetHeroPreviewStage() const
 {
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
+
+	if (AT66PlayerController* PC = T66GetLocalFrontendPlayerController(const_cast<UT66HeroSelectionScreen*>(this)))
+	{
+		PC->EnsureLocalFrontendPreviewScene();
+	}
 
 	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
 	{
@@ -3879,44 +4540,61 @@ void UT66HeroSelectionScreen::EnsureHeroPreviewVideoResources()
 
 void UT66HeroSelectionScreen::UpdateHeroPreviewVideo()
 {
-	const FName ArthurHeroID(TEXT("Hero_1"));
-	const bool bIsArthur = (PreviewedHeroID == ArthurHeroID);
-	const FString ArthurPreviewMoviePath = ResolveArthurPreviewMoviePath();
-	const bool bHasArthurPreview = !ArthurPreviewMoviePath.IsEmpty();
+	FString PreviewMoviePath;
+	if (!bShowingCompanionInfo && PreviewedHeroID == FName(TEXT("Hero_1")))
+	{
+		switch (SelectedHeroPreviewClip)
+		{
+		case EHeroPreviewClip::Ultimate:
+		case EHeroPreviewClip::Passive:
+		case EHeroPreviewClip::Overview:
+		default:
+			PreviewMoviePath = ResolveArthurPreviewMoviePath();
+			break;
+		}
+	}
+
+	const bool bShowHeroVideo = !PreviewMoviePath.IsEmpty();
 
 	if (HeroPreviewVideoImage.IsValid())
 	{
-		HeroPreviewVideoImage->SetVisibility(bIsArthur && bHasArthurPreview ? EVisibility::Visible : EVisibility::Collapsed);
+		HeroPreviewVideoImage->SetVisibility(bShowHeroVideo ? EVisibility::Visible : EVisibility::Collapsed);
 	}
 	if (HeroPreviewPlaceholderText.IsValid())
 	{
-		HeroPreviewPlaceholderText->SetVisibility(bIsArthur && bHasArthurPreview ? EVisibility::Collapsed : EVisibility::Visible);
+		HeroPreviewPlaceholderText->SetVisibility(
+			!bShowingCompanionInfo && !bShowHeroVideo
+				? EVisibility::Visible
+				: EVisibility::Collapsed);
 	}
 
 	if (!HeroPreviewMediaPlayer)
 	{
 		return;
 	}
-	if (bIsArthur)
+	if (bShowHeroVideo)
 	{
-		if (!bHasArthurPreview)
-		{
-			HeroPreviewMediaPlayer->Close();
-			return;
-		}
 		const FString CurrentUrl = HeroPreviewMediaPlayer->GetUrl();
-		if (!HeroPreviewMediaPlayer->IsPlaying() || !CurrentUrl.Contains(TEXT("ArthurPreview.mp4")))
+		const bool bNeedsReopen = !HeroPreviewMediaPlayer->IsPlaying()
+			|| ActivePreviewVideoHeroID != PreviewedHeroID
+			|| ActiveHeroPreviewClip != SelectedHeroPreviewClip
+			|| !CurrentUrl.Equals(PreviewMoviePath, ESearchCase::IgnoreCase);
+		if (bNeedsReopen)
 		{
 			HeroPreviewMediaPlayer->Close();
-			if (!HeroPreviewMediaPlayer->OpenFile(ArthurPreviewMoviePath))
+			if (!HeroPreviewMediaPlayer->OpenFile(PreviewMoviePath))
 			{
-				UE_LOG(LogT66HeroSelection, Warning, TEXT("Failed to open Arthur preview video from '%s'"), *ArthurPreviewMoviePath);
+				UE_LOG(LogT66HeroSelection, Warning, TEXT("Failed to open hero preview video from '%s'"), *PreviewMoviePath);
 			}
+			ActivePreviewVideoHeroID = PreviewedHeroID;
+			ActiveHeroPreviewClip = SelectedHeroPreviewClip;
 		}
 	}
 	else
 	{
 		HeroPreviewMediaPlayer->Close();
+		ActivePreviewVideoHeroID = NAME_None;
+		ActiveHeroPreviewClip = EHeroPreviewClip::Overview;
 	}
 }
 

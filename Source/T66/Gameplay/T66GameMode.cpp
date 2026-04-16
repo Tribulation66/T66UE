@@ -23,7 +23,9 @@
 #include "Gameplay/T66BossGate.h"
 #include "Gameplay/T66TowerDescentHole.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/Enemies/T66EnemyFamilyResolver.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
+#include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66FountainOfLifeInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
@@ -38,7 +40,6 @@
 #include "Gameplay/T66StageCatchUpGoldInteractable.h"
 #include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66StageEffects.h"
-#include "Gameplay/T66LavaPatch.h"
 #include "Gameplay/T66SpawnPlateau.h"
 #include "Gameplay/T66LabCollector.h"
 #include "Gameplay/T66TutorialManager.h"
@@ -55,14 +56,17 @@
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66StageProgressionSubsystem.h"
 #include "Core/T66TrapSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66GameplayLayout.h"
 #include "Core/T66PropSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66SessionPlayerState.h"
+#include "Gameplay/T66StageProgressionVisuals.h"
 #include "UI/T66LoadingScreenWidget.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
@@ -358,6 +362,45 @@ namespace
 		return MapName.Contains(TEXT("Coliseum"));
 	}
 
+	static void T66DestroyMiasmaBoundaryActors(UWorld* World)
+	{
+		if (!World)
+		{
+			return;
+		}
+
+		for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
+		{
+			if (AT66MiasmaBoundary* ExistingBoundary = *It)
+			{
+				ExistingBoundary->Destroy();
+			}
+		}
+	}
+
+	static void T66PauseTowerMiasma(AT66MiasmaManager* MiasmaManager)
+	{
+		if (!MiasmaManager)
+		{
+			return;
+		}
+
+		MiasmaManager->ClearAllMiasma();
+		MiasmaManager->SetActorTickEnabled(false);
+		MiasmaManager->SetActorHiddenInGame(true);
+	}
+
+	static void T66ActivateStageMiasma(AT66MiasmaManager* MiasmaManager)
+	{
+		if (!MiasmaManager)
+		{
+			return;
+		}
+
+		MiasmaManager->SetActorHiddenInGame(false);
+		MiasmaManager->SetActorTickEnabled(true);
+	}
+
 	static constexpr float T66FinalDifficultySurvivalDurationSeconds = 60.f;
 
 	static int32 T66EnsureRunSeed(UT66GameInstance* GI)
@@ -642,6 +685,7 @@ void AT66GameMode::InitializeRunStateForBeginPlay()
 	{
 		// Bind to timer changes so we can spawn LoanShark exactly when timer starts.
 		RunState->StageTimerChanged.AddDynamic(this, &AT66GameMode::HandleStageTimerChanged);
+		RunState->StageChanged.AddDynamic(this, &AT66GameMode::HandleStageChanged);
 		RunState->DifficultyChanged.AddDynamic(this, &AT66GameMode::HandleDifficultyChanged);
 
 		if (T66GI->bApplyLoadedRunSnapshot)
@@ -835,7 +879,18 @@ TWeakObjectPtr<UT66LoadingScreenWidget> AT66GameMode::CreateGameplayWarmupOverla
 		return nullptr;
 	}
 
-	APlayerController* PC = World->GetFirstPlayerController();
+	APlayerController* PC = nullptr;
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (APlayerController* Candidate = It->Get())
+		{
+			if (Candidate->IsLocalController())
+			{
+				PC = Candidate;
+				break;
+			}
+		}
+	}
 	if (!PC)
 	{
 		return nullptr;
@@ -861,6 +916,7 @@ void AT66GameMode::ScheduleGameplayVisualCleanup(UWorld* World)
 	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
+		ApplyStageProgressionVisuals();
 	}));
 
 	FTimerHandle DelayedVisualCleanupHandle;
@@ -869,6 +925,7 @@ void AT66GameMode::ScheduleGameplayVisualCleanup(UWorld* World)
 		FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
 			FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
+			ApplyStageProgressionVisuals();
 		}),
 		0.35f,
 		false);
@@ -879,6 +936,7 @@ void AT66GameMode::ScheduleGameplayVisualCleanup(UWorld* World)
 		FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
 			FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
+			ApplyStageProgressionVisuals();
 		}),
 		0.65f,
 		false);
@@ -1035,29 +1093,26 @@ void AT66GameMode::PrepareMainMapStage(UWorld* World)
 		SyncTowerBossEntryState();
 	}
 
-	if (!IsValid(MiasmaManager))
-	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-	}
-	else
-	{
-		MiasmaManager->RebuildForCurrentStage();
-	}
-
 	if (IsUsingTowerMainMapLayout())
 	{
-		for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
-		{
-			if (AT66MiasmaBoundary* ExistingBoundary = *It)
-			{
-				ExistingBoundary->Destroy();
-			}
-		}
+		T66PauseTowerMiasma(MiasmaManager);
+		T66DestroyMiasmaBoundaryActors(World);
 	}
 	else
 	{
+		if (!IsValid(MiasmaManager))
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		}
+		else
+		{
+			MiasmaManager->RebuildForCurrentStage();
+		}
+
+		T66ActivateStageMiasma(MiasmaManager);
+
 		bool bHasBoundaryActor = false;
 		for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
 		{
@@ -1169,30 +1224,27 @@ void AT66GameMode::SpawnStageMiasmaSystems()
 {
 	if (UWorld* World = GetWorld())
 	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-		if (!IsValid(MiasmaManager))
-		{
-			MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		}
-		else
-		{
-			MiasmaManager->RebuildForCurrentStage();
-		}
-
 		if (IsUsingTowerMainMapLayout())
 		{
-			for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
-			{
-				if (AT66MiasmaBoundary* ExistingBoundary = *It)
-				{
-					ExistingBoundary->Destroy();
-				}
-			}
+			T66PauseTowerMiasma(MiasmaManager);
+			T66DestroyMiasmaBoundaryActors(World);
 		}
 		else
 		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			if (!IsValid(MiasmaManager))
+			{
+				MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+			}
+			else
+			{
+				MiasmaManager->RebuildForCurrentStage();
+			}
+
+			T66ActivateStageMiasma(MiasmaManager);
+
 			bool bHasBoundaryActor = false;
 			for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
 			{
@@ -1207,16 +1259,16 @@ void AT66GameMode::SpawnStageMiasmaSystems()
 			{
 				World->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 			}
-		}
 
-		if (MiasmaManager)
-		{
-			MiasmaManager->UpdateFromRunState();
+			if (MiasmaManager)
+			{
+				MiasmaManager->UpdateFromRunState();
+			}
 		}
 	}
 
 	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Tick2: %s."),
-		IsUsingTowerMainMapLayout() ? TEXT("tower blood miasma manager ready") : TEXT("miasma systems spawned"));
+		IsUsingTowerMainMapLayout() ? TEXT("tower miasma paused") : TEXT("miasma systems spawned"));
 
 	if (UWorld* World = GetWorld())
 	{
@@ -1259,6 +1311,8 @@ void AT66GameMode::FinalizeStandardStageCombatBootstrap()
 	{
 		SpawnBossGateIfNeeded();
 	}
+
+	RefreshProgressionDrivenSystems(false);
 	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Tick4: boss + traversal flow spawned. Phase 2 complete."));
 	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Phase 2 content spawned (combat systems + boss)."));
 }
@@ -1271,6 +1325,7 @@ void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
 			RunState->StageTimerChanged.RemoveDynamic(this, &AT66GameMode::HandleStageTimerChanged);
+			RunState->StageChanged.RemoveDynamic(this, &AT66GameMode::HandleStageChanged);
 			RunState->DifficultyChanged.RemoveDynamic(this, &AT66GameMode::HandleDifficultyChanged);
 		}
 		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
@@ -1348,19 +1403,7 @@ void AT66GameMode::SpawnStageEffectsForStage()
 	static constexpr float SpawnZ = 40.f;
 	static constexpr float SafeBubbleMargin = 350.f;
 
-	int32 LavaPatchCount = 0;
-	switch (Difficulty)
-	{
-	case ET66Difficulty::Easy:       LavaPatchCount = 4;  break;
-	case ET66Difficulty::Medium:     LavaPatchCount = 5;  break;
-	case ET66Difficulty::Hard:       LavaPatchCount = 6;  break;
-	case ET66Difficulty::VeryHard:   LavaPatchCount = 7;  break;
-	case ET66Difficulty::Impossible: LavaPatchCount = 8;  break;
-	default:                         LavaPatchCount = 5;  break;
-	}
-
 	const int32 ShroomCount = (Difficulty == ET66Difficulty::Easy) ? 12 : 0;
-	if (LavaPatchCount <= 0 && ShroomCount <= 0) return;
 
 	struct FUsedStageEffectLoc
 	{
@@ -1469,84 +1512,16 @@ void AT66GameMode::SpawnStageEffectsForStage()
 		UsedLocs.Add({ Loc, Radius });
 	};
 
-	auto GetLavaDamagePerTick = [&]() -> int32
-	{
-		switch (Difficulty)
-		{
-		case ET66Difficulty::Easy:       return 6;
-		case ET66Difficulty::Medium:     return 8;
-		case ET66Difficulty::Hard:       return 10;
-		case ET66Difficulty::VeryHard:   return 12;
-		case ET66Difficulty::Impossible: return 14;
-		default:                         return 8;
-		}
-	};
-
-	auto ConfigureLavaPatch = [&](AT66LavaPatch* Lava)
-	{
-		if (!Lava) return;
-
-		FVector2D Flow(Rng.FRandRange(-1.f, 1.f), Rng.FRandRange(-1.f, 1.f));
-		if (Flow.IsNearlyZero())
-		{
-			Flow = FVector2D(1.f, 0.f);
-		}
-		else
-		{
-			Flow.Normalize();
-		}
-
-		Lava->PatchSize = Rng.FRandRange(1400.f, 2400.f);
-		Lava->HoverHeight = 1.5f;
-		Lava->CollisionHeight = 160.f;
-		Lava->TextureResolution = 64;
-		Lava->AnimationFrames = 18;
-		Lava->AnimationFPS = 12.f;
-		Lava->WarpSpeed = Rng.FRandRange(0.90f, 1.25f);
-		Lava->WarpIntensity = Rng.FRandRange(0.10f, 0.15f);
-		Lava->WarpCloseness = Rng.FRandRange(1.80f, 2.40f);
-		Lava->FlowDir = Flow;
-		Lava->FlowSpeed = Rng.FRandRange(0.12f, 0.26f);
-		Lava->UVScale = Rng.FRandRange(3.60f, 5.40f);
-		Lava->CellDensity = Rng.FRandRange(5.20f, 7.40f);
-		Lava->EdgeContrast = Rng.FRandRange(6.40f, 8.80f);
-		Lava->Brightness = Rng.FRandRange(2.10f, 2.90f);
-		Lava->PatternOffset = FVector2D(Rng.FRandRange(-12.f, 12.f), Rng.FRandRange(-12.f, 12.f));
-		Lava->DamagePerTick = GetLavaDamagePerTick();
-		Lava->DamageIntervalSeconds = 0.45f;
-		Lava->bDamageHero = true;
-	};
-
 	FActorSpawnParameters P;
 	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	int32 SpawnedLavaCount = 0;
-	int32 SpawnedShroomCount = 0;
-
-	static constexpr float LavaExclusionRadius = 1800.f;
-	for (int32 i = 0; i < LavaPatchCount; ++i)
+	if (!IsValid(MiasmaManager))
 	{
-		const FStageEffectSpawnHit Th = FindSpawnLoc(LavaExclusionRadius, 120);
-		if (!Th.bFound)
-		{
-			continue;
-		}
-
-		const FRotator LavaRot(0.f, Rng.FRandRange(0.f, 360.f), 0.f);
-		AT66LavaPatch* Lava = World->SpawnActorDeferred<AT66LavaPatch>(
-			AT66LavaPatch::StaticClass(),
-			FTransform(LavaRot, Th.Loc),
-			this,
-			nullptr,
-			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (Lava)
-		{
-			ConfigureLavaPatch(Lava);
-			Lava->FinishSpawning(FTransform(LavaRot, Th.Loc));
-			NoteUsedLoc(Th.Loc, LavaExclusionRadius);
-			++SpawnedLavaCount;
-		}
+		MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, P);
 	}
+
+	const int32 SpawnedLavaCount = MiasmaManager ? MiasmaManager->SpawnLegacyStageLavaPatchesForCurrentStage() : 0;
+	int32 SpawnedShroomCount = 0;
 
 	static constexpr float ShroomExclusionRadius = 420.f;
 	for (int32 i = 0; i < ShroomCount; ++i)
@@ -1576,7 +1551,22 @@ void AT66GameMode::SpawnStageEffectsForStage()
 void AT66GameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	MaintainPlayerTerrainSafety();
+	if (IsUsingTowerMainMapLayout())
+	{
+		TowerTerrainSafetyAccumulator += DeltaTime;
+		if (TowerTerrainSafetyAccumulator >= 0.10f)
+		{
+			TowerTerrainSafetyAccumulator = 0.f;
+			MaintainPlayerTerrainSafety();
+		}
+	}
+	else
+	{
+		TowerTerrainSafetyAccumulator = 0.f;
+		MaintainPlayerTerrainSafety();
+	}
+
+	SyncTowerTrapActivation();
 	TryActivateMainMapCombat();
 	SyncTowerBossEntryState();
 
@@ -1636,6 +1626,29 @@ void AT66GameMode::Tick(float DeltaTime)
 	}
 }
 
+void AT66GameMode::Logout(AController* Exiting)
+{
+	UWorld* World = GetWorld();
+	UT66SessionSubsystem* SessionSubsystem = nullptr;
+	const FString CurrentMapName = World ? UWorld::RemovePIEPrefix(World->GetMapName()) : FString();
+	const FString FrontendMapName = UT66GameInstance::GetFrontendLevelName().ToString();
+	const bool bShouldCollapsePartySession =
+		World
+		&& World->GetNetMode() != NM_Standalone
+		&& !CurrentMapName.Contains(FrontendMapName)
+		&& !World->URL.HasOption(TEXT("closed"))
+		&& (SessionSubsystem = GetT66GameInstance() ? GetT66GameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr)
+		&& !SessionSubsystem->IsGameplaySaveAndReturnInProgress();
+
+	if (bShouldCollapsePartySession)
+	{
+		UE_LOG(LogT66GameMode, Warning, TEXT("Gameplay player logout detected (%s); saving the active run on the host and returning the party to frontend."), *GetNameSafe(Exiting));
+		SessionSubsystem->SaveCurrentRunAndReturnToFrontend();
+	}
+
+	Super::Logout(Exiting);
+}
+
 void AT66GameMode::HandleStageTimerChanged()
 {
 	if (IsLabLevel()) return;
@@ -1646,7 +1659,11 @@ void AT66GameMode::HandleStageTimerChanged()
 	FLagScopedScope LagScope(GetWorld(), TEXT("HandleStageTimerChanged (Miasma+LoanShark)"));
 
 	// Perf: miasma updates are event-driven (StageTimerChanged broadcasts at most once per second).
-	if (MiasmaManager)
+	if (IsUsingTowerMainMapLayout())
+	{
+		T66PauseTowerMiasma(MiasmaManager);
+	}
+	else if (MiasmaManager)
 	{
 		MiasmaManager->UpdateFromRunState();
 	}
@@ -1657,37 +1674,97 @@ void AT66GameMode::HandleStageTimerChanged()
 	}
 }
 
+void AT66GameMode::HandleStageChanged()
+{
+	RefreshProgressionDrivenSystems(true);
+}
+
 void AT66GameMode::HandleDifficultyChanged()
 {
-	if (IsLabLevel()) return;
+	RefreshProgressionDrivenSystems(true);
+}
+
+void AT66GameMode::RefreshProgressionDrivenSystems(const bool bRescaleLiveEnemies)
+{
+	if (IsLabLevel())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!RunState) return;
-
-	const int32 Stage = RunState->GetCurrentStage();
-	const float Scalar = RunState->GetDifficultyScalar();
-	const float FinaleScalar = RunState->GetFinalSurvivalEnemyScalar();
-	UT66ActorRegistrySubsystem* Registry = GetWorld() ? GetWorld()->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
-	const TArray<TWeakObjectPtr<AT66EnemyBase>>& Enemies = Registry ? Registry->GetEnemies() : TArray<TWeakObjectPtr<AT66EnemyBase>>();
-	for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Enemies)
+	UT66StageProgressionSubsystem* StageProgression = GI ? GI->GetSubsystem<UT66StageProgressionSubsystem>() : nullptr;
+	if (!RunState)
 	{
-		if (AT66EnemyBase* E = WeakEnemy.Get())
+		return;
+	}
+
+	if (StageProgression)
+	{
+		StageProgression->RefreshSnapshot(false);
+	}
+
+	const FT66StageProgressionSnapshot Snapshot = StageProgression
+		? StageProgression->GetCurrentSnapshot()
+		: FT66StageProgressionSnapshot{};
+
+	if (bRescaleLiveEnemies && World)
+	{
+		const int32 Stage = RunState->GetCurrentStage();
+		const float DifficultyScalar = RunState->GetDifficultyScalar();
+		const float FinaleScalar = RunState->GetFinalSurvivalEnemyScalar();
+		UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
+		const TArray<TWeakObjectPtr<AT66EnemyBase>>& Enemies = Registry ? Registry->GetEnemies() : TArray<TWeakObjectPtr<AT66EnemyBase>>();
+		for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Enemies)
 		{
-			E->ApplyStageScaling(Stage);
-			E->ApplyDifficultyScalar(Scalar);
-			E->ApplyFinaleScaling(FinaleScalar);
+			if (AT66EnemyBase* Enemy = WeakEnemy.Get())
+			{
+				Enemy->ApplyStageScaling(Stage);
+				Enemy->ApplyDifficultyScalar(DifficultyScalar);
+				Enemy->ApplyProgressionEnemyScalar(Snapshot.EnemyStatScalar);
+				Enemy->ApplyFinaleScaling(FinaleScalar);
+			}
+		}
+
+		const TArray<TWeakObjectPtr<AT66BossBase>>& Bosses = Registry ? Registry->GetBosses() : TArray<TWeakObjectPtr<AT66BossBase>>();
+		for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Bosses)
+		{
+			if (AT66BossBase* Boss = WeakBoss.Get())
+			{
+				Boss->ApplyDifficultyScalar(DifficultyScalar);
+			}
 		}
 	}
 
-	// Bosses: scale HP + projectile damage (count unchanged).
-	const TArray<TWeakObjectPtr<AT66BossBase>>& Bosses = Registry ? Registry->GetBosses() : TArray<TWeakObjectPtr<AT66BossBase>>();
-	for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Bosses)
+	if (World)
 	{
-		if (AT66BossBase* B = WeakBoss.Get())
+		if (UT66TrapSubsystem* TrapSubsystem = World->GetSubsystem<UT66TrapSubsystem>())
 		{
-			B->ApplyDifficultyScalar(Scalar);
+			TrapSubsystem->RefreshRegisteredTrapProgression();
+		}
+
+		if (AT66EnemyDirector* EnemyDirector = Cast<AT66EnemyDirector>(UGameplayStatics::GetActorOfClass(World, AT66EnemyDirector::StaticClass())))
+		{
+			EnemyDirector->RefreshSpawningFromProgression();
 		}
 	}
+
+	ApplyStageProgressionVisuals();
+}
+
+void AT66GameMode::ApplyStageProgressionVisuals()
+{
+	UWorld* World = GetWorld();
+	UGameInstance* GI = GetGameInstance();
+	UT66StageProgressionSubsystem* StageProgression = GI ? GI->GetSubsystem<UT66StageProgressionSubsystem>() : nullptr;
+	if (!World || !StageProgression)
+	{
+		return;
+	}
+
+	StageProgression->RefreshSnapshot(false);
+	FT66StageProgressionVisuals::ApplyToWorld(World, StageProgression->GetCurrentSnapshot());
 }
 
 void AT66GameMode::TrySpawnLoanSharkIfNeeded()
@@ -1812,6 +1889,14 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 
 	if (GI && NewPlayer)
 	{
+		if (AT66PlayerController* T66PlayerController = Cast<AT66PlayerController>(NewPlayer))
+		{
+			T66PlayerController->ClientApplyGameplayRunSettings(
+				T66EnsureRunSeed(GI),
+				GI->SelectedDifficulty,
+				GI->CurrentMainMapLayoutVariant);
+		}
+
 		if (UGameInstance* GameInstance = GetGameInstance())
 		{
 			if (UT66RunStateSubsystem* RunState = GameInstance->GetSubsystem<UT66RunStateSubsystem>())
@@ -2946,24 +3031,30 @@ void AT66GameMode::TryActivateMainMapCombat()
 	}
 	RunState->SetStageTimerActive(true);
 
-	if (!IsValid(MiasmaManager))
+	if (IsUsingTowerMainMapLayout())
 	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		T66PauseTowerMiasma(MiasmaManager);
+		T66DestroyMiasmaBoundaryActors(World);
+	}
+	else
+	{
+		if (!IsValid(MiasmaManager))
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+			if (MiasmaManager)
+			{
+				MiasmaManager->RebuildForCurrentStage();
+			}
+		}
+
 		if (MiasmaManager)
 		{
-			MiasmaManager->RebuildForCurrentStage();
+			T66ActivateStageMiasma(MiasmaManager);
+			MiasmaManager->UpdateFromRunState();
 		}
-	}
 
-	if (MiasmaManager)
-	{
-		MiasmaManager->UpdateFromRunState();
-	}
-
-	if (!IsUsingTowerMainMapLayout())
-	{
 		bool bHasBoundaryActor = false;
 		for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
 		{
@@ -3045,6 +3136,47 @@ void AT66GameMode::SyncTowerBossEntryState()
 		bTowerBossEntryApplied = true;
 		UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Tower boss-floor entry activated via descent hole."));
 	}
+}
+
+void AT66GameMode::SyncTowerTrapActivation(const bool bForce)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UT66TrapSubsystem* TrapSubsystem = World->GetSubsystem<UT66TrapSubsystem>();
+	if (!TrapSubsystem)
+	{
+		return;
+	}
+
+	if (!IsUsingTowerMainMapLayout())
+	{
+		TowerTrapActivationAccumulator = 0.f;
+		if (bForce || ActiveTowerTrapFloorNumber != INDEX_NONE)
+		{
+			ActiveTowerTrapFloorNumber = INDEX_NONE;
+			TrapSubsystem->SetActiveTowerFloor(INDEX_NONE);
+		}
+		return;
+	}
+
+	const int32 CurrentFloorNumber = GetCurrentTowerFloorIndex();
+	const bool bFloorChanged = CurrentFloorNumber != ActiveTowerTrapFloorNumber;
+	if (!bForce && !bFloorChanged)
+	{
+		TowerTrapActivationAccumulator += World->GetDeltaSeconds();
+		if (TowerTrapActivationAccumulator < 0.10f)
+		{
+			return;
+		}
+	}
+
+	TowerTrapActivationAccumulator = 0.f;
+	ActiveTowerTrapFloorNumber = CurrentFloorNumber;
+	TrapSubsystem->SetActiveTowerFloor(CurrentFloorNumber);
 }
 
 void AT66GameMode::ResetColiseumState()
@@ -4050,7 +4182,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	FRandomStream Rng(RunSeed + StageNum * 1337 + 42);
 	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
 	const bool bTowerLayout = IsUsingTowerMainMapLayout();
-	TArray<int32, TInlineAllocator<4>> TowerGameplayFloorNumbers;
+	TArray<int32> TowerGameplayFloorNumbers;
 	TMap<int32, int32> TowerChestCountByFloor;
 	TMap<int32, int32> TowerCrateCountByFloor;
 	if (bTowerLayout)
@@ -4513,7 +4645,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		static constexpr float TowerCircusChancePerFloor = 0.38f;
 		static constexpr float TowerQuickReviveChancePerFloor = 0.34f;
 		FRandomStream TowerFloorRng(RunSeed + StageNum * 1901 + 77);
-		TArray<int32, TInlineAllocator<4>> GameplayFloorNumbers = TowerGameplayFloorNumbers;
+		TArray<int32> GameplayFloorNumbers = TowerGameplayFloorNumbers;
 
 		auto ResnapTowerActorToFloor = [&](AActor* Actor, const int32 FloorNumber) -> bool
 		{
@@ -4932,6 +5064,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		if (UT66TrapSubsystem* TrapSubsystem = World->GetSubsystem<UT66TrapSubsystem>())
 		{
 			TrapSubsystem->SpawnTowerStageTraps(CachedTowerMainMapLayout, StageNum, Difficulty, RunSeed);
+			SyncTowerTrapActivation(true);
 		}
 	}
 
@@ -6388,6 +6521,9 @@ void AT66GameMode::SpawnMainMapTerrain()
 	CachedTowerMainMapLayout = T66TowerMapTerrain::FLayout{};
 	bTowerBossEntryTriggered = false;
 	bTowerBossEntryApplied = false;
+	TowerTerrainSafetyAccumulator = 0.f;
+	TowerTrapActivationAccumulator = 0.f;
+	ActiveTowerTrapFloorNumber = INDEX_NONE;
 	MainMapSpawnSurfaceLocation = FVector::ZeroVector;
 	MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
 	MainMapStartPathSurfaceLocation = FVector::ZeroVector;
@@ -7038,6 +7174,11 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 			PropSub->ClearProps();
 		}
 	}
+	if (UT66TrapSubsystem* TrapSubsystem = World->GetSubsystem<UT66TrapSubsystem>())
+	{
+		TrapSubsystem->ClearManagedTrapActors();
+		TrapSubsystem->SetActiveTowerFloor(INDEX_NONE);
+	}
 
 	bTerrainCollisionReady = false;
 	bMainMapCombatStarted = false;
@@ -7560,11 +7701,25 @@ AActor* AT66GameMode::SpawnLabMob(FName CharacterVisualID)
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
 
-	TSubclassOf<AT66EnemyBase> ClassToSpawn;
-	if (CharacterVisualID == FName(TEXT("GoblinThief")))
+	TSubclassOf<AT66EnemyBase> ClassToSpawn = nullptr;
+	const FName NormalizedEnemyID = FT66EnemyFamilyResolver::NormalizeMobID(CharacterVisualID);
+	if (NormalizedEnemyID == FName(TEXT("GoblinThief")))
+	{
 		ClassToSpawn = AT66GoblinThiefEnemy::StaticClass();
+	}
+	else if (NormalizedEnemyID == FName(TEXT("UniqueEnemy")))
+	{
+		ClassToSpawn = AT66UniqueDebuffEnemy::StaticClass();
+	}
 	else
-		ClassToSpawn = AT66EnemyBase::StaticClass();
+	{
+		ClassToSpawn = FT66EnemyFamilyResolver::ResolveEnemyClass(NormalizedEnemyID, nullptr);
+	}
+
+	if (!ClassToSpawn)
+	{
+		return nullptr;
+	}
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -7573,9 +7728,13 @@ AActor* AT66GameMode::SpawnLabMob(FName CharacterVisualID)
 	AT66EnemyBase* Mob = World->SpawnActor<AT66EnemyBase>(ClassToSpawn, Loc, Rot, SpawnParams);
 	if (Mob)
 	{
-		if (!CharacterVisualID.IsNone())
+		if (FT66EnemyFamilyResolver::IsStageMobID(NormalizedEnemyID))
 		{
-			Mob->CharacterVisualID = CharacterVisualID;
+			Mob->ConfigureAsMob(NormalizedEnemyID);
+		}
+		else if (NormalizedEnemyID == FName(TEXT("GoblinThief")))
+		{
+			Mob->CharacterVisualID = NormalizedEnemyID;
 		}
 		LabSpawnedActors.Add(Mob);
 	}

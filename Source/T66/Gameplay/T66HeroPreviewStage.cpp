@@ -61,20 +61,20 @@ void AT66HeroPreviewStage::PostInitializeComponents()
 		PreviewDifficulty = GI->SelectedDifficulty;
 	}
 
-	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewPlatform, PreviewDifficulty);
+	T66PreviewStageEnvironment::EnsurePreviewEnvironmentBuilt(this, RootComponent);
+	T66PreviewStageEnvironment::ApplyPreviewEnvironment(this, PreviewPlatform, PreviewDifficulty, PreviewStageMode, bStageVisible);
 }
 
 void AT66HeroPreviewStage::BeginPlay()
 {
 	Super::BeginPlay();
 
-	T66PreviewStageEnvironment::CreateEasyFarmPreviewProps(this, RootComponent, EasyPreviewProps);
+	T66PreviewStageEnvironment::EnsurePreviewEnvironmentBuilt(this, RootComponent);
 
 	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		PreviewDifficulty = GI->SelectedDifficulty;
 	}
-	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewPlatform, PreviewDifficulty);
 	RefreshPreviewEnvironment();
 }
 
@@ -147,7 +147,17 @@ void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType, F
 void AT66HeroPreviewStage::SetPreviewDifficulty(ET66Difficulty Difficulty)
 {
 	PreviewDifficulty = Difficulty;
-	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewPlatform, PreviewDifficulty);
+	RefreshPreviewEnvironment();
+}
+
+void AT66HeroPreviewStage::SetPreviewStageMode(ET66PreviewStageMode NewPreviewStageMode)
+{
+	if (PreviewStageMode == NewPreviewStageMode)
+	{
+		return;
+	}
+
+	PreviewStageMode = NewPreviewStageMode;
 	RefreshPreviewEnvironment();
 }
 
@@ -474,13 +484,5 @@ void AT66HeroPreviewStage::ResetFramingCache()
 
 void AT66HeroPreviewStage::RefreshPreviewEnvironment()
 {
-	if (PreviewPlatform)
-	{
-		PreviewPlatform->SetVisibility(bStageVisible, true);
-		PreviewPlatform->SetHiddenInGame(!bStageVisible, true);
-	}
-
-	T66PreviewStageEnvironment::SetPreviewPropsVisibility(
-		EasyPreviewProps,
-		bStageVisible && T66PreviewStageEnvironment::ShouldShowEasyProps(PreviewDifficulty));
+	T66PreviewStageEnvironment::ApplyPreviewEnvironment(this, PreviewPlatform, PreviewDifficulty, PreviewStageMode, bStageVisible);
 }

@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66GameInstance.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66RetroFXSubsystem.h"
@@ -205,6 +206,16 @@ UT66GameInstance::UT66GameInstance()
 	SelectedHeroID = NAME_None;
 	SelectedCompanionID = NAME_None;
 	SelectedDifficulty = ET66Difficulty::Easy;
+	MiniSelectedHeroID = NAME_None;
+	MiniSelectedCompanionID = NAME_None;
+	MiniSelectedDifficultyID = NAME_None;
+	MiniSelectedIdolIDs.Reset();
+	bMiniLoadFlow = false;
+	bMiniIntermissionFlow = false;
+	MiniIntermissionStateRevision = 0;
+	MiniIntermissionStateJson.Reset();
+	MiniIntermissionRequestRevision = 0;
+	MiniIntermissionRequestJson.Reset();
 	SelectedHeroBodyType = ET66BodyType::TypeA;
 	SelectedCompanionBodyType = ET66BodyType::TypeA;
 }
@@ -215,6 +226,7 @@ void UT66GameInstance::Init()
 
 	ApplyCrispRenderingDefaults();
 	ApplyConfiguredMainMapLayoutVariant();
+	RestoreRememberedSelectionDefaults();
 
 	// Preload core DataTables early, asynchronously, so we avoid sync loads later.
 	PrimeCoreDataTablesAsync();
@@ -1027,9 +1039,57 @@ void UT66GameInstance::ClearSelections()
 	SelectedHeroID = NAME_None;
 	SelectedCompanionID = NAME_None;
 	SelectedDifficulty = ET66Difficulty::Easy;
+	MiniSelectedHeroID = NAME_None;
+	MiniSelectedCompanionID = NAME_None;
+	MiniSelectedDifficultyID = NAME_None;
+	MiniSelectedIdolIDs.Reset();
+	bMiniLoadFlow = false;
+	bMiniIntermissionFlow = false;
+	MiniIntermissionStateRevision = 0;
+	MiniIntermissionStateJson.Reset();
+	MiniIntermissionRequestRevision = 0;
+	MiniIntermissionRequestJson.Reset();
 	SelectedHeroBodyType = ET66BodyType::TypeA;
 	SelectedCompanionBodyType = ET66BodyType::TypeA;
 	ApplyConfiguredMainMapLayoutVariant();
+	RestoreRememberedSelectionDefaults();
+}
+
+void UT66GameInstance::PersistRememberedSelectionDefaults()
+{
+	if (UT66AchievementsSubsystem* Achievements = GetSubsystem<UT66AchievementsSubsystem>())
+	{
+		Achievements->RememberLastSelectedLoadout(SelectedHeroID, SelectedCompanionID);
+	}
+}
+
+void UT66GameInstance::RestoreRememberedSelectionDefaults()
+{
+	if (UT66AchievementsSubsystem* Achievements = GetSubsystem<UT66AchievementsSubsystem>())
+	{
+		const FName RememberedHeroID = Achievements->GetLastSelectedHeroID();
+		if (!RememberedHeroID.IsNone())
+		{
+			FHeroData HeroData;
+			if (GetHeroData(RememberedHeroID, HeroData))
+			{
+				SelectedHeroID = RememberedHeroID;
+			}
+		}
+
+		const FName RememberedCompanionID = Achievements->GetLastSelectedCompanionID();
+		if (RememberedCompanionID.IsNone())
+		{
+			SelectedCompanionID = NAME_None;
+		}
+		else
+		{
+			FCompanionData CompanionData;
+			SelectedCompanionID = GetCompanionData(RememberedCompanionID, CompanionData)
+				? RememberedCompanionID
+				: NAME_None;
+		}
+	}
 }
 
 bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBaseStats, FT66HeroPerLevelStatGains& OutPerLevelGains) const

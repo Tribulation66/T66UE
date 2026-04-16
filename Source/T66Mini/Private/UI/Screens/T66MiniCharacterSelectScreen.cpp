@@ -4,6 +4,7 @@
 
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Data/T66MiniDataTypes.h"
 #include "Engine/Texture2D.h"
@@ -11,6 +12,7 @@
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Styling/SlateBrush.h"
 #include "UI/T66MiniUIStyle.h"
+#include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -35,6 +37,15 @@ void UT66MiniCharacterSelectScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniCharacterSelectScreen::HandleSessionStateChanged);
+			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniCharacterSelect, true);
+		}
+	}
+
 	UT66MiniDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
 	if (!DataSubsystem || !FrontendState)
@@ -45,6 +56,74 @@ void UT66MiniCharacterSelectScreen::OnScreenActivated_Implementation()
 	if (!FrontendState->HasSelectedHero() && DataSubsystem->GetHeroes().Num() > 0)
 	{
 		FrontendState->SelectHero(DataSubsystem->GetHeroes()[0].HeroID);
+	}
+}
+
+void UT66MiniCharacterSelectScreen::OnScreenDeactivated_Implementation()
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+		}
+	}
+
+	SessionStateChangedHandle.Reset();
+	Super::OnScreenDeactivated_Implementation();
+}
+
+void UT66MiniCharacterSelectScreen::NativeDestruct()
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+		}
+	}
+
+	SessionStateChangedHandle.Reset();
+	Super::NativeDestruct();
+}
+
+void UT66MiniCharacterSelectScreen::HandleSessionStateChanged()
+{
+	SyncToSharedPartyScreen();
+	ForceRebuildSlate();
+}
+
+void UT66MiniCharacterSelectScreen::SyncToSharedPartyScreen()
+{
+	if (!UIManager)
+	{
+		return;
+	}
+
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	if (!SessionSubsystem || !SessionSubsystem->IsPartyLobbyContextActive() || SessionSubsystem->IsLocalPlayerPartyHost())
+	{
+		return;
+	}
+
+	const ET66ScreenType DesiredScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
+	switch (DesiredScreen)
+	{
+	case ET66ScreenType::MiniMainMenu:
+	case ET66ScreenType::MiniSaveSlots:
+	case ET66ScreenType::MiniCharacterSelect:
+	case ET66ScreenType::MiniCompanionSelect:
+	case ET66ScreenType::MiniDifficultySelect:
+	case ET66ScreenType::MiniIdolSelect:
+	case ET66ScreenType::MiniShop:
+	case ET66ScreenType::MiniRunSummary:
+		if (UIManager->GetCurrentScreenType() != DesiredScreen)
+		{
+			UIManager->ShowScreen(DesiredScreen);
+		}
+		break;
+	default:
+		break;
 	}
 }
 

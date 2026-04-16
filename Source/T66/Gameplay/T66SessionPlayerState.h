@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Data/T66DataTypes.h"
+#include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "GameFramework/PlayerState.h"
 #include "UI/T66UITypes.h"
 #include "T66SessionPlayerState.generated.h"
@@ -36,6 +37,45 @@ struct T66_API FT66LobbyPlayerInfo
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
 	ET66Difficulty LobbyDifficulty = ET66Difficulty::Easy;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	int32 RunSeed = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	ET66MainMapLayoutVariant MainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	bool bMiniFlowActive = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	FName MiniSelectedHeroID = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	FName MiniSelectedCompanionID = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	FName MiniSelectedDifficultyID = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	TArray<FName> MiniSelectedIdolIDs;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	bool bMiniLoadFlow = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	bool bMiniIntermissionFlow = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	int32 MiniIntermissionStateRevision = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	FString MiniIntermissionStateJson;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	int32 MiniIntermissionRequestRevision = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	FString MiniIntermissionRequestJson;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
 	ET66ScreenType FrontendScreen = ET66ScreenType::MainMenu;
@@ -72,6 +112,8 @@ public:
 
 	FOnT66LobbyInfoChanged& OnLobbyInfoChanged() { return LobbyInfoChanged; }
 
+	virtual void CopyProperties(APlayerState* PlayerState) override;
+	virtual void OverrideWith(APlayerState* PlayerState) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:

@@ -9,15 +9,18 @@
 #include "T66HeroSelectionScreen.generated.h"
 
 class UT66LocalizationSubsystem;
+class UT66LeaderboardRunSummarySaveGame;
 class AT66HeroPreviewStage;
 class UMediaPlayer;
 class UMediaTexture;
 class UFileMediaSource;
 struct FSlateBrush;
 class SVerticalBox;
+class SBox;
 class SImage;
 class STextBlock;
 class SBorder;
+class SProgressBar;
 
 /**
  * Hero Selection Screen - Bible 1.10 Layout
@@ -112,6 +115,13 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
+	enum class EHeroPreviewClip : uint8
+	{
+		Overview,
+		Ultimate,
+		Passive,
+	};
+
 	TArray<FName> AllHeroIDs;
 	int32 CurrentHeroIndex = 0;
 	TArray<FName> AllCompanionIDs;
@@ -120,15 +130,17 @@ private:
 	// Widgets that need updating
 	TSharedPtr<STextBlock> HeroNameWidget;        // Selected hero title in right panel
 	TSharedPtr<STextBlock> HeroQuoteWidget;       // Deprecated summary quote widget
-	TSharedPtr<STextBlock> HeroDescWidget;        // Summary stats in right panel
 	TSharedPtr<STextBlock> HeroLoreWidget;        // Lore text when Lore panel is open
-	TSharedPtr<STextBlock> HeroFullStatsWidget;   // Full stats text in left panel
+	TSharedPtr<SBox> HeroSummaryStatsHost;        // Shared summary stats panel in right panel
+	TSharedPtr<SBox> HeroFullStatsHost;           // Shared full stats panel in left panel
 	TSharedPtr<SImage> HeroRecordMedalImageWidget;
 	TSharedPtr<STextBlock> HeroRecordMedalWidget;
 	TSharedPtr<STextBlock> HeroRecordUnityWidget;
 	TSharedPtr<STextBlock> HeroRecordGamesWidget;
 	TSharedPtr<STextBlock> HeroRecordThirdLabelWidget;
 	TSharedPtr<STextBlock> HeroRecordThirdValueWidget;
+	TSharedPtr<STextBlock> CompanionHealsPerSecondWidget;
+	TSharedPtr<STextBlock> CompanionUnityTextWidget;
 	TSharedPtr<SBorder> HeroPreviewColorBox;      // Fallback colored box when no 3D preview
 	TSharedPtr<STextBlock> DifficultyDropdownText; // Current difficulty display
 
@@ -150,6 +162,7 @@ private:
 	TSharedPtr<STextBlock> ACBalanceTextBlock;
 	TSharedPtr<FSlateBrush> ACBalanceIconBrush;
 	TSharedPtr<FSlateBrush> HeroRecordMedalBrush;
+	TSharedPtr<FSlateBrush> CompanionInfoPortraitBrush;
 
 	/** Hero preview video (e.g. KnightClip): media player and texture for [VIDEO PREVIEW] area. */
 	UPROPERTY(Transient)
@@ -168,6 +181,9 @@ private:
 	/** Video area widgets: image shows video when Knight selected; placeholder shows "[VIDEO PREVIEW]" otherwise. */
 	TSharedPtr<SImage> HeroPreviewVideoImage;
 	TSharedPtr<STextBlock> HeroPreviewPlaceholderText;
+	TSharedPtr<STextBlock> CompanionPreviewPlaceholderText;
+	TSharedPtr<FSlateBrush> HeroUltimateIconBrush;
+	TSharedPtr<FSlateBrush> HeroPassiveIconBrush;
 
 	/** Dropdown for switching the left skins panel between hero and companion skins. */
 	TArray<TSharedPtr<FString>> SkinTargetOptions;
@@ -204,8 +220,9 @@ private:
 	void RefreshHeroCarouselPortraits();
 	void RefreshCompanionCarouselPortraits();
 	void UpdateHeroDisplay();
-	FText BuildHeroSummaryStatsText(const FHeroData& HeroData, const FT66HeroStatBlock& BaseStats, const FT66HeroStatBonuses& PermanentBuffBonuses) const;
-	FText BuildHeroFullStatsText(const FHeroData& HeroData, const FT66HeroStatBlock& BaseStats, const FT66HeroPerLevelStatGains& PerLevelGains, const FT66HeroStatBonuses& PermanentBuffBonuses) const;
+	void EnsureHeroStatsSnapshot();
+	void PopulateHeroStatsSnapshot(const FHeroData& HeroData, const FT66HeroStatBlock& BaseStats, const FT66HeroStatBonuses& PermanentBuffBonuses);
+	void RefreshHeroStatsPanels();
 	void GeneratePlaceholderSkins();
 	/** Repopulate skins list from current PlaceholderSkins (call after Equip/Buy so Equipped/Equip toggle in place). */
 	void RefreshSkinsList();
@@ -227,6 +244,11 @@ private:
 	/** True when the Lore panel is visible (right-side panel swaps to lore). */
 	bool bShowingLore = false;
 	bool bShowingStatsPanel = false;
+	float CompanionUnityProgress01 = 0.f;
+	int32 CompanionUnityStagesCleared = 0;
+	EHeroPreviewClip SelectedHeroPreviewClip = EHeroPreviewClip::Overview;
+	EHeroPreviewClip ActiveHeroPreviewClip = EHeroPreviewClip::Overview;
+	FName ActivePreviewVideoHeroID = NAME_None;
 
 	/** When set, preview shows this skin (e.g. Beachgoer) without equipping. NAME_None = use SelectedHeroSkinID. */
 	FName PreviewSkinIDOverride;
@@ -253,6 +275,9 @@ private:
 	FReply HandleSelectBuffsClicked();
 	FReply HandleLoreClicked();
 	FReply HandleStatsClicked();
+	FReply HandleOpenStatsPanelClicked();
+	FReply HandleUltimatePreviewClicked();
+	FReply HandlePassivePreviewClicked();
 	FReply HandleBodyTypeAClicked();
 	FReply HandleBodyTypeBClicked();
 	FReply HandleEnterClicked();
@@ -266,4 +291,7 @@ private:
 
 	FDelegateHandle PartyStateChangedHandle;
 	FDelegateHandle SessionStateChangedHandle;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UT66LeaderboardRunSummarySaveGame> HeroStatsSnapshot;
 };

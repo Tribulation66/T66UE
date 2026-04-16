@@ -11,6 +11,7 @@
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
+#include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Gameplay/T66FrontendGameMode.h"
@@ -31,6 +32,33 @@
 
 namespace
 {
+	AT66PlayerController* T66GetLocalFrontendPlayerController(UObject* ContextObject)
+	{
+		return ContextObject ? Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(ContextObject, 0)) : nullptr;
+	}
+
+	void T66PositionCompanionPreviewCamera(UObject* ContextObject)
+	{
+		if (!ContextObject)
+		{
+			return;
+		}
+
+		if (UWorld* World = ContextObject->GetWorld())
+		{
+			if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
+			{
+				GM->PositionCameraForCompanionPreview();
+				return;
+			}
+		}
+
+		if (AT66PlayerController* PC = T66GetLocalFrontendPlayerController(ContextObject))
+		{
+			PC->PositionLocalFrontendCameraForCompanionPreview();
+		}
+	}
+
 	class ST66DragRotateCompanionPreview : public SCompoundWidget
 	{
 	public:
@@ -93,13 +121,7 @@ namespace
 			if (Stage.IsValid())
 			{
 				Stage->AddPreviewZoom(MouseEvent.GetWheelDelta());
-				if (UWorld* World = Stage->GetWorld())
-				{
-					if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
-					{
-						GM->PositionCameraForCompanionPreview();
-					}
-				}
+				T66PositionCompanionPreviewCamera(Stage.Get());
 				return FReply::Handled();
 			}
 			return FReply::Unhandled();
@@ -1153,6 +1175,10 @@ AT66CompanionPreviewStage* UT66CompanionSelectionScreen::GetCompanionPreviewStag
 {
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
+	if (AT66PlayerController* PC = T66GetLocalFrontendPlayerController(const_cast<UT66CompanionSelectionScreen*>(this)))
+	{
+		PC->EnsureLocalFrontendPreviewScene();
+	}
 	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
 		return *It;
 	return nullptr;
@@ -1200,18 +1226,13 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 
 	if (AT66CompanionPreviewStage* Stage = GetCompanionPreviewStage())
 	{
+		Stage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
 		if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 		{
 			Stage->SetPreviewDifficulty(GI->SelectedDifficulty);
 		}
 		Stage->SetPreviewCompanion(PreviewedCompanionID, EffectiveSkin);
-		if (UWorld* World = GetWorld())
-		{
-			if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
-			{
-				GM->PositionCameraForCompanionPreview();
-			}
-		}
+		T66PositionCompanionPreviewCamera(this);
 	}
 	else if (CompanionPreviewColorBox.IsValid())
 	{
@@ -1386,11 +1407,7 @@ void UT66CompanionSelectionScreen::OnScreenActivated_Implementation()
 		else
 			SelectNoCompanion();
 	}
-	if (UWorld* World = GetWorld())
-	{
-		if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
-			GM->PositionCameraForCompanionPreview();
-	}
+	T66PositionCompanionPreviewCamera(this);
 }
 
 void UT66CompanionSelectionScreen::RefreshScreen_Implementation()
@@ -1482,6 +1499,7 @@ void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->SelectedCompanionID = PreviewedCompanionID;
+		GI->PersistRememberedSelectionDefaults();
 		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
 		{
 			SessionSubsystem->SetLocalLobbyReady(false);
@@ -1498,6 +1516,7 @@ void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
 			for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
 			{
 				AT66HeroPreviewStage* HeroStage = *It;
+				HeroStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
 				HeroStage->SetPreviewDifficulty(GI->SelectedDifficulty);
 				HeroStage->SetPreviewHero(GI->SelectedHeroID, GI->SelectedHeroBodyType, EffectiveHeroSkinID, GI->SelectedCompanionID);
 				break;

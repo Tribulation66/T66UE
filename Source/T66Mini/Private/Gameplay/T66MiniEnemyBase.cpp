@@ -10,15 +10,18 @@
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
+#include "EngineUtils.h"
 #include "Gameplay/Components/T66MiniDirectionResolverComponent.h"
 #include "Gameplay/Components/T66MiniHitFlashComponent.h"
 #include "Gameplay/Components/T66MiniShadowComponent.h"
 #include "Gameplay/Components/T66MiniSpritePresentationComponent.h"
 #include "Gameplay/T66MiniGameMode.h"
+#include "Gameplay/T66MiniEnemyProjectile.h"
 #include "Gameplay/T66MiniPickup.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "Net/UnrealNetwork.h"
 
 namespace
 {
@@ -33,7 +36,7 @@ namespace
 		return &DataSubsystem->GetItems()[PickedIndex];
 	}
 
-	UStaticMesh* T66MiniLoadPlaneMesh()
+	UStaticMesh* T66MiniEnemyLoadPlaneMesh()
 	{
 		static TWeakObjectPtr<UStaticMesh> Cached;
 		if (!Cached.IsValid())
@@ -44,7 +47,7 @@ namespace
 		return Cached.Get();
 	}
 
-	UMaterialInterface* T66MiniLoadArenaMaterial()
+	UMaterialInterface* T66MiniEnemyLoadArenaMaterial()
 	{
 		static TWeakObjectPtr<UMaterialInterface> Cached;
 		if (!Cached.IsValid())
@@ -55,14 +58,14 @@ namespace
 		return Cached.Get();
 	}
 
-	void T66MiniConfigureIndicator(UStaticMeshComponent* MeshComponent, UObject* Outer, const FLinearColor& Tint)
+	void T66MiniEnemyConfigureIndicator(UStaticMeshComponent* MeshComponent, UObject* Outer, const FLinearColor& Tint)
 	{
 		if (!MeshComponent)
 		{
 			return;
 		}
 
-		UMaterialInterface* BaseMaterial = T66MiniLoadArenaMaterial();
+		UMaterialInterface* BaseMaterial = T66MiniEnemyLoadArenaMaterial();
 		if (!BaseMaterial)
 		{
 			return;
@@ -95,6 +98,8 @@ namespace
 AT66MiniEnemyBase::AT66MiniEnemyBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -109,8 +114,8 @@ AT66MiniEnemyBase::AT66MiniEnemyBase()
 
 	SpriteComponent = CreateDefaultSubobject<UBillboardComponent>(TEXT("Sprite"));
 	SpriteComponent->SetupAttachment(SceneRoot);
-	SpriteComponent->SetRelativeLocation(FVector(0.f, 0.f, 60.f));
-	SpriteComponent->SetRelativeScale3D(FVector(1.5f, 1.5f, 1.5f));
+	SpriteComponent->SetRelativeLocation(FVector(0.f, 0.f, 54.f));
+	SpriteComponent->SetRelativeScale3D(FVector(1.20f, 1.20f, 1.20f));
 	SpriteComponent->SetHiddenInGame(false, true);
 	SpriteComponent->SetVisibility(true, true);
 
@@ -130,16 +135,27 @@ AT66MiniEnemyBase::AT66MiniEnemyBase()
 	IndicatorMesh->SetupAttachment(SceneRoot);
 	IndicatorMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	IndicatorMesh->SetCastShadow(false);
-	IndicatorMesh->SetStaticMesh(T66MiniLoadPlaneMesh());
+	IndicatorMesh->SetStaticMesh(T66MiniEnemyLoadPlaneMesh());
 	IndicatorMesh->SetRelativeLocation(FVector(0.f, 0.f, 4.f));
 	IndicatorMesh->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
 	IndicatorMesh->SetRelativeScale3D(FVector(0.24f, 0.24f, 1.0f));
-	T66MiniConfigureIndicator(IndicatorMesh, this, FLinearColor(0.84f, 0.18f, 0.18f, 0.34f));
+	T66MiniEnemyConfigureIndicator(IndicatorMesh, this, FLinearColor(0.84f, 0.18f, 0.18f, 0.34f));
 }
 
 void AT66MiniEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
+	RefreshPresentationFromState();
+}
+
+void AT66MiniEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AT66MiniEnemyBase, EnemyID);
+	DOREPLIFETIME(AT66MiniEnemyBase, bIsBoss);
+	DOREPLIFETIME(AT66MiniEnemyBase, MaxHealth);
+	DOREPLIFETIME(AT66MiniEnemyBase, CurrentHealth);
 }
 
 void AT66MiniEnemyBase::InitializeEnemy(
@@ -152,48 +168,40 @@ void AT66MiniEnemyBase::InitializeEnemy(
 	const int32 InMaterialDrop,
 	const float InExperienceDrop,
 	const float InCurrentHealth,
-	const ET66MiniEnemyBehaviorProfile InBehaviorProfile)
+	const ET66MiniEnemyBehaviorProfile InBehaviorProfile,
+	const ET66MiniEnemyFamily InFamily,
+	const float InFireIntervalSeconds,
+	const float InProjectileSpeed,
+	const float InProjectileDamage,
+	const float InPreferredRange)
 {
 	EnemyID = InEnemyID;
 	bIsBoss = bInBoss;
 	BehaviorProfile = InBehaviorProfile;
+	EnemyFamily = bIsBoss ? ET66MiniEnemyFamily::Boss : InFamily;
 	MaxHealth = InMaxHealth;
 	CurrentHealth = InCurrentHealth >= 0.f ? FMath::Min(InCurrentHealth, InMaxHealth) : InMaxHealth;
 	MoveSpeed = InMoveSpeed;
 	TouchDamage = InTouchDamage;
 	MaterialDrop = InMaterialDrop;
 	ExperienceDrop = InExperienceDrop;
+	FireIntervalSeconds = FMath::Clamp(InFireIntervalSeconds, 0.45f, 4.0f);
+	ProjectileSpeed = FMath::Clamp(InProjectileSpeed, 400.f, 2600.f);
+	ProjectileDamage = FMath::Max(1.f, InProjectileDamage);
+	PreferredRange = FMath::Max(220.f, InPreferredRange);
+	ProjectileCooldownRemaining = (EnemyFamily == ET66MiniEnemyFamily::Ranged || EnemyFamily == ET66MiniEnemyFamily::Boss)
+		? FMath::FRandRange(FireIntervalSeconds * 0.25f, FireIntervalSeconds * 0.9f)
+		: 0.f;
 	ChargeCooldownRemaining = (BehaviorProfile == ET66MiniEnemyBehaviorProfile::GoatCharger || BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist)
 		? FMath::FRandRange(1.0f, 2.2f)
 		: 0.f;
+	if (EnemyFamily == ET66MiniEnemyFamily::Boss)
+	{
+		ChargeCooldownRemaining = FMath::FRandRange(1.4f, 2.2f);
+	}
 	ChargeDurationRemaining = 0.f;
 	ChargeDirection = FVector::ForwardVector;
-
-	CollisionComponent->SetSphereRadius(bIsBoss ? 110.f : 72.f);
-	SpriteComponent->SetRelativeLocation(FVector(0.f, 0.f, bIsBoss ? 92.f : 60.f));
-	SpriteComponent->SetRelativeScale3D(bIsBoss ? FVector(6.25f, 6.25f, 6.25f) : FVector(4.25f, 4.25f, 4.25f));
-	if (SpritePresentationComponent)
-	{
-		SpritePresentationComponent->SetBaseScale(SpriteComponent->GetRelativeScale3D());
-	}
-	IndicatorMesh->SetRelativeScale3D(bIsBoss ? FVector(0.42f, 0.42f, 1.0f) : FVector(0.26f, 0.26f, 1.0f));
-	T66MiniConfigureIndicator(IndicatorMesh, this, bIsBoss ? FLinearColor(0.96f, 0.28f, 0.16f, 0.42f) : FLinearColor(0.84f, 0.18f, 0.18f, 0.30f));
-	if (ShadowComponent)
-	{
-		ShadowComponent->InitializeShadow(
-			SceneRoot,
-			FVector(0.f, 0.f, 1.0f),
-			bIsBoss ? FVector(0.40f, 0.40f, 1.f) : FVector(0.28f, 0.28f, 1.f),
-			FLinearColor(0.f, 0.f, 0.f, bIsBoss ? 0.24f : 0.18f));
-	}
-	if (HitFlashComponent)
-	{
-		HitFlashComponent->InitializeFlash(
-			SceneRoot,
-			FVector(0.f, 0.f, 5.f),
-			bIsBoss ? FVector(0.42f, 0.42f, 1.f) : FVector(0.28f, 0.28f, 1.f),
-			bIsBoss ? FLinearColor(1.0f, 0.46f, 0.22f, 0.48f) : FLinearColor(0.98f, 0.34f, 0.20f, 0.40f));
-	}
+	RefreshPresentationFromState();
 	if (InTexture)
 	{
 		SpriteComponent->SetSprite(InTexture);
@@ -205,6 +213,11 @@ void AT66MiniEnemyBase::Tick(const float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	if (bDead)
+	{
+		return;
+	}
+
+	if (!HasAuthority())
 	{
 		return;
 	}
@@ -237,7 +250,7 @@ void AT66MiniEnemyBase::Tick(const float DeltaSeconds)
 		return;
 	}
 
-	if (AT66MiniPlayerPawn* PlayerPawn = GetMiniPlayerPawn())
+	if (AT66MiniPlayerPawn* PlayerPawn = FindBestTargetPawn())
 	{
 		const FVector CurrentLocation = GetActorLocation();
 		const FVector TargetLocation = PlayerPawn->GetActorLocation();
@@ -246,34 +259,52 @@ void AT66MiniEnemyBase::Tick(const float DeltaSeconds)
 		float EffectiveMoveSpeed = MoveSpeed;
 		float EffectiveTouchDamage = TouchDamage;
 		FVector MovementDirection = ToPlayer.GetSafeNormal2D();
+		ProjectileCooldownRemaining = FMath::Max(0.f, ProjectileCooldownRemaining - DeltaSeconds);
+		const bool bCanCharge = EnemyFamily == ET66MiniEnemyFamily::Rushing || EnemyFamily == ET66MiniEnemyFamily::Boss;
+		const bool bCanShoot = EnemyFamily == ET66MiniEnemyFamily::Ranged || EnemyFamily == ET66MiniEnemyFamily::Boss;
 
-		if (BehaviorProfile == ET66MiniEnemyBehaviorProfile::RoostPress || BehaviorProfile == ET66MiniEnemyBehaviorProfile::Sharpshooter)
+		if (EnemyFamily == ET66MiniEnemyFamily::Ranged)
 		{
-			EffectiveMoveSpeed *= Distance > 900.f ? 1.28f : 1.05f;
+			const FVector StrafeDirection = FVector(-MovementDirection.Y, MovementDirection.X, 0.f);
+			if (Distance > PreferredRange * 1.12f)
+			{
+				EffectiveMoveSpeed *= 1.10f;
+			}
+			else if (Distance < PreferredRange * 0.72f)
+			{
+				MovementDirection *= -1.f;
+				EffectiveMoveSpeed *= 1.05f;
+			}
+			else
+			{
+				MovementDirection = (MovementDirection * 0.34f) + (StrafeDirection * FMath::Sin(GetWorld()->GetTimeSeconds() * 2.2f));
+				MovementDirection.Normalize();
+				EffectiveMoveSpeed *= 0.88f;
+			}
 		}
 		else if (BehaviorProfile == ET66MiniEnemyBehaviorProfile::CowBruiser || BehaviorProfile == ET66MiniEnemyBehaviorProfile::Juggernaut)
 		{
 			EffectiveMoveSpeed *= Distance < 420.f ? 0.82f : 1.04f;
 			EffectiveTouchDamage *= BehaviorProfile == ET66MiniEnemyBehaviorProfile::Juggernaut ? 1.35f : 1.15f;
 		}
-		else if (BehaviorProfile == ET66MiniEnemyBehaviorProfile::GoatCharger || BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist)
+		else if (bCanCharge)
 		{
 			if (ChargeDurationRemaining > 0.f)
 			{
 				ChargeDurationRemaining -= DeltaSeconds;
-				EffectiveMoveSpeed *= BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist ? 2.15f : 1.95f;
-				EffectiveTouchDamage *= 1.2f;
+				EffectiveMoveSpeed *= (EnemyFamily == ET66MiniEnemyFamily::Boss || BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist) ? 2.25f : 1.95f;
+				EffectiveTouchDamage *= EnemyFamily == ET66MiniEnemyFamily::Boss ? 1.35f : 1.2f;
 				MovementDirection = ChargeDirection;
 			}
 			else
 			{
 				ChargeCooldownRemaining -= DeltaSeconds;
-				EffectiveMoveSpeed *= BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist ? 1.08f : 0.95f;
+				EffectiveMoveSpeed *= (EnemyFamily == ET66MiniEnemyFamily::Boss || BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist) ? 1.08f : 0.95f;
 				if (ChargeCooldownRemaining <= 0.f && Distance >= 260.f && Distance <= 1200.f)
 				{
 					ChargeDirection = MovementDirection;
-					ChargeDurationRemaining = BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist ? 0.48f : 0.42f;
-					ChargeCooldownRemaining = BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist
+					ChargeDurationRemaining = (EnemyFamily == ET66MiniEnemyFamily::Boss || BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist) ? 0.50f : 0.42f;
+					ChargeCooldownRemaining = (EnemyFamily == ET66MiniEnemyFamily::Boss || BehaviorProfile == ET66MiniEnemyBehaviorProfile::Duelist)
 						? FMath::FRandRange(1.8f, 2.6f)
 						: FMath::FRandRange(2.4f, 3.6f);
 				}
@@ -283,6 +314,19 @@ void AT66MiniEnemyBase::Tick(const float DeltaSeconds)
 		{
 			EffectiveMoveSpeed *= 1.32f;
 			EffectiveTouchDamage *= 1.25f;
+		}
+
+		if (EnemyFamily == ET66MiniEnemyFamily::Boss && Distance > PreferredRange * 0.85f && Distance < PreferredRange * 1.25f && ChargeDurationRemaining <= 0.f)
+		{
+			const FVector StrafeDirection = FVector(-MovementDirection.Y, MovementDirection.X, 0.f);
+			MovementDirection = (MovementDirection * 0.55f) + (StrafeDirection * FMath::Sin(GetWorld()->GetTimeSeconds() * 1.5f));
+			MovementDirection.Normalize();
+		}
+
+		if (bCanShoot && ProjectileCooldownRemaining <= 0.f && Distance <= PreferredRange * 1.6f)
+		{
+			FireProjectileAtPlayer(TargetLocation);
+			ProjectileCooldownRemaining = FireIntervalSeconds;
 		}
 
 		if (Distance > KINDA_SMALL_NUMBER)
@@ -300,12 +344,16 @@ void AT66MiniEnemyBase::Tick(const float DeltaSeconds)
 
 void AT66MiniEnemyBase::ApplyDamage(const float InDamage)
 {
-	if (bDead || InDamage <= 0.f)
+	if (!HasAuthority() || bDead || InDamage <= 0.f)
 	{
 		return;
 	}
 
 	CurrentHealth -= InDamage;
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+	{
+		MiniGameMode->AddCombatText(GetActorLocation() + FVector(0.f, 0.f, bIsBoss ? 110.f : 80.f), InDamage, FLinearColor::White);
+	}
 	if (HitFlashComponent)
 	{
 		HitFlashComponent->TriggerHitFlash(bIsBoss ? FLinearColor(1.0f, 0.52f, 0.26f, 0.50f) : FLinearColor(0.98f, 0.34f, 0.20f, 0.38f), bIsBoss ? 0.18f : 0.10f);
@@ -353,14 +401,38 @@ void AT66MiniEnemyBase::ApplyStun(const float DurationSeconds)
 	}
 }
 
-AT66MiniPlayerPawn* AT66MiniEnemyBase::GetMiniPlayerPawn() const
+AT66MiniPlayerPawn* AT66MiniEnemyBase::FindBestTargetPawn() const
 {
-	return GetWorld() ? Cast<AT66MiniPlayerPawn>(GetWorld()->GetFirstPlayerController() ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr;
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	AT66MiniPlayerPawn* BestPawn = nullptr;
+	float BestDistanceSq = TNumericLimits<float>::Max();
+	for (TActorIterator<AT66MiniPlayerPawn> It(World); It; ++It)
+	{
+		AT66MiniPlayerPawn* Candidate = *It;
+		if (!Candidate || !Candidate->IsHeroAlive())
+		{
+			continue;
+		}
+
+		const float DistanceSq = FVector::DistSquared2D(GetActorLocation(), Candidate->GetActorLocation());
+		if (DistanceSq < BestDistanceSq)
+		{
+			BestDistanceSq = DistanceSq;
+			BestPawn = Candidate;
+		}
+	}
+
+	return BestPawn;
 }
 
 void AT66MiniEnemyBase::HandleDeath()
 {
-	if (bDead)
+	if (!HasAuthority() || bDead)
 	{
 		return;
 	}
@@ -409,4 +481,98 @@ void AT66MiniEnemyBase::HandleDeath()
 	}
 
 	Destroy();
+}
+
+void AT66MiniEnemyBase::FireProjectileAtPlayer(const FVector& PlayerLocation)
+{
+	UWorld* World = GetWorld();
+	if (!HasAuthority() || !World)
+	{
+		return;
+	}
+
+	const FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, bIsBoss ? 82.f : 48.f);
+	const FVector FireDirection = (PlayerLocation - SpawnLocation).GetSafeNormal();
+	UT66MiniVisualSubsystem* VisualSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr;
+	UTexture2D* ProjectileTexture = VisualSubsystem
+		? VisualSubsystem->LoadEffectTexture(bIsBoss ? TEXT("EnemyProjectile_Boss") : TEXT("EnemyProjectile_Ranged"))
+		: nullptr;
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AT66MiniEnemyProjectile* Projectile = World->SpawnActor<AT66MiniEnemyProjectile>(AT66MiniEnemyProjectile::StaticClass(), SpawnLocation, FireDirection.Rotation(), SpawnParams))
+	{
+		Projectile->InitializeProjectile(
+			SpawnLocation,
+			FireDirection,
+			ProjectileSpeed,
+			ProjectileDamage,
+			ProjectileTexture,
+			bIsBoss ? 5.2f : 4.0f);
+	}
+
+	if (UT66MiniVFXSubsystem* VfxSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
+	{
+		VfxSubsystem->SpawnPulse(World, SpawnLocation, bIsBoss ? FVector(0.26f, 0.26f, 1.f) : FVector(0.16f, 0.16f, 1.f), 0.10f, FLinearColor(1.0f, 0.62f, 0.30f, 0.22f), 0.45f);
+		VfxSubsystem->PlayShotSfx(this, bIsBoss ? 0.18f : 0.10f, bIsBoss ? 0.78f : 1.02f);
+	}
+}
+
+void AT66MiniEnemyBase::RefreshPresentationFromState()
+{
+	CollisionComponent->SetSphereRadius(bIsBoss ? 104.f : 70.f);
+	SpriteComponent->SetRelativeLocation(FVector(0.f, 0.f, bIsBoss ? 82.f : 54.f));
+	SpriteComponent->SetRelativeScale3D(bIsBoss ? FVector(4.35f, 4.35f, 4.35f) : FVector(2.85f, 2.85f, 2.85f));
+	if (SpritePresentationComponent)
+	{
+		SpritePresentationComponent->SetBaseScale(SpriteComponent->GetRelativeScale3D());
+	}
+	IndicatorMesh->SetRelativeScale3D(bIsBoss ? FVector(0.36f, 0.36f, 1.0f) : FVector(0.23f, 0.23f, 1.0f));
+	T66MiniEnemyConfigureIndicator(IndicatorMesh, this, bIsBoss ? FLinearColor(0.96f, 0.28f, 0.16f, 0.42f) : FLinearColor(0.84f, 0.18f, 0.18f, 0.30f));
+	if (ShadowComponent)
+	{
+		ShadowComponent->InitializeShadow(
+			SceneRoot,
+			FVector(0.f, 0.f, 1.0f),
+			bIsBoss ? FVector(0.35f, 0.35f, 1.f) : FVector(0.24f, 0.24f, 1.f),
+			FLinearColor(0.f, 0.f, 0.f, bIsBoss ? 0.24f : 0.18f));
+	}
+	if (HitFlashComponent)
+	{
+		HitFlashComponent->InitializeFlash(
+			SceneRoot,
+			FVector(0.f, 0.f, 5.f),
+			bIsBoss ? FVector(0.36f, 0.36f, 1.f) : FVector(0.24f, 0.24f, 1.f),
+			bIsBoss ? FLinearColor(1.0f, 0.46f, 0.22f, 0.48f) : FLinearColor(0.98f, 0.34f, 0.20f, 0.40f));
+	}
+
+	UGameInstance* GameInstance = GetGameInstance();
+	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
+	UT66MiniVisualSubsystem* VisualSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr;
+	if (!DataSubsystem || !VisualSubsystem || EnemyID.IsNone())
+	{
+		return;
+	}
+
+	FString VisualID = EnemyID.ToString();
+	if (bIsBoss)
+	{
+		if (const FT66MiniBossDefinition* BossDefinition = DataSubsystem->FindBoss(EnemyID))
+		{
+			VisualID = BossDefinition->VisualID;
+		}
+		SpriteComponent->SetSprite(VisualSubsystem->LoadBossTexture(VisualID));
+	}
+	else
+	{
+		if (const FT66MiniEnemyDefinition* EnemyDefinition = DataSubsystem->FindEnemy(EnemyID))
+		{
+			VisualID = EnemyDefinition->VisualID;
+		}
+		SpriteComponent->SetSprite(VisualSubsystem->LoadEnemyTexture(VisualID));
+	}
+}
+
+void AT66MiniEnemyBase::OnRep_EnemyPresentationState()
+{
+	RefreshPresentationFromState();
 }

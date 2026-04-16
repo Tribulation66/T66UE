@@ -58,6 +58,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Companion")
 	void SetLockedVisual(bool bLocked);
 
+	/** Gameplay healing rate derived from the companion's current Union tier. */
+	static float GetHealingPerSecondForUnionStages(int32 UnionStagesCleared);
+
 	/** Offset from hero when following (e.g. behind and to the side) */
 	UPROPERTY(EditDefaultsOnly, Category = "Follow")
 	FVector FollowOffset = FVector(-120.f, 80.f, 0.f);
@@ -72,7 +75,7 @@ public:
 
 	/** Uniform actor scale for imported companion visuals. */
 	UPROPERTY(EditDefaultsOnly, Category = "Visuals")
-	float CompanionActorScale = 1.5f;
+	float CompanionActorScale = 1.7f;
 
 protected:
 	virtual void BeginPlay() override;
@@ -123,15 +126,6 @@ protected:
 	int32 CachedUnionStagesCleared = 0;
 	bool bHasCachedGroundZ = false;
 	float CachedGroundZ = 0.f;
-
-	// Healing (gameplay only)
-	float HealAccumSeconds = 0.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Healing")
-	float HealIntervalSeconds = 10.0f; // Basic Union tier
-
-	UPROPERTY(EditDefaultsOnly, Category = "Healing")
-	int32 HealAmountHearts = 1;
 
 	UFUNCTION()
 	void HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs);

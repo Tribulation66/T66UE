@@ -122,7 +122,7 @@ This folder is the project’s service layer. It contains persistent state, prof
 - `T66FloatingCombatTextSubsystem` and `T66FloatingCombatTextPoolSubsystem`
   - Floating combat text creation and pooling
 - `T66HeroSpeedSubsystem`
-  - Movement-speed interpretation used by hero/companion motion and animation
+  - Binary movement-animation bridge used by hero/companion visuals
 - `T66MediaViewerSubsystem`, `T66WebView2Host`, `T66WebImageCache`
   - Embedded short-form media viewer plumbing
 - `T66MusicSubsystem`
@@ -187,6 +187,11 @@ This folder contains world actors, the main run flow, player/avatar logic, enemi
     - vendor/gambler/casino/collector/cowardice/load-preview overlays
     - scoped ultimate behavior
     - media viewer toggles
+  - Notable partial files now include:
+    - `T66PlayerController_Movement.cpp`
+    - `T66PlayerController_Combat.cpp`
+    - `T66PlayerController_Overlays.cpp`
+    - `T66PlayerController_WorldDialogue.cpp`
 
 ### Player and companion
 
@@ -197,7 +202,16 @@ This folder contains world actors, the main run flow, player/avatar logic, enemi
   - Safe-zone behavior
   - attack-range rings
   - cooldown widget
-  - dash, stage slide, terrain recovery, sky-drop entry, quick-revive visuals
+  - hosts the dedicated movement package, plus stage slide, terrain recovery, sky-drop entry, quick-revive visuals
+
+- `Gameplay/Movement/T66HeroMovementComponent`
+  - Central owner for hero locomotion rules
+  - Single-jump setup
+  - 8-direction dash resolution from held modifier + movement intent
+  - walk-speed authority and run-state speed multiplier application
+
+- `Gameplay/Movement/T66HeroMovementTypes`
+  - shared dash-direction and movement-tuning types
 
 - `T66CombatComponent`
   - Best-separated combat logic unit in the project
@@ -219,14 +233,29 @@ This folder contains world actors, the main run flow, player/avatar logic, enemi
 
 - `T66EnemyBase`
   - Standard enemy base
-  - HP, armor, slows, confusion, flee logic, leash/catch-up logic, stage scaling, difficulty scaling, loot drop, floating combat text
+  - shared HP, armor, slows, confusion, leash/catch-up logic, stage scaling, difficulty scaling, loot drop, floating combat text
+  - exposes family behavior hooks used by the new enemy classes
 
 - `T66EnemyDirector`
   - Stage wave spawner
   - Uses timer-driven staggered spawning, alive caps, miniboss chance, goblin thief chance
+  - now resolves stage `MobID` into family-specific enemy classes instead of one generic regular class
 
 - `T66EnemyAIController`
   - Supporting AI controller
+
+- `Gameplay/Enemies/T66EnemyFamilyResolver`
+  - Maps stage mob IDs (`Cow`, `Pig`, `Goat`, `Roost`) to their family classes
+
+- Enemy family classes
+  - `Gameplay/Enemies/T66MeleeEnemy`
+  - `Gameplay/Enemies/T66RushEnemy`
+  - `Gameplay/Enemies/T66RangedEnemy`
+  - `Gameplay/Enemies/T66FlyingEnemy`
+
+- Enemy projectiles
+  - `Gameplay/Enemies/Projectiles/T66EnemyProjectileBase`
+  - `Gameplay/Enemies/Projectiles/T66SpitProjectile`
 
 - `T66BossBase`
   - Dormant-until-awakened chase/projectile boss

@@ -9,6 +9,7 @@
 
 class UT66AchievementsSubsystem;
 class UT66ProfileSaveGame;
+class UTexture2D;
 
 /** Entity type for skin ownership (hero vs companion). */
 UENUM(BlueprintType)
@@ -75,6 +76,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
 	TArray<FSkinData> GetSkinsForEntity(ET66SkinEntityType EntityType, FName EntityID) const;
 
+	/** Resolve the portrait used for an entity skin; falls back to the entity portrait when no skin-specific override is defined. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
+	TSoftObjectPtr<UTexture2D> GetSkinPortrait(ET66SkinEntityType EntityType, FName EntityID, FName SkinID, bool bSelectionPortrait = false) const;
+
 	/** Current Chad Coupons balance (from profile). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
 	int32 GetAchievementCoinsBalance() const;
@@ -108,4 +113,5 @@ public:
 private:
 	UT66ProfileSaveGame* GetProfile() const;
 	void MarkProfileDirtyAndSave(bool bBroadcastCoinsChanged);
+	TSoftObjectPtr<UTexture2D> GetCompanionSkinPortraitOverride(FName CompanionID, FName SkinID, bool bSelectionPortrait) const;
 };

@@ -8,24 +8,24 @@ class UTexture2D;
 
 namespace T66RuntimeUITextureAccess
 {
-	FString MakeProjectDirPath(const FString& RelativePath);
-	FString MakeProjectContentPath(const FString& RelativePath);
-	FString MakeProjectRuntimeDependencyPath(const FString& RelativePath);
-	FString MapSourceRelativePathToRuntimeDependencyRelativePath(const FString& RelativePath);
-	TArray<FString> BuildLooseTextureCandidatePaths(const FString& RelativePath);
+	T66_API FString MakeProjectDirPath(const FString& RelativePath);
+	T66_API FString MakeProjectContentPath(const FString& RelativePath);
+	T66_API FString MakeProjectRuntimeDependencyPath(const FString& RelativePath);
+	T66_API FString MapSourceRelativePathToRuntimeDependencyRelativePath(const FString& RelativePath);
+	T66_API TArray<FString> BuildLooseTextureCandidatePaths(const FString& RelativePath);
 
-	UTexture2D* LoadAssetTexture(
+	T66_API UTexture2D* LoadAssetTexture(
 		const TCHAR* AssetPath,
 		TextureFilter Filter = TextureFilter::TF_Trilinear,
 		const TCHAR* DebugLabel = nullptr);
 
-	UTexture2D* ImportFileTexture(
+	T66_API UTexture2D* ImportFileTexture(
 		const FString& FilePath,
 		TextureFilter Filter = TextureFilter::TF_Trilinear,
 		bool bClamp = false,
 		const TCHAR* DebugLabel = nullptr);
 
-	UTexture2D* ImportFileTextureWithGeneratedMips(
+	T66_API UTexture2D* ImportFileTextureWithGeneratedMips(
 		const FString& FilePath,
 		TextureFilter Filter = TextureFilter::TF_Trilinear,
 		const TCHAR* DebugLabel = nullptr);

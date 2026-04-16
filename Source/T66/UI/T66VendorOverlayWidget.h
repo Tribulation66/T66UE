@@ -28,6 +28,7 @@ class T66_API UT66VendorOverlayWidget : public UUserWidget
 public:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeDestruct() override;
+	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 	void CloseOverlay();
 	void SetEmbeddedInCircusShell(bool bEmbedded) { bEmbeddedInCircusShell = bEmbedded; }
@@ -130,6 +131,7 @@ private:
 	void RefreshSellPanel();
 	void RefreshStatsPanel();
 	void PrimeVisibleItemIconTextures();
+	void ReleaseCachedSlateResources();
 
 	FReply OnReroll();
 	FReply OnDialogueShop();

@@ -28,6 +28,9 @@ private:
 	FReply HandleBackToMainMenuClicked();
 	FReply HandleNewGameClicked();
 	FReply HandleLoadGameClicked();
+	void HandlePartyStateChanged();
+	void HandleSessionStateChanged();
+	void SyncToSharedPartyScreen();
 	void HandleFriendSearchTextChanged(const FText& InText);
 	void RequestMiniMenuTextures();
 	void ReleaseRetainedSlateState();
@@ -45,4 +48,6 @@ private:
 	TArray<TSharedPtr<FSlateBrush>> FriendAvatarBrushes;
 	TArray<TSharedPtr<FSlateBrush>> PartyAvatarBrushes;
 	FString FriendSearchQuery;
+	FDelegateHandle PartyStateChangedHandle;
+	FDelegateHandle SessionStateChangedHandle;
 };

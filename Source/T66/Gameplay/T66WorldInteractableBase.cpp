@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66WorldInteractableBase.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66InteractionPromptSubsystem.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -89,6 +90,14 @@ void AT66WorldInteractableBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->RegisterWorldInteractable(this);
+		}
+	}
+
 	if (PromptText && GetRootComponent() && PromptText->GetAttachParent() != GetRootComponent())
 	{
 		PromptText->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
@@ -115,6 +124,14 @@ void AT66WorldInteractableBase::BeginPlay()
 
 void AT66WorldInteractableBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->UnregisterWorldInteractable(this);
+		}
+	}
+
 	if (TriggerBox)
 	{
 		TriggerBox->OnComponentBeginOverlap.RemoveDynamic(this, &AT66WorldInteractableBase::HandleTriggerBeginOverlap);

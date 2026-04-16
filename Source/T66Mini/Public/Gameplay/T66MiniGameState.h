@@ -14,21 +14,28 @@ class T66MINI_API AT66MiniGameState : public AGameStateBase
 	GENERATED_BODY()
 
 public:
+	AT66MiniGameState();
+
 	UFUNCTION(BlueprintCallable, Category = "Mini")
 	void ApplyRunSave(const UT66MiniRunSaveGame* RunSave);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Mini")
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Mini")
+	bool bOnlinePartyMode = false;
+
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Mini")
 	FName HeroID = NAME_None;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Mini")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Mini")
 	FName CompanionID = NAME_None;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Mini")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Mini")
 	FName DifficultyID = NAME_None;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Mini")
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Mini")
 	int32 WaveIndex = 1;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Mini")
-	float WaveSecondsRemaining = 180.f;
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Mini")
+	float WaveSecondsRemaining = 60.f;
 };

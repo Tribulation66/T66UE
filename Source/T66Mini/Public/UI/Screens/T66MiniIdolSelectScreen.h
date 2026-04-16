@@ -20,6 +20,8 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
+	virtual void OnScreenDeactivated_Implementation() override;
+	virtual void NativeDestruct() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
@@ -27,6 +29,8 @@ private:
 	FReply HandleRerollClicked();
 	FReply HandleTakeIdolClicked(FName IdolID);
 	FReply HandleContinueClicked();
+	void HandleSessionStateChanged();
+	void SyncToSharedPartyScreen();
 	void SetStatus(const FText& InText);
 	void RebuildIdolBrushes(const TArray<FT66MiniIdolDefinition>& Idols);
 	const FSlateBrush* FindIdolBrush(FName IdolID) const;
@@ -34,4 +38,5 @@ private:
 	TSharedPtr<STextBlock> StatusTextBlock;
 	TMap<FName, TSharedPtr<FSlateBrush>> IdolBrushes;
 	FText CurrentStatusText;
+	FDelegateHandle SessionStateChangedHandle;
 };

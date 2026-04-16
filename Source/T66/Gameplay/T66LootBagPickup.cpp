@@ -110,10 +110,38 @@ AT66LootBagPickup::AT66LootBagPickup()
 void AT66LootBagPickup::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->RegisterLootBag(this);
+		}
+	}
+
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &AT66LootBagPickup::OnSphereBeginOverlap);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &AT66LootBagPickup::OnSphereEndOverlap);
 	UpdateVisualsFromRarity();
 	ResolveSpawnClearance();
+}
+
+void AT66LootBagPickup::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->UnregisterLootBag(this);
+		}
+	}
+
+	if (SphereComponent)
+	{
+		SphereComponent->OnComponentBeginOverlap.RemoveDynamic(this, &AT66LootBagPickup::OnSphereBeginOverlap);
+		SphereComponent->OnComponentEndOverlap.RemoveDynamic(this, &AT66LootBagPickup::OnSphereEndOverlap);
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AT66LootBagPickup::SetItemID(FName InItemID)

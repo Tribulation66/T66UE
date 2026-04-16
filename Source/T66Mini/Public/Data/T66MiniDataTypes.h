@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/T66DataTypes.h"
 #include "T66MiniDataTypes.generated.h"
 
 USTRUCT(BlueprintType)
@@ -45,6 +46,12 @@ struct T66MINI_API FT66MiniHeroDefinition
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	float BaseSpeed = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	ET66UltimateType UltimateType = ET66UltimateType::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	ET66PassiveType PassiveType = ET66PassiveType::None;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	bool bUnlockedByDefault = true;
@@ -156,6 +163,7 @@ UENUM(BlueprintType)
 enum class ET66MiniEnemyBehaviorProfile : uint8
 {
 	Balanced UMETA(DisplayName = "Balanced"),
+	HumanoidBalanced UMETA(DisplayName = "Humanoid Balanced"),
 	RoostPress UMETA(DisplayName = "Roost Press"),
 	CowBruiser UMETA(DisplayName = "Cow Bruiser"),
 	GoatCharger UMETA(DisplayName = "Goat Charger"),
@@ -163,6 +171,15 @@ enum class ET66MiniEnemyBehaviorProfile : uint8
 	Sharpshooter UMETA(DisplayName = "Sharpshooter"),
 	Juggernaut UMETA(DisplayName = "Juggernaut"),
 	Duelist UMETA(DisplayName = "Duelist")
+};
+
+UENUM(BlueprintType)
+enum class ET66MiniEnemyFamily : uint8
+{
+	Melee UMETA(DisplayName = "Melee"),
+	Ranged UMETA(DisplayName = "Ranged"),
+	Rushing UMETA(DisplayName = "Rushing"),
+	Boss UMETA(DisplayName = "Boss")
 };
 
 UENUM(BlueprintType)
@@ -192,6 +209,9 @@ struct T66MINI_API FT66MiniEnemyDefinition
 	ET66MiniEnemyBehaviorProfile BehaviorProfile = ET66MiniEnemyBehaviorProfile::Balanced;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	ET66MiniEnemyFamily Family = ET66MiniEnemyFamily::Melee;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	float BaseHealth = 30.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
@@ -208,6 +228,18 @@ struct T66MINI_API FT66MiniEnemyDefinition
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	float SpawnWeight = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float FireIntervalSeconds = 1.6f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float ProjectileSpeed = 920.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float ProjectileDamage = 8.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float PreferredRange = 860.0f;
 };
 
 USTRUCT(BlueprintType)
@@ -228,6 +260,9 @@ struct T66MINI_API FT66MiniBossDefinition
 	ET66MiniEnemyBehaviorProfile BehaviorProfile = ET66MiniEnemyBehaviorProfile::Balanced;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	ET66MiniEnemyFamily Family = ET66MiniEnemyFamily::Boss;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	float MaxHealth = 1000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
@@ -244,6 +279,15 @@ struct T66MINI_API FT66MiniBossDefinition
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	float TelegraphSeconds = 1.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float FireIntervalSeconds = 1.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float ProjectileSpeed = 1000.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float ProjectileDamage = 18.0f;
 };
 
 USTRUCT(BlueprintType)
@@ -258,7 +302,7 @@ struct T66MINI_API FT66MiniWaveDefinition
 	int32 WaveIndex = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
-	float DurationSeconds = 180.0f;
+	float DurationSeconds = 60.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	FName BossID = NAME_None;
@@ -316,6 +360,9 @@ struct T66MINI_API FT66MiniInteractableDefinition
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	float HealAmount = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	bool bRequiresManualInteract = false;
 };
 
 USTRUCT(BlueprintType)

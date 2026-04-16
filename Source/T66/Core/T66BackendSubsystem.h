@@ -70,6 +70,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	bool, bSuccess,
 	const FString&, Message);
 
+DECLARE_MULTICAST_DELEGATE_FiveParams(
+	FOnT66ClientLaunchPolicyResponse,
+	bool /*bSuccess*/,
+	bool /*bUpdateRequired*/,
+	int32 /*RequiredBuildId*/,
+	int32 /*LatestBuildId*/,
+	const FString& /*Message*/);
+
 USTRUCT(BlueprintType)
 struct T66_API FT66PartyInviteEntry
 {
@@ -271,6 +279,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Backend")
 	void PingHealth();
 
+	// ── API: Launch Policy ────────────────────────────────────
+
+	UFUNCTION(BlueprintCallable, Category = "Backend")
+	void FetchClientLaunchPolicy(int32 LocalSteamBuildId, const FString& SteamAppId, const FString& SteamBetaName = TEXT(""));
+
+	FOnT66ClientLaunchPolicyResponse& OnClientLaunchPolicyResponse() { return ClientLaunchPolicyResponse; }
+
 	// ── API: Fetch Leaderboard ───────────────────────────────
 
 	/**
@@ -319,9 +334,14 @@ private:
 	FString LastAccountStatusReason;
 	FString LastAccountAppealStatus;
 	FString LastAccountRunSummaryId;
+	FString LastClientLaunchPolicyMessage;
+	int32 LastRequiredSteamBuildId = 0;
+	int32 LastLatestSteamBuildId = 0;
+	bool bLastClientLaunchPolicyRequiresUpdate = false;
 	TArray<FT66PartyInviteEntry> PendingPartyInvites;
 	FOnT66PendingPartyInvitesChanged PendingPartyInvitesChanged;
 	FOnT66PartyInviteActionComplete PartyInviteActionComplete;
+	FOnT66ClientLaunchPolicyResponse ClientLaunchPolicyResponse;
 
 	struct FCachedLeaderboard
 	{
@@ -361,6 +381,7 @@ private:
 	TSet<FString> PendingRunSummaryFetches;
 	FTSTicker::FDelegateHandle PartyInvitePollTickerHandle;
 	FTSTicker::FDelegateHandle PendingCoopSubmitTickerHandle;
+	TWeakPtr<IHttpRequest, ESPMode::ThreadSafe> PendingPartyInvitePollRequest;
 	double LastPartyInvitePollTimeSeconds = 0.0;
 	bool bPartyInvitePollInFlight = false;
 	TMap<FString, FPendingCoopSubmit> PendingCoopSubmitRequests;
@@ -409,6 +430,7 @@ private:
 	void OnProofOfRunResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnBugReportResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnHealthResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnClientLaunchPolicyResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, int32 LocalSteamBuildId);
 	void OnSendPartyInviteResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnPendingPartyInvitesResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnRespondPartyInviteResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString InviteId, FString Action);

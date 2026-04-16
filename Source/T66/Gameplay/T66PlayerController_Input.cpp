@@ -324,6 +324,7 @@ void AT66PlayerController::SetupInputComponent()
 
 		// Dash (default: LeftShift; configured in DefaultInput.ini)
 		InputComponent->BindAction(TEXT("Dash"), IE_Pressed, this, &AT66PlayerController::HandleDashPressed);
+		InputComponent->BindAction(TEXT("Dash"), IE_Released, this, &AT66PlayerController::HandleDashReleased);
 		
 		// Jump (Space)
 		InputComponent->BindAction(TEXT("Jump"), IE_Pressed, this, &AT66PlayerController::HandleJumpPressed);
@@ -502,20 +503,6 @@ void AT66PlayerController::HandleRestartRunPressed()
 }
 
 
-void AT66PlayerController::HandleDashPressed()
-{
-	if (!IsGameplayLevel()) return;
-	if (AActor* A = GetPawn())
-	{
-		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(A))
-		{
-			if (Hero->IsVehicleMounted()) return;
-			Hero->DashForward();
-		}
-	}
-}
-
-
 void AT66PlayerController::HandleToggleHUDPressed()
 {
 	if (!IsGameplayLevel()) return;
@@ -595,116 +582,6 @@ void AT66PlayerController::ClearNearbyLootBag(AT66LootBagPickup* LootBag)
 }
 
 
-void AT66PlayerController::HandleMoveForward(float Value)
-{
-	if (!IsGameplayLevel()) return;
-
-	// While an in-world NPC dialogue is open, use forward/back as UI navigation and block movement.
-	if (bWorldDialogueOpen)
-	{
-		if (UWorld* World = GetWorld())
-		{
-			const float Now = World->GetTimeSeconds();
-			if (Now - LastWorldDialogueNavTimeSeconds >= WorldDialogueNavDebounceSeconds)
-			{
-				// Down (S / stick down) goes to next option.
-				if (Value <= -0.6f)
-				{
-					NavigateWorldDialogue(+1);
-					LastWorldDialogueNavTimeSeconds = Now;
-				}
-				// Up (W / stick up) goes to previous option.
-				else if (Value >= 0.6f)
-				{
-					NavigateWorldDialogue(-1);
-					LastWorldDialogueNavTimeSeconds = Now;
-				}
-			}
-		}
-		return;
-	}
-
-	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
-	{
-		if (Hero->IsVehicleMounted())
-		{
-			if (AT66PilotableTractor* Tractor = Hero->GetMountedTractor())
-			{
-				Tractor->SetDriveForwardInput(Value);
-			}
-			return;
-		}
-	}
-
-	if (FMath::IsNearlyZero(Value)) return;
-
-	// Tutorial progress: first time the player moves.
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-		{
-			RunState->NotifyTutorialMoveInput();
-		}
-	}
-	
-	if (APawn* MyPawn = GetPawn())
-	{
-		// Get the control rotation (where we're looking)
-		FRotator ControlRot = GetControlRotation();
-		ControlRot.Pitch = 0.f; // Don't include pitch for movement
-		ControlRot.Roll = 0.f;
-		
-		// Get forward vector based on control rotation
-		FVector ForwardDir = FRotationMatrix(ControlRot).GetUnitAxis(EAxis::X);
-		MyPawn->AddMovementInput(ForwardDir, Value);
-	}
-}
-
-
-void AT66PlayerController::HandleMoveRight(float Value)
-{
-	if (!IsGameplayLevel()) return;
-
-	// Block strafing while an in-world NPC dialogue is open (so WASD doesn't move you).
-	if (bWorldDialogueOpen) return;
-
-	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
-	{
-		if (Hero->IsVehicleMounted())
-		{
-			if (AT66PilotableTractor* Tractor = Hero->GetMountedTractor())
-			{
-				Tractor->SetDriveRightInput(Value);
-			}
-			return;
-		}
-	}
-
-	if (FMath::IsNearlyZero(Value)) return;
-
-	// Tutorial progress: first time the player moves.
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-		{
-			RunState->NotifyTutorialMoveInput();
-		}
-	}
-	
-	if (APawn* MyPawn = GetPawn())
-	{
-		// Get the control rotation (where we're looking)
-		FRotator ControlRot = GetControlRotation();
-		ControlRot.Pitch = 0.f;
-		ControlRot.Roll = 0.f;
-		
-		// Get right vector based on control rotation
-		FVector RightDir = FRotationMatrix(ControlRot).GetUnitAxis(EAxis::Y);
-		MyPawn->AddMovementInput(RightDir, Value);
-	}
-}
-
-
 void AT66PlayerController::HandleLookUp(float Value)
 {
 	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
@@ -734,75 +611,6 @@ void AT66PlayerController::HandleTurn(float Value)
 		}
 	}
 	AddYawInput(Value);
-}
-
-
-void AT66PlayerController::HandleJumpPressed()
-{
-	if (!IsGameplayLevel()) return;
-
-	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
-	{
-		if (Hero->IsVehicleMounted()) return;
-	}
-
-	// Tutorial progress: first time the player jumps.
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-		{
-			RunState->NotifyTutorialJumpInput();
-		}
-	}
-	
-	if (ACharacter* MyCharacter = Cast<ACharacter>(GetPawn()))
-	{
-		UCharacterMovementComponent* CMC = MyCharacter->GetCharacterMovement();
-		const int32 JumpCurrent = MyCharacter->JumpCurrentCount;
-		const int32 JumpMax = MyCharacter->JumpMaxCount;
-		const bool bOnGround = CMC ? CMC->IsMovingOnGround() : false;
-		const bool bFalling = CMC ? CMC->IsFalling() : false;
-		const FString MoveMode = CMC ? StaticEnum<EMovementMode>()->GetNameStringByValue(static_cast<int64>(CMC->MovementMode)) : TEXT("N/A");
-		UE_LOG(LogT66PlayerInput, Verbose, TEXT("[JUMP] Space pressed: JumpCount=%d/%d OnGround=%d Falling=%d MoveMode=%s Z=%.1f"),
-			JumpCurrent, JumpMax, bOnGround ? 1 : 0, bFalling ? 1 : 0, *MoveMode, MyCharacter->GetActorLocation().Z);
-
-		MyCharacter->Jump();
-
-		UWorld* World = GetWorld();
-		UNiagaraSystem* JumpVFX = GetActiveJumpVFXSystem();
- 		if (World && JumpVFX)
- 		{
- 			const FVector FeetLoc = MyCharacter->GetActorLocation() - FVector(0.f, 0.f, 50.f);
- 			const FVector4 TintWhite(1.f, 1.f, 1.f, 0.8f);
- 			UT66PixelVFXSubsystem* PixelVFX = World->GetSubsystem<UT66PixelVFXSubsystem>();
- 			for (int32 i = 0; i < 6; ++i)
- 			{
- 				const FVector Offset(FMath::FRandRange(-30.f, 30.f), FMath::FRandRange(-30.f, 30.f), 0.f);
- 				if (PixelVFX)
- 				{
- 					PixelVFX->SpawnPixelAtLocation(
- 						FeetLoc + Offset,
- 						FLinearColor(TintWhite.X, TintWhite.Y, TintWhite.Z, TintWhite.W),
- 						FVector2D(2.0f, 2.0f),
- 						ET66PixelVFXPriority::Low,
- 						FRotator::ZeroRotator,
- 						FVector(1.f),
- 						JumpVFX);
- 				}
- 			}
-		}
-	}
-}
-
-
-void AT66PlayerController::HandleJumpReleased()
-{
-	if (!IsGameplayLevel()) return;
-	
-	if (ACharacter* MyCharacter = Cast<ACharacter>(GetPawn()))
-	{
-		MyCharacter->StopJumping();
-	}
 }
 
 

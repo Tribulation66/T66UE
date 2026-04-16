@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "UI/T66UITypes.h"
 #include "T66MiniPlayerController.generated.h"
 
 class AT66MiniPlayerPawn;
@@ -21,7 +22,7 @@ public:
 	virtual void SetupInputComponent() override;
 
 	void ResumeFromPauseMenu();
-	void ReturnToMainMenuFromPause();
+	void SaveAndQuitToMiniMenuFromPause();
 	bool StartLootCratePresentation();
 	void ResolveLootCratePresentationNow(bool bAwardItem = true);
 	bool IsLootCratePresentationActive() const { return bLootCratePresentationActive; }
@@ -31,18 +32,34 @@ public:
 	int32 GetLootCrateWinnerIndex() const { return LootCrateWinnerIndex; }
 	FName GetLootCrateRewardItemID() const { return PendingLootCrateRewardItemID; }
 
+	UFUNCTION(Client, Reliable)
+	void ClientPrepareMiniOnlineRunSummary(bool bWasVictory, const FString& ResultLabel, int32 WaveReached, float RunSeconds);
+
+	UFUNCTION(Client, Reliable)
+	void ClientPrepareMiniFrontendTravel(ET66ScreenType PendingScreen, bool bIntermissionFlow);
+
 protected:
 	virtual void BeginPlay() override;
 
 private:
+	UFUNCTION(Server, Reliable)
+	void ServerTryInteract();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestPartySaveAndReturnToFrontend();
+
 	void ConfigureGameplayInputMode();
 	void ConfigurePauseMenuInputMode();
+	void HandleInteractPressed();
+	void HandleUltimatePressed();
 	void HandlePausePressed();
 	void OpenPauseMenu();
 	void ClosePauseMenu();
 	void UpdateMouseFollowTarget();
 	void UpdateLootCratePresentation();
 	void BuildLootCrateStrip();
+	bool IsOnlinePartyMode() const;
+	bool IsPauseMenuVisible() const;
 	static bool ProjectCursorToGroundPlane(APlayerController* PlayerController, FVector& OutWorldLocation);
 
 	UPROPERTY()

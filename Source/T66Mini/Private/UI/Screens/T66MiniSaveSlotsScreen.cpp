@@ -4,8 +4,10 @@
 
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
+#include "Core/T66PartySubsystem.h"
 #include "Core/T66MiniRunStateSubsystem.h"
 #include "Core/T66MiniRuntimeSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Data/T66MiniDataTypes.h"
 #include "Save/T66MiniRunSaveGame.h"
 #include "Save/T66MiniSaveSubsystem.h"
@@ -27,11 +29,97 @@ UT66MiniSaveSlotsScreen::UT66MiniSaveSlotsScreen(const FObjectInitializer& Objec
 	bIsModal = false;
 }
 
+void UT66MiniSaveSlotsScreen::OnScreenActivated_Implementation()
+{
+	Super::OnScreenActivated_Implementation();
+
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniSaveSlotsScreen::HandleSessionStateChanged);
+			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniSaveSlots, true);
+		}
+	}
+}
+
+void UT66MiniSaveSlotsScreen::OnScreenDeactivated_Implementation()
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+		}
+	}
+
+	SessionStateChangedHandle.Reset();
+	Super::OnScreenDeactivated_Implementation();
+}
+
+void UT66MiniSaveSlotsScreen::NativeDestruct()
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+		}
+	}
+
+	SessionStateChangedHandle.Reset();
+	Super::NativeDestruct();
+}
+
+void UT66MiniSaveSlotsScreen::HandleSessionStateChanged()
+{
+	SyncToSharedPartyScreen();
+	ForceRebuildSlate();
+}
+
+void UT66MiniSaveSlotsScreen::SyncToSharedPartyScreen()
+{
+	if (!UIManager)
+	{
+		return;
+	}
+
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	if (!SessionSubsystem || !SessionSubsystem->IsPartyLobbyContextActive() || SessionSubsystem->IsLocalPlayerPartyHost())
+	{
+		return;
+	}
+
+	const ET66ScreenType DesiredScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
+	switch (DesiredScreen)
+	{
+	case ET66ScreenType::MiniMainMenu:
+	case ET66ScreenType::MiniSaveSlots:
+	case ET66ScreenType::MiniCharacterSelect:
+	case ET66ScreenType::MiniCompanionSelect:
+	case ET66ScreenType::MiniDifficultySelect:
+	case ET66ScreenType::MiniIdolSelect:
+	case ET66ScreenType::MiniShop:
+	case ET66ScreenType::MiniRunSummary:
+		if (UIManager->GetCurrentScreenType() != DesiredScreen)
+		{
+			UIManager->ShowScreen(DesiredScreen);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 {
 	UT66MiniDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
+	UT66PartySubsystem* PartySubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	const TArray<FT66MiniSaveSlotSummary> SlotSummaries = SaveSubsystem ? SaveSubsystem->BuildRunSlotSummaries(DataSubsystem) : TArray<FT66MiniSaveSlotSummary>();
+	const bool bOnlinePartyActive = PartySubsystem && PartySubsystem->HasRemotePartyMembers();
+	const bool bIsPartyHost = !SessionSubsystem || SessionSubsystem->IsLocalPlayerPartyHost();
 
 	TSharedRef<SGridPanel> CardGrid = SNew(SGridPanel);
 	for (int32 Index = 0; Index < SlotSummaries.Num(); ++Index)
@@ -93,8 +181,8 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 							{
 								return HandleLoadSlotClicked(SlotIndex);
 							}))
-							.IsEnabled(Summary.bOccupied)
-							.ButtonColorAndOpacity(Summary.bOccupied ? T66MiniUI::AccentGreen() : T66MiniUI::RaisedFill())
+							.IsEnabled(Summary.bOccupied && (!bOnlinePartyActive || bIsPartyHost))
+							.ButtonColorAndOpacity((Summary.bOccupied && (!bOnlinePartyActive || bIsPartyHost)) ? T66MiniUI::AccentGreen() : T66MiniUI::RaisedFill())
 							[
 								SNew(STextBlock)
 								.Text(NSLOCTEXT("T66Mini.SaveSlots", "Load", "LOAD"))
@@ -142,7 +230,11 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 					.Padding(FMargin(14.f))
 					[
 						SAssignNew(StatusTextBlock, STextBlock)
-						.Text(NSLOCTEXT("T66Mini.SaveSlots", "DefaultStatus", "These slots are mini-specific and separate from the regular game's save pipeline."))
+						.Text(bOnlinePartyActive
+							? (bIsPartyHost
+								? NSLOCTEXT("T66Mini.SaveSlots", "OnlinePartyHostStatus", "Party host can load a compatible mini co-op save directly into battle. Intermission/shop restores remain disabled until online intermission is finished.")
+								: NSLOCTEXT("T66Mini.SaveSlots", "OnlinePartyGuestBlocked", "Only the party host can load a mini party save."))
+							: NSLOCTEXT("T66Mini.SaveSlots", "DefaultStatus", "These slots are mini-specific and separate from the regular game's save pipeline."))
 						.Font(T66MiniUI::BodyFont(16))
 						.ColorAndOpacity(T66MiniUI::MutedText())
 						.AutoWrapText(true)
@@ -185,13 +277,39 @@ FReply UT66MiniSaveSlotsScreen::HandleLoadSlotClicked(const int32 SlotIndex)
 	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
 	UT66MiniRunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	UT66MiniRuntimeSubsystem* RuntimeSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniRuntimeSubsystem>() : nullptr;
+	UT66PartySubsystem* PartySubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	if (!SaveSubsystem || !FrontendState || !RunState || !RuntimeSubsystem)
 	{
 		return FReply::Handled();
 	}
 
+	const bool bOnlinePartyActive = PartySubsystem && PartySubsystem->HasRemotePartyMembers();
+	const bool bIsPartyHost = !SessionSubsystem || SessionSubsystem->IsLocalPlayerPartyHost();
+	if (bOnlinePartyActive && !bIsPartyHost)
+	{
+		SetStatus(NSLOCTEXT("T66Mini.SaveSlots", "OnlineGuestBlocked", "Only the party host can load a mini party save."));
+		return FReply::Handled();
+	}
+
 	if (UT66MiniRunSaveGame* RunSave = SaveSubsystem->LoadRunFromSlot(SlotIndex))
 	{
+		if (bOnlinePartyActive)
+		{
+			FString FailureReason;
+			if (!SaveSubsystem->IsRunCompatibleWithCurrentParty(RunSave, &FailureReason))
+			{
+				SetStatus(FText::FromString(FailureReason));
+				return FReply::Handled();
+			}
+
+			if (RunSave->bPendingShopIntermission)
+			{
+				SetStatus(NSLOCTEXT("T66Mini.SaveSlots", "OnlineIntermissionBlocked", "This mini party save is parked in intermission. Online shop/intermission restore is still disabled, so load a mid-wave party save instead."));
+				return FReply::Handled();
+			}
+		}
+
 		FrontendState->SeedFromRunSave(RunSave);
 		RunState->LoadRunFromSave(RunSave);
 
@@ -215,7 +333,14 @@ FReply UT66MiniSaveSlotsScreen::HandleLoadSlotClicked(const int32 SlotIndex)
 			UIManager->HideAllUI();
 		}
 
-		SetStatus(FText::FromString(FString::Printf(TEXT("Loaded mini slot %d and launched the isolated mini battle runtime."), SlotIndex + 1)));
+		if (bOnlinePartyActive)
+		{
+			SetStatus(FText::FromString(FString::Printf(TEXT("Loaded mini slot %d and launched the party mini battle runtime."), SlotIndex + 1)));
+		}
+		else
+		{
+			SetStatus(FText::FromString(FString::Printf(TEXT("Loaded mini slot %d and launched the isolated mini battle runtime."), SlotIndex + 1)));
+		}
 	}
 	else
 	{

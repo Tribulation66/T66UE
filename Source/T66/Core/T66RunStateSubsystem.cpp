@@ -3200,6 +3200,20 @@ void UT66RunStateSubsystem::HealHP(float Amount)
 	HeartsChanged.Broadcast();
 }
 
+void UT66RunStateSubsystem::HealHPFromCompanion(float Amount)
+{
+	if (bInLastStand || bInQuickReviveDowned) return;
+	if (Amount <= 0.f) return;
+
+	const float PreviousHP = CurrentHP;
+	HealHP(Amount);
+	const float AppliedHealing = FMath::Max(0.f, CurrentHP - PreviousHP);
+	if (AppliedHealing > 0.f)
+	{
+		CompanionHealingDoneThisRun += AppliedHealing;
+	}
+}
+
 void UT66RunStateSubsystem::HealHearts(int32 Hearts)
 {
 	if (Hearts <= 0) return;
@@ -3677,6 +3691,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	CurrentScore = 0;
 	LastDamageTime = -9999.f;
 	PowerCrystalsEarnedThisRun = 0;
+	CompanionHealingDoneThisRun = 0.f;
 	SingleUseSecondaryMultipliers.Reset();
 
 	// Skill Rating: reset per brand new run.
@@ -3834,6 +3849,7 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.XPToNextLevel = XPToNextLevel;
 	OutSnapshot.HeroStats = HeroStats;
 	OutSnapshot.PowerCrystalsEarnedThisRun = PowerCrystalsEarnedThisRun;
+	OutSnapshot.CompanionHealingDoneThisRun = CompanionHealingDoneThisRun;
 	OutSnapshot.bBossActive = bBossActive;
 	OutSnapshot.ActiveBossID = ActiveBossID;
 	OutSnapshot.BossMaxHP = BossMaxHP;
@@ -3976,6 +3992,7 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	XPToNextLevel = FMath::Max(1, Snapshot.XPToNextLevel);
 	HeroStats = Snapshot.HeroStats;
 	PowerCrystalsEarnedThisRun = FMath::Max(0, Snapshot.PowerCrystalsEarnedThisRun);
+	CompanionHealingDoneThisRun = FMath::Max(0.f, Snapshot.CompanionHealingDoneThisRun);
 	bBossActive = Snapshot.bBossActive;
 	ActiveBossID = Snapshot.ActiveBossID;
 	BossMaxHP = FMath::Max(1, Snapshot.BossMaxHP);

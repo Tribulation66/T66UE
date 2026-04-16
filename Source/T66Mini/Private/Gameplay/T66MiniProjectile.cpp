@@ -9,6 +9,7 @@
 #include "EngineUtils.h"
 #include "Gameplay/T66MiniEnemyBase.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
+#include "Net/UnrealNetwork.h"
 
 namespace
 {
@@ -44,15 +45,15 @@ namespace
 		{
 		case ET66MiniProjectileBehavior::AOE:
 		{
-			const float UniformScale = FMath::Clamp(Radius / 220.f, 0.28f, 0.92f);
+			const float UniformScale = FMath::Clamp(Radius / 180.f, 0.46f, 1.18f);
 			return FVector(UniformScale, UniformScale, 1.f);
 		}
 
 		case ET66MiniProjectileBehavior::DOT:
-			return FVector(0.20f, 0.20f, 1.f);
+			return FVector(0.42f, 0.42f, 1.f);
 
 		default:
-			return FVector(0.18f, 0.18f, 1.f);
+			return FVector(0.36f, 0.36f, 1.f);
 		}
 	}
 
@@ -73,6 +74,8 @@ namespace
 AT66MiniProjectile::AT66MiniProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -96,7 +99,21 @@ AT66MiniProjectile::AT66MiniProjectile()
 void AT66MiniProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AT66MiniProjectile::HandleOverlap);
+	if (HasAuthority())
+	{
+		CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AT66MiniProjectile::HandleOverlap);
+	}
+	OnRep_ProjectileVisualState();
+}
+
+void AT66MiniProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AT66MiniProjectile, Behavior);
+	DOREPLIFETIME(AT66MiniProjectile, IdolID);
+	DOREPLIFETIME(AT66MiniProjectile, PrimaryTexture);
+	DOREPLIFETIME(AT66MiniProjectile, FollowUpTexture);
 }
 
 void AT66MiniProjectile::InitializeProjectile(
@@ -153,6 +170,11 @@ void AT66MiniProjectile::InitializeProjectile(
 void AT66MiniProjectile::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (!HasAuthority())
+	{
+		return;
+	}
 
 	LifetimeRemaining -= DeltaSeconds;
 	if (LifetimeRemaining <= 0.f)
@@ -365,9 +387,21 @@ void AT66MiniProjectile::SpawnFollowUpPulse(const FVector& Location) const
 	const FLinearColor Tint = T66MiniGetFollowUpTint(Behavior, IdolID);
 	if (FollowUpTexture)
 	{
-		VfxSubsystem->SpawnSpritePulse(GetWorld(), Location, Scale, Behavior == ET66MiniProjectileBehavior::AOE ? 0.16f : 0.10f, Tint, FollowUpTexture, Behavior == ET66MiniProjectileBehavior::AOE ? 0.80f : 0.45f);
+		VfxSubsystem->SpawnSpritePulse(GetWorld(), Location, Scale, Behavior == ET66MiniProjectileBehavior::AOE ? 0.20f : 0.14f, Tint, FollowUpTexture, Behavior == ET66MiniProjectileBehavior::AOE ? 0.94f : 0.70f);
 		return;
 	}
 
-	VfxSubsystem->SpawnPulse(GetWorld(), Location, Scale, Behavior == ET66MiniProjectileBehavior::AOE ? 0.16f : 0.10f, Tint, Behavior == ET66MiniProjectileBehavior::AOE ? 0.80f : 0.45f);
+	VfxSubsystem->SpawnPulse(GetWorld(), Location, Scale, Behavior == ET66MiniProjectileBehavior::AOE ? 0.20f : 0.14f, Tint, Behavior == ET66MiniProjectileBehavior::AOE ? 0.94f : 0.70f);
+}
+
+void AT66MiniProjectile::OnRep_ProjectileVisualState()
+{
+	if (PrimaryTexture)
+	{
+		SpriteComponent->SetSprite(PrimaryTexture);
+	}
+	else if (FollowUpTexture)
+	{
+		SpriteComponent->SetSprite(FollowUpTexture);
+	}
 }

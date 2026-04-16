@@ -2,6 +2,9 @@
 
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66FrontendGameMode.h"
+#include "Gameplay/T66HeroPreviewStage.h"
+#include "Gameplay/T66CompanionPreviewStage.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -37,6 +40,7 @@
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Gameplay/T66FountainOfLifeInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
@@ -52,6 +56,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66BackendSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
@@ -60,6 +65,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66SteamHelper.h"
+#include "UI/T66LoadingScreenWidget.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66VendorNPC.h"
@@ -103,6 +110,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Framework/Application/SlateApplication.h"
 #include "TimerManager.h"
 #include "UnrealClient.h"
+#include "HAL/PlatformMisc.h"
+#include "Camera/CameraActor.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SWeakWidget.h"
 #include "Widgets/Input/SButton.h"
@@ -825,10 +834,165 @@ void AT66PlayerController::HandleFrontendAutomationQuit()
 	ConsoleCommand(TEXT("quit"));
 }
 
+void AT66PlayerController::EnsureFrontendStartupOverlay(const FText& LoadingText)
+{
+	if (FrontendStartupOverlayWidget)
+	{
+		FrontendStartupOverlayWidget->SetLoadingText(LoadingText);
+		return;
+	}
+
+	if (UT66LoadingScreenWidget* Overlay = CreateWidget<UT66LoadingScreenWidget>(this, UT66LoadingScreenWidget::StaticClass()))
+	{
+		Overlay->SetLoadingText(LoadingText);
+		Overlay->AddToViewport(10000);
+		FrontendStartupOverlayWidget = Overlay;
+	}
+}
+
+void AT66PlayerController::HideFrontendStartupOverlay()
+{
+	if (FrontendStartupOverlayWidget)
+	{
+		FrontendStartupOverlayWidget->RemoveFromParent();
+		FrontendStartupOverlayWidget = nullptr;
+	}
+}
+
+void AT66PlayerController::StartFrontendLaunchPolicyCheck()
+{
+	if (bFrontendLaunchPolicyCheckComplete)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(FrontendLaunchPolicyTimeoutTimerHandle);
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			if (FrontendLaunchPolicyResponseHandle.IsValid())
+			{
+				Backend->OnClientLaunchPolicyResponse().Remove(FrontendLaunchPolicyResponseHandle);
+				FrontendLaunchPolicyResponseHandle.Reset();
+			}
+		}
+	}
+
+	bFrontendLaunchPolicyCheckStarted = false;
+	bFrontendLaunchPolicyCheckComplete = true;
+	bFrontendLaunchPolicyUpdateBlocked = false;
+	HideFrontendStartupOverlay();
+	UE_LOG(LogT66Frontend, Log, TEXT("Frontend update gate disabled; continuing startup without client-config validation."));
+	InitializeUI();
+}
+
+void AT66PlayerController::HandleFrontendLaunchPolicyResponse(bool bSuccess, bool bUpdateRequired, int32 RequiredBuildId, int32 LatestBuildId, const FString& Message)
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			if (FrontendLaunchPolicyResponseHandle.IsValid())
+			{
+				Backend->OnClientLaunchPolicyResponse().Remove(FrontendLaunchPolicyResponseHandle);
+				FrontendLaunchPolicyResponseHandle.Reset();
+			}
+		}
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(FrontendLaunchPolicyTimeoutTimerHandle);
+	}
+
+	bFrontendLaunchPolicyCheckStarted = false;
+	bFrontendLaunchPolicyCheckComplete = true;
+
+	if (bSuccess && bUpdateRequired)
+	{
+		UE_LOG(
+			LogT66Frontend,
+			Warning,
+			TEXT("Frontend update gate: blocking outdated client local=%d required=%d latest=%d."),
+			FrontendLocalSteamBuildId,
+			RequiredBuildId,
+			LatestBuildId);
+		bFrontendLaunchPolicyUpdateBlocked = true;
+		HideFrontendStartupOverlay();
+		ShowFrontendUpdateRequiredAndQuit(Message);
+		return;
+	}
+
+	if (!bSuccess)
+	{
+		UE_LOG(LogT66Frontend, Warning, TEXT("Frontend update gate: backend unavailable, allowing startup."));
+	}
+
+	InitializeUI();
+}
+
+void AT66PlayerController::HandleFrontendLaunchPolicyTimeout()
+{
+	if (!bFrontendLaunchPolicyCheckStarted || bFrontendLaunchPolicyCheckComplete)
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			if (FrontendLaunchPolicyResponseHandle.IsValid())
+			{
+				Backend->OnClientLaunchPolicyResponse().Remove(FrontendLaunchPolicyResponseHandle);
+				FrontendLaunchPolicyResponseHandle.Reset();
+			}
+		}
+	}
+
+	bFrontendLaunchPolicyCheckStarted = false;
+	bFrontendLaunchPolicyCheckComplete = true;
+	UE_LOG(LogT66Frontend, Warning, TEXT("Frontend update gate: timed out, allowing startup."));
+	InitializeUI();
+}
+
+void AT66PlayerController::ShowFrontendUpdateRequiredAndQuit(const FString& Message) const
+{
+	const FString ResolvedMessage = Message.IsEmpty()
+		? FString::Printf(
+			TEXT("A new build is available. Please restart Steam to update CHADPOCALYPSE.\n\nInstalled build: %d"),
+			FrontendLocalSteamBuildId)
+		: Message;
+
+	FPlatformMisc::MessageBoxExt(EAppMsgType::Ok, *ResolvedMessage, TEXT("Update Required"));
+	const_cast<AT66PlayerController*>(this)->ConsoleCommand(TEXT("quit"));
+}
+
 
 void AT66PlayerController::InitializeUI()
 {
 	if (bUIInitialized)
+	{
+		return;
+	}
+
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	if (IsFrontendLevel() && !bFrontendLaunchPolicyCheckComplete)
+	{
+		StartFrontendLaunchPolicyCheck();
+		return;
+	}
+
+	if (bFrontendLaunchPolicyUpdateBlocked)
 	{
 		return;
 	}
@@ -940,14 +1104,45 @@ void AT66PlayerController::InitializeUI()
 
 	bUIInitialized = true;
 
+	if (IsFrontendLevel())
+	{
+		EnsureLocalFrontendPreviewScene();
+	}
+
 	// Show the initial screen
 	ET66ScreenType ScreenToShow = InitialScreen;
+	const bool bClosedConnectionReturn = GetWorld() && GetWorld()->URL.HasOption(TEXT("closed"));
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
-		if (GI->PendingFrontendScreen != ET66ScreenType::None)
+		if (bClosedConnectionReturn)
+		{
+			ScreenToShow = ET66ScreenType::MainMenu;
+			GI->PendingFrontendScreen = ET66ScreenType::None;
+			if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+			{
+				SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MainMenu, true);
+				GI->PendingFrontendScreen = ET66ScreenType::None;
+			}
+			UE_LOG(LogT66Frontend, Log, TEXT("Frontend disconnect return detected; forcing MainMenu startup screen."));
+		}
+		else if (GI->PendingFrontendScreen != ET66ScreenType::None)
 		{
 			ScreenToShow = GI->PendingFrontendScreen;
 			GI->PendingFrontendScreen = ET66ScreenType::None;
+		}
+
+		if (!bClosedConnectionReturn)
+		{
+			if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+			{
+				const ET66ScreenType DesiredPartyScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
+				if (SessionSubsystem->IsPartyLobbyContextActive()
+					&& !SessionSubsystem->IsLocalPlayerPartyHost()
+					&& DesiredPartyScreen != ET66ScreenType::None)
+				{
+					ScreenToShow = DesiredPartyScreen;
+				}
+			}
 		}
 	}
 
@@ -958,6 +1153,154 @@ void AT66PlayerController::InitializeUI()
 		UIManager->ShowScreen(ScreenToShow);
 		RefreshPartyInviteModal();
 		QueueFrontendAutomationScreenshotIfRequested();
+	}
+
+	HideFrontendStartupOverlay();
+}
+
+void AT66PlayerController::EnsureLocalFrontendPreviewScene()
+{
+	if (!IsLocalController() || !IsFrontendLevel())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	const FVector PreviewOrigin(100000.f, 0.f, 0.f);
+
+	if (!LocalFrontendHeroPreviewStage.IsValid())
+	{
+		LocalFrontendHeroPreviewStage = World->SpawnActor<AT66HeroPreviewStage>(
+			AT66HeroPreviewStage::StaticClass(),
+			PreviewOrigin,
+			FRotator::ZeroRotator,
+			SpawnParams);
+	}
+	if (LocalFrontendHeroPreviewStage.IsValid())
+	{
+		LocalFrontendHeroPreviewStage.Get()->SetActorLocation(PreviewOrigin);
+		LocalFrontendHeroPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		LocalFrontendHeroPreviewStage.Get()->SetStageVisible(true);
+		LocalFrontendHeroPreviewStage.Get()->ResetFramingCache();
+	}
+
+	if (!LocalFrontendCompanionPreviewStage.IsValid())
+	{
+		LocalFrontendCompanionPreviewStage = World->SpawnActor<AT66CompanionPreviewStage>(
+			AT66CompanionPreviewStage::StaticClass(),
+			PreviewOrigin,
+			FRotator::ZeroRotator,
+			SpawnParams);
+	}
+	if (LocalFrontendCompanionPreviewStage.IsValid())
+	{
+		LocalFrontendCompanionPreviewStage.Get()->SetActorLocation(PreviewOrigin);
+		LocalFrontendCompanionPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		LocalFrontendCompanionPreviewStage.Get()->SetStageVisible(false);
+		LocalFrontendCompanionPreviewStage.Get()->ResetFramingCache();
+	}
+
+	if (!LocalFrontendPreviewCamera.IsValid())
+	{
+		LocalFrontendPreviewCamera = World->SpawnActor<ACameraActor>(
+			ACameraActor::StaticClass(),
+			FVector(-400.f, 0.f, 350.f),
+			FRotator(-15.f, 0.f, 0.f),
+			SpawnParams);
+		if (LocalFrontendPreviewCamera.IsValid())
+		{
+			if (UCameraComponent* CameraComponent = LocalFrontendPreviewCamera.Get()->GetCameraComponent())
+			{
+				CameraComponent->SetFieldOfView(90.f);
+				CameraComponent->bConstrainAspectRatio = false;
+			}
+		}
+	}
+}
+
+void AT66PlayerController::PositionLocalFrontendCameraForHeroPreview()
+{
+	EnsureLocalFrontendPreviewScene();
+	if (!LocalFrontendPreviewCamera.IsValid())
+	{
+		return;
+	}
+
+	if (LocalFrontendHeroPreviewStage.IsValid())
+	{
+		LocalFrontendHeroPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		LocalFrontendHeroPreviewStage.Get()->SetStageVisible(true);
+	}
+	if (LocalFrontendCompanionPreviewStage.IsValid())
+	{
+		LocalFrontendCompanionPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		LocalFrontendCompanionPreviewStage.Get()->SetStageVisible(false);
+	}
+
+	if (LocalFrontendHeroPreviewStage.IsValid())
+	{
+		const FVector CameraLocation = LocalFrontendHeroPreviewStage.Get()->GetIdealCameraLocation();
+		const FRotator CameraRotation = LocalFrontendHeroPreviewStage.Get()->GetIdealCameraRotation();
+		if (!CameraLocation.IsNearlyZero())
+		{
+			LocalFrontendPreviewCamera.Get()->SetActorLocation(CameraLocation);
+			LocalFrontendPreviewCamera.Get()->SetActorRotation(CameraRotation);
+		}
+	}
+
+	if (GetViewTarget() != LocalFrontendPreviewCamera.Get())
+	{
+		SetViewTarget(LocalFrontendPreviewCamera.Get());
+	}
+}
+
+void AT66PlayerController::PositionLocalFrontendCameraForCompanionPreview()
+{
+	EnsureLocalFrontendPreviewScene();
+	if (!LocalFrontendPreviewCamera.IsValid())
+	{
+		return;
+	}
+
+	if (LocalFrontendCompanionPreviewStage.IsValid())
+	{
+		LocalFrontendCompanionPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		LocalFrontendCompanionPreviewStage.Get()->SetStageVisible(true);
+	}
+	if (LocalFrontendHeroPreviewStage.IsValid())
+	{
+		LocalFrontendHeroPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		LocalFrontendHeroPreviewStage.Get()->SetStageVisible(false);
+	}
+
+	if (LocalFrontendCompanionPreviewStage.IsValid())
+	{
+		const FVector CameraLocation = LocalFrontendCompanionPreviewStage.Get()->GetIdealCameraLocation();
+		const FRotator CameraRotation = LocalFrontendCompanionPreviewStage.Get()->GetIdealCameraRotation();
+		if (!CameraLocation.IsNearlyZero())
+		{
+			LocalFrontendPreviewCamera.Get()->SetActorLocation(CameraLocation);
+			LocalFrontendPreviewCamera.Get()->SetActorRotation(CameraRotation);
+		}
+	}
+
+	if (GetViewTarget() != LocalFrontendPreviewCamera.Get())
+	{
+		SetViewTarget(LocalFrontendPreviewCamera.Get());
 	}
 }
 

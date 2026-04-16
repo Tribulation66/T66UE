@@ -96,5 +96,7 @@ If you call `/generate?mode=json`, the response is JSON metadata instead of raw 
 
 - The bridge opens a fresh ChatGPT tab per request so image detection does not get confused by old conversation history.
 - Only one generation request is processed at a time.
+- For mini-game sprite work, prefer 2x2 sheets that pack four related subjects into one image so a single generation covers a complete set.
+- Do not regenerate the same requested sprite sheet more than once unless there is a serious issue with the output.
 - If ChatGPT changes its DOM, update the selectors in `server.py`.
 - If the bridge can see the new image but cannot fetch the original bytes, it falls back to a screenshot of the rendered image.

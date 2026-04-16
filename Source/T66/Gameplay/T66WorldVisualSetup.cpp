@@ -212,3 +212,8 @@ void FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(UWorld* World)
 			RemovedLegacyEclipseActors);
 	}
 }
+
+APostProcessVolume* FT66WorldVisualSetup::FindOrCreateRuntimePostProcessVolume(UWorld* World)
+{
+	return T66FindOrCreateUnboundPostProcessVolume(World);
+}

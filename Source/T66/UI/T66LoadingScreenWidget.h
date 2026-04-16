@@ -19,5 +19,12 @@ class T66_API UT66LoadingScreenWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "Loading")
+	void SetLoadingText(const FText& InLoadingText);
+
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+
+private:
+	FText LoadingTextOverride;
+	TSharedPtr<STextBlock> LoadingTextBlock;
 };

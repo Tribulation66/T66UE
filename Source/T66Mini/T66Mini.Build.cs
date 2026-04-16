@@ -21,12 +21,15 @@ public class T66Mini : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
 			"Slate",
+			"ApplicationCore",
 			"EnhancedInput",
 			"Niagara",
 			"HTTP",
 			"Json",
 			"JsonUtilities",
-			"ImageWrapper"
+			"ImageWrapper",
+			"OnlineSubsystem",
+			"OnlineSubsystemUtils"
 		});
 
 		void AddLooseMiniRuntimeDependency(string RelativeProjectPath)

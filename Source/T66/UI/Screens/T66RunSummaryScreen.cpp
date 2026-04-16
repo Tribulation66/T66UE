@@ -222,6 +222,9 @@ void UT66RunSummaryScreen::ProcessLiveRunFinalSubmission()
 		{
 			Achievements->AddCompanionGamesPlayed(T66GI->SelectedCompanionID, 1);
 			Achievements->AddCompanionCumulativeScore(T66GI->SelectedCompanionID, RunState->GetCurrentScore());
+			Achievements->AddCompanionTotalHealing(
+				T66GI->SelectedCompanionID,
+				FMath::RoundToInt(RunState->GetCompanionHealingDoneThisRun()));
 		}
 
 		if (RunState->DidRunEndInVictory())
@@ -263,6 +266,17 @@ void UT66RunSummaryScreen::EnsurePreviewCaptures()
 	// Drive them from the saved selection so it matches the hero/companion selection UI.
 	if (HeroPreviewStage)
 	{
+		if (!bStoredHeroPreviewStageVisibility)
+		{
+			bHeroPreviewStageWasVisible = HeroPreviewStage->IsStageVisible();
+			bStoredHeroPreviewStageVisibility = true;
+		}
+
+		HeroPreviewStage->SetStageVisible(true);
+		HeroPreviewStage->SetPreviewStageMode(ET66PreviewStageMode::RunSummary);
+
+		const ET66Difficulty PreviewDifficulty =
+			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Difficulty : GI->SelectedDifficulty;
 		const FName HeroID =
 			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroID :
 			(!GI->SelectedHeroID.IsNone() ? GI->SelectedHeroID :
@@ -270,10 +284,13 @@ void UT66RunSummaryScreen::EnsurePreviewCaptures()
 
 		const ET66BodyType BodyType =
 			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroBodyType : GI->SelectedHeroBodyType;
+		const FName CompanionID =
+			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->CompanionID : GI->SelectedCompanionID;
 		FName SkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
 		if (!HeroID.IsNone())
 		{
-			HeroPreviewStage->SetPreviewHero(HeroID, BodyType, SkinID);
+			HeroPreviewStage->SetPreviewDifficulty(PreviewDifficulty);
+			HeroPreviewStage->SetPreviewHero(HeroID, BodyType, SkinID, CompanionID);
 		}
 
 		// Capture hero preview to a render target for the Run Summary panel.
@@ -330,6 +347,17 @@ void UT66RunSummaryScreen::EnsurePreviewCaptures()
 
 void UT66RunSummaryScreen::DestroyPreviewCaptures()
 {
+	if (HeroPreviewStage)
+	{
+		HeroPreviewStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		if (bStoredHeroPreviewStageVisibility)
+		{
+			HeroPreviewStage->SetStageVisible(bHeroPreviewStageWasVisible);
+		}
+	}
+	bStoredHeroPreviewStageVisibility = false;
+	bHeroPreviewStageWasVisible = true;
+
 	HeroPreviewBrush.Reset();
 	if (HeroCaptureActor)
 	{

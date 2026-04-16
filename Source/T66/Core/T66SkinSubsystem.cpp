@@ -2,6 +2,7 @@
 
 #include "Core/T66SkinSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66ProfileSaveGame.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -219,9 +220,52 @@ TArray<FSkinData> UT66SkinSubsystem::GetSkinsForEntity(ET66SkinEntityType Entity
 		Skin.bIsOwned = Skin.bIsDefault || IsSkinOwned(EntityType, EntityID, SkinID);
 		Skin.bIsEquipped = (SkinID == EquippedID);
 		Skin.CoinCost = Skin.bIsDefault ? 0 : DefaultSkinPriceAC;
+		Skin.Portrait = GetSkinPortrait(EntityType, EntityID, SkinID, false);
+		Skin.SelectionPortrait = GetSkinPortrait(EntityType, EntityID, SkinID, true);
 		Out.Add(Skin);
 	}
 	return Out;
+}
+
+TSoftObjectPtr<UTexture2D> UT66SkinSubsystem::GetSkinPortrait(
+	const ET66SkinEntityType EntityType,
+	const FName EntityID,
+	const FName SkinID,
+	const bool bSelectionPortrait) const
+{
+	if (EntityID.IsNone())
+	{
+		return TSoftObjectPtr<UTexture2D>();
+	}
+
+	const FName EffectiveSkinID = SkinID.IsNone() ? DefaultSkinID : SkinID;
+
+	if (EntityType == ET66SkinEntityType::Companion)
+	{
+		if (const TSoftObjectPtr<UTexture2D> OverridePortrait = GetCompanionSkinPortraitOverride(EntityID, EffectiveSkinID, bSelectionPortrait);
+			!OverridePortrait.IsNull())
+		{
+			return OverridePortrait;
+		}
+
+		if (UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GetGameInstance()))
+		{
+			FCompanionData CompanionData;
+			if (T66GameInstance->GetCompanionData(EntityID, CompanionData))
+			{
+				if (bSelectionPortrait)
+				{
+					return !CompanionData.SelectionPortrait.IsNull()
+						? CompanionData.SelectionPortrait
+						: CompanionData.Portrait;
+				}
+
+				return CompanionData.Portrait;
+			}
+		}
+	}
+
+	return TSoftObjectPtr<UTexture2D>();
 }
 
 int32 UT66SkinSubsystem::GetAchievementCoinsBalance() const
@@ -294,4 +338,18 @@ void UT66SkinSubsystem::ResetAllHeroSkinOwnership()
 	Profile->EquippedHeroSkinID = DefaultSkinID;
 	MarkProfileDirtyAndSave(false);
 	OnSkinStateChanged.Broadcast();
+}
+
+TSoftObjectPtr<UTexture2D> UT66SkinSubsystem::GetCompanionSkinPortraitOverride(
+	const FName CompanionID,
+	const FName SkinID,
+	const bool bSelectionPortrait) const
+{
+	(void)CompanionID;
+	(void)SkinID;
+	(void)bSelectionPortrait;
+
+	// Future hook for per-skin companion preview art. Add explicit overrides here when
+	// a skin gets its own companion portrait or selection/info portrait asset.
+	return TSoftObjectPtr<UTexture2D>();
 }

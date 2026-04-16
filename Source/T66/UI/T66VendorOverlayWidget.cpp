@@ -99,7 +99,64 @@ void UT66VendorOverlayWidget::NativeDestruct()
 			PC->RestoreGameplayInputMode();
 		}
 	}
+
+	ReleaseCachedSlateResources();
 	Super::NativeDestruct();
+}
+
+void UT66VendorOverlayWidget::ReleaseSlateResources(bool bReleaseChildren)
+{
+	ReleaseCachedSlateResources();
+	Super::ReleaseSlateResources(bReleaseChildren);
+}
+
+void UT66VendorOverlayWidget::ReleaseCachedSlateResources()
+{
+	PageSwitcher.Reset();
+	NetWorthText.Reset();
+	GoldText.Reset();
+	DebtText.Reset();
+	StatusText.Reset();
+	AngerCircleImage.Reset();
+	StatsPanelBox.Reset();
+	LiveStatsPanel.Reset();
+	ShopBuybackSwitcher.Reset();
+	SellPanelContainer.Reset();
+	SellItemNameText.Reset();
+	SellItemDescText.Reset();
+	SellItemPriceText.Reset();
+	SellItemButton.Reset();
+	BorrowAmountSpin.Reset();
+	PaybackAmountSpin.Reset();
+	StealPromptContainer.Reset();
+	StealMarkerSpacerBox.Reset();
+
+	ItemNameTexts.Reset();
+	ItemDescTexts.Reset();
+	ItemPriceTexts.Reset();
+	ItemTileBorders.Reset();
+	ItemIconBorders.Reset();
+	ItemIconImages.Reset();
+	ItemIconBrushes.Reset();
+	BuyButtons.Reset();
+	StealButtons.Reset();
+	BuyButtonTexts.Reset();
+
+	BuybackNameTexts.Reset();
+	BuybackDescTexts.Reset();
+	BuybackPriceTexts.Reset();
+	BuybackTileBorders.Reset();
+	BuybackIconBorders.Reset();
+	BuybackIconImages.Reset();
+	BuybackIconBrushes.Reset();
+	BuybackBuyButtons.Reset();
+
+	InventorySlotBorders.Reset();
+	InventorySlotButtons.Reset();
+	InventorySlotTexts.Reset();
+	InventorySlotCountTexts.Reset();
+	InventorySlotIconImages.Reset();
+	InventorySlotIconBrushes.Reset();
 }
 
 void UT66VendorOverlayWidget::CloseOverlay()

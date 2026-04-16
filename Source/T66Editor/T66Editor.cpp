@@ -10,16 +10,33 @@
 #include "LevelEditor.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Math/UnrealMathUtility.h"
+#include "Misc/App.h"
 #include "Misc/CoreDelegates.h"
 
 DEFINE_LOG_CATEGORY(LogT66Editor);
 
 IMPLEMENT_MODULE(FT66EditorModule, T66Editor)
 
+namespace
+{
+	bool ShouldRegisterEditorMenus()
+	{
+		return !IsRunningCommandlet() && !FApp::IsUnattended();
+	}
+}
+
 void FT66EditorModule::StartupModule()
 {
 	UE_LOG(LogT66Editor, Log, TEXT("T66Editor module started"));
-	RegisterT66ToolsMenu();
+	if (ShouldRegisterEditorMenus())
+	{
+		ToolMenuStartupHandle = UToolMenus::RegisterStartupCallback(
+			FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FT66EditorModule::RegisterT66ToolsMenu));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Verbose, TEXT("Skipping T66 editor menu registration for unattended/headless startup"));
+	}
 	PostLoadMapHandle = FCoreUObjectDelegates::PostLoadMapWithWorld.AddStatic(&FT66EditorModule::OnGameplayLevelLoaded);
 }
 
@@ -29,6 +46,11 @@ void FT66EditorModule::ShutdownModule()
 	{
 		FCoreUObjectDelegates::PostLoadMapWithWorld.Remove(PostLoadMapHandle);
 		PostLoadMapHandle.Reset();
+	}
+	if (ToolMenuStartupHandle.IsValid())
+	{
+		UToolMenus::UnRegisterStartupCallback(ToolMenuStartupHandle);
+		ToolMenuStartupHandle.Reset();
 	}
 	UnregisterT66ToolsMenu();
 	UE_LOG(LogT66Editor, Log, TEXT("T66Editor module shutdown"));
@@ -51,6 +73,11 @@ void FT66EditorModule::OnGameplayLevelLoaded(UWorld* LoadedWorld)
 
 void FT66EditorModule::RegisterT66ToolsMenu()
 {
+	if (!ShouldRegisterEditorMenus())
+	{
+		return;
+	}
+
 	UToolMenus* ToolMenus = UToolMenus::Get();
 	if (!ToolMenus)
 	{
@@ -58,6 +85,7 @@ void FT66EditorModule::RegisterT66ToolsMenu()
 		return;
 	}
 
+	FToolMenuOwnerScoped OwnerScoped(this);
 	T66ToolsMenuName = FName(TEXT("LevelEditor.MainMenu.Window"));
 	UToolMenu* WindowMenu = ToolMenus->ExtendMenu(T66ToolsMenuName);
 	if (!WindowMenu)
@@ -113,10 +141,9 @@ void FT66EditorModule::RegisterT66ToolsMenu()
 
 void FT66EditorModule::UnregisterT66ToolsMenu()
 {
-	UToolMenus* ToolMenus = UToolMenus::Get();
-	if (ToolMenus && T66ToolsMenuName != NAME_None)
+	if (T66ToolsMenuName != NAME_None)
 	{
-		ToolMenus->RemoveEntry(T66ToolsMenuName, TEXT("T66ToolsSection"), TEXT("T66ToolsSubMenu"));
+		UToolMenus::UnregisterOwner(this);
 	}
 	T66ToolsMenuName = NAME_None;
 }

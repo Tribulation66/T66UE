@@ -11,9 +11,11 @@
 #include "Core/T66MiniVFXSubsystem.h"
 #include "Core/T66MiniVisualSubsystem.h"
 #include "EngineUtils.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "Gameplay/T66MiniArena.h"
 #include "Gameplay/T66MiniCompanionBase.h"
 #include "Gameplay/T66MiniEnemyBase.h"
+#include "Gameplay/T66MiniHazardTrap.h"
 #include "Gameplay/T66MiniGameState.h"
 #include "Gameplay/T66MiniInteractable.h"
 #include "Gameplay/T66MiniPickup.h"
@@ -23,6 +25,7 @@
 #include "Save/T66MiniRunSaveGame.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Sound/SoundBase.h"
+#include "TimerManager.h"
 #include "UI/T66MiniBattleHUD.h"
 #include "VFX/T66MiniGroundTelegraphActor.h"
 
@@ -58,6 +61,77 @@ namespace
 
 		return Cached.Get();
 	}
+
+	TArray<AT66MiniPlayerPawn*> T66MiniGatherPlayerPawns(UWorld* World, const bool bOnlyLiving = false)
+	{
+		TArray<AT66MiniPlayerPawn*> PlayerPawns;
+		if (!World)
+		{
+			return PlayerPawns;
+		}
+
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			APlayerController* PlayerController = It->Get();
+			AT66MiniPlayerPawn* PlayerPawn = PlayerController ? Cast<AT66MiniPlayerPawn>(PlayerController->GetPawn()) : nullptr;
+			if (!PlayerPawn || (bOnlyLiving && !PlayerPawn->IsHeroAlive()))
+			{
+				continue;
+			}
+
+			PlayerPawns.Add(PlayerPawn);
+		}
+
+		return PlayerPawns;
+	}
+
+	AT66MiniPlayerPawn* T66MiniChooseAnchorPawn(UWorld* World)
+	{
+		const TArray<AT66MiniPlayerPawn*> LivingPawns = T66MiniGatherPlayerPawns(World, true);
+		if (LivingPawns.Num() > 0)
+		{
+			return LivingPawns[0];
+		}
+
+		const TArray<AT66MiniPlayerPawn*> AllPawns = T66MiniGatherPlayerPawns(World, false);
+		return AllPawns.Num() > 0 ? AllPawns[0] : nullptr;
+	}
+
+	FT66MiniPartyPlayerSnapshot* T66MiniFindPartySnapshotByPlayerId(UT66MiniRunSaveGame* RunSave, const FString& PlayerId)
+	{
+		if (!RunSave || PlayerId.IsEmpty())
+		{
+			return nullptr;
+		}
+
+		for (FT66MiniPartyPlayerSnapshot& Snapshot : RunSave->PartyPlayerSnapshots)
+		{
+			if (Snapshot.SteamId == PlayerId)
+			{
+				return &Snapshot;
+			}
+		}
+
+		return nullptr;
+	}
+
+	const FT66MiniPartyPlayerSnapshot* T66MiniFindPartySnapshotByPlayerId(const UT66MiniRunSaveGame* RunSave, const FString& PlayerId)
+	{
+		if (!RunSave || PlayerId.IsEmpty())
+		{
+			return nullptr;
+		}
+
+		for (const FT66MiniPartyPlayerSnapshot& Snapshot : RunSave->PartyPlayerSnapshots)
+		{
+			if (Snapshot.SteamId == PlayerId)
+			{
+				return &Snapshot;
+			}
+		}
+
+		return nullptr;
+	}
 }
 
 AT66MiniGameMode::AT66MiniGameMode()
@@ -65,8 +139,10 @@ AT66MiniGameMode::AT66MiniGameMode()
 	PrimaryActorTick.bCanEverTick = true;
 	DefaultPawnClass = AT66MiniPlayerPawn::StaticClass();
 	PlayerControllerClass = AT66MiniPlayerController::StaticClass();
+	PlayerStateClass = AT66SessionPlayerState::StaticClass();
 	GameStateClass = AT66MiniGameState::StaticClass();
 	HUDClass = AT66MiniBattleHUD::StaticClass();
+	bUseSeamlessTravel = true;
 }
 
 void AT66MiniGameMode::BeginPlay()
@@ -87,6 +163,7 @@ void AT66MiniGameMode::BeginPlay()
 			if (AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>())
 			{
 				MiniGameState->ApplyRunSave(ActiveRun);
+				MiniGameState->bOnlinePartyMode = IsOnlinePartyMiniRun();
 			}
 		}
 	}
@@ -98,6 +175,7 @@ void AT66MiniGameMode::BeginPlay()
 	}
 
 	SpawnArenaAndPositionPlayer();
+	PositionPartyPawns();
 	TryApplySavedPawnState();
 	SpawnCompanionActor();
 
@@ -124,6 +202,8 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 	UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
 	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
+	PositionPartyPawns();
+	UpdateCombatTexts(DeltaSeconds);
 	if (!RunState || !DataSubsystem || !MiniGameState || !ActiveRun)
 	{
 		return;
@@ -131,6 +211,7 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 
 	TryApplySavedPawnState();
 	UpdateLiveEnemyCache();
+	UpdateLiveTrapCache();
 
 	if (!bRunCompleted)
 	{
@@ -167,6 +248,7 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 			MiniGameState->WaveSecondsRemaining = FMath::Max(0.f, MiniGameState->WaveSecondsRemaining - DeltaSeconds);
 			EnemySpawnAccumulator += DeltaSeconds;
 			InteractableSpawnAccumulator += DeltaSeconds;
+			TrapSpawnAccumulator += DeltaSeconds;
 
 			float SpawnInterval = WaveDefinition ? WaveDefinition->SpawnInterval : 1.2f;
 			if (DifficultyDefinition)
@@ -188,6 +270,13 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 			{
 				InteractableSpawnAccumulator = 0.f;
 				SpawnRandomInteractable();
+			}
+
+			const float TrapInterval = FMath::Max(5.5f, (13.5f - (MiniGameState->WaveIndex * 1.25f)) / FMath::Max(0.75f, DifficultyDefinition ? DifficultyDefinition->SpawnRateScalar : 1.0f));
+			if (TrapSpawnAccumulator >= TrapInterval)
+			{
+				TrapSpawnAccumulator = 0.f;
+				SpawnRandomTrap();
 			}
 
 			if (MiniGameState->WaveSecondsRemaining <= 0.f)
@@ -213,9 +302,10 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 	ActiveRun->EnemySpawnAccumulator = EnemySpawnAccumulator;
 	ActiveRun->InteractableSpawnAccumulator = InteractableSpawnAccumulator;
 	ActiveRun->PostBossDelayRemaining = PostBossDelayRemaining;
+	ActiveRun->TrapSpawnAccumulator = TrapSpawnAccumulator;
 	ActiveRun->TotalRunSeconds += DeltaSeconds;
 
-	if (AT66MiniPlayerPawn* PlayerPawn = GetWorld() ? Cast<AT66MiniPlayerPawn>(GetWorld()->GetFirstPlayerController() ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr)
+	if (AT66MiniPlayerPawn* PlayerPawn = T66MiniChooseAnchorPawn(GetWorld()))
 	{
 		ActiveRun->PlayerLocation = PlayerPawn->GetActorLocation();
 		ActiveRun->bHasPlayerLocation = true;
@@ -226,7 +316,12 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 		ActiveRun->Materials = PlayerPawn->GetMaterials();
 		ActiveRun->Gold = PlayerPawn->GetGold();
 		ActiveRun->Experience = PlayerPawn->GetExperience();
+		ActiveRun->UltimateCooldownRemaining = PlayerPawn->GetUltimateCooldownRemaining();
+		ActiveRun->bEnduranceCheatUsedThisWave = PlayerPawn->HasEnduranceCheatUsedThisWave();
+		ActiveRun->bQuickReviveReady = PlayerPawn->HasQuickReviveReady();
 	}
+
+	CapturePartyPlayerSnapshots(ActiveRun);
 
 	AutosaveAccumulator += DeltaSeconds;
 	if (AutosaveAccumulator >= 1.0f)
@@ -234,6 +329,37 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 		PersistActiveRunSnapshot(true);
 		AutosaveAccumulator = 0.f;
 	}
+}
+
+void AT66MiniGameMode::Logout(AController* Exiting)
+{
+	const bool bWasOnlinePartyRun = IsOnlinePartyMiniRun();
+	FString ExitingDisplayName = TEXT("A party member");
+	if (const APlayerState* ExitingPlayerState = Exiting ? Exiting->PlayerState : nullptr)
+	{
+		if (const AT66SessionPlayerState* SessionPlayerState = Cast<AT66SessionPlayerState>(ExitingPlayerState))
+		{
+			if (!SessionPlayerState->GetDisplayName().IsEmpty())
+			{
+				ExitingDisplayName = SessionPlayerState->GetDisplayName();
+			}
+		}
+		else if (!ExitingPlayerState->GetPlayerName().IsEmpty())
+		{
+			ExitingDisplayName = ExitingPlayerState->GetPlayerName();
+		}
+	}
+
+	Super::Logout(Exiting);
+
+	if (!bWasOnlinePartyRun || bRunFinalized || bFrontendTravelInProgress)
+	{
+		return;
+	}
+
+	AbortOnlinePartyRunToFrontend(
+		FString::Printf(TEXT("Party run interrupted after %s disconnected."), *ExitingDisplayName),
+		ET66ScreenType::MiniMainMenu);
 }
 
 void AT66MiniGameMode::RefreshAudioMix()
@@ -252,6 +378,11 @@ void AT66MiniGameMode::HandleEnemyKilled(AT66MiniEnemyBase* Enemy)
 {
 	if (Enemy)
 	{
+		for (AT66MiniPlayerPawn* PlayerPawn : T66MiniGatherPlayerPawns(GetWorld(), false))
+		{
+			PlayerPawn->HandleEnemyKilled(Enemy);
+		}
+
 		if (UT66MiniVFXSubsystem* VfxSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
 		{
 			VfxSubsystem->SpawnPulse(GetWorld(), Enemy->GetActorLocation() + FVector(0.f, 0.f, 8.f), Enemy->IsBossEnemy() ? FVector(0.62f, 0.62f, 1.f) : FVector(0.24f, 0.24f, 1.f), Enemy->IsBossEnemy() ? 0.22f : 0.12f, Enemy->IsBossEnemy() ? FLinearColor(1.0f, 0.56f, 0.24f, 0.34f) : FLinearColor(0.98f, 0.44f, 0.22f, 0.18f), Enemy->IsBossEnemy() ? 0.95f : 0.55f);
@@ -263,6 +394,22 @@ void AT66MiniGameMode::HandleEnemyKilled(AT66MiniEnemyBase* Enemy)
 
 void AT66MiniGameMode::HandlePlayerDefeated()
 {
+	if (bRunFinalized)
+	{
+		return;
+	}
+
+	if (IsOnlinePartyMiniRun())
+	{
+		for (AT66MiniPlayerPawn* PlayerPawn : T66MiniGatherPlayerPawns(GetWorld(), false))
+		{
+			if (PlayerPawn && PlayerPawn->IsHeroAlive())
+			{
+				return;
+			}
+		}
+	}
+
 	if (!bRunFinalized)
 	{
 		FinalizeRun(false, TEXT("Run failed"));
@@ -280,6 +427,37 @@ FVector AT66MiniGameMode::ClampPointToArena(const FVector& WorldLocation) const
 void AT66MiniGameMode::SaveRunProgressNow(const bool bMarkMidWaveSnapshot)
 {
 	PersistActiveRunSnapshot(bMarkMidWaveSnapshot);
+}
+
+void AT66MiniGameMode::PositionPartyPawns()
+{
+	const TArray<AT66MiniPlayerPawn*> PlayerPawns = T66MiniGatherPlayerPawns(GetWorld(), false);
+	if (PlayerPawns.Num() == 0)
+	{
+		return;
+	}
+
+	const float FormationRadius = PlayerPawns.Num() > 1 ? 150.f : 0.f;
+	bool bPositionedAnyPawn = false;
+	for (int32 Index = 0; Index < PlayerPawns.Num(); ++Index)
+	{
+		AT66MiniPlayerPawn* PlayerPawn = PlayerPawns[Index];
+		if (!PlayerPawn || PositionedPlayerPawns.Contains(PlayerPawn))
+		{
+			continue;
+		}
+
+		const float Angle = PlayerPawns.Num() > 1 ? (UE_TWO_PI * static_cast<float>(Index) / static_cast<float>(PlayerPawns.Num())) : 0.f;
+		const FVector SpawnOffset = FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0.f) * FormationRadius;
+		PlayerPawn->SetActorLocation(ClampPointToArena(ArenaOrigin + SpawnOffset));
+		PositionedPlayerPawns.Add(PlayerPawn);
+		bPositionedAnyPawn = true;
+	}
+
+	if (bPositionedAnyPawn)
+	{
+		SpawnCompanionActor();
+	}
 }
 
 void AT66MiniGameMode::SpawnArenaAndPositionPlayer()
@@ -302,14 +480,6 @@ void AT66MiniGameMode::SpawnArenaAndPositionPlayer()
 			ArenaHalfExtent,
 			VisualSubsystem ? VisualSubsystem->LoadBackgroundTexture() : nullptr);
 	}
-
-	if (APlayerController* PlayerController = World->GetFirstPlayerController())
-	{
-		if (APawn* PlayerPawn = PlayerController->GetPawn())
-		{
-			PlayerPawn->SetActorLocation(ArenaOrigin + FVector(0.f, 0.f, 20.f));
-		}
-	}
 }
 
 void AT66MiniGameMode::StartWave(const int32 WaveIndex, const bool bResetTimer)
@@ -329,17 +499,23 @@ void AT66MiniGameMode::StartWave(const int32 WaveIndex, const bool bResetTimer)
 		}
 		else
 		{
-			MiniGameState->WaveSecondsRemaining = 180.f;
+			MiniGameState->WaveSecondsRemaining = 60.f;
 		}
 	}
 
 	EnemySpawnAccumulator = 0.f;
 	InteractableSpawnAccumulator = 0.f;
+	TrapSpawnAccumulator = 0.f;
 	PostBossDelayRemaining = 0.f;
 	BossTelegraphRemaining = 0.f;
 	PendingBossID = NAME_None;
 	PendingBossSpawnLocation = FVector::ZeroVector;
 	bBossSpawnedForWave = false;
+
+	for (AT66MiniPlayerPawn* PlayerPawn : T66MiniGatherPlayerPawns(GetWorld(), false))
+	{
+		PlayerPawn->HandleWaveStarted(MiniGameState->WaveIndex);
+	}
 }
 
 const FT66MiniWaveDefinition* AT66MiniGameMode::GetWaveDefinition() const
@@ -423,7 +599,7 @@ void AT66MiniGameMode::SpawnWaveEnemy()
 {
 	UWorld* World = GetWorld();
 	AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
-	AT66MiniPlayerPawn* PlayerPawn = World ? Cast<AT66MiniPlayerPawn>(World->GetFirstPlayerController() ? World->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr;
+	AT66MiniPlayerPawn* PlayerPawn = T66MiniChooseAnchorPawn(World);
 	UGameInstance* GameInstance = GetGameInstance();
 	UT66MiniVisualSubsystem* VisualSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr;
 	const FT66MiniEnemyDefinition* EnemyDefinition = ChooseEnemyDefinition();
@@ -461,7 +637,12 @@ void AT66MiniGameMode::SpawnWaveEnemy()
 			FMath::RoundToInt(EnemyDefinition->BaseMaterials * ProgressScalar),
 			EnemyDefinition->BaseExperience * ProgressScalar,
 			-1.f,
-			EnemyDefinition->BehaviorProfile);
+			EnemyDefinition->BehaviorProfile,
+			EnemyDefinition->Family,
+			EnemyDefinition->FireIntervalSeconds / FMath::Max(0.80f, DifficultyDefinition ? DifficultyDefinition->SpawnRateScalar : 1.0f),
+			EnemyDefinition->ProjectileSpeed,
+			EnemyDefinition->ProjectileDamage * DifficultyDamageScalar * WaveDamageScalar,
+			EnemyDefinition->PreferredRange);
 		LiveEnemies.Add(Enemy);
 		if (UT66MiniVFXSubsystem* VfxSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
 		{
@@ -481,7 +662,7 @@ void AT66MiniGameMode::BeginBossSpawnTelegraph()
 	UWorld* World = GetWorld();
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	const FT66MiniWaveDefinition* WaveDefinition = GetWaveDefinition();
-	AT66MiniPlayerPawn* PlayerPawn = World ? Cast<AT66MiniPlayerPawn>(World->GetFirstPlayerController() ? World->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr;
+	AT66MiniPlayerPawn* PlayerPawn = T66MiniChooseAnchorPawn(World);
 	if (!World || !DataSubsystem || !WaveDefinition || !PlayerPawn)
 	{
 		SpawnBossEnemy();
@@ -546,7 +727,12 @@ void AT66MiniGameMode::SpawnBossEnemy()
 			FMath::RoundToInt(BossDefinition->MaterialReward * DifficultyScalar),
 			BossDefinition->ExperienceReward * DifficultyScalar,
 			-1.f,
-			BossDefinition->BehaviorProfile);
+			BossDefinition->BehaviorProfile,
+			BossDefinition->Family,
+			BossDefinition->FireIntervalSeconds / FMath::Max(0.85f, DifficultyScalar),
+			BossDefinition->ProjectileSpeed,
+			BossDefinition->ProjectileDamage * DifficultyScalar,
+			960.f);
 		LiveEnemies.Add(Boss);
 	}
 
@@ -612,7 +798,39 @@ void AT66MiniGameMode::SpawnRandomInteractable()
 			PickedDefinition->MaterialReward,
 			PickedDefinition->GoldReward,
 			PickedDefinition->ExperienceReward,
-			PickedDefinition->HealAmount);
+			PickedDefinition->HealAmount,
+			PickedDefinition->bRequiresManualInteract);
+	}
+}
+
+void AT66MiniGameMode::SpawnRandomTrap()
+{
+	UWorld* World = GetWorld();
+	AT66MiniPlayerPawn* PlayerPawn = T66MiniChooseAnchorPawn(World);
+	AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
+	if (!World || !PlayerPawn || !MiniGameState)
+	{
+		return;
+	}
+
+	const float SpawnAngle = FMath::FRandRange(0.f, UE_TWO_PI);
+	const FVector SpawnDirection = FVector(FMath::Cos(SpawnAngle), FMath::Sin(SpawnAngle), 0.f);
+	FVector SpawnLocation = PlayerPawn->GetActorLocation() + (SpawnDirection * FMath::FRandRange(360.f, 980.f));
+	SpawnLocation = ClampPointToArena(SpawnLocation);
+
+	const float Radius = 180.f + (MiniGameState->WaveIndex * 24.f) + FMath::FRandRange(0.f, 80.f);
+	const float Damage = 7.f + (MiniGameState->WaveIndex * 1.3f);
+	const float Warmup = 0.95f + FMath::FRandRange(0.0f, 0.35f);
+	const float ActiveSeconds = 3.8f + (MiniGameState->WaveIndex * 0.28f);
+	const float PulseInterval = FMath::Max(0.28f, 0.72f - (MiniGameState->WaveIndex * 0.04f));
+	const int32 TrapVariant = FMath::RandRange(0, 2);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AT66MiniHazardTrap* Trap = World->SpawnActor<AT66MiniHazardTrap>(AT66MiniHazardTrap::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams))
+	{
+		Trap->InitializeTrap(SpawnLocation, Radius, Damage, PulseInterval, Warmup, ActiveSeconds, TrapVariant);
+		LiveTraps.Add(Trap);
 	}
 }
 
@@ -640,10 +858,12 @@ void AT66MiniGameMode::ReturnToShopIntermission()
 	ActiveRun->PendingBossSpawnLocation = FVector::ZeroVector;
 	ActiveRun->EnemySpawnAccumulator = 0.f;
 	ActiveRun->InteractableSpawnAccumulator = 0.f;
+	ActiveRun->TrapSpawnAccumulator = 0.f;
 	ActiveRun->PostBossDelayRemaining = 0.f;
 	ActiveRun->EnemySnapshots.Reset();
 	ActiveRun->PickupSnapshots.Reset();
 	ActiveRun->InteractableSnapshots.Reset();
+	ActiveRun->TrapSnapshots.Reset();
 	if (ActiveBossTelegraphActor)
 	{
 		ActiveBossTelegraphActor->Destroy();
@@ -653,12 +873,42 @@ void AT66MiniGameMode::ReturnToShopIntermission()
 	FrontendState->EnterIntermissionFlow(DataSubsystem);
 	FrontendState->WriteIntermissionStateToRunSave(ActiveRun);
 	SaveSubsystem->SaveRunToSlot(RunState->GetActiveSaveSlot(), ActiveRun);
+
+	if (IsOnlinePartyMiniRun())
+	{
+		bFrontendTravelInProgress = true;
+		T66GameInstance->MiniIntermissionStateRevision = 0;
+		T66GameInstance->MiniIntermissionStateJson.Reset();
+		T66GameInstance->MiniIntermissionRequestRevision = 0;
+		T66GameInstance->MiniIntermissionRequestJson.Reset();
+
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			if (AT66MiniPlayerController* MiniController = Cast<AT66MiniPlayerController>(It->Get()))
+			{
+				MiniController->ClientPrepareMiniFrontendTravel(ET66ScreenType::MiniShop, true);
+			}
+		}
+
+		T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniShop;
+		const FString TravelUrl = FString::Printf(
+			TEXT("%s?listen?game=/Script/T66.T66FrontendGameMode"),
+			*UT66GameInstance::GetFrontendLevelName().ToString());
+		GetWorld()->ServerTravel(TravelUrl);
+		return;
+	}
+
 	T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniShop;
 	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
 }
 
 void AT66MiniGameMode::RecordClearedMiniStageProgression()
 {
+	if (IsOnlinePartyMiniRun())
+	{
+		return;
+	}
+
 	const UGameInstance* GameInstance = GetGameInstance();
 	const UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
@@ -689,9 +939,37 @@ void AT66MiniGameMode::FinalizeRun(const bool bWasVictory, const FString& Result
 	AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
 	UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GameInstance);
 	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-	AT66MiniPlayerPawn* PlayerPawn = GetWorld() ? Cast<AT66MiniPlayerPawn>(GetWorld()->GetFirstPlayerController() ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr;
+	AT66MiniPlayerPawn* PlayerPawn = T66MiniChooseAnchorPawn(GetWorld());
 	if (!RunState || !FrontendState || !SaveSubsystem || !DataSubsystem || !MiniGameState || !T66GameInstance || !ActiveRun)
 	{
+		return;
+	}
+
+	if (BattleMusicComponent)
+	{
+		BattleMusicComponent->Stop();
+	}
+	if (ActiveBossTelegraphActor)
+	{
+		ActiveBossTelegraphActor->Destroy();
+		ActiveBossTelegraphActor = nullptr;
+	}
+
+	if (IsOnlinePartyMiniRun())
+	{
+		bFrontendTravelInProgress = true;
+		const int32 FinalWaveIndex = FMath::Max(1, MiniGameState->WaveIndex);
+		const float FinalRunSeconds = ActiveRun->TotalRunSeconds;
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			if (AT66MiniPlayerController* MiniController = Cast<AT66MiniPlayerController>(It->Get()))
+			{
+				MiniController->ClientPrepareMiniOnlineRunSummary(bWasVictory, ResultLabel, FinalWaveIndex, FinalRunSeconds);
+			}
+		}
+
+		T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniRunSummary;
+		GetWorldTimerManager().SetTimer(OnlineFrontendTravelTimer, this, &AT66MiniGameMode::CompleteOnlineFrontendTravel, 0.25f, false);
 		return;
 	}
 
@@ -743,18 +1021,22 @@ void AT66MiniGameMode::FinalizeRun(const bool bWasVictory, const FString& Result
 	{
 		SaveSubsystem->DeleteRunFromSlot(RunState->GetActiveSaveSlot());
 	}
-	if (BattleMusicComponent)
-	{
-		BattleMusicComponent->Stop();
-	}
-	if (ActiveBossTelegraphActor)
-	{
-		ActiveBossTelegraphActor->Destroy();
-		ActiveBossTelegraphActor = nullptr;
-	}
 	RunState->ResetActiveRun();
 	T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniRunSummary;
 	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
+}
+
+void AT66MiniGameMode::RequestPartySaveAndReturnToFrontend(const FString& ResultLabel, const ET66ScreenType PendingScreen)
+{
+	if (!IsOnlinePartyMiniRun() || bRunFinalized || bFrontendTravelInProgress)
+	{
+		return;
+	}
+
+	AbortOnlinePartyRunToFrontend(ResultLabel.IsEmpty()
+		? TEXT("Mini party run saved. Returning the whole party to the mini menu.")
+		: ResultLabel,
+		PendingScreen);
 }
 
 void AT66MiniGameMode::TryApplySavedPawnState()
@@ -767,14 +1049,51 @@ void AT66MiniGameMode::TryApplySavedPawnState()
 	UGameInstance* GameInstance = GetGameInstance();
 	UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-	if (!ActiveRun || !ActiveRun->bHasMidWaveSnapshot || !ActiveRun->bHasPlayerLocation)
+	if (!ActiveRun || !ActiveRun->bHasMidWaveSnapshot)
 	{
 		bAppliedSavedPawnState = true;
 		return;
 	}
 
-	APlayerController* PlayerController = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
-	APawn* PlayerPawn = PlayerController ? PlayerController->GetPawn() : nullptr;
+	if (ActiveRun->bOnlinePartyRun && ActiveRun->PartyPlayerSnapshots.Num() > 0)
+	{
+		bool bAllSnapshotsResolved = true;
+		for (AT66MiniPlayerPawn* PlayerPawn : T66MiniGatherPlayerPawns(GetWorld(), false))
+		{
+			if (!PlayerPawn)
+			{
+				continue;
+			}
+
+			const AT66SessionPlayerState* SessionPlayerState = PlayerPawn->GetPlayerState<AT66SessionPlayerState>();
+			const FString SnapshotPlayerId = SessionPlayerState ? SessionPlayerState->GetSteamId() : FString();
+			const FT66MiniPartyPlayerSnapshot* Snapshot = T66MiniFindPartySnapshotByPlayerId(ActiveRun, SnapshotPlayerId);
+			if (!Snapshot)
+			{
+				bAllSnapshotsResolved = false;
+				continue;
+			}
+
+			if (Snapshot->bHasPlayerLocation)
+			{
+				PlayerPawn->SetActorLocation(ClampPointToArena(Snapshot->PlayerLocation));
+			}
+		}
+
+		if (bAllSnapshotsResolved)
+		{
+			bAppliedSavedPawnState = true;
+		}
+		return;
+	}
+
+	if (!ActiveRun->bHasPlayerLocation)
+	{
+		bAppliedSavedPawnState = true;
+		return;
+	}
+
+	AT66MiniPlayerPawn* PlayerPawn = T66MiniChooseAnchorPawn(GetWorld());
 	if (!PlayerPawn)
 	{
 		return;
@@ -786,56 +1105,67 @@ void AT66MiniGameMode::TryApplySavedPawnState()
 
 void AT66MiniGameMode::SpawnCompanionActor()
 {
-	if (ActiveCompanionActor)
+	for (AT66MiniCompanionBase* CompanionActor : ActiveCompanionActors)
 	{
-		ActiveCompanionActor->Destroy();
-		ActiveCompanionActor = nullptr;
+		if (CompanionActor)
+		{
+			CompanionActor->Destroy();
+		}
 	}
+	ActiveCompanionActors.Reset();
 
 	UWorld* World = GetWorld();
 	UGameInstance* GameInstance = GetGameInstance();
-	AT66MiniPlayerPawn* PlayerPawn = World ? Cast<AT66MiniPlayerPawn>(World->GetFirstPlayerController() ? World->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr;
 	UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
 	AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
 	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-	FName CompanionID = ActiveRun ? ActiveRun->CompanionID : NAME_None;
-	if ((CompanionID == NAME_None || (SaveSubsystem && !SaveSubsystem->IsCompanionUnlocked(CompanionID, DataSubsystem))) && SaveSubsystem && DataSubsystem)
+	const TArray<AT66MiniPlayerPawn*> PlayerPawns = T66MiniGatherPlayerPawns(World, false);
+	if (!World || !DataSubsystem || PlayerPawns.Num() == 0)
 	{
-		CompanionID = SaveSubsystem->GetFirstUnlockedCompanionID(DataSubsystem);
-		if (ActiveRun)
+		return;
+	}
+
+	if (MiniGameState && PlayerPawns.Num() > 0)
+	{
+		MiniGameState->CompanionID = PlayerPawns[0]->GetSelectedCompanionID();
+	}
+
+	for (AT66MiniPlayerPawn* PlayerPawn : PlayerPawns)
+	{
+		if (!PlayerPawn)
 		{
-			ActiveRun->CompanionID = CompanionID;
+			continue;
 		}
-	}
 
-	if (MiniGameState)
-	{
-		MiniGameState->CompanionID = CompanionID;
-	}
+		FName CompanionID = PlayerPawn->GetSelectedCompanionID();
+		if (CompanionID.IsNone() && ActiveRun)
+		{
+			CompanionID = ActiveRun->CompanionID;
+		}
+		if ((CompanionID == NAME_None || (SaveSubsystem && !SaveSubsystem->IsCompanionUnlocked(CompanionID, DataSubsystem))) && SaveSubsystem)
+		{
+			CompanionID = SaveSubsystem->GetFirstUnlockedCompanionID(DataSubsystem);
+		}
 
-	if (!World || !PlayerPawn || !DataSubsystem || CompanionID == NAME_None)
-	{
-		return;
-	}
+		const FT66MiniCompanionDefinition* CompanionDefinition = DataSubsystem->FindCompanion(CompanionID);
+		if (!CompanionDefinition)
+		{
+			continue;
+		}
 
-	const FT66MiniCompanionDefinition* CompanionDefinition = DataSubsystem->FindCompanion(CompanionID);
-	if (!CompanionDefinition)
-	{
-		return;
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	ActiveCompanionActor = World->SpawnActor<AT66MiniCompanionBase>(
-		AT66MiniCompanionBase::StaticClass(),
-		ClampPointToArena(PlayerPawn->GetActorLocation() + FVector(CompanionDefinition->FollowOffsetX, CompanionDefinition->FollowOffsetY, 0.f)),
-		FRotator::ZeroRotator,
-		SpawnParams);
-	if (ActiveCompanionActor)
-	{
-		ActiveCompanionActor->InitializeCompanion(*CompanionDefinition, PlayerPawn);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		if (AT66MiniCompanionBase* CompanionActor = World->SpawnActor<AT66MiniCompanionBase>(
+			AT66MiniCompanionBase::StaticClass(),
+			ClampPointToArena(PlayerPawn->GetActorLocation() + FVector(CompanionDefinition->FollowOffsetX, CompanionDefinition->FollowOffsetY, 0.f)),
+			FRotator::ZeroRotator,
+			SpawnParams))
+		{
+			CompanionActor->InitializeCompanion(*CompanionDefinition, PlayerPawn);
+			ActiveCompanionActors.Add(CompanionActor);
+		}
 	}
 }
 
@@ -852,6 +1182,7 @@ void AT66MiniGameMode::RestoreTransientWaveState(const UT66MiniRunSaveGame* RunS
 	PendingBossSpawnLocation = RunSave->PendingBossSpawnLocation;
 	EnemySpawnAccumulator = FMath::Max(0.f, RunSave->EnemySpawnAccumulator);
 	InteractableSpawnAccumulator = FMath::Max(0.f, RunSave->InteractableSpawnAccumulator);
+	TrapSpawnAccumulator = FMath::Max(0.f, RunSave->TrapSpawnAccumulator);
 	PostBossDelayRemaining = FMath::Max(0.f, RunSave->PostBossDelayRemaining);
 
 	if (ActiveBossTelegraphActor)
@@ -886,6 +1217,7 @@ void AT66MiniGameMode::RestoreWorldState(const UT66MiniRunSaveGame* RunSave)
 	}
 
 	LiveEnemies.Reset();
+	LiveTraps.Reset();
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -893,19 +1225,34 @@ void AT66MiniGameMode::RestoreWorldState(const UT66MiniRunSaveGame* RunSave)
 	for (const FT66MiniEnemySnapshot& Snapshot : RunSave->EnemySnapshots)
 	{
 		ET66MiniEnemyBehaviorProfile BehaviorProfile = ET66MiniEnemyBehaviorProfile::Balanced;
+		ET66MiniEnemyFamily EnemyFamily = Snapshot.bIsBoss ? ET66MiniEnemyFamily::Boss : ET66MiniEnemyFamily::Melee;
 		FString VisualID = Snapshot.EnemyID.ToString();
+		float FireIntervalSeconds = 1.8f;
+		float ProjectileSpeed = 980.f;
+		float ProjectileDamage = Snapshot.TouchDamage;
+		float PreferredRange = 860.f;
 		if (Snapshot.bIsBoss)
 		{
 			if (const FT66MiniBossDefinition* BossDefinition = DataSubsystem->FindBoss(Snapshot.EnemyID))
 			{
 				BehaviorProfile = BossDefinition->BehaviorProfile;
+				EnemyFamily = BossDefinition->Family;
 				VisualID = BossDefinition->VisualID;
+				FireIntervalSeconds = BossDefinition->FireIntervalSeconds;
+				ProjectileSpeed = BossDefinition->ProjectileSpeed;
+				ProjectileDamage = BossDefinition->ProjectileDamage;
+				PreferredRange = 960.f;
 			}
 		}
 		else if (const FT66MiniEnemyDefinition* EnemyDefinition = DataSubsystem->FindEnemy(Snapshot.EnemyID))
 		{
 			BehaviorProfile = EnemyDefinition->BehaviorProfile;
+			EnemyFamily = EnemyDefinition->Family;
 			VisualID = EnemyDefinition->VisualID;
+			FireIntervalSeconds = EnemyDefinition->FireIntervalSeconds;
+			ProjectileSpeed = EnemyDefinition->ProjectileSpeed;
+			ProjectileDamage = EnemyDefinition->ProjectileDamage;
+			PreferredRange = EnemyDefinition->PreferredRange;
 		}
 
 		UTexture2D* Texture = Snapshot.bIsBoss ? VisualSubsystem->LoadBossTexture(VisualID) : VisualSubsystem->LoadEnemyTexture(VisualID);
@@ -921,7 +1268,12 @@ void AT66MiniGameMode::RestoreWorldState(const UT66MiniRunSaveGame* RunSave)
 				Snapshot.MaterialDrop,
 				Snapshot.ExperienceDrop,
 				Snapshot.CurrentHealth,
-				BehaviorProfile);
+				BehaviorProfile,
+				EnemyFamily,
+				FireIntervalSeconds,
+				ProjectileSpeed,
+				ProjectileDamage,
+				PreferredRange);
 			LiveEnemies.Add(Enemy);
 		}
 	}
@@ -954,7 +1306,19 @@ void AT66MiniGameMode::RestoreWorldState(const UT66MiniRunSaveGame* RunSave)
 				Definition ? Definition->MaterialReward : 0,
 				Definition ? Definition->GoldReward : 0,
 				Definition ? Definition->ExperienceReward : 0.f,
-				Definition ? Definition->HealAmount : 0.f);
+				Definition ? Definition->HealAmount : 0.f,
+				Definition ? Definition->bRequiresManualInteract : static_cast<ET66MiniInteractableType>(Snapshot.InteractableType) == ET66MiniInteractableType::QuickReviveMachine);
+		}
+	}
+
+	for (const FT66MiniTrapSnapshot& Snapshot : RunSave->TrapSnapshots)
+	{
+		if (AT66MiniHazardTrap* Trap = World->SpawnActor<AT66MiniHazardTrap>(AT66MiniHazardTrap::StaticClass(), ClampPointToArena(Snapshot.Location), FRotator::ZeroRotator, SpawnParams))
+		{
+			const float ActiveSeconds = FMath::Max(0.2f, Snapshot.ActiveRemaining);
+			const float WarmupSeconds = FMath::Max(0.f, Snapshot.WarmupRemaining);
+			Trap->InitializeTrap(ClampPointToArena(Snapshot.Location), Snapshot.Radius, Snapshot.DamagePerPulse, Snapshot.PulseInterval, WarmupSeconds, ActiveSeconds, Snapshot.TrapVariant);
+			LiveTraps.Add(Trap);
 		}
 	}
 }
@@ -975,6 +1339,7 @@ void AT66MiniGameMode::CaptureWorldState(UT66MiniRunSaveGame* RunSave) const
 	RunSave->EnemySnapshots.Reset();
 	RunSave->PickupSnapshots.Reset();
 	RunSave->InteractableSnapshots.Reset();
+	RunSave->TrapSnapshots.Reset();
 
 	for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
 	{
@@ -1028,6 +1393,74 @@ void AT66MiniGameMode::CaptureWorldState(UT66MiniRunSaveGame* RunSave) const
 		Snapshot.VisualID = Interactable->GetVisualID();
 		Snapshot.LifetimeRemaining = Interactable->GetLifetimeRemaining();
 	}
+
+	for (TActorIterator<AT66MiniHazardTrap> It(World); It; ++It)
+	{
+		const AT66MiniHazardTrap* Trap = *It;
+		if (!Trap)
+		{
+			continue;
+		}
+
+		FT66MiniTrapSnapshot& Snapshot = RunSave->TrapSnapshots.AddDefaulted_GetRef();
+		Snapshot.Location = Trap->GetActorLocation();
+		Snapshot.Radius = Trap->GetRadius();
+		Snapshot.DamagePerPulse = Trap->GetDamagePerPulse();
+		Snapshot.PulseInterval = Trap->GetPulseInterval();
+		Snapshot.WarmupRemaining = Trap->GetWarmupRemaining();
+		Snapshot.ActiveRemaining = Trap->GetActiveRemaining();
+		Snapshot.LifetimeRemaining = Trap->GetLifetimeRemaining();
+		Snapshot.TrapVariant = Trap->GetTrapVariant();
+	}
+}
+
+void AT66MiniGameMode::CapturePartyPlayerSnapshots(UT66MiniRunSaveGame* RunSave) const
+{
+	if (!RunSave || !RunSave->bOnlinePartyRun)
+	{
+		return;
+	}
+
+	for (AT66MiniPlayerPawn* PlayerPawn : T66MiniGatherPlayerPawns(GetWorld(), false))
+	{
+		if (!PlayerPawn)
+		{
+			continue;
+		}
+
+		const AT66SessionPlayerState* SessionPlayerState = PlayerPawn->GetPlayerState<AT66SessionPlayerState>();
+		if (!SessionPlayerState || SessionPlayerState->GetSteamId().IsEmpty())
+		{
+			continue;
+		}
+
+		FT66MiniPartyPlayerSnapshot* Snapshot = T66MiniFindPartySnapshotByPlayerId(RunSave, SessionPlayerState->GetSteamId());
+		if (!Snapshot)
+		{
+			FT66MiniPartyPlayerSnapshot& NewSnapshot = RunSave->PartyPlayerSnapshots.AddDefaulted_GetRef();
+			NewSnapshot.SteamId = SessionPlayerState->GetSteamId();
+			NewSnapshot.DisplayName = SessionPlayerState->GetDisplayName();
+			Snapshot = &NewSnapshot;
+		}
+
+		Snapshot->SteamId = SessionPlayerState->GetSteamId();
+		Snapshot->DisplayName = SessionPlayerState->GetDisplayName();
+		Snapshot->HeroID = PlayerPawn->GetHeroID();
+		Snapshot->CompanionID = PlayerPawn->GetSelectedCompanionID();
+		Snapshot->EquippedIdolIDs = PlayerPawn->GetEquippedIdolIDs();
+		Snapshot->OwnedItemIDs = PlayerPawn->GetOwnedItemIDs();
+		Snapshot->HeroLevel = PlayerPawn->GetHeroLevel();
+		Snapshot->CurrentHealth = PlayerPawn->GetCurrentHealth();
+		Snapshot->MaxHealth = PlayerPawn->GetMaxHealth();
+		Snapshot->Materials = PlayerPawn->GetMaterials();
+		Snapshot->Gold = PlayerPawn->GetGold();
+		Snapshot->Experience = PlayerPawn->GetExperience();
+		Snapshot->UltimateCooldownRemaining = PlayerPawn->GetUltimateCooldownRemaining();
+		Snapshot->bEnduranceCheatUsedThisWave = PlayerPawn->HasEnduranceCheatUsedThisWave();
+		Snapshot->bQuickReviveReady = PlayerPawn->HasQuickReviveReady();
+		Snapshot->bHasPlayerLocation = true;
+		Snapshot->PlayerLocation = PlayerPawn->GetActorLocation();
+	}
 }
 
 void AT66MiniGameMode::PersistActiveRunSnapshot(const bool bMarkMidWaveSnapshot)
@@ -1041,7 +1474,7 @@ void AT66MiniGameMode::PersistActiveRunSnapshot(const bool bMarkMidWaveSnapshot)
 		return;
 	}
 
-	if (AT66MiniPlayerPawn* PlayerPawn = GetWorld() ? Cast<AT66MiniPlayerPawn>(GetWorld()->GetFirstPlayerController() ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr)
+	if (AT66MiniPlayerPawn* PlayerPawn = T66MiniChooseAnchorPawn(GetWorld()))
 	{
 		ActiveRun->PlayerLocation = PlayerPawn->GetActorLocation();
 		ActiveRun->bHasPlayerLocation = bMarkMidWaveSnapshot;
@@ -1051,13 +1484,18 @@ void AT66MiniGameMode::PersistActiveRunSnapshot(const bool bMarkMidWaveSnapshot)
 		ActiveRun->Gold = PlayerPawn->GetGold();
 		ActiveRun->Experience = PlayerPawn->GetExperience();
 		ActiveRun->HeroLevel = PlayerPawn->GetHeroLevel();
+		ActiveRun->UltimateCooldownRemaining = PlayerPawn->GetUltimateCooldownRemaining();
+		ActiveRun->bEnduranceCheatUsedThisWave = PlayerPawn->HasEnduranceCheatUsedThisWave();
+		ActiveRun->bQuickReviveReady = PlayerPawn->HasQuickReviveReady();
 	}
 
 	ActiveRun->bHasMidWaveSnapshot = bMarkMidWaveSnapshot;
 	ActiveRun->BossTelegraphRemaining = FMath::Max(0.f, BossTelegraphRemaining);
 	ActiveRun->PendingBossID = PendingBossID;
 	ActiveRun->PendingBossSpawnLocation = PendingBossSpawnLocation;
+	ActiveRun->TrapSpawnAccumulator = TrapSpawnAccumulator;
 	CaptureWorldState(ActiveRun);
+	CapturePartyPlayerSnapshots(ActiveRun);
 	SaveSubsystem->SaveRunToSlot(RunState->GetActiveSaveSlot(), ActiveRun);
 }
 
@@ -1070,4 +1508,153 @@ void AT66MiniGameMode::UpdateLiveEnemyCache()
 			LiveEnemies.RemoveAtSwap(Index);
 		}
 	}
+}
+
+void AT66MiniGameMode::UpdateLiveTrapCache()
+{
+	for (int32 Index = LiveTraps.Num() - 1; Index >= 0; --Index)
+	{
+		if (!IsValid(LiveTraps[Index]))
+		{
+			LiveTraps.RemoveAtSwap(Index);
+		}
+	}
+}
+
+void AT66MiniGameMode::UpdateCombatTexts(const float DeltaSeconds)
+{
+	for (int32 Index = CombatTexts.Num() - 1; Index >= 0; --Index)
+	{
+		FT66MiniCombatTextEntry& Entry = CombatTexts[Index];
+		Entry.RemainingTime -= DeltaSeconds;
+		Entry.WorldLocation += Entry.Velocity * DeltaSeconds;
+		Entry.Velocity *= 0.94f;
+		if (Entry.RemainingTime <= 0.f)
+		{
+			CombatTexts.RemoveAtSwap(Index);
+		}
+	}
+}
+
+void AT66MiniGameMode::AddCombatText(const FVector& WorldLocation, const float Value, const FLinearColor& Color, const float Duration, const FString& Prefix)
+{
+	if (Value <= 0.f)
+	{
+		return;
+	}
+
+	FT66MiniCombatTextEntry& Entry = CombatTexts.AddDefaulted_GetRef();
+	Entry.WorldLocation = WorldLocation;
+	Entry.Label = Prefix.IsEmpty()
+		? FString::Printf(TEXT("%.0f"), Value)
+		: FString::Printf(TEXT("%s%.0f"), *Prefix, Value);
+	Entry.Color = Color;
+	Entry.RemainingTime = FMath::Max(0.2f, Duration);
+	Entry.Velocity = FVector(FMath::FRandRange(-12.f, 12.f), FMath::FRandRange(-12.f, 12.f), FMath::FRandRange(120.f, 180.f));
+}
+
+bool AT66MiniGameMode::TryInteractNearest(AT66MiniPlayerPawn* PlayerPawn, const float MaxRange)
+{
+	if (!PlayerPawn)
+	{
+		return false;
+	}
+
+	AT66MiniInteractable* BestInteractable = nullptr;
+	float BestDistanceSq = FMath::Square(MaxRange);
+	for (TActorIterator<AT66MiniInteractable> It(GetWorld()); It; ++It)
+	{
+		AT66MiniInteractable* Candidate = *It;
+		if (!Candidate || !Candidate->RequiresManualInteract())
+		{
+			continue;
+		}
+
+		const float DistanceSq = FVector::DistSquared2D(PlayerPawn->GetActorLocation(), Candidate->GetActorLocation());
+		if (DistanceSq < BestDistanceSq)
+		{
+			BestDistanceSq = DistanceSq;
+			BestInteractable = Candidate;
+		}
+	}
+
+	if (BestInteractable)
+	{
+		return BestInteractable->TryInteract(PlayerPawn);
+	}
+
+	return false;
+}
+
+bool AT66MiniGameMode::IsOnlinePartyMiniRun() const
+{
+	const AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
+	return MiniGameState && MiniGameState->bOnlinePartyMode;
+}
+
+void AT66MiniGameMode::CompleteOnlineFrontendTravel()
+{
+	UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GetGameInstance());
+	UWorld* World = GetWorld();
+	if (!T66GameInstance || !World)
+	{
+		return;
+	}
+
+	T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniRunSummary;
+	bFrontendTravelInProgress = true;
+	const FString TravelUrl = FString::Printf(
+		TEXT("%s?listen?game=/Script/T66.T66FrontendGameMode"),
+		*UT66GameInstance::GetFrontendLevelName().ToString());
+	World->ServerTravel(TravelUrl);
+}
+
+void AT66MiniGameMode::AbortOnlinePartyRunToFrontend(const FString& ResultLabel, const ET66ScreenType PendingScreen)
+{
+	if (!IsOnlinePartyMiniRun() || bRunFinalized || bFrontendTravelInProgress)
+	{
+		return;
+	}
+
+	UGameInstance* GameInstance = GetGameInstance();
+	UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
+	UT66MiniFrontendStateSubsystem* FrontendState = GameInstance ? GameInstance->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
+	UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GameInstance);
+	if (!RunState || !FrontendState || !T66GameInstance)
+	{
+		return;
+	}
+
+	if (BattleMusicComponent)
+	{
+		BattleMusicComponent->Stop();
+	}
+	if (ActiveBossTelegraphActor)
+	{
+		ActiveBossTelegraphActor->Destroy();
+		ActiveBossTelegraphActor = nullptr;
+	}
+
+	SaveRunProgressNow(true);
+	FrontendState->ExitIntermissionFlow();
+	bFrontendTravelInProgress = true;
+	T66GameInstance->MiniIntermissionStateRevision = 0;
+	T66GameInstance->MiniIntermissionStateJson.Reset();
+	T66GameInstance->MiniIntermissionRequestRevision = 0;
+	T66GameInstance->MiniIntermissionRequestJson.Reset();
+
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (AT66MiniPlayerController* MiniController = Cast<AT66MiniPlayerController>(It->Get()))
+		{
+			MiniController->ClientMessage(ResultLabel);
+			MiniController->ClientPrepareMiniFrontendTravel(PendingScreen, false);
+		}
+	}
+
+	T66GameInstance->PendingFrontendScreen = PendingScreen;
+	const FString TravelUrl = FString::Printf(
+		TEXT("%s?listen?game=/Script/T66.T66FrontendGameMode"),
+		*UT66GameInstance::GetFrontendLevelName().ToString());
+	GetWorld()->ServerTravel(TravelUrl);
 }

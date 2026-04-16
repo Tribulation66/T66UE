@@ -82,6 +82,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void AddAchievementCoins(int32 Amount);
 
+	/** Most recently selected/played hero from the main frontend profile. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Selection")
+	FName GetLastSelectedHeroID() const;
+
+	/** Most recently selected/used companion from the main frontend profile. NAME_None means no companion. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Selection")
+	FName GetLastSelectedCompanionID() const;
+
+	/** Persist the current main-frontend hero/companion defaults into the profile. */
+	UFUNCTION(BlueprintCallable, Category = "Profile|Selection")
+	void RememberLastSelectedLoadout(FName HeroID, FName CompanionID);
+
 	/** Hero skins: per-hero ownership. Default is always considered owned. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements|Skins")
 	bool IsHeroSkinOwned(FName HeroID, FName SkinID) const;
@@ -272,6 +284,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
 	int32 GetCompanionCumulativeScore(FName CompanionID) const;
 
+	/** Lifetime healing done by a specific companion across all completed runs. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetCompanionTotalHealing(FName CompanionID) const;
+
 	/** Increment games-played for a hero. */
 	UFUNCTION(BlueprintCallable, Category = "Account")
 	void AddHeroGamesPlayed(FName HeroID, int32 DeltaGamesPlayed = 1);
@@ -287,6 +303,10 @@ public:
 	/** Add run score to a companion's lifetime cumulative total. */
 	UFUNCTION(BlueprintCallable, Category = "Account")
 	void AddCompanionCumulativeScore(FName CompanionID, int32 DeltaScore);
+
+	/** Add actual healed HP to a companion's lifetime total. */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	void AddCompanionTotalHealing(FName CompanionID, int32 DeltaHealing);
 
 	/** Record a full-clear medal for a hero based on the cleared difficulty. */
 	UFUNCTION(BlueprintCallable, Category = "Account")

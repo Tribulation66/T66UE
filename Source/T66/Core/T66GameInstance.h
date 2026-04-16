@@ -114,6 +114,46 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
 
+	/** Mini lobby selected hero row name. */
+	UPROPERTY(BlueprintReadWrite, Category = "Mini")
+	FName MiniSelectedHeroID;
+
+	/** Mini lobby selected companion row name. */
+	UPROPERTY(BlueprintReadWrite, Category = "Mini")
+	FName MiniSelectedCompanionID;
+
+	/** Mini lobby selected difficulty row name. */
+	UPROPERTY(BlueprintReadWrite, Category = "Mini")
+	FName MiniSelectedDifficultyID;
+
+	/** Mini lobby selected idol loadout. */
+	UPROPERTY(BlueprintReadWrite, Category = "Mini")
+	TArray<FName> MiniSelectedIdolIDs;
+
+	/** True when the current mini frontend flow came from loading a save. */
+	UPROPERTY(BlueprintReadWrite, Category = "Mini")
+	bool bMiniLoadFlow = false;
+
+	/** True when the current mini frontend flow is in intermission/shop state. */
+	UPROPERTY(BlueprintReadWrite, Category = "Mini")
+	bool bMiniIntermissionFlow = false;
+
+	/** Host-authored mini intermission state revision mirrored through lobby profiles. */
+	UPROPERTY(BlueprintReadWrite, Category = "Mini")
+	int32 MiniIntermissionStateRevision = 0;
+
+	/** Serialized mini intermission state mirrored through lobby profiles. */
+	UPROPERTY(BlueprintReadWrite, Category = "Mini")
+	FString MiniIntermissionStateJson;
+
+	/** Client-authored mini intermission request revision mirrored through lobby profiles. */
+	UPROPERTY(BlueprintReadWrite, Category = "Mini")
+	int32 MiniIntermissionRequestRevision = 0;
+
+	/** Serialized mini intermission request mirrored through lobby profiles. */
+	UPROPERTY(BlueprintReadWrite, Category = "Mini")
+	FString MiniIntermissionRequestJson;
+
 	/** If true, the next GameplayLevel load should spawn into the Stage Catch Up platform first. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bStageCatchUpPending = false;
@@ -215,6 +255,22 @@ public:
 	/** Frontend screen to show immediately after the next frontend-level BeginPlay. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	ET66ScreenType PendingFrontendScreen = ET66ScreenType::None;
+
+	/** True while a loaded save is being inspected in paused preview mode. */
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	bool bSaveSlotPreviewMode = false;
+
+	/** Restore the save-slot browser state after returning from preview mode. */
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	bool bRestoreSaveSlotsState = false;
+
+	/** Party-size filter to restore when returning from save preview mode. */
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	ET66PartySize PendingSaveSlotsPartyFilter = ET66PartySize::Solo;
+
+	/** Page index to restore when returning from save preview mode. */
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	int32 PendingSaveSlotsPage = 0;
 
 	// ============================================
 	// DataTable Access Helpers
@@ -350,6 +406,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Selection")
 	bool HasCompanionSelected() const { return !SelectedCompanionID.IsNone(); }
 
+	/** Persist the current hero/companion defaults into the profile save. */
+	void PersistRememberedSelectionDefaults();
+
 	/**
 	 * Pre-load gameplay assets (engine meshes, ground materials) that would otherwise
 	 * hitch the game thread during GameplayLevel BeginPlay. Call before OpenLevel.
@@ -399,6 +458,7 @@ private:
 	void HandleCoreDataTablesLoaded();
 	void HandleHeroSelectionAssetsLoaded();
 	void HandleHeroSelectionPreviewVisualsLoaded();
+	void RestoreRememberedSelectionDefaults();
 
 	bool bCoreDataTablesLoadRequested = false;
 	bool bCoreDataTablesLoaded = false;

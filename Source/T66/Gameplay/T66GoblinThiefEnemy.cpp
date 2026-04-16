@@ -25,6 +25,8 @@ static FName T66_GetGoblinThiefVisualIdForRarity(ET66Rarity R)
 
 AT66GoblinThiefEnemy::AT66GoblinThiefEnemy()
 {
+	EnemyFamily = ET66EnemyFamily::Special;
+
 	// Default to Black; Director will call SetRarity shortly after spawn.
 	CharacterVisualID = T66_GetGoblinThiefVisualIdForRarity(Rarity);
 
@@ -130,4 +132,3 @@ void AT66GoblinThiefEnemy::OnCapsuleBeginOverlapThief(UPrimitiveComponent* Overl
 	// Steal gold without damaging hearts.
 	RunState->TrySpendGold(GoldStolenPerHit);
 }
-

@@ -1,6 +1,6 @@
 # T66 Master Combat
 
-**Last updated:** 2026-04-11  
+**Last updated:** 2026-04-14  
 **Scope:** Single-source handoff for combat runtime flow, targeting, damage routing, hit feedback, and the implementation plan for spatial headshots, accuracy-driven aiming, and boss body-part combat.  
 **Companion docs:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`, `MASTER DOCS/T66_PROJECT_CATALOGUE.md`, `MASTER DOCS/Anti Cheat/MASTER_ANTI_CHEAT.md`  
 **Maintenance rule:** Update this file after every material combat, targeting, damage-model, hitbox, projectile, boss-health, or combat-UI change.
@@ -9,6 +9,11 @@
 
 - Combat now supports target handles with optional hit-zone selection for standard enemies and bosses.
 - Standard enemies can expose `Body` and `Head` hit zones while still sharing one HP pool.
+- Standard enemy combat is now split across family classes:
+  - `Melee` for direct chase/touch damage
+  - `Rush` for burst charge movement
+  - `Ranged` for projectile spit attacks
+  - `Flying` for hovering chase behavior
 - Bosses can now expose multipart hit zones with per-part HP snapshots and per-part HUD bars.
 - `Accuracy` now exists as a full primary hero stat and its secondary family feeds untargeted auto-attack head selection.
 - The existing `Headshot` passive is no longer a random proc; it currently adds `+20%` accuracy weighting.

@@ -115,6 +115,12 @@ public:
 	bool GetShowScorePacing() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetShowDamageNumbers(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	bool GetShowDamageNumbers() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
 	void SetTimeToBeatSelection(const FT66BeatTargetSelection& Selection);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")

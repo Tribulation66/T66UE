@@ -23,6 +23,7 @@ class UT66IdolAltarOverlayWidget;
 class UNiagaraSystem;
 class UT66VendorOverlayWidget;
 class UT66CollectorOverlayWidget;
+class UT66LoadingScreenWidget;
 class AT66LootBagPickup;
 class AT66HouseNPCBase;
 class AT66VendorNPC;
@@ -36,6 +37,9 @@ class SWidget;
 class SWeakWidget;
 class UInputAction;
 class UInputMappingContext;
+class ACameraActor;
+class AT66HeroPreviewStage;
+class AT66CompanionPreviewStage;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FT66NearbyLootBagChanged);
 
@@ -84,6 +88,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void InitializeUI();
 
+	/** Ensure local-only frontend preview actors exist when running as a network client. */
+	void EnsureLocalFrontendPreviewScene();
+
+	/** Position the local preview camera for the hero preview stage. */
+	void PositionLocalFrontendCameraForHeroPreview();
+
+	/** Position the local preview camera for the companion preview stage. */
+	void PositionLocalFrontendCameraForCompanionPreview();
+
 	/** Auto-load screen classes by convention paths */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	bool bAutoLoadScreenClasses = true;
@@ -110,6 +123,12 @@ public:
 	void PushLobbyProfileToServer(const FT66LobbyPlayerInfo& LobbyInfo);
 	void PushPartyRunSummaryToServer(const FString& RequestKey, const FString& RunSummaryJson);
 	void RefreshPartyInviteModal();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestPartySaveAndReturnToFrontend();
+
+	UFUNCTION(Client, Reliable)
+	void ClientApplyGameplayRunSettings(int32 InRunSeed, ET66Difficulty InDifficulty, ET66MainMapLayoutVariant InLayoutVariant);
 
 	bool IsHeroOneScopedUltActive() const { return bHeroOneScopedUltActive; }
 	bool IsHeroOneScopeViewEnabled() const { return bHeroOneScopeViewEnabled; }
@@ -182,7 +201,10 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void BeginPlayingState() override;
 	virtual void OnPossess(APawn* InPawn) override;
+	virtual void OnRep_Pawn() override;
+	virtual void ClientRestart_Implementation(APawn* NewPawn) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
@@ -201,8 +223,9 @@ protected:
 	/** Handle scroll wheel zoom (game world only) */
 	void HandleZoom(float Value);
 
-	/** Handle dash (CapsLock) */
+	/** Handle dash modifier (default: LeftShift) */
 	void HandleDashPressed();
+	void HandleDashReleased();
 
 	/** Handle jump */
 	void HandleJumpPressed();
@@ -266,6 +289,8 @@ protected:
 	void ServerSubmitPartyRunSummary(const FString& RequestKey, const FString& RunSummaryJson);
 
 private:
+	void UpdateHeroMovementIntent();
+
 	TSubclassOf<UT66ScreenBase> ResolveScreenClass(ET66ScreenType ScreenType) const;
 	TSubclassOf<UT66GameplayHUDWidget> ResolveGameplayHUDClass() const;
 	TSubclassOf<UT66GamblerOverlayWidget> ResolveGamblerOverlayClass() const;
@@ -324,11 +349,50 @@ private:
 	FTimerHandle DeathVFXTimerHandle;
 
 	void SetupGameplayHUD();
+	void EnsureFrontendStartupOverlay(const FText& LoadingText);
+	void HideFrontendStartupOverlay();
+	void StartFrontendLaunchPolicyCheck();
+	void HandleFrontendLaunchPolicyResponse(bool bSuccess, bool bUpdateRequired, int32 RequiredBuildId, int32 LatestBuildId, const FString& Message);
+	void HandleFrontendLaunchPolicyTimeout();
+	void ShowFrontendUpdateRequiredAndQuit(const FString& Message) const;
+	void RefreshGameplayViewTarget(bool bAllowRetry);
+	void EnsureClientGameplayWorldSetup(bool bAllowRetry);
+	bool ApplyHostPartyRunSettingsToGameInstance() const;
+	void ApplyFrontendCommandLineOverrides(ET66ScreenType& ScreenToShow);
+	void QueueFrontendAutomationScreenshotIfRequested();
+	void HandleFrontendAutomationScreenshot();
+	void HandleFrontendAutomationQuit();
 	void BindPartyInviteEvents();
 	void UnbindPartyInviteEvents();
 	void HandlePendingPartyInvitesChanged();
 	bool bUIInitialized = false;
 	FDelegateHandle PendingPartyInvitesChangedHandle;
+	FString FrontendAutomationScreenshotPath;
+	float FrontendAutomationScreenshotDelaySeconds = 0.f;
+	bool bFrontendAutomationKeepAliveAfterScreenshot = false;
+	FTimerHandle FrontendAutomationScreenshotTimerHandle;
+	FTimerHandle FrontendAutomationQuitTimerHandle;
+	FTimerHandle FrontendLaunchPolicyTimeoutTimerHandle;
+	FTimerHandle GameplayViewTargetRetryTimerHandle;
+	FTimerHandle ClientGameplayWorldSetupRetryTimerHandle;
+	FDelegateHandle FrontendLaunchPolicyResponseHandle;
+	int32 FrontendLocalSteamBuildId = 0;
+	int32 GameplayViewTargetRetriesRemaining = 0;
+	int32 ClientGameplayWorldSetupRetriesRemaining = 0;
+	bool bClientGameplayWorldSetupComplete = false;
+	bool bReceivedGameplayRunSettingsFromServer = false;
+	bool bFrontendLaunchPolicyCheckStarted = false;
+	bool bFrontendLaunchPolicyCheckComplete = false;
+	bool bFrontendLaunchPolicyUpdateBlocked = false;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UT66LoadingScreenWidget> FrontendStartupOverlayWidget;
+
+	TWeakObjectPtr<AT66HeroPreviewStage> LocalFrontendHeroPreviewStage;
+
+	TWeakObjectPtr<AT66CompanionPreviewStage> LocalFrontendCompanionPreviewStage;
+
+	TWeakObjectPtr<ACameraActor> LocalFrontendPreviewCamera;
 
 	/** Last time Escape/Pause was handled (debounce rapid key repeat) */
 	float LastPauseToggleTime = 0.f;
@@ -417,6 +481,9 @@ private:
 	bool bDevConsoleOpen = false;
 	TSharedPtr<SWidget> DevConsoleWidget;
 	TSharedPtr<SWeakWidget> DevConsoleWeakWidget;
+
+	float RawMoveForwardValue = 0.f;
+	float RawMoveRightValue = 0.f;
 
 	// ============================================================
 	// In-world NPC dialogue (Vendor/Gambler)

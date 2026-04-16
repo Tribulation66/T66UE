@@ -313,6 +313,20 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		UE_LOG(LogT66Achievements, Log, TEXT("[Account] LoadOrCreateProfile: Added cumulative score tracking (SaveVersion 13)."));
 	}
 
+	if (LoadedSaveVersion < 14)
+	{
+		Profile->SaveVersion = 14;
+		bProfileDirty = true;
+		UE_LOG(LogT66Achievements, Log, TEXT("[Account] LoadOrCreateProfile: Added companion total healing tracking (SaveVersion 14)."));
+	}
+
+	if (LoadedSaveVersion < 15)
+	{
+		Profile->SaveVersion = 15;
+		bProfileDirty = true;
+		UE_LOG(LogT66Achievements, Log, TEXT("[Account] LoadOrCreateProfile: Added remembered hero/companion defaults (SaveVersion 15)."));
+	}
+
 	// Hero skins: log current state (no more auto-reset; purchases persist).
 	const FName DefaultSkin(TEXT("Default"));
 	
@@ -372,7 +386,12 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
 	}
 
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 13);
+	for (TPair<FName, int32>& Pair : Profile->CompanionTotalHealingByID)
+	{
+		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
+	}
+
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 15);
 }
 
 int32 UT66AchievementsSubsystem::GetChadCouponBalance() const
@@ -424,6 +443,45 @@ bool UT66AchievementsSubsystem::SpendAchievementCoins(int32 Amount)
 void UT66AchievementsSubsystem::AddAchievementCoins(int32 Amount)
 {
 	AddChadCoupons(Amount);
+}
+
+FName UT66AchievementsSubsystem::GetLastSelectedHeroID() const
+{
+	return Profile ? Profile->LastSelectedHeroID : NAME_None;
+}
+
+FName UT66AchievementsSubsystem::GetLastSelectedCompanionID() const
+{
+	return Profile ? Profile->LastSelectedCompanionID : NAME_None;
+}
+
+void UT66AchievementsSubsystem::RememberLastSelectedLoadout(FName HeroID, FName CompanionID)
+{
+	if (!Profile)
+	{
+		LoadOrCreateProfile();
+	}
+	if (!Profile)
+	{
+		return;
+	}
+
+	bool bChanged = false;
+	if (!HeroID.IsNone() && Profile->LastSelectedHeroID != HeroID)
+	{
+		Profile->LastSelectedHeroID = HeroID;
+		bChanged = true;
+	}
+	if (Profile->LastSelectedCompanionID != CompanionID)
+	{
+		Profile->LastSelectedCompanionID = CompanionID;
+		bChanged = true;
+	}
+
+	if (bChanged)
+	{
+		MarkProfileDirtyAndSave(false);
+	}
 }
 
 bool UT66AchievementsSubsystem::IsHeroSkinOwned(FName HeroID, FName SkinID) const
@@ -1143,8 +1201,11 @@ void UT66AchievementsSubsystem::ResetProfileProgress()
 	Profile->HeroUnityStagesClearedByID.Reset();
 	Profile->HeroGamesPlayedByID.Reset();
 	Profile->HeroHighestMedalByID.Reset();
+	Profile->HeroCumulativeScoreByID.Reset();
 	Profile->CompanionGamesPlayedByID.Reset();
 	Profile->CompanionHighestMedalByID.Reset();
+	Profile->CompanionCumulativeScoreByID.Reset();
+	Profile->CompanionTotalHealingByID.Reset();
 
 	MarkDirtyAndMaybeSave(true);
 	AchievementCoinsChanged.Broadcast();
@@ -1289,6 +1350,13 @@ int32 UT66AchievementsSubsystem::GetCompanionCumulativeScore(FName CompanionID) 
 	return Found ? FMath::Max(0, *Found) : 0;
 }
 
+int32 UT66AchievementsSubsystem::GetCompanionTotalHealing(FName CompanionID) const
+{
+	if (!Profile || CompanionID.IsNone()) return 0;
+	const int32* Found = Profile->CompanionTotalHealingByID.Find(CompanionID);
+	return Found ? FMath::Max(0, *Found) : 0;
+}
+
 ET66AccountMedalTier UT66AchievementsSubsystem::GetHeroHighestMedal(FName HeroID) const
 {
 	if (!Profile || HeroID.IsNone()) return ET66AccountMedalTier::None;
@@ -1356,6 +1424,20 @@ void UT66AchievementsSubsystem::AddCompanionCumulativeScore(FName CompanionID, i
 
 	const int32 Prev = GetCompanionCumulativeScore(CompanionID);
 	Profile->CompanionCumulativeScoreByID.FindOrAdd(CompanionID) = FMath::Clamp(Prev + Delta, 0, 2000000000);
+	MarkDirtyAndMaybeSave(false);
+}
+
+void UT66AchievementsSubsystem::AddCompanionTotalHealing(FName CompanionID, int32 DeltaHealing)
+{
+	if (CompanionID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const int32 Delta = FMath::Clamp(DeltaHealing, 0, 1000000000);
+	if (Delta <= 0) return;
+
+	const int32 Prev = GetCompanionTotalHealing(CompanionID);
+	Profile->CompanionTotalHealingByID.FindOrAdd(CompanionID) = FMath::Clamp(Prev + Delta, 0, 2000000000);
 	MarkDirtyAndMaybeSave(false);
 }
 

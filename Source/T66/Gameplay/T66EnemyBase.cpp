@@ -432,15 +432,7 @@ void AT66EnemyBase::ApplyMiniBossMultipliers(float HPScalar, float DamageScalar,
 	MiniBossHPScalarApplied = FMath::Max(0.1f, HPScalar);
 	MiniBossDamageScalarApplied = FMath::Max(0.1f, DamageScalar);
 	MiniBossScaleScalarApplied = FMath::Clamp(ScaleScalar, 1.0f, 4.0f);
-
-	// Stats: scale current (already difficulty-scaled) tuning.
-	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(MaxHP) * MiniBossHPScalarApplied));
-	CurrentHP = MaxHP;
-	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(TouchDamageHearts) * MiniBossDamageScalarApplied));
-	UpdateHealthBar();
-
-	// Visual: scale the whole actor (capsule + mesh) so it's obviously a mini-boss.
-	SetActorScale3D(FVector(MiniBossScaleScalarApplied, MiniBossScaleScalarApplied, MiniBossScaleScalarApplied));
+	RebuildScaledCombatStats(true);
 }
 
 void AT66EnemyBase::BeginPlay()
@@ -457,17 +449,22 @@ void AT66EnemyBase::BeginPlay()
 	}
 
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->SetMovementMode(GetDefaultMovementMode());
 		BaseMaxWalkSpeed = Move->MaxWalkSpeed;
+	}
 
 	if (!bBaseTuningInitialized)
 	{
 		BaseMaxHP = MaxHP;
 		BaseTouchDamageHearts = TouchDamageHearts;
 		BasePointValue = PointValue;
+		BaseArmor = Armor;
 		bBaseTuningInitialized = true;
 	}
 	// Ensure HP is valid on spawn (in case difficulty scaled before BeginPlay).
 	CurrentHP = FMath::Clamp(CurrentHP, 1, MaxHP);
+	ResetFamilyState();
 
 	if (HealthBarWidget)
 	{
@@ -580,6 +577,67 @@ void AT66EnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
+void AT66EnemyBase::RebuildScaledCombatStats(const bool bResetCurrentHPToMax)
+{
+	if (!bBaseTuningInitialized)
+	{
+		BaseMaxHP = MaxHP;
+		BaseTouchDamageHearts = TouchDamageHearts;
+		BasePointValue = PointValue;
+		BaseArmor = Armor;
+		bBaseTuningInitialized = true;
+	}
+
+	const float PreviousMax = static_cast<float>(FMath::Max(1, MaxHP));
+	const float PreviousCurrent = static_cast<float>(FMath::Clamp(CurrentHP, 0, MaxHP));
+	const float PreviousHealthPercent = FMath::Clamp(PreviousCurrent / PreviousMax, 0.f, 1.f);
+
+	int32 ResolvedMaxHP = BaseMaxHP;
+	float ResolvedArmor = BaseArmor;
+	if (!bStageScalingApplied)
+	{
+		ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseMaxHP) * DifficultyScalarApplied));
+		ResolvedArmor = static_cast<float>(BaseArmor) * DifficultyScalarApplied;
+	}
+
+	ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedMaxHP) * ProgressionEnemyScalarApplied));
+	ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedMaxHP) * FinaleScalarApplied));
+
+	int32 ResolvedTouchDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseTouchDamageHearts) * DifficultyScalarApplied));
+	ResolvedTouchDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedTouchDamage) * ProgressionEnemyScalarApplied));
+	ResolvedTouchDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedTouchDamage) * FinaleScalarApplied));
+
+	if (bIsMiniBoss)
+	{
+		ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedMaxHP) * MiniBossHPScalarApplied));
+		ResolvedTouchDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedTouchDamage) * MiniBossDamageScalarApplied));
+		SetActorScale3D(FVector(MiniBossScaleScalarApplied, MiniBossScaleScalarApplied, MiniBossScaleScalarApplied));
+	}
+	else
+	{
+		SetActorScale3D(FVector::OneVector);
+	}
+
+	MaxHP = FMath::Max(1, ResolvedMaxHP);
+	Armor = FMath::Clamp(ResolvedArmor, 0.f, 0.95f);
+	TouchDamageHearts = ResolvedTouchDamage;
+
+	if (bResetCurrentHPToMax)
+	{
+		CurrentHP = MaxHP;
+	}
+	else if (CurrentHP > 0)
+	{
+		CurrentHP = FMath::Clamp(FMath::RoundToInt(static_cast<float>(MaxHP) * PreviousHealthPercent), 1, MaxHP);
+	}
+	else
+	{
+		CurrentHP = 0;
+	}
+
+	UpdateHealthBar();
+}
+
 void AT66EnemyBase::ApplyStageScaling(int32 Stage)
 {
 	const int32 ClampedStage = FMath::Clamp(Stage, 1, 999);
@@ -587,18 +645,16 @@ void AT66EnemyBase::ApplyStageScaling(int32 Stage)
 
 	BaseMaxHP = FMath::Max(1, FMath::RoundToInt(50.f * Multiplier));
 	BaseArmor = 0.1f * Multiplier;
-	MaxHP = BaseMaxHP;
-	Armor = FMath::Clamp(BaseArmor, 0.f, 0.95f);
-	CurrentHP = MaxHP;
 
 	if (!bBaseTuningInitialized)
 	{
 		BaseTouchDamageHearts = TouchDamageHearts;
 		BasePointValue = PointValue;
+		BaseArmor = 0.1f * Multiplier;
 		bBaseTuningInitialized = true;
 	}
 	bStageScalingApplied = true;
-	UpdateHealthBar();
+	RebuildScaledCombatStats(true);
 }
 
 void AT66EnemyBase::ApplyDifficultyScalar(float Scalar)
@@ -612,48 +668,20 @@ void AT66EnemyBase::ApplyDifficultyScalar(float Scalar)
 		bBaseTuningInitialized = true;
 	}
 
-	const float ClampedScalar = FMath::Clamp(Scalar, 1.0f, 99.0f);
+	DifficultyScalarApplied = FMath::Clamp(Scalar, 1.0f, 99.0f);
+	RebuildScaledCombatStats(false);
+}
 
-	// When stage scaling is used, only scale touch damage and point value; HP and Armor stay stage-based.
-	if (!bStageScalingApplied)
-	{
-		const float PrevMax = static_cast<float>(FMath::Max(1, MaxHP));
-		const float PrevCur = static_cast<float>(FMath::Clamp(CurrentHP, 0, MaxHP));
-		const float Pct = FMath::Clamp(PrevCur / PrevMax, 0.f, 1.f);
-		MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseMaxHP) * ClampedScalar));
-		Armor = FMath::Clamp(static_cast<float>(BaseArmor) * ClampedScalar, 0.f, 0.95f);
-		CurrentHP = FMath::Clamp(FMath::RoundToInt(static_cast<float>(MaxHP) * Pct), 1, MaxHP);
-	}
-
-	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseTouchDamageHearts) * ClampedScalar));
-
-	// Re-apply mini-boss multipliers if this enemy was promoted.
-	if (bIsMiniBoss)
-	{
-		MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(MaxHP) * FMath::Max(0.1f, MiniBossHPScalarApplied)));
-		CurrentHP = MaxHP;
-		TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(TouchDamageHearts) * FMath::Max(0.1f, MiniBossDamageScalarApplied)));
-		SetActorScale3D(FVector(MiniBossScaleScalarApplied, MiniBossScaleScalarApplied, MiniBossScaleScalarApplied));
-	}
-
-	UpdateHealthBar();
+void AT66EnemyBase::ApplyProgressionEnemyScalar(float Scalar)
+{
+	ProgressionEnemyScalarApplied = FMath::Clamp(Scalar, 1.0f, 99.0f);
+	RebuildScaledCombatStats(false);
 }
 
 void AT66EnemyBase::ApplyFinaleScaling(float Scalar)
 {
-	const float ClampedScalar = FMath::Clamp(Scalar, 1.0f, 99.0f);
-	if (ClampedScalar <= 1.001f)
-	{
-		return;
-	}
-
-	const float PrevMax = static_cast<float>(FMath::Max(1, MaxHP));
-	const float PrevCur = static_cast<float>(FMath::Clamp(CurrentHP, 0, MaxHP));
-	const float Pct = FMath::Clamp(PrevCur / PrevMax, 0.f, 1.f);
-	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(MaxHP) * ClampedScalar));
-	CurrentHP = FMath::Clamp(FMath::RoundToInt(static_cast<float>(MaxHP) * Pct), 1, MaxHP);
-	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(TouchDamageHearts) * ClampedScalar));
-	UpdateHealthBar();
+	FinaleScalarApplied = FMath::Clamp(Scalar, 1.0f, 99.0f);
+	RebuildScaledCombatStats(false);
 }
 
 void AT66EnemyBase::ApplyDifficultyTier(int32 Tier)
@@ -687,6 +715,9 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	MiniBossHPScalarApplied = 1.0f;
 	MiniBossDamageScalarApplied = 1.0f;
 	MiniBossScaleScalarApplied = 1.0f;
+	DifficultyScalarApplied = 1.0f;
+	ProgressionEnemyScalarApplied = 1.0f;
+	FinaleScalarApplied = 1.0f;
 	SetActorScale3D(FVector::OneVector);
 	LastTouchDamageTime = -9999.f;
 	CachedPlayerPawn = nullptr;
@@ -714,7 +745,7 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
 		Move->SetComponentTickEnabled(true);
-		Move->SetMovementMode(MOVE_Walking);
+		Move->SetMovementMode(GetDefaultMovementMode());
 	}
 
 	// Re-register with the actor registry (we unregistered when released to pool).
@@ -726,6 +757,7 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 		}
 	}
 
+	ResetFamilyState();
 	UpdateHealthBar();
 }
 
@@ -767,6 +799,25 @@ void AT66EnemyBase::StartEmergeFromWall(const FVector& TargetLocation, const FVe
 	if (UCapsuleComponent* Cap = GetCapsuleComponent())
 	{
 		Cap->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	}
+}
+
+void AT66EnemyBase::ResetFamilyState()
+{
+}
+
+void AT66EnemyBase::TickFamilyBehavior(APawn* PlayerPawn, float DeltaSeconds, float Dist2DToPlayer, const bool bShouldRunAwayFromPlayer)
+{
+	if (!PlayerPawn)
+	{
+		return;
+	}
+
+	FVector ToPlayer = PlayerPawn->GetActorLocation() - GetActorLocation();
+	ToPlayer.Z = 0.f;
+	if (Dist2DToPlayer > 10.f && ToPlayer.Normalize())
+	{
+		AddMovementInput(bShouldRunAwayFromPlayer ? -ToPlayer : ToPlayer, 1.f);
 	}
 }
 
@@ -1021,21 +1072,7 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		}
 	}
 
-	FVector ToPlayer = PlayerPawn->GetActorLocation() - GetActorLocation();
-	ToPlayer.Z = 0.f;
-	float Len = ToPlayer.Size();
-	if (Len > 10.f)
-	{
-		ToPlayer /= Len;
-		if (bShouldRunAwayFromPlayer)
-		{
-			AddMovementInput(-ToPlayer, 1.f);
-		}
-		else
-		{
-			AddMovementInput(ToPlayer, 1.f);
-		}
-	}
+	TickFamilyBehavior(PlayerPawn, DeltaSeconds, Dist2DToPlayer, bShouldRunAwayFromPlayer);
 }
 
 void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -1062,44 +1099,66 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	RunState->ApplyDamage(DamageHP, this);
 }
 
-bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName EventType)
+bool AT66EnemyBase::ApplyResolvedDamage(int32 Damage, const bool bCreditHeroKill, FName DamageSourceID, FName EventType)
 {
-	if (Damage <= 0 || CurrentHP <= 0) return false;
+	if (Damage <= 0 || CurrentHP <= 0)
+	{
+		return false;
+	}
 
-	// Apply enemy armor (damage reduction). Debuffs temporarily lower armor; can go negative for bonus damage.
 	const float EffectiveArmor = GetEffectiveArmor();
 	const int32 ReducedDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(Damage) * (1.f - EffectiveArmor)));
-
 	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
+
 	if (UWorld* World = GetWorld())
 	{
 		if (UGameInstance* GI = World->GetGameInstance())
 		{
-			if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+			if (bCreditHeroKill)
 			{
-				DamageLog->RecordDamageDealt(SourceID, ReducedDamage);
+				if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+				{
+					DamageLog->RecordDamageDealt(SourceID, ReducedDamage);
+				}
 			}
+
 			if (UT66FloatingCombatTextSubsystem* FloatingText = GI->GetSubsystem<UT66FloatingCombatTextSubsystem>())
 			{
 				FloatingText->ShowDamageNumber(this, ReducedDamage, EventType);
 			}
 		}
 	}
+
 	CurrentHP = FMath::Max(0, CurrentHP - ReducedDamage);
 	UpdateHealthBar();
 	if (CurrentHP <= 0)
 	{
 		if (UWorld* World = GetWorld())
 		{
-			if (UGameInstance* GI = World->GetGameInstance())
-				if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-					RunState->NotifyEnemyKilledByHero();
+			if (bCreditHeroKill)
+			{
+				if (UGameInstance* GI = World->GetGameInstance())
+				{
+					if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+					{
+						RunState->NotifyEnemyKilledByHero();
+					}
+				}
+			}
+
 			UT66CombatComponent::SpawnDeathBurstAtLocation(World, GetActorLocation(), 16, 60.f);
 		}
+
 		OnDeath();
 		return true;
 	}
+
 	return false;
+}
+
+bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName EventType)
+{
+	return ApplyResolvedDamage(Damage, true, DamageSourceID, EventType);
 }
 
 bool AT66EnemyBase::TakeDamageFromHeroHitZone(int32 Damage, const FT66CombatTargetHandle& TargetHandle, FName DamageSourceID, FName EventType)
@@ -1114,6 +1173,12 @@ bool AT66EnemyBase::TakeDamageFromHeroHitZone(int32 Damage, const FT66CombatTarg
 	}
 
 	return TakeDamageFromHero(AdjustedDamage, DamageSourceID, ResolvedEventType);
+}
+
+bool AT66EnemyBase::TakeDamageFromEnvironment(int32 Damage, AActor* DamageCauser, FName EventType)
+{
+	(void)DamageCauser;
+	return ApplyResolvedDamage(Damage, false, NAME_None, EventType);
 }
 
 void AT66EnemyBase::ApplyAutoAttackKnockback(const FVector& HitOrigin, float StrengthScale)

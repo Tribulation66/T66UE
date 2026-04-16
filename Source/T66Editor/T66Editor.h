@@ -21,4 +21,5 @@ private:
 
 	FName T66ToolsMenuName;
 	FDelegateHandle PostLoadMapHandle;
+	FDelegateHandle ToolMenuStartupHandle;
 };

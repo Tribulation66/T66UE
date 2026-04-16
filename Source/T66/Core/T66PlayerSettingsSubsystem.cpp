@@ -188,6 +188,13 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		bNeedsSave = true;
 	}
 
+	if (SettingsObj->SchemaVersion < 18)
+	{
+		SettingsObj->SchemaVersion = 18;
+		SettingsObj->bShowDamageNumbers = true;
+		bNeedsSave = true;
+	}
+
 	const ET66MediaViewerSource SanitizedMediaViewerSource = SanitizeMediaViewerSourceIndex(SettingsObj->MediaViewerSourceIndex);
 	if (SettingsObj->MediaViewerSourceIndex != static_cast<int32>(SanitizedMediaViewerSource))
 	{
@@ -455,6 +462,18 @@ void UT66PlayerSettingsSubsystem::SetShowScorePacing(bool bEnabled)
 {
 	if (!SettingsObj || SettingsObj->bShowScorePacing == bEnabled) return;
 	SettingsObj->bShowScorePacing = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetShowDamageNumbers() const
+{
+	return SettingsObj ? SettingsObj->bShowDamageNumbers : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetShowDamageNumbers(bool bEnabled)
+{
+	if (!SettingsObj || SettingsObj->bShowDamageNumbers == bEnabled) return;
+	SettingsObj->bShowDamageNumbers = bEnabled;
 	Save();
 }
 

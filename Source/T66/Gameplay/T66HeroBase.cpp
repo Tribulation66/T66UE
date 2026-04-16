@@ -3,10 +3,12 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66PilotableTractor.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66CombatComponent.h"
+#include "Gameplay/Movement/T66HeroMovementComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
-#include "Core/T66HeroSpeedSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -23,6 +25,7 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "Net/UnrealNetwork.h"
 #include "UObject/ConstructorHelpers.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
@@ -31,20 +34,29 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Hero, Log, All);
 
+namespace
+{
+	static constexpr float T66HeroCapsuleRadiusUU = 34.0f;
+	static constexpr float T66HeroHeightTypeAUU = 200.0f;
+	static constexpr float T66HeroHeightTypeBUU = 180.0f;
+	static constexpr float T66HeroBaselineVisualHeightUU = 176.0f;
+	static constexpr float T66HeroDefaultCameraArmLengthUU = 2300.0f;
+}
+
 AT66HeroBase::AT66HeroBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	// ========== Capsule Setup ==========
-	GetCapsuleComponent()->SetCapsuleHalfHeight(88.f);
-	GetCapsuleComponent()->SetCapsuleRadius(34.f);
+	GetCapsuleComponent()->SetCapsuleHalfHeight(T66HeroHeightTypeAUU * 0.5f);
+	GetCapsuleComponent()->SetCapsuleRadius(T66HeroCapsuleRadiusUU);
 
 	// ========== Camera Setup (Third-Person with Mouse Look) ==========
 	
 	// Create spring arm (camera boom)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 2400.0f;
+	CameraBoom->TargetArmLength = T66HeroDefaultCameraArmLengthUU;
 	CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 60.f)); // Offset up from center
 	CameraBoom->bUsePawnControlRotation = true; // Rotate arm based on controller (mouse look)
 	CameraBoom->bDoCollisionTest = true; // Pull camera in when hitting walls
@@ -74,14 +86,7 @@ AT66HeroBase::AT66HeroBase()
 
 	// Cache mesh assets in constructor
 	CacheMeshAssets();
-	
-	// Default to cylinder (TypeA)
-	if (CylinderMesh)
-	{
-		PlaceholderMesh->SetStaticMesh(CylinderMesh);
-		// Scale to reasonable character size (cylinder is 100 units tall by default)
-		PlaceholderMesh->SetRelativeScale3D(FVector(0.5f, 0.5f, 1.0f));
-	}
+	ApplyBodyTypeDimensions(false);
 
 	// ========== Combat range ring (visual) ==========
 	AttackRangeRingISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("AttackRangeRingISM"));
@@ -115,7 +120,6 @@ AT66HeroBase::AT66HeroBase()
 	}
 
 	// Sit on the ground plane under the capsule.
-	AttackRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() + 2.f));
 	AttackRangeRingISM->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 
 	// Close range ring (10% of attack range) and long range ring (90%) — same mesh/material as outer ring.
@@ -130,7 +134,6 @@ AT66HeroBase::AT66HeroBase()
 	if (CubeMesh) CloseRangeRingISM->SetStaticMesh(CubeMesh);
 	else if (CylinderMesh) CloseRangeRingISM->SetStaticMesh(CylinderMesh);
 	if (RingMat) CloseRangeRingISM->SetMaterial(0, RingMat);
-	CloseRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() + 2.f));
 	CloseRangeRingISM->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 
 	LongRangeRingISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("LongRangeRingISM"));
@@ -144,7 +147,6 @@ AT66HeroBase::AT66HeroBase()
 	if (CubeMesh) LongRangeRingISM->SetStaticMesh(CubeMesh);
 	else if (CylinderMesh) LongRangeRingISM->SetStaticMesh(CylinderMesh);
 	if (RingMat) LongRangeRingISM->SetMaterial(0, RingMat);
-	LongRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() + 2.f));
 	LongRangeRingISM->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 
 	// ========== Auto-attack cooldown bar (below feet) ==========
@@ -152,29 +154,8 @@ AT66HeroBase::AT66HeroBase()
 	CooldownBarWidgetComponent->SetupAttachment(RootComponent);
 	CooldownBarWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
 	CooldownBarWidgetComponent->SetDrawSize(FVector2D(120.f, 36.f));
-	CooldownBarWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() - 24.f));
 	CooldownBarWidgetComponent->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 	CooldownBarWidgetComponent->SetWidgetClass(UT66HeroCooldownBarWidget::StaticClass());
-
-	// ========== Character Movement Setup ==========
-	
-	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
-	{
-		Movement->MaxWalkSpeed = BaseMaxWalkSpeed;
-		Movement->MaxAcceleration = 99999.f;
-		Movement->BrakingDecelerationWalking = 99999.f;
-		Movement->GroundFriction = 8.f;
-		Movement->BrakingFrictionFactor = 2.f;
-		Movement->JumpZVelocity = 2200.f;
-		Movement->AirControl = 0.65f;
-		Movement->GravityScale = 2.5f;
-		
-		Movement->bOrientRotationToMovement = true;
-		Movement->RotationRate = FRotator(0.f, 99999.f, 0.f);
-	}
-
-	// Double jump
-	JumpMaxCount = 2;
 
 	// Don't rotate pawn with controller (controller only rotates camera)
 	bUseControllerRotationPitch = false;
@@ -182,6 +163,11 @@ AT66HeroBase::AT66HeroBase()
 	bUseControllerRotationRoll = false;
 
 	CombatComponent = CreateDefaultSubobject<UT66CombatComponent>(TEXT("CombatComponent"));
+	HeroMovementComponent = CreateDefaultSubobject<UT66HeroMovementComponent>(TEXT("HeroMovementComponent"));
+	if (HeroMovementComponent)
+	{
+		HeroMovementComponent->ApplyDefaultMovementConfig();
+	}
 
 	// Prepare built-in SkeletalMeshComponent for imported models.
 	if (USkeletalMeshComponent* Skel = GetMesh())
@@ -189,6 +175,101 @@ AT66HeroBase::AT66HeroBase()
 		Skel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Skel->SetVisibility(false, true); // shown only when a character visual mapping exists
 	}
+
+	UpdateGroundAttachmentOffsets();
+}
+
+float AT66HeroBase::GetDesiredHeroHeightUU() const
+{
+	return BodyType == ET66BodyType::TypeB ? T66HeroHeightTypeBUU : T66HeroHeightTypeAUU;
+}
+
+void AT66HeroBase::UpdateGroundAttachmentOffsets()
+{
+	const float CapsuleHalfHeight = GetCapsuleComponent()
+		? GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()
+		: (GetDesiredHeroHeightUU() * 0.5f);
+
+	if (AttackRangeRingISM)
+	{
+		AttackRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -CapsuleHalfHeight + 2.f));
+	}
+	if (CloseRangeRingISM)
+	{
+		CloseRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -CapsuleHalfHeight + 2.f));
+	}
+	if (LongRangeRingISM)
+	{
+		LongRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -CapsuleHalfHeight + 2.f));
+	}
+	if (CooldownBarWidgetComponent)
+	{
+		CooldownBarWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, -CapsuleHalfHeight - 24.f));
+	}
+
+	QuickReviveDownedVisualOffset.Z = -(GetDesiredHeroHeightUU() * 0.33f);
+}
+
+void AT66HeroBase::ApplyCurrentHeroVisualScale()
+{
+	USkeletalMeshComponent* Skel = GetMesh();
+	if (!Skel || !Skel->GetSkeletalMeshAsset())
+	{
+		return;
+	}
+
+	const FVector BaseScale = bHasCharacterVisualBaseScale ? CharacterVisualBaseScale : Skel->GetRelativeScale3D();
+	const float HeightRatio = GetDesiredHeroHeightUU() / T66HeroBaselineVisualHeightUU;
+	Skel->SetRelativeScale3D(BaseScale * HeightRatio);
+}
+
+void AT66HeroBase::ApplyBodyTypeDimensions(const bool bKeepFeetWorldPosition)
+{
+	const float DesiredHeight = GetDesiredHeroHeightUU();
+	const float DesiredHalfHeight = DesiredHeight * 0.5f;
+	float PreviousHalfHeight = DesiredHalfHeight;
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		PreviousHalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
+		Capsule->SetCapsuleSize(T66HeroCapsuleRadiusUU, DesiredHalfHeight, true);
+		if (bKeepFeetWorldPosition)
+		{
+			const float HalfHeightDelta = DesiredHalfHeight - PreviousHalfHeight;
+			if (!FMath::IsNearlyZero(HalfHeightDelta))
+			{
+				AddActorWorldOffset(FVector(0.f, 0.f, HalfHeightDelta), false, nullptr, ETeleportType::TeleportPhysics);
+			}
+		}
+	}
+
+	if (PlaceholderMesh)
+	{
+		UStaticMesh* TargetMesh = (BodyType == ET66BodyType::TypeB) ? CubeMesh.Get() : CylinderMesh.Get();
+		if (TargetMesh)
+		{
+			PlaceholderMesh->SetStaticMesh(TargetMesh);
+		}
+
+		const float VisualScaleZ = DesiredHeight / 100.0f;
+		const FVector TargetScale(0.5f, 0.5f, VisualScaleZ);
+		const float PlaceholderHalfHeight = 50.0f * VisualScaleZ;
+		PlaceholderMesh->SetRelativeScale3D(TargetScale);
+		PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, PlaceholderHalfHeight - DesiredHalfHeight));
+	}
+
+	if (USkeletalMeshComponent* Skel = GetMesh())
+	{
+		const float HalfHeightDelta = DesiredHalfHeight - PreviousHalfHeight;
+		if (!FMath::IsNearlyZero(HalfHeightDelta))
+		{
+			FVector RelLoc = Skel->GetRelativeLocation();
+			RelLoc.Z -= HalfHeightDelta;
+			Skel->SetRelativeLocation(RelLoc);
+		}
+	}
+
+	UpdateGroundAttachmentOffsets();
+	ApplyCurrentHeroVisualScale();
 }
 
 void AT66HeroBase::AddSafeZoneOverlap(int32 Delta)
@@ -262,7 +343,6 @@ void AT66HeroBase::BeginPlay()
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		CachedRunState = GI->GetSubsystem<UT66RunStateSubsystem>();
-		CachedHeroSpeedSubsystem = GI->GetSubsystem<UT66HeroSpeedSubsystem>();
 		if (CachedRunState)
 		{
 			CachedRunState->HeroProgressChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
@@ -272,10 +352,6 @@ void AT66HeroBase::BeginPlay()
 		}
 	}
 
-	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
-	{
-		BaseMaxWalkSpeed = Movement->MaxWalkSpeed;
-	}
 	HandleHeroDerivedStatsChanged();
 	HandleHUDPanelVisibilityChanged();
 
@@ -290,6 +366,8 @@ void AT66HeroBase::BeginPlay()
 		FTimerHandle Tmp;
 		World->GetTimerManager().SetTimer(Tmp, this, &AT66HeroBase::UpdateAttackRangeRing, 0.15f, false);
 	}
+
+	TryApplyLobbyDrivenVisuals();
 }
 
 void AT66HeroBase::BeginSkyDrop()
@@ -323,19 +401,58 @@ void AT66HeroBase::Landed(const FHitResult& Hit)
 	}
 }
 
+void AT66HeroBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	TryApplyLobbyDrivenVisuals();
+}
+
+void AT66HeroBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	TryApplyLobbyDrivenVisuals();
+}
+
+void AT66HeroBase::OnRep_HeroAppearance()
+{
+	if (bIsPreviewMode || HeroID.IsNone())
+	{
+		return;
+	}
+
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	if (!T66GI)
+	{
+		return;
+	}
+
+	FHeroData DesiredHeroData;
+	if (!T66GI->GetHeroData(HeroID, DesiredHeroData))
+	{
+		return;
+	}
+
+	const FName DesiredSkinID = HeroSkinID.IsNone() ? FName(TEXT("Default")) : HeroSkinID;
+	InitializeHero(DesiredHeroData, BodyType, DesiredSkinID, false);
+	bLobbyDrivenVisualsApplied = true;
+}
+
+void AT66HeroBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AT66HeroBase, HeroID);
+	DOREPLIFETIME(AT66HeroBase, BodyType);
+	DOREPLIFETIME(AT66HeroBase, HeroSkinID);
+}
+
 void AT66HeroBase::HandleHeroDerivedStatsChanged()
 {
 	if (!CachedRunState) return;
-	UCharacterMovementComponent* Movement = GetCharacterMovement();
-	if (!Movement) return;
-
-	const float Mult = CachedRunState->GetHeroMoveSpeedMultiplier()
-		* CachedRunState->GetItemMoveSpeedMultiplier()
-		* CachedRunState->GetMovementSpeedSecondaryMultiplier()
-		* CachedRunState->GetLastStandMoveSpeedMultiplier()
-		* CachedRunState->GetStageMoveSpeedMultiplier()
-		* CachedRunState->GetStatusMoveSpeedMultiplier();
-	Movement->MaxWalkSpeed = FMath::Clamp(BaseMaxWalkSpeed * Mult, 200.f, 10000.f);
+	if (HeroMovementComponent)
+	{
+		HeroMovementComponent->RefreshWalkSpeedFromRunState();
+	}
 
 	UpdateAttackRangeRing();
 }
@@ -389,7 +506,10 @@ void AT66HeroBase::SetVehicleMounted(bool bMounted, AT66PilotableTractor* InMoun
 		else
 		{
 			Movement->SetMovementMode(MOVE_Walking);
-			HandleHeroDerivedStatsChanged();
+			if (HeroMovementComponent)
+			{
+				HeroMovementComponent->RefreshWalkSpeedFromRunState();
+			}
 		}
 	}
 
@@ -447,7 +567,10 @@ void AT66HeroBase::SetQuickReviveDowned(bool bDowned)
 		else if (!bVehicleMounted)
 		{
 			Movement->SetMovementMode(MOVE_Walking);
-			HandleHeroDerivedStatsChanged();
+			if (HeroMovementComponent)
+			{
+				HeroMovementComponent->RefreshWalkSpeedFromRunState();
+			}
 		}
 	}
 
@@ -476,6 +599,11 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 
 	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
 	{
+		if (!bLobbyDrivenVisualsApplied)
+		{
+			TryApplyLobbyDrivenVisuals();
+		}
+
 		if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 		{
 			auto TraceGround = [this](float UpDistance, float DownDistance, FHitResult& OutHit) -> bool
@@ -564,51 +692,56 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 		}
 	}
 
-	// Hero speed: instant max when moving, 0 when idle; drive MaxWalkSpeed and animation state.
+	// Hero animation: idle while still, walk while moving, jump while airborne.
 	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
 	{
-		if (CachedHeroSpeedSubsystem)
+		const bool bHasMovementInput = HeroMovementComponent
+			? HeroMovementComponent->HasMovementInput()
+			: (GetLastMovementInputVector().SizeSquared() > 0.01f);
+		const FVector ReplicatedVelocity = GetReplicatedMovement().LinearVelocity;
+		const bool bHasReplicatedHorizontalVelocity =
+			GetVelocity().SizeSquared2D() > FMath::Square(8.f)
+			|| ReplicatedVelocity.SizeSquared2D() > FMath::Square(8.f);
+		bool bHasRemoteLocationDelta = false;
+		if (bHasLastAnimSampleLocation)
 		{
-			// Movement input: use last movement input (set by controller when it calls AddMovementInput).
-			const FVector LastInput = GetLastMovementInputVector();
-			const bool bHasMovementInput = LastInput.SizeSquared() > 0.01f;
-			CachedHeroSpeedSubsystem->Update(DeltaSeconds, bHasMovementInput);
-			if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+			const float AnimTravelDeltaSq = FVector::DistSquared2D(GetActorLocation(), LastAnimSampleLocation);
+			bHasRemoteLocationDelta = AnimTravelDeltaSq > FMath::Square(5.f);
+		}
+		LastAnimSampleLocation = GetActorLocation();
+		bHasLastAnimSampleLocation = true;
+		if (GetMesh() && GetMesh()->IsVisible() && (CachedIdleAnim || CachedJumpAnim || CachedWalkAnim))
+		{
+			EMovementAnimState NewState = EMovementAnimState::Idle;
+			if (UCharacterMovementComponent* Movement = GetCharacterMovement(); Movement && Movement->IsFalling())
 			{
-				Movement->MaxWalkSpeed = CachedHeroSpeedSubsystem->GetCurrentSpeed();
+				NewState = EMovementAnimState::Jump;
 			}
-			// Hero animation: idle at zero speed, walk while moving, jump while airborne.
-			if (GetMesh() && GetMesh()->IsVisible() && (CachedIdleAnim || CachedJumpAnim || CachedWalkAnim))
+			else if (bHasMovementInput || bHasReplicatedHorizontalVelocity || (!IsLocallyControlled() && bHasRemoteLocationDelta))
 			{
-				EMovementAnimState NewState = EMovementAnimState::Idle;
-				if (UCharacterMovementComponent* Movement = GetCharacterMovement(); Movement && Movement->IsFalling())
-				{
-					NewState = EMovementAnimState::Jump;
-				}
-				else if (CachedHeroSpeedSubsystem->GetMovementAnimState() != 0)
-				{
-					NewState = EMovementAnimState::Walk;
-				}
+				NewState = EMovementAnimState::Walk;
+			}
 
-				if (LastMovementAnimState != NewState)
+			if (LastMovementAnimState != NewState)
+			{
+				LastMovementAnimState = NewState;
+				UAnimationAsset* ToPlay = nullptr;
+				switch (NewState)
 				{
-					LastMovementAnimState = NewState;
-					UAnimationAsset* ToPlay = nullptr;
-					switch (NewState)
-					{
-					case EMovementAnimState::Idle:
-						ToPlay = CachedIdleAnim ? CachedIdleAnim : CachedWalkAnim;
-						break;
-					case EMovementAnimState::Jump:
-						ToPlay = CachedJumpAnim ? CachedJumpAnim : CachedWalkAnim;
-						break;
-					case EMovementAnimState::Walk:
-					default:
-						ToPlay = CachedWalkAnim ? CachedWalkAnim : CachedIdleAnim;
-						break;
-					}
-					if (ToPlay)
-						GetMesh()->PlayAnimation(ToPlay, true);
+				case EMovementAnimState::Idle:
+					ToPlay = CachedIdleAnim ? CachedIdleAnim : CachedWalkAnim;
+					break;
+				case EMovementAnimState::Jump:
+					ToPlay = CachedJumpAnim ? CachedJumpAnim : CachedWalkAnim;
+					break;
+				case EMovementAnimState::Walk:
+				default:
+					ToPlay = CachedWalkAnim ? CachedWalkAnim : CachedIdleAnim;
+					break;
+				}
+				if (ToPlay)
+				{
+					GetMesh()->PlayAnimation(ToPlay, true);
 				}
 			}
 		}
@@ -688,6 +821,66 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 			}
 		}
 	}
+}
+
+bool AT66HeroBase::TryGetLobbyDrivenVisualParams(FHeroData& OutHeroData, ET66BodyType& OutBodyType, FName& OutSkinID) const
+{
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	const AT66SessionPlayerState* SessionPlayerState = GetPlayerState<AT66SessionPlayerState>();
+	if (!T66GI || !SessionPlayerState)
+	{
+		return false;
+	}
+
+	const FName SelectedHeroID = SessionPlayerState->GetSelectedHeroID();
+	if (SelectedHeroID.IsNone())
+	{
+		return false;
+	}
+
+	if (!T66GI->GetHeroData(SelectedHeroID, OutHeroData))
+	{
+		return false;
+	}
+
+	OutBodyType = SessionPlayerState->GetSelectedHeroBodyType();
+	OutSkinID = SessionPlayerState->GetSelectedHeroSkinID().IsNone()
+		? FName(TEXT("Default"))
+		: SessionPlayerState->GetSelectedHeroSkinID();
+	return true;
+}
+
+void AT66HeroBase::TryApplyLobbyDrivenVisuals()
+{
+	if (bIsPreviewMode)
+	{
+		return;
+	}
+
+	FHeroData DesiredHeroData;
+	ET66BodyType DesiredBodyType = ET66BodyType::TypeA;
+	FName DesiredSkinID = FName(TEXT("Default"));
+	if (!TryGetLobbyDrivenVisualParams(DesiredHeroData, DesiredBodyType, DesiredSkinID))
+	{
+		return;
+	}
+
+	const bool bMeshVisible = GetMesh() && GetMesh()->IsVisible();
+	const bool bAnimationsCached = CachedIdleAnim || CachedWalkAnim || CachedJumpAnim;
+	const bool bNeedsRefresh =
+		!bLobbyDrivenVisualsApplied
+		|| HeroID != DesiredHeroData.HeroID
+		|| BodyType != DesiredBodyType
+		|| !bMeshVisible
+		|| !bAnimationsCached;
+
+	if (!bNeedsRefresh)
+	{
+		return;
+	}
+
+	InitializeHero(DesiredHeroData, DesiredBodyType, DesiredSkinID, false);
+	bLobbyDrivenVisualsApplied = true;
 }
 
 void AT66HeroBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -776,21 +969,6 @@ void AT66HeroBase::UpdateAttackRangeRing()
 	if (LongRangeRingISM)  { LongRangeRingISM->SetHiddenInGame(false, true);  LongRangeRingISM->SetVisibility(true, true); }
 }
 
-void AT66HeroBase::OnJumped_Implementation()
-{
-	Super::OnJumped_Implementation();
-	if (JumpCurrentCount > 1)
-	{
-		if (UCharacterMovementComponent* Movement = GetCharacterMovement())
-		{
-			FVector Vel = Movement->Velocity;
-			if (Vel.Z < 0.f)
-				Vel.Z = 0.f;
-			Movement->Velocity = Vel;
-		}
-	}
-}
-
 void AT66HeroBase::ApplyStageSlide(float DurationSeconds)
 {
 	if (DurationSeconds <= 0.f) return;
@@ -817,6 +995,8 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 	SetPlaceholderColor(InHeroData.PlaceholderColor);
 
 	FName SkinID = InSkinID.IsNone() ? FName(TEXT("Default")) : InSkinID;
+	HeroSkinID = SkinID;
+	bLobbyDrivenVisualsApplied = !bPreviewMode;
 
 	UE_LOG(LogT66Hero, Log, TEXT("Hero initialized: %s, BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
 		*InHeroData.DisplayName.ToString(),
@@ -840,6 +1020,8 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 			const bool bApplied = Visuals->ApplyCharacterVisual(VisualID, GetMesh(), PlaceholderMesh, true, bUseIdleAnimation, bPreviewMode);
 			if (!bApplied)
 			{
+				bHasCharacterVisualBaseScale = false;
+				CharacterVisualBaseScale = FVector::OneVector;
 				if (GetMesh())
 				{
 					GetMesh()->SetVisibility(false, true);
@@ -853,6 +1035,9 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 			{
 				if (GetMesh())
 				{
+					CharacterVisualBaseScale = GetMesh()->GetRelativeScale3D();
+					bHasCharacterVisualBaseScale = true;
+					ApplyCurrentHeroVisualScale();
 					GetMesh()->SetVisibility(true, true);
 				}
 			}
@@ -873,9 +1058,9 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 				}
 				// Force first Tick to play idle (speed 0); if we left Idle we wouldn't call PlayAnimation.
 				LastMovementAnimState = EMovementAnimState::Walk;
-				if (UT66HeroSpeedSubsystem* SpeedSub = GI->GetSubsystem<UT66HeroSpeedSubsystem>())
+				if (HeroMovementComponent)
 				{
-					SpeedSub->SetParams(InHeroData.MaxSpeed * 2.0f, InHeroData.AccelerationPercentPerSecond);
+					HeroMovementComponent->SetHeroBaseWalkSpeed(InHeroData.MaxSpeed * 2.0f);
 				}
 			}
 		}
@@ -924,32 +1109,11 @@ void AT66HeroBase::SetBodyType(ET66BodyType NewBodyType)
 
 	if (!PlaceholderMesh) return;
 
-	UStaticMesh* TargetMesh = nullptr;
-	FVector TargetScale = FVector(1.f);
-
-	if (NewBodyType == ET66BodyType::TypeA)
+	ApplyBodyTypeDimensions(true);
+	PlaceholderMaterial = nullptr;
+	if (!HeroData.HeroID.IsNone())
 	{
-		// Type A = Cylinder
-		TargetMesh = CylinderMesh;
-		TargetScale = FVector(0.5f, 0.5f, 1.0f); // Cylinder scaled for character proportions
-	}
-	else
-	{
-		// Type B = Cube
-		TargetMesh = CubeMesh;
-		TargetScale = FVector(0.5f, 0.5f, 1.5f); // Cube scaled taller for character proportions
-	}
-
-	if (TargetMesh)
-	{
-		PlaceholderMesh->SetStaticMesh(TargetMesh);
-		PlaceholderMesh->SetRelativeScale3D(TargetScale);
-
-		PlaceholderMaterial = nullptr;
-		if (!HeroData.HeroID.IsNone())
-		{
-			SetPlaceholderColor(HeroData.PlaceholderColor);
-		}
+		SetPlaceholderColor(HeroData.PlaceholderColor);
 	}
 
 	UE_LOG(LogT66Hero, Log, TEXT("Hero body type set to: %s"),
@@ -992,27 +1156,8 @@ void AT66HeroBase::SetPreviewMode(bool bPreview)
 
 void AT66HeroBase::DashForward()
 {
-	if (bIsPreviewMode) return;
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	const float Now = static_cast<float>(World->GetTimeSeconds());
-	float Cooldown = DashCooldownSeconds;
-	if (UT66RunStateSubsystem* RunState = World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>())
+	if (HeroMovementComponent)
 	{
-		Cooldown *= RunState->GetDashCooldownMultiplier();
+		HeroMovementComponent->TryDashInWorldDirection(GetActorForwardVector());
 	}
-	Cooldown = FMath::Clamp(Cooldown, 0.05f, 10.f);
-	if (Now - LastDashTime < Cooldown) return;
-	LastDashTime = Now;
-
-	// Dash in facing direction.
-	FVector Dir = GetActorForwardVector();
-	Dir.Z = 0.f;
-	if (!Dir.Normalize())
-	{
-		Dir = FVector(1.f, 0.f, 0.f);
-	}
-
-	LaunchCharacter(Dir * DashStrength, true, true);
 }

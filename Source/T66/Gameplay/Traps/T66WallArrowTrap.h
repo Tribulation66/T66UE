@@ -36,12 +36,29 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap")
 	int32 DamageHP = 12;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
+	FVector TrapVisualScale = FVector(0.32f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
+	FLinearColor TrapTint = FLinearColor(0.95f, 0.78f, 0.20f, 1.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
+	FLinearColor WindupColor = FLinearColor(1.f, 0.80f, 0.25f, 1.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
+	FLinearColor ProjectileTint = FLinearColor(1.f, 0.88f, 0.30f, 1.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
+	FLinearColor ProjectileTrailColor = FLinearColor(1.f, 0.78f, 0.25f, 0.95f);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void HandleTrapEnabledChanged() override;
 
 private:
+	void UpdateTrapVisuals();
 	void HandleFireCycleStart();
 	void FireProjectile();
 	void ScheduleNextFireCycle(float DelaySeconds);

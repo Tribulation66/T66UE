@@ -57,7 +57,7 @@ class T66_API UT66ProfileSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 13;
+	int32 SaveVersion = 15;
 
 	/** Item IDs ever obtained (any run type) — used to show only unlocked items in The Lab. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lab")
@@ -172,5 +172,17 @@ public:
 	/** Lifetime cumulative score earned per companion across all completed runs. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	TMap<FName, int32> CompanionCumulativeScoreByID;
+
+	/** Lifetime healing done by each companion across all completed runs. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	TMap<FName, int32> CompanionTotalHealingByID;
+
+	/** Last hero selected/played in the main Tribulation frontend. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
+	FName LastSelectedHeroID = NAME_None;
+
+	/** Last companion selected/used in the main Tribulation frontend. NAME_None means no companion. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
+	FName LastSelectedCompanionID = NAME_None;
 };
 

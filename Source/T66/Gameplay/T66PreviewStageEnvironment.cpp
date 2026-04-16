@@ -2,144 +2,185 @@
 
 #include "Gameplay/T66PreviewStageEnvironment.h"
 
+#include "Gameplay/T66TowerMapTerrain.h"
+#include "Gameplay/T66TowerThemeVisuals.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Engine/Texture.h"
-#include "Engine/Texture2D.h"
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInterface.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/UObjectGlobals.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogT66PreviewEnvironment, Log, All);
 
 namespace
 {
 	const TCHAR* PreviewFallbackBlockMaterialPath = TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock");
-	const TCHAR* PreviewGroundBaseMaterialPath = TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit");
-	const TCHAR* EasyBlockTexturePath = TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock");
 
-	struct FDifficultyThemeAssetInfo
-	{
-		const TCHAR* FolderName = nullptr;
-		const TCHAR* AssetSuffix = nullptr;
+	const FName PreviewBackdropWallName(TEXT("PreviewBackdropWall"));
+	const FName PreviewLeftWallName(TEXT("PreviewLeftWall"));
+	const FName PreviewRightWallName(TEXT("PreviewRightWall"));
+	const FName PreviewCeilingName(TEXT("PreviewCeiling"));
+	const FName PreviewDecorSlotNames[] = {
+		FName(TEXT("PreviewDecorSlot0")),
+		FName(TEXT("PreviewDecorSlot1")),
+		FName(TEXT("PreviewDecorSlot2")),
+		FName(TEXT("PreviewDecorSlot3")),
+		FName(TEXT("PreviewDecorSlot4")),
+		FName(TEXT("PreviewDecorSlot5"))
 	};
 
-	struct FT66PreviewPropSpec
+	struct FT66PreviewThemeProfile
 	{
-		const TCHAR* Name;
-		const TCHAR* MeshPath;
-		FVector RelativeLocation;
-		FRotator RelativeRotation;
-		FVector RelativeScale;
+		T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme = T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon;
+		bool bHideBackdropWalls = false;
+		bool bShowCeiling = true;
 	};
 
-	const FT66PreviewPropSpec EasyFarmPreviewProps[] =
+	struct FT66PreviewDecorSpec
 	{
-		{ TEXT("PreviewBarn"), TEXT("/Game/World/Props/Barn.Barn"), FVector(3200.f, -2500.f, 0.f), FRotator(0.f, -18.f, 0.f), FVector(1.0f, 1.0f, 1.0f) },
-		{ TEXT("PreviewWindmill"), TEXT("/Game/World/Props/Windmill.Windmill"), FVector(4200.f, 2600.f, 0.f), FRotator(0.f, 180.f, 0.f), FVector(1.0f, 1.0f, 1.0f) },
-		{ TEXT("PreviewSilo"), TEXT("/Game/World/Props/Silo.Silo"), FVector(3400.f, 1400.f, 0.f), FRotator(0.f, 170.f, 0.f), FVector(1.0f, 1.0f, 1.0f) },
-		{ TEXT("PreviewTreeLeft"), TEXT("/Game/World/Props/Tree3.Tree3"), FVector(1700.f, -2100.f, 0.f), FRotator::ZeroRotator, FVector(1.05f, 1.05f, 1.05f) },
-		{ TEXT("PreviewTreeRight"), TEXT("/Game/World/Props/Tree.Tree"), FVector(1700.f, 2200.f, 0.f), FRotator::ZeroRotator, FVector(1.0f, 1.0f, 1.0f) },
-		{ TEXT("PreviewTreeBack"), TEXT("/Game/World/Props/Tree2.Tree2"), FVector(2800.f, 3000.f, 0.f), FRotator::ZeroRotator, FVector(1.1f, 1.1f, 1.1f) },
-		{ TEXT("PreviewTractor"), TEXT("/Game/World/Props/Tractor.Tractor"), FVector(1900.f, -950.f, 0.f), FRotator(0.f, 22.f, 0.f), FVector(1.0f, 1.0f, 1.0f) },
-		{ TEXT("PreviewHay"), TEXT("/Game/World/Props/Haybell.Haybell"), FVector(1750.f, 950.f, 0.f), FRotator(0.f, -30.f, 0.f), FVector(0.95f, 0.95f, 0.95f) },
-		{ TEXT("PreviewScarecrow"), TEXT("/Game/World/Props/Scarecrow.Scarecrow"), FVector(2150.f, 240.f, 0.f), FRotator(0.f, 180.f, 0.f), FVector(1.0f, 1.0f, 1.0f) },
-		{ TEXT("PreviewRocks"), TEXT("/Game/World/Props/Rocks.Rocks"), FVector(1350.f, 1550.f, 0.f), FRotator(0.f, 145.f, 0.f), FVector(1.0f, 1.0f, 1.0f) },
+		const TCHAR* MeshPath = nullptr;
+		FVector RelativeLocation = FVector::ZeroVector;
+		FRotator RelativeRotation = FRotator::ZeroRotator;
+		FVector RelativeScale = FVector::OneVector;
+		bool bApplyThemeMaterial = false;
 	};
 
-	FDifficultyThemeAssetInfo GetDifficultyThemeAssetInfo(ET66Difficulty Difficulty)
+	const FT66PreviewDecorSpec ForestDecorSpecs[] = {
+		{ TEXT("/Game/World/Props/Tree3.Tree3"), FVector(980.f, -920.f, 0.f), FRotator(0.f, -8.f, 0.f), FVector(1.18f, 1.18f, 1.18f), false },
+		{ TEXT("/Game/World/Props/Tree.Tree"),  FVector(1140.f, -260.f, 0.f), FRotator::ZeroRotator, FVector(1.05f, 1.05f, 1.05f), false },
+		{ TEXT("/Game/World/Props/Tree2.Tree2"), FVector(1110.f, 320.f, 0.f), FRotator(0.f, 6.f, 0.f), FVector(1.10f, 1.10f, 1.10f), false },
+		{ TEXT("/Game/World/Props/Tree.Tree"),  FVector(930.f, 920.f, 0.f), FRotator::ZeroRotator, FVector(1.16f, 1.16f, 1.16f), false },
+		{ TEXT("/Game/World/Props/Bush.Bush"),  FVector(430.f, -620.f, 0.f), FRotator(0.f, 18.f, 0.f), FVector(1.10f, 1.10f, 1.10f), false },
+		{ TEXT("/Game/World/Props/Bush.Bush"),  FVector(390.f, 620.f, 0.f), FRotator(0.f, -12.f, 0.f), FVector(1.00f, 1.00f, 1.00f), false }
+	};
+
+	const FT66PreviewDecorSpec OceanDecorSpecs[] = {
+		{ TEXT("/Game/World/Props/Grass.Grass"), FVector(930.f, -880.f, 0.f), FRotator(0.f, 12.f, 0.f), FVector(1.55f, 1.55f, 1.30f), true },
+		{ TEXT("/Game/World/Props/Bush.Bush"),   FVector(1120.f, -280.f, 0.f), FRotator(0.f, -12.f, 0.f), FVector(1.10f, 1.10f, 1.10f), true },
+		{ TEXT("/Game/World/Props/Rocks.Rocks"), FVector(1160.f, 340.f, 0.f), FRotator(0.f, 22.f, 0.f), FVector(1.16f, 1.16f, 1.16f), true },
+		{ TEXT("/Game/World/Props/Grass.Grass"), FVector(900.f, 880.f, 0.f), FRotator(0.f, -18.f, 0.f), FVector(1.45f, 1.45f, 1.28f), true },
+		{ TEXT("/Game/World/Props/Rock.Rock"),   FVector(420.f, -560.f, 0.f), FRotator(0.f, 48.f, 0.f), FVector(1.10f, 1.10f, 1.10f), true },
+		{ TEXT("/Game/World/Props/Rock.Rock"),   FVector(380.f, 580.f, 0.f), FRotator(0.f, -40.f, 0.f), FVector(1.00f, 1.00f, 1.00f), true }
+	};
+
+	const FT66PreviewDecorSpec MartianDecorSpecs[] = {
+		{ TEXT("/Game/World/Props/Boulder.Boulder"), FVector(980.f, -860.f, 0.f), FRotator(0.f, -6.f, 0.f), FVector(1.10f, 1.10f, 1.10f), true },
+		{ TEXT("/Game/World/Props/Rocks.Rocks"),    FVector(1150.f, -230.f, 0.f), FRotator(0.f, 18.f, 0.f), FVector(1.22f, 1.22f, 1.22f), true },
+		{ TEXT("/Game/World/Props/Rock.Rock"),      FVector(1170.f, 340.f, 0.f), FRotator(0.f, 30.f, 0.f), FVector(1.15f, 1.15f, 1.15f), true },
+		{ TEXT("/Game/World/Props/Boulder.Boulder"), FVector(920.f, 900.f, 0.f), FRotator(0.f, -10.f, 0.f), FVector(1.04f, 1.04f, 1.04f), true },
+		{ TEXT("/Game/World/Props/Branch.Branch"),  FVector(420.f, -600.f, 0.f), FRotator(0.f, 36.f, 0.f), FVector(1.25f, 1.25f, 1.25f), true },
+		{ TEXT("/Game/World/Props/Rock.Rock"),      FVector(360.f, 600.f, 0.f), FRotator(0.f, -28.f, 0.f), FVector(1.08f, 1.08f, 1.08f), true }
+	};
+
+	const FT66PreviewDecorSpec HellDecorSpecs[] = {
+		{ TEXT("/Game/World/Props/Rock.Rock"),       FVector(950.f, -860.f, 0.f), FRotator(0.f, 22.f, 0.f), FVector(1.18f, 1.18f, 1.18f), true },
+		{ TEXT("/Game/World/Props/Stump.Stump"),     FVector(1130.f, -220.f, 0.f), FRotator(0.f, -14.f, 0.f), FVector(1.18f, 1.18f, 1.18f), true },
+		{ TEXT("/Game/World/Props/Branch.Branch"),   FVector(1170.f, 340.f, 0.f), FRotator(0.f, 34.f, 0.f), FVector(1.30f, 1.30f, 1.30f), true },
+		{ TEXT("/Game/World/Props/Boulder.Boulder"), FVector(930.f, 900.f, 0.f), FRotator(0.f, -18.f, 0.f), FVector(1.05f, 1.05f, 1.05f), true },
+		{ TEXT("/Game/World/Props/Rocks.Rocks"),     FVector(430.f, -610.f, 0.f), FRotator(0.f, 30.f, 0.f), FVector(1.20f, 1.20f, 1.20f), true },
+		{ TEXT("/Game/World/Props/Stump.Stump"),     FVector(360.f, 620.f, 0.f), FRotator(0.f, -24.f, 0.f), FVector(1.06f, 1.06f, 1.06f), true }
+	};
+
+	FT66PreviewThemeProfile ResolvePreviewThemeProfile(const ET66Difficulty Difficulty)
 	{
-		switch (Difficulty)
+		const int32 GameplayLevelNumber = T66TowerMapTerrain::ResolveGameplayLevelNumberForDifficulty(Difficulty);
+		const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme =
+			T66TowerMapTerrain::ResolveGameplayLevelTheme(GameplayLevelNumber);
+
+		switch (Theme)
 		{
-		case ET66Difficulty::Medium: return { TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard") };
-		case ET66Difficulty::Hard: return { TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole") };
-		case ET66Difficulty::VeryHard: return { TEXT("PerditionMars"), TEXT("PerditionMars") };
-		case ET66Difficulty::Impossible: return { TEXT("FinalHell"), TEXT("FinalHell") };
-		case ET66Difficulty::Easy:
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Forest:
+			return {
+				Theme,
+				true,
+				true
+			};
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Ocean:
+			return {
+				Theme,
+				false,
+				true
+			};
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Martian:
+			return {
+				Theme,
+				false,
+				true
+			};
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell:
+			return {
+				Theme,
+				false,
+				true
+			};
 		default:
-			return {};
+			return {
+				T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon,
+				false,
+				true
+			};
 		}
 	}
 
-	UTexture* LoadPreviewBlockTexture(ET66Difficulty Difficulty)
+	const FT66PreviewDecorSpec* GetDecorSpecsForTheme(const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme, int32& OutCount)
 	{
-		if (Difficulty == ET66Difficulty::Easy)
+		OutCount = 0;
+
+		switch (Theme)
 		{
-			return LoadObject<UTexture>(nullptr, EasyBlockTexturePath);
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Forest:
+			OutCount = UE_ARRAY_COUNT(ForestDecorSpecs);
+			return ForestDecorSpecs;
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Ocean:
+			OutCount = UE_ARRAY_COUNT(OceanDecorSpecs);
+			return OceanDecorSpecs;
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Martian:
+			OutCount = UE_ARRAY_COUNT(MartianDecorSpecs);
+			return MartianDecorSpecs;
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell:
+			OutCount = UE_ARRAY_COUNT(HellDecorSpecs);
+			return HellDecorSpecs;
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon:
+		default:
+			return nullptr;
 		}
-
-		const FDifficultyThemeAssetInfo ThemeInfo = GetDifficultyThemeAssetInfo(Difficulty);
-		if (!ThemeInfo.FolderName || !ThemeInfo.AssetSuffix)
-		{
-			return LoadObject<UTexture>(nullptr, EasyBlockTexturePath);
-		}
-
-		const FString AssetName = FString::Printf(TEXT("T_MegabonkBlock_%s"), ThemeInfo.AssetSuffix);
-		const FString AssetPath = FString::Printf(
-			TEXT("/Game/World/Terrain/MegabonkThemes/%s/%s.%s"),
-			ThemeInfo.FolderName,
-			*AssetName,
-			*AssetName);
-
-		if (UTexture2D* ThemeTexture = LoadObject<UTexture2D>(nullptr, *AssetPath))
-		{
-			return ThemeTexture;
-		}
-
-		UE_LOG(LogT66PreviewEnvironment, Warning, TEXT("[PREVIEW] Missing preview block texture override: %s"), *AssetPath);
-		return LoadObject<UTexture>(nullptr, EasyBlockTexturePath);
 	}
 
-	UMaterialInterface* BuildPreviewGroundMaterial(UStaticMeshComponent* GroundComponent, ET66Difficulty Difficulty)
+	UStaticMeshComponent* FindPreviewComponent(AActor* Owner, const FName& ComponentName)
 	{
-		if (!GroundComponent)
+		if (!Owner)
 		{
 			return nullptr;
 		}
 
-		UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, PreviewGroundBaseMaterialPath);
-		UTexture* BlockTexture = LoadPreviewBlockTexture(Difficulty);
-		if (BaseMaterial && BlockTexture)
+		TInlineComponentArray<UStaticMeshComponent*> Components(Owner);
+		for (UStaticMeshComponent* Component : Components)
 		{
-			if (UMaterialInstanceDynamic* GroundMID = UMaterialInstanceDynamic::Create(BaseMaterial, GroundComponent, TEXT("PreviewGroundMID")))
+			if (Component && Component->GetFName() == ComponentName)
 			{
-				GroundMID->SetTextureParameterValue(TEXT("DiffuseColorMap"), BlockTexture);
-				GroundMID->SetTextureParameterValue(TEXT("BaseColorTexture"), BlockTexture);
-				GroundMID->SetScalarParameterValue(TEXT("Brightness"), 1.0f);
-				GroundMID->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
-				GroundMID->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White);
-				return GroundMID;
+				return Component;
 			}
-		}
-
-		if (UMaterialInterface* FallbackBlockMaterial = LoadObject<UMaterialInterface>(nullptr, PreviewFallbackBlockMaterialPath))
-		{
-			return FallbackBlockMaterial;
 		}
 
 		return nullptr;
 	}
 
-	UStaticMeshComponent* CreatePreviewPropComponent(
+	UStaticMeshComponent* EnsurePreviewComponent(
 		AActor* Owner,
 		USceneComponent* RootComponent,
-		const FT66PreviewPropSpec& Spec)
+		const FName& ComponentName)
 	{
 		if (!Owner || !RootComponent)
 		{
 			return nullptr;
 		}
 
-		UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, Spec.MeshPath);
-		if (!Mesh)
+		if (UStaticMeshComponent* Existing = FindPreviewComponent(Owner, ComponentName))
 		{
-			return nullptr;
+			return Existing;
 		}
 
-		UStaticMeshComponent* Component = NewObject<UStaticMeshComponent>(Owner, *FString::Printf(TEXT("%sComponent"), Spec.Name));
+		UStaticMeshComponent* Component = NewObject<UStaticMeshComponent>(Owner, ComponentName);
 		if (!Component)
 		{
 			return nullptr;
@@ -148,12 +189,8 @@ namespace
 		Component->SetupAttachment(RootComponent);
 		Component->SetMobility(EComponentMobility::Movable);
 		Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Component->SetStaticMesh(Mesh);
-		Component->SetRelativeScale3D(Spec.RelativeScale);
-		Component->SetRelativeRotation(Spec.RelativeRotation);
-		Component->SetRelativeLocation(FVector(Spec.RelativeLocation.X, Spec.RelativeLocation.Y, 0.f));
-		FT66VisualUtil::GroundMeshToActorOrigin(Component, Mesh);
-		Component->AddRelativeLocation(FVector(0.f, 0.f, Spec.RelativeLocation.Z));
+		Component->SetGenerateOverlapEvents(false);
+		Component->SetCanEverAffectNavigation(false);
 		Component->SetVisibility(false, true);
 		Component->SetHiddenInGame(true, true);
 
@@ -161,57 +198,238 @@ namespace
 		Component->RegisterComponent();
 		return Component;
 	}
-}
 
-void T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(UStaticMeshComponent* GroundComponent, ET66Difficulty Difficulty)
-{
-	if (!GroundComponent)
-	{
-		return;
-	}
-
-	if (UMaterialInterface* GroundMat = BuildPreviewGroundMaterial(GroundComponent, Difficulty))
-	{
-		GroundComponent->SetMaterial(0, GroundMat);
-	}
-}
-
-void T66PreviewStageEnvironment::CreateEasyFarmPreviewProps(
-	AActor* Owner,
-	USceneComponent* RootComponent,
-	TArray<TObjectPtr<UStaticMeshComponent>>& OutComponents)
-{
-	if (!Owner || !RootComponent || OutComponents.Num() > 0)
-	{
-		return;
-	}
-
-	for (const FT66PreviewPropSpec& Spec : EasyFarmPreviewProps)
-	{
-		if (UStaticMeshComponent* Component = CreatePreviewPropComponent(Owner, RootComponent, Spec))
-		{
-			OutComponents.Add(Component);
-		}
-	}
-}
-
-void T66PreviewStageEnvironment::SetPreviewPropsVisibility(
-	const TArray<TObjectPtr<UStaticMeshComponent>>& Props,
-	bool bVisible)
-{
-	for (UStaticMeshComponent* Component : Props)
+	void SetPreviewComponentVisible(UStaticMeshComponent* Component, const bool bVisible)
 	{
 		if (!Component)
 		{
-			continue;
+			return;
 		}
 
 		Component->SetVisibility(bVisible, true);
 		Component->SetHiddenInGame(!bVisible, true);
 	}
+
+	void ApplyMaterialToComponent(UStaticMeshComponent* Component, UMaterialInterface* Material)
+	{
+		if (!Component || !Material)
+		{
+			return;
+		}
+
+		const int32 MaterialSlots = FMath::Max(Component->GetNumMaterials(), 1);
+		for (int32 MaterialIndex = 0; MaterialIndex < MaterialSlots; ++MaterialIndex)
+		{
+			Component->SetMaterial(MaterialIndex, Material);
+		}
+	}
+
+	void ResetComponentMaterials(UStaticMeshComponent* Component)
+	{
+		if (!Component)
+		{
+			return;
+		}
+
+		Component->EmptyOverrideMaterials();
+	}
+
+	void ConfigureBackdropBox(
+		UStaticMeshComponent* Component,
+		const FVector& RelativeLocation,
+		const FVector& DesiredHalfExtents)
+	{
+		if (!Component)
+		{
+			return;
+		}
+
+		if (UStaticMesh* CubeMesh = FT66VisualUtil::GetBasicShapeCube())
+		{
+			Component->SetStaticMesh(CubeMesh);
+			const FVector BoundsHalfExtent = CubeMesh->GetBounds().BoxExtent;
+			Component->SetRelativeScale3D(FVector(
+				DesiredHalfExtents.X / FMath::Max(BoundsHalfExtent.X, 1.0f),
+				DesiredHalfExtents.Y / FMath::Max(BoundsHalfExtent.Y, 1.0f),
+				DesiredHalfExtents.Z / FMath::Max(BoundsHalfExtent.Z, 1.0f)));
+		}
+
+		Component->SetRelativeLocation(RelativeLocation);
+		Component->SetRelativeRotation(FRotator::ZeroRotator);
+	}
+
+	UMaterialInterface* ResolvePreviewSurfaceMaterial(
+		UObject* Outer,
+		const FT66PreviewThemeProfile& ThemeProfile,
+		const bool bWallSurface,
+		const bool bRoofSurface)
+	{
+		T66TowerThemeVisuals::FResolvedTheme Theme;
+		if (T66TowerThemeVisuals::ResolveTheme(Outer, ThemeProfile.Theme, false, Theme))
+		{
+			if (bRoofSurface)
+			{
+				return Theme.RoofMaterial ? Theme.RoofMaterial : (Theme.WallMaterial ? Theme.WallMaterial : Theme.FloorMaterial);
+			}
+
+			if (bWallSurface)
+			{
+				return Theme.WallMaterial ? Theme.WallMaterial : Theme.FloorMaterial;
+			}
+
+			if (Theme.FloorMaterial)
+			{
+				return Theme.FloorMaterial;
+			}
+		}
+
+		return LoadObject<UMaterialInterface>(nullptr, PreviewFallbackBlockMaterialPath);
+	}
+
+	void ConfigureDecorSlot(
+		UStaticMeshComponent* Component,
+		const FT66PreviewDecorSpec* Spec,
+		UMaterialInterface* ThemeMaterial,
+		const bool bVisible)
+	{
+		if (!Component)
+		{
+			return;
+		}
+
+		if (!Spec || !bVisible)
+		{
+			SetPreviewComponentVisible(Component, false);
+			return;
+		}
+
+		UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, Spec->MeshPath);
+		if (!Mesh)
+		{
+			Component->SetStaticMesh(nullptr);
+			SetPreviewComponentVisible(Component, false);
+			return;
+		}
+
+		Component->SetStaticMesh(Mesh);
+		Component->SetRelativeScale3D(Spec->RelativeScale);
+		Component->SetRelativeRotation(Spec->RelativeRotation);
+		Component->SetRelativeLocation(FVector(Spec->RelativeLocation.X, Spec->RelativeLocation.Y, 0.0f));
+		FT66VisualUtil::GroundMeshToActorOrigin(Component, Mesh);
+		Component->AddRelativeLocation(FVector(0.0f, 0.0f, Spec->RelativeLocation.Z));
+
+		if (Spec->bApplyThemeMaterial && ThemeMaterial)
+		{
+			ApplyMaterialToComponent(Component, ThemeMaterial);
+		}
+		else
+		{
+			ResetComponentMaterials(Component);
+		}
+
+		SetPreviewComponentVisible(Component, true);
+	}
 }
 
-bool T66PreviewStageEnvironment::ShouldShowEasyProps(ET66Difficulty Difficulty)
+void T66PreviewStageEnvironment::EnsurePreviewEnvironmentBuilt(
+	AActor* Owner,
+	USceneComponent* RootComponent)
 {
-	return Difficulty == ET66Difficulty::Easy;
+	if (!Owner || !RootComponent)
+	{
+		return;
+	}
+
+	ConfigureBackdropBox(
+		EnsurePreviewComponent(Owner, RootComponent, PreviewBackdropWallName),
+		FVector(1150.0f, 0.0f, 430.0f),
+		FVector(70.0f, 860.0f, 430.0f));
+
+	ConfigureBackdropBox(
+		EnsurePreviewComponent(Owner, RootComponent, PreviewLeftWallName),
+		FVector(620.0f, -980.0f, 390.0f),
+		FVector(650.0f, 70.0f, 390.0f));
+
+	ConfigureBackdropBox(
+		EnsurePreviewComponent(Owner, RootComponent, PreviewRightWallName),
+		FVector(620.0f, 980.0f, 390.0f),
+		FVector(650.0f, 70.0f, 390.0f));
+
+	ConfigureBackdropBox(
+		EnsurePreviewComponent(Owner, RootComponent, PreviewCeilingName),
+		FVector(760.0f, 0.0f, 870.0f),
+		FVector(670.0f, 860.0f, 40.0f));
+
+	for (const FName& DecorSlotName : PreviewDecorSlotNames)
+	{
+		(void)EnsurePreviewComponent(Owner, RootComponent, DecorSlotName);
+	}
+}
+
+void T66PreviewStageEnvironment::ApplyPreviewEnvironment(
+	AActor* Owner,
+	UStaticMeshComponent* GroundComponent,
+	ET66Difficulty Difficulty,
+	ET66PreviewStageMode PreviewStageMode,
+	bool bVisible)
+{
+	if (!Owner || !GroundComponent)
+	{
+		return;
+	}
+
+	EnsurePreviewEnvironmentBuilt(Owner, Owner->GetRootComponent());
+
+	const FT66PreviewThemeProfile ThemeProfile = ResolvePreviewThemeProfile(Difficulty);
+	UMaterialInterface* GroundMaterial = ResolvePreviewSurfaceMaterial(GroundComponent, ThemeProfile, false, false);
+	UMaterialInterface* WallMaterial = ResolvePreviewSurfaceMaterial(Owner, ThemeProfile, true, false);
+	UMaterialInterface* RoofMaterial = ResolvePreviewSurfaceMaterial(Owner, ThemeProfile, false, true);
+
+	if (!WallMaterial)
+	{
+		WallMaterial = GroundMaterial;
+	}
+	if (!RoofMaterial)
+	{
+		RoofMaterial = WallMaterial ? WallMaterial : GroundMaterial;
+	}
+
+	ApplyMaterialToComponent(GroundComponent, GroundMaterial);
+
+	const bool bShowSelectionDressing = bVisible && PreviewStageMode == ET66PreviewStageMode::Selection;
+	const bool bShowBackdropWalls = bShowSelectionDressing && !ThemeProfile.bHideBackdropWalls;
+	const bool bShowCeiling = bShowSelectionDressing && ThemeProfile.bShowCeiling;
+
+	if (UStaticMeshComponent* BackdropWall = FindPreviewComponent(Owner, PreviewBackdropWallName))
+	{
+		ApplyMaterialToComponent(BackdropWall, WallMaterial);
+		SetPreviewComponentVisible(BackdropWall, bShowBackdropWalls);
+	}
+	if (UStaticMeshComponent* LeftWall = FindPreviewComponent(Owner, PreviewLeftWallName))
+	{
+		ApplyMaterialToComponent(LeftWall, WallMaterial);
+		SetPreviewComponentVisible(LeftWall, bShowBackdropWalls);
+	}
+	if (UStaticMeshComponent* RightWall = FindPreviewComponent(Owner, PreviewRightWallName))
+	{
+		ApplyMaterialToComponent(RightWall, WallMaterial);
+		SetPreviewComponentVisible(RightWall, bShowBackdropWalls);
+	}
+	if (UStaticMeshComponent* Ceiling = FindPreviewComponent(Owner, PreviewCeilingName))
+	{
+		ApplyMaterialToComponent(Ceiling, RoofMaterial);
+		SetPreviewComponentVisible(Ceiling, bShowCeiling);
+	}
+
+	int32 DecorSpecCount = 0;
+	const FT66PreviewDecorSpec* DecorSpecs = GetDecorSpecsForTheme(ThemeProfile.Theme, DecorSpecCount);
+	for (int32 DecorIndex = 0; DecorIndex < UE_ARRAY_COUNT(PreviewDecorSlotNames); ++DecorIndex)
+	{
+		const FT66PreviewDecorSpec* DecorSpec = (DecorSpecs && DecorIndex < DecorSpecCount) ? &DecorSpecs[DecorIndex] : nullptr;
+		ConfigureDecorSlot(
+			FindPreviewComponent(Owner, PreviewDecorSlotNames[DecorIndex]),
+			DecorSpec,
+			WallMaterial,
+			bShowSelectionDressing);
+	}
 }

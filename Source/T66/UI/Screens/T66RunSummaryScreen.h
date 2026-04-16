@@ -125,4 +125,7 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<AT66CompanionPreviewStage> CompanionPreviewStage;
+
+	bool bStoredHeroPreviewStageVisibility = false;
+	bool bHeroPreviewStageWasVisible = true;
 };

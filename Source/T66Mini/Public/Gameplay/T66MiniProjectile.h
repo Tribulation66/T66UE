@@ -30,6 +30,7 @@ public:
 	AT66MiniProjectile();
 
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void InitializeProjectile(
 		AActor* InOwnerActor,
@@ -68,6 +69,9 @@ private:
 	void ExplodeAt(const FVector& Location);
 	void SpawnFollowUpPulse(const FVector& Location) const;
 
+	UFUNCTION()
+	void OnRep_ProjectileVisualState();
+
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> SceneRoot;
 
@@ -82,7 +86,10 @@ private:
 	TSet<TWeakObjectPtr<AActor>> HitActors;
 
 	FVector MoveDirection = FVector::ForwardVector;
+	UPROPERTY(Replicated)
 	ET66MiniProjectileBehavior Behavior = ET66MiniProjectileBehavior::Pierce;
+
+	UPROPERTY(Replicated)
 	FName IdolID = NAME_None;
 	float PrimaryDamage = 0.f;
 	float FollowUpDamage = 0.f;
@@ -97,9 +104,9 @@ private:
 	float LifetimeRemaining = 4.f;
 	bool bPrimaryHitResolved = false;
 
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_ProjectileVisualState)
 	TObjectPtr<UTexture2D> PrimaryTexture;
 
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_ProjectileVisualState)
 	TObjectPtr<UTexture2D> FollowUpTexture;
 };

@@ -16,9 +16,9 @@
 - The active gameplay map family is the tower generator and floor-based traversal path, not the old one-board Megabonk preset selection flow.
 - The old `Hilly` / `Flat` discussion below is retained only as historical design context for how the tower split was originally planned.
 - Current tower pacing still follows the same high-level runtime structure:
-  - `1` start floor
-  - `4` gameplay floors
-  - `1` boss floor
+  - `1` `Start Level`
+  - `5` gameplay levels
+  - `1` `Boss Level`
 
 ### 1.1 Current tower implementation status
 
@@ -34,9 +34,9 @@
   - randomizes each floor's square descent-hole position from the run seed instead of keeping the holes on a fixed shared pattern
   - adds full-height internal maze walls on gameplay floors and teaches tower surface placement to treat those wall volumes as blocked space
   - pushes maze-wall spans all the way into the outer shell so gameplay floors no longer keep an open perimeter ring around the tower walls
-  - keeps `Floor 1` on the generic dungeon-tower scaffold again instead of the later enclosed-room pass, while still keeping tree props out of Stage 1
+  - keeps the `Start Level` on the generic dungeon-tower scaffold again instead of the later enclosed-room pass, while still keeping tree props out of Stage 1
   - restores the original taller Stage 1 tower read by using the roof cap only at the top of the tower instead of adding the later low ceiling caps between floors
-  - keeps `Floor 1` as a clean start floor with the idol and no guaranteed start-area interactable scatter
+  - keeps the `Start Level` as a clean start floor with the idol and no guaranteed start-area interactable scatter
   - now places the start-floor idol altar on its own dedicated tower start anchor instead of directly on the player spawn point
   - no longer spawns the old idol-area dummy enemy test targets
   - starts real stage combat/timer pressure once the player reaches the gameplay floors
@@ -52,9 +52,9 @@
   - allows compact casino/circus and quick-revive opportunities to roll per gameplay floor
   - spawns exactly one saint on one gameplay floor per tower stage
   - guarantees tower chest/crate rules by floor instead of using the old global stage scatter for those two interactables:
-    - `Floor 1`: no chest, no crate
-    - `Floors 2-5`: `1-3` chests and `1-3` crates per floor
-    - `Floor 6`: no chest, no crate
+    - `Start Level`: no chest, no crate
+    - gameplay `Levels 1-5`: `1-3` chests and `1-3` crates per floor
+    - `Boss Level`: no chest, no crate
   - now rejects cross-floor tower placement traces and retries tower floor placement more aggressively, so gameplay-floor chest/crate/casino/utility placement stays on the intended floor instead of bleeding through floor gaps to another level
   - snaps tower NPC/interactable spawns to an explicit requested floor and tags them with explicit tower-floor identity so floor-local placement and safety logic do not rely only on raw actor Z
   - re-snaps tower chest/crate/totem/wheel placements after rarity/configuration work so floor-local mesh swaps cannot pull those actors back onto the wrong floor
@@ -65,8 +65,8 @@
   - uses denser tower-only tree/rock scatter on gameplay floors while keeping the start floor clean
   - uses tower-only dungeon material instances for floor, wall, and roof surfaces instead of the inherited green/brown Megabonk terrain look
   - uses dedicated tower descent-hole trigger actors for floor-to-floor progression while keeping the existing boss-kill `StageGate` portal for actual stage-to-stage travel
-  - replaces the legacy boss-threshold gate on tower with final-hole boss entry, so dropping from `Floor 5` into `Floor 6` pauses normal wave spawning and starts boss flow
-  - keeps the boss floor as the terminal floor with no further descent hole
+  - replaces the legacy boss-threshold gate on tower with final-hole boss entry, so dropping from `Level 5` into `Boss Level` pauses normal wave spawning and starts boss flow
+  - keeps the `Boss Level` as the terminal floor with no further descent hole
   - uses tower-specific fall-rescue logic so normal hole descent does not snap players back onto upper floors
   - uses tighter floor-classification tolerance so falling between levels is not misread as standing on a gameplay floor
   - snaps tower bosses after boss initialization so tall boss meshes do not sink into the floor
@@ -247,35 +247,36 @@
 ### 4.2 Recommended first playable structure
 
 - Initial recommended prototype:
-  - `Floor 1`: start floor only, modeled after the current start area, with the idol altar and no normal enemy/wave gameplay
-  - `Floor 2`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
-  - `Floor 3`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
-  - `Floor 4`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
-  - `Floor 5`: final gameplay floor with monsters, world interactables, and the baby gate placed beside the boss descent hole
-  - `Floor 6`: boss floor
+  - `Start Level`: start floor only, modeled after the current start area, with the idol altar and no normal enemy/wave gameplay
+  - `Level 1`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+  - `Level 2`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+  - `Level 3`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+  - `Level 4`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+  - `Level 5`: final gameplay floor with monsters, world interactables, and the baby gate placed beside the boss descent hole
+  - `Boss Level`: boss floor
 - Reason for this recommendation:
   - `7:00` total stage time is already established in runtime/UI/save logic
   - `3:00` boss budget leaves `4:00` for non-boss gameplay
   - separating the top floor as a start-only space preserves the current game feel
-  - `4` gameplay floors gives the descent enough weight to feel like a tower instead of just a short vertical corridor
+  - `5` gameplay floors gives the descent enough weight to feel like a full difficulty ladder instead of just a short vertical corridor
 
 ### 4.3 Traversal rules
 
-- `Floor 1` should own:
+- `Start Level` should own:
   - the stage-start idol altar
   - current start-area feel and breathing room
   - no standard monster spawning
   - no normal world-interactable scatter pass
   - the first descent hole into real gameplay
-- Each gameplay floor (`Floor 2` through `Floor 5`) should own:
+- Each gameplay floor (`Level 1` through `Level 5`) should own:
   - one local exploration space
   - one altar
   - one descent hole
   - side-wall enemy spawn anchors
   - optional small casino / vendor / quick revive opportunities
-- `Floor 5` should also own:
+- `Level 5` should also own:
   - baby gate directly beside the boss-hole descent
-- Boss floor should own:
+- `Boss Level` should own:
   - boss entry point
   - boss combat space
   - no further descent hole
@@ -310,7 +311,7 @@
   - use a smaller circus/casino version
   - chance to spawn on each gameplay floor
 - Quick revive:
-  - keep the start-area version on `Floor 1`
+  - keep the start-area version on `Start Level`
   - optional chance on gameplay floors after that
 - Saint:
   - exactly once per stage
@@ -484,14 +485,14 @@
 - Add descent holes.
 - Add active floor tracking.
 - Let the player move from floor to floor.
-- Keep `Floor 1` as a start-only floor.
+- Keep `Start Level` as a start-only floor.
 
 ### Phase 3. Move combat spawning to tower rules
 
 - Add side-wall spawn anchors.
 - Make enemy spawns floor-aware.
 - Restrict spawns to the active floor.
-- Keep normal monster spawning disabled on `Floor 1`.
+- Keep normal monster spawning disabled on `Start Level`.
 
 ### Phase 4. Move stage systems to tower rules
 
@@ -549,8 +550,8 @@
 
 1. Do we want the preset name to stay plain `Tower`, or should it be something more thematic like `Descent` while keeping the same design?
 2. Does altar interaction immediately arm blood pressure, or should blood begin after a short grace delay on that floor?
-3. Should the timer remain frozen on the top start floor and only begin once the player descends into `Floor 2`, matching the current start-area philosophy?
-4. Should the casino be allowed on `Floor 5`, or should that floor be reserved for baby-gate / boss-entry setup?
+3. Should the timer remain frozen on `Start Level` and only begin once the player descends into `Level 1`, matching the current start-area philosophy?
+4. Should the casino be allowed on `Level 5`, or should that floor be reserved for baby-gate / boss-entry setup?
 5. Do we want quick revive to remain guaranteed only on the start floor, or become a chance on some gameplay floors after the prototype is stable?
 6. Do we want one altar on every gameplay floor, or only on selected floors after pacing tests?
 

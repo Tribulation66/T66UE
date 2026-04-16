@@ -7,11 +7,54 @@
 #include "Core/T66MiniFrontendStateSubsystem.h"
 #include "Core/T66MiniRunStateSubsystem.h"
 #include "Gameplay/T66MiniGameMode.h"
+#include "Gameplay/T66MiniGameState.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "Math/UnrealMathUtility.h"
+#include "GameFramework/InputSettings.h"
+#include "GameFramework/PlayerInput.h"
+#include "Save/T66MiniRunSaveGame.h"
+#include "Save/T66MiniSaveSubsystem.h"
 #include "UI/T66MiniPauseMenuWidget.h"
 #include "UI/T66UITypes.h"
+
+namespace
+{
+	const FName MiniPauseAction(TEXT("MiniPause"));
+	const FName MiniInteractAction(TEXT("MiniInteract"));
+	const FName MiniUltimateAction(TEXT("MiniUltimate"));
+
+	bool IsKeyboardMouseKey(const FKey& Key)
+	{
+		return Key.IsValid() && !Key.IsGamepadKey() && !Key.IsTouch();
+	}
+
+	void EnsureMiniActionHasDefaultBinding(APlayerController* PlayerController, const FName ActionName, const FKey DesiredKey)
+	{
+		UInputSettings* Settings = UInputSettings::GetInputSettings();
+		if (!Settings || !DesiredKey.IsValid())
+		{
+			return;
+		}
+
+		for (const FInputActionKeyMapping& Mapping : Settings->GetActionMappings())
+		{
+			if (Mapping.ActionName == ActionName && IsKeyboardMouseKey(Mapping.Key))
+			{
+				return;
+			}
+		}
+
+		Settings->AddActionMapping(FInputActionKeyMapping(ActionName, DesiredKey));
+		Settings->SaveKeyMappings();
+		Settings->SaveConfig();
+
+		if (PlayerController && PlayerController->PlayerInput)
+		{
+			PlayerController->PlayerInput->ForceRebuildingKeyMaps(true);
+		}
+	}
+}
 
 AT66MiniPlayerController::AT66MiniPlayerController()
 {
@@ -49,24 +92,52 @@ void AT66MiniPlayerController::SetupInputComponent()
 		return;
 	}
 
-	FInputKeyBinding& EscapeBinding = InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &AT66MiniPlayerController::HandlePausePressed);
-	EscapeBinding.bExecuteWhenPaused = true;
+	EnsureMiniActionHasDefaultBinding(this, MiniPauseAction, EKeys::Escape);
+	EnsureMiniActionHasDefaultBinding(this, MiniInteractAction, EKeys::LeftMouseButton);
+	EnsureMiniActionHasDefaultBinding(this, MiniUltimateAction, EKeys::RightMouseButton);
 
-	FInputKeyBinding& PauseBinding = InputComponent->BindKey(EKeys::Pause, IE_Pressed, this, &AT66MiniPlayerController::HandlePausePressed);
+	FInputActionBinding& PauseBinding = InputComponent->BindAction(MiniPauseAction, IE_Pressed, this, &AT66MiniPlayerController::HandlePausePressed);
 	PauseBinding.bExecuteWhenPaused = true;
+
+	InputComponent->BindAction(MiniInteractAction, IE_Pressed, this, &AT66MiniPlayerController::HandleInteractPressed);
+	InputComponent->BindAction(MiniUltimateAction, IE_Pressed, this, &AT66MiniPlayerController::HandleUltimatePressed);
 }
 
 void AT66MiniPlayerController::ResumeFromPauseMenu()
 {
 	ClosePauseMenu();
-	SetPause(false);
+	if (!IsOnlinePartyMode() && IsPaused())
+	{
+		SetPause(false);
+	}
 	ConfigureGameplayInputMode();
 }
 
-void AT66MiniPlayerController::ReturnToMainMenuFromPause()
+void AT66MiniPlayerController::SaveAndQuitToMiniMenuFromPause()
 {
+	if (IsOnlinePartyMode())
+	{
+		ClosePauseMenu();
+		if (HasAuthority())
+		{
+			if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+			{
+				MiniGameMode->RequestPartySaveAndReturnToFrontend(TEXT("Mini party run saved. Returning the whole party to the mini menu."));
+			}
+		}
+		else
+		{
+			ServerRequestPartySaveAndReturnToFrontend();
+		}
+		ConfigureGameplayInputMode();
+		return;
+	}
+
 	ClosePauseMenu();
-	SetPause(false);
+	if (IsPaused())
+	{
+		SetPause(false);
+	}
 
 	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
 	{
@@ -87,7 +158,7 @@ void AT66MiniPlayerController::ReturnToMainMenuFromPause()
 
 		if (UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GameInstance))
 		{
-			T66GameInstance->PendingFrontendScreen = ET66ScreenType::MainMenu;
+			T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniMainMenu;
 			UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
 		}
 	}
@@ -123,6 +194,11 @@ void AT66MiniPlayerController::HandlePausePressed()
 
 	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
 	{
+		if (PauseMenuWidget->HandlePauseBackAction())
+		{
+			return;
+		}
+
 		ResumeFromPauseMenu();
 		return;
 	}
@@ -130,14 +206,55 @@ void AT66MiniPlayerController::HandlePausePressed()
 	OpenPauseMenu();
 }
 
-void AT66MiniPlayerController::OpenPauseMenu()
+void AT66MiniPlayerController::HandleInteractPressed()
 {
-	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+	if (IsPaused() || bLootCratePresentationActive || IsPauseMenuVisible())
 	{
-		MiniGameMode->SaveRunProgressNow(true);
+		return;
 	}
 
-	SetPause(true);
+	if (HasAuthority())
+	{
+		if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+		{
+			MiniGameMode->TryInteractNearest(Cast<AT66MiniPlayerPawn>(GetPawn()));
+		}
+		return;
+	}
+
+	ServerTryInteract();
+}
+
+void AT66MiniPlayerController::HandleUltimatePressed()
+{
+	if (IsPaused() || bLootCratePresentationActive || IsPauseMenuVisible())
+	{
+		return;
+	}
+
+	AT66MiniPlayerPawn* MiniPawn = Cast<AT66MiniPlayerPawn>(GetPawn());
+	if (!MiniPawn)
+	{
+		return;
+	}
+
+	FVector CursorWorldLocation = MiniPawn->GetActorLocation();
+	ProjectCursorToGroundPlane(this, CursorWorldLocation);
+	MiniPawn->TryActivateUltimate(CursorWorldLocation);
+}
+
+void AT66MiniPlayerController::OpenPauseMenu()
+{
+	const bool bOnlinePartyMode = IsOnlinePartyMode();
+	if (!bOnlinePartyMode)
+	{
+		if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+		{
+			MiniGameMode->SaveRunProgressNow(true);
+		}
+		SetPause(true);
+	}
+
 	ConfigurePauseMenuInputMode();
 
 	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
@@ -149,6 +266,7 @@ void AT66MiniPlayerController::OpenPauseMenu()
 	if (PauseMenuWidget)
 	{
 		PauseMenuWidget->AddToViewport(500);
+		PauseMenuWidget->SetKeyboardFocus();
 	}
 }
 
@@ -162,6 +280,11 @@ void AT66MiniPlayerController::ClosePauseMenu()
 
 void AT66MiniPlayerController::UpdateMouseFollowTarget()
 {
+	if (IsPauseMenuVisible())
+	{
+		return;
+	}
+
 	AT66MiniPlayerPawn* MiniPawn = Cast<AT66MiniPlayerPawn>(GetPawn());
 	if (!MiniPawn)
 	{
@@ -207,6 +330,25 @@ bool AT66MiniPlayerController::ProjectCursorToGroundPlane(APlayerController* Pla
 
 bool AT66MiniPlayerController::StartLootCratePresentation()
 {
+	if (IsOnlinePartyMode())
+	{
+		BuildLootCrateStrip();
+		if (LootCrateStripItemIDs.Num() == 0 || PendingLootCrateRewardItemID.IsNone())
+		{
+			return false;
+		}
+
+		if (AT66MiniPlayerPawn* MiniPawn = Cast<AT66MiniPlayerPawn>(GetPawn()))
+		{
+			MiniPawn->AcquireItem(PendingLootCrateRewardItemID);
+		}
+
+		LootCrateWinnerIndex = 0;
+		PendingLootCrateRewardItemID = NAME_None;
+		LootCrateStripItemIDs.Reset();
+		return true;
+	}
+
 	if (bLootCratePresentationActive)
 	{
 		return false;
@@ -301,5 +443,149 @@ void AT66MiniPlayerController::BuildLootCrateStrip()
 
 		const int32 PickedIndex = FMath::RandRange(0, ItemDefinitions->Num() - 1);
 		LootCrateStripItemIDs.Add((*ItemDefinitions)[PickedIndex].ItemID);
+	}
+}
+
+void AT66MiniPlayerController::ServerTryInteract_Implementation()
+{
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+	{
+		MiniGameMode->TryInteractNearest(Cast<AT66MiniPlayerPawn>(GetPawn()));
+	}
+}
+
+void AT66MiniPlayerController::ServerRequestPartySaveAndReturnToFrontend_Implementation()
+{
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+	{
+		MiniGameMode->RequestPartySaveAndReturnToFrontend(TEXT("Mini party run saved. Returning the whole party to the mini menu."));
+	}
+}
+
+bool AT66MiniPlayerController::IsOnlinePartyMode() const
+{
+	const AT66MiniGameState* MiniGameState = GetWorld() ? GetWorld()->GetGameState<AT66MiniGameState>() : nullptr;
+	return MiniGameState && MiniGameState->bOnlinePartyMode;
+}
+
+bool AT66MiniPlayerController::IsPauseMenuVisible() const
+{
+	return PauseMenuWidget && PauseMenuWidget->IsInViewport();
+}
+
+void AT66MiniPlayerController::ClientPrepareMiniOnlineRunSummary_Implementation(
+	const bool bWasVictory,
+	const FString& ResultLabel,
+	const int32 WaveReached,
+	const float RunSeconds)
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	UT66MiniFrontendStateSubsystem* FrontendState = GameInstance ? GameInstance->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
+	UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
+	UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
+	UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
+	UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GameInstance);
+	const UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
+	const AT66MiniPlayerPawn* MiniPawn = Cast<AT66MiniPlayerPawn>(GetPawn());
+	if (!FrontendState || !DataSubsystem)
+	{
+		if (T66GameInstance)
+		{
+			T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniMainMenu;
+		}
+		return;
+	}
+
+	FT66MiniRunSummary Summary;
+	Summary.bHasSummary = true;
+	Summary.bWasVictory = bWasVictory;
+	Summary.HeroID = MiniPawn ? MiniPawn->GetHeroID() : (ActiveRun ? ActiveRun->HeroID : NAME_None);
+	Summary.CompanionID = MiniPawn ? MiniPawn->GetSelectedCompanionID() : (ActiveRun ? ActiveRun->CompanionID : NAME_None);
+	Summary.DifficultyID = ActiveRun ? ActiveRun->DifficultyID : NAME_None;
+	Summary.WaveReached = FMath::Max(1, WaveReached);
+	Summary.MaterialsCollected = MiniPawn ? MiniPawn->GetMaterials() : (ActiveRun ? ActiveRun->Materials : 0);
+	Summary.OwnedItemCount = MiniPawn ? MiniPawn->GetOwnedItemIDs().Num() : (ActiveRun ? ActiveRun->OwnedItemIDs.Num() : 0);
+	Summary.EquippedIdolCount = MiniPawn ? MiniPawn->GetEquippedIdolIDs().Num() : (ActiveRun ? ActiveRun->EquippedIdolIDs.Num() : 0);
+	Summary.RunSeconds = RunSeconds;
+	Summary.ResultLabel = ResultLabel;
+	Summary.LastUpdatedUtc = FDateTime::UtcNow().ToIso8601();
+
+	if (const FT66MiniHeroDefinition* HeroDefinition = DataSubsystem->FindHero(Summary.HeroID))
+	{
+		Summary.HeroDisplayName = HeroDefinition->DisplayName;
+	}
+	else
+	{
+		Summary.HeroDisplayName = Summary.HeroID.ToString();
+	}
+
+	if (const FT66MiniCompanionDefinition* CompanionDefinition = DataSubsystem->FindCompanion(Summary.CompanionID))
+	{
+		Summary.CompanionDisplayName = CompanionDefinition->DisplayName;
+	}
+	else
+	{
+		Summary.CompanionDisplayName = Summary.CompanionID.ToString();
+	}
+
+	if (const FT66MiniDifficultyDefinition* DifficultyDefinition = DataSubsystem->FindDifficulty(Summary.DifficultyID))
+	{
+		Summary.DifficultyDisplayName = DifficultyDefinition->DisplayName;
+	}
+	else
+	{
+		Summary.DifficultyDisplayName = Summary.DifficultyID.ToString();
+	}
+
+	FrontendState->SetLastRunSummary(Summary);
+	FrontendState->ExitIntermissionFlow();
+	if (SaveSubsystem)
+	{
+		SaveSubsystem->RecordRunSummary(Summary, DataSubsystem);
+		if (bWasVictory)
+		{
+			SaveSubsystem->RecordClearedMiniStage(Summary.CompanionID, DataSubsystem);
+		}
+	}
+	if (RunState)
+	{
+		RunState->ResetActiveRun();
+	}
+	if (T66GameInstance)
+	{
+		T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniRunSummary;
+	}
+}
+
+void AT66MiniPlayerController::ClientPrepareMiniFrontendTravel_Implementation(const ET66ScreenType PendingScreen, const bool bIntermissionFlow)
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	UT66MiniFrontendStateSubsystem* FrontendState = GameInstance ? GameInstance->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
+	UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
+	UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GameInstance);
+	if (FrontendState)
+	{
+		if (bIntermissionFlow)
+		{
+			FrontendState->ResumeIntermissionFlow();
+		}
+		else
+		{
+			FrontendState->ExitIntermissionFlow();
+		}
+	}
+
+	if (!bIntermissionFlow && RunState)
+	{
+		RunState->ResetActiveRun();
+	}
+
+	if (T66GameInstance)
+	{
+		T66GameInstance->MiniIntermissionStateRevision = 0;
+		T66GameInstance->MiniIntermissionStateJson.Reset();
+		T66GameInstance->MiniIntermissionRequestRevision = 0;
+		T66GameInstance->MiniIntermissionRequestJson.Reset();
+		T66GameInstance->PendingFrontendScreen = PendingScreen;
 	}
 }

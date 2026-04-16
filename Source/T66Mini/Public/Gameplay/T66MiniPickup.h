@@ -22,6 +22,7 @@ public:
 	AT66MiniPickup();
 
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void InitializePickup(int32 InMaterialValue, float InExperienceValue, float InHealValue, UTexture2D* InTexture, const FString& InVisualID = FString(), float InLifetimeRemaining = 20.f, FName InGrantedItemID = NAME_None);
 	int32 GetMaterialValue() const { return MaterialValue; }
@@ -45,7 +46,11 @@ private:
 	const FHitResult& SweepResult);
 
 	void CollectPickup(class AT66MiniPlayerPawn* PlayerPawn);
-	class AT66MiniPlayerPawn* GetMiniPlayerPawn() const;
+	class AT66MiniPlayerPawn* FindClosestPlayerPawn(bool bRequireAlive = true) const;
+	void RefreshVisuals();
+
+	UFUNCTION()
+	void OnRep_VisualState();
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -62,12 +67,23 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UT66MiniShadowComponent> ShadowComponent;
 
+	UPROPERTY(Replicated)
 	int32 MaterialValue = 0;
+
+	UPROPERTY(Replicated)
 	float ExperienceValue = 0.f;
+
+	UPROPERTY(Replicated)
 	float HealValue = 0.f;
+
 	float LifetimeRemaining = 20.f;
 	float HoverPhase = 0.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_VisualState)
 	FString VisualID;
+
+	UPROPERTY(Replicated)
 	FName GrantedItemID = NAME_None;
+
 	bool bCollected = false;
 };

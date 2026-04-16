@@ -3,7 +3,11 @@
 #include "Core/T66SessionSubsystem.h"
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66PartySubsystem.h"
 #include "Core/T66RunSaveGame.h"
+#include "Core/T66RunStateSubsystem.h"
+#include "Core/T66SaveSubsystem.h"
 #include "Core/T66SteamHelper.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66SessionPlayerState.h"
@@ -29,6 +33,7 @@ namespace
 {
 	constexpr int32 T66MaxPendingFriendJoinLookupAttempts = 10;
 	constexpr double T66InviteFeedbackLifetimeSeconds = 12.0;
+	constexpr int32 T66DefaultSteamJoinPort = 7777;
 
 	FString T66JoinSessionResultToString(EOnJoinSessionCompleteResult::Type Result)
 	{
@@ -50,11 +55,47 @@ namespace
 		}
 	}
 
+	bool T66TryParseSteamIdString(const FString& SteamIdString, uint64& OutSteamId)
+	{
+		OutSteamId = 0;
+		return !SteamIdString.IsEmpty() && LexTryParseString(OutSteamId, *SteamIdString) && OutSteamId != 0;
+	}
+
+	int32 T66ResolveSteamJoinPort(const UWorld* World)
+	{
+		return (World && World->URL.Port > 0) ? World->URL.Port : T66DefaultSteamJoinPort;
+	}
+
 	FString T66BuildSteamJoinConnectString(const FString& HostSteamId)
 	{
 		return HostSteamId.IsEmpty()
 			? FString()
 			: FString::Printf(TEXT("t66party:%s"), *HostSteamId);
+	}
+
+	FString T66BuildSteamDirectConnectString(const FString& HostSteamId, const int32 JoinPort)
+	{
+		return HostSteamId.IsEmpty()
+			? FString()
+			: FString::Printf(TEXT("steam.%s:%d"), *HostSteamId, JoinPort > 0 ? JoinPort : T66DefaultSteamJoinPort);
+	}
+
+	bool T66IsMiniFrontendScreen(const ET66ScreenType ScreenType)
+	{
+		switch (ScreenType)
+		{
+		case ET66ScreenType::MiniMainMenu:
+		case ET66ScreenType::MiniSaveSlots:
+		case ET66ScreenType::MiniCharacterSelect:
+		case ET66ScreenType::MiniCompanionSelect:
+		case ET66ScreenType::MiniDifficultySelect:
+		case ET66ScreenType::MiniIdolSelect:
+		case ET66ScreenType::MiniShop:
+		case ET66ScreenType::MiniRunSummary:
+			return true;
+		default:
+			return false;
+		}
 	}
 }
 
@@ -81,6 +122,7 @@ void UT66SessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
 	{
+		SteamLobbyJoinRequestedHandle = SteamHelper->OnSteamLobbyJoinRequested().AddUObject(this, &UT66SessionSubsystem::HandleSteamLobbyJoinRequested);
 		SteamJoinRequestedHandle = SteamHelper->OnSteamJoinRequested().AddUObject(this, &UT66SessionSubsystem::HandleSteamJoinRequested);
 	}
 }
@@ -120,6 +162,8 @@ void UT66SessionSubsystem::Deinitialize()
 
 	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
 	{
+		SteamHelper->OnSteamLobbyJoinRequested().Remove(SteamLobbyJoinRequestedHandle);
+		SteamLobbyJoinRequestedHandle.Reset();
 		SteamHelper->OnSteamJoinRequested().Remove(SteamJoinRequestedHandle);
 		SteamJoinRequestedHandle.Reset();
 	}
@@ -134,7 +178,7 @@ bool UT66SessionSubsystem::PrepareToHostFrontendLobby(ET66PartySize DesiredParty
 
 bool UT66SessionSubsystem::EnsurePartySessionReady(ET66PartySize DesiredPartySize, ET66ScreenType PartyHubScreen)
 {
-	PendingPartySize = (DesiredPartySize == ET66PartySize::Solo) ? ET66PartySize::Solo : ET66PartySize::Quad;
+	PendingPartySize = DesiredPartySize;
 	PartyHubScreenType = PartyHubScreen;
 	LocalFrontendScreen = PartyHubScreen;
 	bLocalReadyState = false;
@@ -182,6 +226,14 @@ bool UT66SessionSubsystem::EnsurePartySessionReady(ET66PartySize DesiredPartySiz
 void UT66SessionSubsystem::HandlePartyHubScreenActivated()
 {
 	UWorld* World = GetWorld();
+	bGameplaySaveAndReturnInProgress = false;
+	if (World && World->URL.HasOption(TEXT("closed")))
+	{
+		SyncLocalLobbyProfile();
+		UpdateSteamRichPresence();
+		return;
+	}
+
 	if (!bPendingCreateLobbySession
 		&& !IsPartySessionActive()
 		&& !bJoinInProgress
@@ -208,6 +260,10 @@ void UT66SessionSubsystem::HandlePartyHubScreenActivated()
 	{
 		CreatePartySession();
 	}
+	else if (IsPartySessionActive())
+	{
+		UpdatePartySessionJoinability(true, TEXT("frontend_party_hub"));
+	}
 
 	SyncLocalLobbyProfile();
 	UpdateSteamRichPresence();
@@ -232,7 +288,17 @@ bool UT66SessionSubsystem::SendInviteToFriend(const FString& FriendPlayerId, con
 	{
 		PendingInviteFriendPlayerId = FriendPlayerId;
 		PendingInviteFriendDisplayName = FriendDisplayName;
-		const bool bStartedLobby = EnsurePartySessionReady(ET66PartySize::Quad, ET66ScreenType::MainMenu);
+		ET66PartySize DesiredPartySize = ET66PartySize::Duo;
+		if (const UT66GameInstance* GI = GetT66GameInstance())
+		{
+			DesiredPartySize = GI->SelectedPartySize;
+		}
+		if (DesiredPartySize == ET66PartySize::Solo)
+		{
+			DesiredPartySize = ET66PartySize::Duo;
+		}
+
+		const bool bStartedLobby = EnsurePartySessionReady(DesiredPartySize, ET66ScreenType::MainMenu);
 		if (!bStartedLobby)
 		{
 			PendingInviteFriendPlayerId.Reset();
@@ -296,7 +362,7 @@ bool UT66SessionSubsystem::SendInviteToFriendInternal(const FString& FriendPlaye
 
 	IOnlineSessionPtr SessionInterface = GetSessionInterface();
 	IOnlineIdentityPtr IdentityInterface = GetIdentityInterface();
-	if ((!bPreferInGameInvite || !bBackendInviteSent) && SessionInterface.IsValid() && IdentityInterface.IsValid())
+	if (SessionInterface.IsValid() && IdentityInterface.IsValid())
 	{
 		FUniqueNetIdPtr FriendNetId = IdentityInterface->CreateUniquePlayerId(FriendPlayerId);
 		if (FriendNetId.IsValid())
@@ -357,6 +423,16 @@ bool UT66SessionSubsystem::SendInviteToFriendInternal(const FString& FriendPlaye
 
 bool UT66SessionSubsystem::JoinFriendPartySessionBySteamId(const FString& FriendPlayerId, const FString& InviteId, const FString& AppId)
 {
+	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
+	{
+		FString FriendCurrentAppId;
+		FString FriendCurrentLobbyId;
+		if (SteamHelper->TryGetFriendCurrentGame(FriendPlayerId, &FriendCurrentAppId, &FriendCurrentLobbyId) && !FriendCurrentLobbyId.IsEmpty())
+		{
+			return JoinPartySessionByLobbyId(FriendCurrentLobbyId, FriendPlayerId, AppId.IsEmpty() ? FriendCurrentAppId : AppId, InviteId);
+		}
+	}
+
 	return StartJoinByFriendId(FriendPlayerId, FString(), InviteId, AppId);
 }
 
@@ -384,23 +460,50 @@ bool UT66SessionSubsystem::JoinPartySessionByLobbyId(const FString& LobbyId, con
 			TMap<FString, FString> DiagnosticFields;
 			DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
 			DiagnosticFields.Add(TEXT("active_app_id"), ActiveAppId);
-			SubmitSessionDiagnostic(TEXT("invite_join_app_mismatch"), TEXT("warning"), TEXT("Invite app ID does not match the active app ID."), InviteId, LobbyId, FString(), DiagnosticFields);
+			SubmitSessionDiagnostic(TEXT("invite_join_app_mismatch"), TEXT("error"), TEXT("Invite app ID does not match the active app ID."), InviteId, LobbyId, FString(), DiagnosticFields);
+			BroadcastStateChanged(TEXT("Party invite targets a different Steam app/build."));
+			return false;
 		}
 	}
 
-	UE_LOG(LogT66Session, Log, TEXT("Joining invited party via friend lookup. Host=%s Lobby=%s App=%s"), *HostSteamId, *LobbyId, *AppId);
-	if (!StartJoinByFriendId(HostSteamId, LobbyId, InviteId, AppId))
+	const int32 JoinPort = T66ResolveSteamJoinPort(GetWorld());
+	const FString DirectConnectString = T66BuildSteamDirectConnectString(HostSteamId, JoinPort);
+	if (DirectConnectString.IsEmpty())
 	{
-		SubmitSessionDiagnostic(TEXT("invite_join_lookup_start_failed"), TEXT("error"), TEXT("Could not start looking up the host party."), InviteId, LobbyId);
-		BroadcastStateChanged(TEXT("Could not start looking up the host party."));
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("host_steam_id"), HostSteamId);
+		DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
+		DiagnosticFields.Add(TEXT("join_port"), FString::FromInt(JoinPort));
+		SubmitSessionDiagnostic(TEXT("invite_join_direct_bootstrap_failed"), TEXT("error"), TEXT("Could not build a Steam direct-connect target from the invite."), InviteId, LobbyId, FString(), DiagnosticFields);
+		BroadcastStateChanged(TEXT("Party invite could not be prepared for joining."));
 		return false;
 	}
 
+	UE_LOG(LogT66Session, Log, TEXT("Joining invited party via direct Steam travel. Host=%s Lobby=%s App=%s Port=%d"), *HostSteamId, *LobbyId, *AppId, JoinPort);
 	TMap<FString, FString> DiagnosticFields;
 	DiagnosticFields.Add(TEXT("host_steam_id"), HostSteamId);
 	DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
-	SubmitSessionDiagnostic(TEXT("invite_join_lookup_started"), TEXT("info"), TEXT("Started host party lookup from invite."), InviteId, LobbyId, FString(), DiagnosticFields);
+	DiagnosticFields.Add(TEXT("join_port"), FString::FromInt(JoinPort));
+	SubmitSessionDiagnostic(TEXT("invite_join_direct_bootstrap_started"), TEXT("info"), TEXT("Built direct Steam travel target from invite."), InviteId, LobbyId, FString(), DiagnosticFields);
 
+	if (IsPartySessionActive())
+	{
+		PendingDirectJoinConnectString = DirectConnectString;
+		DestroyPartySession();
+		return true;
+	}
+
+	AT66PlayerController* PlayerController = GetPrimaryPlayerController();
+	if (!PlayerController)
+	{
+		SubmitSessionDiagnostic(TEXT("invite_join_direct_start_failed"), TEXT("error"), TEXT("Could not resolve the local player controller for direct Steam travel."), InviteId, LobbyId, FString(), DiagnosticFields);
+		BroadcastStateChanged(TEXT("Could not start joining the invited Steam lobby."));
+		return false;
+	}
+
+	SubmitSessionDiagnostic(TEXT("invite_join_direct_travel_started"), TEXT("info"), TEXT("Travelling directly to the invited Steam host."), InviteId, LobbyId, FString(), DiagnosticFields);
+	BroadcastStateChanged(TEXT("Joining party lobby..."));
+	PlayerController->ClientTravel(DirectConnectString, TRAVEL_Absolute);
 	return true;
 }
 
@@ -437,18 +540,263 @@ bool UT66SessionSubsystem::StartGameplayTravel()
 		return false;
 	}
 
-	ClearCachedPartyRunSummaries();
-
-	if (IOnlineSessionPtr SessionInterface = GetSessionInterface())
-	{
-		SessionInterface->StartSession(PartySessionName);
-	}
-
-	UpdateSteamRichPresence();
+	PreparePartySessionForWorldTravel(TEXT("gameplay_travel"));
 
 	const FName LevelToOpen = UT66GameInstance::GetGameplayLevelName();
 	const FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelToOpen.ToString());
 	World->ServerTravel(TravelURL);
+	return true;
+}
+
+bool UT66SessionSubsystem::PreparePartySessionForWorldTravel(const TCHAR* Context)
+{
+	if (!IsPartySessionActive())
+	{
+		return false;
+	}
+
+	ClearCachedPartyRunSummaries();
+
+	if (IOnlineSessionPtr SessionInterface = GetSessionInterface())
+	{
+		UpdatePartySessionJoinability(false, Context ? Context : TEXT("gameplay_travel"));
+		SessionInterface->StartSession(PartySessionName);
+	}
+
+	UpdateSteamRichPresence();
+	return true;
+}
+
+UT66RunSaveGame* UT66SessionSubsystem::BuildCurrentRunSaveSnapshot(UObject* Outer) const
+{
+	UT66GameInstance* GI = GetT66GameInstance();
+	if (!GI)
+	{
+		return nullptr;
+	}
+
+	UT66RunSaveGame* SaveObj = NewObject<UT66RunSaveGame>(Outer ? Outer : const_cast<UT66SessionSubsystem*>(this));
+	if (!SaveObj)
+	{
+		return nullptr;
+	}
+
+	SaveObj->HeroID = GI->SelectedHeroID;
+	SaveObj->HeroBodyType = GI->SelectedHeroBodyType;
+	SaveObj->CompanionID = GI->SelectedCompanionID;
+	SaveObj->Difficulty = GI->SelectedDifficulty;
+	SaveObj->PartySize = GI->SelectedPartySize;
+	SaveObj->MapName = GetWorld() ? UWorld::RemovePIEPrefix(GetWorld()->GetMapName()) : FString();
+	SaveObj->LastPlayedUtc = FDateTime::UtcNow().ToIso8601();
+	SaveObj->RunSeed = GI->RunSeed;
+	SaveObj->MainMapLayoutVariant = GI->CurrentMainMapLayoutVariant;
+	SaveObj->bRunIneligibleForLeaderboard = GI->bRunIneligibleForLeaderboard;
+
+	if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+	{
+		SaveObj->StageReached = RunState->GetCurrentStage();
+		RunState->ExportSavedRunSnapshot(SaveObj->RunSnapshot);
+		if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+		{
+			SaveObj->EquippedIdols = IdolManager->GetEquippedIdols();
+			SaveObj->EquippedIdolTiers = IdolManager->GetEquippedIdolTierValues();
+		}
+		else
+		{
+			SaveObj->EquippedIdols = RunState->GetEquippedIdols();
+			SaveObj->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
+		}
+	}
+
+	if (AT66PlayerController* PlayerController = GetPrimaryPlayerController())
+	{
+		if (APawn* Pawn = PlayerController->GetPawn())
+		{
+			SaveObj->PlayerTransform = Pawn->GetActorTransform();
+		}
+	}
+
+	const UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>();
+	SaveObj->OwnerPlayerId = !GI->CurrentRunOwnerPlayerId.IsEmpty()
+		? GI->CurrentRunOwnerPlayerId
+		: (PartySubsystem ? PartySubsystem->GetLocalPlayerId() : TEXT("local_player"));
+	SaveObj->OwnerDisplayName = !GI->CurrentRunOwnerDisplayName.IsEmpty()
+		? GI->CurrentRunOwnerDisplayName
+		: (PartySubsystem ? PartySubsystem->GetLocalDisplayName() : TEXT("You"));
+	SaveObj->PartyMemberIds = GI->CurrentRunPartyMemberIds.Num() > 0
+		? GI->CurrentRunPartyMemberIds
+		: (PartySubsystem ? PartySubsystem->GetCurrentPartyMemberIds() : TArray<FString>());
+	SaveObj->PartyMemberDisplayNames = GI->CurrentRunPartyMemberDisplayNames.Num() > 0
+		? GI->CurrentRunPartyMemberDisplayNames
+		: (PartySubsystem ? PartySubsystem->GetCurrentPartyMemberDisplayNames() : TArray<FString>());
+	if (SaveObj->PartyMemberIds.Num() == 0 && !SaveObj->OwnerPlayerId.IsEmpty())
+	{
+		SaveObj->PartyMemberIds.Add(SaveObj->OwnerPlayerId);
+	}
+	if (SaveObj->PartyMemberDisplayNames.Num() == 0 && !SaveObj->OwnerDisplayName.IsEmpty())
+	{
+		SaveObj->PartyMemberDisplayNames.Add(SaveObj->OwnerDisplayName);
+	}
+
+	SaveObj->SavedPartyPlayers.Reset();
+	if (UWorld* World = GetWorld())
+	{
+		if (AGameStateBase* GameState = World->GetGameState())
+		{
+			for (APlayerState* PlayerState : GameState->PlayerArray)
+			{
+				const AT66SessionPlayerState* SessionPlayerState = Cast<AT66SessionPlayerState>(PlayerState);
+				if (!SessionPlayerState)
+				{
+					continue;
+				}
+
+				const FT66LobbyPlayerInfo& LobbyInfo = SessionPlayerState->GetLobbyInfo();
+				if (LobbyInfo.SteamId.IsEmpty())
+				{
+					continue;
+				}
+
+				FT66SavedPartyPlayerState& SavedPlayer = SaveObj->SavedPartyPlayers.AddDefaulted_GetRef();
+				SavedPlayer.PlayerId = LobbyInfo.SteamId;
+				SavedPlayer.DisplayName = LobbyInfo.DisplayName;
+				SavedPlayer.HeroID = LobbyInfo.SelectedHeroID;
+				SavedPlayer.HeroBodyType = LobbyInfo.SelectedHeroBodyType;
+				SavedPlayer.HeroSkinID = LobbyInfo.SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : LobbyInfo.SelectedHeroSkinID;
+				SavedPlayer.CompanionID = LobbyInfo.SelectedCompanionID;
+				SavedPlayer.CompanionBodyType = LobbyInfo.SelectedCompanionBodyType;
+				SavedPlayer.bIsPartyHost = LobbyInfo.bPartyHost;
+			}
+		}
+	}
+
+	if (SaveObj->SavedPartyPlayers.Num() == 0)
+	{
+		FT66SavedPartyPlayerState& LocalSavedPlayer = SaveObj->SavedPartyPlayers.AddDefaulted_GetRef();
+		LocalSavedPlayer.PlayerId = SaveObj->OwnerPlayerId;
+		LocalSavedPlayer.DisplayName = SaveObj->OwnerDisplayName;
+		LocalSavedPlayer.HeroID = SaveObj->HeroID;
+		LocalSavedPlayer.HeroBodyType = SaveObj->HeroBodyType;
+		LocalSavedPlayer.HeroSkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
+		LocalSavedPlayer.CompanionID = SaveObj->CompanionID;
+		LocalSavedPlayer.PlayerTransform = SaveObj->PlayerTransform;
+		LocalSavedPlayer.bIsPartyHost = true;
+	}
+	else
+	{
+		for (FT66SavedPartyPlayerState& SavedPlayer : SaveObj->SavedPartyPlayers)
+		{
+			if (SavedPlayer.PlayerId == SaveObj->OwnerPlayerId)
+			{
+				SavedPlayer.PlayerTransform = SaveObj->PlayerTransform;
+				SavedPlayer.bIsPartyHost = true;
+				break;
+			}
+		}
+	}
+
+	SaveObj->PartyMemberIds.Reset();
+	SaveObj->PartyMemberDisplayNames.Reset();
+	for (const FT66SavedPartyPlayerState& SavedPlayer : SaveObj->SavedPartyPlayers)
+	{
+		if (!SavedPlayer.PlayerId.IsEmpty())
+		{
+			SaveObj->PartyMemberIds.AddUnique(SavedPlayer.PlayerId);
+		}
+		if (!SavedPlayer.DisplayName.IsEmpty())
+		{
+			SaveObj->PartyMemberDisplayNames.AddUnique(SavedPlayer.DisplayName);
+		}
+	}
+
+	switch (SaveObj->SavedPartyPlayers.Num())
+	{
+	case 4:
+		SaveObj->PartySize = ET66PartySize::Quad;
+		break;
+	case 3:
+		SaveObj->PartySize = ET66PartySize::Trio;
+		break;
+	case 2:
+		SaveObj->PartySize = ET66PartySize::Duo;
+		break;
+	case 1:
+	default:
+		SaveObj->PartySize = ET66PartySize::Solo;
+		break;
+	}
+
+	return SaveObj;
+}
+
+bool UT66SessionSubsystem::SaveCurrentRunAndReturnToFrontend()
+{
+	if (bGameplaySaveAndReturnInProgress)
+	{
+		return true;
+	}
+
+	UWorld* World = GetWorld();
+	UT66GameInstance* GI = GetT66GameInstance();
+	if (!World || !GI || World->GetNetMode() == NM_Client)
+	{
+		return false;
+	}
+
+	UT66SaveSubsystem* SaveSub = GI->GetSubsystem<UT66SaveSubsystem>();
+	if (!SaveSub)
+	{
+		return false;
+	}
+
+	int32 SlotIndex = GI->CurrentSaveSlotIndex;
+	if (SlotIndex < 0 || SlotIndex >= UT66SaveSubsystem::MaxSlots)
+	{
+		SlotIndex = SaveSub->FindFirstEmptySlot();
+		if (SlotIndex == INDEX_NONE)
+		{
+			SlotIndex = SaveSub->FindOldestOccupiedSlot();
+			if (SlotIndex == INDEX_NONE)
+			{
+				return false;
+			}
+		}
+		GI->CurrentSaveSlotIndex = SlotIndex;
+	}
+
+	UT66RunSaveGame* SaveObj = BuildCurrentRunSaveSnapshot(this);
+	if (!SaveObj || !SaveSub->SaveToSlot(SlotIndex, SaveObj))
+	{
+		return false;
+	}
+
+	bGameplaySaveAndReturnInProgress = true;
+	bPendingCreateLobbySession = false;
+	bPendingJoinAfterDestroy = false;
+	bPendingTravelToStandaloneFrontendAfterDestroy = false;
+	bJoinInProgress = false;
+	bLocalReadyState = false;
+	ClearCachedPartyRunSummaries();
+	ClearPendingFriendJoinRetry();
+	PendingInviteFriendPlayerId.Reset();
+	PendingInviteFriendDisplayName.Reset();
+	PendingJoinFriendPlayerId.Reset();
+	PendingExpectedJoinLobbyId.Reset();
+	PendingJoinInviteId.Reset();
+	PendingJoinSourceAppId.Reset();
+	PendingFoundLobbyId.Reset();
+	PendingDirectJoinConnectString.Reset();
+	PendingJoinFriendLookupAttempts = 0;
+	LocalFrontendScreen = ET66ScreenType::MainMenu;
+	GI->PendingFrontendScreen = ET66ScreenType::MainMenu;
+	ClearSteamRichPresence();
+
+	if (AT66PlayerController* PlayerController = GetPrimaryPlayerController())
+	{
+		PlayerController->SetPause(false);
+	}
+
+	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
 	return true;
 }
 
@@ -464,6 +812,7 @@ bool UT66SessionSubsystem::LeaveFrontendLobby(ET66ScreenType ReturnScreen)
 	PendingJoinInviteId.Reset();
 	PendingJoinSourceAppId.Reset();
 	PendingFoundLobbyId.Reset();
+	PendingDirectJoinConnectString.Reset();
 	PendingJoinFriendLookupAttempts = 0;
 	bLocalReadyState = false;
 	LocalFrontendScreen = ReturnScreen;
@@ -533,6 +882,24 @@ bool UT66SessionSubsystem::IsPartySessionActive() const
 		return SessionInterface->GetNamedSession(PartySessionName) != nullptr;
 	}
 	return false;
+}
+
+bool UT66SessionSubsystem::IsPartyLobbyContextActive() const
+{
+	if (IsPartySessionActive())
+	{
+		return true;
+	}
+
+	const UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() == NM_Standalone)
+	{
+		return false;
+	}
+
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	GetCurrentLobbyProfiles(LobbyProfiles);
+	return LobbyProfiles.Num() > 1;
 }
 
 bool UT66SessionSubsystem::IsHostingPartySession() const
@@ -752,13 +1119,15 @@ FString UT66SessionSubsystem::GetCurrentPartyLobbyId() const
 	return FString();
 }
 
+int32 UT66SessionSubsystem::GetCurrentLobbyPlayerCount() const
+{
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	GetCurrentLobbyProfiles(LobbyProfiles);
+	return LobbyProfiles.Num();
+}
+
 bool UT66SessionSubsystem::IsLocalPlayerPartyHost() const
 {
-	if (!IsPartySessionActive())
-	{
-		return true;
-	}
-
 	FT66LobbyPlayerInfo HostLobbyInfo;
 	if (!GetHostLobbyProfile(HostLobbyInfo))
 	{
@@ -903,11 +1272,6 @@ bool UT66SessionSubsystem::GetHostLobbyProfile(FT66LobbyPlayerInfo& OutLobbyInfo
 
 ET66ScreenType UT66SessionSubsystem::GetDesiredPartyFrontendScreen() const
 {
-	if (!IsPartySessionActive())
-	{
-		return LocalFrontendScreen;
-	}
-
 	FT66LobbyPlayerInfo HostLobbyInfo;
 	if (GetHostLobbyProfile(HostLobbyInfo) && HostLobbyInfo.FrontendScreen != ET66ScreenType::None)
 	{
@@ -953,6 +1317,79 @@ bool UT66SessionSubsystem::AreAllPartyMembersReadyForGameplay(FString* OutFailur
 			if (OutFailureReason)
 			{
 				*OutFailureReason = FString::Printf(TEXT("%s has not selected a hero yet."), *LobbyInfo.DisplayName);
+			}
+			return false;
+		}
+
+		if (!LobbyInfo.bPartyHost && LobbyProfiles.Num() > 1 && !LobbyInfo.bLobbyReady)
+		{
+			if (OutFailureReason)
+			{
+				*OutFailureReason = FString::Printf(TEXT("%s is not ready yet."), *LobbyInfo.DisplayName);
+			}
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool UT66SessionSubsystem::AreAllPartyMembersReadyForMiniGameplay(FString* OutFailureReason) const
+{
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	GetCurrentLobbyProfiles(LobbyProfiles);
+	if (LobbyProfiles.Num() <= 0)
+	{
+		if (OutFailureReason)
+		{
+			*OutFailureReason = TEXT("No mini party members are available.");
+		}
+		return false;
+	}
+
+	for (const FT66LobbyPlayerInfo& LobbyInfo : LobbyProfiles)
+	{
+		if (!LobbyInfo.bMiniFlowActive)
+		{
+			if (OutFailureReason)
+			{
+				*OutFailureReason = FString::Printf(TEXT("%s is not in the mini lobby yet."), *LobbyInfo.DisplayName);
+			}
+			return false;
+		}
+
+		if (LobbyInfo.MiniSelectedHeroID.IsNone())
+		{
+			if (OutFailureReason)
+			{
+				*OutFailureReason = FString::Printf(TEXT("%s has not selected a mini hero yet."), *LobbyInfo.DisplayName);
+			}
+			return false;
+		}
+
+		if (LobbyInfo.MiniSelectedCompanionID.IsNone())
+		{
+			if (OutFailureReason)
+			{
+				*OutFailureReason = FString::Printf(TEXT("%s has not selected a mini companion yet."), *LobbyInfo.DisplayName);
+			}
+			return false;
+		}
+
+		if (LobbyInfo.MiniSelectedDifficultyID.IsNone())
+		{
+			if (OutFailureReason)
+			{
+				*OutFailureReason = FString::Printf(TEXT("%s has not selected a mini difficulty yet."), *LobbyInfo.DisplayName);
+			}
+			return false;
+		}
+
+		if (LobbyInfo.MiniSelectedIdolIDs.Num() <= 0)
+		{
+			if (OutFailureReason)
+			{
+				*OutFailureReason = FString::Printf(TEXT("%s has not equipped any mini idols yet."), *LobbyInfo.DisplayName);
 			}
 			return false;
 		}
@@ -1043,6 +1480,8 @@ bool UT66SessionSubsystem::CreatePartySession()
 	SessionSettings.NumPrivateConnections = 0;
 	SessionSettings.bIsLANMatch = false;
 	SessionSettings.bShouldAdvertise = true;
+	// The pre-game Steam lobby must stay joinable so invite acceptance can
+	// discover and join the host before gameplay travel begins.
 	SessionSettings.bAllowJoinInProgress = true;
 	SessionSettings.bAllowInvites = true;
 	SessionSettings.bUsesPresence = true;
@@ -1062,6 +1501,68 @@ bool UT66SessionSubsystem::CreatePartySession()
 	{
 		SubmitSessionDiagnostic(TEXT("create_party_session_started"), TEXT("info"), TEXT("Creating Steam lobby."));
 		BroadcastStateChanged(TEXT("Creating Steam lobby..."));
+	}
+
+	return bStarted;
+}
+
+bool UT66SessionSubsystem::UpdatePartySessionJoinability(bool bAllowJoinInProgress, const TCHAR* Context)
+{
+	IOnlineSessionPtr SessionInterface = GetSessionInterface();
+	if (!SessionInterface.IsValid())
+	{
+		return false;
+	}
+
+	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(PartySessionName);
+	if (!Session)
+	{
+		return false;
+	}
+
+	if (Session->SessionSettings.bAllowJoinInProgress == bAllowJoinInProgress)
+	{
+		return true;
+	}
+
+	FOnlineSessionSettings UpdatedSessionSettings = Session->SessionSettings;
+	UpdatedSessionSettings.bAllowJoinInProgress = bAllowJoinInProgress;
+
+	const bool bStarted = SessionInterface->UpdateSession(PartySessionName, UpdatedSessionSettings, true);
+	if (bStarted)
+	{
+		UE_LOG(
+			LogT66Session,
+			Log,
+			TEXT("Updating party session joinability to %s (context=%s) started=%d"),
+			bAllowJoinInProgress ? TEXT("true") : TEXT("false"),
+			Context ? Context : TEXT("unspecified"),
+			1);
+	}
+	else
+	{
+		UE_LOG(
+			LogT66Session,
+			Warning,
+			TEXT("Updating party session joinability to %s (context=%s) started=%d"),
+			bAllowJoinInProgress ? TEXT("true") : TEXT("false"),
+			Context ? Context : TEXT("unspecified"),
+			0);
+	}
+
+	if (bStarted)
+	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("allow_join_in_progress"), bAllowJoinInProgress ? TEXT("true") : TEXT("false"));
+		DiagnosticFields.Add(TEXT("context"), Context ? FString(Context) : TEXT("unspecified"));
+		SubmitSessionDiagnostic(
+			TEXT("party_session_joinability_update_started"),
+			TEXT("info"),
+			FString::Printf(TEXT("Updating party session joinability to %s."), bAllowJoinInProgress ? TEXT("true") : TEXT("false")),
+			FString(),
+			GetCurrentPartyLobbyId(),
+			FString(),
+			DiagnosticFields);
 	}
 
 	return bStarted;
@@ -1256,6 +1757,29 @@ FT66LobbyPlayerInfo UT66SessionSubsystem::BuildLocalLobbyProfile() const
 		LobbyInfo.SelectedCompanionBodyType = GI->SelectedCompanionBodyType;
 		LobbyInfo.SelectedHeroSkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
 		LobbyInfo.LobbyDifficulty = GI->SelectedDifficulty;
+		LobbyInfo.RunSeed = GI->RunSeed;
+		LobbyInfo.MainMapLayoutVariant = GI->CurrentMainMapLayoutVariant;
+		LobbyInfo.bMiniFlowActive = T66IsMiniFrontendScreen(LocalFrontendScreen);
+		if (LobbyInfo.bMiniFlowActive)
+		{
+			LobbyInfo.MiniSelectedHeroID = GI->MiniSelectedHeroID;
+			LobbyInfo.MiniSelectedCompanionID = GI->MiniSelectedCompanionID;
+			LobbyInfo.MiniSelectedDifficultyID = GI->MiniSelectedDifficultyID;
+			LobbyInfo.MiniSelectedIdolIDs = GI->MiniSelectedIdolIDs;
+			LobbyInfo.bMiniLoadFlow = GI->bMiniLoadFlow;
+			LobbyInfo.bMiniIntermissionFlow = GI->bMiniIntermissionFlow;
+		}
+
+		if (LobbyInfo.bMiniFlowActive
+			|| GI->bMiniIntermissionFlow
+			|| GI->MiniIntermissionStateRevision > 0
+			|| GI->MiniIntermissionRequestRevision > 0)
+		{
+			LobbyInfo.MiniIntermissionStateRevision = GI->MiniIntermissionStateRevision;
+			LobbyInfo.MiniIntermissionStateJson = GI->MiniIntermissionStateJson;
+			LobbyInfo.MiniIntermissionRequestRevision = GI->MiniIntermissionRequestRevision;
+			LobbyInfo.MiniIntermissionRequestJson = GI->MiniIntermissionRequestJson;
+		}
 	}
 
 	if (LobbyInfo.DisplayName.IsEmpty())
@@ -1394,6 +1918,18 @@ void UT66SessionSubsystem::HandleDestroySessionComplete(FName SessionName, bool 
 		bPendingJoinAfterDestroy = false;
 		JoinPartySession(PendingJoinSearchResult);
 		return;
+	}
+
+	if (!PendingDirectJoinConnectString.IsEmpty())
+	{
+		const FString ConnectString = PendingDirectJoinConnectString;
+		PendingDirectJoinConnectString.Reset();
+		if (AT66PlayerController* PlayerController = GetPrimaryPlayerController())
+		{
+			BroadcastStateChanged(TEXT("Joining party lobby..."));
+			PlayerController->ClientTravel(ConnectString, TRAVEL_Absolute);
+			return;
+		}
 	}
 
 	if (bPendingTravelToStandaloneFrontendAfterDestroy)
@@ -1594,6 +2130,45 @@ void UT66SessionSubsystem::HandleSessionUserInviteAccepted(bool bWasSuccessful, 
 	JoinPartySession(InviteResult);
 }
 
+void UT66SessionSubsystem::HandleSteamLobbyJoinRequested(const FString& FriendPlayerId, const FString& LobbyId)
+{
+	if (FriendPlayerId.IsEmpty() || LobbyId.IsEmpty())
+	{
+		return;
+	}
+
+	const FString LocalPlayerId = GetSteamHelper() ? GetSteamHelper()->GetLocalSteamId() : FString();
+	if (!LocalPlayerId.IsEmpty() && FriendPlayerId == LocalPlayerId)
+	{
+		return;
+	}
+
+	FString InviteAppId;
+	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
+	{
+		SteamHelper->TryGetFriendCurrentGame(FriendPlayerId, &InviteAppId, nullptr);
+		if (InviteAppId.IsEmpty())
+		{
+			InviteAppId = SteamHelper->GetActiveSteamAppId();
+		}
+	}
+
+	UE_LOG(LogT66Session, Log, TEXT("Steam lobby join request received. Host=%s Lobby=%s App=%s"), *FriendPlayerId, *LobbyId, *InviteAppId);
+	TMap<FString, FString> DiagnosticFields;
+	DiagnosticFields.Add(TEXT("host_steam_id"), FriendPlayerId);
+	DiagnosticFields.Add(TEXT("lobby_id"), LobbyId);
+	if (!InviteAppId.IsEmpty())
+	{
+		DiagnosticFields.Add(TEXT("invite_app_id"), InviteAppId);
+	}
+	SubmitSessionDiagnostic(TEXT("steam_lobby_join_requested"), TEXT("info"), TEXT("Steam lobby join request received."), FString(), LobbyId, FString(), DiagnosticFields);
+
+	if (!JoinPartySessionByLobbyId(LobbyId, FriendPlayerId, InviteAppId))
+	{
+		SubmitSessionDiagnostic(TEXT("steam_lobby_join_request_failed"), TEXT("error"), TEXT("Steam lobby join request could not be resolved into a join."), FString(), LobbyId, FString(), DiagnosticFields);
+	}
+}
+
 void UT66SessionSubsystem::HandleSteamJoinRequested(const FString& FriendPlayerId)
 {
 	if (FriendPlayerId.IsEmpty())
@@ -1607,9 +2182,9 @@ void UT66SessionSubsystem::HandleSteamJoinRequested(const FString& FriendPlayerI
 		return;
 	}
 
-	UE_LOG(LogT66Session, Log, TEXT("Steam join request fallback received for friend %s."), *FriendPlayerId);
+	UE_LOG(LogT66Session, Log, TEXT("Steam rich-presence join request fallback received for friend %s."), *FriendPlayerId);
 	TMap<FString, FString> DiagnosticFields;
 	DiagnosticFields.Add(TEXT("host_steam_id"), FriendPlayerId);
-	SubmitSessionDiagnostic(TEXT("steam_rich_presence_join_requested"), TEXT("info"), TEXT("Steam rich presence join request received."), FString(), FString(), FString(), DiagnosticFields);
+	SubmitSessionDiagnostic(TEXT("steam_rich_presence_join_requested"), TEXT("info"), TEXT("Steam rich presence join request received via fallback path."), FString(), FString(), FString(), DiagnosticFields);
 	JoinFriendPartySessionBySteamId(FriendPlayerId);
 }

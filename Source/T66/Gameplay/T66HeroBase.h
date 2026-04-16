@@ -15,9 +15,10 @@ class UInstancedStaticMeshComponent;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
 class UWidgetComponent;
-class UT66HeroSpeedSubsystem;
 class UAnimationAsset;
 class AT66PilotableTractor;
+class UT66HeroMovementComponent;
+class AT66SessionPlayerState;
 
 /**
  * Base class for all playable heroes in Tribulation 66
@@ -41,12 +42,16 @@ public:
 	AT66HeroBase();
 
 	/** The hero ID this actor represents (set at spawn time) */
-	UPROPERTY(BlueprintReadWrite, Category = "Hero")
+	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_HeroAppearance, Category = "Hero")
 	FName HeroID;
 
 	/** The selected body type for this hero */
-	UPROPERTY(BlueprintReadWrite, Category = "Hero")
+	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_HeroAppearance, Category = "Hero")
 	ET66BodyType BodyType = ET66BodyType::TypeA;
+
+	/** Replicated skin selection so simulated proxies can rebuild visuals after travel. */
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_HeroAppearance, Category = "Hero")
+	FName HeroSkinID = FName(TEXT("Default"));
 
 	/** Cached hero data (populated on spawn) */
 	UPROPERTY(BlueprintReadOnly, Category = "Hero")
@@ -68,6 +73,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UT66CombatComponent> CombatComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	TObjectPtr<UT66HeroMovementComponent> HeroMovementComponent;
+
 	/** Safe-zone overlap count (NPC safe bubbles). */
 	void AddSafeZoneOverlap(int32 Delta);
 
@@ -87,6 +95,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hero|QuickRevive")
 	bool IsQuickReviveDowned() const { return bQuickReviveDowned; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Movement")
+	UT66HeroMovementComponent* GetHeroMovementComponent() const { return HeroMovementComponent; }
 
 	// ========== Placeholder Visuals (for prototyping) ==========
 	
@@ -168,7 +179,9 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Landed(const FHitResult& Hit) override;
-	virtual void OnJumped_Implementation() override;
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION()
 	void HandleHeroDerivedStatsChanged();
@@ -176,7 +189,16 @@ protected:
 	UFUNCTION()
 	void HandleHUDPanelVisibilityChanged();
 
+	UFUNCTION()
+	void OnRep_HeroAppearance();
+
 private:
+	float GetDesiredHeroHeightUU() const;
+	void UpdateGroundAttachmentOffsets();
+	void ApplyBodyTypeDimensions(bool bKeepFeetWorldPosition);
+	void ApplyCurrentHeroVisualScale();
+	void TryApplyLobbyDrivenVisuals();
+	bool TryGetLobbyDrivenVisualParams(FHeroData& OutHeroData, ET66BodyType& OutBodyType, FName& OutSkinID) const;
 
 	/** Dynamic material instance for color changes */
 	UPROPERTY()
@@ -204,9 +226,6 @@ private:
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UT66HeroSpeedSubsystem> CachedHeroSpeedSubsystem = nullptr;
-
 	/** Cached idle/walk/jump anims for the current hero visual. */
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CachedIdleAnim = nullptr;
@@ -217,9 +236,15 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CachedJumpAnim = nullptr;
 
+	FVector CharacterVisualBaseScale = FVector::OneVector;
+	bool bHasCharacterVisualBaseScale = false;
+
 	/** Last animation state so we only call PlayAnimation on change. */
 	enum class EMovementAnimState : uint8 { Idle, Walk, Jump };
 	EMovementAnimState LastMovementAnimState = EMovementAnimState::Idle;
+	FVector LastAnimSampleLocation = FVector::ZeroVector;
+	bool bHasLastAnimSampleLocation = false;
+	bool bLobbyDrivenVisualsApplied = false;
 
 	bool bVehicleMounted = false;
 	bool bQuickReviveDowned = false;
@@ -230,18 +255,8 @@ private:
 	FRotator DefaultSkeletalMeshRelativeRotation = FRotator::ZeroRotator;
 	TWeakObjectPtr<AT66PilotableTractor> MountedTractor;
 
-	float BaseMaxWalkSpeed = 1800.f;
 	FVector QuickReviveDownedVisualOffset = FVector(0.f, 0.f, -58.f);
 	FRotator QuickReviveDownedVisualRotation = FRotator(0.f, 0.f, 90.f);
-
-	// Dash tuning
-	float LastDashTime = -9999.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Movement|Dash")
-	float DashCooldownSeconds = 0.7f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Movement|Dash")
-	float DashStrength = 1600.f;
 
 	// Stage slide tuning/state
 	float BaseGroundFriction = 8.f;

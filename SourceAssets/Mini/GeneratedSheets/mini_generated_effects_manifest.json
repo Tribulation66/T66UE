@@ -1,0 +1,46 @@
+[
+  {
+    "job": "effects_projectiles",
+    "sheet": "C:\\UE\\T66\\SourceAssets\\Mini\\GeneratedSheets\\effects_projectiles_sheet.png",
+    "assets": {
+      "tl": "C:\\UE\\T66\\SourceAssets\\Mini\\Effects\\EnemyProjectile_Ranged.png",
+      "tr": "C:\\UE\\T66\\SourceAssets\\Mini\\Effects\\EnemyProjectile_Boss.png",
+      "bl": "C:\\UE\\T66\\SourceAssets\\Mini\\Effects\\EnemyProjectile_Impact.png",
+      "br": "C:\\UE\\T66\\SourceAssets\\Mini\\Effects\\Trap_Pulse_Impact.png"
+    },
+    "source_saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260414-231117-generate-exactly-one-square-2x2-sprite-sheet-for.png"
+  },
+  {
+    "job": "effects_traps",
+    "sheet": "C:\\UE\\T66\\SourceAssets\\Mini\\GeneratedSheets\\effects_traps_sheet.png",
+    "assets": {
+      "tl": "C:\\UE\\T66\\SourceAssets\\Mini\\Effects\\Trap_Telegraph_Ring.png",
+      "tr": "C:\\UE\\T66\\SourceAssets\\Mini\\Effects\\Trap_Core_Fire.png",
+      "bl": "C:\\UE\\T66\\SourceAssets\\Mini\\Effects\\Trap_Core_Spike.png",
+      "br": "C:\\UE\\T66\\SourceAssets\\Mini\\Effects\\Trap_Core_Arcane.png"
+    },
+    "source_saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260414-231219-generate-exactly-one-square-2x2-sprite-sheet-for.png"
+  },
+  {
+    "job": "hud_status_icons",
+    "sheet": "C:\\UE\\T66\\SourceAssets\\Mini\\GeneratedSheets\\hud_status_icons_sheet.png",
+    "assets": {
+      "tl": "C:\\UE\\T66\\SourceAssets\\Mini\\HUD\\Ult_Generic.png",
+      "tr": "C:\\UE\\T66\\SourceAssets\\Mini\\HUD\\Passive_Generic.png",
+      "bl": "C:\\UE\\T66\\SourceAssets\\Mini\\HUD\\QuickRevive.png",
+      "br": "C:\\UE\\T66\\SourceAssets\\Mini\\HUD\\Interact_Hand.png"
+    },
+    "source_saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260414-231840-generate-exactly-one-square-2x2-icon-sheet-for-a.png"
+  },
+  {
+    "job": "hud_input_icons",
+    "sheet": "C:\\UE\\T66\\SourceAssets\\Mini\\GeneratedSheets\\hud_input_icons_sheet.png",
+    "assets": {
+      "tl": "C:\\UE\\T66\\SourceAssets\\Mini\\HUD\\MouseLeft.png",
+      "tr": "C:\\UE\\T66\\SourceAssets\\Mini\\HUD\\MouseRight.png",
+      "bl": "C:\\UE\\T66\\SourceAssets\\Mini\\HUD\\Prompt_Interact.png",
+      "br": "C:\\UE\\T66\\SourceAssets\\Mini\\HUD\\Prompt_Ultimate.png"
+    },
+    "source_saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260414-231933-generate-exactly-one-square-2x2-icon-sheet-for-a.png"
+  }
+]

@@ -3,10 +3,13 @@
 #include "UI/Screens/T66MiniMainMenuScreen.h"
 
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
 #include "Core/T66PartySubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Core/T66SteamHelper.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Components/T66LeaderboardPanel.h"
@@ -14,6 +17,7 @@
 #include "UI/ST66AnimatedBorderGlow.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
+#include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SEditableTextBox.h"
@@ -150,6 +154,20 @@ void UT66MiniMainMenuScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
+		{
+			PartyStateChangedHandle = PartySubsystem->OnPartyStateChanged().AddUObject(this, &UT66MiniMainMenuScreen::HandlePartyStateChanged);
+		}
+
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniMainMenuScreen::HandleSessionStateChanged);
+			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniMainMenu, true);
+		}
+	}
+
 	if (LeaderboardPanel.IsValid())
 	{
 		LeaderboardPanel->SetUIManager(UIManager);
@@ -158,14 +176,90 @@ void UT66MiniMainMenuScreen::OnScreenActivated_Implementation()
 
 void UT66MiniMainMenuScreen::OnScreenDeactivated_Implementation()
 {
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
+		{
+			PartySubsystem->OnPartyStateChanged().Remove(PartyStateChangedHandle);
+		}
+
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+		}
+	}
+
+	PartyStateChangedHandle.Reset();
+	SessionStateChangedHandle.Reset();
 	ReleaseRetainedSlateState();
 	Super::OnScreenDeactivated_Implementation();
 }
 
 void UT66MiniMainMenuScreen::NativeDestruct()
 {
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
+		{
+			PartySubsystem->OnPartyStateChanged().Remove(PartyStateChangedHandle);
+		}
+
+		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+		}
+	}
+
+	PartyStateChangedHandle.Reset();
+	SessionStateChangedHandle.Reset();
 	ReleaseRetainedSlateState();
 	Super::NativeDestruct();
+}
+
+void UT66MiniMainMenuScreen::HandlePartyStateChanged()
+{
+	SyncToSharedPartyScreen();
+	ForceRebuildSlate();
+}
+
+void UT66MiniMainMenuScreen::HandleSessionStateChanged()
+{
+	SyncToSharedPartyScreen();
+	ForceRebuildSlate();
+}
+
+void UT66MiniMainMenuScreen::SyncToSharedPartyScreen()
+{
+	if (!UIManager)
+	{
+		return;
+	}
+
+	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	if (!SessionSubsystem || !SessionSubsystem->IsPartyLobbyContextActive() || SessionSubsystem->IsLocalPlayerPartyHost())
+	{
+		return;
+	}
+
+	const ET66ScreenType DesiredScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
+	switch (DesiredScreen)
+	{
+	case ET66ScreenType::MiniMainMenu:
+	case ET66ScreenType::MiniSaveSlots:
+	case ET66ScreenType::MiniCharacterSelect:
+	case ET66ScreenType::MiniCompanionSelect:
+	case ET66ScreenType::MiniDifficultySelect:
+	case ET66ScreenType::MiniIdolSelect:
+	case ET66ScreenType::MiniShop:
+	case ET66ScreenType::MiniRunSummary:
+		if (UIManager->GetCurrentScreenType() != DesiredScreen)
+		{
+			UIManager->ShowScreen(DesiredScreen);
+		}
+		break;
+	default:
+		break;
+	}
 }
 
 TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
@@ -175,7 +269,9 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 	UGameInstance* GameInstance = GetGameInstance();
 	UT66LocalizationSubsystem* LocSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66LeaderboardSubsystem* LeaderboardSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	UT66MiniDataSubsystem* MiniDataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66PartySubsystem* PartySubsystem = GameInstance ? GameInstance->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	UT66SteamHelper* SteamHelper = GameInstance ? GameInstance->GetSubsystem<UT66SteamHelper>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
 
@@ -220,6 +316,20 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 		LocalMember.bIsLocal = true;
 		LocalMember.bOnline = SteamHelper && SteamHelper->IsSteamReady();
 		PartyMembers.Add(LocalMember);
+	}
+
+	TMap<FString, FT66LobbyPlayerInfo> LobbyInfoByPlayerId;
+	if (SessionSubsystem)
+	{
+		TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+		SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
+		for (const FT66LobbyPlayerInfo& LobbyInfo : LobbyProfiles)
+		{
+			if (!LobbyInfo.SteamId.IsEmpty())
+			{
+				LobbyInfoByPlayerId.Add(LobbyInfo.SteamId, LobbyInfo);
+			}
+		}
 	}
 
 	ProfileAvatarBrush = MakeAvatarBrush(SteamHelper ? SteamHelper->GetLocalAvatarTexture() : nullptr, FVector2D(76.f, 76.f));
@@ -270,12 +380,86 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 			.ColorAndOpacity(Color);
 	};
 
+	auto ResolveMiniScreenLabel = [](const ET66ScreenType InScreenType) -> FString
+	{
+		switch (InScreenType)
+		{
+		case ET66ScreenType::MiniMainMenu:
+			return TEXT("Mini Menu");
+		case ET66ScreenType::MiniSaveSlots:
+			return TEXT("Save Slots");
+		case ET66ScreenType::MiniCharacterSelect:
+			return TEXT("Hero Select");
+		case ET66ScreenType::MiniCompanionSelect:
+			return TEXT("Companion");
+		case ET66ScreenType::MiniDifficultySelect:
+			return TEXT("Difficulty");
+		case ET66ScreenType::MiniIdolSelect:
+			return TEXT("Idols");
+		case ET66ScreenType::MiniShop:
+			return TEXT("Shop");
+		case ET66ScreenType::MiniRunSummary:
+			return TEXT("Summary");
+		default:
+			return TEXT("Party");
+		}
+	};
+
+	auto BuildPartyMemberStatusText = [&](const FT66PartyMemberEntry* Member) -> FString
+	{
+		if (!Member)
+		{
+			return TEXT("Invite or join");
+		}
+
+		const FT66LobbyPlayerInfo* LobbyInfo = nullptr;
+		if (!Member->PlayerId.IsEmpty())
+		{
+			LobbyInfo = LobbyInfoByPlayerId.Find(Member->PlayerId);
+		}
+
+		if (!LobbyInfo)
+		{
+			return Member->bIsPartyHost ? TEXT("Party Host") : TEXT("In Party");
+		}
+
+		if (!LobbyInfo->bMiniFlowActive)
+		{
+			return Member->bIsPartyHost ? TEXT("Party Host") : ResolveMiniScreenLabel(LobbyInfo->FrontendScreen);
+		}
+
+		FString HeroLabel = TEXT("No Hero");
+		if (!LobbyInfo->MiniSelectedHeroID.IsNone())
+		{
+			if (const FT66MiniHeroDefinition* Hero = MiniDataSubsystem ? MiniDataSubsystem->FindHero(LobbyInfo->MiniSelectedHeroID) : nullptr)
+			{
+				HeroLabel = Hero->DisplayName;
+			}
+			else
+			{
+				HeroLabel = LobbyInfo->MiniSelectedHeroID.ToString();
+			}
+		}
+
+		FString Status = HeroLabel + TEXT(" | ") + ResolveMiniScreenLabel(LobbyInfo->FrontendScreen);
+		if (!LobbyInfo->bPartyHost && LobbyInfo->bLobbyReady)
+		{
+			Status += TEXT(" | Ready");
+		}
+
+		return Status;
+	};
+
 	auto MakeFriendRow = [&](const FT66PartyFriendEntry& Friend) -> TSharedRef<SWidget>
 	{
 		TSharedPtr<FSlateBrush> AvatarBrush = MakeAvatarBrush(
 			SteamHelper ? SteamHelper->GetAvatarTextureForSteamId(Friend.PlayerId) : nullptr,
 			FVector2D(40.f, 40.f));
 		FriendAvatarBrushes.Add(AvatarBrush);
+		const bool bInParty = PartySubsystem && PartySubsystem->IsFriendInParty(Friend.PlayerId);
+		const bool bInvitePending = SessionSubsystem && SessionSubsystem->IsFriendInvitePending(Friend.PlayerId);
+		const bool bCanInvite = Friend.bOnline && !bInParty && !bInvitePending;
+		const bool bCanJoin = Friend.bOnline && !bInParty && SessionSubsystem;
 
 		return SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -309,6 +493,55 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 						.ColorAndOpacity(MutedText)
 					]
 				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 6.f, 0.f)
+					[
+						FT66Style::MakeButton(
+							FT66ButtonParams(
+								FText::FromString(
+									bInParty
+										? TEXT("IN PARTY")
+										: (bInvitePending ? TEXT("INVITED") : TEXT("INVITE"))),
+								FOnClicked::CreateLambda([this, PartySubsystem, Friend]()
+								{
+									if (PartySubsystem)
+									{
+										PartySubsystem->InviteFriend(Friend.PlayerId, Friend.DisplayName);
+									}
+									ForceRebuildSlate();
+									return FReply::Handled();
+								}),
+								ET66ButtonType::Primary)
+							.SetMinWidth(84.f)
+							.SetHeight(30.f)
+							.SetFontSize(10)
+							.SetPadding(FMargin(10.f, 6.f))
+							.SetEnabled(bCanInvite))
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						FT66Style::MakeButton(
+							FT66ButtonParams(
+								FText::FromString(TEXT("JOIN")),
+								FOnClicked::CreateLambda([this, SessionSubsystem, Friend]()
+								{
+									if (SessionSubsystem)
+									{
+										SessionSubsystem->JoinFriendPartySessionBySteamId(Friend.PlayerId);
+									}
+									ForceRebuildSlate();
+									return FReply::Handled();
+								}),
+								ET66ButtonType::Neutral)
+							.SetMinWidth(72.f)
+							.SetHeight(30.f)
+							.SetFontSize(10)
+							.SetPadding(FMargin(10.f, 6.f))
+							.SetEnabled(bCanJoin))
+					]
+				]
 			];
 	};
 
@@ -321,13 +554,13 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 
 	TSharedRef<SVerticalBox> FriendsList = SNew(SVerticalBox);
 	FriendsList->AddSlot().AutoHeight()[MakeFriendGroupHeader(NSLOCTEXT("T66Mini.MainMenu", "Online", "ONLINE"), OnlineFriends.Num(), FLinearColor(0.42f, 0.67f, 0.96f, 1.0f))];
-	for (int32 Index = 0; Index < OnlineFriends.Num() && Index < 3; ++Index)
+	for (int32 Index = 0; Index < OnlineFriends.Num(); ++Index)
 	{
 		FriendsList->AddSlot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[MakeFriendRow(OnlineFriends[Index])];
 	}
 	FriendsList->AddSlot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)[MakeDivider()];
 	FriendsList->AddSlot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)[MakeFriendGroupHeader(NSLOCTEXT("T66Mini.MainMenu", "Offline", "OFFLINE"), OfflineFriends.Num(), HeaderText)];
-	for (int32 Index = 0; Index < OfflineFriends.Num() && Index < 3; ++Index)
+	for (int32 Index = 0; Index < OfflineFriends.Num(); ++Index)
 	{
 		FriendsList->AddSlot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[MakeFriendRow(OfflineFriends[Index])];
 	}
@@ -359,6 +592,16 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 				.Font(FT66Style::MakeFont(TEXT("Regular"), 10))
 				.ColorAndOpacity(Member ? BrightText : MutedText)
 				.Justification(ETextJustify::Center)
+				.AutoWrapText(true)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f).HAlign(HAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(BuildPartyMemberStatusText(Member)))
+				.Font(FT66Style::MakeFont(TEXT("Regular"), 9))
+				.ColorAndOpacity(Member ? MutedText : HeaderText)
+				.Justification(ETextJustify::Center)
+				.AutoWrapText(true)
 			]
 		];
 	}
@@ -468,6 +711,8 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 			}
 		}
 	}
+	const bool bHasRemotePartyMembers = PartySubsystem && PartySubsystem->HasRemotePartyMembers();
+	const bool bCanLoadMiniSave = bHasAnyMiniSave && !bHasRemotePartyMembers;
 
 	const TSharedRef<SWidget> CenterButtons =
 		SNew(SBox)
@@ -483,7 +728,7 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[MakeMenuButton(NSLOCTEXT("T66Mini.MainMenu", "Start", "START"), &UT66MiniMainMenuScreen::HandleNewGameClicked, true, true)]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, CenterButtonGap, 0.f, 0.f)
 				[
-					MakeMenuButton(NSLOCTEXT("T66Mini.MainMenu", "Continue", "CONTINUE"), &UT66MiniMainMenuScreen::HandleLoadGameClicked, false, bHasAnyMiniSave)
+					MakeMenuButton(NSLOCTEXT("T66Mini.MainMenu", "Continue", "CONTINUE"), &UT66MiniMainMenuScreen::HandleLoadGameClicked, false, bCanLoadMiniSave)
 				]
 			]
 		];
@@ -623,6 +868,17 @@ FReply UT66MiniMainMenuScreen::HandleNewGameClicked()
 
 FReply UT66MiniMainMenuScreen::HandleLoadGameClicked()
 {
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
+		{
+			if (PartySubsystem->HasRemotePartyMembers())
+			{
+				return FReply::Handled();
+			}
+		}
+	}
+
 	NavigateTo(ET66ScreenType::MiniSaveSlots);
 	return FReply::Handled();
 }

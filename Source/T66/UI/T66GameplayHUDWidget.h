@@ -368,6 +368,7 @@ protected:
 		Gate,
 		Enemy,
 		Miasma,
+		POI,
 	};
 
 	struct FMapCacheEntry
@@ -383,6 +384,7 @@ protected:
 	TWeakObjectPtr<UWorld> MapCacheWorld;
 	static constexpr float MapCacheRefreshIntervalSeconds = 1.5f;
 	TMap<int32, TArray<FVector2D>> TowerRevealPointsByFloor;
+	int32 LastTowerRevealFloorNumber = INDEX_NONE;
 
 	FTimerHandle MapRefreshTimerHandle;
 	FTimerHandle FPSTimerHandle;
