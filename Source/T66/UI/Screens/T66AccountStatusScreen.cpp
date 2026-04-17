@@ -308,6 +308,12 @@ void UT66AccountStatusScreen::HandleBackendMyRankDataReady(const FString& Key, b
 	static_cast<void>(bSuccess);
 	static_cast<void>(Rank);
 	static_cast<void>(TotalEntries);
+
+	if (!HasBuiltSlateUI() || !IsVisible())
+	{
+		return;
+	}
+
 	ForceRebuildSlate();
 }
 
@@ -1611,6 +1617,12 @@ void UT66AccountStatusScreen::HandleBackendAppealSubmitComplete(bool bSuccess, c
 		bAppealEditorOpen = false;
 		AppealDraftMessage.Reset();
 	}
+
+	if (!HasBuiltSlateUI() || !IsVisible())
+	{
+		return;
+	}
+
 	ForceRebuildSlate();
 }
 

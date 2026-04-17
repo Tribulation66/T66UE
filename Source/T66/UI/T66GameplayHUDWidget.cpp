@@ -2541,27 +2541,55 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 			{
 				CenterCrosshairBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
 			}
-			CenterCrosshairBox->SetVisibility(bScoped ? EVisibility::Collapsed : EVisibility::HitTestInvisible);
+			if (bScoped != bLastScopedHudVisible)
+			{
+				CenterCrosshairBox->SetVisibility(bScoped ? EVisibility::Collapsed : EVisibility::HitTestInvisible);
+			}
 		}
 		if (ScopedSniperOverlayBorder.IsValid())
 		{
-			ScopedSniperOverlayBorder->SetVisibility(bScoped ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
+			if (bScoped != bLastScopedHudVisible)
+			{
+				ScopedSniperOverlayBorder->SetVisibility(bScoped ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
+			}
 		}
 		if (bScoped)
 		{
 			if (ScopedUltTimerText.IsValid())
 			{
-				ScopedUltTimerText->SetText(FText::FromString(FString::Printf(TEXT("ULT %.1fs"), T66PC->GetHeroOneScopedUltRemainingSeconds())));
+				const int32 UltDisplayTenths = FMath::RoundToInt(FMath::Max(0.f, T66PC->GetHeroOneScopedUltRemainingSeconds()) * 10.f);
+				if (!bLastScopedHudVisible || UltDisplayTenths != LastScopedUltDisplayTenths)
+				{
+					LastScopedUltDisplayTenths = UltDisplayTenths;
+					ScopedUltTimerText->SetText(FText::FromString(FString::Printf(TEXT("ULT %.1fs"), static_cast<float>(UltDisplayTenths) / 10.f)));
+				}
 			}
 			if (ScopedShotCooldownText.IsValid())
 			{
 				const float ShotCooldown = T66PC->GetHeroOneScopedShotCooldownRemainingSeconds();
-				ScopedShotCooldownText->SetText(
-					ShotCooldown > 0.f
-						? FText::FromString(FString::Printf(TEXT("SHOT %.2fs"), ShotCooldown))
-						: NSLOCTEXT("T66.HUD", "ScopedShotReady", "SHOT READY"));
+				const bool bShotReady = ShotCooldown <= 0.f;
+				const int32 ShotDisplayCentis = bShotReady ? 0 : FMath::RoundToInt(FMath::Max(0.f, ShotCooldown) * 100.f);
+				if (!bLastScopedHudVisible
+					|| bShotReady != bLastScopedShotReady
+					|| (!bShotReady && ShotDisplayCentis != LastScopedShotDisplayCentis))
+				{
+					bLastScopedShotReady = bShotReady;
+					LastScopedShotDisplayCentis = ShotDisplayCentis;
+					ScopedShotCooldownText->SetText(
+						bShotReady
+							? NSLOCTEXT("T66.HUD", "ScopedShotReady", "SHOT READY")
+							: FText::FromString(FString::Printf(TEXT("SHOT %.2fs"), static_cast<float>(ShotDisplayCentis) / 100.f)));
+				}
 			}
 		}
+		else if (bLastScopedHudVisible)
+		{
+			LastScopedUltDisplayTenths = INDEX_NONE;
+			LastScopedShotDisplayCentis = INDEX_NONE;
+			bLastScopedShotReady = false;
+		}
+
+		bLastScopedHudVisible = bScoped;
 	}
 	else
 	{
@@ -2574,6 +2602,10 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 		{
 			ScopedSniperOverlayBorder->SetVisibility(EVisibility::Collapsed);
 		}
+		bLastScopedHudVisible = false;
+		LastScopedUltDisplayTenths = INDEX_NONE;
+		LastScopedShotDisplayCentis = INDEX_NONE;
+		bLastScopedShotReady = false;
 	}
 }
 

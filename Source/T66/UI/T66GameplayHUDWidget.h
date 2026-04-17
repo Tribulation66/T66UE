@@ -357,6 +357,10 @@ protected:
 	FName LastAbilityHeroID = NAME_None;
 	ET66UltimateType LastUltimateType = ET66UltimateType::None;
 	ET66PassiveType LastPassiveType = ET66PassiveType::None;
+	bool bLastScopedHudVisible = false;
+	int32 LastScopedUltDisplayTenths = INDEX_NONE;
+	int32 LastScopedShotDisplayCentis = INDEX_NONE;
+	bool bLastScopedShotReady = false;
 	bool bLastPausePresentationActive = false;
 	bool bHasAppliedMediaViewerOpenState = false;
 	bool bLastAppliedMediaViewerOpenState = false;

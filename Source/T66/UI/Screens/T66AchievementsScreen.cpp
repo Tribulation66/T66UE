@@ -825,6 +825,11 @@ FReply UT66AchievementsScreen::HandleClaimClicked(FName AchievementID)
 
 FReply UT66AchievementsScreen::HandleAchievementsTabClicked()
 {
+	if (ActiveTab == EAchievementTab::Achievements)
+	{
+		return FReply::Handled();
+	}
+
 	ActiveTab = EAchievementTab::Achievements;
 	ForceRebuildSlate();
 	return FReply::Handled();
@@ -832,6 +837,11 @@ FReply UT66AchievementsScreen::HandleAchievementsTabClicked()
 
 FReply UT66AchievementsScreen::HandleSecretTabClicked()
 {
+	if (ActiveTab == EAchievementTab::Secret)
+	{
+		return FReply::Handled();
+	}
+
 	ActiveTab = EAchievementTab::Secret;
 	ForceRebuildSlate();
 	return FReply::Handled();
@@ -844,11 +854,10 @@ void UT66AchievementsScreen::HandleLanguageChanged(ET66Language NewLanguage)
 
 void UT66AchievementsScreen::HandleAchievementsStateChanged()
 {
-	if (UIManager)
+	if (!HasBuiltSlateUI() || !IsVisible())
 	{
-		UIManager->RebuildAllVisibleUI();
 		return;
 	}
 
-	FT66Style::DeferRebuild(this);
+	RebuildAchievementList();
 }
