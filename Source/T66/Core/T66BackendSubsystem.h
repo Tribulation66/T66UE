@@ -384,6 +384,7 @@ private:
 	TWeakPtr<IHttpRequest, ESPMode::ThreadSafe> PendingPartyInvitePollRequest;
 	double LastPartyInvitePollTimeSeconds = 0.0;
 	bool bPartyInvitePollInFlight = false;
+	bool bPartyInvitePollRequestedWhileInFlight = false;
 	TMap<FString, FPendingCoopSubmit> PendingCoopSubmitRequests;
 
 	void SeedDevelopmentDummyLeaderboardsIfNeeded();

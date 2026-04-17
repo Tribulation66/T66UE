@@ -24,6 +24,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PartyInviteModal, Log, All);
 void UT66PartyInviteModal::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
+	bJoinKickoffStarted = false;
 
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
@@ -46,6 +47,14 @@ void UT66PartyInviteModal::OnScreenDeactivated_Implementation()
 	}
 	UE_LOG(LogT66PartyInviteModal, Log, TEXT("Party invite modal deactivated. InFlight=%d InviteId=%s"), bActionInFlight ? 1 : 0, *ActionInviteId);
 	PartyInviteActionCompleteHandle.Reset();
+	ActionInviteId.Reset();
+	ActionHostSteamId.Reset();
+	ActionHostLobbyId.Reset();
+	ActionHostAppId.Reset();
+	bAcceptingInvite = false;
+	bActionInFlight = false;
+	bJoinKickoffStarted = false;
+	ActionStatusText.Reset();
 
 	Super::OnScreenDeactivated_Implementation();
 }
@@ -196,10 +205,27 @@ FReply UT66PartyInviteModal::HandleAcceptClicked()
 			ActionHostAppId = Invite->HostAppId;
 			ActionStatusText = TEXT("Accepting invite...");
 			bAcceptingInvite = true;
-			bActionInFlight = true;
+			bActionInFlight = Backend->RespondToPartyInvite(Invite->InviteId, true);
+			bJoinKickoffStarted = false;
 			UE_LOG(LogT66PartyInviteModal, Log, TEXT("Accept clicked for invite %s host=%s lobby=%s app=%s"), *ActionInviteId, *ActionHostSteamId, *ActionHostLobbyId, *ActionHostAppId);
-			ForceRebuildSlate();
-			Backend->RespondToPartyInvite(Invite->InviteId, true);
+
+			if (TryStartJoinKickoff())
+			{
+				bJoinKickoffStarted = true;
+				ActionStatusText = TEXT("Joining party...");
+				CloseModal();
+				return FReply::Handled();
+			}
+
+			if (bActionInFlight)
+			{
+				ForceRebuildSlate();
+			}
+			else
+			{
+				ActionStatusText = TEXT("Invite accept could not be sent.");
+				ForceRebuildSlate();
+			}
 		}
 	}
 
@@ -230,10 +256,18 @@ FReply UT66PartyInviteModal::HandleRejectClicked()
 			ActionHostAppId.Reset();
 			ActionStatusText = TEXT("Rejecting invite...");
 			bAcceptingInvite = false;
-			bActionInFlight = true;
+			bActionInFlight = Backend->RespondToPartyInvite(Invite->InviteId, false);
+			bJoinKickoffStarted = false;
 			UE_LOG(LogT66PartyInviteModal, Log, TEXT("Reject clicked for invite %s"), *ActionInviteId);
-			ForceRebuildSlate();
-			Backend->RespondToPartyInvite(Invite->InviteId, false);
+			if (bActionInFlight)
+			{
+				ForceRebuildSlate();
+			}
+			else
+			{
+				ActionStatusText = TEXT("Invite reject could not be sent.");
+				ForceRebuildSlate();
+			}
 		}
 	}
 
@@ -262,6 +296,12 @@ void UT66PartyInviteModal::HandlePartyInviteActionComplete(bool bSuccess, const 
 
 	if (bAcceptingInvite)
 	{
+		if (bJoinKickoffStarted)
+		{
+			CloseModal();
+			return;
+		}
+
 		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 		{
 			if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
@@ -282,4 +322,27 @@ void UT66PartyInviteModal::HandlePartyInviteActionComplete(bool bSuccess, const 
 	}
 
 	CloseModal();
+}
+
+bool UT66PartyInviteModal::TryStartJoinKickoff()
+{
+	if (!bAcceptingInvite)
+	{
+		return false;
+	}
+
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			const bool bJoinStarted =
+				!ActionHostLobbyId.IsEmpty()
+					? SessionSubsystem->JoinPartySessionByLobbyId(ActionHostLobbyId, ActionHostSteamId, ActionHostAppId, ActionInviteId)
+					: SessionSubsystem->JoinFriendPartySessionBySteamId(ActionHostSteamId, ActionInviteId, ActionHostAppId);
+			UE_LOG(LogT66PartyInviteModal, Log, TEXT("Invite join kickoff result=%d host=%s lobby=%s app=%s"), bJoinStarted ? 1 : 0, *ActionHostSteamId, *ActionHostLobbyId, *ActionHostAppId);
+			return bJoinStarted;
+		}
+	}
+
+	return false;
 }

@@ -31,7 +31,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Session, Log, All);
 
 static TAutoConsoleVariable<float> CVarT66PendingFriendJoinRetryDelaySeconds(
 	TEXT("T66.Session.PendingFriendJoinRetryDelaySeconds"),
-	0.25f,
+	0.10f,
 	TEXT("Delay before retrying a pending friend-session join lookup."),
 	ECVF_Default);
 

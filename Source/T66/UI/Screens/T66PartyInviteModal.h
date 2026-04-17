@@ -28,6 +28,7 @@ private:
 	FReply HandleRejectClicked();
 	void HandlePartyInviteActionComplete(bool bSuccess, const FString& Action, const FString& InviteId, const FString& Message);
 	const struct FT66PartyInviteEntry* GetCurrentInvite() const;
+	bool TryStartJoinKickoff();
 
 	FDelegateHandle PartyInviteActionCompleteHandle;
 	FString ActionInviteId;
@@ -36,5 +37,6 @@ private:
 	FString ActionHostAppId;
 	bool bAcceptingInvite = false;
 	bool bActionInFlight = false;
+	bool bJoinKickoffStarted = false;
 	FString ActionStatusText;
 };

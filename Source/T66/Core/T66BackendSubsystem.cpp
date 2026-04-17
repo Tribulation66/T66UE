@@ -33,8 +33,14 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Backend, Log, All);
 
 static TAutoConsoleVariable<float> CVarT66PartyInvitePollMinIntervalSeconds(
 	TEXT("T66.Backend.PartyInvitePollMinIntervalSeconds"),
-	0.25f,
+	0.15f,
 	TEXT("Minimum interval between non-forced party invite polls."),
+	ECVF_Default);
+
+static TAutoConsoleVariable<float> CVarT66PartyInvitePollTickerIntervalSeconds(
+	TEXT("T66.Backend.PartyInvitePollTickerIntervalSeconds"),
+	0.15f,
+	TEXT("Ticker cadence used to drive invite polling while the backend subsystem is alive."),
 	ECVF_Default);
 
 namespace
@@ -343,7 +349,7 @@ void UT66BackendSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	PartyInvitePollTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
 		FTickerDelegate::CreateUObject(this, &UT66BackendSubsystem::HandlePartyInvitePollTicker),
-		0.5f);
+		FMath::Max(0.05f, CVarT66PartyInvitePollTickerIntervalSeconds.GetValueOnGameThread()));
 }
 
 void UT66BackendSubsystem::Deinitialize()
@@ -368,6 +374,7 @@ void UT66BackendSubsystem::Deinitialize()
 	}
 
 	bPartyInvitePollInFlight = false;
+	bPartyInvitePollRequestedWhileInFlight = false;
 	PendingPartyInvites.Reset();
 	PendingCoopSubmitRequests.Reset();
 	PendingPartyInvitesChanged.Clear();
@@ -418,6 +425,12 @@ bool UT66BackendSubsystem::SendPartyInvite(const FString& TargetSteamId, const F
 			{
 				Root->SetStringField(TEXT("host_app_id"), HostAppId);
 			}
+
+			const FString HostDisplayName = SteamHelper->GetLocalDisplayName();
+			if (!HostDisplayName.IsEmpty())
+			{
+				Root->SetStringField(TEXT("host_display_name"), HostDisplayName);
+			}
 		}
 	}
 
@@ -441,12 +454,17 @@ void UT66BackendSubsystem::PollPendingPartyInvites(bool bForce)
 
 	if (!IsBackendConfigured() || !HasSteamTicket())
 	{
+		bPartyInvitePollRequestedWhileInFlight = false;
 		SetPendingPartyInvites({});
 		return;
 	}
 
 	if (bPartyInvitePollInFlight)
 	{
+		if (bForce)
+		{
+			bPartyInvitePollRequestedWhileInFlight = true;
+		}
 		return;
 	}
 
@@ -459,6 +477,7 @@ void UT66BackendSubsystem::PollPendingPartyInvites(bool bForce)
 
 	LastPartyInvitePollTimeSeconds = NowSeconds;
 	bPartyInvitePollInFlight = true;
+	bPartyInvitePollRequestedWhileInFlight = false;
 
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), TEXT("/api/party-invite/pending"));
 	PendingPartyInvitePollRequest = Request;
@@ -2151,6 +2170,8 @@ void UT66BackendSubsystem::OnSendPartyInviteResponseReceived(FHttpRequestPtr Req
 void UT66BackendSubsystem::OnPendingPartyInvitesResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
 {
 	bPartyInvitePollInFlight = false;
+	const bool bRepollAfterCompletion = bPartyInvitePollRequestedWhileInFlight;
+	bPartyInvitePollRequestedWhileInFlight = false;
 	if (TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> PendingInviteRequest = PendingPartyInvitePollRequest.Pin();
 		PendingInviteRequest.Get() == Request.Get())
 	{
@@ -2160,6 +2181,10 @@ void UT66BackendSubsystem::OnPendingPartyInvitesResponseReceived(FHttpRequestPtr
 	if (!bConnectedSuccessfully || !Response.IsValid())
 	{
 		UE_LOG(LogT66Backend, Verbose, TEXT("Backend: pending party invite poll failed."));
+		if (bRepollAfterCompletion)
+		{
+			PollPendingPartyInvites(true);
+		}
 		return;
 	}
 
@@ -2168,12 +2193,20 @@ void UT66BackendSubsystem::OnPendingPartyInvitesResponseReceived(FHttpRequestPtr
 	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
 	{
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: failed to parse pending party invites JSON."));
+		if (bRepollAfterCompletion)
+		{
+			PollPendingPartyInvites(true);
+		}
 		return;
 	}
 
 	if (Response->GetResponseCode() != 200)
 	{
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: pending party invite poll returned HTTP %d."), Response->GetResponseCode());
+		if (bRepollAfterCompletion)
+		{
+			PollPendingPartyInvites(true);
+		}
 		return;
 	}
 
@@ -2194,6 +2227,11 @@ void UT66BackendSubsystem::OnPendingPartyInvitesResponseReceived(FHttpRequestPtr
 	}
 
 	SetPendingPartyInvites(MoveTemp(ParsedInvites));
+
+	if (bRepollAfterCompletion)
+	{
+		PollPendingPartyInvites(true);
+	}
 }
 
 void UT66BackendSubsystem::OnRespondPartyInviteResponseReceived(

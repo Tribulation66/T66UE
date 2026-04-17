@@ -31,6 +31,15 @@ class AT66LootBagPickup;
 enum class ET66ItemRarity : uint8;
 enum class ET66Rarity : uint8;
 
+struct FT66BossPartBarRow
+{
+	FName PartID = NAME_None;
+	ET66HitZoneType HitZoneType = ET66HitZoneType::None;
+	TSharedPtr<SBox> FillBox;
+	TSharedPtr<SBorder> FillBorder;
+	TSharedPtr<STextBlock> Text;
+};
+
 /**
  * In-run HUD: hearts (5 icons), gold, toggleable inventory bar (1x5) and minimap placeholder.
  * T toggles panels; hearts and gold always visible. Event-driven updates via RunState.
@@ -65,6 +74,8 @@ public:
 
 	UFUNCTION()
 	void RefreshBossBar();
+	void RebuildBossPartBars(const TArray<FT66BossPartSnapshot>& BossParts, const FLinearColor& BossBarBackgroundColor);
+	bool DoesBossPartBarTopologyMatch(const TArray<FT66BossPartSnapshot>& BossParts) const;
 
 	UFUNCTION()
 	void RefreshTutorialHint();
@@ -188,6 +199,7 @@ protected:
 	TSharedPtr<SBox> BossBarFillBox;
 	TSharedPtr<STextBlock> BossBarText;
 	TSharedPtr<SVerticalBox> BossPartBarsBox;
+	TArray<FT66BossPartBarRow> BossPartBarRows;
 	TSharedPtr<SBox> LootPromptBox;
 	TSharedPtr<SBorder> LootPromptBorder;
 	TSharedPtr<SImage> LootPromptIconImage;

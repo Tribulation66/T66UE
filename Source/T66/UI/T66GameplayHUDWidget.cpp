@@ -4471,6 +4471,85 @@ void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
 	}
 }
 
+bool UT66GameplayHUDWidget::DoesBossPartBarTopologyMatch(const TArray<FT66BossPartSnapshot>& BossParts) const
+{
+	if (BossPartBarRows.Num() != BossParts.Num())
+	{
+		return false;
+	}
+
+	for (int32 Index = 0; Index < BossParts.Num(); ++Index)
+	{
+		const FT66BossPartBarRow& ExistingRow = BossPartBarRows[Index];
+		const FT66BossPartSnapshot& Part = BossParts[Index];
+		if (ExistingRow.PartID != Part.PartID || ExistingRow.HitZoneType != Part.HitZoneType)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void UT66GameplayHUDWidget::RebuildBossPartBars(
+	const TArray<FT66BossPartSnapshot>& BossParts,
+	const FLinearColor& BossBarBackgroundColor)
+{
+	if (!BossPartBarsBox.IsValid())
+	{
+		BossPartBarRows.Reset();
+		return;
+	}
+
+	BossPartBarsBox->ClearChildren();
+	BossPartBarRows.Reset();
+	BossPartBarRows.Reserve(BossParts.Num());
+
+	static constexpr float BossBarWidth = 560.f;
+
+	for (const FT66BossPartSnapshot& Part : BossParts)
+	{
+		FT66BossPartBarRow& Row = BossPartBarRows.AddDefaulted_GetRef();
+		Row.PartID = Part.PartID;
+		Row.HitZoneType = Part.HitZoneType;
+
+		BossPartBarsBox->AddSlot()
+		.AutoHeight()
+		.Padding(0.f, 6.f, 0.f, 0.f)
+		[
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(BossBarBackgroundColor)
+				.Padding(0.f)
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			[
+				SAssignNew(Row.FillBox, SBox)
+				.HeightOverride(18.f)
+				.WidthOverride(BossBarWidth)
+				[
+					SAssignNew(Row.FillBorder, SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(GetBossPartFillColor(Part.HitZoneType, Part.IsAlive()))
+					.Padding(0.f)
+				]
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				SAssignNew(Row.Text, STextBlock)
+				.Font(FT66Style::Tokens::FontBold(11))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+		];
+	}
+}
+
 void UT66GameplayHUDWidget::RefreshBossBar()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
@@ -4486,11 +4565,6 @@ void UT66GameplayHUDWidget::RefreshBossBar()
 	if (BossBarContainerBox.IsValid())
 	{
 		BossBarContainerBox->SetVisibility(bBossActive ? EVisibility::Visible : EVisibility::Collapsed);
-	}
-
-	if (BossPartBarsBox.IsValid())
-	{
-		BossPartBarsBox->ClearChildren();
 	}
 
 	if (bBossActive)
@@ -4518,52 +4592,37 @@ void UT66GameplayHUDWidget::RefreshBossBar()
 
 			if (bShowPartBars)
 			{
-				for (const FT66BossPartSnapshot& Part : BossParts)
+				if (!DoesBossPartBarTopologyMatch(BossParts))
 				{
+					// Rebuild only when the boss part layout changes; damage updates should reuse the existing rows.
+					RebuildBossPartBars(BossParts, BossBarBackgroundColor);
+				}
+
+				for (int32 Index = 0; Index < BossParts.Num() && Index < BossPartBarRows.Num(); ++Index)
+				{
+					const FT66BossPartSnapshot& Part = BossParts[Index];
+					FT66BossPartBarRow& Row = BossPartBarRows[Index];
 					const int32 PartMaxHP = FMath::Max(1, Part.MaxHP);
 					const int32 PartCurrentHP = FMath::Clamp(Part.CurrentHP, 0, PartMaxHP);
 					const float PartPct = static_cast<float>(PartCurrentHP) / static_cast<float>(PartMaxHP);
-					const FLinearColor PartFillColor = GetBossPartFillColor(Part.HitZoneType, Part.IsAlive());
 
-					BossPartBarsBox->AddSlot()
-					.AutoHeight()
-					.Padding(0.f, 6.f, 0.f, 0.f)
-					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(BossBarBackgroundColor)
-							.Padding(0.f)
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Left)
-						[
-							SNew(SBox)
-							.HeightOverride(18.f)
-							.WidthOverride(FMath::Clamp(BossBarWidth * PartPct, 0.f, BossBarWidth))
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(PartFillColor)
-								.Padding(0.f)
-							]
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						[
-							SNew(STextBlock)
-							.Text(FText::Format(
-								NSLOCTEXT("T66.GameplayHUD", "BossPartFraction", "{0} {1}/{2}"),
-								GetBossPartDisplayName(Part),
-								FText::AsNumber(PartCurrentHP),
-								FText::AsNumber(PartMaxHP)))
-							.Font(FT66Style::Tokens::FontBold(11))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-						]
-					];
+					if (Row.FillBox.IsValid())
+					{
+						Row.FillBox->SetWidthOverride(FMath::Clamp(BossBarWidth * PartPct, 0.f, BossBarWidth));
+						if (Row.FillBorder.IsValid())
+						{
+							Row.FillBorder->SetBorderBackgroundColor(GetBossPartFillColor(Part.HitZoneType, Part.IsAlive()));
+						}
+					}
+
+					if (Row.Text.IsValid())
+					{
+						Row.Text->SetText(FText::Format(
+							NSLOCTEXT("T66.GameplayHUD", "BossPartFraction", "{0} {1}/{2}"),
+							GetBossPartDisplayName(Part),
+							FText::AsNumber(PartCurrentHP),
+							FText::AsNumber(PartMaxHP)));
+					}
 				}
 			}
 		}
@@ -5210,6 +5269,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const FText PortraitLabel = Loc ? Loc->GetText_PortraitPlaceholder() : NSLOCTEXT("T66.GameplayHUD", "PortraitLabel", "PORTRAIT");
 	NetWorthText.Reset();
 	PortraitStatPanelBox.Reset();
+	BossPartBarRows.Reset();
 	const bool bDotaTheme = FT66Style::IsDotaTheme();
 	const FLinearColor SlotOuterColor = bDotaTheme ? FT66Style::SlotOuter() : FLinearColor(0.f, 0.f, 0.f, 0.25f);
 	const FLinearColor SlotFrameColor = bDotaTheme ? FT66Style::SlotInner() : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
