@@ -55,7 +55,7 @@ namespace
 	constexpr int32 HeroSelectionCarouselVisibleSlots = 7;
 	constexpr int32 HeroSelectionCarouselCenterIndex = HeroSelectionCarouselVisibleSlots / 2;
 
-	AT66PlayerController* T66GetLocalFrontendPlayerController(UObject* ContextObject)
+	AT66PlayerController* T66GetLocalFrontendHeroPlayerController(UObject* ContextObject)
 	{
 		return ContextObject ? Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(ContextObject, 0)) : nullptr;
 	}
@@ -76,7 +76,7 @@ namespace
 			}
 		}
 
-		if (AT66PlayerController* PC = T66GetLocalFrontendPlayerController(ContextObject))
+		if (AT66PlayerController* PC = T66GetLocalFrontendHeroPlayerController(ContextObject))
 		{
 			PC->PositionLocalFrontendCameraForHeroPreview();
 		}
@@ -4471,7 +4471,7 @@ AT66HeroPreviewStage* UT66HeroSelectionScreen::GetHeroPreviewStage() const
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
 
-	if (AT66PlayerController* PC = T66GetLocalFrontendPlayerController(const_cast<UT66HeroSelectionScreen*>(this)))
+	if (AT66PlayerController* PC = T66GetLocalFrontendHeroPlayerController(const_cast<UT66HeroSelectionScreen*>(this)))
 	{
 		PC->EnsureLocalFrontendPreviewScene();
 	}

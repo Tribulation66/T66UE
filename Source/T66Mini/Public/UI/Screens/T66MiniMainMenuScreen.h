@@ -7,7 +7,7 @@
 #include "UObject/StrongObjectPtr.h"
 #include "T66MiniMainMenuScreen.generated.h"
 
-class ST66LeaderboardPanel;
+class ST66MiniLeaderboardPanel;
 class UTexture2D;
 
 UCLASS(Blueprintable)
@@ -35,7 +35,7 @@ private:
 	void RequestMiniMenuTextures();
 	void ReleaseRetainedSlateState();
 
-	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
+	TSharedPtr<ST66MiniLeaderboardPanel> LeaderboardPanel;
 	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
 	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
 	TSharedPtr<FSlateBrush> FireMoonBrush;

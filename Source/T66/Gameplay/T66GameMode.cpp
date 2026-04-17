@@ -159,6 +159,88 @@ namespace
 		return FName(*FString::Printf(TEXT("Companion_%02d"), Index));
 	}
 
+	static int32 T66ResolveFallbackBossStageNum(const FName BossID, const int32 DefaultStageNum)
+	{
+		const int32 ClampedDefaultStage = FMath::Clamp(DefaultStageNum, 1, 23);
+		const FString BossName = BossID.ToString();
+		int32 SeparatorIndex = INDEX_NONE;
+		if (!BossName.FindLastChar(TEXT('_'), SeparatorIndex))
+		{
+			return ClampedDefaultStage;
+		}
+
+		const FString Suffix = BossName.Mid(SeparatorIndex + 1);
+		if (Suffix.IsEmpty())
+		{
+			return ClampedDefaultStage;
+		}
+
+		for (const TCHAR Char : Suffix)
+		{
+			if (!FChar::IsDigit(Char))
+			{
+				return ClampedDefaultStage;
+			}
+		}
+
+		return FMath::Clamp(FCString::Atoi(*Suffix), 1, 23);
+	}
+
+	static void T66BuildFallbackBossData(const int32 StageNum, const FName BossID, FBossData& OutBossData)
+	{
+		const int32 S = FMath::Clamp(StageNum, 1, 23);
+		const float T = static_cast<float>(S - 1) / 22.f; // 0..1
+
+		OutBossData = FBossData{};
+		OutBossData.BossID = BossID.IsNone()
+			? FName(*FString::Printf(TEXT("Boss_%02d"), S))
+			: BossID;
+		OutBossData.MaxHP = 1000 + (S * 250);
+		OutBossData.AwakenDistance = 900.f;
+		OutBossData.MoveSpeed = 350.f + (S * 2.f);
+		OutBossData.FireIntervalSeconds = FMath::Clamp(2.0f - (S * 0.015f), 0.65f, 3.5f);
+		OutBossData.ProjectileSpeed = 900.f + (S * 15.f);
+		OutBossData.ProjectileDamageHearts = 1 + (S / 20);
+
+		const float Hue = FMath::Fmod(static_cast<float>(S) * 31.f, 360.f);
+		FLinearColor Color = FLinearColor::MakeFromHSV8(static_cast<uint8>(Hue / 360.f * 255.f), 210, 245);
+		Color.A = 1.f;
+		Color.R = FMath::Lerp(Color.R * 0.85f, Color.R, T);
+		Color.G = FMath::Lerp(Color.G * 0.85f, Color.G, T);
+		Color.B = FMath::Lerp(Color.B * 0.85f, Color.B, T);
+		OutBossData.PlaceholderColor = Color;
+	}
+
+	static UClass* T66LoadBossClassSync(const FBossData& BossData)
+	{
+		UClass* BossClass = AT66BossBase::StaticClass();
+		if (!BossData.BossClass.IsNull())
+		{
+			if (UClass* LoadedClass = BossData.BossClass.LoadSynchronous())
+			{
+				if (LoadedClass->IsChildOf(AT66BossBase::StaticClass()))
+				{
+					BossClass = LoadedClass;
+				}
+			}
+		}
+		return BossClass;
+	}
+
+	static FVector T66ComputeBossClusterLocation(const FVector& Center, const int32 BossIndex, const int32 BossCount)
+	{
+		if (BossCount <= 0)
+		{
+			return Center;
+		}
+
+		const float Radius = 760.f + (90.f * static_cast<float>(FMath::Max(0, BossCount - 1)));
+		const float Angle = (BossCount == 1)
+			? 0.f
+			: (2.f * PI * static_cast<float>(BossIndex) / static_cast<float>(BossCount));
+		return Center + FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f);
+	}
+
 	static bool T66_HasAnyFloorTag(const AActor* A)
 	{
 		if (!A) return false;
@@ -421,6 +503,8 @@ namespace
 	static FT66MapPreset T66BuildMainMapPreset(UT66GameInstance* GI)
 	{
 		const ET66Difficulty Difficulty = GI ? GI->SelectedDifficulty : ET66Difficulty::Easy;
+		// Geometry/layout stays stable for the current difficulty + run seed. Local stage progression
+		// should come from stage tuning, enemy rosters, and interactable/trap rolls rather than a new tower shell.
 		return T66MainMapTerrain::BuildPresetForDifficulty(Difficulty, T66EnsureRunSeed(GI));
 	}
 
@@ -3126,7 +3210,6 @@ void AT66GameMode::SyncTowerBossEntryState()
 				{
 					Boss->ForceAwaken();
 				}
-				break;
 			}
 		}
 	}
@@ -3243,6 +3326,29 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		RunState->AddPowerCrystalsEarnedThisRun(1);
 	}
 
+	AT66BossBase* RemainingBoss = nullptr;
+	int32 RemainingBossCount = 0;
+	if (!IsColiseumStage())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
+			{
+				AT66BossBase* CandidateBoss = WeakBoss.Get();
+				if (!CandidateBoss || CandidateBoss == Boss || !CandidateBoss->IsAlive())
+				{
+					continue;
+				}
+
+				++RemainingBossCount;
+				if (!RemainingBoss)
+				{
+					RemainingBoss = CandidateBoss;
+				}
+			}
+		}
+	}
+
 	if (IsColiseumStage())
 	{
 		if (IsFinalDifficultyBossColiseumStage())
@@ -3276,6 +3382,17 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 			}
 			SpawnStageGateAtLocation(Location);
 		}
+		return;
+	}
+
+	if (RemainingBossCount > 0)
+	{
+		if (RunState && RemainingBoss)
+		{
+			RemainingBoss->RefreshRunStateBossState();
+		}
+
+		UE_LOG(LogT66GameMode, Log, TEXT("Boss defeated, but %d boss(es) remain active on this stage."), RemainingBossCount);
 		return;
 	}
 
@@ -3337,6 +3454,11 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	ClearMiasma();
 	if (bCompletedSelectedDifficulty)
 	{
+		if (RunState)
+		{
+			RunState->ClearOwedBosses();
+		}
+
 		bool bOpenedSummary = false;
 		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 		{
@@ -5511,7 +5633,23 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 	if (!World) return;
 
 	FVector SpawnLoc(Location.X, Location.Y, Location.Z);
-	if (IsUsingTowerMainMapLayout())
+
+	// Prefer the exact boss-death location. Only fall back to the boss-room anchor when that
+	// position cannot be grounded (for example if the boss dies above a hole or invalid surface).
+	bool bHasGroundedSpawn = false;
+	{
+		FHitResult Hit;
+		const FVector Start = SpawnLoc + FVector(0.f, 0.f, 3000.f);
+		const FVector End = SpawnLoc - FVector(0.f, 0.f, 9000.f);
+		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic) ||
+			World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility))
+		{
+			SpawnLoc = Hit.ImpactPoint;
+			bHasGroundedSpawn = true;
+		}
+	}
+
+	if (!bHasGroundedSpawn && IsUsingTowerMainMapLayout())
 	{
 		if (!MainMapBossBeaconSurfaceLocation.IsNearlyZero())
 		{
@@ -5521,10 +5659,7 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 		{
 			SpawnLoc = MainMapBossAreaCenterSurfaceLocation;
 		}
-	}
 
-	// Snap to ground at the chosen XY so the gate is never floating/sunk.
-	{
 		FHitResult Hit;
 		const FVector Start = SpawnLoc + FVector(0.f, 0.f, 3000.f);
 		const FVector End = SpawnLoc - FVector(0.f, 0.f, 9000.f);
@@ -5532,15 +5667,31 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 			World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility))
 		{
 			SpawnLoc = Hit.ImpactPoint;
+			bHasGroundedSpawn = true;
 		}
 	}
+
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	AT66StageGate* StageGate = World->SpawnActor<AT66StageGate>(AT66StageGate::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 	if (StageGate)
 	{
-		UE_LOG(LogT66GameMode, Log, TEXT("Spawned Stage Gate at boss death location"));
+		if (IsUsingTowerMainMapLayout())
+		{
+			const int32 BossFloorNumber = GetTowerFloorIndexForLocation(SpawnLoc);
+			if (BossFloorNumber != INDEX_NONE)
+			{
+				T66TrySnapActorToTowerFloor(World, StageGate, CachedTowerMainMapLayout, BossFloorNumber, SpawnLoc);
+				T66AssignTowerFloorTag(StageGate, BossFloorNumber);
+			}
+		}
+
+		UE_LOG(LogT66GameMode, Log, TEXT("Spawned Stage Gate at (%.0f, %.0f, %.0f)%s"),
+			SpawnLoc.X,
+			SpawnLoc.Y,
+			SpawnLoc.Z,
+			bHasGroundedSpawn ? TEXT("") : TEXT(" [location not grounded]"));
 	}
 }
 
@@ -5599,30 +5750,7 @@ void AT66GameMode::SpawnBossForCurrentStage()
 
 	// Default/fallback boss data (if DT_Bosses is not wired yet)
 	FBossData BossData;
-	BossData.BossID = StageData.BossID;
-	{
-		// Stage-scaled fallback so all 23 stages work even if DT_Bosses isn't reimported yet.
-		const int32 S = FMath::Clamp(StageNum, 1, 23);
-		const float T = static_cast<float>(S - 1) / 22.f; // 0..1
-
-		// Bosses are intended to be 1000+ HP always (BossBase will clamp too).
-		BossData.MaxHP = 1000 + (S * 250);
-		BossData.AwakenDistance = 900.f;
-		BossData.MoveSpeed = 350.f + (S * 2.f);
-		BossData.FireIntervalSeconds = FMath::Clamp(2.0f - (S * 0.015f), 0.65f, 3.5f);
-		BossData.ProjectileSpeed = 900.f + (S * 15.f);
-		BossData.ProjectileDamageHearts = 1 + (S / 20);
-
-		// Visually differentiate bosses by stage (HSV wheel).
-		const float Hue = FMath::Fmod(static_cast<float>(S) * 31.f, 360.f);
-		FLinearColor C = FLinearColor::MakeFromHSV8(static_cast<uint8>(Hue / 360.f * 255.f), 210, 245);
-		C.A = 1.f;
-		// Slightly darken early, brighten later.
-		C.R = FMath::Lerp(C.R * 0.85f, C.R, T);
-		C.G = FMath::Lerp(C.G * 0.85f, C.G, T);
-		C.B = FMath::Lerp(C.B * 0.85f, C.B, T);
-		BossData.PlaceholderColor = C;
-	}
+	T66BuildFallbackBossData(StageNum, StageData.BossID, BossData);
 
 	FBossData FromBossDT;
 	if (!StageData.BossID.IsNone() && T66GI->GetBossData(StageData.BossID, FromBossDT))
@@ -5698,6 +5826,60 @@ void AT66GameMode::SpawnBossForCurrentStage()
 			{
 				ActiveAsyncLoadHandles.Add(Handle);
 			}
+		}
+	}
+
+	int32 SelectedDifficultyEndStage = INDEX_NONE;
+	if (UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr)
+	{
+		SelectedDifficultyEndStage = PlayerExperience->GetDifficultyEndStage(T66GI->SelectedDifficulty);
+	}
+
+	TArray<FName> FinalFloorOwedBossIDs;
+	if (StageNum == SelectedDifficultyEndStage)
+	{
+		for (const FName OwedBossID : RunState->GetOwedBossIDs())
+		{
+			if (OwedBossID.IsNone())
+			{
+				continue;
+			}
+
+			FinalFloorOwedBossIDs.Add(OwedBossID);
+		}
+	}
+
+	for (int32 BossIndex = 0; BossIndex < FinalFloorOwedBossIDs.Num(); ++BossIndex)
+	{
+		const FName OwedBossID = FinalFloorOwedBossIDs[BossIndex];
+		FBossData OwedBossData;
+		T66BuildFallbackBossData(T66ResolveFallbackBossStageNum(OwedBossID, StageNum), OwedBossID, OwedBossData);
+		if (FBossData FromBossTable; T66GI->GetBossData(OwedBossID, FromBossTable))
+		{
+			OwedBossData = FromBossTable;
+		}
+
+		const FVector OwedBossSpawnLocation = T66ComputeBossClusterLocation(StageData.BossSpawnLocation, BossIndex, FinalFloorOwedBossIDs.Num());
+		FActorSpawnParameters OwedSpawnParams;
+		OwedSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AActor* OwedSpawnedActor = World->SpawnActor<AActor>(T66LoadBossClassSync(OwedBossData), OwedBossSpawnLocation, FRotator::ZeroRotator, OwedSpawnParams);
+		if (AT66BossBase* OwedBoss = Cast<AT66BossBase>(OwedSpawnedActor))
+		{
+			OwedBoss->InitializeBoss(OwedBossData);
+			if (IsUsingTowerMainMapLayout())
+			{
+				if (!T66TrySnapActorToTowerFloor(World, OwedBoss, CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber, OwedBossSpawnLocation))
+				{
+					T66TrySnapActorToTowerFloor(World, OwedBoss, CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber, StageData.BossSpawnLocation);
+				}
+				T66AssignTowerFloorTag(OwedBoss, CachedTowerMainMapLayout.BossFloorNumber);
+			}
+			else
+			{
+				TrySnapActorToTerrainAtLocation(OwedBoss, OwedBossSpawnLocation);
+			}
+
+			UE_LOG(LogT66GameMode, Log, TEXT("Spawned owed boss on final boss floor (BossID=%s)"), *OwedBossData.BossID.ToString());
 		}
 	}
 }

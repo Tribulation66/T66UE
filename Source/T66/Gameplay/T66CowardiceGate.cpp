@@ -3,7 +3,6 @@
 #include "Gameplay/T66CowardiceGate.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66GameInstance.h"
-#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Components/BoxComponent.h"
@@ -110,27 +109,9 @@ bool AT66CowardiceGate::ConfirmCowardice()
 	RunState->SetCurrentStage(NextStage);
 	RunState->SetLoanSharkPending(RunState->GetCurrentDebt() > 0);
 	T66GI->bIsStageTransition = true;
-
-	// Coliseum rule: before entering a difficulty boss stage, route to Coliseum if there are owed bosses.
-	int32 SelectedDifficultyEndStage = INDEX_NONE;
-	if (UT66PlayerExperienceSubSystem* PlayerExperience = GI->GetSubsystem<UT66PlayerExperienceSubSystem>())
-	{
-		SelectedDifficultyEndStage = PlayerExperience->GetDifficultyEndStage(T66GI->SelectedDifficulty);
-	}
-	if (NextStage == SelectedDifficultyEndStage)
-	{
-		T66GI->bForceColiseumMode = true;
-		T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::FinalDifficultyBoss;
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetColiseumLevelName());
-		return true;
-	}
-	if (T66IsDifficultyBossStage(NextStage) && RunState->GetOwedBossIDs().Num() > 0)
-	{
-		T66GI->bForceColiseumMode = true;
-		T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::OwedBosses;
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetColiseumLevelName());
-		return true;
-	}
+	T66GI->bPendingTowerStageDropIntro = false;
+	T66GI->bForceColiseumMode = false;
+	T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
 
 	const FString LevelName = UGameplayStatics::GetCurrentLevelName(this);
 	if (LevelName.IsEmpty()) return false;

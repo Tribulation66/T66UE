@@ -29,7 +29,8 @@ public class T66Mini : ModuleRules
 			"JsonUtilities",
 			"ImageWrapper",
 			"OnlineSubsystem",
-			"OnlineSubsystemUtils"
+			"OnlineSubsystemUtils",
+			"Steamworks"
 		});
 
 		void AddLooseMiniRuntimeDependency(string RelativeProjectPath)

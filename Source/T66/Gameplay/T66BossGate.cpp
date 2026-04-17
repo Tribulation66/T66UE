@@ -123,7 +123,6 @@ void AT66BossGate::TryTriggerForActor(AActor* OtherActor)
 			if (AT66BossBase* Boss = WeakBoss.Get())
 			{
 				Boss->ForceAwaken();
-				break;
 			}
 		}
 	}

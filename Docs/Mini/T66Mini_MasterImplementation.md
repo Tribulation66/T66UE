@@ -30,6 +30,11 @@ The primary engineering goal is isolation. Mini-game work must be able to evolve
 - First build ships with all 16 heroes unlocked.
 - First build supports true mid-wave resume using a mini-specific save/profile system.
 - First build converts all current regular enemies and bosses into 2D mini variants.
+- Mini leaderboard uses Steam leaderboards directly, not the Vercel backend.
+- Mini leaderboard tracks score only, where score is the run's banked materials.
+- Mini leaderboard supports all-time boards only.
+- Mini leaderboard filters are global and friends only.
+- Mini leaderboard does not ship speedrun, weekly, or streamers views.
 - Mandatory first-build random interactables/NPCs:
   - Treasure Chest
   - Fountain

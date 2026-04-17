@@ -2,17 +2,16 @@
 
 #include "UI/Screens/T66MiniMainMenuScreen.h"
 
-#include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66MiniDataSubsystem.h"
-#include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
+#include "Core/T66MiniLeaderboardSubsystem.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66SessionSubsystem.h"
 #include "Core/T66SteamHelper.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Styling/CoreStyle.h"
-#include "UI/Components/T66LeaderboardPanel.h"
+#include "UI/Components/T66MiniLeaderboardPanel.h"
 #include "UI/ST66AnimatedBackground.h"
 #include "UI/ST66AnimatedBorderGlow.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
@@ -168,10 +167,6 @@ void UT66MiniMainMenuScreen::OnScreenActivated_Implementation()
 		}
 	}
 
-	if (LeaderboardPanel.IsValid())
-	{
-		LeaderboardPanel->SetUIManager(UIManager);
-	}
 }
 
 void UT66MiniMainMenuScreen::OnScreenDeactivated_Implementation()
@@ -267,9 +262,8 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 	RequestMiniMenuTextures();
 
 	UGameInstance* GameInstance = GetGameInstance();
-	UT66LocalizationSubsystem* LocSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	UT66LeaderboardSubsystem* LeaderboardSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	UT66MiniDataSubsystem* MiniDataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
+	UT66MiniLeaderboardSubsystem* MiniLeaderboardSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniLeaderboardSubsystem>() : nullptr;
 	UT66PartySubsystem* PartySubsystem = GameInstance ? GameInstance->GetSubsystem<UT66PartySubsystem>() : nullptr;
 	UT66SessionSubsystem* SessionSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	UT66SteamHelper* SteamHelper = GameInstance ? GameInstance->GetSubsystem<UT66SteamHelper>() : nullptr;
@@ -758,10 +752,10 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 		];
 
 	const TSharedRef<SWidget> LeaderboardShell =
-		SAssignNew(LeaderboardPanel, ST66LeaderboardPanel)
-		.LocalizationSubsystem(LocSubsystem)
-		.LeaderboardSubsystem(LeaderboardSubsystem)
-		.UIManager(UIManager);
+		SAssignNew(LeaderboardPanel, ST66MiniLeaderboardPanel)
+		.DataSubsystem(MiniDataSubsystem)
+		.LeaderboardSubsystem(MiniLeaderboardSubsystem)
+		.PartySubsystem(PartySubsystem);
 
 	TArray<FT66AnimatedBackgroundLayer> BackgroundLayers;
 	BackgroundLayers.Reserve(3);

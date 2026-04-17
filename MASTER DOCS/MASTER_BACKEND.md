@@ -1,11 +1,13 @@
 # T66 Master Backend
 
-**Last updated:** 2026-04-12
+**Last updated:** 2026-04-16
 **Scope:** Single-source handoff for T66 online state: Steam, Steamworks, Steam AppIDs, Vercel, backend services, live status, and the recommended path to private multiplayer testing under the real Steam AppID.
 **Companion policy doc:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`
+**Companion Steam ops doc:** `MASTER DOCS/MASTER_STEAMWORKS.md`
 **Companion anti-cheat doc:** `MASTER DOCS/Anti Cheat/MASTER_ANTI_CHEAT.md`
 **Historical predecessor docs:** `Docs/Archive/Systems/backend_architecture_historical.md`, `Docs/Archive/Systems/backend_0.1_checklist_historical.md`, `Docs/Archive/Systems/version_0.1_full_checklist_historical.md`
-**Maintenance rule:** Update this file after every Steam, backend, online, multiplayer, upload, deployment, or other internet-connected systems change. If the change also affects project policy, workflow, or anti-cheat enforcement, update `MASTER DOCS/T66_MASTER_GUIDELINES.md` and `MASTER DOCS/Anti Cheat/MASTER_ANTI_CHEAT.md` in the same pass.
+**Maintenance rule:** Update this file after every Steam, backend, online, multiplayer, upload, deployment, or other internet-connected systems change. Update `MASTER DOCS/MASTER_STEAMWORKS.md` in the same pass for any Steamworks/build/upload/private-test workflow change. If the change also affects project policy, workflow, or anti-cheat enforcement, update `MASTER DOCS/T66_MASTER_GUIDELINES.md` and `MASTER DOCS/Anti Cheat/MASTER_ANTI_CHEAT.md` in the same pass.
+**Status note:** For the current Steamworks operational state, active build ID, upload workflow, and private-testing procedure, prefer `MASTER DOCS/MASTER_STEAMWORKS.md`. This backend document still contains historical transition details from the earlier `480` to `4464300` migration period.
 
 ## 1. Primary Source Files
 
@@ -30,6 +32,7 @@ Where this document contradicts the archived backend/reference docs, prefer this
 ## 2. Executive Summary
 
 - The project already has a real Steam multiplayer foundation in code.
+- `MASTER DOCS/MASTER_STEAMWORKS.md` is now the primary operator-memory file for Steamworks uploads, current build tracking, key handling, and the local PowerShell workflow.
 - The backend is real and deployed at `https://t66-backend.vercel.app`.
 - The live backend health check is currently healthy as of 2026-04-07.
 - The main blocker is not "Steam is missing"; it is finishing the move from legacy Spacewar testing to the real app path.
@@ -38,6 +41,9 @@ Where this document contradicts the archived backend/reference docs, prefer this
 - The backend party-invite and diagnostics routes still allow legacy `480` during the transition window.
 - Structured multiplayer diagnostics now exist locally and through the backend so host/guest failures can be correlated without asking for full raw log files.
 - The runtime leaderboard UI now exposes `solo`, `duo`, `trio`, and `quad` and no longer collapses `trio`/`quad` requests back to `duo`.
+- Source now prevents score-only victory submits from seeding bogus `0 ms` speedrun leaderboard rows; backend speedrun keys are only generated for real completed-run submissions with `time_ms > 0`.
+- Source now treats an empty Steam friends list as valid for the Friends leaderboard route and returns the requesting player's own row instead of failing the request.
+- Source now parses backend speedrun leaderboard values into `TimeSeconds` for UI display, and completed-run local rank handling now uses the backend speedrun rank rather than the score rank.
 - Suspicion-level anti-cheat restrictions are now backend-authoritative and block new score submissions the same way the frontend does.
 - Automatic suspension reasons now distinguish `luck_rating` and `skill_rating` breaches over `100`, and the Account Status flow can open the reviewed backend run summary tied to the restriction.
 - All-time proof-of-run data now persists for the active PB leaderboard entry until that PB is replaced or the entry is removed; weekly proof-backed summaries are wiped by the weekly reset.

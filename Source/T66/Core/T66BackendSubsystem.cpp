@@ -1521,18 +1521,41 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 	{
 		double ScoreRankAlltimeValue = 0.0;
 		double ScoreRankWeeklyValue = 0.0;
-		bool bNewPB = false;
+		double SpeedRunRankAlltimeValue = 0.0;
+		double SpeedRunRankWeeklyValue = 0.0;
+		bool bNewScorePB = false;
+		bool bNewSpeedRunPB = false;
 		(void)Json->TryGetNumberField(TEXT("score_rank_alltime"), ScoreRankAlltimeValue);
 		(void)Json->TryGetNumberField(TEXT("score_rank_weekly"), ScoreRankWeeklyValue);
-		(void)Json->TryGetBoolField(TEXT("is_new_personal_best_score"), bNewPB);
+		(void)Json->TryGetNumberField(TEXT("speedrun_rank_alltime"), SpeedRunRankAlltimeValue);
+		(void)Json->TryGetNumberField(TEXT("speedrun_rank_weekly"), SpeedRunRankWeeklyValue);
+		(void)Json->TryGetBoolField(TEXT("is_new_personal_best_score"), bNewScorePB);
+		(void)Json->TryGetBoolField(TEXT("is_new_personal_best_speedrun"), bNewSpeedRunPB);
 		const int32 ScoreRankAlltime = static_cast<int32>(ScoreRankAlltimeValue);
 		const int32 ScoreRankWeekly = static_cast<int32>(ScoreRankWeeklyValue);
+		const int32 SpeedRunRankAlltime = static_cast<int32>(SpeedRunRankAlltimeValue);
+		const int32 SpeedRunRankWeekly = static_cast<int32>(SpeedRunRankWeeklyValue);
+		const bool bExpectCompletedRunRank = RequestKey.StartsWith(TEXT("best_rank_completed_"));
+		const int32 PrimaryRankAlltime = bExpectCompletedRunRank ? SpeedRunRankAlltime : ScoreRankAlltime;
+		const int32 PrimaryRankWeekly = bExpectCompletedRunRank ? SpeedRunRankWeekly : ScoreRankWeekly;
+		const bool bPrimaryNewPB = bExpectCompletedRunRank ? bNewSpeedRunPB : bNewScorePB;
 
-		UE_LOG(LogT66Backend, Log, TEXT("Backend: submit-run accepted. Alltime rank=%d, Weekly rank=%d, NewPB=%s"),
-			ScoreRankAlltime, ScoreRankWeekly, bNewPB ? TEXT("true") : TEXT("false"));
+		UE_LOG(
+			LogT66Backend,
+			Log,
+			TEXT("Backend: submit-run accepted. Score(All=%d Weekly=%d NewPB=%s) SpeedRun(All=%d Weekly=%d NewPB=%s) Selected(All=%d Weekly=%d NewPB=%s)"),
+			ScoreRankAlltime,
+			ScoreRankWeekly,
+			bNewScorePB ? TEXT("true") : TEXT("false"),
+			SpeedRunRankAlltime,
+			SpeedRunRankWeekly,
+			bNewSpeedRunPB ? TEXT("true") : TEXT("false"),
+			PrimaryRankAlltime,
+			PrimaryRankWeekly,
+			bPrimaryNewPB ? TEXT("true") : TEXT("false"));
 
-		OnSubmitRunComplete.Broadcast(true, ScoreRankAlltime, ScoreRankWeekly, bNewPB);
-		OnSubmitRunDataReady.Broadcast(RequestKey, true, ScoreRankAlltime, ScoreRankWeekly, bNewPB);
+		OnSubmitRunComplete.Broadcast(true, PrimaryRankAlltime, PrimaryRankWeekly, bPrimaryNewPB);
+		OnSubmitRunDataReady.Broadcast(RequestKey, true, PrimaryRankAlltime, PrimaryRankWeekly, bPrimaryNewPB);
 	}
 	else if (Status == TEXT("flagged") || Status == TEXT("banned") || Status == TEXT("suspended"))
 	{
@@ -2356,6 +2379,7 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 	FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString LeaderboardKey)
 {
 	PendingLeaderboardFetches.Remove(LeaderboardKey);
+	const bool bIsSpeedRunLeaderboard = LeaderboardKey.StartsWith(TEXT("speedrun_"));
 
 	if (!bConnectedSuccessfully || !Response.IsValid() || Response->GetResponseCode() != 200)
 	{
@@ -2429,6 +2453,10 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 		}
 
 		Entry.Score = static_cast<int64>(E->GetNumberField(TEXT("score")));
+		if (bIsSpeedRunLeaderboard)
+		{
+			Entry.TimeSeconds = static_cast<float>(Entry.Score) / 1000.0f;
+		}
 		Entry.StageReached = static_cast<int32>(E->GetNumberField(TEXT("stage_reached")));
 
 		const FString HeroIdStr = E->GetStringField(TEXT("hero_id"));

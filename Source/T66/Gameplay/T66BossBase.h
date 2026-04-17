@@ -142,6 +142,7 @@ public:
 
 	/** Coliseum: start the fight immediately (bypasses proximity). */
 	void ForceAwaken() { Awaken(); }
+	void RefreshRunStateBossState() const;
 
 	int32 GetPointValue() const { return PointValue; }
 

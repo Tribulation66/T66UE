@@ -148,7 +148,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	int32 GetLocalScoreRank(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
-	/** Rank (1–16) of local player's best speed run time for this stage; 0 if no time submitted. */
+	/** Rank of the local player's best completed-run speedrun time; 0 if none is recorded. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	int32 GetLocalSpeedRunRank(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
 

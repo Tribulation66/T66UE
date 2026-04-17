@@ -8,6 +8,7 @@ This folder is the canonical home for active master handoff and policy documents
 - `MASTER_MAP_DESIGN.md`: map presets, stage-space layout, minimap behavior, hazard pressure, and tower-preset implementation plan.
 - `MASTER_TRAPS.md`: trap subsystem ownership, trap runtime rules, and current trap-family implementation details.
 - `MASTER_BACKEND.md`: live Steam, backend, multiplayer, and online-service state.
+- `MASTER_STEAMWORKS.md`: Steamworks operations memory, current Steam app/build state, upload workflow, and private-testing procedure.
 - `Anti Cheat/MASTER_ANTI_CHEAT.md`: anti-cheat telemetry, enforcement flow, moderation, and open gaps.
 - `Anti Cheat/ANTI_CHEAT_IMPLEMENTATION_CHECKLIST.md`: phased, file-by-file anti-cheat execution plan.
 - `T66_PROJECT_CATALOGUE.md`: current codebase and runtime architecture map.

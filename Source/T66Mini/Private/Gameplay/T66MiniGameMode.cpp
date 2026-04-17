@@ -7,9 +7,11 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
+#include "Core/T66MiniLeaderboardSubsystem.h"
 #include "Core/T66MiniRunStateSubsystem.h"
 #include "Core/T66MiniVFXSubsystem.h"
 #include "Core/T66MiniVisualSubsystem.h"
+#include "Core/T66PartySubsystem.h"
 #include "EngineUtils.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Gameplay/T66MiniArena.h"
@@ -1017,6 +1019,14 @@ void AT66MiniGameMode::FinalizeRun(const bool bWasVictory, const FString& Result
 	FrontendState->SetLastRunSummary(Summary);
 	FrontendState->ExitIntermissionFlow();
 	SaveSubsystem->RecordRunSummary(Summary, DataSubsystem);
+	if (UT66MiniLeaderboardSubsystem* MiniLeaderboardSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniLeaderboardSubsystem>() : nullptr)
+	{
+		const UT66PartySubsystem* PartySubsystem = GameInstance ? GameInstance->GetSubsystem<UT66PartySubsystem>() : nullptr;
+		MiniLeaderboardSubsystem->SubmitScore(
+			Summary.DifficultyID,
+			PartySubsystem ? PartySubsystem->GetCurrentPartySizeEnum() : ET66PartySize::Solo,
+			Summary.MaterialsCollected);
+	}
 	if (RunState->GetActiveSaveSlot() != INDEX_NONE)
 	{
 		SaveSubsystem->DeleteRunFromSlot(RunState->GetActiveSaveSlot());

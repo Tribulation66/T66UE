@@ -708,6 +708,11 @@ void AT66BossBase::ApplyDifficultyScalar(float Scalar)
 	}
 }
 
+void AT66BossBase::RefreshRunStateBossState() const
+{
+	PushBossPartStateToRunState();
+}
+
 void AT66BossBase::BeginPlay()
 {
 	Super::BeginPlay();

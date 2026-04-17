@@ -5,7 +5,9 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
+#include "Core/T66MiniLeaderboardSubsystem.h"
 #include "Core/T66MiniRunStateSubsystem.h"
+#include "Core/T66PartySubsystem.h"
 #include "Gameplay/T66MiniGameMode.h"
 #include "Gameplay/T66MiniGameState.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
@@ -546,6 +548,14 @@ void AT66MiniPlayerController::ClientPrepareMiniOnlineRunSummary_Implementation(
 		{
 			SaveSubsystem->RecordClearedMiniStage(Summary.CompanionID, DataSubsystem);
 		}
+	}
+	if (UT66MiniLeaderboardSubsystem* MiniLeaderboardSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniLeaderboardSubsystem>() : nullptr)
+	{
+		const UT66PartySubsystem* PartySubsystem = GameInstance ? GameInstance->GetSubsystem<UT66PartySubsystem>() : nullptr;
+		MiniLeaderboardSubsystem->SubmitScore(
+			Summary.DifficultyID,
+			PartySubsystem ? PartySubsystem->GetCurrentPartySizeEnum() : ET66PartySize::Solo,
+			Summary.MaterialsCollected);
 	}
 	if (RunState)
 	{

@@ -1670,6 +1670,14 @@ int32 UT66LeaderboardSubsystem::GetLocalScoreRank(ET66Difficulty Difficulty, ET6
 
 int32 UT66LeaderboardSubsystem::GetLocalSpeedRunRank(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const
 {
+	static_cast<void>(Stage);
+
+	FT66LocalCompletedRunTimeRecord Record;
+	if (GetLocalBestCompletedRunTimeRecord(Difficulty, PartySize, Record))
+	{
+		return FMath::Max(0, Record.BestCompletedRankAllTime);
+	}
+
 	return 0;
 }
 

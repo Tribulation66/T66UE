@@ -32,7 +32,7 @@
 
 namespace
 {
-	AT66PlayerController* T66GetLocalFrontendPlayerController(UObject* ContextObject)
+	AT66PlayerController* T66GetLocalFrontendCompanionPlayerController(UObject* ContextObject)
 	{
 		return ContextObject ? Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(ContextObject, 0)) : nullptr;
 	}
@@ -53,7 +53,7 @@ namespace
 			}
 		}
 
-		if (AT66PlayerController* PC = T66GetLocalFrontendPlayerController(ContextObject))
+		if (AT66PlayerController* PC = T66GetLocalFrontendCompanionPlayerController(ContextObject))
 		{
 			PC->PositionLocalFrontendCameraForCompanionPreview();
 		}
@@ -1175,7 +1175,7 @@ AT66CompanionPreviewStage* UT66CompanionSelectionScreen::GetCompanionPreviewStag
 {
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
-	if (AT66PlayerController* PC = T66GetLocalFrontendPlayerController(const_cast<UT66CompanionSelectionScreen*>(this)))
+	if (AT66PlayerController* PC = T66GetLocalFrontendCompanionPlayerController(const_cast<UT66CompanionSelectionScreen*>(this)))
 	{
 		PC->EnsureLocalFrontendPreviewScene();
 	}

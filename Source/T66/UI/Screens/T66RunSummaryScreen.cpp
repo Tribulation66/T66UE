@@ -580,11 +580,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	const bool bDotaTheme = FT66Style::IsDotaTheme();
 	const int32 ScoreRank = (GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalScoreRank(GI->SelectedDifficulty, GI->SelectedPartySize) : 0;
 	const bool bSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
-	const int32 SpeedRunStageForRank = FMath::Max(1, StageReached - 1);
-	const int32 SpeedRunRank = (bSpeedRunMode && GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalSpeedRunRank(GI->SelectedDifficulty, GI->SelectedPartySize, SpeedRunStageForRank) : 0;
+	const int32 SpeedRunRank = (bSpeedRunMode && GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalSpeedRunRank(GI->SelectedDifficulty, GI->SelectedPartySize, StageReached) : 0;
 	const FText ScoreRankLabelText = NSLOCTEXT("T66.RunSummary", "ScoreRankLabel", "Score Rank:");
 	const FText ScoreRankValueText = (ScoreRank > 0) ? FText::Format(NSLOCTEXT("T66.RunSummary", "RankFormat", "#{0}"), FText::AsNumber(ScoreRank)) : NSLOCTEXT("T66.RunSummary", "RankNA", "N/A");
-	const FText SpeedRunRankLabelText = FText::Format(NSLOCTEXT("T66.RunSummary", "SpeedRunRankLabelFormat", "Speed Run Rank (Stage {0}):"), FText::AsNumber(SpeedRunStageForRank));
+	const FText SpeedRunRankLabelText = NSLOCTEXT("T66.RunSummary", "SpeedRunRankLabel", "Speed Run Rank:");
 	const FText SpeedRunRankValueText = (SpeedRunRank > 0) ? FText::Format(NSLOCTEXT("T66.RunSummary", "RankFormat", "#{0}"), FText::AsNumber(SpeedRunRank)) : NSLOCTEXT("T66.RunSummary", "RankNA", "N/A");
 
 	auto MakeSectionPanel = [](const FText& Header, const TSharedRef<SWidget>& Body) -> TSharedRef<SWidget>
