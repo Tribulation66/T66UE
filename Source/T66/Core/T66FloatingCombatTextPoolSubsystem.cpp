@@ -20,7 +20,11 @@ AT66FloatingCombatTextActor* UT66FloatingCombatTextPoolSubsystem::AcquireActor(A
 	}
 
 	++TotalRequested;
-	CompactPools();
+	if (++AcquireRequestsSinceLastCompact >= CompactIntervalRequests)
+	{
+		CompactPools();
+		AcquireRequestsSinceLastCompact = 0;
+	}
 
 	AT66FloatingCombatTextActor* Actor = nullptr;
 	while (InactiveActors.Num() > 0 && !Actor)
@@ -135,6 +139,7 @@ void UT66FloatingCombatTextPoolSubsystem::Deinitialize()
 	ActiveActors.Reset();
 	InactiveActors.Reset();
 	ActiveOrder.Reset();
+	AcquireRequestsSinceLastCompact = 0;
 
 	Super::Deinitialize();
 }

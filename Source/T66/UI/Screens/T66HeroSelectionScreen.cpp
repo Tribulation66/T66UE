@@ -1181,10 +1181,13 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		const TSoftObjectPtr<UTexture2D> BalanceIconSoft = GetHeroSelectionBalanceIcon();
 		if (!BalanceIconSoft.IsNull())
 		{
-			TArray<FSoftObjectPath> BalanceIconPaths;
-			BalanceIconPaths.Add(BalanceIconSoft.ToSoftObjectPath());
-			SelectionTexPool->EnsureTexturesLoadedSync(BalanceIconPaths);
-			ACBalanceIconBrush->SetResourceObject(T66SlateTexture::GetLoaded(SelectionTexPool, BalanceIconSoft));
+			T66SlateTexture::BindSharedBrushAsync(
+				SelectionTexPool,
+				BalanceIconSoft,
+				this,
+				ACBalanceIconBrush,
+				FName(TEXT("HeroSelectionBalanceIcon")),
+				/*bClearWhileLoading*/ true);
 		}
 	}
 	if (!CompanionInfoPortraitBrush.IsValid())
@@ -1297,13 +1300,13 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		{
 			HeroPortraitSoft = T66GI->ResolveHeroPortrait(HeroData, T66GI->SelectedHeroBodyType, ET66HeroPortraitVariant::Half);
 		}
-		if (!HeroPortraitSoft.IsNull())
-		{
-			TArray<FSoftObjectPath> PortraitPaths;
-			PortraitPaths.AddUnique(HeroPortraitSoft.ToSoftObjectPath());
-			T66GI->GetSubsystem<UT66UITexturePoolSubsystem>()->EnsureTexturesLoadedSync(PortraitPaths);
-		}
-		PartyHeroPortraitBrush->SetResourceObject(T66SlateTexture::GetLoaded(T66GI->GetSubsystem<UT66UITexturePoolSubsystem>(), HeroPortraitSoft));
+		T66SlateTexture::BindSharedBrushAsync(
+			T66GI->GetSubsystem<UT66UITexturePoolSubsystem>(),
+			HeroPortraitSoft,
+			this,
+			PartyHeroPortraitBrush,
+			FName(TEXT("HeroSelectionPartyHeroPortrait")),
+			/*bClearWhileLoading*/ true);
 	}
 
 	// Build skins list (Default + Beachgoer only). Refreshed in place via RefreshSkinsList() when Equip/Buy.

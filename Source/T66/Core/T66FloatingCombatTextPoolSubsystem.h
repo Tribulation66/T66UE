@@ -48,6 +48,9 @@ private:
 	int32 TotalSpawned = 0;
 	int32 TotalReused = 0;
 	int32 TotalRecycled = 0;
+	int32 AcquireRequestsSinceLastCompact = 0;
+
+	static constexpr int32 CompactIntervalRequests = 16;
 
 	void CompactPools();
 	AT66FloatingCombatTextActor* SpawnPooledActor();

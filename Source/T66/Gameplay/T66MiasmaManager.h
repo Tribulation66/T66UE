@@ -136,6 +136,9 @@ private:
 	float DamageTickAccumulator = 0.f;
 	float AnimationStartTimeSeconds = 0.f;
 	int32 CurrentFrameIndex = INDEX_NONE;
+	bool bMaterialLookApplied = false;
+	FLinearColor LastAppliedTint = FLinearColor::Transparent;
+	float LastAppliedBrightness = -1.0f;
 
 	void BuildGrid();
 	void EnsureSpawnedCount(int32 DesiredCount);
@@ -149,4 +152,5 @@ private:
 	UTexture2D* BuildFrameTexture(int32 FrameIndex, int32 ClampedFrames, int32 Resolution) const;
 	FLinearColor SampleLavaColor(const FVector2D& BaseUV, float Phase) const;
 	void ApplyAnimationFrame(int32 FrameIndex);
+	void ApplyMaterialLookIfNeeded(const FLinearColor& Tint, float InBrightness);
 };

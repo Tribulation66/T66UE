@@ -133,7 +133,8 @@ void AT66LavaPatch::Tick(float DeltaSeconds)
 		return;
 	}
 
-	LavaMID->SetScalarParameterValue(TEXT("Brightness"), Brightness);
+	const bool bHasFrames = GeneratedFrames.Num() > 0;
+	ApplyMaterialLookIfNeeded(bHasFrames ? FLinearColor::White : GlowColor, bHasFrames ? Brightness : 1.0f);
 
 	UWorld* World = GetWorld();
 	if (!World || AnimationFPS <= KINDA_SMALL_NUMBER || GeneratedFrames.Num() <= 1)
@@ -321,9 +322,7 @@ void AT66LavaPatch::EnsureVisualMaterial()
 	}
 
 	const FLinearColor TintColor = bHasFrames ? FLinearColor::White : GlowColor;
-	LavaMID->SetVectorParameterValue(TEXT("Tint"), TintColor);
-	LavaMID->SetVectorParameterValue(TEXT("BaseColor"), TintColor);
-	LavaMID->SetScalarParameterValue(TEXT("Brightness"), bHasFrames ? Brightness : 1.f);
+	ApplyMaterialLookIfNeeded(TintColor, bHasFrames ? Brightness : 1.f);
 }
 
 void AT66LavaPatch::GenerateAnimationFrames()
@@ -453,9 +452,27 @@ void AT66LavaPatch::ApplyAnimationFrame(int32 FrameIndex)
 	{
 		LavaMID->SetTextureParameterValue(TEXT("DiffuseColorMap"), FrameTexture);
 		LavaMID->SetTextureParameterValue(TEXT("BaseColorTexture"), FrameTexture);
-		LavaMID->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
-		LavaMID->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White);
-		LavaMID->SetScalarParameterValue(TEXT("Brightness"), Brightness);
+		ApplyMaterialLookIfNeeded(FLinearColor::White, Brightness);
+	}
+}
+
+void AT66LavaPatch::ApplyMaterialLookIfNeeded(const FLinearColor& Tint, float InBrightness)
+{
+	if (!LavaMID)
+	{
+		return;
+	}
+
+	if (!bMaterialLookApplied
+		|| !LastAppliedTint.Equals(Tint)
+		|| !FMath::IsNearlyEqual(LastAppliedBrightness, InBrightness))
+	{
+		LavaMID->SetVectorParameterValue(TEXT("Tint"), Tint);
+		LavaMID->SetVectorParameterValue(TEXT("BaseColor"), Tint);
+		LavaMID->SetScalarParameterValue(TEXT("Brightness"), InBrightness);
+		LastAppliedTint = Tint;
+		LastAppliedBrightness = InBrightness;
+		bMaterialLookApplied = true;
 	}
 }
 

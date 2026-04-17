@@ -1265,7 +1265,15 @@ void UT66VendorOverlayWidget::PrimeVisibleItemIconTextures()
 
 	if (IconPaths.Num() > 0)
 	{
-		TexPool->EnsureTexturesLoadedSync(IconPaths);
+		for (const FSoftObjectPath& IconPath : IconPaths)
+		{
+			if (!IconPath.IsValid())
+			{
+				continue;
+			}
+
+			TexPool->RequestTexture(TSoftObjectPtr<UTexture2D>(IconPath), this, [](UTexture2D*) {});
+		}
 	}
 }
 

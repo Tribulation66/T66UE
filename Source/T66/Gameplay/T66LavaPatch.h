@@ -145,4 +145,9 @@ private:
 	float AnimationStartTimeSeconds = 0.f;
 	int32 StartFrameOffset = 0;
 	int32 CurrentFrameIndex = INDEX_NONE;
+	bool bMaterialLookApplied = false;
+	FLinearColor LastAppliedTint = FLinearColor::Transparent;
+	float LastAppliedBrightness = -1.0f;
+
+	void ApplyMaterialLookIfNeeded(const FLinearColor& Tint, float InBrightness);
 };

@@ -102,7 +102,10 @@ void AT66MiasmaManager::Tick(float DeltaTime)
 		return;
 	}
 
-	LavaMID->SetScalarParameterValue(TEXT("Brightness"), Brightness);
+	const bool bTowerBlood = ShouldUseTowerBloodLook();
+	ApplyMaterialLookIfNeeded(
+		bTowerBlood ? FLinearColor(0.95f, 0.22f, 0.24f, 1.0f) : FLinearColor::White,
+		bTowerBlood ? 1.45f : Brightness);
 
 	UWorld* World = GetWorld();
 	if (!World || AnimationFPS <= KINDA_SMALL_NUMBER || GeneratedFrames.Num() <= 1)
@@ -625,11 +628,23 @@ void AT66MiasmaManager::EnsureSpawnedCount(int32 DesiredCount)
 	}
 
 	const FVector InstanceScale(FMath::Max(TileSize / 100.f, 0.1f), FMath::Max(TileSize / 100.f, 0.1f), 1.f);
-	while (SpawnedTileCount < DesiredCount && SpawnedTileCount < TileCenters.Num())
+	const int32 TargetCount = FMath::Min(DesiredCount, TileCenters.Num());
+	if (SpawnedTileCount >= TargetCount)
 	{
-		const FVector& Location = TileCenters[SpawnedTileCount];
-		TileInstances->AddInstance(FTransform(FRotator::ZeroRotator, Location, InstanceScale));
-		++SpawnedTileCount;
+		return;
+	}
+
+	TArray<FTransform> InstanceTransforms;
+	InstanceTransforms.Reserve(TargetCount - SpawnedTileCount);
+	for (int32 TileIndex = SpawnedTileCount; TileIndex < TargetCount; ++TileIndex)
+	{
+		InstanceTransforms.Add(FTransform(FRotator::ZeroRotator, TileCenters[TileIndex], InstanceScale));
+	}
+
+	if (InstanceTransforms.Num() > 0)
+	{
+		TileInstances->AddInstances(InstanceTransforms, false, false, false);
+		SpawnedTileCount = TargetCount;
 	}
 }
 
@@ -705,9 +720,7 @@ void AT66MiasmaManager::EnsureVisualMaterial()
 		LavaMID->SetTextureParameterValue(TEXT("BaseColorTexture"), TextureToUse);
 	}
 
-	LavaMID->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
-	LavaMID->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White);
-	LavaMID->SetScalarParameterValue(TEXT("Brightness"), Brightness);
+	ApplyMaterialLookIfNeeded(FLinearColor::White, Brightness);
 
 	if (ShouldUseTowerBloodLook())
 	{
@@ -715,9 +728,7 @@ void AT66MiasmaManager::EnsureVisualMaterial()
 		MidColor = FLinearColor(0.48f, 0.00f, 0.02f, 1.0f);
 		GlowColor = FLinearColor(0.86f, 0.05f, 0.08f, 1.0f);
 		Brightness = 1.45f;
-		LavaMID->SetVectorParameterValue(TEXT("Tint"), FLinearColor(0.95f, 0.22f, 0.24f, 1.0f));
-		LavaMID->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.95f, 0.22f, 0.24f, 1.0f));
-		LavaMID->SetScalarParameterValue(TEXT("Brightness"), Brightness);
+		ApplyMaterialLookIfNeeded(FLinearColor(0.95f, 0.22f, 0.24f, 1.0f), Brightness);
 	}
 }
 
@@ -840,6 +851,26 @@ void AT66MiasmaManager::ApplyAnimationFrame(const int32 FrameIndex)
 
 	CurrentFrameIndex = FrameIndex;
 	EnsureVisualMaterial();
+}
+
+void AT66MiasmaManager::ApplyMaterialLookIfNeeded(const FLinearColor& Tint, float InBrightness)
+{
+	if (!LavaMID)
+	{
+		return;
+	}
+
+	if (!bMaterialLookApplied
+		|| !LastAppliedTint.Equals(Tint)
+		|| !FMath::IsNearlyEqual(LastAppliedBrightness, InBrightness))
+	{
+		LavaMID->SetVectorParameterValue(TEXT("Tint"), Tint);
+		LavaMID->SetVectorParameterValue(TEXT("BaseColor"), Tint);
+		LavaMID->SetScalarParameterValue(TEXT("Brightness"), InBrightness);
+		LastAppliedTint = Tint;
+		LastAppliedBrightness = InBrightness;
+		bMaterialLookApplied = true;
+	}
 }
 
 void AT66MiasmaManager::ClearAllMiasma()

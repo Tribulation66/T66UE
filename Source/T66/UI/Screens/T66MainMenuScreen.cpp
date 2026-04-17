@@ -393,21 +393,6 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		return CountMatchingFriends(true) + CountMatchingFriends(false);
 	};
 
-	TArray<FSoftObjectPath> PortraitPaths;
-	for (const FMenuFriendEntry& Friend : Friends)
-	{
-		const TSoftObjectPtr<UTexture2D> FriendPortraitSoft = ResolvePortraitSoft(Friend.HeroID, Friend.BodyType, ET66HeroPortraitVariant::Low);
-		if (!FriendPortraitSoft.IsNull())
-		{
-			PortraitPaths.AddUnique(FriendPortraitSoft.ToSoftObjectPath());
-		}
-	}
-
-	if (TexPool && PortraitPaths.Num() > 0)
-	{
-		TexPool->EnsureTexturesLoadedSync(PortraitPaths);
-	}
-
 	ProfileAvatarBrush = MakeShared<FSlateBrush>();
 	ProfileAvatarBrush->DrawAs = ESlateBrushDrawType::Image;
 	ProfileAvatarBrush->Tiling = ESlateBrushTileType::NoTile;
@@ -428,7 +413,20 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		else
 		{
 			const TSoftObjectPtr<UTexture2D> FriendPortraitSoft = ResolvePortraitSoft(Friend.HeroID, Friend.BodyType, ET66HeroPortraitVariant::Low);
-			Brush->SetResourceObject(TexPool ? T66SlateTexture::GetLoaded(TexPool, FriendPortraitSoft) : nullptr);
+			if (TexPool)
+			{
+				T66SlateTexture::BindSharedBrushAsync(
+					TexPool,
+					FriendPortraitSoft,
+					this,
+					Brush,
+					FName(*FString::Printf(TEXT("MainMenuFriendPortrait_%d"), FriendPortraitBrushes.Num() + 1)),
+					/*bClearWhileLoading*/ true);
+			}
+			else
+			{
+				Brush->SetResourceObject(nullptr);
+			}
 		}
 		FriendPortraitBrushes.Add(Brush);
 	}
@@ -1536,30 +1534,6 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 {
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
-
-	if (TexPool)
-	{
-		TArray<FSoftObjectPath> ExistingBackgroundPaths;
-		ExistingBackgroundPaths.Reserve(3);
-
-		if (FPackageName::DoesPackageExist(TEXT("/Game/UI/MainMenu/sky_bg")))
-		{
-			ExistingBackgroundPaths.Add(FSoftObjectPath(TEXT("/Game/UI/MainMenu/sky_bg.sky_bg")));
-		}
-		if (FPackageName::DoesPackageExist(TEXT("/Game/UI/MainMenu/fire_moon")))
-		{
-			ExistingBackgroundPaths.Add(FSoftObjectPath(TEXT("/Game/UI/MainMenu/fire_moon.fire_moon")));
-		}
-		if (FPackageName::DoesPackageExist(TEXT("/Game/UI/MainMenu/pyramid_chad")))
-		{
-			ExistingBackgroundPaths.Add(FSoftObjectPath(TEXT("/Game/UI/MainMenu/pyramid_chad.pyramid_chad")));
-		}
-
-		if (ExistingBackgroundPaths.Num() > 0)
-		{
-			TexPool->EnsureTexturesLoadedSync(ExistingBackgroundPaths);
-		}
-	}
 
 	SetupMainMenuLayerBrush(
 		SkyBackgroundBrush,
