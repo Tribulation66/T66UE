@@ -8,7 +8,6 @@
 #include "Core/T66MiniVFXSubsystem.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
-#include "EngineUtils.h"
 #include "Gameplay/T66MiniEnemyBase.h"
 #include "Gameplay/T66MiniGameMode.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
@@ -239,22 +238,6 @@ void AT66MiniHazardTrap::ApplyPulse()
 			}
 		}
 	}
-	else
-	{
-		for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
-		{
-			AT66MiniEnemyBase* Enemy = *It;
-			if (!Enemy || Enemy->IsEnemyDead())
-			{
-				continue;
-			}
-
-			if (FVector::DistSquared2D(GetActorLocation(), Enemy->GetActorLocation()) <= FMath::Square(Radius))
-			{
-				Enemy->ApplyDamage(DamagePerPulse);
-			}
-		}
-	}
 
 	if (UT66MiniVFXSubsystem* VfxSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
 	{
@@ -317,32 +300,7 @@ AT66MiniPlayerPawn* AT66MiniHazardTrap::FindClosestPlayerPawn(const bool bRequir
 	{
 		return MiniGameMode->FindClosestPlayerPawn(GetActorLocation(), bRequireAlive);
 	}
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return nullptr;
-	}
-
-	AT66MiniPlayerPawn* BestPawn = nullptr;
-	float BestDistanceSq = TNumericLimits<float>::Max();
-	for (TActorIterator<AT66MiniPlayerPawn> It(World); It; ++It)
-	{
-		AT66MiniPlayerPawn* Candidate = *It;
-		if (!Candidate || (bRequireAlive && !Candidate->IsHeroAlive()))
-		{
-			continue;
-		}
-
-		const float DistanceSq = FVector::DistSquared2D(GetActorLocation(), Candidate->GetActorLocation());
-		if (DistanceSq < BestDistanceSq)
-		{
-			BestDistanceSq = DistanceSq;
-			BestPawn = Candidate;
-		}
-	}
-
-	return BestPawn;
+	return nullptr;
 }
 
 void AT66MiniHazardTrap::OnRep_TrapPresentationState()

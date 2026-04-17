@@ -13,7 +13,6 @@
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Data/T66MiniDataTypes.h"
 #include "Engine/Texture2D.h"
-#include "EngineUtils.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Gameplay/Components/T66MiniDirectionResolverComponent.h"
 #include "Gameplay/Components/T66MiniHitFlashComponent.h"
@@ -1377,41 +1376,6 @@ void AT66MiniPlayerPawn::ApplyAreaDamage(const FVector& Center, const float Radi
 	const TArray<TObjectPtr<AT66MiniEnemyBase>>* LiveEnemies = T66MiniResolveLiveEnemies(World);
 	if (!LiveEnemies)
 	{
-		for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
-		{
-			AT66MiniEnemyBase* Candidate = *It;
-			if (!Candidate || Candidate->IsEnemyDead())
-			{
-				continue;
-			}
-
-			const float DistanceSq = FVector::DistSquared2D(Center, Candidate->GetActorLocation());
-			if (DistanceSq > FMath::Square(Radius))
-			{
-				continue;
-			}
-
-			float AppliedDamage = Damage * TemporaryDamageMultiplier;
-			if (PassiveType == ET66PassiveType::ArcaneAmplification)
-			{
-				AppliedDamage *= 1.18f;
-			}
-			if (PassiveType == ET66PassiveType::ToxinStacking && Candidate->HasActiveDot())
-			{
-				AppliedDamage *= 1.14f;
-			}
-
-			Candidate->ApplyDamage(AppliedDamage);
-			HandleSuccessfulHit(AppliedDamage);
-			if (!Candidate->IsEnemyDead() && StunDuration > 0.f)
-			{
-				Candidate->ApplyStun(StunDuration);
-			}
-			if (!Candidate->IsEnemyDead() && DotTickDamage > 0.f && DotDuration > 0.f)
-			{
-				Candidate->ApplyDot(DotTickDamage, 0.40f, DotDuration);
-			}
-		}
 		return;
 	}
 
@@ -1767,25 +1731,6 @@ void AT66MiniPlayerPawn::ApplyAoeIdolBurst(const FVector& ImpactLocation, const 
 	const TArray<TObjectPtr<AT66MiniEnemyBase>>* LiveEnemies = T66MiniResolveLiveEnemies(World);
 	if (!LiveEnemies)
 	{
-		for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
-		{
-			AT66MiniEnemyBase* Candidate = *It;
-			if (!Candidate || Candidate->IsEnemyDead())
-			{
-				continue;
-			}
-
-			const float DistanceSq = FVector::DistSquared2D(ImpactLocation, Candidate->GetActorLocation());
-			if (DistanceSq > FMath::Square(Radius))
-			{
-				continue;
-			}
-
-			const float DistanceAlpha = 1.f - FMath::Clamp(FMath::Sqrt(DistanceSq) / FMath::Max(1.f, Radius), 0.f, 1.f);
-			const float AppliedDamage = Damage * (0.65f + (DistanceAlpha * 0.35f));
-			Candidate->ApplyDamage(AppliedDamage);
-			HandleSuccessfulHit(AppliedDamage);
-		}
 		return;
 	}
 
@@ -1822,21 +1767,6 @@ AT66MiniEnemyBase* AT66MiniPlayerPawn::FindClosestEnemyFromLocation(const FVecto
 	const TArray<TObjectPtr<AT66MiniEnemyBase>>* LiveEnemies = T66MiniResolveLiveEnemies(World);
 	if (!LiveEnemies)
 	{
-		for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
-		{
-			AT66MiniEnemyBase* Candidate = *It;
-			if (!Candidate || Candidate == IgnoreActor || Candidate->IsEnemyDead())
-			{
-				continue;
-			}
-
-			const float DistanceSq = FVector::DistSquared2D(Origin, Candidate->GetActorLocation());
-			if (DistanceSq < BestDistanceSq)
-			{
-				BestDistanceSq = DistanceSq;
-				BestEnemy = Candidate;
-			}
-		}
 		return BestEnemy;
 	}
 
@@ -1871,21 +1801,6 @@ AT66MiniEnemyBase* AT66MiniPlayerPawn::FindBestTarget(const float MaxRange) cons
 	const TArray<TObjectPtr<AT66MiniEnemyBase>>* LiveEnemies = T66MiniResolveLiveEnemies(World);
 	if (!LiveEnemies)
 	{
-		for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
-		{
-			AT66MiniEnemyBase* Candidate = *It;
-			if (!Candidate || Candidate->IsEnemyDead())
-			{
-				continue;
-			}
-
-			const float DistanceSq = FVector::DistSquared2D(GetActorLocation(), Candidate->GetActorLocation());
-			if (DistanceSq < BestDistanceSq)
-			{
-				BestDistanceSq = DistanceSq;
-				BestEnemy = Candidate;
-			}
-		}
 		return BestEnemy;
 	}
 

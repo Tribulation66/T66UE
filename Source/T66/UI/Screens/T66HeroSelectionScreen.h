@@ -173,9 +173,8 @@ private:
 	TObjectPtr<UFileMediaSource> KnightPreviewMediaSource;
 	/** Brush bound to HeroPreviewMediaTexture for Slate SImage; kept alive so Slate does not hold raw UObject. */
 	TSharedPtr<FSlateBrush> HeroPreviewVideoBrush;
-	/** Brush for the bottom party leader portrait; must outlive BuildSlateUI because Slate stores a raw brush pointer. */
-	TSharedPtr<FSlateBrush> PartyHeroPortraitBrush;
 	TArray<TSharedPtr<FSlateBrush>> PartyAvatarBrushes;
+	TArray<TSharedPtr<FSlateBrush>> PartyHeroPortraitBrushes;
 	TArray<TSharedPtr<FSlateBrush>> SelectedTemporaryBuffBrushes;
 
 	/** Video area widgets: image shows video when Knight selected; placeholder shows "[VIDEO PREVIEW]" otherwise. */
@@ -291,6 +290,7 @@ private:
 
 	FDelegateHandle PartyStateChangedHandle;
 	FDelegateHandle SessionStateChangedHandle;
+	ET66Language LastBuiltLanguage = ET66Language::English;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UT66LeaderboardRunSummarySaveGame> HeroStatsSnapshot;

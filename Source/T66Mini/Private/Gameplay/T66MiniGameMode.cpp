@@ -186,6 +186,28 @@ AT66MiniPlayerPawn* AT66MiniGameMode::FindClosestPlayerPawn(const FVector& World
 {
 	AT66MiniPlayerPawn* BestPawn = nullptr;
 	float BestDistanceSq = TNumericLimits<float>::Max();
+	bool bUsedCachedPlayerSet = false;
+	for (AT66MiniPlayerPawn* Candidate : LivePlayerPawns)
+	{
+		if (!Candidate || (bRequireAlive && !Candidate->IsHeroAlive()))
+		{
+			continue;
+		}
+
+		bUsedCachedPlayerSet = true;
+		const float DistanceSq = FVector::DistSquared2D(WorldLocation, Candidate->GetActorLocation());
+		if (DistanceSq < BestDistanceSq)
+		{
+			BestDistanceSq = DistanceSq;
+			BestPawn = Candidate;
+		}
+	}
+
+	if (bUsedCachedPlayerSet || !GetWorld())
+	{
+		return BestPawn;
+	}
+
 	for (AT66MiniPlayerPawn* Candidate : T66MiniGatherPlayerPawns(GetWorld(), bRequireAlive))
 	{
 		if (!Candidate)
@@ -468,6 +490,7 @@ void AT66MiniGameMode::Logout(AController* Exiting)
 	}
 
 	Super::Logout(Exiting);
+	UpdateLivePlayerPawnCache();
 
 	if (!bWasOnlinePartyRun || bRunFinalized || bFrontendTravelInProgress)
 	{

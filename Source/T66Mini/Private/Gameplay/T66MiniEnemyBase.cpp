@@ -10,7 +10,6 @@
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
-#include "EngineUtils.h"
 #include "Gameplay/Components/T66MiniDirectionResolverComponent.h"
 #include "Gameplay/Components/T66MiniHitFlashComponent.h"
 #include "Gameplay/Components/T66MiniShadowComponent.h"
@@ -407,32 +406,7 @@ AT66MiniPlayerPawn* AT66MiniEnemyBase::FindBestTargetPawn() const
 	{
 		return MiniGameMode->FindClosestPlayerPawn(GetActorLocation(), true);
 	}
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return nullptr;
-	}
-
-	AT66MiniPlayerPawn* BestPawn = nullptr;
-	float BestDistanceSq = TNumericLimits<float>::Max();
-	for (TActorIterator<AT66MiniPlayerPawn> It(World); It; ++It)
-	{
-		AT66MiniPlayerPawn* Candidate = *It;
-		if (!Candidate || !Candidate->IsHeroAlive())
-		{
-			continue;
-		}
-
-		const float DistanceSq = FVector::DistSquared2D(GetActorLocation(), Candidate->GetActorLocation());
-		if (DistanceSq < BestDistanceSq)
-		{
-			BestDistanceSq = DistanceSq;
-			BestPawn = Candidate;
-		}
-	}
-
-	return BestPawn;
+	return nullptr;
 }
 
 void AT66MiniEnemyBase::HandleDeath()

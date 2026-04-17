@@ -6,7 +6,6 @@
 #include "Components/SphereComponent.h"
 #include "Core/T66MiniVFXSubsystem.h"
 #include "Engine/Texture2D.h"
-#include "EngineUtils.h"
 #include "Gameplay/T66MiniEnemyBase.h"
 #include "Gameplay/T66MiniGameMode.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
@@ -332,39 +331,23 @@ AT66MiniEnemyBase* AT66MiniProjectile::FindNextBounceTarget(AActor* IgnoreActor,
 	float BestDistanceSq = FMath::Square(MaxRange);
 	const AT66MiniGameMode* MiniGameMode = World->GetAuthGameMode<AT66MiniGameMode>();
 	const TArray<TObjectPtr<AT66MiniEnemyBase>>* LiveEnemies = MiniGameMode ? &MiniGameMode->GetLiveEnemies() : nullptr;
-	if (LiveEnemies)
+	if (!LiveEnemies)
 	{
-		for (AT66MiniEnemyBase* Candidate : *LiveEnemies)
-		{
-			if (!Candidate || Candidate == IgnoreActor || Candidate->IsEnemyDead() || HitActors.Contains(Candidate))
-			{
-				continue;
-			}
-
-			const float DistanceSq = FVector::DistSquared2D(GetActorLocation(), Candidate->GetActorLocation());
-			if (DistanceSq < BestDistanceSq)
-			{
-				BestDistanceSq = DistanceSq;
-				BestEnemy = Candidate;
-			}
-		}
+		return BestEnemy;
 	}
-	else
-	{
-		for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
-		{
-			AT66MiniEnemyBase* Candidate = *It;
-			if (!Candidate || Candidate == IgnoreActor || Candidate->IsEnemyDead() || HitActors.Contains(Candidate))
-			{
-				continue;
-			}
 
-			const float DistanceSq = FVector::DistSquared2D(GetActorLocation(), Candidate->GetActorLocation());
-			if (DistanceSq < BestDistanceSq)
-			{
-				BestDistanceSq = DistanceSq;
-				BestEnemy = Candidate;
-			}
+	for (AT66MiniEnemyBase* Candidate : *LiveEnemies)
+	{
+		if (!Candidate || Candidate == IgnoreActor || Candidate->IsEnemyDead() || HitActors.Contains(Candidate))
+		{
+			continue;
+		}
+
+		const float DistanceSq = FVector::DistSquared2D(GetActorLocation(), Candidate->GetActorLocation());
+		if (DistanceSq < BestDistanceSq)
+		{
+			BestDistanceSq = DistanceSq;
+			BestEnemy = Candidate;
 		}
 	}
 
@@ -383,39 +366,23 @@ void AT66MiniProjectile::ExplodeAt(const FVector& Location)
 
 	const AT66MiniGameMode* MiniGameMode = World->GetAuthGameMode<AT66MiniGameMode>();
 	const TArray<TObjectPtr<AT66MiniEnemyBase>>* LiveEnemies = MiniGameMode ? &MiniGameMode->GetLiveEnemies() : nullptr;
-	if (LiveEnemies)
+	if (!LiveEnemies)
 	{
-		for (AT66MiniEnemyBase* Candidate : *LiveEnemies)
-		{
-			if (!Candidate || Candidate->IsEnemyDead())
-			{
-				continue;
-			}
-
-			const float DistanceSq = FVector::DistSquared2D(Location, Candidate->GetActorLocation());
-			if (DistanceSq <= FMath::Square(Radius))
-			{
-				Candidate->ApplyDamage(FollowUpDamage);
-				T66MiniCreditSuccessfulHit(OwnerActor.Get(), FollowUpDamage);
-			}
-		}
+		return;
 	}
-	else
-	{
-		for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
-		{
-			AT66MiniEnemyBase* Candidate = *It;
-			if (!Candidate || Candidate->IsEnemyDead())
-			{
-				continue;
-			}
 
-			const float DistanceSq = FVector::DistSquared2D(Location, Candidate->GetActorLocation());
-			if (DistanceSq <= FMath::Square(Radius))
-			{
-				Candidate->ApplyDamage(FollowUpDamage);
-				T66MiniCreditSuccessfulHit(OwnerActor.Get(), FollowUpDamage);
-			}
+	for (AT66MiniEnemyBase* Candidate : *LiveEnemies)
+	{
+		if (!Candidate || Candidate->IsEnemyDead())
+		{
+			continue;
+		}
+
+		const float DistanceSq = FVector::DistSquared2D(Location, Candidate->GetActorLocation());
+		if (DistanceSq <= FMath::Square(Radius))
+		{
+			Candidate->ApplyDamage(FollowUpDamage);
+			T66MiniCreditSuccessfulHit(OwnerActor.Get(), FollowUpDamage);
 		}
 	}
 }

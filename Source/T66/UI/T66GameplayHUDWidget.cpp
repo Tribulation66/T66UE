@@ -2746,6 +2746,14 @@ void UT66GameplayHUDWidget::NativeConstruct()
 
 	MarkHUDDirty();
 	RefreshHUD();
+	RefreshTutorialHint();
+	RefreshTutorialSubtitle();
+	RefreshSpeedRunTimers();
+	RefreshDPS();
+	RefreshLootPrompt();
+	RefreshHearts();
+	RefreshQuickReviveState();
+	RefreshStatusEffects();
 }
 
 void UT66GameplayHUDWidget::NativeDestruct()
@@ -4855,19 +4863,9 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	UT66GameInstance* GIAsT66 = Cast<UT66GameInstance>(GetGameInstance());
 
 	RefreshEconomy();
-	RefreshTutorialHint();
-	RefreshTutorialSubtitle();
-
 	RefreshStageAndTimer();
-	RefreshSpeedRunTimers();
 	RefreshBeatTargets();
 	RefreshBossBar();
-	RefreshLootPrompt();
-	RefreshDPS();
-
-	RefreshHearts();
-	RefreshQuickReviveState();
-	RefreshStatusEffects();
 	RefreshHeroStats();
 
 	// Portrait frame stays neutral; heart tier is already conveyed by the heart row and other HUD accents.

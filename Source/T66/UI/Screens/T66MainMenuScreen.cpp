@@ -137,6 +137,18 @@ namespace
 
 		if (!TextureHandle.IsValid())
 		{
+			static TMap<FString, TWeakObjectPtr<UTexture2D>> CachedRuntimeTextures;
+			const FString CacheKey = AssetPath && *AssetPath
+				? FString::Printf(TEXT("asset:%s"), AssetPath)
+				: FString::Printf(TEXT("stage:%s"), StagedRelativePath ? StagedRelativePath : TEXT(""));
+			if (TWeakObjectPtr<UTexture2D>* CachedTexture = CachedRuntimeTextures.Find(CacheKey))
+			{
+				if (CachedTexture->IsValid())
+				{
+					TextureHandle.Reset(CachedTexture->Get());
+				}
+			}
+
 			if (AssetPath && *AssetPath)
 			{
 				if (UTexture2D* AssetTexture = T66RuntimeUITextureAccess::LoadAssetTexture(
@@ -164,9 +176,15 @@ namespace
 						TEXT("MainMenuRuntimeImage")))
 					{
 						TextureHandle.Reset(FileTexture);
+						CachedRuntimeTextures.Add(CacheKey, FileTexture);
 						break;
 					}
 				}
+			}
+
+			if (TextureHandle.IsValid())
+			{
+				CachedRuntimeTextures.Add(CacheKey, TextureHandle.Get());
 			}
 		}
 
@@ -632,17 +650,12 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const FText UnfavoriteFriendTooltip = NSLOCTEXT("T66.MainMenu", "UnfavoriteFriendTooltip", "Remove favorite");
 	const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
 
-	auto MakeFlatActionButton = [FriendsPanelBodyFontSize, &NoBorderButtonStyle](const FText& Text, const FOnClicked& OnClicked, bool bEnabled, bool bPrimary, bool bInvitedState) -> TSharedRef<SWidget>
+	auto MakeFlatActionButton = [FriendsPanelBodyFontSize, &NoBorderButtonStyle](
+		TAttribute<FText> Text,
+		const FOnClicked& OnClicked,
+		TAttribute<bool> IsEnabled,
+		TAttribute<FSlateColor> FillColor) -> TSharedRef<SWidget>
 	{
-		const FLinearColor FillColor = !bEnabled
-			? FLinearColor(0.42f, 0.47f, 0.40f, 0.72f)
-			: (bInvitedState
-				? FLinearColor(0.56f, 0.42f, 0.16f, 0.98f)
-				: (bPrimary ? FLinearColor(0.18f, 0.31f, 0.18f, 0.97f) : FLinearColor(0.27f, 0.30f, 0.34f, 0.94f)));
-		const FLinearColor TextColor = bEnabled
-			? FLinearColor(0.96f, 0.97f, 0.94f, 1.0f)
-			: FLinearColor(0.88f, 0.90f, 0.84f, 0.72f);
-
 		return SNew(SBox)
 			.WidthOverride(80.f)
 			.HeightOverride(30.f)
@@ -650,7 +663,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				SNew(SButton)
 				.ButtonStyle(&NoBorderButtonStyle)
 				.ContentPadding(FMargin(0.f))
-				.IsEnabled(bEnabled)
+				.IsEnabled(IsEnabled)
 				.OnClicked(OnClicked)
 				[
 					SNew(SBorder)
@@ -661,7 +674,12 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(Text)
 						.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
-						.ColorAndOpacity(TextColor)
+						.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsEnabled]() -> FSlateColor
+						{
+							return IsEnabled.Get()
+								? FSlateColor(FLinearColor(0.96f, 0.97f, 0.94f, 1.0f))
+								: FSlateColor(FLinearColor(0.88f, 0.90f, 0.84f, 0.72f));
+						}))
 						.Justification(ETextJustify::Center)
 					]
 				]
@@ -673,26 +691,84 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		int32 FriendIndex) -> TSharedRef<SWidget>
 	{
 		const FLinearColor NameColor = Friend.bOnline ? BrightText : OfflineNameText;
-		const FLinearColor StatusColor = Friend.bOnline ? OnlineStatusText : MutedText;
 		const FLinearColor AccentColor = Friend.bOnline ? AvatarAccentOnline : AvatarAccentOffline;
-		const bool bInParty = PartySubsystem && PartySubsystem->IsFriendInParty(Friend.PlayerId);
-		const bool bInvitePending = Friend.bInvitePending && !bInParty;
-		const bool bCanInvite = PartySubsystem && Friend.bOnline && !bInParty && !bInvitePending && PartySubsystem->GetPartyMemberCount() < 4;
-		const FText ActionText = bInParty
-			? InPartyText
-			: (bInvitePending
-				? InvitedFriendText
-			: (!Friend.bOnline
-				? OfflineActionText
-				: ((PartySubsystem && PartySubsystem->GetPartyMemberCount() >= 4) ? PartyFullText : InviteFriendText)));
-		const FText FavoriteGlyph = FText::FromString(Friend.bFavorite ? TEXT("\u2605") : TEXT("\u2606"));
-		const FLinearColor FavoriteGlyphColor = Friend.bFavorite
-			? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f)
-			: FLinearColor(0.55f, 0.58f, 0.62f, 1.0f);
+		auto IsFriendInParty = [PartySubsystem, PlayerId = Friend.PlayerId]() -> bool
+		{
+			return PartySubsystem && PartySubsystem->IsFriendInParty(PlayerId);
+		};
+		auto IsInvitePending = [SessionSubsystem, PlayerId = Friend.PlayerId, IsFriendInParty]() -> bool
+		{
+			return !IsFriendInParty() && SessionSubsystem && SessionSubsystem->IsFriendInvitePending(PlayerId);
+		};
+		auto CanInviteFriend = [PartySubsystem, bOnline = Friend.bOnline, IsFriendInParty, IsInvitePending]() -> bool
+		{
+			return PartySubsystem && bOnline && !IsFriendInParty() && !IsInvitePending() && PartySubsystem->GetPartyMemberCount() < 4;
+		};
+		auto ResolveFavoriteGlyph = [PlayerSettings, PlayerId = Friend.PlayerId]() -> FText
+		{
+			return FText::FromString((PlayerSettings && PlayerSettings->IsFavoriteFriend(PlayerId)) ? TEXT("\u2605") : TEXT("\u2606"));
+		};
+		auto ResolveFavoriteGlyphColor = [PlayerSettings, PlayerId = Friend.PlayerId]() -> FSlateColor
+		{
+			const bool bFavorite = PlayerSettings && PlayerSettings->IsFavoriteFriend(PlayerId);
+			return FSlateColor(bFavorite
+				? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f)
+				: FLinearColor(0.55f, 0.58f, 0.62f, 1.0f));
+		};
+		auto ResolveActionText = [
+			PartySubsystem,
+			bOnline = Friend.bOnline,
+			IsFriendInParty,
+			IsInvitePending,
+			InPartyText,
+			InvitedFriendText,
+			OfflineActionText,
+			PartyFullText,
+			InviteFriendText]() -> FText
+		{
+			if (IsFriendInParty())
+			{
+				return InPartyText;
+			}
+			if (IsInvitePending())
+			{
+				return InvitedFriendText;
+			}
+			if (!bOnline)
+			{
+				return OfflineActionText;
+			}
+			if (PartySubsystem && PartySubsystem->GetPartyMemberCount() >= 4)
+			{
+				return PartyFullText;
+			}
+			return InviteFriendText;
+		};
+		auto ResolveActionFillColor = [bOnline = Friend.bOnline, IsFriendInParty, IsInvitePending, CanInviteFriend]() -> FSlateColor
+		{
+			if (IsInvitePending())
+			{
+				return FSlateColor(FLinearColor(0.56f, 0.42f, 0.16f, 0.98f));
+			}
+			if (!CanInviteFriend())
+			{
+				return FSlateColor(FLinearColor(0.42f, 0.47f, 0.40f, 0.72f));
+			}
+			if (bOnline && !IsFriendInParty())
+			{
+				return FSlateColor(FLinearColor(0.18f, 0.31f, 0.18f, 0.97f));
+			}
+			return FSlateColor(FLinearColor(0.27f, 0.30f, 0.34f, 0.94f));
+		};
 
 		return SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(bInParty ? FLinearColor(0.10f, 0.14f, 0.18f, 0.55f) : FLinearColor(0.f, 0.f, 0.f, 0.20f))
+			.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([IsFriendInParty]() -> FSlateColor
+			{
+				return FSlateColor(IsFriendInParty()
+					? FLinearColor(0.10f, 0.14f, 0.18f, 0.55f)
+					: FLinearColor(0.f, 0.f, 0.f, 0.20f));
+			}))
 			.Padding(6.f, 4.f)
 			[
 				SNew(SHorizontalBox)
@@ -723,9 +799,17 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 1.f, 0.f, 0.f)
 					[
 						SNew(STextBlock)
-						.Text(bInParty ? InPartyText : FText::FromString(Friend.Status))
+						.Text_Lambda([IsFriendInParty, Status = Friend.Status, InPartyText]()
+						{
+							return IsFriendInParty() ? InPartyText : FText::FromString(Status);
+						})
 						.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
-						.ColorAndOpacity(StatusColor)
+						.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsFriendInParty, bOnline = Friend.bOnline, OnlineStatusText, MutedText]() -> FSlateColor
+						{
+							return FSlateColor(IsFriendInParty()
+								? OnlineStatusText
+								: (bOnline ? OnlineStatusText : MutedText));
+						}))
 					]
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
@@ -737,13 +821,21 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 						SNew(SButton)
 						.ButtonStyle(&NoBorderButtonStyle)
 						.ContentPadding(FMargin(0.f))
-						.ToolTipText(Friend.bFavorite ? UnfavoriteFriendTooltip : FavoriteFriendTooltip)
+						.ToolTipText(TAttribute<FText>::CreateLambda([PlayerSettings, PlayerId = Friend.PlayerId, FavoriteFriendTooltip, UnfavoriteFriendTooltip]()
+						{
+							return (PlayerSettings && PlayerSettings->IsFavoriteFriend(PlayerId))
+								? UnfavoriteFriendTooltip
+								: FavoriteFriendTooltip;
+						}))
 						.OnClicked(FOnClicked::CreateLambda([this, PlayerSettings, PlayerId = Friend.PlayerId]()
 						{
 							if (PlayerSettings)
 							{
 								PlayerSettings->SetFavoriteFriend(PlayerId, !PlayerSettings->IsFavoriteFriend(PlayerId));
-								ForceRebuildSlate();
+								if (FriendsListContainer.IsValid())
+								{
+									FriendsListContainer->Invalidate(EInvalidateWidget::Layout);
+								}
 							}
 							return FReply::Handled();
 						}))
@@ -754,9 +846,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 							.Padding(FMargin(0.f))
 							[
 								SNew(STextBlock)
-								.Text(FavoriteGlyph)
+								.Text_Lambda(ResolveFavoriteGlyph)
 								.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 6))
-								.ColorAndOpacity(FavoriteGlyphColor)
+								.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda(ResolveFavoriteGlyphColor))
 								.Justification(ETextJustify::Center)
 							]
 						]
@@ -765,7 +857,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 				[
 					MakeFlatActionButton(
-						ActionText,
+						TAttribute<FText>::CreateLambda(ResolveActionText),
 						FOnClicked::CreateLambda([this, PartySubsystem, PlayerId = Friend.PlayerId, PlayerName = Friend.Name]()
 						{
 							if (!PartySubsystem)
@@ -775,13 +867,15 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 
 							if (PartySubsystem->InviteFriend(PlayerId, PlayerName))
 							{
-								ForceRebuildSlate();
+								if (FriendsListContainer.IsValid())
+								{
+									FriendsListContainer->Invalidate(EInvalidateWidget::Layout);
+								}
 							}
 							return FReply::Handled();
 						}),
-						bCanInvite,
-						!bInParty && Friend.bOnline,
-						bInvitePending)
+						TAttribute<bool>::CreateLambda(CanInviteFriend),
+						TAttribute<FSlateColor>::CreateLambda(ResolveActionFillColor))
 				]
 			];
 	};
@@ -1570,10 +1664,24 @@ void UT66MainMenuScreen::RequestUtilityButtonIcons()
 {
 	auto LoadGeneratedIcon = [](const FString& RelativePath, TSharedPtr<FSlateBrush>& IconBrush)
 	{
+		static TMap<FString, TWeakObjectPtr<UTexture2D>> CachedGeneratedIcons;
+
 		if (!IconBrush.IsValid())
 		{
 			for (const FString& IconPath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
+				if (TWeakObjectPtr<UTexture2D>* CachedTexture = CachedGeneratedIcons.Find(IconPath))
+				{
+					if (CachedTexture->IsValid())
+					{
+						IconBrush = MakeShared<FSlateBrush>();
+						EnsureRuntimeImageBrush(IconBrush, FVector2D(24.f, 24.f));
+						IconBrush->SetResourceObject(CachedTexture->Get());
+						IconBrush->TintColor = FSlateColor(FLinearColor::White);
+						break;
+					}
+				}
+
 				if (!FPaths::FileExists(IconPath))
 				{
 					continue;
@@ -1589,6 +1697,7 @@ void UT66MainMenuScreen::RequestUtilityButtonIcons()
 					EnsureRuntimeImageBrush(IconBrush, FVector2D(24.f, 24.f));
 					IconBrush->SetResourceObject(IconTexture);
 					IconBrush->TintColor = FSlateColor(FLinearColor::White);
+					CachedGeneratedIcons.Add(IconPath, IconTexture);
 					break;
 				}
 			}

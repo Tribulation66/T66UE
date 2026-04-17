@@ -7,7 +7,6 @@
 #include "Components/StaticMeshComponent.h"
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Core/T66MiniVFXSubsystem.h"
-#include "EngineUtils.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
 #include "Gameplay/Components/T66MiniShadowComponent.h"
@@ -271,32 +270,7 @@ AT66MiniPlayerPawn* AT66MiniPickup::FindClosestPlayerPawn(const bool bRequireAli
 	{
 		return MiniGameMode->FindClosestPlayerPawn(GetActorLocation(), bRequireAlive);
 	}
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return nullptr;
-	}
-
-	AT66MiniPlayerPawn* BestPawn = nullptr;
-	float BestDistanceSq = TNumericLimits<float>::Max();
-	for (TActorIterator<AT66MiniPlayerPawn> It(World); It; ++It)
-	{
-		AT66MiniPlayerPawn* Candidate = *It;
-		if (!Candidate || (bRequireAlive && !Candidate->IsHeroAlive()))
-		{
-			continue;
-		}
-
-		const float DistanceSq = FVector::DistSquared2D(GetActorLocation(), Candidate->GetActorLocation());
-		if (DistanceSq < BestDistanceSq)
-		{
-			BestDistanceSq = DistanceSq;
-			BestPawn = Candidate;
-		}
-	}
-
-	return BestPawn;
+	return nullptr;
 }
 
 void AT66MiniPickup::RefreshVisuals()
