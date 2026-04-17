@@ -91,6 +91,7 @@ private:
 	bool AttemptPendingFriendJoinLookup();
 	void SchedulePendingFriendJoinRetry();
 	void ClearPendingFriendJoinRetry();
+	void ClearPendingJoinState();
 	void PruneInviteFeedbackState();
 	class UT66RunSaveGame* BuildCurrentRunSaveSnapshot(UObject* Outer) const;
 	void ApplyLoadedRunToGameInstance(const class UT66RunSaveGame* LoadedSave, int32 SaveSlotIndex) const;

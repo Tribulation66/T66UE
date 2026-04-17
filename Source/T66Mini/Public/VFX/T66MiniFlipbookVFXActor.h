@@ -27,6 +27,8 @@ public:
 		const FLinearColor& InTint,
 		UTexture* InTexture = nullptr,
 		const float InGrowthFactor = 0.65f);
+	void DeactivateVfx();
+	bool IsAvailableForReuse() const { return !bVfxActive; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -43,4 +45,5 @@ private:
 	float LifetimeSeconds = 0.18f;
 	float LifetimeRemaining = 0.18f;
 	float GrowthFactor = 0.65f;
+	bool bVfxActive = false;
 };

@@ -1,6 +1,8 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/T66UIManager.h"
+#include "Core/T66LagTrackerSubsystem.h"
+#include "UI/T66FrontendBackButtonWidget.h"
 #include "UI/T66FrontendTopBarWidget.h"
 #include "UI/T66ScreenBase.h"
 #include "UI/Style/T66Style.h"
@@ -9,12 +11,26 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66UIManager, Log, All);
 
+namespace
+{
+	FString T66ScreenTypeToDebugName(const ET66ScreenType ScreenType)
+	{
+		if (const UEnum* ScreenEnum = StaticEnum<ET66ScreenType>())
+		{
+			return ScreenEnum->GetNameStringByValue(static_cast<int64>(ScreenType));
+		}
+
+		return FString::Printf(TEXT("Screen_%d"), static_cast<int32>(ScreenType));
+	}
+}
+
 UT66UIManager::UT66UIManager()
 {
 	CurrentScreenType = ET66ScreenType::None;
 	CurrentScreen = nullptr;
 	CurrentModal = nullptr;
 	FrontendTopBar = nullptr;
+	FrontendBackButton = nullptr;
 }
 
 void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
@@ -27,6 +43,11 @@ void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
 		FrontendTopBar->RemoveFromParent();
 	}
 	FrontendTopBar = nullptr;
+	if (FrontendBackButton && FrontendBackButton->IsInViewport())
+	{
+		FrontendBackButton->RemoveFromParent();
+	}
+	FrontendBackButton = nullptr;
 }
 
 void UT66UIManager::RegisterScreenClass(ET66ScreenType ScreenType, TSubclassOf<UT66ScreenBase> WidgetClass)
@@ -71,18 +92,27 @@ UT66ScreenBase* UT66UIManager::CreateScreen(ET66ScreenType ScreenType)
 	return NewScreen;
 }
 
-void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
+bool UT66UIManager::SwitchToScreen(ET66ScreenType ScreenType, const bool bAddCurrentToHistory)
 {
 	if (ScreenType == ET66ScreenType::None)
 	{
 		HideAllUI();
-		return;
+		return true;
 	}
 
-	// Close any active modal first
+	// Close any active modal first so switching screens or refreshing the current
+	// screen never duplicates history entries for the same destination.
 	if (CurrentModal)
 	{
 		CloseModal();
+	}
+
+	if (CurrentScreen && CurrentScreenType == ScreenType)
+	{
+		CurrentScreen->RefreshScreen();
+		UpdateFrontendTopBar();
+		UpdateFrontendBackButton();
+		return true;
 	}
 
 	ET66ScreenType OldScreenType = CurrentScreenType;
@@ -92,7 +122,7 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 		UE_LOG(LogT66UIManager, Warning, TEXT("Failed to create screen type %d; keeping current screen type %d"),
 			static_cast<int32>(ScreenType),
 			static_cast<int32>(CurrentScreenType));
-		return;
+		return false;
 	}
 
 	// Deactivate current screen
@@ -103,7 +133,7 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 	}
 
 	// Add current screen to history before switching (if valid)
-	if (CurrentScreenType != ET66ScreenType::None)
+	if (bAddCurrentToHistory && CurrentScreenType != ET66ScreenType::None)
 	{
 		NavigationHistory.Add(CurrentScreenType);
 
@@ -125,12 +155,63 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 	CurrentScreen->AddToViewport(0);
 	CurrentScreen->OnScreenActivated();
 	UpdateFrontendTopBar();
+	UpdateFrontendBackButton();
 
 	OnScreenChanged.Broadcast(OldScreenType, ScreenType);
+	return true;
+}
+
+void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
+{
+	UWorld* const World = OwningPlayer ? OwningPlayer->GetWorld() : nullptr;
+	const TObjectPtr<UT66ScreenBase>* ExistingScreen = ScreenCache.Find(ScreenType);
+	const bool bWarmShow = ExistingScreen && ExistingScreen->Get() && ExistingScreen->Get()->HasBuiltSlateUI();
+	const FString PerfLabel = FString::Printf(TEXT("UIManager::ShowScreen[%s][%s]"), *T66ScreenTypeToDebugName(ScreenType), bWarmShow ? TEXT("warm") : TEXT("cold"));
+	FLagScopedScope LagScope(World, *PerfLabel);
+
+	if (ScreenType == ET66ScreenType::None)
+	{
+		HideAllUI();
+		return;
+	}
+
+	if (CurrentScreen && CurrentScreenType == ScreenType && !CurrentModal)
+	{
+		return;
+	}
+
+	SwitchToScreen(ScreenType, true);
+}
+
+void UT66UIManager::ShowScreenWithoutHistory(ET66ScreenType ScreenType)
+{
+	UWorld* const World = OwningPlayer ? OwningPlayer->GetWorld() : nullptr;
+	const TObjectPtr<UT66ScreenBase>* ExistingScreen = ScreenCache.Find(ScreenType);
+	const bool bWarmShow = ExistingScreen && ExistingScreen->Get() && ExistingScreen->Get()->HasBuiltSlateUI();
+	const FString PerfLabel = FString::Printf(TEXT("UIManager::ShowScreenWithoutHistory[%s][%s]"), *T66ScreenTypeToDebugName(ScreenType), bWarmShow ? TEXT("warm") : TEXT("cold"));
+	FLagScopedScope LagScope(World, *PerfLabel);
+
+	if (CurrentScreen && CurrentScreenType == ScreenType && !CurrentModal)
+	{
+		return;
+	}
+
+	SwitchToScreen(ScreenType, false);
 }
 
 void UT66UIManager::ShowModal(ET66ScreenType ModalType)
 {
+	UWorld* const World = OwningPlayer ? OwningPlayer->GetWorld() : nullptr;
+	const TObjectPtr<UT66ScreenBase>* ExistingModal = ScreenCache.Find(ModalType);
+	const bool bWarmShow = ExistingModal && ExistingModal->Get() && ExistingModal->Get()->HasBuiltSlateUI();
+	const FString PerfLabel = FString::Printf(TEXT("UIManager::ShowModal[%s][%s]"), *T66ScreenTypeToDebugName(ModalType), bWarmShow ? TEXT("warm") : TEXT("cold"));
+	FLagScopedScope LagScope(World, *PerfLabel);
+
+	if (CurrentModal && CurrentModal->ScreenType == ModalType)
+	{
+		return;
+	}
+
 	// Close any existing modal
 	if (CurrentModal)
 	{
@@ -145,6 +226,7 @@ void UT66UIManager::ShowModal(ET66ScreenType ModalType)
 		CurrentModal->AddToViewport(100); // Higher Z-order than main screen
 		CurrentModal->OnScreenActivated();
 		UpdateFrontendTopBar();
+		UpdateFrontendBackButton();
 	}
 }
 
@@ -155,24 +237,31 @@ ET66ScreenType UT66UIManager::GetCurrentModalType() const
 
 void UT66UIManager::CloseModal()
 {
+	const FString PerfLabel = FString::Printf(TEXT("UIManager::CloseModal[%s]"), CurrentModal ? *T66ScreenTypeToDebugName(CurrentModal->ScreenType) : TEXT("None"));
+	FLagScopedScope LagScope(OwningPlayer ? OwningPlayer->GetWorld() : nullptr, *PerfLabel);
+
 	if (CurrentModal)
 	{
+		UT66ScreenBase* const ClosingModal = CurrentModal;
 		CurrentModal->OnScreenDeactivated();
 		CurrentModal->RemoveFromParent();
 		CurrentModal = nullptr;
 
 		// Refresh the underlying screen in case state changed while modal was open
-		if (CurrentScreen)
+		if (CurrentScreen && ClosingModal && ClosingModal->ShouldRefreshUnderlyingScreenOnModalClose())
 		{
 			CurrentScreen->RefreshScreen();
 		}
 
 		UpdateFrontendTopBar();
+		UpdateFrontendBackButton();
 	}
 }
 
 void UT66UIManager::GoBack()
 {
+	FLagScopedScope LagScope(OwningPlayer ? OwningPlayer->GetWorld() : nullptr, TEXT("UIManager::GoBack"));
+
 	// If modal is open, close it first
 	if (CurrentModal)
 	{
@@ -184,32 +273,7 @@ void UT66UIManager::GoBack()
 	if (NavigationHistory.Num() > 0)
 	{
 		ET66ScreenType PreviousScreen = NavigationHistory.Pop();
-		UT66ScreenBase* NewScreen = CreateScreen(PreviousScreen);
-		if (!NewScreen)
-		{
-			UE_LOG(LogT66UIManager, Warning, TEXT("Failed to go back to screen type %d; keeping current screen type %d"),
-				static_cast<int32>(PreviousScreen),
-				static_cast<int32>(CurrentScreenType));
-			return;
-		}
-
-		// Deactivate current screen
-		ET66ScreenType OldScreenType = CurrentScreenType;
-		if (CurrentScreen)
-		{
-			CurrentScreen->OnScreenDeactivated();
-			CurrentScreen->RemoveFromParent();
-		}
-
-		// Show previous screen without adding to history
-		CurrentScreen = NewScreen;
-		CurrentScreenType = PreviousScreen;
-		CurrentScreen->bIsModal = false;
-		CurrentScreen->AddToViewport(0);
-		CurrentScreen->OnScreenActivated();
-		UpdateFrontendTopBar();
-
-		OnScreenChanged.Broadcast(OldScreenType, PreviousScreen);
+		SwitchToScreen(PreviousScreen, false);
 	}
 }
 
@@ -229,6 +293,11 @@ void UT66UIManager::RebuildAllVisibleUI()
 	if (FrontendTopBar && FrontendTopBar->IsInViewport())
 	{
 		FT66Style::DeferRebuild(FrontendTopBar, 50);
+	}
+
+	if (FrontendBackButton && FrontendBackButton->IsInViewport())
+	{
+		FT66Style::DeferRebuild(FrontendBackButton, 40);
 	}
 }
 
@@ -253,6 +322,7 @@ void UT66UIManager::HideAllUI()
 	ET66ScreenType OldScreenType = CurrentScreenType;
 	CurrentScreenType = ET66ScreenType::None;
 	UpdateFrontendTopBar();
+	UpdateFrontendBackButton();
 
 	OnScreenChanged.Broadcast(OldScreenType, ET66ScreenType::None);
 }
@@ -290,6 +360,14 @@ bool UT66UIManager::ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const
 	}
 }
 
+bool UT66UIManager::ShouldShowFrontendBackButton() const
+{
+	return !CurrentModal
+		&& CurrentScreenType != ET66ScreenType::None
+		&& CurrentScreenType != ET66ScreenType::MainMenu
+		&& ShouldShowFrontendTopBar(CurrentScreenType);
+}
+
 void UT66UIManager::UpdateFrontendTopBar()
 {
 	const bool bShouldShow = ShouldShowFrontendTopBar(CurrentScreenType);
@@ -325,4 +403,41 @@ void UT66UIManager::UpdateFrontendTopBar()
 	}
 
 	FrontendTopBar->RefreshScreen();
+}
+
+void UT66UIManager::UpdateFrontendBackButton()
+{
+	const bool bShouldShow = ShouldShowFrontendBackButton();
+	if (!bShouldShow)
+	{
+		if (FrontendBackButton && FrontendBackButton->IsInViewport())
+		{
+			FrontendBackButton->RemoveFromParent();
+		}
+		return;
+	}
+
+	if (!OwningPlayer)
+	{
+		return;
+	}
+
+	if (!FrontendBackButton)
+	{
+		FrontendBackButton = CreateWidget<UT66FrontendBackButtonWidget>(OwningPlayer, UT66FrontendBackButtonWidget::StaticClass());
+		if (!FrontendBackButton)
+		{
+			return;
+		}
+
+		FrontendBackButton->UIManager = this;
+	}
+
+	FrontendBackButton->UIManager = this;
+	if (!FrontendBackButton->IsInViewport())
+	{
+		FrontendBackButton->AddToViewport(40);
+	}
+
+	FrontendBackButton->RefreshScreen();
 }

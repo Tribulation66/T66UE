@@ -20,6 +20,8 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	void InitializeTelegraph(const FVector& InWorldLocation, float InRadius, float InLifetimeSeconds, const FLinearColor& InTint);
+	void DeactivateTelegraph();
+	bool IsAvailableForReuse() const { return !bTelegraphActive; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -35,4 +37,5 @@ private:
 	float LifetimeSeconds = 1.0f;
 	float LifetimeRemaining = 1.0f;
 	float PulseAccumulator = 0.f;
+	bool bTelegraphActive = false;
 };

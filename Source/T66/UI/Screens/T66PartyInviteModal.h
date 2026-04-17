@@ -21,6 +21,7 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 	virtual void OnScreenActivated_Implementation() override;
 	virtual void OnScreenDeactivated_Implementation() override;
+	virtual bool ShouldRefreshUnderlyingScreenOnModalClose() const override { return false; }
 
 private:
 	FReply HandleAcceptClicked();

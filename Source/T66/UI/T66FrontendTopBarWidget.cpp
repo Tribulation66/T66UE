@@ -3,6 +3,7 @@
 #include "UI/T66FrontendTopBarWidget.h"
 
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66BuffSubsystem.h"
 #include "UI/ST66PulsingIcon.h"
@@ -565,6 +566,34 @@ FText UT66FrontendTopBarWidget::GetChadCouponsValueText() const
 	}
 
 	return FText::AsNumber(0);
+}
+
+void UT66FrontendTopBarWidget::NavigateWithTopBar(const ET66ScreenType TargetScreen)
+{
+	if (!UIManager)
+	{
+		NavigateTo(TargetScreen);
+		return;
+	}
+
+	if (UIManager->IsModalActive())
+	{
+		if (UIManager->GetCurrentScreenType() == TargetScreen)
+		{
+			UIManager->CloseModal();
+			return;
+		}
+
+		UIManager->CloseModal();
+	}
+
+	if (TargetScreen != ET66ScreenType::MainMenu && UIManager->GetCurrentScreenType() == TargetScreen)
+	{
+		UIManager->ShowScreenWithoutHistory(ET66ScreenType::MainMenu);
+		return;
+	}
+
+	UIManager->ShowScreen(TargetScreen);
 }
 
 void UT66FrontendTopBarWidget::RequestTopBarAssets()
@@ -1203,43 +1232,48 @@ void UT66FrontendTopBarWidget::ReleaseSlateResources(bool bReleaseChildren)
 
 FReply UT66FrontendTopBarWidget::HandleSettingsClicked()
 {
-	NavigateTo(ET66ScreenType::Settings);
+	FLagScopedScope LagScope(GetWorld(), TEXT("FE-03 FrontendTopBar::Settings"));
+	NavigateWithTopBar(ET66ScreenType::Settings);
 	return FReply::Handled();
 }
 
 FReply UT66FrontendTopBarWidget::HandleLanguageClicked()
 {
-	NavigateTo(ET66ScreenType::LanguageSelect);
+	NavigateWithTopBar(ET66ScreenType::LanguageSelect);
 	return FReply::Handled();
 }
 
 FReply UT66FrontendTopBarWidget::HandleHomeClicked()
 {
-	NavigateTo(ET66ScreenType::MainMenu);
+	FLagScopedScope LagScope(GetWorld(), TEXT("FE-04 FrontendTopBar::Home"));
+	NavigateWithTopBar(ET66ScreenType::MainMenu);
 	return FReply::Handled();
 }
 
 FReply UT66FrontendTopBarWidget::HandleShopClicked()
 {
-	NavigateTo(ET66ScreenType::PowerUp);
+	FLagScopedScope LagScope(GetWorld(), TEXT("FE-01/FE-02 FrontendTopBar::PowerUp"));
+	NavigateWithTopBar(ET66ScreenType::PowerUp);
 	return FReply::Handled();
 }
 
 FReply UT66FrontendTopBarWidget::HandleMiniGamesClicked()
 {
-	NavigateTo(ET66ScreenType::Unlocks);
+	NavigateWithTopBar(ET66ScreenType::Unlocks);
 	return FReply::Handled();
 }
 
 FReply UT66FrontendTopBarWidget::HandleAchievementsClicked()
 {
-	NavigateTo(ET66ScreenType::Achievements);
+	FLagScopedScope LagScope(GetWorld(), TEXT("FE-03 FrontendTopBar::Achievements"));
+	NavigateWithTopBar(ET66ScreenType::Achievements);
 	return FReply::Handled();
 }
 
 FReply UT66FrontendTopBarWidget::HandleAccountStatusClicked()
 {
-	NavigateTo(ET66ScreenType::AccountStatus);
+	FLagScopedScope LagScope(GetWorld(), TEXT("FE-03 FrontendTopBar::AccountStatus"));
+	NavigateWithTopBar(ET66ScreenType::AccountStatus);
 	return FReply::Handled();
 }
 

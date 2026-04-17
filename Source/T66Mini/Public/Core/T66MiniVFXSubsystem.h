@@ -28,5 +28,13 @@ public:
 	void PlayBossSpawnSfx(UObject* WorldContext, float Volume = 0.24f, float Pitch = 0.72f);
 
 private:
+	AT66MiniGroundTelegraphActor* AcquireGroundTelegraph(UWorld* World);
+	AT66MiniFlipbookVFXActor* AcquirePulseActor(UWorld* World);
 	USoundBase* LoadMiniSfx();
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<AT66MiniGroundTelegraphActor>> GroundTelegraphPool;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<AT66MiniFlipbookVFXActor>> PulseActorPool;
 };

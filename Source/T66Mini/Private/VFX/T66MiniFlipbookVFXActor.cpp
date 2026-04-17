@@ -9,6 +9,8 @@
 AT66MiniFlipbookVFXActor::AT66MiniFlipbookVFXActor()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	SetActorHiddenInGame(true);
+	SetActorTickEnabled(false);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -33,7 +35,7 @@ void AT66MiniFlipbookVFXActor::Tick(const float DeltaSeconds)
 	LifetimeRemaining -= DeltaSeconds;
 	if (LifetimeRemaining <= 0.f)
 	{
-		Destroy();
+		DeactivateVfx();
 		return;
 	}
 
@@ -46,6 +48,14 @@ void AT66MiniFlipbookVFXActor::Tick(const float DeltaSeconds)
 		this,
 		nullptr,
 		FLinearColor(Tint.R, Tint.G, Tint.B, Tint.A * NormalizedRemaining));
+}
+
+void AT66MiniFlipbookVFXActor::DeactivateVfx()
+{
+	bVfxActive = false;
+	LifetimeRemaining = 0.f;
+	SetActorHiddenInGame(true);
+	SetActorTickEnabled(false);
 }
 
 void AT66MiniFlipbookVFXActor::InitializeVfx(
@@ -62,6 +72,9 @@ void AT66MiniFlipbookVFXActor::InitializeVfx(
 	LifetimeSeconds = FMath::Max(0.05f, InLifetimeSeconds);
 	LifetimeRemaining = LifetimeSeconds;
 	GrowthFactor = InGrowthFactor;
+	bVfxActive = true;
+	SetActorHiddenInGame(false);
+	SetActorTickEnabled(true);
 	VfxMesh->SetRelativeScale3D(BaseScale);
 	T66MiniVfx::ApplyTintedMaterial(VfxMesh, this, InTexture, Tint);
 }

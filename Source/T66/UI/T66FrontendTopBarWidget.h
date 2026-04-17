@@ -44,6 +44,7 @@ protected:
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	ETopBarSection GetActiveSection() const;
 	FText GetChadCouponsValueText() const;
+	void NavigateWithTopBar(ET66ScreenType TargetScreen);
 	void RequestTopBarAssets();
 	void ReleaseTopBarBrushes();
 

@@ -515,13 +515,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const float CenterColumnHeight = (CenterButtonHeight * 2.f) + CenterButtonGap + (CenterPanelVerticalPadding * 2.f);
 	const float CenterButtonLift = FMath::Max(LerpDimension(38.f, 52.f), (ColumnTargetHeight - CenterColumnHeight) * 0.24f);
 	const float SceneVerticalOffset = LerpDimension(96.f, 128.f);
-	const float SceneTitleTopPadding = TopReservedInset + LerpDimension(8.f, 12.f);
+	const float SceneTitleTopPadding = FMath::Max(0.f, TopReservedInset - LerpDimension(10.f, 18.f));
 	const int32 LeftPanelBodyFontSize = LerpInt(10, 11);
 	const int32 LeftPanelTitleFontSize = LerpInt(10, 11);
 	const int32 FriendsPanelBodyFontSize = FMath::Max(8, LeftPanelBodyFontSize - 2);
 	const int32 FriendsPanelHeaderFontSize = FMath::Max(8, LeftPanelTitleFontSize - 2);
 	const int32 CenterButtonFontSize = LerpInt(24, 28);
 	const int32 SceneTitleFontSize = LerpInt(50, 62);
+	const int32 SceneSubtitleFontSize = LerpInt(18, 22);
 
 	auto MakeRadianceFont = [](int32 Size, int32 LetterSpacing = 0) -> FSlateFontInfo
 	{
@@ -1243,34 +1244,57 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			.VAlign(VAlign_Top)
 			.Padding(0.f, SceneTitleTopPadding, 0.f, 0.f)
 			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
 				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.MainMenu", "SceneTitle", "CHADPOCALYPSE"))
-					.Font([SceneTitleFontSize]()
-					{
-						FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Black"), SceneTitleFontSize);
-						Font.LetterSpacing = 104;
-						return Font;
-					}())
-					.ColorAndOpacity(FLinearColor(0.98f, 0.68f, 0.18f, 0.30f))
-					.ShadowOffset(FVector2D(0.f, 0.f))
-					.RenderTransform(FSlateRenderTransform(FVector2D(2.f, 2.f)))
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.MainMenu", "SceneTitle", "CHADPOCALYPSE"))
+						.Font([SceneTitleFontSize]()
+						{
+							FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Black"), SceneTitleFontSize);
+							Font.LetterSpacing = 104;
+							return Font;
+						}())
+						.ColorAndOpacity(FLinearColor(0.98f, 0.68f, 0.18f, 0.30f))
+						.ShadowOffset(FVector2D(0.f, 0.f))
+						.RenderTransform(FSlateRenderTransform(FVector2D(2.f, 2.f)))
+					]
+					+ SOverlay::Slot()
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.MainMenu", "SceneTitle", "CHADPOCALYPSE"))
+						.Font([SceneTitleFontSize]()
+						{
+							FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Black"), SceneTitleFontSize);
+							Font.LetterSpacing = 104;
+							return Font;
+						}())
+						.ColorAndOpacity(FLinearColor(0.02f, 0.01f, 0.01f, 0.98f))
+						.ShadowOffset(FVector2D(2.f, 2.f))
+						.ShadowColorAndOpacity(FLinearColor(1.0f, 0.72f, 0.18f, 0.42f))
+					]
 				]
-				+ SOverlay::Slot()
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(0.f, 6.f, 0.f, 0.f)
 				[
 					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.MainMenu", "SceneTitle", "CHADPOCALYPSE"))
-					.Font([SceneTitleFontSize]()
+					.Text(NSLOCTEXT("T66.MainMenu", "SceneSubtitle", "If you're not Chad it's over"))
+					.Font([SceneSubtitleFontSize]()
 					{
-						FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Black"), SceneTitleFontSize);
-						Font.LetterSpacing = 104;
+						FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Bold"), SceneSubtitleFontSize);
+						Font.LetterSpacing = 38;
 						return Font;
 					}())
-					.ColorAndOpacity(FLinearColor(0.02f, 0.01f, 0.01f, 0.98f))
-					.ShadowOffset(FVector2D(2.f, 2.f))
-					.ShadowColorAndOpacity(FLinearColor(1.0f, 0.72f, 0.18f, 0.42f))
+					.ColorAndOpacity(FLinearColor(0.96f, 0.84f, 0.62f, 0.96f))
+					.ShadowOffset(FVector2D(1.f, 1.f))
+					.ShadowColorAndOpacity(FLinearColor(0.04f, 0.02f, 0.01f, 0.92f))
+					.Justification(ETextJustify::Center)
 				]
 			]
 			+ SOverlay::Slot()

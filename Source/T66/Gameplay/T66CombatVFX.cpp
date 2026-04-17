@@ -761,8 +761,17 @@ namespace
 
 void UT66CombatComponent::WarmupVFXSystems()
 {
-	CachedSlashVFXNiagara = SlashVFXNiagara.LoadSynchronous();
-	CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
+	CachedSlashVFXNiagara = SlashVFXNiagara.Get();
+	if (!CachedSlashVFXNiagara)
+	{
+		CachedSlashVFXNiagara = SlashVFXNiagara.LoadSynchronous();
+	}
+
+	CachedPixelVFXNiagara = PixelVFXNiagara.Get();
+	if (!CachedPixelVFXNiagara)
+	{
+		CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
+	}
 	if (CachedPixelVFXNiagara)
 	{
 		UE_LOG(LogT66Combat, Log, TEXT("[VFX] Pixel particle system loaded: NS_PixelParticle"));

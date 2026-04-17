@@ -16,6 +16,8 @@ class AT66MiniEnemyBase;
 class AT66MiniHazardTrap;
 class AT66MiniGroundTelegraphActor;
 class AT66MiniInteractable;
+class AT66MiniPickup;
+class AT66MiniPlayerPawn;
 class UAudioComponent;
 class UT66MiniRunSaveGame;
 
@@ -47,6 +49,17 @@ public:
 	float GetBossTelegraphRemaining() const { return BossTelegraphRemaining; }
 	FVector GetBossTelegraphLocation() const { return PendingBossSpawnLocation; }
 	FName GetPendingBossID() const { return PendingBossID; }
+	AT66MiniEnemyBase* GetActiveBossEnemy() const;
+	AT66MiniPlayerPawn* FindClosestPlayerPawn(const FVector& WorldLocation, bool bRequireAlive) const;
+	const TArray<TObjectPtr<AT66MiniEnemyBase>>& GetLiveEnemies() const { return LiveEnemies; }
+	const TArray<TObjectPtr<AT66MiniInteractable>>& GetLiveInteractables() const { return LiveInteractables; }
+	const TArray<TObjectPtr<AT66MiniPickup>>& GetLivePickups() const { return LivePickups; }
+	void RegisterLiveTrap(AT66MiniHazardTrap* Trap);
+	void UnregisterLiveTrap(const AT66MiniHazardTrap* Trap);
+	void RegisterLiveInteractable(AT66MiniInteractable* Interactable);
+	void UnregisterLiveInteractable(const AT66MiniInteractable* Interactable);
+	void RegisterLivePickup(AT66MiniPickup* Pickup);
+	void UnregisterLivePickup(const AT66MiniPickup* Pickup);
 	void AddCombatText(const FVector& WorldLocation, float Value, const FLinearColor& Color, float Duration = 0.9f, const FString& Prefix = FString());
 	const TArray<FT66MiniCombatTextEntry>& GetCombatTexts() const { return CombatTexts; }
 	bool TryInteractNearest(class AT66MiniPlayerPawn* PlayerPawn, float MaxRange = 190.f);
@@ -81,6 +94,8 @@ private:
 	void PersistActiveRunSnapshot(bool bMarkMidWaveSnapshot);
 	void UpdateLiveEnemyCache();
 	void UpdateLiveTrapCache();
+	void UpdateLiveInteractableCache();
+	void UpdateLivePickupCache();
 	void UpdateCombatTexts(float DeltaSeconds);
 	bool IsOnlinePartyMiniRun() const;
 	void CompleteOnlineFrontendTravel();
@@ -116,6 +131,12 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<AT66MiniHazardTrap>> LiveTraps;
+
+	UPROPERTY()
+	TArray<TObjectPtr<AT66MiniInteractable>> LiveInteractables;
+
+	UPROPERTY()
+	TArray<TObjectPtr<AT66MiniPickup>> LivePickups;
 
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> BattleMusicComponent;

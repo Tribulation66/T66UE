@@ -22,6 +22,58 @@ namespace
 	}
 }
 
+AT66MiniGroundTelegraphActor* UT66MiniVFXSubsystem::AcquireGroundTelegraph(UWorld* World)
+{
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	for (AT66MiniGroundTelegraphActor* Telegraph : GroundTelegraphPool)
+	{
+		if (Telegraph && Telegraph->IsAvailableForReuse() && Telegraph->GetWorld() == World)
+		{
+			return Telegraph;
+		}
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AT66MiniGroundTelegraphActor* Telegraph = World->SpawnActor<AT66MiniGroundTelegraphActor>(AT66MiniGroundTelegraphActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams))
+	{
+		GroundTelegraphPool.Add(Telegraph);
+		return Telegraph;
+	}
+
+	return nullptr;
+}
+
+AT66MiniFlipbookVFXActor* UT66MiniVFXSubsystem::AcquirePulseActor(UWorld* World)
+{
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	for (AT66MiniFlipbookVFXActor* Pulse : PulseActorPool)
+	{
+		if (Pulse && Pulse->IsAvailableForReuse() && Pulse->GetWorld() == World)
+		{
+			return Pulse;
+		}
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AT66MiniFlipbookVFXActor* Pulse = World->SpawnActor<AT66MiniFlipbookVFXActor>(AT66MiniFlipbookVFXActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams))
+	{
+		PulseActorPool.Add(Pulse);
+		return Pulse;
+	}
+
+	return nullptr;
+}
+
 AT66MiniGroundTelegraphActor* UT66MiniVFXSubsystem::SpawnGroundTelegraph(
 	UWorld* World,
 	const FVector& Location,
@@ -34,9 +86,7 @@ AT66MiniGroundTelegraphActor* UT66MiniVFXSubsystem::SpawnGroundTelegraph(
 		return nullptr;
 	}
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	if (AT66MiniGroundTelegraphActor* Telegraph = World->SpawnActor<AT66MiniGroundTelegraphActor>(AT66MiniGroundTelegraphActor::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams))
+	if (AT66MiniGroundTelegraphActor* Telegraph = AcquireGroundTelegraph(World))
 	{
 		Telegraph->InitializeTelegraph(Location, Radius, LifetimeSeconds, Tint);
 		return Telegraph;
@@ -58,9 +108,7 @@ AT66MiniFlipbookVFXActor* UT66MiniVFXSubsystem::SpawnPulse(
 		return nullptr;
 	}
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	if (AT66MiniFlipbookVFXActor* Pulse = World->SpawnActor<AT66MiniFlipbookVFXActor>(AT66MiniFlipbookVFXActor::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams))
+	if (AT66MiniFlipbookVFXActor* Pulse = AcquirePulseActor(World))
 	{
 		Pulse->InitializeVfx(Location, Scale, LifetimeSeconds, Tint, nullptr, GrowthFactor);
 		return Pulse;
@@ -83,9 +131,7 @@ AT66MiniFlipbookVFXActor* UT66MiniVFXSubsystem::SpawnSpritePulse(
 		return nullptr;
 	}
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	if (AT66MiniFlipbookVFXActor* Pulse = World->SpawnActor<AT66MiniFlipbookVFXActor>(AT66MiniFlipbookVFXActor::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams))
+	if (AT66MiniFlipbookVFXActor* Pulse = AcquirePulseActor(World))
 	{
 		Pulse->InitializeVfx(Location, Scale, LifetimeSeconds, Tint, Texture, GrowthFactor);
 		return Pulse;

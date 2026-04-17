@@ -89,6 +89,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Screen")
 	void ForceRebuildSlate();
 
+	UFUNCTION(BlueprintPure, Category = "Screen")
+	bool HasBuiltSlateUI() const { return bSlateUIBuilt; }
+
+	virtual bool ShouldRefreshUnderlyingScreenOnModalClose() const { return true; }
+
 protected:
 	virtual void NativeConstruct() override;
 
@@ -119,4 +124,7 @@ protected:
 
 	/** Flag indicating if UI was built */
 	bool bSlateUIBuilt = false;
+
+	/** Tracks whether the screen has already been activated once. */
+	bool bHasBeenActivated = false;
 };

@@ -11,6 +11,7 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
 #include "Gameplay/Components/T66MiniShadowComponent.h"
+#include "Gameplay/T66MiniGameMode.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -118,12 +119,26 @@ AT66MiniPickup::AT66MiniPickup()
 void AT66MiniPickup::BeginPlay()
 {
 	Super::BeginPlay();
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		MiniGameMode->RegisterLivePickup(this);
+	}
 	if (HasAuthority())
 	{
 		CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AT66MiniPickup::HandleOverlap);
 	}
 	HoverPhase = FMath::FRandRange(0.f, UE_TWO_PI);
 	RefreshVisuals();
+}
+
+void AT66MiniPickup::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		MiniGameMode->UnregisterLivePickup(this);
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AT66MiniPickup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -252,6 +267,11 @@ void AT66MiniPickup::CollectPickup(AT66MiniPlayerPawn* PlayerPawn)
 
 AT66MiniPlayerPawn* AT66MiniPickup::FindClosestPlayerPawn(const bool bRequireAlive) const
 {
+	if (const AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		return MiniGameMode->FindClosestPlayerPawn(GetActorLocation(), bRequireAlive);
+	}
+
 	UWorld* World = GetWorld();
 	if (!World)
 	{

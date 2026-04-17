@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66PartyInviteModal.h"
 #include "Core/T66BackendSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
@@ -171,6 +172,8 @@ TSharedRef<SWidget> UT66PartyInviteModal::BuildSlateUI()
 
 FReply UT66PartyInviteModal::HandleAcceptClicked()
 {
+	FLagScopedScope LagScope(GetWorld(), TEXT("MP-03 PartyInviteModal::AcceptClick"));
+
 	if (bActionInFlight)
 	{
 		return FReply::Handled();
@@ -239,6 +242,8 @@ FReply UT66PartyInviteModal::HandleRejectClicked()
 
 void UT66PartyInviteModal::HandlePartyInviteActionComplete(bool bSuccess, const FString& Action, const FString& InviteId, const FString& Message)
 {
+	FLagScopedScope LagScope(GetWorld(), TEXT("MP-03 PartyInviteModal::ActionComplete"));
+
 	if (InviteId != ActionInviteId || bActionInFlight == false)
 	{
 		UE_LOG(LogT66PartyInviteModal, Verbose, TEXT("Ignoring action-complete callback success=%d action=%s invite=%s current=%s inFlight=%d"), bSuccess ? 1 : 0, *Action, *InviteId, *ActionInviteId, bActionInFlight ? 1 : 0);

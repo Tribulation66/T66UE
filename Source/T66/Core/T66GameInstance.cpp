@@ -235,6 +235,20 @@ void UT66GameInstance::Init()
 	// EnsureTexturesLoadedSync fallback fires. If these finish in time, the sync path becomes a no-op.
 	if (UT66UITexturePoolSubsystem* TexPool = GetSubsystem<UT66UITexturePoolSubsystem>())
 	{
+		auto RequestFrontendTexture = [TexPool, this](const TCHAR* PackagePath, const TCHAR* ObjectPath, const TCHAR* RequestKey)
+		{
+			if (!PackagePath || !ObjectPath || !RequestKey || !FPackageName::DoesPackageExist(PackagePath))
+			{
+				return;
+			}
+
+			TexPool->RequestTexture(
+				TSoftObjectPtr<UTexture2D>(FSoftObjectPath(ObjectPath)),
+				this,
+				FName(RequestKey),
+				[](UTexture2D*) {});
+		};
+
 		const TSoftObjectPtr<UTexture2D> MMRed(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));
 		const TSoftObjectPtr<UTexture2D> SkyBg(FSoftObjectPath(TEXT("/Game/UI/MainMenu/sky_bg.sky_bg")));
 		const TSoftObjectPtr<UTexture2D> FireMoon(FSoftObjectPath(TEXT("/Game/UI/MainMenu/fire_moon.fire_moon")));
@@ -258,6 +272,65 @@ void UT66GameInstance::Init()
 		TexPool->RequestTexture(LBGlobal, this, FName(TEXT("PreloadLBGlobal")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBFriends, this, FName(TEXT("PreloadLBFriends")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBStreamers, this, FName(TEXT("PreloadLBStreamers")), [](UTexture2D*) {});
+
+		const TCHAR* const PowerUpStatueNames[] = {
+			TEXT("forbidden_chad_left_arm"),
+			TEXT("forbidden_chad_right_arm"),
+			TEXT("forbidden_chad_head"),
+			TEXT("forbidden_chad_torso"),
+			TEXT("forbidden_chad_left_leg"),
+			TEXT("forbidden_chad_right_leg")
+		};
+
+		for (const TCHAR* StatueName : PowerUpStatueNames)
+		{
+			const FString PackagePath = FString::Printf(TEXT("/Game/UI/PowerUp/Statues/forbidden_chad/%s"), StatueName);
+			const FString ObjectPath = FString::Printf(TEXT("%s.%s"), *PackagePath, StatueName);
+			const FString RequestKey = FString::Printf(TEXT("PreloadPowerUp_%s"), StatueName);
+			RequestFrontendTexture(*PackagePath, *ObjectPath, *RequestKey);
+		}
+
+		const TCHAR* const PowerUpBuffSlugs[] = {
+			TEXT("aoe-damage"),
+			TEXT("bounce-damage"),
+			TEXT("pierce-damage"),
+			TEXT("dot-damage"),
+			TEXT("crit-damage"),
+			TEXT("aoe-speed"),
+			TEXT("bounce-speed"),
+			TEXT("pierce-speed"),
+			TEXT("dot-speed"),
+			TEXT("crit-chance"),
+			TEXT("aoe-scale"),
+			TEXT("bounce-scale"),
+			TEXT("pierce-scale"),
+			TEXT("dot-scale"),
+			TEXT("range"),
+			TEXT("taunt"),
+			TEXT("damage-reduction"),
+			TEXT("damage-reflection"),
+			TEXT("hp-regen"),
+			TEXT("crush"),
+			TEXT("dodge"),
+			TEXT("counter-attack"),
+			TEXT("life-steal"),
+			TEXT("invisibility"),
+			TEXT("assassinate"),
+			TEXT("treasure-chest"),
+			TEXT("cheating"),
+			TEXT("stealing"),
+			TEXT("loot-crate"),
+			TEXT("alchemy"),
+			TEXT("accuracy")
+		};
+
+		for (const TCHAR* BuffSlug : PowerUpBuffSlugs)
+		{
+			const FString PackagePath = FString::Printf(TEXT("/Game/UI/PowerUp/SecondaryBuffs/%s"), BuffSlug);
+			const FString ObjectPath = FString::Printf(TEXT("%s.%s"), *PackagePath, BuffSlug);
+			const FString RequestKey = FString::Printf(TEXT("PreloadPowerUp_%s"), BuffSlug);
+			RequestFrontendTexture(*PackagePath, *ObjectPath, *RequestKey);
+		}
 	}
 }
 
@@ -1267,6 +1340,9 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Troth.Troth")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Windmill.Windmill")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
+	AddPath(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
+	AddPath(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
+	AddPath(FSoftObjectPath(TEXT("/Game/Audio/SFX/Shot.Shot")));
 
 	AddVisualAssets(UT66CharacterVisualSubsystem::GetHeroVisualID(
 		SelectedHeroID,

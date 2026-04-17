@@ -8,6 +8,7 @@
 #include "T66UIManager.generated.h"
 
 class UT66ScreenBase;
+class UT66FrontendBackButtonWidget;
 class UT66FrontendTopBarWidget;
 class UUserWidget;
 
@@ -43,6 +44,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void ShowScreen(ET66ScreenType ScreenType);
+
+	/** Show a screen without pushing the current screen onto navigation history. */
+	void ShowScreenWithoutHistory(ET66ScreenType ScreenType);
 
 	/**
 	 * Show a modal on top of the current screen
@@ -148,6 +152,10 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UT66FrontendTopBarWidget> FrontendTopBar;
 
+	/** Persistent frontend back button shown on non-home frontend screens. */
+	UPROPERTY()
+	TObjectPtr<UT66FrontendBackButtonWidget> FrontendBackButton;
+
 	/** Navigation history stack for back navigation */
 	UPROPERTY()
 	TArray<ET66ScreenType> NavigationHistory;
@@ -155,7 +163,10 @@ protected:
 	/** Maximum history depth to prevent memory bloat */
 	static constexpr int32 MaxHistoryDepth = 10;
 
+	bool SwitchToScreen(ET66ScreenType ScreenType, bool bAddCurrentToHistory);
 	bool ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const;
+	bool ShouldShowFrontendBackButton() const;
 	void UpdateFrontendTopBar();
+	void UpdateFrontendBackButton();
 
 };

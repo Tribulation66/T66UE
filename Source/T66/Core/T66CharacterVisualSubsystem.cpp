@@ -434,6 +434,11 @@ static void T66ApplySafeCharacterMaterialOverrides(USkeletalMeshComponent* Targe
 template <typename TObjectType>
 static TObjectType* TryLoadSoftObjectIfPackageExists(const TSoftObjectPtr<TObjectType>& SoftPath)
 {
+	if (TObjectType* LoadedObject = SoftPath.Get())
+	{
+		return LoadedObject;
+	}
+
 	const FSoftObjectPath ObjectPath = SoftPath.ToSoftObjectPath();
 	const FString PackageName = ObjectPath.GetLongPackageName();
 	if (PackageName.IsEmpty() || !FPackageName::DoesPackageExist(PackageName))
@@ -590,13 +595,22 @@ UDataTable* UT66CharacterVisualSubsystem::GetVisualsDataTable() const
 
 	if (const UGameInstance* GI = GetGameInstance())
 	{
-		if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(const_cast<UGameInstance*>(GI)))
 		{
+			if (UDataTable* LoadedDataTable = T66GI->GetCharacterVisualsDataTable())
+			{
+				CachedVisualsDataTable = LoadedDataTable;
+				return CachedVisualsDataTable;
+			}
+
 			// Optional: wire this in BP_T66GameInstance later; keep a safe hardcoded fallback for now.
 			if (!T66GI->CharacterVisualsDataTable.IsNull())
 			{
-				CachedVisualsDataTable = T66GI->CharacterVisualsDataTable.LoadSynchronous();
-				return CachedVisualsDataTable;
+				CachedVisualsDataTable = T66GI->CharacterVisualsDataTable.Get();
+				if (CachedVisualsDataTable)
+				{
+					return CachedVisualsDataTable;
+				}
 			}
 		}
 	}

@@ -21,6 +21,7 @@ void UT66ScreenBase::NativeConstruct()
 TSharedRef<SWidget> UT66ScreenBase::RebuildWidget()
 {
 	// Build our custom Slate UI
+	bSlateUIBuilt = true;
 	return FT66Style::MakeResponsiveRoot(BuildSlateUI());
 }
 
@@ -42,7 +43,13 @@ TSharedRef<SWidget> UT66ScreenBase::BuildSlateUI()
 
 void UT66ScreenBase::OnScreenActivated_Implementation()
 {
-	RefreshScreen();
+	const bool bShouldRefreshExistingScreen = bHasBeenActivated;
+	bHasBeenActivated = true;
+
+	if (bShouldRefreshExistingScreen)
+	{
+		RefreshScreen();
+	}
 }
 
 void UT66ScreenBase::OnScreenDeactivated_Implementation()

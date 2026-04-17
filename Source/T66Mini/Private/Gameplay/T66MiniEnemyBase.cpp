@@ -403,6 +403,11 @@ void AT66MiniEnemyBase::ApplyStun(const float DurationSeconds)
 
 AT66MiniPlayerPawn* AT66MiniEnemyBase::FindBestTargetPawn() const
 {
+	if (const AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		return MiniGameMode->FindClosestPlayerPawn(GetActorLocation(), true);
+	}
+
 	UWorld* World = GetWorld();
 	if (!World)
 	{

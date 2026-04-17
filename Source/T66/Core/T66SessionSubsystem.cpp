@@ -4,6 +4,7 @@
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -20,12 +21,19 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "GameFramework/GameStateBase.h"
+#include "HAL/IConsoleManager.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "steam/steam_api.h"
 THIRD_PARTY_INCLUDES_END
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Session, Log, All);
+
+static TAutoConsoleVariable<float> CVarT66PendingFriendJoinRetryDelaySeconds(
+	TEXT("T66.Session.PendingFriendJoinRetryDelaySeconds"),
+	0.25f,
+	TEXT("Delay before retrying a pending friend-session join lookup."),
+	ECVF_Default);
 
 const FName UT66SessionSubsystem::PartySessionName(TEXT("T66PartySession"));
 
@@ -438,6 +446,8 @@ bool UT66SessionSubsystem::JoinFriendPartySessionBySteamId(const FString& Friend
 
 bool UT66SessionSubsystem::JoinPartySessionByLobbyId(const FString& LobbyId, const FString& HostSteamId, const FString& AppId, const FString& InviteId)
 {
+	FLagScopedScope LagScope(GetWorld(), TEXT("MP-03 Session::JoinPartySessionByLobbyId"));
+
 	if (LobbyId.IsEmpty())
 	{
 		SubmitSessionDiagnostic(TEXT("invite_join_missing_lobby"), TEXT("error"), TEXT("Party invite is missing the host lobby ID."), InviteId);
@@ -484,11 +494,25 @@ bool UT66SessionSubsystem::JoinPartySessionByLobbyId(const FString& LobbyId, con
 	DiagnosticFields.Add(TEXT("host_steam_id"), HostSteamId);
 	DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
 	DiagnosticFields.Add(TEXT("join_port"), FString::FromInt(JoinPort));
+
+	if (IsPartySessionActive())
+	{
+		const FString CurrentLobbyId = GetCurrentPartyLobbyId();
+		if (!CurrentLobbyId.IsEmpty() && CurrentLobbyId == LobbyId)
+		{
+			SubmitSessionDiagnostic(TEXT("invite_join_already_in_target"), TEXT("info"), TEXT("Already joined to the invited party lobby."), InviteId, LobbyId, FString(), DiagnosticFields);
+			ClearPendingJoinState();
+			BroadcastStateChanged(TEXT("Already in party lobby."));
+			return true;
+		}
+	}
+
 	SubmitSessionDiagnostic(TEXT("invite_join_direct_bootstrap_started"), TEXT("info"), TEXT("Built direct Steam travel target from invite."), InviteId, LobbyId, FString(), DiagnosticFields);
 
 	if (IsPartySessionActive())
 	{
 		PendingDirectJoinConnectString = DirectConnectString;
+		ClearPendingFriendJoinRetry();
 		DestroyPartySession();
 		return true;
 	}
@@ -503,6 +527,7 @@ bool UT66SessionSubsystem::JoinPartySessionByLobbyId(const FString& LobbyId, con
 
 	SubmitSessionDiagnostic(TEXT("invite_join_direct_travel_started"), TEXT("info"), TEXT("Travelling directly to the invited Steam host."), InviteId, LobbyId, FString(), DiagnosticFields);
 	BroadcastStateChanged(TEXT("Joining party lobby..."));
+	ClearPendingJoinState();
 	PlayerController->ClientTravel(DirectConnectString, TRAVEL_Absolute);
 	return true;
 }
@@ -972,6 +997,27 @@ bool UT66SessionSubsystem::AttemptPendingFriendJoinLookup()
 		return false;
 	}
 
+	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
+	{
+		FString ResolvedAppId;
+		FString ResolvedLobbyId;
+		if (SteamHelper->TryGetFriendCurrentGame(PendingJoinFriendPlayerId, &ResolvedAppId, &ResolvedLobbyId)
+			&& !ResolvedLobbyId.IsEmpty()
+			&& (PendingExpectedJoinLobbyId.IsEmpty() || PendingExpectedJoinLobbyId == ResolvedLobbyId))
+		{
+			const FString EffectiveAppId = PendingJoinSourceAppId.IsEmpty() ? ResolvedAppId : PendingJoinSourceAppId;
+			TMap<FString, FString> DiagnosticFields;
+			DiagnosticFields.Add(TEXT("resolved_lobby_id"), ResolvedLobbyId);
+			DiagnosticFields.Add(TEXT("resolved_app_id"), EffectiveAppId);
+			DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts + 1));
+			SubmitSessionDiagnostic(TEXT("join_lookup_direct_fast_path"), TEXT("info"), TEXT("Resolved host lobby directly from Steam presence."), PendingJoinInviteId, PendingExpectedJoinLobbyId, ResolvedLobbyId, DiagnosticFields);
+			if (JoinPartySessionByLobbyId(ResolvedLobbyId, PendingJoinFriendPlayerId, EffectiveAppId, PendingJoinInviteId))
+			{
+				return true;
+			}
+		}
+	}
+
 	if (bJoinInProgress || bDestroyInProgress)
 	{
 		TMap<FString, FString> DiagnosticFields;
@@ -1001,11 +1047,7 @@ bool UT66SessionSubsystem::AttemptPendingFriendJoinLookup()
 		DiagnosticFields.Add(TEXT("host_steam_id"), PendingJoinFriendPlayerId);
 		SubmitSessionDiagnostic(TEXT("join_lookup_host_resolve_failed"), TEXT("error"), TEXT("Could not resolve the host Steam ID."), FString(), FString(), FString(), DiagnosticFields);
 		BroadcastStateChanged(TEXT("Could not resolve the host Steam ID."));
-		PendingJoinFriendPlayerId.Reset();
-		PendingExpectedJoinLobbyId.Reset();
-		PendingJoinInviteId.Reset();
-		PendingJoinSourceAppId.Reset();
-		PendingFoundLobbyId.Reset();
+		ClearPendingJoinState();
 		return false;
 	}
 
@@ -1028,11 +1070,7 @@ bool UT66SessionSubsystem::AttemptPendingFriendJoinLookup()
 		DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
 		SubmitSessionDiagnostic(TEXT("join_lookup_exhausted"), TEXT("error"), TEXT("Could not find the host party session."), FString(), FString(), FString(), DiagnosticFields);
 		BroadcastStateChanged(TEXT("Could not find the host party session."));
-		PendingJoinFriendPlayerId.Reset();
-		PendingExpectedJoinLobbyId.Reset();
-		PendingJoinInviteId.Reset();
-		PendingJoinSourceAppId.Reset();
-		PendingFoundLobbyId.Reset();
+		ClearPendingJoinState();
 		return false;
 	}
 
@@ -1046,14 +1084,17 @@ bool UT66SessionSubsystem::AttemptPendingFriendJoinLookup()
 
 void UT66SessionSubsystem::SchedulePendingFriendJoinRetry()
 {
+	FLagScopedScope LagScope(GetWorld(), TEXT("MP-03 Session::SchedulePendingFriendJoinRetry"));
+
 	if (PendingJoinFriendPlayerId.IsEmpty() || PendingJoinFriendRetryTickerHandle.IsValid())
 	{
 		return;
 	}
 
+	const float RetryDelaySeconds = FMath::Max(0.05f, CVarT66PendingFriendJoinRetryDelaySeconds.GetValueOnGameThread());
 	PendingJoinFriendRetryTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
 		FTickerDelegate::CreateUObject(this, &UT66SessionSubsystem::HandlePendingFriendJoinRetryTicker),
-		1.0f);
+		RetryDelaySeconds);
 }
 
 void UT66SessionSubsystem::ClearPendingFriendJoinRetry()
@@ -1063,6 +1104,18 @@ void UT66SessionSubsystem::ClearPendingFriendJoinRetry()
 		FTSTicker::GetCoreTicker().RemoveTicker(PendingJoinFriendRetryTickerHandle);
 		PendingJoinFriendRetryTickerHandle.Reset();
 	}
+}
+
+void UT66SessionSubsystem::ClearPendingJoinState()
+{
+	ClearPendingFriendJoinRetry();
+	PendingJoinFriendPlayerId.Reset();
+	PendingExpectedJoinLobbyId.Reset();
+	PendingJoinInviteId.Reset();
+	PendingJoinSourceAppId.Reset();
+	PendingFoundLobbyId.Reset();
+	PendingDirectJoinConnectString.Reset();
+	PendingJoinFriendLookupAttempts = 0;
 }
 
 bool UT66SessionSubsystem::HandlePendingFriendJoinRetryTicker(float DeltaTime)
@@ -1923,7 +1976,7 @@ void UT66SessionSubsystem::HandleDestroySessionComplete(FName SessionName, bool 
 	if (!PendingDirectJoinConnectString.IsEmpty())
 	{
 		const FString ConnectString = PendingDirectJoinConnectString;
-		PendingDirectJoinConnectString.Reset();
+		ClearPendingJoinState();
 		if (AT66PlayerController* PlayerController = GetPrimaryPlayerController())
 		{
 			BroadcastStateChanged(TEXT("Joining party lobby..."));
@@ -1980,12 +2033,7 @@ void UT66SessionSubsystem::HandleFindFriendSessionComplete(int32 LocalUserNum, b
 		DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
 		SubmitSessionDiagnostic(TEXT("find_friend_session_not_found"), TEXT("error"), TEXT("Host party was not found."), FString(), FString(), FoundLobbyId, DiagnosticFields);
 		BroadcastStateChanged(TEXT("Host party was not found."));
-		PendingJoinFriendPlayerId.Reset();
-		PendingExpectedJoinLobbyId.Reset();
-		PendingJoinInviteId.Reset();
-		PendingJoinSourceAppId.Reset();
-		PendingFoundLobbyId.Reset();
-		PendingJoinFriendLookupAttempts = 0;
+		ClearPendingJoinState();
 		return;
 	}
 
@@ -2007,12 +2055,14 @@ void UT66SessionSubsystem::HandleFindFriendSessionComplete(int32 LocalUserNum, b
 		DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
 		SubmitSessionDiagnostic(TEXT("find_friend_session_lobby_mismatch"), TEXT("error"), TEXT("Found a host party, but it did not match the invite lobby."), FString(), FString(), FoundLobbyId, DiagnosticFields);
 		BroadcastStateChanged(TEXT("Found a host party, but it did not match the invite lobby."));
-		PendingJoinFriendPlayerId.Reset();
-		PendingExpectedJoinLobbyId.Reset();
-		PendingJoinInviteId.Reset();
-		PendingJoinSourceAppId.Reset();
-		PendingFoundLobbyId.Reset();
-		PendingJoinFriendLookupAttempts = 0;
+		ClearPendingJoinState();
+		return;
+	}
+
+	if (!PendingJoinFriendPlayerId.IsEmpty()
+		&& !FoundLobbyId.IsEmpty()
+		&& JoinPartySessionByLobbyId(FoundLobbyId, PendingJoinFriendPlayerId, PendingJoinSourceAppId, PendingJoinInviteId))
+	{
 		return;
 	}
 
@@ -2053,13 +2103,7 @@ void UT66SessionSubsystem::HandleJoinSessionComplete(FName SessionName, EOnJoinS
 	FString ConnectString;
 	if (Result == EOnJoinSessionCompleteResult::Success && SessionInterface->GetResolvedConnectString(PartySessionName, ConnectString))
 	{
-		ClearPendingFriendJoinRetry();
-		PendingJoinFriendPlayerId.Reset();
-		PendingExpectedJoinLobbyId.Reset();
-		PendingJoinInviteId.Reset();
-		PendingJoinSourceAppId.Reset();
-		PendingFoundLobbyId.Reset();
-		PendingJoinFriendLookupAttempts = 0;
+		ClearPendingJoinState();
 		TMap<FString, FString> DiagnosticFields;
 		DiagnosticFields.Add(TEXT("join_result"), T66JoinSessionResultToString(Result));
 		DiagnosticFields.Add(TEXT("connect_string"), ConnectString);
@@ -2083,12 +2127,7 @@ void UT66SessionSubsystem::HandleJoinSessionComplete(FName SessionName, EOnJoinS
 	TMap<FString, FString> DiagnosticFields;
 	DiagnosticFields.Add(TEXT("join_result"), T66JoinSessionResultToString(Result));
 	SubmitSessionDiagnostic(TEXT("join_session_failed"), TEXT("error"), TEXT("JoinSession completed without a valid connection."), FString(), FString(), FString(), DiagnosticFields);
-	PendingJoinFriendPlayerId.Reset();
-	PendingExpectedJoinLobbyId.Reset();
-	PendingJoinInviteId.Reset();
-	PendingJoinSourceAppId.Reset();
-	PendingFoundLobbyId.Reset();
-	PendingJoinFriendLookupAttempts = 0;
+	ClearPendingJoinState();
 	BroadcastStateChanged(TEXT("JoinSession completed without a valid connection."));
 }
 

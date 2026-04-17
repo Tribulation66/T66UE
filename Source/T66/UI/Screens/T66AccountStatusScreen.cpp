@@ -279,7 +279,6 @@ void UT66AccountStatusScreen::OnScreenActivated_Implementation()
 			Backend->OnAppealSubmitComplete.AddDynamic(this, &UT66AccountStatusScreen::HandleBackendAppealSubmitComplete);
 		}
 	}
-	RefreshScreen();
 }
 
 void UT66AccountStatusScreen::OnScreenDeactivated_Implementation()

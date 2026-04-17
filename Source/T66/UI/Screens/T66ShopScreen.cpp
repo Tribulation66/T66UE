@@ -479,6 +479,17 @@ UT66ShopScreen::UT66ShopScreen(const FObjectInitializer& ObjectInitializer)
 	bIsModal = false;
 }
 
+void UT66ShopScreen::OnScreenActivated_Implementation()
+{
+	if (HasBuiltSlateUI() && !bNeedsWarmActivationRefresh)
+	{
+		SetShowingSingleUse(bShowingSingleUse);
+		return;
+	}
+
+	Super::OnScreenActivated_Implementation();
+}
+
 UT66LocalizationSubsystem* UT66ShopScreen::GetLocSubsystem() const
 {
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
@@ -550,11 +561,14 @@ FReply UT66ShopScreen::HandlePurchaseSingleUseClicked(ET66SecondaryStatType Stat
 void UT66ShopScreen::RefreshScreen_Implementation()
 {
 	Super::RefreshScreen_Implementation();
+	bNeedsWarmActivationRefresh = false;
 	ForceRebuildSlate();
 }
 
 TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 {
+	bNeedsWarmActivationRefresh = false;
+
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	UT66BuffSubsystem* Buffs = GetBuffSubsystem();
 	UWorld* World = GetWorld();

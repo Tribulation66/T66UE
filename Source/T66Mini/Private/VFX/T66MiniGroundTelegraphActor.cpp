@@ -9,6 +9,8 @@
 AT66MiniGroundTelegraphActor::AT66MiniGroundTelegraphActor()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	SetActorHiddenInGame(true);
+	SetActorTickEnabled(false);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -33,7 +35,7 @@ void AT66MiniGroundTelegraphActor::Tick(const float DeltaSeconds)
 	LifetimeRemaining -= DeltaSeconds;
 	if (LifetimeRemaining <= 0.f)
 	{
-		Destroy();
+		DeactivateTelegraph();
 		return;
 	}
 
@@ -42,6 +44,15 @@ void AT66MiniGroundTelegraphActor::Tick(const float DeltaSeconds)
 	const float NormalizedRemaining = LifetimeSeconds > 0.f ? (LifetimeRemaining / LifetimeSeconds) : 0.f;
 	const FLinearColor CurrentTint(Tint.R, Tint.G, Tint.B, FMath::Clamp(Tint.A * PulseAlpha * (0.45f + (NormalizedRemaining * 0.55f)), 0.f, 1.f));
 	T66MiniVfx::ApplyTintedMaterial(TelegraphMesh, this, nullptr, CurrentTint);
+}
+
+void AT66MiniGroundTelegraphActor::DeactivateTelegraph()
+{
+	bTelegraphActive = false;
+	LifetimeRemaining = 0.f;
+	PulseAccumulator = 0.f;
+	SetActorHiddenInGame(true);
+	SetActorTickEnabled(false);
 }
 
 void AT66MiniGroundTelegraphActor::InitializeTelegraph(
@@ -54,6 +65,10 @@ void AT66MiniGroundTelegraphActor::InitializeTelegraph(
 	Tint = InTint;
 	LifetimeSeconds = FMath::Max(0.10f, InLifetimeSeconds);
 	LifetimeRemaining = LifetimeSeconds;
+	PulseAccumulator = 0.f;
+	bTelegraphActive = true;
+	SetActorHiddenInGame(false);
+	SetActorTickEnabled(true);
 	const float PlaneScale = FMath::Max(0.12f, InRadius / 50.f);
 	TelegraphMesh->SetRelativeScale3D(FVector(PlaneScale, PlaneScale, 1.f));
 	T66MiniVfx::ApplyTintedMaterial(TelegraphMesh, this, nullptr, Tint);

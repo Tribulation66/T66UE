@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66BackendSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66SteamHelper.h"
 #include "Core/T66SessionSubsystem.h"
 #include "Core/T66LeaderboardPacingUtils.h"
@@ -25,9 +26,16 @@
 #include "Engine/World.h"
 #include "GenericPlatform/GenericPlatformHttp.h"
 #include "HAL/FileManager.h"
+#include "HAL/IConsoleManager.h"
 #include "HAL/PlatformMisc.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Backend, Log, All);
+
+static TAutoConsoleVariable<float> CVarT66PartyInvitePollMinIntervalSeconds(
+	TEXT("T66.Backend.PartyInvitePollMinIntervalSeconds"),
+	0.25f,
+	TEXT("Minimum interval between non-forced party invite polls."),
+	ECVF_Default);
 
 namespace
 {
@@ -429,6 +437,8 @@ bool UT66BackendSubsystem::SendPartyInvite(const FString& TargetSteamId, const F
 
 void UT66BackendSubsystem::PollPendingPartyInvites(bool bForce)
 {
+	FLagScopedScope LagScope(GetWorld(), bForce ? TEXT("MP-02 Backend::PollPendingPartyInvites[force]") : TEXT("MP-02 Backend::PollPendingPartyInvites"));
+
 	if (!IsBackendConfigured() || !HasSteamTicket())
 	{
 		SetPendingPartyInvites({});
@@ -441,7 +451,8 @@ void UT66BackendSubsystem::PollPendingPartyInvites(bool bForce)
 	}
 
 	const double NowSeconds = FPlatformTime::Seconds();
-	if (!bForce && (NowSeconds - LastPartyInvitePollTimeSeconds) < 0.75)
+	const double MinPollIntervalSeconds = static_cast<double>(FMath::Max(0.05f, CVarT66PartyInvitePollMinIntervalSeconds.GetValueOnGameThread()));
+	if (!bForce && (NowSeconds - LastPartyInvitePollTimeSeconds) < MinPollIntervalSeconds)
 	{
 		return;
 	}
@@ -458,6 +469,8 @@ void UT66BackendSubsystem::PollPendingPartyInvites(bool bForce)
 
 bool UT66BackendSubsystem::RespondToPartyInvite(const FString& InviteId, bool bAccept)
 {
+	FLagScopedScope LagScope(GetWorld(), bAccept ? TEXT("MP-03 Backend::RespondToPartyInvite[accept]") : TEXT("MP-03 Backend::RespondToPartyInvite[reject]"));
+
 	if (!IsBackendConfigured() || !HasSteamTicket() || InviteId.IsEmpty())
 	{
 		return false;
@@ -2128,6 +2141,11 @@ void UT66BackendSubsystem::OnSendPartyInviteResponseReceived(FHttpRequestPtr Req
 	SubmitMultiplayerDiagnostic(Diagnostic);
 
 	PartyInviteActionComplete.Broadcast(bSuccess, TEXT("send"), InviteId, Message);
+
+	if (bSuccess)
+	{
+		PollPendingPartyInvites(true);
+	}
 }
 
 void UT66BackendSubsystem::OnPendingPartyInvitesResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
@@ -2228,6 +2246,7 @@ void UT66BackendSubsystem::OnRespondPartyInviteResponseReceived(
 			return Invite.InviteId == InviteId;
 		});
 		SetPendingPartyInvites(MoveTemp(UpdatedInvites));
+		PollPendingPartyInvites(true);
 	}
 	else
 	{

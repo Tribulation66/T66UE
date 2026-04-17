@@ -24,6 +24,7 @@ public:
 	UT66ShopScreen(const FObjectInitializer& ObjectInitializer);
 
 protected:
+	virtual void OnScreenActivated_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 	virtual void RefreshScreen_Implementation() override;
 
@@ -33,6 +34,7 @@ private:
 	void SetShowingSingleUse(bool bInShowingSingleUse);
 
 	bool bShowingSingleUse = false;
+	bool bNeedsWarmActivationRefresh = false;
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
 	TMap<FString, TSharedPtr<FSlateBrush>> OwnedBrushes;
 

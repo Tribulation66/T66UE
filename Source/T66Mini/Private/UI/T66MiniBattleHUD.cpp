@@ -578,15 +578,7 @@ void AT66MiniBattleHUD::DrawHUD()
 		}
 	}
 
-	AT66MiniEnemyBase* BossEnemy = nullptr;
-	for (TActorIterator<AT66MiniEnemyBase> It(GetWorld()); It; ++It)
-	{
-		if (It->IsBossEnemy() && !It->IsEnemyDead())
-		{
-			BossEnemy = *It;
-			break;
-		}
-	}
+	AT66MiniEnemyBase* BossEnemy = MiniGameMode ? MiniGameMode->GetActiveBossEnemy() : nullptr;
 
 	if (BossEnemy)
 	{

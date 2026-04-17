@@ -147,6 +147,95 @@ AT66MiniGameMode::AT66MiniGameMode()
 	bUseSeamlessTravel = true;
 }
 
+AT66MiniEnemyBase* AT66MiniGameMode::GetActiveBossEnemy() const
+{
+	for (AT66MiniEnemyBase* Enemy : LiveEnemies)
+	{
+		if (Enemy && Enemy->IsBossEnemy() && !Enemy->IsEnemyDead())
+		{
+			return Enemy;
+		}
+	}
+
+	return nullptr;
+}
+
+AT66MiniPlayerPawn* AT66MiniGameMode::FindClosestPlayerPawn(const FVector& WorldLocation, const bool bRequireAlive) const
+{
+	AT66MiniPlayerPawn* BestPawn = nullptr;
+	float BestDistanceSq = TNumericLimits<float>::Max();
+	for (AT66MiniPlayerPawn* Candidate : T66MiniGatherPlayerPawns(GetWorld(), bRequireAlive))
+	{
+		if (!Candidate)
+		{
+			continue;
+		}
+
+		const float DistanceSq = FVector::DistSquared2D(WorldLocation, Candidate->GetActorLocation());
+		if (DistanceSq < BestDistanceSq)
+		{
+			BestDistanceSq = DistanceSq;
+			BestPawn = Candidate;
+		}
+	}
+
+	return BestPawn;
+}
+
+void AT66MiniGameMode::RegisterLiveTrap(AT66MiniHazardTrap* Trap)
+{
+	if (Trap)
+	{
+		LiveTraps.AddUnique(Trap);
+	}
+}
+
+void AT66MiniGameMode::UnregisterLiveTrap(const AT66MiniHazardTrap* Trap)
+{
+	LiveTraps.RemoveAllSwap(
+		[Trap](const TObjectPtr<AT66MiniHazardTrap>& Candidate)
+		{
+			return Candidate.Get() == Trap;
+		},
+		EAllowShrinking::No);
+}
+
+void AT66MiniGameMode::RegisterLiveInteractable(AT66MiniInteractable* Interactable)
+{
+	if (Interactable)
+	{
+		LiveInteractables.AddUnique(Interactable);
+	}
+}
+
+void AT66MiniGameMode::UnregisterLiveInteractable(const AT66MiniInteractable* Interactable)
+{
+	LiveInteractables.RemoveAllSwap(
+		[Interactable](const TObjectPtr<AT66MiniInteractable>& Candidate)
+		{
+			return Candidate.Get() == Interactable;
+		},
+		EAllowShrinking::No);
+}
+
+void AT66MiniGameMode::RegisterLivePickup(AT66MiniPickup* Pickup)
+{
+	if (Pickup)
+	{
+		LivePickups.AddUnique(Pickup);
+	}
+}
+
+void AT66MiniGameMode::UnregisterLivePickup(const AT66MiniPickup* Pickup)
+{
+	LivePickups.RemoveAllSwap(
+		[Pickup](const TObjectPtr<AT66MiniPickup>& Candidate)
+		{
+			return Candidate.Get() == Pickup;
+		},
+		EAllowShrinking::No);
+}
+
 void AT66MiniGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -214,6 +303,8 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 	TryApplySavedPawnState();
 	UpdateLiveEnemyCache();
 	UpdateLiveTrapCache();
+	UpdateLiveInteractableCache();
+	UpdateLivePickupCache();
 
 	if (!bRunCompleted)
 	{
@@ -679,7 +770,7 @@ void AT66MiniGameMode::BeginBossSpawnTelegraph()
 	BossTelegraphRemaining = BossDefinition ? BossDefinition->TelegraphSeconds : 1.2f;
 	if (ActiveBossTelegraphActor)
 	{
-		ActiveBossTelegraphActor->Destroy();
+		ActiveBossTelegraphActor->DeactivateTelegraph();
 		ActiveBossTelegraphActor = nullptr;
 	}
 	if (UT66MiniVFXSubsystem* VfxSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
@@ -740,7 +831,7 @@ void AT66MiniGameMode::SpawnBossEnemy()
 
 	if (ActiveBossTelegraphActor)
 	{
-		ActiveBossTelegraphActor->Destroy();
+		ActiveBossTelegraphActor->DeactivateTelegraph();
 		ActiveBossTelegraphActor = nullptr;
 	}
 	if (UT66MiniVFXSubsystem* VfxSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
@@ -868,7 +959,7 @@ void AT66MiniGameMode::ReturnToShopIntermission()
 	ActiveRun->TrapSnapshots.Reset();
 	if (ActiveBossTelegraphActor)
 	{
-		ActiveBossTelegraphActor->Destroy();
+		ActiveBossTelegraphActor->DeactivateTelegraph();
 		ActiveBossTelegraphActor = nullptr;
 	}
 	FrontendState->SeedFromRunSave(ActiveRun);
@@ -953,7 +1044,7 @@ void AT66MiniGameMode::FinalizeRun(const bool bWasVictory, const FString& Result
 	}
 	if (ActiveBossTelegraphActor)
 	{
-		ActiveBossTelegraphActor->Destroy();
+		ActiveBossTelegraphActor->DeactivateTelegraph();
 		ActiveBossTelegraphActor = nullptr;
 	}
 
@@ -1197,7 +1288,7 @@ void AT66MiniGameMode::RestoreTransientWaveState(const UT66MiniRunSaveGame* RunS
 
 	if (ActiveBossTelegraphActor)
 	{
-		ActiveBossTelegraphActor->Destroy();
+		ActiveBossTelegraphActor->DeactivateTelegraph();
 		ActiveBossTelegraphActor = nullptr;
 	}
 
@@ -1228,6 +1319,8 @@ void AT66MiniGameMode::RestoreWorldState(const UT66MiniRunSaveGame* RunSave)
 
 	LiveEnemies.Reset();
 	LiveTraps.Reset();
+	LiveInteractables.Reset();
+	LivePickups.Reset();
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -1351,9 +1444,8 @@ void AT66MiniGameMode::CaptureWorldState(UT66MiniRunSaveGame* RunSave) const
 	RunSave->InteractableSnapshots.Reset();
 	RunSave->TrapSnapshots.Reset();
 
-	for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
+	for (const AT66MiniEnemyBase* Enemy : LiveEnemies)
 	{
-		const AT66MiniEnemyBase* Enemy = *It;
 		if (!Enemy || Enemy->IsEnemyDead())
 		{
 			continue;
@@ -1371,9 +1463,8 @@ void AT66MiniGameMode::CaptureWorldState(UT66MiniRunSaveGame* RunSave) const
 		Snapshot.ExperienceDrop = Enemy->GetExperienceDrop();
 	}
 
-	for (TActorIterator<AT66MiniPickup> It(World); It; ++It)
+	for (const AT66MiniPickup* Pickup : LivePickups)
 	{
-		const AT66MiniPickup* Pickup = *It;
 		if (!Pickup)
 		{
 			continue;
@@ -1389,9 +1480,8 @@ void AT66MiniGameMode::CaptureWorldState(UT66MiniRunSaveGame* RunSave) const
 		Snapshot.GrantedItemID = Pickup->GetGrantedItemID();
 	}
 
-	for (TActorIterator<AT66MiniInteractable> It(World); It; ++It)
+	for (const AT66MiniInteractable* Interactable : LiveInteractables)
 	{
-		const AT66MiniInteractable* Interactable = *It;
 		if (!Interactable)
 		{
 			continue;
@@ -1404,9 +1494,8 @@ void AT66MiniGameMode::CaptureWorldState(UT66MiniRunSaveGame* RunSave) const
 		Snapshot.LifetimeRemaining = Interactable->GetLifetimeRemaining();
 	}
 
-	for (TActorIterator<AT66MiniHazardTrap> It(World); It; ++It)
+	for (const AT66MiniHazardTrap* Trap : LiveTraps)
 	{
-		const AT66MiniHazardTrap* Trap = *It;
 		if (!Trap)
 		{
 			continue;
@@ -1531,6 +1620,28 @@ void AT66MiniGameMode::UpdateLiveTrapCache()
 	}
 }
 
+void AT66MiniGameMode::UpdateLiveInteractableCache()
+{
+	for (int32 Index = LiveInteractables.Num() - 1; Index >= 0; --Index)
+	{
+		if (!IsValid(LiveInteractables[Index]))
+		{
+			LiveInteractables.RemoveAtSwap(Index);
+		}
+	}
+}
+
+void AT66MiniGameMode::UpdateLivePickupCache()
+{
+	for (int32 Index = LivePickups.Num() - 1; Index >= 0; --Index)
+	{
+		if (!IsValid(LivePickups[Index]))
+		{
+			LivePickups.RemoveAtSwap(Index);
+		}
+	}
+}
+
 void AT66MiniGameMode::UpdateCombatTexts(const float DeltaSeconds)
 {
 	for (int32 Index = CombatTexts.Num() - 1; Index >= 0; --Index)
@@ -1572,9 +1683,8 @@ bool AT66MiniGameMode::TryInteractNearest(AT66MiniPlayerPawn* PlayerPawn, const 
 
 	AT66MiniInteractable* BestInteractable = nullptr;
 	float BestDistanceSq = FMath::Square(MaxRange);
-	for (TActorIterator<AT66MiniInteractable> It(GetWorld()); It; ++It)
+	for (AT66MiniInteractable* Candidate : LiveInteractables)
 	{
-		AT66MiniInteractable* Candidate = *It;
 		if (!Candidate || !Candidate->RequiresManualInteract())
 		{
 			continue;
@@ -1641,7 +1751,7 @@ void AT66MiniGameMode::AbortOnlinePartyRunToFrontend(const FString& ResultLabel,
 	}
 	if (ActiveBossTelegraphActor)
 	{
-		ActiveBossTelegraphActor->Destroy();
+		ActiveBossTelegraphActor->DeactivateTelegraph();
 		ActiveBossTelegraphActor = nullptr;
 	}
 

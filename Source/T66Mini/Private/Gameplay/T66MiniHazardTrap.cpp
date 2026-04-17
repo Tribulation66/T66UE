@@ -10,7 +10,9 @@
 #include "Engine/Texture2D.h"
 #include "EngineUtils.h"
 #include "Gameplay/T66MiniEnemyBase.h"
+#include "Gameplay/T66MiniGameMode.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
+#include "GameFramework/PlayerController.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Net/UnrealNetwork.h"
@@ -84,6 +86,10 @@ AT66MiniHazardTrap::AT66MiniHazardTrap()
 void AT66MiniHazardTrap::BeginPlay()
 {
 	Super::BeginPlay();
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		MiniGameMode->RegisterLiveTrap(this);
+	}
 
 	UT66MiniVisualSubsystem* VisualSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr;
 	UTexture2D* TelegraphTexture = VisualSubsystem ? VisualSubsystem->LoadEffectTexture(TEXT("Trap_Telegraph_Ring")) : nullptr;
@@ -117,6 +123,16 @@ void AT66MiniHazardTrap::BeginPlay()
 	}
 
 	UpdatePresentation();
+}
+
+void AT66MiniHazardTrap::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		MiniGameMode->UnregisterLiveTrap(this);
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AT66MiniHazardTrap::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -196,26 +212,47 @@ void AT66MiniHazardTrap::ApplyPulse()
 		return;
 	}
 
-	for (TActorIterator<AT66MiniPlayerPawn> It(World); It; ++It)
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 	{
-		AT66MiniPlayerPawn* PlayerPawn = *It;
+		APlayerController* PlayerController = It->Get();
+		AT66MiniPlayerPawn* PlayerPawn = PlayerController ? Cast<AT66MiniPlayerPawn>(PlayerController->GetPawn()) : nullptr;
 		if (PlayerPawn && PlayerPawn->IsHeroAlive() && FVector::DistSquared2D(GetActorLocation(), PlayerPawn->GetActorLocation()) <= FMath::Square(Radius))
 		{
 			PlayerPawn->ApplyDamage(DamagePerPulse);
 		}
 	}
 
-	for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
+	const AT66MiniGameMode* MiniGameMode = World->GetAuthGameMode<AT66MiniGameMode>();
+	const TArray<TObjectPtr<AT66MiniEnemyBase>>* LiveEnemies = MiniGameMode ? &MiniGameMode->GetLiveEnemies() : nullptr;
+	if (LiveEnemies)
 	{
-		AT66MiniEnemyBase* Enemy = *It;
-		if (!Enemy || Enemy->IsEnemyDead())
+		for (AT66MiniEnemyBase* Enemy : *LiveEnemies)
 		{
-			continue;
-		}
+			if (!Enemy || Enemy->IsEnemyDead())
+			{
+				continue;
+			}
 
-		if (FVector::DistSquared2D(GetActorLocation(), Enemy->GetActorLocation()) <= FMath::Square(Radius))
+			if (FVector::DistSquared2D(GetActorLocation(), Enemy->GetActorLocation()) <= FMath::Square(Radius))
+			{
+				Enemy->ApplyDamage(DamagePerPulse);
+			}
+		}
+	}
+	else
+	{
+		for (TActorIterator<AT66MiniEnemyBase> It(World); It; ++It)
 		{
-			Enemy->ApplyDamage(DamagePerPulse);
+			AT66MiniEnemyBase* Enemy = *It;
+			if (!Enemy || Enemy->IsEnemyDead())
+			{
+				continue;
+			}
+
+			if (FVector::DistSquared2D(GetActorLocation(), Enemy->GetActorLocation()) <= FMath::Square(Radius))
+			{
+				Enemy->ApplyDamage(DamagePerPulse);
+			}
 		}
 	}
 
@@ -276,6 +313,11 @@ FLinearColor AT66MiniHazardTrap::ResolveTrapTint() const
 
 AT66MiniPlayerPawn* AT66MiniHazardTrap::FindClosestPlayerPawn(const bool bRequireAlive) const
 {
+	if (const AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		return MiniGameMode->FindClosestPlayerPawn(GetActorLocation(), bRequireAlive);
+	}
+
 	UWorld* World = GetWorld();
 	if (!World)
 	{

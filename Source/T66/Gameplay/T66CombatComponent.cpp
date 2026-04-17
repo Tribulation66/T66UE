@@ -257,7 +257,11 @@ void UT66CombatComponent::BeginPlay()
 
 	RecomputeFromRunState();
 
-	CachedShotSfx = ShotSfx.LoadSynchronous();
+	CachedShotSfx = ShotSfx.Get();
+	if (!CachedShotSfx)
+	{
+		CachedShotSfx = ShotSfx.LoadSynchronous();
+	}
 	WarmupVFXSystems();
 
 	// --- Create the range detection sphere ---

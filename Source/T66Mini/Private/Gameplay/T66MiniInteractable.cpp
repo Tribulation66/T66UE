@@ -11,6 +11,7 @@
 #include "Engine/Texture.h"
 #include "EngineUtils.h"
 #include "Gameplay/Components/T66MiniShadowComponent.h"
+#include "Gameplay/T66MiniGameMode.h"
 #include "Gameplay/T66MiniPlayerController.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -119,12 +120,26 @@ AT66MiniInteractable::AT66MiniInteractable()
 void AT66MiniInteractable::BeginPlay()
 {
 	Super::BeginPlay();
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		MiniGameMode->RegisterLiveInteractable(this);
+	}
 	if (HasAuthority())
 	{
 		CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AT66MiniInteractable::HandleOverlap);
 	}
 	HoverPhase = FMath::FRandRange(0.f, UE_TWO_PI);
 	RefreshVisuals();
+}
+
+void AT66MiniInteractable::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		MiniGameMode->UnregisterLiveInteractable(this);
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AT66MiniInteractable::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -312,6 +327,11 @@ void AT66MiniInteractable::ConsumeInteractable(AT66MiniPlayerPawn* PlayerPawn)
 
 AT66MiniPlayerPawn* AT66MiniInteractable::FindClosestPlayerPawn(const bool bRequireAlive) const
 {
+	if (const AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		return MiniGameMode->FindClosestPlayerPawn(GetActorLocation(), bRequireAlive);
+	}
+
 	UWorld* World = GetWorld();
 	if (!World)
 	{

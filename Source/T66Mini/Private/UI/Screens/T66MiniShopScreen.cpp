@@ -16,7 +16,6 @@
 #include "Save/T66MiniRunSaveGame.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "UI/T66MiniUIStyle.h"
-#include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
 #include "UI/Style/T66Style.h"
@@ -137,9 +136,24 @@ namespace
 			return false;
 		}
 
-		UTexture2D* Texture = TextureSoft.LoadSynchronous();
+		UTexture2D* Texture = TexPool->GetLoadedTexture(TextureSoft);
 		if (!Texture)
 		{
+			TWeakPtr<FSlateBrush> WeakBrush = Brush;
+			TexPool->RequestTexture(
+				TextureSoft,
+				Owner,
+				FName(*Key),
+				[WeakBrush](UTexture2D* LoadedTexture)
+				{
+					if (LoadedTexture)
+					{
+						if (const TSharedPtr<FSlateBrush> PinnedBrush = WeakBrush.Pin())
+						{
+							PinnedBrush->SetResourceObject(LoadedTexture);
+						}
+					}
+				});
 			return false;
 		}
 
@@ -156,7 +170,7 @@ namespace
 		const FVector2D& Size)
 	{
 		const TSharedPtr<FSlateBrush> Brush = T66MiniMakeBrush(Size);
-		const bool bHasIcon = T66MiniBindBrush(Owner, TexPool, TexturePath, Brush, BrushKey);
+		T66MiniBindBrush(Owner, TexPool, TexturePath, Brush, BrushKey);
 		return FT66Style::MakePanel(
 			SNew(SBox)
 			.WidthOverride(Size.X)
@@ -170,7 +184,10 @@ namespace
 					{
 						return Brush.Get();
 					})
-					.Visibility(bHasIcon ? EVisibility::Visible : EVisibility::Collapsed)
+					.Visibility_Lambda([Brush]() -> EVisibility
+					{
+						return (Brush.IsValid() && Brush->GetResourceObject() != nullptr) ? EVisibility::Visible : EVisibility::Collapsed;
+					})
 				]
 				+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
 				[
@@ -178,7 +195,10 @@ namespace
 					.Text(FallbackText)
 					.Font(FT66Style::MakeFont(TEXT("Bold"), 12))
 					.ColorAndOpacity(FT66Style::TextMuted())
-					.Visibility(bHasIcon ? EVisibility::Collapsed : EVisibility::Visible)
+					.Visibility_Lambda([Brush]() -> EVisibility
+					{
+						return (Brush.IsValid() && Brush->GetResourceObject() != nullptr) ? EVisibility::Collapsed : EVisibility::Visible;
+					})
 					.Justification(ETextJustify::Center)
 				]
 			],

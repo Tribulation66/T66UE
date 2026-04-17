@@ -160,8 +160,16 @@ void AT66PlayerController::BeginPlay()
 		ClientGameplayWorldSetupRetriesRemaining = T66ClientGameplayWorldSetupRetryBudget;
 		EnsureClientGameplayWorldSetup(true);
 		SetupGameplayHUD();
-		CachedJumpVFXNiagara = JumpVFXNiagara.LoadSynchronous();
-		CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
+		CachedJumpVFXNiagara = JumpVFXNiagara.Get();
+		if (!CachedJumpVFXNiagara)
+		{
+			CachedJumpVFXNiagara = JumpVFXNiagara.LoadSynchronous();
+		}
+		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
+		if (!CachedPixelVFXNiagara)
+		{
+			CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
+		}
 		UWorld* World = GetWorld();
 		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 
