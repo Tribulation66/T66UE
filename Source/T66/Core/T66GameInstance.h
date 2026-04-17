@@ -458,6 +458,7 @@ private:
 	void HandleCoreDataTablesLoaded();
 	void HandleHeroSelectionAssetsLoaded();
 	void HandleHeroSelectionPreviewVisualsLoaded();
+	bool QueueGameplayVisualAssetPreload();
 	void RestoreRememberedSelectionDefaults();
 
 	bool bCoreDataTablesLoadRequested = false;
@@ -538,6 +539,7 @@ private:
 
 	// Gameplay asset pre-load tracking.
 	bool bGameplayAssetsPreloadInFlight = false;
+	bool bGameplayVisualAssetsPhaseQueued = false;
 	TSharedPtr<FStreamableHandle> GameplayAssetsPreloadHandle;
 	TFunction<void()> GameplayAssetsPreloadCallback;
 	void HandleGameplayAssetsPreloaded();

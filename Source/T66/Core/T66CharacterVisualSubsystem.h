@@ -13,6 +13,7 @@ class USkeletalMesh;
 class UAnimationAsset;
 class USceneComponent;
 class USkeleton;
+struct FStreamableHandle;
 
 USTRUCT()
 struct FT66ResolvedCharacterVisual
@@ -86,12 +87,16 @@ private:
 	FT66ResolvedCharacterVisual ResolveVisual(FName VisualID);
 	UDataTable* GetVisualsDataTable() const;
 	UAnimationAsset* FindFallbackLoopingAnim(USkeleton* Skeleton) const;
+	const FT66CharacterVisualRow* FindVisualRow(FName VisualID, FName* OutResolvedVisualID = nullptr) const;
+	void HandleCharacterVisualPreloadCompleted(FName VisualID);
 
 	UPROPERTY(Transient)
 	mutable TObjectPtr<UDataTable> CachedVisualsDataTable;
 
 	UPROPERTY(Transient)
 	mutable TMap<FName, FT66ResolvedCharacterVisual> ResolvedCache;
+
+	TMap<FName, TSharedPtr<FStreamableHandle>> PendingPreloadHandles;
 
 	/** Cache: Skeleton asset path -> chosen looping animation */
 	UPROPERTY(Transient)

@@ -67,6 +67,22 @@ static FString GetMaterialBasePath(const UMaterialInterface* Material)
 	return Material->GetPathName();
 }
 
+static void T66AppendCharacterVisualAssetPaths(const FT66CharacterVisualRow& Row, TArray<FSoftObjectPath>& OutPaths)
+{
+	auto AddPath = [&OutPaths](const FSoftObjectPath& Path)
+	{
+		if (!Path.IsNull())
+		{
+			OutPaths.AddUnique(Path);
+		}
+	};
+
+	AddPath(Row.SkeletalMesh.ToSoftObjectPath());
+	AddPath(Row.LoopingAnimation.ToSoftObjectPath());
+	AddPath(Row.AlertAnimation.ToSoftObjectPath());
+	AddPath(Row.RunAnimation.ToSoftObjectPath());
+}
+
 static bool T66IsUsableImportedTexture(const UTexture* Texture)
 {
 	return IsValid(Texture) && Texture != GetWhiteFallbackTexture();
@@ -620,6 +636,34 @@ UDataTable* UT66CharacterVisualSubsystem::GetVisualsDataTable() const
 	return CachedVisualsDataTable;
 }
 
+const FT66CharacterVisualRow* UT66CharacterVisualSubsystem::FindVisualRow(FName VisualID, FName* OutResolvedVisualID) const
+{
+	UDataTable* DT = GetVisualsDataTable();
+	if (!DT || VisualID.IsNone())
+	{
+		return nullptr;
+	}
+
+	FName ResolvedVisualID = VisualID;
+	const FT66CharacterVisualRow* Row = DT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("FindVisualRow"));
+	if (!Row)
+	{
+		const FName FallbackVisualID = GetFallbackVisualID(VisualID);
+		if (!FallbackVisualID.IsNone())
+		{
+			ResolvedVisualID = FallbackVisualID;
+			Row = DT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("FindVisualRowFallback"));
+		}
+	}
+
+	if (OutResolvedVisualID)
+	{
+		*OutResolvedVisualID = ResolvedVisualID;
+	}
+
+	return Row;
+}
+
 FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName VisualID)
 {
 	if (VisualID.IsNone())
@@ -761,6 +805,63 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 
 void UT66CharacterVisualSubsystem::PreloadCharacterVisual(FName VisualID)
 {
+	if (VisualID.IsNone() || ResolvedCache.Contains(VisualID) || PendingPreloadHandles.Contains(VisualID))
+	{
+		return;
+	}
+
+	FName ResolvedVisualID = VisualID;
+	const FT66CharacterVisualRow* Row = FindVisualRow(VisualID, &ResolvedVisualID);
+	if (!Row)
+	{
+		return;
+	}
+
+	TArray<FSoftObjectPath> PendingPaths;
+	PendingPaths.Reserve(4);
+	T66AppendCharacterVisualAssetPaths(*Row, PendingPaths);
+
+	bool bAllAssetsLoaded = true;
+	for (int32 Index = PendingPaths.Num() - 1; Index >= 0; --Index)
+	{
+		const FSoftObjectPath& AssetPath = PendingPaths[Index];
+		if (AssetPath.IsNull())
+		{
+			PendingPaths.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+			continue;
+		}
+
+		if (AssetPath.ResolveObject())
+		{
+			PendingPaths.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+		}
+		else
+		{
+			bAllAssetsLoaded = false;
+		}
+	}
+
+	if (bAllAssetsLoaded || PendingPaths.Num() <= 0)
+	{
+		ResolveVisual(VisualID);
+		return;
+	}
+
+	TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		PendingPaths,
+		FStreamableDelegate::CreateUObject(this, &UT66CharacterVisualSubsystem::HandleCharacterVisualPreloadCompleted, VisualID));
+	if (!Handle.IsValid())
+	{
+		ResolveVisual(VisualID);
+		return;
+	}
+
+	PendingPreloadHandles.Add(VisualID, Handle);
+}
+
+void UT66CharacterVisualSubsystem::HandleCharacterVisualPreloadCompleted(FName VisualID)
+{
+	PendingPreloadHandles.Remove(VisualID);
 	ResolveVisual(VisualID);
 }
 

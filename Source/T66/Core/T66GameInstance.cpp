@@ -1234,8 +1234,9 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	}
 
 	TArray<FSoftObjectPath> Paths;
-	Paths.Reserve(48);
+	Paths.Reserve(64);
 	GameplayPreloadVisualIDs.Reset();
+	bGameplayVisualAssetsPhaseQueued = false;
 
 	auto AddPath = [&Paths](const FSoftObjectPath& Path)
 	{
@@ -1268,7 +1269,17 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 			return;
 		}
 
-		UDataTable* VisualsDT = GetCharacterVisualsDataTable();
+		GameplayPreloadVisualIDs.AddUnique(VisualID);
+
+		UDataTable* VisualsDT = CachedCharacterVisualsDataTable.Get();
+		if (!VisualsDT)
+		{
+			VisualsDT = CharacterVisualsDataTable.Get();
+		}
+		if (!VisualsDT && bCoreDataTablesLoaded)
+		{
+			VisualsDT = GetCharacterVisualsDataTable();
+		}
 		FName ResolvedVisualID = VisualID;
 		const FT66CharacterVisualRow* VisualRow = VisualsDT ? VisualsDT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("PreloadGameplayAssets")) : nullptr;
 		if (!VisualRow)
@@ -1286,7 +1297,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 			return;
 		}
 
-		GameplayPreloadVisualIDs.AddUnique(VisualID);
 		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
 		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
@@ -1321,14 +1331,17 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 
 	// Main gameplay uses a dedicated terrain asset set. Preload the full terrain/prop contract
 	// before opening the gameplay level so the first entry does not depend on cold material state.
+	AddPath(CharacterVisualsDataTable.ToSoftObjectPath());
 	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkBlock.SM_MegabonkBlock")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkSlope.SM_MegabonkSlope")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall")));
 	AddCurrentDifficultyThemeTextures();
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
@@ -1384,10 +1397,98 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	}
 }
 
+bool UT66GameInstance::QueueGameplayVisualAssetPreload()
+{
+	if (GameplayPreloadVisualIDs.Num() <= 0)
+	{
+		return false;
+	}
+
+	UDataTable* VisualsDT = CachedCharacterVisualsDataTable.Get();
+	if (!VisualsDT)
+	{
+		VisualsDT = CharacterVisualsDataTable.Get();
+	}
+	if (!VisualsDT)
+	{
+		UE_LOG(LogT66GameInstance, Warning, TEXT("[LOAD] Gameplay preload skipped visual-asset phase because the character visuals table is not loaded yet."));
+		return false;
+	}
+
+	TArray<FSoftObjectPath> VisualPaths;
+	VisualPaths.Reserve(GameplayPreloadVisualIDs.Num() * 4);
+
+	auto AddVisualPath = [&VisualPaths](const FSoftObjectPath& Path)
+	{
+		if (!Path.IsNull())
+		{
+			VisualPaths.AddUnique(Path);
+		}
+	};
+
+	for (const FName VisualID : GameplayPreloadVisualIDs)
+	{
+		FName ResolvedVisualID = VisualID;
+		const FT66CharacterVisualRow* VisualRow = VisualsDT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("QueueGameplayVisualAssetPreload"));
+		if (!VisualRow)
+		{
+			const FName FallbackVisualID = UT66CharacterVisualSubsystem::GetFallbackVisualID(VisualID);
+			if (!FallbackVisualID.IsNone())
+			{
+				ResolvedVisualID = FallbackVisualID;
+				VisualRow = VisualsDT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("QueueGameplayVisualAssetPreloadFallback"));
+			}
+		}
+
+		if (!VisualRow)
+		{
+			continue;
+		}
+
+		AddVisualPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
+		AddVisualPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
+		AddVisualPath(VisualRow->AlertAnimation.ToSoftObjectPath());
+		AddVisualPath(VisualRow->RunAnimation.ToSoftObjectPath());
+	}
+
+	for (int32 Index = VisualPaths.Num() - 1; Index >= 0; --Index)
+	{
+		if (VisualPaths[Index].ResolveObject())
+		{
+			VisualPaths.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+		}
+	}
+
+	if (VisualPaths.Num() <= 0)
+	{
+		return false;
+	}
+
+	bGameplayVisualAssetsPhaseQueued = true;
+	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] Gameplay preload queued %d visual assets for the second-stage warmup."), VisualPaths.Num());
+
+	GameplayAssetsPreloadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		VisualPaths,
+		FStreamableDelegate::CreateUObject(this, &UT66GameInstance::HandleGameplayAssetsPreloaded));
+	if (!GameplayAssetsPreloadHandle.IsValid())
+	{
+		bGameplayVisualAssetsPhaseQueued = false;
+		return false;
+	}
+
+	return true;
+}
+
 void UT66GameInstance::HandleGameplayAssetsPreloaded()
 {
-	bGameplayAssetsPreloadInFlight = false;
 	GameplayAssetsPreloadHandle.Reset();
+	if (!bGameplayVisualAssetsPhaseQueued && QueueGameplayVisualAssetPreload())
+	{
+		return;
+	}
+
+	bGameplayAssetsPreloadInFlight = false;
+	bGameplayVisualAssetsPhaseQueued = false;
 	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] Gameplay transition asset preload completed. Pre-resolving %d visuals."), GameplayPreloadVisualIDs.Num());
 	if (UT66CharacterVisualSubsystem* Visuals = GetSubsystem<UT66CharacterVisualSubsystem>())
 	{

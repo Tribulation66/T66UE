@@ -69,6 +69,21 @@ namespace
 		return !SteamIdString.IsEmpty() && LexTryParseString(OutSteamId, *SteamIdString) && OutSteamId != 0;
 	}
 
+	FString T66ExtractSearchResultHostSteamId(const FOnlineSessionSearchResult& SearchResult)
+	{
+		if (SearchResult.Session.OwningUserId.IsValid())
+		{
+			const FString CandidateSteamId = SearchResult.Session.OwningUserId->ToString();
+			uint64 ParsedSteamId = 0;
+			if (T66TryParseSteamIdString(CandidateSteamId, ParsedSteamId))
+			{
+				return CandidateSteamId;
+			}
+		}
+
+		return FString();
+	}
+
 	int32 T66ResolveSteamJoinPort(const UWorld* World)
 	{
 		return (World && World->URL.Port > 0) ? World->URL.Port : T66DefaultSteamJoinPort;
@@ -2157,6 +2172,31 @@ void UT66SessionSubsystem::HandleSessionUserInviteAccepted(bool bWasSuccessful, 
 	DiagnosticFields.Add(TEXT("controller_id"), FString::FromInt(ControllerId));
 	DiagnosticFields.Add(TEXT("session_owner"), InviteResult.Session.OwningUserName);
 	SubmitSessionDiagnostic(TEXT("steam_oss_invite_accepted"), TEXT("info"), TEXT("Steam invite accepted via OSS."), FString(), FString(), FString(), DiagnosticFields);
+
+	FString InviteLobbyId;
+	if (InviteResult.Session.SessionInfo.IsValid())
+	{
+		InviteLobbyId = InviteResult.Session.SessionInfo->GetSessionId().ToString();
+	}
+
+	const FString HostSteamId = T66ExtractSearchResultHostSteamId(InviteResult);
+	if (!InviteLobbyId.IsEmpty() && !HostSteamId.IsEmpty())
+	{
+		FString InviteAppId;
+		if (UT66SteamHelper* SteamHelper = GetSteamHelper())
+		{
+			SteamHelper->TryGetFriendCurrentGame(HostSteamId, &InviteAppId, nullptr);
+			if (InviteAppId.IsEmpty())
+			{
+				InviteAppId = SteamHelper->GetActiveSteamAppId();
+			}
+		}
+
+		if (JoinPartySessionByLobbyId(InviteLobbyId, HostSteamId, InviteAppId))
+		{
+			return;
+		}
+	}
 
 	if (IsPartySessionActive())
 	{

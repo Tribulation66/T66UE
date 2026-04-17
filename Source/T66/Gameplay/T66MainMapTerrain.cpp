@@ -1777,23 +1777,13 @@ namespace T66MainMapTerrain
 		VisualRoot->SetRelativeLocation(BoardOrigin);
 		VisualRoot->RegisterComponent();
 
-		auto ResolveForcedTextureMaterial = [VisualActor, Assets](
+		auto ResolveForcedTextureMaterial = [VisualActor](
 			UTexture* Texture,
-			const TCHAR* TexturePath,
+			UMaterialInterface* EnvironmentUnlitMaterial,
 			UMaterialInterface* FallbackMaterial,
 			const TCHAR* FallbackMaterialPath,
 			const TCHAR* DebugName) -> FResolvedFarmMaterial
 		{
-			UMaterialInterface* EnvironmentUnlitMaterial = Assets.EnvironmentUnlitMaterial;
-			if (!EnvironmentUnlitMaterial)
-			{
-				EnvironmentUnlitMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
-			}
-			if (!Texture && TexturePath)
-			{
-				Texture = LoadObject<UTexture>(nullptr, TexturePath);
-			}
-
 			if (EnvironmentUnlitMaterial && Texture)
 			{
 				if (UMaterialInstanceDynamic* ForcedMaterial = UMaterialInstanceDynamic::Create(EnvironmentUnlitMaterial, VisualActor, FName(DebugName)))
@@ -1805,11 +1795,6 @@ namespace T66MainMapTerrain
 					ForcedMaterial->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White);
 					return { ForcedMaterial, true };
 				}
-			}
-
-			if (!FallbackMaterial && FallbackMaterialPath)
-			{
-				FallbackMaterial = LoadObject<UMaterialInterface>(nullptr, FallbackMaterialPath);
 			}
 
 			if (FallbackMaterial)
@@ -1844,19 +1829,19 @@ namespace T66MainMapTerrain
 
 		const FResolvedFarmMaterial InitialBlockMaterial = ResolveForcedTextureMaterial(
 			Assets.BlockTexture,
-			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"),
+			Assets.EnvironmentUnlitMaterial,
 			Assets.BlockMaterial,
 			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"),
 			TEXT("FarmBlockMID"));
 		const FResolvedFarmMaterial InitialSlopeMaterial = ResolveForcedTextureMaterial(
 			Assets.SlopeTexture,
-			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope"),
+			Assets.EnvironmentUnlitMaterial,
 			Assets.SlopeMaterial,
 			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"),
 			TEXT("FarmSlopeMID"));
 		const FResolvedFarmMaterial InitialDirtMaterial = ResolveForcedTextureMaterial(
 			Assets.DirtTexture,
-			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt"),
+			Assets.EnvironmentUnlitMaterial,
 			Assets.DirtMaterial ? Assets.DirtMaterial : Assets.BlockMaterial,
 			Assets.DirtMaterial
 				? TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt")
@@ -1864,7 +1849,7 @@ namespace T66MainMapTerrain
 			TEXT("FarmDirtMID"));
 		const FResolvedFarmMaterial InitialWallMaterial = ResolveForcedTextureMaterial(
 			Assets.WallTexture,
-			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall"),
+			Assets.EnvironmentUnlitMaterial,
 			Assets.WallMaterial,
 			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"),
 			TEXT("FarmWallMID"));
@@ -1890,19 +1875,19 @@ namespace T66MainMapTerrain
 
 			const FResolvedFarmMaterial BlockMaterial = ResolveForcedTextureMaterial(
 				Assets.BlockTexture,
-				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"),
+				Assets.EnvironmentUnlitMaterial,
 				Assets.BlockMaterial,
 				TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"),
 				TEXT("FarmBlockMID"));
 			const FResolvedFarmMaterial SlopeMaterial = ResolveForcedTextureMaterial(
 				Assets.SlopeTexture,
-				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope"),
+				Assets.EnvironmentUnlitMaterial,
 				Assets.SlopeMaterial,
 				TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"),
 				TEXT("FarmSlopeMID"));
 			const FResolvedFarmMaterial DirtMaterial = ResolveForcedTextureMaterial(
 				Assets.DirtTexture,
-				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt"),
+				Assets.EnvironmentUnlitMaterial,
 				Assets.DirtMaterial ? Assets.DirtMaterial : Assets.BlockMaterial,
 				Assets.DirtMaterial
 					? TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt")
@@ -1910,7 +1895,7 @@ namespace T66MainMapTerrain
 				TEXT("FarmDirtMID"));
 			const FResolvedFarmMaterial WallMaterial = ResolveForcedTextureMaterial(
 				Assets.WallTexture,
-				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall"),
+				Assets.EnvironmentUnlitMaterial,
 				Assets.WallMaterial,
 				TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"),
 				TEXT("FarmWallMID"));
