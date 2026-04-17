@@ -4564,31 +4564,46 @@ void UT66GameplayHUDWidget::RefreshBossBar()
 	const bool bBossActive = RunState->GetBossActive();
 	if (BossBarContainerBox.IsValid())
 	{
-		BossBarContainerBox->SetVisibility(bBossActive ? EVisibility::Visible : EVisibility::Collapsed);
+		const EVisibility DesiredVisibility = bBossActive ? EVisibility::Visible : EVisibility::Collapsed;
+		if (BossBarContainerBox->GetVisibility() != DesiredVisibility)
+		{
+			BossBarContainerBox->SetVisibility(DesiredVisibility);
+		}
 	}
 
 	if (bBossActive)
 	{
 		const int32 BossHP = RunState->GetBossCurrentHP();
 		const int32 BossMax = FMath::Max(1, RunState->GetBossMaxHP());
-		const float Pct = static_cast<float>(BossHP) / static_cast<float>(BossMax);
-		if (BossBarFillBox.IsValid())
+		if (!bLastBossBarVisible || BossHP != LastDisplayedBossCurrentHP || BossMax != LastDisplayedBossMaxHP)
 		{
-			BossBarFillBox->SetWidthOverride(FMath::Clamp(BossBarWidth * Pct, 0.f, BossBarWidth));
+			const float Pct = static_cast<float>(BossHP) / static_cast<float>(BossMax);
+			if (BossBarFillBox.IsValid())
+			{
+				BossBarFillBox->SetWidthOverride(FMath::Clamp(BossBarWidth * Pct, 0.f, BossBarWidth));
+			}
+			if (BossBarText.IsValid())
+			{
+				BossBarText->SetText(FText::Format(
+					NSLOCTEXT("T66.Common", "Fraction", "{0}/{1}"),
+					FText::AsNumber(BossHP),
+					FText::AsNumber(BossMax)));
+			}
+
+			LastDisplayedBossCurrentHP = BossHP;
+			LastDisplayedBossMaxHP = BossMax;
 		}
-		if (BossBarText.IsValid())
-		{
-			BossBarText->SetText(FText::Format(
-				NSLOCTEXT("T66.Common", "Fraction", "{0}/{1}"),
-				FText::AsNumber(BossHP),
-				FText::AsNumber(BossMax)));
-		}
+		bLastBossBarVisible = true;
 
 		if (BossPartBarsBox.IsValid())
 		{
 			const TArray<FT66BossPartSnapshot>& BossParts = RunState->GetBossPartSnapshots();
 			const bool bShowPartBars = BossParts.Num() > 1;
-			BossPartBarsBox->SetVisibility(bShowPartBars ? EVisibility::Visible : EVisibility::Collapsed);
+			const EVisibility DesiredPartVisibility = bShowPartBars ? EVisibility::Visible : EVisibility::Collapsed;
+			if (BossPartBarsBox->GetVisibility() != DesiredPartVisibility)
+			{
+				BossPartBarsBox->SetVisibility(DesiredPartVisibility);
+			}
 
 			if (bShowPartBars)
 			{
@@ -4605,17 +4620,19 @@ void UT66GameplayHUDWidget::RefreshBossBar()
 					const int32 PartMaxHP = FMath::Max(1, Part.MaxHP);
 					const int32 PartCurrentHP = FMath::Clamp(Part.CurrentHP, 0, PartMaxHP);
 					const float PartPct = static_cast<float>(PartCurrentHP) / static_cast<float>(PartMaxHP);
+					const bool bPartAlive = Part.IsAlive();
 
-					if (Row.FillBox.IsValid())
+					if (Row.FillBox.IsValid() && (Row.LastCurrentHP != PartCurrentHP || Row.LastMaxHP != PartMaxHP))
 					{
 						Row.FillBox->SetWidthOverride(FMath::Clamp(BossBarWidth * PartPct, 0.f, BossBarWidth));
-						if (Row.FillBorder.IsValid())
-						{
-							Row.FillBorder->SetBorderBackgroundColor(GetBossPartFillColor(Part.HitZoneType, Part.IsAlive()));
-						}
 					}
 
-					if (Row.Text.IsValid())
+					if (Row.FillBorder.IsValid() && (Row.bLastAlive != bPartAlive || Row.LastCurrentHP == INDEX_NONE))
+					{
+						Row.FillBorder->SetBorderBackgroundColor(GetBossPartFillColor(Part.HitZoneType, bPartAlive));
+					}
+
+					if (Row.Text.IsValid() && (Row.LastCurrentHP != PartCurrentHP || Row.LastMaxHP != PartMaxHP))
 					{
 						Row.Text->SetText(FText::Format(
 							NSLOCTEXT("T66.GameplayHUD", "BossPartFraction", "{0} {1}/{2}"),
@@ -4623,13 +4640,23 @@ void UT66GameplayHUDWidget::RefreshBossBar()
 							FText::AsNumber(PartCurrentHP),
 							FText::AsNumber(PartMaxHP)));
 					}
+
+					Row.LastCurrentHP = PartCurrentHP;
+					Row.LastMaxHP = PartMaxHP;
+					Row.bLastAlive = bPartAlive;
 				}
 			}
 		}
 	}
-	else if (BossPartBarsBox.IsValid())
+	else
 	{
-		BossPartBarsBox->SetVisibility(EVisibility::Collapsed);
+		if (BossPartBarsBox.IsValid())
+		{
+			BossPartBarsBox->SetVisibility(EVisibility::Collapsed);
+		}
+		LastDisplayedBossCurrentHP = INDEX_NONE;
+		LastDisplayedBossMaxHP = INDEX_NONE;
+		bLastBossBarVisible = false;
 	}
 }
 

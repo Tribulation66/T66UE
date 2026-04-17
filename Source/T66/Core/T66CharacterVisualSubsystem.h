@@ -71,6 +71,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
 	static FName GetCompanionVisualID(FName CompanionID, FName SkinID);
 
+	/** Resolve the canonical fallback visual row ID (e.g. Hero_1_TypeA_Skin -> Hero_1_TypeA). */
+	static FName GetFallbackVisualID(FName VisualID);
+
 	/** Preload a visual mapping (loads assets synchronously once and caches). */
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
 	void PreloadCharacterVisual(FName VisualID);

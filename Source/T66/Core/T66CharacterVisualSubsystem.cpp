@@ -495,7 +495,7 @@ static UAnimationAsset* LoadAnimationFallbackStripPackageAnimSuffix(const TSoftO
 	return nullptr;
 }
 
-static FName T66GetFallbackVisualID(FName VisualID)
+FName UT66CharacterVisualSubsystem::GetFallbackVisualID(FName VisualID)
 {
 	if (VisualID.IsNone())
 	{
@@ -649,7 +649,7 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 	FT66CharacterVisualRow* Row = DT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("ResolveVisual"));
 	if (!Row)
 	{
-		const FName FallbackVisualID = T66GetFallbackVisualID(VisualID);
+		const FName FallbackVisualID = GetFallbackVisualID(VisualID);
 		if (!FallbackVisualID.IsNone())
 		{
 			if (FT66CharacterVisualRow* FallbackRow = DT->FindRow<FT66CharacterVisualRow>(FallbackVisualID, TEXT("ResolveVisualFallback")))

@@ -38,6 +38,9 @@ struct FT66BossPartBarRow
 	TSharedPtr<SBox> FillBox;
 	TSharedPtr<SBorder> FillBorder;
 	TSharedPtr<STextBlock> Text;
+	int32 LastCurrentHP = INDEX_NONE;
+	int32 LastMaxHP = INDEX_NONE;
+	bool bLastAlive = false;
 };
 
 /**
@@ -360,6 +363,9 @@ protected:
 	TArray<FQueuedChestReward> QueuedChestRewards;
 	TArray<FQueuedPickupCard> QueuedPickupCards;
 	int32 LastDisplayedSpeedRunTotalCs = -1;
+	int32 LastDisplayedBossCurrentHP = INDEX_NONE;
+	int32 LastDisplayedBossMaxHP = INDEX_NONE;
+	bool bLastBossBarVisible = false;
 	bool bPortraitStateInitialized = false;
 	bool bLastPortraitHasRef = false;
 	FName LastPortraitHeroID = NAME_None;

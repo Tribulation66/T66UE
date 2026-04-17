@@ -51,6 +51,7 @@ public:
 	FName GetPendingBossID() const { return PendingBossID; }
 	AT66MiniEnemyBase* GetActiveBossEnemy() const;
 	AT66MiniPlayerPawn* FindClosestPlayerPawn(const FVector& WorldLocation, bool bRequireAlive) const;
+	const TArray<TObjectPtr<AT66MiniPlayerPawn>>& GetLivePlayerPawns() const { return LivePlayerPawns; }
 	const TArray<TObjectPtr<AT66MiniEnemyBase>>& GetLiveEnemies() const { return LiveEnemies; }
 	const TArray<TObjectPtr<AT66MiniInteractable>>& GetLiveInteractables() const { return LiveInteractables; }
 	const TArray<TObjectPtr<AT66MiniPickup>>& GetLivePickups() const { return LivePickups; }
@@ -92,6 +93,7 @@ private:
 	void CapturePartyPlayerSnapshots(UT66MiniRunSaveGame* RunSave) const;
 	void CaptureWorldState(UT66MiniRunSaveGame* RunSave) const;
 	void PersistActiveRunSnapshot(bool bMarkMidWaveSnapshot);
+	void UpdateLivePlayerPawnCache();
 	void UpdateLiveEnemyCache();
 	void UpdateLiveTrapCache();
 	void UpdateLiveInteractableCache();
@@ -125,6 +127,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<AT66MiniGroundTelegraphActor> ActiveBossTelegraphActor;
+
+	UPROPERTY()
+	TArray<TObjectPtr<AT66MiniPlayerPawn>> LivePlayerPawns;
 
 	UPROPERTY()
 	TArray<TObjectPtr<AT66MiniEnemyBase>> LiveEnemies;

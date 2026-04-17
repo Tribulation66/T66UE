@@ -38,6 +38,11 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Style, Log, All);
 
+namespace
+{
+	TSet<TWeakObjectPtr<UUserWidget>> GDeferredRebuildWidgets;
+}
+
 TSharedPtr<FSlateStyleSet> FT66Style::StyleInstance;
 
 // --- Colors (dark presentation) ---
@@ -2368,10 +2373,25 @@ void FT66Style::DeferRebuild(UUserWidget* Widget, int32 ZOrder)
 	if (!World || World->bIsTearingDown || GExitPurge || IsGarbageCollecting()) return;
 
 	TWeakObjectPtr<UUserWidget> Weak(Widget);
+	for (auto It = GDeferredRebuildWidgets.CreateIterator(); It; ++It)
+	{
+		if (!It->IsValid())
+		{
+			It.RemoveCurrent();
+		}
+	}
+	if (GDeferredRebuildWidgets.Contains(Weak))
+	{
+		return;
+	}
+
+	GDeferredRebuildWidgets.Add(Weak);
 	TWeakObjectPtr<UWorld> WeakWorld(World);
 	World->GetTimerManager().SetTimerForNextTick(
 		FTimerDelegate::CreateLambda([Weak, WeakWorld, ZOrder]()
 		{
+			GDeferredRebuildWidgets.Remove(Weak);
+
 			UWorld* LocalWorld = WeakWorld.Get();
 			UUserWidget* W = Weak.Get();
 			if (!W || !LocalWorld || LocalWorld->bIsTearingDown || GExitPurge || IsGarbageCollecting()) return;

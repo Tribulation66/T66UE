@@ -942,6 +942,13 @@ namespace T66MainMapTerrain
 
 		static bool LoadAssets(FLoadedAssets& OutAssets)
 		{
+			static FLoadedAssets CachedLoadedAssets;
+			if (IsValid(CachedLoadedAssets.BlockMesh) && IsValid(CachedLoadedAssets.SlopeMesh))
+			{
+				OutAssets = CachedLoadedAssets;
+				return true;
+			}
+
 			OutAssets.BlockMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkBlock.SM_MegabonkBlock"));
 			OutAssets.SlopeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkSlope.SM_MegabonkSlope"));
 			if (!OutAssets.BlockMesh || !OutAssets.SlopeMesh)
@@ -995,6 +1002,7 @@ namespace T66MainMapTerrain
 				OutAssets.TreeMesh3 ? TEXT("yes") : TEXT("no"),
 				OutAssets.RockMesh1 ? TEXT("yes") : TEXT("no"),
 				OutAssets.RockMesh2 ? TEXT("yes") : TEXT("no"));
+			CachedLoadedAssets = OutAssets;
 			return true;
 		}
 	}

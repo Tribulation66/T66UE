@@ -1269,7 +1269,18 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		}
 
 		UDataTable* VisualsDT = GetCharacterVisualsDataTable();
-		const FT66CharacterVisualRow* VisualRow = VisualsDT ? VisualsDT->FindRow<FT66CharacterVisualRow>(VisualID, TEXT("PreloadGameplayAssets")) : nullptr;
+		FName ResolvedVisualID = VisualID;
+		const FT66CharacterVisualRow* VisualRow = VisualsDT ? VisualsDT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("PreloadGameplayAssets")) : nullptr;
+		if (!VisualRow)
+		{
+			const FName FallbackVisualID = UT66CharacterVisualSubsystem::GetFallbackVisualID(VisualID);
+			if (!FallbackVisualID.IsNone())
+			{
+				ResolvedVisualID = FallbackVisualID;
+				VisualRow = VisualsDT ? VisualsDT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("PreloadGameplayAssetsFallback")) : nullptr;
+			}
+		}
+
 		if (!VisualRow)
 		{
 			return;

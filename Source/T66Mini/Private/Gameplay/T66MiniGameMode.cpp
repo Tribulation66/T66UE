@@ -72,6 +72,28 @@ namespace
 			return PlayerPawns;
 		}
 
+		if (const AT66MiniGameMode* MiniGameMode = World->GetAuthGameMode<AT66MiniGameMode>())
+		{
+			const TArray<TObjectPtr<AT66MiniPlayerPawn>>& CachedPlayerPawns = MiniGameMode->GetLivePlayerPawns();
+			if (CachedPlayerPawns.Num() > 0)
+			{
+				for (AT66MiniPlayerPawn* PlayerPawn : CachedPlayerPawns)
+				{
+					if (!PlayerPawn || (bOnlyLiving && !PlayerPawn->IsHeroAlive()))
+					{
+						continue;
+					}
+
+					PlayerPawns.Add(PlayerPawn);
+				}
+
+				if (PlayerPawns.Num() > 0 || !bOnlyLiving)
+				{
+					return PlayerPawns;
+				}
+			}
+		}
+
 		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 		{
 			APlayerController* PlayerController = It->Get();
@@ -266,6 +288,7 @@ void AT66MiniGameMode::BeginPlay()
 	}
 
 	SpawnArenaAndPositionPlayer();
+	UpdateLivePlayerPawnCache();
 	PositionPartyPawns();
 	TryApplySavedPawnState();
 	SpawnCompanionActor();
@@ -293,6 +316,7 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 	UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
 	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
+	UpdateLivePlayerPawnCache();
 	PositionPartyPawns();
 	UpdateCombatTexts(DeltaSeconds);
 	if (!RunState || !DataSubsystem || !MiniGameState || !ActiveRun)
@@ -1605,6 +1629,24 @@ void AT66MiniGameMode::UpdateLiveEnemyCache()
 		if (!IsValid(LiveEnemies[Index]) || LiveEnemies[Index]->IsEnemyDead())
 		{
 			LiveEnemies.RemoveAtSwap(Index);
+		}
+	}
+}
+
+void AT66MiniGameMode::UpdateLivePlayerPawnCache()
+{
+	LivePlayerPawns.Reset();
+
+	if (UWorld* World = GetWorld())
+	{
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			APlayerController* PlayerController = It->Get();
+			AT66MiniPlayerPawn* PlayerPawn = PlayerController ? Cast<AT66MiniPlayerPawn>(PlayerController->GetPawn()) : nullptr;
+			if (PlayerPawn)
+			{
+				LivePlayerPawns.AddUnique(PlayerPawn);
+			}
 		}
 	}
 }
