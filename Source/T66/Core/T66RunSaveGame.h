@@ -8,6 +8,7 @@
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66BossPartTypes.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
+#include "Core/T66RunIntegrityTypes.h"
 #include "T66RunSaveGame.generated.h"
 
 USTRUCT(BlueprintType)
@@ -294,6 +295,19 @@ struct T66_API FT66AntiCheatGamblerEvent
 };
 
 USTRUCT(BlueprintType)
+struct T66_API FT66SavedSecondaryStatBonusEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	ET66SecondaryStatType StatType = ET66SecondaryStatType::None;
+
+	/** Fixed-point tenths of accumulated secondary stat points. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 BonusTenths = 0;
+};
+
+USTRUCT(BlueprintType)
 struct T66_API FT66SavedRunSnapshot
 {
 	GENERATED_BODY()
@@ -392,7 +406,19 @@ struct T66_API FT66SavedRunSnapshot
 	FT66HeroStatBlock HeroStats;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FT66HeroPreciseStatBlock HeroPreciseStats;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 HeroStatRngCurrentSeed = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	TArray<FT66SavedSecondaryStatBonusEntry> PersistentSecondaryStatBonusEntries;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 PowerCrystalsEarnedThisRun = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 PowerCrystalsGrantedToWalletThisRun = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	float CompanionHealingDoneThisRun = 0.f;
@@ -537,7 +563,7 @@ class T66_API UT66RunSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 7;
+	int32 SaveVersion = 9;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FName HeroID;
@@ -595,6 +621,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	bool bRunIneligibleForLeaderboard = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FT66RunIntegrityContext IntegrityContext;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	TArray<FT66SavedPartyPlayerState> SavedPartyPlayers;

@@ -129,6 +129,8 @@ private:
 	void HandlePartyStateChanged();
 	void HandleSessionStateChanged();
 	void SyncToSharedPartyScreen();
+	FString BuildShopUiStateKey() const;
+	void RequestShopRebuildIfStateChanged();
 	bool IsOnlineMiniParty(bool* bOutIsHost = nullptr) const;
 	bool ResolveLocalPartyIdentity(FString& OutPlayerId, FString& OutDisplayName) const;
 	void ResetMiniIntermissionTransport() const;
@@ -144,6 +146,7 @@ private:
 	FText CurrentStatusText;
 	EMiniCircusTab ActiveTab = EMiniCircusTab::Vendor;
 	int32 LastAppliedStateRevision = 0;
+	FString LastShopUiStateKey;
 	TMap<FString, int32> ProcessedRequestRevisionByPlayerId;
 	FDelegateHandle PartyStateChangedHandle;
 	FDelegateHandle SessionStateChangedHandle;

@@ -10,7 +10,7 @@ class UStaticMeshComponent;
 class UStaticMesh;
 
 /**
- * Treasure Chest: grants gold (rarity-scaled) or spawns a Mimic.
+ * Treasure Chest: reward rarity is rolled on open, or it spawns a Mimic.
  */
 UCLASS(Blueprintable)
 class T66_API AT66ChestInteractable : public AT66WorldInteractableBase

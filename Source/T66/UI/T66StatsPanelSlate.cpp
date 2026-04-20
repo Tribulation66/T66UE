@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "T66StatsPanelSlate.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -25,11 +26,6 @@ static FSlateFontInfo MakeStatsPanelHeadingFont(int32 FontSizeAdjustment)
 	FSlateFontInfo Font = FT66Style::Tokens::FontHeading();
 	Font.Size = AdjustStatsPanelFontSize(Font.Size, FontSizeAdjustment);
 	return Font;
-}
-
-static FSlateFontInfo MakeStatsPanelCategoryFont(int32 FontSizeAdjustment)
-{
-	return FT66Style::Tokens::FontBold(AdjustStatsPanelFontSize(17, FontSizeAdjustment));
 }
 
 static FSlateFontInfo MakeStatsPanelBodyFont(int32 FontSizeAdjustment)
@@ -90,23 +86,6 @@ struct FSecondaryStatCategory
 	int32 Num;
 	EDerivedStatLine DerivedLine = EDerivedStatLine::None;
 	int32 PrimaryStatIndex = INDEX_NONE;
-};
-
-struct FPrimaryStatAdjectiveDescriptor
-{
-	FText Label;
-	FLinearColor Color = FT66Style::Tokens::Text;
-};
-
-enum class EStatAdjectiveRank : uint8
-{
-	Terrible,
-	Bad,
-	Mid,
-	Good,
-	Great,
-	Excellent,
-	Godlike,
 };
 
 static const int32 CatDamage[] =
@@ -189,50 +168,7 @@ static FText GetPrimaryStatLabel(UT66LocalizationSubsystem* Loc, int32 Index)
 	}
 }
 
-static FPrimaryStatAdjectiveDescriptor MakeStatAdjectiveDescriptor(EStatAdjectiveRank Rank)
-{
-	switch (Rank)
-	{
-	case EStatAdjectiveRank::Terrible:
-		return {
-			NSLOCTEXT("T66.StatsPanel", "PrimaryStatAdjectiveTerrible", "Terrible"),
-			FLinearColor(0.83f, 0.26f, 0.26f, 1.0f)
-		};
-	case EStatAdjectiveRank::Bad:
-		return {
-			NSLOCTEXT("T66.StatsPanel", "PrimaryStatAdjectiveBad", "Bad"),
-			FLinearColor(0.91f, 0.48f, 0.24f, 1.0f)
-		};
-	case EStatAdjectiveRank::Mid:
-		return {
-			NSLOCTEXT("T66.StatsPanel", "PrimaryStatAdjectiveMid", "Mid"),
-			FLinearColor(0.90f, 0.78f, 0.33f, 1.0f)
-		};
-	case EStatAdjectiveRank::Good:
-		return {
-			NSLOCTEXT("T66.StatsPanel", "PrimaryStatAdjectiveGood", "Good"),
-			FLinearColor(0.46f, 0.82f, 0.40f, 1.0f)
-		};
-	case EStatAdjectiveRank::Great:
-		return {
-			NSLOCTEXT("T66.StatsPanel", "PrimaryStatAdjectiveGreat", "Great"),
-			FLinearColor(0.28f, 0.82f, 0.68f, 1.0f)
-		};
-	case EStatAdjectiveRank::Excellent:
-		return {
-			NSLOCTEXT("T66.StatsPanel", "PrimaryStatAdjectiveExcellent", "Excellent"),
-			FLinearColor(0.38f, 0.67f, 0.96f, 1.0f)
-		};
-	case EStatAdjectiveRank::Godlike:
-	default:
-		return {
-			NSLOCTEXT("T66.StatsPanel", "PrimaryStatAdjectiveGodlike", "Godlike"),
-			FLinearColor(0.99f, 0.86f, 0.36f, 1.0f)
-		};
-	}
-}
-
-static int32 GetPrimaryStatValue(const UT66RunStateSubsystem* RunState, int32 Index)
+static int32 GetRunStatePrimaryStatValue(const UT66RunStateSubsystem* RunState, int32 Index)
 {
 	if (!RunState)
 	{
@@ -253,68 +189,84 @@ static int32 GetPrimaryStatValue(const UT66RunStateSubsystem* RunState, int32 In
 	}
 }
 
-static FPrimaryStatAdjectiveDescriptor GetPrimaryStatAdjective(int32 Value)
+static int32 GetHeroBasePrimaryStatValue(const UT66RunStateSubsystem* RunState, int32 Index)
 {
-	const int32 ClampedValue = FMath::Max(1, Value);
-
-	if (ClampedValue <= 1)
+	if (!RunState || Index <= 0)
 	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Terrible);
-	}
-	if (ClampedValue <= 3)
-	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Bad);
-	}
-	if (ClampedValue <= 6)
-	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Mid);
-	}
-	if (ClampedValue <= 9)
-	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Good);
-	}
-	if (ClampedValue <= 13)
-	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Great);
-	}
-	if (ClampedValue <= 18)
-	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Excellent);
+		return 0;
 	}
 
-	return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Godlike);
+	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(RunState->GetGameInstance());
+	if (!T66GI || T66GI->SelectedHeroID.IsNone())
+	{
+		return GetRunStatePrimaryStatValue(RunState, Index);
+	}
+
+	FT66HeroStatBlock BaseStats;
+	FT66HeroPerLevelStatGains IgnoredGains;
+	if (!T66GI->GetHeroStatTuning(T66GI->SelectedHeroID, BaseStats, IgnoredGains))
+	{
+		return GetRunStatePrimaryStatValue(RunState, Index);
+	}
+
+	switch (Index)
+	{
+	case 1: return BaseStats.Damage;
+	case 2: return BaseStats.AttackSpeed;
+	case 3: return BaseStats.AttackScale;
+	case 4: return BaseStats.Accuracy;
+	case 5: return BaseStats.Armor;
+	case 6: return BaseStats.Evasion;
+	case 7: return BaseStats.Luck;
+	default: return 0;
+	}
 }
 
-static FPrimaryStatAdjectiveDescriptor GetRatioAdjective(float Ratio)
+static FText GetPrimaryStatAdjective(const UT66RunStateSubsystem* RunState, int32 Index)
 {
-	const float ClampedRatio = FMath::Max(0.f, Ratio);
-
-	if (ClampedRatio <= 0.50f)
+	if (!RunState || Index <= 0)
 	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Terrible);
-	}
-	if (ClampedRatio <= 0.85f)
-	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Bad);
-	}
-	if (ClampedRatio <= 1.00f)
-	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Mid);
-	}
-	if (ClampedRatio <= 1.25f)
-	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Good);
-	}
-	if (ClampedRatio <= 1.50f)
-	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Great);
-	}
-	if (ClampedRatio <= 2.00f)
-	{
-		return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Excellent);
+		return FText::GetEmpty();
 	}
 
-	return MakeStatAdjectiveDescriptor(EStatAdjectiveRank::Godlike);
+	const int32 BaseValue = FMath::Clamp(GetHeroBasePrimaryStatValue(RunState, Index), 1, 10);
+	const int32 CurrentValue = FMath::Clamp(GetRunStatePrimaryStatValue(RunState, Index), 1, UT66RunStateSubsystem::MaxHeroStatValue);
+	const float Innate01 = FMath::Clamp((static_cast<float>(BaseValue) - 1.f) / 9.f, 0.f, 1.f);
+	const float Growth01 = (CurrentValue > BaseValue)
+		? FMath::Clamp(
+			static_cast<float>(CurrentValue - BaseValue)
+				/ static_cast<float>(FMath::Max(1, UT66RunStateSubsystem::MaxHeroStatValue - BaseValue)),
+			0.f,
+			1.f)
+		: 0.f;
+	const float Effective01 = FMath::Max(Innate01, Growth01);
+
+	if (Effective01 >= 0.92f)
+	{
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjExcellent", "Excellent");
+	}
+	if (Effective01 >= 0.78f)
+	{
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjExceptional", "Exceptional");
+	}
+	if (Effective01 >= 0.62f)
+	{
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjGreat", "Great");
+	}
+	if (Effective01 >= 0.45f)
+	{
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjGood", "Good");
+	}
+	if (Effective01 >= 0.28f)
+	{
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjMid", "Mid");
+	}
+	if (Effective01 >= 0.12f)
+	{
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjPoor", "Poor");
+	}
+
+	return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjTerrible", "Terrible");
 }
 
 static bool IsSecondaryPercent(ET66SecondaryStatType SecType)
@@ -330,16 +282,6 @@ static bool IsSecondaryPercent(ET66SecondaryStatType SecType)
 		|| SecType == ET66SecondaryStatType::DamageReduction
 		|| SecType == ET66SecondaryStatType::EvasionChance
 		|| SecType == ET66SecondaryStatType::Accuracy;
-}
-
-static FText FormatBonusPercent(float BonusRatio)
-{
-	return FText::FromString(FString::Printf(TEXT("+%d%%"), FMath::RoundToInt(FMath::Max(0.f, BonusRatio) * 100.f)));
-}
-
-static FText FormatPercent01(float Value01)
-{
-	return FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(FMath::Max(0.f, Value01) * 100.f)));
 }
 
 static float GetArmorReductionFromStatValue(int32 ArmorStat)
@@ -428,125 +370,99 @@ static float GetDerivedStatValueFromSnapshot(const UT66LeaderboardRunSummarySave
 	}
 }
 
-static FText FormatSecondaryValue(const UT66RunStateSubsystem* RunState, ET66SecondaryStatType SecType, float Value)
+static FText FormatDisplayedValueOutOf99(int32 Value)
 {
-	if (IsSecondaryPercent(SecType))
-	{
-		return FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(Value * 100.f)));
-	}
-
-	if (RunState)
-	{
-		const float BaselineValue = RunState->GetSecondaryStatBaselineValue(SecType);
-		if (BaselineValue > KINDA_SMALL_NUMBER)
-		{
-			return FormatBonusPercent((Value / BaselineValue) - 1.f);
-		}
-	}
-
-	return FText::FromString(FString::Printf(TEXT("%.1f"), Value));
+	return FText::Format(
+		NSLOCTEXT("T66.StatsPanel", "ValueOutOf99", "{0}/99"),
+		FText::AsNumber(FMath::Clamp(Value, 0, UT66RunStateSubsystem::MaxHeroStatValue)));
 }
 
-static float GetAbsoluteSecondaryCap(ET66SecondaryStatType SecType)
+static FText FormatDisplayedSecondaryStatValue(ET66SecondaryStatType SecType, float Value)
 {
-	switch (SecType)
-	{
-	case ET66SecondaryStatType::DamageReduction:
-		return 0.80f;
-	case ET66SecondaryStatType::EvasionChance:
-		return 0.60f;
-	case ET66SecondaryStatType::CritChance:
-	case ET66SecondaryStatType::ReflectDamage:
-	case ET66SecondaryStatType::Crush:
-	case ET66SecondaryStatType::Invisibility:
-	case ET66SecondaryStatType::CounterAttack:
-	case ET66SecondaryStatType::Assassinate:
-	case ET66SecondaryStatType::Cheating:
-	case ET66SecondaryStatType::Stealing:
-	case ET66SecondaryStatType::Accuracy:
-		return 1.0f;
-	default:
-		return 5.0f;
-	}
+	const int32 DisplayValue = IsSecondaryPercent(SecType)
+		? FMath::CeilToInt(FMath::Max(0.f, Value) * 100.f)
+		: FMath::CeilToInt(FMath::Max(0.f, Value));
+
+	return FormatDisplayedValueOutOf99(DisplayValue);
 }
 
-static FPrimaryStatAdjectiveDescriptor GetSecondaryStatAdjective(
-	const UT66RunStateSubsystem* RunState,
-	ET66SecondaryStatType SecType,
-	float Value)
-{
-	if (RunState)
-	{
-		const float BaselineValue = RunState->GetSecondaryStatBaselineValue(SecType);
-		if (BaselineValue > KINDA_SMALL_NUMBER)
-		{
-			return GetRatioAdjective(Value / BaselineValue);
-		}
-	}
-
-	const float AbsoluteCap = FMath::Max(KINDA_SMALL_NUMBER, GetAbsoluteSecondaryCap(SecType));
-	return GetRatioAdjective(Value / AbsoluteCap);
-}
-
-static FPrimaryStatAdjectiveDescriptor GetDerivedStatAdjective(EDerivedStatLine DerivedLine, float Value)
+static FText FormatDisplayedDerivedStatValue(EDerivedStatLine DerivedLine, float Value)
 {
 	switch (DerivedLine)
 	{
 	case EDerivedStatLine::ArmorReduction:
-		return GetRatioAdjective(Value / 0.80f);
 	case EDerivedStatLine::EvasionChance:
-		return GetRatioAdjective(Value / 0.60f);
+		return FormatDisplayedValueOutOf99(FMath::CeilToInt(FMath::Max(0.f, Value) * 100.f));
 	case EDerivedStatLine::None:
 	default:
-		return GetRatioAdjective(Value);
+		return FormatDisplayedValueOutOf99(FMath::CeilToInt(FMath::Max(0.f, Value)));
 	}
 }
 
 static TSharedRef<SWidget> MakeStatsPanelLineContent(
 	const FText& LineText,
 	const FTextBlockStyle& TextStyle,
-	const FSlateFontInfo& Font,
-	const TOptional<FPrimaryStatAdjectiveDescriptor>& Adjective = TOptional<FPrimaryStatAdjectiveDescriptor>())
+	const FSlateFontInfo& Font)
 {
-	if (!Adjective.IsSet())
+	return SNew(STextBlock)
+		.Text(LineText)
+		.TextStyle(&TextStyle)
+		.Font(Font)
+		.ColorAndOpacity(FT66Style::Tokens::Text);
+}
+
+static FText FormatDisplayedPrimaryStatValue(int32 Index, int32 Value)
+{
+	return FormatDisplayedValueOutOf99(Value);
+}
+
+static FText FormatPrimaryStatLineText(
+	UT66LocalizationSubsystem* Loc,
+	const UT66RunStateSubsystem* RunState,
+	int32 Index,
+	bool bIncludeAdjective)
+{
+	const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.StatsPanel", "StatLineFormat", "{0}: {1}");
+	const FText Label = GetPrimaryStatLabel(Loc, Index);
+	const FText ValueText = FormatDisplayedPrimaryStatValue(Index, GetRunStatePrimaryStatValue(RunState, Index));
+	if (!bIncludeAdjective || Index == 0 || !RunState)
 	{
-		return SNew(STextBlock)
-			.Text(LineText)
-			.TextStyle(&TextStyle)
-			.Font(Font)
-			.ColorAndOpacity(FT66Style::Tokens::Text);
+		return FText::Format(StatFmt, Label, ValueText);
 	}
 
-	return SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.VAlign(VAlign_Center)
-		[
-			SNew(STextBlock)
-			.Text(FText::Format(
-				NSLOCTEXT("T66.StatsPanel", "LineWithAdjectivePrefix", "{0} -"),
-				LineText))
-			.TextStyle(&TextStyle)
-			.Font(Font)
-			.ColorAndOpacity(FT66Style::Tokens::Text)
-		]
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.VAlign(VAlign_Center)
-		.Padding(6.f, 0.f, 0.f, 0.f)
-		[
-			SNew(STextBlock)
-			.Text(Adjective->Label)
-			.TextStyle(&TextStyle)
-			.Font(Font)
-			.ColorAndOpacity(Adjective->Color)
-		];
+	const FText Adjective = GetPrimaryStatAdjective(RunState, Index);
+	return FText::Format(
+		NSLOCTEXT("T66.StatsPanel", "PrimaryStatLineWithAdjective", "{0}: {1} ({2})"),
+		Label,
+		ValueText,
+		Adjective);
+}
+
+static FText FormatCategoryHeaderText(
+	UT66LocalizationSubsystem* Loc,
+	const UT66RunStateSubsystem* RunState,
+	const FSecondaryStatCategory& Category)
+{
+	const FText Label = (Category.PrimaryStatIndex != INDEX_NONE && Loc)
+		? GetPrimaryStatLabel(Loc, Category.PrimaryStatIndex)
+		: Category.Header;
+	if (!RunState || Category.PrimaryStatIndex == INDEX_NONE)
+	{
+		return Label;
+	}
+
+	return FText::Format(
+		NSLOCTEXT("T66.StatsPanel", "CategoryHeaderWithValue", "{0}: {1}"),
+		Label,
+		FormatDisplayedPrimaryStatValue(Category.PrimaryStatIndex, GetRunStatePrimaryStatValue(RunState, Category.PrimaryStatIndex)));
 }
 
 void T66StatsPanelSlate::FT66LiveStatsPanel::Reset()
 {
 	PrimaryLines.Empty();
 	PrimaryLines.SetNum(8);
+	CategoryHeaderLines.Empty();
+	CategoryHeaderLines.SetNum(NumSecondaryStatCategories);
 	SecondaryLines.Reset();
 	ArmorReductionLine.Reset();
 	EvasionChanceLine.Reset();
@@ -554,16 +470,26 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Reset()
 
 void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc) const
 {
-	const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
+	const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.StatsPanel", "StatLineFormat", "{0}: {1}");
 
-	auto SetPrimaryLine = [&](int32 Index, int32 Value)
+	auto SetPrimaryLine = [&](int32 Index)
 	{
 		if (!PrimaryLines.IsValidIndex(Index) || !PrimaryLines[Index].IsValid())
 		{
 			return;
 		}
 
-		PrimaryLines[Index]->SetText(FText::Format(StatFmt, GetPrimaryStatLabel(Loc, Index), FText::AsNumber(Value)));
+		PrimaryLines[Index]->SetText(FormatPrimaryStatLineText(Loc, RunState, Index, true));
+	};
+
+	auto SetCategoryHeaderLine = [&](int32 CategoryIndex, const FSecondaryStatCategory& Category)
+	{
+		if (!CategoryHeaderLines.IsValidIndex(CategoryIndex) || !CategoryHeaderLines[CategoryIndex].IsValid())
+		{
+			return;
+		}
+
+		CategoryHeaderLines[CategoryIndex]->SetText(FormatCategoryHeaderText(Loc, RunState, Category));
 	};
 
 	if (!RunState)
@@ -591,24 +517,27 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunSt
 		{
 			EvasionChanceLine->SetText(FText::GetEmpty());
 		}
+		for (const TSharedPtr<STextBlock>& HeaderLine : CategoryHeaderLines)
+		{
+			if (HeaderLine.IsValid())
+			{
+				HeaderLine->SetText(FText::GetEmpty());
+			}
+		}
 		return;
 	}
 
-	SetPrimaryLine(0, RunState->GetHeroLevel());
-	SetPrimaryLine(1, RunState->GetDamageStat());
-	SetPrimaryLine(2, RunState->GetAttackSpeedStat());
-	SetPrimaryLine(3, RunState->GetScaleStat());
-	SetPrimaryLine(4, RunState->GetAccuracyStat());
-	SetPrimaryLine(5, RunState->GetArmorStat());
-	SetPrimaryLine(6, RunState->GetEvasionStat());
-	SetPrimaryLine(7, RunState->GetLuckStat());
+	for (int32 Index = 0; Index < 8; ++Index)
+	{
+		SetPrimaryLine(Index);
+	}
 
 	if (ArmorReductionLine.IsValid())
 	{
 		ArmorReductionLine->SetText(FText::Format(
 			StatFmt,
 			GetDerivedStatLabel(EDerivedStatLine::ArmorReduction),
-			FormatPercent01(GetDerivedStatValue(RunState, EDerivedStatLine::ArmorReduction))));
+			FormatDisplayedDerivedStatValue(EDerivedStatLine::ArmorReduction, GetDerivedStatValue(RunState, EDerivedStatLine::ArmorReduction))));
 	}
 
 	if (EvasionChanceLine.IsValid())
@@ -616,7 +545,12 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunSt
 		EvasionChanceLine->SetText(FText::Format(
 			StatFmt,
 			GetDerivedStatLabel(EDerivedStatLine::EvasionChance),
-			FormatPercent01(GetDerivedStatValue(RunState, EDerivedStatLine::EvasionChance))));
+			FormatDisplayedDerivedStatValue(EDerivedStatLine::EvasionChance, GetDerivedStatValue(RunState, EDerivedStatLine::EvasionChance))));
+	}
+
+	for (int32 CategoryIndex = 0; CategoryIndex < NumSecondaryStatCategories; ++CategoryIndex)
+	{
+		SetCategoryHeaderLine(CategoryIndex, SecondaryStatCategories[CategoryIndex]);
 	}
 
 	for (const TPair<ET66SecondaryStatType, TSharedPtr<STextBlock>>& Pair : SecondaryLines)
@@ -629,7 +563,7 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunSt
 		const ET66SecondaryStatType SecType = Pair.Key;
 		const FText Label = Loc ? Loc->GetText_SecondaryStatName(SecType) : FText::FromString(TEXT("?"));
 		const float Value = RunState->GetSecondaryStatValue(SecType);
-		Pair.Value->SetText(FText::Format(StatFmt, Label, FormatSecondaryValue(RunState, SecType, Value)));
+		Pair.Value->SetText(FText::Format(StatFmt, Label, FormatDisplayedSecondaryStatValue(SecType, Value)));
 	}
 }
 
@@ -640,13 +574,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 	bool bExtended,
 	int32 FontSizeAdjustment,
 	int32 HeadingFontSizeAdjustment,
-	bool bShowAdjectiveSummaries)
+	bool /*bShowAdjectiveSummaries*/)
 {
 	const FText HeaderText = NSLOCTEXT("T66.StatsPanel", "Header", "STATS");
 	const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
 	const FTextBlockStyle& BodyStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 	const FSlateFontInfo HeadingFont = MakeStatsPanelHeadingFont(FontSizeAdjustment + HeadingFontSizeAdjustment);
-	const FSlateFontInfo CategoryHeadingFont = MakeStatsPanelCategoryFont(FontSizeAdjustment);
 	const FSlateFontInfo BodyFont = MakeStatsPanelBodyFont(FontSizeAdjustment);
 
 	TSharedRef<SVerticalBox> StatsBox = SNew(SVerticalBox);
@@ -662,12 +595,13 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 		const int32 EvasionStat = RunState->GetEvasionStat();
 		const int32 LuckStat = RunState->GetLuckStat();
 
-		auto AddStatLine = [&](const FText& Label, int32 Value, const FText& TooltipTitle, const FText& TooltipDesc)
+		auto AddStatLine = [&](int32 Index, const FText& Label, int32 Value, const FText& TooltipTitle, const FText& TooltipDesc)
 		{
-			const bool bAllowAdjective = !Label.EqualTo(GetPrimaryStatLabel(Loc, 0));
-			const TOptional<FPrimaryStatAdjectiveDescriptor> Adjective = bShowAdjectiveSummaries && bAllowAdjective
-				? TOptional<FPrimaryStatAdjectiveDescriptor>(GetPrimaryStatAdjective(Value))
-				: TOptional<FPrimaryStatAdjectiveDescriptor>();
+			FText LineText = FText::Format(StatFmt, Label, FormatDisplayedPrimaryStatValue(Index, Value));
+			if (Index > 0)
+			{
+				LineText = FormatPrimaryStatLineText(Loc, RunState, Index, true);
+			}
 
 			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
@@ -677,19 +611,15 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc, FontSizeAdjustment))
 				[
 					MakeStatsPanelLineContent(
-						FText::Format(StatFmt, Label, FText::AsNumber(Value)),
+						LineText,
 						BodyStyle,
-						BodyFont,
-						Adjective)
+						BodyFont)
 				]
 			];
 		};
 
-		auto AddStatLineFloat = [&](const FText& Label, float Value, bool bAsPercent, const FText& TooltipTitle, const FText& TooltipDesc, const TOptional<FPrimaryStatAdjectiveDescriptor>& Adjective = TOptional<FPrimaryStatAdjectiveDescriptor>())
+		auto AddStatLineFloat = [&](const FText& Label, const FText& ValueText, const FText& TooltipTitle, const FText& TooltipDesc)
 		{
-			FText ValueText = bAsPercent
-				? FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(Value * 100.f)))
-				: FText::FromString(FString::Printf(TEXT("%.1f"), Value));
 			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
 				SNew(SBorder)
@@ -700,20 +630,19 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 					MakeStatsPanelLineContent(
 						FText::Format(StatFmt, Label, ValueText),
 						BodyStyle,
-						BodyFont,
-						Adjective)
+						BodyFont)
 				]
 			];
 		};
 
-		AddStatLine(GetPrimaryStatLabel(Loc, 0), HeroLevel,       GetPrimaryStatLabel(Loc, 0), Loc ? Loc->GetText_PrimaryStatDescription(0) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 1), DamageStat,      GetPrimaryStatLabel(Loc, 1), Loc ? Loc->GetText_PrimaryStatDescription(1) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 2), AttackSpeedStat, GetPrimaryStatLabel(Loc, 2), Loc ? Loc->GetText_PrimaryStatDescription(2) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 3), AttackScaleStat, GetPrimaryStatLabel(Loc, 3), Loc ? Loc->GetText_PrimaryStatDescription(3) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 4), AccuracyStat,    GetPrimaryStatLabel(Loc, 4), Loc ? Loc->GetText_PrimaryStatDescription(4) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 5), ArmorStat,       GetPrimaryStatLabel(Loc, 5), Loc ? Loc->GetText_PrimaryStatDescription(5) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 6), EvasionStat,     GetPrimaryStatLabel(Loc, 6), Loc ? Loc->GetText_PrimaryStatDescription(6) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 7), LuckStat,        GetPrimaryStatLabel(Loc, 7), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty());
+		AddStatLine(0, GetPrimaryStatLabel(Loc, 0), HeroLevel,       GetPrimaryStatLabel(Loc, 0), Loc ? Loc->GetText_PrimaryStatDescription(0) : FText::GetEmpty());
+		AddStatLine(1, GetPrimaryStatLabel(Loc, 1), DamageStat,      GetPrimaryStatLabel(Loc, 1), Loc ? Loc->GetText_PrimaryStatDescription(1) : FText::GetEmpty());
+		AddStatLine(2, GetPrimaryStatLabel(Loc, 2), AttackSpeedStat, GetPrimaryStatLabel(Loc, 2), Loc ? Loc->GetText_PrimaryStatDescription(2) : FText::GetEmpty());
+		AddStatLine(3, GetPrimaryStatLabel(Loc, 3), AttackScaleStat, GetPrimaryStatLabel(Loc, 3), Loc ? Loc->GetText_PrimaryStatDescription(3) : FText::GetEmpty());
+		AddStatLine(4, GetPrimaryStatLabel(Loc, 4), AccuracyStat,    GetPrimaryStatLabel(Loc, 4), Loc ? Loc->GetText_PrimaryStatDescription(4) : FText::GetEmpty());
+		AddStatLine(5, GetPrimaryStatLabel(Loc, 5), ArmorStat,       GetPrimaryStatLabel(Loc, 5), Loc ? Loc->GetText_PrimaryStatDescription(5) : FText::GetEmpty());
+		AddStatLine(6, GetPrimaryStatLabel(Loc, 6), EvasionStat,     GetPrimaryStatLabel(Loc, 6), Loc ? Loc->GetText_PrimaryStatDescription(6) : FText::GetEmpty());
+		AddStatLine(7, GetPrimaryStatLabel(Loc, 7), LuckStat,        GetPrimaryStatLabel(Loc, 7), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty());
 
 		if (bExtended)
 		{
@@ -738,33 +667,10 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 
 			auto AddCategoryHeader = [&](const FSecondaryStatCategory& Category)
 			{
-				const FText Text = Category.PrimaryStatIndex != INDEX_NONE && Loc
-					? GetPrimaryStatLabel(Loc, Category.PrimaryStatIndex)
-					: Category.Header;
-
-				if (bShowAdjectiveSummaries && Category.PrimaryStatIndex != INDEX_NONE)
-				{
-					const int32 PrimaryStatValue = GetPrimaryStatValue(RunState, Category.PrimaryStatIndex);
-					const FPrimaryStatAdjectiveDescriptor Adjective = GetPrimaryStatAdjective(PrimaryStatValue);
-
-					StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
-					[
-						MakeStatsPanelLineContent(
-							FText::Format(
-								NSLOCTEXT("T66.StatsPanel", "CategoryHeaderSummary", "{0}: {1}"),
-								Text,
-								FText::AsNumber(PrimaryStatValue)),
-							HeadingStyle,
-							CategoryHeadingFont,
-							TOptional<FPrimaryStatAdjectiveDescriptor>(Adjective))
-					];
-					return;
-				}
-
 				StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 				[
 					SNew(STextBlock)
-					.Text(Text)
+					.Text(FormatCategoryHeaderText(Loc, RunState, Category))
 					.TextStyle(&HeadingStyle)
 					.Font(HeadingFont)
 					.ColorAndOpacity(FT66Style::Tokens::Text)
@@ -781,10 +687,11 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 					const FText DerivedLabel = GetDerivedStatLabel(Cat.DerivedLine);
 					const FText DerivedDesc = GetDerivedStatDescription(Cat.DerivedLine);
 					const float DerivedValue = GetDerivedStatValue(RunState, Cat.DerivedLine);
-					const TOptional<FPrimaryStatAdjectiveDescriptor> Adjective = bShowAdjectiveSummaries
-						? TOptional<FPrimaryStatAdjectiveDescriptor>(GetDerivedStatAdjective(Cat.DerivedLine, DerivedValue))
-						: TOptional<FPrimaryStatAdjectiveDescriptor>();
-					AddStatLineFloat(DerivedLabel, DerivedValue, true, DerivedLabel, DerivedDesc, Adjective);
+					AddStatLineFloat(
+						DerivedLabel,
+						FormatDisplayedDerivedStatValue(Cat.DerivedLine, DerivedValue),
+						DerivedLabel,
+						DerivedDesc);
 				}
 				for (int32 k = 0; k < Cat.Num; ++k)
 				{
@@ -792,12 +699,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 					const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
 					const FText Label = Loc->GetText_SecondaryStatName(SecType);
 					const float Value = RunState->GetSecondaryStatValue(SecType);
-					const bool bPercent = IsSecondaryPercent(SecType);
 					const FText SecDesc = Loc ? Loc->GetText_SecondaryStatDescription(SecType) : FText::GetEmpty();
-					const TOptional<FPrimaryStatAdjectiveDescriptor> Adjective = bShowAdjectiveSummaries
-						? TOptional<FPrimaryStatAdjectiveDescriptor>(GetSecondaryStatAdjective(RunState, SecType, Value))
-						: TOptional<FPrimaryStatAdjectiveDescriptor>();
-					AddStatLineFloat(Label, Value, bPercent, Label, SecDesc, Adjective);
+					AddStatLineFloat(
+						Label,
+						FormatDisplayedSecondaryStatValue(SecType, Value),
+						Label,
+						SecDesc);
 				}
 				AddHorizontalLine();
 			}
@@ -875,7 +782,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 		];
 	};
 
-	for (int32 Index = 0; Index < 7; ++Index)
+	for (int32 Index = 0; Index < 8; ++Index)
 	{
 		AddPrimaryLine(Index);
 	}
@@ -900,12 +807,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 			];
 		};
 
-		auto AddCategoryHeader = [&](const FText& Text)
+		auto AddCategoryHeader = [&](int32 CategoryIndex)
 		{
 			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
-				SNew(STextBlock)
-				.Text(Text)
+				SAssignNew(LivePanel->CategoryHeaderLines[CategoryIndex], STextBlock)
+				.Text(FText::GetEmpty())
 				.TextStyle(&HeadingStyle)
 				.Font(HeadingFont)
 				.ColorAndOpacity(FT66Style::Tokens::Text)
@@ -916,7 +823,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 		{
 			const FSecondaryStatCategory& Cat = SecondaryStatCategories[c];
 			AddHorizontalLine();
-			AddCategoryHeader(Cat.Header);
+			AddCategoryHeader(c);
 
 			if (Cat.DerivedLine != EDerivedStatLine::None)
 			{
@@ -1045,7 +952,6 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 	const FTextBlockStyle& BodyStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 	const FTextBlockStyle& HeadingStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
 	const FSlateFontInfo HeadingFont = MakeStatsPanelHeadingFont(Options.FontSizeAdjustment + Options.HeadingFontSizeAdjustment);
-	const FSlateFontInfo CategoryHeadingFont = MakeStatsPanelCategoryFont(Options.FontSizeAdjustment);
 	const FSlateFontInfo BodyFont = MakeStatsPanelBodyFont(Options.FontSizeAdjustment);
 	const bool bExtended = Options.bExtended;
 
@@ -1084,10 +990,6 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 			const FText Label = GetPrimaryStatLabel(Loc, Index);
 			const int32 Value = GetSnapshotPrimaryStatValue(Index);
 			const FText Description = Loc ? Loc->GetText_PrimaryStatDescription(Index) : FText::GetEmpty();
-			const bool bAllowAdjective = (Index != 0);
-			const TOptional<FPrimaryStatAdjectiveDescriptor> Adjective = Options.bShowAdjectiveSummaries && bAllowAdjective
-				? TOptional<FPrimaryStatAdjectiveDescriptor>(GetPrimaryStatAdjective(Value))
-				: TOptional<FPrimaryStatAdjectiveDescriptor>();
 
 			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
@@ -1097,19 +999,15 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 				.ToolTip(MakeT66Tooltip(Label, Description, Options.FontSizeAdjustment))
 				[
 					MakeStatsPanelLineContent(
-						FText::Format(StatFmt, Label, FText::AsNumber(Value)),
+						FText::Format(StatFmt, Label, FormatDisplayedPrimaryStatValue(Index, Value)),
 						BodyStyle,
-						BodyFont,
-						Adjective)
+						BodyFont)
 				]
 			];
 		};
 
-		auto AddSecondaryLine = [&](const FText& Label, float Value, bool bAsPercent, const FText& TooltipTitle, const FText& TooltipDesc, const TOptional<FPrimaryStatAdjectiveDescriptor>& Adjective)
+		auto AddSecondaryLine = [&](const FText& Label, const FText& ValueText, const FText& TooltipTitle, const FText& TooltipDesc)
 		{
-			const FText ValueText = bAsPercent
-				? FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(Value * 100.f)))
-				: FText::FromString(FString::Printf(TEXT("%.1f"), Value));
 			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
 				SNew(SBorder)
@@ -1120,8 +1018,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 					MakeStatsPanelLineContent(
 						FText::Format(StatFmt, Label, ValueText),
 						BodyStyle,
-						BodyFont,
-						Adjective)
+						BodyFont)
 				]
 			];
 		};
@@ -1152,25 +1049,13 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 
 			auto AddCategoryHeader = [&](const FSecondaryStatCategory& Category)
 			{
-				const FText Text = Category.PrimaryStatIndex != INDEX_NONE && Loc
-					? GetPrimaryStatLabel(Loc, Category.PrimaryStatIndex)
-					: Category.Header;
-
-				if (Options.bShowAdjectiveSummaries && Category.PrimaryStatIndex != INDEX_NONE)
+				FText Text = Category.Header;
+				if (Category.PrimaryStatIndex != INDEX_NONE)
 				{
-					const int32 PrimaryStatValue = GetSnapshotPrimaryStatValue(Category.PrimaryStatIndex);
-					StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
-					[
-						MakeStatsPanelLineContent(
-							FText::Format(
-								NSLOCTEXT("T66.StatsPanel", "CategoryHeaderSummary", "{0}: {1}"),
-								Text,
-								FText::AsNumber(PrimaryStatValue)),
-							HeadingStyle,
-							CategoryHeadingFont,
-							TOptional<FPrimaryStatAdjectiveDescriptor>(GetPrimaryStatAdjective(PrimaryStatValue)))
-					];
-					return;
+					Text = FText::Format(
+						NSLOCTEXT("T66.StatsPanel", "CategoryHeaderWithValue", "{0}: {1}"),
+						GetPrimaryStatLabel(Loc, Category.PrimaryStatIndex),
+						FormatDisplayedPrimaryStatValue(Category.PrimaryStatIndex, GetSnapshotPrimaryStatValue(Category.PrimaryStatIndex)));
 				}
 
 				StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
@@ -1194,10 +1079,11 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 					const FText DerivedLabel = GetDerivedStatLabel(Cat.DerivedLine);
 					const FText DerivedDesc = GetDerivedStatDescription(Cat.DerivedLine);
 					const float DerivedValue = GetDerivedStatValueFromSnapshot(Snapshot, Cat.DerivedLine);
-					const TOptional<FPrimaryStatAdjectiveDescriptor> Adjective = Options.bShowAdjectiveSummaries
-						? TOptional<FPrimaryStatAdjectiveDescriptor>(GetDerivedStatAdjective(Cat.DerivedLine, DerivedValue))
-						: TOptional<FPrimaryStatAdjectiveDescriptor>();
-					AddSecondaryLine(DerivedLabel, DerivedValue, true, DerivedLabel, DerivedDesc, Adjective);
+					AddSecondaryLine(
+						DerivedLabel,
+						FormatDisplayedDerivedStatValue(Cat.DerivedLine, DerivedValue),
+						DerivedLabel,
+						DerivedDesc);
 				}
 
 				for (int32 k = 0; k < Cat.Num; ++k)
@@ -1206,16 +1092,11 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 					const FText Label = Loc ? Loc->GetText_SecondaryStatName(SecType) : FText::FromString(TEXT("?"));
 					const float* P = Snapshot->SecondaryStatValues.Find(SecType);
 					const float Value = P ? *P : 0.f;
-					const TOptional<FPrimaryStatAdjectiveDescriptor> Adjective = Options.bShowAdjectiveSummaries
-						? TOptional<FPrimaryStatAdjectiveDescriptor>(GetSecondaryStatAdjective(nullptr, SecType, Value))
-						: TOptional<FPrimaryStatAdjectiveDescriptor>();
 					AddSecondaryLine(
 						Label,
-						Value,
-						IsSecondaryPercent(SecType),
+						FormatDisplayedSecondaryStatValue(SecType, Value),
 						Label,
-						Loc ? Loc->GetText_SecondaryStatDescription(SecType) : FText::GetEmpty(),
-						Adjective);
+						Loc ? Loc->GetText_SecondaryStatDescription(SecType) : FText::GetEmpty());
 				}
 
 				AddHorizontalLine();

@@ -7,6 +7,8 @@
 #include "T66FrontendGameMode.generated.h"
 
 class ACameraActor;
+class AT66HeroPreviewStage;
+class AT66CompanionPreviewStage;
 
 /**
  * Game Mode for the frontend/menu level
@@ -37,4 +39,7 @@ protected:
 	/** Camera that views the preview characters (set as the PlayerController's view target). */
 	UPROPERTY(Transient)
 	TObjectPtr<ACameraActor> PreviewCamera;
+
+	TWeakObjectPtr<AT66HeroPreviewStage> HeroPreviewStage;
+	TWeakObjectPtr<AT66CompanionPreviewStage> CompanionPreviewStage;
 };

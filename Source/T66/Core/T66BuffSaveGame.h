@@ -20,7 +20,7 @@ struct T66_API FT66TemporaryBuffPreset
 
 	FT66TemporaryBuffPreset()
 	{
-		SlotBuffs.Init(ET66SecondaryStatType::None, 5);
+		SlotBuffs.Init(ET66SecondaryStatType::None, 4);
 	}
 };
 
@@ -36,7 +36,7 @@ class T66_API UT66BuffSaveGame : public USaveGame
 	GENERATED_BODY()
 
 public:
-	/** SaveVersion 10 = collapsed named temp-buff presets into one 5-slot loadout; 9 = added primary Accuracy progression; 8 = named temp-buff presets; 7 = selected secondary single-use buffs; 6 = secondary-stat single-use buffs; 5 = unified Chad Coupons buffs; 4 = 10 fill steps; 3 = 6 body-part unlocks; 2 = 10-slot wedge tiers; 1 = legacy slice counts. */
+	/** SaveVersion 10 = collapsed named temp-buff presets into one temp-buff loadout; 9 = added primary Accuracy progression; 8 = named temp-buff presets; 7 = selected secondary single-use buffs; 6 = secondary-stat single-use buffs; 5 = unified Chad Coupons buffs; 4 = 10 fill steps; 3 = 6 body-part unlocks; 2 = 10-slot wedge tiers; 1 = legacy slice counts. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	int32 SaveVersion = 10;
 
@@ -106,7 +106,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	TArray<uint8> SelectedSingleUseBuffStates;
 
-	/** Live source of truth for the 5 temp-buff slots shown on hero selection. */
+	/** Live source of truth for the temp-buff slots shown on hero selection. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	TArray<ET66SecondaryStatType> SelectedSingleUseBuffSlots;
 

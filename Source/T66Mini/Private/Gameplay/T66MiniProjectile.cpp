@@ -6,6 +6,7 @@
 #include "Components/SphereComponent.h"
 #include "Core/T66MiniVFXSubsystem.h"
 #include "Engine/Texture2D.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Gameplay/T66MiniEnemyBase.h"
 #include "Gameplay/T66MiniGameMode.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
@@ -73,15 +74,14 @@ namespace
 
 AT66MiniProjectile::AT66MiniProjectile()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	SetReplicateMovement(true);
-
-	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
-	SetRootComponent(SceneRoot);
+	NetUpdateFrequency = 30.f;
+	MinNetUpdateFrequency = 15.f;
 
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
-	CollisionComponent->SetupAttachment(SceneRoot);
+	SetRootComponent(CollisionComponent);
 	CollisionComponent->InitSphereRadius(26.f);
 	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CollisionComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -89,11 +89,17 @@ AT66MiniProjectile::AT66MiniProjectile()
 	CollisionComponent->SetGenerateOverlapEvents(true);
 
 	SpriteComponent = CreateDefaultSubobject<UBillboardComponent>(TEXT("Sprite"));
-	SpriteComponent->SetupAttachment(SceneRoot);
+	SpriteComponent->SetupAttachment(CollisionComponent);
 	SpriteComponent->SetRelativeLocation(FVector(0.f, 0.f, 30.f));
 	SpriteComponent->SetRelativeScale3D(FVector(1.1f, 1.1f, 1.1f));
 	SpriteComponent->SetHiddenInGame(false, true);
 	SpriteComponent->SetVisibility(true, true);
+
+	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
+	ProjectileMovementComponent->SetUpdatedComponent(CollisionComponent);
+	ProjectileMovementComponent->ProjectileGravityScale = 0.f;
+	ProjectileMovementComponent->bRotationFollowsVelocity = false;
+	ProjectileMovementComponent->bShouldBounce = false;
 }
 
 void AT66MiniProjectile::BeginPlay()
@@ -138,7 +144,6 @@ void AT66MiniProjectile::InitializeProjectile(
 {
 	OwnerActor = InOwnerActor;
 	SetActorLocation(InSpawnLocation);
-	MoveDirection = InDirection.GetSafeNormal();
 	Behavior = InBehavior;
 	IdolID = InIdolID;
 	PrimaryDamage = InPrimaryDamage;
@@ -155,8 +160,24 @@ void AT66MiniProjectile::InitializeProjectile(
 	PrimaryTexture = InPrimaryTexture;
 	FollowUpTexture = InFollowUpTexture;
 	bPrimaryHitResolved = false;
+	SetLifeSpan(4.f);
 
 	CollisionComponent->SetSphereRadius(FMath::Clamp(InRadius * 0.18f, 18.f, 42.f));
+	if (ProjectileMovementComponent)
+	{
+		const FVector MoveDirection = InDirection.GetSafeNormal();
+		ProjectileMovementComponent->InitialSpeed = Speed;
+		ProjectileMovementComponent->MaxSpeed = Speed;
+		ProjectileMovementComponent->Velocity = MoveDirection * Speed;
+		ProjectileMovementComponent->bIsHomingProjectile =
+			(Behavior == ET66MiniProjectileBehavior::Bounce || Behavior == ET66MiniProjectileBehavior::DOT)
+			&& HomingTarget.IsValid()
+			&& HomingTarget->GetRootComponent();
+		ProjectileMovementComponent->HomingAccelerationMagnitude = FMath::Max(Speed * 6.f, 2400.f);
+		ProjectileMovementComponent->HomingTargetComponent = ProjectileMovementComponent->bIsHomingProjectile
+			? HomingTarget->GetRootComponent()
+			: nullptr;
+	}
 	if (PrimaryTexture)
 	{
 		SpriteComponent->SetSprite(PrimaryTexture);
@@ -165,39 +186,6 @@ void AT66MiniProjectile::InitializeProjectile(
 	{
 		SpriteComponent->SetSprite(FollowUpTexture);
 	}
-}
-
-void AT66MiniProjectile::Tick(const float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	if (!HasAuthority())
-	{
-		return;
-	}
-
-	LifetimeRemaining -= DeltaSeconds;
-	if (LifetimeRemaining <= 0.f)
-	{
-		if (Behavior == ET66MiniProjectileBehavior::AOE)
-		{
-			ExplodeAt(GetActorLocation());
-		}
-
-		Destroy();
-		return;
-	}
-
-	if ((Behavior == ET66MiniProjectileBehavior::Bounce || Behavior == ET66MiniProjectileBehavior::DOT) && HomingTarget.IsValid())
-	{
-		const FVector ToTarget = HomingTarget->GetActorLocation() - GetActorLocation();
-		if (!ToTarget.IsNearlyZero())
-		{
-			MoveDirection = ToTarget.GetSafeNormal();
-		}
-	}
-
-	SetActorLocation(GetActorLocation() + (MoveDirection * Speed * DeltaSeconds));
 }
 
 void AT66MiniProjectile::HandleOverlap(
@@ -280,7 +268,13 @@ void AT66MiniProjectile::HandleOverlap(
 			{
 				HomingTarget = NextEnemy;
 				SetActorLocation(Enemy->GetActorLocation() + FVector(0.f, 0.f, 30.f));
-				MoveDirection = (NextEnemy->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+				if (ProjectileMovementComponent)
+				{
+					ProjectileMovementComponent->bIsHomingProjectile = true;
+					ProjectileMovementComponent->HomingTargetComponent = NextEnemy->GetRootComponent();
+					ProjectileMovementComponent->Velocity = (NextEnemy->GetActorLocation() - GetActorLocation()).GetSafeNormal() * Speed;
+				}
+				ForceNetUpdate();
 				if (FollowUpTexture)
 				{
 					SpriteComponent->SetSprite(FollowUpTexture);
@@ -317,6 +311,16 @@ void AT66MiniProjectile::HandleOverlap(
 		Destroy();
 		break;
 	}
+}
+
+void AT66MiniProjectile::LifeSpanExpired()
+{
+	if (HasAuthority() && Behavior == ET66MiniProjectileBehavior::AOE)
+	{
+		ExplodeAt(GetActorLocation());
+	}
+
+	Super::LifeSpanExpired();
 }
 
 AT66MiniEnemyBase* AT66MiniProjectile::FindNextBounceTarget(AActor* IgnoreActor, const float MaxRange) const

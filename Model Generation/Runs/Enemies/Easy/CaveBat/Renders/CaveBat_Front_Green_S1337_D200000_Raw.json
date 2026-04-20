@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\CaveBat\\Raw\\CaveBat_Front_Green_S1337_D200000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\CaveBat\\Renders\\CaveBat_Front_Green_S1337_D200000_Raw.png",
+  "export": null,
+  "raw_triangles": 198030,
+  "triangles_before_decimate": 198030,
+  "triangles_after_decimate": 198030,
+  "bounds": {
+    "min": [
+      -0.5004383325576782,
+      -0.13850148022174835,
+      -0.23027536273002625
+    ],
+    "max": [
+      0.5005160570144653,
+      0.12973690032958984,
+      0.22880855202674866
+    ],
+    "size": [
+      1.0009543895721436,
+      0.268238365650177,
+      0.4590839147567749
+    ]
+  }
+}

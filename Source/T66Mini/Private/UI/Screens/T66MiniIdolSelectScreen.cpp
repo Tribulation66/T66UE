@@ -92,6 +92,7 @@ void UT66MiniIdolSelectScreen::OnScreenActivated_Implementation()
 		{
 			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniIdolSelectScreen::HandleSessionStateChanged);
 			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniIdolSelect, true);
+			LastSessionUiStateKey = BuildSessionUiStateKey();
 		}
 	}
 
@@ -163,6 +164,18 @@ void UT66MiniIdolSelectScreen::NativeDestruct()
 void UT66MiniIdolSelectScreen::HandleSessionStateChanged()
 {
 	SyncToSharedPartyScreen();
+	if (UIManager && UIManager->GetCurrentScreenType() != ScreenType)
+	{
+		return;
+	}
+
+	const FString NewSessionUiStateKey = BuildSessionUiStateKey();
+	if (NewSessionUiStateKey == LastSessionUiStateKey)
+	{
+		return;
+	}
+
+	LastSessionUiStateKey = NewSessionUiStateKey;
 	ForceRebuildSlate();
 }
 
@@ -248,6 +261,7 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 	const float CompanionHealingPerSecond = (SaveSubsystem && DataSubsystem && SelectedCompanion)
 		? SaveSubsystem->GetCompanionHealingPerSecond(SelectedCompanion->CompanionID, DataSubsystem)
 		: 0.0f;
+	LastSessionUiStateKey = BuildSessionUiStateKey();
 	RebuildIdolBrushes(Idols);
 
 	if (CurrentStatusText.IsEmpty())
@@ -872,9 +886,9 @@ void UT66MiniIdolSelectScreen::RebuildIdolBrushes(const TArray<FT66MiniIdolDefin
 		Brush->ImageSize = FVector2D(128.f, 128.f);
 		Brush->SetResourceObject(nullptr);
 
-		if (!Idol.IconPath.IsEmpty())
+		if (!Idol.IconPath.IsEmpty() && VisualSubsystem)
 		{
-			if (UTexture2D* IconTexture = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), nullptr, *Idol.IconPath)))
+			if (UTexture2D* IconTexture = VisualSubsystem->LoadTextureByAssetPath(Idol.IconPath))
 			{
 				Brush->SetResourceObject(IconTexture);
 			}
@@ -900,4 +914,24 @@ const FSlateBrush* UT66MiniIdolSelectScreen::FindIdolBrush(const FName IdolID) c
 	}
 
 	return nullptr;
+}
+
+FString UT66MiniIdolSelectScreen::BuildSessionUiStateKey() const
+{
+	const UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	if (!SessionSubsystem)
+	{
+		return FString();
+	}
+
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
+	return FString::Printf(
+		TEXT("%d|%d|%d|%d|%d|%d"),
+		static_cast<int32>(SessionSubsystem->GetDesiredPartyFrontendScreen()),
+		SessionSubsystem->IsPartyLobbyContextActive() ? 1 : 0,
+		SessionSubsystem->IsLocalPlayerPartyHost() ? 1 : 0,
+		SessionSubsystem->IsLocalLobbyReady() ? 1 : 0,
+		SessionSubsystem->IsPartySessionActive() ? 1 : 0,
+		LobbyProfiles.Num());
 }

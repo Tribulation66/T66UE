@@ -52,11 +52,12 @@ namespace
 	{
 		FT66PlayerExperienceDifficultyTuning Tuning;
 		static constexpr int32 DefaultStartStages[] = { 1, 6, 11, 16, 21 };
+		static constexpr int32 DefaultStartHeroBonusLevels[] = { 0, 24, 49, 74, 98 };
 		const int32 SafeIndex = FMath::Clamp(DifficultyIndex, 0, UE_ARRAY_COUNT(DefaultStartStages) - 1);
 		Tuning.StartStage = DefaultStartStages[SafeIndex];
 		Tuning.StartGoldBonus = 200 * DifficultyIndex;
 		Tuning.StartLootBags = 2 + (DifficultyIndex * 2);
-		Tuning.StartHeroBonusLevels = DifficultyIndex * 10;
+		Tuning.StartHeroBonusLevels = DefaultStartHeroBonusLevels[SafeIndex];
 		Tuning.bSpawnSupportVendorAtRunStart = DifficultyIndex > 0;
 		Tuning.bSupportVendorAllowSteal = false;
 		Tuning.EnemyLootBagDropChanceBase = 0.10f;

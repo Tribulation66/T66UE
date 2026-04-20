@@ -14,7 +14,9 @@ class T66MINI_API UT66MiniVisualSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	UTexture2D* GetWhiteTexture();
 	UTexture2D* LoadLooseTexture(const FString& RelativePath);
+	UTexture2D* LoadTextureByAssetPath(const FString& AssetPath);
 	UTexture2D* LoadBackgroundTexture();
 	UTexture2D* LoadHeroTexture(const FString& HeroDisplayName);
 	UTexture2D* LoadHeroAnimationTexture(const FString& HeroDisplayName, const FString& FrameKey);
@@ -39,6 +41,9 @@ private:
 
 	UPROPERTY()
 	TMap<FString, TObjectPtr<UTexture2D>> CachedTextures;
+
+	UPROPERTY()
+	TObjectPtr<UTexture2D> CachedWhiteTexture;
 
 	TSet<FString> MissingImportedPackages;
 };

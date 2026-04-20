@@ -206,6 +206,8 @@ UT66GameInstance::UT66GameInstance()
 	SelectedHeroID = NAME_None;
 	SelectedCompanionID = NAME_None;
 	SelectedDifficulty = ET66Difficulty::Easy;
+	SelectedRunModifierKind = ET66RunModifierKind::None;
+	SelectedRunModifierID = NAME_None;
 	MiniSelectedHeroID = NAME_None;
 	MiniSelectedCompanionID = NAME_None;
 	MiniSelectedDifficultyID = NAME_None;
@@ -230,6 +232,7 @@ void UT66GameInstance::Init()
 
 	// Preload core DataTables early, asynchronously, so we avoid sync loads later.
 	PrimeCoreDataTablesAsync();
+	PrimeCorePresentationAssetsAsync();
 
 	// Preload the main-menu textures so they are often ready before BuildSlateUI's
 	// EnsureTexturesLoadedSync fallback fires. If these finish in time, the sync path becomes a no-op.
@@ -382,6 +385,8 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 
 void UT66GameInstance::HandleCoreDataTablesLoaded()
 {
+	CoreDataTablesLoadHandle.Reset();
+
 	// Cache any tables that successfully loaded.
 	if (!CachedHeroDataTable) CachedHeroDataTable = HeroDataTable.Get();
 	if (!CachedCompanionDataTable) CachedCompanionDataTable = CompanionDataTable.Get();
@@ -395,6 +400,60 @@ void UT66GameInstance::HandleCoreDataTablesLoaded()
 
 	bCoreDataTablesLoaded = true;
 	PrimeHeroSelectionAssetsAsync();
+
+	if (bGameplayPreloadWaitingOnCoreTables)
+	{
+		bGameplayPreloadWaitingOnCoreTables = false;
+		bGameplayAssetsPreloadInFlight = false;
+		TFunction<void()> DeferredCallback = MoveTemp(GameplayAssetsPreloadCallback);
+		PreloadGameplayAssets(MoveTemp(DeferredCallback));
+		return;
+	}
+}
+
+void UT66GameInstance::PrimeCorePresentationAssetsAsync()
+{
+	if (bCorePresentationAssetsLoaded || bCorePresentationAssetsLoadRequested)
+	{
+		return;
+	}
+
+	TArray<FSoftObjectPath> Paths;
+	Paths.Reserve(3);
+	Paths.AddUnique(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
+	Paths.AddUnique(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
+	Paths.AddUnique(FSoftObjectPath(TEXT("/Game/Audio/SFX/Shot.Shot")));
+
+	Paths.RemoveAll([](const FSoftObjectPath& Path)
+	{
+		return Path.IsNull();
+	});
+
+	if (Paths.Num() <= 0)
+	{
+		bCorePresentationAssetsLoaded = true;
+		return;
+	}
+
+	bCorePresentationAssetsLoadRequested = true;
+	CorePresentationAssetsLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		Paths,
+		FStreamableDelegate::CreateUObject(this, &UT66GameInstance::HandleCorePresentationAssetsLoaded));
+
+	if (!CorePresentationAssetsLoadHandle.IsValid())
+	{
+		HandleCorePresentationAssetsLoaded();
+		return;
+	}
+
+	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] PrimeCorePresentationAssetsAsync queued %d startup combat-presentation assets."), Paths.Num());
+}
+
+void UT66GameInstance::HandleCorePresentationAssetsLoaded()
+{
+	CorePresentationAssetsLoadHandle.Reset();
+	bCorePresentationAssetsLoaded = true;
+	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] Startup combat-presentation asset warmup completed."));
 }
 
 void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
@@ -1167,7 +1226,7 @@ void UT66GameInstance::RestoreRememberedSelectionDefaults()
 
 bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBaseStats, FT66HeroPerLevelStatGains& OutPerLevelGains) const
 {
-	auto Range = [](int32 Min, int32 Max) -> FT66HeroStatGainRange
+	auto Range = [](const float Min, const float Max) -> FT66HeroStatGainRange
 	{
 		FT66HeroStatGainRange R;
 		R.Min = Min;
@@ -1187,13 +1246,14 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 	OutBaseStats.Speed = 2;
 
 	OutPerLevelGains = FT66HeroPerLevelStatGains{};
-	OutPerLevelGains.Damage = Range(1, 2);
-	OutPerLevelGains.AttackSpeed = Range(1, 2);
-	OutPerLevelGains.AttackScale = Range(1, 2);
-	OutPerLevelGains.Accuracy = Range(1, 2);
-	OutPerLevelGains.Armor = Range(1, 2);
-	OutPerLevelGains.Evasion = Range(1, 2);
-	OutPerLevelGains.Luck = Range(1, 2);
+	OutPerLevelGains.Damage = Range(0.5f, 1.0f);
+	OutPerLevelGains.AttackSpeed = Range(0.2f, 0.4f);
+	OutPerLevelGains.AttackScale = Range(0.2f, 0.4f);
+	OutPerLevelGains.Accuracy = Range(0.2f, 0.4f);
+	OutPerLevelGains.Armor = Range(0.2f, 0.4f);
+	OutPerLevelGains.Evasion = Range(0.2f, 0.4f);
+	OutPerLevelGains.Luck = Range(0.2f, 0.4f);
+	OutPerLevelGains.Speed = Range(0.2f, 0.4f);
 
 	if (HeroID.IsNone()) return false;
 
@@ -1217,6 +1277,7 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 		OutPerLevelGains.Armor       = Range(HD.LvlArmorMin, HD.LvlArmorMax);
 		OutPerLevelGains.Evasion     = Range(HD.LvlEvasionMin, HD.LvlEvasionMax);
 		OutPerLevelGains.Luck        = Range(HD.LvlLuckMin, HD.LvlLuckMax);
+		OutPerLevelGains.Speed       = Range(HD.LvlSpeedMin, HD.LvlSpeedMax);
 		return true;
 	}
 
@@ -1233,8 +1294,21 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		return;
 	}
 
+	if (!bCoreDataTablesLoaded)
+	{
+		PrimeCoreDataTablesAsync();
+		if (!bCoreDataTablesLoaded && CoreDataTablesLoadHandle.IsValid())
+		{
+			bGameplayAssetsPreloadInFlight = true;
+			bGameplayPreloadWaitingOnCoreTables = true;
+			GameplayAssetsPreloadCallback = MoveTemp(OnComplete);
+			UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] Gameplay transition preload is waiting on core DataTables before gathering gameplay assets."));
+			return;
+		}
+	}
+
 	TArray<FSoftObjectPath> Paths;
-	Paths.Reserve(64);
+	Paths.Reserve(128);
 	GameplayPreloadVisualIDs.Reset();
 	bGameplayVisualAssetsPhaseQueued = false;
 
@@ -1260,6 +1334,53 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 			FolderName,
 			*SlopeAssetName,
 			*SlopeAssetName)));
+	};
+
+	auto AddAllCombatEffectAssets = [&AddPath]()
+	{
+		static const TCHAR* CombatEffectPaths[] = {
+			TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"),
+			TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"),
+			TEXT("/Game/Audio/SFX/Shot.Shot"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Portal.P_Cosmic_Portal"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Fire.P_Fire"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Poison_02.P_Poison_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Liquid_Hit_03.P_Liquid_Hit_03"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/P_Electric_Projectile_02.P_Electric_Projectile_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Ice_Projectile_02.P_Ice_Projectile_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_02.P_Cosmic_Projectile_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_03.P_Cosmic_Projectile_03"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/P_Splash_02.P_Splash_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/P_Laser_02.P_Laser_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_01.P_Weapon_01"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Web_Projectile_01.P_Web_Projectile_01"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_02.P_Weapon_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Blueprints/BP_Storm.BP_Storm_C")
+		};
+
+		for (const TCHAR* AssetPath : CombatEffectPaths)
+		{
+			AddPath(FSoftObjectPath(AssetPath));
+		}
+	};
+
+	auto AddAllTowerThemeAssets = [&AddPath, &AddDifficultyThemeTextures]()
+	{
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestRoof.MI_TowerForestRoof")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof")));
+		AddDifficultyThemeTextures(TEXT("MediumOcean"), TEXT("MediumOcean"));
+		AddDifficultyThemeTextures(TEXT("PerditionMars"), TEXT("PerditionMars"));
+		AddDifficultyThemeTextures(TEXT("FinalHell"), TEXT("FinalHell"));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Branch.Branch")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Rock.Rock")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile2.MI_HillTile2")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile3.MI_HillTile3")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile4.MI_HillTile4")));
 	};
 
 	auto AddVisualAssets = [this, &AddPath](FName VisualID)
@@ -1297,10 +1418,12 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 			return;
 		}
 
-		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
-		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
-		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
-		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
+		TArray<FSoftObjectPath> VisualPreloadPaths;
+		UT66CharacterVisualSubsystem::AppendCharacterVisualPreloadPaths(*VisualRow, VisualPreloadPaths);
+		for (const FSoftObjectPath& VisualPath : VisualPreloadPaths)
+		{
+			AddPath(VisualPath);
+		}
 	};
 
 	auto AddCurrentDifficultyThemeTextures = [this, &AddDifficultyThemeTextures]()
@@ -1364,9 +1487,8 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Troth.Troth")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Windmill.Windmill")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
-	AddPath(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
-	AddPath(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
-	AddPath(FSoftObjectPath(TEXT("/Game/Audio/SFX/Shot.Shot")));
+	AddAllTowerThemeAssets();
+	AddAllCombatEffectAssets();
 
 	AddVisualAssets(UT66CharacterVisualSubsystem::GetHeroVisualID(
 		SelectedHeroID,
@@ -1416,15 +1538,7 @@ bool UT66GameInstance::QueueGameplayVisualAssetPreload()
 	}
 
 	TArray<FSoftObjectPath> VisualPaths;
-	VisualPaths.Reserve(GameplayPreloadVisualIDs.Num() * 4);
-
-	auto AddVisualPath = [&VisualPaths](const FSoftObjectPath& Path)
-	{
-		if (!Path.IsNull())
-		{
-			VisualPaths.AddUnique(Path);
-		}
-	};
+	VisualPaths.Reserve(GameplayPreloadVisualIDs.Num() * 8);
 
 	for (const FName VisualID : GameplayPreloadVisualIDs)
 	{
@@ -1445,10 +1559,7 @@ bool UT66GameInstance::QueueGameplayVisualAssetPreload()
 			continue;
 		}
 
-		AddVisualPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
-		AddVisualPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
-		AddVisualPath(VisualRow->AlertAnimation.ToSoftObjectPath());
-		AddVisualPath(VisualRow->RunAnimation.ToSoftObjectPath());
+		UT66CharacterVisualSubsystem::AppendCharacterVisualPreloadPaths(*VisualRow, VisualPaths);
 	}
 
 	for (int32 Index = VisualPaths.Num() - 1; Index >= 0; --Index)
@@ -1482,22 +1593,95 @@ bool UT66GameInstance::QueueGameplayVisualAssetPreload()
 void UT66GameInstance::HandleGameplayAssetsPreloaded()
 {
 	GameplayAssetsPreloadHandle.Reset();
+	if (!CachedCharacterVisualsDataTable && !CharacterVisualsDataTable.IsNull())
+	{
+		CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
+	}
 	if (!bGameplayVisualAssetsPhaseQueued && QueueGameplayVisualAssetPreload())
 	{
 		return;
 	}
 
-	bGameplayAssetsPreloadInFlight = false;
-	bGameplayVisualAssetsPhaseQueued = false;
 	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] Gameplay transition asset preload completed. Pre-resolving %d visuals."), GameplayPreloadVisualIDs.Num());
+	bool bWaitingOnVisualResolves = false;
 	if (UT66CharacterVisualSubsystem* Visuals = GetSubsystem<UT66CharacterVisualSubsystem>())
 	{
 		for (const FName VisualID : GameplayPreloadVisualIDs)
 		{
 			Visuals->PreloadCharacterVisual(VisualID);
+			if (!Visuals->IsCharacterVisualReady(VisualID))
+			{
+				bWaitingOnVisualResolves = true;
+			}
 		}
 	}
+
+	if (bWaitingOnVisualResolves)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(GameplayVisualPreloadPollTimerHandle);
+			GameplayVisualPreloadPollRetriesRemaining = 100;
+			World->GetTimerManager().SetTimer(
+				GameplayVisualPreloadPollTimerHandle,
+				this,
+				&UT66GameInstance::PollGameplayVisualPreloadCompletion,
+				0.02f,
+				true);
+			return;
+		}
+	}
+
+	FinalizeGameplayAssetsPreload();
+}
+
+void UT66GameInstance::PollGameplayVisualPreloadCompletion()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		FinalizeGameplayAssetsPreload();
+		return;
+	}
+
+	UT66CharacterVisualSubsystem* Visuals = GetSubsystem<UT66CharacterVisualSubsystem>();
+	bool bAllReady = true;
+	if (Visuals)
+	{
+		for (const FName VisualID : GameplayPreloadVisualIDs)
+		{
+			if (!Visuals->IsCharacterVisualReady(VisualID))
+			{
+				bAllReady = false;
+				break;
+			}
+		}
+	}
+
+	if (bAllReady || --GameplayVisualPreloadPollRetriesRemaining <= 0)
+	{
+		if (!bAllReady)
+		{
+			UE_LOG(LogT66GameInstance, Warning, TEXT("[LOAD] Gameplay transition visual preload polling timed out; continuing with remaining fallback-safe startup behavior."));
+		}
+		World->GetTimerManager().ClearTimer(GameplayVisualPreloadPollTimerHandle);
+		FinalizeGameplayAssetsPreload();
+	}
+}
+
+void UT66GameInstance::FinalizeGameplayAssetsPreload()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(GameplayVisualPreloadPollTimerHandle);
+	}
+
+	GameplayVisualPreloadPollRetriesRemaining = 0;
+	bGameplayAssetsPreloadInFlight = false;
+	bGameplayPreloadWaitingOnCoreTables = false;
+	bGameplayVisualAssetsPhaseQueued = false;
 	GameplayPreloadVisualIDs.Reset();
+
 	if (GameplayAssetsPreloadCallback)
 	{
 		TFunction<void()> Cb = MoveTemp(GameplayAssetsPreloadCallback);

@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\GoblinCharger\\Raw\\GoblinCharger_Front_Green_S1337_D200000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\GoblinCharger\\Renders\\GoblinCharger_Front_Green_S1337_D200000_Raw.png",
+  "export": null,
+  "raw_triangles": 193726,
+  "triangles_before_decimate": 193726,
+  "triangles_after_decimate": 193726,
+  "bounds": {
+    "min": [
+      -0.48132064938545227,
+      -0.2864969074726105,
+      -0.5002182126045227
+    ],
+    "max": [
+      0.4808803200721741,
+      0.28429847955703735,
+      0.5002022385597229
+    ],
+    "size": [
+      0.9622009992599487,
+      0.5707954168319702,
+      1.0004204511642456
+    ]
+  }
+}

@@ -104,6 +104,9 @@ private:
 	void AbortOnlinePartyRunToFrontend(const FString& ResultLabel, ET66ScreenType PendingScreen);
 
 	float AutosaveAccumulator = 0.f;
+	float AudioMixRefreshAccumulator = 0.f;
+	float LiveCacheRefreshAccumulator = 0.f;
+	float PlayerRuntimeRefreshAccumulator = 0.f;
 	bool bAppliedSavedPawnState = false;
 	float EnemySpawnAccumulator = 0.f;
 	float InteractableSpawnAccumulator = 0.f;

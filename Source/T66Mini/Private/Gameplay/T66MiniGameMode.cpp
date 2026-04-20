@@ -301,6 +301,52 @@ void AT66MiniGameMode::BeginPlay()
 				MiniGameState->bOnlinePartyMode = IsOnlinePartyMiniRun();
 			}
 		}
+
+		if (UT66MiniVisualSubsystem* VisualSubsystem = GameInstance->GetSubsystem<UT66MiniVisualSubsystem>())
+		{
+			VisualSubsystem->LoadTextureByAssetPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Red.T_Heart_Red"));
+			VisualSubsystem->LoadHudTexture(TEXT("Ult_Generic"));
+			VisualSubsystem->LoadHudTexture(TEXT("Passive_Generic"));
+			VisualSubsystem->LoadHudTexture(TEXT("QuickRevive"));
+			VisualSubsystem->LoadHudTexture(TEXT("MouseLeft"));
+			VisualSubsystem->LoadHudTexture(TEXT("MouseRight"));
+			VisualSubsystem->LoadHudTexture(TEXT("Interact_Hand"));
+			VisualSubsystem->LoadEffectTexture(TEXT("EnemyProjectile_Ranged"));
+			VisualSubsystem->LoadEffectTexture(TEXT("EnemyProjectile_Boss"));
+			VisualSubsystem->LoadEffectTexture(TEXT("EnemyProjectile_Impact"));
+			VisualSubsystem->LoadInteractableTexture(TEXT("LootBag_Red"));
+			VisualSubsystem->LoadInteractableTexture(TEXT("LootBag_Black"));
+			VisualSubsystem->LoadInteractableTexture(TEXT("LootBag_Yellow"));
+
+			if (const UT66MiniDataSubsystem* DataSubsystem = GameInstance->GetSubsystem<UT66MiniDataSubsystem>())
+			{
+				if (ActiveRun)
+				{
+					if (const FT66MiniHeroDefinition* HeroDefinition = DataSubsystem->FindHero(ActiveRun->HeroID))
+					{
+						VisualSubsystem->LoadHeroProjectileTexture(HeroDefinition->DisplayName);
+						VisualSubsystem->LoadTextureByAssetPath(HeroDefinition->PortraitPath);
+					}
+
+					for (const FName ItemID : ActiveRun->OwnedItemIDs)
+					{
+						if (const FT66MiniItemDefinition* ItemDefinition = DataSubsystem->FindItem(ItemID))
+						{
+							VisualSubsystem->LoadItemTexture(ItemDefinition->ItemID, ItemDefinition->IconPath);
+						}
+					}
+
+					for (const FName IdolID : ActiveRun->EquippedIdolIDs)
+					{
+						VisualSubsystem->LoadIdolEffectTexture(IdolID);
+						if (const FT66MiniIdolDefinition* IdolDefinition = DataSubsystem->FindIdol(IdolID))
+						{
+							VisualSubsystem->LoadTextureByAssetPath(IdolDefinition->IconPath);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if (USoundBase* BattleMusic = T66MiniLoadBattleMusic())
@@ -331,15 +377,26 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	RefreshAudioMix();
+	AudioMixRefreshAccumulator += DeltaSeconds;
+	if (AudioMixRefreshAccumulator >= 0.25f)
+	{
+		RefreshAudioMix();
+		AudioMixRefreshAccumulator = 0.f;
+	}
 
 	UGameInstance* GameInstance = GetGameInstance();
 	UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
 	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-	UpdateLivePlayerPawnCache();
-	PositionPartyPawns();
+	PlayerRuntimeRefreshAccumulator += DeltaSeconds;
+	const bool bNeedsFastPlayerRefresh = !bAppliedSavedPawnState || PositionedPlayerPawns.Num() < LivePlayerPawns.Num();
+	if (PlayerRuntimeRefreshAccumulator >= (bNeedsFastPlayerRefresh ? 0.05f : 0.50f))
+	{
+		UpdateLivePlayerPawnCache();
+		PositionPartyPawns();
+		PlayerRuntimeRefreshAccumulator = 0.f;
+	}
 	UpdateCombatTexts(DeltaSeconds);
 	if (!RunState || !DataSubsystem || !MiniGameState || !ActiveRun)
 	{
@@ -347,10 +404,15 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 	}
 
 	TryApplySavedPawnState();
-	UpdateLiveEnemyCache();
-	UpdateLiveTrapCache();
-	UpdateLiveInteractableCache();
-	UpdateLivePickupCache();
+	LiveCacheRefreshAccumulator += DeltaSeconds;
+	if (LiveCacheRefreshAccumulator >= 0.50f)
+	{
+		UpdateLiveEnemyCache();
+		UpdateLiveTrapCache();
+		UpdateLiveInteractableCache();
+		UpdateLivePickupCache();
+		LiveCacheRefreshAccumulator = 0.f;
+	}
 
 	if (!bRunCompleted)
 	{

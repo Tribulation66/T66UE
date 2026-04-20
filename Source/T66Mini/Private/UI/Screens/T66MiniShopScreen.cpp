@@ -259,6 +259,7 @@ void UT66MiniShopScreen::OnScreenActivated_Implementation()
 	Super::OnScreenActivated_Implementation();
 	CurrentStatusText = FText::GetEmpty();
 	LastAppliedStateRevision = 0;
+	LastShopUiStateKey.Reset();
 	ProcessedRequestRevisionByPlayerId.Reset();
 
 	if (UGameInstance* GameInstance = GetGameInstance())
@@ -309,8 +310,10 @@ void UT66MiniShopScreen::OnScreenActivated_Implementation()
 
 		ShopSyncTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
 			FTickerDelegate::CreateUObject(this, &UT66MiniShopScreen::HandleShopSyncTicker),
-			0.20f);
+			0.25f);
 	}
+
+	LastShopUiStateKey = BuildShopUiStateKey();
 }
 
 void UT66MiniShopScreen::OnScreenDeactivated_Implementation()
@@ -367,6 +370,7 @@ void UT66MiniShopScreen::NativeDestruct()
 
 TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 {
+	LastShopUiStateKey = BuildShopUiStateKey();
 	UT66MiniDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
 	UT66MiniCircusSubsystem* CircusSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniCircusSubsystem>() : nullptr;
@@ -1420,18 +1424,18 @@ void UT66MiniShopScreen::HandlePartyStateChanged()
 	bool bIsHost = false;
 	if (IsOnlineMiniParty(&bIsHost))
 	{
-		if (bIsHost)
-		{
-			TryProcessRemoteRequests(true);
-		}
-		else
-		{
-			ApplyAuthoritativeStateFromLobby(true);
-		}
-		return;
+	if (bIsHost)
+	{
+		TryProcessRemoteRequests(true);
+	}
+	else
+	{
+		ApplyAuthoritativeStateFromLobby(true);
+	}
+	return;
 	}
 
-	ForceRebuildSlate();
+	RequestShopRebuildIfStateChanged();
 }
 
 void UT66MiniShopScreen::HandleSessionStateChanged()
@@ -1471,6 +1475,90 @@ void UT66MiniShopScreen::SyncToSharedPartyScreen()
 	default:
 		break;
 	}
+}
+
+FString UT66MiniShopScreen::BuildShopUiStateKey() const
+{
+	FString StateKey = FString::Printf(
+		TEXT("%d|%d|%s"),
+		static_cast<int32>(ActiveTab),
+		LastAppliedStateRevision,
+		*CurrentStatusText.ToString());
+
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
+	const UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
+	if (ActiveRun)
+	{
+		StateKey += FString::Printf(
+			TEXT("|R:%d:%d:%d:%d:%d:%f:%s:%s"),
+			ActiveRun->bOnlinePartyRun ? 1 : 0,
+			ActiveRun->bPendingShopIntermission ? 1 : 0,
+			ActiveRun->WaveIndex,
+			ActiveRun->ShopRerollCount,
+			ActiveRun->CircusDebt,
+			ActiveRun->CircusAnger01,
+			*ActiveRun->DifficultyID.ToString(),
+			*ActiveRun->OnlineHostSteamId);
+
+		for (const FName& ItemId : ActiveRun->OwnedItemIDs)
+		{
+			StateKey += TEXT("|O:");
+			StateKey += ItemId.ToString();
+		}
+
+		for (const FName& OfferId : ActiveRun->CurrentShopOfferIDs)
+		{
+			StateKey += TEXT("|C:");
+			StateKey += OfferId.ToString();
+		}
+
+		for (const FName& LockedId : ActiveRun->LockedShopOfferIDs)
+		{
+			StateKey += TEXT("|L:");
+			StateKey += LockedId.ToString();
+		}
+
+		for (const FName& BuybackId : ActiveRun->CircusBuybackItemIDs)
+		{
+			StateKey += TEXT("|B:");
+			StateKey += BuybackId.ToString();
+		}
+	}
+
+	const UT66SessionSubsystem* SessionSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	if (SessionSubsystem)
+	{
+		StateKey += FString::Printf(
+			TEXT("|S:%d:%d:%d"),
+			SessionSubsystem->IsPartySessionActive() ? 1 : 0,
+			SessionSubsystem->IsLocalPlayerPartyHost() ? 1 : 0,
+			SessionSubsystem->IsLocalLobbyReady() ? 1 : 0);
+
+		FT66LobbyPlayerInfo HostLobbyInfo;
+		if (SessionSubsystem->GetHostLobbyProfile(HostLobbyInfo))
+		{
+			StateKey += FString::Printf(
+				TEXT("|H:%d:%d:%d"),
+				HostLobbyInfo.MiniIntermissionStateRevision,
+				HostLobbyInfo.MiniIntermissionRequestRevision,
+				HostLobbyInfo.bLobbyReady ? 1 : 0);
+		}
+	}
+
+	return StateKey;
+}
+
+void UT66MiniShopScreen::RequestShopRebuildIfStateChanged()
+{
+	const FString NewUiStateKey = BuildShopUiStateKey();
+	if (NewUiStateKey == LastShopUiStateKey)
+	{
+		return;
+	}
+
+	LastShopUiStateKey = NewUiStateKey;
+	FT66Style::DeferRebuild(this);
 }
 
 bool UT66MiniShopScreen::IsOnlineMiniParty(bool* bOutIsHost) const
@@ -1662,7 +1750,7 @@ bool UT66MiniShopScreen::ApplyAuthoritativeStateFromLobby(const bool bForceRebui
 
 	if (bForceRebuild || Payload.Revision > 0)
 	{
-		ForceRebuildSlate();
+		RequestShopRebuildIfStateChanged();
 	}
 
 	return true;
@@ -1756,11 +1844,11 @@ bool UT66MiniShopScreen::TryProcessRemoteRequests(const bool bForceRebuild)
 	if (bProcessedAny)
 	{
 		PublishAuthoritativeState(LatestStatus, true);
-		ForceRebuildSlate();
+		RequestShopRebuildIfStateChanged();
 	}
 	else if (bForceRebuild)
 	{
-		ForceRebuildSlate();
+		RequestShopRebuildIfStateChanged();
 	}
 
 	if (bNavigateToIdolSelect)
@@ -1873,22 +1961,37 @@ bool UT66MiniShopScreen::ExecuteAuthoritativeRequest(
 
 FReply UT66MiniShopScreen::HandleVendorTabClicked()
 {
+	if (ActiveTab == EMiniCircusTab::Vendor)
+	{
+		return FReply::Handled();
+	}
+
 	ActiveTab = EMiniCircusTab::Vendor;
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleGamblingTabClicked()
 {
+	if (ActiveTab == EMiniCircusTab::Gambling)
+	{
+		return FReply::Handled();
+	}
+
 	ActiveTab = EMiniCircusTab::Gambling;
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleAlchemyTabClicked()
 {
+	if (ActiveTab == EMiniCircusTab::Alchemy)
+	{
+		return FReply::Handled();
+	}
+
 	ActiveTab = EMiniCircusTab::Alchemy;
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -1913,7 +2016,7 @@ FReply UT66MiniShopScreen::HandleBuyItemClicked(const FName ItemID)
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -1938,7 +2041,7 @@ FReply UT66MiniShopScreen::HandleStealItemClicked(const FName ItemID)
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -1963,7 +2066,7 @@ FReply UT66MiniShopScreen::HandleSellItemClicked(const FName ItemID)
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -1988,7 +2091,7 @@ FReply UT66MiniShopScreen::HandleBuybackClicked(const FName ItemID)
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -2013,7 +2116,7 @@ FReply UT66MiniShopScreen::HandleLockClicked(const FName ItemID)
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -2036,7 +2139,7 @@ FReply UT66MiniShopScreen::HandleRerollClicked()
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -2061,7 +2164,7 @@ FReply UT66MiniShopScreen::HandleBorrowGoldClicked(const int32 Amount)
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -2086,7 +2189,7 @@ FReply UT66MiniShopScreen::HandlePayDebtClicked(const int32 Amount)
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -2111,7 +2214,7 @@ FReply UT66MiniShopScreen::HandleCircusGameClicked(const FName GameID, const FSt
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -2134,7 +2237,7 @@ FReply UT66MiniShopScreen::HandleAlchemyTransmuteClicked()
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -2157,7 +2260,7 @@ FReply UT66MiniShopScreen::HandleAlchemyDissolveClicked()
 	bool bNavigateToIdolSelect = false;
 	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
 	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
-	FT66Style::DeferRebuild(this);
+	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
@@ -2197,6 +2300,6 @@ void UT66MiniShopScreen::SetStatus(const FText& InText)
 	if (StatusTextBlock.IsValid())
 	{
 		StatusTextBlock->SetText(InText);
-		StatusTextBlock->SetColorAndOpacity(FT66Style::Text());
+		StatusTextBlock->SetColorAndOpacity(InText.IsEmpty() ? FT66Style::TextMuted() : FT66Style::Text());
 	}
 }

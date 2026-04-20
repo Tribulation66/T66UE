@@ -40,6 +40,7 @@ class UInputMappingContext;
 class ACameraActor;
 class AT66HeroPreviewStage;
 class AT66CompanionPreviewStage;
+struct FStreamableHandle;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FT66NearbyLootBagChanged);
 
@@ -349,6 +350,8 @@ private:
 	FTimerHandle DeathVFXTimerHandle;
 
 	void SetupGameplayHUD();
+	void PrimeGameplayPresentationAssetsAsync();
+	void HandleGameplayPresentationAssetsLoaded();
 	void EnsureFrontendStartupOverlay(const FText& LoadingText);
 	void HideFrontendStartupOverlay();
 	void StartFrontendLaunchPolicyCheck();
@@ -375,6 +378,7 @@ private:
 	FTimerHandle FrontendLaunchPolicyTimeoutTimerHandle;
 	FTimerHandle GameplayViewTargetRetryTimerHandle;
 	FTimerHandle ClientGameplayWorldSetupRetryTimerHandle;
+	TSharedPtr<FStreamableHandle> GameplayPresentationAssetsLoadHandle;
 	FDelegateHandle FrontendLaunchPolicyResponseHandle;
 	int32 FrontendLocalSteamBuildId = 0;
 	int32 GameplayViewTargetRetriesRemaining = 0;

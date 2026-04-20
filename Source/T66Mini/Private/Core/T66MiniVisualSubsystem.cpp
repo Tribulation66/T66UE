@@ -48,9 +48,45 @@ namespace
 	}
 }
 
+UTexture2D* UT66MiniVisualSubsystem::GetWhiteTexture()
+{
+	if (!CachedWhiteTexture)
+	{
+		CachedWhiteTexture = FindObject<UTexture2D>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+		if (!CachedWhiteTexture)
+		{
+			CachedWhiteTexture = LoadObject<UTexture2D>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+		}
+	}
+
+	return CachedWhiteTexture;
+}
+
 UTexture2D* UT66MiniVisualSubsystem::LoadLooseTexture(const FString& RelativePath)
 {
 	return LoadCachedTexture(RelativePath, RelativePath);
+}
+
+UTexture2D* UT66MiniVisualSubsystem::LoadTextureByAssetPath(const FString& AssetPath)
+{
+	if (AssetPath.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	const FString CacheKey = FString::Printf(TEXT("ImportedAsset:%s"), *AssetPath);
+	if (TObjectPtr<UTexture2D>* ExistingTexture = CachedTextures.Find(CacheKey))
+	{
+		return ExistingTexture->Get();
+	}
+
+	if (UTexture2D* ImportedTexture = LoadImportedTexture(AssetPath))
+	{
+		CachedTextures.Add(CacheKey, ImportedTexture);
+		return ImportedTexture;
+	}
+
+	return nullptr;
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadBackgroundTexture()
@@ -210,7 +246,7 @@ UTexture2D* UT66MiniVisualSubsystem::LoadItemTexture(const FName ItemID, const F
 			continue;
 		}
 
-		if (UTexture2D* ImportedTexture = LoadImportedTexture(AssetPath))
+		if (UTexture2D* ImportedTexture = LoadTextureByAssetPath(AssetPath))
 		{
 			CachedTextures.Add(CacheKey, ImportedTexture);
 			return ImportedTexture;
@@ -254,6 +290,11 @@ UTexture2D* UT66MiniVisualSubsystem::LoadImportedTexture(const FString& AssetPat
 		return nullptr;
 	}
 
+	if (UTexture2D* ExistingTexture = FindObject<UTexture2D>(nullptr, *AssetPath))
+	{
+		return ExistingTexture;
+	}
+
 	const FString PackagePath = GetPackagePathFromObjectPath(AssetPath);
 	if (!PackagePath.IsEmpty())
 	{
@@ -269,7 +310,7 @@ UTexture2D* UT66MiniVisualSubsystem::LoadImportedTexture(const FString& AssetPat
 		}
 	}
 
-	return Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), nullptr, *AssetPath));
+	return LoadObject<UTexture2D>(nullptr, *AssetPath);
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadImportedOrLooseTexture(const FString& CacheKey, const FString& AssetPath, const FString& RelativePath)
@@ -279,7 +320,7 @@ UTexture2D* UT66MiniVisualSubsystem::LoadImportedOrLooseTexture(const FString& C
 		return ExistingTexture->Get();
 	}
 
-	if (UTexture2D* ImportedTexture = LoadImportedTexture(AssetPath))
+	if (UTexture2D* ImportedTexture = LoadTextureByAssetPath(AssetPath))
 	{
 		CachedTextures.Add(CacheKey, ImportedTexture);
 		return ImportedTexture;

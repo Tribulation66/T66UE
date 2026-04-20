@@ -581,7 +581,7 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 	const FText PermanentTabText = NSLOCTEXT("T66.Shop", "PermanentTab", "PERMANENT");
 	const FText SingleUseTabText = NSLOCTEXT("T66.Shop", "SingleUseTab", "SINGLE USE");
 	const FText ForbiddenChadSetText = NSLOCTEXT("T66.Shop", "ForbiddenChadSet", "FORBIDDEN CHAD");
-	const FText SingleUseHintText = NSLOCTEXT("T66.Shop", "SingleUseHint", "Buy stackable buffs for any secondary stat. Owned buffs can be selected from Hero Selection, up to 5 total per run.");
+	const FText SingleUseHintText = NSLOCTEXT("T66.Shop", "SingleUseHint", "Buy stackable buffs for any secondary stat. Owned buffs can be selected from Hero Selection, up to 4 total per run.");
 	const FText SingleUseBonusText = NSLOCTEXT("T66.Shop", "SingleUseBonus", "+10% when selected");
 
 	const int32 Balance = Achievements ? Achievements->GetChadCouponBalance() : (Buffs ? Buffs->GetChadCouponBalance() : 0);

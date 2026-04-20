@@ -190,6 +190,7 @@ private:
 	int32 VideoModeConfirmSecondsRemaining = 0;
 	FTimerHandle VideoModeConfirmTimerHandle;
 
+	TSharedPtr<class SBorder> VideoModeConfirmOverlay;
 	TSharedPtr<class STextBlock> VideoModeConfirmCountdownText;
 
 	void InitializeGraphicsFromUserSettingsIfNeeded();

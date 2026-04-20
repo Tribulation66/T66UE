@@ -29,8 +29,10 @@ private:
 	FReply HandleDifficultyClicked(FName DifficultyID);
 	void HandleSessionStateChanged();
 	void SyncToSharedPartyScreen();
+	FString BuildSessionUiStateKey() const;
 	void RefreshSelectedHeroBrush(const FT66MiniHeroDefinition* Hero);
 
 	TSharedPtr<FSlateBrush> SelectedHeroBrush;
 	FDelegateHandle SessionStateChangedHandle;
+	FString LastSessionUiStateKey;
 };

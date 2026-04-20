@@ -66,7 +66,7 @@ TSharedRef<SWidget> UT66TemporaryBuffShopScreen::BuildSlateUI()
 
 	const FText TitleText = NSLOCTEXT("T66.TempBuffShop", "Title", "TEMP BUFF SHOP");
 	const FText BackText = NSLOCTEXT("T66.TempBuffShop", "BackToBuffs", "BACK TO BUFFS");
-	const FText HintText = NSLOCTEXT("T66.TempBuffShop", "Hint", "Buy stackable temporary buffs here. Owned buffs stay in your inventory until you select up to 5 total on Hero Selection.");
+	const FText HintText = NSLOCTEXT("T66.TempBuffShop", "Hint", "Buy stackable temporary buffs here. Owned buffs stay in your inventory until you select up to 4 total on Hero Selection.");
 	const FText BonusText = NSLOCTEXT("T66.TempBuffShop", "Bonus", "+10% when selected");
 	const int32 Balance = Buffs ? Buffs->GetChadCouponBalance() : 0;
 	const int32 Cost = Buffs ? Buffs->GetSingleUseBuffCost() : UT66BuffSubsystem::SingleUseBuffCostCC;

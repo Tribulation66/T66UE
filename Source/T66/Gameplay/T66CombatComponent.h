@@ -16,6 +16,7 @@ class UT66FloatingCombatTextSubsystem;
 class UT66IdolManagerSubsystem;
 class USoundBase;
 class UNiagaraSystem;
+struct FStreamableHandle;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogT66Combat, Log, All);
 
@@ -154,6 +155,7 @@ protected:
 	TObjectPtr<USoundBase> CachedShotSfx = nullptr;
 
 	bool bShotSfxWarnedMissing = false;
+	TSharedPtr<FStreamableHandle> CombatPresentationAssetsLoadHandle;
 
 	/** Legacy Niagara system (round ball). Asset: /Game/VFX/VFX_Attack1 */
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|VFX")
@@ -169,6 +171,8 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraSystem> CachedPixelVFXNiagara = nullptr;
 
+	void PrimeCombatPresentationAssetsAsync();
+	void HandleCombatPresentationAssetsLoaded();
 	void WarmupVFXSystems();
 
 	/** Returns the active VFX system: pixel if available, otherwise legacy. */

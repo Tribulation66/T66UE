@@ -7,7 +7,7 @@
 #include "T66MiniProjectile.generated.h"
 
 class UBillboardComponent;
-class USceneComponent;
+class UProjectileMovementComponent;
 class USphereComponent;
 class UTexture2D;
 
@@ -29,7 +29,6 @@ class T66MINI_API AT66MiniProjectile : public AActor
 public:
 	AT66MiniProjectile();
 
-	virtual void Tick(float DeltaSeconds) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void InitializeProjectile(
@@ -54,6 +53,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void LifeSpanExpired() override;
 
 private:
 	UFUNCTION()
@@ -73,19 +73,17 @@ private:
 	void OnRep_ProjectileVisualState();
 
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<USceneComponent> SceneRoot;
-
-	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USphereComponent> CollisionComponent;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UBillboardComponent> SpriteComponent;
 
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent;
+
 	TWeakObjectPtr<AActor> OwnerActor;
 	TWeakObjectPtr<AActor> HomingTarget;
 	TSet<TWeakObjectPtr<AActor>> HitActors;
-
-	FVector MoveDirection = FVector::ForwardVector;
 	UPROPERTY(Replicated)
 	ET66MiniProjectileBehavior Behavior = ET66MiniProjectileBehavior::Pierce;
 
@@ -101,7 +99,6 @@ private:
 	float DotTickInterval = 0.5f;
 	float DotDuration = 3.f;
 	float StunDuration = 0.f;
-	float LifetimeRemaining = 4.f;
 	bool bPrimaryHitResolved = false;
 
 	UPROPERTY(ReplicatedUsing = OnRep_ProjectileVisualState)

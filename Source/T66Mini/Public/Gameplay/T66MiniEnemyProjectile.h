@@ -7,7 +7,7 @@
 #include "T66MiniEnemyProjectile.generated.h"
 
 class UBillboardComponent;
-class USceneComponent;
+class UProjectileMovementComponent;
 class USphereComponent;
 class UTexture2D;
 
@@ -19,7 +19,6 @@ class T66MINI_API AT66MiniEnemyProjectile : public AActor
 public:
 	AT66MiniEnemyProjectile();
 
-	virtual void Tick(float DeltaSeconds) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void InitializeProjectile(const FVector& SpawnLocation, const FVector& Direction, float InSpeed, float InDamage, UTexture2D* InTexture = nullptr, float InLifetime = 4.0f);
@@ -38,18 +37,15 @@ private:
 		const FHitResult& SweepResult);
 
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<USceneComponent> SceneRoot;
-
-	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USphereComponent> CollisionComponent;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UBillboardComponent> SpriteComponent;
 
-	FVector MoveDirection = FVector::ForwardVector;
-	float Speed = 900.f;
 	float Damage = 8.f;
-	float LifetimeRemaining = 4.f;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent;
 
 	UFUNCTION()
 	void OnRep_ProjectileTexture();

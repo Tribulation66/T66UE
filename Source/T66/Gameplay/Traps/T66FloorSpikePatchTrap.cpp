@@ -12,7 +12,31 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "TimerManager.h"
+#include "UObject/SoftObjectPath.h"
+
+namespace
+{
+	UStaticMesh* LoadFloorSpikeMesh()
+	{
+		static TSoftObjectPtr<UStaticMesh> Mesh(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Meshes/SM_Spike.SM_Spike")));
+		return Mesh.LoadSynchronous();
+	}
+
+	UStaticMesh* LoadFloorSpikeClusterMesh()
+	{
+		static TSoftObjectPtr<UStaticMesh> Mesh(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Meshes/SM_Spikes.SM_Spikes")));
+		return Mesh.LoadSynchronous();
+	}
+
+	UNiagaraSystem* LoadFloorSpikeBurstSystem()
+	{
+		static TSoftObjectPtr<UNiagaraSystem> System(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02")));
+		return System.LoadSynchronous();
+	}
+}
 
 AT66FloorSpikePatchTrap::AT66FloorSpikePatchTrap()
 {
@@ -36,10 +60,15 @@ AT66FloorSpikePatchTrap::AT66FloorSpikePatchTrap()
 	MarkerMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	MarkerMesh->SetCastShadow(false);
 
+	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseMesh"));
+	BaseMesh->SetupAttachment(SceneRoot);
+	BaseMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	BaseMesh->SetCastShadow(true);
+
 	SpikeInstances = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("SpikeInstances"));
 	SpikeInstances->SetupAttachment(SceneRoot);
 	SpikeInstances->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SpikeInstances->SetCastShadow(false);
+	SpikeInstances->SetCastShadow(true);
 }
 
 void AT66FloorSpikePatchTrap::OnConstruction(const FTransform& Transform)
@@ -54,6 +83,7 @@ void AT66FloorSpikePatchTrap::BeginPlay()
 {
 	Super::BeginPlay();
 	RebuildSpikes();
+	CachedRiseBurstSystem = LoadFloorSpikeBurstSystem();
 	UpdateMarkerVisuals();
 	UpdateSpikeTransforms(0.f);
 	if (UsesTimedActivation())
@@ -162,6 +192,7 @@ void AT66FloorSpikePatchTrap::BeginRiseCycle()
 	bRaised = false;
 	PhaseElapsed = 0.f;
 	UpdateMarkerVisuals();
+	SpawnRiseNiagaraBurst();
 	SpawnRiseBurst();
 	SetActorTickEnabled(true);
 
@@ -325,15 +356,25 @@ void AT66FloorSpikePatchTrap::RebuildSpikes()
 
 	if (MarkerMesh && !MarkerMesh->GetStaticMesh())
 	{
-		if (UStaticMesh* CylinderMesh = FT66VisualUtil::GetBasicShapeCylinder())
-		{
-			MarkerMesh->SetStaticMesh(CylinderMesh);
-		}
+		MarkerMesh->SetStaticMesh(FT66VisualUtil::GetBasicShapeCylinder());
+	}
+
+	if (BaseMesh && !BaseMesh->GetStaticMesh())
+	{
+		BaseMesh->SetStaticMesh(FT66VisualUtil::GetBasicShapeCylinder());
 	}
 
 	if (SpikeInstances && !SpikeInstances->GetStaticMesh())
 	{
-		if (UStaticMesh* ConeMesh = FT66VisualUtil::GetBasicShapeCone())
+		if (UStaticMesh* SpikeMesh = LoadFloorSpikeMesh())
+		{
+			SpikeInstances->SetStaticMesh(SpikeMesh);
+		}
+		else if (UStaticMesh* SpikeClusterMesh = LoadFloorSpikeClusterMesh())
+		{
+			SpikeInstances->SetStaticMesh(SpikeClusterMesh);
+		}
+		else if (UStaticMesh* ConeMesh = FT66VisualUtil::GetBasicShapeCone())
 		{
 			SpikeInstances->SetStaticMesh(ConeMesh);
 		}
@@ -355,10 +396,17 @@ void AT66FloorSpikePatchTrap::RebuildSpikes()
 
 void AT66FloorSpikePatchTrap::UpdateMarkerVisuals()
 {
+	if (BaseMesh)
+	{
+		BaseMesh->SetRelativeLocation(FVector(0.f, 0.f, -7.f));
+		BaseMesh->SetRelativeScale3D(FVector(Radius / 48.f, Radius / 48.f, 0.05f));
+		FT66VisualUtil::ApplyT66Color(BaseMesh, this, FLinearColor(0.07f, 0.06f, 0.06f, 1.f));
+	}
+
 	if (MarkerMesh)
 	{
-		MarkerMesh->SetRelativeLocation(FVector(0.f, 0.f, -10.f));
-		MarkerMesh->SetRelativeScale3D(FVector(Radius / 50.f, Radius / 50.f, 0.035f));
+		MarkerMesh->SetRelativeLocation(FVector(0.f, 0.f, -11.f));
+		MarkerMesh->SetRelativeScale3D(FVector((Radius / 50.f) * 1.04f, (Radius / 50.f) * 1.04f, 0.02f));
 
 		FLinearColor MarkerColor = IdleMarkerColor;
 		if (bWarningActive)
@@ -376,6 +424,13 @@ void AT66FloorSpikePatchTrap::UpdateMarkerVisuals()
 
 	if (SpikeInstances)
 	{
+		if (SpikeInstances->GetStaticMesh() != FT66VisualUtil::GetBasicShapeCone())
+		{
+			SpikeDynamicMaterials.Reset();
+			SpikeInstances->EmptyOverrideMaterials();
+			return;
+		}
+
 		if (SpikeDynamicMaterials.Num() != SpikeInstances->GetNumMaterials())
 		{
 			SpikeDynamicMaterials.Reset();
@@ -406,16 +461,27 @@ void AT66FloorSpikePatchTrap::UpdateSpikeTransforms(const float RaisedAlpha)
 	}
 
 	const int32 InstanceCount = SpikeInstances->GetInstanceCount();
+	const bool bUsingImportedSpikeMesh = SpikeInstances->GetStaticMesh() != FT66VisualUtil::GetBasicShapeCone();
+	const float HiddenZ = bUsingImportedSpikeMesh ? (-SpikeHeight * 0.88f) : (-SpikeHeight * 0.55f);
+	const float VisibleZ = bUsingImportedSpikeMesh ? (SpikeHeight * 0.10f) : (SpikeHeight * 0.35f);
+	const float BaseXYScale = bUsingImportedSpikeMesh ? 0.52f : 0.40f;
+	const float BaseZScale = bUsingImportedSpikeMesh ? (SpikeHeight / 185.f) : (SpikeHeight / 100.f);
 	for (int32 Index = 0; Index < InstanceCount; ++Index)
 	{
-		const float Angle = (static_cast<float>(Index) / static_cast<float>(InstanceCount)) * 2.f * PI;
-		const float Dist = Radius * FMath::Lerp(0.18f, 0.78f, (static_cast<float>(Index % 3) / 2.f));
+		const float Angle = ((static_cast<float>(Index) + 0.5f) / static_cast<float>(InstanceCount)) * 2.f * PI + (static_cast<float>(Index % 3) * 0.16f);
+		const float Dist = Radius * (Index % 3 == 0 ? 0.34f : (Index % 3 == 1 ? 0.56f : 0.78f));
+		const float ScaleJitter = FMath::Lerp(0.92f, 1.14f, static_cast<float>(Index % 4) / 3.f);
 		const FVector Location(
 			FMath::Cos(Angle) * Dist,
 			FMath::Sin(Angle) * Dist,
-			FMath::Lerp(-SpikeHeight * 0.55f, SpikeHeight * 0.35f, RaisedAlpha));
-		const FRotator Rotation(0.f, FMath::RadiansToDegrees(Angle), -90.f);
-		const FVector Scale(0.40f, 0.40f, FMath::Max(0.10f, RaisedAlpha) * (SpikeHeight / 100.f));
+			FMath::Lerp(HiddenZ, VisibleZ, RaisedAlpha));
+		const FRotator Rotation = bUsingImportedSpikeMesh
+			? FRotator(0.f, FMath::RadiansToDegrees(Angle) + (Index % 2 == 0 ? 14.f : -14.f), 0.f)
+			: FRotator(0.f, FMath::RadiansToDegrees(Angle), -90.f);
+		const FVector Scale(
+			BaseXYScale * ScaleJitter,
+			BaseXYScale * ScaleJitter,
+			FMath::Max(0.10f, RaisedAlpha) * BaseZScale);
 		SpikeInstances->UpdateInstanceTransform(Index, FTransform(Rotation, Location, Scale), false, true, true);
 	}
 
@@ -446,6 +512,25 @@ void AT66FloorSpikePatchTrap::SpawnRiseBurst() const
 			FVector2D(3.8f, 3.8f),
 			ET66PixelVFXPriority::Medium);
 	}
+}
+
+void AT66FloorSpikePatchTrap::SpawnRiseNiagaraBurst() const
+{
+	if (!CachedRiseBurstSystem || !GetWorld())
+	{
+		return;
+	}
+
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(),
+		CachedRiseBurstSystem,
+		GetActorLocation(),
+		FRotator::ZeroRotator,
+		FVector(FMath::Max(Radius / 170.f, 0.95f)),
+		false,
+		true,
+		ENCPoolMethod::AutoRelease,
+		true);
 }
 
 bool AT66FloorSpikePatchTrap::CanAcceptExternalTrigger() const

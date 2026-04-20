@@ -59,8 +59,11 @@ namespace
 AT66MiniHazardTrap::AT66MiniHazardTrap()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 1.f / 30.f;
 	bReplicates = true;
-	SetReplicateMovement(true);
+	SetReplicateMovement(false);
+	NetUpdateFrequency = 10.f;
+	MinNetUpdateFrequency = 5.f;
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -104,7 +107,12 @@ void AT66MiniHazardTrap::BeginPlay()
 
 		if (IndicatorMaterial)
 		{
-			if (UTexture2D* RingTexture = TelegraphTexture ? TelegraphTexture : LoadObject<UTexture2D>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture")))
+			UTexture2D* RingTexture = TelegraphTexture;
+			if (!RingTexture && VisualSubsystem)
+			{
+				RingTexture = VisualSubsystem->GetWhiteTexture();
+			}
+			if (RingTexture)
 			{
 				IndicatorMaterial->SetTextureParameterValue(TEXT("DiffuseColorMap"), RingTexture);
 				IndicatorMaterial->SetTextureParameterValue(TEXT("BaseColorTexture"), RingTexture);
@@ -116,7 +124,7 @@ void AT66MiniHazardTrap::BeginPlay()
 	{
 		SpriteComponent->SetSprite(TrapSprite);
 	}
-	else if (UTexture2D* WhiteTexture = LoadObject<UTexture2D>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture")))
+	else if (UTexture2D* WhiteTexture = VisualSubsystem ? VisualSubsystem->GetWhiteTexture() : nullptr)
 	{
 		SpriteComponent->SetSprite(WhiteTexture);
 	}
@@ -211,17 +219,31 @@ void AT66MiniHazardTrap::ApplyPulse()
 		return;
 	}
 
-	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	const AT66MiniGameMode* MiniGameMode = World->GetAuthGameMode<AT66MiniGameMode>();
+	const TArray<TObjectPtr<AT66MiniPlayerPawn>>* LivePlayerPawns = MiniGameMode ? &MiniGameMode->GetLivePlayerPawns() : nullptr;
+	if (LivePlayerPawns && LivePlayerPawns->Num() > 0)
 	{
-		APlayerController* PlayerController = It->Get();
-		AT66MiniPlayerPawn* PlayerPawn = PlayerController ? Cast<AT66MiniPlayerPawn>(PlayerController->GetPawn()) : nullptr;
-		if (PlayerPawn && PlayerPawn->IsHeroAlive() && FVector::DistSquared2D(GetActorLocation(), PlayerPawn->GetActorLocation()) <= FMath::Square(Radius))
+		for (AT66MiniPlayerPawn* PlayerPawn : *LivePlayerPawns)
 		{
-			PlayerPawn->ApplyDamage(DamagePerPulse);
+			if (PlayerPawn && PlayerPawn->IsHeroAlive() && FVector::DistSquared2D(GetActorLocation(), PlayerPawn->GetActorLocation()) <= FMath::Square(Radius))
+			{
+				PlayerPawn->ApplyDamage(DamagePerPulse);
+			}
+		}
+	}
+	else
+	{
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			APlayerController* PlayerController = It->Get();
+			AT66MiniPlayerPawn* PlayerPawn = PlayerController ? Cast<AT66MiniPlayerPawn>(PlayerController->GetPawn()) : nullptr;
+			if (PlayerPawn && PlayerPawn->IsHeroAlive() && FVector::DistSquared2D(GetActorLocation(), PlayerPawn->GetActorLocation()) <= FMath::Square(Radius))
+			{
+				PlayerPawn->ApplyDamage(DamagePerPulse);
+			}
 		}
 	}
 
-	const AT66MiniGameMode* MiniGameMode = World->GetAuthGameMode<AT66MiniGameMode>();
 	const TArray<TObjectPtr<AT66MiniEnemyBase>>* LiveEnemies = MiniGameMode ? &MiniGameMode->GetLiveEnemies() : nullptr;
 	if (LiveEnemies)
 	{

@@ -41,10 +41,18 @@ static UTexture* GetWhiteFallbackTexture()
 		return CachedTexture.Get();
 	}
 
-	UTexture* LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+	UTexture* LoadedTexture = FindObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
 	if (!LoadedTexture)
 	{
-		LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+		LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+	}
+	if (!LoadedTexture)
+	{
+		LoadedTexture = FindObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+		if (!LoadedTexture)
+		{
+			LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+		}
 	}
 
 	CachedTexture = LoadedTexture;
@@ -67,20 +75,66 @@ static FString GetMaterialBasePath(const UMaterialInterface* Material)
 	return Material->GetPathName();
 }
 
+static void T66AddUniqueCharacterVisualPath(const FSoftObjectPath& Path, TArray<FSoftObjectPath>& OutPaths)
+{
+	if (!Path.IsNull())
+	{
+		OutPaths.AddUnique(Path);
+	}
+}
+
+static void T66AddCharacterVisualPathIfPackageExists(const FString& ObjectPathString, TArray<FSoftObjectPath>& OutPaths)
+{
+	const FSoftObjectPath ObjectPath(ObjectPathString);
+	const FString PackageName = ObjectPath.GetLongPackageName();
+	if (!PackageName.IsEmpty() && FPackageName::DoesPackageExist(PackageName))
+	{
+		OutPaths.AddUnique(ObjectPath);
+	}
+}
+
+static void T66AppendAnimationFallbackPreloadPaths(const TSoftObjectPtr<UAnimationAsset>& SoftPath, TArray<FSoftObjectPath>& OutPaths)
+{
+	const FString PathStr = SoftPath.ToString();
+	if (PathStr.IsEmpty())
+	{
+		return;
+	}
+
+	int32 DotIdx = INDEX_NONE;
+	if (!PathStr.FindLastChar(TEXT('.'), DotIdx))
+	{
+		return;
+	}
+
+	const FString Base = PathStr.Left(DotIdx);
+	const FString ObjName = PathStr.Mid(DotIdx + 1);
+	if (!PathStr.Contains(TEXT("_Anim.")))
+	{
+		T66AddCharacterVisualPathIfPackageExists(Base + TEXT("_Anim.") + ObjName + TEXT("_Anim"), OutPaths);
+	}
+
+	const bool bBaseHasAnimSuffix = Base.EndsWith(TEXT("_Anim"));
+	const bool bObjectHasAnimSuffix = ObjName.EndsWith(TEXT("_Anim"));
+	if (bBaseHasAnimSuffix || bObjectHasAnimSuffix)
+	{
+		const FString BaseStrip = bBaseHasAnimSuffix ? Base.LeftChop(5) : Base;
+		const FString ObjNameStrip = bObjectHasAnimSuffix ? ObjName.LeftChop(5) : ObjName;
+		T66AddCharacterVisualPathIfPackageExists(BaseStrip + TEXT(".") + ObjNameStrip, OutPaths);
+		T66AddCharacterVisualPathIfPackageExists(BaseStrip + TEXT(".") + ObjName, OutPaths);
+		T66AddCharacterVisualPathIfPackageExists(Base + TEXT(".") + ObjNameStrip, OutPaths);
+	}
+}
+
 static void T66AppendCharacterVisualAssetPaths(const FT66CharacterVisualRow& Row, TArray<FSoftObjectPath>& OutPaths)
 {
-	auto AddPath = [&OutPaths](const FSoftObjectPath& Path)
-	{
-		if (!Path.IsNull())
-		{
-			OutPaths.AddUnique(Path);
-		}
-	};
-
-	AddPath(Row.SkeletalMesh.ToSoftObjectPath());
-	AddPath(Row.LoopingAnimation.ToSoftObjectPath());
-	AddPath(Row.AlertAnimation.ToSoftObjectPath());
-	AddPath(Row.RunAnimation.ToSoftObjectPath());
+	T66AddUniqueCharacterVisualPath(Row.SkeletalMesh.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.LoopingAnimation.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.AlertAnimation.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.RunAnimation.ToSoftObjectPath(), OutPaths);
+	T66AppendAnimationFallbackPreloadPaths(Row.LoopingAnimation, OutPaths);
+	T66AppendAnimationFallbackPreloadPaths(Row.AlertAnimation, OutPaths);
+	T66AppendAnimationFallbackPreloadPaths(Row.RunAnimation, OutPaths);
 }
 
 static bool T66IsUsableImportedTexture(const UTexture* Texture)
@@ -534,6 +588,11 @@ FName UT66CharacterVisualSubsystem::GetFallbackVisualID(FName VisualID)
 	return FName(*FallbackName);
 }
 
+void UT66CharacterVisualSubsystem::AppendCharacterVisualPreloadPaths(const FT66CharacterVisualRow& Row, TArray<FSoftObjectPath>& OutPaths)
+{
+	T66AppendCharacterVisualAssetPaths(Row, OutPaths);
+}
+
 UAnimationAsset* UT66CharacterVisualSubsystem::FindFallbackLoopingAnim(USkeleton* Skeleton) const
 {
 	if (!Skeleton)
@@ -632,7 +691,11 @@ UDataTable* UT66CharacterVisualSubsystem::GetVisualsDataTable() const
 	}
 
 	// Fallback: load by canonical path if present.
-	CachedVisualsDataTable = LoadObject<UDataTable>(nullptr, T66_DefaultCharacterVisualsDTPath);
+	CachedVisualsDataTable = FindObject<UDataTable>(nullptr, T66_DefaultCharacterVisualsDTPath);
+	if (!CachedVisualsDataTable)
+	{
+		CachedVisualsDataTable = LoadObject<UDataTable>(nullptr, T66_DefaultCharacterVisualsDTPath);
+	}
 	return CachedVisualsDataTable;
 }
 
@@ -857,6 +920,27 @@ void UT66CharacterVisualSubsystem::PreloadCharacterVisual(FName VisualID)
 	}
 
 	PendingPreloadHandles.Add(VisualID, Handle);
+}
+
+bool UT66CharacterVisualSubsystem::IsCharacterVisualReady(FName VisualID) const
+{
+	if (VisualID.IsNone())
+	{
+		return true;
+	}
+
+	if (ResolvedCache.Contains(VisualID))
+	{
+		return true;
+	}
+
+	if (PendingPreloadHandles.Contains(VisualID))
+	{
+		return false;
+	}
+
+	FName ResolvedVisualID = VisualID;
+	return FindVisualRow(VisualID, &ResolvedVisualID) == nullptr;
 }
 
 void UT66CharacterVisualSubsystem::HandleCharacterVisualPreloadCompleted(FName VisualID)

@@ -8,6 +8,7 @@
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Data/T66MiniDataTypes.h"
 #include "Engine/Texture2D.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "Save/T66MiniProfileSaveGame.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Styling/SlateBrush.h"
@@ -43,6 +44,7 @@ void UT66MiniCharacterSelectScreen::OnScreenActivated_Implementation()
 		{
 			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniCharacterSelectScreen::HandleSessionStateChanged);
 			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniCharacterSelect, true);
+			LastSessionUiStateKey = BuildSessionUiStateKey();
 		}
 	}
 
@@ -90,6 +92,18 @@ void UT66MiniCharacterSelectScreen::NativeDestruct()
 void UT66MiniCharacterSelectScreen::HandleSessionStateChanged()
 {
 	SyncToSharedPartyScreen();
+	if (UIManager && UIManager->GetCurrentScreenType() != ScreenType)
+	{
+		return;
+	}
+
+	const FString NewSessionUiStateKey = BuildSessionUiStateKey();
+	if (NewSessionUiStateKey == LastSessionUiStateKey)
+	{
+		return;
+	}
+
+	LastSessionUiStateKey = NewSessionUiStateKey;
 	ForceRebuildSlate();
 }
 
@@ -138,6 +152,8 @@ TSharedRef<SWidget> UT66MiniCharacterSelectScreen::BuildSlateUI()
 	{
 		SelectedHero = &Heroes[0];
 	}
+
+	LastSessionUiStateKey = BuildSessionUiStateKey();
 
 	RebuildHeroSpriteBrushes(Heroes);
 	const FSlateBrush* SelectedSprite = SelectedHero ? FindHeroSpriteBrush(SelectedHero->HeroID) : nullptr;
@@ -534,6 +550,11 @@ FReply UT66MiniCharacterSelectScreen::HandleHeroClicked(const FName HeroID)
 {
 	if (UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr)
 	{
+		if (FrontendState->GetSelectedHeroID() == HeroID)
+		{
+			return FReply::Handled();
+		}
+
 		FrontendState->SelectHero(HeroID);
 		ForceRebuildSlate();
 	}
@@ -563,6 +584,25 @@ void UT66MiniCharacterSelectScreen::RebuildHeroSpriteBrushes(const TArray<FT66Mi
 
 		HeroSpriteBrushes.Add(Hero.HeroID, Brush);
 	}
+}
+
+FString UT66MiniCharacterSelectScreen::BuildSessionUiStateKey() const
+{
+	const UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	if (!SessionSubsystem)
+	{
+		return FString();
+	}
+
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
+	return FString::Printf(
+		TEXT("%d|%d|%d|%d|%d"),
+		static_cast<int32>(SessionSubsystem->GetDesiredPartyFrontendScreen()),
+		SessionSubsystem->IsPartyLobbyContextActive() ? 1 : 0,
+		SessionSubsystem->IsLocalPlayerPartyHost() ? 1 : 0,
+		SessionSubsystem->IsLocalLobbyReady() ? 1 : 0,
+		LobbyProfiles.Num());
 }
 
 const FSlateBrush* UT66MiniCharacterSelectScreen::FindHeroSpriteBrush(const FName HeroID) const

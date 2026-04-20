@@ -702,6 +702,30 @@ namespace
 			SecondsText);
 	}
 
+	static int32 T66RarityToStageIndex(const ET66Rarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66Rarity::Red: return 1;
+		case ET66Rarity::Yellow: return 2;
+		case ET66Rarity::White: return 3;
+		case ET66Rarity::Black:
+		default: return 0;
+		}
+	}
+
+	static ET66Rarity T66StageIndexToRarity(const int32 StageIndex)
+	{
+		switch (StageIndex)
+		{
+		case 1: return ET66Rarity::Red;
+		case 2: return ET66Rarity::Yellow;
+		case 3: return ET66Rarity::White;
+		case 0:
+		default: return ET66Rarity::Black;
+		}
+	}
+
 	static float GetAchievementProgress01(const FAchievementData& Achievement)
 	{
 		return Achievement.RequirementCount > 0
@@ -966,12 +990,23 @@ class ST66CrosshairWidget : public SLeafWidget
 {
 public:
 	SLATE_BEGIN_ARGS(ST66CrosshairWidget) {}
-		SLATE_ATTRIBUTE(bool, Locked)
+		SLATE_ARGUMENT(bool, Locked)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs)
 	{
-		LockedAttribute = InArgs._Locked;
+		bLocked = InArgs._Locked;
+	}
+
+	void SetLocked(const bool bInLocked)
+	{
+		if (bLocked == bInLocked)
+		{
+			return;
+		}
+
+		bLocked = bInLocked;
+		Invalidate(EInvalidateWidget::Paint);
 	}
 
 	virtual FVector2D ComputeDesiredSize(float) const override
@@ -984,7 +1019,6 @@ public:
 	{
 		const FVector2D Size = AllottedGeometry.GetLocalSize();
 		const FVector2D Center(Size.X * 0.5f, Size.Y * 0.5f);
-		const bool bLocked = LockedAttribute.Get(false);
 		const FLinearColor CrosshairColor = bLocked
 			? FLinearColor(1.f, 0.28f, 0.18f, 0.98f)
 			: FLinearColor(0.95f, 0.95f, 1.f, 0.85f);
@@ -1082,7 +1116,7 @@ public:
 	}
 
 private:
-	TAttribute<bool> LockedAttribute;
+	bool bLocked = false;
 };
 
 class ST66ScopedSniperWidget : public SLeafWidget
@@ -2450,6 +2484,11 @@ void UT66GameplayHUDWidget::RefreshPausePresentation()
 		PauseAchievementsPanelBox->SetVisibility(EVisibility::Collapsed);
 		PauseAchievementsPanelBox->SetContent(StaticCastSharedRef<SWidget>(SNew(SSpacer)));
 	}
+
+	if (IsMediaViewerOpen())
+	{
+		RequestTikTokWebView2OverlaySync();
+	}
 }
 
 void UT66GameplayHUDWidget::MarkHUDDirty()
@@ -2490,7 +2529,16 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 	}
 	if (RevealPawn)
 	{
-		UpdateTowerMapReveal(RevealPawn->GetActorLocation());
+		TowerRevealAccumSeconds += InDeltaTime;
+		if (TowerRevealAccumSeconds >= TowerRevealIntervalSeconds)
+		{
+			TowerRevealAccumSeconds = 0.f;
+			UpdateTowerMapReveal(RevealPawn->GetActorLocation());
+		}
+	}
+	else
+	{
+		TowerRevealAccumSeconds = TowerRevealIntervalSeconds;
 	}
 
 	if (bPickupCardVisible && PickupCardBox.IsValid())
@@ -2515,14 +2563,15 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 	TickChestRewardPresentation(InDeltaTime);
 	TryShowQueuedPresentation();
 
-	if (bPausePresentationActive && IsMediaViewerOpen())
-	{
-		SyncTikTokWebView2OverlayToPlaceholder();
-	}
-
 	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
 		const bool bScoped = T66PC->IsHeroOneScopeViewEnabled();
+		const bool bCrosshairLocked = T66PC->HasAttackLockedEnemy();
+		if (CenterCrosshairWidget.IsValid() && bCrosshairLocked != bLastCrosshairLocked)
+		{
+			CenterCrosshairWidget->SetLocked(bCrosshairLocked);
+			bLastCrosshairLocked = bCrosshairLocked;
+		}
 		if (CenterCrosshairBox.IsValid())
 		{
 			CenterCrosshairBox->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
@@ -2593,6 +2642,10 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 	}
 	else
 	{
+		if (CenterCrosshairWidget.IsValid() && bLastCrosshairLocked)
+		{
+			CenterCrosshairWidget->SetLocked(false);
+		}
 		if (CenterCrosshairBox.IsValid())
 		{
 			CenterCrosshairBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
@@ -2602,6 +2655,7 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 		{
 			ScopedSniperOverlayBorder->SetVisibility(EVisibility::Collapsed);
 		}
+		bLastCrosshairLocked = false;
 		bLastScopedHudVisible = false;
 		LastScopedUltDisplayTenths = INDEX_NONE;
 		LastScopedShotDisplayCentis = INDEX_NONE;
@@ -2674,7 +2728,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->HeroProgressChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->SurvivalChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
-	RunState->QuickReviveChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+	RunState->QuickReviveChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshQuickReviveState);
 	RunState->StatusEffectsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
 	RunState->TutorialHintChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
 	RunState->TutorialSubtitleChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialSubtitle);
@@ -2805,7 +2859,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->UltimateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->SurvivalChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
-		RunState->QuickReviveChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		RunState->QuickReviveChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshQuickReviveState);
 		RunState->TutorialHintChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
 		RunState->TutorialSubtitleChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialSubtitle);
 		RunState->DevCheatsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
@@ -3215,28 +3269,29 @@ void UT66GameplayHUDWidget::StartChestReward(const ET66Rarity ChestRarity, const
 	}
 
 	const FVector2D ChestImageSize(108.f, 108.f);
+	static constexpr ET66Rarity ChestPresentationArtRarity = ET66Rarity::Yellow;
 	if (ChestRewardClosedBrush.IsValid())
 	{
-		BindRuntimeHudBrush(ChestRewardClosedBrush, GetChestRewardClosedRelativePath(ChestRarity), ChestImageSize);
+		BindRuntimeHudBrush(ChestRewardClosedBrush, GetChestRewardClosedRelativePath(ChestPresentationArtRarity), ChestImageSize);
 		if (!ChestRewardClosedBrush->GetResourceObject())
 		{
-			BindHudAssetBrush(ChestRewardClosedBrush, GetChestRewardFallbackAssetPath(ChestRarity), ChestImageSize);
+			BindHudAssetBrush(ChestRewardClosedBrush, GetChestRewardFallbackAssetPath(ChestPresentationArtRarity), ChestImageSize);
 		}
 		if (!ChestRewardClosedBrush->GetResourceObject())
 		{
-			BindRuntimeHudBrush(ChestRewardClosedBrush, GetChestRewardFallbackRelativePath(ChestRarity), ChestImageSize);
+			BindRuntimeHudBrush(ChestRewardClosedBrush, GetChestRewardFallbackRelativePath(ChestPresentationArtRarity), ChestImageSize);
 		}
 	}
 	if (ChestRewardOpenBrush.IsValid())
 	{
-		BindRuntimeHudBrush(ChestRewardOpenBrush, GetChestRewardOpenRelativePath(ChestRarity), ChestImageSize);
+		BindRuntimeHudBrush(ChestRewardOpenBrush, GetChestRewardOpenRelativePath(ChestPresentationArtRarity), ChestImageSize);
 		if (!ChestRewardOpenBrush->GetResourceObject())
 		{
-			BindHudAssetBrush(ChestRewardOpenBrush, GetChestRewardFallbackAssetPath(ChestRarity), ChestImageSize);
+			BindHudAssetBrush(ChestRewardOpenBrush, GetChestRewardFallbackAssetPath(ChestPresentationArtRarity), ChestImageSize);
 		}
 		if (!ChestRewardOpenBrush->GetResourceObject())
 		{
-			BindRuntimeHudBrush(ChestRewardOpenBrush, GetChestRewardFallbackRelativePath(ChestRarity), ChestImageSize);
+			BindRuntimeHudBrush(ChestRewardOpenBrush, GetChestRewardFallbackRelativePath(ChestPresentationArtRarity), ChestImageSize);
 		}
 	}
 
@@ -3257,15 +3312,10 @@ void UT66GameplayHUDWidget::StartChestReward(const ET66Rarity ChestRarity, const
 		ChestRewardOpenBox->SetRenderOpacity(0.f);
 	}
 
-	if (ChestRewardTileBorder.IsValid())
-	{
-		const FLinearColor AccentColor = FT66RarityUtil::GetRarityColor(ChestRarity) * 0.58f + FLinearColor(0.06f, 0.05f, 0.04f, 0.52f);
-		ChestRewardTileBorder->SetBorderBackgroundColor(AccentColor);
-	}
-
 	ActiveChestRewardRarity = ChestRarity;
 	ChestRewardTargetGold = FMath::Max(0, GoldAmount);
 	ChestRewardDisplayedGold = 0;
+	ChestRewardMinimumDisplayedGold = 0;
 	ChestRewardElapsedSeconds = 0.f;
 	ChestRewardRemainingSeconds = ChestRewardDisplaySeconds;
 	bChestRewardVisible = true;
@@ -3286,6 +3336,7 @@ void UT66GameplayHUDWidget::StartChestReward(const ET66Rarity ChestRarity, const
 		ChestRewardBox->SetVisibility(EVisibility::Visible);
 		ChestRewardBox->SetRenderOpacity(1.f);
 	}
+	RefreshChestRewardVisualState();
 
 	for (int32 CoinIndex = 0; CoinIndex < ChestRewardCoinBoxes.Num(); ++CoinIndex)
 	{
@@ -3331,14 +3382,23 @@ bool UT66GameplayHUDWidget::TrySkipActivePresentation()
 
 	if (bChestRewardVisible)
 	{
-		ChestRewardDisplayedGold = ChestRewardTargetGold;
-		if (ChestRewardCounterText.IsValid())
+		const ET66Rarity CurrentDisplayRarity = ResolveChestRewardDisplayedRarity(FMath::Max(ChestRewardDisplayedGold, ChestRewardMinimumDisplayedGold));
+		if (CurrentDisplayRarity == ActiveChestRewardRarity)
 		{
-			ChestRewardCounterText->SetText(FText::Format(
-				NSLOCTEXT("T66.ChestReward", "GoldCounterFormat", "+{0}"),
-				FText::AsNumber(ChestRewardTargetGold)));
+			ChestRewardDisplayedGold = ChestRewardTargetGold;
+			ChestRewardMinimumDisplayedGold = ChestRewardTargetGold;
+			RefreshChestRewardVisualState();
+			HideChestReward();
 		}
-		HideChestReward();
+		else
+		{
+			const int32 CurrentStageIndex = T66RarityToStageIndex(CurrentDisplayRarity);
+			const int32 FinalStageIndex = T66RarityToStageIndex(ActiveChestRewardRarity);
+			const ET66Rarity NextDisplayRarity = T66StageIndexToRarity(FMath::Clamp(CurrentStageIndex + 1, 0, FinalStageIndex));
+			ChestRewardMinimumDisplayedGold = FMath::Max(ChestRewardMinimumDisplayedGold, GetChestRewardRevealThresholdGold(NextDisplayRarity));
+			ChestRewardDisplayedGold = FMath::Max(ChestRewardDisplayedGold, ChestRewardMinimumDisplayedGold);
+			RefreshChestRewardVisualState();
+		}
 		return true;
 	}
 
@@ -3451,6 +3511,79 @@ void UT66GameplayHUDWidget::CloseWheelSpin()
 	TryShowQueuedPresentation();
 }
 
+int32 UT66GameplayHUDWidget::GetChestRewardRevealThresholdGold(const ET66Rarity Rarity) const
+{
+	if (Rarity == ET66Rarity::Black)
+	{
+		return 0;
+	}
+
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI ? T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	const ET66Rarity PriorRarity = [Rarity]() -> ET66Rarity
+	{
+		switch (Rarity)
+		{
+		case ET66Rarity::Red: return ET66Rarity::Black;
+		case ET66Rarity::Yellow: return ET66Rarity::Red;
+		case ET66Rarity::White: return ET66Rarity::Yellow;
+		case ET66Rarity::Black:
+		default: return ET66Rarity::Black;
+		}
+	}();
+	if (PlayerExperience)
+	{
+		const FT66IntRange GoldRange = PlayerExperience->GetDifficultyChestGoldRange(Difficulty, PriorRarity);
+		return FMath::Max(0, FMath::Max(GoldRange.Min, GoldRange.Max) + 1);
+	}
+
+	switch (Rarity)
+	{
+	case ET66Rarity::Red: return 76;
+	case ET66Rarity::Yellow: return 181;
+	case ET66Rarity::White: return 381;
+	case ET66Rarity::Black:
+	default: return 0;
+	}
+}
+
+ET66Rarity UT66GameplayHUDWidget::ResolveChestRewardDisplayedRarity(const int32 DisplayedGold) const
+{
+	ET66Rarity ResolvedRarity = ET66Rarity::Black;
+	const int32 FinalStageIndex = T66RarityToStageIndex(ActiveChestRewardRarity);
+	for (int32 StageIndex = 1; StageIndex <= FinalStageIndex; ++StageIndex)
+	{
+		const ET66Rarity StageRarity = T66StageIndexToRarity(StageIndex);
+		if (DisplayedGold >= GetChestRewardRevealThresholdGold(StageRarity))
+		{
+			ResolvedRarity = StageRarity;
+			continue;
+		}
+
+		break;
+	}
+
+	return ResolvedRarity;
+}
+
+void UT66GameplayHUDWidget::RefreshChestRewardVisualState()
+{
+	const ET66Rarity DisplayRarity = ResolveChestRewardDisplayedRarity(FMath::Max(ChestRewardDisplayedGold, ChestRewardMinimumDisplayedGold));
+	if (ChestRewardTileBorder.IsValid())
+	{
+		const FLinearColor AccentColor = FT66RarityUtil::GetRarityColor(DisplayRarity) * 0.58f + FLinearColor(0.06f, 0.05f, 0.04f, 0.52f);
+		ChestRewardTileBorder->SetBorderBackgroundColor(AccentColor);
+	}
+
+	if (ChestRewardCounterText.IsValid())
+	{
+		ChestRewardCounterText->SetText(FText::Format(
+			NSLOCTEXT("T66.ChestReward", "GoldCounterFormat", "+{0}"),
+			FText::AsNumber(FMath::Max(0, ChestRewardDisplayedGold))));
+	}
+}
+
 void UT66GameplayHUDWidget::TickChestRewardPresentation(const float InDeltaTime)
 {
 	if (!bChestRewardVisible || !ChestRewardBox.IsValid())
@@ -3464,17 +3597,13 @@ void UT66GameplayHUDWidget::TickChestRewardPresentation(const float InDeltaTime)
 	const float CounterProgress = FMath::Clamp(ChestRewardElapsedSeconds / 1.05f, 0.f, 1.f);
 	const float CounterEase = FMath::InterpEaseOut(0.f, 1.f, CounterProgress, 2.5f);
 	ChestRewardDisplayedGold = FMath::RoundToInt(static_cast<float>(ChestRewardTargetGold) * CounterEase);
+	ChestRewardDisplayedGold = FMath::Max(ChestRewardDisplayedGold, ChestRewardMinimumDisplayedGold);
 	if (ChestRewardRemainingSeconds <= 0.f)
 	{
 		ChestRewardDisplayedGold = ChestRewardTargetGold;
 	}
 
-	if (ChestRewardCounterText.IsValid())
-	{
-		ChestRewardCounterText->SetText(FText::Format(
-			NSLOCTEXT("T66.ChestReward", "GoldCounterFormat", "+{0}"),
-			FText::AsNumber(ChestRewardDisplayedGold)));
-	}
+	RefreshChestRewardVisualState();
 	if (ChestRewardSkipText.IsValid())
 	{
 		ChestRewardSkipText->SetText(BuildSkipCountdownText(ChestRewardRemainingSeconds, FName(TEXT("Interact"))));
@@ -3546,6 +3675,7 @@ void UT66GameplayHUDWidget::HideChestReward()
 	ChestRewardElapsedSeconds = 0.f;
 	ChestRewardTargetGold = 0;
 	ChestRewardDisplayedGold = 0;
+	ChestRewardMinimumDisplayedGold = 0;
 	if (ChestRewardBox.IsValid())
 	{
 		ChestRewardBox->SetVisibility(EVisibility::Collapsed);
@@ -4936,6 +5066,14 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			PortraitImage->SetVisibility(DesiredVisibility);
 		}
 	}
+	if (PortraitPlaceholderText.IsValid())
+	{
+		const EVisibility DesiredVisibility = bLastPortraitHasRef ? EVisibility::Collapsed : EVisibility::Visible;
+		if (PortraitPlaceholderText->GetVisibility() != DesiredVisibility)
+		{
+			PortraitPlaceholderText->SetVisibility(DesiredVisibility);
+		}
+	}
 
 	FHeroData SelectedHeroData;
 	const bool bHasSelectedHeroData = GIAsT66 && GIAsT66->GetSelectedHeroData(SelectedHeroData);
@@ -4994,7 +5132,9 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	}
 	if (LevelText.IsValid())
 	{
-		LevelText->SetText(FText::AsNumber(RunState->GetHeroLevel()));
+		LevelText->SetText(FText::Format(
+			NSLOCTEXT("T66.HUD", "LevelOutOf99", "{0}/99"),
+			FText::AsNumber(FMath::Clamp(RunState->GetHeroLevel(), 0, UT66RunStateSubsystem::MaxHeroLevel))));
 	}
 
 	// Ultimate (R) — show cooldown overlay with countdown when on cooldown, hide when ready
@@ -5056,6 +5196,10 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				DifficultyImages[i]->SetColorAndOpacity(Tier == 0 ? FLinearColor::White : TierC);
 			}
 		}
+		if (DifficultyRowBox.IsValid())
+		{
+			DifficultyRowBox->SetVisibility(Skulls > 0 ? EVisibility::Visible : EVisibility::Collapsed);
+		}
 	}
 
 	// Cowardice (clowns): show N clowns for gates taken this segment (resets after Coliseum).
@@ -5070,6 +5214,10 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			{
 				ClownImages[i]->SetColorAndOpacity(FLinearColor::White);
 			}
+		}
+		if (CowardiceRowBox.IsValid())
+		{
+			CowardiceRowBox->SetVisibility(Clowns > 0 ? EVisibility::Visible : EVisibility::Collapsed);
 		}
 	}
 
@@ -5294,6 +5442,9 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const FText PortraitLabel = Loc ? Loc->GetText_PortraitPlaceholder() : NSLOCTEXT("T66.GameplayHUD", "PortraitLabel", "PORTRAIT");
 	NetWorthText.Reset();
 	PortraitStatPanelBox.Reset();
+	PortraitPlaceholderText.Reset();
+	DifficultyRowBox.Reset();
+	CowardiceRowBox.Reset();
 	BossPartBarRows.Reset();
 	const bool bDotaTheme = FT66Style::IsDotaTheme();
 	const FLinearColor SlotOuterColor = bDotaTheme ? FT66Style::SlotOuter() : FLinearColor(0.f, 0.f, 0.f, 0.25f);
@@ -6757,15 +6908,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 														.HAlign(HAlign_Center)
 														.VAlign(VAlign_Center)
 														[
-															SNew(STextBlock)
+															SAssignNew(PortraitPlaceholderText, STextBlock)
 															.Text(PortraitLabel)
 															.Font(FT66Style::Tokens::FontBold(11))
 															.ColorAndOpacity(FT66Style::TextMuted())
 															.Justification(ETextJustify::Center)
-															.Visibility_Lambda([this]() -> EVisibility
-															{
-																return (PortraitBrush.IsValid() && PortraitBrush->GetResourceObject()) ? EVisibility::Collapsed : EVisibility::Visible;
-															})
+															.Visibility(EVisibility::Visible)
 														]
 														)
 													: StaticCastSharedRef<SWidget>(
@@ -6794,15 +6942,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 														.HAlign(HAlign_Center)
 														.VAlign(VAlign_Center)
 														[
-															SNew(STextBlock)
+															SAssignNew(PortraitPlaceholderText, STextBlock)
 															.Text(PortraitLabel)
 															.Font(FT66Style::Tokens::FontBold(11))
 															.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 															.Justification(ETextJustify::Center)
-															.Visibility_Lambda([this]() -> EVisibility
-															{
-																return (PortraitBrush.IsValid() && PortraitBrush->GetResourceObject()) ? EVisibility::Collapsed : EVisibility::Visible;
-															})
+															.Visibility(EVisibility::Visible)
 														]
 														),
 												FMargin(2.f),
@@ -7057,30 +7202,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							]
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 							[
-								SNew(SBox)
-								.Visibility_Lambda([this]() -> EVisibility
-								{
-									if (const UT66RunStateSubsystem* RunState = GetRunState())
-									{
-										return RunState->GetDifficultySkulls() > 0 ? EVisibility::Visible : EVisibility::Collapsed;
-									}
-									return EVisibility::Collapsed;
-								})
+								SAssignNew(DifficultyRowBox, SBox)
+								.Visibility(EVisibility::Collapsed)
 								[
 									DifficultyRowRef
 								]
 							]
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 0.f)
 							[
-								SNew(SBox)
-								.Visibility_Lambda([this]() -> EVisibility
-								{
-									if (const UT66RunStateSubsystem* RunState = GetRunState())
-									{
-										return RunState->GetCowardiceGatesTaken() > 0 ? EVisibility::Visible : EVisibility::Collapsed;
-									}
-									return EVisibility::Collapsed;
-								})
+								SAssignNew(CowardiceRowBox, SBox)
+								.Visibility(EVisibility::Collapsed)
 								[
 									CowardiceRowRef
 								]
@@ -7128,30 +7259,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							]
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 							[
-								SNew(SBox)
-								.Visibility_Lambda([this]() -> EVisibility
-								{
-									if (const UT66RunStateSubsystem* RunState = GetRunState())
-									{
-										return RunState->GetDifficultySkulls() > 0 ? EVisibility::Visible : EVisibility::Collapsed;
-									}
-									return EVisibility::Collapsed;
-								})
+								SAssignNew(DifficultyRowBox, SBox)
+								.Visibility(EVisibility::Collapsed)
 								[
 									DifficultyRowRef
 								]
 							]
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 0.f)
 							[
-								SNew(SBox)
-								.Visibility_Lambda([this]() -> EVisibility
-								{
-									if (const UT66RunStateSubsystem* RunState = GetRunState())
-									{
-										return RunState->GetCowardiceGatesTaken() > 0 ? EVisibility::Visible : EVisibility::Collapsed;
-									}
-									return EVisibility::Collapsed;
-								})
+								SAssignNew(CowardiceRowBox, SBox)
+								.Visibility(EVisibility::Collapsed)
 								[
 									CowardiceRowRef
 								]
@@ -7562,15 +7679,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.WidthOverride(28.f)
 			.HeightOverride(28.f)
 			[
-				SNew(ST66CrosshairWidget)
-				.Locked(TAttribute<bool>::CreateLambda([this]()
-				{
-					if (const AT66PlayerController* T66PC = Cast<AT66PlayerController>(GetOwningPlayer()))
-					{
-						return T66PC->HasAttackLockedEnemy();
-					}
-					return false;
-				}))
+				SAssignNew(CenterCrosshairWidget, ST66CrosshairWidget)
+				.Locked(false)
 			]
 		]
 		// Hero 1 scoped sniper overlay (first-person aim view + ult timers)

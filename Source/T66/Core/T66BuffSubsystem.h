@@ -34,7 +34,7 @@ public:
 	static constexpr int32 MaxFillStepsPerStat = 10;
 	static constexpr int32 PermanentBuffUnlockCostCC = 10;
 	static constexpr int32 SingleUseBuffCostCC = 1;
-	static constexpr int32 MaxSelectedSingleUseBuffs = 5;
+	static constexpr int32 MaxSelectedSingleUseBuffs = 4;
 	static constexpr float SingleUseSecondaryBuffMultiplier = 1.10f;
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;

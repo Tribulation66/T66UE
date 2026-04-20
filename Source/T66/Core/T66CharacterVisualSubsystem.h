@@ -75,9 +75,16 @@ public:
 	/** Resolve the canonical fallback visual row ID (e.g. Hero_1_TypeA_Skin -> Hero_1_TypeA). */
 	static FName GetFallbackVisualID(FName VisualID);
 
-	/** Preload a visual mapping (loads assets synchronously once and caches). */
+	/** Append all known preload candidates for a visual row, including animation fallback variants. */
+	static void AppendCharacterVisualPreloadPaths(const FT66CharacterVisualRow& Row, TArray<FSoftObjectPath>& OutPaths);
+
+	/** Preload a visual mapping asynchronously and cache it once ready. */
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
 	void PreloadCharacterVisual(FName VisualID);
+
+	/** Returns true when a visual no longer has pending preload work for the given ID. */
+	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
+	bool IsCharacterVisualReady(FName VisualID) const;
 
 	/** Get alert, walk, and run animations for a visual (for runtime animation state). OutRun/OutAlert may be null. */
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")

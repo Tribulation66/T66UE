@@ -33,6 +33,14 @@ enum class ET66ColiseumFlowMode : uint8
 	FinalDifficultyBoss UMETA(DisplayName = "Final Difficulty Boss")
 };
 
+UENUM(BlueprintType)
+enum class ET66RunModifierKind : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Challenge UMETA(DisplayName = "Challenge"),
+	Mod UMETA(DisplayName = "Mod")
+};
+
 /**
  * Game Instance for Tribulation 66
  * Persists across level loads and holds:
@@ -113,6 +121,14 @@ public:
 	/** Selected difficulty */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
+
+	/** Selected run modifier kind. None means no active challenge/mod. */
+	UPROPERTY(BlueprintReadWrite, Category = "Selection")
+	ET66RunModifierKind SelectedRunModifierKind = ET66RunModifierKind::None;
+
+	/** Stable run modifier id/name used by the frontend selection. */
+	UPROPERTY(BlueprintReadWrite, Category = "Selection")
+	FName SelectedRunModifierID = NAME_None;
 
 	/** Mini lobby selected hero row name. */
 	UPROPERTY(BlueprintReadWrite, Category = "Mini")
@@ -406,6 +422,27 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Selection")
 	bool HasCompanionSelected() const { return !SelectedCompanionID.IsNone(); }
 
+	/** Check if a run modifier is selected. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Selection")
+	bool HasSelectedRunModifier() const
+	{
+		return SelectedRunModifierKind != ET66RunModifierKind::None && !SelectedRunModifierID.IsNone();
+	}
+
+	/** Check if the selected run modifier is a challenge. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Selection")
+	bool HasSelectedRunChallenge() const
+	{
+		return SelectedRunModifierKind == ET66RunModifierKind::Challenge && !SelectedRunModifierID.IsNone();
+	}
+
+	/** Check if the selected run modifier is a gameplay mod. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Selection")
+	bool HasSelectedRunMod() const
+	{
+		return SelectedRunModifierKind == ET66RunModifierKind::Mod && !SelectedRunModifierID.IsNone();
+	}
+
 	/** Persist the current hero/companion defaults into the profile save. */
 	void PersistRememberedSelectionDefaults();
 
@@ -455,15 +492,23 @@ public:
 
 private:
 	void PrimeCoreDataTablesAsync();
+	void PrimeCorePresentationAssetsAsync();
 	void HandleCoreDataTablesLoaded();
+	void HandleCorePresentationAssetsLoaded();
 	void HandleHeroSelectionAssetsLoaded();
 	void HandleHeroSelectionPreviewVisualsLoaded();
 	bool QueueGameplayVisualAssetPreload();
+	void PollGameplayVisualPreloadCompletion();
+	void FinalizeGameplayAssetsPreload();
 	void RestoreRememberedSelectionDefaults();
 
 	bool bCoreDataTablesLoadRequested = false;
 	bool bCoreDataTablesLoaded = false;
 	TSharedPtr<FStreamableHandle> CoreDataTablesLoadHandle;
+
+	bool bCorePresentationAssetsLoadRequested = false;
+	bool bCorePresentationAssetsLoaded = false;
+	TSharedPtr<FStreamableHandle> CorePresentationAssetsLoadHandle;
 
 	bool bHeroSelectionAssetsLoadRequested = false;
 	bool bHeroSelectionAssetsLoaded = false;
@@ -539,9 +584,12 @@ private:
 
 	// Gameplay asset pre-load tracking.
 	bool bGameplayAssetsPreloadInFlight = false;
+	bool bGameplayPreloadWaitingOnCoreTables = false;
 	bool bGameplayVisualAssetsPhaseQueued = false;
+	int32 GameplayVisualPreloadPollRetriesRemaining = 0;
 	TSharedPtr<FStreamableHandle> GameplayAssetsPreloadHandle;
 	TFunction<void()> GameplayAssetsPreloadCallback;
+	FTimerHandle GameplayVisualPreloadPollTimerHandle;
 	void HandleGameplayAssetsPreloaded();
 	TSharedPtr<SBorder> PersistentGameplayTransitionCurtain;
 };

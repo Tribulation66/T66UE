@@ -8,6 +8,7 @@
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Data/T66MiniDataTypes.h"
 #include "Engine/Texture2D.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Styling/SlateBrush.h"
 #include "UI/T66MiniUIStyle.h"
@@ -49,6 +50,7 @@ void UT66MiniDifficultySelectScreen::OnScreenActivated_Implementation()
 		{
 			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniDifficultySelectScreen::HandleSessionStateChanged);
 			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniDifficultySelect, true);
+			LastSessionUiStateKey = BuildSessionUiStateKey();
 		}
 	}
 
@@ -115,6 +117,18 @@ void UT66MiniDifficultySelectScreen::NativeDestruct()
 void UT66MiniDifficultySelectScreen::HandleSessionStateChanged()
 {
 	SyncToSharedPartyScreen();
+	if (UIManager && UIManager->GetCurrentScreenType() != ScreenType)
+	{
+		return;
+	}
+
+	const FString NewSessionUiStateKey = BuildSessionUiStateKey();
+	if (NewSessionUiStateKey == LastSessionUiStateKey)
+	{
+		return;
+	}
+
+	LastSessionUiStateKey = NewSessionUiStateKey;
 	ForceRebuildSlate();
 }
 
@@ -194,6 +208,7 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 	const float CompanionHealingPerSecond = (SaveSubsystem && DataSubsystem && SelectedCompanion)
 		? SaveSubsystem->GetCompanionHealingPerSecond(SelectedCompanion->CompanionID, DataSubsystem)
 		: 0.0f;
+	LastSessionUiStateKey = BuildSessionUiStateKey();
 	RefreshSelectedHeroBrush(SelectedHero);
 	const FSlateBrush* HeroBrush = SelectedHeroBrush.Get();
 
@@ -591,6 +606,11 @@ FReply UT66MiniDifficultySelectScreen::HandleDifficultyClicked(const FName Diffi
 
 	if (UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr)
 	{
+		if (FrontendState->GetSelectedDifficultyID() == DifficultyID)
+		{
+			return FReply::Handled();
+		}
+
 		FrontendState->SelectDifficulty(DifficultyID);
 		ForceRebuildSlate();
 	}
@@ -620,4 +640,24 @@ void UT66MiniDifficultySelectScreen::RefreshSelectedHeroBrush(const FT66MiniHero
 			SelectedHeroBrush->SetResourceObject(HeroTexture);
 		}
 	}
+}
+
+FString UT66MiniDifficultySelectScreen::BuildSessionUiStateKey() const
+{
+	const UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	if (!SessionSubsystem)
+	{
+		return FString();
+	}
+
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
+	return FString::Printf(
+		TEXT("%d|%d|%d|%d|%d|%d"),
+		static_cast<int32>(SessionSubsystem->GetDesiredPartyFrontendScreen()),
+		SessionSubsystem->IsPartyLobbyContextActive() ? 1 : 0,
+		SessionSubsystem->IsLocalPlayerPartyHost() ? 1 : 0,
+		SessionSubsystem->IsLocalLobbyReady() ? 1 : 0,
+		SessionSubsystem->IsPartySessionActive() ? 1 : 0,
+		LobbyProfiles.Num());
 }

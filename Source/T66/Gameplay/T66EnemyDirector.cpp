@@ -31,6 +31,10 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66EnemyDirector, Log, All);
 namespace
 {
 	static constexpr bool T66EnableTowerEnemySpawns = true;
+	static constexpr int32 T66TowerTargetInitialEnemiesPerGameplayFloor = 4;
+	static constexpr float T66TowerTargetRuntimeSpawnIntervalSeconds = 9.0f;
+	static constexpr int32 T66TowerTargetEnemiesPerWave = 1;
+	static constexpr int32 T66TowerTargetMaxAliveEnemies = 12;
 
 	static void T66ResolveStageMobIDs(UGameInstance* GI, const int32 StageNum, TArray<FName>& OutMobIDs)
 	{
@@ -174,7 +178,7 @@ void AT66EnemyDirector::SpawnInitialPopulationForStage()
 		}
 
 		const int32 InitialPopulationCount = FMath::Clamp(
-			FMath::RoundToInt(static_cast<float>(FMath::Max(0, InitialTowerEnemiesPerGameplayFloor)) * Snapshot.InitialPopulationScalar * Snapshot.DifficultyScalar),
+			T66TowerTargetInitialEnemiesPerGameplayFloor,
 			0,
 			64);
 		for (int32 SpawnIndex = 0; SpawnIndex < InitialPopulationCount; ++SpawnIndex)
@@ -337,9 +341,13 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 			const FT66StageProgressionSnapshot Snapshot = StageProgression
 				? StageProgression->GetCurrentSnapshot()
 				: FT66StageProgressionSnapshot{};
+			const AT66GameMode* ActiveGameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+			const bool bTowerLayout = ActiveGameMode && ActiveGameMode->IsUsingTowerMainMapLayout();
 			const float RuntimeSpawnInterval = FMath::Max(
 				0.15f,
-				(BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
+				bTowerLayout
+					? T66TowerTargetRuntimeSpawnIntervalSeconds
+					: (BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
 
 			bSpawningArmed = true;
 			SpawnRuntimeTrickleWave();
@@ -413,21 +421,29 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		return;
 	}
 
-	// Global density pass: triple combat spawns on top of the existing difficulty scalar.
-	static constexpr float SpawnDensityMultiplier = 3.0f;
-
-	// Difficulty scaling affects enemy count (waves + max alive).
+	// Difficulty scaling affects enemy count (waves + max alive) outside the tower progression curve.
 	const float Scalar = RunState->GetDifficultyScalar();
 	const float FinaleScalar = RunState->GetFinalSurvivalEnemyScalar();
 	const float SpawnScalar = Scalar * FinaleScalar * Snapshot.RuntimeTrickleCountScalar;
-	int32 EffectivePerWave = FMath::Clamp(
-		FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseEnemiesPerWave)) * SpawnScalar * SpawnDensityMultiplier),
-		1,
-		600);
-	int32 EffectiveMaxAlive = FMath::Clamp(
-		FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseMaxAliveEnemies)) * SpawnScalar * SpawnDensityMultiplier),
-		1,
-		1500);
+	int32 EffectivePerWave = 0;
+	int32 EffectiveMaxAlive = 0;
+	if (bTowerLayout)
+	{
+		EffectivePerWave = T66TowerTargetEnemiesPerWave;
+		EffectiveMaxAlive = T66TowerTargetMaxAliveEnemies;
+	}
+	else
+	{
+		static constexpr float SpawnDensityMultiplier = 3.0f;
+		EffectivePerWave = FMath::Clamp(
+			FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseEnemiesPerWave)) * SpawnScalar * SpawnDensityMultiplier),
+			1,
+			600);
+		EffectiveMaxAlive = FMath::Clamp(
+			FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseMaxAliveEnemies)) * SpawnScalar * SpawnDensityMultiplier),
+			1,
+			1500);
+	}
 	EffectiveMaxAlive = FMath::Max(EffectiveMaxAlive, EffectivePerWave);
 
 	int32 ToSpawn = FMath::Min(EffectivePerWave, EffectiveMaxAlive - AliveCount);
@@ -1006,7 +1022,8 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 		if (Enemy)
 		{
 			const FT66RarityWeights Weights = Tuning ? Tuning->SpecialEnemyRarityBase : FT66RarityWeights{};
-			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+			const bool bGoblinRarityReplayable = (RngSub && Tuning);
+			const ET66Rarity R = bGoblinRarityReplayable ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
 			if (AT66GoblinThiefEnemy* Gob = Cast<AT66GoblinThiefEnemy>(Enemy))
 			{
 				Gob->SetRarity(R);
@@ -1015,9 +1032,9 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 					RunState->RecordLuckQualityRarity(
 						FName(TEXT("GoblinRarity")),
 						R,
-						RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE,
-						RngSub ? RngSub->GetLastRunPreDrawSeed() : 0,
-						&Weights);
+						bGoblinRarityReplayable ? RngSub->GetLastRunDrawIndex() : INDEX_NONE,
+						bGoblinRarityReplayable ? RngSub->GetLastRunPreDrawSeed() : 0,
+						bGoblinRarityReplayable ? &Weights : nullptr);
 				}
 			}
 

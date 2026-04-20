@@ -25,6 +25,9 @@ AT66GamblerBoss::AT66GamblerBoss()
 	GroundAOERadius = 250.f;
 	GroundAOEWarningSeconds = 1.0f;
 	GroundAOEBaseDamageHP = 20;
+	AttackProfile = ET66BossAttackProfile::Gambler;
+	AttackPrimaryColor = FLinearColor(0.92f, 0.16f, 0.42f, 1.f);
+	AttackSecondaryColor = FLinearColor(0.18f, 0.84f, 0.96f, 1.f);
 
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{

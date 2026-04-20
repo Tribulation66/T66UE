@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\SkeletonWarrior\\Raw\\SkeletonWarrior_Front_Green_S1337_D200000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\SkeletonWarrior\\Renders\\SkeletonWarrior_Front_Green_S1337_D200000_Raw.png",
+  "export": null,
+  "raw_triangles": 194361,
+  "triangles_before_decimate": 194361,
+  "triangles_after_decimate": 194361,
+  "bounds": {
+    "min": [
+      -0.33784520626068115,
+      -0.1635381579399109,
+      -0.5009737014770508
+    ],
+    "max": [
+      0.3378533720970154,
+      0.16053861379623413,
+      0.500686526298523
+    ],
+    "size": [
+      0.6756985783576965,
+      0.324076771736145,
+      1.0016602277755737
+    ]
+  }
+}

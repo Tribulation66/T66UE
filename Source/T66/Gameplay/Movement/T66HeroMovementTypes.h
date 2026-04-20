@@ -28,29 +28,50 @@ struct T66_API FT66HeroMovementTuning
 	float DefaultWalkSpeed = 1800.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
-	float MaxAcceleration = 99999.f;
+	float MaxAcceleration = 9000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
-	float BrakingDecelerationWalking = 99999.f;
+	float BrakingDecelerationWalking = 12000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
 	float GroundFriction = 8.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
-	float BrakingFrictionFactor = 2.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (InlineEditConditionToggle))
+	bool bUseSeparateBrakingFriction = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0", EditCondition = "bUseSeparateBrakingFriction"))
+	float BrakingFriction = 12.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
-	float JumpZVelocity = 2200.f;
+	float BrakingFrictionFactor = 1.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
-	float AirControl = 0.65f;
+	float JumpZVelocity = 1600.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
+	float JumpMaxHoldTime = 0.08f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
+	float AirControl = 0.40f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.1"))
-	float GravityScale = 2.5f;
+	float GravityScale = 4.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
+	float FallingLateralFriction = 0.35f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
+	float BrakingDecelerationFalling = 4096.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.05"))
 	float DashCooldownSeconds = 0.7f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "100.0"))
-	float DashStrength = 1600.f;
+	float DashStrength = 3200.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "1.0"))
+	float DashSpeedMultiplierOverWalkSpeed = 1.6f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
+	float RotationRateYaw = 1440.f;
 };

@@ -1,31 +1,68 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66BossGroundAOE.h"
-#include "Gameplay/T66HeroBase.h"
-#include "Gameplay/T66EnemyBase.h"
-#include "Gameplay/T66BossBase.h"
-#include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66RunStateSubsystem.h"
-#include "Core/T66DamageLogSubsystem.h"
-#include "Components/SphereComponent.h"
-#include "NiagaraFunctionLibrary.h"
-#include "NiagaraComponent.h"
-#include "NiagaraSystem.h"
-#include "Kismet/GameplayStatics.h"
 
-static UNiagaraSystem* LoadPixelVFX_AOE()
+#include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66RunStateSubsystem.h"
+#include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66VisualUtil.h"
+#include "Components/SphereComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
+#include "UObject/UObjectGlobals.h"
+
+namespace
 {
-	static TObjectPtr<UNiagaraSystem> CachedSystem = nullptr;
-	static TObjectPtr<UNiagaraSystem> CachedFallbackSystem = nullptr;
-	if (!CachedSystem)
+	UNiagaraSystem* T66LoadBossAOEImpactSystem(const TCHAR* AssetPath)
 	{
-		CachedSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
+		if (!AssetPath || !*AssetPath)
+		{
+			return nullptr;
+		}
+
+		static TMap<FString, TWeakObjectPtr<UNiagaraSystem>> Cache;
+		const FString Key(AssetPath);
+		if (const TWeakObjectPtr<UNiagaraSystem>* Found = Cache.Find(Key))
+		{
+			if (Found->IsValid())
+			{
+				return Found->Get();
+			}
+		}
+
+		UNiagaraSystem* Loaded = FindObject<UNiagaraSystem>(nullptr, AssetPath);
+		if (!Loaded)
+		{
+			Loaded = LoadObject<UNiagaraSystem>(nullptr, AssetPath);
+		}
+
+		Cache.Add(Key, Loaded);
+		return Loaded;
 	}
-	if (!CachedSystem && !CachedFallbackSystem)
+
+	const TCHAR* T66GetBossAOEImpactPath(const ET66BossAttackProfile AttackProfile)
 	{
-		CachedFallbackSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
+		switch (AttackProfile)
+		{
+		case ET66BossAttackProfile::Sharpshooter:
+			return TEXT("/Game/Stylized_VFX_StPack/Particles/P_Laser_02.P_Laser_02");
+		case ET66BossAttackProfile::Juggernaut:
+			return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02");
+		case ET66BossAttackProfile::Duelist:
+			return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_02.P_Cosmic_Projectile_02");
+		case ET66BossAttackProfile::Vendor:
+			return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_02.P_Weapon_02");
+		case ET66BossAttackProfile::Gambler:
+			return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Portal.P_Cosmic_Portal");
+		case ET66BossAttackProfile::Balanced:
+		default:
+			return TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1");
+		}
 	}
-	return CachedSystem ? CachedSystem.Get() : CachedFallbackSystem.Get();
 }
 
 AT66BossGroundAOE::AT66BossGroundAOE()
@@ -40,18 +77,72 @@ AT66BossGroundAOE::AT66BossGroundAOE()
 	DamageZone->SetGenerateOverlapEvents(false);
 	RootComponent = DamageZone;
 
+	WarningMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WarningMesh"));
+	WarningMesh->SetupAttachment(RootComponent);
+	WarningMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	WarningMesh->SetCastShadow(false);
+
+	ImpactMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ImpactMesh"));
+	ImpactMesh->SetupAttachment(RootComponent);
+	ImpactMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ImpactMesh->SetCastShadow(false);
+	ImpactMesh->SetVisibility(false);
+
+	if (UStaticMesh* CylinderMesh = FT66VisualUtil::GetBasicShapeCylinder())
+	{
+		WarningMesh->SetStaticMesh(CylinderMesh);
+		ImpactMesh->SetStaticMesh(CylinderMesh);
+	}
+
 	InitialLifeSpan = 8.f;
+}
+
+void AT66BossGroundAOE::ConfigureVisualStyle(
+	const ET66BossAttackProfile InAttackProfile,
+	const FLinearColor& InTelegraphColor,
+	const FLinearColor& InImpactColor)
+{
+	AttackProfile = InAttackProfile;
+	TelegraphColor = InTelegraphColor;
+	ImpactColor = InImpactColor;
+	CachedImpactVFX = T66LoadBossAOEImpactSystem(T66GetBossAOEImpactPath(AttackProfile));
+}
+
+void AT66BossGroundAOE::RefreshVisualState(const float WarningAlpha)
+{
+	const float RadiusScale = Radius / 50.f;
+	if (WarningMesh)
+	{
+		const float Pulse = 1.f + 0.08f * FMath::Sin(WarningElapsed * FMath::Lerp(2.f, 8.f, WarningAlpha) * PI);
+		WarningMesh->SetRelativeScale3D(FVector(RadiusScale * Pulse, RadiusScale * Pulse, 0.025f + 0.01f * WarningAlpha));
+		WarningMesh->SetRelativeLocation(FVector(0.f, 0.f, 2.5f));
+		WarningMesh->AddLocalRotation(FRotator(0.f, 50.f * GetWorld()->GetDeltaSeconds(), 0.f));
+		FT66VisualUtil::ApplyT66Color(WarningMesh, this, TelegraphColor);
+	}
+
+	if (ImpactMesh)
+	{
+		const float PillarHeightScale = FMath::Lerp(0.05f, 2.6f, WarningAlpha);
+		ImpactMesh->SetRelativeScale3D(FVector(RadiusScale * 0.38f, RadiusScale * 0.38f, PillarHeightScale));
+		ImpactMesh->SetRelativeLocation(FVector(0.f, 0.f, 100.f * PillarHeightScale));
+		FT66VisualUtil::ApplyT66Color(ImpactMesh, this, ImpactColor);
+	}
 }
 
 void AT66BossGroundAOE::BeginPlay()
 {
 	Super::BeginPlay();
 	DamageZone->SetSphereRadius(Radius);
-	CachedPixelVFX = LoadPixelVFX_AOE();
 	WarningElapsed = 0.f;
 
-	UWorld* World = GetWorld();
-	if (World)
+	if (!CachedImpactVFX)
+	{
+		CachedImpactVFX = T66LoadBossAOEImpactSystem(T66GetBossAOEImpactPath(AttackProfile));
+	}
+
+	RefreshVisualState(0.f);
+
+	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(ActivateTimerHandle, this, &AT66BossGroundAOE::ActivateDamage, WarningDurationSeconds, false);
 	}
@@ -61,96 +152,31 @@ void AT66BossGroundAOE::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!CachedPixelVFX || !GetWorld()) return;
-
-	VFXAccum += DeltaSeconds;
-
 	if (!bDamageActivated)
 	{
 		WarningElapsed += DeltaSeconds;
-
-		static constexpr float RingSpawnInterval = 0.06f;
-		if (VFXAccum < RingSpawnInterval) return;
-		VFXAccum -= RingSpawnInterval;
-
-		const FVector Origin = GetActorLocation();
-		const float T = WarningElapsed / FMath::Max(0.1f, WarningDurationSeconds);
-		const float PulseFreq = FMath::Lerp(2.f, 8.f, FMath::Clamp(T, 0.f, 1.f));
-		const float PulseScale = 1.f + 0.1f * FMath::Sin(WarningElapsed * PulseFreq * PI);
-		const float EffectiveRadius = Radius * PulseScale;
-
-		const FLinearColor BaseColor = bDamageEnemies
-			? FLinearColor(0.2f, 0.3f, 0.9f, 0.6f)
-			: FLinearColor(0.9f, 0.1f, 0.05f, 0.6f);
-		UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>();
-
-		static constexpr int32 RingParticles = 8;
-		for (int32 i = 0; i < RingParticles; ++i)
-		{
-			const float Angle = (static_cast<float>(i) / static_cast<float>(RingParticles)) * 2.f * PI
-				+ WarningElapsed * 2.f;
-			const FVector Loc(
-				Origin.X + FMath::Cos(Angle) * EffectiveRadius,
-				Origin.Y + FMath::Sin(Angle) * EffectiveRadius,
-				Origin.Z + 5.f);
-
-			const FVector4 Tint(BaseColor.R, BaseColor.G, BaseColor.B, BaseColor.A);
-			if (PixelVFX)
-			{
-				PixelVFX->SpawnPixelAtLocation(
-					Loc,
-					FLinearColor(Tint.X, Tint.Y, Tint.Z, Tint.W),
-					FVector2D(3.0f, 3.0f),
-					ET66PixelVFXPriority::Low,
-					FRotator::ZeroRotator,
-					FVector(1.f),
-					CachedPixelVFX);
-			}
-		}
+		RefreshVisualState(FMath::Clamp(WarningElapsed / FMath::Max(0.1f, WarningDurationSeconds), 0.f, 1.f));
+		return;
 	}
-	else
-	{
-		static constexpr float PillarSpawnInterval = 0.05f;
-		if (VFXAccum < PillarSpawnInterval) return;
-		VFXAccum -= PillarSpawnInterval;
 
-		const FVector Origin = GetActorLocation();
-		const FLinearColor PillarColor = bDamageEnemies
-			? FLinearColor(0.4f, 0.2f, 0.9f, 0.9f)
-			: FLinearColor(1.f, 0.15f, 0.05f, 0.9f);
-		UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>();
-
-		static constexpr int32 PillarParticles = 10;
-		for (int32 i = 0; i < PillarParticles; ++i)
-		{
-			const float Angle = FMath::FRandRange(0.f, 2.f * PI);
-			const float Dist = FMath::FRandRange(0.f, Radius * 0.7f);
-			const float Z = FMath::FRandRange(0.f, 600.f);
-			const FVector Loc(
-				Origin.X + FMath::Cos(Angle) * Dist,
-				Origin.Y + FMath::Sin(Angle) * Dist,
-				Origin.Z + Z);
-
-			const FVector4 Tint(PillarColor.R, PillarColor.G, PillarColor.B, PillarColor.A);
-			if (PixelVFX)
-			{
-				PixelVFX->SpawnPixelAtLocation(
-					Loc,
-					FLinearColor(Tint.X, Tint.Y, Tint.Z, Tint.W),
-					FVector2D(4.0f, 4.0f),
-					ET66PixelVFXPriority::Low,
-					FRotator::ZeroRotator,
-					FVector(1.f),
-					CachedPixelVFX);
-			}
-		}
-	}
+	const float LingerAlpha = FMath::Clamp(WarningElapsed / FMath::Max(0.1f, PillarLingerSeconds), 0.f, 1.f);
+	RefreshVisualState(1.f - LingerAlpha);
+	WarningElapsed += DeltaSeconds;
 }
 
 void AT66BossGroundAOE::ActivateDamage()
 {
 	bDamageActivated = true;
-	VFXAccum = 0.f;
+	WarningElapsed = 0.f;
+
+	if (WarningMesh)
+	{
+		WarningMesh->SetVisibility(false);
+	}
+	if (ImpactMesh)
+	{
+		ImpactMesh->SetVisibility(true);
+	}
 
 	DamageZone->SetGenerateOverlapEvents(true);
 	DamageZone->UpdateOverlaps();
@@ -166,12 +192,16 @@ void AT66BossGroundAOE::ActivateDamage()
 			if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Actor))
 			{
 				if (E->CurrentHP > 0)
+				{
 					E->TakeDamageFromHero(DamageHP, UltimateSourceID, NAME_None);
+				}
 			}
 			else if (AT66BossBase* B = Cast<AT66BossBase>(Actor))
 			{
 				if (B->IsAwakened() && B->IsAlive())
+				{
 					B->TakeDamageFromHeroHit(DamageHP, UltimateSourceID, NAME_None);
+				}
 			}
 		}
 	}
@@ -182,55 +212,38 @@ void AT66BossGroundAOE::ActivateDamage()
 		for (AActor* Actor : Overlapping)
 		{
 			AT66HeroBase* Hero = Cast<AT66HeroBase>(Actor);
-			if (!Hero) continue;
-			if (Hero->IsInSafeZone()) continue;
+			if (!Hero || Hero->IsInSafeZone())
+			{
+				continue;
+			}
 
 			UWorld* World = GetWorld();
 			UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 			UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 			if (RunState)
+			{
 				RunState->ApplyDamage(DamageHP, GetOwner());
+			}
 		}
 	}
 
 	DamageZone->SetGenerateOverlapEvents(false);
 
-	// Spawn a big burst of particles at impact
-	if (CachedPixelVFX && GetWorld())
+	if (CachedImpactVFX && GetWorld())
 	{
-		const FVector Origin = GetActorLocation();
-		const FLinearColor PillarColor = bDamageEnemies
-			? FLinearColor(0.4f, 0.2f, 0.9f, 1.f)
-			: FLinearColor(1.f, 0.15f, 0.05f, 1.f);
-		UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>();
-
-		for (int32 i = 0; i < 30; ++i)
-		{
-			const float Angle = FMath::FRandRange(0.f, 2.f * PI);
-			const float Dist = FMath::FRandRange(0.f, Radius);
-			const float Z = FMath::FRandRange(0.f, 600.f);
-			const FVector Loc(
-				Origin.X + FMath::Cos(Angle) * Dist,
-				Origin.Y + FMath::Sin(Angle) * Dist,
-				Origin.Z + Z);
-			if (PixelVFX)
-			{
-				PixelVFX->SpawnPixelAtLocation(
-					Loc,
-					FLinearColor(PillarColor.R, PillarColor.G, PillarColor.B, 1.f),
-					FVector2D(4.0f, 4.0f),
-					ET66PixelVFXPriority::Medium,
-					FRotator::ZeroRotator,
-					FVector(1.f),
-					CachedPixelVFX);
-			}
-		}
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			CachedImpactVFX,
+			GetActorLocation(),
+			FRotator::ZeroRotator,
+			FVector(FMath::Max(0.65f, Radius / 180.f)),
+			true,
+			true,
+			ENCPoolMethod::AutoRelease,
+			true);
 	}
 
-	SetActorTickEnabled(false);
-
-	UWorld* World = GetWorld();
-	if (World)
+	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(DestroyTimerHandle, this, &AT66BossGroundAOE::DestroySelf, PillarLingerSeconds, false);
 	}

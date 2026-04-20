@@ -4,6 +4,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66PartySubsystem.h"
+#include "Core/T66RunIntegritySubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
@@ -780,6 +781,12 @@ void UT66SaveSlotsScreen::PrepareGameInstanceForLoadedSave(UT66GameInstance* GI,
 	GI->bApplyLoadedRunSnapshot = Loaded->RunSnapshot.bValid;
 	GI->CurrentSaveSlotIndex = SlotIndex;
 	GI->bRunIneligibleForLeaderboard = Loaded->bRunIneligibleForLeaderboard;
+	if (UT66RunIntegritySubsystem* Integrity = GI->GetSubsystem<UT66RunIntegritySubsystem>())
+	{
+		Integrity->RestoreActiveRunContext(Loaded->IntegrityContext);
+		Integrity->MarkLoadedSnapshot();
+		GI->bRunIneligibleForLeaderboard = GI->bRunIneligibleForLeaderboard || !Integrity->GetCurrentContext().ShouldAllowRankedSubmission();
+	}
 	GI->CurrentRunOwnerPlayerId = Loaded->OwnerPlayerId;
 	GI->CurrentRunOwnerDisplayName = Loaded->OwnerDisplayName;
 	GI->CurrentRunPartyMemberIds = Loaded->PartyMemberIds;

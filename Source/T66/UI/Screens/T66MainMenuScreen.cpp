@@ -231,6 +231,71 @@ UT66LocalizationSubsystem* UT66MainMenuScreen::GetLocSubsystem() const
 	return nullptr;
 }
 
+uint32 UT66MainMenuScreen::CaptureMenuStateHash() const
+{
+	uint32 StateHash = 0;
+
+	if (const UT66LocalizationSubsystem* Loc = GetLocSubsystem())
+	{
+		StateHash = HashCombine(StateHash, GetTypeHash(static_cast<uint8>(Loc->GetCurrentLanguage())));
+	}
+
+	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (const UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
+		{
+			for (const FT66PartyFriendEntry& Friend : PartySubsystem->GetFriends())
+			{
+				StateHash = HashCombine(StateHash, GetTypeHash(Friend.PlayerId));
+				StateHash = HashCombine(StateHash, GetTypeHash(Friend.DisplayName));
+				StateHash = HashCombine(StateHash, GetTypeHash(Friend.PresenceText));
+				StateHash = HashCombine(StateHash, GetTypeHash(Friend.bOnline));
+			}
+
+			for (const FT66PartyMemberEntry& Member : PartySubsystem->GetPartyMembers())
+			{
+				StateHash = HashCombine(StateHash, GetTypeHash(Member.PlayerId));
+				StateHash = HashCombine(StateHash, GetTypeHash(Member.DisplayName));
+				StateHash = HashCombine(StateHash, GetTypeHash(Member.bIsLocal));
+				StateHash = HashCombine(StateHash, GetTypeHash(Member.bIsPartyHost));
+				StateHash = HashCombine(StateHash, GetTypeHash(Member.bOnline));
+			}
+		}
+
+		if (const UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			StateHash = HashCombine(StateHash, GetTypeHash(SessionSubsystem->IsPartyLobbyContextActive()));
+			StateHash = HashCombine(StateHash, GetTypeHash(SessionSubsystem->GetCurrentLobbyPlayerCount()));
+			StateHash = HashCombine(StateHash, GetTypeHash(SessionSubsystem->IsLocalPlayerPartyHost()));
+			StateHash = HashCombine(StateHash, GetTypeHash(static_cast<uint8>(SessionSubsystem->GetDesiredPartyFrontendScreen())));
+		}
+	}
+
+	return StateHash;
+}
+
+bool UT66MainMenuScreen::ShouldRebuildRetainedSlate() const
+{
+	if (!HasBuiltSlateUI())
+	{
+		return true;
+	}
+
+	const UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	const ET66Language CurrentLanguage = Loc ? Loc->GetCurrentLanguage() : ET66Language::English;
+	if (CurrentLanguage != LastBuiltLanguage)
+	{
+		return true;
+	}
+
+	if (!GetEffectiveFrontendViewportSize().Equals(LastBuiltViewportSize, 1.0f))
+	{
+		return true;
+	}
+
+	return CaptureMenuStateHash() != LastBuiltMenuStateHash;
+}
+
 TSharedRef<SWidget> UT66MainMenuScreen::RebuildWidget()
 {
 	// This screen already computes its layout from the live safe-frame size.
@@ -242,6 +307,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 {
 	RequestBackgroundTexture();
 	CachedViewportSize = GetEffectiveFrontendViewportSize();
+	LastBuiltViewportSize = CachedViewportSize;
+	PendingViewportSize = CachedViewportSize;
+	PendingViewportStableTime = 0.f;
 	bViewportResponsiveRebuildQueued = false;
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
@@ -252,6 +320,12 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	UT66PlayerSettingsSubsystem* PlayerSettings = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
 	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	UT66SteamHelper* SteamHelper = GI ? GI->GetSubsystem<UT66SteamHelper>() : nullptr;
+	LastBuiltLanguage = Loc ? Loc->GetCurrentLanguage() : ET66Language::English;
+	LastBuiltMenuStateHash = CaptureMenuStateHash();
+	FriendGroupWidgetRefs.Reset();
+	FriendRowWidgetRefs.Reset();
+	FriendGroupsDividerBox.Reset();
+	NoMatchingFriendsBox.Reset();
 
 	const FText NewGameText = NSLOCTEXT("T66.MainMenu", "Start", "START");
 	const FText LoadGameText = NSLOCTEXT("T66.MainMenu", "Continue", "CONTINUE");
@@ -575,15 +649,12 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		GroupFont.LetterSpacing = 72;
 		const bool bExpanded = bOnlineGroup ? bShowOnlineFriends : bShowOfflineFriends;
 		const FSlateBrush* DownArrowBrush = &FCoreStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton").DownArrowImage;
+		TSharedPtr<SBox> GroupRootBox;
+		TSharedPtr<SImage> ExpandArrowImage;
+		TSharedPtr<STextBlock> GroupCountText;
 
-		return SNew(SHorizontalBox)
-			.Visibility_Lambda([this, CountMatchingFriends, bOnlineGroup]()
-			{
-				const bool bSearchActive = !FriendSearchQuery.TrimStartAndEnd().IsEmpty();
-				return (!bSearchActive || CountMatchingFriends(bOnlineGroup) > 0)
-					? EVisibility::Visible
-					: EVisibility::Collapsed;
-			})
+		const TSharedRef<SWidget> HeaderRow =
+			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
 				SNew(SButton)
@@ -600,7 +671,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 						bShowOfflineFriends = !bShowOfflineFriends;
 					}
 
-					ForceRebuildSlate();
+					RefreshFriendListVisualState();
 					return FReply::Handled();
 				}))
 				[
@@ -608,7 +679,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					.WidthOverride(14.f)
 					.HeightOverride(14.f)
 					[
-						SNew(SImage)
+						SAssignNew(ExpandArrowImage, SImage)
 						.Image(DownArrowBrush)
 						.ColorAndOpacity(HeaderText)
 						.RenderTransformPivot(FVector2D(0.5f, 0.5f))
@@ -628,16 +699,30 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 			[
-				SNew(STextBlock)
-				.Text_Lambda([CountMatchingFriends, bOnlineGroup]()
-				{
-					return FText::Format(
-						NSLOCTEXT("T66.MainMenu", "FriendsGroupCount", "({0})"),
-						FText::AsNumber(CountMatchingFriends(bOnlineGroup)));
-				})
+				SAssignNew(GroupCountText, STextBlock)
+				.Text(FText::Format(
+					NSLOCTEXT("T66.MainMenu", "FriendsGroupCount", "({0})"),
+					FText::AsNumber(CountMatchingFriends(bOnlineGroup))))
 				.Font(GroupFont)
 				.ColorAndOpacity(CountColor)
 			];
+
+		TSharedRef<SBox> GroupRootWidget =
+			SAssignNew(GroupRootBox, SBox)
+			.Visibility((FriendSearchQuery.TrimStartAndEnd().IsEmpty() || CountMatchingFriends(bOnlineGroup) > 0)
+				? EVisibility::Visible
+				: EVisibility::Collapsed)
+			[
+				HeaderRow
+			];
+
+		FFriendGroupWidgetRefs& GroupRefs = FriendGroupWidgetRefs.AddDefaulted_GetRef();
+		GroupRefs.bOnlineGroup = bOnlineGroup;
+		GroupRefs.RootBox = GroupRootBox;
+		GroupRefs.CountText = GroupCountText;
+		GroupRefs.ExpandArrowImage = ExpandArrowImage;
+
+		return GroupRootWidget;
 	};
 
 	const FText InviteFriendText = NSLOCTEXT("T66.MainMenu", "InviteFriend", "INVITE");
@@ -760,15 +845,21 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			}
 			return FSlateColor(FLinearColor(0.27f, 0.30f, 0.34f, 0.94f));
 		};
+		TSharedPtr<SBox> RowRootBox;
+		TSharedPtr<SBorder> RowBorder;
+		TSharedPtr<STextBlock> StatusTextWidget;
+		TSharedPtr<SButton> FavoriteButton;
+		TSharedPtr<STextBlock> FavoriteGlyphText;
+		TSharedPtr<SButton> ActionButton;
+		TSharedPtr<SBorder> ActionFillBorder;
+		TSharedPtr<STextBlock> ActionTextWidget;
 
-		return SNew(SBorder)
+		const TSharedRef<SWidget> RowContent =
+			SAssignNew(RowBorder, SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([IsFriendInParty]() -> FSlateColor
-			{
-				return FSlateColor(IsFriendInParty()
-					? FLinearColor(0.10f, 0.14f, 0.18f, 0.55f)
-					: FLinearColor(0.f, 0.f, 0.f, 0.20f));
-			}))
+			.BorderBackgroundColor(IsFriendInParty()
+				? FLinearColor(0.10f, 0.14f, 0.18f, 0.55f)
+				: FLinearColor(0.f, 0.f, 0.f, 0.20f))
 			.Padding(6.f, 4.f)
 			[
 				SNew(SHorizontalBox)
@@ -798,18 +889,12 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 1.f, 0.f, 0.f)
 					[
-						SNew(STextBlock)
-						.Text_Lambda([IsFriendInParty, Status = Friend.Status, InPartyText]()
-						{
-							return IsFriendInParty() ? InPartyText : FText::FromString(Status);
-						})
+						SAssignNew(StatusTextWidget, STextBlock)
+						.Text(IsFriendInParty() ? InPartyText : FText::FromString(Friend.Status))
 						.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
-						.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsFriendInParty, bOnline = Friend.bOnline, OnlineStatusText, MutedText]() -> FSlateColor
-						{
-							return FSlateColor(IsFriendInParty()
-								? OnlineStatusText
-								: (bOnline ? OnlineStatusText : MutedText));
-						}))
+						.ColorAndOpacity(IsFriendInParty()
+							? OnlineStatusText
+							: (Friend.bOnline ? OnlineStatusText : MutedText))
 					]
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
@@ -818,24 +903,18 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					.WidthOverride(28.f)
 					.HeightOverride(28.f)
 					[
-						SNew(SButton)
+						SAssignNew(FavoriteButton, SButton)
 						.ButtonStyle(&NoBorderButtonStyle)
 						.ContentPadding(FMargin(0.f))
-						.ToolTipText(TAttribute<FText>::CreateLambda([PlayerSettings, PlayerId = Friend.PlayerId, FavoriteFriendTooltip, UnfavoriteFriendTooltip]()
-						{
-							return (PlayerSettings && PlayerSettings->IsFavoriteFriend(PlayerId))
-								? UnfavoriteFriendTooltip
-								: FavoriteFriendTooltip;
-						}))
+						.ToolTipText((PlayerSettings && PlayerSettings->IsFavoriteFriend(Friend.PlayerId))
+							? UnfavoriteFriendTooltip
+							: FavoriteFriendTooltip)
 						.OnClicked(FOnClicked::CreateLambda([this, PlayerSettings, PlayerId = Friend.PlayerId]()
 						{
 							if (PlayerSettings)
 							{
 								PlayerSettings->SetFavoriteFriend(PlayerId, !PlayerSettings->IsFavoriteFriend(PlayerId));
-								if (FriendsListContainer.IsValid())
-								{
-									FriendsListContainer->Invalidate(EInvalidateWidget::Layout);
-								}
+								RefreshFriendListVisualState();
 							}
 							return FReply::Handled();
 						}))
@@ -845,10 +924,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 							.BorderBackgroundColor(FLinearColor(0.10f, 0.11f, 0.14f, 0.94f))
 							.Padding(FMargin(0.f))
 							[
-								SNew(STextBlock)
-								.Text_Lambda(ResolveFavoriteGlyph)
+								SAssignNew(FavoriteGlyphText, STextBlock)
+								.Text(ResolveFavoriteGlyph())
 								.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 6))
-								.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda(ResolveFavoriteGlyphColor))
+								.ColorAndOpacity(ResolveFavoriteGlyphColor())
 								.Justification(ETextJustify::Center)
 							]
 						]
@@ -856,9 +935,15 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 				[
-					MakeFlatActionButton(
-						TAttribute<FText>::CreateLambda(ResolveActionText),
-						FOnClicked::CreateLambda([this, PartySubsystem, PlayerId = Friend.PlayerId, PlayerName = Friend.Name]()
+					SNew(SBox)
+					.WidthOverride(80.f)
+					.HeightOverride(30.f)
+					[
+						SAssignNew(ActionButton, SButton)
+						.ButtonStyle(&NoBorderButtonStyle)
+						.ContentPadding(FMargin(0.f))
+						.IsEnabled(CanInviteFriend())
+						.OnClicked(FOnClicked::CreateLambda([this, PartySubsystem, PlayerId = Friend.PlayerId, PlayerName = Friend.Name]()
 						{
 							if (!PartySubsystem)
 							{
@@ -867,17 +952,58 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 
 							if (PartySubsystem->InviteFriend(PlayerId, PlayerName))
 							{
-								if (FriendsListContainer.IsValid())
-								{
-									FriendsListContainer->Invalidate(EInvalidateWidget::Layout);
-								}
+								RefreshFriendListVisualState();
 							}
 							return FReply::Handled();
-						}),
-						TAttribute<bool>::CreateLambda(CanInviteFriend),
-						TAttribute<FSlateColor>::CreateLambda(ResolveActionFillColor))
+						}))
+						[
+							SAssignNew(ActionFillBorder, SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(ResolveActionFillColor())
+							.Padding(FMargin(8.f, 5.f))
+							[
+								SAssignNew(ActionTextWidget, STextBlock)
+								.Text(ResolveActionText())
+								.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
+								.ColorAndOpacity(CanInviteFriend()
+									? FLinearColor(0.96f, 0.97f, 0.94f, 1.0f)
+									: FLinearColor(0.88f, 0.90f, 0.84f, 0.72f))
+								.Justification(ETextJustify::Center)
+							]
+						]
+					]
 				]
 			];
+
+		const bool bSearchActive = !FriendSearchQuery.TrimStartAndEnd().IsEmpty();
+		const bool bExpanded = Friend.bOnline ? bShowOnlineFriends : bShowOfflineFriends;
+		const bool bMatches = DoesFriendMatchSearchQuery(FriendSearchQuery, Friend.Name);
+		const EVisibility InitialVisibility = (bMatches && (bSearchActive || bExpanded))
+			? EVisibility::Visible
+			: EVisibility::Collapsed;
+
+		TSharedRef<SWidget> RowRoot =
+			SAssignNew(RowRootBox, SBox)
+			.Visibility(InitialVisibility)
+			[
+				RowContent
+			];
+
+		FFriendRowWidgetRefs& RowRefs = FriendRowWidgetRefs.AddDefaulted_GetRef();
+		RowRefs.PlayerId = Friend.PlayerId;
+		RowRefs.FriendName = Friend.Name;
+		RowRefs.BaseStatus = Friend.Status;
+		RowRefs.bOnline = Friend.bOnline;
+		RowRefs.RootBox = RowRootBox;
+		RowRefs.RowBorder = RowBorder;
+		RowRefs.StatusText = StatusTextWidget;
+		RowRefs.FavoriteButton = FavoriteButton;
+		RowRefs.FavoriteGlyphText = FavoriteGlyphText;
+		RowRefs.ActionButton = ActionButton;
+		RowRefs.ActionFillBorder = ActionFillBorder;
+		RowRefs.ActionText = ActionTextWidget;
+
+		return RowRoot;
 	};
 
 	auto MakeMenuButton = [this, CenterButtonWidth, CenterButtonHeight, CenterButtonFontSize](
@@ -1018,34 +1144,24 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	AddFriendGroup(true);
 	FriendsList->AddSlot().AutoHeight().Padding(0.f, 20.f, 0.f, 0.f)
 	[
-		SNew(SSpacer)
-		.Size(FVector2D(1.f, 1.f))
-		.Visibility_Lambda([this, CountMatchingFriends]()
-		{
-			const bool bSearchActive = !FriendSearchQuery.TrimStartAndEnd().IsEmpty();
-			if (!bSearchActive)
-			{
-				return EVisibility::Visible;
-			}
-
-			return (CountMatchingFriends(true) > 0 && CountMatchingFriends(false) > 0)
-				? EVisibility::Visible
-				: EVisibility::Collapsed;
-		})
+		SAssignNew(FriendGroupsDividerBox, SBox)
+		.Visibility(EVisibility::Visible)
+		[
+			SNew(SSpacer)
+			.Size(FVector2D(1.f, 1.f))
+		]
 	];
 	AddFriendGroup(false);
 	FriendsList->AddSlot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
 	[
-		SNew(STextBlock)
-		.Text(NoMatchingFriendsText)
-		.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
-		.ColorAndOpacity(MutedText)
-		.Visibility_Lambda([this, CountAllMatchingFriends]()
-		{
-			return (!FriendSearchQuery.TrimStartAndEnd().IsEmpty() && CountAllMatchingFriends() == 0)
-				? EVisibility::Visible
-				: EVisibility::Collapsed;
-		})
+		SAssignNew(NoMatchingFriendsBox, SBox)
+		.Visibility(EVisibility::Collapsed)
+		[
+			SNew(STextBlock)
+			.Text(NoMatchingFriendsText)
+			.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
+			.ColorAndOpacity(MutedText)
+		]
 	];
 
 	const bool bCanLeaveParty = (SessionSubsystem && SessionSubsystem->IsPartyLobbyContextActive())
@@ -1310,7 +1426,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	PyramidLayer.OpacityMax = 1.f;
 	PyramidLayer.PhaseOffset = 0.43f;
 
-	return SNew(SBorder)
+	TSharedRef<SBorder> Root =
+		SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FLinearColor::Black)
 		.Padding(0.f)
@@ -1443,6 +1560,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				]
 			]
 		];
+
+	RefreshFriendListVisualState();
+	return Root;
 }
 
 void UT66MainMenuScreen::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -1458,6 +1578,19 @@ void UT66MainMenuScreen::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 	if (!CurrentViewportSize.Equals(CachedViewportSize, 1.0f))
 	{
 		CachedViewportSize = CurrentViewportSize;
+		PendingViewportSize = CurrentViewportSize;
+		PendingViewportStableTime = 0.f;
+		return;
+	}
+
+	if (PendingViewportSize.IsNearlyZero() || PendingViewportSize.Equals(LastBuiltViewportSize, 1.0f))
+	{
+		return;
+	}
+
+	PendingViewportStableTime += InDeltaTime;
+	if (PendingViewportStableTime >= 0.15f)
+	{
 		bViewportResponsiveRebuildQueued = true;
 		ForceRebuildSlate();
 	}
@@ -1502,6 +1635,11 @@ void UT66MainMenuScreen::OnScreenActivated_Implementation()
 
 void UT66MainMenuScreen::OnScreenDeactivated_Implementation()
 {
+	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
+	{
+		Loc->OnLanguageChanged.RemoveDynamic(this, &UT66MainMenuScreen::OnLanguageChanged);
+	}
+
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
@@ -1517,7 +1655,6 @@ void UT66MainMenuScreen::OnScreenDeactivated_Implementation()
 		}
 	}
 
-	ReleaseRetainedSlateState();
 	Super::OnScreenDeactivated_Implementation();
 }
 
@@ -1530,8 +1667,11 @@ void UT66MainMenuScreen::NativeDestruct()
 void UT66MainMenuScreen::RefreshScreen_Implementation()
 {
 	Super::RefreshScreen_Implementation();
-	// Force rebuild UI with current language (deferred to next tick for safety)
-	ForceRebuildSlate();
+
+	if (ShouldRebuildRetainedSlate())
+	{
+		ForceRebuildSlate();
+	}
 
 	if (LeaderboardPanel.IsValid())
 	{
@@ -1556,6 +1696,10 @@ void UT66MainMenuScreen::ReleaseRetainedSlateState()
 	FriendPortraitBrushes.Reset();
 	PartyPortraitBrushes.Reset();
 	FriendsListContainer.Reset();
+	FriendGroupWidgetRefs.Reset();
+	FriendRowWidgetRefs.Reset();
+	FriendGroupsDividerBox.Reset();
+	NoMatchingFriendsBox.Reset();
 }
 
 void UT66MainMenuScreen::OnLanguageChanged(ET66Language NewLanguage)
@@ -1591,6 +1735,172 @@ void UT66MainMenuScreen::HandleSessionStateChanged()
 void UT66MainMenuScreen::HandleFriendSearchTextChanged(const FText& NewText)
 {
 	FriendSearchQuery = NewText.ToString();
+	RefreshFriendListVisualState();
+}
+
+void UT66MainMenuScreen::RefreshFriendListVisualState()
+{
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	UT66PlayerSettingsSubsystem* PlayerSettings = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+
+	const FString TrimmedQuery = FriendSearchQuery.TrimStartAndEnd();
+	const bool bSearchActive = !TrimmedQuery.IsEmpty();
+	int32 OnlineVisibleCount = 0;
+	int32 OfflineVisibleCount = 0;
+
+	for (FFriendRowWidgetRefs& RowRefs : FriendRowWidgetRefs)
+	{
+		const bool bMatches = DoesFriendMatchSearchQuery(FriendSearchQuery, RowRefs.FriendName);
+		const bool bExpanded = RowRefs.bOnline ? bShowOnlineFriends : bShowOfflineFriends;
+		const bool bVisible = bMatches && (bSearchActive || bExpanded);
+		if (RowRefs.RootBox.IsValid())
+		{
+			RowRefs.RootBox->SetVisibility(bVisible ? EVisibility::Visible : EVisibility::Collapsed);
+		}
+
+		if (!bMatches)
+		{
+			continue;
+		}
+
+		if (RowRefs.bOnline)
+		{
+			++OnlineVisibleCount;
+		}
+		else
+		{
+			++OfflineVisibleCount;
+		}
+
+		const bool bFriendInParty = PartySubsystem && PartySubsystem->IsFriendInParty(RowRefs.PlayerId);
+		const bool bInvitePending = !bFriendInParty && SessionSubsystem && SessionSubsystem->IsFriendInvitePending(RowRefs.PlayerId);
+		const bool bCanInvite = PartySubsystem
+			&& RowRefs.bOnline
+			&& !bFriendInParty
+			&& !bInvitePending
+			&& PartySubsystem->GetPartyMemberCount() < 4;
+		const bool bFavorite = PlayerSettings && PlayerSettings->IsFavoriteFriend(RowRefs.PlayerId);
+
+		if (RowRefs.RowBorder.IsValid())
+		{
+			RowRefs.RowBorder->SetBorderBackgroundColor(
+				bFriendInParty
+					? FLinearColor(0.10f, 0.14f, 0.18f, 0.55f)
+					: FLinearColor(0.f, 0.f, 0.f, 0.20f));
+		}
+
+		if (RowRefs.StatusText.IsValid())
+		{
+			RowRefs.StatusText->SetText(bFriendInParty ? NSLOCTEXT("T66.MainMenu", "InParty", "In Party") : FText::FromString(RowRefs.BaseStatus));
+			RowRefs.StatusText->SetColorAndOpacity(
+				bFriendInParty
+					? FLinearColor(0.50f, 0.88f, 0.55f, 1.0f)
+					: (RowRefs.bOnline
+						? FLinearColor(0.50f, 0.88f, 0.55f, 1.0f)
+						: FLinearColor(0.56f, 0.59f, 0.63f, 1.0f)));
+		}
+
+		if (RowRefs.FavoriteButton.IsValid())
+		{
+			RowRefs.FavoriteButton->SetToolTipText(
+				bFavorite
+					? NSLOCTEXT("T66.MainMenu", "UnfavoriteFriendTooltip", "Remove favorite")
+					: NSLOCTEXT("T66.MainMenu", "FavoriteFriendTooltip", "Favorite friend"));
+		}
+
+		if (RowRefs.FavoriteGlyphText.IsValid())
+		{
+			RowRefs.FavoriteGlyphText->SetText(FText::FromString(bFavorite ? TEXT("\u2605") : TEXT("\u2606")));
+			RowRefs.FavoriteGlyphText->SetColorAndOpacity(
+				bFavorite
+					? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f)
+					: FLinearColor(0.55f, 0.58f, 0.62f, 1.0f));
+		}
+
+		if (RowRefs.ActionButton.IsValid())
+		{
+			RowRefs.ActionButton->SetEnabled(bCanInvite);
+		}
+
+		if (RowRefs.ActionText.IsValid())
+		{
+			FText ActionText = NSLOCTEXT("T66.MainMenu", "InviteFriend", "INVITE");
+			if (bFriendInParty)
+			{
+				ActionText = NSLOCTEXT("T66.MainMenu", "InParty", "In Party");
+			}
+			else if (bInvitePending)
+			{
+				ActionText = NSLOCTEXT("T66.MainMenu", "InvitedFriend", "INVITED");
+			}
+			else if (!RowRefs.bOnline)
+			{
+				ActionText = NSLOCTEXT("T66.MainMenu", "FriendOffline", "OFFLINE");
+			}
+			else if (PartySubsystem && PartySubsystem->GetPartyMemberCount() >= 4)
+			{
+				ActionText = NSLOCTEXT("T66.MainMenu", "PartyFull", "PARTY FULL");
+			}
+
+			RowRefs.ActionText->SetText(ActionText);
+			RowRefs.ActionText->SetColorAndOpacity(
+				bCanInvite
+					? FLinearColor(0.96f, 0.97f, 0.94f, 1.0f)
+					: FLinearColor(0.88f, 0.90f, 0.84f, 0.72f));
+		}
+
+		if (RowRefs.ActionFillBorder.IsValid())
+		{
+			const FLinearColor FillColor = bInvitePending
+				? FLinearColor(0.56f, 0.42f, 0.16f, 0.98f)
+				: (!bCanInvite
+					? FLinearColor(0.42f, 0.47f, 0.40f, 0.72f)
+					: (RowRefs.bOnline && !bFriendInParty
+						? FLinearColor(0.18f, 0.31f, 0.18f, 0.97f)
+						: FLinearColor(0.27f, 0.30f, 0.34f, 0.94f)));
+			RowRefs.ActionFillBorder->SetBorderBackgroundColor(FillColor);
+		}
+	}
+
+	for (const FFriendGroupWidgetRefs& GroupRefs : FriendGroupWidgetRefs)
+	{
+		const int32 VisibleCount = GroupRefs.bOnlineGroup ? OnlineVisibleCount : OfflineVisibleCount;
+		if (GroupRefs.RootBox.IsValid())
+		{
+			GroupRefs.RootBox->SetVisibility((!bSearchActive || VisibleCount > 0) ? EVisibility::Visible : EVisibility::Collapsed);
+		}
+		if (GroupRefs.CountText.IsValid())
+		{
+			GroupRefs.CountText->SetText(FText::Format(
+				NSLOCTEXT("T66.MainMenu", "FriendsGroupCount", "({0})"),
+				FText::AsNumber(VisibleCount)));
+		}
+		if (GroupRefs.ExpandArrowImage.IsValid())
+		{
+			const bool bExpanded = GroupRefs.bOnlineGroup ? bShowOnlineFriends : bShowOfflineFriends;
+			GroupRefs.ExpandArrowImage->SetRenderTransform(
+				bExpanded
+					? FSlateRenderTransform(FTransform2D())
+					: FSlateRenderTransform(FTransform2D(FQuat2D(FMath::DegreesToRadians(90.f)))));
+		}
+	}
+
+	if (FriendGroupsDividerBox.IsValid())
+	{
+		FriendGroupsDividerBox->SetVisibility((!bSearchActive || (OnlineVisibleCount > 0 && OfflineVisibleCount > 0))
+			? EVisibility::Visible
+			: EVisibility::Collapsed);
+	}
+
+	if (NoMatchingFriendsBox.IsValid())
+	{
+		NoMatchingFriendsBox->SetVisibility((bSearchActive && (OnlineVisibleCount + OfflineVisibleCount) == 0)
+			? EVisibility::Visible
+			: EVisibility::Collapsed);
+	}
+
 	if (FriendsListContainer.IsValid())
 	{
 		FriendsListContainer->Invalidate(EInvalidateWidget::Layout);

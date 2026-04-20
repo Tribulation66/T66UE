@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Data/T66DataTypes.h"
+#include "Gameplay/T66BossAttackTypes.h"
 #include "Gameplay/T66BossPartTypes.h"
 #include "T66BossBase.generated.h"
 
@@ -110,6 +111,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Parts")
 	TArray<FT66BossPartDefinition> BossPartDefinitions;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Attacks")
+	ET66BossAttackProfile AttackProfile = ET66BossAttackProfile::Balanced;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Attacks")
+	FLinearColor AttackPrimaryColor = FLinearColor(0.95f, 0.16f, 0.12f, 1.f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Attacks")
+	FLinearColor AttackSecondaryColor = FLinearColor(1.f, 0.72f, 0.18f, 1.f);
+
 	/** Apply an armor debuff (from hero Taunt). Reduces armor temporarily. */
 	UFUNCTION(BlueprintCallable, Category = "Boss")
 	void ApplyArmorDebuff(float ReductionAmount, float DurationSeconds);
@@ -162,6 +172,7 @@ protected:
 private:
 	APawn* ResolvePlayerPawn();
 	void AssignBossPartDefinitionsForProfile(ET66BossPartProfile InProfile);
+	void ConfigureAttackProfileFromBossPartProfile(ET66BossPartProfile InProfile);
 	void EnsureDefaultBossPartDefinitions();
 	void RefreshCombatHitZoneState();
 	void RebuildBossPartState(bool bPreserveCurrentPercent);
@@ -171,6 +182,17 @@ private:
 	int32 ResolveBossPartIndex(const UPrimitiveComponent* HitComponent, ET66HitZoneType PreferredZone, FName PreferredPartID = NAME_None) const;
 	int32 FindFallbackBossPartIndex() const;
 	float GetBossPartDamageMultiplier(int32 PartIndex) const;
+	float GetHealthPercent() const;
+	int32 GetAttackPhaseIndex() const;
+	FVector ResolveGroundLocation(const FVector& PreferredLocation) const;
+	void SpawnGroundAOEAtLocation(const FVector& WorldLocation, float RadiusScale = 1.f, float WarningScale = 1.f, bool bUseSecondaryTint = false);
+	void SpawnProjectileInDirection(const FVector& Direction, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false);
+	void QueueTimedAttackLambda(FTimerDelegate&& Delegate, float DelaySeconds);
+	void QueueProjectileShotTowards(const FVector& TargetLocation, float DelaySeconds, float YawOffsetDegrees = 0.f, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false);
+	void QueueProjectileShotDirection(const FVector& Direction, float DelaySeconds, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false);
+	void QueueProjectileFanBurst(const FVector& TargetLocation, int32 ShotCount, float SpreadDegrees, float DelayStepSeconds, float SpeedScale = 1.f, float InitialDelaySeconds = 0.f, float SideOffsetDistance = 0.f, bool bUseSecondaryTint = false);
+	void QueueRadialBurst(int32 ShotCount, float DelayStepSeconds, float StartAngleDegrees, float SpeedScale = 1.f, float InitialDelaySeconds = 0.f, bool bUseSecondaryTint = false);
+	void ClearPendingAttackTimers();
 
 	bool bBaseTuningInitialized = false;
 	int32 BaseMaxHP = 0;
@@ -192,5 +214,8 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<FT66BossPartRuntimeState> BossPartStates;
+
+	UPROPERTY(Transient)
+	TArray<FTimerHandle> PendingAttackTimerHandles;
 };
 

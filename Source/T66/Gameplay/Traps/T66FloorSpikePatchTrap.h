@@ -8,6 +8,7 @@
 
 class UInstancedStaticMeshComponent;
 class UMaterialInstanceDynamic;
+class UNiagaraSystem;
 class USphereComponent;
 class UStaticMeshComponent;
 
@@ -85,6 +86,7 @@ private:
 	void UpdateMarkerVisuals();
 	void UpdateSpikeTransforms(float RaisedAlpha);
 	void SpawnRiseBurst() const;
+	void SpawnRiseNiagaraBurst() const;
 	bool ShouldTickForAnimation() const;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
@@ -94,10 +96,16 @@ private:
 	TObjectPtr<UStaticMeshComponent> MarkerMesh;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> BaseMesh;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UInstancedStaticMeshComponent> SpikeInstances;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UMaterialInstanceDynamic>> SpikeDynamicMaterials;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> CachedRiseBurstSystem = nullptr;
 
 	FTimerHandle WarningTimerHandle;
 	FTimerHandle RaiseTimerHandle;

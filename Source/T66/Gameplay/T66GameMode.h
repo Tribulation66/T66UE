@@ -11,6 +11,7 @@ class AActor;
 class AT66HeroBase;
 class AT66CompanionBase;
 class AT66EnemyBase;
+class AT66EnemyDirector;
 class AT66StartGate;
 class AT66StageGate;
 class AT66BossBase;
@@ -234,6 +235,9 @@ protected:
 	void HandleStageTimerChanged();
 
 	UFUNCTION()
+	void HandleIdolStateChanged();
+
+	UFUNCTION()
 	void HandleStageChanged();
 
 	UFUNCTION()
@@ -241,6 +245,14 @@ protected:
 
 	void RefreshProgressionDrivenSystems(bool bRescaleLiveEnemies);
 	void ApplyStageProgressionVisuals();
+	AT66EnemyDirector* FindOrCacheEnemyDirector(UWorld* World);
+	AT66EnemyDirector* EnsureEnemyDirector(UWorld* World);
+	void DestroyEnemyDirectors(UWorld* World);
+	void ResetTowerMiasmaState();
+	void UpdateTowerMiasma(float DeltaTime);
+	void TryStartTowerMiasma(const FVector* SourceAnchor = nullptr, int32 SourceFloorNumber = INDEX_NONE);
+	void SyncTowerMiasmaSourceAnchor(int32 FloorNumber, const FVector& WorldAnchor) const;
+	float GetTowerMiasmaElapsedSeconds() const;
 
 	void TrySpawnLoanSharkIfNeeded();
 
@@ -316,6 +328,8 @@ private:
 
 	// Track the current stage boss so we can safely replace it after async load.
 	TWeakObjectPtr<AT66BossBase> StageBoss;
+	TWeakObjectPtr<AT66EnemyDirector> EnemyDirector;
+	TWeakObjectPtr<AT66TutorialManager> TutorialManager;
 	TWeakObjectPtr<AActor> BossBeaconActor;
 	float BossBeaconUpdateAccumulator = 0.f;
 
@@ -357,6 +371,10 @@ private:
 	bool bTowerBossEntryApplied = false;
 	float TowerTerrainSafetyAccumulator = 0.f;
 	float TowerTrapActivationAccumulator = 0.f;
+	bool bTowerMiasmaActive = false;
+	float TowerMiasmaStartWorldSeconds = 0.f;
+	float TowerMiasmaUpdateAccumulator = 0.f;
+	int32 TowerIdolSelectionsAtStageStart = 0;
 	int32 ActiveTowerTrapFloorNumber = INDEX_NONE;
 
 	// Coliseum: async-load boss classes before spawning.

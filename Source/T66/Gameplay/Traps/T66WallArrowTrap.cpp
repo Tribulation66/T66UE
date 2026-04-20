@@ -14,50 +14,110 @@
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "UObject/SoftObjectPath.h"
+
+namespace
+{
+	UStaticMesh* LoadWallArrowVisualMesh()
+	{
+		static TSoftObjectPtr<UStaticMesh> Mesh(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Meshes/SM_Arrows_PickUp.SM_Arrows_PickUp")));
+		return Mesh.LoadSynchronous();
+	}
+
+	bool IsPrimitiveFallbackMesh(const UStaticMesh* Mesh)
+	{
+		return Mesh == FT66VisualUtil::GetBasicShapeCone()
+			|| Mesh == FT66VisualUtil::GetBasicShapeCube()
+			|| Mesh == FT66VisualUtil::GetBasicShapeCylinder();
+	}
+}
 
 AT66WallArrowTrap::AT66WallArrowTrap()
 {
 	TrapTypeID = FName(TEXT("WallArrow"));
 	TrapFamilyID = FName(TEXT("WallProjectile"));
 
+	HousingMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HousingMesh"));
+	HousingMesh->SetupAttachment(SceneRoot);
+	HousingMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HousingMesh->SetCastShadow(true);
+
 	TrapMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrapMesh"));
 	TrapMesh->SetupAttachment(SceneRoot);
 	TrapMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	TrapMesh->SetCastShadow(false);
+	TrapMesh->SetCastShadow(true);
 	TrapMesh->SetRelativeScale3D(TrapVisualScale);
 
 	ProjectileSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectileSpawnPoint"));
 	ProjectileSpawnPoint->SetupAttachment(SceneRoot);
-	ProjectileSpawnPoint->SetRelativeLocation(FVector(72.f, 0.f, 0.f));
+	ProjectileSpawnPoint->SetRelativeLocation(FVector(86.f, 0.f, 8.f));
 }
 
 void AT66WallArrowTrap::UpdateTrapVisuals()
 {
+	if (HousingMesh)
+	{
+		if (!HousingMesh->GetStaticMesh())
+		{
+			HousingMesh->SetStaticMesh(FT66VisualUtil::GetBasicShapeCube());
+		}
+
+		HousingMesh->SetRelativeLocation(FVector(-12.f, 0.f, 4.f));
+		HousingMesh->SetRelativeScale3D(FVector(0.20f, 0.34f, 0.42f));
+		FT66VisualUtil::ApplyT66Color(HousingMesh, this, FLinearColor(0.10f, 0.08f, 0.06f, 1.f));
+	}
+
 	if (!TrapMesh)
 	{
 		return;
 	}
 
-	FVector ResolvedScale = TrapVisualScale;
-	if (TrapMesh->GetStaticMesh() == FT66VisualUtil::GetBasicShapeCone())
+	TrapMesh->SetRelativeLocation(FVector(24.f, 0.f, 8.f));
+
+	FVector ResolvedScale = TrapVisualScale * 0.90f;
+	const UStaticMesh* CurrentMesh = TrapMesh->GetStaticMesh();
+	if (CurrentMesh == LoadWallArrowVisualMesh())
 	{
+		TrapMesh->EmptyOverrideMaterials();
+		TrapMesh->SetRelativeRotation(FRotator::ZeroRotator);
+		ResolvedScale *= FVector(0.72f);
+	}
+	else if (CurrentMesh == T66ArthurSwordVisuals::LoadSwordMesh())
+	{
+		TrapMesh->EmptyOverrideMaterials();
+		TrapMesh->SetRelativeRotation(FRotator::ZeroRotator);
+		ResolvedScale *= FVector(0.82f);
+	}
+	else if (CurrentMesh == FT66VisualUtil::GetBasicShapeCone())
+	{
+		TrapMesh->SetRelativeRotation(FRotator(0.f, 0.f, -90.f));
 		ResolvedScale *= FVector(0.75f, 0.75f, 1.35f);
+		FT66VisualUtil::ApplyT66Color(TrapMesh, this, TrapTint);
+	}
+	else if (IsPrimitiveFallbackMesh(CurrentMesh))
+	{
+		FT66VisualUtil::ApplyT66Color(TrapMesh, this, TrapTint);
 	}
 
 	TrapMesh->SetRelativeScale3D(ResolvedScale);
-	FT66VisualUtil::ApplyT66Color(TrapMesh, this, TrapTint);
 }
 
 void AT66WallArrowTrap::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	if (!TrapMesh)
+	if (!HousingMesh || !TrapMesh)
 	{
 		return;
 	}
 
-	if (UStaticMesh* SwordMesh = T66ArthurSwordVisuals::LoadSwordMesh())
+	HousingMesh->SetStaticMesh(FT66VisualUtil::GetBasicShapeCube());
+
+	if (UStaticMesh* ArrowMesh = LoadWallArrowVisualMesh())
+	{
+		TrapMesh->SetStaticMesh(ArrowMesh);
+	}
+	else if (UStaticMesh* SwordMesh = T66ArthurSwordVisuals::LoadSwordMesh())
 	{
 		TrapMesh->SetStaticMesh(SwordMesh);
 	}
@@ -114,7 +174,7 @@ void AT66WallArrowTrap::HandleTrapEnabledChanged()
 
 	if (bTrapEnabled && UsesTimedActivation())
 	{
-		ScheduleNextFireCycle(0.15f);
+		ScheduleNextFireCycle(0.05f);
 	}
 	else
 	{

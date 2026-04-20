@@ -49,6 +49,10 @@ public:
 
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
 	TSharedPtr<SWidgetSwitcher> CasinoSwitcher;
+	TSharedPtr<STextBlock> CasinoModeToggleText;
+	TSharedPtr<SWidget> CasinoRerollButtonWidget;
+	TSharedPtr<SWidget> DialogueTeleportButtonWidget;
+	TSharedPtr<SBox> CloseButtonBox;
 	TSharedPtr<STextBlock> NetWorthText;
 	TSharedPtr<STextBlock> GoldText;
 	TSharedPtr<STextBlock> DebtText;
@@ -111,6 +115,7 @@ public:
 	// Coin flip page
 	TSharedPtr<STextBlock> CoinFlipStatusText;  // in-panel status/win (replaces top bar when on this game)
 	TSharedPtr<STextBlock> CoinFlipResultText;
+	TSharedPtr<STextBlock> CoinFlipWagerText;
 	TSharedPtr<SImage> CoinFlipImage;
 	FSlateBrush CoinBrush_Heads;
 	FSlateBrush CoinBrush_Tails;
@@ -126,6 +131,7 @@ public:
 	// RPS page
 	TSharedPtr<STextBlock> RpsStatusText;
 	TSharedPtr<STextBlock> RpsResultText;
+	TSharedPtr<STextBlock> RpsWagerText;
 	TSharedPtr<SImage> RpsHumanHandImage;
 	TSharedPtr<SImage> RpsDemonHandImage;
 	TSharedPtr<SBox> RpsHandsContainer;
@@ -139,6 +145,15 @@ public:
 	// Black Jack page
 	TSharedPtr<STextBlock> BlackJackStatusText;
 	TSharedPtr<STextBlock> BlackJackResultText;
+	TSharedPtr<STextBlock> BlackJackWagerText;
+	TSharedPtr<STextBlock> BlackJackDealerValueText;
+	TSharedPtr<STextBlock> BlackJackPlayerValueText;
+	TSharedPtr<SBox> BlackJackDealerHoleCardBackBox;
+	TSharedPtr<SBox> BlackJackDealButtonBox;
+	TSharedPtr<SBox> BlackJackHitButtonBox;
+	TSharedPtr<SBox> BlackJackStandButtonBox;
+	TSharedPtr<SBox> BlackJackDoubleButtonBox;
+	TSharedPtr<SBox> BlackJackSplitButtonBox;
 	TSharedPtr<SImage> BlackJackDealerHoleCardBackImage;
 	TArray<TSharedPtr<SImage>> BlackJackDealerCardImages;
 	TArray<TSharedPtr<SImage>> BlackJackPlayerCardImages;
@@ -158,6 +173,7 @@ public:
 	FSlateBrush GameIcon_BoxOpening;
 
 	TSharedPtr<SWidgetSwitcher> GameSelectionSwitcher;  // 0 = main 3 games, 1 = Lottery/Plinko/Box Opening
+	TSharedPtr<SBox> CasinoBetRowBox;
 
 	// Lottery: pick 5 from 1-10, then 5 drawn at random
 	TSet<int32> LotterySelected;
@@ -195,9 +211,11 @@ public:
 	FTimerHandle BoxOpeningTimerHandle;
 	TSharedPtr<SBox> BoxOpeningStripContainer;
 	TSharedPtr<STextBlock> BoxOpeningResultText;
+	TArray<TSharedPtr<SBorder>> BoxOpeningColorBorders;
 	void StartBoxOpeningSpin();
 	void TickBoxOpeningSpin();
 	FLinearColor GetBoxOpeningColor(int32 ColorIndex) const;
+	void RefreshBoxOpeningStrip();
 
 	int32 WinGoldAmount = 10; // used as a default gamble amount suggestion from DT
 	bool bInputLocked = false;
@@ -296,6 +314,7 @@ public:
 
 	void SetPage(EGamblerPage Page);
 	void RefreshTopBar();
+	void RefreshCasinoGameChrome();
 	void RefreshBuyback();
 	void RefreshInventory();
 	void RefreshSellPanel();

@@ -191,33 +191,37 @@ struct T66_API FHeroData : public FTableRowBase
 	// ============================================
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlDmgMin = 1;
+	float LvlDmgMin = 0.5f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlDmgMax = 2;
+	float LvlDmgMax = 1.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlAtkSpdMin = 1;
+	float LvlAtkSpdMin = 0.2f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlAtkSpdMax = 2;
+	float LvlAtkSpdMax = 0.4f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlAtkScaleMin = 1;
+	float LvlAtkScaleMin = 0.2f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlAtkScaleMax = 2;
+	float LvlAtkScaleMax = 0.4f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlAccuracyMin = 1;
+	float LvlAccuracyMin = 0.2f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlAccuracyMax = 2;
+	float LvlAccuracyMax = 0.4f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlArmorMin = 1;
+	float LvlArmorMin = 0.2f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlArmorMax = 2;
+	float LvlArmorMax = 0.4f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlEvasionMin = 1;
+	float LvlEvasionMin = 0.2f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlEvasionMax = 2;
+	float LvlEvasionMax = 0.4f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlLuckMin = 1;
+	float LvlLuckMin = 0.2f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	int32 LvlLuckMax = 2;
+	float LvlLuckMax = 0.4f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	float LvlSpeedMin = 0.2f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	float LvlSpeedMax = 0.4f;
 
 	// ============================================
 	// Category-Specific Base Stats (all 4 categories; boosted by items)
@@ -410,6 +414,92 @@ struct T66_API FT66HeroStatBlock
 	int32 Speed = 1;
 };
 
+/** Fixed-point hero stat storage in tenths (e.g. 17 = 1.7 displayed stat points). */
+USTRUCT(BlueprintType)
+struct T66_API FT66HeroPreciseStatBlock
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 DamageTenths = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 AttackSpeedTenths = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 AttackScaleTenths = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 AccuracyTenths = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 ArmorTenths = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 EvasionTenths = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 LuckTenths = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 SpeedTenths = 0;
+
+	static constexpr int32 TenthsScale = 10;
+
+	static int32 WholeStatToTenths(const int32 WholeValue)
+	{
+		return FMath::Max(0, WholeValue) * TenthsScale;
+	}
+
+	static int32 TenthsToDisplayStat(const int32 TenthsValue)
+	{
+		if (TenthsValue <= 0)
+		{
+			return 0;
+		}
+
+		return FMath::Max(1, FMath::CeilToInt(static_cast<float>(TenthsValue) / static_cast<float>(TenthsScale)));
+	}
+
+	void SetFromWholeStatBlock(const FT66HeroStatBlock& WholeStats)
+	{
+		DamageTenths = WholeStatToTenths(WholeStats.Damage);
+		AttackSpeedTenths = WholeStatToTenths(WholeStats.AttackSpeed);
+		AttackScaleTenths = WholeStatToTenths(WholeStats.AttackScale);
+		AccuracyTenths = WholeStatToTenths(WholeStats.Accuracy);
+		ArmorTenths = WholeStatToTenths(WholeStats.Armor);
+		EvasionTenths = WholeStatToTenths(WholeStats.Evasion);
+		LuckTenths = WholeStatToTenths(WholeStats.Luck);
+		SpeedTenths = WholeStatToTenths(WholeStats.Speed);
+	}
+
+	FT66HeroStatBlock ToDisplayStatBlock() const
+	{
+		FT66HeroStatBlock WholeStats;
+		WholeStats.Damage = TenthsToDisplayStat(DamageTenths);
+		WholeStats.AttackSpeed = TenthsToDisplayStat(AttackSpeedTenths);
+		WholeStats.AttackScale = TenthsToDisplayStat(AttackScaleTenths);
+		WholeStats.Accuracy = TenthsToDisplayStat(AccuracyTenths);
+		WholeStats.Armor = TenthsToDisplayStat(ArmorTenths);
+		WholeStats.Evasion = TenthsToDisplayStat(EvasionTenths);
+		WholeStats.Luck = TenthsToDisplayStat(LuckTenths);
+		WholeStats.Speed = TenthsToDisplayStat(SpeedTenths);
+		return WholeStats;
+	}
+
+	bool HasAnyPositiveValue() const
+	{
+		return DamageTenths > 0
+			|| AttackSpeedTenths > 0
+			|| AttackScaleTenths > 0
+			|| AccuracyTenths > 0
+			|| ArmorTenths > 0
+			|| EvasionTenths > 0
+			|| LuckTenths > 0
+			|| SpeedTenths > 0;
+	}
+};
+
 /** Flat additive stat bonuses (used for items, buffs, etc.). Defaults to 0. */
 USTRUCT(BlueprintType)
 struct T66_API FT66HeroStatBonuses
@@ -475,21 +565,31 @@ struct T66_API FT66HeroStatGainRange
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
-	int32 Min = 0;
+	float Min = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
-	int32 Max = 0;
+	float Max = 0.f;
 
-	int32 Roll(FRandomStream& Rng) const
+	int32 GetMinTenths() const
 	{
-		const int32 A = FMath::Min(Min, Max);
-		const int32 B = FMath::Max(Min, Max);
+		return FMath::Max(0, FMath::RoundToInt(FMath::Min(Min, Max) * 10.f));
+	}
+
+	int32 GetMaxTenths() const
+	{
+		return FMath::Max(0, FMath::RoundToInt(FMath::Max(Min, Max) * 10.f));
+	}
+
+	int32 RollTenths(FRandomStream& Rng) const
+	{
+		const int32 A = GetMinTenths();
+		const int32 B = GetMaxTenths();
 		if (B <= 0) return 0;
-		return Rng.RandRange(FMath::Max(0, A), FMath::Max(0, B));
+		return Rng.RandRange(A, B);
 	}
 };
 
-/** Per-level gains for the 6 foundational stats (Speed is always +1 per level). */
+/** Per-level gain ranges for the 7 foundational stats. */
 USTRUCT(BlueprintType)
 struct T66_API FT66HeroPerLevelStatGains
 {
@@ -515,6 +615,9 @@ struct T66_API FT66HeroPerLevelStatGains
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	FT66HeroStatGainRange Luck;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	FT66HeroStatGainRange Speed;
 };
 
 /**
@@ -726,8 +829,8 @@ enum class ET66HeroStatusEffectType : uint8
  *   - Line 2: a secondary stat type (one live secondary effect)
  *
  * Rarity and Line 1 rolled value are stored at runtime in FT66InventorySlot.
- * Line 2 multiplier is typically derived from rarity: Black 1.1x, Red 1.2x, Yellow 1.5x, White 2.0x.
- * Specific items may override the line 2 multiplier at runtime (for example, alchemy fusion results).
+ * Line 2 multiplier is still preserved for legacy item-card text, but gameplay now prefers
+ * fixed flat secondary rewards per rarity plus primary-driven proxy rolls.
  */
 USTRUCT(BlueprintType)
 struct T66_API FItemData : public FTableRowBase
@@ -784,11 +887,31 @@ struct T66_API FItemData : public FTableRowBase
 	{
 		switch (Rarity)
 		{
-		case ET66ItemRarity::Black:  OutMin = 1;  OutMax = 3;  break;
-		case ET66ItemRarity::Red:    OutMin = 4;  OutMax = 6;  break;
-		case ET66ItemRarity::Yellow: OutMin = 7;  OutMax = 10; break;
-		case ET66ItemRarity::White:  OutMin = 20; OutMax = 30; break;
-		default:                     OutMin = 1;  OutMax = 3;  break;
+		case ET66ItemRarity::Black:  OutMin = 1;  OutMax = 1;  break;
+		case ET66ItemRarity::Red:    OutMin = 3;  OutMax = 3;  break;
+		case ET66ItemRarity::Yellow: OutMin = 9;  OutMax = 9;  break;
+		case ET66ItemRarity::White:  OutMin = 27; OutMax = 27; break;
+		default:                     OutMin = 1;  OutMax = 1;  break;
+		}
+	}
+
+	static int32 GetFlatSecondaryStatBonus(ET66ItemRarity Rarity)
+	{
+		int32 OutMin = 1;
+		int32 OutMax = 1;
+		GetLine1RollRange(Rarity, OutMin, OutMax);
+		return OutMax;
+	}
+
+	static int32 GetAlchemyFlatStatBonus(ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  return 1;
+		case ET66ItemRarity::Red:    return 4;
+		case ET66ItemRarity::Yellow: return 10;
+		case ET66ItemRarity::White:  return 30;
+		default:                     return 1;
 		}
 	}
 
@@ -880,25 +1003,42 @@ struct T66_API FT66InventorySlot
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	int32 Line1RolledValue = 1;
 
+	/** Optional runtime override for the flat secondary stat reward on this slot. <= 0 uses the rarity default. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	int32 SecondaryStatBonusOverride = 0;
+
 	/** Optional runtime override for Line 2 multiplier. <= 0 means use the default rarity multiplier. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	float Line2MultiplierOverride = 0.f;
+
+	/** Stable per-item seed used to derive deterministic proxy-secondary rolls. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	int32 RollSeed = 0;
 
 	FT66InventorySlot()
 		: ItemTemplateID(NAME_None)
 		, Rarity(ET66ItemRarity::Black)
 		, Line1RolledValue(1)
+		, SecondaryStatBonusOverride(0)
 		, Line2MultiplierOverride(0.f)
+		, RollSeed(0)
 	{}
 
-	FT66InventorySlot(FName InTemplateID, ET66ItemRarity InRarity, int32 InRolledValue, float InLine2MultiplierOverride = 0.f)
+	FT66InventorySlot(FName InTemplateID, ET66ItemRarity InRarity, int32 InRolledValue, float InLine2MultiplierOverride = 0.f, int32 InSecondaryStatBonusOverride = 0, int32 InRollSeed = 0)
 		: ItemTemplateID(InTemplateID)
 		, Rarity(InRarity)
 		, Line1RolledValue(InRolledValue)
+		, SecondaryStatBonusOverride(InSecondaryStatBonusOverride)
 		, Line2MultiplierOverride(InLine2MultiplierOverride)
+		, RollSeed(InRollSeed)
 	{}
 
 	bool IsValid() const { return !ItemTemplateID.IsNone(); }
+
+	int32 GetSecondaryStatBonusValue() const
+	{
+		return SecondaryStatBonusOverride > 0 ? SecondaryStatBonusOverride : FItemData::GetFlatSecondaryStatBonus(Rarity);
+	}
 
 	/** Get the Line 2 multiplier for this slot's rarity. */
 	float GetLine2Multiplier() const { return Line2MultiplierOverride > 0.f ? Line2MultiplierOverride : FItemData::GetLine2RarityMultiplier(Rarity); }

@@ -127,8 +127,8 @@ namespace T66TowerMapTerrain
 		float TraceEndZ = -32000.0f;
 		int32 StartFloorNumber = 1;
 		int32 FirstGameplayFloorNumber = 2;
-		int32 LastGameplayFloorNumber = 6;
-		int32 BossFloorNumber = 7;
+		int32 LastGameplayFloorNumber = 4;
+		int32 BossFloorNumber = 5;
 		FVector SpawnSurfaceLocation = FVector::ZeroVector;
 		FVector StartAnchorSurfaceLocation = FVector::ZeroVector;
 		FVector StartPathSurfaceLocation = FVector::ZeroVector;
@@ -142,6 +142,7 @@ namespace T66TowerMapTerrain
 
 	int32 ResolveGameplayLevelNumberForDifficulty(ET66Difficulty Difficulty);
 	ET66TowerGameplayLevelTheme ResolveGameplayLevelTheme(int32 GameplayLevelNumber);
+	ET66TowerGameplayLevelTheme ResolveGameplayLevelThemeForDifficulty(ET66Difficulty Difficulty);
 	FText GetFloorDisplayName(const FFloor& Floor);
 	FText GetFloorDisplayName(const FLayout& Layout, int32 FloorNumber);
 

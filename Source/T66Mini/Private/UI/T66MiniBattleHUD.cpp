@@ -39,34 +39,6 @@ namespace
 		return Cached.Get();
 	}
 
-	UTexture2D* T66MiniLoadHudTexture(const FString& AssetPath)
-	{
-		static TMap<FString, TWeakObjectPtr<UTexture2D>> Cache;
-		if (AssetPath.IsEmpty())
-		{
-			return nullptr;
-		}
-
-		if (TWeakObjectPtr<UTexture2D>* Found = Cache.Find(AssetPath))
-		{
-			if (Found->IsValid())
-			{
-				return Found->Get();
-			}
-
-			Cache.Remove(AssetPath);
-		}
-
-		UTexture2D* Loaded = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), nullptr, *AssetPath));
-		Cache.Add(AssetPath, Loaded);
-		return Loaded;
-	}
-
-	UTexture2D* T66MiniHeartTexture()
-	{
-		return T66MiniLoadHudTexture(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Red.T_Heart_Red"));
-	}
-
 	FString T66MiniInventoryLabelForItem(const FName ItemID)
 	{
 		FString Label = ItemID.ToString();
@@ -128,7 +100,7 @@ namespace
 		Canvas->DrawItem(Tile);
 	}
 
-	void T66MiniDrawHeart(UCanvas* Canvas, const float X, const float Y, const float Size, const float FillAmount)
+	void T66MiniDrawHeart(UCanvas* Canvas, UTexture2D* HeartTexture, const float X, const float Y, const float Size, const float FillAmount)
 	{
 		if (!Canvas)
 		{
@@ -136,11 +108,11 @@ namespace
 		}
 
 		T66MiniDrawBox(Canvas, X - 2.f, Y - 2.f, Size + 4.f, Size + 4.f, FLinearColor(0.02f, 0.02f, 0.03f, 0.92f));
-		T66MiniDrawTexture(Canvas, T66MiniHeartTexture(), X, Y, Size, Size, FLinearColor(0.26f, 0.08f, 0.08f, 0.52f));
+		T66MiniDrawTexture(Canvas, HeartTexture, X, Y, Size, Size, FLinearColor(0.26f, 0.08f, 0.08f, 0.52f));
 		if (FillAmount > 0.f)
 		{
 			const float FilledHeight = Size * FMath::Clamp(FillAmount, 0.f, 1.f);
-			T66MiniDrawTexture(Canvas, T66MiniHeartTexture(), X, Y + (Size - FilledHeight), Size, FilledHeight, FLinearColor::White);
+			T66MiniDrawTexture(Canvas, HeartTexture, X, Y + (Size - FilledHeight), Size, FilledHeight, FLinearColor::White);
 		}
 	}
 
@@ -266,6 +238,36 @@ namespace
 	}
 }
 
+void AT66MiniBattleHUD::BeginPlay()
+{
+	Super::BeginPlay();
+	RefreshCachedUiState();
+}
+
+void AT66MiniBattleHUD::RefreshCachedUiState()
+{
+	CachedPauseKey = T66MiniFindActionKey(FName(TEXT("MiniPause")), EKeys::Escape);
+	CachedInteractKey = T66MiniFindActionKey(FName(TEXT("MiniInteract")), EKeys::LeftMouseButton);
+	CachedUltimateKey = T66MiniFindActionKey(FName(TEXT("MiniUltimate")), EKeys::RightMouseButton);
+	CachedPauseKeyLabel = T66MiniCompactKeyLabel(CachedPauseKey);
+	CachedInteractKeyLabel = T66MiniCompactKeyLabel(CachedInteractKey);
+	CachedUltimateKeyLabel = T66MiniCompactKeyLabel(CachedUltimateKey);
+
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66MiniVisualSubsystem* VisualSubsystem = GameInstance->GetSubsystem<UT66MiniVisualSubsystem>())
+		{
+			HeartTexture = VisualSubsystem->LoadTextureByAssetPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Red.T_Heart_Red"));
+			UltimateIconTexture = VisualSubsystem->LoadHudTexture(TEXT("Ult_Generic"));
+			PassiveIconTexture = VisualSubsystem->LoadHudTexture(TEXT("Passive_Generic"));
+			QuickReviveIconTexture = VisualSubsystem->LoadHudTexture(TEXT("QuickRevive"));
+			MouseLeftIconTexture = VisualSubsystem->LoadHudTexture(TEXT("MouseLeft"));
+			MouseRightIconTexture = VisualSubsystem->LoadHudTexture(TEXT("MouseRight"));
+			InteractHandIconTexture = VisualSubsystem->LoadHudTexture(TEXT("Interact_Hand"));
+		}
+	}
+}
+
 void AT66MiniBattleHUD::DrawHUD()
 {
 	Super::DrawHUD();
@@ -296,12 +298,10 @@ void AT66MiniBattleHUD::DrawHUD()
 	const float ScreenH = Canvas->SizeY;
 	const float SafeMargin = 18.f;
 	const float TopY = 18.f;
-	UTexture2D* UltIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("Ult_Generic")) : nullptr;
-	UTexture2D* PassiveIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("Passive_Generic")) : nullptr;
-	UTexture2D* QuickReviveIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("QuickRevive")) : nullptr;
-	UTexture2D* MouseLeftIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("MouseLeft")) : nullptr;
-	UTexture2D* MouseRightIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("MouseRight")) : nullptr;
-	UTexture2D* InteractHandIcon = VisualSubsystem ? VisualSubsystem->LoadHudTexture(TEXT("Interact_Hand")) : nullptr;
+	if (!HeartTexture || !UltimateIconTexture || !PassiveIconTexture || !QuickReviveIconTexture || !MouseLeftIconTexture || !MouseRightIconTexture || !InteractHandIconTexture)
+	{
+		RefreshCachedUiState();
+	}
 	const FT66MiniDifficultyDefinition* DifficultyDefinition = DataSubsystem ? DataSubsystem->FindDifficulty(MiniGameState->DifficultyID) : nullptr;
 	const FT66MiniHeroDefinition* HeroDefinition = DataSubsystem ? DataSubsystem->FindHero(PlayerPawn->GetHeroID()) : nullptr;
 	const FT66MiniCompanionDefinition* CompanionDefinition = DataSubsystem ? DataSubsystem->FindCompanion(PlayerPawn->GetSelectedCompanionID()) : nullptr;
@@ -340,9 +340,6 @@ void AT66MiniBattleHUD::DrawHUD()
 	const FLinearColor PrimaryText(0.96f, 0.97f, 1.00f, 1.f);
 	const FLinearColor PanelFill(0.03f, 0.04f, 0.06f, 0.82f);
 	const FLinearColor LowTimeColor = MiniGameState->WaveSecondsRemaining <= 12.f ? DangerAccent : GoldAccent;
-	const FKey PauseKey = T66MiniFindActionKey(FName(TEXT("MiniPause")), EKeys::Escape);
-	const FKey InteractKey = T66MiniFindActionKey(FName(TEXT("MiniInteract")), EKeys::LeftMouseButton);
-	const FKey UltimateKey = T66MiniFindActionKey(FName(TEXT("MiniUltimate")), EKeys::RightMouseButton);
 
 	const auto DrawChip = [&](const float X, const float Y, const float W, const FString& Label, const FString& Value, const FLinearColor& Tint)
 	{
@@ -367,7 +364,7 @@ void AT66MiniBattleHUD::DrawHUD()
 	T66MiniDrawInsetPanel(Canvas, HeroPanelX + 14.f, HeroPanelY + 16.f, 78.f, 78.f, FLinearColor(0.10f, 0.11f, 0.15f, 0.92f));
 	if (HeroDefinition)
 	{
-		T66MiniDrawTexture(Canvas, T66MiniLoadHudTexture(HeroDefinition->PortraitPath), HeroPanelX + 17.f, HeroPanelY + 19.f, 72.f, 72.f);
+		T66MiniDrawTexture(Canvas, VisualSubsystem ? VisualSubsystem->LoadTextureByAssetPath(HeroDefinition->PortraitPath) : nullptr, HeroPanelX + 17.f, HeroPanelY + 19.f, 72.f, 72.f);
 	}
 	else
 	{
@@ -389,9 +386,9 @@ void AT66MiniBattleHUD::DrawHUD()
 	if (PlayerPawn->HasQuickReviveReady())
 	{
 		T66MiniDrawInsetPanel(Canvas, HeroPanelX + HeroPanelW - 118.f, HeroPanelY + 114.f, 104.f, 24.f, FLinearColor(0.10f, 0.18f, 0.12f, 0.92f));
-		if (QuickReviveIcon)
+		if (QuickReviveIconTexture)
 		{
-			T66MiniDrawTexture(Canvas, QuickReviveIcon, HeroPanelX + HeroPanelW - 110.f, HeroPanelY + 118.f, 16.f, 16.f);
+			T66MiniDrawTexture(Canvas, QuickReviveIconTexture, HeroPanelX + HeroPanelW - 110.f, HeroPanelY + 118.f, 16.f, 16.f);
 		}
 		T66MiniDrawScaledText(Canvas, BodyFont, TEXT("REVIVE READY"), HeroPanelX + HeroPanelW - 88.f, HeroPanelY + 119.f, GreenAccent, 0.82f);
 	}
@@ -402,7 +399,7 @@ void AT66MiniBattleHUD::DrawHUD()
 	const float HeartY = HeroPanelY + 132.f;
 	for (int32 HeartIndex = 0; HeartIndex < MaxHearts && HeartIndex < 10; ++HeartIndex)
 	{
-		T66MiniDrawHeart(Canvas, HeartX, HeartY, HeartSize, PlayerPawn->GetHeartFill(HeartIndex));
+		T66MiniDrawHeart(Canvas, HeartTexture, HeartX, HeartY, HeartSize, PlayerPawn->GetHeartFill(HeartIndex));
 		HeartX += HeartSize + HeartSpacing;
 	}
 
@@ -430,14 +427,14 @@ void AT66MiniBattleHUD::DrawHUD()
 
 	const float AbilityPanelY = CombatPanelY + CombatPanelH + 14.f;
 	T66MiniDrawPanel(Canvas, CombatPanelX, AbilityPanelY, CombatPanelW, 112.f, GoldAccent, PanelFill);
-	if (UltIcon)
+	if (UltimateIconTexture)
 	{
-		T66MiniDrawTexture(Canvas, UltIcon, CombatPanelX + 16.f, AbilityPanelY + 14.f, 22.f, 22.f);
+		T66MiniDrawTexture(Canvas, UltimateIconTexture, CombatPanelX + 16.f, AbilityPanelY + 14.f, 22.f, 22.f);
 	}
-	T66MiniDrawScaledText(Canvas, TitleFont, TEXT("ULTIMATE"), CombatPanelX + (UltIcon ? 46.f : 16.f), AbilityPanelY + 10.f, PrimaryText, 0.90f);
-	if (MouseRightIcon)
+	T66MiniDrawScaledText(Canvas, TitleFont, TEXT("ULTIMATE"), CombatPanelX + (UltimateIconTexture ? 46.f : 16.f), AbilityPanelY + 10.f, PrimaryText, 0.90f);
+	if (MouseRightIconTexture)
 	{
-		T66MiniDrawTexture(Canvas, MouseRightIcon, CombatPanelX + CombatPanelW - 106.f, AbilityPanelY + 16.f, 18.f, 18.f);
+		T66MiniDrawTexture(Canvas, MouseRightIconTexture, CombatPanelX + CombatPanelW - 106.f, AbilityPanelY + 16.f, 18.f, 18.f);
 	}
 	T66MiniDrawScaledText(
 		Canvas,
@@ -449,9 +446,9 @@ void AT66MiniBattleHUD::DrawHUD()
 		0.92f);
 	T66MiniDrawScaledText(Canvas, BodyFont, PlayerPawn->GetUltimateLabel().ToUpper(), CombatPanelX + 16.f, AbilityPanelY + 42.f, GoldAccent, 0.92f);
 	T66MiniDrawBar(Canvas, CombatPanelX + 16.f, AbilityPanelY + 66.f, CombatPanelW - 32.f, 14.f, UltPct, GoldAccent);
-	if (PassiveIcon)
+	if (PassiveIconTexture)
 	{
-		T66MiniDrawTexture(Canvas, PassiveIcon, CombatPanelX + 16.f, AbilityPanelY + 86.f, 16.f, 16.f);
+		T66MiniDrawTexture(Canvas, PassiveIconTexture, CombatPanelX + 16.f, AbilityPanelY + 86.f, 16.f, 16.f);
 	}
 	T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("PASSIVE  %s"), *PlayerPawn->GetPassiveLabel().ToUpper()), CombatPanelX + 40.f, AbilityPanelY + 87.f, MutedText, 0.84f);
 	if (PlayerPawn->HasQuickReviveReady())
@@ -491,7 +488,7 @@ void AT66MiniBattleHUD::DrawHUD()
 			{
 				if (const FT66MiniIdolDefinition* IdolDefinition = DataSubsystem->FindIdol(EquippedIdolIDs[Index]))
 				{
-					T66MiniDrawTexture(Canvas, T66MiniLoadHudTexture(IdolDefinition->IconPath), IdolX + 6.f, IdolY + 6.f, IdolSlotSize - 12.f, IdolSlotSize - 12.f);
+					T66MiniDrawTexture(Canvas, VisualSubsystem ? VisualSubsystem->LoadTextureByAssetPath(IdolDefinition->IconPath) : nullptr, IdolX + 6.f, IdolY + 6.f, IdolSlotSize - 12.f, IdolSlotSize - 12.f);
 				}
 			}
 			IdolX += IdolSlotSize + IdolSpacing;
@@ -555,7 +552,7 @@ void AT66MiniBattleHUD::DrawHUD()
 			{
 				UTexture2D* ItemTexture = VisualSubsystem
 					? VisualSubsystem->LoadItemTexture(ItemDefinition->ItemID, ItemDefinition->IconPath)
-					: T66MiniLoadHudTexture(ItemDefinition->IconPath);
+					: nullptr;
 				if (ItemTexture)
 				{
 					T66MiniDrawTexture(Canvas, ItemTexture, SlotX + 6.f, SlotY + 6.f, InventorySlotSize - 12.f, InventorySlotSize - 12.f);
@@ -603,31 +600,31 @@ void AT66MiniBattleHUD::DrawHUD()
 		const float ControlsY = ScreenH - 40.f;
 		const float ControlsW = 420.f;
 		T66MiniDrawInsetPanel(Canvas, ControlsX, ControlsY - 4.f, ControlsW, 28.f, FLinearColor(0.05f, 0.06f, 0.09f, 0.86f));
-		if (InteractKey == EKeys::LeftMouseButton && UltimateKey == EKeys::RightMouseButton && MouseLeftIcon && MouseRightIcon)
+		if (CachedInteractKey == EKeys::LeftMouseButton && CachedUltimateKey == EKeys::RightMouseButton && MouseLeftIconTexture && MouseRightIconTexture)
 		{
-			T66MiniDrawTexture(Canvas, MouseLeftIcon, ControlsX + 10.f, ControlsY - 2.f, 18.f, 18.f);
-			if (InteractHandIcon)
+			T66MiniDrawTexture(Canvas, MouseLeftIconTexture, ControlsX + 10.f, ControlsY - 2.f, 18.f, 18.f);
+			if (InteractHandIconTexture)
 			{
-				T66MiniDrawTexture(Canvas, InteractHandIcon, ControlsX + 32.f, ControlsY - 2.f, 18.f, 18.f);
+				T66MiniDrawTexture(Canvas, InteractHandIconTexture, ControlsX + 32.f, ControlsY - 2.f, 18.f, 18.f);
 			}
 			T66MiniDrawScaledText(Canvas, BodyFont, TEXT("INTERACT"), ControlsX + 56.f, ControlsY, MutedText, 0.84f);
 			T66MiniDrawScaledText(Canvas, BodyFont, TEXT("|"), ControlsX + 122.f, ControlsY, FLinearColor(0.42f, 0.46f, 0.52f), 0.84f);
-			T66MiniDrawTexture(Canvas, MouseRightIcon, ControlsX + 138.f, ControlsY - 2.f, 18.f, 18.f);
-			if (UltIcon)
+			T66MiniDrawTexture(Canvas, MouseRightIconTexture, ControlsX + 138.f, ControlsY - 2.f, 18.f, 18.f);
+			if (UltimateIconTexture)
 			{
-				T66MiniDrawTexture(Canvas, UltIcon, ControlsX + 160.f, ControlsY - 2.f, 18.f, 18.f);
+				T66MiniDrawTexture(Canvas, UltimateIconTexture, ControlsX + 160.f, ControlsY - 2.f, 18.f, 18.f);
 			}
 			T66MiniDrawScaledText(Canvas, BodyFont, TEXT("ULTIMATE"), ControlsX + 182.f, ControlsY, MutedText, 0.84f);
 			T66MiniDrawScaledText(Canvas, BodyFont, TEXT("|"), ControlsX + 252.f, ControlsY, FLinearColor(0.42f, 0.46f, 0.52f), 0.84f);
-			T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("%s PAUSE"), *T66MiniCompactKeyLabel(PauseKey)), ControlsX + 268.f, ControlsY, MutedText, 0.84f);
+			T66MiniDrawScaledText(Canvas, BodyFont, FString::Printf(TEXT("%s PAUSE"), *CachedPauseKeyLabel), ControlsX + 268.f, ControlsY, MutedText, 0.84f);
 		}
 		else
 		{
 			const FString ControlsLabel = FString::Printf(
 				TEXT("%s INTERACT  |  %s ULTIMATE  |  %s PAUSE"),
-				*T66MiniCompactKeyLabel(InteractKey),
-				*T66MiniCompactKeyLabel(UltimateKey),
-				*T66MiniCompactKeyLabel(PauseKey));
+				*CachedInteractKeyLabel,
+				*CachedUltimateKeyLabel,
+				*CachedPauseKeyLabel);
 			T66MiniDrawScaledText(Canvas, BodyFont, ControlsLabel, ControlsX + 12.f, ControlsY, MutedText, 0.84f);
 		}
 	}
@@ -694,7 +691,7 @@ void AT66MiniBattleHUD::DrawHUD()
 					{
 						UTexture2D* ItemTexture = VisualSubsystem
 							? VisualSubsystem->LoadItemTexture(ItemDefinition->ItemID, ItemDefinition->IconPath)
-							: T66MiniLoadHudTexture(ItemDefinition->IconPath);
+							: nullptr;
 						if (ItemTexture)
 						{
 							T66MiniDrawTexture(Canvas, ItemTexture, TileX + 10.f, StripOriginY + 10.f, TileSize - 20.f, TileSize - 20.f);

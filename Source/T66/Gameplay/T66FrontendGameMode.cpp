@@ -21,6 +21,52 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66FrontendGameMode, Log, All);
 
+namespace
+{
+	template <typename TStage>
+	TStage* T66ResolveOrSpawnPreviewStage(
+		UWorld* World,
+		TWeakObjectPtr<TStage>& CachedStage,
+		const FVector& StageLocation,
+		const FActorSpawnParameters& SpawnParams,
+		bool& bOutSpawned)
+	{
+		bOutSpawned = false;
+
+		if (TStage* Stage = CachedStage.Get())
+		{
+			return Stage;
+		}
+
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		for (TActorIterator<TStage> It(World); It; ++It)
+		{
+			if (TStage* ExistingStage = *It)
+			{
+				CachedStage = ExistingStage;
+				return ExistingStage;
+			}
+		}
+
+		if (TStage* SpawnedStage = World->SpawnActor<TStage>(
+			TStage::StaticClass(),
+			StageLocation,
+			FRotator::ZeroRotator,
+			SpawnParams))
+		{
+			CachedStage = SpawnedStage;
+			bOutSpawned = true;
+			return SpawnedStage;
+		}
+
+		return nullptr;
+	}
+}
+
 AT66FrontendGameMode::AT66FrontendGameMode()
 {
 	// No default pawn in frontend
@@ -78,51 +124,31 @@ void AT66FrontendGameMode::BeginPlay()
 		// instead of moving the camera between two positions.
 		const FVector PreviewOrigin(100000.f, 0.f, 0.f);
 
-		bool bHasPreviewStage = false;
-		for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+		bool bSpawnedHeroStage = false;
+		if (AT66HeroPreviewStage* HeroStage = T66ResolveOrSpawnPreviewStage(World, HeroPreviewStage, PreviewOrigin, SpawnParams, bSpawnedHeroStage))
 		{
-			bHasPreviewStage = true;
-			It->SetActorLocation(PreviewOrigin);
-			It->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-			It->ResetFramingCache();
-			break;
+			HeroStage->SetActorLocation(PreviewOrigin);
+			HeroStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+			HeroStage->ResetFramingCache();
 		}
-		if (!bHasPreviewStage)
+		if (bSpawnedHeroStage)
 		{
-			if (AT66HeroPreviewStage* HeroStage = World->SpawnActor<AT66HeroPreviewStage>(
-				AT66HeroPreviewStage::StaticClass(),
-				PreviewOrigin,
-				FRotator::ZeroRotator,
-				SpawnParams))
-			{
-				HeroStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-			}
 			UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Spawned HeroPreviewStage for in-world preview"));
 		}
 
-		bool bHasCompanionPreview = false;
-		for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+		bool bSpawnedCompanionStage = false;
+		if (AT66CompanionPreviewStage* CompStage = T66ResolveOrSpawnPreviewStage(World, CompanionPreviewStage, PreviewOrigin, SpawnParams, bSpawnedCompanionStage))
 		{
-			bHasCompanionPreview = true;
-			It->SetActorLocation(PreviewOrigin);
-			It->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-			It->ResetFramingCache();
-			break;
-		}
-		if (!bHasCompanionPreview)
-		{
-			AT66CompanionPreviewStage* CompStage = World->SpawnActor<AT66CompanionPreviewStage>(
-				AT66CompanionPreviewStage::StaticClass(),
-				PreviewOrigin,
-				FRotator::ZeroRotator,
-				SpawnParams
-			);
-			// Start hidden; the hero preview is shown first.
-			if (CompStage)
+			CompStage->SetActorLocation(PreviewOrigin);
+			CompStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+			CompStage->ResetFramingCache();
+			if (bSpawnedCompanionStage)
 			{
-				CompStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
 				CompStage->SetStageVisible(false);
 			}
+		}
+		if (bSpawnedCompanionStage)
+		{
 			UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Spawned CompanionPreviewStage (hidden) for in-world preview"));
 		}
 
@@ -171,6 +197,10 @@ void AT66FrontendGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			PS->OnSettingsChanged.RemoveDynamic(this, &AT66FrontendGameMode::HandleSettingsChanged);
 		}
 	}
+
+	HeroPreviewStage.Reset();
+	CompanionPreviewStage.Reset();
+	PreviewCamera = nullptr;
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -194,26 +224,32 @@ void AT66FrontendGameMode::PositionCameraForHeroPreview()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	bool bSpawnedHeroStage = false;
+	AT66HeroPreviewStage* HeroStage = T66ResolveOrSpawnPreviewStage(World, HeroPreviewStage, FVector(100000.f, 0.f, 0.f), SpawnParams, bSpawnedHeroStage);
+	bool bSpawnedCompanionStage = false;
+	AT66CompanionPreviewStage* CompanionStage = T66ResolveOrSpawnPreviewStage(World, CompanionPreviewStage, FVector(100000.f, 0.f, 0.f), SpawnParams, bSpawnedCompanionStage);
+	static_cast<void>(bSpawnedHeroStage);
+	static_cast<void>(bSpawnedCompanionStage);
+
 	// Show hero, hide companion (they share the same platform location).
-	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+	if (HeroStage)
 	{
-		(*It)->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		(*It)->SetStageVisible(true);
-		break;
+		HeroStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		HeroStage->SetStageVisible(true);
 	}
-	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+	if (CompanionStage)
 	{
-		(*It)->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		(*It)->SetStageVisible(false);
-		break;
+		CompanionStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		CompanionStage->SetStageVisible(false);
 	}
 
 	// Position camera using the hero stage's ideal transform.
-	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+	if (HeroStage)
 	{
-		AT66HeroPreviewStage* Stage = *It;
-		const FVector CamLoc = Stage->GetIdealCameraLocation();
-		const FRotator CamRot = Stage->GetIdealCameraRotation();
+		const FVector CamLoc = HeroStage->GetIdealCameraLocation();
+		const FRotator CamRot = HeroStage->GetIdealCameraRotation();
 		if (!CamLoc.IsNearlyZero())
 		{
 			PreviewCamera->SetActorLocation(CamLoc);
@@ -221,7 +257,6 @@ void AT66FrontendGameMode::PositionCameraForHeroPreview()
 			UE_LOG(LogT66FrontendGameMode, Verbose, TEXT("T66FrontendGameMode: Camera positioned for hero preview at (%.1f,%.1f,%.1f)"),
 				CamLoc.X, CamLoc.Y, CamLoc.Z);
 		}
-		break;
 	}
 }
 
@@ -231,26 +266,32 @@ void AT66FrontendGameMode::PositionCameraForCompanionPreview()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	bool bSpawnedCompanionStage = false;
+	AT66CompanionPreviewStage* CompanionStage = T66ResolveOrSpawnPreviewStage(World, CompanionPreviewStage, FVector(100000.f, 0.f, 0.f), SpawnParams, bSpawnedCompanionStage);
+	bool bSpawnedHeroStage = false;
+	AT66HeroPreviewStage* HeroStage = T66ResolveOrSpawnPreviewStage(World, HeroPreviewStage, FVector(100000.f, 0.f, 0.f), SpawnParams, bSpawnedHeroStage);
+	static_cast<void>(bSpawnedCompanionStage);
+	static_cast<void>(bSpawnedHeroStage);
+
 	// Show companion, hide hero (they share the same platform location).
-	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+	if (CompanionStage)
 	{
-		(*It)->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		(*It)->SetStageVisible(true);
-		break;
+		CompanionStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		CompanionStage->SetStageVisible(true);
 	}
-	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+	if (HeroStage)
 	{
-		(*It)->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		(*It)->SetStageVisible(false);
-		break;
+		HeroStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+		HeroStage->SetStageVisible(false);
 	}
 
 	// Position camera using the companion stage's ideal transform.
-	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+	if (CompanionStage)
 	{
-		AT66CompanionPreviewStage* Stage = *It;
-		const FVector CamLoc = Stage->GetIdealCameraLocation();
-		const FRotator CamRot = Stage->GetIdealCameraRotation();
+		const FVector CamLoc = CompanionStage->GetIdealCameraLocation();
+		const FRotator CamRot = CompanionStage->GetIdealCameraRotation();
 		if (!CamLoc.IsNearlyZero())
 		{
 			PreviewCamera->SetActorLocation(CamLoc);
@@ -258,7 +299,6 @@ void AT66FrontendGameMode::PositionCameraForCompanionPreview()
 			UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Camera positioned for companion preview at (%.1f,%.1f,%.1f)"),
 				CamLoc.X, CamLoc.Y, CamLoc.Z);
 		}
-		break;
 	}
 }
 

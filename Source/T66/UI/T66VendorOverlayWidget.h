@@ -46,6 +46,12 @@ private:
 	};
 
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
+	TSharedPtr<STextBlock> ShopPageTitleText;
+	TSharedPtr<STextBlock> ShopModeToggleButtonText;
+	TSharedPtr<SWidget> ContextRerollButtonWidget;
+	TSharedPtr<SWidget> DialogueShopButtonWidget;
+	TSharedPtr<SWidget> DialogueTeleportButtonWidget;
+	TSharedPtr<SBox> CloseButtonBox;
 
 	// Bottom bar (next to inventory title)
 	TSharedPtr<STextBlock> NetWorthText;
@@ -124,6 +130,7 @@ private:
 	bool bCachedBossActive = false;
 
 	void RefreshAll();
+	void RefreshShopChrome();
 	void RefreshTopBar();
 	void RefreshStock();
 	void RefreshBuyback();

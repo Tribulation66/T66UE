@@ -39,12 +39,15 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(
 	int32, ScoreRankWeekly,
 	bool, bNewPersonalBest);
 
-DECLARE_MULTICAST_DELEGATE_FiveParams(
+DECLARE_MULTICAST_DELEGATE_EightParams(
 	FOnT66SubmitRunDataReady,
 	const FString&,
 	bool,
 	int32,
 	int32,
+	int32,
+	int32,
+	bool,
 	bool);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
@@ -201,6 +204,9 @@ public:
 	FOnSubmitRunResponse OnSubmitRunComplete;
 
 	FOnT66SubmitRunDataReady OnSubmitRunDataReady;
+
+	const FString& GetLastSubmitRunStatus() const { return LastSubmitRunStatus; }
+	const FString& GetLastSubmitRunReason() const { return LastSubmitRunReason; }
 
 	// ── API: My Rank ─────────────────────────────────────────
 
@@ -378,6 +384,8 @@ private:
 
 	UPROPERTY(Transient)
 	TMap<FString, TObjectPtr<UT66LeaderboardRunSummarySaveGame>> RunSummaryCache;
+	FString LastSubmitRunStatus;
+	FString LastSubmitRunReason;
 	TSet<FString> PendingRunSummaryFetches;
 	FTSTicker::FDelegateHandle PartyInvitePollTickerHandle;
 	FTSTicker::FDelegateHandle PendingCoopSubmitTickerHandle;

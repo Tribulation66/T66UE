@@ -30,6 +30,22 @@ namespace T66MainMapTerrain
 {
 	namespace
 	{
+		template <typename TObjectType>
+		static TObjectType* T66FindOrLoadObject(const TCHAR* ObjectPath)
+		{
+			if (!ObjectPath || !*ObjectPath)
+			{
+				return nullptr;
+			}
+
+			if (TObjectType* Existing = FindObject<TObjectType>(nullptr, ObjectPath))
+			{
+				return Existing;
+			}
+
+			return LoadObject<TObjectType>(nullptr, ObjectPath);
+		}
+
 		static constexpr float SourceCellSizeUU = 200.0f;
 		static constexpr float SourceStepHeightUU = 120.0f;
 		static constexpr float TargetMainMapBoardScale = 10.0f;
@@ -157,7 +173,7 @@ namespace T66MainMapTerrain
 				return *Existing;
 			}
 
-			UTexture2D* ThemeTexture = LoadObject<UTexture2D>(nullptr, *ThemeTexturePath);
+			UTexture2D* ThemeTexture = T66FindOrLoadObject<UTexture2D>(*ThemeTexturePath);
 			if (!ThemeTexture)
 			{
 				UE_LOG(LogT66MainMapTerrain, Warning, TEXT("[MAP] Missing difficulty terrain texture: %s"), *ThemeTexturePath);
@@ -949,22 +965,22 @@ namespace T66MainMapTerrain
 				return true;
 			}
 
-			OutAssets.BlockMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkBlock.SM_MegabonkBlock"));
-			OutAssets.SlopeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkSlope.SM_MegabonkSlope"));
+			OutAssets.BlockMesh = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkBlock.SM_MegabonkBlock"));
+			OutAssets.SlopeMesh = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkSlope.SM_MegabonkSlope"));
 			if (!OutAssets.BlockMesh || !OutAssets.SlopeMesh)
 			{
 				return false;
 			}
 
-			OutAssets.EnvironmentUnlitMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
-			OutAssets.BlockMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
-			OutAssets.SlopeMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"));
-			OutAssets.DirtMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt"));
-			OutAssets.WallMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"));
-			OutAssets.BlockTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"));
-			OutAssets.SlopeTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope"));
-			OutAssets.DirtTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt"));
-			OutAssets.WallTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall"));
+			OutAssets.EnvironmentUnlitMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+			OutAssets.BlockMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
+			OutAssets.SlopeMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"));
+			OutAssets.DirtMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt"));
+			OutAssets.WallMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"));
+			OutAssets.BlockTexture = T66FindOrLoadObject<UTexture>(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"));
+			OutAssets.SlopeTexture = T66FindOrLoadObject<UTexture>(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope"));
+			OutAssets.DirtTexture = T66FindOrLoadObject<UTexture>(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt"));
+			OutAssets.WallTexture = T66FindOrLoadObject<UTexture>(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall"));
 			if (!OutAssets.BlockMaterial)
 			{
 				OutAssets.BlockMaterial = OutAssets.SlopeMaterial;
@@ -978,20 +994,20 @@ namespace T66MainMapTerrain
 				OutAssets.WallMaterial = OutAssets.BlockMaterial;
 			}
 
-			OutAssets.PlaneMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
-			OutAssets.GrassMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Grass.Grass"));
-			if (UMaterialInterface* GrassMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Props/Grass/Materials/Material_0_014.Material_0_014")))
+			OutAssets.PlaneMesh = T66FindOrLoadObject<UStaticMesh>(TEXT("/Engine/BasicShapes/Plane.Plane"));
+			OutAssets.GrassMesh = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Grass.Grass"));
+			if (UMaterialInterface* GrassMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Props/Grass/Materials/Material_0_014.Material_0_014")))
 			{
 				OutAssets.GrassMaterials.Add(GrassMaterial);
 			}
 
-			OutAssets.TreeMesh1 = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Tree.Tree"));
-			OutAssets.TreeMesh2 = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Tree2.Tree2"));
-			OutAssets.TreeMesh3 = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Tree3.Tree3"));
-			OutAssets.RockMesh1 = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Rocks.Rocks"));
+			OutAssets.TreeMesh1 = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Tree.Tree"));
+			OutAssets.TreeMesh2 = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Tree2.Tree2"));
+			OutAssets.TreeMesh3 = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Tree3.Tree3"));
+			OutAssets.RockMesh1 = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Rocks.Rocks"));
 			OutAssets.RockMesh2 = OutAssets.RockMesh1;
 			OutAssets.RockMesh3 = OutAssets.RockMesh1;
-			OutAssets.LogMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Log.Log"));
+			OutAssets.LogMesh = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Log.Log"));
 			UE_LOG(LogT66MainMapTerrain, Log, TEXT("[MAP] Main map terrain assets: DirtMaterial=%s DirtTexture=%s WallMaterial=%s WallTexture=%s Tree1=%s Tree2=%s Tree3=%s Rock=%s Rocks=%s"),
 				OutAssets.DirtMaterial ? TEXT("yes") : TEXT("no"),
 				OutAssets.DirtTexture ? TEXT("yes") : TEXT("no"),

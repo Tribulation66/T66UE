@@ -34,6 +34,16 @@ namespace
 	static constexpr float T66TowerGridDefaultDoorWidth = 2600.0f;
 	static constexpr float T66TowerGridBranchChance = 0.35f;
 	static constexpr int32 T66TowerGridMaxBranchCells = 3;
+	static constexpr int32 T66TowerStartFloorNumber = 1;
+	static constexpr int32 T66TowerFirstGameplayFloorNumber = 2;
+	static constexpr int32 T66TowerLastGameplayFloorNumber = 4;
+	static constexpr int32 T66TowerBossFloorNumber = 5;
+	static constexpr int32 T66TowerTotalFloorCount = T66TowerBossFloorNumber - T66TowerStartFloorNumber + 1;
+	static TAutoConsoleVariable<int32> CVarT66TowerIgnoreCameraCollision(
+		TEXT("T66.Camera.IgnoreTowerWallCameraCollision"),
+		0,
+		TEXT("Temporary fallback switch. 0 lets tower walls block the spring-arm camera, 1 ignores the camera channel for tower shell and maze walls."),
+		ECVF_Default);
 
 	static TAutoConsoleVariable<int32> CVarT66TowerMazeMode(
 		TEXT("T66.Tower.MazeMode"),
@@ -66,6 +76,11 @@ namespace
 		}
 
 		MeshComponent->SetCollisionResponseToChannel(ECC_Camera, bIgnoreCameraChannel ? ECR_Ignore : ECR_Block);
+	}
+
+	static bool T66ShouldIgnoreTowerWallCameraCollision()
+	{
+		return CVarT66TowerIgnoreCameraCollision.GetValueOnAnyThread() != 0;
 	}
 
 	static void T66OptimizeTowerMeshComponent(UStaticMeshComponent* MeshComponent)
@@ -1745,6 +1760,27 @@ namespace
 		T66FinalizeFloorMazeMetadata(Layout, Floor);
 	}
 
+	static void T66BuildBossFloorRoom(
+		const T66TowerMapTerrain::FLayout& Layout,
+		T66TowerMapTerrain::FFloor& Floor)
+	{
+		T66ResetFloorMazeMetadata(Floor);
+
+		const float HalfThickness = FMath::Max(Layout.WallThickness * 0.25f, Layout.PlacementCellSize * T66TowerMazeWallHalfThicknessScale);
+		const float RoomBoundsInset = Layout.WallThickness + (Layout.PlacementCellSize * 0.20f);
+		const float RoomHalfExtent = FMath::Max(1400.0f, Floor.BoundsHalfExtent - RoomBoundsInset);
+		const float MinX = Floor.Center.X - RoomHalfExtent;
+		const float MaxX = Floor.Center.X + RoomHalfExtent;
+		const float MinY = Floor.Center.Y - RoomHalfExtent;
+		const float MaxY = Floor.Center.Y + RoomHalfExtent;
+
+		Floor.MazeWallBoxes.Add(FBox2D(FVector2D(MinX - HalfThickness, MinY), FVector2D(MinX + HalfThickness, MaxY)));
+		Floor.MazeWallBoxes.Add(FBox2D(FVector2D(MaxX - HalfThickness, MinY), FVector2D(MaxX + HalfThickness, MaxY)));
+		Floor.MazeWallBoxes.Add(FBox2D(FVector2D(MinX, MinY - HalfThickness), FVector2D(MaxX, MinY + HalfThickness)));
+		Floor.MazeWallBoxes.Add(FBox2D(FVector2D(MinX, MaxY - HalfThickness), FVector2D(MaxX, MaxY + HalfThickness)));
+		T66FinalizeFloorMazeMetadata(Layout, Floor);
+	}
+
 	static void T66SpawnFloorSlab(
 		UWorld* World,
 		UStaticMesh* CubeMesh,
@@ -2047,7 +2083,8 @@ namespace
 		const float DesiredHeight,
 		const FActorSpawnParameters& SpawnParams,
 		const TArray<FName>& Tags,
-		const int32 Seed)
+		const int32 Seed,
+		const bool bIgnoreCameraChannel = false)
 	{
 		const FVector2D WallCenter = (WallBox.Min + WallBox.Max) * 0.5f;
 		const FVector2D WallHalfExtents = (WallBox.Max - WallBox.Min) * 0.5f;
@@ -2075,7 +2112,8 @@ namespace
 					WallExtents,
 					SpawnParams,
 					true,
-					Tags);
+					Tags,
+					bIgnoreCameraChannel);
 			}
 			return;
 		}
@@ -2092,7 +2130,8 @@ namespace
 					WallExtents,
 					SpawnParams,
 					true,
-					Tags);
+					Tags,
+					bIgnoreCameraChannel);
 			}
 			return;
 
@@ -2109,7 +2148,8 @@ namespace
 					WallExtents,
 					SpawnParams,
 					true,
-					Tags);
+					Tags,
+					bIgnoreCameraChannel);
 			}
 			return;
 		}
@@ -2141,7 +2181,8 @@ namespace
 			WallHeight,
 			SpawnParams,
 			ShellTags,
-			Layout.Preset.Seed + (Floor.FloorNumber * 4101));
+			Layout.Preset.Seed + (Floor.FloorNumber * 4101),
+			T66ShouldIgnoreTowerWallCameraCollision());
 		T66SpawnThemedWallBox(
 			World,
 			CubeMesh,
@@ -2151,7 +2192,8 @@ namespace
 			WallHeight,
 			SpawnParams,
 			ShellTags,
-			Layout.Preset.Seed + (Floor.FloorNumber * 4102));
+			Layout.Preset.Seed + (Floor.FloorNumber * 4102),
+			T66ShouldIgnoreTowerWallCameraCollision());
 		T66SpawnThemedWallBox(
 			World,
 			CubeMesh,
@@ -2161,7 +2203,8 @@ namespace
 			WallHeight,
 			SpawnParams,
 			ShellTags,
-			Layout.Preset.Seed + (Floor.FloorNumber * 4103));
+			Layout.Preset.Seed + (Floor.FloorNumber * 4103),
+			T66ShouldIgnoreTowerWallCameraCollision());
 		T66SpawnThemedWallBox(
 			World,
 			CubeMesh,
@@ -2171,7 +2214,8 @@ namespace
 			WallHeight,
 			SpawnParams,
 			ShellTags,
-			Layout.Preset.Seed + (Floor.FloorNumber * 4104));
+			Layout.Preset.Seed + (Floor.FloorNumber * 4104),
+			T66ShouldIgnoreTowerWallCameraCollision());
 	}
 
 	static void T66SpawnMazeWalls(
@@ -2212,91 +2256,113 @@ namespace
 				WallHeight,
 				SpawnParams,
 				WallTags,
-				Layout.Preset.Seed + (Floor.FloorNumber * 913) + static_cast<int32>(WallCenter.X + WallCenter.Y));
+				Layout.Preset.Seed + (Floor.FloorNumber * 913) + static_cast<int32>(WallCenter.X + WallCenter.Y),
+				T66ShouldIgnoreTowerWallCameraCollision());
 		}
 	}
 
 	static void T66SpawnPropActors(
 		UWorld* World,
+		UStaticMesh* CubeMesh,
 		const T66TowerThemeVisuals::FResolvedTheme& Theme,
 		const T66TowerMapTerrain::FLayout& Layout,
 		const T66TowerMapTerrain::FFloor& Floor,
 		const FActorSpawnParameters& SpawnParams)
 	{
-		if (!World || !Floor.bGameplayFloor)
+		if (!World || !CubeMesh || !Floor.bGameplayFloor)
 		{
 			return;
 		}
 
-		if (Theme.DecorationMeshes.Num() <= 0)
-		{
-			return;
-		}
-
+		UMaterialInterface* StoneMaterial = Theme.DecorationMaterialOverride
+			? Theme.DecorationMaterialOverride
+			: (Theme.WallMaterial ? Theme.WallMaterial : Theme.FloorMaterial);
 		FRandomStream Rng(Layout.Preset.Seed + Floor.FloorNumber * 911);
-		static constexpr int32 GameplayFloorPropCount = 42;
-		for (int32 PropIndex = 0; PropIndex < GameplayFloorPropCount; ++PropIndex)
+		static constexpr float T66TowerFloodRockFootprintScale = 0.25f;
+		const float MajorStoneHalfExtent = FMath::Clamp(Layout.PlacementCellSize * 0.72f, 760.0f, 960.0f) * T66TowerFloodRockFootprintScale;
+		const float MinorStoneHalfExtent = MajorStoneHalfExtent * 0.82f;
+		const float MajorStoneHalfHeight = FMath::Clamp(Layout.PlacementCellSize * 0.16f, 150.0f, 220.0f);
+		const float MinorStoneHalfHeight = MajorStoneHalfHeight * 0.78f;
+		const float ConnectionOffset = FMath::Clamp((Layout.GridCellSize * 0.5f) - MajorStoneHalfExtent - 180.0f, 1850.0f, 2250.0f);
+		const TArray<FName> PropTags = {
+			FName(*FString::Printf(TEXT("T66_Floor_Tower_Deco_%02d"), Floor.FloorNumber)),
+			FName(*FString::Printf(TEXT("T66_Floor_Tower_Rock_%02d"), Floor.FloorNumber))
+		};
+
+		auto SpawnStoneAt = [&](const FVector& SurfaceLocation, const float HalfExtentXY, const float HalfHeight) -> bool
 		{
-			FVector SpawnLocation = FVector::ZeroVector;
-			bool bPlaced = false;
-			for (int32 Attempt = 0; Attempt < 36; ++Attempt)
+			if (!T66IsWalkableTowerLocation(Floor, SurfaceLocation, HalfExtentXY * 0.18f, HalfExtentXY * 0.45f, 180.0f))
 			{
-				if (!T66TowerMapTerrain::TryGetRandomSurfaceLocationOnFloor(
-					World,
-					Layout,
-					Floor.FloorNumber,
-					Rng,
-					SpawnLocation,
-					750.0f,
-					1150.0f))
+				return false;
+			}
+
+			const FVector SpawnLocation = SurfaceLocation + FVector(0.0f, 0.0f, HalfHeight);
+			return T66SpawnStaticMeshActor(
+				World,
+				CubeMesh,
+				StoneMaterial,
+				SpawnLocation,
+				FRotator(0.0f, Rng.FRandRange(0.0f, 360.0f), 0.0f),
+				FVector(HalfExtentXY, HalfExtentXY, HalfHeight),
+				SpawnParams,
+				true,
+				PropTags) != nullptr;
+		};
+
+		bool bSpawnedAny = false;
+		if (Floor.GridCells.Num() > 0)
+		{
+			for (const T66TowerMapTerrain::FGridCell& Cell : Floor.GridCells)
+			{
+				if (Cell.Semantic == ET66TowerGridCellSemantic::Unused)
 				{
 					continue;
 				}
 
-				bPlaced = true;
-				break;
-			}
-
-			if (!bPlaced)
-			{
-				continue;
-			}
-
-			UStaticMesh* Mesh = Theme.DecorationMeshes[Rng.RandRange(0, Theme.DecorationMeshes.Num() - 1)];
-			AStaticMeshActor* PropActor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), SpawnLocation, FRotator(0.0f, Rng.FRandRange(0.0f, 360.0f), 0.0f), SpawnParams);
-			if (!PropActor)
-			{
-				continue;
-			}
-
-			if (UStaticMeshComponent* MeshComponent = PropActor->GetStaticMeshComponent())
-			{
-				MeshComponent->SetMobility(EComponentMobility::Movable);
-				MeshComponent->SetStaticMesh(Mesh);
-				MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-				MeshComponent->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
-				MeshComponent->SetGenerateOverlapEvents(false);
-				T66ConfigureTowerCollisionResponses(MeshComponent, false);
-				T66OptimizeTowerMeshComponent(MeshComponent);
-				MeshComponent->SetMobility(EComponentMobility::Static);
-				const float Scale = (Theme.ThemeName == FName(TEXT("Martian")))
-					? Rng.FRandRange(0.85f, 1.35f)
-					: Rng.FRandRange(0.70f, 1.20f);
-				PropActor->SetActorScale3D(FVector(Scale));
-				if (Theme.DecorationMaterialOverride)
+				const bool bOptionalCell = Cell.Semantic == ET66TowerGridCellSemantic::OptionalLoop;
+				if (bOptionalCell && Rng.FRand() > 0.55f)
 				{
-					const int32 MaterialCount = MeshComponent->GetNumMaterials();
-					for (int32 MaterialIndex = 0; MaterialIndex < MaterialCount; ++MaterialIndex)
-					{
-						MeshComponent->SetMaterial(MaterialIndex, Theme.DecorationMaterialOverride);
-					}
+					continue;
 				}
-				FT66VisualUtil::EnsureUnlitMaterials(MeshComponent, World);
-			}
 
-			PropActor->Tags.AddUnique(T66MainMapTerrainVisualTag);
-			PropActor->Tags.AddUnique(T66MainMapTerrainMaterialsReadyTag);
-			PropActor->Tags.AddUnique(FName(*FString::Printf(TEXT("T66_Floor_Tower_Deco_%02d"), Floor.FloorNumber)));
+				bSpawnedAny |= SpawnStoneAt(Cell.WorldCenter, MajorStoneHalfExtent, MajorStoneHalfHeight);
+
+				auto SpawnConnectionStone = [&](const uint8 ConnectionMask, const FVector& Direction)
+				{
+					if ((Cell.ConnectionMask & ConnectionMask) == 0)
+					{
+						return;
+					}
+
+					if (bOptionalCell && Rng.FRand() > 0.45f)
+					{
+						return;
+					}
+
+					bSpawnedAny |= SpawnStoneAt(Cell.WorldCenter + (Direction * ConnectionOffset), MinorStoneHalfExtent, MinorStoneHalfHeight);
+				};
+
+				SpawnConnectionStone(T66TowerMapTerrain::GridNorth, FVector(0.0f, -1.0f, 0.0f));
+				SpawnConnectionStone(T66TowerMapTerrain::GridEast, FVector(1.0f, 0.0f, 0.0f));
+				SpawnConnectionStone(T66TowerMapTerrain::GridSouth, FVector(0.0f, 1.0f, 0.0f));
+				SpawnConnectionStone(T66TowerMapTerrain::GridWest, FVector(-1.0f, 0.0f, 0.0f));
+			}
+		}
+
+		if (bSpawnedAny || Floor.CachedMainPathSpawnSlots.Num() <= 0)
+		{
+			return;
+		}
+
+		TArray<FVector> FallbackSlots = Floor.CachedMainPathSpawnSlots;
+		FallbackSlots.Sort([&Floor](const FVector& A, const FVector& B)
+		{
+			return FVector::DistSquared2D(A, Floor.ArrivalPoint) < FVector::DistSquared2D(B, Floor.ArrivalPoint);
+		});
+
+		for (int32 SlotIndex = 0; SlotIndex < FallbackSlots.Num(); SlotIndex += 2)
+		{
+			SpawnStoneAt(FallbackSlots[SlotIndex], MajorStoneHalfExtent, MajorStoneHalfHeight);
 		}
 	}
 }
@@ -2327,6 +2393,11 @@ namespace T66TowerMapTerrain
 		case 5:  return ET66TowerGameplayLevelTheme::Hell;
 		default: return ET66TowerGameplayLevelTheme::Dungeon;
 		}
+	}
+
+	ET66TowerGameplayLevelTheme ResolveGameplayLevelThemeForDifficulty(const ET66Difficulty Difficulty)
+	{
+		return ResolveGameplayLevelTheme(ResolveGameplayLevelNumberForDifficulty(Difficulty));
 	}
 
 	FText GetFloorDisplayName(const FFloor& Floor)
@@ -2390,21 +2461,22 @@ namespace T66TowerMapTerrain
 		OutLayout.GridRows = T66TowerGridDefaultRows;
 		OutLayout.GridCellSize = T66TowerGridDefaultCellSize;
 		OutLayout.GridDoorWidth = T66TowerGridDefaultDoorWidth;
-		OutLayout.StartFloorNumber = 1;
-		OutLayout.FirstGameplayFloorNumber = 2;
-		OutLayout.LastGameplayFloorNumber = 6;
-		OutLayout.BossFloorNumber = 7;
+		OutLayout.StartFloorNumber = T66TowerStartFloorNumber;
+		OutLayout.FirstGameplayFloorNumber = T66TowerFirstGameplayFloorNumber;
+		OutLayout.LastGameplayFloorNumber = T66TowerLastGameplayFloorNumber;
+		OutLayout.BossFloorNumber = T66TowerBossFloorNumber;
 
 		const float TopFloorZ = Preset.BaselineZ + 1600.0f;
 		const float FloorSpacing = OutLayout.FloorSpacing;
 		const FVector2D HoleHalfExtent(OutLayout.PlacementCellSize * 0.5f, OutLayout.PlacementCellSize * 0.5f);
-		const float FloorBottomZ = TopFloorZ - (6.0f * FloorSpacing) - OutLayout.FloorThickness;
-		FRandomStream HoleRng(Preset.Seed * 977 + 311);
+		const FVector AlignedHoleOffset(0.0f, -(OutLayout.PlacementCellSize * 0.9f), 0.0f);
+		const float StartRoomHalfExtent = T66TowerStartRoomSquareSize * 0.5f;
+		const float FloorBottomZ = TopFloorZ - (static_cast<float>(T66TowerTotalFloorCount - 1) * FloorSpacing) - OutLayout.FloorThickness;
 
 		OutLayout.TraceStartZ = TopFloorZ + 12000.0f;
 		OutLayout.TraceEndZ = FloorBottomZ - 12000.0f;
 
-		for (int32 FloorIndex = 0; FloorIndex < 7; ++FloorIndex)
+		for (int32 FloorIndex = 0; FloorIndex < T66TowerTotalFloorCount; ++FloorIndex)
 		{
 			FFloor& Floor = OutLayout.Floors.AddDefaulted_GetRef();
 			Floor.FloorNumber = FloorIndex + 1;
@@ -2416,17 +2488,20 @@ namespace T66TowerMapTerrain
 			Floor.GameplayLevelNumber = Floor.bGameplayFloor
 				? (Floor.FloorNumber - OutLayout.FirstGameplayFloorNumber + 1)
 				: INDEX_NONE;
-			Floor.Theme = Floor.bGameplayFloor
-				? ResolveGameplayLevelTheme(Floor.GameplayLevelNumber)
-				: ((Floor.FloorRole == ET66TowerFloorRole::Boss)
-					? ET66TowerGameplayLevelTheme::Hell
-					: ET66TowerGameplayLevelTheme::Dungeon);
+			Floor.Theme = ET66TowerGameplayLevelTheme::Dungeon;
 			Floor.bHasDropHole = Floor.FloorNumber < OutLayout.BossFloorNumber;
 			Floor.Center = FVector(0.0f, 0.0f, TopFloorZ - (static_cast<float>(FloorIndex) * FloorSpacing));
 			Floor.SurfaceZ = Floor.Center.Z;
 			Floor.PolygonApothem = OutLayout.ShellRadius - (OutLayout.WallThickness * 0.5f) + 20.0f;
+			if (Floor.FloorNumber == OutLayout.BossFloorNumber)
+			{
+				// Match the final boss arena to the idol-room footprint instead of the full outer shell.
+				Floor.PolygonApothem = StartRoomHalfExtent;
+			}
 			Floor.BoundsHalfExtent = Floor.PolygonApothem;
-			Floor.WalkableHalfExtent = Floor.PolygonApothem - ((Floor.FloorNumber == OutLayout.BossFloorNumber) ? 1600.0f : 1300.0f);
+			Floor.WalkableHalfExtent = (Floor.FloorNumber == OutLayout.BossFloorNumber)
+				? Floor.PolygonApothem
+				: (Floor.PolygonApothem - 1300.0f);
 			Floor.FloorTag =
 				(Floor.FloorRole == ET66TowerFloorRole::Start) ? T66FloorStartTag :
 				(Floor.FloorRole == ET66TowerFloorRole::Boss) ? T66FloorBossTag :
@@ -2434,20 +2509,7 @@ namespace T66TowerMapTerrain
 
 			if (Floor.bHasDropHole)
 			{
-				FVector HoleOffset = FVector::ZeroVector;
-				if (Floor.FloorNumber == OutLayout.StartFloorNumber)
-				{
-					HoleOffset = FVector(0.0f, -(OutLayout.PlacementCellSize * 0.9f), 0.0f);
-				}
-				else
-				{
-					HoleOffset = T66BuildSquareHoleOffset(
-						HoleRng,
-						Floor.WalkableHalfExtent,
-						Floor.BoundsHalfExtent,
-						HoleHalfExtent,
-						OutLayout.PlacementCellSize);
-				}
+				const FVector HoleOffset = AlignedHoleOffset;
 				Floor.HoleCenter = Floor.Center + HoleOffset;
 				Floor.HoleCenter.Z = Floor.SurfaceZ;
 				Floor.HoleHalfExtent = HoleHalfExtent;
@@ -2522,6 +2584,14 @@ namespace T66TowerMapTerrain
 					Floor,
 					OutLayout.SpawnSurfaceLocation,
 					OutLayout.StartAnchorSurfaceLocation);
+				break;
+			}
+		}
+		for (FFloor& Floor : OutLayout.Floors)
+		{
+			if (Floor.FloorNumber == OutLayout.BossFloorNumber)
+			{
+				T66BuildBossFloorRoom(OutLayout, Floor);
 				break;
 			}
 		}
@@ -3009,7 +3079,6 @@ namespace T66TowerMapTerrain
 
 	bool Spawn(UWorld* World, const FLayout& Layout, ET66Difficulty Difficulty, const FActorSpawnParameters& SpawnParams, bool& bOutCollisionReady)
 	{
-		(void)Difficulty;
 		bOutCollisionReady = false;
 		if (!World || Layout.Floors.Num() <= 0)
 		{
@@ -3024,10 +3093,13 @@ namespace T66TowerMapTerrain
 
 		TArray<T66TowerThemeVisuals::FResolvedTheme> FloorThemes;
 		FloorThemes.Reserve(Layout.Floors.Num());
+		const ET66TowerGameplayLevelTheme StageTheme = ResolveGameplayLevelThemeForDifficulty(Difficulty);
 		for (const FFloor& Floor : Layout.Floors)
 		{
+			FFloor ThemedFloor = Floor;
+			ThemedFloor.Theme = StageTheme;
 			T66TowerThemeVisuals::FResolvedTheme Theme;
-			T66TowerThemeVisuals::ResolveFloorTheme(World, Floor, Theme);
+			T66TowerThemeVisuals::ResolveFloorTheme(World, ThemedFloor, Theme);
 			FloorThemes.Add(MoveTemp(Theme));
 		}
 		for (int32 FloorIndex = 0; FloorIndex < Layout.Floors.Num(); ++FloorIndex)
@@ -3044,6 +3116,7 @@ namespace T66TowerMapTerrain
 			T66SpawnShellWallsForFloor(World, CubeMesh, Layout, Floor, Theme, ModuleWallHeight, SpawnParams);
 			T66SpawnPolygonFloor(World, CubeMesh, Theme.FloorMaterial, Layout, Floor, SpawnParams, FloorTags);
 			T66SpawnMazeWalls(World, CubeMesh, Theme, Layout, Floor, ModuleWallHeight, SpawnParams);
+			T66SpawnPropActors(World, CubeMesh, Theme, Layout, Floor, SpawnParams);
 
 			T66TowerMapTerrain::FFloor RoofGeometryFloor;
 			float RoofSurfaceZ = 0.0f;

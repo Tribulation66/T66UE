@@ -89,6 +89,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
 #include "Engine/GameViewportClient.h"
@@ -121,6 +123,57 @@ AT66PlayerController::AT66PlayerController()
 	DefaultMouseCursor = EMouseCursor::Default;
 	JumpVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
 	PixelVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
+}
+
+void AT66PlayerController::PrimeGameplayPresentationAssetsAsync()
+{
+	if (!CachedJumpVFXNiagara)
+	{
+		CachedJumpVFXNiagara = JumpVFXNiagara.Get();
+	}
+	if (!CachedPixelVFXNiagara)
+	{
+		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
+	}
+	if ((CachedJumpVFXNiagara && CachedPixelVFXNiagara) || GameplayPresentationAssetsLoadHandle.IsValid())
+	{
+		return;
+	}
+
+	TArray<FSoftObjectPath> AssetPaths;
+	if (!CachedJumpVFXNiagara && !JumpVFXNiagara.IsNull())
+	{
+		AssetPaths.AddUnique(JumpVFXNiagara.ToSoftObjectPath());
+	}
+	if (!CachedPixelVFXNiagara && !PixelVFXNiagara.IsNull())
+	{
+		AssetPaths.AddUnique(PixelVFXNiagara.ToSoftObjectPath());
+	}
+	if (AssetPaths.Num() <= 0)
+	{
+		return;
+	}
+
+	GameplayPresentationAssetsLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		AssetPaths,
+		FStreamableDelegate::CreateUObject(this, &AT66PlayerController::HandleGameplayPresentationAssetsLoaded));
+	if (!GameplayPresentationAssetsLoadHandle.IsValid())
+	{
+		HandleGameplayPresentationAssetsLoaded();
+	}
+}
+
+void AT66PlayerController::HandleGameplayPresentationAssetsLoaded()
+{
+	GameplayPresentationAssetsLoadHandle.Reset();
+	if (!CachedJumpVFXNiagara)
+	{
+		CachedJumpVFXNiagara = JumpVFXNiagara.Get();
+	}
+	if (!CachedPixelVFXNiagara)
+	{
+		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
+	}
 }
 
 
@@ -160,16 +213,7 @@ void AT66PlayerController::BeginPlay()
 		ClientGameplayWorldSetupRetriesRemaining = T66ClientGameplayWorldSetupRetryBudget;
 		EnsureClientGameplayWorldSetup(true);
 		SetupGameplayHUD();
-		CachedJumpVFXNiagara = JumpVFXNiagara.Get();
-		if (!CachedJumpVFXNiagara)
-		{
-			CachedJumpVFXNiagara = JumpVFXNiagara.LoadSynchronous();
-		}
-		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
-		if (!CachedPixelVFXNiagara)
-		{
-			CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
-		}
+		PrimeGameplayPresentationAssetsAsync();
 		UWorld* World = GetWorld();
 		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 
@@ -335,6 +379,7 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	HideFrontendStartupOverlay();
 	bClientGameplayWorldSetupComplete = false;
 	bReceivedGameplayRunSettingsFromServer = false;
+	GameplayPresentationAssetsLoadHandle.Reset();
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -391,9 +436,12 @@ void AT66PlayerController::RefreshGameplayViewTarget(bool bAllowRetry)
 
 	if (World->GetNetMode() == NM_Client)
 	{
-		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+		if (bClientGameplayWorldSetupComplete)
 		{
-			T66GI->HidePersistentGameplayTransitionCurtain();
+			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+			{
+				T66GI->HidePersistentGameplayTransitionCurtain();
+			}
 		}
 	}
 }
@@ -486,6 +534,7 @@ void AT66PlayerController::EnsureClientGameplayWorldSetup(bool bAllowRetry)
 		World->GetTimerManager().ClearTimer(ClientGameplayWorldSetupRetryTimerHandle);
 		ClientGameplayWorldSetupRetriesRemaining = 0;
 		bClientGameplayWorldSetupComplete = true;
+		RefreshGameplayViewTarget(true);
 		return;
 	}
 

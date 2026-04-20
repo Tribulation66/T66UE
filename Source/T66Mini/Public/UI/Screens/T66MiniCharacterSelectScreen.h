@@ -29,9 +29,11 @@ private:
 	FReply HandleHeroClicked(FName HeroID);
 	void HandleSessionStateChanged();
 	void SyncToSharedPartyScreen();
+	FString BuildSessionUiStateKey() const;
 	void RebuildHeroSpriteBrushes(const TArray<FT66MiniHeroDefinition>& Heroes);
 	const FSlateBrush* FindHeroSpriteBrush(FName HeroID) const;
 
 	TMap<FName, TSharedPtr<FSlateBrush>> HeroSpriteBrushes;
 	FDelegateHandle SessionStateChangedHandle;
+	FString LastSessionUiStateKey;
 };

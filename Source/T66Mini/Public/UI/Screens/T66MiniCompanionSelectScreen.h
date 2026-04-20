@@ -29,9 +29,11 @@ private:
 	FReply HandleCompanionClicked(FName CompanionID);
 	void HandleSessionStateChanged();
 	void SyncToSharedPartyScreen();
+	FString BuildSessionUiStateKey() const;
 	void RebuildCompanionBrushes(const TArray<FT66MiniCompanionDefinition>& Companions);
 	const FSlateBrush* FindCompanionBrush(FName CompanionID) const;
 
 	TMap<FName, TSharedPtr<FSlateBrush>> CompanionBrushes;
 	FDelegateHandle SessionStateChangedHandle;
+	FString LastSessionUiStateKey;
 };

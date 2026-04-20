@@ -28,6 +28,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CatchUp")
 	int32 TargetStage = 1;
 
+	/** When true, this gate behaves like a normal stage-clear exit instead of stage catch-up. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	bool bActsAsStageAdvanceGate = false;
+
 	/** Called when player presses Interact (F) while overlapping. Returns true if transition triggered. */
 	UFUNCTION(BlueprintCallable, Category = "CatchUp")
 	bool EnterChosenStage();

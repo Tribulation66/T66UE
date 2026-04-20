@@ -67,6 +67,9 @@ private:
 	void SpawnWindupBurst(const FVector& Direction) const;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> HousingMesh;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> TrapMesh;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")

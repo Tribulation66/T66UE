@@ -6,6 +6,7 @@
 #include "Core/T66SessionSubsystem.h"
 #include "Core/T66LeaderboardPacingUtils.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
+#include "Core/T66RunIntegrityTypes.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
@@ -1160,6 +1161,49 @@ namespace
 		AntiCheatObj->SetBoolField(TEXT("gambler_events_truncated"), Snapshot->bAntiCheatGamblerEventsTruncated);
 		RunObj->SetObjectField(TEXT("anti_cheat_context"), AntiCheatObj);
 
+		TSharedPtr<FJsonObject> IntegrityObj = MakeShared<FJsonObject>();
+		IntegrityObj->SetStringField(TEXT("verdict"), Snapshot->IntegrityContext.Verdict);
+		IntegrityObj->SetStringField(TEXT("steam_app_id"), Snapshot->IntegrityContext.SteamAppId);
+		IntegrityObj->SetNumberField(TEXT("steam_build_id"), Snapshot->IntegrityContext.SteamBuildId);
+		if (!Snapshot->IntegrityContext.SteamBetaName.IsEmpty())
+		{
+			IntegrityObj->SetStringField(TEXT("steam_beta_name"), Snapshot->IntegrityContext.SteamBetaName);
+		}
+		if (!Snapshot->IntegrityContext.ManifestId.IsEmpty())
+		{
+			IntegrityObj->SetStringField(TEXT("manifest_id"), Snapshot->IntegrityContext.ManifestId);
+		}
+		if (!Snapshot->IntegrityContext.ManifestRootHash.IsEmpty())
+		{
+			IntegrityObj->SetStringField(TEXT("manifest_root_hash"), Snapshot->IntegrityContext.ManifestRootHash);
+		}
+		if (!Snapshot->IntegrityContext.ModuleListHash.IsEmpty())
+		{
+			IntegrityObj->SetStringField(TEXT("module_list_hash"), Snapshot->IntegrityContext.ModuleListHash);
+		}
+		if (!Snapshot->IntegrityContext.MountedContentHash.IsEmpty())
+		{
+			IntegrityObj->SetStringField(TEXT("mounted_content_hash"), Snapshot->IntegrityContext.MountedContentHash);
+		}
+		if (!Snapshot->IntegrityContext.BaselineHash.IsEmpty())
+		{
+			IntegrityObj->SetStringField(TEXT("baseline_hash"), Snapshot->IntegrityContext.BaselineHash);
+		}
+		if (!Snapshot->IntegrityContext.FinalHash.IsEmpty())
+		{
+			IntegrityObj->SetStringField(TEXT("final_hash"), Snapshot->IntegrityContext.FinalHash);
+		}
+		if (Snapshot->IntegrityContext.Reasons.Num() > 0)
+		{
+			TArray<TSharedPtr<FJsonValue>> ReasonArr;
+			for (const FString& Reason : Snapshot->IntegrityContext.Reasons)
+			{
+				ReasonArr.Add(MakeShared<FJsonValueString>(Reason));
+			}
+			IntegrityObj->SetArrayField(TEXT("reasons"), ReasonArr);
+		}
+		RunObj->SetObjectField(TEXT("integrity_context"), IntegrityObj);
+
 		TArray<TSharedPtr<FJsonValue>> IdolArr;
 		for (const FName& Idol : Snapshot->EquippedIdols)
 		{
@@ -1221,7 +1265,7 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 	{
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: cannot submit run — no backend URL configured."));
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 		return;
 	}
 
@@ -1229,7 +1273,7 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 	{
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: cannot submit run — no Steam ticket set."));
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 		return;
 	}
 
@@ -1248,7 +1292,7 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 	{
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: cannot submit run — failed to serialize run summary payload."));
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 		return;
 	}
 
@@ -1261,7 +1305,7 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 		{
 			UE_LOG(LogT66Backend, Log, TEXT("Backend: skipping co-op submit because no active party session was found."));
 			OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 			return;
 		}
 
@@ -1270,7 +1314,7 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 		{
 			UE_LOG(LogT66Backend, Warning, TEXT("Backend: skipping co-op submit because the local run summary could not be handed to the host."));
 			OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 			return;
 		}
 
@@ -1278,7 +1322,7 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 		{
 			UE_LOG(LogT66Backend, Log, TEXT("Backend: forwarded co-op run summary to host; non-host client will not submit directly."));
 			OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 			return;
 		}
 	}
@@ -1349,12 +1393,16 @@ bool UT66BackendSubsystem::TrySubmitRunToBackendNow(
 	{
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: submit-run failed because the host run payload could not be parsed."));
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 		return true;
 	}
 
 	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetStringField(TEXT("display_name"), DisplayName);
+	if (!RequestKey.IsEmpty())
+	{
+		Root->SetStringField(TEXT("submission_id"), RequestKey);
+	}
 
 	FString RootHeroId = HeroId;
 	FString RootCompanionId = CompanionId;
@@ -1369,7 +1417,7 @@ bool UT66BackendSubsystem::TrySubmitRunToBackendNow(
 		{
 			UE_LOG(LogT66Backend, Warning, TEXT("Backend: co-op submit aborted because the local player is no longer the active party host."));
 			OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 			return true;
 		}
 
@@ -1379,7 +1427,7 @@ bool UT66BackendSubsystem::TrySubmitRunToBackendNow(
 		{
 			UE_LOG(LogT66Backend, Warning, TEXT("Backend: co-op submit aborted because fewer than two lobby profiles are available."));
 			OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 			return true;
 		}
 
@@ -1412,7 +1460,7 @@ bool UT66BackendSubsystem::TrySubmitRunToBackendNow(
 				{
 					UE_LOG(LogT66Backend, Warning, TEXT("Backend: co-op submit aborted because a member run payload was invalid. steam_id=%s"), *LobbyInfo.SteamId);
 					OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-					OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+					OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 					return true;
 				}
 			}
@@ -1440,7 +1488,7 @@ bool UT66BackendSubsystem::TrySubmitRunToBackendNow(
 		{
 			UE_LOG(LogT66Backend, Warning, TEXT("Backend: co-op submit aborted because the party payload is incomplete."));
 			OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 			return true;
 		}
 
@@ -1511,7 +1559,7 @@ bool UT66BackendSubsystem::HandlePendingCoopSubmitTicker(float DeltaTime)
 		{
 			UE_LOG(LogT66Backend, Warning, TEXT("Backend: co-op submit timed out waiting for member summaries. request=%s"), *RequestKey);
 			OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 			PendingCoopSubmitRequests.Remove(RequestKey);
 		}
 	}
@@ -1530,8 +1578,10 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 	if (!bConnectedSuccessfully || !Response.IsValid())
 	{
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: submit-run failed (connection error)."));
+		LastSubmitRunStatus = TEXT("connection_error");
+		LastSubmitRunReason = TEXT("connection_error");
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 		return;
 	}
 
@@ -1543,12 +1593,16 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
 	{
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: submit-run failed to parse JSON. Code=%d"), Code);
+		LastSubmitRunStatus = TEXT("parse_error");
+		LastSubmitRunReason = TEXT("parse_error");
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 		return;
 	}
 
 	const FString Status = Json->GetStringField(TEXT("status"));
+	LastSubmitRunStatus = Status;
+	LastSubmitRunReason = Json->HasField(TEXT("reason")) ? Json->GetStringField(TEXT("reason")) : FString();
 	if (Status == TEXT("accepted"))
 	{
 		double ScoreRankAlltimeValue = 0.0;
@@ -1567,10 +1621,9 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 		const int32 ScoreRankWeekly = static_cast<int32>(ScoreRankWeeklyValue);
 		const int32 SpeedRunRankAlltime = static_cast<int32>(SpeedRunRankAlltimeValue);
 		const int32 SpeedRunRankWeekly = static_cast<int32>(SpeedRunRankWeeklyValue);
-		const bool bExpectCompletedRunRank = RequestKey.StartsWith(TEXT("best_rank_completed_"));
-		const int32 PrimaryRankAlltime = bExpectCompletedRunRank ? SpeedRunRankAlltime : ScoreRankAlltime;
-		const int32 PrimaryRankWeekly = bExpectCompletedRunRank ? SpeedRunRankWeekly : ScoreRankWeekly;
-		const bool bPrimaryNewPB = bExpectCompletedRunRank ? bNewSpeedRunPB : bNewScorePB;
+		const int32 PrimaryRankAlltime = ScoreRankAlltime > 0 ? ScoreRankAlltime : SpeedRunRankAlltime;
+		const int32 PrimaryRankWeekly = ScoreRankWeekly > 0 ? ScoreRankWeekly : SpeedRunRankWeekly;
+		const bool bPrimaryNewPB = bNewScorePB || bNewSpeedRunPB;
 
 		UE_LOG(
 			LogT66Backend,
@@ -1587,20 +1640,37 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 			bPrimaryNewPB ? TEXT("true") : TEXT("false"));
 
 		OnSubmitRunComplete.Broadcast(true, PrimaryRankAlltime, PrimaryRankWeekly, bPrimaryNewPB);
-		OnSubmitRunDataReady.Broadcast(RequestKey, true, PrimaryRankAlltime, PrimaryRankWeekly, bPrimaryNewPB);
+		OnSubmitRunDataReady.Broadcast(
+			RequestKey,
+			true,
+			ScoreRankAlltime,
+			ScoreRankWeekly,
+			SpeedRunRankAlltime,
+			SpeedRunRankWeekly,
+			bNewScorePB,
+			bNewSpeedRunPB);
+	}
+	else if (Status == TEXT("unranked"))
+	{
+		const FString ReasonCode = Json->HasField(TEXT("reason_code")) ? Json->GetStringField(TEXT("reason_code")) : TEXT("unranked");
+		const FString Reason = Json->HasField(TEXT("reason")) ? Json->GetStringField(TEXT("reason")) : TEXT("Run is not eligible for ranked submission.");
+		LastSubmitRunReason = Reason;
+		UE_LOG(LogT66Backend, Log, TEXT("Backend: submit-run unranked (%s) — %s"), *ReasonCode, *Reason);
+		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
+		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 	}
 	else if (Status == TEXT("flagged") || Status == TEXT("banned") || Status == TEXT("suspended"))
 	{
 		const FString Reason = Json->GetStringField(TEXT("reason"));
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: submit-run %s — %s"), *Status, *Reason);
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 	}
 	else
 	{
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: submit-run unexpected status=%s, code=%d"), *Status, Code);
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
-		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, false);
+		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
 	}
 }
 
@@ -2249,6 +2319,55 @@ void UT66BackendSubsystem::OnRespondPartyInviteResponseReceived(
 	}
 
 	const bool bSuccess = bConnectedSuccessfully && Response.IsValid() && Response->GetResponseCode() == 200;
+	FString HostSteamId;
+	FString TargetSteamId;
+	FString HostLobbyId;
+	FString HostAppId;
+	if (Json.IsValid())
+	{
+		const TSharedPtr<FJsonObject>* InviteObject = nullptr;
+		if (Json->TryGetObjectField(TEXT("invite"), InviteObject) && InviteObject && InviteObject->IsValid())
+		{
+			(*InviteObject)->TryGetStringField(TEXT("host_steam_id"), HostSteamId);
+			(*InviteObject)->TryGetStringField(TEXT("target_steam_id"), TargetSteamId);
+			(*InviteObject)->TryGetStringField(TEXT("host_lobby_id"), HostLobbyId);
+			(*InviteObject)->TryGetStringField(TEXT("host_app_id"), HostAppId);
+		}
+	}
+
+	if (!InviteId.IsEmpty())
+	{
+		for (FT66PartyInviteEntry& PendingInvite : PendingPartyInvites)
+		{
+			if (PendingInvite.InviteId != InviteId)
+			{
+				continue;
+			}
+
+			if (!HostSteamId.IsEmpty())
+			{
+				PendingInvite.HostSteamId = HostSteamId;
+			}
+
+			if (!HostLobbyId.IsEmpty())
+			{
+				PendingInvite.HostLobbyId = HostLobbyId;
+			}
+
+			if (!HostAppId.IsEmpty())
+			{
+				PendingInvite.HostAppId = HostAppId;
+			}
+
+			if (!TargetSteamId.IsEmpty())
+			{
+				PendingInvite.TargetSteamId = TargetSteamId;
+			}
+
+			break;
+		}
+	}
+
 	const FString Message = ExtractResponseMessage(
 		Json,
 		bSuccess
@@ -2269,6 +2388,14 @@ void UT66BackendSubsystem::OnRespondPartyInviteResponseReceived(
 	Diagnostic.Severity = bSuccess ? TEXT("info") : TEXT("error");
 	Diagnostic.Message = Message;
 	Diagnostic.InviteId = InviteId;
+	Diagnostic.HostSteamId = HostSteamId;
+	Diagnostic.TargetSteamId = TargetSteamId;
+	Diagnostic.LobbyId = HostLobbyId;
+	Diagnostic.SourceAppId = HostAppId;
+	Diagnostic.ExtraFields.Add(TEXT("http_code"), FString::FromInt(Response.IsValid() ? Response->GetResponseCode() : 0));
+	Diagnostic.ExtraFields.Add(TEXT("has_host_steam_id"), HostSteamId.IsEmpty() ? TEXT("false") : TEXT("true"));
+	Diagnostic.ExtraFields.Add(TEXT("has_host_lobby_id"), HostLobbyId.IsEmpty() ? TEXT("false") : TEXT("true"));
+	Diagnostic.ExtraFields.Add(TEXT("has_host_app_id"), HostAppId.IsEmpty() ? TEXT("false") : TEXT("true"));
 	SubmitMultiplayerDiagnostic(Diagnostic);
 
 	// Broadcast the action completion before mutating the pending invite list.
@@ -2284,7 +2411,10 @@ void UT66BackendSubsystem::OnRespondPartyInviteResponseReceived(
 			return Invite.InviteId == InviteId;
 		});
 		SetPendingPartyInvites(MoveTemp(UpdatedInvites));
-		PollPendingPartyInvites(true);
+		if (!Action.Equals(TEXT("accept"), ESearchCase::IgnoreCase))
+		{
+			PollPendingPartyInvites(true);
+		}
 	}
 	else
 	{
@@ -2644,6 +2774,35 @@ UT66LeaderboardRunSummarySaveGame* UT66BackendSubsystem::ParseRunSummaryFromJson
 	S->HeroLevel = Json->HasField(TEXT("hero_level")) ? static_cast<int32>(Json->GetNumberField(TEXT("hero_level"))) : 1;
 
 	S->DisplayName = Json->GetStringField(TEXT("display_name"));
+
+	const TSharedPtr<FJsonObject>* IntegrityObj = nullptr;
+	if (Json->TryGetObjectField(TEXT("integrity_context"), IntegrityObj) && IntegrityObj && (*IntegrityObj).IsValid())
+	{
+		const TSharedPtr<FJsonObject>& Integrity = *IntegrityObj;
+		S->IntegrityContext.Verdict = Integrity->HasField(TEXT("verdict")) ? Integrity->GetStringField(TEXT("verdict")) : TEXT("unknown");
+		S->IntegrityContext.SteamAppId = Integrity->HasField(TEXT("steam_app_id")) ? Integrity->GetStringField(TEXT("steam_app_id")) : FString();
+		S->IntegrityContext.SteamBuildId = Integrity->HasField(TEXT("steam_build_id")) ? static_cast<int32>(Integrity->GetNumberField(TEXT("steam_build_id"))) : 0;
+		S->IntegrityContext.SteamBetaName = Integrity->HasField(TEXT("steam_beta_name")) ? Integrity->GetStringField(TEXT("steam_beta_name")) : FString();
+		S->IntegrityContext.ManifestId = Integrity->HasField(TEXT("manifest_id")) ? Integrity->GetStringField(TEXT("manifest_id")) : FString();
+		S->IntegrityContext.ManifestRootHash = Integrity->HasField(TEXT("manifest_root_hash")) ? Integrity->GetStringField(TEXT("manifest_root_hash")) : FString();
+		S->IntegrityContext.ModuleListHash = Integrity->HasField(TEXT("module_list_hash")) ? Integrity->GetStringField(TEXT("module_list_hash")) : FString();
+		S->IntegrityContext.MountedContentHash = Integrity->HasField(TEXT("mounted_content_hash")) ? Integrity->GetStringField(TEXT("mounted_content_hash")) : FString();
+		S->IntegrityContext.BaselineHash = Integrity->HasField(TEXT("baseline_hash")) ? Integrity->GetStringField(TEXT("baseline_hash")) : FString();
+		S->IntegrityContext.FinalHash = Integrity->HasField(TEXT("final_hash")) ? Integrity->GetStringField(TEXT("final_hash")) : FString();
+
+		const TArray<TSharedPtr<FJsonValue>>* ReasonArr = nullptr;
+		if (Integrity->TryGetArrayField(TEXT("reasons"), ReasonArr) && ReasonArr)
+		{
+			for (const TSharedPtr<FJsonValue>& ReasonValue : *ReasonArr)
+			{
+				FString ReasonStr;
+				if (ReasonValue.IsValid() && ReasonValue->TryGetString(ReasonStr))
+				{
+					S->IntegrityContext.Reasons.Add(ReasonStr);
+				}
+			}
+		}
+	}
 
 	// Stats
 	const TSharedPtr<FJsonObject>* StatsObj = nullptr;

@@ -14,6 +14,21 @@ The standalone unlit scripts are still kept as repair tools, but they are no lon
 
 ---
 
+## TRELLIS GLB Staging Rule
+
+Before any TRELLIS-generated mesh is copied into `SourceAssets/Import/`, require all of the following:
+
+1. a raw QA render from the imported TRELLIS GLB
+2. a decimated / retopo candidate GLB
+3. a fresh Blender re-import verification render from that exported low-poly GLB
+
+Practical rule:
+
+- do not treat `Model Generation/Runs/.../Retopo/*.glb` as Unreal-ready until the exported file itself has been re-imported and rendered cleanly
+- if Blender emits a mesh-validity warning during GLB export, treat it as a verification requirement rather than an automatic rejection
+
+---
+
 ## Source Files
 
 Place source files under `SourceAssets/Import/` and organize them by category:
@@ -166,6 +181,18 @@ The texture parameter name for this path is:
 
 If a GLB import already exists and its materials need to be repaired, run `Scripts/RepairStaticMeshImportBatch.py` for the current batch or `Scripts/MakeGLBImportsUnlit.py` for a broader manual repair pass.
 If the repair includes mesh build settings, prefer `UnrealEditor.exe -ExecutePythonScript="C:/UE/T66/Scripts/RepairStaticMeshImportBatch.py"`.
+
+---
+
+## Current Verified TRELLIS Sources
+
+The following low-poly source candidates have already passed Blender re-import verification and are the current safe staging candidates before Unreal import work:
+
+- [Arthur hero with sword](C:/UE/T66/Model%20Generation/Runs/Arthur/Raw/Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k_WithSword.glb)
+- [SkeletonWarrior easy enemy](C:/UE/T66/Model%20Generation/Runs/Enemies/Easy/SkeletonWarrior/Retopo/SkeletonWarrior_Front_Green_S1337_D200000_Retopo24k.glb)
+- [GoblinCharger easy enemy](C:/UE/T66/Model%20Generation/Runs/Enemies/Easy/GoblinCharger/Retopo/GoblinCharger_Front_Green_S1337_D200000_Retopo24k.glb)
+- [SlimeSpitter easy enemy](C:/UE/T66/Model%20Generation/Runs/Enemies/Easy/SlimeSpitter/Retopo/SlimeSpitter_Front_Green_S1337_D200000_Retopo10k.glb)
+- [CaveBat easy enemy](C:/UE/T66/Model%20Generation/Runs/Enemies/Easy/CaveBat/Retopo/CaveBat_Front_Green_S1337_D200000_Retopo14k.glb)
 
 ---
 

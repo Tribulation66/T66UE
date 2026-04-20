@@ -164,6 +164,26 @@ namespace
 			return ET66BossPartProfile::Duelist;
 		}
 	}
+
+	FVector T66RotatePlanarVector(const FVector& Direction, const float Degrees)
+	{
+		return FRotator(0.f, Degrees, 0.f).RotateVector(Direction).GetSafeNormal();
+	}
+
+	FLinearColor T66MakeAttackSecondaryColor(const FLinearColor& InPrimary)
+	{
+		return FLinearColor(
+			FMath::Clamp(InPrimary.R * 0.55f + 0.38f, 0.f, 1.f),
+			FMath::Clamp(InPrimary.G * 0.35f + 0.46f, 0.f, 1.f),
+			FMath::Clamp(InPrimary.B * 0.25f + 0.10f, 0.f, 1.f),
+			1.f);
+	}
+
+	FVector T66ResolvePlanarRightVector(const FVector& Forward)
+	{
+		const FVector PlanarForward = FVector(Forward.X, Forward.Y, 0.f).GetSafeNormal();
+		return FVector(-PlanarForward.Y, PlanarForward.X, 0.f).GetSafeNormal();
+	}
 }
 
 AT66BossBase::AT66BossBase()
@@ -199,6 +219,9 @@ AT66BossBase::AT66BossBase()
 	{
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.9f, 0.05f, 0.05f, 1.f));
 	}
+
+	AttackPrimaryColor = FLinearColor(0.95f, 0.16f, 0.12f, 1.f);
+	AttackSecondaryColor = T66MakeAttackSecondaryColor(AttackPrimaryColor);
 
 	// Prepare built-in SkeletalMeshComponent for imported models.
 	if (USkeletalMeshComponent* Skel = GetMesh())
@@ -261,6 +284,27 @@ void AT66BossBase::AssignBossPartDefinitionsForProfile(const ET66BossPartProfile
 
 	case ET66BossPartProfile::UseActorDefault:
 	default:
+		break;
+	}
+}
+
+void AT66BossBase::ConfigureAttackProfileFromBossPartProfile(const ET66BossPartProfile InProfile)
+{
+	switch (InProfile)
+	{
+	case ET66BossPartProfile::Sharpshooter:
+		AttackProfile = ET66BossAttackProfile::Sharpshooter;
+		break;
+	case ET66BossPartProfile::Juggernaut:
+		AttackProfile = ET66BossAttackProfile::Juggernaut;
+		break;
+	case ET66BossPartProfile::Duelist:
+		AttackProfile = ET66BossAttackProfile::Duelist;
+		break;
+	case ET66BossPartProfile::HumanoidBalanced:
+	case ET66BossPartProfile::UseActorDefault:
+	default:
+		AttackProfile = ET66BossAttackProfile::Balanced;
 		break;
 	}
 }
@@ -626,6 +670,10 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 		? BossData.BossPartProfile
 		: T66ResolveLegacyBossPartProfile(BossData.BossID);
 	AssignBossPartDefinitionsForProfile(ResolvedPartProfile);
+	ConfigureAttackProfileFromBossPartProfile(ResolvedPartProfile);
+	AttackPrimaryColor = BossData.PlaceholderColor;
+	AttackPrimaryColor.A = 1.f;
+	AttackSecondaryColor = T66MakeAttackSecondaryColor(AttackPrimaryColor);
 
 	// Conservative default if DT doesn't specify a score: tie to HP scale.
 	if (PointValue <= 0)
@@ -650,24 +698,22 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 		}
 	}
 
-	// All stage bosses use the same "Boss" mesh from DT_CharacterVisuals (BossID kept for stats; visual is shared).
-	static const FName BossVisualID(TEXT("Boss"));
+	// Use the same live mob visual as the in-game Cow enemy so boss testing matches
+	// the actual enemy asset path rather than a static showcase prop.
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
-			const bool bApplied = Visuals->ApplyCharacterVisual(BossVisualID, GetMesh(), VisualMesh, true);
-			if (!bApplied && GetMesh())
+			const bool bApplied = Visuals->ApplyCharacterVisual(FName(TEXT("Cow")), GetMesh(), VisualMesh, true);
+			if (USkeletalMeshComponent* SkelMesh = GetMesh())
 			{
-				GetMesh()->SetVisibility(false, true);
-			}
-			else if (bApplied && GetMesh())
-			{
-				if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+				if (bApplied)
 				{
-					FVector MeshLocation = GetMesh()->GetRelativeLocation();
-					MeshLocation.Z += Capsule->GetScaledCapsuleHalfHeight();
-					GetMesh()->SetRelativeLocation(MeshLocation);
+					SkelMesh->SetRelativeScale3D(SkelMesh->GetRelativeScale3D() * 3.0f);
+				}
+				else
+				{
+					SkelMesh->SetVisibility(false, true);
 				}
 			}
 		}
@@ -713,6 +759,238 @@ void AT66BossBase::RefreshRunStateBossState() const
 	PushBossPartStateToRunState();
 }
 
+float AT66BossBase::GetHealthPercent() const
+{
+	if (MaxHP <= 0)
+	{
+		return 1.f;
+	}
+
+	if (!bAwakened && CurrentHP <= 0)
+	{
+		return 1.f;
+	}
+
+	return FMath::Clamp(static_cast<float>(CurrentHP) / static_cast<float>(MaxHP), 0.f, 1.f);
+}
+
+int32 AT66BossBase::GetAttackPhaseIndex() const
+{
+	const float HealthPercent = GetHealthPercent();
+	if (HealthPercent <= 0.34f)
+	{
+		return 2;
+	}
+	if (HealthPercent <= 0.67f)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+FVector AT66BossBase::ResolveGroundLocation(const FVector& PreferredLocation) const
+{
+	FVector TargetLoc = PreferredLocation;
+	if (const UWorld* World = GetWorld())
+	{
+		FHitResult Hit;
+		if (World->LineTraceSingleByChannel(
+			Hit,
+			TargetLoc + FVector(0.f, 0.f, 500.f),
+			TargetLoc - FVector(0.f, 0.f, 1000.f),
+			ECC_WorldStatic))
+		{
+			TargetLoc = Hit.ImpactPoint + FVector(0.f, 0.f, 5.f);
+		}
+	}
+	return TargetLoc;
+}
+
+void AT66BossBase::ClearPendingAttackTimers()
+{
+	if (UWorld* World = GetWorld())
+	{
+		for (FTimerHandle& Handle : PendingAttackTimerHandles)
+		{
+			World->GetTimerManager().ClearTimer(Handle);
+		}
+	}
+
+	PendingAttackTimerHandles.Reset();
+}
+
+void AT66BossBase::QueueTimedAttackLambda(FTimerDelegate&& Delegate, const float DelaySeconds)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	PendingAttackTimerHandles.RemoveAllSwap([World](const FTimerHandle& Handle)
+	{
+		return !Handle.IsValid() || !World->GetTimerManager().TimerExists(Handle);
+	});
+
+	FTimerHandle& Handle = PendingAttackTimerHandles.AddDefaulted_GetRef();
+	World->GetTimerManager().SetTimer(Handle, MoveTemp(Delegate), FMath::Max(0.001f, DelaySeconds), false);
+}
+
+void AT66BossBase::SpawnProjectileInDirection(const FVector& Direction, const float SpeedScale, const FVector& SpawnOffset, const bool bUseSecondaryTint)
+{
+	if (!bAwakened || CurrentHP <= 0 || StunSecondsRemaining > 0.f || FreezeSecondsRemaining > 0.f)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const FVector ShotDirection = Direction.GetSafeNormal();
+	if (ShotDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	const FVector SpawnLoc = GetActorLocation() + FVector(0.f, 0.f, 84.f) + SpawnOffset;
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (AT66BossProjectile* Proj = World->SpawnActor<AT66BossProjectile>(AT66BossProjectile::StaticClass(), SpawnLoc, ShotDirection.Rotation(), SpawnParams))
+	{
+		Proj->DamageHearts = ProjectileDamageHearts;
+		Proj->ConfigureVisualStyle(AttackProfile, AttackPrimaryColor, AttackSecondaryColor, bUseSecondaryTint);
+		Proj->SetTargetLocation(SpawnLoc + ShotDirection * 1000.f, ProjectileSpeed * FMath::Max(0.35f, SpeedScale));
+	}
+}
+
+void AT66BossBase::QueueProjectileShotDirection(const FVector& Direction, const float DelaySeconds, const float SpeedScale, const FVector& SpawnOffset, const bool bUseSecondaryTint)
+{
+	const FVector ShotDirection = Direction.GetSafeNormal();
+	if (ShotDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	TWeakObjectPtr<AT66BossBase> WeakThis(this);
+	QueueTimedAttackLambda(
+		FTimerDelegate::CreateLambda([WeakThis, ShotDirection, SpeedScale, SpawnOffset, bUseSecondaryTint]()
+		{
+			if (!WeakThis.IsValid())
+			{
+				return;
+			}
+
+			WeakThis->SpawnProjectileInDirection(ShotDirection, SpeedScale, SpawnOffset, bUseSecondaryTint);
+		}),
+		DelaySeconds);
+}
+
+void AT66BossBase::QueueProjectileShotTowards(const FVector& TargetLocation, const float DelaySeconds, const float YawOffsetDegrees, const float SpeedScale, const FVector& SpawnOffset, const bool bUseSecondaryTint)
+{
+	FVector Direction = TargetLocation - (GetActorLocation() + FVector(0.f, 0.f, 84.f));
+	Direction.Z = 0.f;
+	Direction = Direction.GetSafeNormal();
+	if (Direction.IsNearlyZero())
+	{
+		Direction = GetActorForwardVector();
+	}
+
+	QueueProjectileShotDirection(T66RotatePlanarVector(Direction, YawOffsetDegrees), DelaySeconds, SpeedScale, SpawnOffset, bUseSecondaryTint);
+}
+
+void AT66BossBase::QueueProjectileFanBurst(
+	const FVector& TargetLocation,
+	const int32 ShotCount,
+	const float SpreadDegrees,
+	const float DelayStepSeconds,
+	const float SpeedScale,
+	const float InitialDelaySeconds,
+	const float SideOffsetDistance,
+	const bool bUseSecondaryTint)
+{
+	if (ShotCount <= 0)
+	{
+		return;
+	}
+
+	const FVector BaseDirection = (TargetLocation - GetActorLocation()).GetSafeNormal();
+	const FVector Right = T66ResolvePlanarRightVector(BaseDirection);
+	const float StartYaw = (ShotCount > 1) ? (-SpreadDegrees * 0.5f) : 0.f;
+	const float StepYaw = (ShotCount > 1) ? (SpreadDegrees / static_cast<float>(ShotCount - 1)) : 0.f;
+
+	for (int32 Index = 0; Index < ShotCount; ++Index)
+	{
+		const float NormalizedIndex = (ShotCount > 1)
+			? (static_cast<float>(Index) / static_cast<float>(ShotCount - 1) - 0.5f) * 2.f
+			: 0.f;
+		const FVector SpawnOffset = Right * (SideOffsetDistance * NormalizedIndex);
+		QueueProjectileShotTowards(
+			TargetLocation,
+			InitialDelaySeconds + DelayStepSeconds * static_cast<float>(Index),
+			StartYaw + StepYaw * static_cast<float>(Index),
+			SpeedScale,
+			SpawnOffset,
+			bUseSecondaryTint && ((Index % 2) == 1));
+	}
+}
+
+void AT66BossBase::QueueRadialBurst(
+	const int32 ShotCount,
+	const float DelayStepSeconds,
+	const float StartAngleDegrees,
+	const float SpeedScale,
+	const float InitialDelaySeconds,
+	const bool bUseSecondaryTint)
+{
+	if (ShotCount <= 0)
+	{
+		return;
+	}
+
+	const float StepDegrees = 360.f / static_cast<float>(ShotCount);
+	for (int32 Index = 0; Index < ShotCount; ++Index)
+	{
+		const float AngleDegrees = StartAngleDegrees + StepDegrees * static_cast<float>(Index);
+		const FVector Direction = FRotator(0.f, AngleDegrees, 0.f).Vector();
+		QueueProjectileShotDirection(
+			Direction,
+			InitialDelaySeconds + DelayStepSeconds * static_cast<float>(Index),
+			SpeedScale,
+			FVector::ZeroVector,
+			bUseSecondaryTint && ((Index % 2) == 1));
+	}
+}
+
+void AT66BossBase::SpawnGroundAOEAtLocation(const FVector& WorldLocation, const float RadiusScale, const float WarningScale, const bool bUseSecondaryTint)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (AT66BossGroundAOE* AOE = World->SpawnActor<AT66BossGroundAOE>(AT66BossGroundAOE::StaticClass(), ResolveGroundLocation(WorldLocation), FRotator::ZeroRotator, Params))
+	{
+		AOE->Radius = GroundAOERadius * FMath::Max(0.35f, RadiusScale);
+		AOE->WarningDurationSeconds = GroundAOEWarningSeconds * FMath::Max(0.55f, WarningScale);
+		AOE->ConfigureVisualStyle(AttackProfile, bUseSecondaryTint ? AttackSecondaryColor : AttackPrimaryColor, AttackSecondaryColor);
+
+		UGameInstance* GI = World->GetGameInstance();
+		UT66RunStateSubsystem* RS = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		const int32 Stage = RS ? FMath::Max(1, RS->GetCurrentStage()) : 1;
+		AOE->DamageHP = FMath::Max(10, FMath::RoundToInt(static_cast<float>(GroundAOEBaseDamageHP) * FMath::Pow(1.25f, static_cast<float>(Stage - 1))));
+	}
+}
+
 void AT66BossBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -748,6 +1026,8 @@ void AT66BossBase::BeginPlay()
 
 void AT66BossBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	ClearPendingAttackTimers();
+
 	if (UWorld* World = GetWorld())
 	{
 		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
@@ -1008,6 +1288,7 @@ void AT66BossBase::Awaken()
 	UWorld* World = GetWorld();
 	if (World)
 	{
+		ClearPendingAttackTimers();
 		World->GetTimerManager().SetTimer(FireTimerHandle, this, &AT66BossBase::FireAtPlayer, FireIntervalSeconds, true, 0.25f);
 
 		if (GroundAOEIntervalSeconds > 0.f)
@@ -1027,16 +1308,75 @@ void AT66BossBase::FireAtPlayer()
 	APawn* PlayerPawn = ResolvePlayerPawn();
 	if (!PlayerPawn) return;
 
-	const FVector SpawnLoc = GetActorLocation() + FVector(0.f, 0.f, 80.f);
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	ClearPendingAttackTimers();
 
-	AT66BossProjectile* Proj = World->SpawnActor<AT66BossProjectile>(AT66BossProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-	if (Proj)
+	const FVector TargetLocation = PlayerPawn->GetActorLocation();
+	const FVector PlanarToTarget = (TargetLocation - GetActorLocation()).GetSafeNormal2D();
+	const FVector Side = T66ResolvePlanarRightVector(PlanarToTarget.IsNearlyZero() ? GetActorForwardVector() : PlanarToTarget);
+	const int32 Phase = GetAttackPhaseIndex();
+	const float PhaseScale = 1.f + 0.08f * static_cast<float>(Phase);
+
+	switch (AttackProfile)
 	{
-		Proj->DamageHearts = ProjectileDamageHearts;
-		Proj->SetTargetLocation(PlayerPawn->GetActorLocation(), ProjectileSpeed);
+	case ET66BossAttackProfile::Sharpshooter:
+		QueueProjectileFanBurst(TargetLocation, Phase >= 1 ? 5 : 3, Phase == 0 ? 8.f : 12.f, 0.04f, 1.18f + 0.06f * static_cast<float>(Phase), 0.f, 18.f, true);
+		QueueProjectileShotTowards(TargetLocation, 0.16f, 0.f, 1.36f + 0.08f * static_cast<float>(Phase), FVector::ZeroVector, false);
+		if (Phase >= 2)
+		{
+			QueueProjectileShotTowards(TargetLocation, 0.28f, -6.f, 1.24f, FVector::ZeroVector, true);
+			QueueProjectileShotTowards(TargetLocation, 0.32f, 6.f, 1.24f, FVector::ZeroVector, true);
+		}
+		break;
+
+	case ET66BossAttackProfile::Juggernaut:
+		QueueProjectileFanBurst(TargetLocation, Phase == 0 ? 5 : 7, 30.f + 4.f * static_cast<float>(Phase), 0.05f, 0.94f + 0.05f * static_cast<float>(Phase), 0.f, 46.f, false);
+		QueueRadialBurst(Phase == 0 ? 6 : (Phase == 1 ? 8 : 10), 0.025f, FMath::FRandRange(0.f, 360.f), 0.76f + 0.05f * static_cast<float>(Phase), 0.18f, true);
+		break;
+
+	case ET66BossAttackProfile::Duelist:
+		QueueProjectileShotTowards(TargetLocation, 0.f, -10.f, 1.12f * PhaseScale, -Side * 52.f, false);
+		QueueProjectileShotTowards(TargetLocation, 0.05f, 10.f, 1.12f * PhaseScale, Side * 52.f, true);
+		if (Phase >= 1)
+		{
+			QueueProjectileFanBurst(TargetLocation, 4 + Phase, 20.f, 0.05f, 1.04f + 0.05f * static_cast<float>(Phase), 0.18f, 26.f, true);
+		}
+		if (Phase >= 2)
+		{
+			QueueRadialBurst(6, 0.03f, PlanarToTarget.Rotation().Yaw + 30.f, 0.96f, 0.34f, true);
+		}
+		break;
+
+	case ET66BossAttackProfile::Vendor:
+		QueueProjectileFanBurst(TargetLocation, 4 + Phase, 22.f + 4.f * static_cast<float>(Phase), 0.05f, 1.00f + 0.04f * static_cast<float>(Phase), 0.f, 52.f, false);
+		QueueProjectileShotTowards(TargetLocation, 0.12f, -18.f, 1.10f, FVector::ZeroVector, true);
+		QueueProjectileShotTowards(TargetLocation, 0.17f, 18.f, 1.10f, FVector::ZeroVector, true);
+		if (Phase >= 2)
+		{
+			QueueRadialBurst(8, 0.025f, PlanarToTarget.Rotation().Yaw + 22.5f, 0.90f, 0.30f, false);
+		}
+		break;
+
+	case ET66BossAttackProfile::Gambler:
+		QueueRadialBurst(6 + Phase * 2, 0.02f, FMath::FRandRange(0.f, 360.f), 0.86f + 0.04f * static_cast<float>(Phase), 0.f, true);
+		QueueProjectileFanBurst(TargetLocation, 3 + Phase, 16.f + 2.f * static_cast<float>(Phase), 0.05f, 1.10f + 0.05f * static_cast<float>(Phase), 0.16f, 20.f, false);
+		if (Phase >= 2)
+		{
+			QueueProjectileShotTowards(TargetLocation, 0.32f, FMath::FRandRange(-12.f, 12.f), 1.35f, FVector::ZeroVector, true);
+		}
+		break;
+
+	case ET66BossAttackProfile::Balanced:
+	default:
+		QueueProjectileFanBurst(TargetLocation, Phase == 0 ? 3 : (Phase == 1 ? 5 : 6), 14.f + 4.f * static_cast<float>(Phase), 0.06f, 1.00f + 0.06f * static_cast<float>(Phase), 0.f, 36.f, false);
+		if (Phase >= 1)
+		{
+			QueueProjectileShotTowards(TargetLocation, 0.22f, 0.f, 1.18f, FVector::ZeroVector, true);
+		}
+		if (Phase >= 2)
+		{
+			QueueProjectileFanBurst(TargetLocation, 3, 10.f, 0.05f, 1.24f, 0.34f, 0.f, true);
+		}
+		break;
 	}
 }
 
@@ -1118,27 +1458,97 @@ void AT66BossBase::SpawnGroundAOE()
 	APawn* PlayerPawn = ResolvePlayerPawn();
 	if (!PlayerPawn) return;
 
-	FVector TargetLoc = PlayerPawn->GetActorLocation();
-	FHitResult Hit;
-	if (World->LineTraceSingleByChannel(Hit, TargetLoc + FVector(0.f, 0.f, 500.f), TargetLoc - FVector(0.f, 0.f, 1000.f), ECC_WorldStatic))
+	const FVector TargetLoc = ResolveGroundLocation(PlayerPawn->GetActorLocation());
+	const FVector Forward = (TargetLoc - GetActorLocation()).GetSafeNormal2D();
+	const FVector Right = T66ResolvePlanarRightVector(Forward.IsNearlyZero() ? GetActorForwardVector() : Forward);
+	const int32 Phase = GetAttackPhaseIndex();
+
+	switch (AttackProfile)
 	{
-		TargetLoc = Hit.ImpactPoint + FVector(0.f, 0.f, 5.f);
+	case ET66BossAttackProfile::Sharpshooter:
+		SpawnGroundAOEAtLocation(TargetLoc, 0.82f, 0.90f, false);
+		SpawnGroundAOEAtLocation(TargetLoc + Right * GroundAOERadius * 0.95f, 0.72f, 0.82f, true);
+		if (Phase >= 1)
+		{
+			SpawnGroundAOEAtLocation(TargetLoc - Right * GroundAOERadius * 0.95f, 0.72f, 0.82f, true);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocation(TargetLoc + Forward * GroundAOERadius * 0.95f, 0.78f, 0.76f, false);
+		}
+		break;
+
+	case ET66BossAttackProfile::Juggernaut:
+		SpawnGroundAOEAtLocation(GetActorLocation(), 1.18f + 0.10f * static_cast<float>(Phase), 1.00f, false);
+		if (Phase >= 1)
+		{
+			SpawnGroundAOEAtLocation(TargetLoc, 1.00f, 0.86f, true);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocation(TargetLoc + Right * GroundAOERadius, 0.84f, 0.78f, true);
+			SpawnGroundAOEAtLocation(TargetLoc - Right * GroundAOERadius, 0.84f, 0.78f, true);
+		}
+		break;
+
+	case ET66BossAttackProfile::Duelist:
+		SpawnGroundAOEAtLocation(TargetLoc + Right * GroundAOERadius * 0.7f, 0.76f, 0.82f, false);
+		SpawnGroundAOEAtLocation(TargetLoc - Right * GroundAOERadius * 0.7f, 0.76f, 0.82f, true);
+		if (Phase >= 1)
+		{
+			SpawnGroundAOEAtLocation(TargetLoc + Forward * GroundAOERadius * 0.82f, 0.72f, 0.76f, true);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocation(TargetLoc - Forward * GroundAOERadius * 0.82f, 0.72f, 0.76f, false);
+		}
+		break;
+
+	case ET66BossAttackProfile::Vendor:
+		SpawnGroundAOEAtLocation(TargetLoc, 0.92f, 0.94f, false);
+		SpawnGroundAOEAtLocation(TargetLoc + Right * GroundAOERadius * 0.78f, 0.74f, 0.82f, true);
+		SpawnGroundAOEAtLocation(TargetLoc - Right * GroundAOERadius * 0.78f, 0.74f, 0.82f, true);
+		if (Phase >= 1)
+		{
+			SpawnGroundAOEAtLocation(TargetLoc + Forward * GroundAOERadius * 0.78f, 0.74f, 0.80f, false);
+			SpawnGroundAOEAtLocation(TargetLoc - Forward * GroundAOERadius * 0.78f, 0.74f, 0.80f, false);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocation(GetActorLocation(), 1.08f, 0.88f, true);
+		}
+		break;
+
+	case ET66BossAttackProfile::Gambler:
+	{
+		const int32 SpotCount = Phase == 0 ? 3 : (Phase == 1 ? 5 : 6);
+		const float RandomStart = FMath::FRandRange(0.f, 360.f);
+		for (int32 Index = 0; Index < SpotCount; ++Index)
+		{
+			const float Angle = RandomStart + (360.f / static_cast<float>(SpotCount)) * static_cast<float>(Index);
+			const FVector Offset = FRotator(0.f, Angle, 0.f).Vector() * (GroundAOERadius * (Phase >= 2 ? 0.92f : 0.72f));
+			SpawnGroundAOEAtLocation(TargetLoc + Offset, 0.70f + 0.05f * static_cast<float>(Phase), 0.82f, (Index % 2) == 1);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocation(TargetLoc, 0.88f, 0.76f, true);
+		}
+		break;
 	}
 
-	FActorSpawnParameters Params;
-	Params.Owner = this;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	AT66BossGroundAOE* AOE = World->SpawnActor<AT66BossGroundAOE>(AT66BossGroundAOE::StaticClass(), TargetLoc, FRotator::ZeroRotator, Params);
-	if (AOE)
-	{
-		AOE->Radius = GroundAOERadius;
-		AOE->WarningDurationSeconds = GroundAOEWarningSeconds;
-
-		UGameInstance* GI = World->GetGameInstance();
-		UT66RunStateSubsystem* RS = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-		const int32 Stage = RS ? FMath::Max(1, RS->GetCurrentStage()) : 1;
-		AOE->DamageHP = FMath::Max(10, FMath::RoundToInt(static_cast<float>(GroundAOEBaseDamageHP) * FMath::Pow(1.25f, static_cast<float>(Stage - 1))));
+	case ET66BossAttackProfile::Balanced:
+	default:
+		SpawnGroundAOEAtLocation(TargetLoc, 1.00f, 1.00f, false);
+		if (Phase >= 1)
+		{
+			SpawnGroundAOEAtLocation(TargetLoc + Right * GroundAOERadius * 0.85f, 0.82f, 0.88f, true);
+			SpawnGroundAOEAtLocation(TargetLoc - Right * GroundAOERadius * 0.85f, 0.82f, 0.88f, true);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocation(TargetLoc + Forward * GroundAOERadius * 0.9f, 0.78f, 0.80f, false);
+		}
+		break;
 	}
 }
 
@@ -1154,6 +1564,7 @@ void AT66BossBase::Die()
 	UWorld* World = GetWorld();
 	if (World)
 	{
+		ClearPendingAttackTimers();
 		World->GetTimerManager().ClearTimer(FireTimerHandle);
 		World->GetTimerManager().ClearTimer(AOETimerHandle);
 		UT66CombatComponent::SpawnDeathBurstAtLocation(World, GetActorLocation(), 32, 120.f);

@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\SlimeSpitter\\Retopo\\SlimeSpitter_Front_Green_S1337_D200000_Retopo10k.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\SlimeSpitter\\Renders\\SlimeSpitter_Front_Green_S1337_D200000_Retopo10k_Verify.png",
+  "export": null,
+  "raw_triangles": 10000,
+  "triangles_before_decimate": 10000,
+  "triangles_after_decimate": 10000,
+  "bounds": {
+    "min": [
+      -0.5014455914497375,
+      -0.4789069592952728,
+      -0.30133575201034546
+    ],
+    "max": [
+      0.5032359957695007,
+      0.48363590240478516,
+      0.30074402689933777
+    ],
+    "size": [
+      1.0046815872192383,
+      0.9625428915023804,
+      0.6020797491073608
+    ]
+  }
+}

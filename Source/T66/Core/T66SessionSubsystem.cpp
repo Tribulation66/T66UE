@@ -6,6 +6,7 @@
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66PartySubsystem.h"
+#include "Core/T66RunIntegritySubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66SaveSubsystem.h"
@@ -444,19 +445,234 @@ bool UT66SessionSubsystem::SendInviteToFriendInternal(const FString& FriendPlaye
 	return false;
 }
 
+void UT66SessionSubsystem::PrimePendingJoinContext(const FString& HostSteamId, const FString& LobbyId, const FString& InviteId, const FString& AppId)
+{
+	PendingJoinFriendPlayerId = HostSteamId;
+	PendingExpectedJoinLobbyId = LobbyId;
+	PendingJoinInviteId = InviteId;
+	PendingJoinSourceAppId = AppId;
+	PendingFoundLobbyId = LobbyId;
+	PendingJoinFriendLookupAttempts = 0;
+}
+
+bool UT66SessionSubsystem::StartDirectJoinByHostSteamId(
+	const FString& HostSteamId,
+	const FString& LobbyId,
+	const FString& AppId,
+	const FString& InviteId,
+	const TCHAR* JoinReason)
+{
+	FLagScopedScope LagScope(GetWorld(), TEXT("MP-03 Session::StartDirectJoinByHostSteamId"));
+
+	if (HostSteamId.IsEmpty())
+	{
+		SubmitSessionDiagnostic(TEXT("invite_join_missing_host"), TEXT("error"), TEXT("Party invite is missing the host Steam ID."), InviteId, LobbyId);
+		BroadcastStateChanged(TEXT("Party invite is missing the host Steam ID."));
+		return false;
+	}
+
+	FString EffectiveLobbyId = LobbyId;
+	FString EffectiveAppId = AppId;
+	TMap<FString, FString> DiagnosticFields;
+	DiagnosticFields.Add(TEXT("host_steam_id"), HostSteamId);
+	DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
+	DiagnosticFields.Add(TEXT("has_lobby_id"), LobbyId.IsEmpty() ? TEXT("false") : TEXT("true"));
+	DiagnosticFields.Add(TEXT("join_reason"), JoinReason ? FString(JoinReason) : TEXT("direct"));
+
+	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
+	{
+		FString PresenceAppId;
+		FString PresenceLobbyId;
+		if (SteamHelper->TryGetFriendCurrentGame(HostSteamId, &PresenceAppId, &PresenceLobbyId))
+		{
+			if (!PresenceAppId.IsEmpty())
+			{
+				DiagnosticFields.Add(TEXT("presence_app_id"), PresenceAppId);
+				if (EffectiveAppId.IsEmpty())
+				{
+					EffectiveAppId = PresenceAppId;
+				}
+				else if (EffectiveAppId != PresenceAppId)
+				{
+					DiagnosticFields.Add(TEXT("stale_invite_app_id"), EffectiveAppId);
+					DiagnosticFields.Add(TEXT("resolved_from_presence_app_id"), PresenceAppId);
+					EffectiveAppId = PresenceAppId;
+				}
+			}
+
+			if (!PresenceLobbyId.IsEmpty())
+			{
+				DiagnosticFields.Add(TEXT("presence_lobby_id"), PresenceLobbyId);
+				if (EffectiveLobbyId.IsEmpty())
+				{
+					EffectiveLobbyId = PresenceLobbyId;
+				}
+				else if (EffectiveLobbyId != PresenceLobbyId)
+				{
+					DiagnosticFields.Add(TEXT("stale_invite_lobby_id"), EffectiveLobbyId);
+					DiagnosticFields.Add(TEXT("resolved_from_presence_lobby_id"), PresenceLobbyId);
+					EffectiveLobbyId = PresenceLobbyId;
+				}
+			}
+		}
+
+		const FString ActiveAppId = SteamHelper->GetActiveSteamAppId();
+		if (!EffectiveAppId.IsEmpty() && !ActiveAppId.IsEmpty() && EffectiveAppId != ActiveAppId)
+		{
+			DiagnosticFields.Add(TEXT("active_app_id"), ActiveAppId);
+			SubmitSessionDiagnostic(TEXT("invite_join_app_mismatch"), TEXT("error"), TEXT("Invite app ID does not match the active app ID."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+			ClearPendingJoinState();
+			BroadcastStateChanged(TEXT("Party invite targets a different Steam app/build."));
+			return false;
+		}
+	}
+
+	if (!EffectiveLobbyId.IsEmpty())
+	{
+		DiagnosticFields.Add(TEXT("resolved_lobby_id"), EffectiveLobbyId);
+	}
+
+	if (!EffectiveAppId.IsEmpty())
+	{
+		DiagnosticFields.Add(TEXT("resolved_app_id"), EffectiveAppId);
+	}
+
+	PrimePendingJoinContext(HostSteamId, EffectiveLobbyId, InviteId, EffectiveAppId);
+	ClearPendingFriendJoinRetry();
+
+	if (bJoinInProgress)
+	{
+		DiagnosticFields.Add(TEXT("join_in_progress"), TEXT("true"));
+		SubmitSessionDiagnostic(TEXT("invite_join_blocked_by_active_join"), TEXT("warning"), TEXT("Another join is already in progress."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+		ClearPendingJoinState();
+		BroadcastStateChanged(TEXT("Another party join is already in progress."));
+		return false;
+	}
+
+	const int32 JoinPort = T66ResolveSteamJoinPort(GetWorld());
+	const FString DirectConnectString = T66BuildSteamDirectConnectString(HostSteamId, JoinPort);
+	if (DirectConnectString.IsEmpty())
+	{
+		DiagnosticFields.Add(TEXT("join_port"), FString::FromInt(JoinPort));
+		SubmitSessionDiagnostic(TEXT("invite_join_direct_bootstrap_failed"), TEXT("error"), TEXT("Could not build a Steam direct-connect target from the invite."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+		ClearPendingJoinState();
+		BroadcastStateChanged(TEXT("Party invite could not be prepared for joining."));
+		return false;
+	}
+
+	DiagnosticFields.Add(TEXT("join_port"), FString::FromInt(JoinPort));
+	UE_LOG(
+		LogT66Session,
+		Log,
+		TEXT("Starting direct party join. Host=%s Lobby=%s App=%s Port=%d Reason=%s"),
+		*HostSteamId,
+		*EffectiveLobbyId,
+		*EffectiveAppId,
+		JoinPort,
+		JoinReason ? JoinReason : TEXT("direct"));
+
+	if (IsPartySessionActive())
+	{
+		const FString CurrentLobbyId = GetCurrentPartyLobbyId();
+		if (!CurrentLobbyId.IsEmpty() && !EffectiveLobbyId.IsEmpty() && CurrentLobbyId == EffectiveLobbyId)
+		{
+			SubmitSessionDiagnostic(TEXT("invite_join_already_in_target"), TEXT("info"), TEXT("Already joined to the invited party lobby."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+			ClearPendingJoinState();
+			BroadcastStateChanged(TEXT("Already in party lobby."));
+			return true;
+		}
+
+		if ((CurrentLobbyId.IsEmpty() || EffectiveLobbyId.IsEmpty()))
+		{
+			FT66LobbyPlayerInfo HostLobbyInfo;
+			if (GetHostLobbyProfile(HostLobbyInfo)
+				&& !HostLobbyInfo.SteamId.IsEmpty()
+				&& HostLobbyInfo.SteamId == HostSteamId)
+			{
+				DiagnosticFields.Add(TEXT("already_in_target_by_host"), TEXT("true"));
+				SubmitSessionDiagnostic(TEXT("invite_join_already_with_host"), TEXT("info"), TEXT("Already connected to the invited host party."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+				ClearPendingJoinState();
+				BroadcastStateChanged(TEXT("Already in party lobby."));
+				return true;
+			}
+		}
+	}
+
+	const FString PreviousPendingDirectJoinConnectString = PendingDirectJoinConnectString;
+	PendingDirectJoinConnectString = DirectConnectString;
+	SubmitSessionDiagnostic(TEXT("invite_join_direct_bootstrap_started"), TEXT("info"), TEXT("Built direct Steam travel target from host data."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+
+	if (bDestroyInProgress)
+	{
+		if (!PreviousPendingDirectJoinConnectString.IsEmpty() && PreviousPendingDirectJoinConnectString == DirectConnectString)
+		{
+			DiagnosticFields.Add(TEXT("destroy_in_progress"), TEXT("true"));
+			DiagnosticFields.Add(TEXT("join_already_queued"), TEXT("true"));
+			SubmitSessionDiagnostic(TEXT("invite_join_waiting_for_destroy"), TEXT("info"), TEXT("Waiting for the current party session to finish destroying before travel."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+			BroadcastStateChanged(TEXT("Leaving current party lobby..."));
+			return true;
+		}
+
+		DiagnosticFields.Add(TEXT("destroy_in_progress"), TEXT("true"));
+		SubmitSessionDiagnostic(TEXT("invite_join_waiting_for_destroy"), TEXT("info"), TEXT("Waiting for the current party session to finish destroying before travel."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+		BroadcastStateChanged(TEXT("Leaving current party lobby..."));
+		return true;
+	}
+
+	if (IsPartySessionActive())
+	{
+		SubmitSessionDiagnostic(TEXT("invite_join_destroy_before_direct_travel"), TEXT("info"), TEXT("Destroying the current party before direct travel."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+		DestroyPartySession();
+		if (bDestroyInProgress)
+		{
+			return true;
+		}
+
+		SubmitSessionDiagnostic(TEXT("invite_join_destroy_start_failed"), TEXT("error"), TEXT("Could not begin destroying the current party before joining the target party."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+		ClearPendingJoinState();
+		return false;
+	}
+
+	AT66PlayerController* PlayerController = GetPrimaryPlayerController();
+	if (!PlayerController)
+	{
+		SubmitSessionDiagnostic(TEXT("invite_join_direct_start_failed"), TEXT("error"), TEXT("Could not resolve the local player controller for direct Steam travel."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+		ClearPendingJoinState();
+		BroadcastStateChanged(TEXT("Could not start joining the invited Steam lobby."));
+		return false;
+	}
+
+	DiagnosticFields.Add(TEXT("connect_string"), DirectConnectString);
+	SubmitSessionDiagnostic(TEXT("invite_join_direct_travel_started"), TEXT("info"), TEXT("Travelling directly to the invited Steam host."), InviteId, EffectiveLobbyId, FString(), DiagnosticFields);
+	BroadcastStateChanged(TEXT("Joining party lobby..."));
+	PlayerController->ClientTravel(DirectConnectString, TRAVEL_Absolute);
+	ClearPendingJoinState();
+	return true;
+}
+
 bool UT66SessionSubsystem::JoinFriendPartySessionBySteamId(const FString& FriendPlayerId, const FString& InviteId, const FString& AppId)
 {
+	FString EffectiveAppId = AppId;
+
 	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
 	{
 		FString FriendCurrentAppId;
 		FString FriendCurrentLobbyId;
-		if (SteamHelper->TryGetFriendCurrentGame(FriendPlayerId, &FriendCurrentAppId, &FriendCurrentLobbyId) && !FriendCurrentLobbyId.IsEmpty())
+		if (SteamHelper->TryGetFriendCurrentGame(FriendPlayerId, &FriendCurrentAppId, &FriendCurrentLobbyId))
 		{
-			return JoinPartySessionByLobbyId(FriendCurrentLobbyId, FriendPlayerId, AppId.IsEmpty() ? FriendCurrentAppId : AppId, InviteId);
+			if (EffectiveAppId.IsEmpty())
+			{
+				EffectiveAppId = FriendCurrentAppId;
+			}
+
+			if (!FriendCurrentLobbyId.IsEmpty())
+			{
+				return JoinPartySessionByLobbyId(FriendCurrentLobbyId, FriendPlayerId, EffectiveAppId, InviteId);
+			}
 		}
 	}
 
-	return StartJoinByFriendId(FriendPlayerId, FString(), InviteId, AppId);
+	return StartDirectJoinByHostSteamId(FriendPlayerId, FString(), EffectiveAppId, InviteId, TEXT("friend_steam_id"));
 }
 
 bool UT66SessionSubsystem::JoinPartySessionByLobbyId(const FString& LobbyId, const FString& HostSteamId, const FString& AppId, const FString& InviteId)
@@ -470,81 +686,7 @@ bool UT66SessionSubsystem::JoinPartySessionByLobbyId(const FString& LobbyId, con
 		return false;
 	}
 
-	if (HostSteamId.IsEmpty())
-	{
-		SubmitSessionDiagnostic(TEXT("invite_join_missing_host"), TEXT("error"), TEXT("Party invite is missing the host Steam ID."), InviteId, LobbyId);
-		BroadcastStateChanged(TEXT("Party invite is missing the host Steam ID."));
-		return false;
-	}
-
-	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
-	{
-		const FString ActiveAppId = SteamHelper->GetActiveSteamAppId();
-		if (!AppId.IsEmpty() && !ActiveAppId.IsEmpty() && AppId != ActiveAppId)
-		{
-			TMap<FString, FString> DiagnosticFields;
-			DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
-			DiagnosticFields.Add(TEXT("active_app_id"), ActiveAppId);
-			SubmitSessionDiagnostic(TEXT("invite_join_app_mismatch"), TEXT("error"), TEXT("Invite app ID does not match the active app ID."), InviteId, LobbyId, FString(), DiagnosticFields);
-			BroadcastStateChanged(TEXT("Party invite targets a different Steam app/build."));
-			return false;
-		}
-	}
-
-	const int32 JoinPort = T66ResolveSteamJoinPort(GetWorld());
-	const FString DirectConnectString = T66BuildSteamDirectConnectString(HostSteamId, JoinPort);
-	if (DirectConnectString.IsEmpty())
-	{
-		TMap<FString, FString> DiagnosticFields;
-		DiagnosticFields.Add(TEXT("host_steam_id"), HostSteamId);
-		DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
-		DiagnosticFields.Add(TEXT("join_port"), FString::FromInt(JoinPort));
-		SubmitSessionDiagnostic(TEXT("invite_join_direct_bootstrap_failed"), TEXT("error"), TEXT("Could not build a Steam direct-connect target from the invite."), InviteId, LobbyId, FString(), DiagnosticFields);
-		BroadcastStateChanged(TEXT("Party invite could not be prepared for joining."));
-		return false;
-	}
-
-	UE_LOG(LogT66Session, Log, TEXT("Joining invited party via direct Steam travel. Host=%s Lobby=%s App=%s Port=%d"), *HostSteamId, *LobbyId, *AppId, JoinPort);
-	TMap<FString, FString> DiagnosticFields;
-	DiagnosticFields.Add(TEXT("host_steam_id"), HostSteamId);
-	DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
-	DiagnosticFields.Add(TEXT("join_port"), FString::FromInt(JoinPort));
-
-	if (IsPartySessionActive())
-	{
-		const FString CurrentLobbyId = GetCurrentPartyLobbyId();
-		if (!CurrentLobbyId.IsEmpty() && CurrentLobbyId == LobbyId)
-		{
-			SubmitSessionDiagnostic(TEXT("invite_join_already_in_target"), TEXT("info"), TEXT("Already joined to the invited party lobby."), InviteId, LobbyId, FString(), DiagnosticFields);
-			ClearPendingJoinState();
-			BroadcastStateChanged(TEXT("Already in party lobby."));
-			return true;
-		}
-	}
-
-	SubmitSessionDiagnostic(TEXT("invite_join_direct_bootstrap_started"), TEXT("info"), TEXT("Built direct Steam travel target from invite."), InviteId, LobbyId, FString(), DiagnosticFields);
-
-	if (IsPartySessionActive())
-	{
-		PendingDirectJoinConnectString = DirectConnectString;
-		ClearPendingFriendJoinRetry();
-		DestroyPartySession();
-		return true;
-	}
-
-	AT66PlayerController* PlayerController = GetPrimaryPlayerController();
-	if (!PlayerController)
-	{
-		SubmitSessionDiagnostic(TEXT("invite_join_direct_start_failed"), TEXT("error"), TEXT("Could not resolve the local player controller for direct Steam travel."), InviteId, LobbyId, FString(), DiagnosticFields);
-		BroadcastStateChanged(TEXT("Could not start joining the invited Steam lobby."));
-		return false;
-	}
-
-	SubmitSessionDiagnostic(TEXT("invite_join_direct_travel_started"), TEXT("info"), TEXT("Travelling directly to the invited Steam host."), InviteId, LobbyId, FString(), DiagnosticFields);
-	BroadcastStateChanged(TEXT("Joining party lobby..."));
-	ClearPendingJoinState();
-	PlayerController->ClientTravel(DirectConnectString, TRAVEL_Absolute);
-	return true;
+	return StartDirectJoinByHostSteamId(HostSteamId, LobbyId, AppId, InviteId, TEXT("invite_lobby"));
 }
 
 bool UT66SessionSubsystem::StartLoadedGameplayTravel(const UT66RunSaveGame* LoadedSave, int32 SaveSlotIndex)
@@ -631,6 +773,10 @@ UT66RunSaveGame* UT66SessionSubsystem::BuildCurrentRunSaveSnapshot(UObject* Oute
 	SaveObj->RunSeed = GI->RunSeed;
 	SaveObj->MainMapLayoutVariant = GI->CurrentMainMapLayoutVariant;
 	SaveObj->bRunIneligibleForLeaderboard = GI->bRunIneligibleForLeaderboard;
+	if (UT66RunIntegritySubsystem* Integrity = GI->GetSubsystem<UT66RunIntegritySubsystem>())
+	{
+		Integrity->CopyCurrentContextTo(SaveObj->IntegrityContext);
+	}
 
 	if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 	{
@@ -1882,6 +2028,12 @@ void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* L
 	GI->bApplyLoadedRunSnapshot = LoadedSave->RunSnapshot.bValid;
 	GI->CurrentSaveSlotIndex = SaveSlotIndex;
 	GI->bRunIneligibleForLeaderboard = LoadedSave->bRunIneligibleForLeaderboard;
+	if (UT66RunIntegritySubsystem* Integrity = GI->GetSubsystem<UT66RunIntegritySubsystem>())
+	{
+		Integrity->RestoreActiveRunContext(LoadedSave->IntegrityContext);
+		Integrity->MarkLoadedSnapshot();
+		GI->bRunIneligibleForLeaderboard = GI->bRunIneligibleForLeaderboard || !Integrity->GetCurrentContext().ShouldAllowRankedSubmission();
+	}
 	GI->CurrentRunOwnerPlayerId = LoadedSave->OwnerPlayerId;
 	GI->CurrentRunOwnerDisplayName = LoadedSave->OwnerDisplayName;
 	GI->CurrentRunPartyMemberIds = LoadedSave->PartyMemberIds;
@@ -1991,13 +2143,30 @@ void UT66SessionSubsystem::HandleDestroySessionComplete(FName SessionName, bool 
 	if (!PendingDirectJoinConnectString.IsEmpty())
 	{
 		const FString ConnectString = PendingDirectJoinConnectString;
-		ClearPendingJoinState();
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("connect_string"), ConnectString);
+		DiagnosticFields.Add(TEXT("continued_after_destroy"), TEXT("true"));
+		SubmitSessionDiagnostic(
+			bWasSuccessful ? TEXT("invite_join_destroy_complete") : TEXT("invite_join_destroy_failed_continue"),
+			bWasSuccessful ? TEXT("info") : TEXT("warning"),
+			bWasSuccessful
+				? TEXT("Previous party lobby closed; continuing direct join.")
+				: TEXT("DestroySession reported failure; continuing direct join anyway."),
+			PendingJoinInviteId,
+			PendingExpectedJoinLobbyId,
+			FString(),
+			DiagnosticFields);
 		if (AT66PlayerController* PlayerController = GetPrimaryPlayerController())
 		{
+			SubmitSessionDiagnostic(TEXT("invite_join_direct_travel_started"), TEXT("info"), TEXT("Travelling directly to the invited Steam host."), PendingJoinInviteId, PendingExpectedJoinLobbyId, FString(), DiagnosticFields);
 			BroadcastStateChanged(TEXT("Joining party lobby..."));
 			PlayerController->ClientTravel(ConnectString, TRAVEL_Absolute);
+			ClearPendingJoinState();
 			return;
 		}
+
+		SubmitSessionDiagnostic(TEXT("invite_join_direct_start_failed"), TEXT("error"), TEXT("Could not resolve the local player controller for direct Steam travel."), PendingJoinInviteId, PendingExpectedJoinLobbyId, FString(), DiagnosticFields);
+		ClearPendingJoinState();
 	}
 
 	if (bPendingTravelToStandaloneFrontendAfterDestroy)
@@ -2180,7 +2349,7 @@ void UT66SessionSubsystem::HandleSessionUserInviteAccepted(bool bWasSuccessful, 
 	}
 
 	const FString HostSteamId = T66ExtractSearchResultHostSteamId(InviteResult);
-	if (!InviteLobbyId.IsEmpty() && !HostSteamId.IsEmpty())
+	if (!HostSteamId.IsEmpty())
 	{
 		FString InviteAppId;
 		if (UT66SteamHelper* SteamHelper = GetSteamHelper())
@@ -2192,7 +2361,7 @@ void UT66SessionSubsystem::HandleSessionUserInviteAccepted(bool bWasSuccessful, 
 			}
 		}
 
-		if (JoinPartySessionByLobbyId(InviteLobbyId, HostSteamId, InviteAppId))
+		if (StartDirectJoinByHostSteamId(HostSteamId, InviteLobbyId, InviteAppId, FString(), TEXT("steam_oss_invite")))
 		{
 			return;
 		}

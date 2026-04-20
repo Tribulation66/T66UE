@@ -14,29 +14,53 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace
 {
 	UNiagaraSystem* LoadTrapPixelVFX()
 	{
-		static TObjectPtr<UNiagaraSystem> CachedSystem = nullptr;
-		static TObjectPtr<UNiagaraSystem> CachedFallbackSystem = nullptr;
-		if (!CachedSystem)
+		static TSoftObjectPtr<UNiagaraSystem> PixelSystem(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
+		if (UNiagaraSystem* System = PixelSystem.LoadSynchronous())
 		{
-			CachedSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
+			return System;
 		}
-		if (!CachedSystem && !CachedFallbackSystem)
-		{
-			CachedFallbackSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
-		}
-		return CachedSystem ? CachedSystem.Get() : CachedFallbackSystem.Get();
+
+		static TSoftObjectPtr<UNiagaraSystem> FallbackSystem(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
+		return FallbackSystem.LoadSynchronous();
+	}
+
+	UStaticMesh* LoadTrapArrowMesh()
+	{
+		static TSoftObjectPtr<UStaticMesh> Mesh(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Meshes/SM_Arrows_PickUp.SM_Arrows_PickUp")));
+		return Mesh.LoadSynchronous();
 	}
 }
 
 void AT66TrapArrowProjectile::UpdateVisuals()
 {
-	if (VisualMesh)
+	if (!VisualMesh)
 	{
+		return;
+	}
+
+	const UStaticMesh* CurrentMesh = VisualMesh->GetStaticMesh();
+	if (CurrentMesh == LoadTrapArrowMesh())
+	{
+		VisualMesh->EmptyOverrideMaterials();
+		VisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
+		VisualMesh->SetRelativeScale3D(FVector(0.22f));
+	}
+	else if (CurrentMesh == T66ArthurSwordVisuals::LoadSwordMesh())
+	{
+		VisualMesh->EmptyOverrideMaterials();
+		VisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
+		VisualMesh->SetRelativeScale3D(FVector(0.36f));
+	}
+	else
+	{
+		VisualMesh->SetRelativeRotation(FRotator(0.f, 0.f, -90.f));
+		VisualMesh->SetRelativeScale3D(FVector(0.28f, 0.28f, 0.52f));
 		FT66VisualUtil::ApplyT66Color(VisualMesh, this, ProjectileTint);
 	}
 }
@@ -56,17 +80,19 @@ AT66TrapArrowProjectile::AT66TrapArrowProjectile()
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	VisualMesh->SetCastShadow(false);
-	VisualMesh->SetRelativeScale3D(FVector(0.45f));
+	VisualMesh->SetCastShadow(true);
 
-	if (UStaticMesh* SwordMesh = T66ArthurSwordVisuals::LoadSwordMesh())
+	if (UStaticMesh* ArrowMesh = LoadTrapArrowMesh())
+	{
+		VisualMesh->SetStaticMesh(ArrowMesh);
+	}
+	else if (UStaticMesh* SwordMesh = T66ArthurSwordVisuals::LoadSwordMesh())
 	{
 		VisualMesh->SetStaticMesh(SwordMesh);
 	}
 	else if (UStaticMesh* FallbackMesh = FT66VisualUtil::GetBasicShapeCone())
 	{
 		VisualMesh->SetStaticMesh(FallbackMesh);
-		VisualMesh->SetRelativeScale3D(FVector(0.28f, 0.28f, 0.52f));
 	}
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));

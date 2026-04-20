@@ -397,6 +397,17 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 				.SetPadding(FMargin(12.f, 10.f)));
 	};
 
+	TSharedRef<SHorizontalBox> LoadoutSlotsRow = SNew(SHorizontalBox);
+	for (int32 SlotIndex = 0; SlotIndex < UT66BuffSubsystem::MaxSelectedSingleUseBuffs; ++SlotIndex)
+	{
+		LoadoutSlotsRow->AddSlot()
+		.AutoWidth()
+		.Padding(SlotIndex + 1 < UT66BuffSubsystem::MaxSelectedSingleUseBuffs ? FMargin(0.f, 0.f, 10.f, 0.f) : FMargin(0.f))
+		[
+			MakeLoadoutSlotWidget(SlotIndex)
+		];
+	}
+
 	const TArray<ET66SecondaryStatType> AllBuffs = UT66BuffSubsystem::GetAllSingleUseBuffTypes();
 	TSharedRef<SGridPanel> Grid = SNew(SGridPanel);
 	for (int32 Index = 0; Index < AllBuffs.Num(); ++Index)
@@ -613,12 +624,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 					.AutoHeight()
 					.Padding(0.f, 16.f, 0.f, 18.f)
 					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)[MakeLoadoutSlotWidget(0)]
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)[MakeLoadoutSlotWidget(1)]
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)[MakeLoadoutSlotWidget(2)]
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)[MakeLoadoutSlotWidget(3)]
-						+ SHorizontalBox::Slot().AutoWidth()[MakeLoadoutSlotWidget(4)]
+						LoadoutSlotsRow
 					]
 					+ SVerticalBox::Slot()
 					.FillHeight(1.f)

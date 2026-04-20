@@ -103,6 +103,9 @@ public:
 	void OnEnterTribulationClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
+	void OnChallengesClicked();
+
+	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
 	void OnBackClicked();
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Hero Selection")
@@ -143,17 +146,28 @@ private:
 	TSharedPtr<STextBlock> CompanionUnityTextWidget;
 	TSharedPtr<SBorder> HeroPreviewColorBox;      // Fallback colored box when no 3D preview
 	TSharedPtr<STextBlock> DifficultyDropdownText; // Current difficulty display
+	TSharedPtr<STextBlock> SkinTargetDropdownText;
+	TSharedPtr<STextBlock> InfoTargetDropdownText;
+	TSharedPtr<class SWidgetSwitcher> LeftPanelWidgetSwitcher;
+	TSharedPtr<class SWidgetSwitcher> RightInfoWidgetSwitcher;
+	TSharedPtr<class SWidgetSwitcher> RightFooterWidgetSwitcher;
+	TSharedPtr<SProgressBar> CompanionUnityProgressBar;
+	TSharedPtr<class SImage> CompanionInfoPortraitImageWidget;
+	TSharedPtr<class SScaleBox> CompanionInfoPortraitScaleBox;
 
 	/** Brushes for the 5-slot hero carousel portraits (prev2..next2). */
 	TArray<TSharedPtr<struct FSlateBrush>> HeroCarouselPortraitBrushes;
 	TArray<FLinearColor> HeroCarouselSlotColors;
 	TArray<EVisibility> HeroCarouselSlotVisibility;
+	TArray<TSharedPtr<class SImage>> HeroCarouselImageWidgets;
 
 	/** Brushes for the 5-slot companion carousel portraits (prev2..next2). */
 	TArray<TSharedPtr<struct FSlateBrush>> CompanionCarouselPortraitBrushes;
 	TArray<FLinearColor> CompanionCarouselSlotColors;
 	TArray<EVisibility> CompanionCarouselSlotVisibility;
 	TArray<FText> CompanionCarouselSlotLabels;
+	TArray<TSharedPtr<class SImage>> CompanionCarouselImageWidgets;
+	TArray<TSharedPtr<class STextBlock>> CompanionCarouselLabelWidgets;
 
 	/** Skins list container; refreshed in place when Equip/Buy changes so buttons toggle without full rebuild. */
 	TSharedPtr<SVerticalBox> SkinsListBoxWidget;
@@ -161,6 +175,7 @@ private:
 	/** AC balance text in skins panel; updated dynamically when purchasing skins. */
 	TSharedPtr<STextBlock> ACBalanceTextBlock;
 	TSharedPtr<FSlateBrush> ACBalanceIconBrush;
+	TSharedPtr<FSlateBrush> ChallengesButtonIconBrush;
 	TSharedPtr<FSlateBrush> HeroRecordMedalBrush;
 	TSharedPtr<FSlateBrush> CompanionInfoPortraitBrush;
 
@@ -176,6 +191,8 @@ private:
 	TArray<TSharedPtr<FSlateBrush>> PartyAvatarBrushes;
 	TArray<TSharedPtr<FSlateBrush>> PartyHeroPortraitBrushes;
 	TArray<TSharedPtr<FSlateBrush>> SelectedTemporaryBuffBrushes;
+	TArray<TSharedPtr<class SImage>> PartyAvatarImageWidgets;
+	TArray<TSharedPtr<class SImage>> PartyHeroPortraitImageWidgets;
 
 	/** Video area widgets: image shows video when Knight selected; placeholder shows "[VIDEO PREVIEW]" otherwise. */
 	TSharedPtr<SImage> HeroPreviewVideoImage;
@@ -218,6 +235,10 @@ private:
 	void RefreshCompanionList();
 	void RefreshHeroCarouselPortraits();
 	void RefreshCompanionCarouselPortraits();
+	void RefreshCompanionPreviewPanel();
+	void RefreshPanelSwitchers();
+	void RefreshTargetDropdownTexts();
+	void RefreshDifficultyDropdownText();
 	void UpdateHeroDisplay();
 	void EnsureHeroStatsSnapshot();
 	void PopulateHeroStatsSnapshot(const FHeroData& HeroData, const FT66HeroStatBlock& BaseStats, const FT66HeroStatBonuses& PermanentBuffBonuses);
@@ -280,6 +301,7 @@ private:
 	FReply HandleBodyTypeAClicked();
 	FReply HandleBodyTypeBClicked();
 	FReply HandleEnterClicked();
+	FReply HandleChallengesClicked();
 	FReply HandleBackClicked();
 	FReply HandleBackToPartyClicked();
 

@@ -162,6 +162,7 @@ ET66Rarity UT66RngSubsystem::RollRarityWeighted(const FT66RarityWeights& BaseWei
 {
 	const UT66RngTuningConfig* T = GetTuning();
 	const float Strength = T ? FMath::Max(0.f, T->RarityBiasStrength) : 1.35f;
+	const bool bTrackedDraw = UsesRunStream(Stream);
 
 	// Exponential tilt toward higher tiers as luck increases.
 	const float Beta = Luck01 * Strength;
@@ -177,7 +178,12 @@ ET66Rarity UT66RngSubsystem::RollRarityWeighted(const FT66RarityWeights& BaseWei
 		return ET66Rarity::Black;
 	}
 
-	const float R = UsesRunStream(Stream) ? RunFRandRange(0.f, Sum) : Stream.FRandRange(0.f, Sum);
+	if (!bTrackedDraw)
+	{
+		ClearLastRunDrawMetadata();
+	}
+
+	const float R = bTrackedDraw ? RunFRandRange(0.f, Sum) : Stream.FRandRange(0.f, Sum);
 	float Acc = 0.f;
 	Acc += W0; if (R <= Acc) return ET66Rarity::Black;
 	Acc += W1; if (R <= Acc) return ET66Rarity::Red;
@@ -189,13 +195,19 @@ int32 UT66RngSubsystem::RollIntRangeBiased(const FT66IntRange& Range, FRandomStr
 {
 	const int32 A = FMath::Min(Range.Min, Range.Max);
 	const int32 B = FMath::Max(Range.Min, Range.Max);
+	const bool bTrackedDraw = UsesRunStream(Stream);
 	if (B <= A)
 	{
 		ClearLastRunDrawMetadata();
 		return A;
 	}
 
-	const float U = BiasHigh01(UsesRunStream(Stream) ? GetRunFraction() : Stream.GetFraction());
+	if (!bTrackedDraw)
+	{
+		ClearLastRunDrawMetadata();
+	}
+
+	const float U = BiasHigh01(bTrackedDraw ? GetRunFraction() : Stream.GetFraction());
 	const float Span = static_cast<float>(B - A);
 	const int32 V = A + FMath::Clamp(FMath::FloorToInt(U * (Span + 1e-3f) + 0.00001f), 0, (B - A));
 	return FMath::Clamp(V, A, B);
@@ -205,13 +217,19 @@ float UT66RngSubsystem::RollFloatRangeBiased(const FT66FloatRange& Range, FRando
 {
 	const float A = FMath::Min(Range.Min, Range.Max);
 	const float B = FMath::Max(Range.Min, Range.Max);
+	const bool bTrackedDraw = UsesRunStream(Stream);
 	if (B <= A)
 	{
 		ClearLastRunDrawMetadata();
 		return A;
 	}
 
-	const float U = BiasHigh01(UsesRunStream(Stream) ? GetRunFraction() : Stream.GetFraction());
+	if (!bTrackedDraw)
+	{
+		ClearLastRunDrawMetadata();
+	}
+
+	const float U = BiasHigh01(bTrackedDraw ? GetRunFraction() : Stream.GetFraction());
 	return A + (B - A) * U;
 }
 

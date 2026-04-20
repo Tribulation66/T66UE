@@ -8,6 +8,7 @@
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Data/T66MiniDataTypes.h"
 #include "Engine/Texture2D.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Styling/SlateBrush.h"
 #include "UI/T66MiniUIStyle.h"
@@ -64,6 +65,7 @@ void UT66MiniCompanionSelectScreen::OnScreenActivated_Implementation()
 		{
 			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniCompanionSelectScreen::HandleSessionStateChanged);
 			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniCompanionSelect, true);
+			LastSessionUiStateKey = BuildSessionUiStateKey();
 		}
 	}
 
@@ -120,6 +122,18 @@ void UT66MiniCompanionSelectScreen::NativeDestruct()
 void UT66MiniCompanionSelectScreen::HandleSessionStateChanged()
 {
 	SyncToSharedPartyScreen();
+	if (UIManager && UIManager->GetCurrentScreenType() != ScreenType)
+	{
+		return;
+	}
+
+	const FString NewSessionUiStateKey = BuildSessionUiStateKey();
+	if (NewSessionUiStateKey == LastSessionUiStateKey)
+	{
+		return;
+	}
+
+	LastSessionUiStateKey = NewSessionUiStateKey;
 	ForceRebuildSlate();
 }
 
@@ -186,6 +200,8 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 	{
 		SelectedCompanion = T66MiniResolveDefaultCompanion(DataSubsystem, SaveSubsystem);
 	}
+
+	LastSessionUiStateKey = BuildSessionUiStateKey();
 
 	RebuildCompanionBrushes(Companions);
 	const FSlateBrush* SelectedBrush = SelectedCompanion ? FindCompanionBrush(SelectedCompanion->CompanionID) : nullptr;
@@ -588,6 +604,11 @@ FReply UT66MiniCompanionSelectScreen::HandleCompanionClicked(const FName Compani
 {
 	if (UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr)
 	{
+		if (FrontendState->GetSelectedCompanionID() == CompanionID)
+		{
+			return FReply::Handled();
+		}
+
 		FrontendState->SelectCompanion(CompanionID);
 		ForceRebuildSlate();
 	}
@@ -617,6 +638,25 @@ void UT66MiniCompanionSelectScreen::RebuildCompanionBrushes(const TArray<FT66Min
 
 		CompanionBrushes.Add(Companion.CompanionID, Brush);
 	}
+}
+
+FString UT66MiniCompanionSelectScreen::BuildSessionUiStateKey() const
+{
+	const UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	if (!SessionSubsystem)
+	{
+		return FString();
+	}
+
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
+	return FString::Printf(
+		TEXT("%d|%d|%d|%d|%d"),
+		static_cast<int32>(SessionSubsystem->GetDesiredPartyFrontendScreen()),
+		SessionSubsystem->IsPartyLobbyContextActive() ? 1 : 0,
+		SessionSubsystem->IsLocalPlayerPartyHost() ? 1 : 0,
+		SessionSubsystem->IsLocalLobbyReady() ? 1 : 0,
+		LobbyProfiles.Num());
 }
 
 const FSlateBrush* UT66MiniCompanionSelectScreen::FindCompanionBrush(const FName CompanionID) const

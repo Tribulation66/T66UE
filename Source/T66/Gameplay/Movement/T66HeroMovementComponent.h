@@ -44,6 +44,7 @@ protected:
 private:
 	AT66HeroBase* ResolveHero() const;
 	UCharacterMovementComponent* ResolveCharacterMovement() const;
+	float ResolveCurrentMaxWalkSpeed() const;
 	FVector GetWorldMoveDirectionFromAxes() const;
 	FVector GetQuantizedWorldDashDirection() const;
 	bool CanUseMovementAbilities() const;

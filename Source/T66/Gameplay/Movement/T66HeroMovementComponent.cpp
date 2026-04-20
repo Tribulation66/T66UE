@@ -47,11 +47,22 @@ UCharacterMovementComponent* UT66HeroMovementComponent::ResolveCharacterMovement
 	return nullptr;
 }
 
+float UT66HeroMovementComponent::ResolveCurrentMaxWalkSpeed() const
+{
+	if (const UCharacterMovementComponent* Movement = ResolveCharacterMovement())
+	{
+		return FMath::Max(200.f, Movement->MaxWalkSpeed);
+	}
+
+	return FMath::Max(200.f, BaseWalkSpeed);
+}
+
 void UT66HeroMovementComponent::ApplyDefaultMovementConfig()
 {
 	if (AT66HeroBase* Hero = ResolveHero())
 	{
 		Hero->JumpMaxCount = 1;
+		Hero->JumpMaxHoldTime = MovementTuning.JumpMaxHoldTime;
 	}
 
 	if (UCharacterMovementComponent* Movement = ResolveCharacterMovement())
@@ -60,12 +71,16 @@ void UT66HeroMovementComponent::ApplyDefaultMovementConfig()
 		Movement->MaxAcceleration = MovementTuning.MaxAcceleration;
 		Movement->BrakingDecelerationWalking = MovementTuning.BrakingDecelerationWalking;
 		Movement->GroundFriction = MovementTuning.GroundFriction;
+		Movement->bUseSeparateBrakingFriction = MovementTuning.bUseSeparateBrakingFriction;
+		Movement->BrakingFriction = MovementTuning.BrakingFriction;
 		Movement->BrakingFrictionFactor = MovementTuning.BrakingFrictionFactor;
 		Movement->JumpZVelocity = MovementTuning.JumpZVelocity;
 		Movement->AirControl = MovementTuning.AirControl;
 		Movement->GravityScale = MovementTuning.GravityScale;
+		Movement->FallingLateralFriction = MovementTuning.FallingLateralFriction;
+		Movement->BrakingDecelerationFalling = MovementTuning.BrakingDecelerationFalling;
 		Movement->bOrientRotationToMovement = true;
-		Movement->RotationRate = FRotator(0.f, 99999.f, 0.f);
+		Movement->RotationRate = FRotator(0.f, MovementTuning.RotationRateYaw, 0.f);
 	}
 }
 
@@ -271,8 +286,10 @@ void UT66HeroMovementComponent::TryConsumeHeldDash()
 		return;
 	}
 
-	bDashConsumedThisHold = true;
-	TryDashInWorldDirection(DashDirection);
+	if (TryDashInWorldDirection(DashDirection))
+	{
+		bDashConsumedThisHold = true;
+	}
 }
 
 bool UT66HeroMovementComponent::TryDashInWorldDirection(const FVector& DesiredWorldDirection)
@@ -297,7 +314,11 @@ bool UT66HeroMovementComponent::TryDashInWorldDirection(const FVector& DesiredWo
 		return false;
 	}
 
+	const float DashStrength = FMath::Max(
+		MovementTuning.DashStrength,
+		ResolveCurrentMaxWalkSpeed() * MovementTuning.DashSpeedMultiplierOverWalkSpeed);
+
 	LastDashTime = Now;
-	Hero->LaunchCharacter(DashDirection * MovementTuning.DashStrength, true, true);
+	Hero->LaunchCharacter(DashDirection * DashStrength, true, true);
 	return true;
 }

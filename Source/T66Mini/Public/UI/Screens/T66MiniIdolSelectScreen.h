@@ -31,6 +31,7 @@ private:
 	FReply HandleContinueClicked();
 	void HandleSessionStateChanged();
 	void SyncToSharedPartyScreen();
+	FString BuildSessionUiStateKey() const;
 	void SetStatus(const FText& InText);
 	void RebuildIdolBrushes(const TArray<FT66MiniIdolDefinition>& Idols);
 	const FSlateBrush* FindIdolBrush(FName IdolID) const;
@@ -39,4 +40,5 @@ private:
 	TMap<FName, TSharedPtr<FSlateBrush>> IdolBrushes;
 	FText CurrentStatusText;
 	FDelegateHandle SessionStateChangedHandle;
+	FString LastSessionUiStateKey;
 };

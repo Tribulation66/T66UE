@@ -52,10 +52,22 @@ private:
 	FReply HandlePowerCouponsThankYouClicked();
 	FReply HandleContinueDifficultyClicked();
 	FReply HandleSaveAndQuitClicked();
-	FReply HandleSubmitAndEndRunClicked();
+	FReply HandleQuitToMainMenuClicked();
+	void PrepareChadCouponsPopupForLiveRun();
+	void HandleBackendSubmitRunDataReadyForSummary(
+		const FString& RequestKey,
+		bool bSuccess,
+		int32 ScoreRankAlltime,
+		int32 ScoreRankWeekly,
+		int32 SpeedRunRankAlltime,
+		int32 SpeedRunRankWeekly,
+		bool bNewScorePersonalBest,
+		bool bNewSpeedRunPersonalBest);
 
 	void HandleProofLinkNavigate() const;
+	void ProcessRunSummaryLeaderboardSubmission(bool bTreatAsVictoryForTime);
 	void ProcessLiveRunFinalSubmission();
+	void ResetSavedRunSummaryViewerState();
 	bool SaveCurrentRunToSlot(bool bFromDifficultyClearSummary);
 
 	void RebuildLogItems();
@@ -72,10 +84,17 @@ private:
 	bool bNewPersonalBestScore = false;
 	bool bNewPersonalBestTime = false;
 	bool bLiveRunSubmissionProcessed = false;
+	bool bLiveRunFinalAccountingProcessed = false;
 	bool bDifficultyClearSummaryMode = false;
 
 	/** When true, show "Power Coupons earned" popup (only when earned >= 1 this run, not when viewing saved). */
 	bool bShowPowerCouponsPopup = false;
+
+	/** Amount of Chad Coupons credited when this live summary opened. */
+	int32 SummaryChadCouponsEarned = 0;
+
+	/** True when the popup checkbox is checked for the current summary. */
+	bool bChadCouponsPopupDontShowAgainChecked = false;
 
 	/** Brush for Power Coupons sprite (Content/UI/Sprites/PowerUp). */
 	TSharedPtr<struct FSlateBrush> PowerCouponSpriteBrush;
@@ -118,6 +137,7 @@ private:
 	/** Brushes for item/idol icon images (resource = UTexture2D). */
 	TArray<TSharedPtr<struct FSlateBrush>> InventoryItemIconBrushes;
 	TArray<TSharedPtr<struct FSlateBrush>> IdolIconBrushes;
+	TArray<TSharedPtr<struct FSlateBrush>> TemporaryBuffIconBrushes;
 
 	// ===== Preview stages (reuse same system as hero/companion selection) =====
 	UPROPERTY(Transient)

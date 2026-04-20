@@ -167,6 +167,7 @@ void UT66MiniMainMenuScreen::OnScreenActivated_Implementation()
 		}
 	}
 
+	LastPartyUiStateKey = BuildPartyUiStateKey();
 }
 
 void UT66MiniMainMenuScreen::OnScreenDeactivated_Implementation()
@@ -214,13 +215,24 @@ void UT66MiniMainMenuScreen::NativeDestruct()
 void UT66MiniMainMenuScreen::HandlePartyStateChanged()
 {
 	SyncToSharedPartyScreen();
-	ForceRebuildSlate();
+	if (UIManager && UIManager->GetCurrentScreenType() != ScreenType)
+	{
+		return;
+	}
+
+	const FString NewStateKey = BuildPartyUiStateKey();
+	if (NewStateKey == LastPartyUiStateKey)
+	{
+		return;
+	}
+
+	LastPartyUiStateKey = NewStateKey;
+	FT66Style::DeferRebuild(this);
 }
 
 void UT66MiniMainMenuScreen::HandleSessionStateChanged()
 {
-	SyncToSharedPartyScreen();
-	ForceRebuildSlate();
+	HandlePartyStateChanged();
 }
 
 void UT66MiniMainMenuScreen::SyncToSharedPartyScreen()
@@ -259,6 +271,7 @@ void UT66MiniMainMenuScreen::SyncToSharedPartyScreen()
 
 TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 {
+	LastPartyUiStateKey = BuildPartyUiStateKey();
 	RequestMiniMenuTextures();
 
 	UGameInstance* GameInstance = GetGameInstance();
@@ -504,7 +517,7 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 									{
 										PartySubsystem->InviteFriend(Friend.PlayerId, Friend.DisplayName);
 									}
-									ForceRebuildSlate();
+									FT66Style::DeferRebuild(this);
 									return FReply::Handled();
 								}),
 								ET66ButtonType::Primary)
@@ -525,7 +538,7 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 									{
 										SessionSubsystem->JoinFriendPartySessionBySteamId(Friend.PlayerId);
 									}
-									ForceRebuildSlate();
+									FT66Style::DeferRebuild(this);
 									return FReply::Handled();
 								}),
 								ET66ButtonType::Neutral)
@@ -843,6 +856,80 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 		];
 }
 
+FString UT66MiniMainMenuScreen::BuildPartyUiStateKey() const
+{
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UT66PartySubsystem* PartySubsystem = GameInstance ? GameInstance->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	const UT66SteamHelper* SteamHelper = GameInstance ? GameInstance->GetSubsystem<UT66SteamHelper>() : nullptr;
+
+	FString StateKey = FriendSearchQuery.TrimStartAndEnd();
+	StateKey += TEXT("|");
+	StateKey += SteamHelper && SteamHelper->IsSteamReady() ? TEXT("1") : TEXT("0");
+	StateKey += TEXT("|");
+	StateKey += SteamHelper ? SteamHelper->GetLocalDisplayName() : FString();
+
+	if (PartySubsystem)
+	{
+		for (const FT66PartyFriendEntry& Friend : PartySubsystem->GetFriends())
+		{
+			if (!DoesFriendMatchQuery(FriendSearchQuery, Friend))
+			{
+				continue;
+			}
+
+			StateKey += FString::Printf(
+				TEXT("|F:%s:%d:%d:%s"),
+				*Friend.PlayerId,
+				Friend.bOnline ? 1 : 0,
+				PartySubsystem->IsFriendInParty(Friend.PlayerId) ? 1 : 0,
+				*Friend.PresenceText);
+			if (SessionSubsystem)
+			{
+				StateKey += SessionSubsystem->IsFriendInvitePending(Friend.PlayerId) ? TEXT(":1") : TEXT(":0");
+			}
+		}
+
+		for (const FT66PartyMemberEntry& Member : PartySubsystem->GetPartyMembers())
+		{
+			StateKey += FString::Printf(
+				TEXT("|P:%s:%s:%d:%d:%d"),
+				*Member.PlayerId,
+				*Member.DisplayName,
+				Member.bIsPartyHost ? 1 : 0,
+				Member.bIsLocal ? 1 : 0,
+				Member.bOnline ? 1 : 0);
+		}
+	}
+
+	if (SessionSubsystem)
+	{
+		StateKey += FString::Printf(
+			TEXT("|S:%d:%d:%d:%d"),
+			SessionSubsystem->IsPartyLobbyContextActive() ? 1 : 0,
+			SessionSubsystem->IsPartySessionActive() ? 1 : 0,
+			SessionSubsystem->IsLocalPlayerPartyHost() ? 1 : 0,
+			static_cast<int32>(SessionSubsystem->GetDesiredPartyFrontendScreen()));
+
+		TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+		SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
+		for (const FT66LobbyPlayerInfo& LobbyInfo : LobbyProfiles)
+		{
+			StateKey += FString::Printf(
+				TEXT("|L:%s:%s:%d:%d:%d:%d:%s"),
+				*LobbyInfo.SteamId,
+				*LobbyInfo.DisplayName,
+				LobbyInfo.bPartyHost ? 1 : 0,
+				LobbyInfo.bLobbyReady ? 1 : 0,
+				LobbyInfo.bMiniFlowActive ? 1 : 0,
+				static_cast<int32>(LobbyInfo.FrontendScreen),
+				*LobbyInfo.MiniSelectedHeroID.ToString());
+		}
+	}
+
+	return StateKey;
+}
+
 FReply UT66MiniMainMenuScreen::HandleBackToMainMenuClicked()
 {
 	NavigateTo(ET66ScreenType::MainMenu);
@@ -879,8 +966,15 @@ FReply UT66MiniMainMenuScreen::HandleLoadGameClicked()
 
 void UT66MiniMainMenuScreen::HandleFriendSearchTextChanged(const FText& InText)
 {
-	FriendSearchQuery = InText.ToString();
-	ForceRebuildSlate();
+	const FString NewQuery = InText.ToString();
+	if (FriendSearchQuery.Equals(NewQuery, ESearchCase::CaseSensitive))
+	{
+		return;
+	}
+
+	FriendSearchQuery = NewQuery;
+	LastPartyUiStateKey = BuildPartyUiStateKey();
+	FT66Style::DeferRebuild(this);
 }
 
 void UT66MiniMainMenuScreen::RequestMiniMenuTextures()

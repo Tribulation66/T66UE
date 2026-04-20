@@ -444,6 +444,10 @@ bool AT66MiniPlayerPawn::AcquireItem(const FName ItemID)
 	{
 		ActiveRun->OwnedItemIDs = OwnedItemIDs;
 	}
+	if (UT66MiniVisualSubsystem* VisualSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr)
+	{
+		VisualSubsystem->LoadItemTexture(ItemDefinition->ItemID, ItemDefinition->IconPath);
+	}
 	ApplyItemDefinition(*ItemDefinition);
 	CurrentHealth = FMath::Min(CurrentHealth, MaxHealth);
 	RefreshPickupMagnetProfile();

@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\GoblinCharger\\Raw\\GoblinCharger_Front_Green_S1337_D200000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\GoblinCharger\\Renders\\GoblinCharger_Front_Green_S1337_D200000_Retopo24k.png",
+  "export": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\GoblinCharger\\Retopo\\GoblinCharger_Front_Green_S1337_D200000_Retopo24k.glb",
+  "raw_triangles": 193726,
+  "triangles_before_decimate": 193726,
+  "triangles_after_decimate": 24000,
+  "bounds": {
+    "min": [
+      -0.481052964925766,
+      -0.2871731221675873,
+      -0.5004078149795532
+    ],
+    "max": [
+      0.4802485406398773,
+      0.2849317789077759,
+      0.5000781416893005
+    ],
+    "size": [
+      0.9613015055656433,
+      0.5721049308776855,
+      1.000485897064209
+    ]
+  }
+}

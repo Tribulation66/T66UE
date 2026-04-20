@@ -31,6 +31,7 @@ private:
 	void HandlePartyStateChanged();
 	void HandleSessionStateChanged();
 	void SyncToSharedPartyScreen();
+	FString BuildPartyUiStateKey() const;
 	void HandleFriendSearchTextChanged(const FText& InText);
 	void RequestMiniMenuTextures();
 	void ReleaseRetainedSlateState();
@@ -48,6 +49,7 @@ private:
 	TArray<TSharedPtr<FSlateBrush>> FriendAvatarBrushes;
 	TArray<TSharedPtr<FSlateBrush>> PartyAvatarBrushes;
 	FString FriendSearchQuery;
+	FString LastPartyUiStateKey;
 	FDelegateHandle PartyStateChangedHandle;
 	FDelegateHandle SessionStateChangedHandle;
 };

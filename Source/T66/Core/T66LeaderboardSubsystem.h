@@ -34,8 +34,8 @@ public:
 	bool SubmitRunScore(int32 Score, const FString& ExistingRunSummarySlotName);
 
 	/**
-	 * Submit a completed stage time (local best), keyed by current difficulty/party size.
-	 * Stage is expected to be 1..5 for the menu leaderboard (stages per difficulty), but we store any stage for future use.
+	 * Legacy hook for stage-complete speedrun timing.
+	 * Stage pacing now lives in run summaries, so this no longer writes any local leaderboard state.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Leaderboard")
 	bool SubmitStageSpeedRunTime(int32 Stage, float Seconds);
@@ -48,11 +48,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	bool WasLastScoreNewPersonalBest() const { return bLastScoreWasNewBest; }
 
-	/** True if the most recent speed run submit set a new personal best time (for the active difficulty/party/stage). */
+	/** Legacy stage-speedrun PB flag. Remains false while per-stage local PBs are disabled. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	bool WasLastSpeedRunNewPersonalBest() const { return bLastSpeedRunWasNewBest; }
 
-	/** Stage number associated with the most recent speed run submission. */
+	/** Stage number associated with the most recent legacy stage-speedrun submit attempt. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	int32 GetLastSpeedRunSubmittedStage() const { return LastSpeedRunSubmittedStage; }
 
@@ -89,6 +89,9 @@ public:
 
 	/** Submit a completed full-run time PB (lower is better). */
 	bool SubmitCompletedRunTime(float Seconds, const FString& ExistingRunSummarySlotName);
+
+	/** Submit a completed difficulty clear in a single backend request, updating score and speedrun boards together. */
+	bool SubmitDifficultyClearRun(float Seconds, const FString& ExistingRunSummarySlotName);
 
 	/** Completed runs, newest first, with no hard history cap. */
 	TArray<FT66RecentRunRecord> GetRecentRuns() const;
@@ -144,11 +147,11 @@ public:
 	/** Returns the 10th-place target time for this stage (used by HUD "time to beat"). */
 	bool GetSpeedRunTarget10Seconds(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage, float& OutSeconds) const;
 
-	/** Rank (1–16) of local player's best score for this difficulty/party; 0 if none. */
+	/** Weekly rank of the current run if available, otherwise the locally cached weekly best score rank; 0 if none. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	int32 GetLocalScoreRank(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
-	/** Rank of the local player's best completed-run speedrun time; 0 if none is recorded. */
+	/** Weekly rank of the current run if available, otherwise the locally cached weekly best speedrun rank; 0 if none is recorded. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	int32 GetLocalSpeedRunRank(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
 
@@ -160,6 +163,7 @@ private:
 	{
 		Score,
 		CompletedRunTime,
+		DifficultyClear,
 	};
 
 	struct FPendingBestRankSubmission
@@ -169,6 +173,7 @@ private:
 		ET66PartySize PartySize = ET66PartySize::Solo;
 		int64 Score = 0;
 		float Seconds = 0.f;
+		bool bSubmittedAnonymous = false;
 		FString RunSummarySlotName;
 		FDateTime AchievedAtUtc = FDateTime::MinValue();
 	};
@@ -218,7 +223,15 @@ private:
 
 	bool GetSettingsPracticeAndAnon(bool& bOutPractice, bool& bOutAnon) const;
 	FString MakePendingBestRankRequestKey(EBestRankRecordType Type, ET66Difficulty Difficulty, ET66PartySize PartySize) const;
-	void HandleBackendSubmitRunDataReady(const FString& RequestKey, bool bSuccess, int32 ScoreRankAlltime, int32 ScoreRankWeekly, bool bNewPersonalBest);
+	void HandleBackendSubmitRunDataReady(
+		const FString& RequestKey,
+		bool bSuccess,
+		int32 ScoreRankAlltime,
+		int32 ScoreRankWeekly,
+		int32 SpeedRunRankAlltime,
+		int32 SpeedRunRankWeekly,
+		bool bNewScorePersonalBest,
+		bool bNewSpeedRunPersonalBest);
 
 	// Transient UI "handshake": panel sets a requested slot name, RunSummaryScreen consumes it.
 	FString PendingRunSummarySlotName;
@@ -234,12 +247,18 @@ private:
 	// Transient UI "handshake": a viewer-mode run summary can request reopening a modal afterwards (single-modal UI manager).
 	ET66ScreenType PendingReturnModalAfterViewerRunSummary = ET66ScreenType::None;
 	TMap<FString, FPendingBestRankSubmission> PendingBestRankSubmissions;
+	FString LastSubmittedScoreRequestKey;
+	FString LastSubmittedCompletedRunTimeRequestKey;
 
 	// ===== Last submit results (for Run Summary "New Personal Best" banners) =====
 	bool bLastScoreWasNewBest = false;
 	bool bLastSpeedRunWasNewBest = false;
 	bool bLastCompletedRunTimeWasNewBest = false;
 	int32 LastSpeedRunSubmittedStage = 0;
+	int32 LastSubmittedScoreRankAllTime = 0;
+	int32 LastSubmittedScoreRankWeekly = 0;
+	int32 LastSubmittedCompletedRunRankAllTime = 0;
+	int32 LastSubmittedCompletedRunRankWeekly = 0;
 
 	UFUNCTION()
 	void HandleBackendAccountStatusComplete(bool bSuccess, const FString& Restriction);

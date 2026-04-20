@@ -7,6 +7,7 @@
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Containers/Ticker.h"
 #include "UI/T66UITypes.h"
@@ -87,6 +88,13 @@ private:
 	void ClearSteamRichPresence();
 	struct FT66LobbyPlayerInfo BuildLocalLobbyProfile() const;
 	bool SendInviteToFriendInternal(const FString& FriendPlayerId, const FString& FriendDisplayName);
+	void PrimePendingJoinContext(const FString& HostSteamId, const FString& LobbyId, const FString& InviteId, const FString& AppId);
+	bool StartDirectJoinByHostSteamId(
+		const FString& HostSteamId,
+		const FString& LobbyId = FString(),
+		const FString& AppId = FString(),
+		const FString& InviteId = FString(),
+		const TCHAR* JoinReason = nullptr);
 	bool StartJoinByFriendId(const FString& FriendPlayerId, const FString& ExpectedLobbyId = FString(), const FString& InviteId = FString(), const FString& AppId = FString());
 	bool AttemptPendingFriendJoinLookup();
 	void SchedulePendingFriendJoinRetry();

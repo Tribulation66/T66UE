@@ -13,29 +13,31 @@
 #include "CollisionQueryParams.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Gameplay/T66GameMode.h"
 
 AT66StageGate::AT66StageGate()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
-	TriggerBox->SetBoxExtent(FVector(120.f, 220.f, 180.f)); // large enough to stand in front and press F
+	TriggerBox->SetBoxExtent(FVector(220.f, 220.f, 260.f));
 	TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	TriggerBox->SetCollisionResponseToAllChannels(ECR_Ignore);
 	TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	RootComponent = TriggerBox;
 
-	// Big 3D rectangle (cube scaled): wide and tall
+	// Guaranteed-visible fallback gate: a plain cuboid using the engine cube mesh.
 	UStaticMesh* CubeMesh = FT66VisualUtil::GetBasicShapeCube();
 	GateMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GateMesh"));
 	GateMesh->SetStaticMesh(CubeMesh);
-	GateMesh->SetRelativeLocation(FVector(0.f, 0.f, 150.f));
-	GateMesh->SetRelativeScale3D(FVector(2.f, 4.f, 3.f)); // 200 x 400 x 300 units
+	GateMesh->SetRelativeLocation(FVector(0.f, 0.f, 260.f));
+	GateMesh->SetRelativeScale3D(FVector(2.4f, 2.4f, 5.2f));
 	GateMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GateMesh->SetHiddenInGame(false, true);
+	GateMesh->SetVisibility(true, true);
 	GateMesh->SetupAttachment(RootComponent);
-
-	// Default expected import location (safe if missing).
-	GateMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Gates/SM_StageGate.SM_StageGate")));
+	GateMeshOverride.Reset();
+	FT66VisualUtil::ApplyT66Color(GateMesh, this, FLinearColor(0.20f, 0.85f, 0.35f, 1.f));
 }
 
 void AT66StageGate::BeginPlay()
@@ -51,17 +53,38 @@ void AT66StageGate::BeginPlay()
 		}
 	}
 
-	if (GateMesh && !GateMeshOverride.IsNull())
+	const AT66GameMode* T66GameMode = GetWorld() ? Cast<AT66GameMode>(GetWorld()->GetAuthGameMode()) : nullptr;
+	if (!T66GameMode || !T66GameMode->IsUsingTowerMainMapLayout())
 	{
-		if (UStaticMesh* M = GateMeshOverride.LoadSynchronous())
-		{
-			GateMesh->SetStaticMesh(M);
-			GateMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
-			FT66VisualUtil::GroundMeshToActorOrigin(GateMesh, M);
-		}
+		FT66VisualUtil::SnapToGround(this, GetWorld());
 	}
 
-	FT66VisualUtil::SnapToGround(this, GetWorld());
+	const FVector ActorLocation = GetActorLocation();
+	const FVector MeshLocation = GateMesh ? GateMesh->GetComponentLocation() : FVector::ZeroVector;
+	const FVector MeshScale = GateMesh ? GateMesh->GetComponentScale() : FVector::OneVector;
+	const FBox MeshBounds = GateMesh ? GateMesh->Bounds.GetBox() : FBox(EForceInit::ForceInit);
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("StageGate BeginPlay: Actor=%s ActorLoc=(%.0f, %.0f, %.0f) MeshLoc=(%.0f, %.0f, %.0f) MeshScale=(%.2f, %.2f, %.2f) MeshBoundsMin=(%.0f, %.0f, %.0f) MeshBoundsMax=(%.0f, %.0f, %.0f) Hidden=%d Visible=%d"),
+		*GetName(),
+		ActorLocation.X,
+		ActorLocation.Y,
+		ActorLocation.Z,
+		MeshLocation.X,
+		MeshLocation.Y,
+		MeshLocation.Z,
+		MeshScale.X,
+		MeshScale.Y,
+		MeshScale.Z,
+		MeshBounds.Min.X,
+		MeshBounds.Min.Y,
+		MeshBounds.Min.Z,
+		MeshBounds.Max.X,
+		MeshBounds.Max.Y,
+		MeshBounds.Max.Z,
+		GateMesh ? (GateMesh->bHiddenInGame ? 1 : 0) : -1,
+		GateMesh ? (GateMesh->IsVisible() ? 1 : 0) : -1);
 }
 
 void AT66StageGate::EndPlay(const EEndPlayReason::Type EndPlayReason)

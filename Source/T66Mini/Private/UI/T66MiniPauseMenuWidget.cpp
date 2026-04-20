@@ -34,6 +34,18 @@ namespace
 	const FName MiniPauseAction(TEXT("MiniPause"));
 	const FName MiniInteractAction(TEXT("MiniInteract"));
 	const FName MiniUltimateAction(TEXT("MiniUltimate"));
+	const FName MiniMasterVolumeRow(TEXT("MiniMasterVolume"));
+	const FName MiniMusicVolumeRow(TEXT("MiniMusicVolume"));
+	const FName MiniSfxVolumeRow(TEXT("MiniSfxVolume"));
+	const FName MiniMuteWhenUnfocusedRow(TEXT("MiniMuteWhenUnfocused"));
+	const FName MiniSubtitlesRow(TEXT("MiniSubtitles"));
+	const FName MiniWindowModeRow(TEXT("MiniWindowMode"));
+	const FName MiniQualityRow(TEXT("MiniQuality"));
+	const FName MiniFpsCapRow(TEXT("MiniFpsCap"));
+	const FName MiniDisplayModeRow(TEXT("MiniDisplayMode"));
+	const FName MiniMonitorRow(TEXT("MiniMonitor"));
+	const FName MiniFogRow(TEXT("MiniFog"));
+	const FName MiniDamageNumbersRow(TEXT("MiniDamageNumbers"));
 	constexpr float FpsCaps[] = { 30.f, 60.f, 90.f, 120.f, 0.f };
 
 	FString T66MiniPauseDescribeItem(const FT66MiniItemDefinition& ItemDefinition)
@@ -123,6 +135,17 @@ UT66MiniPauseMenuWidget::UT66MiniPauseMenuWidget(const FObjectInitializer& Objec
 
 TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 {
+	BindingTextMap.Reset();
+	SliderValueTextMap.Reset();
+	ToggleButtonMap.Reset();
+	ToggleValueTextMap.Reset();
+	CycleValueTextMap.Reset();
+	SettingsTabButtonMap.Reset();
+	SettingsTabTextMap.Reset();
+	SettingsModalRoot.Reset();
+	SettingsTabSwitcher.Reset();
+	SettingsStatusText.Reset();
+
 	const UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	const UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
@@ -303,9 +326,11 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 			];
 	};
 
-	const auto MakeSliderRow = [this](const FText& Label, const FText& Description, TFunction<float()> GetValue, TFunction<void(float)> SetValue) -> TSharedRef<SWidget>
+	const auto MakeSliderRow = [this](const FName RowId, const FText& Label, const FText& Description, TFunction<float()> GetValue, TFunction<void(float)> SetValue) -> TSharedRef<SWidget>
 	{
-		return SNew(SBorder)
+		const float InitialValue = FMath::Clamp(GetValue(), 0.f, 1.f);
+		TSharedPtr<STextBlock> ValueText;
+		TSharedRef<SWidget> Row = SNew(SBorder)
 			.BorderImage(T66MiniUI::WhiteBrush())
 			.BorderBackgroundColor(T66MiniUI::RaisedFill())
 			.Padding(FMargin(12.f))
@@ -320,8 +345,8 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 					]
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(STextBlock)
-						.Text_Lambda([GetValue]() { return FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(FMath::Clamp(GetValue(), 0.f, 1.f) * 100.f))); })
+						SAssignNew(ValueText, STextBlock)
+						.Text(FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(InitialValue * 100.f))))
 						.Font(T66MiniUI::BodyFont(13))
 						.ColorAndOpacity(T66MiniUI::MutedText())
 					]
@@ -333,15 +358,26 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight()
 				[
 					SNew(SSlider)
-					.Value_Lambda([GetValue]() { return FMath::Clamp(GetValue(), 0.f, 1.f); })
-					.OnValueChanged_Lambda([SetValue](const float NewValue) { SetValue(FMath::Clamp(NewValue, 0.f, 1.f)); })
+					.Value(InitialValue)
+					.OnValueChanged_Lambda([this, RowId, SetValue](const float NewValue)
+					{
+						const float ClampedValue = FMath::Clamp(NewValue, 0.f, 1.f);
+						SetValue(ClampedValue);
+						UpdateSliderValueText(RowId, ClampedValue);
+					})
 				]
 			];
+
+		SliderValueTextMap.Add(RowId, ValueText);
+		return Row;
 	};
 
-	const auto MakeToggleRow = [this](const FText& Label, const FText& Description, TFunction<bool()> GetValue, TFunction<void(bool)> SetValue) -> TSharedRef<SWidget>
+	const auto MakeToggleRow = [this](const FName RowId, const FText& Label, const FText& Description, TFunction<bool()> GetValue, TFunction<void(bool)> SetValue) -> TSharedRef<SWidget>
 	{
-		return SNew(SBorder)
+		const bool bInitialValue = GetValue();
+		TSharedPtr<SButton> ToggleButton;
+		TSharedPtr<STextBlock> ToggleValueText;
+		TSharedRef<SWidget> Row = SNew(SBorder)
 			.BorderImage(T66MiniUI::WhiteBrush())
 			.BorderBackgroundColor(T66MiniUI::RaisedFill())
 			.Padding(FMargin(12.f))
@@ -361,27 +397,34 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
-					SNew(SButton)
-					.OnClicked_Lambda([GetValue, SetValue]()
+					SAssignNew(ToggleButton, SButton)
+					.OnClicked_Lambda([this, RowId, GetValue, SetValue]()
 					{
-						SetValue(!GetValue());
+						const bool bNewValue = !GetValue();
+						SetValue(bNewValue);
+						UpdateToggleState(RowId, bNewValue);
 						return FReply::Handled();
 					})
-					.ButtonColorAndOpacity_Lambda([GetValue]() { return GetValue() ? T66MiniUI::AccentGreen() : T66MiniUI::AccentBlue(); })
+					.ButtonColorAndOpacity(bInitialValue ? T66MiniUI::AccentGreen() : T66MiniUI::AccentBlue())
 					.ContentPadding(FMargin(14.f, 8.f))
 					[
-						SNew(STextBlock)
-						.Text_Lambda([GetValue]() { return BoolToText(GetValue()); })
+						SAssignNew(ToggleValueText, STextBlock)
+						.Text(BoolToText(bInitialValue))
 						.Font(T66MiniUI::BoldFont(13))
-						.ColorAndOpacity_Lambda([GetValue]() { return GetValue() ? T66MiniUI::ButtonTextDark() : FLinearColor::White; })
+						.ColorAndOpacity(bInitialValue ? T66MiniUI::ButtonTextDark() : FLinearColor::White)
 					]
 				]
 			];
+
+		ToggleButtonMap.Add(RowId, ToggleButton);
+		ToggleValueTextMap.Add(RowId, ToggleValueText);
+		return Row;
 	};
 
-	const auto MakeCycleRow = [this](const FText& Label, const FText& Description, TFunction<FText()> GetValueText, TFunction<void(int32)> AdjustValue) -> TSharedRef<SWidget>
+	const auto MakeCycleRow = [this](const FName RowId, const FText& Label, const FText& Description, TFunction<FText()> GetValueText, TFunction<void(int32)> AdjustValue) -> TSharedRef<SWidget>
 	{
-		return SNew(SBorder)
+		TSharedPtr<STextBlock> ValueText;
+		TSharedRef<SWidget> Row = SNew(SBorder)
 			.BorderImage(T66MiniUI::WhiteBrush())
 			.BorderBackgroundColor(T66MiniUI::RaisedFill())
 			.Padding(FMargin(12.f))
@@ -404,21 +447,24 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(SButton).OnClicked_Lambda([AdjustValue]() { AdjustValue(-1); return FReply::Handled(); }).ButtonColorAndOpacity(T66MiniUI::AccentBlue()).ContentPadding(FMargin(10.f, 6.f))[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "PrevValue", "<")).Font(T66MiniUI::BoldFont(16)).ColorAndOpacity(FLinearColor::White)]
+						SNew(SButton).OnClicked_Lambda([this, RowId, AdjustValue, GetValueText]() { AdjustValue(-1); UpdateCycleValueText(RowId, GetValueText()); return FReply::Handled(); }).ButtonColorAndOpacity(T66MiniUI::AccentBlue()).ContentPadding(FMargin(10.f, 6.f))[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "PrevValue", "<")).Font(T66MiniUI::BoldFont(16)).ColorAndOpacity(FLinearColor::White)]
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f)
 					[
 						SNew(SBorder).BorderImage(T66MiniUI::WhiteBrush()).BorderBackgroundColor(FLinearColor(0.02f, 0.03f, 0.05f, 0.90f)).Padding(FMargin(14.f, 8.f))
 						[
-							SNew(STextBlock).Text_Lambda([GetValueText]() { return GetValueText(); }).Font(T66MiniUI::BoldFont(13)).ColorAndOpacity(FLinearColor::White)
+							SAssignNew(ValueText, STextBlock).Text(GetValueText()).Font(T66MiniUI::BoldFont(13)).ColorAndOpacity(FLinearColor::White)
 						]
 					]
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(SButton).OnClicked_Lambda([AdjustValue]() { AdjustValue(1); return FReply::Handled(); }).ButtonColorAndOpacity(T66MiniUI::AccentBlue()).ContentPadding(FMargin(10.f, 6.f))[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "NextValue", ">")).Font(T66MiniUI::BoldFont(16)).ColorAndOpacity(FLinearColor::White)]
+						SNew(SButton).OnClicked_Lambda([this, RowId, AdjustValue, GetValueText]() { AdjustValue(1); UpdateCycleValueText(RowId, GetValueText()); return FReply::Handled(); }).ButtonColorAndOpacity(T66MiniUI::AccentBlue()).ContentPadding(FMargin(10.f, 6.f))[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "NextValue", ">")).Font(T66MiniUI::BoldFont(16)).ColorAndOpacity(FLinearColor::White)]
 					]
 				]
 			];
+
+		CycleValueTextMap.Add(RowId, ValueText);
+		return Row;
 	};
 
 	const auto MakeRebindRow = [this](const FText& Label, const FText& Description, const FName ActionName, const bool bAllowMouseButtons) -> TSharedRef<SWidget>
@@ -460,12 +506,63 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 	};
 
 	TSharedRef<SWidget> AudioTab = PlayerSettings
-		? StaticCastSharedRef<SWidget>(SNew(SScrollBox) + SScrollBox::Slot()[SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeSliderRow(NSLOCTEXT("T66Mini.Pause", "MasterVolume", "Master Volume"), NSLOCTEXT("T66Mini.Pause", "MasterVolumeBody", "Global volume for the Mini run and the frontend shell."), [PlayerSettings]() { return PlayerSettings->GetMasterVolume(); }, [this, PlayerSettings](const float Value) { PlayerSettings->SetMasterVolume(Value); if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr) { MiniGameMode->RefreshAudioMix(); } })]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeSliderRow(NSLOCTEXT("T66Mini.Pause", "MusicVolume", "Music Volume"), NSLOCTEXT("T66Mini.Pause", "MusicVolumeBody", "Controls the battle music and intermission soundtrack."), [PlayerSettings]() { return PlayerSettings->GetMusicVolume(); }, [this, PlayerSettings](const float Value) { PlayerSettings->SetMusicVolume(Value); if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr) { MiniGameMode->RefreshAudioMix(); } })]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeSliderRow(NSLOCTEXT("T66Mini.Pause", "SfxVolume", "SFX Volume"), NSLOCTEXT("T66Mini.Pause", "SfxVolumeBody", "Controls combat hits, pickups, traps, and UI sound effects."), [PlayerSettings]() { return PlayerSettings->GetSfxVolume(); }, [this, PlayerSettings](const float Value) { PlayerSettings->SetSfxVolume(Value); if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr) { MiniGameMode->RefreshAudioMix(); } })]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeToggleRow(NSLOCTEXT("T66Mini.Pause", "MuteWhenUnfocused", "Mute When Unfocused"), NSLOCTEXT("T66Mini.Pause", "MuteWhenUnfocusedBody", "Drops game audio when the window loses focus."), [PlayerSettings]() { return PlayerSettings->GetMuteWhenUnfocused(); }, [PlayerSettings](const bool bEnabled) { PlayerSettings->SetMuteWhenUnfocused(bEnabled); })]
-			+ SVerticalBox::Slot().AutoHeight()[MakeToggleRow(NSLOCTEXT("T66Mini.Pause", "Subtitles", "Subtitles"), NSLOCTEXT("T66Mini.Pause", "SubtitlesBody", "Keeps subtitle support enabled whenever a captioned event is available."), [PlayerSettings]() { return PlayerSettings->GetSubtitlesAlwaysOn(); }, [PlayerSettings](const bool bEnabled) { PlayerSettings->SetSubtitlesAlwaysOn(bEnabled); })]])
+		? StaticCastSharedRef<SWidget>(
+			SNew(SScrollBox)
+			+ SScrollBox::Slot()
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+				[
+					MakeSliderRow(MiniMasterVolumeRow, NSLOCTEXT("T66Mini.Pause", "MasterVolume", "Master Volume"), NSLOCTEXT("T66Mini.Pause", "MasterVolumeBody", "Global volume for the Mini run and the frontend shell."),
+						[PlayerSettings]() { return PlayerSettings->GetMasterVolume(); },
+						[this, PlayerSettings](const float Value)
+						{
+							PlayerSettings->SetMasterVolume(Value);
+							if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+							{
+								MiniGameMode->RefreshAudioMix();
+							}
+						})
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+				[
+					MakeSliderRow(MiniMusicVolumeRow, NSLOCTEXT("T66Mini.Pause", "MusicVolume", "Music Volume"), NSLOCTEXT("T66Mini.Pause", "MusicVolumeBody", "Controls the battle music and intermission soundtrack."),
+						[PlayerSettings]() { return PlayerSettings->GetMusicVolume(); },
+						[this, PlayerSettings](const float Value)
+						{
+							PlayerSettings->SetMusicVolume(Value);
+							if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+							{
+								MiniGameMode->RefreshAudioMix();
+							}
+						})
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+				[
+					MakeSliderRow(MiniSfxVolumeRow, NSLOCTEXT("T66Mini.Pause", "SfxVolume", "SFX Volume"), NSLOCTEXT("T66Mini.Pause", "SfxVolumeBody", "Controls combat hits, pickups, traps, and UI sound effects."),
+						[PlayerSettings]() { return PlayerSettings->GetSfxVolume(); },
+						[this, PlayerSettings](const float Value)
+						{
+							PlayerSettings->SetSfxVolume(Value);
+							if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+							{
+								MiniGameMode->RefreshAudioMix();
+							}
+						})
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+				[
+					MakeToggleRow(MiniMuteWhenUnfocusedRow, NSLOCTEXT("T66Mini.Pause", "MuteWhenUnfocused", "Mute When Unfocused"), NSLOCTEXT("T66Mini.Pause", "MuteWhenUnfocusedBody", "Drops game audio when the window loses focus."),
+						[PlayerSettings]() { return PlayerSettings->GetMuteWhenUnfocused(); },
+						[PlayerSettings](const bool bEnabled) { PlayerSettings->SetMuteWhenUnfocused(bEnabled); })
+				]
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					MakeToggleRow(MiniSubtitlesRow, NSLOCTEXT("T66Mini.Pause", "Subtitles", "Subtitles"), NSLOCTEXT("T66Mini.Pause", "SubtitlesBody", "Keeps subtitle support enabled whenever a captioned event is available."),
+						[PlayerSettings]() { return PlayerSettings->GetSubtitlesAlwaysOn(); },
+						[PlayerSettings](const bool bEnabled) { PlayerSettings->SetSubtitlesAlwaysOn(bEnabled); })
+				]
+			])
 		: StaticCastSharedRef<SWidget>(SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "AudioUnavailable", "Audio settings are unavailable in this session.")).Font(T66MiniUI::BodyFont(14)).ColorAndOpacity(T66MiniUI::MutedText()));
 
 	TSharedRef<SWidget> KeyBindingTab = SNew(SScrollBox) + SScrollBox::Slot()[SNew(SVerticalBox)
@@ -477,35 +574,55 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 
 	TSharedRef<SWidget> GraphicsTab = PlayerSettings
 		? StaticCastSharedRef<SWidget>(SNew(SScrollBox) + SScrollBox::Slot()[SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeCycleRow(NSLOCTEXT("T66Mini.Pause", "GraphicsWindowMode", "Window Mode"), NSLOCTEXT("T66Mini.Pause", "GraphicsWindowModeBody", "Switch between windowed, fullscreen, and borderless presentation."), [this]() { return WindowModeToText(PendingGraphics.WindowMode); }, [this](const int32 Step) { const TArray<EWindowMode::Type> Modes = { EWindowMode::Windowed, EWindowMode::Fullscreen, EWindowMode::WindowedFullscreen }; int32 Index = Modes.IndexOfByKey(PendingGraphics.WindowMode); PendingGraphics.WindowMode = Modes[(Index + Step + Modes.Num()) % Modes.Num()]; PendingGraphics.bDirty = true; })]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeCycleRow(NSLOCTEXT("T66Mini.Pause", "GraphicsQuality", "Overall Quality"), NSLOCTEXT("T66Mini.Pause", "GraphicsQualityBody", "Changes the global scalability notch used by the engine."), [this]() { return QualityToText(PendingGraphics.QualityNotch); }, [this](const int32 Step) { PendingGraphics.QualityNotch = FMath::Clamp(PendingGraphics.QualityNotch + Step, 0, 3); PendingGraphics.bDirty = true; })]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeCycleRow(NSLOCTEXT("T66Mini.Pause", "GraphicsFpsCap", "FPS Cap"), NSLOCTEXT("T66Mini.Pause", "GraphicsFpsCapBody", "Caps the render framerate for the current game window."), [this]() { return FpsCapToText(PendingGraphics.FpsCapIndex); }, [this](const int32 Step) { PendingGraphics.FpsCapIndex = (PendingGraphics.FpsCapIndex + Step + 5) % 5; PendingGraphics.bDirty = true; })]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeCycleRow(NSLOCTEXT("T66Mini.Pause", "GraphicsDisplayMode", "Display Mode"), NSLOCTEXT("T66Mini.Pause", "GraphicsDisplayModeBody", "Stores the standard or widescreen preference used by Mini and frontend UI."), [this]() { return DisplayModeToText(PendingGraphics.DisplayModeIndex); }, [this](const int32 Step) { PendingGraphics.DisplayModeIndex = (PendingGraphics.DisplayModeIndex + Step + 2) % 2; PendingGraphics.bDirty = true; })]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[MakeCycleRow(NSLOCTEXT("T66Mini.Pause", "GraphicsMonitor", "Monitor"), NSLOCTEXT("T66Mini.Pause", "GraphicsMonitorBody", "Moves the game window to the selected monitor when more than one display is available."), [this]() { return MonitorIndexToText(PendingGraphics.MonitorIndex); }, [this](const int32 Step) { const int32 MonitorCount = GetMonitorCount(); PendingGraphics.MonitorIndex = (PendingGraphics.MonitorIndex + Step + MonitorCount) % MonitorCount; PendingGraphics.bDirty = true; })]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[MakeToggleRow(NSLOCTEXT("T66Mini.Pause", "GraphicsFog", "Native Fog"), NSLOCTEXT("T66Mini.Pause", "GraphicsFogBody", "Keeps the existing gameplay fog toggle exposed from shared settings."), [PlayerSettings]() { return PlayerSettings->GetFogEnabled(); }, [PlayerSettings](const bool bEnabled) { PlayerSettings->SetFogEnabled(bEnabled); })]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeCycleRow(MiniWindowModeRow, NSLOCTEXT("T66Mini.Pause", "GraphicsWindowMode", "Window Mode"), NSLOCTEXT("T66Mini.Pause", "GraphicsWindowModeBody", "Switch between windowed, fullscreen, and borderless presentation."), [this]() { return WindowModeToText(PendingGraphics.WindowMode); }, [this](const int32 Step) { const TArray<EWindowMode::Type> Modes = { EWindowMode::Windowed, EWindowMode::Fullscreen, EWindowMode::WindowedFullscreen }; int32 Index = Modes.IndexOfByKey(PendingGraphics.WindowMode); PendingGraphics.WindowMode = Modes[(Index + Step + Modes.Num()) % Modes.Num()]; PendingGraphics.bDirty = true; })]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeCycleRow(MiniQualityRow, NSLOCTEXT("T66Mini.Pause", "GraphicsQuality", "Overall Quality"), NSLOCTEXT("T66Mini.Pause", "GraphicsQualityBody", "Changes the global scalability notch used by the engine."), [this]() { return QualityToText(PendingGraphics.QualityNotch); }, [this](const int32 Step) { PendingGraphics.QualityNotch = FMath::Clamp(PendingGraphics.QualityNotch + Step, 0, 3); PendingGraphics.bDirty = true; })]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeCycleRow(MiniFpsCapRow, NSLOCTEXT("T66Mini.Pause", "GraphicsFpsCap", "FPS Cap"), NSLOCTEXT("T66Mini.Pause", "GraphicsFpsCapBody", "Caps the render framerate for the current game window."), [this]() { return FpsCapToText(PendingGraphics.FpsCapIndex); }, [this](const int32 Step) { PendingGraphics.FpsCapIndex = (PendingGraphics.FpsCapIndex + Step + 5) % 5; PendingGraphics.bDirty = true; })]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeCycleRow(MiniDisplayModeRow, NSLOCTEXT("T66Mini.Pause", "GraphicsDisplayMode", "Display Mode"), NSLOCTEXT("T66Mini.Pause", "GraphicsDisplayModeBody", "Stores the standard or widescreen preference used by Mini and frontend UI."), [this]() { return DisplayModeToText(PendingGraphics.DisplayModeIndex); }, [this](const int32 Step) { PendingGraphics.DisplayModeIndex = (PendingGraphics.DisplayModeIndex + Step + 2) % 2; PendingGraphics.bDirty = true; })]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[MakeCycleRow(MiniMonitorRow, NSLOCTEXT("T66Mini.Pause", "GraphicsMonitor", "Monitor"), NSLOCTEXT("T66Mini.Pause", "GraphicsMonitorBody", "Moves the game window to the selected monitor when more than one display is available."), [this]() { return MonitorIndexToText(PendingGraphics.MonitorIndex); }, [this](const int32 Step) { const int32 MonitorCount = GetMonitorCount(); PendingGraphics.MonitorIndex = (PendingGraphics.MonitorIndex + Step + MonitorCount) % MonitorCount; PendingGraphics.bDirty = true; })]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[MakeToggleRow(MiniFogRow, NSLOCTEXT("T66Mini.Pause", "GraphicsFog", "Native Fog"), NSLOCTEXT("T66Mini.Pause", "GraphicsFogBody", "Keeps the existing gameplay fog toggle exposed from shared settings."), [PlayerSettings]() { return PlayerSettings->GetFogEnabled(); }, [PlayerSettings](const bool bEnabled) { PlayerSettings->SetFogEnabled(bEnabled); })]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)[MakeActionButton(NSLOCTEXT("T66Mini.Pause", "ApplyGraphics", "APPLY GRAPHICS"), FOnClicked::CreateUObject(this, &UT66MiniPauseMenuWidget::HandleApplyGraphicsClicked), T66MiniUI::AccentGreen(), T66MiniUI::ButtonTextDark(), 42.f)]])
 		: StaticCastSharedRef<SWidget>(SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "GraphicsUnavailable", "Graphics settings are unavailable in this session.")).Font(T66MiniUI::BodyFont(14)).ColorAndOpacity(T66MiniUI::MutedText()));
 
 	TSharedRef<SWidget> GameplayTab = PlayerSettings
-		? StaticCastSharedRef<SWidget>(SNew(SScrollBox) + SScrollBox::Slot()[SNew(SVerticalBox)+SVerticalBox::Slot().AutoHeight()[MakeToggleRow(NSLOCTEXT("T66Mini.Pause", "ShowDamageNumbers", "Show Damage Numbers"), NSLOCTEXT("T66Mini.Pause", "ShowDamageNumbersBody", "Controls whether floating damage numbers render over heroes and enemies during combat."), [PlayerSettings]() { return PlayerSettings->GetShowDamageNumbers(); }, [PlayerSettings](const bool bEnabled) { PlayerSettings->SetShowDamageNumbers(bEnabled); })]])
+		? StaticCastSharedRef<SWidget>(
+			SNew(SScrollBox)
+			+ SScrollBox::Slot()
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					MakeToggleRow(MiniDamageNumbersRow, NSLOCTEXT("T66Mini.Pause", "ShowDamageNumbers", "Show Damage Numbers"), NSLOCTEXT("T66Mini.Pause", "ShowDamageNumbersBody", "Controls whether floating damage numbers render over heroes and enemies during combat."),
+						[PlayerSettings]() { return PlayerSettings->GetShowDamageNumbers(); },
+						[PlayerSettings](const bool bEnabled) { PlayerSettings->SetShowDamageNumbers(bEnabled); })
+				]
+			])
 		: StaticCastSharedRef<SWidget>(SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "GameplayUnavailable", "Gameplay settings are unavailable in this session.")).Font(T66MiniUI::BodyFont(14)).ColorAndOpacity(T66MiniUI::MutedText()));
 	const auto MakeSettingsTabButton = [this](const FText& Label, const ET66MiniPauseSettingsTab Tab) -> TSharedRef<SWidget>
 	{
-		return SNew(SButton)
+		const uint8 TabKey = static_cast<uint8>(Tab);
+		const bool bIsActive = CurrentSettingsTab == Tab;
+		TSharedPtr<SButton> TabButton;
+		TSharedPtr<STextBlock> TabText;
+		TSharedRef<SWidget> Button =
+			SAssignNew(TabButton, SButton)
 			.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniPauseMenuWidget::HandleSettingsTabClicked, Tab))
-			.ButtonColorAndOpacity_Lambda([this, Tab]() { return CurrentSettingsTab == Tab ? T66MiniUI::AccentGold() : T66MiniUI::RaisedFill(); })
+			.ButtonColorAndOpacity(bIsActive ? T66MiniUI::AccentGold() : T66MiniUI::RaisedFill())
 			.ContentPadding(FMargin(12.f, 10.f))
 			[
-				SNew(STextBlock)
+				SAssignNew(TabText, STextBlock)
 				.Text(Label)
 				.Font(T66MiniUI::BoldFont(13))
-				.ColorAndOpacity_Lambda([this, Tab]() { return CurrentSettingsTab == Tab ? T66MiniUI::ButtonTextDark() : FLinearColor::White; })
+				.ColorAndOpacity(bIsActive ? T66MiniUI::ButtonTextDark() : FLinearColor::White)
 			];
+
+		SettingsTabButtonMap.Add(TabKey, TabButton);
+		SettingsTabTextMap.Add(TabKey, TabText);
+		return Button;
 	};
 
 	TSharedRef<SWidget> SettingsModal =
-		SNew(SOverlay)
-		.Visibility_Lambda([this]() { return bSettingsModalOpen ? EVisibility::Visible : EVisibility::Collapsed; })
+		SAssignNew(SettingsModalRoot, SOverlay)
+		.Visibility(bSettingsModalOpen ? EVisibility::Visible : EVisibility::Collapsed)
 		+ SOverlay::Slot()
 		[
 			SNew(SBorder).BorderImage(T66MiniUI::WhiteBrush()).BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.78f))
@@ -692,6 +809,7 @@ bool UT66MiniPauseMenuWidget::HandlePauseBackAction()
 	if (bSettingsModalOpen)
 	{
 		bSettingsModalOpen = false;
+		RefreshSettingsModalVisibility();
 		SetSettingsStatus(NSLOCTEXT("T66Mini.Pause", "SettingsClosed", "Settings closed."));
 		return true;
 	}
@@ -723,10 +841,12 @@ FReply UT66MiniPauseMenuWidget::HandleSettingsClicked()
 {
 	InitializeGraphicsState();
 	bSettingsModalOpen = true;
+	RefreshSettingsModalVisibility();
 	if (SettingsTabSwitcher.IsValid())
 	{
 		SettingsTabSwitcher->SetActiveWidgetIndex(static_cast<int32>(CurrentSettingsTab));
 	}
+	RefreshSettingsTabVisuals();
 	SetSettingsStatus(NSLOCTEXT("T66Mini.Pause", "SettingsOpened", "Press the current pause binding again to close this modal."));
 	SetKeyboardFocus();
 	return FReply::Handled();
@@ -735,17 +855,24 @@ FReply UT66MiniPauseMenuWidget::HandleSettingsClicked()
 FReply UT66MiniPauseMenuWidget::HandleCloseSettingsClicked()
 {
 	bSettingsModalOpen = false;
+	RefreshSettingsModalVisibility();
 	SetSettingsStatus(NSLOCTEXT("T66Mini.Pause", "SettingsClosed", "Settings closed."));
 	return FReply::Handled();
 }
 
 FReply UT66MiniPauseMenuWidget::HandleSettingsTabClicked(const ET66MiniPauseSettingsTab NewTab)
 {
+	if (CurrentSettingsTab == NewTab)
+	{
+		return FReply::Handled();
+	}
+
 	CurrentSettingsTab = NewTab;
 	if (SettingsTabSwitcher.IsValid())
 	{
 		SettingsTabSwitcher->SetActiveWidgetIndex(static_cast<int32>(CurrentSettingsTab));
 	}
+	RefreshSettingsTabVisuals();
 
 	return FReply::Handled();
 }
@@ -807,6 +934,76 @@ FReply UT66MiniPauseMenuWidget::HandleApplyGraphicsClicked()
 {
 	ApplyGraphicsSettings();
 	return FReply::Handled();
+}
+
+void UT66MiniPauseMenuWidget::RefreshSettingsModalVisibility()
+{
+	if (SettingsModalRoot.IsValid())
+	{
+		SettingsModalRoot->SetVisibility(bSettingsModalOpen ? EVisibility::Visible : EVisibility::Collapsed);
+	}
+}
+
+void UT66MiniPauseMenuWidget::RefreshSettingsTabVisuals()
+{
+	for (const TPair<uint8, TSharedPtr<SButton>>& Pair : SettingsTabButtonMap)
+	{
+		const bool bIsActive = Pair.Key == static_cast<uint8>(CurrentSettingsTab);
+		if (Pair.Value.IsValid())
+		{
+			Pair.Value->SetBorderBackgroundColor(bIsActive ? T66MiniUI::AccentGold() : T66MiniUI::RaisedFill());
+		}
+
+		if (const TSharedPtr<STextBlock>* FoundText = SettingsTabTextMap.Find(Pair.Key))
+		{
+			if (FoundText->IsValid())
+			{
+				(*FoundText)->SetColorAndOpacity(bIsActive ? T66MiniUI::ButtonTextDark() : FLinearColor::White);
+			}
+		}
+	}
+}
+
+void UT66MiniPauseMenuWidget::UpdateSliderValueText(const FName RowId, const float NormalizedValue)
+{
+	if (const TSharedPtr<STextBlock>* FoundText = SliderValueTextMap.Find(RowId))
+	{
+		if (FoundText->IsValid())
+		{
+			(*FoundText)->SetText(FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(FMath::Clamp(NormalizedValue, 0.f, 1.f) * 100.f))));
+		}
+	}
+}
+
+void UT66MiniPauseMenuWidget::UpdateToggleState(const FName RowId, const bool bEnabled)
+{
+	if (const TSharedPtr<SButton>* FoundButton = ToggleButtonMap.Find(RowId))
+	{
+		if (FoundButton->IsValid())
+		{
+			(*FoundButton)->SetBorderBackgroundColor(bEnabled ? T66MiniUI::AccentGreen() : T66MiniUI::AccentBlue());
+		}
+	}
+
+	if (const TSharedPtr<STextBlock>* FoundText = ToggleValueTextMap.Find(RowId))
+	{
+		if (FoundText->IsValid())
+		{
+			(*FoundText)->SetText(BoolToText(bEnabled));
+			(*FoundText)->SetColorAndOpacity(bEnabled ? T66MiniUI::ButtonTextDark() : FLinearColor::White);
+		}
+	}
+}
+
+void UT66MiniPauseMenuWidget::UpdateCycleValueText(const FName RowId, const FText& ValueText)
+{
+	if (const TSharedPtr<STextBlock>* FoundText = CycleValueTextMap.Find(RowId))
+	{
+		if (FoundText->IsValid())
+		{
+			(*FoundText)->SetText(ValueText);
+		}
+	}
 }
 
 void UT66MiniPauseMenuWidget::InitializeGraphicsState()

@@ -1,12 +1,12 @@
 # T66 Master Backend
 
-**Last updated:** 2026-04-16
+**Last updated:** 2026-04-19
 **Scope:** Single-source handoff for T66 online state: Steam, Steamworks, Steam AppIDs, Vercel, backend services, live status, and the recommended path to private multiplayer testing under the real Steam AppID.
 **Companion policy doc:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`
 **Companion Steam ops doc:** `MASTER DOCS/MASTER_STEAMWORKS.md`
-**Companion anti-cheat doc:** `MASTER DOCS/Anti Cheat/MASTER_ANTI_CHEAT.md`
+**Companion anti-cheat doc:** `ANTI_CHEAT/MASTER_ANTI_CHEAT.md`
 **Historical predecessor docs:** `Docs/Archive/Systems/backend_architecture_historical.md`, `Docs/Archive/Systems/backend_0.1_checklist_historical.md`, `Docs/Archive/Systems/version_0.1_full_checklist_historical.md`
-**Maintenance rule:** Update this file after every Steam, backend, online, multiplayer, upload, deployment, or other internet-connected systems change. Update `MASTER DOCS/MASTER_STEAMWORKS.md` in the same pass for any Steamworks/build/upload/private-test workflow change. If the change also affects project policy, workflow, or anti-cheat enforcement, update `MASTER DOCS/T66_MASTER_GUIDELINES.md` and `MASTER DOCS/Anti Cheat/MASTER_ANTI_CHEAT.md` in the same pass.
+**Maintenance rule:** Update this file after every Steam, backend, online, multiplayer, upload, deployment, or other internet-connected systems change. Update `MASTER DOCS/MASTER_STEAMWORKS.md` in the same pass for any Steamworks/build/upload/private-test workflow change. If the change also affects project policy, workflow, or anti-cheat enforcement, update `MASTER DOCS/T66_MASTER_GUIDELINES.md` and `ANTI_CHEAT/MASTER_ANTI_CHEAT.md` in the same pass.
 **Status note:** For the current Steamworks operational state, active build ID, upload workflow, and private-testing procedure, prefer `MASTER DOCS/MASTER_STEAMWORKS.md`. This backend document still contains historical transition details from the earlier `480` to `4464300` migration period.
 
 ## 1. Primary Source Files
@@ -22,10 +22,11 @@ This document consolidates the current state from these checked-in sources plus 
 - `Source/T66/UI/Screens/T66PartyInviteModal.cpp`
 - `Tools/Steam/UploadToSteam.ps1`
 - `Saved/Logs/T66_StagedGameplaySmoke*.log`
+- `C:\UE\Backend\src\lib\leaderboard-keys.ts`
 - `C:\UE\Backend\src\lib\steam.ts`
 - `C:\UE\Backend\src\app\api\party-invite\*\route.ts`
 - `C:\UE\Backend\src\app\api\client-diagnostics\route.ts`
-- `C:\SteamworksSDK\sdk\tools\ContentBuilder\scripts\CHADPOCALYPSE\app_build_4464300.vdf`
+- `C:\SteamworksSDK\sdk\tools\ContentBuilder\scripts\app_build_4464300_root.vdf`
 
 Where this document contradicts the archived backend/reference docs, prefer this document. It is based on the currently checked-in config and current live backend response.
 
@@ -34,8 +35,9 @@ Where this document contradicts the archived backend/reference docs, prefer this
 - The project already has a real Steam multiplayer foundation in code.
 - `MASTER DOCS/MASTER_STEAMWORKS.md` is now the primary operator-memory file for Steamworks uploads, current build tracking, key handling, and the local PowerShell workflow.
 - The backend is real and deployed at `https://t66-backend.vercel.app`.
-- The live backend health check is currently healthy as of 2026-04-07.
+- The live backend health check is currently healthy as of 2026-04-19.
 - The main blocker is not "Steam is missing"; it is finishing the move from legacy Spacewar testing to the real app path.
+- Ranked leaderboard acceptance remains backend-authoritative. Steam trusted leaderboard writes, if ever used for mirroring, do not replace T66's own mod, integrity, or anti-cheat gates.
 - The checked-in UE config now defaults to real AppID `4464300`.
 - Older staged logs still show previous packaged builds running under `480`, so fresh validation is still required.
 - The backend party-invite and diagnostics routes still allow legacy `480` during the transition window.
@@ -44,11 +46,17 @@ Where this document contradicts the archived backend/reference docs, prefer this
 - Source now prevents score-only victory submits from seeding bogus `0 ms` speedrun leaderboard rows; backend speedrun keys are only generated for real completed-run submissions with `time_ms > 0`.
 - Source now treats an empty Steam friends list as valid for the Friends leaderboard route and returns the requesting player's own row instead of failing the request.
 - Source now parses backend speedrun leaderboard values into `TimeSeconds` for UI display, and completed-run local rank handling now uses the backend speedrun rank rather than the score rank.
+- Stage-clear leaderboard submission now uses one authoritative completed-run request on the UE side instead of the earlier score-submit plus completed-run-submit pair.
+- `/api/submit-run` now accepts optional `submission_id` and caches the final response per `steam_id + submission_id`, so a retry of the same logical submission replays the same result instead of being treated as a second run.
+- Accepted leaderboard rows are now append-only per run instead of PB-only per player; `/api/my-rank` now resolves the player's single best row separately for the below-top-10 "you row".
+- Production `run_summaries` schema drift was fixed live on 2026-04-19 by adding the missing anti-cheat and integrity columns that `/api/submit-run` already writes.
+- Production backend stage boundaries now match the game progression again: Easy 1-5, Medium 6-10, Hard 11-15, VeryHard 16-20, Impossible 21-23.
 - Suspicion-level anti-cheat restrictions are now backend-authoritative and block new score submissions the same way the frontend does.
 - Automatic suspension reasons now distinguish `luck_rating` and `skill_rating` breaches over `100`, and the Account Status flow can open the reviewed backend run summary tied to the restriction.
 - All-time proof-of-run data now persists for the active PB leaderboard entry until that PB is replaced or the entry is removed; weekly proof-backed summaries are wiped by the weekly reset.
 - Run reports are now treated as a weekly moderation queue and are wiped by the weekly reset, with a 7-day TTL as fallback cleanup.
-- A local Steam upload wrapper now exists, but no Steam upload has been run from this repo pass.
+- Production streamer whitelist now includes SteamID `76561198749633075` (`Tribulation 66 Studios`) so accepted runs appear in the Streamers leaderboard filter for that account.
+- A local Steam upload wrapper now exists and now defaults to the absolute root VDF after the relative script failed from SteamCMD path resolution.
 - The recommended path remains: use base AppID `4464300`, keep the app unreleased, distribute a small number of Release Override keys, and iterate through SteamPipe uploads.
 
 ## 3. Steamworks App Inventory
@@ -123,26 +131,26 @@ Where this document contradicts the archived backend/reference docs, prefer this
 
 ### 5.2 Live health check
 
-Live check performed on 2026-04-07:
+Live check performed on 2026-04-19:
 
 ```json
 {
   "status": "ok",
-  "timestamp": "2026-04-07T08:08:00.297Z",
+  "timestamp": "2026-04-19T18:08:02.334Z",
   "postgres": "ok",
   "postgres_counts": {
-    "player_profiles": 0,
-    "leaderboard_entries": 0,
-    "run_summaries": 0,
+    "player_profiles": 1,
+    "leaderboard_entries": 1,
+    "run_summaries": 3,
     "run_reports": 0,
-    "bug_reports": 0,
+    "bug_reports": 395,
     "account_restrictions": 0
   },
   "kv": "ok"
 }
 ```
 
-This means the earlier checklist note about production KV being unhealthy is now stale.
+This means the earlier checklist note about production KV being unhealthy is stale, and the production alias was confirmed healthy again after the later 2026-04-19 leaderboard hotfix redeploy.
 
 ### 5.3 Backend auth behavior
 
@@ -177,6 +185,37 @@ So the backend is currently in deliberate dual-AppID transition mode.
 - Suspicion-level restrictions remain appealable through `/api/submit-appeal`, and the reviewed run summary ID returned by `/api/account-status` is now consumed by the UE Account Status screen.
 - Proof-of-run URLs are now stored on the active PB run summary for every live leaderboard entry, not just the previous Top-N summary buffer.
 - When a player improves the PB attached to an entry, the stored run summary is replaced with the new PB snapshot. Existing proof is therefore replaced by the new run's proof state.
+- Production `run_summaries` now has the anti-cheat and integrity columns expected by the deployed backend:
+  - `anti_cheat_context`
+  - `anti_cheat_verdict`
+  - `anti_cheat_flag_category`
+  - `anti_cheat_reason`
+  - `anti_cheat_supporting_data`
+  - `anti_cheat_evaluated_at`
+  - `integrity_context`
+  - `integrity_verdict`
+  - `integrity_reason_code`
+  - `integrity_reason`
+  - `integrity_evaluated_at`
+- The production alias `https://t66-backend.vercel.app` was redeployed on 2026-04-19 after aligning `src/lib/leaderboard-keys.ts` with the real game difficulty ranges so stage-5 clears are treated as completed Easy runs on the backend too.
+- The production alias was redeployed again on 2026-04-19 with deployment `dpl_5t8U9kvwstdxDnUQYMX8QHz2DwC9` after:
+  - moving duplicate submission handling out of the anti-cheat restriction path
+  - keying duplicate detection by a run fingerprint instead of only `steam_id + difficulty`
+  - returning a JSON `unranked` verdict for safe duplicate suppression instead of creating a suspicion-level account restriction
+  - adding explicit server-side `console.error` logging plus JSON `500` responses for unexpected `/api/submit-run` exceptions
+- The production alias was redeployed again on 2026-04-19 with deployment `dpl_H6ejEz35AyLCWECG32LZ2CT1RsAG` after:
+  - adding `submission_id` support to `/api/submit-run`
+  - caching the terminal response per `steam_id + submission_id` so legitimate retries are idempotent
+  - keeping duplicate fingerprint suppression only as a fallback for submissions that do not provide a `submission_id`
+  - matching the UE client change that now sends a single completed-run leaderboard request for stage clears
+- The production alias was redeployed again on 2026-04-19 with deployment `dpl_DW6wcQ7DqHhVQpPo2rAwjX5zzocw` after:
+  - switching `leaderboard_entries` from PB-only upserts to append-only accepted-run inserts
+  - making `/api/my-rank` resolve the player's single best row separately from the Top 10 list
+  - keeping run summaries for every accepted leaderboard row instead of only the active PB row
+  - aligning the backend with the UE weekly-rank display and difficulty-clear quit-button flow
+- A false-positive production `account_restrictions` row for SteamID `76561198749633075` with `flag_category = "rate_limit"` and reason `Duplicate submission within 30s window` was cleared live on 2026-04-19 along with its matching `quarantined_runs` row.
+- A false-positive production `account_restrictions` row for SteamID `76561198749633075` with `flag_category = "luck_replay"` was also cleared live on 2026-04-19 after the UE replay-metadata fix landed; the matching quarantine row was marked `resolved_false_positive`.
+- The production database no longer carries the old `uq_lb_key_steam` unique index. That index was dropped live on 2026-04-19 to allow multiple accepted leaderboard rows per player per board.
 - Weekly cleanup now deletes:
   - all weekly leaderboard entries
   - all weekly run summaries

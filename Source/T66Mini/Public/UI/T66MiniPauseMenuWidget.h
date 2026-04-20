@@ -6,7 +6,9 @@
 #include "Blueprint/UserWidget.h"
 #include "T66MiniPauseMenuWidget.generated.h"
 
+class SButton;
 class STextBlock;
+class SWidget;
 class SWidgetSwitcher;
 struct FKeyEvent;
 struct FPointerEvent;
@@ -63,8 +65,13 @@ private:
 
 	void InitializeGraphicsState();
 	void ApplyGraphicsSettings();
+	void RefreshSettingsModalVisibility();
+	void RefreshSettingsTabVisuals();
 	void RefreshBindingText(FName ActionName);
 	void RefreshAllBindingTexts();
+	void UpdateSliderValueText(FName RowId, float NormalizedValue);
+	void UpdateToggleState(FName RowId, bool bEnabled);
+	void UpdateCycleValueText(FName RowId, const FText& ValueText);
 	bool TryApplyCapturedBinding(const FKey& Key);
 	void CancelPendingRebind();
 	void SetSettingsStatus(const FText& StatusText);
@@ -84,7 +91,14 @@ private:
 	FPendingMiniRebind PendingRebind;
 	FMiniPendingGraphics PendingGraphics;
 
+	TSharedPtr<SWidget> SettingsModalRoot;
 	TSharedPtr<SWidgetSwitcher> SettingsTabSwitcher;
 	TSharedPtr<STextBlock> SettingsStatusText;
 	TMap<FName, TSharedPtr<STextBlock>> BindingTextMap;
+	TMap<FName, TSharedPtr<STextBlock>> SliderValueTextMap;
+	TMap<FName, TSharedPtr<SButton>> ToggleButtonMap;
+	TMap<FName, TSharedPtr<STextBlock>> ToggleValueTextMap;
+	TMap<FName, TSharedPtr<STextBlock>> CycleValueTextMap;
+	TMap<uint8, TSharedPtr<SButton>> SettingsTabButtonMap;
+	TMap<uint8, TSharedPtr<STextBlock>> SettingsTabTextMap;
 };

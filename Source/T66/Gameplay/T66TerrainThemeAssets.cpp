@@ -29,6 +29,22 @@ namespace
 			return {};
 		}
 	}
+
+	template <typename TObjectType>
+	static TObjectType* T66FindOrLoadObject(const TCHAR* ObjectPath)
+	{
+		if (!ObjectPath || !*ObjectPath)
+		{
+			return nullptr;
+		}
+
+		if (TObjectType* Existing = FindObject<TObjectType>(nullptr, ObjectPath))
+		{
+			return Existing;
+		}
+
+		return LoadObject<TObjectType>(nullptr, ObjectPath);
+	}
 }
 
 UTexture* FT66TerrainThemeAssets::LoadDifficultyGroundTexture(ET66Difficulty Difficulty)
@@ -58,10 +74,10 @@ UTexture* FT66TerrainThemeAssets::LoadDifficultyGroundTexture(ET66Difficulty Dif
 		}
 	}
 
-	UTexture* LoadedTexture = LoadObject<UTexture>(nullptr, *TexturePath);
+	UTexture* LoadedTexture = T66FindOrLoadObject<UTexture>(*TexturePath);
 	if (!LoadedTexture && Difficulty != ET66Difficulty::Easy)
 	{
-		LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"));
+		LoadedTexture = T66FindOrLoadObject<UTexture>(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"));
 	}
 
 	CachedTextures.Add(TexturePath, LoadedTexture);
@@ -80,7 +96,7 @@ UMaterialInterface* FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(UObj
 		}
 	}
 
-	UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+	UMaterialInterface* BaseMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
 	UTexture* DifficultyTexture = LoadDifficultyGroundTexture(Difficulty);
 	if (BaseMaterial && DifficultyTexture)
 	{
@@ -96,7 +112,7 @@ UMaterialInterface* FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(UObj
 		}
 	}
 
-	UMaterialInterface* FallbackMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
+	UMaterialInterface* FallbackMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
 	CachedMaterials.Add(CacheKey, FallbackMaterial);
 	return FallbackMaterial;
 }

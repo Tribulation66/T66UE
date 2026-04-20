@@ -38,6 +38,10 @@ struct T66_API FT66LocalScoreRecord
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	int32 BestScoreRankAllTime = 0;
 
+	/** Global weekly rank recorded for the current best-score run. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int32 BestScoreRankWeekly = 0;
+
 	/** Best global all-time rank ever achieved for this difficulty + party. Lower is better. */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	int32 BestRankAllTime = 0;
@@ -53,30 +57,6 @@ struct T66_API FT66LocalScoreRecord
 	/** UTC timestamp for when BestRankAllTime was achieved. */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	FDateTime BestRankAchievedAtUtc = FDateTime::MinValue();
-};
-
-USTRUCT(BlueprintType)
-struct T66_API FT66LocalSpeedRunStageRecord
-{
-	GENERATED_BODY()
-
-	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
-	ET66Difficulty Difficulty = ET66Difficulty::Easy;
-
-	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
-	ET66PartySize PartySize = ET66PartySize::Solo;
-
-	/** Stage number (1..5 used for the menu leaderboard per difficulty; can store more for future use). */
-	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
-	int32 Stage = 1;
-
-	/** Best time in seconds (lower is better). 0 means unset. */
-	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
-	float BestSeconds = 0.f;
-
-	/** Whether the best time was submitted as anonymous. */
-	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
-	bool bSubmittedAnonymous = false;
 };
 
 USTRUCT(BlueprintType)
@@ -109,6 +89,10 @@ struct T66_API FT66LocalCompletedRunTimeRecord
 	/** Global all-time rank recorded for the current best completed time. */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	int32 BestCompletedRankAllTime = 0;
+
+	/** Global weekly rank recorded for the current best completed time. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int32 BestCompletedRankWeekly = 0;
 
 	/** Best global all-time rank ever achieved for this difficulty + party. Lower is better. */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
@@ -221,8 +205,8 @@ struct T66_API FT66AccountRestrictionRecord
 };
 
 /**
- * Local (offline) leaderboard persistence.
- * Stores the local player's best score and per-stage speedrun times.
+ * Local cache for backend-accepted leaderboard records plus recent-run history.
+ * This save no longer stores per-stage speedrun PBs; stage pacing lives in run summaries.
  */
 UCLASS()
 class T66_API UT66LocalLeaderboardSaveGame : public USaveGame
@@ -231,13 +215,10 @@ class T66_API UT66LocalLeaderboardSaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 3;
+	int32 SchemaVersion = 4;
 
 	UPROPERTY(SaveGame)
 	TArray<FT66LocalScoreRecord> ScoreRecords;
-
-	UPROPERTY(SaveGame)
-	TArray<FT66LocalSpeedRunStageRecord> SpeedRunStageRecords;
 
 	UPROPERTY(SaveGame)
 	TArray<FT66LocalCompletedRunTimeRecord> CompletedRunTimeRecords;

@@ -246,6 +246,11 @@ This folder contains world actors, the main run flow, player/avatar logic, enemi
 
 - `Gameplay/Enemies/T66EnemyFamilyResolver`
   - Maps stage mob IDs (`Cow`, `Pig`, `Goat`, `Roost`) to their family classes
+  - Current easy-difficulty dungeon art replacements are:
+    - `Cow / Melee` -> `SkeletonWarrior`
+    - `Pig / Rush` -> `GoblinCharger`
+    - `Goat / Ranged` -> `SlimeSpitter`
+    - `Roost / Flying` -> `CaveBat`
 
 - Enemy family classes
   - `Gameplay/Enemies/T66MeleeEnemy`

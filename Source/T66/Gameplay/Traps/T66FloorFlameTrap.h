@@ -70,6 +70,8 @@ private:
 	void DeactivateFlames();
 	void ApplyDamagePulse();
 	void ScheduleNextCycle(float DelaySeconds);
+	void DestroyActiveFireVisuals();
+	void SpawnActiveFireVisuals();
 	void SpawnActivationBurst() const;
 	void SpawnActivePulseBurst() const;
 	bool ShouldUseFireNiagara() const;
@@ -81,15 +83,21 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> MarkerMesh;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UNiagaraSystem> CachedFireSystem = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> BaseMesh;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> VentMesh;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UNiagaraComponent> ActiveFireComponent = nullptr;
+	TObjectPtr<UNiagaraSystem> CachedFireSystem = nullptr;
 
 	FTimerHandle WarningTimerHandle;
 	FTimerHandle ActiveTimerHandle;
 	FTimerHandle DamageTimerHandle;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UNiagaraComponent>> ActiveFireComponents;
 
 	bool bWarningActive = false;
 	bool bFlamesActive = false;

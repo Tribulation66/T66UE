@@ -104,6 +104,9 @@ public:
 	static constexpr int32 MaxInventorySlots = 20;
 	static constexpr int32 MaxEquippedIdolSlots = UT66IdolManagerSubsystem::MaxEquippedIdolSlots;
 	static constexpr int32 DefaultHeroLevel = 1;
+	static constexpr int32 MaxHeroLevel = 99;
+	static constexpr int32 MaxHeroStatValue = 99;
+	static constexpr int32 HeroStatTenthsScale = 10;
 	static constexpr int32 DefaultXPToLevel = 100;
 	static constexpr float UltimateCooldownSeconds = 30.f;
 	static constexpr int32 UltimateDamage = 200;
@@ -121,6 +124,16 @@ public:
 	static constexpr int32 MaxAntiCheatGamblerEvents = 256;
 	static constexpr int32 AntiCheatPressureWindowSeconds = 5;
 	static constexpr int32 AntiCheatEvasionBucketCount = 5;
+
+	static int32 ClampHeroStatValue(const int32 Value)
+	{
+		return FMath::Clamp(Value, 1, MaxHeroStatValue);
+	}
+
+	static int32 ClampHeroStatTenths(const int32 ValueTenths)
+	{
+		return FMath::Clamp(ValueTenths, HeroStatTenthsScale, MaxHeroStatValue * HeroStatTenthsScale);
+	}
 
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnHeartsChanged HeartsChanged;
@@ -489,11 +502,14 @@ public:
 
 	/**
 	 * Speedrun elapsed time for the live stage segment.
-	 * Starts counting when the stage timer becomes active (i.e., after leaving the start area / crossing the start gate).
-	 * Resets to 0 when the stage timer is reset/frozen for the next stage or difficulty.
+	 * This is now independently startable so GameMode can begin timing at stage entry rather than
+	 * coupling it to stage-timer activation.
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetSpeedRunElapsedSeconds() const { return SpeedRunElapsedSeconds; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|SpeedRun")
+	bool IsSpeedRunTimerActive() const { return bSpeedRunStarted; }
 
 	/** Full active time in seconds across the current difficulty's cleared stages plus the current stage. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -515,7 +531,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	bool DidRunEndInVictory() const { return bRunEnded && bRunEndedAsVictory; }
 
-	/** True if this run has produced a new personal-best speed run time for any completed stage (difficulty/party scoped). */
+	/** Reserved for future backend-backed stage PBs; currently false because stage pacing is summary-only. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|SpeedRun")
 	bool DidThisRunSetNewPersonalBestTime() const { return bThisRunSetNewPersonalBestSpeedRunTime; }
 
@@ -524,6 +540,18 @@ public:
 
 	/** Call every frame from GameMode Tick to update speedrun timer. */
 	void TickSpeedRunTimer(float DeltaTime);
+
+	/** Explicitly starts or resumes the stage-segment speedrun timer. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|SpeedRun")
+	void StartSpeedRunTimer(bool bResetElapsed = true);
+
+	/** Stops the speedrun timer while optionally preserving the elapsed value for UI/readback. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|SpeedRun")
+	void StopSpeedRunTimer(bool bKeepElapsed = true);
+
+	/** Resets the speedrun timer to 0 and leaves it inactive until StartSpeedRunTimer is called. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|SpeedRun")
+	void ResetSpeedRunTimer();
 
 	/** Call every frame from GameMode Tick to tick ultimate + last-stand timers. */
 	void TickHeroTimers(float DeltaTime);
@@ -717,28 +745,28 @@ public:
 
 	/** Foundational stat points (Damage/Attack Speed/Attack Scale/Accuracy/Armor/Evasion/Luck + Speed). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetSpeedStat() const { return FMath::Max(1, HeroStats.Speed); }
+	int32 GetSpeedStat() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetDamageStat() const { return FMath::Max(1, HeroStats.Damage + FMath::Max(0, ItemStatBonuses.Damage) + FMath::Max(0, PermanentBuffStatBonuses.Damage)); }
+	int32 GetDamageStat() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetAttackSpeedStat() const { return FMath::Max(1, HeroStats.AttackSpeed + FMath::Max(0, ItemStatBonuses.AttackSpeed) + FMath::Max(0, PermanentBuffStatBonuses.AttackSpeed)); }
+	int32 GetAttackSpeedStat() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetScaleStat() const { return FMath::Max(1, HeroStats.AttackScale + FMath::Max(0, ItemStatBonuses.AttackScale) + FMath::Max(0, PermanentBuffStatBonuses.AttackScale)); }
+	int32 GetScaleStat() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetAccuracyStat() const { return FMath::Max(1, HeroStats.Accuracy + FMath::Max(0, ItemStatBonuses.Accuracy) + FMath::Max(0, PermanentBuffStatBonuses.Accuracy)); }
+	int32 GetAccuracyStat() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetArmorStat() const { return FMath::Max(1, HeroStats.Armor + FMath::Max(0, ItemStatBonuses.Armor) + FMath::Max(0, PermanentBuffStatBonuses.Armor)); }
+	int32 GetArmorStat() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetEvasionStat() const { return FMath::Max(1, HeroStats.Evasion + FMath::Max(0, ItemStatBonuses.Evasion) + FMath::Max(0, PermanentBuffStatBonuses.Evasion)); }
+	int32 GetEvasionStat() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetLuckStat() const { return FMath::Max(1, HeroStats.Luck + FMath::Max(0, ItemStatBonuses.Luck) + FMath::Max(0, PermanentBuffStatBonuses.Luck)); }
+	int32 GetLuckStat() const;
 
 	// ============================================
 	// Category-Specific Stats (base from hero DataTable + item bonuses)
@@ -852,15 +880,21 @@ public:
 	float GetLongRangeDamageMultiplier() const;
 
 	// ============================================
-	// Power Crystals (earned this run; persisted at run end)
+	// Power Crystals (earned from bosses; credited to the wallet when the live run summary opens)
 	// ============================================
 
-	/** Power Crystals earned this run (from boss kills). Added to persistent balance when run ends. */
+	/** Power Crystals earned in the current run segment from boss kills. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|PowerUp")
 	int32 GetPowerCrystalsEarnedThisRun() const { return PowerCrystalsEarnedThisRun; }
 
 	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
 	void AddPowerCrystalsEarnedThisRun(int32 Amount);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|PowerUp")
+	int32 GetPendingPowerCrystalsForWallet() const { return FMath::Max(0, PowerCrystalsEarnedThisRun - PowerCrystalsGrantedToWalletThisRun); }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
+	void MarkPendingPowerCrystalsGrantedToWallet();
 
 	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
 	void ActivatePendingSingleUseBuffsForRunStart();
@@ -1401,6 +1435,22 @@ private:
 	void InitializeHeroStatsForNewRun();
 	void ApplyOneHeroLevelUp();
 	void RefreshPermanentBuffBonusesFromProfile();
+	static int32 WholeStatToTenths(int32 WholeValue);
+	static int32 TenthsToDisplayStat(int32 ValueTenths);
+	static float TenthsToFloatStat(int32 ValueTenths);
+	int32 GetPrecisePrimaryStatTenths(ET66HeroStatType StatType) const;
+	int32 GetItemPrimaryStatTenths(ET66HeroStatType StatType) const;
+	int32 GetPermanentPrimaryBuffTenths(ET66HeroStatType StatType) const;
+	int32 GetSecondaryStatBonusTenths(ET66SecondaryStatType StatType) const;
+	float GetSecondaryStatBonusValue(ET66SecondaryStatType StatType) const;
+	int32 GetCategoryBaseStatTenths(ET66SecondaryStatType StatType) const;
+	int32 GetCategoryTotalStatTenths(ET66SecondaryStatType StatType) const;
+	void SyncLegacyHeroStatsFromPrecise();
+	void ClearPersistentSecondaryStatBonuses();
+	void AddPersistentSecondaryStatBonusTenths(ET66SecondaryStatType StatType, int32 DeltaTenths);
+	void AddItemSecondaryStatBonusTenths(ET66SecondaryStatType StatType, int32 DeltaTenths);
+	int32 RollHeroPrimaryGainTenthsBiased(const FT66HeroStatGainRange& Range, FName Category);
+	void ApplyPrimaryGainToSecondaryBonuses(ET66HeroStatType PrimaryStatType, int32 PrimaryGainTenths, TMap<ET66SecondaryStatType, int32>& TargetBonuses, int32 SeedSalt = 0) const;
 	static bool IsBossDamageSource(const AActor* Attacker);
 	static float GetHPForHeartTier(int32 Tier);
 	float GetHeartSlotCapacity(int32 SlotIndex) const;
@@ -1611,6 +1661,7 @@ private:
 	float LastDamageTime = -9999.f;
 
 	int32 PowerCrystalsEarnedThisRun = 0;
+	int32 PowerCrystalsGrantedToWalletThisRun = 0;
 
 	// ============================================
 	// Derived combat tuning from Inventory (recomputed on InventoryChanged)
@@ -1649,10 +1700,13 @@ private:
 	int32 HeroXP = 0;
 	int32 XPToNextLevel = DefaultXPToLevel;
 
-	/** Current hero's foundational stat points (base + level-ups). */
+	/** Legacy whole-number mirror of the precise hero stats, kept for compatibility and snapshots. */
 	FT66HeroStatBlock HeroStats = FT66HeroStatBlock{};
 
-	/** Current hero's per-level gain ranges (Speed is always +1 per level). */
+	/** Authoritative foundational hero stats stored in fixed-point tenths. */
+	FT66HeroPreciseStatBlock HeroPreciseStats = FT66HeroPreciseStatBlock{};
+
+	/** Current hero's per-level gain ranges sourced from hero tuning. */
 	FT66HeroPerLevelStatGains HeroPerLevelGains = FT66HeroPerLevelStatGains{};
 
 	/** Category-specific base stats (loaded from Heroes DataTable, not leveled). */
@@ -1680,12 +1734,16 @@ private:
 	float HeroBaseStealChance = 0.05f;
 	float HeroBaseAttackRange = 1000.f;
 	float HeroBaseAccuracy = 0.15f;
+	ET66AttackCategory HeroPrimaryAttackCategory = ET66AttackCategory::Pierce;
 
 	// ============================================
 	// Accumulated secondary stat multipliers from items (product of Line 2 multipliers)
 	// Reset and recomputed in RecomputeItemDerivedStats()
 	// ============================================
 	TMap<ET66SecondaryStatType, float> SecondaryMultipliers;
+	TMap<ET66SecondaryStatType, int32> PersistentSecondaryStatBonusTenths;
+	TMap<ET66SecondaryStatType, int32> ItemSecondaryStatBonusTenths;
+	FT66HeroPreciseStatBlock ItemPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
 
 	/** Run-persistent RNG for hero stat gains (so stage reloads don't reshuffle). */
 	FRandomStream HeroStatRng;

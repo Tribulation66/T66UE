@@ -14,17 +14,14 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "TimerManager.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace
 {
 	UNiagaraSystem* LoadFloorFlameSystem()
 	{
-		static TObjectPtr<UNiagaraSystem> CachedSystem = nullptr;
-		if (!CachedSystem)
-		{
-			CachedSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Fire.P_Fire"));
-		}
-		return CachedSystem.Get();
+		static TSoftObjectPtr<UNiagaraSystem> System(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Fire.P_Fire")));
+		return System.LoadSynchronous();
 	}
 }
 
@@ -47,6 +44,16 @@ AT66FloorFlameTrap::AT66FloorFlameTrap()
 	MarkerMesh->SetupAttachment(SceneRoot);
 	MarkerMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	MarkerMesh->SetCastShadow(false);
+
+	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseMesh"));
+	BaseMesh->SetupAttachment(SceneRoot);
+	BaseMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	BaseMesh->SetCastShadow(true);
+
+	VentMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VentMesh"));
+	VentMesh->SetupAttachment(SceneRoot);
+	VentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	VentMesh->SetCastShadow(true);
 }
 
 void AT66FloorFlameTrap::OnConstruction(const FTransform& Transform)
@@ -62,21 +69,20 @@ void AT66FloorFlameTrap::UpdateMarkerVisuals()
 		DamageZone->SetSphereRadius(Radius);
 	}
 
-	if (!MarkerMesh)
+	if (BaseMesh && !BaseMesh->GetStaticMesh())
 	{
-		return;
+		BaseMesh->SetStaticMesh(FT66VisualUtil::GetBasicShapeCylinder());
 	}
 
-	if (!MarkerMesh->GetStaticMesh())
+	if (VentMesh && !VentMesh->GetStaticMesh())
 	{
-		if (UStaticMesh* CylinderMesh = FT66VisualUtil::GetBasicShapeCylinder())
-		{
-			MarkerMesh->SetStaticMesh(CylinderMesh);
-		}
+		VentMesh->SetStaticMesh(FT66VisualUtil::GetBasicShapeCylinder());
 	}
 
-	MarkerMesh->SetRelativeLocation(FVector(0.f, 0.f, -10.f));
-	MarkerMesh->SetRelativeScale3D(FVector(Radius / 50.f, Radius / 50.f, 0.04f));
+	if (MarkerMesh && !MarkerMesh->GetStaticMesh())
+	{
+		MarkerMesh->SetStaticMesh(FT66VisualUtil::GetBasicShapeCylinder());
+	}
 
 	FLinearColor MarkerColor = IdleMarkerColor;
 	if (bFlamesActive)
@@ -89,7 +95,29 @@ void AT66FloorFlameTrap::UpdateMarkerVisuals()
 		MarkerColor = FMath::Lerp(IdleMarkerColor, WarningColor, Progress);
 	}
 
-	FT66VisualUtil::ApplyT66Color(MarkerMesh, this, MarkerColor);
+	if (BaseMesh)
+	{
+		BaseMesh->SetRelativeLocation(FVector(0.f, 0.f, -8.f));
+		BaseMesh->SetRelativeScale3D(FVector(Radius / 47.f, Radius / 47.f, 0.055f));
+		FT66VisualUtil::ApplyT66Color(BaseMesh, this, FLinearColor(0.05f, 0.04f, 0.04f, 1.f));
+	}
+
+	if (VentMesh)
+	{
+		VentMesh->SetRelativeLocation(FVector(0.f, 0.f, 6.f));
+		VentMesh->SetRelativeScale3D(FVector(Radius / 120.f, Radius / 120.f, 0.18f));
+		const FLinearColor VentColor = bFlamesActive
+			? FMath::Lerp(FLinearColor(0.18f, 0.10f, 0.04f, 1.f), ActiveColor, 0.60f)
+			: FMath::Lerp(FLinearColor(0.10f, 0.07f, 0.05f, 1.f), MarkerColor, bWarningActive ? 0.42f : 0.18f);
+		FT66VisualUtil::ApplyT66Color(VentMesh, this, VentColor);
+	}
+
+	if (MarkerMesh)
+	{
+		MarkerMesh->SetRelativeLocation(FVector(0.f, 0.f, -11.f));
+		MarkerMesh->SetRelativeScale3D(FVector((Radius / 50.f) * 1.06f, (Radius / 50.f) * 1.06f, 0.02f));
+		FT66VisualUtil::ApplyT66Color(MarkerMesh, this, MarkerColor);
+	}
 }
 
 void AT66FloorFlameTrap::BeginPlay()
@@ -113,11 +141,7 @@ void AT66FloorFlameTrap::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		World->GetTimerManager().ClearTimer(DamageTimerHandle);
 	}
 
-	if (ActiveFireComponent)
-	{
-		ActiveFireComponent->DestroyComponent();
-		ActiveFireComponent = nullptr;
-	}
+	DestroyActiveFireVisuals();
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -152,12 +176,7 @@ void AT66FloorFlameTrap::HandleTrapEnabledChanged()
 	ActiveVFXAccum = 0.f;
 	SetActorTickEnabled(false);
 
-	if (ActiveFireComponent)
-	{
-		ActiveFireComponent->Deactivate();
-		ActiveFireComponent->DestroyComponent();
-		ActiveFireComponent = nullptr;
-	}
+	DestroyActiveFireVisuals();
 
 	UpdateMarkerVisuals();
 
@@ -214,18 +233,9 @@ void AT66FloorFlameTrap::ActivateFlames()
 	SetActorTickEnabled(!bUseNiagaraThisCycle);
 	UpdateMarkerVisuals();
 
-	if (bUseNiagaraThisCycle && GetWorld())
+	if (bUseNiagaraThisCycle)
 	{
-		ActiveFireComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(),
-			CachedFireSystem,
-			GetActorLocation(),
-			FRotator::ZeroRotator,
-			FVector(FMath::Max(Radius / 110.f, 1.0f)),
-			false,
-			true,
-			ENCPoolMethod::None,
-			true);
+		SpawnActiveFireVisuals();
 	}
 
 	SpawnActivationBurst();
@@ -259,12 +269,7 @@ void AT66FloorFlameTrap::DeactivateFlames()
 		World->GetTimerManager().ClearTimer(DamageTimerHandle);
 	}
 
-	if (ActiveFireComponent)
-	{
-		ActiveFireComponent->Deactivate();
-		ActiveFireComponent->DestroyComponent();
-		ActiveFireComponent = nullptr;
-	}
+	DestroyActiveFireVisuals();
 
 	SetActorTickEnabled(false);
 	UpdateMarkerVisuals();
@@ -275,6 +280,57 @@ void AT66FloorFlameTrap::DeactivateFlames()
 	else
 	{
 		ResetTriggerLock();
+	}
+}
+
+void AT66FloorFlameTrap::DestroyActiveFireVisuals()
+{
+	for (UNiagaraComponent* FireComponent : ActiveFireComponents)
+	{
+		if (!FireComponent)
+		{
+			continue;
+		}
+
+		FireComponent->Deactivate();
+		FireComponent->DestroyComponent();
+	}
+
+	ActiveFireComponents.Reset();
+}
+
+void AT66FloorFlameTrap::SpawnActiveFireVisuals()
+{
+	if (!ShouldUseFireNiagara() || !GetWorld())
+	{
+		return;
+	}
+
+	DestroyActiveFireVisuals();
+
+	const float ClusterOffset = FMath::Clamp(Radius * 0.24f, 55.f, 105.f);
+	const float FireScale = FMath::Max(Radius / 180.f, 0.95f);
+	TArray<FVector, TInlineAllocator<4>> Offsets;
+	Offsets.Add(FVector::ZeroVector);
+	Offsets.Add(FVector(ClusterOffset, 0.f, 0.f));
+	Offsets.Add(FVector(-ClusterOffset * 0.5f, ClusterOffset * 0.85f, 0.f));
+	Offsets.Add(FVector(-ClusterOffset * 0.5f, -ClusterOffset * 0.85f, 0.f));
+
+	for (const FVector& Offset : Offsets)
+	{
+		if (UNiagaraComponent* FireComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			CachedFireSystem,
+			GetActorLocation() + Offset,
+			FRotator::ZeroRotator,
+			FVector(FireScale),
+			false,
+			true,
+			ENCPoolMethod::None,
+			true))
+		{
+			ActiveFireComponents.Add(FireComponent);
+		}
 	}
 }
 

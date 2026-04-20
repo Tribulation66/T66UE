@@ -101,6 +101,7 @@ def ensure_material_instance(parent, material_name, texture):
         unreal.LinearColor(1.0, 1.0, 1.0, 1.0),
     )
     unreal.MaterialEditingLibrary.set_material_instance_scalar_parameter_value(material, "Brightness", 1.0)
+    unreal.MaterialEditingLibrary.set_material_instance_scalar_parameter_value(material, "Opacity", 1.0)
     unreal.EditorAssetLibrary.save_asset(asset_path)
     return material
 

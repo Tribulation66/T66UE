@@ -3,18 +3,18 @@
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66GamblerNPC.h"
+#include "Gameplay/T66HouseNPCBase.h"
 #include "Data/T66DataTypes.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
-#include "EngineUtils.h"
-#include "Kismet/GameplayStatics.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -35,6 +35,28 @@ static UT66RunStateSubsystem* GetRunStateFromWorld(UWorld* World)
 {
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+}
+
+template <typename TNpcType>
+static TNpcType* GetRegisteredNpcFromWorld(UWorld* World)
+{
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+	{
+		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNpc : Registry->GetNPCs())
+		{
+			if (TNpcType* Npc = Cast<TNpcType>(WeakNpc.Get()))
+			{
+				return Npc;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 static FString MakeInventoryStackKey(const FT66InventorySlot& Slot)
@@ -627,26 +649,28 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f)
 		[
-			FT66Style::MakeButton(
+			SAssignNew(DialogueShopButtonWidget, SBox)
+			[
+				FT66Style::MakeButton(
 				FT66ButtonParams(ShopChoice,
 					FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnDialogueShop),
 					ET66ButtonType::Primary)
 				.SetMinWidth(420.f)
-				.SetPadding(FMargin(18.f, 10.f))
-				.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !bCachedBossActive; }))
-			)
+				.SetPadding(FMargin(18.f, 10.f)))
+			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f)
 		[
-			FT66Style::MakeButton(
+			SAssignNew(DialogueTeleportButtonWidget, SBox)
+			[
+				FT66Style::MakeButton(
 				FT66ButtonParams(TeleportChoice,
 					FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnDialogueTeleport),
 					ET66ButtonType::Neutral)
 				.SetMinWidth(420.f)
-				.SetPadding(FMargin(18.f, 10.f))
-			.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !bCachedBossActive; }))
-		)
-	];
+				.SetPadding(FMargin(18.f, 10.f)))
+			]
+		];
 
 	// Pre-create inventory grid (buttons use centralized MakeButton).
 	TSharedRef<SUniformGridPanel> InventoryGrid = SNew(SUniformGridPanel)
@@ -758,17 +782,18 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					}
 					RefreshBuyback();
 				}
+				RefreshShopChrome();
 				return FReply::Handled();
 			}),
 			ET66ButtonType::Neutral)
 		.SetMinWidth(0.f)
 		.SetPadding(bCompactCircusLayout ? FMargin(8.f, 5.f) : FMargin(12.f, 8.f))
 		.SetFontSize(bCompactCircusLayout ? 11 : 16)
-		.SetDynamicLabel(TAttribute<FText>::CreateLambda([this, ShopTitle, BuybackTitle]() -> FText
-		{
-			const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
-			return bShowingBuyback ? ShopTitle : BuybackTitle;
-		}))
+		.SetContent(
+			SAssignNew(ShopModeToggleButtonText, STextBlock)
+			.Text(BuybackTitle)
+			.Font(FT66Style::Tokens::FontBold(bCompactCircusLayout ? 11 : 16))
+			.ColorAndOpacity(FT66Style::Tokens::Text))
 	);
 
 	TSharedRef<SWidget> ContextRerollButton = FT66Style::MakeButton(
@@ -779,20 +804,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		.SetMinWidth(0.f)
 		.SetPadding(ActionButtonPadding)
 		.SetFontSize(bCompactCircusLayout ? 11 : 16)
-		.SetEnabled(TAttribute<bool>::CreateLambda([this]()
-		{
-			UT66RunStateSubsystem* RS = GetRunStateFromWorld(GetWorld());
-			if (!RS)
-			{
-				return false;
-			}
-
-			const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
-			return bShowingBuyback
-				? RS->GetBuybackPoolSize() > UT66RunStateSubsystem::BuybackDisplaySlotCount
-				: !bCachedBossActive;
-		}))
 	);
+	ContextRerollButtonWidget = ContextRerollButton;
 
 	// Build main 3-column row (Stats | Shop | Bank) as a separate widget to avoid Slate parser issues with SBox::FArguments.
 	TSharedRef<SWidget> MainRowContent = SNew(SHorizontalBox)
@@ -885,7 +898,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 										SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
 										.MinValue(0).MaxValue(999999).Delta(10)
 										.Font(FT66Style::Tokens::FontBold(SpinBoxFontSize))
-										.Value_Lambda([this]() { return BorrowAmount; })
+										.Value(BorrowAmount)
 										.OnValueChanged_Lambda([this](int32 V)
 										{
 											int32 MaxBorrow = TNumericLimits<int32>::Max();
@@ -922,7 +935,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 										SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
 										.MinValue(0).MaxValue(999999).Delta(10)
 										.Font(FT66Style::Tokens::FontBold(SpinBoxFontSize))
-										.Value_Lambda([this]() { return PaybackAmount; })
+										.Value(PaybackAmount)
 										.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
 									]
 								]
@@ -954,12 +967,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
 			[
-				SNew(STextBlock)
-				.Text_Lambda([this, ShopTitle, BuybackTitle]() -> FText
-				{
-					const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
-					return bShowingBuyback ? BuybackTitle : ShopTitle;
-				})
+				SAssignNew(ShopPageTitleText, STextBlock)
+				.Text(ShopTitle)
 				.TextStyle(&TextTitle)
 				.Font(FT66Style::Tokens::FontBold(PageTitleFontSize))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
@@ -1150,17 +1159,17 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		.VAlign(VAlign_Top)
 		.Padding(SafeClosePadding)
 		[
-			FT66Style::MakeButton(
-				FT66ButtonParams(CloseText,
-					FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack),
-					ET66ButtonType::Danger)
-				.SetMinWidth(0.f)
-				.SetPadding(FMargin(20.f, 12.f))
-				.SetVisibility(TAttribute<EVisibility>::CreateLambda([this]()
-				{
-					return bEmbeddedInCircusShell ? EVisibility::Collapsed : EVisibility::Visible;
-				}))
-			)
+			SAssignNew(CloseButtonBox, SBox)
+			.Visibility(EVisibility::Visible)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(CloseText,
+						FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack),
+						ET66ButtonType::Danger)
+					.SetMinWidth(0.f)
+					.SetPadding(FMargin(20.f, 12.f))
+				)
+			]
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
@@ -1171,6 +1180,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 
 	SetPage(EVendorPage::Dialogue);
 	RefreshAll();
+	RefreshShopChrome();
 	return bEmbeddedInCircusShell ? Root : FT66Style::MakeResponsiveRoot(Root);
 }
 
@@ -1191,6 +1201,7 @@ void UT66VendorOverlayWidget::HandleInventoryChanged()
 void UT66VendorOverlayWidget::HandleVendorChanged()
 {
 	PrimeVisibleItemIconTextures();
+	RefreshShopChrome();
 	RefreshTopBar();
 	RefreshStock();
 }
@@ -1198,6 +1209,7 @@ void UT66VendorOverlayWidget::HandleVendorChanged()
 void UT66VendorOverlayWidget::HandleBuybackChanged()
 {
 	PrimeVisibleItemIconTextures();
+	RefreshShopChrome();
 	RefreshTopBar();
 	RefreshBuyback();
 }
@@ -1205,12 +1217,59 @@ void UT66VendorOverlayWidget::HandleBuybackChanged()
 void UT66VendorOverlayWidget::RefreshAll()
 {
 	PrimeVisibleItemIconTextures();
+	RefreshShopChrome();
 	RefreshTopBar();
 	RefreshStock();
 	RefreshBuyback();
 	RefreshInventory();
 	RefreshSellPanel();
 	RefreshStatsPanel();
+}
+
+void UT66VendorOverlayWidget::RefreshShopChrome()
+{
+	UWorld* World = GetWorld();
+	UT66LocalizationSubsystem* Loc = World && World->GetGameInstance()
+		? World->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>()
+		: nullptr;
+	const FText ShopTitle = Loc ? Loc->GetText_Shop() : NSLOCTEXT("T66.Vendor", "Shop", "SHOP");
+	const FText BuybackTitle = NSLOCTEXT("T66.Vendor", "Buyback", "BUYBACK");
+	const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
+
+	if (ShopPageTitleText.IsValid())
+	{
+		ShopPageTitleText->SetText(bShowingBuyback ? BuybackTitle : ShopTitle);
+	}
+
+	if (ShopModeToggleButtonText.IsValid())
+	{
+		ShopModeToggleButtonText->SetText(bShowingBuyback ? ShopTitle : BuybackTitle);
+	}
+
+	if (ContextRerollButtonWidget.IsValid())
+	{
+		UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World);
+		const bool bEnabled = RunState
+			&& (bShowingBuyback
+				? (RunState->GetBuybackPoolSize() > UT66RunStateSubsystem::BuybackDisplaySlotCount)
+				: !bCachedBossActive);
+		ContextRerollButtonWidget->SetEnabled(bEnabled);
+	}
+
+	if (DialogueShopButtonWidget.IsValid())
+	{
+		DialogueShopButtonWidget->SetEnabled(!bCachedBossActive);
+	}
+
+	if (DialogueTeleportButtonWidget.IsValid())
+	{
+		DialogueTeleportButtonWidget->SetEnabled(!bCachedBossActive);
+	}
+
+	if (CloseButtonBox.IsValid())
+	{
+		CloseButtonBox->SetVisibility(bEmbeddedInCircusShell ? EVisibility::Collapsed : EVisibility::Visible);
+	}
 }
 
 void UT66VendorOverlayWidget::PrimeVisibleItemIconTextures()
@@ -1304,6 +1363,16 @@ void UT66VendorOverlayWidget::RefreshTopBar()
 
 	const int32 BorrowCapacity = RunState->GetRemainingBorrowCapacity();
 	BorrowAmount = FMath::Clamp(BorrowAmount, 0, BorrowCapacity);
+	PaybackAmount = FMath::Max(0, PaybackAmount);
+
+	if (BorrowAmountSpin.IsValid())
+	{
+		BorrowAmountSpin->SetValue(BorrowAmount);
+	}
+	if (PaybackAmountSpin.IsValid())
+	{
+		PaybackAmountSpin->SetValue(PaybackAmount);
+	}
 
 	if (NetWorthText.IsValid())
 	{
@@ -1546,6 +1615,7 @@ void UT66VendorOverlayWidget::SetPage(EVendorPage Page)
 {
 	if (!PageSwitcher.IsValid()) return;
 	PageSwitcher->SetActiveWidgetIndex(static_cast<int32>(Page));
+	RefreshShopChrome();
 }
 
 void UT66VendorOverlayWidget::OpenShopPage()
@@ -1616,12 +1686,7 @@ void UT66VendorOverlayWidget::TeleportToGambler()
 	APawn* Pawn = GetOwningPlayerPawn();
 	if (!Pawn) return;
 
-	AT66GamblerNPC* Gambler = nullptr;
-	for (TActorIterator<AT66GamblerNPC> It(World); It; ++It)
-	{
-		Gambler = *It;
-		break;
-	}
+	AT66GamblerNPC* Gambler = GetRegisteredNpcFromWorld<AT66GamblerNPC>(World);
 	if (!Gambler) return;
 
 	const FVector GamblerLoc = Gambler->GetActorLocation();
@@ -2094,6 +2159,7 @@ void UT66VendorOverlayWidget::HandleBossChanged()
 	RefreshStock();
 	RefreshInventory();
 	RefreshSellPanel();
+	RefreshShopChrome();
 }
 
 void UT66VendorOverlayWidget::TriggerVendorBossIfAngry()

@@ -93,7 +93,11 @@ namespace
 			}
 		}
 
-		UNiagaraSystem* Loaded = LoadObject<UNiagaraSystem>(nullptr, AssetPath);
+		UNiagaraSystem* Loaded = FindObject<UNiagaraSystem>(nullptr, AssetPath);
+		if (!Loaded)
+		{
+			Loaded = LoadObject<UNiagaraSystem>(nullptr, AssetPath);
+		}
 		Cache.Add(Key, Loaded);
 		return Loaded;
 	}
@@ -115,7 +119,11 @@ namespace
 			}
 		}
 
-		UClass* Loaded = StaticLoadClass(AActor::StaticClass(), nullptr, ClassPath);
+		UClass* Loaded = FindObject<UClass>(nullptr, ClassPath);
+		if (!Loaded)
+		{
+			Loaded = StaticLoadClass(AActor::StaticClass(), nullptr, ClassPath);
+		}
 		Cache.Add(Key, Loaded);
 		return Loaded;
 	}
@@ -325,17 +333,12 @@ namespace
 
 	UNiagaraSystem* FindPixelVFXSystem()
 	{
-		static TObjectPtr<UNiagaraSystem> CachedPixelSystem = nullptr;
-		static TObjectPtr<UNiagaraSystem> CachedFallbackSystem = nullptr;
-		if (!CachedPixelSystem)
+		if (UNiagaraSystem* PixelSystem = LoadNiagaraSystemCached(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")))
 		{
-			CachedPixelSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
+			return PixelSystem;
 		}
-		if (!CachedPixelSystem && !CachedFallbackSystem)
-		{
-			CachedFallbackSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
-		}
-		return CachedPixelSystem ? CachedPixelSystem.Get() : CachedFallbackSystem.Get();
+
+		return LoadNiagaraSystemCached(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
 	}
 
 	FVector4 T66MakeBloodTint(bool bBrightCore)
@@ -761,16 +764,17 @@ namespace
 
 void UT66CombatComponent::WarmupVFXSystems()
 {
-	CachedSlashVFXNiagara = SlashVFXNiagara.Get();
 	if (!CachedSlashVFXNiagara)
 	{
-		CachedSlashVFXNiagara = SlashVFXNiagara.LoadSynchronous();
+		CachedSlashVFXNiagara = SlashVFXNiagara.Get();
 	}
-
-	CachedPixelVFXNiagara = PixelVFXNiagara.Get();
 	if (!CachedPixelVFXNiagara)
 	{
-		CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
+		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
+	}
+	if (!CachedSlashVFXNiagara || !CachedPixelVFXNiagara)
+	{
+		PrimeCombatPresentationAssetsAsync();
 	}
 	if (CachedPixelVFXNiagara)
 	{
@@ -784,7 +788,20 @@ void UT66CombatComponent::WarmupVFXSystems()
 
 UNiagaraSystem* UT66CombatComponent::GetActiveVFXSystem() const
 {
-	return CachedPixelVFXNiagara ? CachedPixelVFXNiagara : CachedSlashVFXNiagara;
+	UT66CombatComponent* MutableThis = const_cast<UT66CombatComponent*>(this);
+	if (!MutableThis->CachedPixelVFXNiagara)
+	{
+		MutableThis->CachedPixelVFXNiagara = PixelVFXNiagara.Get();
+	}
+	if (!MutableThis->CachedSlashVFXNiagara)
+	{
+		MutableThis->CachedSlashVFXNiagara = SlashVFXNiagara.Get();
+	}
+	if (!MutableThis->CachedPixelVFXNiagara && !MutableThis->CachedSlashVFXNiagara)
+	{
+		MutableThis->PrimeCombatPresentationAssetsAsync();
+	}
+	return MutableThis->CachedPixelVFXNiagara ? MutableThis->CachedPixelVFXNiagara : MutableThis->CachedSlashVFXNiagara;
 }
 
 void UT66CombatComponent::SpawnDeathBurstAtLocation(UWorld* World, const FVector& Location, int32 NumParticles, float BurstRadius)
@@ -794,13 +811,7 @@ void UT66CombatComponent::SpawnDeathBurstAtLocation(UWorld* World, const FVector
 		return;
 	}
 
-	static TWeakObjectPtr<UNiagaraSystem> CachedBloodBurstVFX;
-	UNiagaraSystem* BloodBurstVFX = CachedBloodBurstVFX.Get();
-	if (!BloodBurstVFX)
-	{
-		BloodBurstVFX = FindPixelVFXSystem();
-		CachedBloodBurstVFX = BloodBurstVFX;
-	}
+	UNiagaraSystem* BloodBurstVFX = FindPixelVFXSystem();
 	if (!BloodBurstVFX)
 	{
 		return;

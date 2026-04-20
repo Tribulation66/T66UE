@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\SkeletonWarrior\\Raw\\SkeletonWarrior_Front_Green_S1337_D200000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\SkeletonWarrior\\Renders\\SkeletonWarrior_Front_Green_S1337_D200000_Retopo24k.png",
+  "export": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\SkeletonWarrior\\Retopo\\SkeletonWarrior_Front_Green_S1337_D200000_Retopo24k.glb",
+  "raw_triangles": 194361,
+  "triangles_before_decimate": 194361,
+  "triangles_after_decimate": 24000,
+  "bounds": {
+    "min": [
+      -0.33786848187446594,
+      -0.16408133506774902,
+      -0.5039883852005005
+    ],
+    "max": [
+      0.3379766047000885,
+      0.16083447635173798,
+      0.5008641481399536
+    ],
+    "size": [
+      0.6758450865745544,
+      0.3249158263206482,
+      1.004852533340454
+    ]
+  }
+}

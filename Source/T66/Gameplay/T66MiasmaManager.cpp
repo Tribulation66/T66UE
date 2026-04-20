@@ -20,6 +20,7 @@
 #include "Gameplay/T66LavaPatch.h"
 #include "Gameplay/T66MainMapTerrain.h"
 #include "Gameplay/T66TowerMapTerrain.h"
+#include "Algo/Sort.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -124,6 +125,8 @@ void AT66MiasmaManager::Tick(float DeltaTime)
 void AT66MiasmaManager::BuildMainMapCellGrid()
 {
 	TileCenters.Reset();
+	TileFloorNumbers.Reset();
+	TowerDefaultSourceAnchors.Reset();
 
 	UWorld* World = GetWorld();
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
@@ -192,6 +195,8 @@ void AT66MiasmaManager::BuildMainMapCellGrid()
 void AT66MiasmaManager::BuildTowerFloorGrid()
 {
 	TileCenters.Reset();
+	TileFloorNumbers.Reset();
+	TowerDefaultSourceAnchors.Reset();
 
 	UWorld* World = GetWorld();
 	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
@@ -201,13 +206,19 @@ void AT66MiasmaManager::BuildTowerFloorGrid()
 		return;
 	}
 
-	TileSize = 1200.0f;
+	TileSize = FMath::Max(Layout.PlacementCellSize * 0.25f, 300.0f);
 	for (const T66TowerMapTerrain::FFloor& Floor : Layout.Floors)
 	{
-		if (!Floor.bGameplayFloor)
+		if (Floor.FloorRole == T66TowerMapTerrain::ET66TowerFloorRole::Boss)
 		{
 			continue;
 		}
+
+		const FVector DefaultAnchor =
+			(Floor.FloorRole == T66TowerMapTerrain::ET66TowerFloorRole::Start)
+				? FVector(Floor.Center.X, Floor.Center.Y, Floor.SurfaceZ + TileZ)
+				: FVector(Floor.ArrivalPoint.X, Floor.ArrivalPoint.Y, Floor.SurfaceZ + TileZ);
+		TowerDefaultSourceAnchors.Add(Floor.FloorNumber, DefaultAnchor);
 
 		for (float X = -Floor.WalkableHalfExtent + (TileSize * 0.5f); X < Floor.WalkableHalfExtent; X += TileSize)
 		{
@@ -222,18 +233,80 @@ void AT66MiasmaManager::BuildTowerFloorGrid()
 				}
 
 				TileCenters.Add(FVector(Candidate.X, Candidate.Y, Floor.SurfaceZ + TileZ));
+				TileFloorNumbers.Add(Floor.FloorNumber);
 			}
 		}
 	}
 
-	FRandomStream Stream(Layout.Preset.Seed + 1703);
-	for (int32 Index = TileCenters.Num() - 1; Index > 0; --Index)
+	ApplyTowerCoverageOrdering();
+
+	UE_LOG(
+		LogT66MiasmaManager,
+		Log,
+		TEXT("[LAVA] Built tower miasma grid with %d tiles across %d non-boss floors (tileSize=%.0f)."),
+		TileCenters.Num(),
+		TowerDefaultSourceAnchors.Num(),
+		TileSize);
+}
+
+void AT66MiasmaManager::ApplyTowerCoverageOrdering()
+{
+	if (!ShouldUseTowerBloodLook() || TileCenters.Num() <= 0 || TileCenters.Num() != TileFloorNumbers.Num())
 	{
-		const int32 SwapIndex = Stream.RandRange(0, Index);
-		if (Index != SwapIndex)
+		return;
+	}
+
+	struct FSortedTowerTile
+	{
+		FVector Center = FVector::ZeroVector;
+		int32 FloorNumber = INDEX_NONE;
+		float DistanceSq = 0.0f;
+		float Angle = 0.0f;
+		int32 OriginalIndex = INDEX_NONE;
+	};
+
+	TArray<FSortedTowerTile> OrderedTiles;
+	OrderedTiles.Reserve(TileCenters.Num());
+	for (int32 TileIndex = 0; TileIndex < TileCenters.Num(); ++TileIndex)
+	{
+		const FVector& Center = TileCenters[TileIndex];
+		const int32 FloorNumber = TileFloorNumbers[TileIndex];
+		const FVector SourceAnchor = ResolveTowerSourceAnchor(FloorNumber, Center);
+		const FVector2D Delta(Center.X - SourceAnchor.X, Center.Y - SourceAnchor.Y);
+
+		FSortedTowerTile& OrderedTile = OrderedTiles.AddDefaulted_GetRef();
+		OrderedTile.Center = Center;
+		OrderedTile.FloorNumber = FloorNumber;
+		OrderedTile.DistanceSq = Delta.SizeSquared();
+		OrderedTile.Angle = FMath::Atan2(Delta.Y, Delta.X);
+		OrderedTile.OriginalIndex = TileIndex;
+	}
+
+	Algo::StableSort(
+		OrderedTiles,
+		[](const FSortedTowerTile& A, const FSortedTowerTile& B)
 		{
-			TileCenters.Swap(Index, SwapIndex);
+			if (A.FloorNumber != B.FloorNumber)
+			{
+				return A.FloorNumber < B.FloorNumber;
+			}
+			if (!FMath::IsNearlyEqual(A.DistanceSq, B.DistanceSq))
+			{
+				return A.DistanceSq < B.DistanceSq;
+			}
+			if (!FMath::IsNearlyEqual(A.Angle, B.Angle))
+			{
+				return A.Angle < B.Angle;
+			}
+			return A.OriginalIndex < B.OriginalIndex;
 		}
+
+	);
+
+	for (int32 TileIndex = 0; TileIndex < OrderedTiles.Num(); ++TileIndex)
+	{
+		TileCenters[TileIndex] = OrderedTiles[TileIndex].Center;
+		TileFloorNumbers[TileIndex] = OrderedTiles[TileIndex].FloorNumber;
 	}
 }
 
@@ -258,6 +331,8 @@ void AT66MiasmaManager::BuildGrid()
 	}
 
 	TileCenters.Reset();
+	TileFloorNumbers.Reset();
+	TowerDefaultSourceAnchors.Reset();
 
 	const int32 Num = FMath::Max(1, FMath::FloorToInt((CoverageHalfExtent * 2.f) / TileSize));
 	const float Start = -CoverageHalfExtent + (TileSize * 0.5f);
@@ -302,42 +377,27 @@ void AT66MiasmaManager::UpdateFromRunState()
 	}
 
 	FLagScopedScope LagScope(World, TEXT("MiasmaManager::UpdateFromRunState (EnsureSpawnedCount)"));
-	UGameInstance* GI = World->GetGameInstance();
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!RunState || TileCenters.Num() <= 0 || !RunState->GetStageTimerActive())
+	if (TileCenters.Num() <= 0)
 	{
 		return;
 	}
 
-	const float Remaining = RunState->GetStageTimerSecondsRemaining();
-	const float Duration = UT66RunStateSubsystem::StageTimerDurationSeconds;
-	const float Elapsed = FMath::Clamp(Duration - Remaining, 0.f, Duration);
+	float ElapsedSeconds = 0.0f;
+	if (!TryGetExpansionElapsedSeconds(ElapsedSeconds))
+	{
+		return;
+	}
+
 	const int32 Total = TileCenters.Num();
 	int32 Desired = 0;
-	if (Duration <= 0.f)
+	if (FullCoverageSeconds <= KINDA_SMALL_NUMBER)
 	{
 		Desired = Total;
 	}
 	else
 	{
-		const float ExpansionStartDelay = FMath::Clamp(ExpansionStartDelaySeconds, 0.f, Duration);
-		const float ActiveDuration = FMath::Max(Duration - ExpansionStartDelay, 0.f);
-		const float ExpansionInterval = FMath::Max(ExpansionIntervalSeconds, 1.0f);
-		if (Elapsed >= ExpansionStartDelay && ActiveDuration > KINDA_SMALL_NUMBER)
-		{
-			const int32 ExpansionSteps = FMath::Max(1, FMath::CeilToInt(ActiveDuration / ExpansionInterval));
-			const float ActiveElapsed = FMath::Clamp(Elapsed - ExpansionStartDelay, 0.f, ActiveDuration);
-			const int32 CompletedSteps = FMath::Clamp(
-				FMath::FloorToInt(ActiveElapsed / ExpansionInterval) + 1,
-				0,
-				ExpansionSteps);
-			const float StepAlpha = static_cast<float>(CompletedSteps) / static_cast<float>(ExpansionSteps);
-			Desired = FMath::Clamp(FMath::CeilToInt(StepAlpha * static_cast<float>(Total)), 0, Total);
-		}
-	}
-	if (Remaining <= 0.05f)
-	{
-		Desired = Total;
+		const float ExpansionAlpha = FMath::Clamp(ElapsedSeconds / FullCoverageSeconds, 0.0f, 1.0f);
+		Desired = FMath::Clamp(FMath::CeilToInt(ExpansionAlpha * static_cast<float>(Total)), 0, Total);
 	}
 
 	EnsureSpawnedCount(Desired);
@@ -351,8 +411,12 @@ void AT66MiasmaManager::RebuildForCurrentStage()
 	}
 
 	TileCenters.Reset();
+	TileFloorNumbers.Reset();
 	SpawnedTileCount = 0;
 	DamageTickAccumulator = 0.f;
+	TowerDefaultSourceAnchors.Reset();
+	bExplicitExpansionActive = false;
+	ExplicitExpansionStartTimeSeconds = 0.0f;
 	ClearLegacyLavaPatches();
 
 	GenerateAnimationFrames();
@@ -620,6 +684,58 @@ int32 AT66MiasmaManager::SpawnLegacyStageLavaPatchesForCurrentStage()
 	return SpawnedLavaCount;
 }
 
+void AT66MiasmaManager::SetExpansionActive(const bool bActive, const float ElapsedSeconds)
+{
+	bExplicitExpansionActive = bActive;
+
+	if (!bExplicitExpansionActive)
+	{
+		ExplicitExpansionStartTimeSeconds = 0.0f;
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		ExplicitExpansionStartTimeSeconds = World->GetTimeSeconds() - FMath::Max(ElapsedSeconds, 0.0f);
+	}
+	else
+	{
+		ExplicitExpansionStartTimeSeconds = 0.0f;
+	}
+
+	UpdateFromRunState();
+}
+
+void AT66MiasmaManager::SetTowerSourceAnchor(const int32 FloorNumber, const FVector& WorldAnchor)
+{
+	if (FloorNumber <= 0)
+	{
+		return;
+	}
+
+	TowerSourceAnchorOverrides.Add(FloorNumber, WorldAnchor);
+	if (ShouldUseTowerBloodLook() && TileCenters.Num() > 0)
+	{
+		ApplyTowerCoverageOrdering();
+		RebuildSpawnedInstances();
+	}
+}
+
+void AT66MiasmaManager::ClearTowerSourceAnchors()
+{
+	if (TowerSourceAnchorOverrides.Num() <= 0)
+	{
+		return;
+	}
+
+	TowerSourceAnchorOverrides.Reset();
+	if (ShouldUseTowerBloodLook() && TileCenters.Num() > 0)
+	{
+		ApplyTowerCoverageOrdering();
+		RebuildSpawnedInstances();
+	}
+}
+
 void AT66MiasmaManager::EnsureSpawnedCount(int32 DesiredCount)
 {
 	if (!TileInstances)
@@ -646,6 +762,19 @@ void AT66MiasmaManager::EnsureSpawnedCount(int32 DesiredCount)
 		TileInstances->AddInstances(InstanceTransforms, false, false, false);
 		SpawnedTileCount = TargetCount;
 	}
+}
+
+void AT66MiasmaManager::RebuildSpawnedInstances()
+{
+	if (!TileInstances)
+	{
+		return;
+	}
+
+	const int32 DesiredCount = SpawnedTileCount;
+	TileInstances->ClearInstances();
+	SpawnedTileCount = 0;
+	EnsureSpawnedCount(DesiredCount);
 }
 
 void AT66MiasmaManager::TickDamageOverActiveTiles(float DeltaTime)
@@ -737,6 +866,50 @@ bool AT66MiasmaManager::ShouldUseTowerBloodLook() const
 	const UWorld* World = GetWorld();
 	const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
 	return GameMode && GameMode->IsUsingTowerMainMapLayout();
+}
+
+bool AT66MiasmaManager::TryGetExpansionElapsedSeconds(float& OutElapsedSeconds) const
+{
+	OutElapsedSeconds = 0.0f;
+
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	if (bExplicitExpansionActive)
+	{
+		OutElapsedSeconds = FMath::Max(World->GetTimeSeconds() - ExplicitExpansionStartTimeSeconds, 0.0f);
+		return true;
+	}
+
+	UGameInstance* GI = World->GetGameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState || !RunState->GetStageTimerActive())
+	{
+		return false;
+	}
+
+	const float Remaining = RunState->GetStageTimerSecondsRemaining();
+	const float Duration = UT66RunStateSubsystem::StageTimerDurationSeconds;
+	OutElapsedSeconds = FMath::Clamp(Duration - Remaining, 0.0f, Duration);
+	return true;
+}
+
+FVector AT66MiasmaManager::ResolveTowerSourceAnchor(const int32 FloorNumber, const FVector& FallbackAnchor) const
+{
+	if (const FVector* OverrideAnchor = TowerSourceAnchorOverrides.Find(FloorNumber))
+	{
+		return *OverrideAnchor;
+	}
+
+	if (const FVector* DefaultAnchor = TowerDefaultSourceAnchors.Find(FloorNumber))
+	{
+		return *DefaultAnchor;
+	}
+
+	return FallbackAnchor;
 }
 
 void AT66MiasmaManager::GenerateAnimationFrames()

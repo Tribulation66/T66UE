@@ -82,10 +82,16 @@ namespace
 			MeshComponent->SetMaterial(0, Material);
 		}
 
-		if (UTexture* WhiteTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture")))
+		if (const UGameInstance* GameInstance = MeshComponent->GetWorld() ? MeshComponent->GetWorld()->GetGameInstance() : nullptr)
 		{
-			Material->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
-			Material->SetTextureParameterValue(TEXT("BaseColorTexture"), WhiteTexture);
+			if (UT66MiniVisualSubsystem* VisualSubsystem = GameInstance->GetSubsystem<UT66MiniVisualSubsystem>())
+			{
+				if (UTexture2D* WhiteTexture = VisualSubsystem->GetWhiteTexture())
+				{
+					Material->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
+					Material->SetTextureParameterValue(TEXT("BaseColorTexture"), WhiteTexture);
+				}
+			}
 		}
 
 		Material->SetVectorParameterValue(TEXT("Color"), Tint);
@@ -99,6 +105,8 @@ AT66MiniEnemyBase::AT66MiniEnemyBase()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	SetReplicateMovement(true);
+	NetUpdateFrequency = 16.f;
+	MinNetUpdateFrequency = 8.f;
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);

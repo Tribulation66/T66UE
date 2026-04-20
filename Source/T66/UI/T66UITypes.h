@@ -52,7 +52,8 @@ enum class ET66ScreenType : uint8
 	MiniIdolSelect = 35 UMETA(DisplayName = "Mini Chadpocalypse Idol Select"),
 	MiniShop = 36 UMETA(DisplayName = "Mini Chadpocalypse Shop"),
 	MiniRunSummary = 37 UMETA(DisplayName = "Mini Chadpocalypse Run Summary"),
-	MiniCompanionSelect = 38 UMETA(DisplayName = "Mini Chadpocalypse Companion Select")
+	MiniCompanionSelect = 38 UMETA(DisplayName = "Mini Chadpocalypse Companion Select"),
+	Challenges = 39 UMETA(DisplayName = "Challenges Modal")
 };
 
 UENUM(BlueprintType)

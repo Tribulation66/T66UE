@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\SlimeSpitter\\Raw\\SlimeSpitter_Front_Green_S1337_D200000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\SlimeSpitter\\Renders\\SlimeSpitter_Front_Green_S1337_D200000_Raw.png",
+  "export": null,
+  "raw_triangles": 189261,
+  "triangles_before_decimate": 189261,
+  "triangles_after_decimate": 189261,
+  "bounds": {
+    "min": [
+      -0.49960529804229736,
+      -0.4804496169090271,
+      -0.3009336590766907
+    ],
+    "max": [
+      0.50069659948349,
+      0.4824756681919098,
+      0.3001190423965454
+    ],
+    "size": [
+      1.0003018379211426,
+      0.9629253149032593,
+      0.6010527014732361
+    ]
+  }
+}

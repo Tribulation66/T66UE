@@ -40,7 +40,8 @@ public class T66 : ModuleRules
 			"ImageWrapper",
 			"MediaAssets",
 			"Media",
-			"ProceduralMeshComponent"
+			"ProceduralMeshComponent",
+			"Projects"
 		});
 
 		if (Target.Platform == UnrealTargetPlatform.Win64)

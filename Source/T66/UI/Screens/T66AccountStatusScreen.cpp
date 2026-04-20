@@ -378,6 +378,8 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		TotalStageCount = FMath::Max(StagesTable->GetRowMap().Num(), 1);
 	}
 	const int32 DisplayStagesCleared = FMath::Clamp(LifetimeStagesCleared, 0, TotalStageCount);
+	const int32 TotalChallengeCount = 6;
+	const int32 DisplayChallengesCompleted = 0;
 
 	auto DifficultyText = [Loc](ET66Difficulty Difficulty) -> FText
 	{
@@ -1299,6 +1301,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "PowerProg", "Permanent Buffs Unlocked"), UnlockedPowerUps, PowerStats.Num() * UT66BuffSubsystem::MaxFillStepsPerStat, FLinearColor(0.76f, 0.63f, 0.30f, 1.0f))]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "HeroProg", "Heroes Unlocked"), HeroIDs.Num(), HeroIDs.Num(), FLinearColor(0.68f, 0.78f, 0.92f, 1.0f))]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "CompProg", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num(), FLinearColor(0.57f, 0.84f, 0.79f, 1.0f))]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "ChallengeProg", "Challenges Completed"), DisplayChallengesCompleted, TotalChallengeCount, FLinearColor(0.63f, 0.77f, 0.95f, 1.0f))]
 					+ SVerticalBox::Slot().AutoHeight()[MakeProgressRow(NSLOCTEXT("T66.Account", "StageProg", "Stages Beat"), DisplayStagesCleared, TotalStageCount, FLinearColor(0.82f, 0.47f, 0.30f, 1.0f))],
 					ET66PanelType::Panel, AccountPanelFill(), FMargin(14.f))
 			]

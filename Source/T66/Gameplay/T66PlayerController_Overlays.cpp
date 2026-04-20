@@ -50,7 +50,6 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66BuffSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -64,7 +63,6 @@
 #include "Gameplay/T66GamblerBoss.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
-#include "EngineUtils.h"
 #include "GameFramework/InputSettings.h"
 #include "GameFramework/PlayerInput.h"
 #include "Camera/CameraComponent.h"
@@ -99,6 +97,73 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
 #include "Styling/CoreStyle.h"
+
+namespace
+{
+	template <typename TNpcType>
+	TNpcType* T66FindRegisteredNpc(UWorld* World)
+	{
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNpc : Registry->GetNPCs())
+			{
+				if (TNpcType* Npc = Cast<TNpcType>(WeakNpc.Get()))
+				{
+					return Npc;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
+	AT66CircusInteractable* T66FindRegisteredCircus(UWorld* World)
+	{
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+			{
+				if (AT66CircusInteractable* Circus = WeakCircus.Get())
+				{
+					return Circus;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
+	bool T66HasRegisteredGamblerBoss(UWorld* World)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
+			{
+				if (Cast<AT66GamblerBoss>(WeakBoss.Get()) != nullptr)
+				{
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+}
 
 
 void AT66PlayerController::SetupGameplayHUD()
@@ -258,34 +323,26 @@ bool AT66PlayerController::TriggerCircusBossIfAngry()
 		return false;
 	}
 
-	for (TActorIterator<AT66GamblerBoss> It(World); It; ++It)
+	if (T66HasRegisteredGamblerBoss(World))
 	{
 		return false;
 	}
 
 	FVector SpawnLoc = FVector::ZeroVector;
 	bool bHasSpawnLoc = false;
-	for (TActorIterator<AT66CircusInteractable> It(World); It; ++It)
+	if (AT66CircusInteractable* Circus = T66FindRegisteredCircus(World))
 	{
-		if (AT66CircusInteractable* Circus = *It)
-		{
-			SpawnLoc = Circus->GetActorLocation();
-			bHasSpawnLoc = true;
-			break;
-		}
+		SpawnLoc = Circus->GetActorLocation();
+		bHasSpawnLoc = true;
 	}
 
 	if (!bHasSpawnLoc)
 	{
-		for (TActorIterator<AT66GamblerNPC> It(World); It; ++It)
+		if (AT66GamblerNPC* Gambler = T66FindRegisteredNpc<AT66GamblerNPC>(World))
 		{
-			if (AT66GamblerNPC* Gambler = *It)
-			{
-				SpawnLoc = Gambler->GetActorLocation();
-				bHasSpawnLoc = true;
-				Gambler->Destroy();
-				break;
-			}
+			SpawnLoc = Gambler->GetActorLocation();
+			bHasSpawnLoc = true;
+			Gambler->Destroy();
 		}
 	}
 
@@ -468,18 +525,9 @@ void AT66PlayerController::OnPlayerDied()
 			if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 			{
 				UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
-				UT66BuffSubsystem* BuffSub = GI->GetSubsystem<UT66BuffSubsystem>();
 				if (RunState)
 				{
 					RunState->MarkRunEnded(false);
-				}
-				if (RunState && BuffSub)
-				{
-					const int32 Earned = RunState->GetPowerCrystalsEarnedThisRun();
-					if (Earned > 0)
-					{
-						BuffSub->AddChadCoupons(Earned);
-					}
 				}
 				if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
 				{
@@ -533,18 +581,9 @@ void AT66PlayerController::ShowVictoryRunSummary()
 		}
 
 		UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
-		UT66BuffSubsystem* BuffSub = GI->GetSubsystem<UT66BuffSubsystem>();
 		if (RunState)
 		{
 			RunState->MarkRunEnded(true);
-		}
-		if (RunState && BuffSub)
-		{
-			const int32 Earned = RunState->GetPowerCrystalsEarnedThisRun();
-			if (Earned > 0)
-			{
-				BuffSub->AddChadCoupons(Earned);
-			}
 		}
 		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{

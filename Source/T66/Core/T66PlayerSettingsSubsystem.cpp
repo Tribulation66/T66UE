@@ -195,6 +195,13 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		bNeedsSave = true;
 	}
 
+	if (SettingsObj->SchemaVersion < 19)
+	{
+		SettingsObj->SchemaVersion = 19;
+		SettingsObj->bShowRunSummaryChadCouponsPopup = true;
+		bNeedsSave = true;
+	}
+
 	const ET66MediaViewerSource SanitizedMediaViewerSource = SanitizeMediaViewerSourceIndex(SettingsObj->MediaViewerSourceIndex);
 	if (SettingsObj->MediaViewerSourceIndex != static_cast<int32>(SanitizedMediaViewerSource))
 	{
@@ -474,6 +481,22 @@ void UT66PlayerSettingsSubsystem::SetShowDamageNumbers(bool bEnabled)
 {
 	if (!SettingsObj || SettingsObj->bShowDamageNumbers == bEnabled) return;
 	SettingsObj->bShowDamageNumbers = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetShowRunSummaryChadCouponsPopup() const
+{
+	return SettingsObj ? SettingsObj->bShowRunSummaryChadCouponsPopup : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetShowRunSummaryChadCouponsPopup(bool bEnabled)
+{
+	if (!SettingsObj || SettingsObj->bShowRunSummaryChadCouponsPopup == bEnabled)
+	{
+		return;
+	}
+
+	SettingsObj->bShowRunSummaryChadCouponsPopup = bEnabled;
 	Save();
 }
 

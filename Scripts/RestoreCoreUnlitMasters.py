@@ -33,17 +33,25 @@ def backup_asset(asset_path, backup_name):
         unreal.log_warning(f'{LOG} Backup failed for {asset_path}')
 
 
-def recreate_material(asset_name):
+def recreate_material(asset_name, used_with_skeletal_mesh=False, used_with_instanced_static_meshes=False, used_with_nanite=False):
     path = f'{DEST_DIR}/{asset_name}'
     if unreal.EditorAssetLibrary.does_asset_exist(path):
-        unreal.EditorAssetLibrary.delete_asset(path)
+        if not unreal.EditorAssetLibrary.delete_asset(path):
+            raise RuntimeError(f'Failed to delete existing asset {path}')
+        collect_garbage = getattr(unreal.SystemLibrary, 'collect_garbage', None)
+        if callable(collect_garbage):
+            collect_garbage()
     factory = unreal.MaterialFactoryNew()
     mat = asset_tools.create_asset(asset_name, DEST_DIR, unreal.Material, factory)
     if not mat:
         raise RuntimeError(f'Failed to create {path}')
     safe_set(mat, 'shading_model', unreal.MaterialShadingModel.MSM_UNLIT)
+    safe_set(mat, 'blend_mode', unreal.BlendMode.BLEND_OPAQUE)
     safe_set(mat, 'two_sided', True)
-    safe_set(mat, 'used_with_nanite', asset_name == 'M_GLB_Unlit')
+    safe_set(mat, 'use_material_attributes', False)
+    safe_set(mat, 'used_with_skeletal_mesh', used_with_skeletal_mesh)
+    safe_set(mat, 'used_with_instanced_static_meshes', used_with_instanced_static_meshes)
+    safe_set(mat, 'used_with_nanite', used_with_nanite)
     return mat, path
 
 
@@ -55,7 +63,7 @@ def save_material(mat, path):
 
 def build_character():
     backup_asset('/Game/Materials/M_Character_Unlit', 'M_Character_Unlit_RetroGeometryBackup')
-    mat, path = recreate_material('M_Character_Unlit')
+    mat, path = recreate_material('M_Character_Unlit', used_with_skeletal_mesh=True)
     tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSampleParameter2D, -400, 0)
     safe_set(tex, 'parameter_name', 'DiffuseColorMap')
     brightness = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -400, 300)
@@ -70,7 +78,10 @@ def build_character():
 
 def build_environment():
     backup_asset('/Game/Materials/M_Environment_Unlit', 'M_Environment_Unlit_RetroGeometryBackup')
-    mat, path = recreate_material('M_Environment_Unlit')
+    mat, path = recreate_material(
+        'M_Environment_Unlit',
+        used_with_instanced_static_meshes=True,
+    )
     tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSampleParameter2D, -500, 0)
     safe_set(tex, 'parameter_name', 'DiffuseColorMap')
     brightness = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -500, 250)
@@ -91,7 +102,7 @@ def build_environment():
 
 def build_fbx():
     backup_asset('/Game/Materials/M_FBX_Unlit', 'M_FBX_Unlit_RetroGeometryBackup')
-    mat, path = recreate_material('M_FBX_Unlit')
+    mat, path = recreate_material('M_FBX_Unlit', used_with_skeletal_mesh=True)
     tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSampleParameter2D, -400, 0)
     safe_set(tex, 'parameter_name', 'DiffuseColorMap')
     normal = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSampleParameter2D, -400, 300)
@@ -109,7 +120,11 @@ def build_fbx():
 
 def build_glb():
     backup_asset('/Game/Materials/M_GLB_Unlit', 'M_GLB_Unlit_RetroGeometryBackup')
-    mat, path = recreate_material('M_GLB_Unlit')
+    mat, path = recreate_material(
+        'M_GLB_Unlit',
+        used_with_instanced_static_meshes=True,
+        used_with_nanite=True,
+    )
     tex = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSampleParameter2D, -300, 0)
     safe_set(tex, 'parameter_name', 'BaseColorTexture')
     mel.connect_material_property(tex, 'RGB', unreal.MaterialProperty.MP_EMISSIVE_COLOR)

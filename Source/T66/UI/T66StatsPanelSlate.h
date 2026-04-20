@@ -30,6 +30,7 @@ namespace T66StatsPanelSlate
 	struct FT66LiveStatsPanel
 	{
 		TArray<TSharedPtr<class STextBlock>> PrimaryLines;
+		TArray<TSharedPtr<class STextBlock>> CategoryHeaderLines;
 		TMap<ET66SecondaryStatType, TSharedPtr<class STextBlock>> SecondaryLines;
 		TSharedPtr<class STextBlock> ArmorReductionLine;
 		TSharedPtr<class STextBlock> EvasionChanceLine;

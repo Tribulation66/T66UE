@@ -1362,9 +1362,17 @@ void AT66EnemyBase::OnDeath()
 		const float Scalar = RunState->GetDifficultyScalar();
 		const float TreasureMult = RunState->GetTreasureHunterGoldMultiplier();
 		const int32 AwardPoints = FMath::Max(0, FMath::RoundToInt(static_cast<float>(PointValue) * Scalar * TreasureMult));
+		int32 AwardXP = XPValue;
+		if (AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr)
+		{
+			if (GameMode->IsUsingTowerMainMapLayout())
+			{
+				AwardXP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(XPValue) * 0.5f));
+			}
+		}
 		RunState->AddScore(AwardPoints);
-		RunState->AddHeroXP(XPValue);
-		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("PointValue=%d"), AwardPoints));
+		RunState->AddHeroXP(AwardXP);
+		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("PointValue=%d,XP=%d"), AwardPoints, AwardXP));
 	}
 	if (Achievements)
 	{

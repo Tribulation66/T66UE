@@ -12,6 +12,9 @@ class UStaticMeshComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UInstancedStaticMeshComponent;
+class UMaterial;
+class UMaterialInstanceDynamic;
+class UPrimitiveComponent;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
 class UWidgetComponent;
@@ -19,6 +22,7 @@ class UAnimationAsset;
 class AT66PilotableTractor;
 class UT66HeroMovementComponent;
 class AT66SessionPlayerState;
+class APostProcessVolume;
 
 /**
  * Base class for all playable heroes in Tribulation 66
@@ -199,10 +203,20 @@ private:
 	void ApplyCurrentHeroVisualScale();
 	void TryApplyLobbyDrivenVisuals();
 	bool TryGetLobbyDrivenVisualParams(FHeroData& OutHeroData, ET66BodyType& OutBodyType, FName& OutSkinID) const;
+	bool ShouldEnableHeroOcclusionReveal() const;
+	void UpdateHeroOcclusionRevealSetup();
+	void ConfigureHeroOcclusionComponent(UPrimitiveComponent* Component, bool bEnable) const;
+	void DestroyHeroOcclusionRevealVolume();
 
 	/** Dynamic material instance for color changes */
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> PlaceholderMaterial;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> HeroOcclusionRevealMaterial;
+
+	UPROPERTY(Transient)
+	TObjectPtr<APostProcessVolume> HeroOcclusionRevealVolume;
 
 	/** The base material to use for colored placeholders */
 	UPROPERTY()

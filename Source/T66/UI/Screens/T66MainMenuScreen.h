@@ -11,6 +11,12 @@
 
 struct FSlateBrush;
 class ST66LeaderboardPanel;
+class SBorder;
+class SBox;
+class SButton;
+class SHorizontalBox;
+class SImage;
+class STextBlock;
 class SVerticalBox;
 class UTexture2D;
 /**
@@ -69,6 +75,33 @@ protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 private:
+	struct FFriendGroupWidgetRefs
+	{
+		bool bOnlineGroup = false;
+		TSharedPtr<SBox> RootBox;
+		TSharedPtr<STextBlock> CountText;
+		TSharedPtr<SImage> ExpandArrowImage;
+	};
+
+	struct FFriendRowWidgetRefs
+	{
+		FString PlayerId;
+		FString FriendName;
+		FString BaseStatus;
+		bool bOnline = false;
+		TSharedPtr<SBox> RootBox;
+		TSharedPtr<SBorder> RowBorder;
+		TSharedPtr<STextBlock> StatusText;
+		TSharedPtr<SButton> FavoriteButton;
+		TSharedPtr<STextBlock> FavoriteGlyphText;
+		TSharedPtr<SButton> ActionButton;
+		TSharedPtr<SBorder> ActionFillBorder;
+		TSharedPtr<STextBlock> ActionText;
+	};
+
+	uint32 CaptureMenuStateHash() const;
+	bool ShouldRebuildRetainedSlate() const;
+
 	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
 	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
 	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
@@ -84,11 +117,20 @@ private:
 	TArray<TSharedPtr<FSlateBrush>> FriendPortraitBrushes;
 	TArray<TSharedPtr<FSlateBrush>> PartyPortraitBrushes;
 	TSharedPtr<SVerticalBox> FriendsListContainer;
+	TArray<FFriendGroupWidgetRefs> FriendGroupWidgetRefs;
+	TArray<FFriendRowWidgetRefs> FriendRowWidgetRefs;
+	TSharedPtr<SBox> FriendGroupsDividerBox;
+	TSharedPtr<SBox> NoMatchingFriendsBox;
 	bool bShowOnlineFriends = true;
 	bool bShowOfflineFriends = true;
 	FString FriendSearchQuery;
 	FVector2D CachedViewportSize = FVector2D::ZeroVector;
+	FVector2D LastBuiltViewportSize = FVector2D::ZeroVector;
+	FVector2D PendingViewportSize = FVector2D::ZeroVector;
+	float PendingViewportStableTime = 0.f;
 	bool bViewportResponsiveRebuildQueued = false;
+	ET66Language LastBuiltLanguage = ET66Language::English;
+	uint32 LastBuiltMenuStateHash = 0;
 
 	// Get localization subsystem
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
@@ -111,6 +153,7 @@ private:
 	void HandleSessionStateChanged();
 	void SyncToSharedPartyScreen();
 	void HandleFriendSearchTextChanged(const FText& NewText);
+	void RefreshFriendListVisualState();
 	void ReleaseRetainedSlateState();
 
 	// Handle language change to rebuild UI

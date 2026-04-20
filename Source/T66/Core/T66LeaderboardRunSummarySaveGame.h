@@ -6,6 +6,7 @@
 #include "Core/T66RunSaveGame.h"
 #include "Data/T66DataTypes.h"
 #include "GameFramework/SaveGame.h"
+#include "Core/T66RunIntegrityTypes.h"
 #include "T66LeaderboardRunSummarySaveGame.generated.h"
 
 /**
@@ -22,7 +23,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 15;
+	int32 SchemaVersion = 17;
 
 	/** Backend leaderboard entry UUID when this snapshot came from the online service. */
 	UPROPERTY(SaveGame)
@@ -213,6 +214,10 @@ public:
 	UPROPERTY(SaveGame)
 	bool bAntiCheatGamblerEventsTruncated = false;
 
+	/** Build and runtime integrity context captured for this run. SchemaVersion>=16. */
+	UPROPERTY(SaveGame)
+	FT66RunIntegrityContext IntegrityContext;
+
 	// ===== Proof of Run =====
 
 	/** Proof-of-run URL (e.g. YouTube). SchemaVersion>=3. */
@@ -233,6 +238,10 @@ public:
 
 	UPROPERTY(SaveGame)
 	TArray<FName> Inventory;
+
+	/** Temporary buff loadout that was active when the run summary snapshot was captured. SchemaVersion>=17. */
+	UPROPERTY(SaveGame)
+	TArray<ET66SecondaryStatType> TemporaryBuffSlots;
 
 	UPROPERTY(SaveGame)
 	TArray<FString> EventLog;

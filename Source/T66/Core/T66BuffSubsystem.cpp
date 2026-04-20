@@ -430,7 +430,7 @@ void UT66BuffSubsystem::MigrateV9ToV10SingleLoadoutSlots()
 	}
 
 	EnsureSelectedSingleUseBuffSlotsSize(SaveData->SelectedSingleUseBuffSlots);
-	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v9 temp-buff presets to v10 single 5-slot loadout."));
+	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v9 temp-buff presets to v10 single temp-buff loadout."));
 }
 
 void UT66BuffSubsystem::Save()

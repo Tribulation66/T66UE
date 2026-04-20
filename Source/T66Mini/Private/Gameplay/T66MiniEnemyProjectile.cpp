@@ -7,20 +7,20 @@
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Core/T66MiniVFXSubsystem.h"
 #include "Engine/Texture2D.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Gameplay/T66MiniPlayerPawn.h"
 #include "Net/UnrealNetwork.h"
 
 AT66MiniEnemyProjectile::AT66MiniEnemyProjectile()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	SetReplicateMovement(true);
-
-	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
-	SetRootComponent(SceneRoot);
+	NetUpdateFrequency = 24.f;
+	MinNetUpdateFrequency = 12.f;
 
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
-	CollisionComponent->SetupAttachment(SceneRoot);
+	SetRootComponent(CollisionComponent);
 	CollisionComponent->InitSphereRadius(22.f);
 	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CollisionComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -28,11 +28,17 @@ AT66MiniEnemyProjectile::AT66MiniEnemyProjectile()
 	CollisionComponent->SetGenerateOverlapEvents(true);
 
 	SpriteComponent = CreateDefaultSubobject<UBillboardComponent>(TEXT("Sprite"));
-	SpriteComponent->SetupAttachment(SceneRoot);
+	SpriteComponent->SetupAttachment(CollisionComponent);
 	SpriteComponent->SetRelativeLocation(FVector(0.f, 0.f, 28.f));
 	SpriteComponent->SetRelativeScale3D(FVector(0.9f, 0.9f, 0.9f));
 	SpriteComponent->SetHiddenInGame(false, true);
 	SpriteComponent->SetVisibility(true, true);
+
+	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
+	ProjectileMovementComponent->SetUpdatedComponent(CollisionComponent);
+	ProjectileMovementComponent->ProjectileGravityScale = 0.f;
+	ProjectileMovementComponent->bRotationFollowsVelocity = false;
+	ProjectileMovementComponent->bShouldBounce = false;
 }
 
 void AT66MiniEnemyProjectile::BeginPlay()
@@ -55,34 +61,29 @@ void AT66MiniEnemyProjectile::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 void AT66MiniEnemyProjectile::InitializeProjectile(const FVector& SpawnLocation, const FVector& Direction, float InSpeed, float InDamage, UTexture2D* InTexture, float InLifetime)
 {
 	SetActorLocation(SpawnLocation);
-	MoveDirection = Direction.GetSafeNormal();
-	Speed = FMath::Max(200.f, InSpeed);
 	Damage = FMath::Max(1.f, InDamage);
-	LifetimeRemaining = FMath::Max(0.2f, InLifetime);
-	ProjectileTexture = InTexture ? InTexture : LoadObject<UTexture2D>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+	const float Speed = FMath::Max(200.f, InSpeed);
+	SetLifeSpan(FMath::Max(0.2f, InLifetime));
+
+	if (ProjectileMovementComponent)
+	{
+		ProjectileMovementComponent->Velocity = Direction.GetSafeNormal() * Speed;
+		ProjectileMovementComponent->InitialSpeed = Speed;
+		ProjectileMovementComponent->MaxSpeed = Speed;
+	}
+
+	ProjectileTexture = InTexture;
+	if (!ProjectileTexture)
+	{
+		if (UT66MiniVisualSubsystem* VisualSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr)
+		{
+			ProjectileTexture = VisualSubsystem->GetWhiteTexture();
+		}
+	}
 	if (ProjectileTexture)
 	{
 		SpriteComponent->SetSprite(ProjectileTexture);
 	}
-}
-
-void AT66MiniEnemyProjectile::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	if (!HasAuthority())
-	{
-		return;
-	}
-
-	LifetimeRemaining -= DeltaSeconds;
-	if (LifetimeRemaining <= 0.f)
-	{
-		Destroy();
-		return;
-	}
-
-	SetActorLocation(GetActorLocation() + (MoveDirection * Speed * DeltaSeconds));
 }
 
 void AT66MiniEnemyProjectile::HandleOverlap(

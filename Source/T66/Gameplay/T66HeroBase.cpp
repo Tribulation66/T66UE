@@ -20,9 +20,11 @@
 #include "UI/T66HeroCooldownBarWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/PostProcessVolume.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Net/UnrealNetwork.h"
@@ -31,6 +33,7 @@
 #include "Engine/World.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/EngineTypes.h"
+#include "HAL/IConsoleManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Hero, Log, All);
 
@@ -41,6 +44,19 @@ namespace
 	static constexpr float T66HeroHeightTypeBUU = 180.0f;
 	static constexpr float T66HeroBaselineVisualHeightUU = 176.0f;
 	static constexpr float T66HeroDefaultCameraArmLengthUU = 2300.0f;
+	static TAutoConsoleVariable<int32> CVarT66HeroOcclusionRevealEnabled(
+		TEXT("T66.Camera.EnableHeroOcclusionReveal"),
+		0,
+		TEXT("Temporary fallback switch. 0 keeps classic spring-arm camera behavior, 1 enables hero occlusion reveal."),
+		ECVF_Default);
+	static const TCHAR* T66HeroOcclusionMaterialPath = TEXT("/Game/Materials/PostProcess/M_HeroOcclusionReveal.M_HeroOcclusionReveal");
+	static const FName T66HeroRevealColorParameter(TEXT("RevealColor"));
+	static const FName T66HeroRevealOpacityParameter(TEXT("RevealOpacity"));
+	static const FName T66HeroRevealDepthBiasParameter(TEXT("DepthBias"));
+	static const FName T66HeroRevealDepthScaleParameter(TEXT("DepthScale"));
+	static const FName T66HeroRevealStencilValueParameter(TEXT("HeroStencilValue"));
+	static constexpr int32 T66HeroOcclusionStencilValue = 17;
+	static constexpr float T66HeroOcclusionPostProcessPriority = 6000.0f;
 }
 
 AT66HeroBase::AT66HeroBase()
@@ -368,6 +384,7 @@ void AT66HeroBase::BeginPlay()
 	}
 
 	TryApplyLobbyDrivenVisuals();
+	UpdateHeroOcclusionRevealSetup();
 }
 
 void AT66HeroBase::BeginSkyDrop()
@@ -405,12 +422,14 @@ void AT66HeroBase::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	TryApplyLobbyDrivenVisuals();
+	UpdateHeroOcclusionRevealSetup();
 }
 
 void AT66HeroBase::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	TryApplyLobbyDrivenVisuals();
+	UpdateHeroOcclusionRevealSetup();
 }
 
 void AT66HeroBase::OnRep_HeroAppearance()
@@ -823,6 +842,129 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 	}
 }
 
+bool AT66HeroBase::ShouldEnableHeroOcclusionReveal() const
+{
+	if (CVarT66HeroOcclusionRevealEnabled.GetValueOnGameThread() == 0)
+	{
+		return false;
+	}
+
+	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	return !bIsPreviewMode && PlayerController && PlayerController->IsLocalController();
+}
+
+void AT66HeroBase::ConfigureHeroOcclusionComponent(UPrimitiveComponent* Component, const bool bEnable) const
+{
+	if (!Component)
+	{
+		return;
+	}
+
+	Component->SetRenderCustomDepth(bEnable);
+	if (bEnable)
+	{
+		Component->SetCustomDepthStencilValue(T66HeroOcclusionStencilValue);
+	}
+}
+
+void AT66HeroBase::DestroyHeroOcclusionRevealVolume()
+{
+	if (HeroOcclusionRevealVolume)
+	{
+		HeroOcclusionRevealVolume->Destroy();
+		HeroOcclusionRevealVolume = nullptr;
+	}
+
+	HeroOcclusionRevealMaterial = nullptr;
+}
+
+void AT66HeroBase::UpdateHeroOcclusionRevealSetup()
+{
+	const bool bEnableReveal = ShouldEnableHeroOcclusionReveal();
+	ConfigureHeroOcclusionComponent(GetMesh(), bEnableReveal);
+	ConfigureHeroOcclusionComponent(PlaceholderMesh, bEnableReveal);
+
+	if (!bEnableReveal)
+	{
+		DestroyHeroOcclusionRevealVolume();
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		DestroyHeroOcclusionRevealVolume();
+		return;
+	}
+
+	if (HeroOcclusionRevealVolume && HeroOcclusionRevealVolume->GetWorld() != World)
+	{
+		DestroyHeroOcclusionRevealVolume();
+	}
+
+	if (!HeroOcclusionRevealVolume)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.ObjectFlags |= RF_Transient;
+		HeroOcclusionRevealVolume = World->SpawnActor<APostProcessVolume>(
+			APostProcessVolume::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			SpawnParams);
+		if (HeroOcclusionRevealVolume)
+		{
+			HeroOcclusionRevealVolume->bUnbound = true;
+			HeroOcclusionRevealVolume->BlendWeight = 1.0f;
+			HeroOcclusionRevealVolume->Priority = T66HeroOcclusionPostProcessPriority;
+			HeroOcclusionRevealVolume->Settings.WeightedBlendables.Array.Reset();
+#if WITH_EDITOR
+			HeroOcclusionRevealVolume->SetActorLabel(TEXT("DEV_HeroOcclusionReveal_PostProcessVolume"));
+#endif
+		}
+	}
+
+	if (!HeroOcclusionRevealVolume)
+	{
+		return;
+	}
+
+	UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, T66HeroOcclusionMaterialPath);
+	if (!BaseMaterial)
+	{
+		UE_LOG(LogT66Hero, Warning, TEXT("Hero occlusion reveal material missing at %s"), T66HeroOcclusionMaterialPath);
+		return;
+	}
+
+	if (!HeroOcclusionRevealMaterial)
+	{
+		HeroOcclusionRevealMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+	}
+
+	if (!HeroOcclusionRevealMaterial)
+	{
+		return;
+	}
+
+	HeroOcclusionRevealMaterial->SetVectorParameterValue(T66HeroRevealColorParameter, FLinearColor(0.97f, 0.80f, 0.24f, 1.0f));
+	HeroOcclusionRevealMaterial->SetScalarParameterValue(T66HeroRevealOpacityParameter, 0.92f);
+	HeroOcclusionRevealMaterial->SetScalarParameterValue(T66HeroRevealDepthBiasParameter, 2.0f);
+	HeroOcclusionRevealMaterial->SetScalarParameterValue(T66HeroRevealDepthScaleParameter, 0.08f);
+	HeroOcclusionRevealMaterial->SetScalarParameterValue(T66HeroRevealStencilValueParameter, static_cast<float>(T66HeroOcclusionStencilValue));
+
+	FPostProcessSettings& PostProcessSettings = HeroOcclusionRevealVolume->Settings;
+	for (FWeightedBlendable& Blendable : PostProcessSettings.WeightedBlendables.Array)
+	{
+		if (Blendable.Object == HeroOcclusionRevealMaterial)
+		{
+			Blendable.Weight = 1.0f;
+			return;
+		}
+	}
+
+	PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.0f, HeroOcclusionRevealMaterial));
+}
+
 bool AT66HeroBase::TryGetLobbyDrivenVisualParams(FHeroData& OutHeroData, ET66BodyType& OutBodyType, FName& OutSkinID) const
 {
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
@@ -885,6 +1027,8 @@ void AT66HeroBase::TryApplyLobbyDrivenVisuals()
 
 void AT66HeroBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	DestroyHeroOcclusionRevealVolume();
+
 	if (CachedRunState)
 	{
 		CachedRunState->HeroProgressChanged.RemoveDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
@@ -1041,6 +1185,7 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 					GetMesh()->SetVisibility(true, true);
 				}
 			}
+			UpdateHeroOcclusionRevealSetup();
 			if (bApplied && !bPreviewMode)
 			{
 				// Cache idle/walk/jump anims and init hero speed params.
@@ -1152,6 +1297,8 @@ void AT66HeroBase::SetPreviewMode(bool bPreview)
 			Movement->SetMovementMode(MOVE_Walking);
 		}
 	}
+
+	UpdateHeroOcclusionRevealSetup();
 }
 
 void AT66HeroBase::DashForward()

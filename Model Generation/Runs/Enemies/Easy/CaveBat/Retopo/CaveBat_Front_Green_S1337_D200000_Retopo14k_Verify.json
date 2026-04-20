@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\CaveBat\\Retopo\\CaveBat_Front_Green_S1337_D200000_Retopo14k.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Enemies\\Easy\\CaveBat\\Renders\\CaveBat_Front_Green_S1337_D200000_Retopo14k_Verify.png",
+  "export": null,
+  "raw_triangles": 14000,
+  "triangles_before_decimate": 14000,
+  "triangles_after_decimate": 14000,
+  "bounds": {
+    "min": [
+      -0.5008404850959778,
+      -0.13855187594890594,
+      -0.22998544573783875
+    ],
+    "max": [
+      0.5003567934036255,
+      0.12958809733390808,
+      0.22944161295890808
+    ],
+    "size": [
+      1.001197338104248,
+      0.26813995838165283,
+      0.4594270586967468
+    ]
+  }
+}

@@ -21,6 +21,47 @@ UT66PartyInviteModal::UT66PartyInviteModal(const FObjectInitializer& ObjectIniti
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66PartyInviteModal, Log, All);
 
+namespace
+{
+	void T66RefreshInviteJoinContext(
+		const UT66BackendSubsystem* Backend,
+		const FString& InviteId,
+		FString& InOutHostSteamId,
+		FString& InOutHostLobbyId,
+		FString& InOutHostAppId)
+	{
+		if (!Backend || InviteId.IsEmpty())
+		{
+			return;
+		}
+
+		for (const FT66PartyInviteEntry& Invite : Backend->GetPendingPartyInvites())
+		{
+			if (Invite.InviteId != InviteId)
+			{
+				continue;
+			}
+
+			if (!Invite.HostSteamId.IsEmpty())
+			{
+				InOutHostSteamId = Invite.HostSteamId;
+			}
+
+			if (!Invite.HostLobbyId.IsEmpty())
+			{
+				InOutHostLobbyId = Invite.HostLobbyId;
+			}
+
+			if (!Invite.HostAppId.IsEmpty())
+			{
+				InOutHostAppId = Invite.HostAppId;
+			}
+
+			break;
+		}
+	}
+}
+
 void UT66PartyInviteModal::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
@@ -205,6 +246,15 @@ FReply UT66PartyInviteModal::HandleAcceptClicked()
 			ActionHostAppId = Invite->HostAppId;
 			ActionStatusText = TEXT("Accepting invite...");
 			bAcceptingInvite = true;
+			FT66MultiplayerDiagnosticContext Diagnostic;
+			Diagnostic.EventName = TEXT("invite_accept_click");
+			Diagnostic.Severity = TEXT("info");
+			Diagnostic.Message = TEXT("Player accepted a party invite.");
+			Diagnostic.InviteId = ActionInviteId;
+			Diagnostic.HostSteamId = ActionHostSteamId;
+			Diagnostic.LobbyId = ActionHostLobbyId;
+			Diagnostic.SourceAppId = ActionHostAppId;
+			Backend->SubmitMultiplayerDiagnostic(Diagnostic);
 			bActionInFlight = Backend->RespondToPartyInvite(Invite->InviteId, true);
 			bJoinKickoffStarted = false;
 			UE_LOG(LogT66PartyInviteModal, Log, TEXT("Accept clicked for invite %s host=%s lobby=%s app=%s"), *ActionInviteId, *ActionHostSteamId, *ActionHostLobbyId, *ActionHostAppId);
@@ -304,6 +354,11 @@ void UT66PartyInviteModal::HandlePartyInviteActionComplete(bool bSuccess, const 
 
 		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 		{
+			if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+			{
+				T66RefreshInviteJoinContext(Backend, ActionInviteId, ActionHostSteamId, ActionHostLobbyId, ActionHostAppId);
+			}
+
 			if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
 			{
 				const bool bJoinStarted =
@@ -333,6 +388,11 @@ bool UT66PartyInviteModal::TryStartJoinKickoff()
 
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			T66RefreshInviteJoinContext(Backend, ActionInviteId, ActionHostSteamId, ActionHostLobbyId, ActionHostAppId);
+		}
+
 		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
 		{
 			const bool bJoinStarted =

@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Arthur\\Raw\\Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k_WithSword_HeldUp.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Arthur\\Renders\\Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k_WithSword_HeldUp.png",
+  "export": null,
+  "raw_triangles": 118766,
+  "triangles_before_decimate": 118766,
+  "triangles_after_decimate": 118766,
+  "bounds": {
+    "min": [
+      0.32737013697624207,
+      -0.2148102968931198,
+      0.0
+    ],
+    "max": [
+      1.2724345922470093,
+      0.28693509101867676,
+      1.7506027221679688
+    ],
+    "size": [
+      0.9450644254684448,
+      0.5017454028129578,
+      1.7506027221679688
+    ]
+  }
+}

@@ -21,6 +21,8 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
 #include "Components/CapsuleComponent.h"
@@ -155,6 +157,69 @@ UT66CombatComponent::UT66CombatComponent()
 	PixelVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
 }
 
+void UT66CombatComponent::PrimeCombatPresentationAssetsAsync()
+{
+	if (!CachedShotSfx)
+	{
+		CachedShotSfx = ShotSfx.Get();
+	}
+	if (!CachedSlashVFXNiagara)
+	{
+		CachedSlashVFXNiagara = SlashVFXNiagara.Get();
+	}
+	if (!CachedPixelVFXNiagara)
+	{
+		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
+	}
+	if ((CachedShotSfx && CachedSlashVFXNiagara && CachedPixelVFXNiagara) || CombatPresentationAssetsLoadHandle.IsValid())
+	{
+		return;
+	}
+
+	TArray<FSoftObjectPath> AssetPaths;
+	if (!CachedShotSfx && !ShotSfx.IsNull())
+	{
+		AssetPaths.AddUnique(ShotSfx.ToSoftObjectPath());
+	}
+	if (!CachedSlashVFXNiagara && !SlashVFXNiagara.IsNull())
+	{
+		AssetPaths.AddUnique(SlashVFXNiagara.ToSoftObjectPath());
+	}
+	if (!CachedPixelVFXNiagara && !PixelVFXNiagara.IsNull())
+	{
+		AssetPaths.AddUnique(PixelVFXNiagara.ToSoftObjectPath());
+	}
+	if (AssetPaths.Num() <= 0)
+	{
+		return;
+	}
+
+	CombatPresentationAssetsLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		AssetPaths,
+		FStreamableDelegate::CreateUObject(this, &UT66CombatComponent::HandleCombatPresentationAssetsLoaded));
+	if (!CombatPresentationAssetsLoadHandle.IsValid())
+	{
+		HandleCombatPresentationAssetsLoaded();
+	}
+}
+
+void UT66CombatComponent::HandleCombatPresentationAssetsLoaded()
+{
+	CombatPresentationAssetsLoadHandle.Reset();
+	if (!CachedShotSfx)
+	{
+		CachedShotSfx = ShotSfx.Get();
+	}
+	if (!CachedSlashVFXNiagara)
+	{
+		CachedSlashVFXNiagara = SlashVFXNiagara.Get();
+	}
+	if (!CachedPixelVFXNiagara)
+	{
+		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
+	}
+}
+
 void UT66CombatComponent::SetLockedTarget(const FT66CombatTargetHandle& InTarget)
 {
 	LockedTarget = InTarget;
@@ -257,11 +322,7 @@ void UT66CombatComponent::BeginPlay()
 
 	RecomputeFromRunState();
 
-	CachedShotSfx = ShotSfx.Get();
-	if (!CachedShotSfx)
-	{
-		CachedShotSfx = ShotSfx.LoadSynchronous();
-	}
+	PrimeCombatPresentationAssetsAsync();
 	WarmupVFXSystems();
 
 	// --- Create the range detection sphere ---
@@ -310,6 +371,7 @@ void UT66CombatComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	{
 		CachedIdolManager->IdolStateChanged.RemoveDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
 	}
+	CombatPresentationAssetsLoadHandle.Reset();
 
 	// Clean up the sphere.
 	if (RangeSphere)
@@ -748,6 +810,14 @@ void UT66CombatComponent::PlayShotSfx()
 	USoundBase* Sound = CachedShotSfx;
 	if (!Sound)
 	{
+		CachedShotSfx = ShotSfx.Get();
+		Sound = CachedShotSfx;
+		if (!Sound && !ShotSfx.IsNull())
+		{
+			PrimeCombatPresentationAssetsAsync();
+			return;
+		}
+
 		if (!bShotSfxWarnedMissing)
 		{
 			bShotSfxWarnedMissing = true;

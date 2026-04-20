@@ -4,13 +4,15 @@ param(
 
     [string]$SteamworksSdkRoot = "C:\SteamworksSDK\sdk",
 
-    [string]$AppScript = "CHADPOCALYPSE\app_build_4464300.vdf",
+    [string]$AppScript = "app_build_4464300_root.vdf",
 
     [string]$ContentFolderName = "CHADPOCALYPSE",
 
     [string]$Description = "",
 
     [string]$SetLiveBeta = "",
+
+    [string]$SteamLogin = "tribulation66",
 
     [switch]$Preview
 )
@@ -81,7 +83,15 @@ if (-not [string]::IsNullOrWhiteSpace($Description) -or $Preview.IsPresent -or -
 Push-Location (Join-Path $ContentBuilderRoot "builder")
 try {
     Write-Host "Uploading build using $AppBuildScript"
-    & $BuilderExe +run_app_build $AppBuildScript +quit
+    $SteamCmdArgs = @()
+    if (-not [string]::IsNullOrWhiteSpace($SteamLogin)) {
+        $SteamCmdArgs += "+login"
+        $SteamCmdArgs += $SteamLogin
+    }
+    $SteamCmdArgs += "+run_app_build"
+    $SteamCmdArgs += $AppBuildScript
+    $SteamCmdArgs += "+quit"
+    & $BuilderExe @SteamCmdArgs
 } finally {
     Pop-Location
 }

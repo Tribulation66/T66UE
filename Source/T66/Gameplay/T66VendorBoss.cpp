@@ -21,6 +21,9 @@ AT66VendorBoss::AT66VendorBoss()
 	GroundAOERadius = 350.f;
 	GroundAOEWarningSeconds = 1.2f;
 	GroundAOEBaseDamageHP = 30;
+	AttackProfile = ET66BossAttackProfile::Vendor;
+	AttackPrimaryColor = FLinearColor(0.92f, 0.46f, 0.12f, 1.f);
+	AttackSecondaryColor = FLinearColor(1.f, 0.84f, 0.22f, 1.f);
 
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{

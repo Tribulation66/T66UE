@@ -2,7 +2,43 @@
 
 As of April 17, 2026.
 
-This is the validated `V5` master optimization audit for `T66`, `T66Mini`, Steam/session plumbing, backend invite services, and shared infrastructure. It supersedes `T66_MASTER_OPTIMIZATION_AUDIT_V4.md` as the current consolidated master. No gameplay code, UI code, backend code, or build-system code is changed in this phase.
+This is the validated `V5` master optimization audit for `T66`, `T66Mini`, Steam/session plumbing, backend invite services, and shared infrastructure. It supersedes `T66_MASTER_OPTIMIZATION_AUDIT_V4.md` as the current consolidated master.
+
+`V5` was authored as the final audit/planning master before implementation. The addendum below records the integrated implementation state and packaged-runtime validation checkpoint reached afterward so this file remains the single optimization source of truth.
+
+## V5 Implementation Status Addendum
+
+As of April 17, 2026, the repo and the rebuilt staged standalone at `C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe` contain a large integrated implementation pass against this audit.
+
+### Implemented From This Audit
+
+- frontend hot-screen lifecycle improvements across `MainMenu`, `HeroSelection`, `Settings`, `PowerUp`, and other cached screen paths
+- invite accept / direct-join path reductions and healthier multiplayer happy-path orchestration
+- gameplay preload, character-visual readiness, and first-use combat presentation warmup improvements
+- main-runtime scan, HUD, overlay, terrain, and stage-bootstrap cleanup
+- Mini runtime, Mini UI, Mini projectile, and Mini startup cleanup
+- packaged standalone rebuild/validation workflow wired into the optimization closeout process instead of stopping at editor validation
+
+### Packaged Validation Closed In This Implementation Pass
+
+- packaged frontend boot on the rebuilt staged standalone
+- packaged direct `GameplayLevel` startup smoke on the rebuilt staged standalone
+- packaged direct `T66MiniBattleMap` startup smoke on the rebuilt staged standalone
+- packaged first-combat-frame presentation warmup for the direct gameplay path
+
+The last concrete packaged-only issue surfaced during this pass was direct gameplay startup falling back from `NS_PixelParticle` to `VFX_Attack1`. That was closed by adding a small startup combat-presentation preload in `UT66GameInstance`, then rebuilding and restaging the standalone. After that fix, packaged gameplay startup logs showed `NS_PixelParticle` resolving successfully instead of falling back.
+
+### Remaining Validation That Still Requires A Human / Live Environment
+
+- real Steam-to-Steam invite accept -> joined lobby timing validation
+- interactive gameplay-run smoke for actual HUD/combat feel during a live run
+- interactive Mini-run smoke for real combat feel and runtime behavior during a live run
+
+### Build / Packaging Rule Learned During Implementation
+
+- `Scripts/StageStandaloneBuild.ps1 -ClientConfig Development -SkipCook` is acceptable only for code-only restages against unchanged cooked content.
+- After changes to runtime asset references, async preload/warmup behavior, cook/staging rules, map travel targets, always-cook coverage, or other packaged-runtime asset-resolution paths, use a fresh cooked standalone build before trusting packaged validation results.
+- When packaged behavior disagrees with editor behavior, packaged standalone still wins; validate and debug against the rebuilt staged standalone, not PIE convenience paths.
 
 ## V5 Change Log
 

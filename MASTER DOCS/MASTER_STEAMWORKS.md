@@ -1,6 +1,6 @@
 # T66 Master Steamworks
 
-**Last updated:** 2026-04-16  
+**Last updated:** 2026-04-19  
 **Scope:** Steamworks memory file and operating guideline for future agents. This is the canonical handoff for T66 Steam app state, SteamPipe upload workflow, private-testing process, current known build state, and the repeatable PowerShell flow used on this machine.  
 **Companion docs:** `MASTER DOCS/MASTER_BACKEND.md`, `MASTER DOCS/T66_MASTER_GUIDELINES.md`  
 **Maintenance rule:** Update this file after any Steamworks change, Steam build upload, branch/live-build switch, key request, release-state change, or multiplayer-validation milestone. If the change also affects backend auth/routes, update `MASTER DOCS/MASTER_BACKEND.md` in the same pass.
@@ -10,7 +10,8 @@
 - **Steam app:** `CHADPOCALYPSE`
 - **AppID:** `4464300`
 - **Primary Windows depot:** `4464301`
-- **Current local Steam install state on this machine:** `buildid "22815997"` from `C:\Program Files (x86)\Steam\steamapps\appmanifest_4464300.acf` on 2026-04-16
+- **Last confirmed local Steam install state on this machine:** `buildid "22857027"` was the last live build tested through Steam on 2026-04-19 before this upload pass. Re-check `appmanifest_4464300.acf` after setting the newest build live.
+- **Newest uploaded Steam build (not live until branch switch):** `22857325` uploaded on 2026-04-19 for the false-positive leaderboard quarantine fix, weekly summary rank display, append-only leaderboard rows, and difficulty-clear quit-button cleanup
 - **Current release model:** unreleased app, private testing through Steam + Release Override keys
 - **Current default branch used for testing:** `default`
 - **Current Git backup snapshot:** branch `codex/version-2.2`, tag `v2.2`, commit `28a85e82`
@@ -21,6 +22,7 @@
 Future agents should treat these files and locations as the operational source of truth:
 
 - `C:\UE\T66\Tools\Steam\UploadToSteam.ps1`
+- `C:\SteamworksSDK\sdk\tools\ContentBuilder\scripts\app_build_4464300_root.vdf`
 - `C:\SteamworksSDK\sdk\tools\ContentBuilder\scripts\CHADPOCALYPSE\app_build_4464300.vdf`
 - `C:\Program Files (x86)\Steam\steamapps\appmanifest_4464300.acf`
 - `C:\UE\T66\MASTER DOCS\MASTER_BACKEND.md`
@@ -37,6 +39,8 @@ Use the local PowerShell wrapper. It is the safest path because it:
 - clears the Steam ContentBuilder content root first
 - recopies the staged build into the Steam content root
 - optionally injects a fresh description into the VDF
+- performs the SteamCMD login step before `run_app_build`
+- defaults to the absolute-path root VDF so SteamCMD resolves the content root correctly
 - avoids stale-content uploads that happened earlier in this project
 
 ### 3.2 Correct build source
@@ -81,7 +85,7 @@ powershell -ExecutionPolicy Bypass -File "C:\UE\T66\Tools\Steam\UploadToSteam.ps
 ### 3.4 What the wrapper targets
 
 - **Steamworks SDK root:** `C:\SteamworksSDK\sdk`
-- **App build script:** `C:\SteamworksSDK\sdk\tools\ContentBuilder\scripts\CHADPOCALYPSE\app_build_4464300.vdf`
+- **Default app build script:** `C:\SteamworksSDK\sdk\tools\ContentBuilder\scripts\app_build_4464300_root.vdf`
 - **ContentBuilder content root:** `C:\SteamworksSDK\sdk\tools\ContentBuilder\content\CHADPOCALYPSE`
 
 ## 4. SteamCMD Authentication Notes
@@ -110,11 +114,16 @@ Once `steamcmd` has cached credentials on this machine, future uploads can usual
 
 If the wrapper is not being used, the direct fallback is:
 
-```text
-run_app_build "C:\SteamworksSDK\sdk\tools\ContentBuilder\scripts\CHADPOCALYPSE\app_build_4464300.vdf"
+```powershell
+C:\SteamworksSDK\sdk\tools\ContentBuilder\builder\steamcmd.exe `
+  +login tribulation66 `
+  +run_app_build "C:\SteamworksSDK\sdk\tools\ContentBuilder\scripts\app_build_4464300_root.vdf" `
+  +quit
 ```
 
-Only use this after confirming the ContentBuilder content root has already been refreshed from the current staged build. Otherwise it may upload stale content.
+Use the `app_build_4464300_root.vdf` fallback for manual recovery because it has absolute `ContentRoot` and `BuildOutput` paths. The relative `CHADPOCALYPSE\app_build_4464300.vdf` script is still available for reference, but the wrapper now defaults to the root VDF because the relative script failed again when SteamCMD resolved the content root from the script directory.
+
+Only use the direct fallback after confirming the ContentBuilder content root has already been refreshed from the current staged build. Otherwise it may upload stale content.
 
 ## 5. Steamworks Steps Future Agents Cannot Fully Automate
 
@@ -236,7 +245,8 @@ Do not treat these as meaningful project files or include them in source-control
 As of this handoff:
 
 - main-game Steam multiplayer under AppID `4464300` has been brought to a working host/guest state through the recent multiplayer pass
-- the current installed Steam build on this machine is `22815997`
+- the last confirmed installed Steam build on this machine was `22856853`
+- the newest uploaded but not-yet-live build is `22857027`
 - the Git backup snapshot is `codex/version-2.2` / `v2.2` / `28a85e82`
 - source control now contains additional post-build work that future agents must not assume is already present in the installed Steam build unless a new upload has been performed and verified
 
@@ -250,3 +260,14 @@ When resuming Steam/Steamworks work:
 4. verify the current branch/tag/working tree
 5. prefer `Tools/Steam/UploadToSteam.ps1` over manual ContentBuilder copying
 6. never assume the current repo state is the same as the currently installed Steam build
+
+## 12. 2026-04-19 Upload Note
+
+- Uploaded build: `22857027`
+- Build source used: `C:\UE\T66\Saved\StagedBuilds\Windows`
+- Steam content root refreshed before upload: `C:\SteamworksSDK\sdk\tools\ContentBuilder\content\CHADPOCALYPSE`
+- The local wrapper originally failed with `ERROR! Not logged on` because it did not include `+login`; source now includes the login step.
+- The wrapper now defaults to `C:\SteamworksSDK\sdk\tools\ContentBuilder\scripts\app_build_4464300_root.vdf` because the relative `CHADPOCALYPSE\app_build_4464300.vdf` path failed again on 2026-04-19 with `Content root folder does not exist`.
+- The successful upload path used the wrapper against `C:\UE\T66\Saved\StagedBuilds\Windows` and produced build `22857027`.
+- This upload contains the proper stage-clear leaderboard fix: speedrun-enabled difficulty clears now submit through one authoritative backend request instead of the previous score-submit plus completed-run-submit pair.
+- If the Steam client on this machine still shows `22856853`, the new build has not been set live on the branch yet or the client has not refreshed after the branch switch.

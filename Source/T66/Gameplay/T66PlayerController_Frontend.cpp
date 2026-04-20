@@ -30,6 +30,7 @@
 #include "UI/Screens/T66SnakeGameModal.h"
 #include "UI/Screens/T66LeaderboardScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
+#include "UI/Screens/T66ChallengesScreen.h"
 #include "UI/Screens/T66PartyInviteModal.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
@@ -413,6 +414,11 @@ namespace
 			OutScreenType = ET66ScreenType::MiniSaveSlots;
 			return true;
 		}
+		if (Normalized.Equals(TEXT("Challenges"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::Challenges;
+			return true;
+		}
 
 		return false;
 	}
@@ -501,6 +507,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66LeaderboardScreen::StaticClass();
 	case ET66ScreenType::AccountStatus:
 		return UT66AccountStatusScreen::StaticClass();
+	case ET66ScreenType::Challenges:
+		return UT66ChallengesScreen::StaticClass();
 	case ET66ScreenType::PartyInvite:
 		return UT66PartyInviteModal::StaticClass();
 	default:
@@ -1096,6 +1104,10 @@ void AT66PlayerController::InitializeUI()
 	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, AccountStatusClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> ChallengesClass = ResolveScreenClass(ET66ScreenType::Challenges))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::Challenges, ChallengesClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> PartyInviteClass = ResolveScreenClass(ET66ScreenType::PartyInvite))
 	{

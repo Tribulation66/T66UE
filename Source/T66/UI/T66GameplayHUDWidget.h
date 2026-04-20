@@ -21,6 +21,7 @@ class SBox;
 class SVerticalBox;
 class SButton;
 class SImage;
+class ST66CrosshairWidget;
 class UTexture2D;
 struct FSlateBrush;
 class ST66RingWidget;
@@ -178,6 +179,9 @@ protected:
 	void TickWheelSpin();
 	void ResolveWheelSpin();
 	void CloseWheelSpin();
+	int32 GetChestRewardRevealThresholdGold(ET66Rarity Rarity) const;
+	ET66Rarity ResolveChestRewardDisplayedRarity(int32 DisplayedGold) const;
+	void RefreshChestRewardVisualState();
 	void TickChestRewardPresentation(float InDeltaTime);
 	void HideChestReward();
 	void TryShowQueuedPresentation();
@@ -245,6 +249,7 @@ protected:
 	TSharedPtr<SBorder> TutorialSubtitleBorder;
 	TSharedPtr<STextBlock> TutorialSubtitleSpeakerText;
 	TSharedPtr<STextBlock> TutorialSubtitleBodyText;
+	TSharedPtr<ST66CrosshairWidget> CenterCrosshairWidget;
 	TSharedPtr<SBox> CenterCrosshairBox;
 	TSharedPtr<SBorder> ScopedSniperOverlayBorder;
 	TSharedPtr<STextBlock> ScopedUltTimerText;
@@ -279,9 +284,11 @@ protected:
 	TSharedPtr<SBox> QuickReviveIconRowBox;
 	TSharedPtr<SImage> QuickReviveIconImage;
 	TSharedPtr<FSlateBrush> QuickReviveBrush;
+	TSharedPtr<SBox> DifficultyRowBox;
 	TArray<TSharedPtr<SBorder>> DifficultyBorders;
 	TArray<TSharedPtr<SImage>> DifficultyImages;
 	TSharedPtr<FSlateBrush> SkullBrush;
+	TSharedPtr<SBox> CowardiceRowBox;
 	TArray<TSharedPtr<SImage>> ClownImages;
 	TSharedPtr<FSlateBrush> ClownBrush;
 	TSharedPtr<SButton> ImmortalityButton;
@@ -295,6 +302,7 @@ protected:
 	TSharedPtr<SBorder> PortraitBorder;
 	TSharedPtr<SImage> PortraitImage;
 	TSharedPtr<FSlateBrush> PortraitBrush;
+	TSharedPtr<STextBlock> PortraitPlaceholderText;
 	TSharedPtr<SBox> PortraitStatPanelBox;
 	TSharedPtr<STextBlock> StatDamageText;
 	TSharedPtr<STextBlock> StatAttackSpeedText;
@@ -360,6 +368,7 @@ protected:
 	ET66Rarity ActiveChestRewardRarity = ET66Rarity::Black;
 	int32 ChestRewardTargetGold = 0;
 	int32 ChestRewardDisplayedGold = 0;
+	int32 ChestRewardMinimumDisplayedGold = 0;
 	TArray<FQueuedChestReward> QueuedChestRewards;
 	TArray<FQueuedPickupCard> QueuedPickupCards;
 	int32 LastDisplayedSpeedRunTotalCs = -1;
@@ -375,6 +384,7 @@ protected:
 	FName LastAbilityHeroID = NAME_None;
 	ET66UltimateType LastUltimateType = ET66UltimateType::None;
 	ET66PassiveType LastPassiveType = ET66PassiveType::None;
+	bool bLastCrosshairLocked = false;
 	bool bLastScopedHudVisible = false;
 	int32 LastScopedUltDisplayTenths = INDEX_NONE;
 	int32 LastScopedShotDisplayCentis = INDEX_NONE;
@@ -407,6 +417,8 @@ protected:
 	static constexpr float MapCacheRefreshIntervalSeconds = 1.5f;
 	TMap<int32, TArray<FVector2D>> TowerRevealPointsByFloor;
 	int32 LastTowerRevealFloorNumber = INDEX_NONE;
+	float TowerRevealAccumSeconds = 0.f;
+	static constexpr float TowerRevealIntervalSeconds = 0.10f;
 
 	FTimerHandle MapRefreshTimerHandle;
 	FTimerHandle FPSTimerHandle;
