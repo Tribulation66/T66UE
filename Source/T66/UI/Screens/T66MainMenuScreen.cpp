@@ -327,8 +327,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	FriendGroupsDividerBox.Reset();
 	NoMatchingFriendsBox.Reset();
 
-	const FText NewGameText = NSLOCTEXT("T66.MainMenu", "Start", "START");
-	const FText LoadGameText = NSLOCTEXT("T66.MainMenu", "Continue", "CONTINUE");
+	const FText NewGameText = NSLOCTEXT("T66.MainMenu", "Start", "NEW GAME");
+	const FText LoadGameText = NSLOCTEXT("T66.MainMenu", "Continue", "LOAD GAME");
+	const FText DailyClimbText = NSLOCTEXT("T66.MainMenu", "DailyClimb", "DAILY CHALLENGE");
 	SetupRuntimeImageBrush(
 		PrimaryCTAFillBrush,
 		PrimaryCTAFillTexture,
@@ -1079,6 +1080,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, CenterButtonGap, 0.f, 0.f)
 				[
 					MakeMenuButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked, ET66ButtonType::Success, true, false)
+				]
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, CenterButtonGap, 0.f, 0.f)
+				[
+					MakeMenuButton(DailyClimbText, &UT66MainMenuScreen::HandleDailyClimbClicked, ET66ButtonType::Success, true, false)
 				]
 			]
 		];
@@ -2031,6 +2036,12 @@ FReply UT66MainMenuScreen::HandleLoadGameClicked()
 	return FReply::Handled();
 }
 
+FReply UT66MainMenuScreen::HandleDailyClimbClicked()
+{
+	OnDailyClimbClicked();
+	return FReply::Handled();
+}
+
 FReply UT66MainMenuScreen::HandlePowerUpClicked()
 {
 	OnPowerUpClicked();
@@ -2135,6 +2146,11 @@ void UT66MainMenuScreen::OnLoadGameClicked()
 		}
 	}
 	NavigateTo(ET66ScreenType::SaveSlots);
+}
+
+void UT66MainMenuScreen::OnDailyClimbClicked()
+{
+	NavigateTo(ET66ScreenType::DailyClimb);
 }
 
 void UT66MainMenuScreen::OnPowerUpClicked()

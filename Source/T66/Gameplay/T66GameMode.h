@@ -105,7 +105,7 @@ public:
 	/** Clear all miasma tiles (e.g. when boss is defeated). */
 	void ClearMiasma();
 
-	/** Called by BossBase on death so GameMode can decide what happens (normal vs Coliseum) and award score. */
+	/** Called by BossBase on death so GameMode can advance stage flow and award score. */
 	void HandleBossDefeated(AT66BossBase* Boss);
 
 	/** Destroy existing main map terrain geometry and spawn a fresh difficulty-driven terrain run. */
@@ -177,10 +177,7 @@ protected:
 	void SpawnModelShowcaseRow();
 	void SpawnStageCatchUpPlatformAndInteractables();
 	void SpawnStageEffectsForStage();
-	void SpawnColiseumArenaIfNeeded();
 	void SpawnTutorialArenaIfNeeded();
-	void SpawnAllOwedBossesInColiseum();
-	void SpawnFinalDifficultyBossInColiseum();
 	void BeginFinalDifficultySurvival(const FVector& BossDeathLocation);
 	void TickFinalDifficultySurvival(float DeltaTime);
 	void UpdateFinalDifficultySurvivalScaling(bool bForce = false);
@@ -208,7 +205,6 @@ protected:
 	void SpawnTowerDescentHolesIfNeeded();
 	void InitializeRunStateForBeginPlay();
 	bool HandleSpecialModeBeginPlay();
-	void HandleColiseumBeginPlay();
 	void HandleLabBeginPlay();
 	void ConsumePendingStageCatchUp();
 	void ScheduleDeferredGameplayLevelSpawn();
@@ -224,11 +220,8 @@ protected:
 	void SpawnStageEnemyDirector();
 	void FinalizeStandardStageCombatBootstrap();
 
-	bool IsColiseumStage() const;
-	bool IsFinalDifficultyBossColiseumStage() const;
 	/** True when current level is The Lab (practice room). */
 	bool IsLabLevel() const;
-	void ResetColiseumState();
 
 	/** Called when stage timer changes (we use it to detect "timer started"). */
 	UFUNCTION()
@@ -242,6 +235,7 @@ protected:
 
 	UFUNCTION()
 	void HandleDifficultyChanged();
+	bool IsBossRushFinaleStage() const;
 
 	void RefreshProgressionDrivenSystems(bool bRescaleLiveEnemies);
 	void ApplyStageProgressionVisuals();
@@ -377,14 +371,6 @@ private:
 	int32 TowerIdolSelectionsAtStageStart = 0;
 	int32 ActiveTowerTrapFloorNumber = INDEX_NONE;
 
-	// Coliseum: async-load boss classes before spawning.
-	bool bColiseumBossesAsyncLoadInFlight = false;
-	bool bColiseumBossesAsyncLoadAttempted = false;
-
-	// Coliseum state (only used when bForceColiseumMode is true).
-	int32 ColiseumBossesRemaining = 0;
-	bool bColiseumExitGateSpawned = false;
-	FVector ColiseumCenter = FVector(-45455.f, -23636.f, 200.f);
 	bool bFinalDifficultySurvivalActive = false;
 	float FinalDifficultySurvivalElapsedSeconds = 0.f;
 	float LastAppliedFinalDifficultyEnemyScalar = 1.f;

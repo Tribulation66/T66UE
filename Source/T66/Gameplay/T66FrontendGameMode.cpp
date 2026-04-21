@@ -95,8 +95,6 @@ void AT66FrontendGameMode::BeginPlay()
 			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 			{
 				T66GI->bIsStageTransition = false;
-				T66GI->bForceColiseumMode = false;
-				T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
 			}
 		}
 	}

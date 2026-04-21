@@ -3384,7 +3384,7 @@ FReply UT66GamblerOverlayWidget::OnCheatYes()
 			: 0.40f;
 		if (RunState && RngSub && Base > 0.f)
 		{
-			RngSub->UpdateLuckStat(RunState->GetLuckStat());
+			RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
 			const float Chance = RngSub->BiasChance01(Base);
 			bCheatSuccess = RngSub->RollChance01(Chance);
 			RunState->RecordLuckQuantityBool(

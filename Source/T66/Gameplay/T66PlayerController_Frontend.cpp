@@ -31,6 +31,7 @@
 #include "UI/Screens/T66LeaderboardScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/Screens/T66ChallengesScreen.h"
+#include "UI/Screens/T66DailyClimbScreen.h"
 #include "UI/Screens/T66PartyInviteModal.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
@@ -419,6 +420,11 @@ namespace
 			OutScreenType = ET66ScreenType::Challenges;
 			return true;
 		}
+		if (Normalized.Equals(TEXT("DailyClimb"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::DailyClimb;
+			return true;
+		}
 
 		return false;
 	}
@@ -509,6 +515,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66AccountStatusScreen::StaticClass();
 	case ET66ScreenType::Challenges:
 		return UT66ChallengesScreen::StaticClass();
+	case ET66ScreenType::DailyClimb:
+		return UT66DailyClimbScreen::StaticClass();
 	case ET66ScreenType::PartyInvite:
 		return UT66PartyInviteModal::StaticClass();
 	default:
@@ -1108,6 +1116,10 @@ void AT66PlayerController::InitializeUI()
 	if (TSubclassOf<UT66ScreenBase> ChallengesClass = ResolveScreenClass(ET66ScreenType::Challenges))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::Challenges, ChallengesClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> DailyClimbClass = ResolveScreenClass(ET66ScreenType::DailyClimb))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::DailyClimb, DailyClimbClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> PartyInviteClass = ResolveScreenClass(ET66ScreenType::PartyInvite))
 	{

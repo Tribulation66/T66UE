@@ -245,6 +245,69 @@ namespace
 		return FJsonSerializer::Deserialize(Reader, OutJson) && OutJson.IsValid();
 	}
 
+	int32 T66GetDifficultyStageCount(const ET66Difficulty Difficulty)
+	{
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Easy:
+		case ET66Difficulty::Medium:
+		case ET66Difficulty::Hard:
+		case ET66Difficulty::VeryHard:
+			return 4;
+		case ET66Difficulty::Impossible:
+			return 3;
+		default:
+			return 4;
+		}
+	}
+
+	int32 T66GetDifficultyStartStage(const ET66Difficulty Difficulty)
+	{
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Easy: return 1;
+		case ET66Difficulty::Medium: return 6;
+		case ET66Difficulty::Hard: return 11;
+		case ET66Difficulty::VeryHard: return 16;
+		case ET66Difficulty::Impossible: return 21;
+		default: return 1;
+		}
+	}
+
+	int32 T66NormalizeLocalStageReached(const ET66Difficulty Difficulty, const int32 StageReached)
+	{
+		const int32 StageCount = T66GetDifficultyStageCount(Difficulty);
+		if (StageReached >= 1 && StageReached <= StageCount)
+		{
+			return StageReached;
+		}
+
+		const int32 StageStart = T66GetDifficultyStartStage(Difficulty);
+		return FMath::Clamp(StageReached - StageStart + 1, 1, StageCount);
+	}
+
+	int32 T66MakeBackendCompatibleStageReached(const ET66Difficulty Difficulty, const int32 StageReached)
+	{
+		const int32 LocalStageReached = T66NormalizeLocalStageReached(Difficulty, StageReached);
+		const int32 StageStart = T66GetDifficultyStartStage(Difficulty);
+		const int32 CanonicalAbsoluteStage = StageStart + LocalStageReached - 1;
+
+		// Production still accepts the old 1/5/10/15/20/23 completion boundaries.
+		// Preserve those terminal values for non-Impossible clears until the live
+		// backend rollout is updated, while still sending the real local stage too.
+		if (Difficulty != ET66Difficulty::Impossible && LocalStageReached == T66GetDifficultyStageCount(Difficulty))
+		{
+			return StageStart + 4;
+		}
+
+		if (StageReached < StageStart || StageReached > StageStart + 4)
+		{
+			return CanonicalAbsoluteStage;
+		}
+
+		return StageReached;
+	}
+
 	FName T66GetDummyHeroId(const int32 Index)
 	{
 		static const FName HeroIds[] = {
@@ -276,8 +339,12 @@ namespace
 		Summary->RunDurationSeconds = Entry.TimeSeconds;
 		Summary->bWasFullClear = true;
 		Summary->bWasSpeedRunMode = (Summary->LeaderboardType == ET66LeaderboardType::SpeedRun);
-		Summary->StageReached = 5;
+		Summary->StageReached = 4;
 		Summary->Score = static_cast<int32>(Entry.Score);
+		Summary->ScoreRankAllTime = (Identity.Type == TEXT("score") && Identity.Time == TEXT("alltime")) ? Entry.Rank : 0;
+		Summary->ScoreRankWeekly = (Identity.Type == TEXT("score") && Identity.Time == TEXT("weekly")) ? Entry.Rank : 0;
+		Summary->SpeedRunRankAllTime = (Identity.Type == TEXT("speedrun") && Identity.Time == TEXT("alltime")) ? Entry.Rank : 0;
+		Summary->SpeedRunRankWeekly = (Identity.Type == TEXT("speedrun") && Identity.Time == TEXT("weekly")) ? Entry.Rank : 0;
 		Summary->HeroID = Entry.HeroID;
 		Summary->CompanionID = NAME_None;
 		Summary->HeroLevel = 18 - Entry.Rank;
@@ -299,9 +366,9 @@ namespace
 		Summary->DamageBySource.Add(FName(TEXT("Ultimate")), FMath::Max(600, Summary->Score / 6));
 		Summary->DisplayName = DisplayName;
 
-		const TArray<float> TimeFractions = { 0.18f, 0.38f, 0.59f, 0.79f, 1.0f };
-		const TArray<float> ScoreFractions = { 0.12f, 0.29f, 0.49f, 0.71f, 1.0f };
-		for (int32 StageIndex = 0; StageIndex < 5; ++StageIndex)
+		const TArray<float> TimeFractions = { 0.22f, 0.48f, 0.74f, 1.0f };
+		const TArray<float> ScoreFractions = { 0.18f, 0.42f, 0.69f, 1.0f };
+		for (int32 StageIndex = 0; StageIndex < 4; ++StageIndex)
 		{
 			const int32 StageNumber = StageIndex + 1;
 			const float ElapsedSeconds = FMath::RoundToFloat(Entry.TimeSeconds * TimeFractions[StageIndex] * 100.0f) / 100.0f;
@@ -857,7 +924,8 @@ namespace
 		RunObj->SetStringField(TEXT("companion_id"), CompanionId);
 		RunObj->SetStringField(TEXT("difficulty"), DifficultyToApi(Difficulty));
 		RunObj->SetStringField(TEXT("party_size"), PartyToApi(PartySize));
-		RunObj->SetNumberField(TEXT("stage_reached"), StageReached);
+		RunObj->SetNumberField(TEXT("stage_reached"), T66MakeBackendCompatibleStageReached(Difficulty, StageReached));
+		RunObj->SetNumberField(TEXT("local_stage_reached"), T66NormalizeLocalStageReached(Difficulty, StageReached));
 		RunObj->SetNumberField(TEXT("score"), Score);
 		RunObj->SetNumberField(TEXT("time_ms"), TimeMs);
 
@@ -930,6 +998,9 @@ namespace
 		RunObj->SetObjectField(TEXT("secondary_stats"), SecObj);
 
 		if (Snapshot->LuckRating0To100 >= 0) RunObj->SetNumberField(TEXT("luck_rating"), Snapshot->LuckRating0To100);
+		if (Snapshot->SeedLuck0To100 >= 0) RunObj->SetNumberField(TEXT("seed_luck"), Snapshot->SeedLuck0To100);
+		if (Snapshot->LuckModifierPercent > 0.f) RunObj->SetNumberField(TEXT("luck_modifier_percent"), Snapshot->LuckModifierPercent);
+		if (Snapshot->EffectiveLuck > 0.f) RunObj->SetNumberField(TEXT("effective_luck"), Snapshot->EffectiveLuck);
 		if (Snapshot->LuckRatingQuantity0To100 >= 0) RunObj->SetNumberField(TEXT("luck_quantity"), Snapshot->LuckRatingQuantity0To100);
 		if (Snapshot->LuckRatingQuality0To100 >= 0) RunObj->SetNumberField(TEXT("luck_quality"), Snapshot->LuckRatingQuality0To100);
 		if (Snapshot->SkillRating0To100 >= 0) RunObj->SetNumberField(TEXT("skill_rating"), Snapshot->SkillRating0To100);
@@ -996,6 +1067,14 @@ namespace
 				{
 					EventObj->SetNumberField(TEXT("draw_index"), Event.RunDrawIndex);
 					EventObj->SetNumberField(TEXT("pre_draw_seed"), Event.PreDrawSeed);
+				}
+				if (Event.LuckStatSnapshot >= 0)
+				{
+					EventObj->SetNumberField(TEXT("luck_stat_snapshot"), Event.LuckStatSnapshot);
+				}
+				if (Event.Luck01Snapshot >= 0.f)
+				{
+					EventObj->SetNumberField(TEXT("luck_01_snapshot"), Event.Luck01Snapshot);
 				}
 				if (Event.ExpectedChance01 >= 0.f)
 				{
@@ -1244,6 +1323,128 @@ namespace
 		RunObj->SetObjectField(TEXT("damage_by_source"), DmgObj);
 
 		return RunObj;
+	}
+
+	ET66DailyClimbRuleType T66ParseDailyClimbRuleType(const FString& Type)
+	{
+		if (Type.Equals(TEXT("start_random_items"), ESearchCase::IgnoreCase))
+		{
+			return ET66DailyClimbRuleType::StartRandomItems;
+		}
+		if (Type.Equals(TEXT("start_bonus_gold"), ESearchCase::IgnoreCase))
+		{
+			return ET66DailyClimbRuleType::StartBonusGold;
+		}
+		if (Type.Equals(TEXT("enemy_hp_multiplier"), ESearchCase::IgnoreCase))
+		{
+			return ET66DailyClimbRuleType::EnemyHpMultiplier;
+		}
+		if (Type.Equals(TEXT("enemy_loot_bag_count_multiplier"), ESearchCase::IgnoreCase))
+		{
+			return ET66DailyClimbRuleType::EnemyLootBagCountMultiplier;
+		}
+
+		return ET66DailyClimbRuleType::Unknown;
+	}
+
+	ET66Difficulty T66ParseDailyClimbDifficulty(const FString& Difficulty)
+	{
+		if (Difficulty.Equals(TEXT("medium"), ESearchCase::IgnoreCase)) return ET66Difficulty::Medium;
+		if (Difficulty.Equals(TEXT("hard"), ESearchCase::IgnoreCase)) return ET66Difficulty::Hard;
+		if (Difficulty.Equals(TEXT("veryhard"), ESearchCase::IgnoreCase)) return ET66Difficulty::VeryHard;
+		if (Difficulty.Equals(TEXT("impossible"), ESearchCase::IgnoreCase)) return ET66Difficulty::Impossible;
+		return ET66Difficulty::Easy;
+	}
+
+	bool T66ParseDailyClimbChallengeData(const TSharedPtr<FJsonObject>& Json, FT66DailyClimbChallengeData& OutChallenge)
+	{
+		if (!Json.IsValid())
+		{
+			return false;
+		}
+
+		const TSharedPtr<FJsonObject>* ChallengeObjectPtr = nullptr;
+		const TSharedPtr<FJsonObject> ChallengeJson =
+			(Json->TryGetObjectField(TEXT("challenge"), ChallengeObjectPtr) && ChallengeObjectPtr && (*ChallengeObjectPtr).IsValid())
+			? *ChallengeObjectPtr
+			: Json;
+
+		if (!ChallengeJson.IsValid())
+		{
+			return false;
+		}
+
+		FT66DailyClimbChallengeData ParsedChallenge;
+		ChallengeJson->TryGetStringField(TEXT("challenge_id"), ParsedChallenge.ChallengeId);
+		ChallengeJson->TryGetStringField(TEXT("challenge_date_utc"), ParsedChallenge.ChallengeDateUtc);
+		ChallengeJson->TryGetStringField(TEXT("title"), ParsedChallenge.Title);
+		ChallengeJson->TryGetStringField(TEXT("leaderboard_key"), ParsedChallenge.LeaderboardKey);
+		ChallengeJson->TryGetStringField(TEXT("attempt_id"), ParsedChallenge.AttemptId);
+		ChallengeJson->TryGetStringField(TEXT("attempt_state"), ParsedChallenge.AttemptState);
+
+		FString HeroIdString;
+		if (ChallengeJson->TryGetStringField(TEXT("hero_id"), HeroIdString) && !HeroIdString.IsEmpty())
+		{
+			ParsedChallenge.HeroID = FName(*HeroIdString);
+		}
+
+		FString DifficultyString;
+		if (ChallengeJson->TryGetStringField(TEXT("difficulty"), DifficultyString))
+		{
+			ParsedChallenge.Difficulty = T66ParseDailyClimbDifficulty(DifficultyString);
+		}
+
+		double RunSeedValue = 0.0;
+		if (ChallengeJson->TryGetNumberField(TEXT("run_seed"), RunSeedValue))
+		{
+			ParsedChallenge.RunSeed = static_cast<int32>(RunSeedValue);
+		}
+
+		double CouponRewardValue = 0.0;
+		if (ChallengeJson->TryGetNumberField(TEXT("coupon_reward"), CouponRewardValue))
+		{
+			ParsedChallenge.CouponReward = static_cast<int32>(CouponRewardValue);
+		}
+
+		const TArray<TSharedPtr<FJsonValue>>* RulesArray = nullptr;
+		if (ChallengeJson->TryGetArrayField(TEXT("rules"), RulesArray) && RulesArray)
+		{
+			for (const TSharedPtr<FJsonValue>& RuleValue : *RulesArray)
+			{
+				const TSharedPtr<FJsonObject>* RuleObject = nullptr;
+				if (!RuleValue.IsValid() || !RuleValue->TryGetObject(RuleObject) || !RuleObject || !(*RuleObject).IsValid())
+				{
+					continue;
+				}
+
+				FT66DailyClimbRule& Rule = ParsedChallenge.Rules.AddDefaulted_GetRef();
+				FString RuleTypeString;
+				(*RuleObject)->TryGetStringField(TEXT("type"), RuleTypeString);
+				Rule.Type = T66ParseDailyClimbRuleType(RuleTypeString);
+				(*RuleObject)->TryGetStringField(TEXT("label"), Rule.Label);
+				(*RuleObject)->TryGetStringField(TEXT("description"), Rule.Description);
+
+				double IntValue = 0.0;
+				if ((*RuleObject)->TryGetNumberField(TEXT("intValue"), IntValue))
+				{
+					Rule.IntValue = static_cast<int32>(IntValue);
+				}
+
+				double FloatValue = 0.0;
+				if ((*RuleObject)->TryGetNumberField(TEXT("floatValue"), FloatValue))
+				{
+					Rule.FloatValue = static_cast<float>(FloatValue);
+				}
+			}
+		}
+
+		if (!ParsedChallenge.IsValid())
+		{
+			return false;
+		}
+
+		OutChallenge = MoveTemp(ParsedChallenge);
+		return true;
 	}
 }
 
@@ -1518,6 +1719,118 @@ void UT66BackendSubsystem::SendSubmitRunRequest(const TSharedPtr<FJsonObject>& R
 	Request->ProcessRequest();
 }
 
+void UT66BackendSubsystem::FetchCurrentDailyClimb()
+{
+	if (!IsBackendConfigured())
+	{
+		LastDailyClimbStatus = TEXT("backend_unconfigured");
+		LastDailyClimbMessage = TEXT("Backend URL is not configured.");
+		OnDailyClimbChallengeReady.Broadcast(TEXT("current"));
+		return;
+	}
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), TEXT("/api/daily/current"));
+	if (HasSteamTicket())
+	{
+		SetAuthHeaders(Request);
+	}
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnDailyClimbStatusResponseReceived, FString(TEXT("current")));
+	Request->ProcessRequest();
+}
+
+void UT66BackendSubsystem::StartDailyClimbAttempt()
+{
+	if (!IsBackendConfigured())
+	{
+		LastDailyClimbStatus = TEXT("backend_unconfigured");
+		LastDailyClimbMessage = TEXT("Backend URL is not configured.");
+		OnDailyClimbChallengeReady.Broadcast(TEXT("start"));
+		return;
+	}
+
+	if (!HasSteamTicket())
+	{
+		LastDailyClimbStatus = TEXT("missing_auth");
+		LastDailyClimbMessage = TEXT("Steam authentication is required for Daily Climb.");
+		OnDailyClimbChallengeReady.Broadcast(TEXT("start"));
+		return;
+	}
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("POST"), TEXT("/api/daily/start"));
+	SetAuthHeaders(Request);
+	Request->SetContentAsString(TEXT("{}"));
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnDailyClimbStatusResponseReceived, FString(TEXT("start")));
+	Request->ProcessRequest();
+}
+
+void UT66BackendSubsystem::FetchDailyLeaderboard(const FString& Filter)
+{
+	if (!IsBackendConfigured())
+	{
+		return;
+	}
+
+	const FString NormalizedFilter = Filter.IsEmpty() ? TEXT("global") : Filter.ToLower();
+	const FString CacheKey = FString::Printf(TEXT("daily_%s"), *NormalizedFilter);
+	if (PendingLeaderboardFetches.Contains(CacheKey))
+	{
+		return;
+	}
+	PendingLeaderboardFetches.Add(CacheKey);
+
+	const FString Endpoint = FString::Printf(TEXT("/api/daily/leaderboard?filter=%s"), *NormalizedFilter);
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnLeaderboardResponseReceived, CacheKey);
+	Request->ProcessRequest();
+}
+
+void UT66BackendSubsystem::SubmitDailyClimbRun(
+	const FString& DisplayName,
+	UT66LeaderboardRunSummarySaveGame* Snapshot,
+	const FString& ChallengeId,
+	const FString& AttemptId,
+	const FString& RequestKey)
+{
+	if (!IsBackendConfigured() || !HasSteamTicket() || !Snapshot || ChallengeId.IsEmpty() || AttemptId.IsEmpty())
+	{
+		OnDailyClimbSubmitDataReady.Broadcast(RequestKey, false, TEXT("invalid_daily_submit"), 0, 0);
+		return;
+	}
+
+	const FString HeroId = Snapshot->HeroID.IsNone() ? FString() : Snapshot->HeroID.ToString();
+	const FString CompanionId = Snapshot->CompanionID.IsNone() ? FString() : Snapshot->CompanionID.ToString();
+	const int32 TimeMs = FMath::Max(0, FMath::RoundToInt(Snapshot->RunDurationSeconds * 1000.f));
+	const TSharedPtr<FJsonObject> RunObject = T66BuildRunJsonObject(
+		HeroId,
+		CompanionId,
+		Snapshot->Difficulty,
+		ET66PartySize::Solo,
+		Snapshot->StageReached,
+		Snapshot->Score,
+		TimeMs,
+		Snapshot);
+
+	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetStringField(TEXT("display_name"), DisplayName);
+	if (!RequestKey.IsEmpty())
+	{
+		Root->SetStringField(TEXT("submission_id"), RequestKey);
+	}
+	Root->SetStringField(TEXT("challenge_id"), ChallengeId);
+	Root->SetStringField(TEXT("attempt_id"), AttemptId);
+	Root->SetObjectField(TEXT("run"), RunObject);
+
+	FString Payload;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Payload);
+	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("POST"), TEXT("/api/daily/submit"));
+	SetAuthHeaders(Request);
+	Request->SetContentAsString(Payload);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnDailyClimbSubmitResponseReceived, RequestKey);
+	Request->ProcessRequest();
+}
+
 bool UT66BackendSubsystem::HandlePendingCoopSubmitTicker(float DeltaTime)
 {
 	(void)DeltaTime;
@@ -1674,6 +1987,101 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 	}
 }
 
+void UT66BackendSubsystem::OnDailyClimbStatusResponseReceived(
+	FHttpRequestPtr Request,
+	FHttpResponsePtr Response,
+	bool bConnectedSuccessfully,
+	FString RequestTag)
+{
+	if (!bConnectedSuccessfully || !Response.IsValid())
+	{
+		LastDailyClimbStatus = TEXT("connection_error");
+		LastDailyClimbMessage = TEXT("Daily Climb request failed.");
+		OnDailyClimbChallengeReady.Broadcast(RequestTag);
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
+	{
+		LastDailyClimbStatus = TEXT("parse_error");
+		LastDailyClimbMessage = TEXT("Daily Climb response was invalid JSON.");
+		OnDailyClimbChallengeReady.Broadcast(RequestTag);
+		return;
+	}
+
+	if (!Json->TryGetStringField(TEXT("status"), LastDailyClimbStatus))
+	{
+		LastDailyClimbStatus = TEXT("ok");
+	}
+	LastDailyClimbMessage = ExtractResponseMessage(Json, LastDailyClimbStatus);
+
+	FT66DailyClimbChallengeData ParsedChallenge;
+	if (T66ParseDailyClimbChallengeData(Json, ParsedChallenge))
+	{
+		CachedDailyClimbChallenge = MoveTemp(ParsedChallenge);
+	}
+
+	OnDailyClimbChallengeReady.Broadcast(RequestTag);
+}
+
+void UT66BackendSubsystem::OnDailyClimbSubmitResponseReceived(
+	FHttpRequestPtr Request,
+	FHttpResponsePtr Response,
+	bool bConnectedSuccessfully,
+	FString RequestKey)
+{
+	if (!bConnectedSuccessfully || !Response.IsValid())
+	{
+		LastDailyClimbStatus = TEXT("connection_error");
+		LastDailyClimbMessage = TEXT("Daily Climb submit failed.");
+		OnDailyClimbSubmitDataReady.Broadcast(RequestKey, false, LastDailyClimbStatus, 0, 0);
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
+	{
+		LastDailyClimbStatus = TEXT("parse_error");
+		LastDailyClimbMessage = TEXT("Daily Climb submit returned invalid JSON.");
+		OnDailyClimbSubmitDataReady.Broadcast(RequestKey, false, LastDailyClimbStatus, 0, 0);
+		return;
+	}
+
+	if (!Json->TryGetStringField(TEXT("status"), LastDailyClimbStatus))
+	{
+		LastDailyClimbStatus = TEXT("unknown");
+	}
+	LastDailyClimbMessage = ExtractResponseMessage(Json, LastDailyClimbStatus);
+
+	double DailyRankValue = 0.0;
+	double CouponValue = 0.0;
+	(void)Json->TryGetNumberField(TEXT("score_rank_daily"), DailyRankValue);
+	(void)Json->TryGetNumberField(TEXT("coupons_awarded"), CouponValue);
+	const int32 DailyRank = static_cast<int32>(DailyRankValue);
+	const int32 CouponsAwarded = static_cast<int32>(CouponValue);
+
+	if (CachedDailyClimbChallenge.IsValid()
+		&& (LastDailyClimbStatus == TEXT("accepted")
+			|| LastDailyClimbStatus == TEXT("unranked")
+			|| LastDailyClimbStatus == TEXT("flagged")
+			|| LastDailyClimbStatus == TEXT("banned")
+			|| LastDailyClimbStatus == TEXT("suspended")))
+	{
+		CachedDailyClimbChallenge.AttemptState = TEXT("completed");
+	}
+
+	const bool bParsedResponse =
+		LastDailyClimbStatus == TEXT("accepted")
+		|| LastDailyClimbStatus == TEXT("unranked")
+		|| LastDailyClimbStatus == TEXT("flagged")
+		|| LastDailyClimbStatus == TEXT("banned")
+		|| LastDailyClimbStatus == TEXT("suspended");
+	OnDailyClimbSubmitDataReady.Broadcast(RequestKey, bParsedResponse, LastDailyClimbStatus, DailyRank, CouponsAwarded);
+}
+
 // ── My Rank ──────────────────────────────────────────────────
 
 void UT66BackendSubsystem::FetchMyRank(
@@ -1682,7 +2090,31 @@ void UT66BackendSubsystem::FetchMyRank(
 	const FString& Party,
 	const FString& Difficulty)
 {
-	const FString RankKey = MakeMyRankCacheKey(Type, Time, Party, Difficulty);
+	FetchMyRankFiltered(Type, Time, Party, Difficulty, TEXT("global"));
+}
+
+void UT66BackendSubsystem::FetchMyRankFiltered(
+	const FString& Type,
+	const FString& Time,
+	const FString& Party,
+	const FString& Difficulty,
+	const FString& Filter,
+	const FString& FilterContext)
+{
+	const FString ResolvedFilter = Filter.IsEmpty() ? TEXT("global") : Filter;
+	FString ResolvedFilterContext = FilterContext;
+	if (ResolvedFilter.Equals(TEXT("friends"), ESearchCase::IgnoreCase) && ResolvedFilterContext.IsEmpty())
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66SteamHelper* Steam = GI->GetSubsystem<UT66SteamHelper>())
+			{
+				ResolvedFilterContext = FString::Join(Steam->GetFriendSteamIds(), TEXT(","));
+			}
+		}
+	}
+
+	const FString RankKey = MakeMyRankCacheKey(Type, Time, Party, Difficulty, ResolvedFilter, ResolvedFilterContext);
 	if (PendingMyRankFetches.Contains(RankKey))
 	{
 		return;
@@ -1697,9 +2129,17 @@ void UT66BackendSubsystem::FetchMyRank(
 		return;
 	}
 
-	const FString Endpoint = FString::Printf(
-		TEXT("/api/my-rank?type=%s&time=%s&party=%s&difficulty=%s"),
-		*Type, *Time, *Party, *Difficulty);
+	FString Endpoint = FString::Printf(
+		TEXT("/api/my-rank?type=%s&time=%s&party=%s&difficulty=%s&filter=%s"),
+		*Type,
+		*Time,
+		*Party,
+		*Difficulty,
+		*ResolvedFilter);
+	if (ResolvedFilter.Equals(TEXT("friends"), ESearchCase::IgnoreCase))
+	{
+		Endpoint += FString::Printf(TEXT("&friend_ids=%s"), *ResolvedFilterContext);
+	}
 
 	PendingMyRankFetches.Add(RankKey);
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
@@ -1712,9 +2152,20 @@ FString UT66BackendSubsystem::MakeMyRankCacheKey(
 	const FString& Type,
 	const FString& Time,
 	const FString& Party,
-	const FString& Difficulty)
+	const FString& Difficulty,
+	const FString& Filter,
+	const FString& FilterContext)
 {
-	return FString::Printf(TEXT("%s_%s_%s_%s"), *Type, *Time, *Party, *Difficulty);
+	const FString ResolvedFilter = Filter.IsEmpty() ? TEXT("global") : Filter;
+	const uint32 FilterContextHash = FilterContext.IsEmpty() ? 0u : GetTypeHash(FilterContext);
+	return FString::Printf(
+		TEXT("%s_%s_%s_%s_%s_%u"),
+		*Type,
+		*Time,
+		*Party,
+		*Difficulty,
+		*ResolvedFilter,
+		FilterContextHash);
 }
 
 bool UT66BackendSubsystem::HasCachedMyRank(const FString& Key) const
@@ -2763,6 +3214,10 @@ UT66LeaderboardRunSummarySaveGame* UT66BackendSubsystem::ParseRunSummaryFromJson
 	S->OwnerSteamId = Json->HasField(TEXT("steam_id")) ? Json->GetStringField(TEXT("steam_id")) : FString();
 	S->StageReached = Json->HasField(TEXT("stage_reached")) ? static_cast<int32>(Json->GetNumberField(TEXT("stage_reached"))) : 1;
 	S->Score = Json->HasField(TEXT("score")) ? static_cast<int32>(Json->GetNumberField(TEXT("score"))) : 0;
+	S->ScoreRankAllTime = Json->HasField(TEXT("score_rank_alltime")) ? static_cast<int32>(Json->GetNumberField(TEXT("score_rank_alltime"))) : 0;
+	S->ScoreRankWeekly = Json->HasField(TEXT("score_rank_weekly")) ? static_cast<int32>(Json->GetNumberField(TEXT("score_rank_weekly"))) : 0;
+	S->SpeedRunRankAllTime = Json->HasField(TEXT("speedrun_rank_alltime")) ? static_cast<int32>(Json->GetNumberField(TEXT("speedrun_rank_alltime"))) : 0;
+	S->SpeedRunRankWeekly = Json->HasField(TEXT("speedrun_rank_weekly")) ? static_cast<int32>(Json->GetNumberField(TEXT("speedrun_rank_weekly"))) : 0;
 	S->RunDurationSeconds = Json->HasField(TEXT("time_seconds")) ? static_cast<float>(Json->GetNumberField(TEXT("time_seconds"))) : 0.f;
 
 	const FString HeroIdStr = Json->GetStringField(TEXT("hero_id"));

@@ -1541,7 +1541,8 @@ UENUM(BlueprintType)
 enum class ET66LeaderboardTime : uint8
 {
 	Current UMETA(DisplayName = "Current"),
-	AllTime UMETA(DisplayName = "All Time")
+	AllTime UMETA(DisplayName = "All Time"),
+	Daily UMETA(DisplayName = "Daily")
 };
 
 /**

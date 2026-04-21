@@ -329,7 +329,9 @@ void UT66UIManager::HideAllUI()
 
 bool UT66UIManager::IsFrontendTopBarVisible() const
 {
-	return FrontendTopBar && FrontendTopBar->IsInViewport();
+	return FrontendTopBar
+		&& FrontendTopBar->IsInViewport()
+		&& FrontendTopBar->GetCachedWidget().IsValid();
 }
 
 float UT66UIManager::GetFrontendTopBarReservedHeight() const
@@ -383,6 +385,17 @@ void UT66UIManager::UpdateFrontendTopBar()
 	if (!OwningPlayer)
 	{
 		return;
+	}
+
+	// Recover from a stale widget shell that still exists on the UObject side
+	// but no longer has a live Slate tree to draw.
+	if (FrontendTopBar && !FrontendTopBar->GetCachedWidget().IsValid())
+	{
+		if (FrontendTopBar->IsInViewport())
+		{
+			FrontendTopBar->RemoveFromParent();
+		}
+		FrontendTopBar = nullptr;
 	}
 
 	if (!FrontendTopBar)

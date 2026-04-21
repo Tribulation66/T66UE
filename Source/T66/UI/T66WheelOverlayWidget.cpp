@@ -333,7 +333,7 @@ FReply UT66WheelOverlayWidget::OnSpin()
 			UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 			if (RunState)
 			{
-				RngSub->UpdateLuckStat(RunState->GetLuckStat());
+				RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
 			}
 
 			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))

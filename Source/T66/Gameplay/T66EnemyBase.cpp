@@ -602,6 +602,14 @@ void AT66EnemyBase::RebuildScaledCombatStats(const bool bResetCurrentHPToMax)
 
 	ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedMaxHP) * ProgressionEnemyScalarApplied));
 	ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedMaxHP) * FinaleScalarApplied));
+	if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		const float DailyEnemyHpMultiplier = T66GI->GetDailyClimbFloatRuleValue(ET66DailyClimbRuleType::EnemyHpMultiplier, 1.0f);
+		if (DailyEnemyHpMultiplier > 0.0f && !FMath::IsNearlyEqual(DailyEnemyHpMultiplier, 1.0f))
+		{
+			ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedMaxHP) * DailyEnemyHpMultiplier));
+		}
+	}
 
 	int32 ResolvedTouchDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseTouchDamageHearts) * DifficultyScalarApplied));
 	ResolvedTouchDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedTouchDamage) * ProgressionEnemyScalarApplied));
@@ -1398,7 +1406,7 @@ void AT66EnemyBase::OnDeath()
 		UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 		if (RngSub && RunState)
 		{
-			RngSub->UpdateLuckStat(RunState->GetLuckStat());
+			RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
 		}
 
 		FRandomStream LocalRng(FPlatformTime::Cycles());
@@ -1446,11 +1454,15 @@ void AT66EnemyBase::OnDeath()
 		const int32 LootBagCount = RngSub
 			? FMath::Max(1, RngSub->RollIntRangeBiased(BagCountRange, Stream))
 			: FMath::Max(1, Stream.RandRange(BagCountMin, BagCountMax));
+		const float DailyLootBagMultiplier = T66GI->GetDailyClimbFloatRuleValue(ET66DailyClimbRuleType::EnemyLootBagCountMultiplier, 1.0f);
+		const int32 AdjustedLootBagCount = (DailyLootBagMultiplier > 0.0f && !FMath::IsNearlyEqual(DailyLootBagMultiplier, 1.0f))
+			? FMath::Max(1, FMath::RoundToInt(static_cast<float>(LootBagCount) * DailyLootBagMultiplier))
+			: LootBagCount;
 		const int32 BagCountDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
 		const int32 BagCountPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
 		if (RunState)
 		{
-			RunState->RecordLuckQuantityRoll(FName(TEXT("EnemyLootBagCount")), LootBagCount, BagCountMin, BagCountMax, BagCountDrawIndex, BagCountPreDrawSeed);
+			RunState->RecordLuckQuantityRoll(FName(TEXT("EnemyLootBagCount")), AdjustedLootBagCount, BagCountMin, BagCountMax, BagCountDrawIndex, BagCountPreDrawSeed);
 		}
 
 		const FT66RarityWeights Weights = PlayerExperience
@@ -1458,7 +1470,7 @@ void AT66EnemyBase::OnDeath()
 			: FT66RarityWeights{};
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		for (int32 BagIndex = 0; BagIndex < LootBagCount; ++BagIndex)
+		for (int32 BagIndex = 0; BagIndex < AdjustedLootBagCount; ++BagIndex)
 		{
 			ET66Rarity BagRarity = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
 			const int32 BagRarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
@@ -1481,7 +1493,7 @@ void AT66EnemyBase::OnDeath()
 
 			const FName ItemID = T66GI->GetRandomItemIDForLootRarityFromStream(BagRarity, Stream);
 			const float Angle = RngSub ? RngSub->RunFRandRange(0.f, 2.f * PI) : Stream.FRandRange(0.f, 2.f * PI);
-			const float Radius = (LootBagCount > 1)
+			const float Radius = (AdjustedLootBagCount > 1)
 				? (RngSub ? RngSub->RunFRandRange(0.f, 90.f) : Stream.FRandRange(0.f, 90.f))
 				: 0.f;
 			const FVector Offset(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f);

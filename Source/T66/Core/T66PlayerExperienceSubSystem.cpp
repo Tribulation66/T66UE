@@ -142,12 +142,12 @@ int32 UT66PlayerExperienceSubSystem::GetDifficultyEndStage(const ET66Difficulty 
 {
 	switch (Difficulty)
 	{
-	case ET66Difficulty::Easy: return 5;
-	case ET66Difficulty::Medium: return 10;
-	case ET66Difficulty::Hard: return 15;
-	case ET66Difficulty::VeryHard: return 20;
+	case ET66Difficulty::Easy: return 4;
+	case ET66Difficulty::Medium: return 9;
+	case ET66Difficulty::Hard: return 14;
+	case ET66Difficulty::VeryHard: return 19;
 	case ET66Difficulty::Impossible: return 23;
-	default: return 5;
+	default: return 4;
 	}
 }
 

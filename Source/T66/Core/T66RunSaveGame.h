@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/T66RngTuningConfig.h"
+#include "Core/T66DailyClimbTypes.h"
 #include "GameFramework/SaveGame.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66BossPartTypes.h"
@@ -48,6 +49,18 @@ struct T66_API FT66AntiCheatLuckEvent
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	float TimeSeconds = 0.f;
 
+	/** Fixed per-run Seed Luck (0..100) active when this event was recorded. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 SeedLuck0To100 = -1;
+
+	/** Aggregate luck modifier percentage active when this event was recorded. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float LuckModifierPercent = 0.f;
+
+	/** Effective Seed Luck after applying modifiers when this event was recorded. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float EffectiveLuck = 0.f;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	float Value01 = 0.5f;
 
@@ -65,6 +78,12 @@ struct T66_API FT66AntiCheatLuckEvent
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 PreDrawSeed = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 LuckStatSnapshot = -1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float Luck01Snapshot = -1.f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	float ExpectedChance01 = -1.f;
@@ -420,6 +439,18 @@ struct T66_API FT66SavedRunSnapshot
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 PowerCrystalsGrantedToWalletThisRun = 0;
 
+	/** Fixed per-run Seed Luck rolled once at run start. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 SeedLuck0To100 = -1;
+
+	/** Aggregate modifier percent applied to Seed Luck for runtime RNG biasing. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float LuckModifierPercent = 0.f;
+
+	/** Effective Seed Luck after applying modifiers. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float EffectiveLuck = 0.f;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	float CompanionHealingDoneThisRun = 0.f;
 
@@ -563,7 +594,7 @@ class T66_API UT66RunSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 9;
+	int32 SaveVersion = 10;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FName HeroID;
@@ -615,6 +646,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 RunSeed = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	bool bIsDailyClimbRun = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FT66DailyClimbChallengeData DailyClimbChallenge;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	ET66MainMapLayoutVariant MainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;

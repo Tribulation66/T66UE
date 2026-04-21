@@ -25,13 +25,13 @@ struct T66_API FT66StageProgressionSnapshot
 	int32 DifficultyStartStage = 1;
 
 	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
-	int32 DifficultyEndStage = 5;
+	int32 DifficultyEndStage = 4;
 
 	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
 	int32 LocalStageIndex = 1;
 
 	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
-	int32 LocalStageCount = 5;
+	int32 LocalStageCount = 4;
 
 	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
 	float DifficultyScalar = 1.0f;

@@ -38,6 +38,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RNG")
 	int32 GetRunSeed() const { return RunSeed; }
 
+	/** Deterministic per-run Seed Luck roll derived from RunSeed without consuming the main run stream. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RNG")
+	int32 RollSeedLuck0To100() const;
+
 	/** Effective Luck stat used for biasing (>=1). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RNG")
 	int32 GetLuckStat() const { return LuckStat; }

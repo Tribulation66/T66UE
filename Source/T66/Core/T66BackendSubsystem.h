@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Core/T66DailyClimbTypes.h"
 #include "Data/T66DataTypes.h"
 #include "Containers/Ticker.h"
 #include "Interfaces/IHttpRequest.h"
@@ -62,6 +63,18 @@ DECLARE_MULTICAST_DELEGATE_FourParams(
 	bool,
 	int32,
 	int32);
+
+DECLARE_MULTICAST_DELEGATE_OneParam(
+	FOnT66DailyClimbChallengeReady,
+	const FString& /*RequestTag*/);
+
+DECLARE_MULTICAST_DELEGATE_FiveParams(
+	FOnT66DailyClimbSubmitDataReady,
+	const FString& /*RequestKey*/,
+	bool /*bSuccess*/,
+	const FString& /*Status*/,
+	int32 /*DailyRank*/,
+	int32 /*CouponsAwarded*/);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnAccountStatusResponse,
@@ -217,11 +230,21 @@ public:
 		const FString& Party,
 		const FString& Difficulty);
 
+	void FetchMyRankFiltered(
+		const FString& Type,
+		const FString& Time,
+		const FString& Party,
+		const FString& Difficulty,
+		const FString& Filter,
+		const FString& FilterContext = FString());
+
 	static FString MakeMyRankCacheKey(
 		const FString& Type,
 		const FString& Time,
 		const FString& Party,
-		const FString& Difficulty);
+		const FString& Difficulty,
+		const FString& Filter = TEXT("global"),
+		const FString& FilterContext = FString());
 
 	bool HasCachedMyRank(const FString& Key) const;
 	bool GetCachedMyRank(const FString& Key, bool& bOutSuccess, int32& OutRank, int32& OutTotalEntries) const;
@@ -230,6 +253,26 @@ public:
 	FOnMyRankResponse OnMyRankComplete;
 
 	FOnT66MyRankDataReady OnMyRankDataReady;
+
+	// ── API: Daily Climb ─────────────────────────────────────
+
+	void FetchCurrentDailyClimb();
+	void StartDailyClimbAttempt();
+	void FetchDailyLeaderboard(const FString& Filter = TEXT("global"));
+	void SubmitDailyClimbRun(
+		const FString& DisplayName,
+		UT66LeaderboardRunSummarySaveGame* Snapshot,
+		const FString& ChallengeId,
+		const FString& AttemptId,
+		const FString& RequestKey = FString());
+
+	bool HasCachedDailyClimbChallenge() const { return CachedDailyClimbChallenge.IsValid(); }
+	const FT66DailyClimbChallengeData& GetCachedDailyClimbChallenge() const { return CachedDailyClimbChallenge; }
+	const FString& GetLastDailyClimbStatus() const { return LastDailyClimbStatus; }
+	const FString& GetLastDailyClimbMessage() const { return LastDailyClimbMessage; }
+
+	FOnT66DailyClimbChallengeReady OnDailyClimbChallengeReady;
+	FOnT66DailyClimbSubmitDataReady OnDailyClimbSubmitDataReady;
 
 	// ── API: Account Status ──────────────────────────────────
 
@@ -386,6 +429,9 @@ private:
 	TMap<FString, TObjectPtr<UT66LeaderboardRunSummarySaveGame>> RunSummaryCache;
 	FString LastSubmitRunStatus;
 	FString LastSubmitRunReason;
+	FT66DailyClimbChallengeData CachedDailyClimbChallenge;
+	FString LastDailyClimbStatus;
+	FString LastDailyClimbMessage;
 	TSet<FString> PendingRunSummaryFetches;
 	FTSTicker::FDelegateHandle PartyInvitePollTickerHandle;
 	FTSTicker::FDelegateHandle PendingCoopSubmitTickerHandle;
@@ -446,6 +492,8 @@ private:
 	void OnClientDiagnosticsResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString EventName, FString InviteId);
 	void OnLeaderboardResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString LeaderboardKey);
 	void OnRunSummaryResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString EntryId);
+	void OnDailyClimbStatusResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString RequestTag);
+	void OnDailyClimbSubmitResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString RequestKey);
 
 	static ET66Difficulty ApiStringToDifficulty(const FString& S);
 	static ET66PartySize ApiStringToPartySize(const FString& S);

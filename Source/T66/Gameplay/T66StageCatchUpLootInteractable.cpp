@@ -53,7 +53,7 @@ bool AT66StageCatchUpLootInteractable::Interact(APlayerController* PC)
 	const int32 Count = FMath::Clamp(LootBagCount, 0, 999);
 	if (RngSub)
 	{
-		RngSub->UpdateLuckStat(RunState->GetLuckStat());
+		RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
 	}
 	FRandomStream LocalRng(FPlatformTime::Cycles());
 	FRandomStream& Rng = RngSub ? RngSub->GetRunStream() : LocalRng;

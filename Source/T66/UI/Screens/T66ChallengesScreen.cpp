@@ -1,16 +1,22 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/T66ChallengesScreen.h"
+#include "Core/T66CommunityContentSubsystem.h"
 #include "Core/T66GameInstance.h"
-#include "UI/Style/T66Style.h"
-#include "Styling/CoreStyle.h"
+#include "Data/T66DataTypes.h"
+#include "Engine/DataTable.h"
 #include "Kismet/GameplayStatics.h"
+#include "Styling/CoreStyle.h"
+#include "UI/Style/T66Style.h"
+#include "Widgets/Input/SCheckBox.h"
+#include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SSpacer.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
+#include "Widgets/Input/SMultiLineEditableTextBox.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace
@@ -19,65 +25,19 @@ namespace
 	{
 		Challenges = 0,
 		Mods = 1,
-		Count
+		Count,
 	};
 
-	struct FCommittedSelectionState
+	enum class ESourceTabIndex : int32
 	{
-		ET66RunModifierKind Kind = ET66RunModifierKind::None;
-		FName ID = NAME_None;
+		Official = 0,
+		Community = 1,
+		Count,
 	};
-
-	FCommittedSelectionState& GetFallbackCommittedSelection()
-	{
-		static FCommittedSelectionState Selection;
-		return Selection;
-	}
 
 	UT66GameInstance* GetT66GameInstance(const UObject* Context)
 	{
 		return Context ? Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(Context)) : nullptr;
-	}
-
-	int32 GetTabIndexForModifierKind(const ET66RunModifierKind Kind)
-	{
-		return Kind == ET66RunModifierKind::Mod
-			? static_cast<int32>(ETabIndex::Mods)
-			: static_cast<int32>(ETabIndex::Challenges);
-	}
-
-	void SetConfirmedSelection(const UObject* Context, const ET66RunModifierKind Kind, const FName ID)
-	{
-		if (UT66GameInstance* GI = GetT66GameInstance(Context))
-		{
-			GI->SelectedRunModifierKind = Kind;
-			GI->SelectedRunModifierID = ID;
-			return;
-		}
-
-		FCommittedSelectionState& State = GetFallbackCommittedSelection();
-		State.Kind = Kind;
-		State.ID = ID;
-	}
-
-	ET66RunModifierKind GetConfirmedSelectionKind(const UObject* Context)
-	{
-		if (const UT66GameInstance* GI = GetT66GameInstance(Context))
-		{
-			return GI->SelectedRunModifierKind;
-		}
-
-		return GetFallbackCommittedSelection().Kind;
-	}
-
-	FName GetConfirmedSelectionID(const UObject* Context)
-	{
-		if (const UT66GameInstance* GI = GetT66GameInstance(Context))
-		{
-			return GI->SelectedRunModifierID;
-		}
-
-		return GetFallbackCommittedSelection().ID;
 	}
 
 	FLinearColor ChallengeShellFill()
@@ -119,6 +79,18 @@ namespace
 	{
 		return FLinearColor(0.78f, 0.88f, 0.50f, 1.0f);
 	}
+
+	FLinearColor ChallengeMutedBadgeTint()
+	{
+		return FLinearColor(0.45f, 0.50f, 0.47f, 1.0f);
+	}
+
+	ET66CommunityContentKind TabIndexToKind(const int32 TabIndex)
+	{
+		return TabIndex == static_cast<int32>(ETabIndex::Mods)
+			? ET66CommunityContentKind::Mod
+			: ET66CommunityContentKind::Challenge;
+	}
 }
 
 UT66ChallengesScreen::UT66ChallengesScreen(const FObjectInitializer& ObjectInitializer)
@@ -128,117 +100,195 @@ UT66ChallengesScreen::UT66ChallengesScreen(const FObjectInitializer& ObjectIniti
 	bIsModal = true;
 }
 
-const TArray<UT66ChallengesScreen::FChallengeEntry>& UT66ChallengesScreen::GetPlaceholderChallenges() const
+void UT66ChallengesScreen::OnScreenActivated_Implementation()
 {
-	static const TArray<FChallengeEntry> PlaceholderChallenges = {
-		{
-			NSLOCTEXT("T66.Challenges", "Fragile3Title", "Fragile 3"),
-			NSLOCTEXT("T66.Challenges", "Fragile3Reward", "1.6x Chad Coupons"),
-			NSLOCTEXT("T66.Challenges", "Fragile3Desc", "One hit ends the run. Every floor has to be played as a clean execution check."),
-			{
-				NSLOCTEXT("T66.Challenges", "Fragile3Constraint1", "Die upon taking any damage."),
-				NSLOCTEXT("T66.Challenges", "Fragile3Constraint2", "Bosses still have to be cleared to finish the run.")
-			},
-			NSLOCTEXT("T66.Challenges", "Fragile3RewardDetail", "Reward: 160 Chad Coupons (placeholder)"),
-			NSLOCTEXT("T66.Challenges", "Fragile3Completion", "Not completed"),
-			ET66RunModifierKind::Challenge,
-			FName(TEXT("Fragile3"))
-		},
-		{
-			NSLOCTEXT("T66.Challenges", "Speedrunner3Title", "Speedrunner 3"),
-			NSLOCTEXT("T66.Challenges", "Speedrunner3Reward", "1.5x Chad Coupons"),
-			NSLOCTEXT("T66.Challenges", "Speedrunner3Desc", "Push to the boss immediately and clear the stage before the route fully collapses."),
-			{
-				NSLOCTEXT("T66.Challenges", "Speedrunner3Constraint1", "Beat the stage before the stage timer expires."),
-				NSLOCTEXT("T66.Challenges", "Speedrunner3Constraint2", "Skipping floors is allowed, but the boss still has to die.")
-			},
-			NSLOCTEXT("T66.Challenges", "Speedrunner3RewardDetail", "Reward: 150 Chad Coupons (placeholder)"),
-			NSLOCTEXT("T66.Challenges", "Speedrunner3Completion", "Not completed"),
-			ET66RunModifierKind::Challenge,
-			FName(TEXT("Speedrunner3"))
-		},
-		{
-			NSLOCTEXT("T66.Challenges", "SpeedrunnerPlus3Title", "Speedrunner+ 3"),
-			NSLOCTEXT("T66.Challenges", "SpeedrunnerPlus3Reward", "2.0x Chad Coupons"),
-			NSLOCTEXT("T66.Challenges", "SpeedrunnerPlus3Desc", "A harsher timed push with almost no recovery space between floors."),
-			{
-				NSLOCTEXT("T66.Challenges", "SpeedrunnerPlus3Constraint1", "Beat the stage with less than 45 seconds left."),
-				NSLOCTEXT("T66.Challenges", "SpeedrunnerPlus3Constraint2", "No revives or support saves.")
-			},
-			NSLOCTEXT("T66.Challenges", "SpeedrunnerPlus3RewardDetail", "Reward: 200 Chad Coupons (placeholder)"),
-			NSLOCTEXT("T66.Challenges", "SpeedrunnerPlus3Completion", "Not completed"),
-			ET66RunModifierKind::Challenge,
-			FName(TEXT("SpeedrunnerPlus3"))
-		},
-		{
-			NSLOCTEXT("T66.Challenges", "OhNo3Title", "Oh No 3"),
-			NSLOCTEXT("T66.Challenges", "OhNo3Reward", "1.5x Chad Coupons"),
-			NSLOCTEXT("T66.Challenges", "OhNo3Desc", "Resource denial. Gold matters, but greed kills the run if you overcommit."),
-			{
-				NSLOCTEXT("T66.Challenges", "OhNo3Constraint1", "Do not spend more than 250 gold in the stage."),
-				NSLOCTEXT("T66.Challenges", "OhNo3Constraint2", "No alchemy rerolls.")
-			},
-			NSLOCTEXT("T66.Challenges", "OhNo3RewardDetail", "Reward: 150 Chad Coupons (placeholder)"),
-			NSLOCTEXT("T66.Challenges", "OhNo3Completion", "Not completed"),
-			ET66RunModifierKind::Challenge,
-			FName(TEXT("OhNo3"))
-		},
-		{
-			NSLOCTEXT("T66.Challenges", "OhShit3Title", "Oh Shit 3"),
-			NSLOCTEXT("T66.Challenges", "OhShit3Reward", "1.75x Chad Coupons"),
-			NSLOCTEXT("T66.Challenges", "OhShit3Desc", "Flood pressure stays high. If you lose the route, the run gets taken away from you."),
-			{
-				NSLOCTEXT("T66.Challenges", "OhShit3Constraint1", "Stay above the flooded floor for the whole stage."),
-				NSLOCTEXT("T66.Challenges", "OhShit3Constraint2", "Do not use quick revive.")
-			},
-			NSLOCTEXT("T66.Challenges", "OhShit3RewardDetail", "Reward: 175 Chad Coupons (placeholder)"),
-			NSLOCTEXT("T66.Challenges", "OhShit3Completion", "Not completed"),
-			ET66RunModifierKind::Challenge,
-			FName(TEXT("OhShit3"))
-		},
-		{
-			NSLOCTEXT("T66.Challenges", "WhatTheHell3Title", "What The Hell 3"),
-			NSLOCTEXT("T66.Challenges", "WhatTheHell3Reward", "2.0x Chad Coupons"),
-			NSLOCTEXT("T66.Challenges", "WhatTheHell3Desc", "The stage is played under stacked restrictions and is meant to feel unfair in a controlled way."),
-			{
-				NSLOCTEXT("T66.Challenges", "WhatTheHell3Constraint1", "No damage, no revive, and no chest opens."),
-				NSLOCTEXT("T66.Challenges", "WhatTheHell3Constraint2", "Kill the boss to validate the challenge.")
-			},
-			NSLOCTEXT("T66.Challenges", "WhatTheHell3RewardDetail", "Reward: 200 Chad Coupons (placeholder)"),
-			NSLOCTEXT("T66.Challenges", "WhatTheHell3Completion", "Not completed"),
-			ET66RunModifierKind::Challenge,
-			FName(TEXT("WhatTheHell3"))
-		}
-	};
+	Super::OnScreenActivated_Implementation();
 
-	return PlaceholderChallenges;
+	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	{
+		if (!bCommunityDelegateBound)
+		{
+			Community->OnContentChanged().AddUObject(this, &UT66ChallengesScreen::HandleCommunityContentChanged);
+			bCommunityDelegateBound = true;
+		}
+	}
 }
 
-const TArray<UT66ChallengesScreen::FChallengeEntry>& UT66ChallengesScreen::GetPlaceholderMods() const
+void UT66ChallengesScreen::OnScreenDeactivated_Implementation()
 {
-	static const TArray<FChallengeEntry> PlaceholderMods = {
-		{
-			NSLOCTEXT("T66.Challenges", "MaxPowerTitle", "Max Power"),
-			NSLOCTEXT("T66.Challenges", "MaxPowerReward", "No Chad Coupons"),
-			NSLOCTEXT("T66.Challenges", "MaxPowerDesc", "A full-power modded run that starts at level 99 with all stats maxed."),
-			{
-				NSLOCTEXT("T66.Challenges", "MaxPowerConstraint1", "Start at level 99."),
-				NSLOCTEXT("T66.Challenges", "MaxPowerConstraint2", "All stats begin maxed for the run."),
-				NSLOCTEXT("T66.Challenges", "MaxPowerConstraint3", "This is a placeholder mod entry.")
-			},
-			NSLOCTEXT("T66.Challenges", "MaxPowerRewardDetail", "Reward: none (placeholder)"),
-			NSLOCTEXT("T66.Challenges", "MaxPowerCompletion", "Not completed"),
-			ET66RunModifierKind::Mod,
-			FName(TEXT("Mod_MaxHeroStats"))
-		}
-	};
+	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	{
+		Community->OnContentChanged().RemoveAll(this);
+	}
 
-	return PlaceholderMods;
+	bCommunityDelegateBound = false;
+	Super::OnScreenDeactivated_Implementation();
 }
 
-const TArray<UT66ChallengesScreen::FChallengeEntry>& UT66ChallengesScreen::GetEntriesForTab(const int32 TabIndex) const
+UT66CommunityContentSubsystem* UT66ChallengesScreen::GetCommunitySubsystem() const
 {
-	return TabIndex == static_cast<int32>(ETabIndex::Mods) ? GetPlaceholderMods() : GetPlaceholderChallenges();
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		return GI->GetSubsystem<UT66CommunityContentSubsystem>();
+	}
+
+	return nullptr;
+}
+
+ET66CommunityContentKind UT66ChallengesScreen::GetActiveKind() const
+{
+	return TabIndexToKind(ActiveTabIndex);
+}
+
+TArray<FT66CommunityContentEntry> UT66ChallengesScreen::GetEntriesForView(const int32 TabIndex, const int32 SourceTabIndex) const
+{
+	const UT66CommunityContentSubsystem* Community = GetCommunitySubsystem();
+	if (!Community)
+	{
+		return {};
+	}
+
+	const ET66CommunityContentKind Kind = TabIndexToKind(TabIndex);
+	return SourceTabIndex == static_cast<int32>(ESourceTabIndex::Official)
+		? TArray<FT66CommunityContentEntry>(Community->GetOfficialEntries(Kind))
+		: Community->GetCommunityBrowserEntries(Kind);
+}
+
+bool UT66ChallengesScreen::FindSelectedEntryForView(const int32 TabIndex, const int32 SourceTabIndex, FT66CommunityContentEntry& OutEntry)
+{
+	const TArray<FT66CommunityContentEntry> Entries = GetEntriesForView(TabIndex, SourceTabIndex);
+	if (Entries.Num() <= 0)
+	{
+		return false;
+	}
+
+	const FName SelectedId = GetSelectedEntryIdForView(TabIndex, SourceTabIndex);
+	const FT66CommunityContentEntry* Found = Entries.FindByPredicate([SelectedId](const FT66CommunityContentEntry& Entry)
+	{
+		return Entry.LocalId == SelectedId;
+	});
+
+	OutEntry = Found ? *Found : Entries[0];
+	return true;
+}
+
+bool UT66ChallengesScreen::FindCurrentSelectedEntry(FT66CommunityContentEntry& OutEntry)
+{
+	return FindSelectedEntryForView(
+		ActiveTabIndex,
+		ActiveSourceTabIndex[ActiveTabIndex],
+		OutEntry);
+}
+
+bool UT66ChallengesScreen::FindConfirmedEntry(FT66CommunityContentEntry& OutEntry) const
+{
+	if (const UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	{
+		return Community->GetActiveEntry(OutEntry);
+	}
+
+	return false;
+}
+
+FName UT66ChallengesScreen::GetSelectedEntryIdForView(const int32 TabIndex, const int32 SourceTabIndex)
+{
+	InitializeSelectionState();
+
+	const int32 SafeTabIndex = FMath::Clamp(TabIndex, 0, static_cast<int32>(ETabIndex::Count) - 1);
+	const int32 SafeSourceIndex = FMath::Clamp(SourceTabIndex, 0, static_cast<int32>(ESourceTabIndex::Count) - 1);
+	FName& SelectedId = PendingSelections[SafeTabIndex][SafeSourceIndex];
+	if (!SelectedId.IsNone())
+	{
+		return SelectedId;
+	}
+
+	const TArray<FT66CommunityContentEntry> Entries = GetEntriesForView(SafeTabIndex, SafeSourceIndex);
+	if (Entries.Num() > 0)
+	{
+		SelectedId = Entries[0].LocalId;
+	}
+
+	return SelectedId;
+}
+
+FString UT66ChallengesScreen::GetOriginLabel(const FT66CommunityContentEntry& Entry) const
+{
+	switch (Entry.Origin)
+	{
+	case ET66CommunityContentOrigin::Draft:
+		return TEXT("Draft");
+	case ET66CommunityContentOrigin::Community:
+		return TEXT("Community");
+	case ET66CommunityContentOrigin::Official:
+	default:
+		return TEXT("Official");
+	}
+}
+
+FString UT66ChallengesScreen::GetDraftSubmissionLabel(const FT66CommunityContentEntry& Entry) const
+{
+	if (!Entry.SubmissionStatus.IsEmpty())
+	{
+		return Entry.SubmissionStatus;
+	}
+
+	if (!Entry.ReviewNote.IsEmpty())
+	{
+		return Entry.ReviewNote;
+	}
+
+	if (!Entry.ModerationStatus.IsEmpty())
+	{
+		return Entry.ModerationStatus;
+	}
+
+	return TEXT("Not submitted");
+}
+
+FString UT66ChallengesScreen::GetPassiveLabel(const ET66PassiveType PassiveType) const
+{
+	if (const UEnum* Enum = StaticEnum<ET66PassiveType>())
+	{
+		return Enum->GetDisplayNameTextByValue(static_cast<int64>(PassiveType)).ToString();
+	}
+
+	return TEXT("None");
+}
+
+FString UT66ChallengesScreen::GetUltimateLabel(const ET66UltimateType UltimateType) const
+{
+	if (const UEnum* Enum = StaticEnum<ET66UltimateType>())
+	{
+		return Enum->GetDisplayNameTextByValue(static_cast<int64>(UltimateType)).ToString();
+	}
+
+	return TEXT("None");
+}
+
+FString UT66ChallengesScreen::GetItemLabel(const FName ItemId) const
+{
+	return ItemId.IsNone() ? TEXT("None") : ItemId.ToString();
+}
+
+TArray<FName> UT66ChallengesScreen::GetSelectableItemIds() const
+{
+	TArray<FName> Result;
+	Result.Add(NAME_None);
+
+	if (UT66GameInstance* T66GI = GetT66GameInstance(this))
+	{
+		if (UDataTable* ItemsTable = T66GI->GetItemsDataTable())
+		{
+			TArray<FName> RowNames = ItemsTable->GetRowNames();
+			RowNames.Sort([](const FName& A, const FName& B)
+			{
+				return A.LexicalLess(B);
+			});
+			Result.Append(RowNames);
+		}
+	}
+
+	return Result;
 }
 
 void UT66ChallengesScreen::InitializeSelectionState()
@@ -250,171 +300,191 @@ void UT66ChallengesScreen::InitializeSelectionState()
 
 	bSelectionStateInitialized = true;
 	ActiveTabIndex = static_cast<int32>(ETabIndex::Challenges);
-	PendingSelections[static_cast<int32>(ETabIndex::Challenges)] = { ET66RunModifierKind::Challenge, NAME_None };
-	PendingSelections[static_cast<int32>(ETabIndex::Mods)] = { ET66RunModifierKind::Mod, NAME_None };
+	ActiveSourceTabIndex[static_cast<int32>(ETabIndex::Challenges)] = static_cast<int32>(ESourceTabIndex::Official);
+	ActiveSourceTabIndex[static_cast<int32>(ETabIndex::Mods)] = static_cast<int32>(ESourceTabIndex::Official);
 
 	for (int32 TabIndex = 0; TabIndex < static_cast<int32>(ETabIndex::Count); ++TabIndex)
 	{
-		const TArray<FChallengeEntry>& Entries = GetEntriesForTab(TabIndex);
-		if (Entries.Num() == 0)
+		for (int32 SourceTabIndex = 0; SourceTabIndex < static_cast<int32>(ESourceTabIndex::Count); ++SourceTabIndex)
 		{
-			continue;
+			const TArray<FT66CommunityContentEntry> Entries = GetEntriesForView(TabIndex, SourceTabIndex);
+			PendingSelections[TabIndex][SourceTabIndex] = Entries.Num() > 0 ? Entries[0].LocalId : NAME_None;
 		}
-
-		PendingSelections[TabIndex].Kind = Entries[0].RunModifierKind;
-		PendingSelections[TabIndex].ID = Entries[0].RunModifierID;
 	}
 
-	const ET66RunModifierKind ConfirmedKind = GetConfirmedSelectionKind(this);
-	const FName ConfirmedID = GetConfirmedSelectionID(this);
-	ActiveTabIndex = FMath::Clamp(GetTabIndexForModifierKind(ConfirmedKind), 0, static_cast<int32>(ETabIndex::Count) - 1);
+	if (const UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	{
+		FT66CommunityContentEntry ActiveEntry;
+		if (Community->GetActiveEntry(ActiveEntry))
+		{
+			ActiveTabIndex = ActiveEntry.Kind == ET66CommunityContentKind::Mod
+				? static_cast<int32>(ETabIndex::Mods)
+				: static_cast<int32>(ETabIndex::Challenges);
+			ActiveSourceTabIndex[ActiveTabIndex] = ActiveEntry.Origin == ET66CommunityContentOrigin::Official
+				? static_cast<int32>(ESourceTabIndex::Official)
+				: static_cast<int32>(ESourceTabIndex::Community);
+			PendingSelections[ActiveTabIndex][ActiveSourceTabIndex[ActiveTabIndex]] = ActiveEntry.LocalId;
+			return;
+		}
+	}
 
-	if (ConfirmedKind == ET66RunModifierKind::None || ConfirmedID.IsNone())
+	if (const UT66GameInstance* T66GI = GetT66GameInstance(this))
+	{
+		if (T66GI->SelectedRunModifierKind == ET66RunModifierKind::Mod)
+		{
+			ActiveTabIndex = static_cast<int32>(ETabIndex::Mods);
+		}
+	}
+}
+
+void UT66ChallengesScreen::BeginDraftEditor(const FT66CommunityContentEntry& DraftEntry)
+{
+	bDraftEditorActive = true;
+	DraftEditorEntry = DraftEntry;
+	ActiveTabIndex = DraftEntry.Kind == ET66CommunityContentKind::Mod
+		? static_cast<int32>(ETabIndex::Mods)
+		: static_cast<int32>(ETabIndex::Challenges);
+	ActiveSourceTabIndex[ActiveTabIndex] = static_cast<int32>(ESourceTabIndex::Community);
+	PendingSelections[ActiveTabIndex][ActiveSourceTabIndex[ActiveTabIndex]] = DraftEntry.LocalId;
+}
+
+void UT66ChallengesScreen::EndDraftEditor()
+{
+	bDraftEditorActive = false;
+	DraftEditorEntry = FT66CommunityContentEntry{};
+}
+
+void UT66ChallengesScreen::CycleDraftPassive(const int32 Direction)
+{
+	const UEnum* Enum = StaticEnum<ET66PassiveType>();
+	if (!Enum)
 	{
 		return;
 	}
 
-	for (int32 TabIndex = 0; TabIndex < static_cast<int32>(ETabIndex::Count); ++TabIndex)
+	TArray<ET66PassiveType> Values;
+	for (int32 EnumIndex = 0; EnumIndex < Enum->NumEnums() - 1; ++EnumIndex)
 	{
-		const TArray<FChallengeEntry>& Entries = GetEntriesForTab(TabIndex);
-		for (const FChallengeEntry& Entry : Entries)
-		{
-			if (Entry.RunModifierKind == ConfirmedKind && Entry.RunModifierID == ConfirmedID)
-			{
-				PendingSelections[TabIndex].Kind = Entry.RunModifierKind;
-				PendingSelections[TabIndex].ID = Entry.RunModifierID;
-				return;
-			}
-		}
+		Values.Add(static_cast<ET66PassiveType>(Enum->GetValueByIndex(EnumIndex)));
 	}
+
+	const int32 CurrentIndex = Values.IndexOfByKey(DraftEditorEntry.Rules.PassiveOverride);
+	const int32 NextIndex = Values.IsValidIndex(CurrentIndex)
+		? (CurrentIndex + Direction + Values.Num()) % Values.Num()
+		: 0;
+	DraftEditorEntry.Rules.PassiveOverride = Values.IsValidIndex(NextIndex) ? Values[NextIndex] : ET66PassiveType::None;
 }
 
-int32 UT66ChallengesScreen::GetActiveTabIndex()
+void UT66ChallengesScreen::CycleDraftUltimate(const int32 Direction)
 {
-	InitializeSelectionState();
-	return FMath::Clamp(ActiveTabIndex, 0, static_cast<int32>(ETabIndex::Count) - 1);
+	const UEnum* Enum = StaticEnum<ET66UltimateType>();
+	if (!Enum)
+	{
+		return;
+	}
+
+	TArray<ET66UltimateType> Values;
+	for (int32 EnumIndex = 0; EnumIndex < Enum->NumEnums() - 1; ++EnumIndex)
+	{
+		Values.Add(static_cast<ET66UltimateType>(Enum->GetValueByIndex(EnumIndex)));
+	}
+
+	const int32 CurrentIndex = Values.IndexOfByKey(DraftEditorEntry.Rules.UltimateOverride);
+	const int32 NextIndex = Values.IsValidIndex(CurrentIndex)
+		? (CurrentIndex + Direction + Values.Num()) % Values.Num()
+		: 0;
+	DraftEditorEntry.Rules.UltimateOverride = Values.IsValidIndex(NextIndex) ? Values[NextIndex] : ET66UltimateType::None;
 }
 
-int32 UT66ChallengesScreen::GetSelectedEntryIndex(const int32 TabIndex)
+void UT66ChallengesScreen::CycleDraftStartingItem(const int32 Direction)
 {
-	InitializeSelectionState();
-
-	const TArray<FChallengeEntry>& Entries = GetEntriesForTab(TabIndex);
-	if (Entries.Num() == 0)
+	const TArray<FName> ItemIds = GetSelectableItemIds();
+	if (ItemIds.Num() <= 0)
 	{
-		return INDEX_NONE;
+		DraftEditorEntry.Rules.StartingItemId = NAME_None;
+		return;
 	}
 
-	const int32 SafeTabIndex = FMath::Clamp(TabIndex, 0, static_cast<int32>(ETabIndex::Count) - 1);
-	const FSelectionState& PendingSelection = PendingSelections[SafeTabIndex];
-
-	for (int32 EntryIndex = 0; EntryIndex < Entries.Num(); ++EntryIndex)
-	{
-		const FChallengeEntry& Entry = Entries[EntryIndex];
-		if (Entry.RunModifierKind == PendingSelection.Kind && Entry.RunModifierID == PendingSelection.ID)
-		{
-			return EntryIndex;
-		}
-	}
-
-	return 0;
+	const int32 CurrentIndex = ItemIds.IndexOfByKey(DraftEditorEntry.Rules.StartingItemId);
+	const int32 SafeCurrentIndex = CurrentIndex != INDEX_NONE ? CurrentIndex : 0;
+	const int32 NextIndex = (SafeCurrentIndex + Direction + ItemIds.Num()) % ItemIds.Num();
+	DraftEditorEntry.Rules.StartingItemId = ItemIds[NextIndex];
 }
 
-int32 UT66ChallengesScreen::GetConfirmedEntryIndex(const int32 TabIndex) const
+void UT66ChallengesScreen::AdjustDraftStat(const EDraftStatField Field, const int32 Delta)
 {
-	const TArray<FChallengeEntry>& Entries = GetEntriesForTab(TabIndex);
-	if (Entries.Num() == 0)
+	auto Clamp = [](int32 Value)
 	{
-		return INDEX_NONE;
-	}
+		return FMath::Clamp(Value, -99, 99);
+	};
 
-	const ET66RunModifierKind ConfirmedKind = GetConfirmedSelectionKind(this);
-	const FName ConfirmedID = GetConfirmedSelectionID(this);
-	if (ConfirmedKind == ET66RunModifierKind::None || ConfirmedID.IsNone())
+	switch (Field)
 	{
-		return INDEX_NONE;
+	case EDraftStatField::Damage:
+		DraftEditorEntry.Rules.BonusStats.Damage = Clamp(DraftEditorEntry.Rules.BonusStats.Damage + Delta);
+		break;
+	case EDraftStatField::AttackSpeed:
+		DraftEditorEntry.Rules.BonusStats.AttackSpeed = Clamp(DraftEditorEntry.Rules.BonusStats.AttackSpeed + Delta);
+		break;
+	case EDraftStatField::AttackScale:
+		DraftEditorEntry.Rules.BonusStats.AttackScale = Clamp(DraftEditorEntry.Rules.BonusStats.AttackScale + Delta);
+		break;
+	case EDraftStatField::Accuracy:
+		DraftEditorEntry.Rules.BonusStats.Accuracy = Clamp(DraftEditorEntry.Rules.BonusStats.Accuracy + Delta);
+		break;
+	case EDraftStatField::Armor:
+		DraftEditorEntry.Rules.BonusStats.Armor = Clamp(DraftEditorEntry.Rules.BonusStats.Armor + Delta);
+		break;
+	case EDraftStatField::Evasion:
+		DraftEditorEntry.Rules.BonusStats.Evasion = Clamp(DraftEditorEntry.Rules.BonusStats.Evasion + Delta);
+		break;
+	case EDraftStatField::Luck:
+		DraftEditorEntry.Rules.BonusStats.Luck = Clamp(DraftEditorEntry.Rules.BonusStats.Luck + Delta);
+		break;
+	case EDraftStatField::Speed:
+		DraftEditorEntry.Rules.BonusStats.Speed = Clamp(DraftEditorEntry.Rules.BonusStats.Speed + Delta);
+		break;
+	default:
+		break;
 	}
-
-	for (int32 EntryIndex = 0; EntryIndex < Entries.Num(); ++EntryIndex)
-	{
-		const FChallengeEntry& Entry = Entries[EntryIndex];
-		if (Entry.RunModifierKind == ConfirmedKind && Entry.RunModifierID == ConfirmedID)
-		{
-			return EntryIndex;
-		}
-	}
-
-	return INDEX_NONE;
 }
 
 TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 {
-	const int32 CurrentTabIndex = GetActiveTabIndex();
-	const TArray<FChallengeEntry>& Entries = GetEntriesForTab(CurrentTabIndex);
-	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
-	const float ModalWidth = FMath::Min(SafeFrameSize.X * 0.94f, 1100.0f);
-	const float ModalHeight = FMath::Min(SafeFrameSize.Y * 0.92f, 760.0f);
-	const float ColumnGap = 12.0f;
-	const float BodyPadding = 14.0f;
-	const float DetailColumnWidth = FMath::Max(340.0f, ModalWidth * 0.44f);
-	const float ListColumnWidth = FMath::Max(320.0f, ModalWidth - DetailColumnWidth - 64.0f);
+	InitializeSelectionState();
 
-	if (Entries.Num() == 0)
+	UT66CommunityContentSubsystem* Community = GetCommunitySubsystem();
+	if (Community && !bRequestedCommunityRefresh)
 	{
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FT66Style::Scrim())
-			[
-				SNew(SBox)
-				.WidthOverride(640.f)
-				.HeightOverride(320.f)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(ChallengeShellFill())
-					.Padding(18.f)
-					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Center)
-						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66.Challenges", "NoChallenges", "No challenge definitions are available."))
-							.Font(FT66Style::Tokens::FontBold(18))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-							.Justification(ETextJustify::Center)
-						]
-						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 12.f, 0.f, 0.f)
-						[
-							FT66Style::MakeButton(
-								FT66ButtonParams(NSLOCTEXT("T66.Challenges", "CloseEmpty", "CLOSE"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleBackClicked), ET66ButtonType::Neutral)
-								.SetMinWidth(120.f)
-								.SetHeight(34.f))
-						]
-					]
-				]
-			];
+		bRequestedCommunityRefresh = true;
+		Community->RefreshCommunityCatalog(false);
+		Community->RefreshMySubmissionStates(false);
 	}
 
-	const int32 SelectedEntryIndex = GetSelectedEntryIndex(CurrentTabIndex);
-	const int32 ConfirmedEntryIndex = GetConfirmedEntryIndex(CurrentTabIndex);
-	const int32 DetailEntryIndex = SelectedEntryIndex != INDEX_NONE ? SelectedEntryIndex : 0;
-	const FChallengeEntry& SelectedEntry = Entries[DetailEntryIndex];
-	const bool bSelectedEntryConfirmed = SelectedEntryIndex != INDEX_NONE && SelectedEntryIndex == ConfirmedEntryIndex;
-	const bool bChallengesTabActive = CurrentTabIndex == static_cast<int32>(ETabIndex::Challenges);
-	const FText HeaderTitle = bChallengesTabActive
-		? NSLOCTEXT("T66.Challenges", "ChallengesTitle", "Challenges Tier 3")
-		: NSLOCTEXT("T66.Challenges", "ModsTitle", "Mods Tier 3");
-	const FText DetailListHeader = bChallengesTabActive
-		? NSLOCTEXT("T66.Challenges", "ConstraintsHeader", "Constraints")
-		: NSLOCTEXT("T66.Challenges", "ModifiersHeader", "Modifiers");
-	const FText LeaderboardNote = NSLOCTEXT("T66.Challenges", "LeaderboardNote", "Challenge and modded runs are not uploaded to online leaderboards.");
-	const FText SelectNote = bChallengesTabActive
-		? NSLOCTEXT("T66.Challenges", "SelectChallengeNote", "Pick a challenge and confirm it to arm the placeholder rule set.")
-		: NSLOCTEXT("T66.Challenges", "SelectModNote", "Pick a mod and confirm it to arm the placeholder mod set.");
+	const int32 SafeFrameWidth = static_cast<int32>(FT66Style::GetSafeFrameSize().X);
+	const int32 SafeFrameHeight = static_cast<int32>(FT66Style::GetSafeFrameSize().Y);
+	const float ModalWidth = FMath::Min(static_cast<float>(SafeFrameWidth) * 0.94f, 1180.0f);
+	const float ModalHeight = FMath::Min(static_cast<float>(SafeFrameHeight) * 0.92f, 790.0f);
+	const float ColumnGap = 12.0f;
+	const float BodyPadding = 14.0f;
+	const float DetailColumnWidth = FMath::Max(380.0f, ModalWidth * 0.45f);
+	const float ListColumnWidth = FMath::Max(340.0f, ModalWidth - DetailColumnWidth - 72.0f);
+	const int32 CurrentSourceTabIndex = ActiveSourceTabIndex[ActiveTabIndex];
+	const ET66CommunityContentKind ActiveKind = GetActiveKind();
+	const TArray<FT66CommunityContentEntry> Entries = GetEntriesForView(ActiveTabIndex, CurrentSourceTabIndex);
 
-	auto MakeConstraintRow = [](const FText& ConstraintText) -> TSharedRef<SWidget>
+	FT66CommunityContentEntry SelectedEntry;
+	const bool bHasSelectedEntry = !bDraftEditorActive && FindCurrentSelectedEntry(SelectedEntry);
+
+	FT66CommunityContentEntry ConfirmedEntry;
+	const bool bHasConfirmedEntry = FindConfirmedEntry(ConfirmedEntry);
+	const bool bSelectedEntryConfirmed = bHasSelectedEntry && bHasConfirmedEntry && SelectedEntry.LocalId == ConfirmedEntry.LocalId;
+
+	const FString HeaderTitle = ActiveKind == ET66CommunityContentKind::Mod ? TEXT("Mods") : TEXT("Challenges");
+	const FString DetailListHeader = ActiveKind == ET66CommunityContentKind::Mod ? TEXT("Rules") : TEXT("Rules And Requirements");
+	const FString StatusMessage = Community ? Community->GetLastStatusMessage() : FString();
+
+	auto MakeConstraintRow = [](const FString& ConstraintText) -> TSharedRef<SWidget>
 	{
 		return SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 1.f, 8.f, 0.f)
@@ -427,22 +497,21 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			+ SHorizontalBox::Slot().FillWidth(1.f)
 			[
 				SNew(STextBlock)
-				.Text(ConstraintText)
+				.Text(FText::FromString(ConstraintText))
 				.Font(FT66Style::Tokens::FontRegular(12))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 				.AutoWrapText(true)
 			];
 	};
 
-	auto MakeTabButton = [this, CurrentTabIndex](const int32 TabIndex, const FText& Label) -> TSharedRef<SWidget>
+	auto MakeTopTabButton = [this](const int32 TabIndex, const FText& Label) -> TSharedRef<SWidget>
 	{
-		const bool bActive = CurrentTabIndex == TabIndex;
-
+		const bool bActive = ActiveTabIndex == TabIndex;
 		return FT66Style::MakeButton(
 			FT66ButtonParams(Label, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleTabSelected, TabIndex), bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Row)
 			.SetBorderVisual(ET66ButtonBorderVisual::None)
 			.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
-			.SetMinWidth(124.f)
+			.SetMinWidth(132.f)
 			.SetHeight(36.f)
 			.SetPadding(FMargin(12.f, 4.f))
 			.SetColor(bActive ? ChallengeSelectedFill() : FLinearColor(0.10f, 0.12f, 0.11f, 1.0f))
@@ -450,35 +519,58 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			.SetUseGlow(false));
 	};
 
-	auto MakeEntryRow = [this, CurrentTabIndex](const FChallengeEntry& Entry, const int32 EntryIndex) -> TSharedRef<SWidget>
+	auto MakeSourceTabButton = [this, CurrentSourceTabIndex](const int32 SourceTabIndex, const FText& Label) -> TSharedRef<SWidget>
 	{
-		const bool bSelected = EntryIndex == GetSelectedEntryIndex(CurrentTabIndex);
-		const bool bConfirmed = EntryIndex == GetConfirmedEntryIndex(CurrentTabIndex);
+		const bool bActive = CurrentSourceTabIndex == SourceTabIndex;
+		return FT66Style::MakeButton(
+			FT66ButtonParams(Label, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSourceTabSelected, SourceTabIndex), bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Row)
+			.SetBorderVisual(ET66ButtonBorderVisual::None)
+			.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+			.SetMinWidth(116.f)
+			.SetHeight(32.f)
+			.SetPadding(FMargin(10.f, 4.f))
+			.SetColor(bActive ? ChallengeSelectedFill() : ChallengePanelInsetFill())
+			.SetTextColor(FT66Style::Tokens::Text)
+			.SetUseGlow(false));
+	};
+
+	auto MakeEntryRow = [this, CurrentSourceTabIndex, Community](const FT66CommunityContentEntry& Entry, const int32 EntryIndex) -> TSharedRef<SWidget>
+	{
+		const FName SelectedId = GetSelectedEntryIdForView(ActiveTabIndex, CurrentSourceTabIndex);
+		const bool bSelected = Entry.LocalId == SelectedId;
+		const FT66CommunityContentEntry ActiveEntry = [this]()
+		{
+			FT66CommunityContentEntry Result;
+			FindConfirmedEntry(Result);
+			return Result;
+		}();
+		const bool bConfirmed = !ActiveEntry.LocalId.IsNone() && ActiveEntry.LocalId == Entry.LocalId;
 
 		return FT66Style::MakeButton(
 			FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleEntrySelected, EntryIndex), bSelected ? ET66ButtonType::ToggleActive : ET66ButtonType::Row)
 			.SetBorderVisual(ET66ButtonBorderVisual::None)
 			.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
 			.SetMinWidth(0.f)
-			.SetHeight(52.f)
+			.SetHeight(74.f)
 			.SetPadding(FMargin(12.f, 8.f))
 			.SetColor(bSelected ? ChallengeSelectedFill() : ChallengePanelInsetFill())
 			.SetTextColor(FT66Style::Tokens::Text)
 			.SetUseGlow(false)
 			.SetContent(
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
 				[
-					SNew(SBox)
-					.WidthOverride(22.f)
-					.HeightOverride(22.f)
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(bConfirmed ? ChallengeSuccessTint() : FLinearColor(0.10f, 0.12f, 0.11f, 1.0f))
-						.Padding(2.f)
+						SNew(SBox)
+						.WidthOverride(20.f)
+						.HeightOverride(20.f)
 						[
-							SNew(SBox)
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(bConfirmed ? ChallengeSuccessTint() : FLinearColor(0.10f, 0.12f, 0.11f, 1.0f))
+							.Padding(2.f)
 							[
 								SNew(STextBlock)
 								.Text(bConfirmed ? NSLOCTEXT("T66.Challenges", "ConfirmedMarker", "X") : FText::GetEmpty())
@@ -488,21 +580,128 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 							]
 						]
 					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString(Entry.Title))
+						.Font(FT66Style::Tokens::FontBold(15))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(Entry.IsDraft() ? ChallengeDangerTint() : ChallengeMutedBadgeTint())
+						.Padding(FMargin(6.f, 2.f))
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(GetOriginLabel(Entry)))
+							.Font(FT66Style::Tokens::FontBold(10))
+							.ColorAndOpacity(FLinearColor(0.08f, 0.09f, 0.07f, 1.0f))
+						]
+					]
 				]
-				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+				+ SVerticalBox::Slot().AutoHeight().Padding(30.f, 4.f, 0.f, 0.f)
 				[
-					SNew(STextBlock)
-					.Text(Entry.Title)
-					.Font(FT66Style::Tokens::FontBold(15))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
-				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
-				[
-					SNew(STextBlock)
-					.Text(Entry.RewardSummary)
-					.Font(FT66Style::Tokens::FontBold(13))
-					.ColorAndOpacity(ChallengeRewardTint())
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f)
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString(Community ? Community->BuildRewardSummary(Entry) : TEXT("No reward data")))
+						.Font(FT66Style::Tokens::FontRegular(11))
+						.ColorAndOpacity(ChallengeRewardTint())
+						.AutoWrapText(true)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString(Entry.IsDraft() ? GetDraftSubmissionLabel(Entry) : Entry.AuthorDisplayName))
+						.Font(FT66Style::Tokens::FontRegular(10))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					]
 				]));
+	};
+
+	auto MakeDraftStepRow = [this](const FString& Label, const int32 Value, const FOnClicked& OnMinus, const FOnClicked& OnPlus) -> TSharedRef<SWidget>
+	{
+		return SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(Label))
+				.Font(FT66Style::Tokens::FontBold(12))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(FText::FromString(TEXT("-")), OnMinus, ET66ButtonType::Row)
+					.SetMinWidth(26.f)
+					.SetHeight(24.f)
+					.SetPadding(FMargin(0.f))
+					.SetColor(ChallengePanelInsetFill())
+					.SetTextColor(FT66Style::Tokens::Text)
+					.SetUseGlow(false))
+			]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(FText::AsNumber(Value))
+				.Font(FT66Style::Tokens::FontBold(12))
+				.ColorAndOpacity(ChallengeRewardTint())
+			]
+			+ SHorizontalBox::Slot().AutoWidth()
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(FText::FromString(TEXT("+")), OnPlus, ET66ButtonType::Row)
+					.SetMinWidth(26.f)
+					.SetHeight(24.f)
+					.SetPadding(FMargin(0.f))
+					.SetColor(ChallengePanelInsetFill())
+					.SetTextColor(FT66Style::Tokens::Text)
+					.SetUseGlow(false))
+			];
+	};
+
+	auto MakeCycleRow = [this](const FString& Label, const FString& Value, const FOnClicked& OnPrev, const FOnClicked& OnNext) -> TSharedRef<SWidget>
+	{
+		return SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(Label))
+				.Font(FT66Style::Tokens::FontBold(12))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(FText::FromString(TEXT("<")), OnPrev, ET66ButtonType::Row)
+					.SetMinWidth(26.f)
+					.SetHeight(24.f)
+					.SetPadding(FMargin(0.f))
+					.SetColor(ChallengePanelInsetFill())
+					.SetTextColor(FT66Style::Tokens::Text)
+					.SetUseGlow(false))
+			]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(Value))
+				.Font(FT66Style::Tokens::FontBold(12))
+				.ColorAndOpacity(ChallengeRewardTint())
+			]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(FText::FromString(TEXT(">")), OnNext, ET66ButtonType::Row)
+					.SetMinWidth(26.f)
+					.SetHeight(24.f)
+					.SetPadding(FMargin(0.f))
+					.SetColor(ChallengePanelInsetFill())
+					.SetTextColor(FT66Style::Tokens::Text)
+					.SetUseGlow(false))
+			];
 	};
 
 	TSharedRef<SVerticalBox> EntryList = SNew(SVerticalBox);
@@ -516,15 +715,483 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		];
 	}
 
-	TSharedRef<SVerticalBox> ConstraintList = SNew(SVerticalBox);
-	for (const FText& ConstraintText : SelectedEntry.Constraints)
+	const TSharedRef<SWidget> ListPanelContent = Entries.Num() > 0
+		? StaticCastSharedRef<SWidget>(
+			SNew(SScrollBox)
+			+ SScrollBox::Slot()
+			[
+				EntryList
+			])
+		: StaticCastSharedRef<SWidget>(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(CurrentSourceTabIndex == static_cast<int32>(ESourceTabIndex::Community)
+					? TEXT("No community entries yet. Create the first one.")
+					: TEXT("No official entries were found.")))
+				.Font(FT66Style::Tokens::FontBold(16))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Justification(ETextJustify::Center)
+				.AutoWrapText(true)
+			]);
+
+	const TSharedRef<SWidget> CreateButtonContent = CurrentSourceTabIndex == static_cast<int32>(ESourceTabIndex::Community)
+		? FT66Style::MakeButton(
+			FT66ButtonParams(
+				FText::FromString(ActiveKind == ET66CommunityContentKind::Mod ? TEXT("CREATE MOD") : TEXT("CREATE CHALLENGE")),
+				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCreateDraftClicked),
+				ET66ButtonType::Primary)
+			.SetMinWidth(160.f)
+			.SetHeight(32.f)
+			.SetColor(ChallengeRewardTint())
+			.SetTextColor(FLinearColor(0.07f, 0.08f, 0.09f, 1.0f))
+			.SetUseGlow(false))
+		: StaticCastSharedRef<SWidget>(SNew(SSpacer));
+
+	TSharedRef<SWidget> DetailPanelContent = SNew(STextBlock)
+		.Text(NSLOCTEXT("T66.Challenges", "NoSelection", "Select an entry or create a new draft."))
+		.Font(FT66Style::Tokens::FontRegular(13))
+		.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+		.AutoWrapText(true);
+
+	if (bDraftEditorActive)
 	{
-		ConstraintList->AddSlot()
-		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 8.f)
+		TSharedRef<SVerticalBox> EditorRows = SNew(SVerticalBox);
+
+		auto AddEditorSpacer = [&EditorRows](float Height)
+		{
+			EditorRows->AddSlot().AutoHeight().Padding(0.f, Height, 0.f, 0.f)
+			[
+				SNew(SSpacer)
+				.Size(FVector2D(1.f, 1.f))
+			];
+		};
+
+		EditorRows->AddSlot().AutoHeight()
 		[
-			MakeConstraintRow(ConstraintText)
+			SNew(STextBlock)
+			.Text(FText::FromString(DraftEditorEntry.Kind == ET66CommunityContentKind::Mod ? TEXT("Create Mod") : TEXT("Create Challenge")))
+			.Font(FT66Style::Tokens::FontBold(28))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
 		];
+		AddEditorSpacer(10.f);
+		EditorRows->AddSlot().AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(TEXT("Title")))
+			.Font(FT66Style::Tokens::FontBold(12))
+			.ColorAndOpacity(ChallengeSuccessTint())
+		];
+		EditorRows->AddSlot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+		[
+			SNew(SEditableTextBox)
+			.Text(FText::FromString(DraftEditorEntry.Title))
+			.OnTextChanged_UObject(this, &UT66ChallengesScreen::HandleDraftTitleChanged)
+		];
+		AddEditorSpacer(10.f);
+		EditorRows->AddSlot().AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(TEXT("Description")))
+			.Font(FT66Style::Tokens::FontBold(12))
+			.ColorAndOpacity(ChallengeSuccessTint())
+		];
+		EditorRows->AddSlot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+		[
+			SNew(SMultiLineEditableTextBox)
+			.Text(FText::FromString(DraftEditorEntry.Description))
+			.OnTextChanged_UObject(this, &UT66ChallengesScreen::HandleDraftDescriptionChanged)
+		];
+
+		if (DraftEditorEntry.Kind == ET66CommunityContentKind::Challenge)
+		{
+			AddEditorSpacer(12.f);
+			EditorRows->AddSlot().AutoHeight()
+			[
+				MakeDraftStepRow(
+					TEXT("Suggested Chad Coupons"),
+					DraftEditorEntry.SuggestedRewardChadCoupons,
+					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftReward, -5),
+					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftReward, +5))
+			];
+		}
+
+		AddEditorSpacer(12.f);
+		EditorRows->AddSlot().AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(TEXT("Gameplay Rules")))
+			.Font(FT66Style::Tokens::FontBold(12))
+			.ColorAndOpacity(ChallengeSuccessTint())
+		];
+		EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+		[
+			MakeDraftStepRow(
+				TEXT("Start Level"),
+				DraftEditorEntry.Rules.StartLevelOverride,
+				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftStartLevel, -1),
+				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftStartLevel, +1))
+		];
+		EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(TEXT("Max Hero Stats")))
+				.Font(FT66Style::Tokens::FontBold(12))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SHorizontalBox::Slot().AutoWidth()
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(
+						FText::FromString(DraftEditorEntry.Rules.bSetMaxHeroStats ? TEXT("Enabled") : TEXT("Disabled")),
+						FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleToggleDraftMaxStats),
+						ET66ButtonType::Row)
+					.SetMinWidth(100.f)
+					.SetHeight(24.f)
+					.SetPadding(FMargin(8.f, 2.f))
+					.SetColor(DraftEditorEntry.Rules.bSetMaxHeroStats ? ChallengeSuccessTint() : ChallengePanelInsetFill())
+					.SetTextColor(DraftEditorEntry.Rules.bSetMaxHeroStats ? FLinearColor(0.08f, 0.09f, 0.07f, 1.0f) : FT66Style::Tokens::Text)
+					.SetUseGlow(false))
+			]
+		];
+
+		const TArray<TPair<FString, EDraftStatField>> StatFields = {
+			TPair<FString, EDraftStatField>(TEXT("Damage"), EDraftStatField::Damage),
+			TPair<FString, EDraftStatField>(TEXT("Attack Speed"), EDraftStatField::AttackSpeed),
+			TPair<FString, EDraftStatField>(TEXT("Attack Scale"), EDraftStatField::AttackScale),
+			TPair<FString, EDraftStatField>(TEXT("Accuracy"), EDraftStatField::Accuracy),
+			TPair<FString, EDraftStatField>(TEXT("Armor"), EDraftStatField::Armor),
+			TPair<FString, EDraftStatField>(TEXT("Evasion"), EDraftStatField::Evasion),
+			TPair<FString, EDraftStatField>(TEXT("Luck"), EDraftStatField::Luck),
+			TPair<FString, EDraftStatField>(TEXT("Speed"), EDraftStatField::Speed),
+		};
+
+		auto GetDraftStatValue = [this](const EDraftStatField Field)
+		{
+			switch (Field)
+			{
+			case EDraftStatField::Damage: return DraftEditorEntry.Rules.BonusStats.Damage;
+			case EDraftStatField::AttackSpeed: return DraftEditorEntry.Rules.BonusStats.AttackSpeed;
+			case EDraftStatField::AttackScale: return DraftEditorEntry.Rules.BonusStats.AttackScale;
+			case EDraftStatField::Accuracy: return DraftEditorEntry.Rules.BonusStats.Accuracy;
+			case EDraftStatField::Armor: return DraftEditorEntry.Rules.BonusStats.Armor;
+			case EDraftStatField::Evasion: return DraftEditorEntry.Rules.BonusStats.Evasion;
+			case EDraftStatField::Luck: return DraftEditorEntry.Rules.BonusStats.Luck;
+			case EDraftStatField::Speed: return DraftEditorEntry.Rules.BonusStats.Speed;
+			default: return 0;
+			}
+		};
+
+		for (const TPair<FString, EDraftStatField>& StatField : StatFields)
+		{
+			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+			[
+				MakeDraftStepRow(
+					StatField.Key,
+					GetDraftStatValue(StatField.Value),
+					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftStatClicked, StatField.Value, -5),
+					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftStatClicked, StatField.Value, +5))
+			];
+		}
+
+		EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+		[
+			MakeCycleRow(
+				TEXT("Starting Item"),
+				GetItemLabel(DraftEditorEntry.Rules.StartingItemId),
+				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCycleDraftStartingItemClicked, -1),
+				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCycleDraftStartingItemClicked, +1))
+		];
+		EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+		[
+			MakeCycleRow(
+				TEXT("Passive Override"),
+				GetPassiveLabel(DraftEditorEntry.Rules.PassiveOverride),
+				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCycleDraftPassiveClicked, -1),
+				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCycleDraftPassiveClicked, +1))
+		];
+		EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+		[
+			MakeCycleRow(
+				TEXT("Ultimate Override"),
+				GetUltimateLabel(DraftEditorEntry.Rules.UltimateOverride),
+				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCycleDraftUltimateClicked, -1),
+				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCycleDraftUltimateClicked, +1))
+		];
+
+		if (DraftEditorEntry.Kind == ET66CommunityContentKind::Challenge)
+		{
+			AddEditorSpacer(12.f);
+			EditorRows->AddSlot().AutoHeight()
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(TEXT("Completion Requirements")))
+				.Font(FT66Style::Tokens::FontBold(12))
+				.ColorAndOpacity(ChallengeSuccessTint())
+			];
+			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+			[
+				SNew(SCheckBox)
+				.IsChecked(DraftEditorEntry.Rules.bRequireFullClear ? ECheckBoxState::Checked : ECheckBoxState::Unchecked)
+				.OnCheckStateChanged_UObject(this, &UT66ChallengesScreen::HandleDraftFullClearChanged)
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString(TEXT("Require full clear")))
+					.Font(FT66Style::Tokens::FontRegular(12))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
+			];
+			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+			[
+				SNew(SCheckBox)
+				.IsChecked(DraftEditorEntry.Rules.bRequireNoDamage ? ECheckBoxState::Checked : ECheckBoxState::Unchecked)
+				.OnCheckStateChanged_UObject(this, &UT66ChallengesScreen::HandleDraftNoDamageChanged)
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString(TEXT("Require no damage")))
+					.Font(FT66Style::Tokens::FontRegular(12))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
+			];
+			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+			[
+				MakeDraftStepRow(
+					TEXT("Minimum Stage Reached"),
+					DraftEditorEntry.Rules.RequiredStageReached,
+					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftRequiredStage, -1),
+					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftRequiredStage, +1))
+			];
+			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+			[
+				MakeDraftStepRow(
+					TEXT("Max Run Time (Seconds)"),
+					DraftEditorEntry.Rules.MaxRunTimeSeconds,
+					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftMaxRunTime, -30),
+					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftMaxRunTime, +30))
+			];
+		}
+
+		AddEditorSpacer(16.f);
+		EditorRows->AddSlot().AutoHeight()
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(NSLOCTEXT("T66.Challenges", "SaveDraft", "SAVE DRAFT"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSaveDraftClicked), ET66ButtonType::Primary)
+					.SetMinWidth(136.f)
+					.SetHeight(34.f)
+					.SetColor(ChallengeRewardTint())
+					.SetTextColor(FLinearColor(0.07f, 0.08f, 0.09f, 1.0f))
+					.SetUseGlow(false))
+			]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(NSLOCTEXT("T66.Challenges", "SubmitDraft", "SUBMIT"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSubmitDraftClicked), ET66ButtonType::Row)
+					.SetMinWidth(120.f)
+					.SetHeight(34.f)
+					.SetColor(ChallengeSuccessTint())
+					.SetTextColor(FLinearColor(0.07f, 0.08f, 0.09f, 1.0f))
+					.SetUseGlow(false))
+			]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(NSLOCTEXT("T66.Challenges", "PlayDraft", "PLAY DRAFT"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandlePlayDraftClicked), ET66ButtonType::Row)
+					.SetMinWidth(120.f)
+					.SetHeight(34.f)
+					.SetColor(ChallengePanelInsetFill())
+					.SetTextColor(FT66Style::Tokens::Text)
+					.SetUseGlow(false))
+			]
+			+ SHorizontalBox::Slot().AutoWidth()
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(NSLOCTEXT("T66.Challenges", "CancelDraft", "CANCEL"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCancelDraftEditorClicked), ET66ButtonType::Danger)
+					.SetMinWidth(112.f)
+					.SetHeight(34.f)
+					.SetColor(FLinearColor(0.32f, 0.08f, 0.06f, 1.0f))
+					.SetTextColor(FLinearColor(1.0f, 0.18f, 0.15f, 1.0f))
+					.SetUseGlow(false))
+			]
+		];
+
+		DetailPanelContent =
+			SNew(SScrollBox)
+			+ SScrollBox::Slot()
+			[
+				EditorRows
+			];
+	}
+	else if (bHasSelectedEntry)
+	{
+		const TArray<FString> RuleLines = Community ? Community->BuildRuleSummaryLines(SelectedEntry) : TArray<FString>{};
+		TSharedRef<SVerticalBox> RuleList = SNew(SVerticalBox);
+		for (const FString& RuleLine : RuleLines)
+		{
+			RuleList->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 8.f)
+			[
+				MakeConstraintRow(RuleLine)
+			];
+		}
+
+		TSharedRef<SVerticalBox> DetailLayout = SNew(SVerticalBox);
+		DetailLayout->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(SelectedEntry.Title))
+			.Font(FT66Style::Tokens::FontBold(30))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		];
+		DetailLayout->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(FString::Printf(TEXT("%s%s%s"),
+				*GetOriginLabel(SelectedEntry),
+				SelectedEntry.AuthorDisplayName.IsEmpty() ? TEXT("") : TEXT(" by "),
+				*SelectedEntry.AuthorDisplayName)))
+			.Font(FT66Style::Tokens::FontRegular(11))
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.AutoWrapText(true)
+		];
+		DetailLayout->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(SelectedEntry.Description))
+			.Font(FT66Style::Tokens::FontRegular(13))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.AutoWrapText(true)
+		];
+		DetailLayout->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(DetailListHeader))
+			.Font(FT66Style::Tokens::FontBold(14))
+			.ColorAndOpacity(ChallengeSuccessTint())
+		];
+		DetailLayout->AddSlot().FillHeight(1.f)
+		[
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(ChallengePanelInsetFill())
+			.Padding(12.f)
+			[
+				SNew(SScrollBox)
+				+ SScrollBox::Slot()
+				[
+					RuleList
+				]
+			]
+		];
+		DetailLayout->AddSlot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(Community ? Community->BuildRewardSummary(SelectedEntry) : TEXT("No reward data")))
+			.Font(FT66Style::Tokens::FontBold(22))
+			.ColorAndOpacity(ChallengeRewardTint())
+		];
+		DetailLayout->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(Community ? Community->BuildSelectionSummary(SelectedEntry) : TEXT("No selection summary available.")))
+			.Font(FT66Style::Tokens::FontRegular(11))
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.AutoWrapText(true)
+		];
+
+		if (SelectedEntry.IsDraft())
+		{
+			DetailLayout->AddSlot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(GetDraftSubmissionLabel(SelectedEntry)))
+				.Font(FT66Style::Tokens::FontBold(14))
+				.ColorAndOpacity(ChallengeDangerTint())
+			];
+			DetailLayout->AddSlot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+				[
+					FT66Style::MakeButton(
+						FT66ButtonParams(NSLOCTEXT("T66.Challenges", "EditDraft", "EDIT"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleEditDraftClicked), ET66ButtonType::Row)
+						.SetMinWidth(100.f)
+						.SetHeight(34.f)
+						.SetColor(ChallengePanelInsetFill())
+						.SetTextColor(FT66Style::Tokens::Text)
+						.SetUseGlow(false))
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+				[
+					FT66Style::MakeButton(
+						FT66ButtonParams(NSLOCTEXT("T66.Challenges", "SubmitSelectedDraft", "SUBMIT"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSubmitDraftClicked), ET66ButtonType::Row)
+						.SetMinWidth(112.f)
+						.SetHeight(34.f)
+						.SetColor(ChallengeSuccessTint())
+						.SetTextColor(FLinearColor(0.07f, 0.08f, 0.09f, 1.0f))
+						.SetUseGlow(false))
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+				[
+					FT66Style::MakeButton(
+						FT66ButtonParams(NSLOCTEXT("T66.Challenges", "PlaySelectedDraft", "PLAY"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandlePlayDraftClicked), ET66ButtonType::Primary)
+						.SetMinWidth(112.f)
+						.SetHeight(34.f)
+						.SetColor(ChallengeRewardTint())
+						.SetTextColor(FLinearColor(0.07f, 0.08f, 0.09f, 1.0f))
+						.SetUseGlow(false))
+				]
+				+ SHorizontalBox::Slot().AutoWidth()
+				[
+					FT66Style::MakeButton(
+						FT66ButtonParams(NSLOCTEXT("T66.Challenges", "DeleteSelectedDraft", "DELETE"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleDeleteDraftClicked), ET66ButtonType::Danger)
+						.SetMinWidth(112.f)
+						.SetHeight(34.f)
+						.SetColor(FLinearColor(0.32f, 0.08f, 0.06f, 1.0f))
+						.SetTextColor(FLinearColor(1.0f, 0.18f, 0.15f, 1.0f))
+						.SetUseGlow(false))
+				]
+			];
+		}
+		else
+		{
+			DetailLayout->AddSlot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(bSelectedEntryConfirmed ? TEXT("Selected for the next run.") : TEXT("Confirm this entry to arm it for the next run.")))
+				.Font(FT66Style::Tokens::FontRegular(11))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.AutoWrapText(true)
+			];
+			DetailLayout->AddSlot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 16.f, 0.f, 0.f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(
+						FText::FromString(bSelectedEntryConfirmed ? TEXT("SELECTED") : TEXT("CONFIRM")),
+						FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleConfirmClicked),
+						ET66ButtonType::Primary)
+					.SetMinWidth(174.f)
+					.SetHeight(40.f)
+					.SetPadding(FMargin(16.f, 8.f, 16.f, 6.f))
+					.SetColor(bSelectedEntryConfirmed ? ChallengeSuccessTint() : ChallengeRewardTint())
+					.SetTextColor(FLinearColor(0.07f, 0.08f, 0.09f, 1.0f))
+					.SetUseGlow(false))
+			];
+		}
+
+		DetailPanelContent =
+			SNew(SScrollBox)
+			+ SScrollBox::Slot()
+			[
+				DetailLayout
+			];
 	}
 
 	return SNew(SBorder)
@@ -558,39 +1225,67 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 							.BorderBackgroundColor(ChallengeHeaderFill())
 							.Padding(FMargin(16.f, 12.f))
 							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight()
 								[
-									SNew(STextBlock)
-									.Text(HeaderTitle)
-									.Font(FT66Style::Tokens::FontBold(28))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									SNew(SHorizontalBox)
+									+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+									[
+										SNew(STextBlock)
+										.Text(FText::FromString(HeaderTitle))
+										.Font(FT66Style::Tokens::FontBold(28))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
+									+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+									[
+										SNew(SHorizontalBox)
+										+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+										[
+											MakeTopTabButton(static_cast<int32>(ETabIndex::Challenges), NSLOCTEXT("T66.Challenges", "ChallengesTab", "Challenges"))
+										]
+										+ SHorizontalBox::Slot().AutoWidth()
+										[
+											MakeTopTabButton(static_cast<int32>(ETabIndex::Mods), NSLOCTEXT("T66.Challenges", "ModsTab", "Mods"))
+										]
+									]
+									+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+									[
+										FT66Style::MakeButton(
+											FT66ButtonParams(NSLOCTEXT("T66.Challenges", "Close", "X"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleBackClicked), ET66ButtonType::Danger)
+											.SetBorderVisual(ET66ButtonBorderVisual::None)
+											.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+											.SetMinWidth(38.f)
+											.SetHeight(38.f)
+											.SetPadding(FMargin(0.f))
+											.SetColor(FLinearColor(0.32f, 0.08f, 0.06f, 1.0f))
+											.SetTextColor(FLinearColor(1.0f, 0.18f, 0.15f, 1.0f))
+											.SetFontSize(18)
+											.SetUseGlow(false))
+									]
 								]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 								[
 									SNew(SHorizontalBox)
 									+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
 									[
-										MakeTabButton(static_cast<int32>(ETabIndex::Challenges), NSLOCTEXT("T66.Challenges", "ChallengesTab", "Challenges"))
+										MakeSourceTabButton(static_cast<int32>(ESourceTabIndex::Official), NSLOCTEXT("T66.Challenges", "OfficialTab", "Official"))
 									]
-									+ SHorizontalBox::Slot().AutoWidth()
+									+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
 									[
-										MakeTabButton(static_cast<int32>(ETabIndex::Mods), NSLOCTEXT("T66.Challenges", "ModsTab", "Mods"))
+										MakeSourceTabButton(static_cast<int32>(ESourceTabIndex::Community), NSLOCTEXT("T66.Challenges", "CommunityTab", "Community"))
 									]
-								]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-								[
-									FT66Style::MakeButton(
-										FT66ButtonParams(NSLOCTEXT("T66.Challenges", "Close", "X"), FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleBackClicked), ET66ButtonType::Danger)
-										.SetBorderVisual(ET66ButtonBorderVisual::None)
-										.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
-										.SetMinWidth(38.f)
-										.SetHeight(38.f)
-										.SetPadding(FMargin(0.f))
-										.SetColor(FLinearColor(0.32f, 0.08f, 0.06f, 1.0f))
-										.SetTextColor(FLinearColor(1.0f, 0.18f, 0.15f, 1.0f))
-										.SetFontSize(18)
-										.SetUseGlow(false))
+									+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+									[
+										SNew(STextBlock)
+										.Text(FText::FromString(StatusMessage))
+										.Font(FT66Style::Tokens::FontRegular(10))
+										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+										.AutoWrapText(true)
+									]
+									+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f)
+									[
+										CreateButtonContent
+									]
 								]
 							]
 						]
@@ -607,11 +1302,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 									SNew(SBox)
 									.WidthOverride(ListColumnWidth)
 									[
-										SNew(SScrollBox)
-										+ SScrollBox::Slot()
-										[
-											EntryList
-										]
+										ListPanelContent
 									]
 								]
 							]
@@ -625,94 +1316,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 									SNew(SBox)
 									.WidthOverride(DetailColumnWidth)
 									[
-										SNew(SVerticalBox)
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-										[
-											SNew(STextBlock)
-											.Text(SelectedEntry.Title)
-											.Font(FT66Style::Tokens::FontBold(30))
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-										]
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
-										[
-											SNew(STextBlock)
-											.Text(SelectedEntry.Description)
-											.Font(FT66Style::Tokens::FontRegular(13))
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-											.AutoWrapText(true)
-										]
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
-										[
-											SNew(STextBlock)
-											.Text(DetailListHeader)
-											.Font(FT66Style::Tokens::FontBold(14))
-											.ColorAndOpacity(ChallengeSuccessTint())
-										]
-										+ SVerticalBox::Slot().FillHeight(1.f)
-										[
-											SNew(SBorder)
-											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-											.BorderBackgroundColor(ChallengePanelInsetFill())
-											.Padding(12.f)
-											[
-												ConstraintList
-											]
-										]
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-										[
-											SNew(STextBlock)
-											.Text(SelectedEntry.RewardSummary)
-											.Font(FT66Style::Tokens::FontBold(22))
-											.ColorAndOpacity(ChallengeRewardTint())
-										]
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-										[
-											SNew(STextBlock)
-											.Text(SelectedEntry.RewardDetail)
-											.Font(FT66Style::Tokens::FontRegular(12))
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-										]
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-										[
-											SNew(STextBlock)
-											.Text(LeaderboardNote)
-											.Font(FT66Style::Tokens::FontRegular(11))
-											.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-											.AutoWrapText(true)
-										]
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-										[
-											SNew(STextBlock)
-											.Text(SelectedEntry.CompletionPlaceholder)
-											.Font(FT66Style::Tokens::FontBold(14))
-											.ColorAndOpacity(ChallengeDangerTint())
-										]
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
-										[
-											SNew(STextBlock)
-											.Text(bSelectedEntryConfirmed
-												? NSLOCTEXT("T66.Challenges", "SelectedNote", "Selected for the next run.")
-												: SelectNote)
-											.Font(FT66Style::Tokens::FontRegular(11))
-											.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-											.AutoWrapText(true)
-										]
-										+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 16.f, 0.f, 0.f)
-										[
-											FT66Style::MakeButton(
-												FT66ButtonParams(
-													bSelectedEntryConfirmed
-														? NSLOCTEXT("T66.Challenges", "Selected", "SELECTED")
-														: NSLOCTEXT("T66.Challenges", "Confirm", "CONFIRM"),
-													FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleConfirmClicked),
-													ET66ButtonType::Primary)
-												.SetMinWidth(174.f)
-												.SetHeight(40.f)
-												.SetPadding(FMargin(16.f, 8.f, 16.f, 6.f))
-												.SetColor(bSelectedEntryConfirmed ? ChallengeSuccessTint() : ChallengeRewardTint())
-												.SetTextColor(FLinearColor(0.07f, 0.08f, 0.09f, 1.0f))
-												.SetUseGlow(false))
-										]
+										DetailPanelContent
 									]
 								]
 							]
@@ -726,6 +1330,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 FReply UT66ChallengesScreen::HandleBackClicked()
 {
 	bSelectionStateInitialized = false;
+	bRequestedCommunityRefresh = false;
+	EndDraftEditor();
 	CloseModal();
 	return FReply::Handled();
 }
@@ -734,34 +1340,228 @@ FReply UT66ChallengesScreen::HandleTabSelected(const int32 TabIndex)
 {
 	InitializeSelectionState();
 	ActiveTabIndex = FMath::Clamp(TabIndex, 0, static_cast<int32>(ETabIndex::Count) - 1);
+	EndDraftEditor();
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleSourceTabSelected(const int32 SourceTabIndex)
+{
+	InitializeSelectionState();
+	ActiveSourceTabIndex[ActiveTabIndex] = FMath::Clamp(SourceTabIndex, 0, static_cast<int32>(ESourceTabIndex::Count) - 1);
+	EndDraftEditor();
 	ForceRebuildSlate();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleEntrySelected(const int32 EntryIndex)
 {
-	const int32 CurrentTabIndex = GetActiveTabIndex();
-	const TArray<FChallengeEntry>& Entries = GetEntriesForTab(CurrentTabIndex);
+	const int32 SourceTabIndex = ActiveSourceTabIndex[ActiveTabIndex];
+	const TArray<FT66CommunityContentEntry> Entries = GetEntriesForView(ActiveTabIndex, SourceTabIndex);
 	if (Entries.IsValidIndex(EntryIndex))
 	{
-		PendingSelections[CurrentTabIndex].Kind = Entries[EntryIndex].RunModifierKind;
-		PendingSelections[CurrentTabIndex].ID = Entries[EntryIndex].RunModifierID;
+		PendingSelections[ActiveTabIndex][SourceTabIndex] = Entries[EntryIndex].LocalId;
 	}
+
+	EndDraftEditor();
 	ForceRebuildSlate();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleConfirmClicked()
 {
-	const int32 CurrentTabIndex = GetActiveTabIndex();
-	const TArray<FChallengeEntry>& Entries = GetEntriesForTab(CurrentTabIndex);
-	const int32 SelectedIndex = GetSelectedEntryIndex(CurrentTabIndex);
-	const int32 EntryIndex = Entries.IsValidIndex(SelectedIndex) ? SelectedIndex : 0;
-	if (Entries.IsValidIndex(EntryIndex))
+	FT66CommunityContentEntry Entry;
+	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
 	{
-		SetConfirmedSelection(this, Entries[EntryIndex].RunModifierKind, Entries[EntryIndex].RunModifierID);
+		if (FindCurrentSelectedEntry(Entry))
+		{
+			Community->ActivateEntry(Entry.LocalId);
+		}
 	}
+
 	bSelectionStateInitialized = false;
 	CloseModal();
 	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleCreateDraftClicked()
+{
+	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	{
+		BeginDraftEditor(Community->CreateDraftTemplate(GetActiveKind()));
+		ForceRebuildSlate();
+	}
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleEditDraftClicked()
+{
+	FT66CommunityContentEntry Entry;
+	if (FindCurrentSelectedEntry(Entry) && Entry.IsDraft())
+	{
+		BeginDraftEditor(Entry);
+		ForceRebuildSlate();
+	}
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleDeleteDraftClicked()
+{
+	FT66CommunityContentEntry Entry;
+	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	{
+		if (FindCurrentSelectedEntry(Entry) && Entry.IsDraft())
+		{
+			Community->DeleteDraft(Entry.LocalId);
+			EndDraftEditor();
+			PendingSelections[ActiveTabIndex][ActiveSourceTabIndex[ActiveTabIndex]] = NAME_None;
+			ForceRebuildSlate();
+		}
+	}
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleSaveDraftClicked()
+{
+	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	{
+		Community->SaveDraft(DraftEditorEntry);
+		PendingSelections[ActiveTabIndex][static_cast<int32>(ESourceTabIndex::Community)] = DraftEditorEntry.LocalId;
+	}
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandlePlayDraftClicked()
+{
+	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	{
+		if (bDraftEditorActive)
+		{
+			Community->SaveDraft(DraftEditorEntry);
+			Community->ActivateEntry(DraftEditorEntry.LocalId);
+		}
+		else
+		{
+			FT66CommunityContentEntry Entry;
+			if (FindCurrentSelectedEntry(Entry) && Entry.IsDraft())
+			{
+				Community->ActivateEntry(Entry.LocalId);
+			}
+		}
+	}
+
+	bSelectionStateInitialized = false;
+	CloseModal();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleSubmitDraftClicked()
+{
+	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	{
+		const FName DraftId = bDraftEditorActive ? DraftEditorEntry.LocalId : GetSelectedEntryIdForView(ActiveTabIndex, ActiveSourceTabIndex[ActiveTabIndex]);
+		if (bDraftEditorActive)
+		{
+			Community->SaveDraft(DraftEditorEntry);
+		}
+		Community->SubmitDraftForApproval(DraftId);
+	}
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleCancelDraftEditorClicked()
+{
+	EndDraftEditor();
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleAdjustDraftReward(const int32 Delta)
+{
+	DraftEditorEntry.SuggestedRewardChadCoupons = FMath::Clamp(DraftEditorEntry.SuggestedRewardChadCoupons + Delta, 0, 999);
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleAdjustDraftStartLevel(const int32 Delta)
+{
+	DraftEditorEntry.Rules.StartLevelOverride = FMath::Clamp(DraftEditorEntry.Rules.StartLevelOverride + Delta, 0, 99);
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleAdjustDraftRequiredStage(const int32 Delta)
+{
+	DraftEditorEntry.Rules.RequiredStageReached = FMath::Clamp(DraftEditorEntry.Rules.RequiredStageReached + Delta, 0, 23);
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleAdjustDraftMaxRunTime(const int32 Delta)
+{
+	DraftEditorEntry.Rules.MaxRunTimeSeconds = FMath::Clamp(DraftEditorEntry.Rules.MaxRunTimeSeconds + Delta, 0, 3600);
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleToggleDraftMaxStats()
+{
+	DraftEditorEntry.Rules.bSetMaxHeroStats = !DraftEditorEntry.Rules.bSetMaxHeroStats;
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleAdjustDraftStatClicked(const EDraftStatField Field, const int32 Delta)
+{
+	AdjustDraftStat(Field, Delta);
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleCycleDraftPassiveClicked(const int32 Direction)
+{
+	CycleDraftPassive(Direction);
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleCycleDraftUltimateClicked(const int32 Direction)
+{
+	CycleDraftUltimate(Direction);
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66ChallengesScreen::HandleCycleDraftStartingItemClicked(const int32 Direction)
+{
+	CycleDraftStartingItem(Direction);
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+void UT66ChallengesScreen::HandleDraftTitleChanged(const FText& NewText)
+{
+	DraftEditorEntry.Title = NewText.ToString();
+}
+
+void UT66ChallengesScreen::HandleDraftDescriptionChanged(const FText& NewText)
+{
+	DraftEditorEntry.Description = NewText.ToString();
+}
+
+void UT66ChallengesScreen::HandleDraftFullClearChanged(const ECheckBoxState NewState)
+{
+	DraftEditorEntry.Rules.bRequireFullClear = (NewState == ECheckBoxState::Checked);
+}
+
+void UT66ChallengesScreen::HandleDraftNoDamageChanged(const ECheckBoxState NewState)
+{
+	DraftEditorEntry.Rules.bRequireNoDamage = (NewState == ECheckBoxState::Checked);
+}
+
+void UT66ChallengesScreen::HandleCommunityContentChanged()
+{
+	ForceRebuildSlate();
 }

@@ -23,7 +23,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 17;
+	int32 SchemaVersion = 19;
 
 	/** Backend leaderboard entry UUID when this snapshot came from the online service. */
 	UPROPERTY(SaveGame)
@@ -70,6 +70,22 @@ public:
 
 	UPROPERTY(SaveGame)
 	int32 Score = 0;
+
+	/** All-time score rank captured for this run summary, if known. */
+	UPROPERTY(SaveGame)
+	int32 ScoreRankAllTime = 0;
+
+	/** Weekly score rank captured for this run summary, if known. */
+	UPROPERTY(SaveGame)
+	int32 ScoreRankWeekly = 0;
+
+	/** All-time speedrun rank captured for this run summary, if known. */
+	UPROPERTY(SaveGame)
+	int32 SpeedRunRankAllTime = 0;
+
+	/** Weekly speedrun rank captured for this run summary, if known. */
+	UPROPERTY(SaveGame)
+	int32 SpeedRunRankWeekly = 0;
 
 	// ===== Identity / selection =====
 
@@ -123,6 +139,18 @@ public:
 	/** Luck Rating (0..100). SchemaVersion>=2. */
 	UPROPERTY(SaveGame)
 	int32 LuckRating0To100 = -1;
+
+	/** Fixed per-run Seed Luck (0..100). SchemaVersion>=19. */
+	UPROPERTY(SaveGame)
+	int32 SeedLuck0To100 = -1;
+
+	/** Aggregate modifier percent applied to Seed Luck. SchemaVersion>=19. */
+	UPROPERTY(SaveGame)
+	float LuckModifierPercent = 0.f;
+
+	/** Effective Seed Luck after modifiers. SchemaVersion>=19. */
+	UPROPERTY(SaveGame)
+	float EffectiveLuck = 0.f;
 
 	/** Quantity component (0..100). SchemaVersion>=2. */
 	UPROPERTY(SaveGame)

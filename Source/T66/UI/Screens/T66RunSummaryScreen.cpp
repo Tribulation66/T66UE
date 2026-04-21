@@ -2,10 +2,10 @@
 
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/T66UIManager.h"
+#include "Core/T66CommunityContentSubsystem.h"
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
-#include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardPacingUtils.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -36,10 +36,12 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "EngineUtils.h"
 #include "Widgets/Images/SImage.h"
+#include "Widgets/Images/SThrobber.h"
 #include "Styling/SlateBrush.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
@@ -69,14 +71,26 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 	bLiveRunSubmissionProcessed = false;
 	bLiveRunFinalAccountingProcessed = false;
 	bDifficultyClearSummaryMode = false;
+	bDailyClimbSummaryMode = false;
+	bBackendRankDataReceived = false;
+	bAwaitingBackendRankData = false;
+	BackendScoreRankAllTime = 0;
+	BackendScoreRankWeekly = 0;
+	BackendSpeedRunRankAllTime = 0;
+	BackendSpeedRunRankWeekly = 0;
+	BackendDailyScoreRank = 0;
+	bLiveRunCheatFlagged = false;
+	bChadCouponsResolutionProcessed = false;
 	SummaryChadCouponsEarned = 0;
+	SummaryChadCouponsSourceLabel.Reset();
+	SummaryChadCouponsFailureReason.Reset();
 	bChadCouponsPopupDontShowAgainChecked = false;
 
 	// If we were opened from a leaderboard row click, load the saved snapshot first.
 	const bool bWasViewingSaved = bViewingSavedLeaderboardRunSummary;
 	const TObjectPtr<UT66LeaderboardRunSummarySaveGame> PrevSummary = LoadedSavedSummary;
 	const bool bConsumedRequest = LoadSavedRunSummaryIfRequested();
-	if (!bConsumedRequest && bViewingSavedLeaderboardRunSummary)
+	if (!bConsumedRequest && bViewingSavedLeaderboardRunSummary && HasValidLiveRunSummaryContext())
 	{
 		UE_LOG(LogT66RunSummary, Log, TEXT("Run Summary: clearing stale cached viewer state before live activation."));
 		ResetSavedRunSummaryViewerState();
@@ -99,29 +113,47 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 	{
 		UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+		bDailyClimbSummaryMode = T66GI && T66GI->IsDailyClimbRunActive();
 		if (UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr)
 		{
 			Backend->OnSubmitRunDataReady.RemoveAll(this);
-			Backend->OnSubmitRunDataReady.AddUObject(this, &UT66RunSummaryScreen::HandleBackendSubmitRunDataReadyForSummary);
+			Backend->OnDailyClimbSubmitDataReady.RemoveAll(this);
+			if (bDailyClimbSummaryMode)
+			{
+				Backend->OnDailyClimbSubmitDataReady.AddUObject(this, &UT66RunSummaryScreen::HandleBackendDailyClimbSubmitDataReadyForSummary);
+			}
+			else
+			{
+				Backend->OnSubmitRunDataReady.AddUObject(this, &UT66RunSummaryScreen::HandleBackendSubmitRunDataReadyForSummary);
+			}
 		}
-		bDifficultyClearSummaryMode = RunState && RunState->HasPendingDifficultyClearSummary();
+		bDifficultyClearSummaryMode = !bDailyClimbSummaryMode && RunState && RunState->HasPendingDifficultyClearSummary();
 		UE_LOG(
 			LogT66RunSummary,
 			Log,
-			TEXT("Run Summary: live activation stage=%d score=%d difficultyClear=%d runEnded=%d victory=%d"),
+			TEXT("Run Summary: live activation stage=%d score=%d difficultyClear=%d daily=%d runEnded=%d victory=%d"),
 			RunState ? RunState->GetCurrentStage() : -1,
 			RunState ? RunState->GetCurrentScore() : -1,
 			bDifficultyClearSummaryMode ? 1 : 0,
+			bDailyClimbSummaryMode ? 1 : 0,
 			RunState && RunState->HasRunEnded() ? 1 : 0,
 			RunState && RunState->DidRunEndInVictory() ? 1 : 0);
-		PrepareChadCouponsPopupForLiveRun();
-		if (bDifficultyClearSummaryMode)
+		if (HasValidLiveRunSummaryContext())
 		{
-			ProcessRunSummaryLeaderboardSubmission(true);
+			PrepareChadCouponsPopupForLiveRun();
+			if (bDifficultyClearSummaryMode)
+			{
+				ProcessRunSummaryLeaderboardSubmission(true);
+			}
+			else
+			{
+				ProcessLiveRunFinalSubmission();
+			}
 		}
 		else
 		{
-			ProcessLiveRunFinalSubmission();
+			UE_LOG(LogT66RunSummary, Log, TEXT("Run Summary: live activation has no finished-run context; skipping leaderboard submission and final accounting."));
 		}
 
 		// The UI manager reuses modal widget instances, so the cached Slate tree can
@@ -145,6 +177,15 @@ void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
 		{
 			Backend->OnSubmitRunDataReady.RemoveAll(this);
+			Backend->OnDailyClimbSubmitDataReady.RemoveAll(this);
+		}
+
+		if (bDailyClimbSummaryMode)
+		{
+			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+			{
+				T66GI->ClearActiveDailyClimbRun();
+			}
 		}
 	}
 	InventoryItemIconBrushes.Reset();
@@ -154,7 +195,19 @@ void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 	bLiveRunSubmissionProcessed = false;
 	bLiveRunFinalAccountingProcessed = false;
 	bDifficultyClearSummaryMode = false;
+	bDailyClimbSummaryMode = false;
+	bBackendRankDataReceived = false;
+	bAwaitingBackendRankData = false;
+	BackendScoreRankAllTime = 0;
+	BackendScoreRankWeekly = 0;
+	BackendSpeedRunRankAllTime = 0;
+	BackendSpeedRunRankWeekly = 0;
+	BackendDailyScoreRank = 0;
+	bLiveRunCheatFlagged = false;
+	bChadCouponsResolutionProcessed = false;
 	SummaryChadCouponsEarned = 0;
+	SummaryChadCouponsSourceLabel.Reset();
+	SummaryChadCouponsFailureReason.Reset();
 	bChadCouponsPopupDontShowAgainChecked = false;
 	bShowPowerCouponsPopup = false;
 	Super::OnScreenDeactivated_Implementation();
@@ -163,6 +216,49 @@ void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 namespace
 {
 	constexpr int32 T66RunSummaryFontDelta = -8;
+
+	static FText FormatRunSummaryDurationText(float TotalSeconds)
+	{
+		const int32 RoundedSeconds = FMath::Max(0, FMath::RoundToInt(TotalSeconds));
+		const int32 Hours = RoundedSeconds / 3600;
+		const int32 Minutes = (RoundedSeconds % 3600) / 60;
+		const int32 Seconds = RoundedSeconds % 60;
+
+		if (Hours > 0)
+		{
+			return FText::FromString(FString::Printf(TEXT("%d:%02d:%02d"), Hours, Minutes, Seconds));
+		}
+
+		return FText::FromString(FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds));
+	}
+
+	static FText FormatRunSummaryRankText(int32 Rank)
+	{
+		return (Rank > 0)
+			? FText::Format(NSLOCTEXT("T66.RunSummary", "RankFormat", "#{0}"), FText::AsNumber(Rank))
+			: NSLOCTEXT("T66.RunSummary", "RankNA", "N/A");
+	}
+
+	static int32 GetDisplayedRunSummaryStageNumber(
+		const UT66PlayerExperienceSubSystem* PlayerExperience,
+		const ET66Difficulty Difficulty,
+		const int32 StageReached)
+	{
+		if (StageReached <= 0)
+		{
+			return 1;
+		}
+
+		const int32 StageCount = (Difficulty == ET66Difficulty::Impossible) ? 3 : 4;
+		if (!PlayerExperience)
+		{
+			return FMath::Clamp(StageReached, 1, StageCount);
+		}
+
+		const int32 StartStage = FMath::Max(1, PlayerExperience->GetDifficultyStartStage(Difficulty));
+		const int32 StageOffset = FMath::Max(0, StageReached - StartStage);
+		return (StageOffset % StageCount) + 1;
+	}
 
 	static bool T66GetNextDifficulty(const ET66Difficulty Current, ET66Difficulty& OutNextDifficulty)
 	{
@@ -227,14 +323,124 @@ namespace
 	}
 }
 
+bool UT66RunSummaryScreen::HasValidLiveRunSummaryContext() const
+{
+	if (bViewingSavedLeaderboardRunSummary)
+	{
+		return false;
+	}
+
+	const UGameInstance* GI = GetGameInstance();
+	const UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	return RunState && (RunState->HasPendingDifficultyClearSummary() || RunState->HasRunEnded());
+}
+
 void UT66RunSummaryScreen::PrepareChadCouponsPopupForLiveRun()
 {
 	SummaryChadCouponsEarned = 0;
+	SummaryChadCouponsSourceLabel.Reset();
+	SummaryChadCouponsFailureReason.Reset();
 	bShowPowerCouponsPopup = false;
 	bChadCouponsPopupDontShowAgainChecked = false;
 
-	if (bViewingSavedLeaderboardRunSummary)
+	if (!HasValidLiveRunSummaryContext())
 	{
+		return;
+	}
+
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState)
+	{
+		return;
+	}
+
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+	const UT66CommunityContentSubsystem* Community = GI ? GI->GetSubsystem<UT66CommunityContentSubsystem>() : nullptr;
+	const int32 PendingCoupons = RunState->GetPendingPowerCrystalsForWallet();
+	const bool bDailyClimbRun = T66GI && T66GI->IsDailyClimbRunActive();
+
+	int32 ChallengeRewardCoupons = 0;
+	if (!bDailyClimbRun && Community)
+	{
+		ChallengeRewardCoupons = Community->GetApprovedRewardForActiveChallenge(
+			RunState,
+			&SummaryChadCouponsSourceLabel,
+			&SummaryChadCouponsFailureReason);
+	}
+
+	if (RunState->ShouldSuppressPendingPowerCrystalsForWallet())
+	{
+		const bool bSelectedRunModifier = T66GI && T66GI->SelectedRunModifierKind != ET66RunModifierKind::None;
+		UE_LOG(
+			LogT66RunSummary,
+			Log,
+			TEXT("Run Summary: suppressing %d Chad Coupons because %s."),
+			PendingCoupons,
+			bSelectedRunModifier ? TEXT("a run modifier was selected") : TEXT("the run was flagged locally"));
+
+		RunState->MarkPendingPowerCrystalsSuppressedForWallet();
+		if (!bSelectedRunModifier || bDailyClimbRun)
+		{
+			bChadCouponsResolutionProcessed = true;
+			bLiveRunCheatFlagged = true;
+			return;
+		}
+	}
+
+	if (bDailyClimbRun)
+	{
+		if (PendingCoupons > 0)
+		{
+			UE_LOG(
+				LogT66RunSummary,
+				Log,
+				TEXT("Run Summary: suppressing %d standard Chad Coupons because Daily Climb rewards are backend-authoritative."),
+				PendingCoupons);
+			RunState->MarkPendingPowerCrystalsSuppressedForWallet();
+		}
+
+		SummaryChadCouponsSourceLabel = TEXT("Daily Climb reward");
+		return;
+	}
+
+	SummaryChadCouponsEarned = ChallengeRewardCoupons;
+	if (SummaryChadCouponsEarned <= 0)
+	{
+		if (PendingCoupons <= 0 && SummaryChadCouponsFailureReason.IsEmpty())
+		{
+			SummaryChadCouponsSourceLabel.Reset();
+		}
+		return;
+	}
+
+	if (SummaryChadCouponsSourceLabel.IsEmpty())
+	{
+		SummaryChadCouponsSourceLabel = TEXT("Challenge reward");
+	}
+}
+
+void UT66RunSummaryScreen::ResolveChadCouponsPopupForLiveRun(const bool bAllowGrant)
+{
+	if (bViewingSavedLeaderboardRunSummary || bChadCouponsResolutionProcessed)
+	{
+		return;
+	}
+
+	bChadCouponsResolutionProcessed = true;
+	bShowPowerCouponsPopup = false;
+	if (!bAllowGrant || SummaryChadCouponsEarned <= 0)
+	{
+		if (!bAllowGrant)
+		{
+			if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+			{
+				if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+				{
+					RunState->MarkPendingPowerCrystalsSuppressedForWallet();
+				}
+			}
+		}
 		return;
 	}
 
@@ -247,21 +453,17 @@ void UT66RunSummaryScreen::PrepareChadCouponsPopupForLiveRun()
 		return;
 	}
 
-	const int32 PendingCoupons = RunState->GetPendingPowerCrystalsForWallet();
-	if (PendingCoupons <= 0)
-	{
-		return;
-	}
-
 	if (!Achievements)
 	{
-		UE_LOG(LogT66RunSummary, Warning, TEXT("Run Summary: unable to credit %d Chad Coupons because Achievements subsystem was unavailable."), PendingCoupons);
+		UE_LOG(LogT66RunSummary, Warning, TEXT("Run Summary: unable to credit %d Chad Coupons because Achievements subsystem was unavailable."), SummaryChadCouponsEarned);
 		return;
 	}
 
-	Achievements->AddChadCoupons(PendingCoupons);
-	RunState->MarkPendingPowerCrystalsGrantedToWallet();
-	SummaryChadCouponsEarned = PendingCoupons;
+	Achievements->AddChadCoupons(SummaryChadCouponsEarned);
+	if (RunState->GetPendingPowerCrystalsForWallet() > 0)
+	{
+		RunState->MarkPendingPowerCrystalsGrantedToWallet();
+	}
 	bShowPowerCouponsPopup = !PlayerSettings || PlayerSettings->GetShowRunSummaryChadCouponsPopup();
 }
 
@@ -276,14 +478,81 @@ void UT66RunSummaryScreen::ProcessRunSummaryLeaderboardSubmission(const bool bTr
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
 	if (!GI || !RunState || !LB)
 	{
 		UE_LOG(LogT66RunSummary, Warning, TEXT("Run Summary: leaderboard submission skipped because required subsystems were unavailable."));
+		ResolveChadCouponsPopupForLiveRun(true);
+		return;
+	}
+	if (!HasValidLiveRunSummaryContext())
+	{
+		UE_LOG(LogT66RunSummary, Log, TEXT("Run Summary: refusing leaderboard submission because there is no finished-run context."));
+		bAwaitingBackendRankData = false;
 		return;
 	}
 
 	FString SavedRunSummarySlotName;
 	const bool bSavedSnapshot = LB->SaveFinishedRunSummarySnapshot(SavedRunSummarySlotName);
+	if (bDailyClimbSummaryMode)
+	{
+		if (!Backend || !T66GI || !T66GI->ActiveDailyClimbChallenge.IsValid() || T66GI->ActiveDailyClimbChallenge.AttemptId.IsEmpty())
+		{
+			UE_LOG(LogT66RunSummary, Warning, TEXT("Run Summary: Daily Climb submission skipped because the active daily context was incomplete."));
+			bAwaitingBackendRankData = false;
+			ResolveChadCouponsPopupForLiveRun(false);
+			bLiveRunSubmissionProcessed = true;
+			return;
+		}
+
+		UT66LeaderboardRunSummarySaveGame* Snapshot = nullptr;
+		if (bSavedSnapshot && !SavedRunSummarySlotName.IsEmpty())
+		{
+			if (USaveGame* LoadedSnapshot = UGameplayStatics::LoadGameFromSlot(SavedRunSummarySlotName, 0))
+			{
+				Snapshot = Cast<UT66LeaderboardRunSummarySaveGame>(LoadedSnapshot);
+			}
+		}
+
+		if (!Snapshot)
+		{
+			UE_LOG(LogT66RunSummary, Warning, TEXT("Run Summary: Daily Climb submission skipped because the run summary snapshot could not be loaded."));
+			bAwaitingBackendRankData = false;
+			ResolveChadCouponsPopupForLiveRun(false);
+			bLiveRunSubmissionProcessed = true;
+			return;
+		}
+
+		const FString DisplayName = !T66GI->CurrentRunOwnerDisplayName.IsEmpty()
+			? T66GI->CurrentRunOwnerDisplayName
+			: TEXT("Player");
+		const FString DailyRequestKey = FString::Printf(TEXT("daily_submit_%s"), *T66GI->ActiveDailyClimbChallenge.ChallengeId);
+
+		Backend->SubmitDailyClimbRun(
+			DisplayName,
+			Snapshot,
+			T66GI->ActiveDailyClimbChallenge.ChallengeId,
+			T66GI->ActiveDailyClimbChallenge.AttemptId,
+			DailyRequestKey);
+
+		UE_LOG(
+			LogT66RunSummary,
+			Log,
+			TEXT("Run Summary: submitted Daily Climb result snapshotSaved=%d slot=%s challenge=%s attempt=%s stage=%d score=%d"),
+			bSavedSnapshot ? 1 : 0,
+			SavedRunSummarySlotName.IsEmpty() ? TEXT("<none>") : *SavedRunSummarySlotName,
+			*T66GI->ActiveDailyClimbChallenge.ChallengeId,
+			*T66GI->ActiveDailyClimbChallenge.AttemptId,
+			RunState->GetCurrentStage(),
+			RunState->GetCurrentScore());
+
+		bNewPersonalBestScore = false;
+		bNewPersonalBestTime = false;
+		bAwaitingBackendRankData = true;
+		bLiveRunSubmissionProcessed = true;
+		return;
+	}
 
 	const bool bShouldSubmitTime =
 		(RunState->DidRunEndInVictory() || bTreatAsVictoryForTime)
@@ -317,6 +586,16 @@ void UT66RunSummaryScreen::ProcessRunSummaryLeaderboardSubmission(const bool bTr
 		RunState->GetCurrentScore(),
 		bTreatAsVictoryForTime ? 1 : 0);
 
+	if (!bSubmittedScore && !bSubmittedTime)
+	{
+		bAwaitingBackendRankData = false;
+		ResolveChadCouponsPopupForLiveRun(true);
+	}
+	else
+	{
+		bAwaitingBackendRankData = true;
+	}
+
 	bLiveRunSubmissionProcessed = true;
 }
 
@@ -327,12 +606,26 @@ void UT66RunSummaryScreen::ProcessLiveRunFinalSubmission()
 		return;
 	}
 
+	ProcessRunSummaryLeaderboardSubmission(false);
+	ProcessLiveRunFinalAccounting();
+}
+
+void UT66RunSummaryScreen::ProcessLiveRunFinalAccounting()
+{
+	if (bLiveRunFinalAccountingProcessed || bViewingSavedLeaderboardRunSummary)
+	{
+		return;
+	}
+	if (!HasValidLiveRunSummaryContext())
+	{
+		UE_LOG(LogT66RunSummary, Log, TEXT("Run Summary: skipping final accounting because there is no finished-run context."));
+		return;
+	}
+
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
-	ProcessRunSummaryLeaderboardSubmission(false);
-
 	if (!RunState || !Achievements || !T66GI)
 	{
 		UE_LOG(LogT66RunSummary, Warning, TEXT("Run Summary: final accounting skipped because required subsystems were unavailable."));
@@ -515,7 +808,36 @@ bool UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
 		return false;
 	}
 
-	// Prefer in-memory fake snapshot (non-local leaderboard rows), then slot-based request.
+	FString SlotName;
+	if (LB->ConsumePendingRunSummaryRequest(SlotName))
+	{
+		// We are consuming an explicit saved-slot request: clear previous snapshot state now.
+		ResetSavedRunSummaryViewerState();
+
+		if (SlotName.IsEmpty() || !UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+		{
+			return true;
+		}
+
+		USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(SlotName, 0);
+		LoadedSavedSummary = Cast<UT66LeaderboardRunSummarySaveGame>(Loaded);
+		if (LoadedSavedSummary)
+		{
+			LoadedSavedSummary->HeroID = T66MigrateHeroIDFromSave(LoadedSavedSummary->HeroID);
+			bViewingSavedLeaderboardRunSummary = true;
+			LoadedSavedSummarySlotName = SlotName;
+
+			// Proof-of-run fields are schema-versioned. If not present, default to empty/unlocked.
+			if (LoadedSavedSummary->SchemaVersion >= 3)
+			{
+				ProofOfRunUrl = LoadedSavedSummary->ProofOfRunUrl;
+				bProofOfRunLocked = LoadedSavedSummary->bProofOfRunLocked;
+			}
+		}
+		return true;
+	}
+
+	// No explicit slot request; fall back to in-memory fake snapshot (non-local leaderboard rows).
 	UT66LeaderboardRunSummarySaveGame* FakeSnap = LB->ConsumePendingFakeRunSummarySnapshot();
 	if (FakeSnap)
 	{
@@ -530,37 +852,8 @@ bool UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
 		return true;
 	}
 
-	FString SlotName;
-	if (!LB->ConsumePendingRunSummaryRequest(SlotName))
-	{
-		// No pending request: do not clobber any existing viewer state.
-		return false;
-	}
-
-	// We are consuming a request: clear previous snapshot state now.
-	ResetSavedRunSummaryViewerState();
-
-	if (SlotName.IsEmpty() || !UGameplayStatics::DoesSaveGameExist(SlotName, 0))
-	{
-		return true;
-	}
-
-	USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(SlotName, 0);
-	LoadedSavedSummary = Cast<UT66LeaderboardRunSummarySaveGame>(Loaded);
-	if (LoadedSavedSummary)
-	{
-		LoadedSavedSummary->HeroID = T66MigrateHeroIDFromSave(LoadedSavedSummary->HeroID);
-		bViewingSavedLeaderboardRunSummary = true;
-		LoadedSavedSummarySlotName = SlotName;
-
-		// Proof-of-run fields are schema-versioned. If not present, default to empty/unlocked.
-		if (LoadedSavedSummary->SchemaVersion >= 3)
-		{
-			ProofOfRunUrl = LoadedSavedSummary->ProofOfRunUrl;
-			bProofOfRunLocked = LoadedSavedSummary->bProofOfRunLocked;
-		}
-	}
-	return true;
+	// No pending request: do not clobber any existing viewer state.
+	return false;
 }
 
 TSharedRef<SWidget> UT66RunSummaryScreen::RebuildWidget()
@@ -633,13 +926,25 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	UWorld* World = GetWorld();
 	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GIBase ? GIBase->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const UT66GameInstance* T66GIBase = Cast<UT66GameInstance>(GIBase);
+	const ET66Difficulty SummaryDifficulty =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Difficulty :
+		(T66GIBase ? T66GIBase->SelectedDifficulty : ET66Difficulty::Easy);
+	const ET66PartySize SummaryPartySize =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->PartySize :
+		(T66GIBase ? T66GIBase->SelectedPartySize : ET66PartySize::Solo);
+	const UT66PlayerExperienceSubSystem* PlayerExperience = GIBase ? GIBase->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 	const int32 StageReached =
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->StageReached :
 		(RunState ? RunState->GetCurrentStage() : 1);
+	const int32 DisplayStageReached = GetDisplayedRunSummaryStageNumber(PlayerExperience, SummaryDifficulty, StageReached);
 
 	const int32 DisplayScore =
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Score :
 		(RunState ? RunState->GetCurrentScore() : 0);
+	const float DisplaySeconds =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->RunDurationSeconds :
+		(RunState ? RunState->GetFinalRunElapsedSeconds() : 0.f);
 
 	const int32 HeroLevel =
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroLevel :
@@ -700,22 +1005,21 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		.OnGenerateRow(SListView<TSharedPtr<FString>>::FOnGenerateRow::CreateUObject(this, &UT66RunSummaryScreen::GenerateLogRow))
 		.SelectionMode(ESelectionMode::None);
 
-	const FText TitleText = Loc ? Loc->GetText_RunSummaryTitle() : NSLOCTEXT("T66.RunSummary", "Title", "RUN SUMMARY");
-	const FText StageScoreText = Loc
-		? FText::Format(Loc->GetText_RunSummaryStageReachedScoreFormat(), FText::AsNumber(StageReached), FText::AsNumber(DisplayScore))
-		: FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  Score: %d"), StageReached, DisplayScore));
+	const FText TitleText = bDailyClimbSummaryMode
+		? NSLOCTEXT("T66.RunSummary", "DailyTitle", "DAILY CLIMB SUMMARY")
+		: (Loc ? Loc->GetText_RunSummaryTitle() : NSLOCTEXT("T66.RunSummary", "Title", "RUN SUMMARY"));
+	const FText StageScoreText = FText::Format(
+		NSLOCTEXT("T66.RunSummary", "StageReachedScoreTimeFormat", "Stage Reached: {0}  |  Score: {1}  |  Time: {2}"),
+		FText::AsNumber(DisplayStageReached),
+		FText::AsNumber(DisplayScore),
+		FormatRunSummaryDurationText(DisplaySeconds));
 
-	// Global ranking (high score always; speed run when mode on — N/A if no time for that stage).
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
-	UT66PlayerSettingsSubsystem* PS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
 	const bool bDotaTheme = FT66Style::IsDotaTheme();
-	const int32 ScoreRank = (GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalScoreRank(GI->SelectedDifficulty, GI->SelectedPartySize) : 0;
-	const bool bSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
-	const int32 SpeedRunRank = (bSpeedRunMode && GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalSpeedRunRank(GI->SelectedDifficulty, GI->SelectedPartySize, StageReached) : 0;
-	const FText ScoreRankLabelText = NSLOCTEXT("T66.RunSummary", "ScoreRankLabel", "Score Rank:");
-	const FText ScoreRankValueText = (ScoreRank > 0) ? FText::Format(NSLOCTEXT("T66.RunSummary", "RankFormat", "#{0}"), FText::AsNumber(ScoreRank)) : NSLOCTEXT("T66.RunSummary", "RankNA", "N/A");
-	const FText SpeedRunRankLabelText = NSLOCTEXT("T66.RunSummary", "SpeedRunRankLabel", "Speed Run Rank:");
-	const FText SpeedRunRankValueText = (SpeedRunRank > 0) ? FText::Format(NSLOCTEXT("T66.RunSummary", "RankFormat", "#{0}"), FText::AsNumber(SpeedRunRank)) : NSLOCTEXT("T66.RunSummary", "RankNA", "N/A");
+	const FText ScoreRankLabelText = NSLOCTEXT("T66.RunSummary", "ScoreRankLabel", "Score");
+	const FText SpeedRunRankLabelText = NSLOCTEXT("T66.RunSummary", "SpeedRunRankLabel", "Speed Run");
+	const TWeakObjectPtr<UT66RunSummaryScreen> WeakScreen(this);
+	const TWeakObjectPtr<UT66LeaderboardSubsystem> WeakLB(LB);
 
 	auto MakeSectionPanel = [](const FText& Header, const TSharedRef<SWidget>& Body) -> TSharedRef<SWidget>
 	{
@@ -731,6 +1035,144 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
 				Body
+			],
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4)
+		);
+	};
+
+	auto ResolveDisplayedRank = [WeakScreen, WeakLB, SummaryDifficulty, SummaryPartySize](bool bScoreRank, bool bWeeklyRank) -> int32
+	{
+		if (!WeakScreen.IsValid())
+		{
+			return 0;
+		}
+
+		const UT66RunSummaryScreen* Screen = WeakScreen.Get();
+		if (Screen->bViewingSavedLeaderboardRunSummary && Screen->LoadedSavedSummary)
+		{
+			if (bScoreRank)
+			{
+				return bWeeklyRank ? Screen->LoadedSavedSummary->ScoreRankWeekly : Screen->LoadedSavedSummary->ScoreRankAllTime;
+			}
+
+			return bWeeklyRank ? Screen->LoadedSavedSummary->SpeedRunRankWeekly : Screen->LoadedSavedSummary->SpeedRunRankAllTime;
+		}
+
+		if (Screen->bBackendRankDataReceived)
+		{
+			if (bScoreRank)
+			{
+				return bWeeklyRank ? Screen->BackendScoreRankWeekly : Screen->BackendScoreRankAllTime;
+			}
+
+			return bWeeklyRank ? Screen->BackendSpeedRunRankWeekly : Screen->BackendSpeedRunRankAllTime;
+		}
+
+		if (!WeakLB.IsValid())
+		{
+			return 0;
+		}
+
+		if (bScoreRank)
+		{
+			return bWeeklyRank
+				? WeakLB->GetLocalScoreRankWeekly(SummaryDifficulty, SummaryPartySize)
+				: WeakLB->GetLocalScoreRankAllTime(SummaryDifficulty, SummaryPartySize);
+		}
+
+		return bWeeklyRank
+			? WeakLB->GetLocalSpeedRunRankWeekly(SummaryDifficulty, SummaryPartySize)
+			: WeakLB->GetLocalSpeedRunRankAllTime(SummaryDifficulty, SummaryPartySize);
+	};
+
+	auto GetRankLoadingVisibility = [WeakScreen]() -> EVisibility
+	{
+		if (!WeakScreen.IsValid())
+		{
+			return EVisibility::Collapsed;
+		}
+
+		const UT66RunSummaryScreen* Screen = WeakScreen.Get();
+		return (!Screen->bViewingSavedLeaderboardRunSummary && Screen->bAwaitingBackendRankData)
+			? EVisibility::Visible
+			: EVisibility::Collapsed;
+	};
+
+	auto GetRankContentVisibility = [WeakScreen]() -> EVisibility
+	{
+		if (!WeakScreen.IsValid())
+		{
+			return EVisibility::Visible;
+		}
+
+		const UT66RunSummaryScreen* Screen = WeakScreen.Get();
+		return (!Screen->bViewingSavedLeaderboardRunSummary && Screen->bAwaitingBackendRankData)
+			? EVisibility::Collapsed
+			: EVisibility::Visible;
+	};
+
+	auto MakeRankValuePair = [](const FText& Label, TAttribute<FText> RankText) -> TSharedRef<SWidget>
+	{
+		return SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(Label)
+				.Font(RunSummaryRegularFont(14))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(6.f, 0.f, 0.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(RankText)
+				.Font(RunSummaryBoldFont(14))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			];
+	};
+
+	auto MakeRankSectionPanel = [&](const FText& Header, TAttribute<FText> ScoreRankText, TAttribute<FText> SpeedRunRankText) -> TSharedRef<SWidget>
+	{
+		return FT66Style::MakePanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			[
+				SNew(STextBlock)
+				.Text(Header)
+				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+				.Font(RunSummaryHeadingFont())
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SHorizontalBox)
+					.Visibility_Lambda(GetRankContentVisibility)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
+					[
+						MakeRankValuePair(ScoreRankLabelText, ScoreRankText)
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						MakeRankValuePair(SpeedRunRankLabelText, SpeedRunRankText)
+					]
+				]
+				+ SOverlay::Slot()
+				[
+					SNew(SHorizontalBox)
+					.Visibility_Lambda(GetRankLoadingVisibility)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 2.f, 8.f, 2.f)
+					[
+						SNew(SThrobber)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.RunSummary", "RanksLoading", "Updating ranks..."))
+						.Font(RunSummaryRegularFont(14))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					]
+				]
 			],
 			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4)
 		);
@@ -757,6 +1199,85 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4)
 		);
 	};
+
+	TSharedRef<SWidget> WeeklyRankPanel = MakeRankSectionPanel(
+		NSLOCTEXT("T66.RunSummary", "WeeklyRankHeader", "Weekly Rank"),
+		TAttribute<FText>::CreateLambda([ResolveDisplayedRank]() { return FormatRunSummaryRankText(ResolveDisplayedRank(true, true)); }),
+		TAttribute<FText>::CreateLambda([ResolveDisplayedRank]() { return FormatRunSummaryRankText(ResolveDisplayedRank(false, true)); }));
+	TSharedRef<SWidget> AllTimeRankPanel = MakeRankSectionPanel(
+		NSLOCTEXT("T66.RunSummary", "AllTimeRankHeader", "All Time Rank"),
+		TAttribute<FText>::CreateLambda([ResolveDisplayedRank]() { return FormatRunSummaryRankText(ResolveDisplayedRank(true, false)); }),
+		TAttribute<FText>::CreateLambda([ResolveDisplayedRank]() { return FormatRunSummaryRankText(ResolveDisplayedRank(false, false)); }));
+	TSharedRef<SWidget> DailyRankPanel =
+		FT66Style::MakePanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.RunSummary", "DailyRankHeader", "Daily Rank"))
+				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+				.Font(RunSummaryHeadingFont())
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SHorizontalBox)
+					.Visibility_Lambda(GetRankContentVisibility)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
+					[
+						MakeRankValuePair(
+							NSLOCTEXT("T66.RunSummary", "DailyRankLabel", "Score"),
+							TAttribute<FText>::CreateLambda([WeakScreen]()
+							{
+								if (!WeakScreen.IsValid())
+								{
+									return FormatRunSummaryRankText(0);
+								}
+
+								const UT66RunSummaryScreen* Screen = WeakScreen.Get();
+								return FormatRunSummaryRankText(Screen->BackendDailyScoreRank);
+							}))
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						MakeRankValuePair(
+							NSLOCTEXT("T66.RunSummary", "DailyRewardLabel", "Reward"),
+							TAttribute<FText>::CreateLambda([WeakScreen]()
+							{
+								if (!WeakScreen.IsValid())
+								{
+									return FText::Format(
+										NSLOCTEXT("T66.RunSummary", "DailyRewardValue", "{0} Coupons"),
+										FText::AsNumber(0));
+								}
+
+								const UT66RunSummaryScreen* Screen = WeakScreen.Get();
+								return FText::Format(
+									NSLOCTEXT("T66.RunSummary", "DailyRewardValue", "{0} Coupons"),
+									FText::AsNumber(FMath::Max(0, Screen->SummaryChadCouponsEarned)));
+							}))
+					]
+				]
+				+ SOverlay::Slot()
+				[
+					SNew(SHorizontalBox)
+					.Visibility_Lambda(GetRankLoadingVisibility)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 2.f, 8.f, 2.f)
+					[
+						SNew(SThrobber)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.RunSummary", "DailyRanksLoading", "Submitting Daily Climb..."))
+						.Font(RunSummaryRegularFont(14))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					]
+				]
+			],
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4));
 
 	auto MakeHeroPreview = [bDotaTheme](const TSharedPtr<FSlateBrush>& Brush) -> TSharedRef<SWidget>
 	{
@@ -1237,6 +1758,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	TSharedRef<SWidget> ButtonsStack = [&]() -> TSharedRef<SWidget>
 	{
+		if (bDailyClimbSummaryMode)
+		{
+			return StaticCastSharedRef<SWidget>(
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked)))
+						.SetMinWidth(220.f).SetPadding(FMargin(18.f, 10.f)))
+				]);
+		}
+
 		if (bDifficultyClearSummaryMode)
 		{
 			TSharedRef<SVerticalBox> DifficultyClearButtons = SNew(SVerticalBox);
@@ -1286,7 +1818,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			]);
 	}();
 
-	// Placeholder panels (wiring for calculation will come later).
 	auto MakeBigCenteredValue = [](const FText& ValueText, const int32 FontSize = 34) -> TSharedRef<SWidget>
 	{
 		return SNew(SBox)
@@ -1301,58 +1832,61 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			];
 	};
 
-	// Canonical names:
-	// - Dodge Rating -> Skill Rating (computed from no-damage windows)
-	// - Luck Rating (computed from recorded RNG outcomes)
-	// - Probability of Cheating (wiring TBD)
-	const int32 LuckRating0To100 =
-		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
-		? ((LoadedSavedSummary->SchemaVersion >= 2) ? LoadedSavedSummary->LuckRating0To100 : -1)
-		: (RunState ? RunState->GetLuckRating0To100() : -1);
+	// Seed Luck is fixed per run. Older saved snapshots will not have it.
+	const bool bHasSavedSeedLuck = bViewingSavedLeaderboardRunSummary
+		&& LoadedSavedSummary
+		&& LoadedSavedSummary->SchemaVersion >= 19
+		&& LoadedSavedSummary->SeedLuck0To100 >= 0;
+	const int32 SeedLuck0To100 =
+		bHasSavedSeedLuck
+		? FMath::Clamp(LoadedSavedSummary->SeedLuck0To100, 0, 100)
+		: (RunState ? RunState->GetSeedLuck0To100() : -1);
+	const FText SeedLuckText =
+		(SeedLuck0To100 >= 0)
+		? FText::Format(
+			NSLOCTEXT("T66.RunSummary", "SeedLuckOutOf100Format", "{0} / 100 ({1})"),
+			FText::AsNumber(SeedLuck0To100),
+			UT66RunStateSubsystem::GetSeedLuckAdjectiveText(SeedLuck0To100))
+		: NSLOCTEXT("T66.RunSummary", "RatingNA", "N/A");
 
-	UT66SkillRatingSubsystem* Skill = nullptr;
+	FString BackendSubmitStatus;
 	if (!bViewingSavedLeaderboardRunSummary)
 	{
-		if (UGameInstance* GameInstance = GetGameInstance())
+		if (UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr)
 		{
-			Skill = GameInstance->GetSubsystem<UT66SkillRatingSubsystem>();
+			BackendSubmitStatus = Backend->GetLastSubmitRunStatus();
 		}
 	}
-	const int32 SkillRating0To100 =
-		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
-		? ((LoadedSavedSummary->SchemaVersion >= 4) ? LoadedSavedSummary->SkillRating0To100 : -1)
-		: (Skill ? Skill->GetSkillRating0To100() : -1);
 
-	const FText LuckRatingText =
-		(LuckRating0To100 >= 0)
-		? FText::Format(NSLOCTEXT("T66.RunSummary", "RatingOutOf100Format", "{0} / 100"), FText::AsNumber(LuckRating0To100))
-		: NSLOCTEXT("T66.RunSummary", "RatingNA", "N/A");
+	const bool bSavedSummaryFlagged =
+		bViewingSavedLeaderboardRunSummary
+		&& LoadedSavedSummary
+		&& !LoadedSavedSummary->IntegrityContext.ShouldAllowRankedSubmission();
+	const bool bIntegrityPending = !bViewingSavedLeaderboardRunSummary && bAwaitingBackendRankData;
+	const bool bFlaggedForCheating =
+		bLiveRunCheatFlagged
+		|| BackendSubmitStatus == TEXT("flagged")
+		|| BackendSubmitStatus == TEXT("banned")
+		|| BackendSubmitStatus == TEXT("suspended")
+		|| bSavedSummaryFlagged;
+	const FText IntegrityStatusText = bIntegrityPending
+		? NSLOCTEXT("T66.RunSummary", "IntegrityPending", "Checking integrity...")
+		: (bFlaggedForCheating
+			? NSLOCTEXT("T66.RunSummary", "IntegrityFlagged", "Run flagged for cheating.")
+			: NSLOCTEXT("T66.RunSummary", "IntegrityClear", "No cheating detected."));
 
-	const FText SkillRatingText =
-		(SkillRating0To100 >= 0)
-		? FText::Format(NSLOCTEXT("T66.RunSummary", "RatingOutOf100Format", "{0} / 100"), FText::AsNumber(SkillRating0To100))
-		: NSLOCTEXT("T66.RunSummary", "RatingNA", "N/A");
-
-	TSharedRef<SWidget> LuckRatingPanel = MakeRatingSectionPanel(
-		NSLOCTEXT("T66.RunSummary", "LuckRatingPanel", "LUCK RATING"),
-		MakeBigCenteredValue(LuckRatingText, 28)
+	TSharedRef<SWidget> SeedLuckPanel = MakeRatingSectionPanel(
+		NSLOCTEXT("T66.RunSummary", "SeedLuckPanel", "SEED LUCK"),
+		MakeBigCenteredValue(SeedLuckText, 28)
 	);
-	TSharedRef<SWidget> SkillRatingPanel = MakeRatingSectionPanel(
-		NSLOCTEXT("T66.RunSummary", "SkillRatingPanel", "SKILL RATING"),
-		MakeBigCenteredValue(SkillRatingText, 28)
-	);
-	const FText CheatProbLine = FText::Format(
-		NSLOCTEXT("T66.RunSummary", "CheatProbabilityLineFormat", "Probability of Cheating: {0}%"),
-		FText::AsNumber(0)
-	);
-	TSharedRef<SWidget> CheatProbabilityPanel = MakeSectionPanel(
+	TSharedRef<SWidget> IntegrityPanel = MakeSectionPanel(
 		NSLOCTEXT("T66.RunSummary", "IntegrityPanel", "INTEGRITY"),
 		SNew(SBox)
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
 		[
 			SNew(STextBlock)
-			.Text(CheatProbLine)
+			.Text(IntegrityStatusText)
 			.Font(RunSummaryBoldFont(18))
 			.ColorAndOpacity(FT66Style::Tokens::Text)
 			.Justification(ETextJustify::Center)
@@ -1510,49 +2044,20 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							.Font(RunSummaryBoldFont(18))
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						]
-						// Global ranking (high score + speed run when mode on) — only for current run, not when viewing saved.
+						// Rank panels for the freshly finished run only (Daily Climb uses a dedicated single panel).
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 						[
 							SNew(SBox)
 							.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
 							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, bDailyClimbSummaryMode ? 0.f : 10.f)
 								[
-									SNew(SHorizontalBox)
-									+ SHorizontalBox::Slot().AutoWidth()
-									[
-										SNew(STextBlock)
-										.Text(ScoreRankLabelText)
-										.Font(RunSummaryRegularFont(14))
-										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-									]
-									+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
-									[
-										SNew(STextBlock)
-										.Text(ScoreRankValueText)
-										.Font(RunSummaryBoldFont(14))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
-									]
+									bDailyClimbSummaryMode ? DailyRankPanel : WeeklyRankPanel
 								]
-								+ SHorizontalBox::Slot().AutoWidth()
+								+ SVerticalBox::Slot().AutoHeight()
 								[
-									SNew(SHorizontalBox)
-									.Visibility_Lambda([bSpeedRunMode]() { return bSpeedRunMode ? EVisibility::Visible : EVisibility::Collapsed; })
-									+ SHorizontalBox::Slot().AutoWidth()
-									[
-										SNew(STextBlock)
-										.Text(SpeedRunRankLabelText)
-										.Font(RunSummaryRegularFont(14))
-										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-									]
-									+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
-									[
-										SNew(STextBlock)
-										.Text(SpeedRunRankValueText)
-										.Font(RunSummaryBoldFont(14))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
-									]
+									bDailyClimbSummaryMode ? StaticCastSharedRef<SWidget>(SNew(SSpacer).Size(FVector2D(1.f, 1.f))) : AllTimeRankPanel
 								]
 							]
 						]
@@ -1579,17 +2084,16 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							.Font(RunSummaryBoldFont(16))
 							.ColorAndOpacity(FT66Style::Tokens::Success)
 						]
-						// Main content: Left = Luck, Skill, Integrity, Proof of Run, They're cheating. Center = Hero (middle), idols (1x6), inventory. Right = Stats, Damage.
+						// Main content: Left = Seed Luck, Integrity, buttons/proof. Center = Hero (middle), idols (1x6), inventory. Right = Stats, Damage.
 						+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 0.f, 0.f, 18.f)
 						[
 							SNew(SHorizontalBox)
-							// Left side: Luck Rating, Skill Rating, Probability of Cheating, Proof of Run, They're cheating
+							// Left side: Seed Luck, Integrity, buttons/proof.
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
 							[
 								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[LuckRatingPanel]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[SkillRatingPanel]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[CheatProbabilityPanel]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[SeedLuckPanel]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[IntegrityPanel]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
 								[
 									SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
@@ -1714,6 +2218,20 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 									.Font(RunSummaryBoldFont(24))
 									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
+							]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
+							[
+								SNew(STextBlock)
+								.Text_Lambda([this]()
+								{
+									return SummaryChadCouponsSourceLabel.IsEmpty()
+										? NSLOCTEXT("T66.RunSummary", "PowerCouponsSourceFallback", "Approved challenge reward")
+										: FText::FromString(SummaryChadCouponsSourceLabel);
+								})
+								.Font(RunSummaryRegularFont(12))
+								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+								.Justification(ETextJustify::Center)
+								.AutoWrapText(true)
 							]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 							[
@@ -1992,8 +2510,6 @@ FReply UT66RunSummaryScreen::HandleContinueDifficultyClicked()
 
 	T66GI->SelectedDifficulty = NextDifficulty;
 	T66GI->bIsStageTransition = true;
-	T66GI->bForceColiseumMode = false;
-	T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
 
 	const int32 NextStage = PlayerExperience->GetDifficultyStartStage(NextDifficulty);
 	RunState->SetCurrentStage(NextStage);
@@ -2015,6 +2531,8 @@ FReply UT66RunSummaryScreen::HandleSaveAndQuitClicked()
 	{
 		return FReply::Handled();
 	}
+
+	ProcessLiveRunFinalAccounting();
 
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
@@ -2045,16 +2563,15 @@ FReply UT66RunSummaryScreen::HandleQuitToMainMenuClicked()
 	RunState->SetFinalSurvivalEnemyScalar(1.f);
 	RunState->MarkRunEnded(true);
 
-	if (UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
-	{
-		Achievements->NotifyRunCompleted(RunState);
-	}
-
 	bDifficultyClearSummaryMode = false;
-	ProcessLiveRunFinalSubmission();
+	ProcessLiveRunFinalAccounting();
 
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 	{
+		if (bDailyClimbSummaryMode)
+		{
+			T66GI->ClearActiveDailyClimbRun();
+		}
 		T66GI->PendingFrontendScreen = ET66ScreenType::MainMenu;
 	}
 
@@ -2077,17 +2594,42 @@ void UT66RunSummaryScreen::HandleBackendSubmitRunDataReadyForSummary(
 	bool bNewSpeedRunPersonalBest)
 {
 	static_cast<void>(RequestKey);
-	static_cast<void>(bSuccess);
-	static_cast<void>(ScoreRankAlltime);
-	static_cast<void>(ScoreRankWeekly);
-	static_cast<void>(SpeedRunRankAlltime);
-	static_cast<void>(SpeedRunRankWeekly);
 	static_cast<void>(bNewScorePersonalBest);
 	static_cast<void>(bNewSpeedRunPersonalBest);
 
 	if (bViewingSavedLeaderboardRunSummary)
 	{
 		return;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			const FString SubmitStatus = Backend->GetLastSubmitRunStatus();
+			bLiveRunCheatFlagged =
+				SubmitStatus == TEXT("flagged")
+				|| SubmitStatus == TEXT("banned")
+				|| SubmitStatus == TEXT("suspended");
+			ResolveChadCouponsPopupForLiveRun(!bLiveRunCheatFlagged);
+		}
+	}
+
+	bBackendRankDataReceived = bSuccess;
+	bAwaitingBackendRankData = false;
+	if (bSuccess)
+	{
+		BackendScoreRankAllTime = FMath::Max(0, ScoreRankAlltime);
+		BackendScoreRankWeekly = FMath::Max(0, ScoreRankWeekly);
+		BackendSpeedRunRankAllTime = FMath::Max(0, SpeedRunRankAlltime);
+		BackendSpeedRunRankWeekly = FMath::Max(0, SpeedRunRankWeekly);
+	}
+	else
+	{
+		BackendScoreRankAllTime = 0;
+		BackendScoreRankWeekly = 0;
+		BackendSpeedRunRankAllTime = 0;
+		BackendSpeedRunRankWeekly = 0;
 	}
 
 	if (UGameInstance* GI = GetGameInstance())
@@ -2099,6 +2641,47 @@ void UT66RunSummaryScreen::HandleBackendSubmitRunDataReadyForSummary(
 		}
 	}
 
+	ForceRebuildSlate();
+}
+
+void UT66RunSummaryScreen::HandleBackendDailyClimbSubmitDataReadyForSummary(
+	const FString& RequestKey,
+	bool bSuccess,
+	const FString& Status,
+	int32 DailyRank,
+	int32 CouponsAwarded)
+{
+	static_cast<void>(RequestKey);
+
+	if (bViewingSavedLeaderboardRunSummary)
+	{
+		return;
+	}
+
+	bBackendRankDataReceived = bSuccess;
+	bAwaitingBackendRankData = false;
+	BackendDailyScoreRank = bSuccess ? FMath::Max(0, DailyRank) : 0;
+	bNewPersonalBestScore = false;
+	bNewPersonalBestTime = false;
+	bLiveRunCheatFlagged =
+		Status == TEXT("flagged")
+		|| Status == TEXT("banned")
+		|| Status == TEXT("suspended");
+
+	if (Status == TEXT("accepted"))
+	{
+		SummaryChadCouponsEarned = FMath::Max(0, CouponsAwarded);
+		if (SummaryChadCouponsSourceLabel.IsEmpty())
+		{
+			SummaryChadCouponsSourceLabel = TEXT("Daily Climb reward");
+		}
+	}
+	else
+	{
+		SummaryChadCouponsEarned = 0;
+	}
+
+	ResolveChadCouponsPopupForLiveRun(Status == TEXT("accepted") && !bLiveRunCheatFlagged);
 	ForceRebuildSlate();
 }
 
@@ -2130,6 +2713,23 @@ void UT66RunSummaryScreen::OnRestartClicked()
 		return;
 	}
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	if (bDailyClimbSummaryMode)
+	{
+		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+		{
+			T66GI->ClearActiveDailyClimbRun();
+			T66GI->PendingFrontendScreen = ET66ScreenType::MainMenu;
+		}
+
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			PC->SetPause(false);
+		}
+
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
+		return;
+	}
+
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState) RunState->ResetForNewRun();
 	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
@@ -2179,6 +2779,10 @@ void UT66RunSummaryScreen::OnMainMenuClicked()
 	if (PC) PC->SetPause(false);
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 	{
+		if (bDailyClimbSummaryMode)
+		{
+			T66GI->ClearActiveDailyClimbRun();
+		}
 		T66GI->PendingFrontendScreen = ET66ScreenType::MainMenu;
 	}
 

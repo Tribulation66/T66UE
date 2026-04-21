@@ -14,6 +14,7 @@
 #include "Core/T66RunIntegritySubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
+#include "Core/T66SteamHelper.h"
 
 #include "Engine/DataTable.h"
 #include "Kismet/GameplayStatics.h"
@@ -231,6 +232,16 @@ void UT66LeaderboardSubsystem::HandleBackendSubmitRunDataReady(
 		return;
 	}
 
+	if (!Pending.RunSummarySlotName.IsEmpty())
+	{
+		UpdateSavedRunSummaryRanks(
+			Pending.RunSummarySlotName,
+			ScoreRankAlltime,
+			ScoreRankWeekly,
+			SpeedRunRankAlltime,
+			SpeedRunRankWeekly);
+	}
+
 	LoadOrCreateLocalSave();
 	if (!LocalSave)
 	{
@@ -430,26 +441,44 @@ void UT66LeaderboardSubsystem::HandleBackendSubmitRunDataReady(
 
 void UT66LeaderboardSubsystem::LoadOrCreateLocalSave()
 {
-	if (LocalSave) return;
-	if (UGameInstance* GI = GetGameInstance())
+	const FString DesiredSlotName = MakeResolvedLocalSaveSlotName();
+	if (LocalSave && ActiveLocalSaveSlotName.Equals(DesiredSlotName, ESearchCase::CaseSensitive))
 	{
-		(void)GI;
-	}
-
-	if (UGameplayStatics::DoesSaveGameExist(LocalSaveSlotName, 0))
-	{
-		USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(LocalSaveSlotName, 0);
-		LocalSave = Cast<UT66LocalLeaderboardSaveGame>(Loaded);
-	}
-
-	if (!LocalSave)
-	{
-		LocalSave = Cast<UT66LocalLeaderboardSaveGame>(UGameplayStatics::CreateSaveGameObject(UT66LocalLeaderboardSaveGame::StaticClass()));
-		SaveLocalSave();
 		return;
 	}
 
-	if (LocalSave->SchemaVersion < MinCompatibleLocalSaveSchemaVersion)
+	if (LocalSave && !ActiveLocalSaveSlotName.IsEmpty())
+	{
+		SaveLocalSave();
+		LocalSave = nullptr;
+		bLastScoreWasNewBest = false;
+		bLastSpeedRunWasNewBest = false;
+		bLastCompletedRunTimeWasNewBest = false;
+		LastSpeedRunSubmittedStage = 0;
+		LastSubmittedScoreRankAllTime = 0;
+		LastSubmittedScoreRankWeekly = 0;
+		LastSubmittedCompletedRunRankAllTime = 0;
+		LastSubmittedCompletedRunRankWeekly = 0;
+		LastSubmittedScoreRequestKey.Reset();
+		LastSubmittedCompletedRunTimeRequestKey.Reset();
+		PendingBestRankSubmissions.Reset();
+	}
+
+	ActiveLocalSaveSlotName = DesiredSlotName;
+
+	if (UGameplayStatics::DoesSaveGameExist(ActiveLocalSaveSlotName, 0))
+	{
+		USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(ActiveLocalSaveSlotName, 0);
+		LocalSave = Cast<UT66LocalLeaderboardSaveGame>(Loaded);
+	}
+
+	bool bNeedsSave = false;
+	if (!LocalSave)
+	{
+		LocalSave = Cast<UT66LocalLeaderboardSaveGame>(UGameplayStatics::CreateSaveGameObject(UT66LocalLeaderboardSaveGame::StaticClass()));
+		bNeedsSave = true;
+	}
+	else if (LocalSave->SchemaVersion < MinCompatibleLocalSaveSchemaVersion)
 	{
 		UE_LOG(
 			LogT66Leaderboard,
@@ -461,13 +490,43 @@ void UT66LeaderboardSubsystem::LoadOrCreateLocalSave()
 		return;
 	}
 
-	LocalSave->SchemaVersion = FMath::Max(LocalSave->SchemaVersion, MinCompatibleLocalSaveSchemaVersion);
+	LocalSave->SchemaVersion = FMath::Max(LocalSave->SchemaVersion, CurrentLocalSaveSchemaVersion);
+
+	const FString CurrentSteamId = GetCurrentLocalSteamId();
+	if (!LocalSave->OwnerSteamId.Equals(CurrentSteamId, ESearchCase::CaseSensitive))
+	{
+		LocalSave->OwnerSteamId = CurrentSteamId;
+		bNeedsSave = true;
+	}
+
+	const FString CurrentDisplayName = GetCurrentLocalDisplayName();
+	if (!CurrentDisplayName.IsEmpty() && !LocalSave->OwnerDisplayName.Equals(CurrentDisplayName, ESearchCase::CaseSensitive))
+	{
+		LocalSave->OwnerDisplayName = CurrentDisplayName;
+		bNeedsSave = true;
+	}
+	if (PruneInvalidRecentRunRecords())
+	{
+		bNeedsSave = true;
+	}
+	if (SyncRecentRunRecordsFromSnapshots())
+	{
+		bNeedsSave = true;
+	}
+
+	if (bNeedsSave)
+	{
+		SaveLocalSave();
+	}
 }
 
 void UT66LeaderboardSubsystem::SaveLocalSave() const
 {
 	if (!LocalSave) return;
-	UGameplayStatics::SaveGameToSlot(LocalSave, LocalSaveSlotName, 0);
+	const FString SlotName = ActiveLocalSaveSlotName.IsEmpty()
+		? MakeResolvedLocalSaveSlotName()
+		: ActiveLocalSaveSlotName;
+	UGameplayStatics::SaveGameToSlot(LocalSave, SlotName, 0);
 }
 
 void UT66LeaderboardSubsystem::DebugClearLocalLeaderboard()
@@ -516,6 +575,9 @@ void UT66LeaderboardSubsystem::DebugClearLocalLeaderboard()
 	}
 
 	// Delete the core local leaderboard save.
+	const FString LocalSaveSlotName = ActiveLocalSaveSlotName.IsEmpty()
+		? MakeResolvedLocalSaveSlotName()
+		: ActiveLocalSaveSlotName;
 	(void)UGameplayStatics::DeleteGameInSlot(LocalSaveSlotName, 0);
 
 	// Delete all local best score run summary snapshots (all supported difficulty/party combinations).
@@ -552,6 +614,7 @@ void UT66LeaderboardSubsystem::DebugClearLocalLeaderboard()
 
 	// Reset transient state and recreate the save so UI can immediately read a valid object.
 	LocalSave = nullptr;
+	ActiveLocalSaveSlotName.Reset();
 	PendingRunSummarySlotName.Reset();
 	PendingReturnModalAfterViewerRunSummary = ET66ScreenType::None;
 	bLastScoreWasNewBest = false;
@@ -589,14 +652,152 @@ FString UT66LeaderboardSubsystem::PartySizeKey(ET66PartySize PartySize)
 	}
 }
 
-FString UT66LeaderboardSubsystem::MakeLocalBestScoreRunSummarySlotName(ET66Difficulty Difficulty, ET66PartySize PartySize)
+FString UT66LeaderboardSubsystem::GetCurrentLocalSteamId() const
 {
-	return FString::Printf(TEXT("T66_LocalBestScoreRunSummary_%s_%s"), *DifficultyKey(Difficulty), *PartySizeKey(PartySize));
+	const UGameInstance* GI = GetGameInstance();
+	const UT66SteamHelper* SteamHelper = GI ? GI->GetSubsystem<UT66SteamHelper>() : nullptr;
+	return SteamHelper ? SteamHelper->GetLocalSteamId() : FString();
 }
 
-FString UT66LeaderboardSubsystem::MakeRecentRunSummarySlotName(const FGuid& RunId)
+FString UT66LeaderboardSubsystem::GetCurrentLocalDisplayName() const
 {
-	return FString::Printf(TEXT("T66_RunSummary_%s"), *RunId.ToString(EGuidFormats::DigitsWithHyphens));
+	const UGameInstance* GI = GetGameInstance();
+	const UT66SteamHelper* SteamHelper = GI ? GI->GetSubsystem<UT66SteamHelper>() : nullptr;
+	return SteamHelper ? SteamHelper->GetLocalDisplayName() : FString();
+}
+
+FString UT66LeaderboardSubsystem::BuildAccountSlotSuffix() const
+{
+	FString SteamId = GetCurrentLocalSteamId();
+	SteamId.TrimStartAndEndInline();
+	return SteamId.IsEmpty() ? TEXT("NoSteam") : SteamId;
+}
+
+FString UT66LeaderboardSubsystem::MakeResolvedLocalSaveSlotName() const
+{
+	return FString::Printf(TEXT("%s_%s"), LocalSaveSlotBaseName, *BuildAccountSlotSuffix());
+}
+
+FString UT66LeaderboardSubsystem::MakeResolvedAccountRestrictionRunSummarySlotName() const
+{
+	return FString::Printf(TEXT("%s_%s"), AccountRestrictionRunSummarySlotBaseName, *BuildAccountSlotSuffix());
+}
+
+FString UT66LeaderboardSubsystem::MakeLocalBestScoreRunSummarySlotName(ET66Difficulty Difficulty, ET66PartySize PartySize) const
+{
+	return FString::Printf(
+		TEXT("%s_%s_%s_%s"),
+		LocalBestScoreRunSummarySlotBaseName,
+		*DifficultyKey(Difficulty),
+		*PartySizeKey(PartySize),
+		*BuildAccountSlotSuffix());
+}
+
+FString UT66LeaderboardSubsystem::MakeRecentRunSummarySlotName(const FGuid& RunId) const
+{
+	return FString::Printf(
+		TEXT("%s_%s_%s"),
+		RecentRunSummarySlotBaseName,
+		*BuildAccountSlotSuffix(),
+		*RunId.ToString(EGuidFormats::DigitsWithHyphens));
+}
+
+bool UT66LeaderboardSubsystem::PruneInvalidRecentRunRecords()
+{
+	if (!LocalSave)
+	{
+		return false;
+	}
+
+	bool bChanged = false;
+	for (int32 Index = LocalSave->RecentRuns.Num() - 1; Index >= 0; --Index)
+	{
+		const FT66RecentRunRecord& Record = LocalSave->RecentRuns[Index];
+		if (Record.RunSummarySlotName.IsEmpty() || !UGameplayStatics::DoesSaveGameExist(Record.RunSummarySlotName, 0))
+		{
+			continue;
+		}
+
+		USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(Record.RunSummarySlotName, 0);
+		const UT66LeaderboardRunSummarySaveGame* Snapshot = Cast<UT66LeaderboardRunSummarySaveGame>(Loaded);
+		if (!Snapshot)
+		{
+			continue;
+		}
+
+		const bool bLooksLikeFrontendPlaceholder =
+			Snapshot->EntryId.IsEmpty()
+			&& Snapshot->Score <= 0
+			&& Snapshot->StageReached <= 1
+			&& Snapshot->RunDurationSeconds <= KINDA_SMALL_NUMBER
+			&& !Snapshot->bWasFullClear
+			&& Snapshot->EventLog.Num() == 0
+			&& Snapshot->DamageBySource.Num() == 0;
+		if (!bLooksLikeFrontendPlaceholder)
+		{
+			continue;
+		}
+
+		UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: pruning invalid recent-run placeholder snapshot %s."), *Record.RunSummarySlotName);
+		UGameplayStatics::DeleteGameInSlot(Record.RunSummarySlotName, 0);
+		LocalSave->RecentRuns.RemoveAt(Index);
+		bChanged = true;
+	}
+
+	return bChanged;
+}
+
+bool UT66LeaderboardSubsystem::SyncRecentRunRecordsFromSnapshots()
+{
+	if (!LocalSave)
+	{
+		return false;
+	}
+
+	bool bChanged = false;
+	for (FT66RecentRunRecord& Record : LocalSave->RecentRuns)
+	{
+		if (Record.RunSummarySlotName.IsEmpty() || !UGameplayStatics::DoesSaveGameExist(Record.RunSummarySlotName, 0))
+		{
+			continue;
+		}
+
+		USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(Record.RunSummarySlotName, 0);
+		const UT66LeaderboardRunSummarySaveGame* Snapshot = Cast<UT66LeaderboardRunSummarySaveGame>(Loaded);
+		if (!Snapshot)
+		{
+			continue;
+		}
+
+		bool bRecordChanged = false;
+		auto SyncField = [&bRecordChanged](auto& Target, const auto& Source)
+		{
+			if (!(Target == Source))
+			{
+				Target = Source;
+				bRecordChanged = true;
+			}
+		};
+
+		if (Snapshot->RunEndedAtUtc > FDateTime::MinValue())
+		{
+			SyncField(Record.EndedAtUtc, Snapshot->RunEndedAtUtc);
+		}
+
+		SyncField(Record.Difficulty, Snapshot->Difficulty);
+		SyncField(Record.PartySize, Snapshot->PartySize);
+		SyncField(Record.HeroID, Snapshot->HeroID);
+		SyncField(Record.CompanionID, Snapshot->CompanionID);
+		SyncField(Record.Score, Snapshot->Score);
+		SyncField(Record.StageReached, Snapshot->StageReached);
+		SyncField(Record.DurationSeconds, Snapshot->RunDurationSeconds);
+		SyncField(Record.bWasFullClear, Snapshot->bWasFullClear);
+		SyncField(Record.bWasSpeedRunMode, Snapshot->bWasSpeedRunMode);
+
+		bChanged = bChanged || bRecordChanged;
+	}
+
+	return bChanged;
 }
 
 bool UT66LeaderboardSubsystem::HasLocalBestScoreRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize) const
@@ -638,14 +839,14 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 		return nullptr;
 	}
 
-	Snapshot->SchemaVersion = 17;
+	Snapshot->SchemaVersion = 19;
 	Snapshot->LeaderboardType = LeaderboardType;
 	Snapshot->Difficulty = Difficulty;
 	Snapshot->PartySize = PartySize;
 	Snapshot->SavedAtUtc = FDateTime::UtcNow();
 	Snapshot->RunEndedAtUtc = FDateTime::UtcNow();
 	Snapshot->RunDurationSeconds = RunState->GetFinalRunElapsedSeconds();
-	Snapshot->bWasFullClear = RunState->DidRunEndInVictory();
+	Snapshot->bWasFullClear = RunState->DidRunEndInVictory() || RunState->HasPendingDifficultyClearSummary();
 	Snapshot->bWasSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
 
 	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 23);
@@ -678,6 +879,9 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	Snapshot->SpeedStat = FMath::Max(1, RunState->GetSpeedStat());
 
 	Snapshot->LuckRating0To100 = RunState->GetLuckRating0To100();
+	Snapshot->SeedLuck0To100 = RunState->GetSeedLuck0To100();
+	Snapshot->LuckModifierPercent = RunState->GetTotalLuckModifierPercent();
+	Snapshot->EffectiveLuck = RunState->GetEffectiveLuckValue();
 	Snapshot->LuckRatingQuantity0To100 = RunState->GetLuckRatingQuantity0To100();
 	Snapshot->LuckRatingQuality0To100 = RunState->GetLuckRatingQuality0To100();
 	Snapshot->SkillRating0To100 = Skill ? Skill->GetSkillRating0To100() : -1;
@@ -737,12 +941,51 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 		}
 	}
 
+	PopulateSnapshotLeaderboardRanks(*Snapshot, Difficulty, PartySize);
 	return Snapshot;
 }
 
 bool UT66LeaderboardSubsystem::SaveRunSummarySnapshotToSlot(UT66LeaderboardRunSummarySaveGame* Snapshot, const FString& SlotName) const
 {
 	return Snapshot && !SlotName.IsEmpty() && UGameplayStatics::SaveGameToSlot(Snapshot, SlotName, 0);
+}
+
+bool UT66LeaderboardSubsystem::UpdateSavedRunSummaryRanks(
+	const FString& SlotName,
+	const int32 ScoreRankAlltime,
+	const int32 ScoreRankWeekly,
+	const int32 SpeedRunRankAlltime,
+	const int32 SpeedRunRankWeekly) const
+{
+	if (SlotName.IsEmpty() || !UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	{
+		return false;
+	}
+
+	USaveGame* LoadedGame = UGameplayStatics::LoadGameFromSlot(SlotName, 0);
+	UT66LeaderboardRunSummarySaveGame* Snapshot = Cast<UT66LeaderboardRunSummarySaveGame>(LoadedGame);
+	if (!Snapshot)
+	{
+		return false;
+	}
+
+	Snapshot->SchemaVersion = FMath::Max(Snapshot->SchemaVersion, 18);
+	Snapshot->ScoreRankAllTime = FMath::Max(0, ScoreRankAlltime);
+	Snapshot->ScoreRankWeekly = FMath::Max(0, ScoreRankWeekly);
+	Snapshot->SpeedRunRankAllTime = FMath::Max(0, SpeedRunRankAlltime);
+	Snapshot->SpeedRunRankWeekly = FMath::Max(0, SpeedRunRankWeekly);
+	return UGameplayStatics::SaveGameToSlot(Snapshot, SlotName, 0);
+}
+
+void UT66LeaderboardSubsystem::PopulateSnapshotLeaderboardRanks(
+	UT66LeaderboardRunSummarySaveGame& Snapshot,
+	const ET66Difficulty Difficulty,
+	const ET66PartySize PartySize) const
+{
+	Snapshot.ScoreRankAllTime = GetLocalScoreRankAllTime(Difficulty, PartySize);
+	Snapshot.ScoreRankWeekly = GetLocalScoreRankWeekly(Difficulty, PartySize);
+	Snapshot.SpeedRunRankAllTime = GetLocalSpeedRunRankAllTime(Difficulty, PartySize);
+	Snapshot.SpeedRunRankWeekly = GetLocalSpeedRunRankWeekly(Difficulty, PartySize);
 }
 
 bool UT66LeaderboardSubsystem::SaveLocalBestScoreRunSummarySnapshot(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Score, const FString& ExistingRunSummarySlotName) const
@@ -1027,7 +1270,7 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score, const FString& Existi
 	LastSubmittedScoreRankAllTime = 0;
 	LastSubmittedScoreRankWeekly = 0;
 
-	if (!IsAccountEligibleForLeaderboard())
+	if (!CanAttemptBackendRankedSubmission(TEXT("score")))
 	{
 		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: blocked (account status). Score=%d"), Score);
 		return false;
@@ -1115,7 +1358,7 @@ bool UT66LeaderboardSubsystem::SubmitCompletedRunTime(float Seconds, const FStri
 		return false;
 	}
 
-	if (!IsAccountEligibleForLeaderboard())
+	if (!CanAttemptBackendRankedSubmission(TEXT("completed-run")))
 	{
 		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: completed run time blocked (account status). Seconds=%.3f"), Seconds);
 		return false;
@@ -1204,7 +1447,7 @@ bool UT66LeaderboardSubsystem::SubmitDifficultyClearRun(float Seconds, const FSt
 		return false;
 	}
 
-	if (!IsAccountEligibleForLeaderboard())
+	if (!CanAttemptBackendRankedSubmission(TEXT("difficulty-clear")))
 	{
 		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: difficulty-clear submit blocked (account status). Seconds=%.3f"), Seconds);
 		return false;
@@ -1287,7 +1530,7 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 	bLastSpeedRunWasNewBest = false;
 	LastSpeedRunSubmittedStage = Stage;
 
-	if (!IsAccountEligibleForLeaderboard())
+	if (!CanAttemptBackendRankedSubmission(TEXT("stage-speedrun")))
 	{
 		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: blocked (account status). Stage=%d Seconds=%.3f"), Stage, Seconds);
 		return false;
@@ -1314,6 +1557,7 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 
 void UT66LeaderboardSubsystem::RequestOpenLocalBestScoreRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize)
 {
+	PendingFakeSnapshot = nullptr;
 	if (const FT66LocalScoreRecord* Record = FindLocalScoreRecord(Difficulty, PartySize))
 	{
 		if (!Record->RunSummarySlotName.IsEmpty() && UGameplayStatics::DoesSaveGameExist(Record->RunSummarySlotName, 0))
@@ -1333,6 +1577,7 @@ bool UT66LeaderboardSubsystem::RequestOpenRunSummarySlot(const FString& SlotName
 		return false;
 	}
 
+	PendingFakeSnapshot = nullptr;
 	PendingRunSummarySlotName = SlotName;
 	PendingReturnModalAfterViewerRunSummary = ReturnModalAfterClose;
 	return true;
@@ -1351,6 +1596,7 @@ bool UT66LeaderboardSubsystem::ConsumePendingRunSummaryRequest(FString& OutSaveS
 
 void UT66LeaderboardSubsystem::SetPendingFakeRunSummarySnapshot(UT66LeaderboardRunSummarySaveGame* Snapshot)
 {
+	PendingRunSummarySlotName.Reset();
 	PendingFakeSnapshot = Snapshot;
 }
 
@@ -1366,6 +1612,10 @@ TArray<FT66RecentRunRecord> UT66LeaderboardSubsystem::GetRecentRuns() const
 	if (!LocalSave)
 	{
 		const_cast<UT66LeaderboardSubsystem*>(this)->LoadOrCreateLocalSave();
+	}
+	else if (const_cast<UT66LeaderboardSubsystem*>(this)->SyncRecentRunRecordsFromSnapshots())
+	{
+		const_cast<UT66LeaderboardSubsystem*>(this)->SaveLocalSave();
 	}
 
 	return LocalSave ? LocalSave->RecentRuns : TArray<FT66RecentRunRecord>();
@@ -1431,6 +1681,11 @@ bool UT66LeaderboardSubsystem::SaveFinishedRunSummarySnapshot(FString& OutSlotNa
 		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: could not save run summary snapshot because runtime state was unavailable."));
 		return false;
 	}
+	if (!RunState->HasPendingDifficultyClearSummary() && !RunState->HasRunEnded())
+	{
+		UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: refusing to save run summary snapshot because the run has not ended and no difficulty-clear summary is pending."));
+		return false;
+	}
 
 	const FGuid RunId = FGuid::NewGuid();
 	const FString SlotName = MakeRecentRunSummarySlotName(RunId);
@@ -1470,8 +1725,8 @@ void UT66LeaderboardSubsystem::AppendRecentRunRecord(const FString& RunSummarySl
 
 	FT66RecentRunRecord Record;
 	Record.RunId = FGuid::NewGuid();
-	Record.EndedAtUtc = FDateTime::UtcNow();
 	Record.RunSummarySlotName = RunSummarySlotName;
+	Record.EndedAtUtc = FDateTime::UtcNow();
 	Record.Difficulty = T66GI->SelectedDifficulty;
 	Record.PartySize = T66GI->SelectedPartySize;
 	Record.HeroID = T66GI->SelectedHeroID;
@@ -1479,8 +1734,29 @@ void UT66LeaderboardSubsystem::AppendRecentRunRecord(const FString& RunSummarySl
 	Record.Score = RunState->GetCurrentScore();
 	Record.StageReached = RunState->GetCurrentStage();
 	Record.DurationSeconds = RunState->GetFinalRunElapsedSeconds();
-	Record.bWasFullClear = RunState->DidRunEndInVictory();
+	Record.bWasFullClear = RunState->DidRunEndInVictory() || RunState->HasPendingDifficultyClearSummary();
 	Record.bWasSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
+
+	if (UGameplayStatics::DoesSaveGameExist(RunSummarySlotName, 0))
+	{
+		USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(RunSummarySlotName, 0);
+		if (const UT66LeaderboardRunSummarySaveGame* Snapshot = Cast<UT66LeaderboardRunSummarySaveGame>(Loaded))
+		{
+			if (Snapshot->RunEndedAtUtc > FDateTime::MinValue())
+			{
+				Record.EndedAtUtc = Snapshot->RunEndedAtUtc;
+			}
+			Record.Difficulty = Snapshot->Difficulty;
+			Record.PartySize = Snapshot->PartySize;
+			Record.HeroID = Snapshot->HeroID;
+			Record.CompanionID = Snapshot->CompanionID;
+			Record.Score = Snapshot->Score;
+			Record.StageReached = Snapshot->StageReached;
+			Record.DurationSeconds = Snapshot->RunDurationSeconds;
+			Record.bWasFullClear = Snapshot->bWasFullClear;
+			Record.bWasSpeedRunMode = Snapshot->bWasSpeedRunMode;
+		}
+	}
 
 	LocalSave->RecentRuns.Insert(Record, 0);
 }
@@ -1584,6 +1860,33 @@ FT66AccountRestrictionRecord UT66LeaderboardSubsystem::GetAccountRestrictionReco
 bool UT66LeaderboardSubsystem::IsAccountEligibleForLeaderboard() const
 {
 	return GetAccountRestrictionRecord().Restriction == ET66AccountRestrictionKind::None;
+}
+
+bool UT66LeaderboardSubsystem::CanAttemptBackendRankedSubmission(const TCHAR* SubmissionLabel) const
+{
+	if (IsAccountEligibleForLeaderboard())
+	{
+		return true;
+	}
+
+	const UGameInstance* GI = GetGameInstance();
+	const UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	const bool bBackendCanAuthoritativelyEvaluate =
+		Backend
+		&& Backend->IsBackendConfigured()
+		&& Backend->HasSteamTicket();
+	if (!bBackendCanAuthoritativelyEvaluate)
+	{
+		return false;
+	}
+
+	const_cast<UT66LeaderboardSubsystem*>(this)->RefreshAccountStatusFromBackend();
+	UE_LOG(
+		LogT66Leaderboard,
+		Warning,
+		TEXT("Leaderboard: cached account restriction present during %s submit; deferring final ranked eligibility verdict to backend."),
+		SubmissionLabel ? SubmissionLabel : TEXT("unknown"));
+	return true;
 }
 
 bool UT66LeaderboardSubsystem::HasAccountRestrictionRunSummary() const
@@ -1732,9 +2035,11 @@ void UT66LeaderboardSubsystem::HandleBackendRunSummaryReady(const FString& Entry
 		return;
 	}
 
-	if (SaveRunSummarySnapshotToSlot(Snapshot, AccountRestrictionRunSummarySlotName))
+	const FString RestrictionRunSummarySlotName = MakeResolvedAccountRestrictionRunSummarySlotName();
+
+	if (SaveRunSummarySnapshotToSlot(Snapshot, RestrictionRunSummarySlotName))
 	{
-		LocalSave->AccountRestriction.RunSummarySlotName = AccountRestrictionRunSummarySlotName;
+		LocalSave->AccountRestriction.RunSummarySlotName = RestrictionRunSummarySlotName;
 		SaveLocalSave();
 	}
 
@@ -1770,15 +2075,16 @@ void UT66LeaderboardSubsystem::HandleBackendAccountStatusComplete(bool bSuccess,
 			NewRecord.AppealStatus = T66AppealStatusFromBackend(Backend->GetLastAccountAppealStatus());
 			const FString AccountRunSummaryId = Backend->GetLastAccountRunSummaryId();
 			PendingAccountRestrictionRunSummaryId.Reset();
+			const FString RestrictionRunSummarySlotName = MakeResolvedAccountRestrictionRunSummarySlotName();
 
 			if (NewRecord.Restriction != ET66AccountRestrictionKind::None && !AccountRunSummaryId.IsEmpty())
 			{
-				NewRecord.RunSummarySlotName = AccountRestrictionRunSummarySlotName;
+				NewRecord.RunSummarySlotName = RestrictionRunSummarySlotName;
 				if (Backend->HasCachedRunSummary(AccountRunSummaryId))
 				{
 					if (UT66LeaderboardRunSummarySaveGame* Snapshot = Backend->GetCachedRunSummary(AccountRunSummaryId))
 					{
-						SaveRunSummarySnapshotToSlot(Snapshot, AccountRestrictionRunSummarySlotName);
+						SaveRunSummarySnapshotToSlot(Snapshot, RestrictionRunSummarySlotName);
 					}
 				}
 				else
@@ -1787,9 +2093,9 @@ void UT66LeaderboardSubsystem::HandleBackendAccountStatusComplete(bool bSuccess,
 					Backend->FetchRunSummary(AccountRunSummaryId);
 				}
 			}
-			else if (UGameplayStatics::DoesSaveGameExist(AccountRestrictionRunSummarySlotName, 0))
+			else if (UGameplayStatics::DoesSaveGameExist(RestrictionRunSummarySlotName, 0))
 			{
-				UGameplayStatics::DeleteGameInSlot(AccountRestrictionRunSummarySlotName, 0);
+				UGameplayStatics::DeleteGameInSlot(RestrictionRunSummarySlotName, 0);
 			}
 		}
 	}
@@ -1848,6 +2154,11 @@ ET66ScreenType UT66LeaderboardSubsystem::ConsumePendingReturnModalAfterViewerRun
 
 int32 UT66LeaderboardSubsystem::GetLocalScoreRank(ET66Difficulty Difficulty, ET66PartySize PartySize) const
 {
+	return GetLocalScoreRankWeekly(Difficulty, PartySize);
+}
+
+int32 UT66LeaderboardSubsystem::GetLocalScoreRankWeekly(ET66Difficulty Difficulty, ET66PartySize PartySize) const
+{
 	if (LastSubmittedScoreRankWeekly > 0)
 	{
 		return LastSubmittedScoreRankWeekly;
@@ -1861,20 +2172,56 @@ int32 UT66LeaderboardSubsystem::GetLocalScoreRank(ET66Difficulty Difficulty, ET6
 	return 0;
 }
 
+int32 UT66LeaderboardSubsystem::GetLocalScoreRankAllTime(ET66Difficulty Difficulty, ET66PartySize PartySize) const
+{
+	if (LastSubmittedScoreRankAllTime > 0)
+	{
+		return LastSubmittedScoreRankAllTime;
+	}
+
+	FT66LocalScoreRecord Record;
+	if (GetLocalBestScoreRecord(Difficulty, PartySize, Record))
+	{
+		return FMath::Max(0, Record.BestScoreRankAllTime);
+	}
+	return 0;
+}
+
 int32 UT66LeaderboardSubsystem::GetLocalSpeedRunRank(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const
 {
 	static_cast<void>(Stage);
+	return GetLocalSpeedRunRankWeekly(Difficulty, PartySize);
+}
+
+int32 UT66LeaderboardSubsystem::GetLocalSpeedRunRankWeekly(ET66Difficulty Difficulty, ET66PartySize PartySize) const
+{
+	if (LastSubmittedCompletedRunRankWeekly > 0)
+	{
+		return LastSubmittedCompletedRunRankWeekly;
+	}
 
 	FT66LocalCompletedRunTimeRecord Record;
 	if (GetLocalBestCompletedRunTimeRecord(Difficulty, PartySize, Record))
 	{
-		if (LastSubmittedCompletedRunRankWeekly > 0)
-		{
-			return LastSubmittedCompletedRunRankWeekly;
-		}
 		return FMath::Max(0, Record.BestCompletedRankWeekly);
 	}
 
-	return LastSubmittedCompletedRunRankWeekly;
+	return 0;
+}
+
+int32 UT66LeaderboardSubsystem::GetLocalSpeedRunRankAllTime(ET66Difficulty Difficulty, ET66PartySize PartySize) const
+{
+	if (LastSubmittedCompletedRunRankAllTime > 0)
+	{
+		return LastSubmittedCompletedRunRankAllTime;
+	}
+
+	FT66LocalCompletedRunTimeRecord Record;
+	if (GetLocalBestCompletedRunTimeRecord(Difficulty, PartySize, Record))
+	{
+		return FMath::Max(0, Record.BestCompletedRankAllTime);
+	}
+
+	return 0;
 }
 

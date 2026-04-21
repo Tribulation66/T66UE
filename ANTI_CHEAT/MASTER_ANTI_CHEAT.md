@@ -1,6 +1,6 @@
 # T66 Master Anti-Cheat
 
-**Last updated:** 2026-04-19  
+**Last updated:** 2026-04-20
 **Scope:** Single-source handoff for anti-cheat policy, ranked eligibility, integrity attestation, provenance validation, moderation, and leaderboard authority.  
 **Companion docs:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`, `MASTER DOCS/MASTER_BACKEND.md`  
 **Execution checklist:** `ANTI_CHEAT/ANTI_CHEAT_IMPLEMENTATION_CHECKLIST.md`  
@@ -18,6 +18,7 @@
   - compact event/provenance validation for items, stats, currency, and progression
 - The design goal is still low runtime overhead. No per-tick anti-cheat scanning is planned. Integrity checks should be boundary-driven and event-driven.
 - Replayable luck-event metadata must only be attached when the submitted event maps directly to the underlying RNG draw. Derived success booleans such as "avoided" / "win" outcomes and draws taken from non-primary RNG streams should stay in aggregate telemetry but omit replay seeds so the backend does not replay the wrong predicate.
+- Invulnerability-window hit checks must still break the sampled consecutive-dodge streak on the client. Otherwise the submitted aggregate dodge counters diverge from the sampled `hit_check_events` sequence and the backend can produce a false `dodge_telemetry` certainty restriction.
 
 ## 2. Ranked Eligibility Policy
 
@@ -97,6 +98,7 @@ Replayability rule:
 - Exact replay is only valid for events where the client can submit the real pre-draw seed for the exact sampled predicate.
 - If the event records a derived outcome instead of the direct roll result, the client should not send replay-seed metadata for that event.
 - If the event uses a secondary/local RNG stream instead of the primary run stream, the client should not send stale primary-stream metadata.
+- Aggregate anti-cheat counters must be derived from the same semantic event boundaries as the sampled event stream. A non-dodge invulnerability hit still counts as a hit-check outcome and must reset any live consecutive-dodge streak before submission.
 
 ### 4.2 Integrity attestation layer
 
@@ -315,6 +317,9 @@ Already in place:
 - structured admin evidence surfaces
 - run-modifier-driven leaderboard ineligibility on the fresh-run path
 - replayable luck events now clear stale primary-stream metadata when a secondary RNG stream is used, and derived boolean outcomes such as `ChestMimicAvoided` / gambler win-state telemetry now omit replay seeds to avoid false-positive `luck_replay` quarantines
+- replayable quantity-roll telemetry must record the real biased min/max range used by the client roll; on 2026-04-20 a false `luck_replay` restriction was traced to `GoblinCountPerWave` being logged as `0..Max` while the actual biased roll was `Min..Max`
+- the run-summary screen must not save history snapshots or submit leaderboard payloads unless the run actually ended or a difficulty-clear summary is pending; otherwise bogus stage-1/score-0 placeholder runs pollute local history and can trigger backend review on junk data
+- restricted reviewed-run fetches may use `run_summaries.id` instead of a visible leaderboard `entry_id`; owner-authenticated fetch support for that path is now part of the backend contract
 
 Still missing or still being changed:
 

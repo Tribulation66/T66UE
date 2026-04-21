@@ -146,7 +146,7 @@ namespace T66TowerMapTerrain
 	FText GetFloorDisplayName(const FFloor& Floor);
 	FText GetFloorDisplayName(const FLayout& Layout, int32 FloorNumber);
 
-	bool BuildLayout(const FT66MapPreset& Preset, FLayout& OutLayout);
+	bool BuildLayout(const FT66MapPreset& Preset, FLayout& OutLayout, bool bBossRushFinaleStage = false);
 	FVector GetPreferredSpawnLocation(const FLayout& Layout, float HeightOffset);
 	int32 FindFloorIndexForLocation(const FLayout& Layout, const FVector& Location, float VerticalTolerance = 900.0f);
 	bool TryGetFloorBounds(const FLayout& Layout, int32 FloorNumber, FVector2D& OutCenter, FVector2D& OutHalfExtents);

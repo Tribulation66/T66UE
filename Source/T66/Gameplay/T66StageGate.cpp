@@ -114,17 +114,6 @@ bool AT66StageGate::AdvanceToNextStage()
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	if (!T66GI) return false;
 
-	// Special: Coliseum mode stage gate returns to the checkpointed gameplay stage (do NOT increment).
-	if (T66GI->bForceColiseumMode || T66GI->ColiseumFlowMode != ET66ColiseumFlowMode::None)
-	{
-		T66GI->bForceColiseumMode = false;
-		T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
-		T66GI->bIsStageTransition = true;
-		// Return to GameplayLevel (checkpoint stage is already set before entering Coliseum).
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
-		return true;
-	}
-
 	// Companion Union + achievement: clearing stages with a companion increases Union and notifies stage cleared.
 	if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
 	{
@@ -147,8 +136,6 @@ bool AT66StageGate::AdvanceToNextStage()
 
 	T66GI->bIsStageTransition = true;
 	T66GI->bPendingTowerStageDropIntro = false;
-	T66GI->bForceColiseumMode = false;
-	T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
 
 	const FString LevelName = UGameplayStatics::GetCurrentLevelName(this);
 	if (LevelName.IsEmpty()) return false;

@@ -100,7 +100,7 @@ void UT66CrateOverlayWidget::GenerateStrip()
 
 	if (RngSub && RunState)
 	{
-		RngSub->UpdateLuckStat(RunState->GetLuckStat());
+		RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
 	}
 
 	FRandomStream LocalRng(static_cast<int32>(FPlatformTime::Cycles()));

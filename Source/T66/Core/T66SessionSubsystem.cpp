@@ -771,6 +771,8 @@ UT66RunSaveGame* UT66SessionSubsystem::BuildCurrentRunSaveSnapshot(UObject* Oute
 	SaveObj->MapName = GetWorld() ? UWorld::RemovePIEPrefix(GetWorld()->GetMapName()) : FString();
 	SaveObj->LastPlayedUtc = FDateTime::UtcNow().ToIso8601();
 	SaveObj->RunSeed = GI->RunSeed;
+	SaveObj->bIsDailyClimbRun = GI->IsDailyClimbRunActive();
+	SaveObj->DailyClimbChallenge = SaveObj->bIsDailyClimbRun ? GI->ActiveDailyClimbChallenge : FT66DailyClimbChallengeData{};
 	SaveObj->MainMapLayoutVariant = GI->CurrentMainMapLayoutVariant;
 	SaveObj->bRunIneligibleForLeaderboard = GI->bRunIneligibleForLeaderboard;
 	if (UT66RunIntegritySubsystem* Integrity = GI->GetSubsystem<UT66RunIntegritySubsystem>())
@@ -2021,6 +2023,19 @@ void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* L
 	GI->SelectedDifficulty = LoadedSave->Difficulty;
 	GI->SelectedPartySize = LoadedSave->PartySize;
 	GI->RunSeed = LoadedSave->RunSeed;
+	if (LoadedSave->bIsDailyClimbRun && LoadedSave->DailyClimbChallenge.IsValid())
+	{
+		GI->CachedDailyClimbChallenge = LoadedSave->DailyClimbChallenge;
+		GI->ActiveDailyClimbChallenge = LoadedSave->DailyClimbChallenge;
+		GI->bIsDailyClimbRunActive = true;
+		GI->SelectedRunModifierKind = ET66RunModifierKind::None;
+		GI->SelectedRunModifierID = NAME_None;
+		GI->SelectedPartySize = ET66PartySize::Solo;
+	}
+	else
+	{
+		GI->ClearActiveDailyClimbRun();
+	}
 	GI->CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;
 	GI->PendingLoadedTransform = LoadedSave->PlayerTransform;
 	GI->bApplyLoadedTransform = true;

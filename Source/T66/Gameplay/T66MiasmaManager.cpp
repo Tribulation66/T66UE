@@ -40,8 +40,7 @@ namespace
 		}
 
 		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
-		return !MapName.Contains(TEXT("Coliseum"))
-			&& !MapName.Contains(TEXT("Tutorial"))
+		return !MapName.Contains(TEXT("Tutorial"))
 			&& !MapName.Contains(TEXT("Lab"));
 	}
 

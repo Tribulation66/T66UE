@@ -27,10 +27,12 @@ public:
 		: _LocalizationSubsystem(nullptr)
 		, _LeaderboardSubsystem(nullptr)
 		, _UIManager(nullptr)
+		, _DailyChallengeMode(false)
 	{}
 		SLATE_ARGUMENT(UT66LocalizationSubsystem*, LocalizationSubsystem)
 		SLATE_ARGUMENT(UT66LeaderboardSubsystem*, LeaderboardSubsystem)
 		SLATE_ARGUMENT(UT66UIManager*, UIManager)
+		SLATE_ARGUMENT(bool, DailyChallengeMode)
 	SLATE_END_ARGS()
 
 	~ST66LeaderboardPanel();
@@ -54,6 +56,7 @@ private:
 	ET66PartySize CurrentPartySize = ET66PartySize::Solo;
 	ET66Difficulty CurrentDifficulty = ET66Difficulty::Easy;
 	ET66LeaderboardType CurrentType = ET66LeaderboardType::Score;
+	bool bDailyChallengeMode = false;
 
 	TArray<FLeaderboardEntry> LeaderboardEntries;
 	UT66LocalizationSubsystem* LocSubsystem = nullptr;
@@ -96,6 +99,7 @@ private:
 	FReply HandleStreamersClicked();
 	FReply HandleCurrentClicked();
 	FReply HandleAllTimeClicked();
+	FReply HandleDailyClicked();
 
 	// Dropdown handlers
 	void OnPartySizeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);

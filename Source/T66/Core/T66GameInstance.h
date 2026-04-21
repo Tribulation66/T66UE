@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "Data/T66DataTypes.h"
+#include "Core/T66DailyClimbTypes.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RunSaveGame.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
@@ -23,14 +24,6 @@ enum class ET66HeroPortraitVariant : uint8
 	Half,
 	Full,
 	Invincible
-};
-
-UENUM(BlueprintType)
-enum class ET66ColiseumFlowMode : uint8
-{
-	None UMETA(DisplayName = "None"),
-	OwedBosses UMETA(DisplayName = "Owed Bosses"),
-	FinalDifficultyBoss UMETA(DisplayName = "Final Difficulty Boss")
 };
 
 UENUM(BlueprintType)
@@ -178,6 +171,18 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	int32 RunSeed = 0;
 
+	/** Most recently fetched backend-authored Daily Climb challenge. */
+	UPROPERTY(BlueprintReadWrite, Category = "Daily Climb")
+	FT66DailyClimbChallengeData CachedDailyClimbChallenge;
+
+	/** Active Daily Climb run context for the current gameplay session. */
+	UPROPERTY(BlueprintReadWrite, Category = "Daily Climb")
+	FT66DailyClimbChallengeData ActiveDailyClimbChallenge;
+
+	/** True while the current gameplay session is an active Daily Climb run. */
+	UPROPERTY(BlueprintReadWrite, Category = "Daily Climb")
+	bool bIsDailyClimbRunActive = false;
+
 	/** Active main gameplay terrain layout for the current run. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	ET66MainMapLayoutVariant CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;
@@ -253,16 +258,6 @@ public:
 	/** When true, this run was started via "Retry level"; do not submit to leaderboard. Cleared when starting a fresh run. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bRunIneligibleForLeaderboard = false;
-
-	/**
-	 * If true, treat the current map as Coliseum behavior (Coliseum is embedded inside GameplayLevel).
-	 */
-	UPROPERTY(BlueprintReadWrite, Category = "Flow")
-	bool bForceColiseumMode = false;
-
-	/** Distinguishes the owed-boss Coliseum route from the selected-difficulty final Coliseum route. */
-	UPROPERTY(BlueprintReadWrite, Category = "Flow")
-	ET66ColiseumFlowMode ColiseumFlowMode = ET66ColiseumFlowMode::None;
 
 	/** If true, the current level is The Lab (practice room). No rewards, no run save; exit returns to Hero Selection. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
@@ -414,6 +409,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Selection")
 	void ClearSelections();
 
+	UFUNCTION(BlueprintCallable, Category = "Daily Climb")
+	void CacheDailyClimbChallenge(const FT66DailyClimbChallengeData& Challenge) { CachedDailyClimbChallenge = Challenge; }
+
+	UFUNCTION(BlueprintCallable, Category = "Daily Climb")
+	void BeginDailyClimbRun(const FT66DailyClimbChallengeData& Challenge);
+
+	UFUNCTION(BlueprintCallable, Category = "Daily Climb")
+	void ClearActiveDailyClimbRun();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Climb")
+	bool IsDailyClimbRunActive() const { return bIsDailyClimbRunActive && ActiveDailyClimbChallenge.IsValid(); }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Climb")
+	int32 GetDailyClimbIntRuleValue(ET66DailyClimbRuleType RuleType, int32 DefaultValue = 0) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Climb")
+	float GetDailyClimbFloatRuleValue(ET66DailyClimbRuleType RuleType, float DefaultValue = 0.0f) const;
+
 	/** Check if a hero is selected */
 	UFUNCTION(BlueprintCallable, Category = "Selection")
 	bool HasHeroSelected() const { return !SelectedHeroID.IsNone(); }
@@ -485,8 +498,6 @@ public:
 	static FName GetGameplayLevelName();
 	/** Entry map package path for a brand-new Tribulation run. */
 	static FName GetTribulationEntryLevelName();
-	/** Standalone coliseum gameplay map package path. */
-	static FName GetColiseumLevelName();
 	/** Standalone tutorial gameplay map package path. */
 	static FName GetTutorialLevelName();
 

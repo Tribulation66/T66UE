@@ -159,7 +159,6 @@ namespace
 	static const TCHAR* FrontendLevelName = TEXT("/Game/Maps/FrontendLevel");
 	static const TCHAR* LabLevelName = TEXT("/Game/Maps/LabLevel");
 	static const TCHAR* GameplayLevelName = TEXT("/Game/Maps/GameplayLevel");
-	static const TCHAR* ColiseumLevelName = TEXT("/Game/Maps/Gameplay_Coliseum");
 	static const TCHAR* TutorialLevelName = TEXT("/Game/Maps/Gameplay_Tutorial");
 
 	// Goal: remove "soft/blurry" presentation caused by resolution scaling / dynamic res.
@@ -1183,8 +1182,53 @@ void UT66GameInstance::ClearSelections()
 	MiniIntermissionRequestJson.Reset();
 	SelectedHeroBodyType = ET66BodyType::TypeA;
 	SelectedCompanionBodyType = ET66BodyType::TypeA;
+	ClearActiveDailyClimbRun();
 	ApplyConfiguredMainMapLayoutVariant();
 	RestoreRememberedSelectionDefaults();
+}
+
+void UT66GameInstance::BeginDailyClimbRun(const FT66DailyClimbChallengeData& Challenge)
+{
+	CachedDailyClimbChallenge = Challenge;
+	ActiveDailyClimbChallenge = Challenge;
+	bIsDailyClimbRunActive = Challenge.IsValid();
+	if (!bIsDailyClimbRunActive)
+	{
+		return;
+	}
+
+	SelectedPartySize = ET66PartySize::Solo;
+	SelectedHeroID = Challenge.HeroID;
+	SelectedCompanionID = NAME_None;
+	SelectedDifficulty = Challenge.Difficulty;
+	SelectedRunModifierKind = ET66RunModifierKind::None;
+	SelectedRunModifierID = NAME_None;
+	SelectedHeroBodyType = ET66BodyType::TypeA;
+	SelectedCompanionBodyType = ET66BodyType::TypeA;
+	bIsNewGameFlow = true;
+	bIsStageTransition = false;
+	bRunIneligibleForLeaderboard = false;
+	RunSeed = Challenge.RunSeed;
+}
+
+void UT66GameInstance::ClearActiveDailyClimbRun()
+{
+	bIsDailyClimbRunActive = false;
+	ActiveDailyClimbChallenge = FT66DailyClimbChallengeData{};
+}
+
+int32 UT66GameInstance::GetDailyClimbIntRuleValue(const ET66DailyClimbRuleType RuleType, const int32 DefaultValue) const
+{
+	return IsDailyClimbRunActive()
+		? ActiveDailyClimbChallenge.FindIntRuleValue(RuleType, DefaultValue)
+		: DefaultValue;
+}
+
+float UT66GameInstance::GetDailyClimbFloatRuleValue(const ET66DailyClimbRuleType RuleType, const float DefaultValue) const
+{
+	return IsDailyClimbRunActive()
+		? ActiveDailyClimbChallenge.FindFloatRuleValue(RuleType, DefaultValue)
+		: DefaultValue;
 }
 
 void UT66GameInstance::PersistRememberedSelectionDefaults()
@@ -1717,11 +1761,6 @@ FName UT66GameInstance::GetTribulationEntryLevelName()
 	}
 
 	return GetGameplayLevelName();
-}
-
-FName UT66GameInstance::GetColiseumLevelName()
-{
-	return FName(ColiseumLevelName);
 }
 
 FName UT66GameInstance::GetTutorialLevelName()

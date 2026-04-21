@@ -2447,7 +2447,7 @@ namespace T66TowerMapTerrain
 			FText::AsNumber(FloorNumber));
 	}
 
-	bool BuildLayout(const FT66MapPreset& Preset, FLayout& OutLayout)
+	bool BuildLayout(const FT66MapPreset& Preset, FLayout& OutLayout, const bool bBossRushFinaleStage)
 	{
 		OutLayout = FLayout{};
 		OutLayout.Preset = Preset;
@@ -2462,21 +2462,22 @@ namespace T66TowerMapTerrain
 		OutLayout.GridCellSize = T66TowerGridDefaultCellSize;
 		OutLayout.GridDoorWidth = T66TowerGridDefaultDoorWidth;
 		OutLayout.StartFloorNumber = T66TowerStartFloorNumber;
-		OutLayout.FirstGameplayFloorNumber = T66TowerFirstGameplayFloorNumber;
-		OutLayout.LastGameplayFloorNumber = T66TowerLastGameplayFloorNumber;
-		OutLayout.BossFloorNumber = T66TowerBossFloorNumber;
+		OutLayout.BossFloorNumber = bBossRushFinaleStage ? 2 : T66TowerBossFloorNumber;
+		OutLayout.FirstGameplayFloorNumber = bBossRushFinaleStage ? OutLayout.BossFloorNumber : T66TowerFirstGameplayFloorNumber;
+		OutLayout.LastGameplayFloorNumber = bBossRushFinaleStage ? OutLayout.StartFloorNumber : T66TowerLastGameplayFloorNumber;
 
 		const float TopFloorZ = Preset.BaselineZ + 1600.0f;
 		const float FloorSpacing = OutLayout.FloorSpacing;
 		const FVector2D HoleHalfExtent(OutLayout.PlacementCellSize * 0.5f, OutLayout.PlacementCellSize * 0.5f);
 		const FVector AlignedHoleOffset(0.0f, -(OutLayout.PlacementCellSize * 0.9f), 0.0f);
 		const float StartRoomHalfExtent = T66TowerStartRoomSquareSize * 0.5f;
-		const float FloorBottomZ = TopFloorZ - (static_cast<float>(T66TowerTotalFloorCount - 1) * FloorSpacing) - OutLayout.FloorThickness;
+		const int32 TotalFloorCount = bBossRushFinaleStage ? 2 : T66TowerTotalFloorCount;
+		const float FloorBottomZ = TopFloorZ - (static_cast<float>(TotalFloorCount - 1) * FloorSpacing) - OutLayout.FloorThickness;
 
 		OutLayout.TraceStartZ = TopFloorZ + 12000.0f;
 		OutLayout.TraceEndZ = FloorBottomZ - 12000.0f;
 
-		for (int32 FloorIndex = 0; FloorIndex < T66TowerTotalFloorCount; ++FloorIndex)
+		for (int32 FloorIndex = 0; FloorIndex < TotalFloorCount; ++FloorIndex)
 		{
 			FFloor& Floor = OutLayout.Floors.AddDefaulted_GetRef();
 			Floor.FloorNumber = FloorIndex + 1;
@@ -2543,8 +2544,9 @@ namespace T66TowerMapTerrain
 		const FFloor* StartFloor = nullptr;
 		const FFloor* PreBossFloor = nullptr;
 		const FFloor* BossFloor = nullptr;
+		const int32 PreBossFloorNumber = FMath::Max(OutLayout.StartFloorNumber, OutLayout.BossFloorNumber - 1);
 		if (!T66TryGetFloor(OutLayout, OutLayout.StartFloorNumber, StartFloor)
-			|| !T66TryGetFloor(OutLayout, OutLayout.LastGameplayFloorNumber, PreBossFloor)
+			|| !T66TryGetFloor(OutLayout, PreBossFloorNumber, PreBossFloor)
 			|| !T66TryGetFloor(OutLayout, OutLayout.BossFloorNumber, BossFloor))
 		{
 			return false;

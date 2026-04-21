@@ -42,6 +42,7 @@
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66CommunityContentSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
@@ -621,7 +622,22 @@ bool AT66PlayerController::TryHandleMouseTriggeredUltimate()
 
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
 	FHeroData HeroData;
-	if (!T66GI || !T66GI->GetSelectedHeroData(HeroData) || !T66UsesMouseTriggeredUltimate(HeroData))
+	if (!T66GI || !T66GI->GetSelectedHeroData(HeroData))
+	{
+		return false;
+	}
+
+	ET66UltimateType DesiredUltimateType = HeroData.UltimateType;
+	if (const UT66CommunityContentSubsystem* Community = T66GI->GetSubsystem<UT66CommunityContentSubsystem>())
+	{
+		const ET66UltimateType OverrideType = Community->GetActiveUltimateOverride();
+		if (OverrideType != ET66UltimateType::None)
+		{
+			DesiredUltimateType = OverrideType;
+		}
+	}
+
+	if (DesiredUltimateType != ET66UltimateType::SpearStorm)
 	{
 		return false;
 	}
@@ -650,9 +666,20 @@ void AT66PlayerController::HandleUltimatePressed()
 	RunState->NotifyTutorialUltimateUsed();
 
 	FHeroData HeroData;
-	const ET66UltimateType UltType = (T66GI && T66GI->GetSelectedHeroData(HeroData))
+	ET66UltimateType UltType = (T66GI && T66GI->GetSelectedHeroData(HeroData))
 		? HeroData.UltimateType
 		: ET66UltimateType::None;
+	if (T66GI)
+	{
+		if (const UT66CommunityContentSubsystem* Community = T66GI->GetSubsystem<UT66CommunityContentSubsystem>())
+		{
+			const ET66UltimateType OverrideType = Community->GetActiveUltimateOverride();
+			if (OverrideType != ET66UltimateType::None)
+			{
+				UltType = OverrideType;
+			}
+		}
+	}
 
 	const int32 UltDmg = UT66RunStateSubsystem::UltimateDamage;
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());

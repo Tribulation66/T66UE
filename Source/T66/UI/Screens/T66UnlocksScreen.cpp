@@ -61,25 +61,73 @@ namespace
 		return FCString::Atoi(*Suffix);
 	}
 
-	int32 T66CompanionUnlockStageFromID(FName CompanionID)
+	bool T66TryResolveCompanionUnlockPresentation(FName CompanionID, ET66Difficulty& OutDifficulty, int32& OutLocalStage)
 	{
 		const int32 TargetIndex = T66ExtractNumericSuffix(CompanionID);
 		if (TargetIndex <= 0)
 		{
-			return INDEX_NONE;
+			return false;
 		}
 
-		if (TargetIndex <= 23)
+		if (TargetIndex <= 5)
 		{
-			return TargetIndex;
+			OutDifficulty = ET66Difficulty::Easy;
+			OutLocalStage = FMath::Min(TargetIndex, 4);
+			return true;
 		}
 
-		if (TargetIndex == 24)
+		if (TargetIndex <= 10)
 		{
-			return 23;
+			OutDifficulty = ET66Difficulty::Medium;
+			OutLocalStage = FMath::Min(TargetIndex - 5, 4);
+			return true;
 		}
 
-		return INDEX_NONE;
+		if (TargetIndex <= 15)
+		{
+			OutDifficulty = ET66Difficulty::Hard;
+			OutLocalStage = FMath::Min(TargetIndex - 10, 4);
+			return true;
+		}
+
+		if (TargetIndex <= 20)
+		{
+			OutDifficulty = ET66Difficulty::VeryHard;
+			OutLocalStage = FMath::Min(TargetIndex - 15, 4);
+			return true;
+		}
+
+		if (TargetIndex <= 24)
+		{
+			OutDifficulty = ET66Difficulty::Impossible;
+			OutLocalStage = FMath::Min(TargetIndex - 20, 3);
+			return true;
+		}
+
+		return false;
+	}
+
+	FText T66GetUnlockDifficultyLabel(UT66LocalizationSubsystem* Loc, const ET66Difficulty Difficulty)
+	{
+		if (Loc)
+		{
+			return Loc->GetText_Difficulty(Difficulty);
+		}
+
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Easy:
+			return NSLOCTEXT("T66.Unlocks", "CompanionUnlockDifficultyEasy", "Easy");
+		case ET66Difficulty::Medium:
+			return NSLOCTEXT("T66.Unlocks", "CompanionUnlockDifficultyMedium", "Medium");
+		case ET66Difficulty::Hard:
+			return NSLOCTEXT("T66.Unlocks", "CompanionUnlockDifficultyHard", "Hard");
+		case ET66Difficulty::VeryHard:
+			return NSLOCTEXT("T66.Unlocks", "CompanionUnlockDifficultyVeryHard", "Very Hard");
+		case ET66Difficulty::Impossible:
+		default:
+			return NSLOCTEXT("T66.Unlocks", "CompanionUnlockDifficultyImpossible", "Impossible");
+		}
 	}
 }
 
@@ -177,7 +225,9 @@ TArray<UT66UnlocksScreen::FUnlockEntry> UT66UnlocksScreen::BuildEntriesForCatego
 				continue;
 			}
 
-			const int32 UnlockStage = T66CompanionUnlockStageFromID(CompanionID);
+			ET66Difficulty UnlockDifficulty = ET66Difficulty::Easy;
+			int32 UnlockStage = INDEX_NONE;
+			const bool bHasUnlockPresentation = T66TryResolveCompanionUnlockPresentation(CompanionID, UnlockDifficulty, UnlockStage);
 			const bool bUnlocked = CompanionUnlocks
 				? CompanionUnlocks->IsCompanionUnlocked(CompanionID)
 				: CompanionData.bUnlockedByDefault;
@@ -185,8 +235,11 @@ TArray<UT66UnlocksScreen::FUnlockEntry> UT66UnlocksScreen::BuildEntriesForCatego
 			FUnlockEntry& Entry = Entries.AddDefaulted_GetRef();
 			Entry.Name = Loc ? Loc->GetText_CompanionName(CompanionID) : (!CompanionData.DisplayName.IsEmpty() ? CompanionData.DisplayName : FText::FromName(CompanionID));
 			Entry.TypeText = NSLOCTEXT("T66.Unlocks", "CompanionType", "COMPANION");
-			Entry.DetailText = (UnlockStage != INDEX_NONE)
-				? FText::Format(NSLOCTEXT("T66.Unlocks", "CompanionStageCondition", "Clear Stage {0} for the first time."), FText::AsNumber(UnlockStage))
+			Entry.DetailText = bHasUnlockPresentation
+				? FText::Format(
+					NSLOCTEXT("T66.Unlocks", "CompanionStageCondition", "Clear {0} Stage {1} for the first time."),
+					T66GetUnlockDifficultyLabel(Loc, UnlockDifficulty),
+					FText::AsNumber(UnlockStage))
 				: NSLOCTEXT("T66.Unlocks", "CompanionFallbackCondition", "Unlock condition is not exposed by the current companion data.");
 			Entry.bUnlocked = bUnlocked;
 			Entry.Order = T66ExtractNumericSuffix(CompanionID);

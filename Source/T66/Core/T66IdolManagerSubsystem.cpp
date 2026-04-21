@@ -6,6 +6,22 @@
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RunStateSubsystem.h"
 
+namespace
+{
+	static int32 T66GetReachableStageCountBeforeDifficulty(const ET66Difficulty Difficulty)
+	{
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Easy: return 0;
+		case ET66Difficulty::Medium: return 4;
+		case ET66Difficulty::Hard: return 8;
+		case ET66Difficulty::VeryHard: return 12;
+		case ET66Difficulty::Impossible: return 16;
+		default: return 0;
+		}
+	}
+}
+
 void UT66IdolManagerSubsystem::NormalizeEquippedArrays()
 {
 	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
@@ -69,12 +85,12 @@ int32 UT66IdolManagerSubsystem::GetDifficultyEndStage(const ET66Difficulty Diffi
 
 	switch (Difficulty)
 	{
-	case ET66Difficulty::Easy: return 5;
-	case ET66Difficulty::Medium: return 10;
-	case ET66Difficulty::Hard: return 15;
-	case ET66Difficulty::VeryHard: return 20;
+	case ET66Difficulty::Easy: return 4;
+	case ET66Difficulty::Medium: return 9;
+	case ET66Difficulty::Hard: return 14;
+	case ET66Difficulty::VeryHard: return 19;
 	case ET66Difficulty::Impossible: return 23;
-	default: return 5;
+	default: return 4;
 	}
 }
 
@@ -492,8 +508,7 @@ void UT66IdolManagerSubsystem::HandleStageChanged(const int32 /*NewStage*/)
 
 int32 UT66IdolManagerSubsystem::GetCatchUpIdolPickCountForDifficulty(const ET66Difficulty Difficulty) const
 {
-	const int32 StartStage = GetDifficultyStartStage(Difficulty);
-	return FMath::Max(0, StartStage - 1);
+	return T66GetReachableStageCountBeforeDifficulty(Difficulty);
 }
 
 bool UT66IdolManagerSubsystem::ConsumeCatchUpIdolPick()

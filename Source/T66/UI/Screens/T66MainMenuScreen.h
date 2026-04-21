@@ -42,6 +42,9 @@ public:
 	void OnLoadGameClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Main Menu")
+	void OnDailyClimbClicked();
+
+	UFUNCTION(BlueprintCallable, Category = "Main Menu")
 	void OnSettingsClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Main Menu")
@@ -138,6 +141,7 @@ private:
 	// Button click handlers for Slate (return FReply)
 	FReply HandleNewGameClicked();
 	FReply HandleLoadGameClicked();
+	FReply HandleDailyClimbClicked();
 	FReply HandlePowerUpClicked();
 	FReply HandleMinigamesClicked();
 	FReply HandleAchievementsClicked();

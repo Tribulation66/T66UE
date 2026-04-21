@@ -86,18 +86,6 @@ bool AT66StageCatchUpGate::EnterChosenStage()
 
 	if (bActsAsStageAdvanceGate)
 	{
-		// Special: Coliseum mode stage gate returns to the checkpointed gameplay stage (do NOT increment).
-		if (T66GI->bForceColiseumMode || T66GI->ColiseumFlowMode != ET66ColiseumFlowMode::None)
-		{
-			T66GI->bStageCatchUpPending = false;
-			RunState->SetInStageCatchUp(false);
-			T66GI->bForceColiseumMode = false;
-			T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
-			T66GI->bIsStageTransition = true;
-			UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
-			return true;
-		}
-
 		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{
 			Ach->NotifyStageCleared(1);
@@ -118,8 +106,6 @@ bool AT66StageCatchUpGate::EnterChosenStage()
 
 		T66GI->bIsStageTransition = true;
 		T66GI->bPendingTowerStageDropIntro = false;
-		T66GI->bForceColiseumMode = false;
-		T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
 
 		const FString LevelName = UGameplayStatics::GetCurrentLevelName(this);
 		if (LevelName.IsEmpty())

@@ -2395,7 +2395,6 @@ void FT66Style::DeferRebuild(UUserWidget* Widget, int32 ZOrder)
 			UWorld* LocalWorld = WeakWorld.Get();
 			UUserWidget* W = Weak.Get();
 			if (!W || !LocalWorld || LocalWorld->bIsTearingDown || GExitPurge || IsGarbageCollecting()) return;
-			if (!W->GetCachedWidget().IsValid()) return;
 
 			const bool bInViewport = W->IsInViewport();
 			if (bInViewport) W->RemoveFromParent();

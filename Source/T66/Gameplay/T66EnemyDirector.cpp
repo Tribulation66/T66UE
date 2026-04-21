@@ -451,7 +451,7 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 
 	if (RngSub && RunState)
 	{
-		RngSub->UpdateLuckStat(RunState->GetLuckStat());
+		RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
 	}
 	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
 
@@ -589,7 +589,7 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		RunState->RecordLuckQuantityRoll(
 			FName(TEXT("GoblinCountPerWave")),
 			GobToSpawn,
-			0,
+			Tuning->GoblinCountPerWave.Min,
 			Tuning->GoblinCountPerWave.Max,
 			(RngSub && GobToSpawn > 0) ? RngSub->GetLastRunDrawIndex() : INDEX_NONE,
 			(RngSub && GobToSpawn > 0) ? RngSub->GetLastRunPreDrawSeed() : 0);

@@ -254,23 +254,23 @@ void ST66LeaderboardPanel::GetStageRangeForDifficulty(const ET66Difficulty Diffi
 	case ET66Difficulty::Easy:
 	default:
 		OutStartStage = 1;
-		OutEndStage = 5;
+		OutEndStage = 4;
 		return;
 	case ET66Difficulty::Medium:
-		OutStartStage = 6;
-		OutEndStage = 10;
+		OutStartStage = 1;
+		OutEndStage = 4;
 		return;
 	case ET66Difficulty::Hard:
-		OutStartStage = 11;
-		OutEndStage = 15;
+		OutStartStage = 1;
+		OutEndStage = 4;
 		return;
 	case ET66Difficulty::VeryHard:
-		OutStartStage = 16;
-		OutEndStage = 20;
+		OutStartStage = 1;
+		OutEndStage = 4;
 		return;
 	case ET66Difficulty::Impossible:
-		OutStartStage = 21;
-		OutEndStage = 23;
+		OutStartStage = 1;
+		OutEndStage = 3;
 		return;
 	}
 }
@@ -278,7 +278,7 @@ void ST66LeaderboardPanel::GetStageRangeForDifficulty(const ET66Difficulty Diffi
 void ST66LeaderboardPanel::UpdateStageOptionsForDifficulty()
 {
 	int32 StartStage = 1;
-	int32 EndStage = 5;
+	int32 EndStage = 4;
 	GetStageRangeForDifficulty(CurrentDifficulty, StartStage, EndStage);
 
 	StageOptions.Reset();
@@ -296,6 +296,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	LocSubsystem = InArgs._LocalizationSubsystem;
 	LeaderboardSubsystem = InArgs._LeaderboardSubsystem;
 	UIManager = InArgs._UIManager;
+	bDailyChallengeMode = InArgs._DailyChallengeMode;
 
 	// Initialize dropdown options
 	PartySizeOptions.Add(MakeShared<FString>(TEXT("Solo")));
@@ -315,7 +316,15 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	TypeOptions.Add(MakeShared<FString>(TEXT("Speed Run")));
 	SelectedTypeOption = TypeOptions[0];
 
-	// Speed run stage dropdown is limited to the selected difficulty's live stage range.
+	if (bDailyChallengeMode)
+	{
+		CurrentTimeFilter = ET66LeaderboardTime::Daily;
+		CurrentFilter = ET66LeaderboardFilter::Global;
+		CurrentPartySize = ET66PartySize::Solo;
+		CurrentType = ET66LeaderboardType::Score;
+	}
+
+	// Speed run stage dropdown is limited to the selected difficulty's displayed stage-label range.
 	UpdateStageOptionsForDifficulty();
 
 	// Default avatar brush (gray circle placeholder)
@@ -599,6 +608,14 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 
 	FText WeeklyText = LocSubsystem ? LocSubsystem->GetText_Weekly() : NSLOCTEXT("T66.Leaderboard", "Weekly", "WEEKLY");
 	FText AllTimeText = NSLOCTEXT("T66.Leaderboard", "AllTime", "ALL TIME");
+	auto GetDailyModeVisibility = [this]() -> EVisibility
+	{
+		return bDailyChallengeMode ? EVisibility::Visible : EVisibility::Collapsed;
+	};
+	auto GetStandardModeVisibility = [this]() -> EVisibility
+	{
+		return (bDailyChallengeMode || CurrentTimeFilter == ET66LeaderboardTime::Daily) ? EVisibility::Collapsed : EVisibility::Visible;
+	};
 
 	ChildSlot
 	[
@@ -609,6 +626,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		.Padding(0.f, 0.f, 0.f, 8.f)
 		[
 			SNew(SHorizontalBox)
+			.Visibility_Lambda(GetStandardModeVisibility)
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
 				MakeFilterButtonShell(ET66LeaderboardFilter::Global, &ST66LeaderboardPanel::HandleGlobalClicked, TEXT("G"), FilterBrushGlobal)
@@ -641,11 +659,30 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.HAlign(HAlign_Center)
 					.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(3.0f, 0.0f)
-						[ MakeTimeButton(WeeklyText, ET66LeaderboardTime::Current, &ST66LeaderboardPanel::HandleCurrentClicked) ]
-						+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(3.0f, 0.0f)
-						[ MakeTimeButton(AllTimeText, ET66LeaderboardTime::AllTime, &ST66LeaderboardPanel::HandleAllTimeClicked) ]
+						SNew(SBox)
+						.Visibility_Lambda(GetDailyModeVisibility)
+						[
+							SNew(STextBlock)
+							.Text(NSLOCTEXT("T66.Leaderboard", "DailyLeaderboard", "DAILY LEADERBOARD"))
+							.Font(LeaderboardTitleFont)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Justification(ETextJustify::Center)
+						]
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.HAlign(HAlign_Center)
+					.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+					[
+						SNew(SBox)
+						.Visibility_Lambda(GetStandardModeVisibility)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(3.0f, 0.0f)
+							[ MakeTimeButton(WeeklyText, ET66LeaderboardTime::Current, &ST66LeaderboardPanel::HandleCurrentClicked) ]
+							+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(3.0f, 0.0f)
+							[ MakeTimeButton(AllTimeText, ET66LeaderboardTime::AllTime, &ST66LeaderboardPanel::HandleAllTimeClicked) ]
+						]
 					]
 					// Dropdowns row (Party Size | Difficulty)
 					+ SVerticalBox::Slot()
@@ -654,6 +691,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 					[
 						SNew(SHorizontalBox)
+						.Visibility_Lambda(GetStandardModeVisibility)
 						// Party Size dropdown
 						+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(0.0f, 0.0f, 3.0f, 0.0f)
 						[
@@ -722,6 +760,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.Padding(0.0f, 0.0f, 0.0f, 18.0f)
 					[
 						SNew(SHorizontalBox)
+						.Visibility_Lambda(GetStandardModeVisibility)
 						+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(0.0f, 0.0f, 3.0f, 0.0f)
 						[
 							MakeTypeButton(ET66LeaderboardType::Score)
@@ -768,7 +807,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 								[
 									SNew(STextBlock)
 									.Text_Lambda([this]() {
-										return CurrentType == ET66LeaderboardType::Score
+										return CurrentTimeFilter == ET66LeaderboardTime::Daily || CurrentType == ET66LeaderboardType::Score
 											? NSLOCTEXT("T66.Leaderboard", "Score", "SCORE")
 											: NSLOCTEXT("T66.Leaderboard", "Time", "TIME"); })
 									.Font(LeaderboardTitleFont)
@@ -959,7 +998,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				SNew(SBox).WidthOverride(ScoreColumnWidth)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(CurrentType == ET66LeaderboardType::Score ? ScoreStr : TimeStr))
+					.Text(FText::FromString((CurrentTimeFilter == ET66LeaderboardTime::Daily || CurrentType == ET66LeaderboardType::Score) ? ScoreStr : TimeStr))
 					.Font(FT66Style::Tokens::FontRegular(LeaderboardBodyFontSize))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 					.Justification(ETextJustify::Right)
@@ -1142,18 +1181,41 @@ FString ST66LeaderboardPanel::FormatTime(float Seconds) const
 
 void ST66LeaderboardPanel::SetFilter(ET66LeaderboardFilter NewFilter)
 {
-	CurrentFilter = NewFilter;
+	if (bDailyChallengeMode || CurrentTimeFilter == ET66LeaderboardTime::Daily)
+	{
+		CurrentFilter = ET66LeaderboardFilter::Global;
+	}
+	else
+	{
+		CurrentFilter = NewFilter;
+	}
 	RefreshLeaderboard();
 }
 
 void ST66LeaderboardPanel::SetTimeFilter(ET66LeaderboardTime NewTime)
 {
+	if (bDailyChallengeMode)
+	{
+		CurrentTimeFilter = ET66LeaderboardTime::Daily;
+		CurrentFilter = ET66LeaderboardFilter::Global;
+		CurrentPartySize = ET66PartySize::Solo;
+		CurrentType = ET66LeaderboardType::Score;
+		RefreshLeaderboard();
+		return;
+	}
+
 	if (CurrentTimeFilter == NewTime)
 	{
 		return;
 	}
 
 	CurrentTimeFilter = NewTime;
+	if (CurrentTimeFilter == ET66LeaderboardTime::Daily)
+	{
+		CurrentFilter = ET66LeaderboardFilter::Global;
+		CurrentPartySize = ET66PartySize::Solo;
+		CurrentType = ET66LeaderboardType::Score;
+	}
 
 	if (GMirrorWeeklyToAllTime)
 	{
@@ -1161,6 +1223,7 @@ void ST66LeaderboardPanel::SetTimeFilter(ET66LeaderboardTime NewTime)
 		return;
 	}
 
+	Invalidate(EInvalidateWidgetReason::Layout);
 	RefreshLeaderboard();
 }
 
@@ -1179,12 +1242,68 @@ void ST66LeaderboardPanel::SetDifficulty(ET66Difficulty NewDifficulty)
 
 void ST66LeaderboardPanel::SetLeaderboardType(ET66LeaderboardType NewType)
 {
+	if (bDailyChallengeMode || CurrentTimeFilter == ET66LeaderboardTime::Daily)
+	{
+		CurrentType = ET66LeaderboardType::Score;
+		RefreshLeaderboard();
+		return;
+	}
+
 	CurrentType = NewType;
 	RefreshLeaderboard();
 }
 
 void ST66LeaderboardPanel::RefreshLeaderboard()
 {
+	if (CurrentTimeFilter == ET66LeaderboardTime::Daily)
+	{
+		const FString CacheKey = TEXT("daily_global");
+
+		UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
+		UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+		if (Backend && Backend->HasCachedLeaderboard(CacheKey))
+		{
+			LeaderboardEntries = Backend->GetCachedLeaderboard(CacheKey);
+		}
+		else
+		{
+			LeaderboardEntries.Reset();
+		}
+
+		TArray<FLeaderboardEntry> LimitedEntries;
+		LimitedEntries.Reserve(LeaderboardVisibleEntryCount);
+		for (const FLeaderboardEntry& Entry : LeaderboardEntries)
+		{
+			if (LimitedEntries.Num() >= LeaderboardVisibleEntryCount)
+			{
+				break;
+			}
+
+			LimitedEntries.Add(Entry);
+		}
+
+		LeaderboardEntries = MoveTemp(LimitedEntries);
+		for (int32 EntryIndex = 0; EntryIndex < LeaderboardEntries.Num(); ++EntryIndex)
+		{
+			NormalizeEntryIdentity(LeaderboardEntries[EntryIndex], EntryIndex);
+		}
+
+		RebuildEntryList();
+
+		if (Backend && Backend->IsBackendConfigured() && !Backend->HasCachedLeaderboard(CacheKey))
+		{
+			if (!bBoundToBackendDelegate && Backend)
+			{
+				Backend->OnLeaderboardDataReady.AddSP(SharedThis(this), &ST66LeaderboardPanel::OnBackendLeaderboardReady);
+				bBoundToBackendDelegate = true;
+			}
+
+			Backend->FetchDailyLeaderboard(TEXT("global"));
+		}
+
+		return;
+	}
+
 	// Convert current filters to backend API strings
 	auto TypeStr = [this]() -> FString {
 		return (CurrentType == ET66LeaderboardType::Score) ? TEXT("score") : TEXT("speedrun");
@@ -1315,6 +1434,12 @@ FReply ST66LeaderboardPanel::HandleAllTimeClicked()
 	return FReply::Handled();
 }
 
+FReply ST66LeaderboardPanel::HandleDailyClicked()
+{
+	SetTimeFilter(ET66LeaderboardTime::Daily);
+	return FReply::Handled();
+}
+
 void ST66LeaderboardPanel::OnPartySizeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
 {
 	if (!NewSelection.IsValid()) return;
@@ -1352,7 +1477,7 @@ void ST66LeaderboardPanel::OnStageChanged(TSharedPtr<FString> NewSelection, ESel
 	if (!NewSelection.IsValid()) return;
 	SelectedStageOption = NewSelection;
 	int32 StartStage = 1;
-	int32 EndStage = 5;
+	int32 EndStage = 4;
 	GetStageRangeForDifficulty(CurrentDifficulty, StartStage, EndStage);
 	CurrentSpeedRunStage = FMath::Clamp(FCString::Atoi(**NewSelection), StartStage, EndStage);
 	RefreshLeaderboard();
@@ -1428,6 +1553,7 @@ FText ST66LeaderboardPanel::GetTimeText(ET66LeaderboardTime Time) const
 	{
 	case ET66LeaderboardTime::Current: return LocSubsystem ? LocSubsystem->GetText_Weekly() : NSLOCTEXT("T66.Leaderboard", "Weekly", "WEEKLY");
 	case ET66LeaderboardTime::AllTime: return NSLOCTEXT("T66.Leaderboard", "AllTime", "ALL TIME");
+	case ET66LeaderboardTime::Daily: return NSLOCTEXT("T66.Leaderboard", "Daily", "DAILY");
 	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}
 }

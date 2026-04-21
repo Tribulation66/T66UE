@@ -6,6 +6,7 @@
 namespace
 {
 	static float Clamp01(float V) { return FMath::Clamp(V, 0.f, 1.f); }
+	static constexpr int32 T66SeedLuckSalt = 0x4C55434B; // "LUCK"
 }
 
 void UT66RngSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -52,12 +53,18 @@ void UT66RngSubsystem::BeginRun(int32 InLuckStat)
 	int32 Seed = static_cast<int32>(FPlatformTime::Cycles());
 	if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
-		Seed ^= static_cast<int32>(GetTypeHash(T66GI->SelectedHeroID));
-		Seed ^= static_cast<int32>(GetTypeHash(T66GI->SelectedCompanionID));
-		Seed ^= static_cast<int32>(T66GI->SelectedDifficulty) * 7919;
-		Seed ^= static_cast<int32>(T66GI->SelectedPartySize) * 1543;
+		if (T66GI->RunSeed != 0)
+		{
+			Seed = T66GI->RunSeed;
+		}
+		else
+		{
+			Seed ^= static_cast<int32>(GetTypeHash(T66GI->SelectedHeroID));
+			Seed ^= static_cast<int32>(GetTypeHash(T66GI->SelectedCompanionID));
+			Seed ^= static_cast<int32>(T66GI->SelectedDifficulty) * 7919;
+			Seed ^= static_cast<int32>(T66GI->SelectedPartySize) * 1543;
+		}
 	}
-	Seed ^= (LuckStat * 1337);
 
 	RunSeed = Seed;
 	RunStream.Initialize(RunSeed);
@@ -65,6 +72,13 @@ void UT66RngSubsystem::BeginRun(int32 InLuckStat)
 	ClearLastRunDrawMetadata();
 
 	RecomputeLuck01();
+}
+
+int32 UT66RngSubsystem::RollSeedLuck0To100() const
+{
+	const int32 SeedBase = (RunSeed != 0) ? RunSeed : 1;
+	FRandomStream SeedLuckStream(SeedBase ^ T66SeedLuckSalt);
+	return FMath::Clamp(SeedLuckStream.RandRange(0, 100), 0, 100);
 }
 
 void UT66RngSubsystem::UpdateLuckStat(int32 InLuckStat)

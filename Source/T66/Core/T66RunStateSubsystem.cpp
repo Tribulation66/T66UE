@@ -3,6 +3,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
+#include "Core/T66CommunityContentSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66BuffSubsystem.h"
@@ -11,6 +12,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RngSubsystem.h"
+#include "Core/T66RunIntegritySubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -894,12 +896,23 @@ void UT66RunStateSubsystem::RecordAntiCheatLuckEvent(ET66AntiCheatLuckEventType 
 	Event.EventType = EventType;
 	Event.Category = Category;
 	Event.TimeSeconds = GetRunElapsedSecondsForAntiCheatEvent();
+	Event.SeedLuck0To100 = GetSeedLuck0To100();
+	Event.LuckModifierPercent = GetTotalLuckModifierPercent();
+	Event.EffectiveLuck = GetEffectiveLuckValue();
 	Event.Value01 = FMath::Clamp(Value01, 0.f, 1.f);
 	Event.RawValue = RawValue;
 	Event.RawMin = RawMin;
 	Event.RawMax = RawMax;
 	Event.RunDrawIndex = RunDrawIndex;
 	Event.PreDrawSeed = PreDrawSeed;
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		if (const UT66RngSubsystem* Rng = GI->GetSubsystem<UT66RngSubsystem>())
+		{
+			Event.LuckStatSnapshot = Rng->GetLuckStat();
+			Event.Luck01Snapshot = Rng->GetLuck01();
+		}
+	}
 	Event.ExpectedChance01 = ExpectedChance01;
 	Event.bHasRarityWeights = (ReplayWeights != nullptr);
 	if (ReplayWeights)
@@ -1872,6 +1885,26 @@ void UT66RunStateSubsystem::MarkPendingPowerCrystalsGrantedToWallet()
 	PowerCrystalsGrantedToWalletThisRun = FMath::Clamp(PowerCrystalsEarnedThisRun, 0, 2000000000);
 }
 
+void UT66RunStateSubsystem::MarkPendingPowerCrystalsSuppressedForWallet()
+{
+	PowerCrystalsGrantedToWalletThisRun = FMath::Clamp(PowerCrystalsEarnedThisRun, 0, 2000000000);
+}
+
+bool UT66RunStateSubsystem::ShouldSuppressPendingPowerCrystalsForWallet()
+{
+	UGameInstance* GI = GetGameInstance();
+	UT66RunIntegritySubsystem* Integrity = GI ? GI->GetSubsystem<UT66RunIntegritySubsystem>() : nullptr;
+	if (!Integrity)
+	{
+		return false;
+	}
+
+	Integrity->FinalizeCurrentRun();
+	FT66RunIntegrityContext IntegrityContext;
+	Integrity->CopyCurrentContextTo(IntegrityContext);
+	return !IntegrityContext.ShouldAllowRankedSubmission();
+}
+
 void UT66RunStateSubsystem::ActivatePendingSingleUseBuffsForRunStart()
 {
 	SingleUseSecondaryMultipliers.Reset();
@@ -1885,7 +1918,7 @@ void UT66RunStateSubsystem::ActivatePendingSingleUseBuffsForRunStart()
 
 		if (UT66RngSubsystem* Rng = GI->GetSubsystem<UT66RngSubsystem>())
 		{
-			Rng->UpdateLuckStat(GetLuckStat());
+			Rng->UpdateLuckStat(GetEffectiveLuckBiasStat());
 		}
 	}
 }
@@ -2037,7 +2070,7 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 		if (RngSub)
 		{
 			// Luck influences how often we roll the high end, but the min/max ranges themselves stay fixed.
-			RngSub->UpdateLuckStat(GetLuckStat());
+			RngSub->UpdateLuckStat(GetEffectiveLuckBiasStat());
 		}
 	}
 
@@ -2163,6 +2196,51 @@ int32 UT66RunStateSubsystem::GetEvasionStat() const
 int32 UT66RunStateSubsystem::GetLuckStat() const
 {
 	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Luck));
+}
+
+float UT66RunStateSubsystem::GetSingleUseLuckModifierPercent() const
+{
+	float ModifierPercent = 0.f;
+	for (const ET66SecondaryStatType StatType : T66_GetLuckSecondaryTypes())
+	{
+		const float* SingleUseMult = SingleUseSecondaryMultipliers.Find(StatType);
+		if (!SingleUseMult || *SingleUseMult <= 1.f)
+		{
+			continue;
+		}
+
+		ModifierPercent += (*SingleUseMult - 1.f) * 100.f;
+	}
+
+	return FMath::Max(0.f, ModifierPercent);
+}
+
+float UT66RunStateSubsystem::GetTotalLuckModifierPercent() const
+{
+	const float PrimaryLuckModifierPercent = static_cast<float>(FMath::Max(0, GetLuckStat() - 1));
+	return FMath::Max(0.f, PrimaryLuckModifierPercent + GetSingleUseLuckModifierPercent());
+}
+
+float UT66RunStateSubsystem::GetEffectiveLuckValue() const
+{
+	const float SeedLuck = static_cast<float>(GetSeedLuck0To100());
+	return FMath::Max(0.f, SeedLuck * (1.f + (GetTotalLuckModifierPercent() / 100.f)));
+}
+
+int32 UT66RunStateSubsystem::GetEffectiveLuckBiasStat() const
+{
+	return FMath::Max(1, FMath::RoundToInt(GetEffectiveLuckValue()));
+}
+
+FText UT66RunStateSubsystem::GetSeedLuckAdjectiveText(const int32 InSeedLuck0To100)
+{
+	const int32 ClampedLuck = FMath::Clamp(InSeedLuck0To100, 0, 100);
+	if (ClampedLuck >= 90) return NSLOCTEXT("T66.RunState", "SeedLuck_Mythic", "Mythic");
+	if (ClampedLuck >= 75) return NSLOCTEXT("T66.RunState", "SeedLuck_Blessed", "Blessed");
+	if (ClampedLuck >= 60) return NSLOCTEXT("T66.RunState", "SeedLuck_Fortunate", "Fortunate");
+	if (ClampedLuck >= 40) return NSLOCTEXT("T66.RunState", "SeedLuck_Steady", "Steady");
+	if (ClampedLuck >= 20) return NSLOCTEXT("T66.RunState", "SeedLuck_Starved", "Starved");
+	return NSLOCTEXT("T66.RunState", "SeedLuck_Cursed", "Cursed");
 }
 
 int32 UT66RunStateSubsystem::GetPierceDmgStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::PierceDamage)); }
@@ -2878,7 +2956,7 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 		RngSub = GameInstance->GetSubsystem<UT66RngSubsystem>();
 		if (RngSub)
 		{
-			RngSub->UpdateLuckStat(GetLuckStat());
+			RngSub->UpdateLuckStat(GetEffectiveLuckBiasStat());
 		}
 	}
 
@@ -3382,6 +3460,9 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 	const float Now = World ? static_cast<float>(World->GetTimeSeconds()) : 0.f;
 	if (Now - LastDamageTime < InvulnDurationSeconds)
 	{
+		// Any resolved non-dodge hit check breaks the consecutive dodge streak,
+		// even when invulnerability prevents damage from being applied.
+		AntiCheatCurrentConsecutiveDodges = 0;
 		RecordAntiCheatHitCheckEvent(Evade, false, false);
 		return false;
 	}
@@ -4258,6 +4339,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	LastDamageTime = -9999.f;
 	PowerCrystalsEarnedThisRun = 0;
 	PowerCrystalsGrantedToWalletThisRun = 0;
+	SeedLuck0To100 = -1;
 	CompanionHealingDoneThisRun = 0.f;
 	SingleUseSecondaryMultipliers.Reset();
 
@@ -4310,7 +4392,79 @@ void UT66RunStateSubsystem::ResetForNewRun()
 
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
-		if (T66GI->HasSelectedRunMod() && T66GI->SelectedRunModifierID == T66MaxHeroStatsRunModifierID)
+		FT66CommunityContentEntry ActiveCommunityEntry;
+		const UT66CommunityContentSubsystem* Community = T66GI->GetSubsystem<UT66CommunityContentSubsystem>();
+		const bool bHasCommunityEntry = Community && Community->GetActiveEntry(ActiveCommunityEntry);
+		if (bHasCommunityEntry)
+		{
+			const FT66CommunityRuleSet& Rules = ActiveCommunityEntry.Rules;
+			const int32 TargetLevel = Rules.bSetMaxHeroStats
+				? MaxHeroLevel
+				: FMath::Clamp(Rules.StartLevelOverride, 0, MaxHeroLevel);
+			while (HeroLevel < TargetLevel)
+			{
+				ApplyOneHeroLevelUp();
+			}
+
+			if (Rules.bSetMaxHeroStats)
+			{
+				HeroLevel = MaxHeroLevel;
+
+				FT66HeroStatBlock MaxHeroStats;
+				MaxHeroStats.Damage = MaxHeroLevel;
+				MaxHeroStats.AttackSpeed = MaxHeroLevel;
+				MaxHeroStats.AttackScale = MaxHeroLevel;
+				MaxHeroStats.Accuracy = MaxHeroLevel;
+				MaxHeroStats.Armor = MaxHeroLevel;
+				MaxHeroStats.Evasion = MaxHeroLevel;
+				MaxHeroStats.Luck = MaxHeroLevel;
+				MaxHeroStats.Speed = MaxHeroLevel;
+				HeroPreciseStats.SetFromWholeStatBlock(MaxHeroStats);
+				SyncLegacyHeroStatsFromPrecise();
+
+				ClearPersistentSecondaryStatBonuses();
+				const int32 MaxStatTenths = WholeStatToTenths(MaxHeroLevel);
+				for (uint8 RawStatType = static_cast<uint8>(ET66SecondaryStatType::None) + 1;
+					RawStatType <= static_cast<uint8>(ET66SecondaryStatType::Accuracy);
+					++RawStatType)
+				{
+					const ET66SecondaryStatType StatType = static_cast<ET66SecondaryStatType>(RawStatType);
+					if (T66IsLiveSecondaryStatType(StatType))
+					{
+						AddPersistentSecondaryStatBonusTenths(StatType, MaxStatTenths);
+					}
+				}
+			}
+			else
+			{
+				auto ApplyPrimaryBonus = [this](int32& StatTenths, const int32 Bonus)
+				{
+					StatTenths = ClampHeroStatTenths(StatTenths + (Bonus * HeroStatTenthsScale));
+				};
+
+				ApplyPrimaryBonus(HeroPreciseStats.DamageTenths, Rules.BonusStats.Damage);
+				ApplyPrimaryBonus(HeroPreciseStats.AttackSpeedTenths, Rules.BonusStats.AttackSpeed);
+				ApplyPrimaryBonus(HeroPreciseStats.AttackScaleTenths, Rules.BonusStats.AttackScale);
+				ApplyPrimaryBonus(HeroPreciseStats.AccuracyTenths, Rules.BonusStats.Accuracy);
+				ApplyPrimaryBonus(HeroPreciseStats.ArmorTenths, Rules.BonusStats.Armor);
+				ApplyPrimaryBonus(HeroPreciseStats.EvasionTenths, Rules.BonusStats.Evasion);
+				ApplyPrimaryBonus(HeroPreciseStats.LuckTenths, Rules.BonusStats.Luck);
+				ApplyPrimaryBonus(HeroPreciseStats.SpeedTenths, Rules.BonusStats.Speed);
+			}
+
+			if (Rules.PassiveOverride != ET66PassiveType::None)
+			{
+				PassiveType = Rules.PassiveOverride;
+			}
+
+			SyncLegacyHeroStatsFromPrecise();
+
+			if (!Rules.StartingItemId.IsNone())
+			{
+				AddItem(Rules.StartingItemId);
+			}
+		}
+		else if (T66GI->HasSelectedRunMod() && T66GI->SelectedRunModifierID == T66MaxHeroStatsRunModifierID)
 		{
 			HeroLevel = MaxHeroLevel;
 
@@ -4346,7 +4500,9 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	{
 		if (UT66RngSubsystem* Rng = GI->GetSubsystem<UT66RngSubsystem>())
 		{
-			Rng->BeginRun(GetLuckStat());
+			Rng->BeginRun(1);
+			SeedLuck0To100 = Rng->RollSeedLuck0To100();
+			Rng->UpdateLuckStat(GetEffectiveLuckBiasStat());
 		}
 	}
 
@@ -4468,6 +4624,9 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.HeroStats = HeroPreciseStats.ToDisplayStatBlock();
 	OutSnapshot.PowerCrystalsEarnedThisRun = PowerCrystalsEarnedThisRun;
 	OutSnapshot.PowerCrystalsGrantedToWalletThisRun = PowerCrystalsGrantedToWalletThisRun;
+	OutSnapshot.SeedLuck0To100 = GetSeedLuck0To100();
+	OutSnapshot.LuckModifierPercent = GetTotalLuckModifierPercent();
+	OutSnapshot.EffectiveLuck = GetEffectiveLuckValue();
 	OutSnapshot.CompanionHealingDoneThisRun = CompanionHealingDoneThisRun;
 	OutSnapshot.bBossActive = bBossActive;
 	OutSnapshot.ActiveBossID = ActiveBossID;
@@ -4635,6 +4794,7 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	SyncLegacyHeroStatsFromPrecise();
 	PowerCrystalsEarnedThisRun = FMath::Max(0, Snapshot.PowerCrystalsEarnedThisRun);
 	PowerCrystalsGrantedToWalletThisRun = FMath::Clamp(Snapshot.PowerCrystalsGrantedToWalletThisRun, 0, PowerCrystalsEarnedThisRun);
+	SeedLuck0To100 = (Snapshot.SeedLuck0To100 >= 0) ? FMath::Clamp(Snapshot.SeedLuck0To100, 0, 100) : -1;
 	CompanionHealingDoneThisRun = FMath::Max(0.f, Snapshot.CompanionHealingDoneThisRun);
 	bBossActive = Snapshot.bBossActive;
 	ActiveBossID = Snapshot.ActiveBossID;
@@ -4892,6 +5052,17 @@ void UT66RunStateSubsystem::ResetDifficultyPacing()
 	FinalRunElapsedSeconds = 0.f;
 	ResetSpeedRunTimer();
 	bThisRunSetNewPersonalBestSpeedRunTime = false;
+}
+
+void UT66RunStateSubsystem::ResetDifficultyScore()
+{
+	if (CurrentScore == 0)
+	{
+		return;
+	}
+
+	CurrentScore = 0;
+	ScoreChanged.Broadcast();
 }
 
 void UT66RunStateSubsystem::SetBossActive(int32 InMaxHP)

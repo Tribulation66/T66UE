@@ -68,7 +68,7 @@ namespace
 	}
 
 	template <typename TObjectType>
-	static TObjectType* T66FindOrLoadObject(const TCHAR* ObjectPath)
+	static TObjectType* T66TowerFindOrLoadObject(const TCHAR* ObjectPath)
 	{
 		if (!ObjectPath || !*ObjectPath)
 		{
@@ -85,7 +85,7 @@ namespace
 
 	static UMaterialInterface* T66LoadThemeMaterial(UObject* Outer, const TCHAR* MaterialPath)
 	{
-		return T66FindOrLoadObject<UMaterialInterface>(MaterialPath);
+		return T66TowerFindOrLoadObject<UMaterialInterface>(MaterialPath);
 	}
 
 	static UMaterialInterface* T66BuildThemeMaterialFromTexture(
@@ -97,7 +97,7 @@ namespace
 
 		if (!TexturePath || !*TexturePath)
 		{
-			return T66FindOrLoadObject<UMaterialInterface>(FallbackMaterialPath);
+			return T66TowerFindOrLoadObject<UMaterialInterface>(FallbackMaterialPath);
 		}
 
 		const FString CacheKey(TexturePath);
@@ -109,8 +109,8 @@ namespace
 			}
 		}
 
-		UMaterialInterface* BaseMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
-		UTexture* ThemeTexture = T66FindOrLoadObject<UTexture>(TexturePath);
+		UMaterialInterface* BaseMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+		UTexture* ThemeTexture = T66TowerFindOrLoadObject<UTexture>(TexturePath);
 		if (BaseMaterial && ThemeTexture)
 		{
 			if (UMaterialInstanceDynamic* ThemeMID = UMaterialInstanceDynamic::Create(BaseMaterial, Outer ? Outer : GetTransientPackage()))
@@ -125,7 +125,7 @@ namespace
 			}
 		}
 
-		UMaterialInterface* FallbackMaterial = T66FindOrLoadObject<UMaterialInterface>(FallbackMaterialPath);
+		UMaterialInterface* FallbackMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(FallbackMaterialPath);
 		CachedMaterials.Add(CacheKey, FallbackMaterial);
 		return FallbackMaterial;
 	}
@@ -137,7 +137,7 @@ namespace
 			return;
 		}
 
-		if (UStaticMesh* Mesh = T66FindOrLoadObject<UStaticMesh>(MeshPath))
+		if (UStaticMesh* Mesh = T66TowerFindOrLoadObject<UStaticMesh>(MeshPath))
 		{
 			OutMeshes.Add(Mesh);
 		}
@@ -239,11 +239,11 @@ bool T66TowerThemeVisuals::ResolveTheme(
 
 	if (!OutTheme.FloorMaterial)
 	{
-		OutTheme.FloorMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
+		OutTheme.FloorMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
 	}
 	if (!OutTheme.WallMaterial)
 	{
-		OutTheme.WallMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"));
+		OutTheme.WallMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"));
 	}
 	if (!OutTheme.RoofMaterial)
 	{

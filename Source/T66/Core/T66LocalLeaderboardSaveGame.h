@@ -215,7 +215,15 @@ class T66_API UT66LocalLeaderboardSaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 4;
+	int32 SchemaVersion = 5;
+
+	/** Steam account that owns this local leaderboard cache. */
+	UPROPERTY(SaveGame)
+	FString OwnerSteamId;
+
+	/** Display name captured when this local cache was last saved. */
+	UPROPERTY(SaveGame)
+	FString OwnerDisplayName;
 
 	UPROPERTY(SaveGame)
 	TArray<FT66LocalScoreRecord> ScoreRecords;

@@ -1,6 +1,6 @@
 # T66 Master Steamworks
 
-**Last updated:** 2026-04-19  
+**Last updated:** 2026-04-20
 **Scope:** Steamworks memory file and operating guideline for future agents. This is the canonical handoff for T66 Steam app state, SteamPipe upload workflow, private-testing process, current known build state, and the repeatable PowerShell flow used on this machine.  
 **Companion docs:** `MASTER DOCS/MASTER_BACKEND.md`, `MASTER DOCS/T66_MASTER_GUIDELINES.md`  
 **Maintenance rule:** Update this file after any Steamworks change, Steam build upload, branch/live-build switch, key request, release-state change, or multiplayer-validation milestone. If the change also affects backend auth/routes, update `MASTER DOCS/MASTER_BACKEND.md` in the same pass.
@@ -10,12 +10,12 @@
 - **Steam app:** `CHADPOCALYPSE`
 - **AppID:** `4464300`
 - **Primary Windows depot:** `4464301`
-- **Last confirmed local Steam install state on this machine:** `buildid "22857027"` was the last live build tested through Steam on 2026-04-19 before this upload pass. Re-check `appmanifest_4464300.acf` after setting the newest build live.
-- **Newest uploaded Steam build (not live until branch switch):** `22857325` uploaded on 2026-04-19 for the false-positive leaderboard quarantine fix, weekly summary rank display, append-only leaderboard rows, and difficulty-clear quit-button cleanup
+- **Last confirmed local Steam install state on this machine:** `appmanifest_4464300.acf` currently shows `buildid "22857450"` and `TargetBuildID "22857450"` on 2026-04-19. Re-check the manifest after setting the newest build live.
+- **Newest uploaded Steam build (not live until branch switch):** `22866715` uploaded on 2026-04-20 for the missing frontend top-bar recovery fix in the UI manager/deferred rebuild path
 - **Current release model:** unreleased app, private testing through Steam + Release Override keys
 - **Current default branch used for testing:** `default`
-- **Current Git backup snapshot:** branch `codex/version-2.2`, tag `v2.2`, commit `28a85e82`
-- **Important mismatch to remember:** the source snapshot on `v2.2` includes work that may be newer than the currently installed Steam build. Do not assume the repo HEAD and Steam build are the same until a new upload is completed and the client manifest confirms the new `buildid`.
+- **Current Git backup snapshot:** branch `codex/version-2.4`, tag `v2.4`, commit `b4483160`
+- **Important mismatch to remember:** the source snapshot on `v2.4` includes work that is newer than the currently installed Steam build on this machine. Do not assume the repo HEAD and Steam build are the same until a new upload is set live and `appmanifest_4464300.acf` confirms the new `buildid`.
 
 ## 2. Source Of Truth Files
 

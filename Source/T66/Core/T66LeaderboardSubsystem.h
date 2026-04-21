@@ -151,9 +151,21 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	int32 GetLocalScoreRank(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	int32 GetLocalScoreRankWeekly(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	int32 GetLocalScoreRankAllTime(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+
 	/** Weekly rank of the current run if available, otherwise the locally cached weekly best speedrun rank; 0 if none is recorded. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	int32 GetLocalSpeedRunRank(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	int32 GetLocalSpeedRunRankWeekly(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	int32 GetLocalSpeedRunRankAllTime(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
 	/** Debug helper: delete local leaderboard + local best run summary snapshots, then reload. */
 	void DebugClearLocalLeaderboard();
@@ -178,14 +190,19 @@ private:
 		FDateTime AchievedAtUtc = FDateTime::MinValue();
 	};
 
-	static constexpr const TCHAR* LocalSaveSlotName = TEXT("T66_LocalLeaderboard");
-	static constexpr const TCHAR* AccountRestrictionRunSummarySlotName = TEXT("T66_AccountRestrictionRunSummary");
+	static constexpr const TCHAR* LocalSaveSlotBaseName = TEXT("T66_LocalLeaderboard");
+	static constexpr const TCHAR* AccountRestrictionRunSummarySlotBaseName = TEXT("T66_AccountRestrictionRunSummary");
+	static constexpr const TCHAR* LocalBestScoreRunSummarySlotBaseName = TEXT("T66_LocalBestScoreRunSummary");
+	static constexpr const TCHAR* RecentRunSummarySlotBaseName = TEXT("T66_RunSummary");
 	static constexpr int32 MinCompatibleLocalSaveSchemaVersion = 3;
+	static constexpr int32 CurrentLocalSaveSchemaVersion = 5;
 	static constexpr const TCHAR* ScoreTargetsDTPath = TEXT("/Game/Data/Leaderboard_ScoreTargets.Leaderboard_ScoreTargets");
 	static constexpr const TCHAR* SpeedRunTargetsDTPath = TEXT("/Game/Data/DT_Leaderboard_SpeedrunTargets.DT_Leaderboard_SpeedrunTargets");
 
 	UPROPERTY(Transient)
 	TObjectPtr<UT66LocalLeaderboardSaveGame> LocalSave;
+
+	FString ActiveLocalSaveSlotName;
 
 	// Legacy runtime targets. Cleanup keeps the current CSV-first behavior visible and
 	// explicit until the packaged-parity pass moves these to cooked ownership.
@@ -199,12 +216,29 @@ private:
 
 	static FString DifficultyKey(ET66Difficulty Difficulty);
 	static FString PartySizeKey(ET66PartySize PartySize);
-	static FString MakeLocalBestScoreRunSummarySlotName(ET66Difficulty Difficulty, ET66PartySize PartySize);
-	static FString MakeRecentRunSummarySlotName(const FGuid& RunId);
+	FString GetCurrentLocalSteamId() const;
+	FString GetCurrentLocalDisplayName() const;
+	FString BuildAccountSlotSuffix() const;
+	FString MakeResolvedLocalSaveSlotName() const;
+	FString MakeResolvedAccountRestrictionRunSummarySlotName() const;
+	FString MakeLocalBestScoreRunSummarySlotName(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+	FString MakeRecentRunSummarySlotName(const FGuid& RunId) const;
+	bool PruneInvalidRecentRunRecords();
+	bool SyncRecentRunRecordsFromSnapshots();
 
 	bool SaveLocalBestScoreRunSummarySnapshot(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Score, const FString& ExistingRunSummarySlotName = FString()) const;
 	UT66LeaderboardRunSummarySaveGame* CreateCurrentRunSummarySnapshot(ET66LeaderboardType LeaderboardType, ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Score) const;
 	bool SaveRunSummarySnapshotToSlot(UT66LeaderboardRunSummarySaveGame* Snapshot, const FString& SlotName) const;
+	bool UpdateSavedRunSummaryRanks(
+		const FString& SlotName,
+		int32 ScoreRankAlltime,
+		int32 ScoreRankWeekly,
+		int32 SpeedRunRankAlltime,
+		int32 SpeedRunRankWeekly) const;
+	void PopulateSnapshotLeaderboardRanks(
+		UT66LeaderboardRunSummarySaveGame& Snapshot,
+		ET66Difficulty Difficulty,
+		ET66PartySize PartySize) const;
 	void AppendRecentRunRecord(const FString& RunSummarySlotName);
 	bool IsRunSummarySlotStillReferenced(const FString& SlotName) const;
 	bool DeleteRunSummarySlotIfUnreferenced(const FString& SlotName) const;
@@ -267,6 +301,7 @@ private:
 	void HandleBackendAppealSubmitComplete(bool bSuccess, const FString& Message);
 
 	void HandleBackendRunSummaryReady(const FString& EntryId);
+	bool CanAttemptBackendRankedSubmission(const TCHAR* SubmissionLabel) const;
 
 	bool bAccountStatusRefreshRequested = false;
 	bool bAccountAppealSubmitInFlight = false;

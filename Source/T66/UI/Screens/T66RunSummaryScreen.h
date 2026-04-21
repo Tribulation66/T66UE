@@ -53,7 +53,9 @@ private:
 	FReply HandleContinueDifficultyClicked();
 	FReply HandleSaveAndQuitClicked();
 	FReply HandleQuitToMainMenuClicked();
+	bool HasValidLiveRunSummaryContext() const;
 	void PrepareChadCouponsPopupForLiveRun();
+	void ResolveChadCouponsPopupForLiveRun(bool bAllowGrant);
 	void HandleBackendSubmitRunDataReadyForSummary(
 		const FString& RequestKey,
 		bool bSuccess,
@@ -63,9 +65,16 @@ private:
 		int32 SpeedRunRankWeekly,
 		bool bNewScorePersonalBest,
 		bool bNewSpeedRunPersonalBest);
+	void HandleBackendDailyClimbSubmitDataReadyForSummary(
+		const FString& RequestKey,
+		bool bSuccess,
+		const FString& Status,
+		int32 DailyRank,
+		int32 CouponsAwarded);
 
 	void HandleProofLinkNavigate() const;
 	void ProcessRunSummaryLeaderboardSubmission(bool bTreatAsVictoryForTime);
+	void ProcessLiveRunFinalAccounting();
 	void ProcessLiveRunFinalSubmission();
 	void ResetSavedRunSummaryViewerState();
 	bool SaveCurrentRunToSlot(bool bFromDifficultyClearSummary);
@@ -86,12 +95,28 @@ private:
 	bool bLiveRunSubmissionProcessed = false;
 	bool bLiveRunFinalAccountingProcessed = false;
 	bool bDifficultyClearSummaryMode = false;
+	bool bDailyClimbSummaryMode = false;
+	bool bBackendRankDataReceived = false;
+	bool bAwaitingBackendRankData = false;
+	int32 BackendScoreRankAllTime = 0;
+	int32 BackendScoreRankWeekly = 0;
+	int32 BackendSpeedRunRankAllTime = 0;
+	int32 BackendSpeedRunRankWeekly = 0;
+	int32 BackendDailyScoreRank = 0;
+	bool bLiveRunCheatFlagged = false;
+	bool bChadCouponsResolutionProcessed = false;
 
 	/** When true, show "Power Coupons earned" popup (only when earned >= 1 this run, not when viewing saved). */
 	bool bShowPowerCouponsPopup = false;
 
-	/** Amount of Chad Coupons credited when this live summary opened. */
+	/** Amount of Chad Coupons pending for this live summary. */
 	int32 SummaryChadCouponsEarned = 0;
+
+	/** Label describing what reward is represented in SummaryChadCouponsEarned. */
+	FString SummaryChadCouponsSourceLabel;
+
+	/** Failure note for a selected challenge that did not meet its payout requirements. */
+	FString SummaryChadCouponsFailureReason;
 
 	/** True when the popup checkbox is checked for the current summary. */
 	bool bChadCouponsPopupDontShowAgainChecked = false;

@@ -18,7 +18,7 @@ namespace
 {
 	bool T66IsDifficultyBossStage(const int32 StageNum)
 	{
-		return StageNum == 5 || StageNum == 10 || StageNum == 15 || StageNum == 20 || StageNum == 23;
+		return StageNum == 4 || StageNum == 9 || StageNum == 14 || StageNum == 19 || StageNum == 23;
 	}
 }
 
@@ -110,8 +110,6 @@ bool AT66CowardiceGate::ConfirmCowardice()
 	RunState->SetLoanSharkPending(RunState->GetCurrentDebt() > 0);
 	T66GI->bIsStageTransition = true;
 	T66GI->bPendingTowerStageDropIntro = false;
-	T66GI->bForceColiseumMode = false;
-	T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
 
 	const FString LevelName = UGameplayStatics::GetCurrentLevelName(this);
 	if (LevelName.IsEmpty()) return false;

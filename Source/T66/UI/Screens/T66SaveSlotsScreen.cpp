@@ -774,6 +774,19 @@ void UT66SaveSlotsScreen::PrepareGameInstanceForLoadedSave(UT66GameInstance* GI,
 	GI->SelectedDifficulty = Loaded->Difficulty;
 	GI->SelectedPartySize = Loaded->PartySize;
 	GI->RunSeed = Loaded->RunSeed;
+	if (Loaded->bIsDailyClimbRun && Loaded->DailyClimbChallenge.IsValid())
+	{
+		GI->CachedDailyClimbChallenge = Loaded->DailyClimbChallenge;
+		GI->ActiveDailyClimbChallenge = Loaded->DailyClimbChallenge;
+		GI->bIsDailyClimbRunActive = true;
+		GI->SelectedRunModifierKind = ET66RunModifierKind::None;
+		GI->SelectedRunModifierID = NAME_None;
+		GI->SelectedPartySize = ET66PartySize::Solo;
+	}
+	else
+	{
+		GI->ClearActiveDailyClimbRun();
+	}
 	GI->CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;
 	GI->PendingLoadedTransform = Loaded->PlayerTransform;
 	GI->bApplyLoadedTransform = true;

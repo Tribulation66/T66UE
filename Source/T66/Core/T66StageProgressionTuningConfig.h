@@ -44,5 +44,4 @@ public:
 	FT66StageProgressionStageTuning Stage2;
 	FT66StageProgressionStageTuning Stage3;
 	FT66StageProgressionStageTuning Stage4;
-	FT66StageProgressionStageTuning Stage5;
 };

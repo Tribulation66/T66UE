@@ -331,7 +331,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void ResetGamblerAnger();
 
-	/** Bosses skipped via Cowardice Gate (must be cleared in Coliseum before checkpoint stages). */
+	/** Bosses skipped via Cowardice Gate; owed bosses are repaid together on the difficulty's final stage. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FName>& GetOwedBossIDs() const { return OwedBossIDs; }
 
@@ -341,11 +341,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void RemoveFirstOwedBoss();
 
-	/** Clear all owed bosses (used after a Coliseum clear). Resets cowardice gates taken count. */
+	/** Clear all owed bosses and reset the current difficulty segment's cowardice count. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void ClearOwedBosses();
 
-	/** Cowardice gates taken this segment (one per gate; resets after Coliseum). */
+	/** Cowardice gates taken this difficulty segment. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCowardiceGatesTaken() const { return CowardiceGatesTakenCount; }
 
@@ -494,7 +494,7 @@ public:
 	bool GetStageTimerActive() const { return bStageTimerActive; }
 
 	/** Stage timer duration in seconds (countdown from this; frozen until start gate). */
-	static constexpr float StageTimerDurationSeconds = 420.f; // 7:00
+	static constexpr float StageTimerDurationSeconds = 600.f; // 10:00
 
 	/** Seconds remaining on stage timer. When inactive, stays at full duration (frozen). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -571,6 +571,9 @@ public:
 
 	/** Clear the current difficulty's cumulative timer + pacing checkpoints before starting the next difficulty. */
 	void ResetDifficultyPacing();
+
+	/** Clear the current difficulty segment's score without wiping the rest of the run build/state. */
+	void ResetDifficultyScore();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentScore() const { return CurrentScore; }
@@ -768,6 +771,20 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
 	int32 GetLuckStat() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	int32 GetSeedLuck0To100() const { return (SeedLuck0To100 >= 0) ? FMath::Clamp(SeedLuck0To100, 0, 100) : 50; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	float GetTotalLuckModifierPercent() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	float GetEffectiveLuckValue() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	int32 GetEffectiveLuckBiasStat() const;
+
+	static FText GetSeedLuckAdjectiveText(int32 InSeedLuck0To100);
+
 	// ============================================
 	// Category-Specific Stats (base from hero DataTable + item bonuses)
 	// ============================================
@@ -895,6 +912,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
 	void MarkPendingPowerCrystalsGrantedToWallet();
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
+	void MarkPendingPowerCrystalsSuppressedForWallet();
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
+	bool ShouldSuppressPendingPowerCrystalsForWallet();
 
 	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
 	void ActivatePendingSingleUseBuffsForRunStart();
@@ -1416,6 +1439,7 @@ private:
 	FT66AntiCheatPressureWindowSummary BuildAntiCheatPressureWindowSummarySnapshot() const;
 
 	void ResetLuckRatingTracking();
+	float GetSingleUseLuckModifierPercent() const;
 	UFUNCTION()
 	void HandleIdolStateChanged();
 
@@ -1494,7 +1518,7 @@ private:
 	UPROPERTY()
 	TArray<FName> OwedBossIDs;
 
-	/** Cowardice gates taken this segment (resets when ClearOwedBosses is called, i.e. after Coliseum). */
+	/** Cowardice gates taken this segment (resets when ClearOwedBosses is called after the owed-boss payoff stage). */
 	UPROPERTY()
 	int32 CowardiceGatesTakenCount = 0;
 
@@ -1662,6 +1686,7 @@ private:
 
 	int32 PowerCrystalsEarnedThisRun = 0;
 	int32 PowerCrystalsGrantedToWalletThisRun = 0;
+	int32 SeedLuck0To100 = -1;
 
 	// ============================================
 	// Derived combat tuning from Inventory (recomputed on InventoryChanged)

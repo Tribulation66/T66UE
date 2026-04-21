@@ -13,7 +13,7 @@ class APlayerController;
 
 /**
  * Cowardice Gate: prompts the player to skip the current stage boss.
- * If accepted: marks boss as owed, advances stage, and travels (may route to Coliseum).
+ * If accepted: marks boss as owed, advances to the next stage in the current difficulty, and travels.
  */
 UCLASS(Blueprintable)
 class T66_API AT66CowardiceGate : public AActor

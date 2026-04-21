@@ -1,6 +1,6 @@
 # T66 Master Backend
 
-**Last updated:** 2026-04-19
+**Last updated:** 2026-04-20
 **Scope:** Single-source handoff for T66 online state: Steam, Steamworks, Steam AppIDs, Vercel, backend services, live status, and the recommended path to private multiplayer testing under the real Steam AppID.
 **Companion policy doc:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`
 **Companion Steam ops doc:** `MASTER DOCS/MASTER_STEAMWORKS.md`
@@ -35,7 +35,7 @@ Where this document contradicts the archived backend/reference docs, prefer this
 - The project already has a real Steam multiplayer foundation in code.
 - `MASTER DOCS/MASTER_STEAMWORKS.md` is now the primary operator-memory file for Steamworks uploads, current build tracking, key handling, and the local PowerShell workflow.
 - The backend is real and deployed at `https://t66-backend.vercel.app`.
-- The live backend health check is currently healthy as of 2026-04-19.
+- The live backend health check is currently healthy as of 2026-04-20 UTC / 2026-04-20 local time.
 - The main blocker is not "Steam is missing"; it is finishing the move from legacy Spacewar testing to the real app path.
 - Ranked leaderboard acceptance remains backend-authoritative. Steam trusted leaderboard writes, if ever used for mirroring, do not replace T66's own mod, integrity, or anti-cheat gates.
 - The checked-in UE config now defaults to real AppID `4464300`.
@@ -50,7 +50,9 @@ Where this document contradicts the archived backend/reference docs, prefer this
 - `/api/submit-run` now accepts optional `submission_id` and caches the final response per `steam_id + submission_id`, so a retry of the same logical submission replays the same result instead of being treated as a second run.
 - Accepted leaderboard rows are now append-only per run instead of PB-only per player; `/api/my-rank` now resolves the player's single best row separately for the below-top-10 "you row".
 - Production `run_summaries` schema drift was fixed live on 2026-04-19 by adding the missing anti-cheat and integrity columns that `/api/submit-run` already writes.
-- Production backend stage boundaries now match the game progression again: Easy 1-5, Medium 6-10, Hard 11-15, VeryHard 16-20, Impossible 21-23.
+- Checked-in backend code now models the redesigned progression as Easy/Medium/Hard/VeryHard = 4 local stages and Impossible = 3 local stages, using `local_stage_reached` plus normalization helpers.
+- Production was successfully redeployed on 2026-04-20 with deployment `dpl_9qrhYBkYE1Zxv8XoKGUgWAx1QEQR`, and the alias `https://t66-backend.vercel.app` now points at that deployment.
+- Steam build `22865517` is now the newest uploaded client payload. It keeps the prior history/export fixes and additionally stops saved history opens from clearing their loaded snapshot during activation, while the backend now rejects zero-score solo submissions as `unranked`.
 - Suspicion-level anti-cheat restrictions are now backend-authoritative and block new score submissions the same way the frontend does.
 - Automatic suspension reasons now distinguish `luck_rating` and `skill_rating` breaches over `100`, and the Account Status flow can open the reviewed backend run summary tied to the restriction.
 - All-time proof-of-run data now persists for the active PB leaderboard entry until that PB is replaced or the entry is removed; weekly proof-backed summaries are wiped by the weekly reset.
@@ -131,19 +133,19 @@ Where this document contradicts the archived backend/reference docs, prefer this
 
 ### 5.2 Live health check
 
-Live check performed on 2026-04-19:
+Live check performed on 2026-04-20:
 
 ```json
 {
   "status": "ok",
-  "timestamp": "2026-04-19T18:08:02.334Z",
+  "timestamp": "2026-04-20T07:22:23.361Z",
   "postgres": "ok",
   "postgres_counts": {
     "player_profiles": 1,
     "leaderboard_entries": 1,
-    "run_summaries": 3,
+    "run_summaries": 4,
     "run_reports": 0,
-    "bug_reports": 395,
+    "bug_reports": 405,
     "account_restrictions": 0
   },
   "kv": "ok"
@@ -213,8 +215,17 @@ So the backend is currently in deliberate dual-AppID transition mode.
   - making `/api/my-rank` resolve the player's single best row separately from the Top 10 list
   - keeping run summaries for every accepted leaderboard row instead of only the active PB row
   - aligning the backend with the UE weekly-rank display and difficulty-clear quit-button flow
+- On 2026-04-19 after the 4-stage progression redesign landed in source, repeated production deploy attempts from `C:\UE\Backend` initially failed before a deployment ID was created:
+  - `npx vercel deploy --prod --yes` failed twice with `read ECONNRESET`
+  - a later retry failed once with `Invalid JSON response`
+  - `npx vercel build --prod --yes` also exposed a local Vercel packaging issue (`Unable to find lambda for route: /admin/login`) even though `npm run build` succeeded
+- A later retry on 2026-04-20 succeeded and produced deployment `dpl_DyRiTW2v9o8AZQuhpVQkr5AHKCfL`, which is now the production alias target.
+- Keep the client compatibility shim in `Source/T66/Core/T66BackendSubsystem.cpp` for now; it is safe with the redeployed backend and avoids introducing another client/backend mismatch before the next validation pass.
 - A false-positive production `account_restrictions` row for SteamID `76561198749633075` with `flag_category = "rate_limit"` and reason `Duplicate submission within 30s window` was cleared live on 2026-04-19 along with its matching `quarantined_runs` row.
 - A false-positive production `account_restrictions` row for SteamID `76561198749633075` with `flag_category = "luck_replay"` was also cleared live on 2026-04-19 after the UE replay-metadata fix landed; the matching quarantine row was marked `resolved_false_positive`.
+- A false-positive production `account_restrictions` row for SteamID `76561198749633075` with `flag_category = "dodge_telemetry"` and reason `Submitted hit-check event telemetry does not match aggregate dodge counters` was cleared live on 2026-04-20 after fixing the UE-side invulnerability hit-check streak reset. The matching quarantine row `376774c3-a53c-402b-ad3a-fc8fbb8b684d` was marked `resolved_false_positive`.
+- A false-positive production `account_restrictions` row for SteamID `76561199841207421` with `flag_category = "luck_replay"` and reason `Submitted luck telemetry does not reproduce the claimed replayable RNG outcomes` was cleared live on 2026-04-20 after fixing the UE-side `GoblinCountPerWave` replay range and redeploying `/api/run-summary/[id]` to support owner-authenticated restricted run-summary fetches by `run_summaries.id`. Matching pending `quarantined_runs` rows for that SteamID were marked `false_positive`.
+- Six accidental zero-score leaderboard rows for SteamID `76561199841207421` were deleted live on 2026-04-20 after tracing them to a client run-summary history-open bug that re-entered the live submit path. The backend now rejects zero-score solo submissions instead of accepting them into `leaderboard_entries`.
 - The production database no longer carries the old `uq_lb_key_steam` unique index. That index was dropped live on 2026-04-19 to allow multiple accepted leaderboard rows per player per board.
 - Weekly cleanup now deletes:
   - all weekly leaderboard entries

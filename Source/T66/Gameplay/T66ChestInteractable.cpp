@@ -67,7 +67,7 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 	bool bRewardRarityReplayable = false;
 	if (RngSub)
 	{
-		RngSub->UpdateLuckStat(RunState->GetLuckStat());
+		RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
 		FRandomStream& Stream = RngSub->GetRunStream();
 		if (PlayerExperience)
 		{
@@ -105,7 +105,7 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 	int32 PreDrawSeed = 0;
 	if (RngSub)
 	{
-		RngSub->UpdateLuckStat(RunState->GetLuckStat());
+		RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
 		FRandomStream& Stream = RngSub->GetRunStream();
 		Gold = FMath::Max(0, RngSub->RollIntRangeBiased(GoldRange, Stream));
 		DrawIndex = RngSub->GetLastRunDrawIndex();

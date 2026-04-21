@@ -4,6 +4,7 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66CommunityContentSubsystem.h"
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -149,6 +150,47 @@ namespace
 		return (UltimateType == ET66UltimateType::SpearStorm)
 			? NSLOCTEXT("T66.GameplayHUD", "UltKeybindRmb", "RMB")
 			: NSLOCTEXT("T66.GameplayHUD", "UltKeybindDefault", "R");
+	}
+
+	static int32 ResolveDisplayedStageNumber(
+		const UT66PlayerExperienceSubSystem* PlayerExperience,
+		ET66Difficulty Difficulty,
+		int32 CurrentStage)
+	{
+		if (CurrentStage <= 0)
+		{
+			return 1;
+		}
+
+		if (!PlayerExperience)
+		{
+			return CurrentStage;
+		}
+
+		const int32 StartStage = FMath::Max(1, PlayerExperience->GetDifficultyStartStage(Difficulty));
+		const int32 StageOffset = FMath::Max(0, CurrentStage - StartStage);
+		if (Difficulty == ET66Difficulty::Impossible)
+		{
+			return (StageOffset % 3) + 1;
+		}
+
+		return (StageOffset % 4) + 1;
+	}
+
+	static FText BuildDisplayedStageText(
+		UT66LocalizationSubsystem* Loc,
+		const UT66PlayerExperienceSubSystem* PlayerExperience,
+		ET66Difficulty Difficulty,
+		int32 CurrentStage,
+		bool bInStageCatchUp)
+	{
+		if (bInStageCatchUp)
+		{
+			return NSLOCTEXT("T66.GameplayHUD", "StageCatchUp", "Stage: Catch Up");
+		}
+
+		const FText Fmt = Loc ? Loc->GetText_StageNumberFormat() : NSLOCTEXT("T66.GameplayHUD", "StageNumberFormat", "Stage number: {0}");
+		return FText::Format(Fmt, FText::AsNumber(ResolveDisplayedStageNumber(PlayerExperience, Difficulty, CurrentStage)));
 	}
 
 	static const FSlateBrush* ResolveHeartBrushForDisplay(
@@ -3159,7 +3201,7 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 			UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 			if (RunState)
 			{
-				RngSub->UpdateLuckStat(RunState->GetLuckStat());
+				RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
 			}
 
 			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
@@ -4327,19 +4369,19 @@ void UT66GameplayHUDWidget::RefreshStageAndTimer()
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	const UT66PlayerExperienceSubSystem* PlayerExperience = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 
 	// Stage number
 	if (StageText.IsValid())
 	{
-		if (RunState->IsInStageCatchUp())
-		{
-			StageText->SetText(NSLOCTEXT("T66.GameplayHUD", "StageCatchUp", "Stage: Catch Up"));
-		}
-		else
-		{
-			const FText Fmt = Loc ? Loc->GetText_StageNumberFormat() : NSLOCTEXT("T66.GameplayHUD", "StageNumberFormat", "Stage number: {0}");
-			StageText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentStage())));
-		}
+		const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+		StageText->SetText(BuildDisplayedStageText(
+			Loc,
+			PlayerExperience,
+			Difficulty,
+			RunState->GetCurrentStage(),
+			RunState->IsInStageCatchUp()));
 
 		bool bTowerBloodActive = false;
 		if (const UWorld* World = GetWorld())
@@ -5078,8 +5120,29 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	FHeroData SelectedHeroData;
 	const bool bHasSelectedHeroData = GIAsT66 && GIAsT66->GetSelectedHeroData(SelectedHeroData);
 	const FName DesiredAbilityHeroID = bHasSelectedHeroData ? SelectedHeroData.HeroID : NAME_None;
-	const ET66UltimateType DesiredUltimateType = bHasSelectedHeroData ? SelectedHeroData.UltimateType : ET66UltimateType::None;
-	const ET66PassiveType DesiredPassiveType = bHasSelectedHeroData ? SelectedHeroData.PassiveType : ET66PassiveType::None;
+	ET66UltimateType DesiredUltimateType = bHasSelectedHeroData ? SelectedHeroData.UltimateType : ET66UltimateType::None;
+	ET66PassiveType DesiredPassiveType = RunState->GetPassiveType();
+	if (DesiredPassiveType == ET66PassiveType::None)
+	{
+		DesiredPassiveType = bHasSelectedHeroData ? SelectedHeroData.PassiveType : ET66PassiveType::None;
+	}
+	if (GIAsT66)
+	{
+		if (const UT66CommunityContentSubsystem* Community = GIAsT66->GetSubsystem<UT66CommunityContentSubsystem>())
+		{
+			const ET66UltimateType OverrideUltimateType = Community->GetActiveUltimateOverride();
+			if (OverrideUltimateType != ET66UltimateType::None)
+			{
+				DesiredUltimateType = OverrideUltimateType;
+			}
+
+			const ET66PassiveType OverridePassiveType = Community->GetActivePassiveOverride();
+			if (OverridePassiveType != ET66PassiveType::None)
+			{
+				DesiredPassiveType = OverridePassiveType;
+			}
+		}
+	}
 	const bool bAbilityStateChanged = !bAbilityStateInitialized
 		|| LastAbilityHeroID != DesiredAbilityHeroID
 		|| LastUltimateType != DesiredUltimateType
@@ -5202,7 +5265,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
-	// Cowardice (clowns): show N clowns for gates taken this segment (resets after Coliseum).
+	// Cowardice (clowns): show N clowns for gates taken this difficulty segment.
 	{
 		const int32 Clowns = FMath::Max(0, RunState->GetCowardiceGatesTaken());
 		for (int32 i = 0; i < ClownImages.Num(); ++i)
@@ -5434,7 +5497,16 @@ void UT66GameplayHUDWidget::RefreshHUD()
 TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	const FText StageInit = Loc ? FText::Format(Loc->GetText_StageNumberFormat(), FText::AsNumber(1)) : NSLOCTEXT("T66.GameplayHUD", "StageNumberInit", "Stage number: 1");
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	const UT66PlayerExperienceSubSystem* PlayerExperience = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const ET66Difficulty SelectedDifficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	const int32 InitialStage = GetRunState() ? GetRunState()->GetCurrentStage() : 1;
+	const FText StageInit = BuildDisplayedStageText(
+		Loc,
+		PlayerExperience,
+		SelectedDifficulty,
+		InitialStage,
+		false);
 	const FText NetWorthInit = FText::AsNumber(0);
 	const FText GoldInit = FText::AsNumber(0);
 	const FText OweInit = FText::AsNumber(0);
