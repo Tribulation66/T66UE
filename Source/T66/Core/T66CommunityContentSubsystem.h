@@ -46,6 +46,7 @@ public:
 	int32 GetApprovedRewardForActiveChallenge(const UT66RunStateSubsystem* RunState, FString* OutRewardLabel = nullptr, FString* OutFailureReason = nullptr) const;
 	ET66PassiveType GetActivePassiveOverride() const;
 	ET66UltimateType GetActiveUltimateOverride() const;
+	void RunCatalogSmokeTest(bool bIncludeDrafts, bool bVerbose = false) const;
 
 	bool IsCatalogRefreshInFlight() const { return bCatalogRefreshInFlight; }
 	bool IsSubmitInFlight() const { return bSubmitInFlight; }
@@ -57,6 +58,10 @@ private:
 	void SeedOfficialContent();
 	void LoadOrCreateSave();
 	void PersistSave();
+	void SanitizeEntryForStorage(FT66CommunityContentEntry& Entry) const;
+	void ValidateEntryForRuntime(const FT66CommunityContentEntry& Entry, TArray<FString>& OutIssues) const;
+	void SanitizeBucket(TArray<FT66CommunityContentEntry>& Bucket) const;
+	void LogValidationIssues(const FT66CommunityContentEntry& Entry, const TArray<FString>& Issues, const TCHAR* Context) const;
 
 	TArray<FT66CommunityContentEntry>& GetMutableBucket(ET66CommunityContentOrigin Origin, ET66CommunityContentKind Kind);
 	const TArray<FT66CommunityContentEntry>& GetBucket(ET66CommunityContentOrigin Origin, ET66CommunityContentKind Kind) const;

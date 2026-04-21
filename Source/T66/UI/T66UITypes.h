@@ -54,7 +54,10 @@ enum class ET66ScreenType : uint8
 	MiniRunSummary = 37 UMETA(DisplayName = "Mini Chadpocalypse Run Summary"),
 	MiniCompanionSelect = 38 UMETA(DisplayName = "Mini Chadpocalypse Companion Select"),
 	Challenges = 39 UMETA(DisplayName = "Challenges Modal"),
-	DailyClimb = 40 UMETA(DisplayName = "Daily Climb")
+	DailyClimb = 40 UMETA(DisplayName = "Daily Climb"),
+	TDMainMenu = 41 UMETA(DisplayName = "Chadpocalypse TD Main Menu"),
+	TDDifficultySelect = 42 UMETA(DisplayName = "Chadpocalypse TD Difficulty Select"),
+	TDBattle = 43 UMETA(DisplayName = "Chadpocalypse TD Battle")
 };
 
 UENUM(BlueprintType)

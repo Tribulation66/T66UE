@@ -3,11 +3,14 @@
 #include "UI/Screens/T66ChallengesScreen.h"
 #include "Core/T66CommunityContentSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66WebImageCache.h"
 #include "Data/T66DataTypes.h"
+#include "Engine/Texture2D.h"
 #include "Engine/DataTable.h"
 #include "Kismet/GameplayStatics.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Style/T66Style.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -291,6 +294,57 @@ TArray<FName> UT66ChallengesScreen::GetSelectableItemIds() const
 	return Result;
 }
 
+const FSlateBrush* UT66ChallengesScreen::GetOrCreateAvatarBrush(const FString& AvatarUrl)
+{
+	if (!DefaultAvatarBrush.IsValid())
+	{
+		DefaultAvatarBrush = MakeShared<FSlateBrush>();
+		DefaultAvatarBrush->DrawAs = ESlateBrushDrawType::Image;
+		DefaultAvatarBrush->ImageSize = FVector2D(52.0f, 52.0f);
+		DefaultAvatarBrush->TintColor = FSlateColor(FLinearColor(0.14f, 0.15f, 0.17f, 0.32f));
+	}
+
+	if (AvatarUrl.IsEmpty())
+	{
+		return DefaultAvatarBrush.Get();
+	}
+
+	if (TSharedPtr<FSlateBrush>* Found = AvatarBrushes.Find(AvatarUrl))
+	{
+		return Found->Get();
+	}
+
+	const UGameInstance* GI = GetGameInstance();
+	UT66WebImageCache* ImageCache = GI ? GI->GetSubsystem<UT66WebImageCache>() : nullptr;
+	if (!ImageCache)
+	{
+		return DefaultAvatarBrush.Get();
+	}
+
+	if (UTexture2D* CachedTexture = ImageCache->GetCachedImage(AvatarUrl))
+	{
+		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+		Brush->SetResourceObject(CachedTexture);
+		Brush->ImageSize = FVector2D(52.0f, 52.0f);
+		AvatarBrushes.Add(AvatarUrl, Brush);
+		return Brush.Get();
+	}
+
+	TWeakObjectPtr<UT66ChallengesScreen> WeakScreen(this);
+	ImageCache->RequestImage(AvatarUrl, [WeakScreen](UTexture2D* Texture)
+	{
+		if (Texture)
+		{
+			if (UT66ChallengesScreen* Screen = WeakScreen.Get())
+			{
+				Screen->ForceRebuildSlate();
+			}
+		}
+	});
+
+	return DefaultAvatarBrush.Get();
+}
+
 void UT66ChallengesScreen::InitializeSelectionState()
 {
 	if (bSelectionStateInitialized)
@@ -415,7 +469,7 @@ void UT66ChallengesScreen::AdjustDraftStat(const EDraftStatField Field, const in
 {
 	auto Clamp = [](int32 Value)
 	{
-		return FMath::Clamp(Value, -99, 99);
+		return T66CommunityContentLimits::ClampStatBonus(Value);
 	};
 
 	switch (Field)
@@ -469,6 +523,9 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 	const float BodyPadding = 14.0f;
 	const float DetailColumnWidth = FMath::Max(380.0f, ModalWidth * 0.45f);
 	const float ListColumnWidth = FMath::Max(340.0f, ModalWidth - DetailColumnWidth - 72.0f);
+	const int32 HeaderTabFontSize = 13;
+	const int32 SourceTabFontSize = 12;
+	const int32 ActionButtonFontSize = 12;
 	const int32 CurrentSourceTabIndex = ActiveSourceTabIndex[ActiveTabIndex];
 	const ET66CommunityContentKind ActiveKind = GetActiveKind();
 	const TArray<FT66CommunityContentEntry> Entries = GetEntriesForView(ActiveTabIndex, CurrentSourceTabIndex);
@@ -504,31 +561,33 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			];
 	};
 
-	auto MakeTopTabButton = [this](const int32 TabIndex, const FText& Label) -> TSharedRef<SWidget>
+	auto MakeTopTabButton = [this, HeaderTabFontSize](const int32 TabIndex, const FText& Label) -> TSharedRef<SWidget>
 	{
 		const bool bActive = ActiveTabIndex == TabIndex;
 		return FT66Style::MakeButton(
 			FT66ButtonParams(Label, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleTabSelected, TabIndex), bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Row)
 			.SetBorderVisual(ET66ButtonBorderVisual::None)
 			.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
-			.SetMinWidth(132.f)
-			.SetHeight(36.f)
-			.SetPadding(FMargin(12.f, 4.f))
+			.SetMinWidth(150.f)
+			.SetHeight(34.f)
+			.SetFontSize(HeaderTabFontSize)
+			.SetPadding(FMargin(10.f, 4.f))
 			.SetColor(bActive ? ChallengeSelectedFill() : FLinearColor(0.10f, 0.12f, 0.11f, 1.0f))
 			.SetTextColor(FT66Style::Tokens::Text)
 			.SetUseGlow(false));
 	};
 
-	auto MakeSourceTabButton = [this, CurrentSourceTabIndex](const int32 SourceTabIndex, const FText& Label) -> TSharedRef<SWidget>
+	auto MakeSourceTabButton = [this, CurrentSourceTabIndex, SourceTabFontSize](const int32 SourceTabIndex, const FText& Label) -> TSharedRef<SWidget>
 	{
 		const bool bActive = CurrentSourceTabIndex == SourceTabIndex;
 		return FT66Style::MakeButton(
 			FT66ButtonParams(Label, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSourceTabSelected, SourceTabIndex), bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Row)
 			.SetBorderVisual(ET66ButtonBorderVisual::None)
 			.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
-			.SetMinWidth(116.f)
+			.SetMinWidth(136.f)
 			.SetHeight(32.f)
-			.SetPadding(FMargin(10.f, 4.f))
+			.SetFontSize(SourceTabFontSize)
+			.SetPadding(FMargin(8.f, 4.f))
 			.SetColor(bActive ? ChallengeSelectedFill() : ChallengePanelInsetFill())
 			.SetTextColor(FT66Style::Tokens::Text)
 			.SetUseGlow(false));
@@ -736,18 +795,18 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.AutoWrapText(true)
 			]);
 
-	const TSharedRef<SWidget> CreateButtonContent = CurrentSourceTabIndex == static_cast<int32>(ESourceTabIndex::Community)
-		? FT66Style::MakeButton(
-			FT66ButtonParams(
-				FText::FromString(ActiveKind == ET66CommunityContentKind::Mod ? TEXT("CREATE MOD") : TEXT("CREATE CHALLENGE")),
-				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCreateDraftClicked),
-				ET66ButtonType::Primary)
-			.SetMinWidth(160.f)
-			.SetHeight(32.f)
-			.SetColor(ChallengeRewardTint())
-			.SetTextColor(FLinearColor(0.07f, 0.08f, 0.09f, 1.0f))
-			.SetUseGlow(false))
-		: StaticCastSharedRef<SWidget>(SNew(SSpacer));
+	const TSharedRef<SWidget> CreateButtonContent = FT66Style::MakeButton(
+		FT66ButtonParams(
+			FText::FromString(ActiveKind == ET66CommunityContentKind::Mod ? TEXT("CREATE MOD") : TEXT("CREATE CHALLENGE")),
+			FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCreateDraftClicked),
+			ET66ButtonType::Primary)
+		.SetMinWidth(188.f)
+		.SetHeight(32.f)
+		.SetFontSize(ActionButtonFontSize)
+		.SetPadding(FMargin(10.f, 4.f))
+		.SetColor(ChallengeRewardTint())
+		.SetTextColor(FLinearColor(0.07f, 0.08f, 0.09f, 1.0f))
+		.SetUseGlow(false));
 
 	TSharedRef<SWidget> DetailPanelContent = SNew(STextBlock)
 		.Text(NSLOCTEXT("T66.Challenges", "NoSelection", "Select an entry or create a new draft."))
@@ -1052,14 +1111,31 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		];
 		DetailLayout->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 		[
-			SNew(STextBlock)
-			.Text(FText::FromString(FString::Printf(TEXT("%s%s%s"),
-				*GetOriginLabel(SelectedEntry),
-				SelectedEntry.AuthorDisplayName.IsEmpty() ? TEXT("") : TEXT(" by "),
-				*SelectedEntry.AuthorDisplayName)))
-			.Font(FT66Style::Tokens::FontRegular(11))
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-			.AutoWrapText(true)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+			[
+				SelectedEntry.AuthorAvatarUrl.IsEmpty()
+				? StaticCastSharedRef<SWidget>(SNew(SSpacer).Size(FVector2D(0.f, 0.f)))
+				: StaticCastSharedRef<SWidget>(
+					SNew(SBox)
+					.WidthOverride(52.f)
+					.HeightOverride(52.f)
+					[
+						SNew(SImage)
+						.Image(GetOrCreateAvatarBrush(SelectedEntry.AuthorAvatarUrl))
+					])
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(FString::Printf(TEXT("%s%s%s"),
+					*GetOriginLabel(SelectedEntry),
+					SelectedEntry.AuthorDisplayName.IsEmpty() ? TEXT("") : TEXT(" by "),
+					*SelectedEntry.AuthorDisplayName)))
+				.Font(FT66Style::Tokens::FontRegular(11))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.AutoWrapText(true)
+			]
 		];
 		DetailLayout->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 		[
@@ -1274,18 +1350,18 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 									[
 										MakeSourceTabButton(static_cast<int32>(ESourceTabIndex::Community), NSLOCTEXT("T66.Challenges", "CommunityTab", "Community"))
 									]
-									+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-									[
-										SNew(STextBlock)
-										.Text(FText::FromString(StatusMessage))
-										.Font(FT66Style::Tokens::FontRegular(10))
-										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-										.AutoWrapText(true)
-									]
 									+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f)
 									[
 										CreateButtonContent
 									]
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
+								[
+									SNew(STextBlock)
+									.Text(FText::FromString(StatusMessage))
+									.Font(FT66Style::Tokens::FontRegular(10))
+									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+									.AutoWrapText(true)
 								]
 							]
 						]
@@ -1480,28 +1556,28 @@ FReply UT66ChallengesScreen::HandleCancelDraftEditorClicked()
 
 FReply UT66ChallengesScreen::HandleAdjustDraftReward(const int32 Delta)
 {
-	DraftEditorEntry.SuggestedRewardChadCoupons = FMath::Clamp(DraftEditorEntry.SuggestedRewardChadCoupons + Delta, 0, 999);
+	DraftEditorEntry.SuggestedRewardChadCoupons = T66CommunityContentLimits::ClampRewardChadCoupons(DraftEditorEntry.SuggestedRewardChadCoupons + Delta);
 	ForceRebuildSlate();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleAdjustDraftStartLevel(const int32 Delta)
 {
-	DraftEditorEntry.Rules.StartLevelOverride = FMath::Clamp(DraftEditorEntry.Rules.StartLevelOverride + Delta, 0, 99);
+	DraftEditorEntry.Rules.StartLevelOverride = T66CommunityContentLimits::ClampStartLevelOverride(DraftEditorEntry.Rules.StartLevelOverride + Delta);
 	ForceRebuildSlate();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleAdjustDraftRequiredStage(const int32 Delta)
 {
-	DraftEditorEntry.Rules.RequiredStageReached = FMath::Clamp(DraftEditorEntry.Rules.RequiredStageReached + Delta, 0, 23);
+	DraftEditorEntry.Rules.RequiredStageReached = T66CommunityContentLimits::ClampRequiredStageReached(DraftEditorEntry.Rules.RequiredStageReached + Delta);
 	ForceRebuildSlate();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleAdjustDraftMaxRunTime(const int32 Delta)
 {
-	DraftEditorEntry.Rules.MaxRunTimeSeconds = FMath::Clamp(DraftEditorEntry.Rules.MaxRunTimeSeconds + Delta, 0, 3600);
+	DraftEditorEntry.Rules.MaxRunTimeSeconds = T66CommunityContentLimits::ClampRunTimeSeconds(DraftEditorEntry.Rules.MaxRunTimeSeconds + Delta);
 	ForceRebuildSlate();
 	return FReply::Handled();
 }

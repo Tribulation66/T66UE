@@ -329,6 +329,9 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 	const FText ActiveSliceTitle = NSLOCTEXT("T66.MiniGames", "SliceActiveTitle", "CHADPOCALYPSE MINI");
 	const FText ActiveSliceBody = NSLOCTEXT("T66.MiniGames", "SliceActiveBody", "Launch the current 2D survivor mini-game shell with its own saves, heroes, idols, enemies, and progression.");
 	const FText ActiveSliceTag = NSLOCTEXT("T66.MiniGames", "SliceActiveTag", "AVAILABLE NOW");
+	const FText TDTitle = NSLOCTEXT("T66.MiniGames", "SliceTDTitle", "CHADPOCALYPSE TD");
+	const FText TDBody = NSLOCTEXT("T66.MiniGames", "SliceTDBody", "Launch the tower defense mini-game with hero placement, enemy waves, upgrades, and a 20-map regular-mode rotation across all five tower themes.");
+	const FText TDTag = NSLOCTEXT("T66.MiniGames", "SliceTDTag", "AVAILABLE NOW");
 	const FText ComingSoonTitle = NSLOCTEXT("T66.MiniGames", "SliceComingSoonTitle", "COMING SOON");
 	const FText ComingSoonBody = NSLOCTEXT("T66.MiniGames", "SliceComingSoonBody", "Reserved slot for future mini-game releases.");
 	const FText ComingSoonTag = NSLOCTEXT("T66.MiniGames", "SliceComingSoonTag", "IN DEVELOPMENT");
@@ -350,7 +353,7 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 		return FT66Style::GetSafePadding(FMargin(20.f, 0.f, 0.f, 20.f));
 	});
 
-	const auto MakeSlicePanel = [&](const FText& Title, const FText& Body, const FText& Tag, const FLinearColor& Accent, const bool bClickable) -> TSharedRef<SWidget>
+	const auto MakeSlicePanel = [&](const FText& Title, const FText& Body, const FText& Tag, const FLinearColor& Accent, const bool bClickable, FOnClicked ClickDelegate = FOnClicked()) -> TSharedRef<SWidget>
 	{
 		TSharedRef<SWidget> SliceContent =
 			SNew(SBox)
@@ -420,7 +423,7 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 
 		return SNew(SButton)
 			.ButtonStyle(FCoreStyle::Get(), "NoBorder")
-			.OnClicked(FOnClicked::CreateUObject(this, &UT66UnlocksScreen::HandleOpenMiniChadpocalypseClicked))
+			.OnClicked(ClickDelegate)
 			[
 				SliceContent
 			];
@@ -453,13 +456,13 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 									.AutoHeight()
 									.Padding(0.f, 0.f, 0.f, 18.f)
 									[
-										MakeSlicePanel(ActiveSliceTitle, ActiveSliceBody, ActiveSliceTag, FT66Style::Success(), true)
+										MakeSlicePanel(ActiveSliceTitle, ActiveSliceBody, ActiveSliceTag, FT66Style::Success(), true, FOnClicked::CreateUObject(this, &UT66UnlocksScreen::HandleOpenMiniChadpocalypseClicked))
 									]
 									+ SVerticalBox::Slot()
 									.AutoHeight()
 									.Padding(0.f, 0.f, 0.f, 18.f)
 									[
-										MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
+										MakeSlicePanel(TDTitle, TDBody, TDTag, FLinearColor(0.88f, 0.34f, 0.22f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66UnlocksScreen::HandleOpenChadpocalypseTDClicked))
 									]
 									+ SVerticalBox::Slot()
 									.AutoHeight()
@@ -637,6 +640,12 @@ FReply UT66UnlocksScreen::HandleBackClicked()
 FReply UT66UnlocksScreen::HandleOpenMiniChadpocalypseClicked()
 {
 	NavigateTo(ET66ScreenType::MiniMainMenu);
+	return FReply::Handled();
+}
+
+FReply UT66UnlocksScreen::HandleOpenChadpocalypseTDClicked()
+{
+	NavigateTo(ET66ScreenType::TDMainMenu);
 	return FReply::Handled();
 }
 

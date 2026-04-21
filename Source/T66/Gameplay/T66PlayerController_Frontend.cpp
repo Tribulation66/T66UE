@@ -385,6 +385,11 @@ namespace
 			OutScreenType = ET66ScreenType::MainMenu;
 			return true;
 		}
+		if (Normalized.Equals(TEXT("Unlocks"), ESearchCase::IgnoreCase) || Normalized.Equals(TEXT("Minigames"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::Unlocks;
+			return true;
+		}
 		if (Normalized.Equals(TEXT("MiniMainMenu"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::MiniMainMenu;
@@ -413,6 +418,21 @@ namespace
 		if (Normalized.Equals(TEXT("MiniSaveSlots"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::MiniSaveSlots;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("TDMainMenu"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::TDMainMenu;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("TDDifficultySelect"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::TDDifficultySelect;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("TDBattle"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::TDBattle;
 			return true;
 		}
 		if (Normalized.Equals(TEXT("Challenges"), ESearchCase::IgnoreCase))
@@ -493,6 +513,12 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniShopScreen"));
 	case ET66ScreenType::MiniRunSummary:
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniRunSummaryScreen"));
+	case ET66ScreenType::TDMainMenu:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66TD.T66TDMainMenuScreen"));
+	case ET66ScreenType::TDDifficultySelect:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66TD.T66TDDifficultySelectScreen"));
+	case ET66ScreenType::TDBattle:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66TD.T66TDBattleScreen"));
 	case ET66ScreenType::ReportBug:
 		return UT66ReportBugScreen::StaticClass();
 	case ET66ScreenType::Settings:
@@ -1103,6 +1129,18 @@ void AT66PlayerController::InitializeUI()
 	if (TSubclassOf<UT66ScreenBase> MiniRunSummaryClass = ResolveScreenClass(ET66ScreenType::MiniRunSummary))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::MiniRunSummary, MiniRunSummaryClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> TDMainMenuClass = ResolveScreenClass(ET66ScreenType::TDMainMenu))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::TDMainMenu, TDMainMenuClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> TDDifficultySelectClass = ResolveScreenClass(ET66ScreenType::TDDifficultySelect))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::TDDifficultySelect, TDDifficultySelectClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> TDBattleClass = ResolveScreenClass(ET66ScreenType::TDBattle))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::TDBattle, TDBattleClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> LeaderboardClass = ResolveScreenClass(ET66ScreenType::Leaderboard))
 	{

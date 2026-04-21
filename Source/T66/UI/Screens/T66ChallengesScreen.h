@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/T66CommunityContentTypes.h"
+#include "Styling/SlateBrush.h"
 #include "UI/T66ScreenBase.h"
 #include "T66ChallengesScreen.generated.h"
 
@@ -46,6 +47,7 @@ private:
 	FString GetUltimateLabel(ET66UltimateType UltimateType) const;
 	FString GetItemLabel(FName ItemId) const;
 	TArray<FName> GetSelectableItemIds() const;
+	const FSlateBrush* GetOrCreateAvatarBrush(const FString& AvatarUrl);
 	void InitializeSelectionState();
 	void BeginDraftEditor(const FT66CommunityContentEntry& DraftEntry);
 	void EndDraftEditor();
@@ -89,4 +91,6 @@ private:
 	int32 ActiveSourceTabIndex[2] = { 0, 0 };
 	FName PendingSelections[2][2];
 	FT66CommunityContentEntry DraftEditorEntry;
+	TMap<FString, TSharedPtr<FSlateBrush>> AvatarBrushes;
+	TSharedPtr<FSlateBrush> DefaultAvatarBrush;
 };

@@ -13,6 +13,7 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
+#include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66CommunityContent, Log, All);
@@ -119,7 +120,40 @@ namespace
 
 		return Status.IsEmpty() ? TEXT("Not submitted") : Status;
 	}
+
+	static void T66_RunCommunityCatalogValidation(const TArray<FString>& Args, UWorld* World)
+	{
+		if (!World)
+		{
+			UE_LOG(LogT66CommunityContent, Warning, TEXT("T66.Community.ValidateCatalog requires a valid world."));
+			return;
+		}
+
+		UGameInstance* GameInstance = World->GetGameInstance();
+		UT66CommunityContentSubsystem* Community = GameInstance ? GameInstance->GetSubsystem<UT66CommunityContentSubsystem>() : nullptr;
+		if (!Community)
+		{
+			UE_LOG(LogT66CommunityContent, Warning, TEXT("T66.Community.ValidateCatalog could not find the community content subsystem."));
+			return;
+		}
+
+		const bool bIncludeDrafts = Args.ContainsByPredicate([](const FString& Arg)
+		{
+			return Arg.Equals(TEXT("drafts"), ESearchCase::IgnoreCase);
+		});
+		const bool bVerbose = Args.ContainsByPredicate([](const FString& Arg)
+		{
+			return Arg.Equals(TEXT("verbose"), ESearchCase::IgnoreCase);
+		});
+
+		Community->RunCatalogSmokeTest(bIncludeDrafts, bVerbose);
+	}
 }
+
+static FAutoConsoleCommandWithWorldAndArgs T66CommunityValidateCatalogCommand(
+	TEXT("T66.Community.ValidateCatalog"),
+	TEXT("Validates official/community community-content entries. Optional args: drafts verbose"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_RunCommunityCatalogValidation));
 
 void UT66CommunityContentSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -165,7 +199,117 @@ FT66CommunityContentEntry UT66CommunityContentSubsystem::CreateDraftTemplate(con
 	Draft.bLocallyAuthored = true;
 	Draft.Rules.bRequireFullClear = true;
 	Draft.UpdatedAt = FDateTime::UtcNow();
+	Draft.Sanitize();
 	return Draft;
+}
+
+void UT66CommunityContentSubsystem::SanitizeEntryForStorage(FT66CommunityContentEntry& Entry) const
+{
+	Entry.Sanitize();
+
+	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	if (T66GI && !Entry.Rules.StartingItemId.IsNone())
+	{
+		FItemData ItemData;
+		if (!const_cast<UT66GameInstance*>(T66GI)->GetItemData(Entry.Rules.StartingItemId, ItemData))
+		{
+			UE_LOG(LogT66CommunityContent, Warning, TEXT("Clearing invalid community starting item '%s' from '%s'."), *Entry.Rules.StartingItemId.ToString(), *Entry.Title);
+			Entry.Rules.StartingItemId = NAME_None;
+		}
+	}
+}
+
+void UT66CommunityContentSubsystem::ValidateEntryForRuntime(const FT66CommunityContentEntry& Entry, TArray<FString>& OutIssues) const
+{
+	OutIssues.Reset();
+
+	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	if (T66GI && !Entry.Rules.StartingItemId.IsNone())
+	{
+		FItemData ItemData;
+		if (!const_cast<UT66GameInstance*>(T66GI)->GetItemData(Entry.Rules.StartingItemId, ItemData))
+		{
+			OutIssues.Add(FString::Printf(TEXT("Unknown starting item: %s"), *Entry.Rules.StartingItemId.ToString()));
+		}
+	}
+
+	if (Entry.Kind == ET66CommunityContentKind::Mod && !Entry.Rules.HasGameplayChanges())
+	{
+		OutIssues.Add(TEXT("Mod has no gameplay changes."));
+	}
+
+	if (Entry.Kind == ET66CommunityContentKind::Challenge
+		&& !Entry.Rules.HasGameplayChanges()
+		&& !Entry.Rules.bRequireNoDamage
+		&& Entry.Rules.RequiredStageReached <= 0
+		&& Entry.Rules.MaxRunTimeSeconds <= 0)
+	{
+		OutIssues.Add(TEXT("Challenge has no gameplay changes or explicit completion requirements."));
+	}
+}
+
+void UT66CommunityContentSubsystem::SanitizeBucket(TArray<FT66CommunityContentEntry>& Bucket) const
+{
+	for (FT66CommunityContentEntry& Entry : Bucket)
+	{
+		SanitizeEntryForStorage(Entry);
+	}
+}
+
+void UT66CommunityContentSubsystem::LogValidationIssues(const FT66CommunityContentEntry& Entry, const TArray<FString>& Issues, const TCHAR* Context) const
+{
+	for (const FString& Issue : Issues)
+	{
+		UE_LOG(LogT66CommunityContent, Warning, TEXT("[%s] %s (%s): %s"),
+			Context,
+			*Entry.Title,
+			Entry.Kind == ET66CommunityContentKind::Mod ? TEXT("Mod") : TEXT("Challenge"),
+			*Issue);
+	}
+}
+
+void UT66CommunityContentSubsystem::RunCatalogSmokeTest(const bool bIncludeDrafts, const bool bVerbose) const
+{
+	int32 CheckedEntries = 0;
+	int32 EntriesWithIssues = 0;
+
+	auto ValidateBucket = [this, bVerbose, &CheckedEntries, &EntriesWithIssues](const TArray<FT66CommunityContentEntry>& Bucket, const TCHAR* Context)
+	{
+		for (const FT66CommunityContentEntry& StoredEntry : Bucket)
+		{
+			FT66CommunityContentEntry Entry = StoredEntry;
+			SanitizeEntryForStorage(Entry);
+
+			TArray<FString> Issues;
+			ValidateEntryForRuntime(Entry, Issues);
+
+			++CheckedEntries;
+			if (Issues.Num() > 0)
+			{
+				++EntriesWithIssues;
+				LogValidationIssues(Entry, Issues, Context);
+			}
+			else if (bVerbose)
+			{
+				UE_LOG(LogT66CommunityContent, Log, TEXT("[%s] %s validated cleanly."), Context, *Entry.Title);
+			}
+		}
+	};
+
+	ValidateBucket(OfficialChallenges, TEXT("OfficialChallenges"));
+	ValidateBucket(OfficialMods, TEXT("OfficialMods"));
+	ValidateBucket(CommunityChallenges, TEXT("CommunityChallenges"));
+	ValidateBucket(CommunityMods, TEXT("CommunityMods"));
+	if (bIncludeDrafts)
+	{
+		ValidateBucket(DraftChallenges, TEXT("DraftChallenges"));
+		ValidateBucket(DraftMods, TEXT("DraftMods"));
+	}
+
+	UE_LOG(LogT66CommunityContent, Log, TEXT("Community catalog validation complete. Checked=%d EntriesWithIssues=%d IncludeDrafts=%d"),
+		CheckedEntries,
+		EntriesWithIssues,
+		bIncludeDrafts ? 1 : 0);
 }
 
 bool UT66CommunityContentSubsystem::SaveDraft(const FT66CommunityContentEntry& Draft)
@@ -185,6 +329,7 @@ bool UT66CommunityContentSubsystem::SaveDraft(const FT66CommunityContentEntry& D
 	SavedDraft.Origin = ET66CommunityContentOrigin::Draft;
 	SavedDraft.bLocallyAuthored = true;
 	SavedDraft.UpdatedAt = FDateTime::UtcNow();
+	SanitizeEntryForStorage(SavedDraft);
 	if (SavedDraft.SubmissionStatus.IsEmpty())
 	{
 		SavedDraft.SubmissionStatus = TEXT("Not submitted");
@@ -257,6 +402,14 @@ bool UT66CommunityContentSubsystem::ActivateEntry(const FName LocalId)
 	if (!FindEntryById(LocalId, Entry))
 	{
 		return false;
+	}
+
+	SanitizeEntryForStorage(Entry);
+	TArray<FString> ValidationIssues;
+	ValidateEntryForRuntime(Entry, ValidationIssues);
+	if (ValidationIssues.Num() > 0)
+	{
+		LogValidationIssues(Entry, ValidationIssues, TEXT("ActivateEntry"));
 	}
 
 	ActiveEntryId = LocalId;
@@ -682,6 +835,9 @@ void UT66CommunityContentSubsystem::SeedOfficialContent()
 	LoadedDice.Rules.BonusStats.Luck = 25;
 	LoadedDice.Rules.StartingItemId = FName(TEXT("Item_GamblersToken"));
 	OfficialMods.Add(LoadedDice);
+
+	SanitizeBucket(OfficialChallenges);
+	SanitizeBucket(OfficialMods);
 }
 
 void UT66CommunityContentSubsystem::LoadOrCreateSave()
@@ -700,12 +856,16 @@ void UT66CommunityContentSubsystem::LoadOrCreateSave()
 
 	for (const FT66CommunityContentEntry& Entry : SaveData->DraftEntries)
 	{
-		GetMutableBucket(ET66CommunityContentOrigin::Draft, Entry.Kind).Add(Entry);
+		FT66CommunityContentEntry SanitizedEntry = Entry;
+		SanitizeEntryForStorage(SanitizedEntry);
+		GetMutableBucket(ET66CommunityContentOrigin::Draft, SanitizedEntry.Kind).Add(SanitizedEntry);
 	}
 
 	for (const FT66CommunityContentEntry& Entry : SaveData->CachedCommunityEntries)
 	{
-		GetMutableBucket(ET66CommunityContentOrigin::Community, Entry.Kind).Add(Entry);
+		FT66CommunityContentEntry SanitizedEntry = Entry;
+		SanitizeEntryForStorage(SanitizedEntry);
+		GetMutableBucket(ET66CommunityContentOrigin::Community, SanitizedEntry.Kind).Add(SanitizedEntry);
 	}
 }
 
@@ -824,6 +984,7 @@ void UT66CommunityContentSubsystem::OnCatalogResponseReceived(FHttpRequestPtr Re
 		FT66CommunityContentEntry ParsedEntry;
 		if (TryParseApiEntry(*EntryObject, ParsedEntry))
 		{
+			SanitizeEntryForStorage(ParsedEntry);
 			GetMutableBucket(ET66CommunityContentOrigin::Community, ParsedEntry.Kind).Add(ParsedEntry);
 		}
 	}
@@ -939,6 +1100,7 @@ void UT66CommunityContentSubsystem::OnMySubmissionsResponseReceived(FHttpRequest
 				Draft.ReviewNote = ReviewNote;
 				Draft.ApprovedRewardChadCoupons = ApprovedReward;
 				Draft.UpdatedAt = FDateTime::UtcNow();
+				SanitizeEntryForStorage(Draft);
 				bDraftsChanged = true;
 			}
 		}
@@ -983,6 +1145,7 @@ bool UT66CommunityContentSubsystem::TryParseApiEntry(const TSharedPtr<FJsonObjec
 	OutEntry.Title = Title;
 	OutEntry.Description = Description;
 	Json->TryGetStringField(TEXT("author_display_name"), OutEntry.AuthorDisplayName);
+	Json->TryGetStringField(TEXT("author_avatar_url"), OutEntry.AuthorAvatarUrl);
 	Json->TryGetStringField(TEXT("status"), OutEntry.ModerationStatus);
 	OutEntry.SuggestedRewardChadCoupons = Json->HasField(TEXT("suggested_reward_chad_coupons"))
 		? static_cast<int32>(Json->GetNumberField(TEXT("suggested_reward_chad_coupons")))
@@ -1037,5 +1200,6 @@ bool UT66CommunityContentSubsystem::TryParseApiEntry(const TSharedPtr<FJsonObjec
 		}
 	}
 
+	OutEntry.Sanitize();
 	return true;
 }

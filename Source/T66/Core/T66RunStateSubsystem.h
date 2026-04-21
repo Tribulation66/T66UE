@@ -1376,6 +1376,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void ResetForNewRun();
 
+	FName ConsumeDeferredRunStartItemId();
+
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void ToggleHUDPanels();
 
@@ -1434,6 +1436,7 @@ private:
 	static float GetAntiCheatEvasionBucketMinChance01(int32 BucketIndex);
 	static float GetAntiCheatEvasionBucketMaxChance01(int32 BucketIndex);
 	void ResetAntiCheatPressureTracking();
+	FName DeferredRunStartItemId = NAME_None;
 	void FinalizeCurrentAntiCheatPressureWindow();
 	void RecordAntiCheatPressureHitCheck(float RunElapsedSeconds, float EvasionChance01, bool bDodged, bool bDamageApplied);
 	FT66AntiCheatPressureWindowSummary BuildAntiCheatPressureWindowSummarySnapshot() const;

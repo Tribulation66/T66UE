@@ -121,6 +121,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void StartPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void RestartPlayer(AController* NewPlayer) override;
@@ -203,6 +204,7 @@ protected:
 
 	void SpawnTricksterAndCowardiceGate();
 	void SpawnTowerDescentHolesIfNeeded();
+	void EnsureGameplayStartupInitialized(const TCHAR* TriggerContext);
 	void InitializeRunStateForBeginPlay();
 	bool HandleSpecialModeBeginPlay();
 	void HandleLabBeginPlay();
@@ -347,6 +349,10 @@ private:
 	bool TryFindRandomMainMapSurfaceLocation(int32 SeedOffset, FVector& OutLocation, float ExtraSafeBubbleMargin = 0.f) const;
 
 	bool bTerrainCollisionReady = false;
+	bool bGameplayStartupInitialized = false;
+	bool bGameplayLevelSpawnScheduled = false;
+	bool bGameplayLevelSpawnCompleted = false;
+	FName PendingRunStartItemId = NAME_None;
 	bool bMainMapCombatStarted = false;
 	bool bWorldInteractablesSpawnedForStage = false;
 	bool bHasMainMapSpawnSurfaceLocation = false;

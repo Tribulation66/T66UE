@@ -4272,6 +4272,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	ResetHeartSlotTiers();
 	SyncMaxHPToHeartTiers();
 	CurrentHP = MaxHP;
+	DeferredRunStartItemId = NAME_None;
 	CurrentGold = DefaultStartGold;
 	CurrentDebt = 0;
 	bLoanSharkPending = false;
@@ -4398,11 +4399,20 @@ void UT66RunStateSubsystem::ResetForNewRun()
 		if (bHasCommunityEntry)
 		{
 			const FT66CommunityRuleSet& Rules = ActiveCommunityEntry.Rules;
+			UE_LOG(LogTemp, Log, TEXT("[Community] ResetForNewRun applying '%s' (kind=%d startLevel=%d maxStats=%d startItem=%s passive=%d ultimate=%d)."),
+				*ActiveCommunityEntry.Title,
+				static_cast<int32>(ActiveCommunityEntry.Kind),
+				Rules.StartLevelOverride,
+				Rules.bSetMaxHeroStats ? 1 : 0,
+				*Rules.StartingItemId.ToString(),
+				static_cast<int32>(Rules.PassiveOverride),
+				static_cast<int32>(Rules.UltimateOverride));
 			const int32 TargetLevel = Rules.bSetMaxHeroStats
 				? MaxHeroLevel
 				: FMath::Clamp(Rules.StartLevelOverride, 0, MaxHeroLevel);
 			while (HeroLevel < TargetLevel)
 			{
+				HeroLevel = FMath::Clamp(HeroLevel + 1, DefaultHeroLevel, MaxHeroLevel);
 				ApplyOneHeroLevelUp();
 			}
 
@@ -4461,7 +4471,10 @@ void UT66RunStateSubsystem::ResetForNewRun()
 
 			if (!Rules.StartingItemId.IsNone())
 			{
-				AddItem(Rules.StartingItemId);
+				DeferredRunStartItemId = Rules.StartingItemId;
+				UE_LOG(LogTemp, Log, TEXT("[Community] Deferred run-start item grant for '%s': %s"),
+					*ActiveCommunityEntry.Title,
+					*DeferredRunStartItemId.ToString());
 			}
 		}
 		else if (T66GI->HasSelectedRunMod() && T66GI->SelectedRunModifierID == T66MaxHeroStatsRunModifierID)
@@ -4537,6 +4550,13 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	SurvivalChanged.Broadcast();
 	QuickReviveChanged.Broadcast();
 	StatusEffectsChanged.Broadcast();
+}
+
+FName UT66RunStateSubsystem::ConsumeDeferredRunStartItemId()
+{
+	const FName ItemId = DeferredRunStartItemId;
+	DeferredRunStartItemId = NAME_None;
+	return ItemId;
 }
 
 float UT66RunStateSubsystem::GetCurrentRunElapsedSeconds() const

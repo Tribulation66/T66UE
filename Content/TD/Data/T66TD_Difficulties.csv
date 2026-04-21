@@ -1,0 +1,6 @@
+---,DifficultyID,DisplayName,Description,AccentColor,MapCount,EnemyHealthScalar,EnemySpeedScalar,BossScalar,RewardScalar
+Difficulty_Easy,Easy,Easy,Dungeon-tier onboarding with readable pressure and forgiving leaks.,"(R=0.64,G=0.70,B=0.84,A=1.0)",4,0.92,0.94,0.96,0.96
+Difficulty_Medium,Medium,Medium,Forest-tier baseline pressure with steadier side-lane punishment.,"(R=0.36,G=0.58,B=0.38,A=1.0)",4,1.00,1.00,1.00,1.00
+Difficulty_Hard,Hard,Hard,Ocean-tier routing with less room for recovery once leaks start.,"(R=0.24,G=0.52,B=0.74,A=1.0)",4,1.12,1.06,1.12,1.08
+Difficulty_VeryHard,VeryHard,Very Hard,Martian-tier density with shielded pressure and harsher boss checks.,"(R=0.70,G=0.42,B=0.28,A=1.0)",4,1.26,1.12,1.28,1.18
+Difficulty_Impossible,Impossible,Impossible,Hell-tier spike pressure tuned for full-board control and efficient tower curves.,"(R=0.78,G=0.26,B=0.22,A=1.0)",4,1.42,1.18,1.46,1.30

@@ -1191,6 +1191,31 @@ void AT66GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
+	EnsureGameplayStartupInitialized(TEXT("BeginPlay"));
+}
+
+void AT66GameMode::StartPlay()
+{
+	const bool bRecoveringSkippedBeginPlay = !bGameplayStartupInitialized;
+	Super::StartPlay();
+
+	EnsureGameplayStartupInitialized(TEXT("StartPlay"));
+
+	if (bRecoveringSkippedBeginPlay)
+	{
+		UE_LOG(LogT66GameMode, Warning, TEXT("AT66GameMode recovered gameplay startup from StartPlay because BeginPlay initialization was skipped."));
+	}
+}
+
+void AT66GameMode::EnsureGameplayStartupInitialized(const TCHAR* TriggerContext)
+{
+	if (bGameplayStartupInitialized)
+	{
+		return;
+	}
+
+	bGameplayStartupInitialized = true;
+
 	// Main flat floor is spawned in SpawnLevelContentAfterLandscapeReady (no external asset packs).
 	InitializeRunStateForBeginPlay();
 
@@ -1203,6 +1228,7 @@ void AT66GameMode::BeginPlay()
 	{
 		if (UT66PlayerSettingsSubsystem* PS = GIP->GetSubsystem<UT66PlayerSettingsSubsystem>())
 		{
+			PS->OnSettingsChanged.RemoveDynamic(this, &AT66GameMode::HandleSettingsChanged);
 			PS->OnSettingsChanged.AddDynamic(this, &AT66GameMode::HandleSettingsChanged);
 		}
 	}
@@ -1210,18 +1236,20 @@ void AT66GameMode::BeginPlay()
 
 	if (HandleSpecialModeBeginPlay())
 	{
+		UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode %s - special-mode startup initialized."), TriggerContext);
 		return;
 	}
 
 	ConsumePendingStageCatchUp();
 	ScheduleDeferredGameplayLevelSpawn();
-	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode BeginPlay - Level setup scheduled; content will spawn after landscape is ready."));
+	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode %s - level setup scheduled; content will spawn after landscape is ready."), TriggerContext);
 }
 
 void AT66GameMode::InitializeRunStateForBeginPlay()
 {
 	UGameInstance* GI = GetGameInstance();
 	UT66GameInstance* T66GI = GetT66GameInstance();
+	PendingRunStartItemId = NAME_None;
 	if (!GI || !T66GI)
 	{
 		return;
@@ -1299,6 +1327,11 @@ void AT66GameMode::InitializeRunStateForBeginPlay()
 		}
 		T66GI->bPendingTowerStageDropIntro = false;
 		RunState->ResetForNewRun();
+		PendingRunStartItemId = RunState->ConsumeDeferredRunStartItemId();
+		if (!PendingRunStartItemId.IsNone())
+		{
+			UE_LOG(LogT66GameMode, Log, TEXT("[Community] Queued deferred run-start item grant: %s"), *PendingRunStartItemId.ToString());
+		}
 		RunState->ActivatePendingSingleUseBuffsForRunStart();
 		if (T66GI->IsDailyClimbRunActive())
 		{
@@ -1378,8 +1411,14 @@ void AT66GameMode::ConsumePendingStageCatchUp()
 
 void AT66GameMode::ScheduleDeferredGameplayLevelSpawn()
 {
+	if (bGameplayLevelSpawnScheduled || bGameplayLevelSpawnCompleted)
+	{
+		return;
+	}
+
 	if (UWorld* World = GetWorld())
 	{
+		bGameplayLevelSpawnScheduled = true;
 		// Normal stage: defer all ground-dependent spawns until next tick so the landscape is fully formed and collision is ready.
 		World->GetTimerManager().SetTimerForNextTick(this, &AT66GameMode::SpawnLevelContentAfterLandscapeReady);
 	}
@@ -1388,6 +1427,19 @@ void AT66GameMode::ScheduleDeferredGameplayLevelSpawn()
 void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 {
 	UWorld* World = GetWorld();
+	if (!World)
+	{
+		bGameplayLevelSpawnScheduled = false;
+		return;
+	}
+
+	if (bGameplayLevelSpawnCompleted)
+	{
+		return;
+	}
+
+	bGameplayLevelSpawnScheduled = false;
+	bGameplayLevelSpawnCompleted = true;
 	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
 	TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay = CreateGameplayWarmupOverlay(World, bUsingMainMapTerrain);
 
@@ -7882,8 +7934,22 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 	if (bUsingMainMapTerrain && !bTerrainCollisionReady)
 	{
-		UE_LOG(LogT66GameMode, Log, TEXT("Deferring main-map hero spawn until terrain collision is ready."));
-		return nullptr;
+		EnsureGameplayStartupInitialized(TEXT("SpawnDefaultPawnFor"));
+		if (!bGameplayLevelSpawnCompleted)
+		{
+			UE_LOG(LogT66GameMode, Warning, TEXT("Recovering gameplay level spawn from SpawnDefaultPawnFor because terrain/content bootstrap was not ready."));
+			SpawnLevelContentAfterLandscapeReady();
+			if (NewPlayer && NewPlayer->GetPawn())
+			{
+				UE_LOG(LogT66GameMode, Warning, TEXT("Spawn recovery already created a pawn for this controller; reusing it to avoid duplicate hero spawns."));
+				return NewPlayer->GetPawn();
+			}
+		}
+
+		if (!bTerrainCollisionReady)
+		{
+			UE_LOG(LogT66GameMode, Warning, TEXT("Main-map terrain is still not ready during pawn spawn; spawning hero in frozen safe mode."));
+		}
 	}
 
 	if (bUsingMainMapTerrain && bHasMainMapSpawnSurfaceLocation)
@@ -8167,6 +8233,16 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 				UE_LOG(LogT66GameMode, Warning, TEXT("No hero selected in Game Instance - spawning with defaults"));
 			}
 		}
+	}
+
+	if (SpawnedPawn && !PendingRunStartItemId.IsNone())
+	{
+		if (UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
+		{
+			UE_LOG(LogT66GameMode, Log, TEXT("[Community] Granting deferred run-start item after hero spawn: %s"), *PendingRunStartItemId.ToString());
+			RunState->AddItem(PendingRunStartItemId);
+		}
+		PendingRunStartItemId = NAME_None;
 	}
 
 	return SpawnedPawn;

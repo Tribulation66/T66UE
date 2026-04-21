@@ -34,6 +34,7 @@
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Blueprint/UserWidget.h"
+#include "Async/Async.h"
 #include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Style, Log, All);
@@ -2369,6 +2370,18 @@ TSharedRef<SWidget> FT66Style::MakeSafeFrame(
 void FT66Style::DeferRebuild(UUserWidget* Widget, int32 ZOrder)
 {
 	if (!Widget) return;
+	if (!IsInGameThread())
+	{
+		TWeakObjectPtr<UUserWidget> WeakWidget(Widget);
+		AsyncTask(ENamedThreads::GameThread, [WeakWidget, ZOrder]()
+		{
+			if (UUserWidget* SafeWidget = WeakWidget.Get())
+			{
+				FT66Style::DeferRebuild(SafeWidget, ZOrder);
+			}
+		});
+		return;
+	}
 	UWorld* World = Widget->GetWorld();
 	if (!World || World->bIsTearingDown || GExitPurge || IsGarbageCollecting()) return;
 
