@@ -17,6 +17,12 @@ Rebuild the T66 Slate UI into a resolution-independent system that:
 
 This document is an implementation plan only. It does not perform the implementation.
 
+Visual-direction note:
+
+- The reconstruction-first workflow now supersedes older style-direction assumptions in this file.
+- Use this plan for layout/scaling/primitives/plumbing guidance.
+- Use `Docs/UI/UI_Reconstruction_Sprite_Sheet_Workflow.md`, `Docs/UI/MasterStyle.md`, `Docs/UI/MASTER.md`, `Docs/UI/SCREEN_REVIEW_GATE.md`, and the `reconstruction-ui` skill for the active visual and screen-rebuild policy.
+
 ## Locked Decisions
 
 - Minimum supported safe layout: `1280x720`
@@ -121,7 +127,7 @@ Lock the baseline rules and create a repeatable validation workflow before code 
 - Record the required validation matrix above.
 - Define default screenshot checkpoints for frontend, overlay, and gameplay validation.
 - Decide whether Steam Deck gets a slightly elevated default UI scale at runtime or via user setting defaults.
-- Decide whether `FT66DotaTheme::CornerRadius()` staying at `0.0f` is intentional or a bug; this affects the primitive rollout.
+- Decide whether the legacy theme wrapper corner-radius staying at `0.0f` is intentional or a bug; this affects the primitive rollout.
 
 ### Acceptance Criteria
 
@@ -204,10 +210,9 @@ Centralize layout-facing numbers so screen code stops tuning dimensions ad hoc.
   - spacing scale
   - title/body/caption font sizes
   - readable line widths
-- Keep `FT66DotaTheme` focused on visuals:
-  - colors
-  - brushes
-  - font family/weight selection
+- Keep legacy style/theme wrappers isolated from visual direction:
+  - Legacy style/theme wrappers must not dictate the approved visual direction for reconstructed screens.
+  - Shared tokens and primitives should stay style-neutral or be fed by the reconstruction-derived UI kit.
 - Reconcile duplicated or contradictory theme/layout values, especially corner-radius behavior.
 
 ### Acceptance Criteria
@@ -464,12 +469,12 @@ Use this order unless implementation reveals a hard dependency:
 
 ## Risks And Mitigations
 
-### Risk: visual drift from the current Dota-styled frontend
+### Risk: visual drift from the approved reconstruction reference
 
 Mitigation:
 
-- keep `FT66DotaTheme` in place for color/brush/font identity
-- migrate layout first, not visual language
+- use the approved reference image and reference-derived UI kit as the visual authority
+- migrate layout and interaction safely without preserving retired artistic directions as guidance
 
 ### Risk: button migration causes broad breakage because many screens use `FT66Style::MakeButton`
 
@@ -512,4 +517,3 @@ The rollout is complete when all of the following are true:
 - Button and panel text clipping is eliminated in migrated screens.
 - The project uses one scaling policy.
 - Screen code primarily uses shared tokens and primitives rather than ad hoc width/height literals.
-

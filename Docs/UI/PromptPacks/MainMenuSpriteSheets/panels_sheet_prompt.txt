@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: game UI runtime component sheet
+Primary request: reorganize the attached Chadpocalypse main menu reference into a production sprite sheet for the social panel and leaderboard panel families
+Scene/background: flat near-black board with clean negative space and no full-screen environment art
+Subject: isolated reusable panel shells and subcomponents derived from the exact reference screen
+Style/medium: painted game UI asset sheet, exact reconstruction of the reference art style, not a redesign
+Composition/framing: wide board, assets arranged by family with clean spacing, front-on, no perspective skew
+Lighting/mood: warm torch-lit fantasy UI materials matching the reference
+Color palette: dark charcoal interiors, bronze-gold trim, muted green accent states, restrained purple accents, warm stone details
+Materials/textures: worn stone-metal borders, slight moss/leaf growth on some corners, painted dark fills, beveled frames, thin dividers
+Constraints: include left social panel shell, right leaderboard shell, search field plate, friend-row plate, invite button plate, favorite/star button plate, party slot frame, leaderboard row plate, weekly/all-time tab plates, dropdown/select plates, score/speed-run toggle plates, rank badges, and thin divider ornaments; all runtime plates must be empty with NO baked names or numbers; where a decorative badge is its own asset, isolate it cleanly; include normal, hover, pressed, and disabled or selected states where relevant; preserve the exact proportions and art language from the reference; no watermark
+Avoid: full-screen composition, fake placeholder text inside assets, flat modern UI, extra fantasy embellishments not in the reference, blurry borders, overglow

@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: game UI runtime component sheet
+Primary request: reorganize the attached Chadpocalypse main menu reference into a production sprite sheet for the central call-to-action button family only
+Scene/background: flat near-black presentation board with no environment art, no mock screen, and generous spacing
+Subject: isolated reusable assets for the central stacked menu buttons and their outer frame, all derived from the exact reference image style
+Style/medium: painted game UI asset sheet, exact reconstruction of the reference art style, not a redesign
+Composition/framing: wide board with grouped rows by state and by color family, front-on orthographic presentation, no overlap
+Lighting/mood: same warm beveled highlights and grounded shadow depth from the reference
+Color palette: moss green, dusty teal-blue, rich violet, dark bronze frame, warm parchment text area feel without actual text
+Materials/textures: beveled carved borders, chipped painted fills, small scratches, subtle edge wear, dark stone-metal outer frame
+Constraints: include the outer stack frame plus empty button plates for the green, blue, and purple center buttons; NO baked words; provide normal, hover, pressed, and disabled states for each color family; keep exact silhouette, border thickness, corner cuts, and proportions from the reference; no full menu art; no watermark
+Avoid: any text on the buttons, fake generic UI kits, flat gradients, oversaturated neon, softened silhouettes, decorative flourishes not present in the reference

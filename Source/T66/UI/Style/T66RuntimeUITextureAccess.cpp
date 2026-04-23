@@ -226,18 +226,7 @@ namespace T66RuntimeUITextureAccess
 			return FString(RuntimePrefix) + NormalizedPath.RightChop(LegacyPrefixString.Len());
 		};
 
-		auto RemapExactDirectory = [&NormalizedPath](const TCHAR* LegacyDirectory, const TCHAR* RuntimeDirectory) -> FString
-		{
-			return NormalizedPath.Equals(LegacyDirectory, ESearchCase::CaseSensitive)
-				? FString(RuntimeDirectory)
-				: FString();
-		};
-
 		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/UI/MainMenuGenerated/"), TEXT("RuntimeDependencies/T66/UI/MainMenu/")); !Remapped.IsEmpty())
-		{
-			return Remapped;
-		}
-		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/UI/MainMenu/Generated/"), TEXT("RuntimeDependencies/T66/UI/MainMenu/")); !Remapped.IsEmpty())
 		{
 			return Remapped;
 		}
@@ -259,23 +248,6 @@ namespace T66RuntimeUITextureAccess
 		{
 			return Remapped;
 		}
-		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/UI/MainMenuBlueTrim/"), TEXT("RuntimeDependencies/T66/UI/MainMenuBlueTrim/")); !Remapped.IsEmpty())
-		{
-			return Remapped;
-		}
-		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/UI/MainMenuBlueWoodFill/"), TEXT("RuntimeDependencies/T66/UI/MainMenuBlueWoodFill/")); !Remapped.IsEmpty())
-		{
-			return Remapped;
-		}
-		if (const FString Remapped = RemapExactDirectory(TEXT("SourceAssets/UI/MainMenuBlueTrim"), TEXT("RuntimeDependencies/T66/UI/MainMenuBlueTrim")); !Remapped.IsEmpty())
-		{
-			return Remapped;
-		}
-		if (const FString Remapped = RemapExactDirectory(TEXT("SourceAssets/UI/MainMenuBlueWoodFill"), TEXT("RuntimeDependencies/T66/UI/MainMenuBlueWoodFill")); !Remapped.IsEmpty())
-		{
-			return Remapped;
-		}
-
 		return FString();
 	}
 

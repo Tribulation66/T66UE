@@ -909,6 +909,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 		Integrity->FinalizeCurrentRun();
 		Integrity->CopyCurrentContextTo(Snapshot->IntegrityContext);
 	}
+	Snapshot->ScoreBudgetContext = RunState->GetScoreBudgetContext();
 
 	// Proof-of-run link is user-provided post-run; default empty for new snapshots.
 	Snapshot->ProofOfRunUrl = FString();

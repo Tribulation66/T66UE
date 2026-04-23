@@ -1,16 +1,14 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/T66SavePreviewScreen.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Kismet/GameplayStatics.h"
-#include "Styling/CoreStyle.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UIManager.h"
-#include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
-#include "Widgets/Layout/SSpacer.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
@@ -39,6 +37,18 @@ TSharedRef<SWidget> UT66SavePreviewScreen::BuildSlateUI()
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const FText LoadText = NSLOCTEXT("T66.SavePreview", "Load", "LOAD");
 	const FText SubtitleText = NSLOCTEXT("T66.SavePreview", "Subtitle", "The run is paused for inspection. Back returns to Save Slots, Load resumes normally.");
+	const TSharedRef<SWidget> BackButton =
+		FT66Style::MakeButton(
+			FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleBackClicked), ET66ButtonType::Neutral)
+			.SetMinWidth(160.f)
+			.SetHeight(42.f)
+			.SetFontSize(12));
+	const TSharedRef<SWidget> LoadButton =
+		FT66Style::MakeButton(
+			FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleLoadClicked), ET66ButtonType::Primary)
+			.SetMinWidth(160.f)
+			.SetHeight(42.f)
+			.SetFontSize(12));
 
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
@@ -76,26 +86,11 @@ TSharedRef<SWidget> UT66SavePreviewScreen::BuildSlateUI()
 				+ SVerticalBox::Slot()
 				.AutoHeight()
 				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.Padding(0.f, 0.f, 10.f, 0.f)
-					[
-						FT66Style::MakeButton(
-							FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleBackClicked), ET66ButtonType::Neutral)
-							.SetMinWidth(160.f)
-							.SetHeight(42.f)
-							.SetFontSize(12))
-					]
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					[
-						FT66Style::MakeButton(
-							FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleLoadClicked), ET66ButtonType::Primary)
-							.SetMinWidth(160.f)
-							.SetHeight(42.f)
-							.SetFontSize(12))
-					]
+					T66ScreenSlateHelpers::MakeTwoButtonRow(
+						BackButton,
+						LoadButton,
+						FMargin(0.f, 0.f, 10.f, 0.f),
+						FMargin(0.f))
 				],
 				FT66PanelParams(ET66PanelType::Panel)
 					.SetColor(FLinearColor(0.f, 0.f, 0.f, 0.92f))

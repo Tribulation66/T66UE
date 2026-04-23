@@ -1,0 +1,18 @@
+Use case: ui-mockup
+Asset type: game UI runtime component sheet
+Primary request: reorganize the attached Tribulation 66 main menu reference into a production sprite sheet for the central call-to-action button family only, using the measured in-screen button proportions as the source of truth
+Input images: Image 1 = full approved main menu reference; Image 2 = green CTA crop from the approved reference; Image 3 = blue CTA crop from the approved reference; Image 4 = purple CTA crop from the approved reference
+Scene/background: flat near-black presentation board with no environment art, no mock screen, and generous spacing
+Subject: isolated reusable assets for the central stacked menu buttons and their outer frame, all derived from the exact reference image style
+Style/medium: painted game UI asset sheet, exact reconstruction of the approved reference art style, not a redesign
+Composition/framing: wide board with grouped rows by state and by color family, front-on orthographic presentation, no overlap, transparent or clean-cut silhouettes that can be sliced directly for runtime
+Lighting/mood: same warm beveled highlights and grounded shadow depth from the reference
+Color palette: moss green, dusty teal-blue, rich violet, dark bronze frame, warm parchment-like text treatment without actual text
+Materials/textures: beveled carved borders, chipped painted fills, small scratches, subtle edge wear, dark stone-metal outer frame
+Measured reference canvas: 1672x941
+Measured 1x target plate sizes: green = 423x86, blue = 420x82, purple = 419x79
+Required generation scale: render those plates at 2x size on the board so the runtime can downscale without distortion; green = 846x172, blue = 840x164, purple = 838x158
+Measured frame size: outer CTA stack frame at 486x271 in the reference, generate at 2x = 972x542
+Critical proportion rule: the plates are very wide and relatively flat, roughly 5:1 width-to-height; do not make them short chunky capsules or generic medium-width buttons
+Constraints: include the outer stack frame plus empty button plates for the green, blue, and purple center buttons; NO baked words; provide normal, hover, pressed, and disabled states for each color family; keep exact silhouette, border thickness, corner cuts, inset bevel depth, and end-cap proportions from the reference; no full menu art; no watermark
+Avoid: any text on the buttons, fake generic UI kits, flat gradients, oversaturated neon, softened silhouettes, decorative flourishes not present in the reference, extra vertical padding, proportions that are taller or chunkier than the in-screen reference

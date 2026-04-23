@@ -2,106 +2,34 @@
 
 #include "Core/T66PlayerExperienceSubSystem.h"
 
-#include "Misc/ConfigCacheIni.h"
-
 namespace
 {
-	static constexpr const TCHAR* T66PlayerExperienceConfigSection = TEXT("/Script/T66.T66PlayerExperienceSubSystem");
+	static constexpr const TCHAR* T66PlayerExperienceDataTablePath = TEXT("/Game/Data/DT_PlayerExperience.DT_PlayerExperience");
 
-	static FString GetT66PlayerExperienceConfigFilename()
+	static void LoadDifficultyRow(const UDataTable* DataTable, const FName RowName, FT66PlayerExperienceDifficultyTuning& OutTuning)
 	{
-		FString ConfigFilename;
-		FConfigCacheIni::LoadGlobalIniFile(ConfigFilename, TEXT("T66PlayerExperience"));
-		return ConfigFilename;
-	}
-
-	template <typename StructType>
-	static void LoadStructValue(const FString& ConfigFilename, const TCHAR* Key, StructType& Value)
-	{
-		if (!GConfig)
+		if (!DataTable)
 		{
 			return;
 		}
 
-		FString RawValue;
-		if (!GConfig->GetString(T66PlayerExperienceConfigSection, Key, RawValue, ConfigFilename) || RawValue.IsEmpty())
+		if (const FT66PlayerExperienceDifficultyTuning* Row = DataTable->FindRow<FT66PlayerExperienceDifficultyTuning>(RowName, TEXT("PlayerExperienceDataTable")))
 		{
+			OutTuning = *Row;
 			return;
 		}
 
-		UScriptStruct* StructTypeInfo = StructType::StaticStruct();
-		if (!StructTypeInfo)
-		{
-			return;
-		}
-
-		StructTypeInfo->ImportText(*RawValue, &Value, nullptr, PPF_None, GLog, StructTypeInfo->GetName());
-	}
-
-	static FT66RarityWeights MakeRarityWeights(const float Black, const float Red, const float Yellow, const float White)
-	{
-		FT66RarityWeights Weights;
-		Weights.Black = Black;
-		Weights.Red = Red;
-		Weights.Yellow = Yellow;
-		Weights.White = White;
-		return Weights;
-	}
-
-	static FT66PlayerExperienceDifficultyTuning MakeDefaultDifficultyTuning(const int32 DifficultyIndex)
-	{
-		FT66PlayerExperienceDifficultyTuning Tuning;
-		static constexpr int32 DefaultStartStages[] = { 1, 6, 11, 16, 21 };
-		static constexpr int32 DefaultStartHeroBonusLevels[] = { 0, 24, 49, 74, 98 };
-		const int32 SafeIndex = FMath::Clamp(DifficultyIndex, 0, UE_ARRAY_COUNT(DefaultStartStages) - 1);
-		Tuning.StartStage = DefaultStartStages[SafeIndex];
-		Tuning.StartGoldBonus = 200 * DifficultyIndex;
-		Tuning.StartLootBags = 2 + (DifficultyIndex * 2);
-		Tuning.StartHeroBonusLevels = DefaultStartHeroBonusLevels[SafeIndex];
-		Tuning.bSpawnSupportVendorAtRunStart = DifficultyIndex > 0;
-		Tuning.bSupportVendorAllowSteal = false;
-		Tuning.EnemyLootBagDropChanceBase = 0.10f;
-		Tuning.EnemyLootBagCountOnDrop = { 1, 1 };
-		Tuning.EnemyLootBagRarityWeights = MakeRarityWeights(0.80f, 0.15f, 0.045f, 0.005f);
-		Tuning.CatchUpLootBagRarityWeights = MakeRarityWeights(0.70f, 0.20f, 0.09f, 0.01f);
-		Tuning.ChestsPerStage = { 4, 10 };
-		Tuning.ChestRarityWeights = MakeRarityWeights(0.70f, 0.20f, 0.09f, 0.01f);
-		Tuning.ChestGoldRangeByRarity.Black = { 35, 75 };
-		Tuning.ChestGoldRangeByRarity.Red = { 100, 180 };
-		Tuning.ChestGoldRangeByRarity.Yellow = { 220, 380 };
-		Tuning.ChestGoldRangeByRarity.White = { 450, 750 };
-		Tuning.ChestMimicChance = 0.20f;
-		Tuning.WheelsPerStage = { 5, 11 };
-		Tuning.WheelRarityWeights = MakeRarityWeights(0.80f, 0.15f, 0.045f, 0.005f);
-		Tuning.WheelGoldRangeBlack = { 25.f, 100.f };
-		Tuning.WheelGoldRangeRed = { 100.f, 300.f };
-		Tuning.WheelGoldRangeYellow = { 200.f, 600.f };
-		Tuning.WheelGoldRangeWhite = { 500.f, 1500.f };
-		Tuning.CratesPerStage = { 3, 6 };
-		Tuning.CrateRarityWeights = MakeRarityWeights(0.70f, 0.20f, 0.08f, 0.02f);
-		Tuning.GamblerCheatSuccessChanceBase = 0.40f;
-		Tuning.VendorStealSuccessChanceOnTimingHitBase = 0.65f;
-		return Tuning;
+		UE_LOG(LogTemp, Error, TEXT("PlayerExperience DataTable '%s' is missing row '%s'."), *DataTable->GetPathName(), *RowName.ToString());
 	}
 }
 
-FT66PlayerExperienceTuningTable::FT66PlayerExperienceTuningTable()
-	: Easy(MakeDefaultDifficultyTuning(0))
-	, Medium(MakeDefaultDifficultyTuning(1))
-	, Hard(MakeDefaultDifficultyTuning(2))
-	, VeryHard(MakeDefaultDifficultyTuning(3))
-	, Impossible(MakeDefaultDifficultyTuning(4))
+void FT66PlayerExperienceTuningTable::LoadFromDataTable(const UDataTable* DataTable)
 {
-}
-
-void FT66PlayerExperienceTuningTable::LoadFromConfig()
-{
-	const FString ConfigFilename = GetT66PlayerExperienceConfigFilename();
-	LoadStructValue(ConfigFilename, TEXT("Easy"), Easy);
-	LoadStructValue(ConfigFilename, TEXT("Medium"), Medium);
-	LoadStructValue(ConfigFilename, TEXT("Hard"), Hard);
-	LoadStructValue(ConfigFilename, TEXT("VeryHard"), VeryHard);
-	LoadStructValue(ConfigFilename, TEXT("Impossible"), Impossible);
+	LoadDifficultyRow(DataTable, TEXT("Easy"), Easy);
+	LoadDifficultyRow(DataTable, TEXT("Medium"), Medium);
+	LoadDifficultyRow(DataTable, TEXT("Hard"), Hard);
+	LoadDifficultyRow(DataTable, TEXT("VeryHard"), VeryHard);
+	LoadDifficultyRow(DataTable, TEXT("Impossible"), Impossible);
 }
 
 const FT66PlayerExperienceDifficultyTuning& FT66PlayerExperienceTuningTable::Get(const ET66Difficulty Difficulty) const
@@ -120,7 +48,15 @@ const FT66PlayerExperienceDifficultyTuning& FT66PlayerExperienceTuningTable::Get
 void UT66PlayerExperienceSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	CachedTuning.LoadFromConfig();
+
+	UDataTable* PlayerExperienceDataTable = LoadObject<UDataTable>(nullptr, T66PlayerExperienceDataTablePath);
+	if (!PlayerExperienceDataTable)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to load player experience DataTable at '%s'."), T66PlayerExperienceDataTablePath);
+		return;
+	}
+
+	CachedTuning.LoadFromDataTable(PlayerExperienceDataTable);
 }
 
 int32 UT66PlayerExperienceSubSystem::GetDifficultyIndex(const ET66Difficulty Difficulty) const
@@ -140,15 +76,9 @@ int32 UT66PlayerExperienceSubSystem::GetDifficultyStartStage(const ET66Difficult
 
 int32 UT66PlayerExperienceSubSystem::GetDifficultyEndStage(const ET66Difficulty Difficulty) const
 {
-	switch (Difficulty)
-	{
-	case ET66Difficulty::Easy: return 4;
-	case ET66Difficulty::Medium: return 9;
-	case ET66Difficulty::Hard: return 14;
-	case ET66Difficulty::VeryHard: return 19;
-	case ET66Difficulty::Impossible: return 23;
-	default: return 4;
-	}
+	const FT66PlayerExperienceDifficultyTuning& Tuning = GetDifficultyTuning(Difficulty);
+	const int32 StartStage = FMath::Clamp(Tuning.StartStage, 1, 23);
+	return FMath::Clamp(Tuning.EndStage, StartStage, 23);
 }
 
 int32 UT66PlayerExperienceSubSystem::GetDifficultyStartGoldBonus(const ET66Difficulty Difficulty) const

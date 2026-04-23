@@ -16,6 +16,8 @@ namespace
 			&& A.DifficultyEndStage == B.DifficultyEndStage
 			&& A.LocalStageIndex == B.LocalStageIndex
 			&& A.LocalStageCount == B.LocalStageCount
+			&& A.DifficultySkulls == B.DifficultySkulls
+			&& A.TotemsActivatedCount == B.TotemsActivatedCount
 			&& FMath::IsNearlyEqual(A.DifficultyScalar, B.DifficultyScalar, KINDA_SMALL_NUMBER)
 			&& FMath::IsNearlyEqual(A.FinaleScalar, B.FinaleScalar, KINDA_SMALL_NUMBER)
 			&& FMath::IsNearlyEqual(A.EnemyStatScalar, B.EnemyStatScalar, KINDA_SMALL_NUMBER)
@@ -24,6 +26,20 @@ namespace
 			&& FMath::IsNearlyEqual(A.RuntimeTrickleIntervalScalar, B.RuntimeTrickleIntervalScalar, KINDA_SMALL_NUMBER)
 			&& FMath::IsNearlyEqual(A.TrapDamageScalar, B.TrapDamageScalar, KINDA_SMALL_NUMBER)
 			&& FMath::IsNearlyEqual(A.TrapSpeedScalar, B.TrapSpeedScalar, KINDA_SMALL_NUMBER)
+			&& A.TotemRules.UsesPerTotem == B.TotemRules.UsesPerTotem
+			&& A.TotemRules.TotemsPerGameplayStage == B.TotemRules.TotemsPerGameplayStage
+			&& A.TotemRules.GameplayStagesWithTotems == B.TotemRules.GameplayStagesWithTotems
+			&& A.TotemRules.SkullColorBandSize == B.TotemRules.SkullColorBandSize
+			&& A.TotemRules.bDifficultyPersistsAcrossStages == B.TotemRules.bDifficultyPersistsAcrossStages
+			&& A.SpawnBudget.GameplayFloorsPerStage == B.SpawnBudget.GameplayFloorsPerStage
+			&& A.SpawnBudget.InitialEnemiesPerGameplayFloor == B.SpawnBudget.InitialEnemiesPerGameplayFloor
+			&& A.SpawnBudget.TotalInitialEnemiesPerStage == B.SpawnBudget.TotalInitialEnemiesPerStage
+			&& A.SpawnBudget.RuntimeEnemiesPerWave == B.SpawnBudget.RuntimeEnemiesPerWave
+			&& A.SpawnBudget.RuntimeMaxAliveEnemies == B.SpawnBudget.RuntimeMaxAliveEnemies
+			&& FMath::IsNearlyEqual(A.SpawnBudget.RuntimeSpawnIntervalSeconds, B.SpawnBudget.RuntimeSpawnIntervalSeconds, KINDA_SMALL_NUMBER)
+			&& A.SpawnBudget.EstimatedRuntimeWavesPerStage == B.SpawnBudget.EstimatedRuntimeWavesPerStage
+			&& A.SpawnBudget.EstimatedRuntimeEnemiesPerStage == B.SpawnBudget.EstimatedRuntimeEnemiesPerStage
+			&& A.SpawnBudget.EstimatedTotalEnemiesPerStage == B.SpawnBudget.EstimatedTotalEnemiesPerStage
 			&& A.ColorSaturation.Equals(B.ColorSaturation);
 	}
 }
@@ -96,6 +112,8 @@ FT66StageProgressionSnapshot UT66StageProgressionSubsystem::BuildSnapshot() cons
 	Snapshot.DifficultyEndStage = FMath::Clamp(Snapshot.DifficultyEndStage, Snapshot.DifficultyStartStage, 23);
 	Snapshot.LocalStageCount = FMath::Max(1, Snapshot.DifficultyEndStage - Snapshot.DifficultyStartStage + 1);
 	Snapshot.LocalStageIndex = FMath::Clamp(Snapshot.GlobalStage - Snapshot.DifficultyStartStage + 1, 1, Snapshot.LocalStageCount);
+	Snapshot.DifficultySkulls = RunState ? RunState->GetDifficultySkulls() : 0;
+	Snapshot.TotemsActivatedCount = RunState ? RunState->GetTotemsActivatedCount() : 0;
 	Snapshot.DifficultyScalar = RunState ? RunState->GetDifficultyScalar() : 1.0f;
 	Snapshot.FinaleScalar = RunState ? RunState->GetFinalSurvivalEnemyScalar() : 1.0f;
 
@@ -106,6 +124,18 @@ FT66StageProgressionSnapshot UT66StageProgressionSubsystem::BuildSnapshot() cons
 	Snapshot.RuntimeTrickleIntervalScalar = FMath::Max(0.10f, StageTuning.RuntimeTrickleIntervalScalar);
 	Snapshot.TrapDamageScalar = FMath::Max(0.10f, StageTuning.TrapDamageScalar);
 	Snapshot.TrapSpeedScalar = FMath::Max(0.10f, StageTuning.TrapSpeedScalar);
+	Snapshot.TotemRules = PlayerExperience
+		? PlayerExperience->GetDifficultyTotemRules(Snapshot.SelectedDifficulty)
+		: FT66TotemRules{};
+	Snapshot.SpawnBudget = PlayerExperience
+		? PlayerExperience->BuildTowerSpawnBudget(
+			Snapshot.SelectedDifficulty,
+			Snapshot.DifficultyScalar,
+			Snapshot.InitialPopulationScalar,
+			Snapshot.RuntimeTrickleCountScalar,
+			Snapshot.RuntimeTrickleIntervalScalar,
+			UT66RunStateSubsystem::StageTimerDurationSeconds)
+		: FT66SpawnBudget{};
 	Snapshot.ColorSaturation = StageTuning.ColorSaturation;
 	return Snapshot;
 }

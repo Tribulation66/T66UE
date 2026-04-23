@@ -21,6 +21,14 @@ public:
 	static float GetReservedHeight();
 	static float GetVisibleContentHeight();
 
+	struct FPlateBrushSet
+	{
+		TSharedPtr<FSlateBrush> NormalBrush;
+		TSharedPtr<FSlateBrush> HoverBrush;
+		TSharedPtr<FSlateBrush> PressedBrush;
+		TSharedPtr<FSlateBrush> DisabledBrush;
+	};
+
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
@@ -29,12 +37,11 @@ protected:
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 	virtual void RefreshScreen_Implementation() override;
 
-	private:
+private:
 	enum class ETopBarSection : uint8
 	{
 		AccountStatus,
 		Home,
-		LoadGame,
 		PowerUp,
 		MiniGames,
 		Achievements,
@@ -51,29 +58,42 @@ protected:
 	FReply HandleSettingsClicked();
 	FReply HandleLanguageClicked();
 	FReply HandleHomeClicked();
-	FReply HandleLoadGameClicked();
 	FReply HandleShopClicked();
 	FReply HandleMiniGamesClicked();
 	FReply HandleAchievementsClicked();
 	FReply HandleAccountStatusClicked();
 	FReply HandleQuitClicked();
 
-	TSharedPtr<FSlateBrush> TopBarPlateBrush;
-	TSharedPtr<FSlateBrush> InactiveTabBrush;
-	TSharedPtr<FSlateBrush> ActiveTabBrush;
-	TSharedPtr<FSlateBrush> HomeInactiveTabBrush;
-	TSharedPtr<FSlateBrush> HomeActiveTabBrush;
-	TSharedPtr<FSlateBrush> HomeIconBrush;
-	TSharedPtr<FSlateBrush> NavSeparatorBrush;
-	TSharedPtr<FSlateBrush> SettingsSlotBrush;
-	TSharedPtr<FSlateBrush> UtilitySlotBrush;
-	TSharedPtr<FSlateBrush> QuitSlotBrush;
+	TSharedPtr<FSlateBrush> TopBarBackdropBrush;
+	TSharedPtr<FSlateBrush> TopBarFoliageLeftBrush;
+	TSharedPtr<FSlateBrush> TopBarFoliageRightBrush;
+	FPlateBrushSet SettingsButtonBrushes;
+	FPlateBrushSet LanguageButtonBrushes;
+	FPlateBrushSet AccountButtonBrushes;
+	FPlateBrushSet HomeButtonBrushes;
+	FPlateBrushSet NavButtonBrushes;
+	FPlateBrushSet PowerUpButtonBrushes;
+	FPlateBrushSet AchievementsButtonBrushes;
+	FPlateBrushSet MiniGamesButtonBrushes;
+	FPlateBrushSet PortraitButtonBrushes;
+	FPlateBrushSet CouponButtonBrushes;
+	FPlateBrushSet QuitButtonBrushes;
+	TSharedPtr<FSlateBrush> UtilityButtonBrush;
+	TSharedPtr<FSlateBrush> AccountButtonBrush;
+	TSharedPtr<FSlateBrush> AccountButtonActiveBrush;
+	TSharedPtr<FSlateBrush> NavButtonBrush;
+	TSharedPtr<FSlateBrush> NavButtonActiveBrush;
+	TSharedPtr<FSlateBrush> HomeButtonBrush;
+	TSharedPtr<FSlateBrush> HomeButtonActiveBrush;
+	TSharedPtr<FSlateBrush> CurrencyButtonBrush;
 	TSharedPtr<FSlateBrush> SettingsIconBrush;
-	TSharedPtr<FSlateBrush> LanguageIconBrush;
-	TSharedPtr<FSlateBrush> AchievementCoinsIconBrush;
-	TSharedPtr<FSlateBrush> PowerCouponsIconBrush;
+	TSharedPtr<FSlateBrush> SocialIconBrush;
+	TSharedPtr<FSlateBrush> ProfileIconBrush;
+	TSharedPtr<FSlateBrush> PowerUpIconBrush;
+	TSharedPtr<FSlateBrush> AchievementsIconBrush;
+	TSharedPtr<FSlateBrush> MiniGamesIconBrush;
+	TSharedPtr<FSlateBrush> CurrencyIconBrush;
 	TSharedPtr<FSlateBrush> QuitIconBrush;
-	TSharedPtr<FSlateBrush> QuitGlowBrush;
 	FVector2D CachedViewportSize = FVector2D::ZeroVector;
 	bool bViewportResponsiveRebuildQueued = false;
 };

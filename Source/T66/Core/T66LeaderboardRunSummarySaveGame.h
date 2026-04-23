@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Core/T66RunSaveGame.h"
 #include "Data/T66DataTypes.h"
+#include "Core/PlayerExperience/T66PlayerExperienceTypes.h"
 #include "GameFramework/SaveGame.h"
 #include "Core/T66RunIntegrityTypes.h"
 #include "T66LeaderboardRunSummarySaveGame.generated.h"
@@ -23,7 +24,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 19;
+	int32 SchemaVersion = 20;
 
 	/** Backend leaderboard entry UUID when this snapshot came from the online service. */
 	UPROPERTY(SaveGame)
@@ -245,6 +246,10 @@ public:
 	/** Build and runtime integrity context captured for this run. SchemaVersion>=16. */
 	UPROPERTY(SaveGame)
 	FT66RunIntegrityContext IntegrityContext;
+
+	/** Legal spawned score budget versus awarded score for anti-cheat review. */
+	UPROPERTY(SaveGame)
+	FT66ScoreBudget ScoreBudgetContext;
 
 	// ===== Proof of Run =====
 

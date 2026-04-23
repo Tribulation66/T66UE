@@ -1,6 +1,8 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66DifficultyTotem.h"
+#include "Core/T66GameInstance.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -34,9 +36,19 @@ void AT66DifficultyTotem::BeginPlay()
 	// Ensure newly spawned totems match current run interaction growth.
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
+	const UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 	if (!RunState) return;
 
+	MaxInteractions = PlayerExperience
+		? PlayerExperience->GetDifficultyTotemUsesPerTotem(T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy)
+		: 4;
+	MaxInteractions = FMath::Max(1, MaxInteractions);
+	RemainingInteractions = FMath::Clamp(RemainingInteractions, 1, MaxInteractions);
+	bConsumed = RemainingInteractions <= 0;
+
 	ApplyGrowthFromInteractionCount(RunState->GetTotemsActivatedCount());
+	RefreshInteractionPrompt();
 }
 
 bool AT66DifficultyTotem::Interact(APlayerController* PC)
@@ -46,11 +58,19 @@ bool AT66DifficultyTotem::Interact(APlayerController* PC)
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return false;
 
-	// Infinite-use: each interaction adds exactly 1 skull (no half skulls, no rarity deltas).
-	RunState->AddDifficultySkulls(1);
+	if (bConsumed || RemainingInteractions <= 0)
+	{
+		bConsumed = true;
+		RefreshInteractionPrompt();
+		return false;
+	}
 
-	// Track total interactions so all totems grow together.
-	const int32 InteractionCount = RunState->RegisterTotemActivated(); // 1-based, unbounded (clamped in RunState)
+	RunState->AddDifficultySkulls(1);
+	RemainingInteractions = FMath::Max(0, RemainingInteractions - 1);
+	bConsumed = RemainingInteractions <= 0;
+	RefreshInteractionPrompt();
+
+	const int32 InteractionCount = RunState->RegisterTotemActivated();
 
 	// All totems in the map grow taller on each interaction.
 	if (UWorld* World = GetWorld())
@@ -64,6 +84,21 @@ bool AT66DifficultyTotem::Interact(APlayerController* PC)
 		}
 	}
 	return true;
+}
+
+FText AT66DifficultyTotem::BuildInteractionPromptText() const
+{
+	const FText BasePrompt = Super::BuildInteractionPromptText();
+	if (BasePrompt.IsEmpty())
+	{
+		return BasePrompt;
+	}
+
+	return FText::Format(
+		NSLOCTEXT("T66.DifficultyTotem", "PromptWithCharges", "{0} ({1}/{2})"),
+		BasePrompt,
+		FText::AsNumber(FMath::Max(0, RemainingInteractions)),
+		FText::AsNumber(FMath::Max(1, MaxInteractions)));
 }
 
 void AT66DifficultyTotem::ApplyGrowthFromInteractionCount(int32 InteractionCount)

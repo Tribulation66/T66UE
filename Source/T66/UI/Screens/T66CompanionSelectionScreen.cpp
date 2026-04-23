@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/T66CompanionSelectionScreen.h"
+#include "UI/Screens/T66SelectionScreenUtils.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66SkinSubsystem.h"
@@ -17,7 +18,6 @@
 #include "Gameplay/T66FrontendGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
-#include "Widgets/SCompoundWidget.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -58,81 +58,6 @@ namespace
 			PC->PositionLocalFrontendCameraForCompanionPreview();
 		}
 	}
-
-	class ST66DragRotateCompanionPreview : public SCompoundWidget
-	{
-	public:
-		SLATE_BEGIN_ARGS(ST66DragRotateCompanionPreview) {}
-			SLATE_ARGUMENT(TWeakObjectPtr<AT66CompanionPreviewStage>, Stage)
-			SLATE_ARGUMENT(float, DegreesPerPixel)
-		SLATE_END_ARGS()
-
-		void Construct(const FArguments& InArgs)
-		{
-			Stage = InArgs._Stage;
-			DegreesPerPixel = InArgs._DegreesPerPixel;
-			bDragging = false;
-			// No child content — transparent overlay for drag-rotate/zoom.
-			// The viewport renders the 3D companion directly behind this widget.
-		}
-
-		virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-		{
-			if (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
-			{
-				bDragging = true;
-				LastPos = MouseEvent.GetScreenSpacePosition();
-				return FReply::Handled().CaptureMouse(SharedThis(this));
-			}
-			return FReply::Unhandled();
-		}
-
-		virtual FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-		{
-			if (bDragging && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
-			{
-				bDragging = false;
-				return FReply::Handled().ReleaseMouseCapture();
-			}
-			return FReply::Unhandled();
-		}
-
-		virtual FReply OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-		{
-			if (!bDragging)
-			{
-				return FReply::Unhandled();
-			}
-
-			const FVector2D Pos = MouseEvent.GetScreenSpacePosition();
-			const FVector2D Delta = Pos - LastPos;
-			LastPos = Pos;
-
-			if (Stage.IsValid())
-			{
-				// Rotate the companion without orbiting the camera (no vertical pitch).
-				Stage->AddPreviewYaw(Delta.X * DegreesPerPixel);
-			}
-			return FReply::Handled();
-		}
-
-		virtual FReply OnMouseWheel(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-		{
-			if (Stage.IsValid())
-			{
-				Stage->AddPreviewZoom(MouseEvent.GetWheelDelta());
-				T66PositionCompanionPreviewCamera(Stage.Get());
-				return FReply::Handled();
-			}
-			return FReply::Unhandled();
-		}
-
-	private:
-		TWeakObjectPtr<AT66CompanionPreviewStage> Stage;
-		bool bDragging = false;
-		FVector2D LastPos = FVector2D::ZeroVector;
-		float DegreesPerPixel = 0.25f;
-	};
 }
 
 UT66CompanionSelectionScreen::UT66CompanionSelectionScreen(const FObjectInitializer& ObjectInitializer)
@@ -180,16 +105,7 @@ void UT66CompanionSelectionScreen::GeneratePlaceholderSkins()
 	}
 	else
 	{
-		for (FName SkinID : UT66SkinSubsystem::GetAllSkinIDs())
-		{
-			FSkinData S;
-			S.SkinID = SkinID;
-			S.bIsDefault = (SkinID == UT66SkinSubsystem::DefaultSkinID);
-			S.bIsOwned = S.bIsDefault;
-			S.bIsEquipped = S.bIsDefault;
-			S.CoinCost = S.bIsDefault ? 0 : UT66SkinSubsystem::DefaultSkinPriceAC;
-			PlaceholderSkins.Add(S);
-		}
+		T66SelectionScreenUtils::PopulateDefaultOwnedSkins(PlaceholderSkins);
 	}
 }
 
@@ -203,17 +119,9 @@ void UT66CompanionSelectionScreen::RefreshSkinsList()
 	}
 	if (ACBalanceTextBlock.IsValid())
 	{
-		int32 ACBalance = 0;
-		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
-		{
-			if (UT66SkinSubsystem* Skin = GI->GetSubsystem<UT66SkinSubsystem>())
-				ACBalance = Skin->GetAchievementCoinsBalance();
-		}
-		UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-		const FText ACBalanceText = Loc
-			? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(ACBalance))
-			: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} CC"), FText::AsNumber(ACBalance));
-		ACBalanceTextBlock->SetText(ACBalanceText);
+		ACBalanceTextBlock->SetText(T66SelectionScreenUtils::FormatAchievementCoinBalance(
+			GetLocSubsystem(),
+			T66SelectionScreenUtils::GetAchievementCoinBalance(this)));
 	}
 	UpdateCompanionDisplay();
 }
@@ -233,9 +141,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 	const float EquippedMinWidth = 84.f;
 	const float BuyButtonMinWidth = 88.f;
 	const float BuyButtonHeight = 34.f;
-	const FText BeachgoerPriceText = Loc
-		? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(BeachgoerPriceAC))
-		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} CC"), FText::AsNumber(BeachgoerPriceAC));
+	const FText BeachgoerPriceText = T66SelectionScreenUtils::FormatAchievementCoinBalance(Loc, BeachgoerPriceAC);
 
 	for (const FSkinData& Skin : PlaceholderSkins)
 	{
@@ -410,17 +316,9 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	FText ConfirmText = Loc ? Loc->GetText_ConfirmCompanion() : NSLOCTEXT("T66.CompanionSelection", "ConfirmCompanion", "CONFIRM COMPANION");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
-	int32 ACBalance = 0;
-	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
-	{
-		if (UT66SkinSubsystem* SkinSub = GI->GetSubsystem<UT66SkinSubsystem>())
-		{
-			ACBalance = SkinSub->GetAchievementCoinsBalance();
-		}
-	}
-	const FText ACBalanceText = Loc
-		? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(ACBalance))
-		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} CC"), FText::AsNumber(ACBalance));
+	const FText ACBalanceText = T66SelectionScreenUtils::FormatAchievementCoinBalance(
+		Loc,
+		T66SelectionScreenUtils::GetAchievementCoinBalance(this));
 
 	SAssignNew(SkinsListBoxWidget, SVerticalBox);
 	AddSkinRowsToBox(SkinsListBoxWidget);
@@ -1190,15 +1088,30 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::CreateCompanionPreviewWidget(c
 
 	if (Stage)
 	{
+		const TWeakObjectPtr<AT66CompanionPreviewStage> WeakStage(Stage);
 		// In-world preview: transparent overlay for drag-rotate/zoom.
 		// The main viewport renders the companion with full Lumen GI behind the UI.
 		return SNew(SBox)
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
 			[
-				SNew(ST66DragRotateCompanionPreview)
-				.Stage(Stage)
+				SNew(ST66DragRotateStagePreview)
 				.DegreesPerPixel(0.28f)
+				.OnRotateYaw(FT66DragPreviewDeltaDelegate::CreateLambda([WeakStage](const float DeltaYaw)
+				{
+					if (AT66CompanionPreviewStage* PreviewStage = WeakStage.Get())
+					{
+						PreviewStage->AddPreviewYaw(DeltaYaw);
+					}
+				}))
+				.OnZoom(FT66DragPreviewDeltaDelegate::CreateLambda([WeakStage](const float ZoomDelta)
+				{
+					if (AT66CompanionPreviewStage* PreviewStage = WeakStage.Get())
+					{
+						PreviewStage->AddPreviewZoom(ZoomDelta);
+						T66PositionCompanionPreviewCamera(PreviewStage);
+					}
+				}))
 			];
 	}
 	return SAssignNew(CompanionPreviewColorBox, SBorder)

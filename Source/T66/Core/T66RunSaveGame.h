@@ -9,6 +9,7 @@
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66BossPartTypes.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
+#include "Core/PlayerExperience/T66PlayerExperienceTypes.h"
 #include "Core/T66RunIntegrityTypes.h"
 #include "T66RunSaveGame.generated.h"
 
@@ -411,6 +412,9 @@ struct T66_API FT66SavedRunSnapshot
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 CurrentScore = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FT66ScoreBudget ScoreBudgetContext;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 HeroLevel = 1;

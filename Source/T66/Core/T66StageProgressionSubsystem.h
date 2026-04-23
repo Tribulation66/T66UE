@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/PlayerExperience/T66PlayerExperienceTypes.h"
 #include "Data/T66DataTypes.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Core/T66StageProgressionTuningConfig.h"
@@ -34,6 +35,12 @@ struct T66_API FT66StageProgressionSnapshot
 	int32 LocalStageCount = 4;
 
 	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
+	int32 DifficultySkulls = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
+	int32 TotemsActivatedCount = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
 	float DifficultyScalar = 1.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
@@ -56,6 +63,12 @@ struct T66_API FT66StageProgressionSnapshot
 
 	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
 	float TrapSpeedScalar = 1.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
+	FT66TotemRules TotemRules;
+
+	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
+	FT66SpawnBudget SpawnBudget;
 
 	UPROPERTY(BlueprintReadOnly, Category = "StageProgression")
 	FVector4 ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.0f);

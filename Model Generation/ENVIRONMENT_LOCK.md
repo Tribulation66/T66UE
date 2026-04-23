@@ -118,10 +118,10 @@ These are not environment requirements, but they are the current proven operatin
 
 ## Local Workstation Lock
 
-- Blender: `5.0`
+- Blender: `5.1.1`
 - Blender MCP: installed and working
 - RetopoFlow: `4.1.5`
-- Blender MCP recovery helper: [start_blender_mcp.py](C:/UE/T66/Tools/Trellis2/start_blender_mcp.py)
+- Blender MCP recovery helper: [start_blender_mcp.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/start_blender_mcp.py)
 - Blender batch QA / decimate helper: [blender_glb_qa.py](C:/UE/T66/Model%20Generation/Scripts/blender_glb_qa.py)
 - If Blender MCP is disconnected, reopen Blender and rerun the MCP helper before assuming the toolchain is unavailable.
 

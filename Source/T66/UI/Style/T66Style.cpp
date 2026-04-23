@@ -813,7 +813,7 @@ ET66ButtonBackgroundVisual FT66Style::ResolveButtonBackgroundVisual(const FT66Bu
 		return ET66ButtonBackgroundVisual::None;
 	}
 
-	return ET66ButtonBackgroundVisual::MainMenuArcane;
+	return ET66ButtonBackgroundVisual::None;
 }
 
 ET66ButtonBorderVisual FT66Style::ResolvePanelBorderVisual(const FT66PanelParams& Params)
@@ -845,7 +845,7 @@ ET66ButtonBackgroundVisual FT66Style::ResolvePanelBackgroundVisual(const FT66Pan
 		return ET66ButtonBackgroundVisual::None;
 	}
 
-	return ET66ButtonBackgroundVisual::MainMenuArcane;
+	return ET66ButtonBackgroundVisual::None;
 }
 
 float FT66Style::ResolveButtonDecorativeBorderThickness(const FT66ButtonParams& Params, int32 EffectiveFontSize, float MaxThickness)
@@ -917,7 +917,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	const TSharedPtr<FT66ButtonFillBrushSet> FillBrushSet = FT66ButtonVisuals::CreateFillBrushSet(ResolvedBackgroundVisual);
 	const bool bHasCustomFill = FillBrushSet.IsValid() && FillBrushSet->IsValid();
 
-	if (ResolvedBorderVisual == ET66ButtonBorderVisual::RetroWood || ResolvedBorderVisual == ET66ButtonBorderVisual::MainMenuBlueTrim)
+	if (ResolvedBorderVisual == ET66ButtonBorderVisual::RetroWood)
 	{
 		StyleName = bHasCustomFill ? "T66.Button.FlatTransparent" : "T66.Button.FlatRect";
 	}
@@ -935,8 +935,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	const bool bUsesTextureChrome =
 		!IsDotaTheme()
 		&& HasButtonTextures()
-		&& ResolvedBorderVisual != ET66ButtonBorderVisual::RetroWood
-		&& ResolvedBorderVisual != ET66ButtonBorderVisual::MainMenuBlueTrim;
+		&& ResolvedBorderVisual != ET66ButtonBorderVisual::RetroWood;
 	TAttribute<FSlateColor> BtnColor;
 	if (bHasCustomFill)
 	{

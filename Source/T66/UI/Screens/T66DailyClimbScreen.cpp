@@ -31,7 +31,7 @@
 
 namespace
 {
-	const FVector2D MainMenuBackgroundImageSize(1920.f, 1080.f);
+	const FVector2D T66DailyClimbBackgroundImageSize(1920.f, 1080.f);
 
 	FLinearColor DailyShellFill()
 	{
@@ -53,7 +53,7 @@ namespace
 		return FLinearColor(0.70f, 0.76f, 0.80f, 1.0f);
 	}
 
-	void EnsureRuntimeImageBrush(const TSharedPtr<FSlateBrush>& Brush, const FVector2D& ImageSize)
+	void EnsureDailyClimbRuntimeImageBrush(const TSharedPtr<FSlateBrush>& Brush, const FVector2D& ImageSize)
 	{
 		if (!Brush.IsValid())
 		{
@@ -65,7 +65,7 @@ namespace
 		Brush->ImageSize = ImageSize;
 	}
 
-	void SetupMainMenuLayerBrush(
+	void SetupDailyClimbLayerBrush(
 		TSharedPtr<FSlateBrush>& Brush,
 		TStrongObjectPtr<UTexture2D>& TextureHandle,
 		UT66UITexturePoolSubsystem* TexPool,
@@ -77,11 +77,11 @@ namespace
 		if (!Brush.IsValid())
 		{
 			Brush = MakeShared<FSlateBrush>();
-			EnsureRuntimeImageBrush(Brush, MainMenuBackgroundImageSize);
+			EnsureDailyClimbRuntimeImageBrush(Brush, T66DailyClimbBackgroundImageSize);
 		}
 		else
 		{
-			EnsureRuntimeImageBrush(Brush, MainMenuBackgroundImageSize);
+			EnsureDailyClimbRuntimeImageBrush(Brush, T66DailyClimbBackgroundImageSize);
 		}
 
 		if (!TextureHandle.IsValid())
@@ -105,7 +105,7 @@ namespace
 		else
 		{
 			Brush->SetResourceObject(nullptr);
-			Brush->ImageSize = MainMenuBackgroundImageSize;
+			Brush->ImageSize = T66DailyClimbBackgroundImageSize;
 		}
 
 		if (!TexPool || !FPackageName::DoesPackageExist(PackagePath) || TextureHandle.IsValid())
@@ -126,7 +126,7 @@ namespace
 		T66SlateTexture::BindSharedBrushAsync(TexPool, Soft, Requester, Brush, RequestKey, false);
 	}
 
-	void SetupRuntimeImageBrush(
+	void SetupDailyClimbRuntimeImageBrush(
 		TSharedPtr<FSlateBrush>& Brush,
 		TStrongObjectPtr<UTexture2D>& TextureHandle,
 		const TCHAR* AssetPath,
@@ -138,7 +138,7 @@ namespace
 			Brush = MakeShared<FSlateBrush>();
 		}
 
-		EnsureRuntimeImageBrush(Brush, ImageSize);
+		EnsureDailyClimbRuntimeImageBrush(Brush, ImageSize);
 
 		if (!TextureHandle.IsValid())
 		{
@@ -459,7 +459,7 @@ void UT66DailyClimbScreen::RequestBackgroundTexture()
 	UGameInstance* GI = GetGameInstance();
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 
-	SetupMainMenuLayerBrush(
+	SetupDailyClimbLayerBrush(
 		SkyBackgroundBrush,
 		SkyBackgroundTexture,
 		TexPool,
@@ -468,7 +468,7 @@ void UT66DailyClimbScreen::RequestBackgroundTexture()
 		TEXT("/Game/UI/MainMenu/sky_bg"),
 		FName(TEXT("DailyClimbSkyBg")));
 
-	SetupMainMenuLayerBrush(
+	SetupDailyClimbLayerBrush(
 		FireMoonBrush,
 		FireMoonTexture,
 		TexPool,
@@ -477,7 +477,7 @@ void UT66DailyClimbScreen::RequestBackgroundTexture()
 		TEXT("/Game/UI/MainMenu/fire_moon"),
 		FName(TEXT("DailyClimbFireMoon")));
 
-	SetupMainMenuLayerBrush(
+	SetupDailyClimbLayerBrush(
 		PyramidChadBrush,
 		PyramidChadTexture,
 		TexPool,
@@ -486,11 +486,11 @@ void UT66DailyClimbScreen::RequestBackgroundTexture()
 		TEXT("/Game/UI/MainMenu/pyramid_chad"),
 		FName(TEXT("DailyClimbPyramidChad")));
 
-	SetupRuntimeImageBrush(
+	SetupDailyClimbRuntimeImageBrush(
 		PrimaryCTAFillBrush,
 		PrimaryCTAFillTexture,
 		nullptr,
-		TEXT("RuntimeDependencies/T66/UI/MainMenu/mainmenu_cta_fill_green.png"),
+		TEXT("RuntimeDependencies/T66/UI/MiniMainMenu/mini_mainmenu_cta_fill_green.png"),
 		FVector2D(1024.f, 232.f));
 }
 

@@ -144,6 +144,7 @@ void AT66EnemyDirector::SpawnInitialPopulationForStage()
 	const FT66StageProgressionSnapshot Snapshot = StageProgression
 		? StageProgression->GetCurrentSnapshot()
 		: FT66StageProgressionSnapshot{};
+	const FT66SpawnBudget SpawnBudget = Snapshot.SpawnBudget;
 
 	TSubclassOf<AT66EnemyBase> RegularClass = EnemyClass;
 	if (!RegularClass)
@@ -178,9 +179,9 @@ void AT66EnemyDirector::SpawnInitialPopulationForStage()
 		}
 
 		const int32 InitialPopulationCount = FMath::Clamp(
-			T66TowerTargetInitialEnemiesPerGameplayFloor,
+			SpawnBudget.InitialEnemiesPerGameplayFloor > 0 ? SpawnBudget.InitialEnemiesPerGameplayFloor : T66TowerTargetInitialEnemiesPerGameplayFloor,
 			0,
-			64);
+			128);
 		for (int32 SpawnIndex = 0; SpawnIndex < InitialPopulationCount; ++SpawnIndex)
 		{
 			FVector SpawnLoc = FVector::ZeroVector;
@@ -229,6 +230,8 @@ void AT66EnemyDirector::SpawnInitialPopulationForStage()
 				Enemy->ApplyDifficultyScalar(RunState->GetDifficultyScalar());
 				Enemy->ApplyProgressionEnemyScalar(Snapshot.EnemyStatScalar);
 				Enemy->ApplyFinaleScaling(RunState->GetFinalSurvivalEnemyScalar());
+				Enemy->FreezeScoreAwardAtSpawn(RunState->GetDifficultyScalar());
+				RunState->RegisterSpawnedEnemyScoreBudget(Enemy->GetResolvedScoreAward(), StageNum);
 			}
 
 			++AliveCount;
@@ -297,9 +300,13 @@ void AT66EnemyDirector::RefreshSpawningFromProgression()
 	const FT66StageProgressionSnapshot Snapshot = StageProgression
 		? StageProgression->GetCurrentSnapshot()
 		: FT66StageProgressionSnapshot{};
+	const AT66GameMode* ActiveGameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	const bool bTowerLayout = ActiveGameMode && ActiveGameMode->IsUsingTowerMainMapLayout();
 	const float RuntimeSpawnInterval = FMath::Max(
 		0.15f,
-		(BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
+		bTowerLayout
+			? FMath::Max(0.15f, Snapshot.SpawnBudget.RuntimeSpawnIntervalSeconds)
+			: (BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
 
 	World->GetTimerManager().ClearTimer(SpawnTimerHandle);
 	World->GetTimerManager().SetTimer(
@@ -346,7 +353,7 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 			const float RuntimeSpawnInterval = FMath::Max(
 				0.15f,
 				bTowerLayout
-					? T66TowerTargetRuntimeSpawnIntervalSeconds
+					? FMath::Max(0.15f, Snapshot.SpawnBudget.RuntimeSpawnIntervalSeconds)
 					: (BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
 
 			bSpawningArmed = true;
@@ -429,8 +436,8 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	int32 EffectiveMaxAlive = 0;
 	if (bTowerLayout)
 	{
-		EffectivePerWave = T66TowerTargetEnemiesPerWave;
-		EffectiveMaxAlive = T66TowerTargetMaxAliveEnemies;
+		EffectivePerWave = FMath::Max(1, Snapshot.SpawnBudget.RuntimeEnemiesPerWave);
+		EffectiveMaxAlive = FMath::Max(EffectivePerWave, Snapshot.SpawnBudget.RuntimeMaxAliveEnemies);
 	}
 	else
 	{
@@ -1050,6 +1057,11 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 				ActiveMiniBoss = Enemy;
 			}
 			Enemy->ApplyFinaleScaling(Slot.FinaleScalar);
+			if (RunState)
+			{
+				Enemy->FreezeScoreAwardAtSpawn(Slot.DifficultyScalar);
+				RunState->RegisterSpawnedEnemyScoreBudget(Enemy->GetResolvedScoreAward(), Slot.StageNum);
+			}
 			AliveCount++;
 			if (Slot.bSpawnFromWall && bTowerLayout)
 			{

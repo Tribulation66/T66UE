@@ -6,6 +6,7 @@
 #include "Core/T66PlayerSettingsSaveGame.h"
 #include "Data/T66DataTypes.h"
 #include "Styling/SlateBrush.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Input/SComboBox.h"
 
@@ -28,11 +29,13 @@ public:
 		, _LeaderboardSubsystem(nullptr)
 		, _UIManager(nullptr)
 		, _DailyChallengeMode(false)
+		, _ReferenceMirrorMode(false)
 	{}
 		SLATE_ARGUMENT(UT66LocalizationSubsystem*, LocalizationSubsystem)
 		SLATE_ARGUMENT(UT66LeaderboardSubsystem*, LeaderboardSubsystem)
 		SLATE_ARGUMENT(UT66UIManager*, UIManager)
 		SLATE_ARGUMENT(bool, DailyChallengeMode)
+		SLATE_ARGUMENT(bool, ReferenceMirrorMode)
 	SLATE_END_ARGS()
 
 	~ST66LeaderboardPanel();
@@ -57,6 +60,7 @@ private:
 	ET66Difficulty CurrentDifficulty = ET66Difficulty::Easy;
 	ET66LeaderboardType CurrentType = ET66LeaderboardType::Score;
 	bool bDailyChallengeMode = false;
+	bool bReferenceMirrorMode = false;
 
 	TArray<FLeaderboardEntry> LeaderboardEntries;
 	UT66LocalizationSubsystem* LocSubsystem = nullptr;
@@ -135,6 +139,21 @@ private:
 
 	// Local dark dropdown treatment for the leaderboard board.
 	TSharedPtr<FComboButtonStyle> LeaderboardDropdownStyle;
+
+	// Reference-driven main-menu chrome assets.
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceFilterWorldButtonBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceFilterFriendsButtonBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceFilterCrownButtonBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceTabWeeklyActiveBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceTabAllTimeInactiveBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceDropdownLeftBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceDropdownRightBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceToggleScoreSelectedBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceToggleSpeedRunUnselectedBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceAvatarFrameBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceAvatarFallbackBrush01;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceAvatarFallbackBrush02;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceAvatarFallbackBrush03;
 
 	void NormalizeEntryIdentity(FLeaderboardEntry& Entry, int32 EntryIndex);
 	const FSlateBrush* GetPortraitBrushForEntry(const FLeaderboardEntry& Entry);

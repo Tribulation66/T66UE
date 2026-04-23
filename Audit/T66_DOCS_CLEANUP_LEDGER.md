@@ -35,14 +35,14 @@ These are not master docs, but they still look useful as active references:
   - Still useful as a detailed implementation reference tied to the UI audit.
 - `Docs/Systems/T66_Console_Commands.md`
   - Useful operational reference and not clearly superseded by a master doc.
-- `Docs/Art/ChatGPT_Image_Production_Workflow.md`
-- `Docs/Art/MasterStyle.md`
-- `Docs/Art/Item_Icon_Prompt_Pack.md`
-- `Docs/Art/Secondary_Buff_Icon_Prompt_Pack.md`
-- `Docs/Art/Accuracy_Family_Item_Icon_Prompt_Pack.md`
-- `Docs/Art/Accuracy_Item_And_TempBuff_Audit.md`
-- `Docs/Art/Accuracy_Item_Icon_Prompt_Pack.md`
-- `Docs/Art/Accuracy_Secondary_Buff_Icon_Prompt_Pack.md`
+- `Docs/UI/ChatGPT_Image_Production_Workflow.md`
+- `Docs/UI/MasterStyle.md`
+- `Docs/UI/Item_Icon_Prompt_Pack.md`
+- `Docs/UI/Secondary_Buff_Icon_Prompt_Pack.md`
+- `Docs/UI/Accuracy_Family_Item_Icon_Prompt_Pack.md`
+- `Docs/UI/Accuracy_Item_And_TempBuff_Audit.md`
+- `Docs/UI/Accuracy_Item_Icon_Prompt_Pack.md`
+- `Docs/UI/Accuracy_Secondary_Buff_Icon_Prompt_Pack.md`
 - `Audit/T66_UI_AUDIT.md`
 - `Audit/T66_PACKAGING_CLEANUP_TRACKER.md`
 - `Audit/PERFORMANCE_AUDIT.md`
@@ -55,7 +55,7 @@ These are superseded, legacy, or explicitly deprecated with no clear need to kee
   - Superseded by `MASTER DOCS/T66_MASTER_GUIDELINES.md`.
 - `Guidelines/Archive/memory_legacy.md`
   - Legacy agent context; not the current project truth.
-- `Docs/Art/Secondary_Buff_Icon_Prompt_Pack_remaining.md`
+- `Docs/UI/Secondary_Buff_Icon_Prompt_Pack_remaining.md`
   - Explicitly marked as deprecated overflow scratch material.
 - `Docs/Systems/T66_Preview_Stage_Handoff.md`
   - Explicitly called out by `MASTER DOCS/MASTER_LIGHTING.md` as no longer the current source of truth.

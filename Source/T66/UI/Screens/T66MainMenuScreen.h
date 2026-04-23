@@ -102,6 +102,18 @@ private:
 		TSharedPtr<STextBlock> ActionText;
 	};
 
+	struct FButtonStateBrushSet
+	{
+		TSharedPtr<FSlateBrush> NormalBrush;
+		TStrongObjectPtr<UTexture2D> NormalTexture;
+		TSharedPtr<FSlateBrush> HoverBrush;
+		TStrongObjectPtr<UTexture2D> HoverTexture;
+		TSharedPtr<FSlateBrush> PressedBrush;
+		TStrongObjectPtr<UTexture2D> PressedTexture;
+		TSharedPtr<FSlateBrush> DisabledBrush;
+		TStrongObjectPtr<UTexture2D> DisabledTexture;
+	};
+
 	uint32 CaptureMenuStateHash() const;
 	bool ShouldRebuildRetainedSlate() const;
 
@@ -112,9 +124,42 @@ private:
 	TStrongObjectPtr<UTexture2D> FireMoonTexture;
 	TSharedPtr<FSlateBrush> PyramidChadBrush;
 	TStrongObjectPtr<UTexture2D> PyramidChadTexture;
+	TSharedPtr<FSlateBrush> LeftPanelShellBrush;
+	TStrongObjectPtr<UTexture2D> LeftPanelShellTexture;
+	TSharedPtr<FSlateBrush> RightPanelShellBrush;
+	TStrongObjectPtr<UTexture2D> RightPanelShellTexture;
+	TSharedPtr<FSlateBrush> ProfileCardShellBrush;
+	TStrongObjectPtr<UTexture2D> ProfileCardShellTexture;
+	TSharedPtr<FSlateBrush> SearchFieldShellBrush;
+	TStrongObjectPtr<UTexture2D> SearchFieldShellTexture;
+	TSharedPtr<FSlateBrush> SearchIconBrush;
+	TStrongObjectPtr<UTexture2D> SearchIconTexture;
+	TSharedPtr<FSlateBrush> FriendStarButtonBrush;
+	TStrongObjectPtr<UTexture2D> FriendStarButtonTexture;
+	TSharedPtr<FSlateBrush> FriendInviteButtonBrush;
+	TStrongObjectPtr<UTexture2D> FriendInviteButtonTexture;
+	TSharedPtr<FSlateBrush> FriendOfflineButtonBrush;
+	TStrongObjectPtr<UTexture2D> FriendOfflineButtonTexture;
+	TSharedPtr<FSlateBrush> FriendAvatarFrameBrush;
+	TStrongObjectPtr<UTexture2D> FriendAvatarFrameTexture;
+	TSharedPtr<FSlateBrush> PartySlotFrameBrush;
+	TStrongObjectPtr<UTexture2D> PartySlotFrameTexture;
+	TSharedPtr<FSlateBrush> CloseButtonBrush;
+	TStrongObjectPtr<UTexture2D> CloseButtonTexture;
+	TSharedPtr<FSlateBrush> RightUpperStripBrush;
+	TStrongObjectPtr<UTexture2D> RightUpperStripTexture;
 	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
-	TSharedPtr<FSlateBrush> PrimaryCTAFillBrush;
-	TStrongObjectPtr<UTexture2D> PrimaryCTAFillTexture;
+	TSharedPtr<FSlateBrush> ProfileAvatarFallbackBrush;
+	TStrongObjectPtr<UTexture2D> ProfileAvatarFallbackTexture;
+	TSharedPtr<FSlateBrush> TopBarShellBrush;
+	TStrongObjectPtr<UTexture2D> TopBarShellTexture;
+	TSharedPtr<FSlateBrush> CenterStackEnvironmentBrush;
+	TStrongObjectPtr<UTexture2D> CenterStackEnvironmentTexture;
+	TSharedPtr<FSlateBrush> CenterStackFrameBrush;
+	TStrongObjectPtr<UTexture2D> CenterStackFrameTexture;
+	FButtonStateBrushSet NewGameButtonBrushes;
+	FButtonStateBrushSet LoadGameButtonBrushes;
+	FButtonStateBrushSet DailyChallengeButtonBrushes;
 	TSharedPtr<FSlateBrush> SettingsIconBrush;
 	TSharedPtr<FSlateBrush> LanguageIconBrush;
 	TArray<TSharedPtr<FSlateBrush>> FriendPortraitBrushes;
@@ -152,6 +197,8 @@ private:
 
 	/** Load or bind the main menu animated background layers. */
 	void RequestBackgroundTexture();
+	void RequestReferencePanelBrushes();
+	void RequestGeneratedCTAButtonBrushes();
 	void RequestUtilityButtonIcons();
 	void HandlePartyStateChanged();
 	void HandleSessionStateChanged();

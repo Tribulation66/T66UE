@@ -23,9 +23,16 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual FText BuildInteractionPromptText() const override;
 
 private:
 	void ApplyGrowthFromInteractionCount(int32 InteractionCount);
+
+	UPROPERTY(Transient)
+	int32 MaxInteractions = 4;
+
+	UPROPERTY(Transient)
+	int32 RemainingInteractions = 4;
 
 	/** Extra stacked visual segments (do not affect collision/interaction). */
 	UPROPERTY(Transient)

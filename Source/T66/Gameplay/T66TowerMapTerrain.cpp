@@ -15,13 +15,13 @@
 
 namespace
 {
-	static const FName T66MainMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
-	static const FName T66MainMapTerrainMaterialsReadyTag(TEXT("T66_MainMapTerrain_MaterialsReady"));
-	static const FName T66TraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
-	static const FName T66TowerCeilingTag(TEXT("T66_Tower_Ceiling"));
-	static const FName T66FloorStartTag(TEXT("T66_Floor_Start"));
-	static const FName T66FloorMainTag(TEXT("T66_Floor_Main"));
-	static const FName T66FloorBossTag(TEXT("T66_Floor_Boss"));
+	static const FName T66TowerMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
+	static const FName T66TowerMapTerrainMaterialsReadyTag(TEXT("T66_MainMapTerrain_MaterialsReady"));
+	static const FName T66TowerMapTraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
+	static const FName T66TowerMapCeilingTag(TEXT("T66_Tower_Ceiling"));
+	static const FName T66TowerMapFloorStartTag(TEXT("T66_Floor_Start"));
+	static const FName T66TowerMapFloorMainTag(TEXT("T66_Floor_Main"));
+	static const FName T66TowerMapFloorBossTag(TEXT("T66_Floor_Boss"));
 	static constexpr int32 T66TowerFloorVertexCount = 4;
 	static constexpr float T66TowerRoofSkinThickness = 12.0f;
 	static constexpr float T66TowerStartFloorHeadroom = 2000.0f;
@@ -150,8 +150,8 @@ namespace
 			MeshComponent->SetMobility(EComponentMobility::Static);
 		}
 
-		Actor->Tags.AddUnique(T66MainMapTerrainVisualTag);
-		Actor->Tags.AddUnique(T66MainMapTerrainMaterialsReadyTag);
+		Actor->Tags.AddUnique(T66TowerMapTerrainVisualTag);
+		Actor->Tags.AddUnique(T66TowerMapTerrainMaterialsReadyTag);
 		for (const FName& Tag : ExtraTags)
 		{
 			if (!Tag.IsNone())
@@ -254,8 +254,8 @@ namespace
 			MeshComponent->SetMobility(EComponentMobility::Static);
 		}
 
-		Actor->Tags.AddUnique(T66MainMapTerrainVisualTag);
-		Actor->Tags.AddUnique(T66MainMapTerrainMaterialsReadyTag);
+		Actor->Tags.AddUnique(T66TowerMapTerrainVisualTag);
+		Actor->Tags.AddUnique(T66TowerMapTerrainMaterialsReadyTag);
 		for (const FName& Tag : ExtraTags)
 		{
 			if (!Tag.IsNone())
@@ -270,7 +270,7 @@ namespace
 	{
 		const AActor* HitActor = Hit.GetActor();
 		return HitActor
-			&& (HitActor->ActorHasTag(T66TowerCeilingTag) || HitActor->ActorHasTag(T66TraversalBarrierTag));
+			&& (HitActor->ActorHasTag(T66TowerMapCeilingTag) || HitActor->ActorHasTag(T66TowerMapTraversalBarrierTag));
 	}
 
 	static bool T66TraceDownToSurface(UWorld* World, const T66TowerMapTerrain::FLayout& Layout, const FVector& DesiredLocation, FVector& OutLocation)
@@ -2167,7 +2167,7 @@ namespace
 		const float WallHalfDepth = Layout.WallThickness * 0.5f;
 		const float WallHalfSpan = Layout.ShellRadius + WallHalfDepth;
 		const TArray<FName> ShellTags = {
-			T66TraversalBarrierTag,
+			T66TowerMapTraversalBarrierTag,
 			FName(TEXT("T66_Floor_Tower_Shell")),
 			FName(*FString::Printf(TEXT("T66_Floor_Tower_%02d"), Floor.FloorNumber))
 		};
@@ -2233,7 +2233,7 @@ namespace
 		}
 
 		const TArray<FName> WallTags = {
-			T66TraversalBarrierTag,
+			T66TowerMapTraversalBarrierTag,
 			FName(*FString::Printf(TEXT("T66_Floor_Tower_%02d"), Floor.FloorNumber)),
 			FName(*FString::Printf(TEXT("T66_Floor_Tower_Maze_%02d"), Floor.FloorNumber))
 		};
@@ -2504,9 +2504,9 @@ namespace T66TowerMapTerrain
 				? Floor.PolygonApothem
 				: (Floor.PolygonApothem - 1300.0f);
 			Floor.FloorTag =
-				(Floor.FloorRole == ET66TowerFloorRole::Start) ? T66FloorStartTag :
-				(Floor.FloorRole == ET66TowerFloorRole::Boss) ? T66FloorBossTag :
-				T66FloorMainTag;
+				(Floor.FloorRole == ET66TowerFloorRole::Start) ? T66TowerMapFloorStartTag :
+				(Floor.FloorRole == ET66TowerFloorRole::Boss) ? T66TowerMapFloorBossTag :
+				T66TowerMapFloorMainTag;
 
 			if (Floor.bHasDropHole)
 			{
@@ -3137,8 +3137,8 @@ namespace T66TowerMapTerrain
 					SpawnParams,
 					bEnableRoofCollision,
 					{
-						T66TraversalBarrierTag,
-						T66TowerCeilingTag,
+						T66TowerMapTraversalBarrierTag,
+						T66TowerMapCeilingTag,
 						FName(*FString::Printf(TEXT("T66_Floor_Tower_%02d"), Floor.FloorNumber)),
 						FName(TEXT("T66_Floor_Tower_Roof")),
 						FName(*FString::Printf(TEXT("T66_Floor_Tower_Roof_%02d"), Floor.FloorNumber))

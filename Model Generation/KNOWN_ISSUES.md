@@ -122,7 +122,7 @@ Impact:
 
 Current mitigation:
 
-- reopen Blender and rerun [start_blender_mcp.py](C:/UE/T66/Tools/Trellis2/start_blender_mcp.py) first
+- reopen Blender and rerun [start_blender_mcp.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/start_blender_mcp.py) first
 - use the headless Blender helper only as the fallback path for render / decimate / export work
 
 ## 9. Decimated GLB Exports Can Emit Blender Warnings

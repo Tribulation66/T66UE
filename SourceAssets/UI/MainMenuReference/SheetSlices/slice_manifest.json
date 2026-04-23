@@ -1,0 +1,647 @@
+[
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "settings_normal",
+    "box": [
+      33,
+      118,
+      141,
+      230
+    ],
+    "output": "SheetSlices/TopBar/settings_normal.png",
+    "size": [
+      108,
+      112
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "settings_hover",
+    "box": [
+      170,
+      117,
+      283,
+      230
+    ],
+    "output": "SheetSlices/TopBar/settings_hover.png",
+    "size": [
+      113,
+      113
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "settings_pressed",
+    "box": [
+      311,
+      118,
+      421,
+      230
+    ],
+    "output": "SheetSlices/TopBar/settings_pressed.png",
+    "size": [
+      110,
+      112
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "settings_disabled",
+    "box": [
+      446,
+      118,
+      555,
+      230
+    ],
+    "output": "SheetSlices/TopBar/settings_disabled.png",
+    "size": [
+      109,
+      112
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "chat_normal",
+    "box": [
+      33,
+      247,
+      141,
+      358
+    ],
+    "output": "SheetSlices/TopBar/chat_normal.png",
+    "size": [
+      108,
+      111
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "chat_hover",
+    "box": [
+      169,
+      246,
+      282,
+      360
+    ],
+    "output": "SheetSlices/TopBar/chat_hover.png",
+    "size": [
+      113,
+      114
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "chat_pressed",
+    "box": [
+      312,
+      248,
+      420,
+      360
+    ],
+    "output": "SheetSlices/TopBar/chat_pressed.png",
+    "size": [
+      108,
+      112
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "chat_disabled",
+    "box": [
+      446,
+      247,
+      555,
+      359
+    ],
+    "output": "SheetSlices/TopBar/chat_disabled.png",
+    "size": [
+      109,
+      112
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "nav_normal",
+    "box": [
+      602,
+      122,
+      852,
+      237
+    ],
+    "output": "SheetSlices/TopBar/nav_normal.png",
+    "size": [
+      250,
+      115
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "nav_hover",
+    "box": [
+      875,
+      121,
+      1211,
+      238
+    ],
+    "output": "SheetSlices/TopBar/nav_hover.png",
+    "size": [
+      336,
+      117
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "nav_pressed",
+    "box": [
+      1233,
+      124,
+      1514,
+      239
+    ],
+    "output": "SheetSlices/TopBar/nav_pressed.png",
+    "size": [
+      281,
+      115
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "nav_disabled",
+    "box": [
+      1539,
+      125,
+      1794,
+      241
+    ],
+    "output": "SheetSlices/TopBar/nav_disabled.png",
+    "size": [
+      255,
+      116
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "portrait_normal",
+    "box": [
+      35,
+      471,
+      152,
+      615
+    ],
+    "output": "SheetSlices/TopBar/portrait_normal.png",
+    "size": [
+      117,
+      144
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "portrait_hover",
+    "box": [
+      220,
+      471,
+      339,
+      615
+    ],
+    "output": "SheetSlices/TopBar/portrait_hover.png",
+    "size": [
+      119,
+      144
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "portrait_pressed",
+    "box": [
+      410,
+      471,
+      529,
+      615
+    ],
+    "output": "SheetSlices/TopBar/portrait_pressed.png",
+    "size": [
+      119,
+      144
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "portrait_disabled",
+    "box": [
+      598,
+      471,
+      715,
+      615
+    ],
+    "output": "SheetSlices/TopBar/portrait_disabled.png",
+    "size": [
+      117,
+      144
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "coupon_normal",
+    "box": [
+      895,
+      476,
+      1064,
+      586
+    ],
+    "output": "SheetSlices/TopBar/coupon_normal.png",
+    "size": [
+      169,
+      110
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "coupon_hover",
+    "box": [
+      1109,
+      476,
+      1284,
+      586
+    ],
+    "output": "SheetSlices/TopBar/coupon_hover.png",
+    "size": [
+      175,
+      110
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "coupon_pressed",
+    "box": [
+      1338,
+      477,
+      1524,
+      587
+    ],
+    "output": "SheetSlices/TopBar/coupon_pressed.png",
+    "size": [
+      186,
+      110
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "coupon_disabled",
+    "box": [
+      1575,
+      478,
+      1780,
+      588
+    ],
+    "output": "SheetSlices/TopBar/coupon_disabled.png",
+    "size": [
+      205,
+      110
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "power_normal",
+    "box": [
+      33,
+      719,
+      132,
+      819
+    ],
+    "output": "SheetSlices/TopBar/power_normal.png",
+    "size": [
+      99,
+      100
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "power_hover",
+    "box": [
+      168,
+      719,
+      268,
+      819
+    ],
+    "output": "SheetSlices/TopBar/power_hover.png",
+    "size": [
+      100,
+      100
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "power_pressed",
+    "box": [
+      298,
+      719,
+      397,
+      818
+    ],
+    "output": "SheetSlices/TopBar/power_pressed.png",
+    "size": [
+      99,
+      99
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "power_disabled",
+    "box": [
+      425,
+      719,
+      523,
+      819
+    ],
+    "output": "SheetSlices/TopBar/power_disabled.png",
+    "size": [
+      98,
+      100
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "leaf_cluster_small_01",
+    "box": [
+      601,
+      722,
+      744,
+      791
+    ],
+    "output": "SheetSlices/TopBar/leaf_cluster_small_01.png",
+    "size": [
+      143,
+      69
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "leaf_cluster_small_02",
+    "box": [
+      758,
+      723,
+      865,
+      794
+    ],
+    "output": "SheetSlices/TopBar/leaf_cluster_small_02.png",
+    "size": [
+      107,
+      71
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "leaf_cluster_small_03",
+    "box": [
+      879,
+      724,
+      931,
+      793
+    ],
+    "output": "SheetSlices/TopBar/leaf_cluster_small_03.png",
+    "size": [
+      52,
+      69
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "separator_short",
+    "box": [
+      1214,
+      745,
+      1328,
+      782
+    ],
+    "output": "SheetSlices/TopBar/separator_short.png",
+    "size": [
+      114,
+      37
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "separator_medium",
+    "box": [
+      1350,
+      745,
+      1494,
+      782
+    ],
+    "output": "SheetSlices/TopBar/separator_medium.png",
+    "size": [
+      144,
+      37
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
+    "name": "separator_diamond",
+    "box": [
+      1517,
+      744,
+      1791,
+      783
+    ],
+    "output": "SheetSlices/TopBar/separator_diamond.png",
+    "size": [
+      274,
+      39
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "stack_frame",
+    "box": [
+      33,
+      154,
+      421,
+      479
+    ],
+    "output": "SheetSlices/Center/stack_frame.png",
+    "size": [
+      388,
+      325
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "green_normal",
+    "box": [
+      472,
+      145,
+      762,
+      289
+    ],
+    "output": "SheetSlices/Center/green_normal.png",
+    "size": [
+      290,
+      144
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "green_hover",
+    "box": [
+      783,
+      145,
+      1072,
+      289
+    ],
+    "output": "SheetSlices/Center/green_hover.png",
+    "size": [
+      289,
+      144
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "green_pressed",
+    "box": [
+      1093,
+      148,
+      1380,
+      293
+    ],
+    "output": "SheetSlices/Center/green_pressed.png",
+    "size": [
+      287,
+      145
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "green_disabled",
+    "box": [
+      1404,
+      146,
+      1688,
+      289
+    ],
+    "output": "SheetSlices/Center/green_disabled.png",
+    "size": [
+      284,
+      143
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "blue_normal",
+    "box": [
+      471,
+      414,
+      760,
+      559
+    ],
+    "output": "SheetSlices/Center/blue_normal.png",
+    "size": [
+      289,
+      145
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "blue_hover",
+    "box": [
+      782,
+      414,
+      1072,
+      559
+    ],
+    "output": "SheetSlices/Center/blue_hover.png",
+    "size": [
+      290,
+      145
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "blue_pressed",
+    "box": [
+      1093,
+      417,
+      1380,
+      562
+    ],
+    "output": "SheetSlices/Center/blue_pressed.png",
+    "size": [
+      287,
+      145
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "blue_disabled",
+    "box": [
+      1405,
+      417,
+      1688,
+      560
+    ],
+    "output": "SheetSlices/Center/blue_disabled.png",
+    "size": [
+      283,
+      143
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "purple_normal",
+    "box": [
+      471,
+      684,
+      760,
+      829
+    ],
+    "output": "SheetSlices/Center/purple_normal.png",
+    "size": [
+      289,
+      145
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "purple_hover",
+    "box": [
+      782,
+      684,
+      1072,
+      829
+    ],
+    "output": "SheetSlices/Center/purple_hover.png",
+    "size": [
+      290,
+      145
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "purple_pressed",
+    "box": [
+      1093,
+      687,
+      1380,
+      832
+    ],
+    "output": "SheetSlices/Center/purple_pressed.png",
+    "size": [
+      287,
+      145
+    ]
+  },
+  {
+    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
+    "name": "purple_disabled",
+    "box": [
+      1404,
+      686,
+      1688,
+      829
+    ],
+    "output": "SheetSlices/Center/purple_disabled.png",
+    "size": [
+      284,
+      143
+    ]
+  }
+]

@@ -3,6 +3,7 @@
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66HeroSelectionScreen.h"
 #include "UI/Screens/T66CompanionSelectionScreen.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -12,13 +13,7 @@
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/Texture2D.h"
-#include "Widgets/Layout/SBox.h"
-#include "Widgets/Layout/SBorder.h"
-#include "Widgets/Layout/SScaleBox.h"
-#include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
-#include "Widgets/Input/SButton.h"
-#include "Widgets/SOverlay.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/Layout/SSpacer.h"
@@ -73,25 +68,8 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 	IDsWithNone.Append(AllCompanionIDs);
 
 	const int32 CompanionCount = IDsWithNone.Num();
-	const int32 Columns = FMath::Max(1, FMath::CeilToInt(FMath::Sqrt(static_cast<float>(FMath::Max(CompanionCount, 1)))));
-	const int32 Rows = FMath::Max(1, FMath::CeilToInt(static_cast<float>(FMath::Max(CompanionCount, 1)) / static_cast<float>(Columns)));
-	const float ModalWidth = FMath::Min(SafeFrameSize.X * 0.92f, 1180.0f);
-	const float ModalHeight = FMath::Min(SafeFrameSize.Y * 0.94f, 700.0f);
-	const float ModalPaddingX = 30.0f;
-	const float ModalPaddingY = 25.0f;
-	const float TitleSectionHeight = 58.0f;
-	const float FooterSectionHeight = 78.0f;
-	const float TileGap = 6.0f;
-	const float GridWidthBudget = FMath::Max(1.0f, ModalWidth - (ModalPaddingX * 2.0f));
-	const float GridHeightBudget = FMath::Max(1.0f, ModalHeight - (ModalPaddingY * 2.0f) - TitleSectionHeight - FooterSectionHeight);
-	const float TileSize = FMath::Clamp(
-		FMath::FloorToFloat(FMath::Min(
-			(GridWidthBudget - TileGap * static_cast<float>(Columns)) / static_cast<float>(Columns),
-			(GridHeightBudget - TileGap * static_cast<float>(Rows)) / static_cast<float>(Rows))),
-		64.0f,
-		256.0f);
-	const float GridWidth = Columns * TileSize + Columns * TileGap;
-	const float GridHeight = Rows * TileSize + Rows * TileGap;
+	const T66ScreenSlateHelpers::FResponsiveGridModalMetrics GridMetrics =
+		T66ScreenSlateHelpers::MakeResponsiveGridModalMetrics(CompanionCount, SafeFrameSize);
 
 	CompanionPortraitBrushes.Reset();
 	CompanionPortraitBrushes.Reserve(IDsWithNone.Num());
@@ -99,8 +77,8 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 	TSharedRef<SGridPanel> GridPanel = SNew(SGridPanel);
 	for (int32 Index = 0; Index < IDsWithNone.Num(); Index++)
 	{
-		const int32 Row = Index / Columns;
-		const int32 Col = Index % Columns;
+		const int32 Row = Index / GridMetrics.Columns;
+		const int32 Col = Index % GridMetrics.Columns;
 		FName CompanionID = IDsWithNone[Index];
 		FCompanionData Data;
 		FLinearColor SpriteColor = FLinearColor(0.35f, 0.25f, 0.25f, 1.0f);
@@ -131,9 +109,7 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 			}
 			else
 			{
-				PortraitBrush = MakeShared<FSlateBrush>();
-				PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
-				PortraitBrush->ImageSize = FVector2D(256.f, 256.f);
+				PortraitBrush = T66ScreenSlateHelpers::MakeSlateBrush(FVector2D(256.0f, 256.0f));
 				CompanionPortraitBrushes.Add(PortraitBrush);
 				if (TexPool)
 				{
@@ -154,115 +130,33 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 				? StaticCastSharedRef<SWidget>(
 					SNew(STextBlock)
 					.Text(NoCompanionText)
-					.Font(FT66Style::Tokens::FontBold(FMath::Clamp(FMath::RoundToInt(TileSize * 0.16f), 10, 18)))
+					.Font(FT66Style::Tokens::FontBold(FMath::Clamp(FMath::RoundToInt(GridMetrics.TileSize * 0.16f), 10, 18)))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 					.Justification(ETextJustify::Center)
 					.AutoWrapText(true))
 				: StaticCastSharedRef<SWidget>(SNew(SSpacer)));
 		GridPanel->AddSlot(Col, Row)
-			.Padding(TileGap * 0.5f)
+			.Padding(GridMetrics.TileGap * 0.5f)
 			[
-				SNew(SBox)
-				.WidthOverride(TileSize)
-				.HeightOverride(TileSize)
-				[
-					FT66Style::MakeButton(
-						FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, CompanionIDCopy]() { return HandleCompanionClicked(CompanionIDCopy); }))
-						.SetMinWidth(0.f)
-						.SetPadding(FMargin(0.0f))
-						.SetColor(FLinearColor::Transparent)
-						.SetEnabled(CompanionIDCopy.IsNone() || bUnlocked)
-						.SetContent(
-							SNew(SOverlay)
-							+ SOverlay::Slot()
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(SpriteColor)
-							]
-							+ SOverlay::Slot()
-							[
-								SNew(SScaleBox)
-								.Stretch(EStretch::ScaleToFit)
-								[
-									PortraitContent
-								]
-							]
-						)
-					)
-				]
+				T66ScreenSlateHelpers::MakeResponsiveGridTile(
+					FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, CompanionIDCopy]() { return HandleCompanionClicked(CompanionIDCopy); }))
+						.SetEnabled(CompanionIDCopy.IsNone() || bUnlocked),
+					SpriteColor,
+					PortraitContent,
+					GridMetrics)
 			];
 	}
 
-	// Fill remaining grid slots so layout is even
-	for (int32 Index = static_cast<int32>(IDsWithNone.Num()); Index < Rows * Columns; Index++)
-	{
-		const int32 Row = Index / Columns;
-		const int32 Col = Index % Columns;
-		GridPanel->AddSlot(Col, Row)
-			.Padding(TileGap * 0.5f)
-			[
-				SNew(SBox)
-				.WidthOverride(TileSize)
-				.HeightOverride(TileSize)
-				[
-					SNew(SSpacer)
-				]
-			];
-	}
+	T66ScreenSlateHelpers::AddUniformGridPaddingSlots(*GridPanel, IDsWithNone.Num(), GridMetrics);
 
-	return SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::Scrim())
-		[
-			SNew(SBox)
-			.WidthOverride(ModalWidth)
-			.HeightOverride(ModalHeight)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FT66Style::Panel())
-				.Padding(FMargin(30.0f, 25.0f))
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.0f, 0.0f, 0.0f, 20.0f)
-					[
-						SNew(STextBlock)
-						.Text(TitleText)
-						.Font(FT66Style::Tokens::FontBold(28))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SVerticalBox::Slot()
-					.FillHeight(1.0f)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					[
-						SNew(SBox)
-						.WidthOverride(GridWidth)
-						.HeightOverride(GridHeight)
-						[
-							GridPanel
-						]
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.0f, 20.0f, 0.0f, 0.0f)
-					[
-					FT66Style::MakeButton(
-						FT66ButtonParams(CloseText, FOnClicked::CreateUObject(this, &UT66CompanionGridScreen::HandleCloseClicked))
-						.SetMinWidth(120.f)
-						.SetColor(FT66Style::Tokens::Panel2)
-					)
-					]
-				]
-			]
-		];
+	return T66ScreenSlateHelpers::MakeResponsiveGridModal(
+		TitleText,
+		GridPanel,
+		FT66Style::MakeButton(
+			FT66ButtonParams(CloseText, FOnClicked::CreateUObject(this, &UT66CompanionGridScreen::HandleCloseClicked))
+			.SetMinWidth(120.0f)
+			.SetColor(FT66Style::Tokens::Panel2)),
+		GridMetrics);
 }
 
 FReply UT66CompanionGridScreen::HandleCompanionClicked(FName CompanionID)

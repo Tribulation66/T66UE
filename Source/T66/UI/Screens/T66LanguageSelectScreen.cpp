@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/T66LanguageSelectScreen.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
@@ -10,7 +11,6 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
-#include "Widgets/SOverlay.h"
 
 namespace
 {
@@ -193,53 +193,37 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 		.HAlign(HAlign_Center)
 		.Padding(0.0f, 30.0f, 0.0f, 0.0f)
 		[
-			SNew(SHorizontalBox)
-			.Visibility(bModalPresentation ? EVisibility::Visible : EVisibility::Collapsed)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.Padding(10.0f, 0.0f)
-			[
+			T66ScreenSlateHelpers::MakeTwoButtonRow(
 				MakeLanguageButton(
 					FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleBackClicked), ET66ButtonType::Neutral)
 					.SetMinWidth(150.f)
-					.SetColor(T66LanguageNeutralButtonFill()))
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.Padding(10.0f, 0.0f)
-			[
+					.SetColor(T66LanguageNeutralButtonFill())),
 				MakeLanguageButton(
 					FT66ButtonParams(ConfirmText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleConfirmClicked), ET66ButtonType::Success)
 					.SetMinWidth(150.f)
-					.SetColor(FT66Style::Tokens::Success))
-			]
+					.SetColor(FT66Style::Tokens::Success)),
+				FMargin(10.0f, 0.0f),
+				FMargin(10.0f, 0.0f),
+				bModalPresentation ? EVisibility::Visible : EVisibility::Collapsed)
 		];
 
 	if (bModalPresentation)
 	{
-		return SNew(SOverlay)
-			+ SOverlay::Slot()
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FT66Style::Scrim())
-			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			.Padding(FMargin(ScreenPadding))
-			[
-				MakeLanguagePanel(
-					SNew(SBox)
-					.WidthOverride(960.f)
-					.Padding(FMargin(40.0f, 30.0f))
-					[
-						PageContent
-					],
-					ET66PanelType::Panel,
-					T66LanguageShellFill(),
-					FMargin(24.f))
-			];
+		return T66ScreenSlateHelpers::MakeCenteredScrimModal(
+			MakeLanguagePanel(
+				SNew(SBox)
+				.WidthOverride(960.f)
+				.Padding(FMargin(40.0f, 30.0f))
+				[
+					PageContent
+				],
+				ET66PanelType::Panel,
+				T66LanguageShellFill(),
+				FMargin(24.f)),
+			FMargin(ScreenPadding),
+			0.0f,
+			0.0f,
+			true);
 	}
 
 	return SNew(SBox)

@@ -1,0 +1,297 @@
+[
+  {
+    "Name": "Easy",
+    "StartStage": 1,
+    "EndStage": 4,
+    "StartGoldBonus": 0,
+    "StartLootBags": 2,
+    "StartHeroBonusLevels": 0,
+    "bSpawnSupportVendorAtRunStart": false,
+    "bSupportVendorAllowSteal": false,
+    "EnemyLootBagDropChanceBase": 0.1,
+    "EnemyLootBagCountOnDrop": { "Min": 1, "Max": 1 },
+    "EnemyLootBagRarityWeights": { "Black": 0.8, "Red": 0.15, "Yellow": 0.045, "White": 0.005 },
+    "CatchUpLootBagRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.09, "White": 0.01 },
+    "ChestsPerStage": { "Min": 4, "Max": 10 },
+    "ChestRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.09, "White": 0.01 },
+    "ChestGoldRangeByRarity": {
+      "Black": { "Min": 35, "Max": 75 },
+      "Red": { "Min": 100, "Max": 180 },
+      "Yellow": { "Min": 220, "Max": 380 },
+      "White": { "Min": 450, "Max": 750 }
+    },
+    "ChestMimicChance": 0.2,
+    "WheelsPerStage": { "Min": 5, "Max": 11 },
+    "WheelRarityWeights": { "Black": 0.8, "Red": 0.15, "Yellow": 0.045, "White": 0.005 },
+    "WheelGoldRangeBlack": { "Min": 25.0, "Max": 100.0 },
+    "WheelGoldRangeRed": { "Min": 100.0, "Max": 300.0 },
+    "WheelGoldRangeYellow": { "Min": 200.0, "Max": 600.0 },
+    "WheelGoldRangeWhite": { "Min": 500.0, "Max": 1500.0 },
+    "CratesPerStage": { "Min": 3, "Max": 6 },
+    "CrateRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.08, "White": 0.02 },
+    "GamblerCheatSuccessChanceBase": 0.4,
+    "VendorStealSuccessChanceOnTimingHitBase": 0.65,
+    "TotemRules": {
+      "UsesPerTotem": 4,
+      "TotemsPerGameplayStage": 3,
+      "GameplayStagesWithTotems": 3,
+      "SkullColorBandSize": 4,
+      "bDifficultyPersistsAcrossStages": true
+    },
+    "EnemyScoreTuning": {
+      "BaseMultiplier": 1.0,
+      "bScaleWithDifficultyScalar": true
+    },
+    "BossScoreTuning": {
+      "BaseMultiplier": 1.0,
+      "bScaleWithDifficultyScalar": true
+    },
+    "TowerSpawnBudgetBase": {
+      "GameplayFloorsPerStage": 3,
+      "InitialEnemiesPerGameplayFloor": 4,
+      "TotalInitialEnemiesPerStage": 12,
+      "RuntimeEnemiesPerWave": 1,
+      "RuntimeMaxAliveEnemies": 12,
+      "RuntimeSpawnIntervalSeconds": 9.0,
+      "EstimatedRuntimeWavesPerStage": 0,
+      "EstimatedRuntimeEnemiesPerStage": 0,
+      "EstimatedTotalEnemiesPerStage": 0
+    }
+  },
+  {
+    "Name": "Medium",
+    "StartStage": 6,
+    "EndStage": 9,
+    "StartGoldBonus": 200,
+    "StartLootBags": 4,
+    "StartHeroBonusLevels": 24,
+    "bSpawnSupportVendorAtRunStart": true,
+    "bSupportVendorAllowSteal": false,
+    "EnemyLootBagDropChanceBase": 0.1,
+    "EnemyLootBagCountOnDrop": { "Min": 1, "Max": 1 },
+    "EnemyLootBagRarityWeights": { "Black": 0.8, "Red": 0.15, "Yellow": 0.045, "White": 0.005 },
+    "CatchUpLootBagRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.09, "White": 0.01 },
+    "ChestsPerStage": { "Min": 4, "Max": 10 },
+    "ChestRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.09, "White": 0.01 },
+    "ChestGoldRangeByRarity": {
+      "Black": { "Min": 35, "Max": 75 },
+      "Red": { "Min": 100, "Max": 180 },
+      "Yellow": { "Min": 220, "Max": 380 },
+      "White": { "Min": 450, "Max": 750 }
+    },
+    "ChestMimicChance": 0.2,
+    "WheelsPerStage": { "Min": 5, "Max": 11 },
+    "WheelRarityWeights": { "Black": 0.8, "Red": 0.15, "Yellow": 0.045, "White": 0.005 },
+    "WheelGoldRangeBlack": { "Min": 25.0, "Max": 100.0 },
+    "WheelGoldRangeRed": { "Min": 100.0, "Max": 300.0 },
+    "WheelGoldRangeYellow": { "Min": 200.0, "Max": 600.0 },
+    "WheelGoldRangeWhite": { "Min": 500.0, "Max": 1500.0 },
+    "CratesPerStage": { "Min": 3, "Max": 6 },
+    "CrateRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.08, "White": 0.02 },
+    "GamblerCheatSuccessChanceBase": 0.4,
+    "VendorStealSuccessChanceOnTimingHitBase": 0.65,
+    "TotemRules": {
+      "UsesPerTotem": 4,
+      "TotemsPerGameplayStage": 3,
+      "GameplayStagesWithTotems": 3,
+      "SkullColorBandSize": 4,
+      "bDifficultyPersistsAcrossStages": true
+    },
+    "EnemyScoreTuning": {
+      "BaseMultiplier": 1.0,
+      "bScaleWithDifficultyScalar": true
+    },
+    "BossScoreTuning": {
+      "BaseMultiplier": 1.0,
+      "bScaleWithDifficultyScalar": true
+    },
+    "TowerSpawnBudgetBase": {
+      "GameplayFloorsPerStage": 3,
+      "InitialEnemiesPerGameplayFloor": 4,
+      "TotalInitialEnemiesPerStage": 12,
+      "RuntimeEnemiesPerWave": 1,
+      "RuntimeMaxAliveEnemies": 12,
+      "RuntimeSpawnIntervalSeconds": 9.0,
+      "EstimatedRuntimeWavesPerStage": 0,
+      "EstimatedRuntimeEnemiesPerStage": 0,
+      "EstimatedTotalEnemiesPerStage": 0
+    }
+  },
+  {
+    "Name": "Hard",
+    "StartStage": 11,
+    "EndStage": 14,
+    "StartGoldBonus": 400,
+    "StartLootBags": 6,
+    "StartHeroBonusLevels": 49,
+    "bSpawnSupportVendorAtRunStart": true,
+    "bSupportVendorAllowSteal": false,
+    "EnemyLootBagDropChanceBase": 0.1,
+    "EnemyLootBagCountOnDrop": { "Min": 1, "Max": 1 },
+    "EnemyLootBagRarityWeights": { "Black": 0.8, "Red": 0.15, "Yellow": 0.045, "White": 0.005 },
+    "CatchUpLootBagRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.09, "White": 0.01 },
+    "ChestsPerStage": { "Min": 4, "Max": 10 },
+    "ChestRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.09, "White": 0.01 },
+    "ChestGoldRangeByRarity": {
+      "Black": { "Min": 35, "Max": 75 },
+      "Red": { "Min": 100, "Max": 180 },
+      "Yellow": { "Min": 220, "Max": 380 },
+      "White": { "Min": 450, "Max": 750 }
+    },
+    "ChestMimicChance": 0.2,
+    "WheelsPerStage": { "Min": 5, "Max": 11 },
+    "WheelRarityWeights": { "Black": 0.8, "Red": 0.15, "Yellow": 0.045, "White": 0.005 },
+    "WheelGoldRangeBlack": { "Min": 25.0, "Max": 100.0 },
+    "WheelGoldRangeRed": { "Min": 100.0, "Max": 300.0 },
+    "WheelGoldRangeYellow": { "Min": 200.0, "Max": 600.0 },
+    "WheelGoldRangeWhite": { "Min": 500.0, "Max": 1500.0 },
+    "CratesPerStage": { "Min": 3, "Max": 6 },
+    "CrateRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.08, "White": 0.02 },
+    "GamblerCheatSuccessChanceBase": 0.4,
+    "VendorStealSuccessChanceOnTimingHitBase": 0.65,
+    "TotemRules": {
+      "UsesPerTotem": 4,
+      "TotemsPerGameplayStage": 3,
+      "GameplayStagesWithTotems": 3,
+      "SkullColorBandSize": 4,
+      "bDifficultyPersistsAcrossStages": true
+    },
+    "EnemyScoreTuning": {
+      "BaseMultiplier": 1.0,
+      "bScaleWithDifficultyScalar": true
+    },
+    "BossScoreTuning": {
+      "BaseMultiplier": 1.0,
+      "bScaleWithDifficultyScalar": true
+    },
+    "TowerSpawnBudgetBase": {
+      "GameplayFloorsPerStage": 3,
+      "InitialEnemiesPerGameplayFloor": 4,
+      "TotalInitialEnemiesPerStage": 12,
+      "RuntimeEnemiesPerWave": 1,
+      "RuntimeMaxAliveEnemies": 12,
+      "RuntimeSpawnIntervalSeconds": 9.0,
+      "EstimatedRuntimeWavesPerStage": 0,
+      "EstimatedRuntimeEnemiesPerStage": 0,
+      "EstimatedTotalEnemiesPerStage": 0
+    }
+  },
+  {
+    "Name": "VeryHard",
+    "StartStage": 16,
+    "EndStage": 19,
+    "StartGoldBonus": 600,
+    "StartLootBags": 8,
+    "StartHeroBonusLevels": 74,
+    "bSpawnSupportVendorAtRunStart": true,
+    "bSupportVendorAllowSteal": false,
+    "EnemyLootBagDropChanceBase": 0.1,
+    "EnemyLootBagCountOnDrop": { "Min": 1, "Max": 1 },
+    "EnemyLootBagRarityWeights": { "Black": 0.8, "Red": 0.15, "Yellow": 0.045, "White": 0.005 },
+    "CatchUpLootBagRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.09, "White": 0.01 },
+    "ChestsPerStage": { "Min": 4, "Max": 10 },
+    "ChestRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.09, "White": 0.01 },
+    "ChestGoldRangeByRarity": {
+      "Black": { "Min": 35, "Max": 75 },
+      "Red": { "Min": 100, "Max": 180 },
+      "Yellow": { "Min": 220, "Max": 380 },
+      "White": { "Min": 450, "Max": 750 }
+    },
+    "ChestMimicChance": 0.2,
+    "WheelsPerStage": { "Min": 5, "Max": 11 },
+    "WheelRarityWeights": { "Black": 0.8, "Red": 0.15, "Yellow": 0.045, "White": 0.005 },
+    "WheelGoldRangeBlack": { "Min": 25.0, "Max": 100.0 },
+    "WheelGoldRangeRed": { "Min": 100.0, "Max": 300.0 },
+    "WheelGoldRangeYellow": { "Min": 200.0, "Max": 600.0 },
+    "WheelGoldRangeWhite": { "Min": 500.0, "Max": 1500.0 },
+    "CratesPerStage": { "Min": 3, "Max": 6 },
+    "CrateRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.08, "White": 0.02 },
+    "GamblerCheatSuccessChanceBase": 0.4,
+    "VendorStealSuccessChanceOnTimingHitBase": 0.65,
+    "TotemRules": {
+      "UsesPerTotem": 4,
+      "TotemsPerGameplayStage": 3,
+      "GameplayStagesWithTotems": 3,
+      "SkullColorBandSize": 4,
+      "bDifficultyPersistsAcrossStages": true
+    },
+    "EnemyScoreTuning": {
+      "BaseMultiplier": 1.0,
+      "bScaleWithDifficultyScalar": true
+    },
+    "BossScoreTuning": {
+      "BaseMultiplier": 1.0,
+      "bScaleWithDifficultyScalar": true
+    },
+    "TowerSpawnBudgetBase": {
+      "GameplayFloorsPerStage": 3,
+      "InitialEnemiesPerGameplayFloor": 4,
+      "TotalInitialEnemiesPerStage": 12,
+      "RuntimeEnemiesPerWave": 1,
+      "RuntimeMaxAliveEnemies": 12,
+      "RuntimeSpawnIntervalSeconds": 9.0,
+      "EstimatedRuntimeWavesPerStage": 0,
+      "EstimatedRuntimeEnemiesPerStage": 0,
+      "EstimatedTotalEnemiesPerStage": 0
+    }
+  },
+  {
+    "Name": "Impossible",
+    "StartStage": 21,
+    "EndStage": 23,
+    "StartGoldBonus": 800,
+    "StartLootBags": 10,
+    "StartHeroBonusLevels": 98,
+    "bSpawnSupportVendorAtRunStart": true,
+    "bSupportVendorAllowSteal": false,
+    "EnemyLootBagDropChanceBase": 0.1,
+    "EnemyLootBagCountOnDrop": { "Min": 1, "Max": 1 },
+    "EnemyLootBagRarityWeights": { "Black": 0.8, "Red": 0.15, "Yellow": 0.045, "White": 0.005 },
+    "CatchUpLootBagRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.09, "White": 0.01 },
+    "ChestsPerStage": { "Min": 4, "Max": 10 },
+    "ChestRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.09, "White": 0.01 },
+    "ChestGoldRangeByRarity": {
+      "Black": { "Min": 35, "Max": 75 },
+      "Red": { "Min": 100, "Max": 180 },
+      "Yellow": { "Min": 220, "Max": 380 },
+      "White": { "Min": 450, "Max": 750 }
+    },
+    "ChestMimicChance": 0.2,
+    "WheelsPerStage": { "Min": 5, "Max": 11 },
+    "WheelRarityWeights": { "Black": 0.8, "Red": 0.15, "Yellow": 0.045, "White": 0.005 },
+    "WheelGoldRangeBlack": { "Min": 25.0, "Max": 100.0 },
+    "WheelGoldRangeRed": { "Min": 100.0, "Max": 300.0 },
+    "WheelGoldRangeYellow": { "Min": 200.0, "Max": 600.0 },
+    "WheelGoldRangeWhite": { "Min": 500.0, "Max": 1500.0 },
+    "CratesPerStage": { "Min": 3, "Max": 6 },
+    "CrateRarityWeights": { "Black": 0.7, "Red": 0.2, "Yellow": 0.08, "White": 0.02 },
+    "GamblerCheatSuccessChanceBase": 0.4,
+    "VendorStealSuccessChanceOnTimingHitBase": 0.65,
+    "TotemRules": {
+      "UsesPerTotem": 4,
+      "TotemsPerGameplayStage": 3,
+      "GameplayStagesWithTotems": 3,
+      "SkullColorBandSize": 4,
+      "bDifficultyPersistsAcrossStages": true
+    },
+    "EnemyScoreTuning": {
+      "BaseMultiplier": 1.0,
+      "bScaleWithDifficultyScalar": true
+    },
+    "BossScoreTuning": {
+      "BaseMultiplier": 1.0,
+      "bScaleWithDifficultyScalar": true
+    },
+    "TowerSpawnBudgetBase": {
+      "GameplayFloorsPerStage": 3,
+      "InitialEnemiesPerGameplayFloor": 4,
+      "TotalInitialEnemiesPerStage": 12,
+      "RuntimeEnemiesPerWave": 1,
+      "RuntimeMaxAliveEnemies": 12,
+      "RuntimeSpawnIntervalSeconds": 9.0,
+      "EstimatedRuntimeWavesPerStage": 0,
+      "EstimatedRuntimeEnemiesPerStage": 0,
+      "EstimatedTotalEnemiesPerStage": 0
+    }
+  }
+]

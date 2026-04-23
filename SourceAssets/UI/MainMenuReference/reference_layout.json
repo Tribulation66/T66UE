@@ -1,0 +1,289 @@
+{
+  "canvas": {
+    "width": 1672,
+    "height": 941
+  },
+  "metrics": {
+    "topbar_reserved_height": 142.0,
+    "topbar_surface_height": 126.0,
+    "topbar_surface_offset_y": 14.0
+  },
+  "groups": {
+    "TopBar": {
+      "topbar_strip_full": {
+        "x": 0,
+        "y": 0,
+        "width": 1672,
+        "height": 126
+      },
+      "button_settings": {
+        "x": 12,
+        "y": 16,
+        "width": 96,
+        "height": 92
+      },
+      "button_chat": {
+        "x": 126,
+        "y": 16,
+        "width": 96,
+        "height": 92
+      },
+      "tab_account": {
+        "x": 278,
+        "y": 16,
+        "width": 222,
+        "height": 89
+      },
+      "badge_profile": {
+        "x": 521,
+        "y": 12,
+        "width": 79,
+        "height": 107
+      },
+      "tab_power_up": {
+        "x": 616,
+        "y": 16,
+        "width": 220,
+        "height": 89
+      },
+      "tab_achievements": {
+        "x": 848,
+        "y": 16,
+        "width": 243,
+        "height": 89
+      },
+      "tab_minigames": {
+        "x": 1104,
+        "y": 16,
+        "width": 224,
+        "height": 89
+      },
+      "currency_slot": {
+        "x": 1369,
+        "y": 23,
+        "width": 165,
+        "height": 75
+      },
+      "button_power": {
+        "x": 1551,
+        "y": 16,
+        "width": 105,
+        "height": 92
+      }
+    },
+    "Center": {
+      "center_backdrop_full": {
+        "x": 401,
+        "y": 120,
+        "width": 873,
+        "height": 821
+      },
+      "title_lockup": {
+        "x": 400,
+        "y": 120,
+        "width": 875,
+        "height": 164
+      },
+      "subtitle_lockup": {
+        "x": 631,
+        "y": 220,
+        "width": 457,
+        "height": 61
+      },
+      "hero_stage": {
+        "x": 414,
+        "y": 260,
+        "width": 849,
+        "height": 362
+      },
+      "cta_stack_full": {
+        "x": 646,
+        "y": 608,
+        "width": 486,
+        "height": 271
+      },
+      "cta_button_new_game": {
+        "x": 662,
+        "y": 627,
+        "width": 454,
+        "height": 86
+      },
+      "cta_button_load_game": {
+        "x": 662,
+        "y": 715,
+        "width": 450,
+        "height": 82
+      },
+      "cta_button_daily_challenge": {
+        "x": 664,
+        "y": 799,
+        "width": 449,
+        "height": 79
+      }
+    },
+    "CenterRuntime": {
+      "cta_button_new_game_plate": {
+        "x": 662,
+        "y": 627,
+        "width": 423,
+        "height": 86
+      },
+      "cta_button_load_game_plate": {
+        "x": 662,
+        "y": 715,
+        "width": 420,
+        "height": 82
+      },
+      "cta_button_daily_challenge_plate": {
+        "x": 664,
+        "y": 799,
+        "width": 419,
+        "height": 79
+      }
+    },
+    "Left": {
+      "shell_full_reference": {
+        "x": 18,
+        "y": 304,
+        "width": 424,
+        "height": 633
+      },
+      "profile_card_reference": {
+        "x": 35,
+        "y": 314,
+        "width": 369,
+        "height": 94
+      },
+      "search_field_reference": {
+        "x": 40,
+        "y": 427,
+        "width": 352,
+        "height": 47
+      },
+      "search_icon": {
+        "x": 353,
+        "y": 435,
+        "width": 29,
+        "height": 28
+      },
+      "friend_star_button": {
+        "x": 253,
+        "y": 521,
+        "width": 54,
+        "height": 50
+      },
+      "friend_invite_button": {
+        "x": 309,
+        "y": 521,
+        "width": 84,
+        "height": 50
+      },
+      "friend_offline_button": {
+        "x": 309,
+        "y": 672,
+        "width": 85,
+        "height": 50
+      },
+      "friend_avatar_frame_source": {
+        "x": 39,
+        "y": 519,
+        "width": 48,
+        "height": 49
+      },
+      "party_slot_source": {
+        "x": 38,
+        "y": 798,
+        "width": 81,
+        "height": 90
+      },
+      "close_button": {
+        "x": 361,
+        "y": 751,
+        "width": 45,
+        "height": 42
+      }
+    },
+    "Right": {
+      "shell_full_reference": {
+        "x": 1245,
+        "y": 321,
+        "width": 399,
+        "height": 617
+      },
+      "filter_world_button": {
+        "x": 1304,
+        "y": 253,
+        "width": 64,
+        "height": 62
+      },
+      "filter_friends_button": {
+        "x": 1374,
+        "y": 253,
+        "width": 65,
+        "height": 62
+      },
+      "filter_crown_button": {
+        "x": 1445,
+        "y": 253,
+        "width": 66,
+        "height": 62
+      },
+      "tab_weekly_active": {
+        "x": 1258,
+        "y": 334,
+        "width": 182,
+        "height": 56
+      },
+      "tab_all_time_inactive": {
+        "x": 1439,
+        "y": 334,
+        "width": 190,
+        "height": 56
+      },
+      "dropdown_shell_left": {
+        "x": 1260,
+        "y": 397,
+        "width": 181,
+        "height": 50
+      },
+      "dropdown_shell_right": {
+        "x": 1444,
+        "y": 397,
+        "width": 184,
+        "height": 50
+      },
+      "toggle_score_selected": {
+        "x": 1258,
+        "y": 454,
+        "width": 183,
+        "height": 53
+      },
+      "toggle_speedrun_unselected": {
+        "x": 1444,
+        "y": 454,
+        "width": 188,
+        "height": 53
+      },
+      "leaderboard_avatar_frame_source": {
+        "x": 1335,
+        "y": 550,
+        "width": 49,
+        "height": 49
+      }
+    },
+    "MainMenu": {
+      "left_panel_assembly": {
+        "x": 18,
+        "y": 304,
+        "width": 424,
+        "height": 633
+      },
+      "right_panel_assembly": {
+        "x": 1245,
+        "y": 253,
+        "width": 399,
+        "height": 685
+      }
+    }
+  }
+}

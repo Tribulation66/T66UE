@@ -185,6 +185,11 @@ public:
 	/** Extra end-of-difficulty survival scaling layered on top of the normal stage + difficulty tuning. */
 	void ApplyFinaleScaling(float Scalar);
 
+	/** Freeze the score award using the difficulty scalar active when this enemy spawned. */
+	void FreezeScoreAwardAtSpawn(float DifficultyScalar);
+
+	int32 GetResolvedScoreAward() const { return ResolvedScoreAward; }
+
 	/** Apply difficulty tier (Tier 0 = 1.0x, Tier 1 = 1.1x, Tier 2 = 1.2x, ...). */
 	void ApplyDifficultyTier(int32 Tier);
 
@@ -258,6 +263,7 @@ private:
 	int32 BaseMaxHP = 0;
 	int32 BaseTouchDamageHearts = 0;
 	int32 BasePointValue = 0;
+	int32 ResolvedScoreAward = 0;
 	float BaseArmor = 0.f;
 	float DifficultyScalarApplied = 1.0f;
 	float ProgressionEnemyScalarApplied = 1.0f;

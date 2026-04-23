@@ -8,6 +8,8 @@
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
 #include "Styling/SlateBrush.h"
+#include "Templates/UniquePtr.h"
+#include "UI/HUD/T66HUDPresentationController.h"
 #include "T66GameplayHUDWidget.generated.h"
 
 class UT66RunStateSubsystem;
@@ -52,6 +54,7 @@ UCLASS(Blueprintable)
 class T66_API UT66GameplayHUDWidget : public UUserWidget
 {
 	GENERATED_BODY()
+	friend class FT66HUDPresentationController;
 
 public:
 	virtual void NativeConstruct() override;
@@ -339,38 +342,13 @@ protected:
 	TArray<TSharedPtr<SBorder>> WorldDialogueOptionBorders;
 	TArray<TSharedPtr<STextBlock>> WorldDialogueOptionTexts;
 
-	struct FQueuedChestReward
-	{
-		ET66Rarity Rarity = ET66Rarity::Black;
-		int32 GoldAmount = 0;
-	};
-
-	struct FQueuedPickupCard
-	{
-		FName ItemID = NAME_None;
-		ET66ItemRarity ItemRarity = ET66ItemRarity::Black;
-	};
-
 	bool bFullMapOpen = false;
 	bool bInventoryInspectMode = false;
 	bool bHUDDirty = false;
-	bool bPickupCardVisible = false;
-	bool bChestRewardVisible = false;
 	float DPSRefreshAccumSeconds = 0.f;
-	float PickupCardRemainingSeconds = 0.f;
-	float ChestRewardRemainingSeconds = 0.f;
-	float ChestRewardElapsedSeconds = 0.f;
 	static constexpr float DPSRefreshIntervalSeconds = 0.2f;
 	int32 LastDisplayedDPS = -1;
 	FLinearColor LastDisplayedDPSColor = FLinearColor::Transparent;
-	FName ActivePickupCardItemID = NAME_None;
-	ET66ItemRarity ActivePickupCardRarity = ET66ItemRarity::Black;
-	ET66Rarity ActiveChestRewardRarity = ET66Rarity::Black;
-	int32 ChestRewardTargetGold = 0;
-	int32 ChestRewardDisplayedGold = 0;
-	int32 ChestRewardMinimumDisplayedGold = 0;
-	TArray<FQueuedChestReward> QueuedChestRewards;
-	TArray<FQueuedPickupCard> QueuedPickupCards;
 	int32 LastDisplayedSpeedRunTotalCs = -1;
 	int32 LastDisplayedBossCurrentHP = INDEX_NONE;
 	int32 LastDisplayedBossMaxHP = INDEX_NONE;
@@ -423,25 +401,6 @@ protected:
 	FTimerHandle MapRefreshTimerHandle;
 	FTimerHandle FPSTimerHandle;
 	FTimerHandle TikTokOverlaySyncHandle;
-
-	// Wheel spin state
-	bool bWheelPanelOpen = false;
-	bool bWheelSpinning = false;
-	float WheelSpinElapsed = 0.f;
-	float WheelSpinDuration = 2.0f;
-	float WheelStartAngleDeg = 0.f;
-	float WheelTotalAngleDeg = 0.f;
-	float WheelLastTickTimeSeconds = 0.f;
-	int32 WheelPendingGold = 0;
-	ET66Rarity ActiveWheelRarity = static_cast<ET66Rarity>(0);
-	FTimerHandle WheelSpinTickHandle;
-	FTimerHandle WheelResolveHandle;
-	FTimerHandle WheelCloseHandle;
-	TWeakObjectPtr<UT66CrateOverlayWidget> ActiveCrateOverlay;
-
-	// Achievement unlock notification (above inventory, one at a time, tier-colored border)
-	TArray<FName> AchievementNotificationQueue;
-	FTimerHandle AchievementNotificationTimerHandle;
 	TSharedPtr<SBox> AchievementNotificationBox;
 	TSharedPtr<SBorder> AchievementNotificationBorder;
 	TSharedPtr<STextBlock> AchievementNotificationTitleText;
@@ -450,6 +409,9 @@ protected:
 	void HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs);
 	void ShowNextAchievementNotification();
 	void HideAchievementNotificationAndShowNext();
+	FT66HUDPresentationController& GetPresentationController();
+	const FT66HUDPresentationController& GetPresentationController() const;
+	TUniquePtr<FT66HUDPresentationController> PresentationController;
 
 	// ============================================================
 	// Slate texture lifetime

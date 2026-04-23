@@ -108,11 +108,11 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 
 namespace
 {
-	constexpr int32 T66GameplayViewTargetRetryBudget = 20;
-	constexpr float T66GameplayViewTargetRetryDelaySeconds = 0.05f;
-	constexpr int32 T66ClientGameplayWorldSetupRetryBudget = 60;
-	constexpr float T66ClientGameplayWorldSetupRetryDelaySeconds = 0.10f;
-	const FName T66MainMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
+	constexpr int32 T66PlayerControllerGameplayViewTargetRetryBudget = 20;
+	constexpr float T66PlayerControllerGameplayViewTargetRetryDelaySeconds = 0.05f;
+	constexpr int32 T66PlayerControllerClientGameplayWorldSetupRetryBudget = 60;
+	constexpr float T66PlayerControllerClientGameplayWorldSetupRetryDelaySeconds = 0.10f;
+	const FName T66PlayerControllerMainMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
 }
 
 
@@ -206,11 +206,11 @@ void AT66PlayerController::BeginPlay()
 		}
 
 		SetupGameplayMode();
-		GameplayViewTargetRetriesRemaining = T66GameplayViewTargetRetryBudget;
+		GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
 		RefreshGameplayViewTarget(true);
 		bClientGameplayWorldSetupComplete = false;
 		bReceivedGameplayRunSettingsFromServer = false;
-		ClientGameplayWorldSetupRetriesRemaining = T66ClientGameplayWorldSetupRetryBudget;
+		ClientGameplayWorldSetupRetriesRemaining = T66PlayerControllerClientGameplayWorldSetupRetryBudget;
 		EnsureClientGameplayWorldSetup(true);
 		SetupGameplayHUD();
 		PrimeGameplayPresentationAssetsAsync();
@@ -289,7 +289,7 @@ void AT66PlayerController::BeginPlayingState()
 		return;
 	}
 
-	GameplayViewTargetRetriesRemaining = T66GameplayViewTargetRetryBudget;
+	GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
 	RefreshGameplayViewTarget(true);
 }
 
@@ -312,7 +312,7 @@ void AT66PlayerController::OnPossess(APawn* InPawn)
 	SetControlRotation(DesiredRotation);
 	ClientSetRotation(DesiredRotation, true);
 
-	GameplayViewTargetRetriesRemaining = T66GameplayViewTargetRetryBudget;
+	GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
 	RefreshGameplayViewTarget(true);
 }
 
@@ -325,7 +325,7 @@ void AT66PlayerController::ClientRestart_Implementation(APawn* NewPawn)
 		return;
 	}
 
-	GameplayViewTargetRetriesRemaining = T66GameplayViewTargetRetryBudget;
+	GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
 	RefreshGameplayViewTarget(true);
 }
 
@@ -338,7 +338,7 @@ void AT66PlayerController::OnRep_Pawn()
 		return;
 	}
 
-	GameplayViewTargetRetriesRemaining = T66GameplayViewTargetRetryBudget;
+	GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
 	RefreshGameplayViewTarget(true);
 }
 
@@ -409,7 +409,7 @@ void AT66PlayerController::RefreshGameplayViewTarget(bool bAllowRetry)
 				{
 					RefreshGameplayViewTarget(true);
 				}),
-				T66GameplayViewTargetRetryDelaySeconds,
+				T66PlayerControllerGameplayViewTargetRetryDelaySeconds,
 				false);
 		}
 		return;
@@ -498,7 +498,7 @@ void AT66PlayerController::EnsureClientGameplayWorldSetup(bool bAllowRetry)
 	int32 ExistingTerrainVisualCount = 0;
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
-		if (AActor* Actor = *It; Actor && Actor->ActorHasTag(T66MainMapTerrainVisualTag))
+		if (AActor* Actor = *It; Actor && Actor->ActorHasTag(T66PlayerControllerMainMapTerrainVisualTag))
 		{
 			++ExistingTerrainVisualCount;
 		}
@@ -517,7 +517,7 @@ void AT66PlayerController::EnsureClientGameplayWorldSetup(bool bAllowRetry)
 				{
 					EnsureClientGameplayWorldSetup(true);
 				}),
-				T66ClientGameplayWorldSetupRetryDelaySeconds,
+				T66PlayerControllerClientGameplayWorldSetupRetryDelaySeconds,
 				false);
 		}
 		else if (ClientGameplayWorldSetupRetriesRemaining <= 0)
@@ -552,7 +552,7 @@ void AT66PlayerController::EnsureClientGameplayWorldSetup(bool bAllowRetry)
 		TArray<AActor*> TerrainActorsToDestroy;
 		for (TActorIterator<AActor> It(World); It; ++It)
 		{
-			if (AActor* Actor = *It; Actor && Actor->ActorHasTag(T66MainMapTerrainVisualTag))
+			if (AActor* Actor = *It; Actor && Actor->ActorHasTag(T66PlayerControllerMainMapTerrainVisualTag))
 			{
 				TerrainActorsToDestroy.Add(Actor);
 			}
@@ -613,7 +613,7 @@ void AT66PlayerController::ClientApplyGameplayRunSettings_Implementation(int32 I
 	if (IsGameplayLevel())
 	{
 		bClientGameplayWorldSetupComplete = false;
-		ClientGameplayWorldSetupRetriesRemaining = T66ClientGameplayWorldSetupRetryBudget;
+		ClientGameplayWorldSetupRetriesRemaining = T66PlayerControllerClientGameplayWorldSetupRetryBudget;
 		EnsureClientGameplayWorldSetup(true);
 	}
 }

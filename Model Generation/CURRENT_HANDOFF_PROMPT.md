@@ -43,7 +43,7 @@ Rigging / bake exploration rules:
 - Record the pros, blockers, and recommended pipeline in the docs.
 
 Process rules:
-- If Blender MCP is disconnected, reopen Blender and rerun [start_blender_mcp.py](C:/UE/T66/Tools/Trellis2/start_blender_mcp.py) before falling back.
+- If Blender MCP is disconnected, reopen Blender and rerun [start_blender_mcp.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/start_blender_mcp.py) before falling back.
 - Save PNG review images to disk even if chat previews fail.
 - Update [RUN_HISTORY.md](C:/UE/T66/Model Generation/RUN_HISTORY.md), [MASTER_WORKFLOW.md](C:/UE/T66/Model Generation/MASTER_WORKFLOW.md), [KNOWN_ISSUES.md](C:/UE/T66/Model Generation/KNOWN_ISSUES.md), and [NEXT_STEPS.md](C:/UE/T66/Model Generation/NEXT_STEPS.md) with any real findings.
 - Do not restart hero TRELLIS seed sweeps unless you find a concrete reason the current accepted body can no longer support the pipeline.

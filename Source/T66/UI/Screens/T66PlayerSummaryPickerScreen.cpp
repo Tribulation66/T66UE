@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66GameInstance.h"
@@ -69,9 +70,7 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 		TSharedPtr<FSlateBrush>& Brush = HeroBrushes[i];
 		if (!Brush.IsValid())
 		{
-			Brush = MakeShared<FSlateBrush>();
-			Brush->DrawAs = ESlateBrushDrawType::Image;
-			Brush->ImageSize = FVector2D(96.f, 96.f);
+			Brush = T66ScreenSlateHelpers::MakeSlateBrush(FVector2D(96.f, 96.f));
 		}
 		if (T66GI && TexPool && !Snap->HeroID.IsNone())
 		{
@@ -146,34 +145,25 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 			];
 	}
 
-	return SNew(SBorder)
-		.BorderBackgroundColor(FT66Style::Scrim())
-		[
-			SNew(SBox)
+	return T66ScreenSlateHelpers::MakeCenteredScrimModal(
+		FT66Style::MakePanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
 			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			.Padding(0.0f, 0.0f, 0.0f, 24.0f)
 			[
-				FT66Style::MakePanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.0f, 0.0f, 0.0f, 24.0f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Picker", "Title", "Pick the Player"))
-						.Font(FT66Style::Tokens::FontBold(28))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					[
-						OptionsBox
-					]
-				,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(32.0f, 24.0f)))
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.Picker", "Title", "Pick the Player"))
+				.Font(FT66Style::Tokens::FontBold(28))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
 			]
-		];
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				OptionsBox
+			],
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(32.0f, 24.0f))));
 }
 
 FReply UT66PlayerSummaryPickerScreen::HandleSelectClicked(int32 Index)

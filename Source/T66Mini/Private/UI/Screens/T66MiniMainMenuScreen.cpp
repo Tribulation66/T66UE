@@ -982,7 +982,7 @@ void UT66MiniMainMenuScreen::RequestMiniMenuTextures()
 	SetupCookedBrush(SkyBackgroundBrush, SkyBackgroundTexture, TEXT("/Game/UI/MainMenu/sky_bg.sky_bg"), MiniBgSize, TEXT("MiniMainMenuSky"));
 	SetupCookedBrush(FireMoonBrush, FireMoonTexture, TEXT("/Game/UI/MainMenu/fire_moon.fire_moon"), MiniBgSize, TEXT("MiniMainMenuFire"));
 	SetupCookedBrush(PyramidChadBrush, PyramidChadTexture, TEXT("/Game/UI/MainMenu/pyramid_chad.pyramid_chad"), MiniBgSize, TEXT("MiniMainMenuPyramid"));
-	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("RuntimeDependencies/T66/UI/MainMenu/mainmenu_cta_fill_green.png"), FVector2D(1024.f, 232.f), false, TEXT("MiniMainMenuCTA"));
+	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("RuntimeDependencies/T66/UI/MiniMainMenu/mini_mainmenu_cta_fill_green.png"), FVector2D(1024.f, 232.f), false, TEXT("MiniMainMenuCTA"));
 }
 
 void UT66MiniMainMenuScreen::ReleaseRetainedSlateState()

@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/T66PartySizePickerScreen.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66SlateTextureHelpers.h"
@@ -39,17 +40,8 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
 	// Brushes for the party picker card images.
-	SoloCardBrush = MakeShared<FSlateBrush>();
-	SoloCardBrush->DrawAs = ESlateBrushDrawType::Image;
-	SoloCardBrush->ImageSize = FVector2D(560.f, 560.f);
-	SoloCardBrush->Tiling = ESlateBrushTileType::NoTile;
-	SoloCardBrush->SetResourceObject(nullptr);
-
-	CoopCardBrush = MakeShared<FSlateBrush>();
-	CoopCardBrush->DrawAs = ESlateBrushDrawType::Image;
-	CoopCardBrush->ImageSize = FVector2D(560.f, 560.f);
-	CoopCardBrush->Tiling = ESlateBrushTileType::NoTile;
-	CoopCardBrush->SetResourceObject(nullptr);
+	SoloCardBrush = T66ScreenSlateHelpers::MakeSlateBrush(FVector2D(560.f, 560.f));
+	CoopCardBrush = T66ScreenSlateHelpers::MakeSlateBrush(FVector2D(560.f, 560.f));
 
 	const FLinearColor LabelColor = FLinearColor::White;
 	const TSoftObjectPtr<UTexture2D> SoloSoft(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloDark.SoloDark")));
@@ -76,10 +68,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 	}
 
 	// Main menu background — same as the main menu.
-	MainMenuBackgroundBrush = MakeShared<FSlateBrush>();
-	MainMenuBackgroundBrush->DrawAs = ESlateBrushDrawType::Box;
-	MainMenuBackgroundBrush->Tiling = ESlateBrushTileType::NoTile;
-	MainMenuBackgroundBrush->SetResourceObject(nullptr);
+	MainMenuBackgroundBrush = T66ScreenSlateHelpers::MakeSlateBrush(FVector2D::ZeroVector, ESlateBrushDrawType::Box);
 	if (TexPool)
 	{
 		const TSoftObjectPtr<UTexture2D> BgSoft(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));

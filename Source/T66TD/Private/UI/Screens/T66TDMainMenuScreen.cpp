@@ -359,7 +359,7 @@ void UT66TDMainMenuScreen::RequestMenuTextures()
 {
 	SetupLooseBrush(BackdropBrush, BackdropTexture, TEXT("SourceAssets/TD/Maps/Backgrounds/TD_Menu_Backdrop_01.png"), TDBgSize, true, TEXT("TDMenuBackdrop"));
 	SetupLooseBrush(ForegroundBrush, ForegroundTexture, TEXT("SourceAssets/TD/Maps/Backgrounds/TD_Menu_Foreground_01.png"), TDBgSize, true, TEXT("TDMenuForeground"));
-	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("RuntimeDependencies/T66/UI/MainMenu/mainmenu_cta_fill_green.png"), FVector2D(1024.f, 232.f), false, TEXT("TDMenuCTA"));
+	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("RuntimeDependencies/T66/UI/MiniMainMenu/mini_mainmenu_cta_fill_green.png"), FVector2D(1024.f, 232.f), false, TEXT("TDMenuCTA"));
 }
 
 void UT66TDMainMenuScreen::ReleaseRetainedSlateState()

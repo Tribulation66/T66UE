@@ -8,6 +8,7 @@
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66PlayerController.h"
+#include "UI/T66CasinoCircusOverlayShared.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
@@ -26,224 +27,45 @@
 #include "Widgets/SNullWidget.h"
 #include "Widgets/Text/STextBlock.h"
 
-namespace
-{
-	DECLARE_DELEGATE_RetVal_TwoParams(FReply, FCircusAlchemyOnBeginDrag, const FGeometry&, const FPointerEvent&);
-
-	static FString MakeCircusAlchemyStackKey(const FT66InventorySlot& Slot)
-	{
-		return FString::Printf(TEXT("%s|%d"), *Slot.ItemTemplateID.ToString(), static_cast<int32>(Slot.Rarity));
-	}
-
-	class SCircusAlchemyDropBorder : public SBorder
-	{
-	public:
-		SLATE_BEGIN_ARGS(SCircusAlchemyDropBorder)
-			: _BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			, _BorderBackgroundColor(FLinearColor::White)
-			, _Padding(FMargin(0.f))
-		{}
-			SLATE_ARGUMENT(const FSlateBrush*, BorderImage)
-			SLATE_ARGUMENT(FSlateColor, BorderBackgroundColor)
-			SLATE_ARGUMENT(FMargin, Padding)
-			SLATE_EVENT(FOnDrop, OnDropHandler)
-			SLATE_DEFAULT_SLOT(FArguments, Content)
-		SLATE_END_ARGS()
-
-		void Construct(const FArguments& InArgs)
-		{
-			OnDropHandler = InArgs._OnDropHandler;
-			SBorder::Construct(
-				SBorder::FArguments()
-				.BorderImage(InArgs._BorderImage)
-				.BorderBackgroundColor(InArgs._BorderBackgroundColor)
-				.Padding(InArgs._Padding)
-				[
-					InArgs._Content.Widget
-				]);
-		}
-
-		virtual FReply OnDrop(const FGeometry& MyGeometry, const FDragDropEvent& DragDropEvent) override
-		{
-			return OnDropHandler.IsBound() ? OnDropHandler.Execute(MyGeometry, DragDropEvent) : FReply::Unhandled();
-		}
-
-	private:
-		FOnDrop OnDropHandler;
-	};
-
-	class SCircusAlchemyInventoryTile : public SBorder
-	{
-	public:
-		SLATE_BEGIN_ARGS(SCircusAlchemyInventoryTile)
-			: _BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			, _BorderBackgroundColor(FLinearColor::White)
-			, _Padding(FMargin(0.f))
-		{}
-			SLATE_ARGUMENT(const FSlateBrush*, BorderImage)
-			SLATE_ARGUMENT(FSlateColor, BorderBackgroundColor)
-			SLATE_ARGUMENT(FMargin, Padding)
-			SLATE_EVENT(FCircusAlchemyOnBeginDrag, OnBeginDragHandler)
-			SLATE_DEFAULT_SLOT(FArguments, Content)
-		SLATE_END_ARGS()
-
-		void Construct(const FArguments& InArgs)
-		{
-			OnBeginDragHandler = InArgs._OnBeginDragHandler;
-			SBorder::Construct(
-				SBorder::FArguments()
-				.BorderImage(InArgs._BorderImage)
-				.BorderBackgroundColor(InArgs._BorderBackgroundColor)
-				.Padding(InArgs._Padding)
-				[
-					InArgs._Content.Widget
-				]);
-		}
-
-		virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-		{
-			if (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
-			{
-				return FReply::Handled().DetectDrag(SharedThis(this), EKeys::LeftMouseButton);
-			}
-			return SBorder::OnMouseButtonDown(MyGeometry, MouseEvent);
-		}
-
-		virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-		{
-			return OnBeginDragHandler.IsBound() ? OnBeginDragHandler.Execute(MyGeometry, MouseEvent) : FReply::Unhandled();
-		}
-
-	private:
-		FCircusAlchemyOnBeginDrag OnBeginDragHandler;
-	};
-
-	class FCircusAlchemyDragDropOp : public FDragDropOperation
-	{
-	public:
-		DRAG_DROP_OPERATOR_TYPE(FCircusAlchemyDragDropOp, FDragDropOperation)
-
-		int32 InventoryIndex = INDEX_NONE;
-		FText Label;
-		TSharedPtr<FSlateBrush> IconBrush;
-
-		static TSharedRef<FCircusAlchemyDragDropOp> New(int32 InInventoryIndex, const FText& InLabel, const TSharedPtr<FSlateBrush>& InIconBrush)
-		{
-			TSharedRef<FCircusAlchemyDragDropOp> Op = MakeShared<FCircusAlchemyDragDropOp>();
-			Op->InventoryIndex = InInventoryIndex;
-			Op->Label = InLabel;
-			Op->IconBrush = InIconBrush.IsValid() ? InIconBrush : MakeShared<FSlateBrush>();
-			Op->Construct();
-			return Op;
-		}
-
-		virtual void Construct() override
-		{
-			MouseCursor = EMouseCursor::GrabHandClosed;
-			Decorator =
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 0.97f))
-				.Padding(FMargin(12.f, 10.f))
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 8.f, 0.f)
-					[
-						SNew(SBox)
-						.WidthOverride(72.f)
-						.HeightOverride(72.f)
-						[
-							SNew(SImage)
-							.Image(IconBrush.Get())
-							.ColorAndOpacity(FLinearColor::White)
-						]
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-					[
-						SNew(STextBlock)
-						.Text(Label)
-						.ColorAndOpacity(FLinearColor::White)
-						.Font(FT66Style::Tokens::FontBold(16))
-					]
-				];
-
-			// Let Slate create the cursor decorator window for this drag operation.
-			FDragDropOperation::Construct();
-		}
-
-		virtual TSharedPtr<SWidget> GetDefaultDecorator() const override
-		{
-			return Decorator;
-		}
-
-	private:
-		TSharedPtr<SWidget> Decorator;
-	};
-}
+namespace SharedOverlay = T66CasinoCircusOverlayShared;
 
 TSharedRef<SWidget> UT66CircusOverlayWidget::RebuildWidget()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
 
-	if (!GamblerTabWidget)
-	{
-		GamblerTabWidget = CreateWidget<UT66GamblerOverlayWidget>(GetOwningPlayer(), UT66GamblerOverlayWidget::StaticClass());
-		if (GamblerTabWidget)
+	SharedOverlay::EnsureShellTabWidgets(
+		this,
+		GamblerTabWidget,
+		VendorTabWidget,
+		[](UT66GamblerOverlayWidget* Widget) { Widget->SetEmbeddedInCasinoShell(true); },
+		[](UT66VendorOverlayWidget* Widget)
 		{
-			GamblerTabWidget->SetEmbeddedInCasinoShell(true);
-		}
-	}
-	if (!VendorTabWidget)
-	{
-		VendorTabWidget = CreateWidget<UT66VendorOverlayWidget>(GetOwningPlayer(), UT66VendorOverlayWidget::StaticClass());
-		if (VendorTabWidget)
-		{
-			VendorTabWidget->SetEmbeddedInCircusShell(true);
-			VendorTabWidget->SetVendorAllowsSteal(true);
-		}
-	}
+			Widget->SetEmbeddedInCircusShell(true);
+			Widget->SetVendorAllowsSteal(true);
+		});
+
 	if (RunState)
 	{
-		RunState->InventoryChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleInventoryChanged);
-		RunState->GoldChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleGoldOrDebtChanged);
-		RunState->DebtChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleGoldOrDebtChanged);
-		RunState->GamblerAngerChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleAngerChanged);
-		RunState->BossChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleBossChanged);
+		T66_RESET_COMMON_OVERLAY_RUNSTATE_DELEGATES(RunState, this, UT66CircusOverlayWidget);
 		RunState->ScoreChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleScoreChanged);
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleStageTimerChanged);
-		RunState->InventoryChanged.AddDynamic(this, &UT66CircusOverlayWidget::HandleInventoryChanged);
-		RunState->GoldChanged.AddDynamic(this, &UT66CircusOverlayWidget::HandleGoldOrDebtChanged);
-		RunState->DebtChanged.AddDynamic(this, &UT66CircusOverlayWidget::HandleGoldOrDebtChanged);
-		RunState->GamblerAngerChanged.AddDynamic(this, &UT66CircusOverlayWidget::HandleAngerChanged);
-		RunState->BossChanged.AddDynamic(this, &UT66CircusOverlayWidget::HandleBossChanged);
 		RunState->ScoreChanged.AddDynamic(this, &UT66CircusOverlayWidget::HandleScoreChanged);
 		RunState->StageTimerChanged.AddDynamic(this, &UT66CircusOverlayWidget::HandleStageTimerChanged);
 	}
 
-	AlchemyInventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-	AlchemyInventorySlotCountTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-	AlchemyInventorySlotTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-	AlchemyInventorySlotImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-	AlchemyInventorySlotBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	SharedOverlay::ResizeArrays(
+		UT66RunStateSubsystem::MaxInventorySlots,
+		AlchemyInventorySlotBorders,
+		AlchemyInventorySlotCountTexts,
+		AlchemyInventorySlotTexts,
+		AlchemyInventorySlotImages);
 	const float AlchemyCardIconSize = FT66Style::Tokens::NPCCompactShopCardWidth - 10.f;
-	for (int32 Index = 0; Index < UT66RunStateSubsystem::MaxInventorySlots; ++Index)
-	{
-		if (!AlchemyInventorySlotBrushes[Index].IsValid())
-		{
-			AlchemyInventorySlotBrushes[Index] = MakeShared<FSlateBrush>();
-			AlchemyInventorySlotBrushes[Index]->ImageSize = FVector2D(48.f, 48.f);
-		}
-	}
-	if (!AlchemyTargetIconBrush.IsValid())
-	{
-		AlchemyTargetIconBrush = MakeShared<FSlateBrush>();
-	}
-	AlchemyTargetIconBrush->ImageSize = FVector2D(AlchemyCardIconSize, AlchemyCardIconSize);
-	if (!AlchemySacrificeIconBrush.IsValid())
-	{
-		AlchemySacrificeIconBrush = MakeShared<FSlateBrush>();
-	}
-	AlchemySacrificeIconBrush->ImageSize = FVector2D(AlchemyCardIconSize, AlchemyCardIconSize);
+	SharedOverlay::EnsureBrushArray(
+		AlchemyInventorySlotBrushes,
+		UT66RunStateSubsystem::MaxInventorySlots,
+		FVector2D(48.f, 48.f));
+	SharedOverlay::EnsureBrush(AlchemyTargetIconBrush, FVector2D(AlchemyCardIconSize, AlchemyCardIconSize));
+	SharedOverlay::EnsureBrush(AlchemySacrificeIconBrush, FVector2D(AlchemyCardIconSize, AlchemyCardIconSize));
 
 	const FText GamblingTabText = NSLOCTEXT("T66.Casino", "TabGambling", "GAMBLING");
 	const FText VendorTabText = NSLOCTEXT("T66.Casino", "TabVendor", "VENDOR");
@@ -426,61 +248,37 @@ void UT66CircusOverlayWidget::NativeDestruct()
 {
 	if (UT66RunStateSubsystem* RunState = GetRunState())
 	{
-		RunState->InventoryChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleInventoryChanged);
-		RunState->GoldChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleGoldOrDebtChanged);
-		RunState->DebtChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleGoldOrDebtChanged);
-		RunState->GamblerAngerChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleAngerChanged);
-		RunState->BossChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleBossChanged);
+		T66_REMOVE_COMMON_OVERLAY_RUNSTATE_DELEGATES(RunState, this, UT66CircusOverlayWidget);
 		RunState->ScoreChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleScoreChanged);
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66CircusOverlayWidget::HandleStageTimerChanged);
 	}
 
-	if (VendorTabWidget)
-	{
-		VendorTabWidget->RemoveFromParent();
-		VendorTabWidget = nullptr;
-	}
-
-	if (GamblerTabWidget)
-	{
-		GamblerTabWidget->RemoveFromParent();
-		GamblerTabWidget = nullptr;
-	}
+	SharedOverlay::RemoveFromParentAndReset(VendorTabWidget);
+	SharedOverlay::RemoveFromParentAndReset(GamblerTabWidget);
 
 	Super::NativeDestruct();
 }
 
 void UT66CircusOverlayWidget::CloseOverlay()
 {
-	RemoveFromParent();
-	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
-	{
-		PC->RestoreGameplayInputMode();
-	}
+	SharedOverlay::CloseOverlay(this);
 }
 
 void UT66CircusOverlayWidget::OpenGamblingTab()
 {
-	if (GamblerTabWidget)
-	{
-		GamblerTabWidget->OpenCasinoPage();
-	}
-	SetActiveTab(ECasinoTab::Gambling);
+	SharedOverlay::OpenGamblingTab(GamblerTabWidget, [this]() { SetActiveTab(ECasinoTab::Gambling); });
 }
 
 void UT66CircusOverlayWidget::OpenVendorTab()
 {
-	if (VendorTabWidget)
-	{
-		VendorTabWidget->OpenShopPage();
-	}
-	SetActiveTab(ECasinoTab::Vendor);
+	SharedOverlay::OpenVendorTab(VendorTabWidget, [this]() { SetActiveTab(ECasinoTab::Vendor); });
 }
 
 void UT66CircusOverlayWidget::OpenAlchemyTab()
 {
-	SetActiveTab(ECasinoTab::Alchemy);
-	RefreshAlchemy();
+	SharedOverlay::OpenAlchemyTab(
+		[this]() { SetActiveTab(ECasinoTab::Alchemy); },
+		[this]() { RefreshAlchemy(); });
 }
 
 TSharedRef<SWidget> UT66CircusOverlayWidget::BuildAlchemyPage(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc)
@@ -730,51 +528,24 @@ void UT66CircusOverlayWidget::RefreshHeaderSummary()
 
 void UT66CircusOverlayWidget::RefreshAlchemy()
 {
-	RefreshAlchemyTopBar();
-	RefreshAlchemyInventory();
-	RefreshAlchemyDropTargets();
-	if (AlchemyStatusText.IsValid())
-	{
-		AlchemyStatusText->SetText(AlchemyStatusMessage);
-		AlchemyStatusText->SetColorAndOpacity(AlchemyStatusColor);
-	}
+	SharedOverlay::RefreshAlchemy(
+		[this]() { RefreshAlchemyTopBar(); },
+		[this]() { RefreshAlchemyInventory(); },
+		[this]() { RefreshAlchemyDropTargets(); },
+		AlchemyStatusText,
+		AlchemyStatusMessage,
+		AlchemyStatusColor);
 }
 
 void UT66CircusOverlayWidget::RefreshAlchemyTopBar()
 {
-	UT66RunStateSubsystem* RunState = GetRunState();
-	UT66LocalizationSubsystem* Loc = GetLocalization();
-	if (!RunState)
-	{
-		return;
-	}
-
-	if (AlchemyNetWorthText.IsValid())
-	{
-		const int32 NetWorth = RunState->GetNetWorth();
-		const FText Fmt = Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}");
-		AlchemyNetWorthText->SetText(FText::Format(Fmt, FText::AsNumber(NetWorth)));
-		const FLinearColor NetWorthColor = NetWorth > 0
-			? FT66Style::Tokens::Success
-			: (NetWorth < 0 ? FT66Style::Tokens::Danger : FT66Style::Tokens::Text);
-		AlchemyNetWorthText->SetColorAndOpacity(NetWorthColor);
-	}
-
-	if (AlchemyGoldText.IsValid())
-	{
-		const FText Fmt = Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}");
-		AlchemyGoldText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentGold())));
-	}
-	if (AlchemyDebtText.IsValid())
-	{
-		const FText Fmt = Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}");
-		AlchemyDebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
-	}
-	if (AlchemyAngerText.IsValid())
-	{
-		const int32 Pct = FMath::RoundToInt(RunState->GetCasinoAnger01() * 100.f);
-		AlchemyAngerText->SetText(FText::Format(NSLOCTEXT("T66.Casino", "AngerFormat", "ANGER: {0}%"), FText::AsNumber(Pct)));
-	}
+	SharedOverlay::RefreshAlchemyTopBar(
+		GetRunState(),
+		GetLocalization(),
+		AlchemyNetWorthText,
+		AlchemyGoldText,
+		AlchemyDebtText,
+		AlchemyAngerText);
 }
 
 void UT66CircusOverlayWidget::RefreshAlchemyInventory()
@@ -949,11 +720,7 @@ void UT66CircusOverlayWidget::SetAlchemyStatus(const FText& Message, const FLine
 {
 	AlchemyStatusMessage = Message;
 	AlchemyStatusColor = Color;
-	if (AlchemyStatusText.IsValid())
-	{
-		AlchemyStatusText->SetText(AlchemyStatusMessage);
-		AlchemyStatusText->SetColorAndOpacity(AlchemyStatusColor);
-	}
+	SharedOverlay::ApplyAlchemyStatus(AlchemyStatusText, AlchemyStatusMessage, AlchemyStatusColor);
 }
 
 bool UT66CircusOverlayWidget::TryAssignAlchemySlot(const bool bIsTargetSlot, const int32 InventoryIndex)
@@ -998,43 +765,24 @@ FReply UT66CircusOverlayWidget::HandleAlchemyInventoryDragDetected(const FGeomet
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
 	UT66LocalizationSubsystem* Loc = GetLocalization();
-	if (!RunState)
-	{
-		return FReply::Unhandled();
-	}
-
-	const TArray<FName> Inventory = RunState->GetInventory();
-	if (!Inventory.IsValidIndex(InventoryIndex) || Inventory[InventoryIndex].IsNone())
-	{
-		return FReply::Unhandled();
-	}
-
-	const FText Label = Loc ? Loc->GetText_ItemDisplayName(Inventory[InventoryIndex]) : FText::FromName(Inventory[InventoryIndex]);
-	TSharedPtr<FSlateBrush> DragIconBrush = MakeShared<FSlateBrush>();
-	DragIconBrush->DrawAs = ESlateBrushDrawType::Image;
-	DragIconBrush->ImageSize = FVector2D(72.f, 72.f);
-	if (AlchemyInventorySlotBrushes.IsValidIndex(InventoryIndex) && AlchemyInventorySlotBrushes[InventoryIndex].IsValid())
-	{
-		*DragIconBrush = *AlchemyInventorySlotBrushes[InventoryIndex];
-		DragIconBrush->DrawAs = ESlateBrushDrawType::Image;
-		DragIconBrush->ImageSize = FVector2D(72.f, 72.f);
-	}
-
-	return FReply::Handled().BeginDragDrop(FCircusAlchemyDragDropOp::New(
+	return SharedOverlay::BeginAlchemyInventoryDrag(
+		RunState,
 		InventoryIndex,
-		Label,
-		DragIconBrush));
+		AlchemyInventorySlotBrushes,
+		[Loc, InventoryIndex](const TArray<FName>& Inventory, const TArray<FT66InventorySlot>&)
+		{
+			return Loc ? Loc->GetText_ItemDisplayName(Inventory[InventoryIndex]) : FText::FromName(Inventory[InventoryIndex]);
+		});
 }
 
 FReply UT66CircusOverlayWidget::HandleAlchemyDropTarget(const FGeometry&, const FDragDropEvent& DragDropEvent, const bool bIsTargetSlot)
 {
-	const TSharedPtr<FCircusAlchemyDragDropOp> DragOp = DragDropEvent.GetOperationAs<FCircusAlchemyDragDropOp>();
-	if (!DragOp.IsValid())
-	{
-		return FReply::Unhandled();
-	}
-
-	return TryAssignAlchemySlot(bIsTargetSlot, DragOp->InventoryIndex) ? FReply::Handled() : FReply::Unhandled();
+	return SharedOverlay::HandleAlchemyDropTarget(
+		DragDropEvent,
+		[this, bIsTargetSlot](const int32 InventoryIndex)
+		{
+			return TryAssignAlchemySlot(bIsTargetSlot, InventoryIndex);
+		});
 }
 
 FReply UT66CircusOverlayWidget::OnAlchemyTransmuteClicked()
@@ -1102,14 +850,12 @@ FReply UT66CircusOverlayWidget::OnClearAlchemySacrificeClicked()
 
 UT66RunStateSubsystem* UT66CircusOverlayWidget::GetRunState() const
 {
-	UGameInstance* GI = GetGameInstance();
-	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	return SharedOverlay::GetRunState(this);
 }
 
 UT66LocalizationSubsystem* UT66CircusOverlayWidget::GetLocalization() const
 {
-	UGameInstance* GI = GetGameInstance();
-	return GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	return SharedOverlay::GetLocalization(this);
 }
 
 void UT66CircusOverlayWidget::HandleInventoryChanged()

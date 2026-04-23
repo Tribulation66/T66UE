@@ -692,6 +692,17 @@ void AT66EnemyBase::ApplyFinaleScaling(float Scalar)
 	RebuildScaledCombatStats(false);
 }
 
+void AT66EnemyBase::FreezeScoreAwardAtSpawn(const float DifficultyScalar)
+{
+	UGameInstance* GI = GetGameInstance();
+	const UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	ResolvedScoreAward = PlayerExperience
+		? PlayerExperience->ResolveEnemyScoreAtSpawn(Difficulty, BasePointValue, DifficultyScalar)
+		: FMath::Max(0, FMath::RoundToInt(static_cast<float>(BasePointValue) * FMath::Max(1.0f, DifficultyScalar)));
+}
+
 void AT66EnemyBase::ApplyDifficultyTier(int32 Tier)
 {
 	// Tier 0 = 1.0x, Tier 1 = 1.1x, Tier 2 = 1.2x, ...
@@ -726,6 +737,7 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	DifficultyScalarApplied = 1.0f;
 	ProgressionEnemyScalarApplied = 1.0f;
 	FinaleScalarApplied = 1.0f;
+	ResolvedScoreAward = 0;
 	SetActorScale3D(FVector::OneVector);
 	LastTouchDamageTime = -9999.f;
 	CachedPlayerPawn = nullptr;
@@ -1367,9 +1379,7 @@ void AT66EnemyBase::OnDeath()
 	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	if (RunState)
 	{
-		const float Scalar = RunState->GetDifficultyScalar();
-		const float TreasureMult = RunState->GetTreasureHunterGoldMultiplier();
-		const int32 AwardPoints = FMath::Max(0, FMath::RoundToInt(static_cast<float>(PointValue) * Scalar * TreasureMult));
+		const int32 AwardPoints = FMath::Max(0, ResolvedScoreAward);
 		int32 AwardXP = XPValue;
 		if (AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr)
 		{
@@ -1378,9 +1388,9 @@ void AT66EnemyBase::OnDeath()
 				AwardXP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(XPValue) * 0.5f));
 			}
 		}
-		RunState->AddScore(AwardPoints);
+		RunState->AddEnemyKillScore(AwardPoints);
 		RunState->AddHeroXP(AwardXP);
-		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("PointValue=%d,XP=%d"), AwardPoints, AwardXP));
+		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("Score=%d,XP=%d"), AwardPoints, AwardXP));
 	}
 	if (Achievements)
 	{

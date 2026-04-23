@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: game UI runtime component sheet
+Primary request: reorganize the attached Chadpocalypse main menu reference into a production sprite sheet for decorative and title-adjacent assets only
+Scene/background: flat near-black presentation board with clean spacing and no screen mockup
+Subject: isolated reusable decorative assets derived from the exact reference screen
+Style/medium: painted game UI asset sheet, exact reconstruction of the reference art style, not a redesign
+Composition/framing: wide board, front-on presentation, clean rows and columns, no overlap
+Lighting/mood: warm torch-lit fantasy highlights with deep violet crystal glow
+Color palette: bronze-gold trim, deep purple crystals, dark stone, worn cloth, muted mossy greens
+Materials/textures: chipped stone, cracked metal trim, crystalline glow, worn cloth folds, tiny leaf clusters
+Constraints: include purple crystal clusters in multiple sizes, torch/sconce ornament, small leaf and vine clusters, banner or cloth accent shapes, thin ornamental trim pieces, stone corner embellishments, and title-adjacent crystal ornaments; do not include the full CHADPOCALYPSE wordmark because runtime title text should remain live; no full-screen composition; no watermark
+Avoid: flat modern styling, redesigned motifs, extra ornaments not grounded in the reference, blurry edges, text baked into the assets

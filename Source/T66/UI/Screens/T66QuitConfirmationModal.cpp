@@ -1,17 +1,14 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/T66QuitConfirmationModal.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "Widgets/Layout/SBox.h"
-#include "Widgets/Layout/SBorder.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
-#include "Widgets/Input/SButton.h"
-#include "Widgets/SOverlay.h"
 
 UT66QuitConfirmationModal::UT66QuitConfirmationModal(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -33,64 +30,46 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 	FText MessageText = Loc ? Loc->GetText_QuitConfirmMessage() : NSLOCTEXT("T66.QuitConfirm", "Message", "Are you sure you want to quit?");
 	FText StayText = Loc ? Loc->GetText_NoStay() : NSLOCTEXT("T66.QuitConfirm", "Stay", "NO, I WANT TO STAY");
 	FText QuitText = Loc ? Loc->GetText_YesQuit() : NSLOCTEXT("T66.QuitConfirm", "Quit", "YES, I WANT TO QUIT");
+	const TSharedRef<SWidget> StayButton =
+		FT66Style::MakeButton(FT66ButtonParams(StayText, FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleStayClicked), ET66ButtonType::Success)
+			.SetMinWidth(320.f)
+			.SetPadding(FMargin(18.f, 10.f)));
+	const TSharedRef<SWidget> QuitButton =
+		FT66Style::MakeButton(FT66ButtonParams(QuitText, FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleQuitClicked), ET66ButtonType::Danger)
+			.SetMinWidth(320.f)
+			.SetPadding(FMargin(18.f, 10.f)));
 
-	return SNew(SBorder)
-		.BorderBackgroundColor(FT66Style::Scrim())
-		[
-			SNew(SBox)
+	return T66ScreenSlateHelpers::MakeCenteredScrimModal(
+		FT66Style::MakePanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
 			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			.Padding(0.0f, 0.0f, 0.0f, 20.0f)
 			[
-				FT66Style::MakePanel(
-					SNew(SVerticalBox)
-					// Title
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.0f, 0.0f, 0.0f, 20.0f)
-					[
-						SNew(STextBlock)
-						.Text(TitleText)
-						.Font(FT66Style::Tokens::FontBold(36))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					// Message
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.0f, 0.0f, 0.0f, 30.0f)
-					[
-						SNew(STextBlock)
-						.Text(MessageText)
-						.Font(FT66Style::Tokens::FontRegular(18))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-						.AutoWrapText(true)
-					]
-					// Buttons
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(10.0f, 0.0f)
-						[
-							FT66Style::MakeButton(FT66ButtonParams(StayText, FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleStayClicked), ET66ButtonType::Success)
-								.SetMinWidth(320.f).SetPadding(FMargin(18.f, 10.f)))
-						]
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(10.0f, 0.0f)
-						[
-							FT66Style::MakeButton(FT66ButtonParams(QuitText, FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleQuitClicked), ET66ButtonType::Danger)
-								.SetMinWidth(320.f).SetPadding(FMargin(18.f, 10.f)))
-						]
-					]
-				,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(40.0f, 30.0f)))
+				SNew(STextBlock)
+				.Text(TitleText)
+				.Font(FT66Style::Tokens::FontBold(36))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
 			]
-		];
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Center)
+			.Padding(0.0f, 0.0f, 0.0f, 30.0f)
+			[
+				SNew(STextBlock)
+				.Text(MessageText)
+				.Font(FT66Style::Tokens::FontRegular(18))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.AutoWrapText(true)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Center)
+			[
+				T66ScreenSlateHelpers::MakeTwoButtonRow(StayButton, QuitButton)
+			],
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(40.0f, 30.0f))));
 }
 
 FReply UT66QuitConfirmationModal::HandleStayClicked() { OnStayClicked(); return FReply::Handled(); }

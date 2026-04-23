@@ -4,6 +4,8 @@ This is the authoritative internal workflow for `T66` 3D model generation as of 
 
 Use this document as the source of truth.
 
+If you need the workspace map first, start with [README.md](C:/UE/T66/Model%20Generation/README.md).
+
 The JSX setup file in this folder is historical reference only:
 
 - [TRELLIS2_RunPod_Setup_Guide.jsx](C:/UE/T66/Model%20Generation/Reference/TRELLIS2_RunPod_Setup_Guide.jsx)
@@ -31,7 +33,12 @@ Supporting operational files:
 
 ```text
 C:\UE\T66\Model Generation\
+  README.md
   MASTER_WORKFLOW.md
+  Tools\
+    Trellis2\
+      start_blender_mcp.py
+      trellis_server.py
   Reference\
     TRELLIS2_RunPod_Setup_Guide.jsx
   Runs\
@@ -173,16 +180,28 @@ If `transformers` drifts forward again, TRELLIS may fail with DINO-related error
 
 ## Canonical Local Files
 
-- Server template: [trellis_server.py](C:/UE/T66/Tools/Trellis2/trellis_server.py)
-- Blender MCP helper: [start_blender_mcp.py](C:/UE/T66/Tools/Trellis2/start_blender_mcp.py)
+- Server template: [trellis_server.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/trellis_server.py)
+- Blender MCP helper: [start_blender_mcp.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/start_blender_mcp.py)
 - Blender QA / decimate helper: [blender_glb_qa.py](C:/UE/T66/Model%20Generation/Scripts/blender_glb_qa.py)
+
+## Blender Tool Roles
+
+- Blender MCP is the canonical agent automation layer for import, export, scene inspection, scripted edits, screenshots, and repeatable QA.
+- RetopoFlow is the manual retopology tool for assets that need cleaner topology than decimation can provide, especially hero meshes and deformation-critical regions.
+- Blender Buddy, if installed locally, should be treated as an interactive in-Blender copilot for human-driven exploration and tool help, not as the authoritative workflow controller.
 
 ## Blender Session Rule
 
 - Use live Blender through Blender MCP when it is reachable.
-- If Blender MCP is disconnected or stale, reopen Blender and rerun [start_blender_mcp.py](C:/UE/T66/Tools/Trellis2/start_blender_mcp.py) before falling back to headless tooling.
+- If Blender MCP is disconnected or stale, reopen Blender and rerun [start_blender_mcp.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/start_blender_mcp.py) before falling back to headless tooling.
 - Headless Blender is the recovery path for QA render, decimate, export, and re-import verification when the live MCP session is unavailable.
 - Before Unreal import, re-import any accepted decimated GLB in Blender and render one verification image from the exported file itself.
+
+## Retopo Rule
+
+- Start with decimate-plus-verify when the asset class has already proven that path is visually acceptable.
+- Escalate to RetopoFlow when decimation damages silhouette, hand readability, deformation zones, or future rigging viability.
+- For any manual retopo pass, keep the working `.blend`, exported result, and a fresh verification render together with the rest of the model-generation artifacts.
 
 ## Starting The Server
 

@@ -10,10 +10,7 @@
 
 class UT66LocalizationSubsystem;
 class UT66LeaderboardRunSummarySaveGame;
-class AT66HeroPreviewStage;
-class UMediaPlayer;
-class UMediaTexture;
-class UFileMediaSource;
+class UT66HeroSelectionPreviewController;
 struct FSlateBrush;
 class SVerticalBox;
 class SBox;
@@ -118,13 +115,6 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
-	enum class EHeroPreviewClip : uint8
-	{
-		Overview,
-		Ultimate,
-		Passive,
-	};
-
 	TArray<FName> AllHeroIDs;
 	int32 CurrentHeroIndex = 0;
 	TArray<FName> AllCompanionIDs;
@@ -144,7 +134,6 @@ private:
 	TSharedPtr<STextBlock> HeroRecordThirdValueWidget;
 	TSharedPtr<STextBlock> CompanionHealsPerSecondWidget;
 	TSharedPtr<STextBlock> CompanionUnityTextWidget;
-	TSharedPtr<SBorder> HeroPreviewColorBox;      // Fallback colored box when no 3D preview
 	TSharedPtr<STextBlock> DifficultyDropdownText; // Current difficulty display
 	TSharedPtr<STextBlock> SkinTargetDropdownText;
 	TSharedPtr<STextBlock> InfoTargetDropdownText;
@@ -152,8 +141,6 @@ private:
 	TSharedPtr<class SWidgetSwitcher> RightInfoWidgetSwitcher;
 	TSharedPtr<class SWidgetSwitcher> RightFooterWidgetSwitcher;
 	TSharedPtr<SProgressBar> CompanionUnityProgressBar;
-	TSharedPtr<class SImage> CompanionInfoPortraitImageWidget;
-	TSharedPtr<class SScaleBox> CompanionInfoPortraitScaleBox;
 
 	/** Brushes for the 5-slot hero carousel portraits (prev2..next2). */
 	TArray<TSharedPtr<struct FSlateBrush>> HeroCarouselPortraitBrushes;
@@ -177,27 +164,12 @@ private:
 	TSharedPtr<FSlateBrush> ACBalanceIconBrush;
 	TSharedPtr<FSlateBrush> ChallengesButtonIconBrush;
 	TSharedPtr<FSlateBrush> HeroRecordMedalBrush;
-	TSharedPtr<FSlateBrush> CompanionInfoPortraitBrush;
-
-	/** Hero preview video (e.g. KnightClip): media player and texture for [VIDEO PREVIEW] area. */
-	UPROPERTY(Transient)
-	TObjectPtr<UMediaPlayer> HeroPreviewMediaPlayer;
-	UPROPERTY(Transient)
-	TObjectPtr<UMediaTexture> HeroPreviewMediaTexture;
-	UPROPERTY(Transient)
-	TObjectPtr<UFileMediaSource> KnightPreviewMediaSource;
-	/** Brush bound to HeroPreviewMediaTexture for Slate SImage; kept alive so Slate does not hold raw UObject. */
-	TSharedPtr<FSlateBrush> HeroPreviewVideoBrush;
 	TArray<TSharedPtr<FSlateBrush>> PartyAvatarBrushes;
 	TArray<TSharedPtr<FSlateBrush>> PartyHeroPortraitBrushes;
 	TArray<TSharedPtr<FSlateBrush>> SelectedTemporaryBuffBrushes;
 	TArray<TSharedPtr<class SImage>> PartyAvatarImageWidgets;
 	TArray<TSharedPtr<class SImage>> PartyHeroPortraitImageWidgets;
 
-	/** Video area widgets: image shows video when Knight selected; placeholder shows "[VIDEO PREVIEW]" otherwise. */
-	TSharedPtr<SImage> HeroPreviewVideoImage;
-	TSharedPtr<STextBlock> HeroPreviewPlaceholderText;
-	TSharedPtr<STextBlock> CompanionPreviewPlaceholderText;
 	TSharedPtr<FSlateBrush> HeroUltimateIconBrush;
 	TSharedPtr<FSlateBrush> HeroPassiveIconBrush;
 
@@ -207,25 +179,8 @@ private:
 	TArray<TSharedPtr<FString>> InfoTargetOptions;
 	TSharedPtr<FString> CurrentInfoTargetOption;
 
-	/** Start or stop hero preview video based on PreviewedHeroID (Knight = Hero_1 uses KnightClip). */
-	void UpdateHeroPreviewVideo();
-	void RequestKnightPreviewMediaSource();
-	void HandleKnightPreviewMediaSourceLoaded();
-
-	/** Create media player, texture, and brush if not yet created (called from BuildSlateUI). */
-	void EnsureHeroPreviewVideoResources();
-
-	/** Find the hero preview stage in the world (FrontendLevel) */
-	AT66HeroPreviewStage* GetHeroPreviewStage() const;
-
-	/** Build center preview widget: transparent overlay for in-world preview, or colored box fallback */
-	TSharedRef<SWidget> CreateHeroPreviewWidget(const FLinearColor& FallbackColor);
-
 	// Placeholder skins list
 	TArray<FSkinData> PlaceholderSkins;
-
-	/** When set, preview shows this companion skin without equipping. NAME_None = use equipped companion skin. */
-	FName PreviewedCompanionSkinIDOverride = NAME_None;
 	
 	// Difficulty dropdown options
 	TArray<TSharedPtr<FString>> DifficultyOptions;
@@ -235,7 +190,6 @@ private:
 	void RefreshCompanionList();
 	void RefreshHeroCarouselPortraits();
 	void RefreshCompanionCarouselPortraits();
-	void RefreshCompanionPreviewPanel();
 	void RefreshPanelSwitchers();
 	void RefreshTargetDropdownTexts();
 	void RefreshDifficultyDropdownText();
@@ -254,6 +208,8 @@ private:
 	void SetShowingCompanionInfo(bool bShowCompanionInfo);
 	FName GetCurrentSkinEntityID() const;
 	FName GetEffectivePreviewedCompanionSkinID() const;
+	UT66HeroSelectionPreviewController* GetOrCreatePreviewController();
+	const UT66HeroSelectionPreviewController* GetPreviewController() const;
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	void CommitLocalSelectionsToLobby(bool bResetReady);
@@ -266,12 +222,6 @@ private:
 	bool bShowingStatsPanel = false;
 	float CompanionUnityProgress01 = 0.f;
 	int32 CompanionUnityStagesCleared = 0;
-	EHeroPreviewClip SelectedHeroPreviewClip = EHeroPreviewClip::Overview;
-	EHeroPreviewClip ActiveHeroPreviewClip = EHeroPreviewClip::Overview;
-	FName ActivePreviewVideoHeroID = NAME_None;
-
-	/** When set, preview shows this skin (e.g. Beachgoer) without equipping. NAME_None = use SelectedHeroSkinID. */
-	FName PreviewSkinIDOverride;
 
 	/** True when the left panel should show companion skins instead of hero skins. */
 	bool bShowingCompanionSkins = false;
@@ -313,6 +263,9 @@ private:
 	FDelegateHandle PartyStateChangedHandle;
 	FDelegateHandle SessionStateChangedHandle;
 	ET66Language LastBuiltLanguage = ET66Language::English;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UT66HeroSelectionPreviewController> PreviewController;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UT66LeaderboardRunSummarySaveGame> HeroStatsSnapshot;

@@ -6,6 +6,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/PlayerExperience/T66PlayerExperienceTypes.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66Rarity.h"
 #include "Templates/Function.h"
@@ -578,6 +579,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentScore() const { return CurrentScore; }
 
+	const FT66ScoreBudget& GetScoreBudgetContext() const { return ScoreBudgetContext; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	bool HasExceededScoreBudget() const { return ScoreBudgetContext.bExceededLegalScore; }
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	bool GetBossActive() const { return bBossActive; }
 
@@ -630,6 +636,11 @@ public:
 	/** Add to score (e.g. on enemy kill). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddScore(int32 Points);
+
+	void AddEnemyKillScore(int32 Points);
+	void AddBossKillScore(int32 Points, FName BossID = NAME_None);
+	void RegisterSpawnedEnemyScoreBudget(int32 Points, int32 Stage);
+	void RegisterSpawnedBossScoreBudget(int32 Points, int32 Stage, FName BossID = NAME_None);
 
 	/** Add structured event for provenance (also appends string to EventLog for UI). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -1451,6 +1462,8 @@ private:
 	void TrimLogsIfNeeded();
 	bool HasStagePacingPoint(int32 Stage) const;
 	void RecordStagePacingPoint(int32 Stage, float CumulativeElapsedSeconds);
+	void ResetScoreBudgetContext();
+	void RefreshScoreBudgetOverflowState();
 	void RecomputeItemDerivedStats();
 	void HandleLethalDamage(AActor* Attacker);
 	void EnterLastStand();
@@ -1621,6 +1634,9 @@ private:
 
 	UPROPERTY()
 	int32 CurrentScore = 0;
+
+	UPROPERTY()
+	FT66ScoreBudget ScoreBudgetContext;
 
 	UPROPERTY()
 	bool bHUDPanelsVisible = true;
