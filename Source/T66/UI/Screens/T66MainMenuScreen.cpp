@@ -1540,9 +1540,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			LeaderboardShell
 		];
 
-	const FT66ReferenceRect& NewGamePlateRect = T66MainMenuReferenceLayout::Center::CtaButtonNewGame;
-	const FT66ReferenceRect& LoadGamePlateRect = T66MainMenuReferenceLayout::Center::CtaButtonLoadGame;
-	const FT66ReferenceRect& DailyChallengePlateRect = T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge;
+	const FT66ReferenceRect& NewGamePlateRect = T66MainMenuReferenceLayout::CenterRuntime::CtaButtonNewGamePlate;
+	const FT66ReferenceRect& LoadGamePlateRect = T66MainMenuReferenceLayout::CenterRuntime::CtaButtonLoadGamePlate;
+	const FT66ReferenceRect& DailyChallengePlateRect = T66MainMenuReferenceLayout::CenterRuntime::CtaButtonDailyChallengePlate;
 	const TSharedRef<SWidget> CenterActionButtons =
 		SNew(SConstraintCanvas)
 		+ SConstraintCanvas::Slot()

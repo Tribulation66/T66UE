@@ -1,0 +1,51 @@
+{
+  "screen": "HeroSelection",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "assets": [
+    {
+      "id": "current_runtime_anchor",
+      "path": "C:/UE/T66/SourceAssets/UI/HeroSelectionReference/current_runtime_anchor.png",
+      "type": "packaged_structure_anchor",
+      "classification": "do-not-slice",
+      "notes": "Current packaged Hero Selection capture. Use as the structure contract only, not as final style authority."
+    },
+    {
+      "id": "current_runtime_anchor_2x",
+      "path": "C:/UE/T66/SourceAssets/UI/HeroSelectionReference/current_runtime_anchor_2x.png",
+      "type": "helper_reference",
+      "classification": "helper-only",
+      "notes": "Deterministic 2x helper prepared from the packaged structure anchor."
+    },
+    {
+      "id": "main_menu_style_anchor",
+      "path": "C:/UE/T66/SourceAssets/UI/MainMenuReference/reference_main_menu_master.png",
+      "type": "approved_style_anchor",
+      "classification": "helper-only",
+      "notes": "Approved style authority for the current frontend family."
+    },
+    {
+      "id": "screen_master",
+      "path": "C:/UE/T66/SourceAssets/UI/HeroSelectionReference/screen_master.png",
+      "type": "screen_master",
+      "classification": "layout-authority",
+      "notes": "Selected first-pass Hero Selection style-reference master generated from the approved Main Menu family and the packaged Hero Selection structure anchor."
+    },
+    {
+      "id": "screen_master_2x",
+      "path": "C:/UE/T66/SourceAssets/UI/HeroSelectionReference/screen_master_2x.png",
+      "type": "helper_reference",
+      "classification": "helper-only",
+      "notes": "Deterministic 2x companion prepared from the selected Hero Selection screen master."
+    },
+    {
+      "id": "content_ownership",
+      "path": "C:/UE/T66/SourceAssets/UI/HeroSelectionReference/content_ownership.json",
+      "type": "ownership_audit",
+      "classification": "metadata",
+      "notes": "Code-first ownership audit covering live hero portraits, preview/media surfaces, buff sockets, party slots, and ability icon wells."
+    }
+  ]
+}

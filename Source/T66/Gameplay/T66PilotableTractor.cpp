@@ -199,6 +199,25 @@ FText AT66PilotableTractor::BuildInteractionPromptText() const
 	return PromptSubsystem->BuildPromptTextWithSeconds(Action, FMath::CeilToInt(RemainingPilotSeconds));
 }
 
+void AT66PilotableTractor::ConfigurePilotableTractorTuning(
+	const float InTotalPilotSeconds,
+	const float InDriveSpeed,
+	const float InTurnSpeedDegreesPerSecond,
+	const float InMowKillRadius,
+	const float InMowMinSpeed)
+{
+	TotalPilotSeconds = FMath::Max(1.f, InTotalPilotSeconds);
+	DriveSpeed = FMath::Max(100.f, InDriveSpeed);
+	TurnSpeedDegreesPerSecond = FMath::Max(30.f, InTurnSpeedDegreesPerSecond);
+	MowKillRadius = FMath::Max(50.f, InMowKillRadius);
+	MowMinSpeed = FMath::Max(0.f, InMowMinSpeed);
+
+	if (!MountedHero.IsValid())
+	{
+		RemainingPilotSeconds = TotalPilotSeconds;
+	}
+}
+
 bool AT66PilotableTractor::MountHero(AT66HeroBase* Hero)
 {
 	if (!Hero || MountedHero.IsValid() || RemainingPilotSeconds <= KINDA_SMALL_NUMBER)

@@ -1,0 +1,65 @@
+{
+  "screen": "Settings",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "assets": [
+    {
+      "id": "current_runtime_anchor",
+      "path": "C:/UE/T66/SourceAssets/UI/SettingsReference/current_runtime_anchor.png",
+      "type": "packaged_structure_anchor",
+      "classification": "do-not-slice",
+      "notes": "Current packaged Settings capture. Use as the structure contract only, not as final style authority."
+    },
+    {
+      "id": "current_runtime_anchor_2x",
+      "path": "C:/UE/T66/SourceAssets/UI/SettingsReference/current_runtime_anchor_2x.png",
+      "type": "helper_reference",
+      "classification": "helper-only",
+      "notes": "Deterministic 2x helper prepared from the packaged structure anchor."
+    },
+    {
+      "id": "main_menu_style_anchor",
+      "path": "C:/UE/T66/SourceAssets/UI/MainMenuReference/reference_main_menu_master.png",
+      "type": "approved_style_anchor",
+      "classification": "helper-only",
+      "notes": "Approved style authority for the current frontend family."
+    },
+    {
+      "id": "screen_master",
+      "path": "C:/UE/T66/SourceAssets/UI/SettingsReference/screen_master.png",
+      "type": "screen_master",
+      "classification": "layout-authority",
+      "notes": "Selected first-pass Settings style-reference master generated from the approved Main Menu family and the packaged Settings structure anchor."
+    },
+    {
+      "id": "screen_master_2x",
+      "path": "C:/UE/T66/SourceAssets/UI/SettingsReference/screen_master_2x.png",
+      "type": "helper_reference",
+      "classification": "helper-only",
+      "notes": "Deterministic 2x companion prepared from the selected Settings screen master."
+    },
+    {
+      "id": "screen_master_notext",
+      "path": "C:/UE/T66/SourceAssets/UI/SettingsReference/screen_master_notext.png",
+      "type": "screen_variant",
+      "classification": "helper-only",
+      "notes": "First-pass no-text-style Settings companion selected from the live generation set. Useful for family extraction and prompt anchoring, but not yet treated as a final runtime-safe export."
+    },
+    {
+      "id": "screen_master_notext_2x",
+      "path": "C:/UE/T66/SourceAssets/UI/SettingsReference/screen_master_notext_2x.png",
+      "type": "helper_reference",
+      "classification": "helper-only",
+      "notes": "Deterministic 2x companion prepared from the first-pass Settings no-text-style variant."
+    },
+    {
+      "id": "content_ownership",
+      "path": "C:/UE/T66/SourceAssets/UI/SettingsReference/content_ownership.json",
+      "type": "ownership_audit",
+      "classification": "metadata",
+      "notes": "Code-first ownership audit covering live tab labels, dropdown values, toggle labels, and other runtime text inside the generated settings shells."
+    }
+  ]
+}

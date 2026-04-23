@@ -1,0 +1,5 @@
+interface:
+  display_name: "UI Reference Prep"
+  short_description: "Prepare helper references before UI reconstruction"
+  default_prompt: "Use $ui-reference-prep to choose between resample and AI upscale, produce 2x/4x helper references, and classify outputs before reconstruction."
+

@@ -1,0 +1,74 @@
+{
+  "screen": "Settings",
+  "status": "initial_audit",
+  "notes": [
+    "Settings is a utility-heavy screen. Most shells are generated, but nearly all visible labels and values remain live runtime text.",
+    "The center-family board should generate plates, tabs, rows, dividers, dropdown shells, and toggle shells while leaving labels and current values live."
+  ],
+  "regions": [
+    {
+      "id": "top_tab_strip_labels",
+      "reference_layout_key": "TopBar.SettingsSurfaceRelativeTopBand",
+      "region_hint": "tab strip text and close-row title treatment",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "validation_mode": "manual-interior",
+      "notes": "Tab shells and the surrounding top band are generated, but the tab labels remain live FText and should not be baked into reference art or family boards.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/SourceAssets/UI/SettingsReference/reference_layout.json",
+          "start_line": 58,
+          "end_line": 71
+        }
+      ]
+    },
+    {
+      "id": "content_rows_text",
+      "reference_layout_key": "Center.ContentShellRelative",
+      "region_hint": "all row labels, values, and helper text inside the settings shell",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "validation_mode": "manual-interior",
+      "notes": "The content shell and row frames are generated. Row labels, current values, and option text stay live runtime text.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/SourceAssets/UI/SettingsReference/reference_layout.json",
+          "start_line": 72,
+          "end_line": 87
+        }
+      ]
+    },
+    {
+      "id": "dropdown_values",
+      "reference_layout_key": "Decor.DropdownTriggerContract",
+      "region_hint": "dropdown value wells and option labels",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "validation_mode": "manual-interior",
+      "notes": "Generate the dropdown shell, trigger frame, and chevron treatment only. The selected value and dropdown options stay live.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/SourceAssets/UI/SettingsReference/reference_layout.json",
+          "start_line": 90,
+          "end_line": 95
+        }
+      ]
+    },
+    {
+      "id": "toggle_pair_labels",
+      "reference_layout_key": "Decor.TogglePairMinCluster",
+      "region_hint": "toggle labels and state captions",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "validation_mode": "manual-interior",
+      "notes": "Generate the toggle shells and compact state buttons, but keep the labels and selected-state text live.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/SourceAssets/UI/SettingsReference/reference_layout.json",
+          "start_line": 88,
+          "end_line": 90
+        }
+      ]
+    }
+  ]
+}

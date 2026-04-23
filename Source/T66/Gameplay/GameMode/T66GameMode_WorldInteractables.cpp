@@ -596,6 +596,8 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 		Wheel,
 		LootBag,
 		Crate,
+		ArcadeTruck,
+		WhackAMole,
 	};
 
 	struct FGuaranteedStartSpec
@@ -613,6 +615,8 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 		{ EGuaranteedStartInteractable::Chest,       TEXT("T66_StartGuaranteed_Chest"),       FVector(   0.f,  1800.f, 0.f), -0.20f,  1.30f },
 		{ EGuaranteedStartInteractable::LootBag,     TEXT("T66_StartGuaranteed_LootBag"),     FVector( 900.f, -1400.f, 0.f),  0.35f,  0.45f },
 		{ EGuaranteedStartInteractable::Crate,       TEXT("T66_StartGuaranteed_Crate"),       FVector(   0.f, -1800.f, 0.f),  0.00f,  0.55f },
+		{ EGuaranteedStartInteractable::ArcadeTruck, TEXT("T66_StartGuaranteed_ArcadeTruck"), FVector(1500.f,   900.f, 0.f),  0.95f, -0.05f },
+		{ EGuaranteedStartInteractable::WhackAMole,  TEXT("T66_StartGuaranteed_WhackAMole"),  FVector(1500.f,  -900.f, 0.f),  1.05f,  0.70f },
 	};
 
 	FActorSpawnParameters SpawnParams;
@@ -724,6 +728,16 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 				}
 				SpawnedActor = Crate;
 			}
+			break;
+
+		case EGuaranteedStartInteractable::ArcadeTruck:
+			SpawnedActor = World->SpawnActor<AT66ArcadeTruckInteractable>(
+				AT66ArcadeTruckInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
+			break;
+
+		case EGuaranteedStartInteractable::WhackAMole:
+			SpawnedActor = World->SpawnActor<AT66WhackAMoleArcadeInteractable>(
+				AT66WhackAMoleArcadeInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
 			break;
 		}
 
@@ -1579,42 +1593,9 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		}
 	}
 
-	if (!IsLabLevel())
+	if (!IsLabLevel() && !bUsingMainMapTerrain)
 	{
-		FVector TractorLoc = FVector::ZeroVector;
-		bool bShouldSpawnGuaranteedTractor = false;
-		if (!bUsingMainMapTerrain)
-		{
-			static constexpr float GuaranteedTractorOffsetX = 850.f; // just east of the start gate, outside the start corridor
-			const FVector StartGateLoc = T66GameplayLayout::GetStartGateLocation();
-			const float TractorX = StartGateLoc.X + GuaranteedTractorOffsetX;
-			const float TractorY = StartGateLoc.Y;
-			FHitResult TractorHit;
-			const FVector TractorTraceStart(TractorX, TractorY, 8000.f);
-			const FVector TractorTraceEnd(TractorX, TractorY, -16000.f);
-			TractorLoc = FVector(TractorX, TractorY, SpawnZ);
-			if (World->LineTraceSingleByChannel(TractorHit, TractorTraceStart, TractorTraceEnd, ECC_WorldStatic))
-			{
-				TractorLoc = TractorHit.ImpactPoint;
-			}
-			bShouldSpawnGuaranteedTractor = true;
-		}
-
-		if (bShouldSpawnGuaranteedTractor)
-		{
-			FActorSpawnParameters TractorSpawnParams;
-			TractorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			if (AT66PilotableTractor* GuaranteedTractor = World->SpawnActor<AT66PilotableTractor>(
-				AT66PilotableTractor::StaticClass(), TractorLoc, FRotator::ZeroRotator, TractorSpawnParams))
-			{
-				UsedLocs.Add(TractorLoc);
-			}
-		}
-
-		if (!bUsingMainMapTerrain)
-		{
-			SpawnModelShowcaseRow();
-		}
+		SpawnModelShowcaseRow();
 	}
 
 	// Teleport pads are deprecated and no longer part of stage population.

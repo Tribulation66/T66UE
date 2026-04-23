@@ -1,0 +1,99 @@
+{
+  "screen": "MainMenu",
+  "status": "initial_audit",
+  "notes": [
+    "Main Menu shell art is reference-driven, but multiple portrait wells and identity slots are populated from Steam or live fallback portraits at runtime.",
+    "These interiors should be treated as socket-frame regions during generation and as masked or manually validated regions during packaged review."
+  ],
+  "regions": [
+    {
+      "id": "profile_avatar_well",
+      "reference_layout_key": "Left.profile_card_reference",
+      "region_hint": "main profile portrait well",
+      "content_type": "runtime-avatar",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "The profile slot uses a live Steam avatar when available and falls back to an async-loaded hero portrait. Generate the card shell and frame only.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/T66MainMenuScreen.cpp",
+          "start_line": 628,
+          "end_line": 651
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/T66MainMenuScreen.cpp",
+          "start_line": 1296,
+          "end_line": 1338
+        }
+      ]
+    },
+    {
+      "id": "friend_avatar_wells",
+      "reference_layout_key": "Left.friend_avatar_frame_source",
+      "region_hint": "friend-row avatar wells in the left social panel",
+      "content_type": "runtime-avatar",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "Friend portraits are live Steam avatars or fallback hero portraits inside a generated frame. Preserve the frame and leave the interior live.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/T66MainMenuScreen.cpp",
+          "start_line": 655,
+          "end_line": 684
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/T66MainMenuScreen.cpp",
+          "start_line": 961,
+          "end_line": 968
+        }
+      ]
+    },
+    {
+      "id": "party_member_portrait_wells",
+      "reference_layout_key": "Left.party_slot_source",
+      "region_hint": "party-member portrait wells in the lower-left party shell",
+      "content_type": "runtime-avatar",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "Party slots are populated with live member avatar brushes. Generate the frame shell, occupancy state, and any badges only.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/T66MainMenuScreen.cpp",
+          "start_line": 535,
+          "end_line": 595
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/T66MainMenuScreen.cpp",
+          "start_line": 1228,
+          "end_line": 1266
+        }
+      ]
+    },
+    {
+      "id": "leaderboard_avatar_wells",
+      "reference_layout_key": "Right.leaderboard_avatar_frame_source",
+      "region_hint": "leaderboard row avatar wells",
+      "content_type": "runtime-avatar",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "Leaderboard entries use live avatar URLs when available and fall back to hero portraits or a default placeholder. Generate the reference avatar frame only.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Components/T66LeaderboardPanel.cpp",
+          "start_line": 483,
+          "end_line": 501
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Components/T66LeaderboardPanel.cpp",
+          "start_line": 1434,
+          "end_line": 1482
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Components/T66LeaderboardPanel.cpp",
+          "start_line": 2456,
+          "end_line": 2587
+        }
+      ]
+    }
+  ]
+}

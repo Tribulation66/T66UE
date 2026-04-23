@@ -18,6 +18,8 @@ public:
 	void BeginNewRun();
 	void SelectDifficulty(FName DifficultyID);
 	void SelectMap(FName MapID);
+	void ResetBattleRewardGrant();
+	bool TryMarkBattleRewardGranted();
 
 	FName GetSelectedDifficultyID() const { return SelectedDifficultyID; }
 	FName GetSelectedMapID() const { return SelectedMapID; }
@@ -30,4 +32,7 @@ private:
 
 	UPROPERTY()
 	FName SelectedMapID = NAME_None;
+
+	UPROPERTY()
+	bool bBattleRewardGranted = false;
 };

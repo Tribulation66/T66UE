@@ -584,6 +584,7 @@ void UT66MiniDataSubsystem::LoadDifficulties()
 		Definition.SpawnRateScalar = T66MiniToFloat(T66MiniGetValue(Row, TEXT("SpawnRateScalar")), 1.0f);
 		Definition.BossScalar = T66MiniToFloat(T66MiniGetValue(Row, TEXT("BossScalar")), 1.0f);
 		Definition.InteractableInterval = T66MiniToFloat(T66MiniGetValue(Row, TEXT("InteractableInterval")), 18.0f);
+		Definition.StageClearChadCoupons = FMath::Max(0, T66MiniToInt(T66MiniGetValue(Row, TEXT("StageClearChadCoupons")), 0));
 
 		if (Definition.DifficultyID != NAME_None)
 		{

@@ -1,0 +1,150 @@
+{
+  "screen": "Settings",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "metrics": {
+    "TopBarOverlapPx": 22,
+    "TabButtonHeight": 48,
+    "TabWrapperPaddingX": 2,
+    "TabWrapperPaddingY": 0,
+    "TabStripPadding": {
+      "left": 10,
+      "top": 10,
+      "right": 10,
+      "bottom": 10
+    },
+    "TabStripMinHeight": 72,
+    "CloseButtonSize": {
+      "width": 36,
+      "height": 36
+    },
+    "CompactButtonHeight": 44,
+    "ContentShellOuterPadding": {
+      "left": 8,
+      "top": 0,
+      "right": 8,
+      "bottom": 8
+    },
+    "ContentAreaInnerPadding": {
+      "left": 8,
+      "top": 8,
+      "right": 8,
+      "bottom": 8
+    },
+    "GenericRowPadding": {
+      "left": 12,
+      "top": 10,
+      "right": 12,
+      "bottom": 10
+    },
+    "GenericRowMinHeight": 64,
+    "GenericRowSpacing": 8,
+    "TogglePair": {
+      "buttonMinWidth": 88,
+      "buttonGap": 4,
+      "labelToClusterGap": 10,
+      "clusterMinWidth": 180,
+      "clusterMinWidthWithOuterGap": 190,
+      "defaultLabelMinWidth": 200
+    },
+    "DropdownSplit": {
+      "label": 0.4,
+      "value": 0.6
+    },
+    "PercentEntrySplit": {
+      "label": 0.46,
+      "value": 0.54
+    },
+    "SliderSplit": {
+      "label": 0.3,
+      "slider": 0.55,
+      "value": 0.15
+    },
+    "ControlsRowPadding": {
+      "left": 12,
+      "top": 8,
+      "right": 12,
+      "bottom": 8
+    },
+    "ControlsRowSpacing": 4,
+    "ControlsBindingButtonMinWidth": 88,
+    "ConfirmOverlayOuterPadding": 30,
+    "ConfirmDialogInnerPadding": 25,
+    "ConfirmButtonMinWidth": 100,
+    "ConfirmCountdownSeconds": 10,
+    "notes": [
+      "Settings surface width is SafeFrameSize.X and surface height is SafeFrameSize.Y - TopInset.",
+      "TopInset is formula-driven: max(0, (FrontendTopBarContentHeight - 22) / ResponsiveScale) for non-modal mode.",
+      "The first manifest seed keeps top-area and tab-strip contracts relative because the exact frontend top bar content height is not stored in this screen pack."
+    ]
+  },
+  "groups": {
+    "TopBar": {
+      "SettingsSurfaceRelativeTopBand": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 72,
+        "classification": "stateful",
+        "notes": "Relative to the settings surface top, not absolute viewport Y."
+      },
+      "CloseButtonContract": {
+        "x": 0,
+        "y": 0,
+        "width": 36,
+        "height": 36,
+        "classification": "stateful",
+        "notes": "Standalone close button that sits to the right of the tab strip with a 6 px left gap."
+      }
+    },
+    "Center": {
+      "SettingsSurfaceFull": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "classification": "live",
+        "notes": "Absolute canvas placeholder; actual runtime top inset is derived from the frontend top bar."
+      },
+      "TabStripRelative": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 72,
+        "classification": "stateful",
+        "notes": "Relative to the settings surface top."
+      },
+      "ContentShellRelative": {
+        "x": 8,
+        "y": 72,
+        "width": 1904,
+        "height": 1000,
+        "classification": "live",
+        "notes": "Relative shell contract using explicit outer padding and inferred tab-strip band height."
+      }
+    },
+    "Left": {},
+    "Right": {},
+    "Decor": {
+      "TogglePairMinCluster": {
+        "width": 180,
+        "height": 44,
+        "classification": "stateful"
+      },
+      "DropdownTriggerContract": {
+        "width": 0,
+        "height": 44,
+        "classification": "stateful",
+        "notes": "No explicit fixed width in code. Height follows compact control sizing plus trigger padding."
+      },
+      "ConfirmDialogMinimumActionRow": {
+        "width": 224,
+        "height": 56,
+        "classification": "stateful",
+        "notes": "Inferred from two 100 px buttons plus slot padding."
+      }
+    }
+  }
+}

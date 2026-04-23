@@ -1,0 +1,14 @@
+Use case: ui-mockup
+Asset type: layout-authority screen reference
+Primary request: create a Settings screen master that preserves the exact structure of the current packaged Settings screen while restaging it in the approved Main Menu visual family
+Style anchor image: C:/UE/T66/SourceAssets/UI/MainMenuReference/reference_main_menu_master.png
+Structure anchor image: C:/UE/T66/SourceAssets/UI/SettingsReference/current_runtime_anchor.png
+Helper anchor image: C:/UE/T66/SourceAssets/UI/SettingsReference/current_runtime_anchor_2x.png
+Subject: the full Settings screen as one deterministic reference frame
+Style/medium: painted fantasy game UI matching the approved Main Menu family, not a redesign
+Composition/framing: fixed frame at 1920x1080, exact aspect ratio, no reframing
+Structural constraints: preserve the same major region contract as the structure anchor: inherited frontend top bar, settings tab strip, one primary content shell, full-width settings rows, and any current scrollable page density
+Style transfer constraints: inherit the Main Menu material language, bevels, palette, top-bar treatment, and ornamental framing, but do not introduce a central character statue, scenic focal diorama, or any large illustrative centerpiece behind or inside the Settings content shell; repeated settings rows should read as one reusable row family with only state and control variation
+Runtime constraints: all tab labels, row labels, values, and keybind text remain live; shell art and row chrome should stay text-free where possible so no-text and buttonless variants can be derived; dropdown value wells and toggle labels must remain neutral backplates for live runtime text rather than baked captions
+Output expectation: canonical screen master first, then compatible no-buttons and no-text variants from that same composition
+Avoid: layout drift, changing row density, inventing extra side panels, flattening the settings rows into generic modern cards, watermark

@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Runtime Reconstruction"
+  short_description: "Rebuild a reference screen in-engine with real controls"
+  default_prompt: "Use $ui-runtime-reconstruction to rebuild this screen in Unreal using the measured layout and runtime art."

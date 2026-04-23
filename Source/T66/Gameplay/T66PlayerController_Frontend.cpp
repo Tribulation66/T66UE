@@ -385,6 +385,18 @@ namespace
 			OutScreenType = ET66ScreenType::MainMenu;
 			return true;
 		}
+		if (Normalized.Equals(TEXT("HeroSelection"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("HeroSelect"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::HeroSelection;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("Settings"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("SettingsScreen"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::Settings;
+			return true;
+		}
 		if (Normalized.Equals(TEXT("Unlocks"), ESearchCase::IgnoreCase) || Normalized.Equals(TEXT("Minigames"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::Unlocks;

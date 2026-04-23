@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Packaged Review"
+  short_description: "Classify packaged-build deltas against the reference"
+  default_prompt: "Use $ui-packaged-review to compare the packaged capture to the approved reference and rank the remaining blockers."

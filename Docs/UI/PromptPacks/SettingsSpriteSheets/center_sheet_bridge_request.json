@@ -1,0 +1,15 @@
+{
+  "endpoint": "http://127.0.0.1:5000/generate",
+  "token_env": "CHATGPT_BRIDGE_TOKEN",
+  "prompt_file": "center_sheet_prompt.txt",
+  "image_paths": [
+    "../../../../SourceAssets/UI/MainMenuReference/reference_main_menu_master.png",
+    "../../../../SourceAssets/UI/SettingsReference/screen_master.png",
+    "../../../../SourceAssets/UI/SettingsReference/screen_master_2x.png",
+    "../../../../SourceAssets/UI/SettingsReference/screen_master_notext.png",
+    "../../../../SourceAssets/UI/SettingsReference/screen_master_notext_2x.png"
+  ],
+  "timeout_seconds": 240,
+  "json_out": "../../../../Tools/ChatGPTBridge/output/settings_center_sheet_request.json",
+  "copy_to_dir": "../../../../SourceAssets/UI/SettingsReference/SpriteSheets"
+}

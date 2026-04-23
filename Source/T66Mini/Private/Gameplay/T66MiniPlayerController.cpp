@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66MiniPlayerController.h"
 
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
@@ -544,10 +545,6 @@ void AT66MiniPlayerController::ClientPrepareMiniOnlineRunSummary_Implementation(
 	if (SaveSubsystem)
 	{
 		SaveSubsystem->RecordRunSummary(Summary, DataSubsystem);
-		if (bWasVictory)
-		{
-			SaveSubsystem->RecordClearedMiniStage(Summary.CompanionID, DataSubsystem);
-		}
 	}
 	if (UT66MiniLeaderboardSubsystem* MiniLeaderboardSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniLeaderboardSubsystem>() : nullptr)
 	{
@@ -564,6 +561,23 @@ void AT66MiniPlayerController::ClientPrepareMiniOnlineRunSummary_Implementation(
 	if (T66GameInstance)
 	{
 		T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniRunSummary;
+	}
+}
+
+void AT66MiniPlayerController::ClientHandleMiniStageClear_Implementation(const int32 ChadCouponsAwarded, const FName CompanionID)
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	if (UT66AchievementsSubsystem* Achievements = GameInstance ? GameInstance->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
+	{
+		Achievements->AddChadCoupons(ChadCouponsAwarded);
+	}
+
+	if (UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr)
+	{
+		if (UT66MiniDataSubsystem* DataSubsystem = GameInstance->GetSubsystem<UT66MiniDataSubsystem>())
+		{
+			SaveSubsystem->RecordClearedMiniStage(CompanionID, DataSubsystem);
+		}
 	}
 }
 

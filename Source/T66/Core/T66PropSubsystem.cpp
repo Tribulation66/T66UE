@@ -16,7 +16,7 @@
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66HouseNPCBase.h"
-#include "Gameplay/T66PilotableTractor.h"
+#include "Gameplay/T66ArcadeTruckInteractable.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "UObject/SoftObjectPath.h"
 
@@ -539,8 +539,8 @@ bool UT66PropSubsystem::SpawnMainMapGroupedProps(
 			AActor* SpawnedActor = nullptr;
 			if (Entry->bSpawnPilotableTractor)
 			{
-				if (AT66PilotableTractor* Tractor = World->SpawnActor<AT66PilotableTractor>(
-					AT66PilotableTractor::StaticClass(),
+				if (AT66ArcadeTruckInteractable* Tractor = World->SpawnActor<AT66ArcadeTruckInteractable>(
+					AT66ArcadeTruckInteractable::StaticClass(),
 					GroundLocation,
 					Rotation,
 					SpawnParams))
@@ -1068,8 +1068,8 @@ void UT66PropSubsystem::SpawnPropsInternal(
 
 			if (bSpawnPilotableTractor)
 			{
-				AT66PilotableTractor* Tractor = World->SpawnActor<AT66PilotableTractor>(
-					AT66PilotableTractor::StaticClass(), Loc, Rot, SP);
+				AT66ArcadeTruckInteractable* Tractor = World->SpawnActor<AT66ArcadeTruckInteractable>(
+					AT66ArcadeTruckInteractable::StaticClass(), Loc, Rot, SP);
 				if (!Tractor) continue;
 
 				Tractor->SetActorScale3D(FinalScale);

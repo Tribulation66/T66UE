@@ -32,11 +32,14 @@
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
+#include "UI/T66ArcadePopupWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
+#include "UI/T66WhackAMoleArcadeWidget.h"
 #include "Gameplay/T66FountainOfLifeInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
+#include "Gameplay/T66ArcadeInteractableBase.h"
 #include "Gameplay/T66CircusInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
@@ -431,6 +434,104 @@ void AT66PlayerController::OpenCollectorOverlay()
 	}
 }
 
+bool AT66PlayerController::OpenArcadePopup(
+	const FT66ArcadeInteractableData& ArcadeData,
+	AT66ArcadeInteractableBase* SourceInteractable)
+{
+	if (!IsGameplayLevel()
+		|| ArcadeData.ArcadeClass != ET66ArcadeInteractableClass::PopupMinigame
+		|| IsArcadePopupOpen()
+		|| !CanUseCombatMouseInput())
+	{
+		return false;
+	}
+
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
+
+	UT66ArcadePopupWidget* NewPopup = nullptr;
+	TSubclassOf<UT66ArcadePopupWidget> PopupWidgetClass = ArcadeData.PopupWidgetClass;
+	if (!PopupWidgetClass)
+	{
+		switch (ArcadeData.PopupGameType)
+		{
+		case ET66ArcadePopupGameType::WhackAMole:
+			PopupWidgetClass = UT66WhackAMoleArcadeWidget::StaticClass();
+			break;
+
+		case ET66ArcadePopupGameType::None:
+		default:
+			break;
+		}
+	}
+
+	if (PopupWidgetClass)
+	{
+		NewPopup = CreateWidget<UT66ArcadePopupWidget>(this, PopupWidgetClass);
+	}
+
+	if (!NewPopup)
+	{
+		return false;
+	}
+
+	NewPopup->InitializeArcadePopup(ArcadeData, SourceInteractable);
+	ArcadePopupWidget = NewPopup;
+	ArcadePopupWidget->AddToViewport(110);
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+	bEnableClickEvents = true;
+	bEnableMouseOverEvents = true;
+	return true;
+}
+
+void AT66PlayerController::HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, const bool bSucceeded)
+{
+	if (PopupWidget != ArcadePopupWidget)
+	{
+		return;
+	}
+
+	CloseArcadePopup(bSucceeded);
+}
+
+void AT66PlayerController::CloseArcadePopup(const bool bSucceeded)
+{
+	UT66ArcadePopupWidget* PopupWidget = ArcadePopupWidget;
+	if (!PopupWidget)
+	{
+		return;
+	}
+
+	AT66ArcadeInteractableBase* SourceInteractable = PopupWidget->GetSourceInteractable();
+	ArcadePopupWidget = nullptr;
+
+	if (PopupWidget->IsInViewport())
+	{
+		PopupWidget->RemoveFromParent();
+	}
+
+	if (SourceInteractable)
+	{
+		SourceInteractable->HandleArcadePopupClosed(bSucceeded);
+	}
+
+	if (!IsPaused() && !(UIManager && UIManager->IsModalActive()))
+	{
+		RestoreGameplayInputMode();
+	}
+}
+
+bool AT66PlayerController::IsArcadePopupOpen() const
+{
+	return ArcadePopupWidget && ArcadePopupWidget->IsInViewport();
+}
+
 
 void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 {
@@ -491,6 +592,7 @@ void AT66PlayerController::StartChestRewardHUD(ET66Rarity Rarity, int32 GoldAmou
 void AT66PlayerController::OnPlayerDied()
 {
 	EndHeroOneScopedUlt();
+	CloseArcadePopup(false);
 
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
@@ -569,6 +671,7 @@ void AT66PlayerController::OnPlayerDied()
 void AT66PlayerController::ShowVictoryRunSummary()
 {
 	EndHeroOneScopedUlt();
+	CloseArcadePopup(false);
 
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
@@ -611,6 +714,7 @@ void AT66PlayerController::ClientShowVictoryRunSummary_Implementation()
 void AT66PlayerController::ShowDifficultyClearSummary()
 {
 	EndHeroOneScopedUlt();
+	CloseArcadePopup(false);
 
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
@@ -815,6 +919,12 @@ void AT66PlayerController::HandleEscapePressed()
 	if (bInventoryInspectOpen)
 	{
 		SetInventoryInspectOpen(false);
+		return;
+	}
+
+	if (IsArcadePopupOpen())
+	{
+		CloseArcadePopup(false);
 		return;
 	}
 

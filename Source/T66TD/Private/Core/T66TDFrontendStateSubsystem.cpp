@@ -12,6 +12,7 @@ void UT66TDFrontendStateSubsystem::ResetRunSetup()
 {
 	SelectedDifficultyID = NAME_None;
 	SelectedMapID = NAME_None;
+	bBattleRewardGranted = false;
 }
 
 void UT66TDFrontendStateSubsystem::BeginNewRun()
@@ -25,10 +26,28 @@ void UT66TDFrontendStateSubsystem::SelectDifficulty(const FName DifficultyID)
 	{
 		SelectedDifficultyID = DifficultyID;
 		SelectedMapID = NAME_None;
+		bBattleRewardGranted = false;
 	}
 }
 
 void UT66TDFrontendStateSubsystem::SelectMap(const FName MapID)
 {
 	SelectedMapID = MapID;
+	bBattleRewardGranted = false;
+}
+
+void UT66TDFrontendStateSubsystem::ResetBattleRewardGrant()
+{
+	bBattleRewardGranted = false;
+}
+
+bool UT66TDFrontendStateSubsystem::TryMarkBattleRewardGranted()
+{
+	if (bBattleRewardGranted)
+	{
+		return false;
+	}
+
+	bBattleRewardGranted = true;
+	return true;
 }

@@ -66,6 +66,9 @@ struct T66TD_API FT66TDDifficultyDefinition
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TD")
 	float RewardScalar = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "TD")
+	int32 StageClearChadCoupons = 0;
 };
 
 USTRUCT(BlueprintType)

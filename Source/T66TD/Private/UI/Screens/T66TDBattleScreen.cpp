@@ -2,9 +2,11 @@
 
 #include "UI/Screens/T66TDBattleScreen.h"
 
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66TDDataSubsystem.h"
 #include "Core/T66TDFrontendStateSubsystem.h"
 #include "Core/T66TDVisualSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Data/T66TDDataTypes.h"
 #include "Engine/Texture2D.h"
 #include "Input/DragAndDrop.h"
@@ -733,6 +735,7 @@ namespace
 			, _HeroBrushes()
 			, _EnemyBrushes()
 			, _BossBrushes()
+			, _OwningGameInstance(nullptr)
 		{}
 			SLATE_ARGUMENT(FT66TDMapDefinition, MapDefinition)
 			SLATE_ARGUMENT(FT66TDDifficultyDefinition, DifficultyDefinition)
@@ -741,6 +744,7 @@ namespace
 			SLATE_ARGUMENT(FT66TDHeroBrushMap, HeroBrushes)
 			SLATE_ARGUMENT(FT66TDEnemyBrushMap, EnemyBrushes)
 			SLATE_ARGUMENT(FT66TDEnemyBrushMap, BossBrushes)
+			SLATE_ARGUMENT(TWeakObjectPtr<UGameInstance>, OwningGameInstance)
 		SLATE_END_ARGS()
 
 		~ST66TDBattleBoardWidget() override
@@ -761,6 +765,7 @@ namespace
 			HeroBrushes = InArgs._HeroBrushes;
 			EnemyBrushes = InArgs._EnemyBrushes;
 			BossBrushes = InArgs._BossBrushes;
+			OwningGameInstance = InArgs._OwningGameInstance;
 
 			for (const FT66TDHeroDefinition& HeroDefinition : HeroDefinitions)
 			{
@@ -1366,6 +1371,7 @@ namespace
 		EActiveTimerReturnType HandleActiveTimer(double, float InDeltaTime)
 		{
 			AdvanceMatch(InDeltaTime * SimulationSpeed);
+			ResolveVictoryRewardIfNeeded();
 			Invalidate(EInvalidateWidgetReason::Paint);
 			return EActiveTimerReturnType::Continue;
 		}
@@ -1386,6 +1392,33 @@ namespace
 			PendingSpawns.Reset();
 			NextSpawnIndex = 0;
 			TimeUntilNextSpawn = 0.f;
+			if (UGameInstance* GameInstance = OwningGameInstance.Get())
+			{
+				if (UT66TDFrontendStateSubsystem* FrontendState = GameInstance->GetSubsystem<UT66TDFrontendStateSubsystem>())
+				{
+					FrontendState->ResetBattleRewardGrant();
+				}
+			}
+		}
+
+		void ResolveVictoryRewardIfNeeded()
+		{
+			if (MatchState != ET66TDMatchState::Victory)
+			{
+				return;
+			}
+
+			UGameInstance* GameInstance = OwningGameInstance.Get();
+			UT66TDFrontendStateSubsystem* FrontendState = GameInstance ? GameInstance->GetSubsystem<UT66TDFrontendStateSubsystem>() : nullptr;
+			if (!GameInstance || !FrontendState || !FrontendState->TryMarkBattleRewardGranted())
+			{
+				return;
+			}
+
+			if (UT66AchievementsSubsystem* Achievements = GameInstance->GetSubsystem<UT66AchievementsSubsystem>())
+			{
+				Achievements->AddChadCoupons(FMath::Max(0, DifficultyDefinition.StageClearChadCoupons));
+			}
 		}
 
 		void StartNextWave()
@@ -2466,6 +2499,7 @@ namespace
 		TArray<FT66TDQueuedSpawn> PendingSpawns;
 		TArray<FT66TDBeamEffect> BeamEffects;
 		TSharedPtr<FActiveTimerHandle> ActiveTimerHandle;
+		TWeakObjectPtr<UGameInstance> OwningGameInstance;
 		ET66TDMatchState MatchState = ET66TDMatchState::AwaitingWave;
 		int32 Materials = 340;
 		int32 Hearts = 20;
@@ -2595,7 +2629,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 		.Heroes(OrderedHeroes)
 		.HeroBrushes(HeroSpriteBrushes)
 		.EnemyBrushes(EnemySpriteBrushes)
-		.BossBrushes(BossSpriteBrushes);
+		.BossBrushes(BossSpriteBrushes)
+		.OwningGameInstance(TWeakObjectPtr<UGameInstance>(GameInstance));
 	BattleBoardRoot = BattleBoard;
 
 	TSharedRef<SVerticalBox> HeroRoster = SNew(SVerticalBox);

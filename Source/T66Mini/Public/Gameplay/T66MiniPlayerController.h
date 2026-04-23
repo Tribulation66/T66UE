@@ -36,6 +36,9 @@ public:
 	void ClientPrepareMiniOnlineRunSummary(bool bWasVictory, const FString& ResultLabel, int32 WaveReached, float RunSeconds);
 
 	UFUNCTION(Client, Reliable)
+	void ClientHandleMiniStageClear(int32 ChadCouponsAwarded, FName CompanionID);
+
+	UFUNCTION(Client, Reliable)
 	void ClientPrepareMiniFrontendTravel(ET66ScreenType PendingScreen, bool bIntermissionFlow);
 
 protected:

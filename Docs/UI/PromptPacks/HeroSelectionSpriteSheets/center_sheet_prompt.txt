@@ -1,0 +1,14 @@
+Use case: ui-mockup
+Asset type: game UI runtime component sheet
+Primary request: reorganize the approved Hero Selection reference into a production sprite sheet for the center controls family only
+Input images: attach the approved Hero Selection screen master, its 2x companion, the current packaged Hero Selection anchor, and the approved Main Menu style anchor
+Scene/background: flat near-black presentation board with generous spacing
+Subject: isolated reusable assets for the Hero Selection center controls family only, derived from the approved reference
+Style/medium: painted game UI asset sheet, exact reconstruction of the approved reference art style, not a redesign
+Composition/framing: front-on orthographic presentation, grouped by state, no overlap, no mock screen
+Measured reference canvas: 1920x1080
+Measured family contracts: hero-strip center rail proportion 1112x60; companion-strip band proportion 1112x50; body-toggle band proportion 1112x35; keep arrow buttons compact and chunky; preserve the visual rhythm of the selected center portrait slot against smaller neighbor portrait slots
+Required board contents: hero carousel outer rail frame; hero portrait slot frame in normal, selected, and de-emphasized neighbor states; left arrow button family and right arrow button family with normal, hover, pressed, disabled; companion-bar frame; wide `Choose Companion` button family with normal, hover, pressed, disabled; bottom body-toggle shell; segmented body-toggle tab/button pair in selected and unselected states; any horizontal cap or mid-strip trims needed to let the bottom bars stretch cleanly at runtime
+State coverage: for buttons include normal, hover, pressed, and disabled; for slot frames include normal, selected, and de-emphasized states; for shells include only the clean default plate unless a state change is visually explicit in the reference
+Constraints: keep exact silhouette, border thickness, corner cuts, inset bevel depth, material language, and proportions from the approved reference; remove all text from the sprite sheet; do not include the character model, the preview-stage floor, or the stone backdrop wall; preserve the blunt center-control logic rather than inventing ornamental shrine widgets; portrait wells must stay as socket frames only and must not contain live hero or companion imagery; no watermark
+Avoid: fake generic UI kits, flat gradients, softened silhouettes, decorative flourishes not present in the approved reference, large scenic art baked into the controls, or filled-in portrait sockets

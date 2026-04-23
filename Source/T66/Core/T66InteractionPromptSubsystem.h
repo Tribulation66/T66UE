@@ -36,7 +36,10 @@ public:
 
 	FText BuildPromptText(ET66InteractionPromptAction Action) const;
 	FText BuildPromptTextWithSeconds(ET66InteractionPromptAction Action, int32 RemainingSeconds) const;
+	FText BuildCustomPromptText(const FText& ActionText) const;
+	FText BuildCustomPromptTextWithSeconds(const FText& ActionText, int32 RemainingSeconds) const;
 
 private:
 	FText BuildPromptTextInternal(ET66InteractionPromptAction Action, int32 RemainingSeconds, bool bIncludeSeconds) const;
+	FText BuildCustomPromptTextInternal(const FText& ActionText, int32 RemainingSeconds, bool bIncludeSeconds) const;
 };

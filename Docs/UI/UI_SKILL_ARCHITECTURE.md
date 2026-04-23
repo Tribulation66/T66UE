@@ -16,9 +16,10 @@ Those stages fail for different reasons. Splitting them by artifact stage makes 
 
 ## Recommended Shape
 
-Keep one thin orchestrator, five production stage skills, and one optional shared helper:
+Keep one thin orchestrator, five production stage skills, and two shared helpers/prerequisites:
 
 - `ui-reference-prep`
+- `content ownership audit`
 
 1. `ui-style-reference`
 2. `ui-layout-manifest`
@@ -28,7 +29,11 @@ Keep one thin orchestrator, five production stage skills, and one optional share
 
 Do not split down to one full skill per widget type. Buttons, panels, top bar, toggles, and icons should be sub-workflows inside `ui-sprite-families`, not separate top-level skills.
 
-Installed skill paths:
+Repo-managed mirror:
+- `C:\UE\T66\CodexSkills\UI`
+- `C:\UE\T66\Scripts\InstallUIReconstructionSkills.ps1`
+
+Installed skill paths after bootstrap:
 - `C:\Users\DoPra\.codex\skills\ui-reconstruction-orchestrator\SKILL.md`
 - `C:\Users\DoPra\.codex\skills\ui-reference-prep\SKILL.md`
 - `C:\Users\DoPra\.codex\skills\ui-style-reference\SKILL.md`
@@ -36,6 +41,10 @@ Installed skill paths:
 - `C:\Users\DoPra\.codex\skills\ui-sprite-families\SKILL.md`
 - `C:\Users\DoPra\.codex\skills\ui-runtime-reconstruction\SKILL.md`
 - `C:\Users\DoPra\.codex\skills\ui-packaged-review\SKILL.md`
+
+Bootstrap command:
+
+`powershell -ExecutionPolicy Bypass -File "C:\UE\T66\Scripts\InstallUIReconstructionSkills.ps1" -Validate`
 
 ## Orchestrator
 
@@ -53,6 +62,7 @@ Use when:
 Must do:
 - identify what artifacts already exist
 - identify whether the active blocker is reference usability before routing to a production stage
+- identify whether a trusted `content_ownership.json` exists before routing into generation, manifesting, or packaged diffing
 - call the fewest stage skills needed
 - keep the screen moving from reference to packaged validation
 
@@ -104,6 +114,7 @@ Inputs:
 - approved anchor screen(s)
 - target screen skeleton or component map
 - target canvas size
+- `content_ownership.json` or an equivalent code-first ownership note
 - known live or dynamic regions
 - explicit bans such as no baked localizable text
 
@@ -118,7 +129,8 @@ Outputs:
 Must do:
 - preserve style fidelity to the anchor screen
 - preserve the target screen structure
-- keep localizable and live content removable from runtime art
+- keep localizable and runtime-owned content removable from runtime art
+- keep anchor-only scenic motifs out of utilitarian screens unless the target structure explicitly calls for them
 
 Must not do:
 - invent new layout hierarchy
@@ -140,6 +152,7 @@ Use when:
 Inputs:
 - approved `screen_master.png`
 - naming rules for regions and controls
+- `content_ownership.json`
 - optional exclusions for live or dynamic zones
 
 Outputs:
@@ -151,6 +164,7 @@ Outputs:
 Must do:
 - create named rects for all important screen regions
 - distinguish visual crop rects from actual runtime control rects
+- distinguish shell rects from live-content rects when ownership is mixed
 - act as the single placement source of truth
 
 Must not do:
@@ -173,6 +187,7 @@ Use when:
 Inputs:
 - approved reference image set
 - `reference_layout.json`
+- `content_ownership.json`
 - region list to reconstruct
 - state matrix for each family:
   - normal
@@ -197,6 +212,7 @@ Recommended internal sub-workflows:
 Must do:
 - match measured target proportions
 - avoid baked localizable text
+- generate shell-only, socket-frame, empty-backplate, or open-aperture assets when runtime owns the interior
 - generate assets that fit the manifest slots without visible distortion
 - keep family ownership clean
 
@@ -220,6 +236,7 @@ Inputs:
 - runtime screen files
 - reference layout header
 - sliced runtime assets
+- `content_ownership.json`
 - region ownership rules
 - live-data requirements
 
@@ -235,6 +252,7 @@ Must do:
 - keep the visible control as the actual button
 - preserve live content only where appropriate
 - assign exactly one visual owner per region
+- preserve runtime-owned apertures, sockets, and live-content wells instead of filling them with shell art
 
 Must not do:
 - ship hotspot overlays as the interaction model
@@ -256,6 +274,7 @@ Use when:
 Inputs:
 - approved reference
 - packaged screenshot
+- `content_ownership.json`
 - optional region masks or priority list
 
 Outputs:
@@ -274,6 +293,7 @@ Root-cause classes:
 Must do:
 - review packaged output, not just editor behavior
 - separate static-region failures from live-region differences
+- strict-diff shell regions and mask or manually review runtime-owned interiors
 - classify the cause before proposing the next fix
 
 Must not do:
@@ -286,6 +306,10 @@ Success bar:
 ## Handoff Contract
 
 Each skill should hand off concrete files, not just prose.
+
+Every stage that touches a mixed-ownership screen should preserve:
+
+- `content_ownership.json`
 
 ### After `ui-style-reference`
 
@@ -334,10 +358,11 @@ Do not insert it after runtime work starts.
 ### Existing approved reference already exists
 
 Run:
-1. `ui-layout-manifest`
-2. `ui-sprite-families`
-3. `ui-runtime-reconstruction`
-4. `ui-packaged-review`
+1. content ownership audit
+2. `ui-layout-manifest`
+3. `ui-sprite-families`
+4. `ui-runtime-reconstruction`
+5. `ui-packaged-review`
 
 Example:
 - current main menu work
@@ -348,11 +373,12 @@ Optional insertion:
 ### New screen in an existing approved style
 
 Run:
-1. `ui-style-reference`
-2. `ui-layout-manifest`
-3. `ui-sprite-families`
-4. `ui-runtime-reconstruction`
-5. `ui-packaged-review`
+1. content ownership audit
+2. `ui-style-reference`
+3. `ui-layout-manifest`
+4. `ui-sprite-families`
+5. `ui-runtime-reconstruction`
+6. `ui-packaged-review`
 
 Example:
 - hero select built to match the main menu family

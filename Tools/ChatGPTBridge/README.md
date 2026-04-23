@@ -7,6 +7,7 @@ This is UI automation. It is inherently brittle compared to using the API direct
 ## Files
 
 - `server.py`: Flask app with `/health` and `/generate`
+- `request_generate.py`: lightweight client for prompt-file plus reference-image requests
 - `requirements.txt`: Python dependencies
 - `launch_debug_chrome.ps1`: launches Chrome with remote debugging enabled
 
@@ -91,6 +92,31 @@ curl -X POST "https://your-subdomain.ngrok.app/generate" \
 ## Optional JSON Mode
 
 If you call `/generate?mode=json`, the response is JSON metadata instead of raw image bytes. The bridge still saves the image locally under `Tools/ChatGPTBridge/output/`.
+
+## Repo-Friendly Client
+
+Use the helper client when the prompt already lives in a repo file and the request should attach local reference images.
+
+Example:
+
+```powershell
+$env:CHATGPT_BRIDGE_TOKEN = "replace-this-with-a-long-random-secret"
+python .\request_generate.py `
+  --prompt-file C:\UE\T66\Docs\UI\PromptPacks\HeroSelectionSpriteSheets\master_frame_prompt.txt `
+  --image C:\UE\T66\SourceAssets\UI\MainMenuReference\reference_main_menu_master.png `
+  --image C:\UE\T66\SourceAssets\UI\HeroSelectionReference\current_runtime_anchor.png `
+  --image C:\UE\T66\SourceAssets\UI\HeroSelectionReference\current_runtime_anchor_2x.png `
+  --json-out C:\UE\T66\Tools\ChatGPTBridge\output\hero_selection_master_request.json `
+  --copy-to-dir C:\UE\T66\SourceAssets\UI\HeroSelectionReference
+```
+
+The client posts to `/generate?mode=json`, saves the metadata payload, and can optionally copy the generated files into a chosen destination folder.
+
+If you already have a repo-side request manifest, use:
+
+```powershell
+python .\request_generate.py --request-file C:\UE\T66\Docs\UI\PromptPacks\HeroSelectionSpriteSheets\master_frame_bridge_request.json
+```
 
 ## Notes
 

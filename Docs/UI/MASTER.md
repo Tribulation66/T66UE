@@ -18,8 +18,16 @@ The current goal is not open-ended UI exploration. The goal is:
 - Main menu reference pack: `C:\UE\T66\SourceAssets\UI\MainMenuReference`
 - Reconstruction scripts: `C:\UE\T66\Scripts`
 - UI docs: `C:\UE\T66\Docs\UI`
+- Content ownership audit: `C:\UE\T66\Docs\UI\UI_CONTENT_OWNERSHIP_AUDIT.md`
+- Image backend policy: `C:\UE\T66\Docs\UI\UI_IMAGE_BACKEND_POLICY.md`
+- Repo-managed skill mirror: `C:\UE\T66\CodexSkills\UI`
+- Skill bootstrap script: `C:\UE\T66\Scripts\InstallUIReconstructionSkills.ps1`
 - Reconstruction orchestrator: `C:\Users\DoPra\.codex\skills\ui-reconstruction-orchestrator\SKILL.md`
 - Reference prep helper: `C:\Users\DoPra\.codex\skills\ui-reference-prep\SKILL.md`
+
+The repo mirror is the shareable source of truth for the custom UI skills. Reinstall the live local copies with:
+
+`powershell -ExecutionPolicy Bypass -File "C:\UE\T66\Scripts\InstallUIReconstructionSkills.ps1" -Validate`
 
 ## Core Rules
 
@@ -58,7 +66,28 @@ Solve region ownership first:
 
 Do not stack speculative overlays onto contaminated backgrounds and call that progress.
 
-### 6. Validate in packaged runtime
+### 6. Audit runtime-owned interiors before generation
+
+Before style-reference generation, family-board generation, or strict diffing:
+
+- inspect the screen code
+- identify runtime text, portraits, icons, avatars, media, or 3D previews
+- record them in `content_ownership.json`
+- keep shell rects and live-content rects separate
+
+If a region is runtime-owned, prompts and runtime assets must preserve the shell and leave the interior open, socketed, or neutral.
+
+### 7. Prefer native image generation first
+
+Use native Codex `image_gen` first when prompt-only generation or thread-attached references are enough.
+
+Use the ChatGPT bridge only as a fallback when the task needs:
+
+- multiple repo-local reference attachments
+- versioned request manifests or reproducible bridge requests
+- explicit API-side controls not exposed in the local tool surface
+
+### 8. Validate in packaged runtime
 
 Editor-only correctness is not sufficient. Every meaningful pass should be judged in the packaged build.
 
@@ -74,7 +103,17 @@ Optional helper step:
 
 - if the active blocker is reference usability rather than layout, use `ui-reference-prep` to create deterministic `2x/4x` exports or helper-only AI upscales before manifesting or family generation
 
-### 2. Partition the screen
+### 2. Audit content ownership
+
+- inspect the runtime screen code before generating art
+- classify each mixed-ownership region in `content_ownership.json`
+- decide whether each region needs a:
+  - `shell-only`
+  - `socket-frame`
+  - `empty-backplate`
+  - `open-aperture`
+
+### 3. Partition the screen
 
 Break the screen into stable regions:
 
@@ -85,7 +124,7 @@ Break the screen into stable regions:
 - left panel
 - right panel
 
-### 3. Derive reusable assets
+### 4. Derive reusable assets
 
 Prefer clean families over screenshot cleanup:
 
@@ -95,7 +134,7 @@ Prefer clean families over screenshot cleanup:
 - icons
 - toggles
 
-### 4. Rebuild from large to small
+### 5. Rebuild from large to small
 
 Work in this order:
 
@@ -105,7 +144,7 @@ Work in this order:
 4. hover/pressed/disabled state fidelity
 5. live content framing and polish
 
-### 5. Review through the gate
+### 6. Review through the gate
 
 Every pass should clear `C:\UE\T66\Docs\UI\SCREEN_REVIEW_GATE.md` before it is treated as a meaningful improvement.
 

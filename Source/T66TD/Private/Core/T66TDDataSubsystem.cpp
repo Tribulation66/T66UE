@@ -269,6 +269,7 @@ void UT66TDDataSubsystem::LoadDifficulties()
 		Definition.EnemySpeedScalar = T66TDToFloat(T66TDGetValue(Row, TEXT("EnemySpeedScalar")), 1.0f);
 		Definition.BossScalar = T66TDToFloat(T66TDGetValue(Row, TEXT("BossScalar")), 1.0f);
 		Definition.RewardScalar = T66TDToFloat(T66TDGetValue(Row, TEXT("RewardScalar")), 1.0f);
+		Definition.StageClearChadCoupons = FMath::Max(0, T66TDToInt(T66TDGetValue(Row, TEXT("StageClearChadCoupons")), 0));
 
 		if (Definition.DifficultyID != NAME_None)
 		{

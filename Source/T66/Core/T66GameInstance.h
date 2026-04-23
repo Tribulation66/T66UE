@@ -8,6 +8,7 @@
 #include "Core/T66DailyClimbTypes.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RunSaveGame.h"
+#include "Gameplay/T66ArcadeInteractableTypes.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "UI/T66UITypes.h"
 #include "T66GameInstance.generated.h"
@@ -94,6 +95,10 @@ public:
 	/** Reference to the Character Visuals DataTable (ID -> SkeletalMesh + optional looping anim + transform). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> CharacterVisualsDataTable;
+
+	/** Reference to the Arcade Interactables DataTable (in-run arcade tuning and rewards). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> ArcadeInteractablesDataTable;
 
 	// ============================================
 	// Player Selections (for current run setup)
@@ -337,6 +342,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetCharacterVisualsDataTable();
 
+	/** Get the loaded Arcade Interactables DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetArcadeInteractablesDataTable();
+
 	/** Get item data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetItemData(FName ItemID, FItemData& OutItemData);
@@ -368,6 +377,10 @@ public:
 	/** Get companion data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetCompanionData(FName CompanionID, FCompanionData& OutCompanionData);
+
+	/** Get arcade interactable data by row ID. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetArcadeInteractableData(FName ArcadeRowID, FT66ArcadeInteractableData& OutArcadeData);
 
 	/** Get all hero IDs from the DataTable */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -592,6 +605,10 @@ private:
 	/** Cached loaded Character Visuals DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedCharacterVisualsDataTable;
+
+	/** Cached loaded Arcade Interactables DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedArcadeInteractablesDataTable;
 
 	// Gameplay asset pre-load tracking.
 	bool bGameplayAssetsPreloadInFlight = false;

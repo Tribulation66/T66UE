@@ -3,7 +3,7 @@
 #include "Gameplay/T66MiniGameMode.h"
 
 #include "Components/AudioComponent.h"
-#include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
@@ -12,6 +12,7 @@
 #include "Core/T66MiniVFXSubsystem.h"
 #include "Core/T66MiniVisualSubsystem.h"
 #include "Core/T66PartySubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "EngineUtils.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Gameplay/T66MiniArena.h"
@@ -384,7 +385,7 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 		AudioMixRefreshAccumulator = 0.f;
 	}
 
-	UGameInstance* GameInstance = GetGameInstance();
+	const UGameInstance* GameInstance = GetGameInstance();
 	UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
@@ -571,7 +572,7 @@ void AT66MiniGameMode::RefreshAudioMix()
 		return;
 	}
 
-	const UGameInstance* GameInstance = GetGameInstance();
+	UGameInstance* GameInstance = GetGameInstance();
 	const float EffectiveMusicVolume = 0.40f * T66MiniResolveMasterVolume(GameInstance) * T66MiniResolveMusicVolume(GameInstance);
 	BattleMusicComponent->SetVolumeMultiplier(FMath::Clamp(EffectiveMusicVolume, 0.f, 1.f));
 }
@@ -722,7 +723,7 @@ void AT66MiniGameMode::StartWave(const int32 WaveIndex, const bool bResetTimer)
 
 const FT66MiniWaveDefinition* AT66MiniGameMode::GetWaveDefinition() const
 {
-	const UGameInstance* GameInstance = GetGameInstance();
+	UGameInstance* GameInstance = GetGameInstance();
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	const AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
 	if (!DataSubsystem || !MiniGameState)
@@ -1106,22 +1107,39 @@ void AT66MiniGameMode::ReturnToShopIntermission()
 
 void AT66MiniGameMode::RecordClearedMiniStageProgression()
 {
-	if (IsOnlinePartyMiniRun())
-	{
-		return;
-	}
-
 	const UGameInstance* GameInstance = GetGameInstance();
 	const UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	const UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
+	const FT66MiniDifficultyDefinition* DifficultyDefinition = (ActiveRun && DataSubsystem)
+		? DataSubsystem->FindDifficulty(ActiveRun->DifficultyID)
+		: nullptr;
+	const int32 ChadCouponsAwarded = DifficultyDefinition
+		? FMath::Max(0, DifficultyDefinition->StageClearChadCoupons)
+		: 0;
 	if (!SaveSubsystem || !DataSubsystem || !ActiveRun)
 	{
 		return;
 	}
 
+	if (IsOnlinePartyMiniRun())
+	{
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			if (AT66MiniPlayerController* MiniController = Cast<AT66MiniPlayerController>(It->Get()))
+			{
+				MiniController->ClientHandleMiniStageClear(ChadCouponsAwarded, ActiveRun->CompanionID);
+			}
+		}
+		return;
+	}
+
 	SaveSubsystem->RecordClearedMiniStage(ActiveRun->CompanionID, DataSubsystem);
+	if (UT66AchievementsSubsystem* Achievements = GameInstance ? GameInstance->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
+	{
+		Achievements->AddChadCoupons(ChadCouponsAwarded);
+	}
 }
 
 void AT66MiniGameMode::FinalizeRun(const bool bWasVictory, const FString& ResultLabel)

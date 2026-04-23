@@ -14,6 +14,10 @@ Instead, every reconstructed screen should have three distinct artifact layers:
 2. `hi-res art master`
 3. `runtime family sheets`
 
+And one required companion artifact:
+
+4. `content ownership audit`
+
 ## Standard Artifact Model
 
 ### 1. Layout master
@@ -69,6 +73,14 @@ Common requirements:
   - `disabled`
   - `selected`
 
+### 4. Content ownership audit
+
+Every screen pack should also include:
+
+- `content_ownership.json`
+
+This file records which visible regions are owned by runtime text, images, icons, avatars, media, or preview stages so generation prompts and review masks do not treat them as fixed art.
+
 ## Standard Tool Combination
 
 Use a small pipeline, not one tool.
@@ -85,11 +97,17 @@ This produces the `layout master`.
 
 ### Art generation
 
-Use `image_gen` for:
+Use native Codex `image_gen` first for:
 
 - painted runtime family boards
 - hi-res companion art when the original source is too low-resolution for clean extraction
 - isolated icon and chrome families
+
+Use the ChatGPT bridge only as a fallback when the generation task needs:
+
+- multiple repo-local reference attachments
+- a versioned bridge request manifest checked into the repo
+- explicit API-side controls not exposed in the local tool surface
 
 Do not ask one image-generation board to solve multiple unrelated size classes. Generate families at the measured target proportions from the layout manifest.
 
@@ -123,6 +141,24 @@ Use packaged-build screenshots for validation.
 - diff strict static regions
 - validate dynamic/live regions separately
 
+### Content ownership audit
+
+Use a code-first pass to identify:
+
+- runtime text
+- runtime images
+- runtime icons
+- runtime avatars
+- runtime media
+- runtime 3D previews
+
+Then record both:
+
+- shell rects
+- live-content rects
+
+before generating family boards or packaged-review masks.
+
 ## Production Rules
 
 ### Resolution rules
@@ -139,6 +175,7 @@ Use packaged-build screenshots for validation.
 - keep labels as `FText`
 - do not bake localizable words into button art
 - do not repair text-bearing screenshot crops as the long-term production method
+- do not paint runtime-owned portraits, icons, media, or preview content into shell art
 
 ### Stretching rules
 
@@ -157,6 +194,7 @@ For a screen token like `SettingsMenu`, use:
 ```text
 SourceAssets/UI/SettingsMenuReference/
   asset_manifest.json
+  content_ownership.json
   reference_layout.json
   README.md
   debug/
@@ -193,6 +231,7 @@ Every screen reference pack should aim to contain:
 - `screen_master_no_buttons.png`
 - `screen_master_no_text.png`
 - `screen_master_no_dynamic.png`
+- `content_ownership.json`
 - `reference_layout.json`
 - `asset_manifest.json`
 - family boards for all major chrome families
@@ -206,11 +245,12 @@ If a variant cannot be produced immediately, track it in the screen intake file 
 3. Export or create the `layout master`.
 4. Optionally run reference prep for deterministic `2x/4x` exports or helper-only AI upscales.
 5. Export or create the hi-res companion at the same aspect ratio.
-6. Partition the screen into families and live regions.
-7. Generate family boards at measured target proportions.
-8. Slice and stage runtime assets.
-9. Rebuild with real widgets.
-10. Validate in packaged build.
+6. Audit content ownership from code and record `content_ownership.json`.
+7. Partition the screen into families and live regions.
+8. Generate family boards at measured target proportions.
+9. Slice and stage runtime assets.
+10. Rebuild with real widgets.
+11. Validate in packaged build.
 
 ## Scaffold Script
 

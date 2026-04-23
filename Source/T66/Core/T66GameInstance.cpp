@@ -200,6 +200,8 @@ namespace
 
 UT66GameInstance::UT66GameInstance()
 {
+	ArcadeInteractablesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables")));
+
 	// Default selections
 	SelectedPartySize = ET66PartySize::Solo;
 	SelectedHeroID = NAME_None;
@@ -345,7 +347,7 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	bCoreDataTablesLoadRequested = true;
 
 	TArray<FSoftObjectPath> Paths;
-	Paths.Reserve(9);
+	Paths.Reserve(10);
 
 	auto AddDT = [&](const TSoftObjectPtr<UDataTable>& DT)
 	{
@@ -364,6 +366,7 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	AddDT(HouseNPCsDataTable);
 	AddDT(LoanSharkDataTable);
 	AddDT(CharacterVisualsDataTable);
+	AddDT(ArcadeInteractablesDataTable);
 
 	if (Paths.Num() <= 0)
 	{
@@ -396,6 +399,7 @@ void UT66GameInstance::HandleCoreDataTablesLoaded()
 	if (!CachedHouseNPCsDataTable) CachedHouseNPCsDataTable = HouseNPCsDataTable.Get();
 	if (!CachedLoanSharkDataTable) CachedLoanSharkDataTable = LoanSharkDataTable.Get();
 	if (!CachedCharacterVisualsDataTable) CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
+	if (!CachedArcadeInteractablesDataTable) CachedArcadeInteractablesDataTable = ArcadeInteractablesDataTable.Get();
 
 	bCoreDataTablesLoaded = true;
 	PrimeHeroSelectionAssetsAsync();
@@ -752,6 +756,32 @@ bool UT66GameInstance::GetCompanionData(FName CompanionID, FCompanionData& OutCo
 	return false;
 }
 
+bool UT66GameInstance::GetArcadeInteractableData(FName ArcadeRowID, FT66ArcadeInteractableData& OutArcadeData)
+{
+	if (ArcadeRowID.IsNone())
+	{
+		return false;
+	}
+
+	UDataTable* DataTable = GetArcadeInteractablesDataTable();
+	if (!DataTable)
+	{
+		return false;
+	}
+
+	if (const FT66ArcadeInteractableRow* FoundRow = DataTable->FindRow<FT66ArcadeInteractableRow>(ArcadeRowID, TEXT("GetArcadeInteractableData")))
+	{
+		OutArcadeData = FoundRow->ArcadeData;
+		if (OutArcadeData.ArcadeID.IsNone())
+		{
+			OutArcadeData.ArcadeID = ArcadeRowID;
+		}
+		return true;
+	}
+
+	return false;
+}
+
 UDataTable* UT66GameInstance::GetItemsDataTable()
 {
 	if (!CachedItemsDataTable && !ItemsDataTable.IsNull())
@@ -949,6 +979,20 @@ UDataTable* UT66GameInstance::GetCharacterVisualsDataTable()
 		}
 	}
 	return CachedCharacterVisualsDataTable;
+}
+
+UDataTable* UT66GameInstance::GetArcadeInteractablesDataTable()
+{
+	if (!CachedArcadeInteractablesDataTable && !ArcadeInteractablesDataTable.IsNull())
+	{
+		CachedArcadeInteractablesDataTable = ArcadeInteractablesDataTable.Get();
+		if (!CachedArcadeInteractablesDataTable)
+		{
+			PrimeCoreDataTablesAsync();
+			CachedArcadeInteractablesDataTable = ArcadeInteractablesDataTable.LoadSynchronous();
+		}
+	}
+	return CachedArcadeInteractablesDataTable;
 }
 
 bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)

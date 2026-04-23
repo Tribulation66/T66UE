@@ -1,0 +1,260 @@
+{
+  "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+  "items": [
+    {
+      "name": "settings_center_family_01",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        44,
+        30,
+        1565,
+        493
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_01.png",
+      "size": [
+        1521,
+        463
+      ]
+    },
+    {
+      "name": "settings_center_family_02",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        949,
+        520,
+        995,
+        893
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_02.png",
+      "size": [
+        46,
+        373
+      ]
+    },
+    {
+      "name": "settings_center_family_03",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        42,
+        526,
+        903,
+        600
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_03.png",
+      "size": [
+        861,
+        74
+      ]
+    },
+    {
+      "name": "settings_center_family_04",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1029,
+        533,
+        1209,
+        601
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_04.png",
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "name": "settings_center_family_05",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1224,
+        533,
+        1404,
+        600
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_05.png",
+      "size": [
+        180,
+        67
+      ]
+    },
+    {
+      "name": "settings_center_family_06",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1419,
+        533,
+        1605,
+        601
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_06.png",
+      "size": [
+        186,
+        68
+      ]
+    },
+    {
+      "name": "settings_center_family_07",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1224,
+        626,
+        1404,
+        694
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_07.png",
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "name": "settings_center_family_08",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1029,
+        627,
+        1209,
+        694
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_08.png",
+      "size": [
+        180,
+        67
+      ]
+    },
+    {
+      "name": "settings_center_family_09",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1419,
+        627,
+        1606,
+        694
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_09.png",
+      "size": [
+        187,
+        67
+      ]
+    },
+    {
+      "name": "settings_center_family_10",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        43,
+        638,
+        904,
+        721
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_10.png",
+      "size": [
+        861,
+        83
+      ]
+    },
+    {
+      "name": "settings_center_family_11",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1029,
+        714,
+        1209,
+        782
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_11.png",
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "name": "settings_center_family_12",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1224,
+        714,
+        1404,
+        782
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_12.png",
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "name": "settings_center_family_13",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1419,
+        714,
+        1605,
+        782
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_13.png",
+      "size": [
+        186,
+        68
+      ]
+    },
+    {
+      "name": "settings_center_family_14",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        42,
+        758,
+        904,
+        835
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_14.png",
+      "size": [
+        862,
+        77
+      ]
+    },
+    {
+      "name": "settings_center_family_15",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1224,
+        807,
+        1404,
+        876
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_15.png",
+      "size": [
+        180,
+        69
+      ]
+    },
+    {
+      "name": "settings_center_family_16",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1419,
+        807,
+        1605,
+        876
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_16.png",
+      "size": [
+        186,
+        69
+      ]
+    },
+    {
+      "name": "settings_center_family_17",
+      "source": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "box": [
+        1029,
+        808,
+        1209,
+        876
+      ],
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_17.png",
+      "size": [
+        180,
+        68
+      ]
+    }
+  ]
+}

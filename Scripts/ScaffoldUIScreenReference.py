@@ -55,6 +55,7 @@ This folder stores the immutable and derived artifacts used to reconstruct `{scr
 ## Expected Files
 
 - `reference_layout.json`
+- `content_ownership.json`
 - `asset_manifest.json`
 - `debug/`
 - `SpriteSheets/`
@@ -118,6 +119,18 @@ def render_screen_intake(
 - Freeze strategy for strict diffing: `[fixture, mock data, staged screenshot state, or mask]`
 - Regions excluded from strict diff: `[list]`
 - Manual validation required for: `[list]`
+
+## Content Ownership Audit
+
+- Ownership artifact: `{(reference_root / 'content_ownership.json').as_posix()}`
+- Ownership audit completed: `[yes/no]`
+- `generated-shell` regions: `[list]`
+- `runtime-text` regions: `[list]`
+- `runtime-image` / `runtime-avatar` regions: `[list]`
+- `runtime-icon` / `runtime-media` / `runtime-3d-preview` regions: `[list]`
+- Open-aperture regions: `[list]`
+- Socket-frame regions: `[list]`
+- Empty-backplate regions: `[list]`
 
 ## Family Boards Needed
 
@@ -215,6 +228,49 @@ def render_asset_manifest(screen_token: str, canvas_width: int, canvas_height: i
     return json.dumps(payload, indent=2) + "\n"
 
 
+def render_content_ownership(screen_token: str, canvas_width: int, canvas_height: int) -> str:
+    payload = {
+        "screen": screen_token,
+        "canvas": {
+            "width": canvas_width,
+            "height": canvas_height,
+        },
+        "regions": [
+            {
+                "id": "example_shell_region",
+                "group": "Center",
+                "content_type": "generated-shell",
+                "render_contract": "shell-only",
+                "outer_owner": "generated-shell",
+                "inner_owner": "generated-shell",
+                "code_refs": [],
+                "notes": "Use for pure shell/frame chrome owned entirely by the reconstructed screen art.",
+            },
+            {
+                "id": "example_runtime_slot",
+                "group": "Center",
+                "content_type": "runtime-image",
+                "render_contract": "socket-frame",
+                "outer_owner": "generated-shell",
+                "inner_owner": "runtime-image",
+                "code_refs": [],
+                "notes": "Use for image or portrait slots where the frame belongs to the screen but the interior image is injected at runtime.",
+            },
+            {
+                "id": "example_live_viewport",
+                "group": "Center",
+                "content_type": "runtime-media",
+                "render_contract": "open-aperture",
+                "outer_owner": "generated-shell",
+                "inner_owner": "runtime-media",
+                "code_refs": [],
+                "notes": "Use for media/video/3D preview regions that should remain open or neutral in generated references and family boards.",
+            },
+        ],
+    }
+    return json.dumps(payload, indent=2) + "\n"
+
+
 def render_layout_header(screen_token: str, canvas_width: int, canvas_height: int, families: list[FamilySpec]) -> str:
     namespace_name = f"T66{screen_token}ReferenceLayout"
     family_blocks = "\n\n".join(
@@ -279,7 +335,7 @@ def main() -> int:
     families = [FAMILY_SPECS[key] for key in args.families]
 
     reference_root = ROOT / "SourceAssets" / "UI" / f"{screen_token}Reference"
-    prompt_root = ROOT / "Docs" / "Art" / "PromptPacks" / f"{screen_token}SpriteSheets"
+    prompt_root = ROOT / "Docs" / "UI" / "PromptPacks" / f"{screen_token}SpriteSheets"
     header_path = ROOT / "Source" / "T66" / "UI" / "Style" / f"T66{screen_token}ReferenceLayout.generated.h"
 
     directories = [
@@ -313,6 +369,13 @@ def main() -> int:
     write_text_file(
         reference_root / "asset_manifest.json",
         render_asset_manifest(screen_token, args.canvas_width, args.canvas_height),
+        args.force,
+        args.dry_run,
+        actions,
+    )
+    write_text_file(
+        reference_root / "content_ownership.json",
+        render_content_ownership(screen_token, args.canvas_width, args.canvas_height),
         args.force,
         args.dry_run,
         actions,

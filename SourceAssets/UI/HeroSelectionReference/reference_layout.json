@@ -1,0 +1,166 @@
+{
+  "screen": "HeroSelection",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "metrics": {
+    "SidePanelWidth": 404,
+    "CenterColumnWidth": 1112,
+    "PanelGap": 0,
+    "TopBarBottomGap": 0,
+    "TopStripMinHeight": 60,
+    "CompanionStripMinHeight": 50,
+    "BodyToggleGapAbove": 8,
+    "BodyToggleBlockMinHeight": 35,
+    "BottomPartyShellMinHeight": 162,
+    "BottomRunShellMinHeight": 84,
+    "RunPrimaryButtonHeight": 46,
+    "ChallengesButtonSize": {
+      "width": 46,
+      "height": 46
+    },
+    "HeroCarouselSlotSizes": [32, 36, 40, 48, 40, 36, 32],
+    "PartyAvatarSlotSize": {
+      "width": 52,
+      "height": 52
+    },
+    "PartyPortraitSlotSize": {
+      "width": 52,
+      "height": 72
+    },
+    "PartyColumnGap": 10,
+    "PartyReadyBadgeSize": {
+      "width": 18,
+      "height": 18
+    },
+    "RunControlSplitHost": {
+      "difficulty": 0.34,
+      "primary": 0.58,
+      "trailing_auto": true
+    },
+    "notes": [
+      "Side columns are fixed 404 px each; center column is the remaining fill width at 1920.",
+      "CenterPanelFill is declared in code but not used for the active root layout. The stable rule is 404 | fill | 404.",
+      "Panel token padding values such as FT66Style::Tokens::Space3/Space4 are referenced in code but not numerically defined here."
+    ]
+  },
+  "groups": {
+    "TopBar": {
+      "HeroStripCenterBar": {
+        "x": 404,
+        "y": 0,
+        "width": 1112,
+        "height": 60,
+        "classification": "stateful",
+        "notes": "Inferred minimum center hero-strip bar height from the active runtime builder."
+      }
+    },
+    "Center": {
+      "ColumnFull": {
+        "x": 404,
+        "y": 0,
+        "width": 1112,
+        "height": 1080,
+        "classification": "live"
+      },
+      "PreviewViewportBand": {
+        "x": 404,
+        "y": 60,
+        "width": 1112,
+        "height": 927,
+        "classification": "live",
+        "notes": "Inferred from total center-column height minus fixed top strip, companion strip, gap, and body-toggle block."
+      },
+      "CompanionStripBand": {
+        "x": 404,
+        "y": 987,
+        "width": 1112,
+        "height": 50,
+        "classification": "stateful"
+      },
+      "BodyToggleBand": {
+        "x": 404,
+        "y": 1045,
+        "width": 1112,
+        "height": 35,
+        "classification": "stateful"
+      }
+    },
+    "Left": {
+      "ColumnFull": {
+        "x": 0,
+        "y": 0,
+        "width": 404,
+        "height": 1080,
+        "classification": "live"
+      },
+      "TopRowContract": {
+        "x": 0,
+        "y": 0,
+        "width": 404,
+        "height": 64,
+        "classification": "stateful",
+        "notes": "Back button and AC badge contract. Exact outer token padding is not resolved in this manifest seed."
+      },
+      "BottomPartyShellContract": {
+        "x": 0,
+        "y": 918,
+        "width": 404,
+        "height": 162,
+        "classification": "live",
+        "notes": "Bottom-aligned shell min height from runtime builder."
+      }
+    },
+    "Right": {
+      "ColumnFull": {
+        "x": 1516,
+        "y": 0,
+        "width": 404,
+        "height": 1080,
+        "classification": "live"
+      },
+      "TitleBand": {
+        "x": 1516,
+        "y": 0,
+        "width": 404,
+        "height": 44,
+        "classification": "stateful",
+        "notes": "Relative title block height from the runtime builder; actual top inset depends on outer token padding."
+      },
+      "InfoTargetBand": {
+        "x": 1516,
+        "y": 54,
+        "width": 404,
+        "height": 36,
+        "classification": "stateful"
+      },
+      "BottomRunShellContract": {
+        "x": 1516,
+        "y": 996,
+        "width": 404,
+        "height": 84,
+        "classification": "live",
+        "notes": "Bottom-aligned shell min height from runtime builder."
+      }
+    },
+    "Decor": {
+      "RightPreviewInfoCardContentHeight": {
+        "width": 0,
+        "height": 204,
+        "classification": "live",
+        "notes": "Height-only contract from the right preview/info card."
+      },
+      "RightAbilityButtonSize": {
+        "width": 64,
+        "height": 64,
+        "classification": "stateful"
+      },
+      "RightAbilityIconBoxSize": {
+        "width": 42,
+        "height": 42,
+        "classification": "stateful"
+      }
+    }
+  }
+}

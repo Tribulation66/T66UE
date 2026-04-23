@@ -1,0 +1,81 @@
+[
+  {
+    "Name": "Arcade_Truck",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_Truck",
+      "DisplayName": "Arcade Truck",
+      "InteractionVerb": "pilot truck",
+      "ExitInteractionVerb": "exit truck",
+      "ArcadeClass": "WorldMode",
+      "PopupGameType": "None",
+      "bConsumeOnSuccess": false,
+      "bConsumeOnFailure": false,
+      "DisplayMesh": "/Game/World/Props/Tractor.Tractor",
+      "DisplayMeshScale": {
+        "X": 1.0,
+        "Y": 1.0,
+        "Z": 1.0
+      },
+      "DisplayMeshOffset": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 0.0
+      },
+      "Tint": {
+        "R": 0.94,
+        "G": 0.53,
+        "B": 0.17,
+        "A": 1.0
+      },
+      "Modifiers": {
+        "FloatValues": {
+          "VehicleDuration": 20.0,
+          "VehicleDriveSpeed": 2200.0,
+          "VehicleTurnSpeed": 620.0,
+          "VehicleMowRadius": 260.0,
+          "VehicleMowMinSpeed": 125.0
+        },
+        "IntValues": {}
+      }
+    }
+  },
+  {
+    "Name": "Arcade_WhackAMole",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_WhackAMole",
+      "DisplayName": "Whack-a-Mole",
+      "InteractionVerb": "play Whack-a-Mole",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupMinigame",
+      "PopupGameType": "WhackAMole",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": false,
+      "DisplayMeshScale": {
+        "X": 1.3,
+        "Y": 1.3,
+        "Z": 1.0
+      },
+      "DisplayMeshOffset": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 60.0
+      },
+      "Tint": {
+        "R": 0.24,
+        "G": 0.84,
+        "B": 0.42,
+        "A": 1.0
+      },
+      "Modifiers": {
+        "FloatValues": {
+          "PopupRoundSeconds": 12.0,
+          "PopupSpawnInterval": 0.65
+        },
+        "IntValues": {
+          "PopupTargetHits": 10,
+          "PopupSuccessGold": 150
+        }
+      }
+    }
+  }
+]

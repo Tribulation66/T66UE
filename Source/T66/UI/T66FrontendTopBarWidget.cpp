@@ -46,10 +46,10 @@ namespace
 
 	FT66ReferenceTransform GetTopBarViewportTransform()
 	{
-		const FVector2D ViewportLogicalSize = FT66Style::GetViewportSize();
-		const FVector2D SafeViewportSize = ViewportLogicalSize.IsNearlyZero()
+		const FVector2D SafeFrameLogicalSize = FT66Style::GetSafeFrameSize();
+		const FVector2D SafeViewportSize = SafeFrameLogicalSize.IsNearlyZero()
 			? FVector2D(T66MainMenuReferenceLayout::CanvasWidth, T66MainMenuReferenceLayout::CanvasHeight)
-			: ViewportLogicalSize;
+			: SafeFrameLogicalSize;
 		return FT66ReferenceTransform(
 			FVector2D(T66MainMenuReferenceLayout::CanvasWidth, T66MainMenuReferenceLayout::CanvasHeight),
 			SafeViewportSize);

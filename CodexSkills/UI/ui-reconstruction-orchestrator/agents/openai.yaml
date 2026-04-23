@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Reconstruction Orchestrator"
+  short_description: "Route screen reconstruction work to the right stage skill"
+  default_prompt: "Use $ui-reconstruction-orchestrator to choose the correct stage in the T66 UI reconstruction pipeline."

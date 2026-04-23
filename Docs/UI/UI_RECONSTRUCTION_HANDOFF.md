@@ -15,7 +15,13 @@ The first active target is the main menu.
 
 ## Installed Skill Split
 
-The stage skills now exist under `C:\Users\DoPra\.codex\skills`:
+The repo-managed copies now live under `C:\UE\T66\CodexSkills\UI`.
+
+Install or refresh the live local copies with:
+
+`powershell -ExecutionPolicy Bypass -File "C:\UE\T66\Scripts\InstallUIReconstructionSkills.ps1" -Validate`
+
+After bootstrap, the live stage skills exist under `C:\Users\DoPra\.codex\skills`:
 
 - `ui-reconstruction-orchestrator`
 - `ui-reference-prep`
@@ -27,6 +33,8 @@ The stage skills now exist under `C:\Users\DoPra\.codex\skills`:
 
 Use `ui-reconstruction-orchestrator` to route work to the correct stage. Use the specialist skills directly when the stage is already known.
 Use `ui-reference-prep` only when the active blocker is reference usability, such as deterministic `2x/4x` exports or helper-only AI upscales.
+Run the content ownership audit before style-reference generation, sprite-family generation, manifest refinement, or packaged diffing.
+Prefer native Codex `image_gen` first. Use the ChatGPT bridge only when repo-local attachments, bridge manifests, or API-side controls are the real blocker.
 
 ### Primary reference files
 
@@ -34,6 +42,7 @@ Use `ui-reference-prep` only when the active blocker is reference usability, suc
 - `C:\UE\T66\SourceAssets\UI\MainMenuReference\reference_main_menu_master.png`
 - `C:\UE\T66\SourceAssets\UI\MainMenuReference\reference_main_menu_master_nobuttons.png`
 - `C:\UE\T66\SourceAssets\UI\MainMenuReference\reference_main_menu_master_notopbarbuttons.png`
+- `C:\UE\T66\SourceAssets\UI\MainMenuReference\content_ownership.json`
 - `C:\UE\T66\SourceAssets\UI\MainMenuReference\reference_layout.json`
 
 ### Runtime files
@@ -57,8 +66,9 @@ That process should be:
 
 1. reference-led
 2. measured
-3. family-based instead of cleanup-based
-4. validated in packaged runtime
+3. ownership-audited before generation
+4. family-based instead of cleanup-based
+5. validated in packaged runtime
 
 ## Current Lessons Learned
 

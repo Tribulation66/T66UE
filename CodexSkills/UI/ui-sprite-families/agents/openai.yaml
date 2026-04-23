@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Sprite Families"
+  short_description: "Generate runtime-ready UI art family boards and slices"
+  default_prompt: "Use $ui-sprite-families to generate clean runtime UI families from a measured reference."

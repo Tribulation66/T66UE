@@ -468,6 +468,7 @@ void AT66PlayerController::HandleInspectInventoryPressed()
 
 	const bool bHasBlockingOverlay =
 		(GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
+		|| IsArcadePopupOpen()
 		|| (GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
 		|| IsCircusOverlayOpen()
 		|| (CowardicePromptWidget && CowardicePromptWidget->IsInViewport())

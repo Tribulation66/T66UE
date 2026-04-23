@@ -1,0 +1,5 @@
+interface:
+  display_name: "UI Style Reference"
+  short_description: "Create canonical reference screens in an approved UI style"
+  default_prompt: "Use $ui-style-reference to create a new screen reference set that matches the approved T66 UI style."
+

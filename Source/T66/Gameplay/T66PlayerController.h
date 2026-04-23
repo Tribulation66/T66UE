@@ -23,6 +23,7 @@ class UT66IdolAltarOverlayWidget;
 class UNiagaraSystem;
 class UT66VendorOverlayWidget;
 class UT66CollectorOverlayWidget;
+class UT66ArcadePopupWidget;
 class UT66LoadingScreenWidget;
 class AT66LootBagPickup;
 class AT66HouseNPCBase;
@@ -30,9 +31,11 @@ class AT66VendorNPC;
 class AT66GamblerNPC;
 class AT66RecruitableCompanion;
 class AT66HeroBase;
+class AT66ArcadeInteractableBase;
 class UT66CombatComponent;
 class UT66CombatHitZoneComponent;
 enum class ET66Rarity : uint8;
+struct FT66ArcadeInteractableData;
 class SWidget;
 class SWeakWidget;
 class UInputAction;
@@ -161,6 +164,12 @@ public:
 
 	/** Open the Lab Collector full-screen overlay (non-pausing). */
 	void OpenCollectorOverlay();
+
+	/** Open a run-time arcade popup without pausing gameplay. */
+	bool OpenArcadePopup(const FT66ArcadeInteractableData& ArcadeData, AT66ArcadeInteractableBase* SourceInteractable);
+	void HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, bool bSucceeded);
+	void CloseArcadePopup(bool bSucceeded);
+	bool IsArcadePopupOpen() const;
 
 	/** In-world dialogue (open-world) for vendor/gambler interactions (non-pausing). */
 	void OpenWorldDialogueVendor(AT66VendorNPC* Vendor);
@@ -327,6 +336,9 @@ private:
 	/** Lab Collector full-screen UI (opened by interacting with The Collector NPC). */
 	UPROPERTY()
 	TObjectPtr<UT66CollectorOverlayWidget> CollectorOverlayWidget;
+
+	UPROPERTY()
+	TObjectPtr<UT66ArcadePopupWidget> ArcadePopupWidget;
 
 	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
 	TWeakObjectPtr<AT66VendorNPC> ActiveVendorNPC;

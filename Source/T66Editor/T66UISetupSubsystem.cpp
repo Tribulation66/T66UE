@@ -545,6 +545,7 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	const FString StagesTablePath = TEXT("/Game/Data/DT_Stages.DT_Stages");
 	const FString HouseNPCsTablePath = TEXT("/Game/Data/DT_HouseNPCs.DT_HouseNPCs");
 	const FString CharacterVisualsTablePath = TEXT("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals");
+	const FString ArcadeInteractablesTablePath = TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables");
 
 	UDataTable* HeroesTable = LoadObject<UDataTable>(nullptr, *HeroesTablePath);
 	UDataTable* CompanionsTable = LoadObject<UDataTable>(nullptr, *CompanionsTablePath);
@@ -553,6 +554,7 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	UDataTable* StagesTable = LoadObject<UDataTable>(nullptr, *StagesTablePath);
 	UDataTable* HouseNPCsTable = LoadObject<UDataTable>(nullptr, *HouseNPCsTablePath);
 	UDataTable* CharacterVisualsTable = LoadObject<UDataTable>(nullptr, *CharacterVisualsTablePath);
+	UDataTable* ArcadeInteractablesTable = LoadObject<UDataTable>(nullptr, *ArcadeInteractablesTablePath);
 
 	if (HeroesTable)
 	{
@@ -622,6 +624,16 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	else
 	{
 		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_CharacterVisuals (create via SetupCharacterVisualsDataTable.py)"));
+	}
+
+	if (ArcadeInteractablesTable)
+	{
+		GameInstanceCDO->ArcadeInteractablesDataTable = ArcadeInteractablesTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set ArcadeInteractablesDataTable to DT_ArcadeInteractables"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_ArcadeInteractables (create via SetupArcadeInteractablesDataTable.py)"));
 	}
 
 	return SaveBlueprint(Blueprint);

@@ -155,6 +155,16 @@ FText UT66InteractionPromptSubsystem::BuildPromptTextWithSeconds(ET66Interaction
 	return BuildPromptTextInternal(Action, RemainingSeconds, true);
 }
 
+FText UT66InteractionPromptSubsystem::BuildCustomPromptText(const FText& ActionText) const
+{
+	return BuildCustomPromptTextInternal(ActionText, 0, false);
+}
+
+FText UT66InteractionPromptSubsystem::BuildCustomPromptTextWithSeconds(const FText& ActionText, int32 RemainingSeconds) const
+{
+	return BuildCustomPromptTextInternal(ActionText, RemainingSeconds, true);
+}
+
 FText UT66InteractionPromptSubsystem::BuildPromptTextInternal(
 	const ET66InteractionPromptAction Action,
 	const int32 RemainingSeconds,
@@ -178,6 +188,32 @@ FText UT66InteractionPromptSubsystem::BuildPromptTextInternal(
 
 	return FText::Format(
 		NSLOCTEXT("T66.InteractionPrompt", "Prompt", "Press {0} to {1}"),
+		KeyText,
+		ActionText);
+}
+
+FText UT66InteractionPromptSubsystem::BuildCustomPromptTextInternal(
+	const FText& ActionText,
+	const int32 RemainingSeconds,
+	const bool bIncludeSeconds) const
+{
+	if (ActionText.IsEmpty())
+	{
+		return FText::GetEmpty();
+	}
+
+	const FText KeyText = T66_GetActionKeyText(FName(TEXT("Interact")));
+	if (bIncludeSeconds)
+	{
+		return FText::Format(
+			NSLOCTEXT("T66.InteractionPrompt", "CustomPromptWithCountdown", "Press {0} to {1} ({2}s)"),
+			KeyText,
+			ActionText,
+			FText::AsNumber(FMath::Max(1, RemainingSeconds)));
+	}
+
+	return FText::Format(
+		NSLOCTEXT("T66.InteractionPrompt", "CustomPrompt", "Press {0} to {1}"),
 		KeyText,
 		ActionText);
 }

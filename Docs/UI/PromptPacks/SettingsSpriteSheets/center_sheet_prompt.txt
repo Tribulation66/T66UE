@@ -1,0 +1,14 @@
+Use case: ui-mockup
+Asset type: game UI runtime component sheet
+Primary request: reorganize the approved Settings reference into a production sprite sheet for the center content family only
+Input images: attach the approved Settings screen master, its 2x companion, the no-text companion, the no-text 2x companion, and the approved Main Menu style anchor
+Scene/background: flat near-black presentation board with generous spacing
+Subject: isolated reusable assets for the Settings content family only, derived from the approved reference
+Style/medium: painted game UI asset sheet, exact reconstruction of the approved reference art style, not a redesign
+Composition/framing: front-on orthographic presentation, grouped by state, no overlap, no mock screen
+Measured reference canvas: 1920x1080
+Measured family contracts: content shell outer frame at 1904x1000 proportion; generic settings row shell at 64 px minimum height; compact control/button height 44 px; toggle pair cluster at 180x44 minimum; individual toggle buttons at 88x44 minimum; keep the dropdown field family at 44 px height with the chevron slot on the right; preserve the narrow jewel-accent vertical scroll rail
+Required board contents: one large content-shell frame; one reusable full-width generic row shell; one label-plus-control row shell; one dropdown field family; one neutral compact button; one green ON button family; one red OFF button family; one dark inactive button family; one vertical scrollbar track with thumb and end treatment
+State coverage: for buttons and toggles include normal, hover, and pressed; for shells include only the clean default plate unless a state change is visually explicit in the reference
+Constraints: keep exact silhouette, border thickness, corner cuts, inset bevel depth, material language, and proportions from the approved reference; all text must be removed from the sprite sheet; preserve the blunt utilitarian Settings composition instead of turning rows into ornate cards; dropdown value areas and toggle labels must remain empty or neutral for live runtime text; no watermark
+Avoid: fake generic UI kits, flat gradients, softened silhouettes, decorative flourishes not present in the approved reference, scenic centerpiece art, bespoke one-off row treatments, or baked value text

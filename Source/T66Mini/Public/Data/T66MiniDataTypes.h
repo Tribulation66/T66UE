@@ -157,6 +157,9 @@ struct T66MINI_API FT66MiniDifficultyDefinition
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	float InteractableInterval = 18.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 StageClearChadCoupons = 0;
 };
 
 UENUM(BlueprintType)

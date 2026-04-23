@@ -6,6 +6,8 @@ This document defines the helper workflow for preparing high-resolution UI refer
 
 This is not a replacement for measured layout or native-proportion runtime art generation. It is a support lane used to make reference work easier and cleaner.
 
+If the work needs a newly painted or cleaned reference frame rather than a larger helper image, route to native Codex `image_gen` through `ui-style-reference` first. Use the ChatGPT bridge only when native generation cannot satisfy the reference-input or reproducibility requirements.
+
 ## What This Stage Is For
 
 Use reference prep when you need to:
@@ -104,6 +106,24 @@ Use for:
 - reusable image-processing graphs
 - repeatable pipelines that combine resample, upscale, cleanup, and export
 
+### Native Codex image generation
+
+Use for:
+
+- new painted helper companions
+- style-continuation helper references
+- family-board prompting support when prompt-only generation or thread-attached references are enough
+
+This is the preferred first generation path.
+
+### ChatGPT bridge fallback
+
+Use for:
+
+- multiple repo-local reference attachments
+- versioned bridge request manifests
+- explicit API-side controls or attachment behavior not exposed in the local tool surface
+
 ## Decision Rule
 
 ### If you only need a larger deterministic copy
@@ -135,5 +155,6 @@ Instead:
 1. Keep one canonical `1x` master.
 2. Produce a deterministic `2x` export when needed.
 3. Use AI upscale only for helper inspection or style continuation support.
-4. Never assume an AI-upscaled composite is safe to slice into runtime controls.
-5. Promote an output to `runtime-safe` only after a deliberate review.
+4. Prefer native Codex `image_gen` before the bridge when a new helper render is actually needed.
+5. Never assume an AI-upscaled composite is safe to slice into runtime controls.
+6. Promote an output to `runtime-safe` only after a deliberate review.

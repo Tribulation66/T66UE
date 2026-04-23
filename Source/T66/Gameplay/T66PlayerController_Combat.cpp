@@ -816,9 +816,9 @@ void AT66PlayerController::HandleUltimatePressed()
 bool AT66PlayerController::CanUseCombatMouseInput() const
 {
 	// Suppress combat mouse inputs if a modal overlay is active (cursor is visible for UI).
-	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	return IsGameplayLevel()
 		&& !bInventoryInspectOpen
+		&& !IsArcadePopupOpen()
 		&& !(GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
 		&& !(GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
 		&& !(CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
@@ -1031,6 +1031,10 @@ void AT66PlayerController::HandleInteractPressed()
 {
 	if (!IsGameplayLevel()) return;
 	if (GameplayHUDWidget && GameplayHUDWidget->TrySkipActivePresentation())
+	{
+		return;
+	}
+	if (IsArcadePopupOpen())
 	{
 		return;
 	}

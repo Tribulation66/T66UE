@@ -1,0 +1,91 @@
+{
+  "source_sheet": "C:/UE/T66/SourceAssets/UI/SettingsReference/SpriteSheets/20260423-103911-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+  "generated_from": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_manifest.json",
+  "assets": [
+    {
+      "role": "content_shell_frame",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_01.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"
+    },
+    {
+      "role": "scrollbar_vertical",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_02.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_scrollbar_vertical.png"
+    },
+    {
+      "role": "row_shell_full",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_03.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"
+    },
+    {
+      "role": "compact_neutral_normal",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_04.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_compact_neutral_normal.png"
+    },
+    {
+      "role": "compact_neutral_hover",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_05.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_compact_neutral_hover.png"
+    },
+    {
+      "role": "compact_neutral_pressed",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_06.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_compact_neutral_pressed.png"
+    },
+    {
+      "role": "toggle_on_normal",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_07.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_on_normal.png"
+    },
+    {
+      "role": "toggle_on_hover",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_08.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_on_hover.png"
+    },
+    {
+      "role": "toggle_on_pressed",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_09.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_on_pressed.png"
+    },
+    {
+      "role": "row_shell_split",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_10.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_split.png"
+    },
+    {
+      "role": "toggle_off_normal",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_11.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_off_normal.png"
+    },
+    {
+      "role": "toggle_off_hover",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_12.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_off_hover.png"
+    },
+    {
+      "role": "toggle_off_pressed",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_13.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_off_pressed.png"
+    },
+    {
+      "role": "dropdown_field",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_14.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_dropdown_field.png"
+    },
+    {
+      "role": "toggle_inactive_normal",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_15.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_normal.png"
+    },
+    {
+      "role": "toggle_inactive_hover",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_16.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_hover.png"
+    },
+    {
+      "role": "toggle_inactive_pressed",
+      "source_slice": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_center_family_17.png",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_pressed.png"
+    }
+  ]
+}

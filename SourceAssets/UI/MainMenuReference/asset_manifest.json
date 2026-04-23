@@ -1281,6 +1281,18 @@
         1132,
         879
       ]
+    },
+    {
+      "path": "content_ownership.json",
+      "group": "Metadata",
+      "kind": "ownership_audit",
+      "notes": "Code-first ownership audit covering the profile avatar, friend avatars, party portraits, and leaderboard avatar wells that must remain live at runtime.",
+      "source_box": [
+        0,
+        0,
+        0,
+        0
+      ]
     }
   ]
 }

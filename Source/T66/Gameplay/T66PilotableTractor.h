@@ -33,6 +33,9 @@ protected:
 	virtual FText BuildInteractionPromptText() const override;
 	virtual float GetInteractionPromptWorldSize() const override { return 82.f; }
 	virtual float GetInteractionPromptVerticalPadding() const override { return 140.f; }
+	void ConfigurePilotableTractorTuning(float InTotalPilotSeconds, float InDriveSpeed, float InTurnSpeedDegreesPerSecond, float InMowKillRadius, float InMowMinSpeed);
+	float GetRemainingPilotSeconds() const { return RemainingPilotSeconds; }
+	bool HasMountedHero() const { return MountedHero.IsValid(); }
 
 private:
 	bool MountHero(AT66HeroBase* Hero);

@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Layout Manifest"
+  short_description: "Turn a locked reference into measured runtime boxes"
+  default_prompt: "Use $ui-layout-manifest to derive a measured layout manifest from an approved screen reference."

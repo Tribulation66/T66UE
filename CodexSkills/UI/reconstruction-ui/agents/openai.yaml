@@ -1,0 +1,5 @@
+interface:
+  display_name: "Reconstruction UI"
+  short_description: "Rebuild UI screens from references"
+  default_prompt: "Use $reconstruction-ui to route this UI reconstruction task to the correct T66 stage skill and preserve compatibility with older prompts."
+

@@ -1,0 +1,215 @@
+{
+  "screen": "HeroSelection",
+  "status": "initial_audit",
+  "notes": [
+    "This audit is code-first and identifies runtime-owned interiors that must stay open, socketed, or neutral during reference generation, family-board generation, and packaged review.",
+    "Where the first-pass manifest does not yet expose a dedicated sub-rect, use the region_hint and code refs here to refine a later manifest revision instead of painting over the runtime-owned content."
+  ],
+  "regions": [
+    {
+      "id": "hero_carousel_portrait_slots",
+      "reference_layout_key": "TopBar.HeroStripCenterBar",
+      "region_hint": "center hero carousel rail portrait wells",
+      "content_type": "runtime-image",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "The top-strip hero portraits are live brushes. Generate only the rail, slot frames, selection state, and arrow/button shells.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 305,
+          "end_line": 368
+        }
+      ]
+    },
+    {
+      "id": "companion_carousel_portrait_slots",
+      "reference_layout_key": "TopBar.HeroStripCenterBar",
+      "region_hint": "center companion carousel rail portrait wells",
+      "content_type": "runtime-image",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "The companion carousel also uses live portrait brushes. Generate only the rail, slot frames, and selection shell.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 401,
+          "end_line": 471
+        }
+      ]
+    },
+    {
+      "id": "hero_preview_stage",
+      "reference_layout_key": "Center.PreviewViewportBand",
+      "region_hint": "center preview aperture",
+      "content_type": "runtime-3d-preview",
+      "render_contract": "open-aperture",
+      "validation_mode": "manual-interior",
+      "notes": "The main center viewport is a live preview stage. Preserve the shell and keep the interior open or neutral instead of baking a fake hero render into the shell art.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 1768,
+          "end_line": 1769
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionPreviewController.cpp",
+          "start_line": 13,
+          "end_line": 51
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionPreviewController.cpp",
+          "start_line": 467,
+          "end_line": 471
+        }
+      ]
+    },
+    {
+      "id": "hero_preview_video_surface",
+      "reference_layout_key": "Center.PreviewViewportBand",
+      "region_hint": "hero preview video layer inside the center stage",
+      "content_type": "runtime-media",
+      "render_contract": "open-aperture",
+      "validation_mode": "manual-interior",
+      "notes": "The hero preview stage can swap to a looping media surface. Keep the viewport aperture open and do not bake clip imagery into the screen reference or sprite families.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionPreviewController.cpp",
+          "start_line": 66,
+          "end_line": 93
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionPreviewController.cpp",
+          "start_line": 142,
+          "end_line": 191
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 1898,
+          "end_line": 1925
+        }
+      ]
+    },
+    {
+      "id": "companion_preview_portrait",
+      "reference_layout_key": "Right.ColumnFull",
+      "region_hint": "companion portrait panel inside the right info stack",
+      "content_type": "runtime-image",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "The companion portrait panel uses an async-loaded live brush. Build the shell and backplate around it, not the portrait itself.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 1908,
+          "end_line": 1916
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionPreviewController.cpp",
+          "start_line": 203,
+          "end_line": 257
+        }
+      ]
+    },
+    {
+      "id": "temporary_buff_slots",
+      "reference_layout_key": "Right.ColumnFull",
+      "region_hint": "upper reward or buff card strip",
+      "content_type": "runtime-icon",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "The upper right reward or idol slots are driven by live buff brushes. Generate the cards, sockets, counters, and button shells only.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 234,
+          "end_line": 278
+        }
+      ]
+    },
+    {
+      "id": "ultimate_ability_socket",
+      "reference_layout_key": "Decor.RightAbilityButtonSize",
+      "region_hint": "upper ability preview button",
+      "content_type": "runtime-icon",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "The ultimate preview button uses a live icon brush. Generate the bordered button shell and leave the icon well live.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 87,
+          "end_line": 91
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 2164,
+          "end_line": 2197
+        }
+      ]
+    },
+    {
+      "id": "passive_ability_socket",
+      "reference_layout_key": "Decor.RightAbilityButtonSize",
+      "region_hint": "lower ability preview button",
+      "content_type": "runtime-icon",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "The passive preview button also uses a live icon brush. Generate the shell only and keep the icon well open.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 93,
+          "end_line": 97
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 2246,
+          "end_line": 2279
+        }
+      ]
+    },
+    {
+      "id": "party_avatar_slots",
+      "reference_layout_key": "Left.BottomPartyShellContract",
+      "region_hint": "party avatar row in the lower-left shell",
+      "content_type": "runtime-avatar",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "Party avatar wells are live Steam or local avatar textures. Generate the slot frames and ready badges, not the portraits.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 1091,
+          "end_line": 1248
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 1307,
+          "end_line": 1384
+        }
+      ]
+    },
+    {
+      "id": "party_hero_portrait_slots",
+      "reference_layout_key": "Left.BottomPartyShellContract",
+      "region_hint": "party hero portrait row in the lower-left shell",
+      "content_type": "runtime-image",
+      "render_contract": "socket-frame",
+      "validation_mode": "manual-interior",
+      "notes": "Party hero portrait wells are live hero portrait brushes layered separately from the avatar row.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 1250,
+          "end_line": 1302
+        },
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Build.cpp",
+          "start_line": 1365,
+          "end_line": 1366
+        }
+      ]
+    }
+  ]
+}
