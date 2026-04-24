@@ -118,6 +118,90 @@ namespace
 	static TObjectPtr<UMaterialInterface> GButtonGlowMaterial = nullptr;
 	static bool bCheckedButtonGlowMaterial = false;
 
+	enum class ET66InRunPlateKind : uint8
+	{
+		Neutral,
+		Primary,
+		Danger,
+		TabActive,
+		TabInactive,
+	};
+
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush& GetInRunPlateEntry(const ET66InRunPlateKind Kind)
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Neutral;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Primary;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Danger;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush TabActive;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush TabInactive;
+
+		switch (Kind)
+		{
+		case ET66InRunPlateKind::Primary:
+			return Primary;
+		case ET66InRunPlateKind::Danger:
+			return Danger;
+		case ET66InRunPlateKind::TabActive:
+			return TabActive;
+		case ET66InRunPlateKind::TabInactive:
+			return TabInactive;
+		case ET66InRunPlateKind::Neutral:
+		default:
+			return Neutral;
+		}
+	}
+
+	FString GetMainMenuReferenceAssetPath(const TCHAR* RelativePath)
+	{
+		return FPaths::ProjectDir() / TEXT("SourceAssets/UI/MainMenuReference") / RelativePath;
+	}
+
+	const TCHAR* GetInRunPlateRelativePath(const ET66InRunPlateKind Kind)
+	{
+		switch (Kind)
+		{
+		case ET66InRunPlateKind::Primary:
+			return TEXT("Center/cta_button_new_game_plate.png");
+		case ET66InRunPlateKind::Danger:
+			return TEXT("Center/cta_button_daily_challenge_plate.png");
+		case ET66InRunPlateKind::TabActive:
+			return TEXT("RightPanel/tab_weekly_active.png");
+		case ET66InRunPlateKind::TabInactive:
+			return TEXT("RightPanel/tab_all_time_inactive.png");
+		case ET66InRunPlateKind::Neutral:
+		default:
+			return TEXT("Center/cta_button_load_game_plate.png");
+		}
+	}
+
+	FMargin GetInRunPlateMargin(const ET66InRunPlateKind Kind)
+	{
+		switch (Kind)
+		{
+		case ET66InRunPlateKind::TabActive:
+		case ET66InRunPlateKind::TabInactive:
+			return FMargin(0.18f, 0.34f, 0.18f, 0.34f);
+		default:
+			return FMargin(0.18f, 0.35f, 0.18f, 0.35f);
+		}
+	}
+
+	ET66InRunPlateKind ResolveInRunButtonPlateKind(const ET66ButtonType Type)
+	{
+		switch (Type)
+		{
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::Success:
+		case ET66ButtonType::ToggleActive:
+			return ET66InRunPlateKind::Primary;
+		case ET66ButtonType::Danger:
+			return ET66InRunPlateKind::Danger;
+		case ET66ButtonType::Neutral:
+		default:
+			return ET66InRunPlateKind::Neutral;
+		}
+	}
+
 	const FSlateBrush* GetWhiteBrush()
 	{
 		return FCoreStyle::Get().GetBrush("WhiteBrush");
@@ -885,6 +969,42 @@ float FT66Style::ResolvePanelDecorativeBorderThickness(const FT66PanelParams& Pa
 	}
 
 	return FMath::Clamp(Thickness, 4.f, MaxThickness);
+}
+
+const FSlateBrush* FT66Style::GetInRunButtonPlateBrush(const ET66ButtonType Type)
+{
+	const ET66InRunPlateKind Kind = ResolveInRunButtonPlateKind(Type);
+	return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+		GetInRunPlateEntry(Kind),
+		nullptr,
+		GetMainMenuReferenceAssetPath(GetInRunPlateRelativePath(Kind)),
+		GetInRunPlateMargin(Kind),
+		TEXT("InRunButtonPlate"));
+}
+
+const FSlateBrush* FT66Style::GetInRunTabPlateBrush(const bool bSelected)
+{
+	const ET66InRunPlateKind Kind = bSelected ? ET66InRunPlateKind::TabActive : ET66InRunPlateKind::TabInactive;
+	return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+		GetInRunPlateEntry(Kind),
+		nullptr,
+		GetMainMenuReferenceAssetPath(GetInRunPlateRelativePath(Kind)),
+		GetInRunPlateMargin(Kind),
+		TEXT("InRunTabPlate"));
+}
+
+FT66ButtonParams FT66Style::MakeInRunButtonParams(const FText& Label, FOnClicked OnClicked, const ET66ButtonType Type)
+{
+	FT66ButtonParams Params(Label, MoveTemp(OnClicked), Type);
+	Params.SetUseDotaPlateOverlay(true)
+		.SetDotaPlateOverrideBrush(GetInRunButtonPlateBrush(Type))
+		.SetTextColor(FT66Style::Text())
+		.SetStateTextShadowColors(
+			FLinearColor(0.f, 0.f, 0.f, 0.92f),
+			FLinearColor(0.f, 0.f, 0.f, 0.96f),
+			FLinearColor(0.f, 0.f, 0.f, 0.98f))
+		.SetTextShadowOffset(FVector2D(1.f, 1.f));
+	return Params;
 }
 
 // ---------------------------------------------------------------------------

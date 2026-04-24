@@ -3,12 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Styling/CoreStyle.h"
 #include "UI/T66MiniUIStyle.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
+#include "Widgets/Images/SImage.h"
+#include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace T66MiniGeneratedChrome
@@ -27,6 +31,8 @@ namespace T66MiniGeneratedChrome
 		PortraitFrame,
 		IdolOfferRow,
 		IdolOfferRowAction,
+		SummaryRow,
+		BadgeFrame,
 		ButtonGreenNormal,
 		ButtonBlueNormal,
 		ButtonPurpleNormal,
@@ -38,38 +44,42 @@ namespace T66MiniGeneratedChrome
 		switch (Slice)
 		{
 		case ESlice::TitlePlaque:
-			return TEXT("title_plaque.png");
+			return TEXT("title_plaque_heavy_wide.png");
 		case ESlice::PanelLarge:
-			return TEXT("panel_large.png");
+			return TEXT("panel_large_alpha.png");
 		case ESlice::PanelMedium:
-			return TEXT("panel_medium.png");
+			return TEXT("panel_medium_alpha.png");
 		case ESlice::PanelSmall:
-			return TEXT("stat_chip_clean_wide.png");
+			return TEXT("metric_chip_heavy.png");
 		case ESlice::RowLong:
-			return TEXT("row_long.png");
+			return TEXT("footer_bar_heavy.png");
 		case ESlice::StatChip:
-			return TEXT("stat_chip.png");
+			return TEXT("metric_chip_heavy.png");
 		case ESlice::CardNormal:
-			return TEXT("card_normal.png");
+			return TEXT("card_normal_alpha.png");
 		case ESlice::CardSelected:
-			return TEXT("card_selected.png");
+			return TEXT("card_selected_alpha.png");
 		case ESlice::CardDisabled:
-			return TEXT("card_disabled.png");
+			return TEXT("card_disabled_alpha.png");
 		case ESlice::PortraitFrame:
-			return TEXT("portrait_frame_square.png");
+			return TEXT("portrait_frame_square_alpha.png");
 		case ESlice::IdolOfferRow:
-			return TEXT("idol_offer_row.png");
+			return TEXT("idol_offer_row_alpha.png");
 		case ESlice::IdolOfferRowAction:
-			return TEXT("idol_offer_row_action.png");
+			return TEXT("idol_offer_row_action_alpha.png");
+		case ESlice::SummaryRow:
+			return TEXT("summary_row_heavy.png");
+		case ESlice::BadgeFrame:
+			return TEXT("badge_frame_alpha.png");
 		case ESlice::ButtonGreenNormal:
-			return TEXT("button_green_normal.png");
+			return TEXT("button_green_heavy.png");
 		case ESlice::ButtonBlueNormal:
-			return TEXT("button_blue_normal.png");
+			return TEXT("button_blue_heavy.png");
 		case ESlice::ButtonPurpleNormal:
-			return TEXT("button_purple_normal.png");
+			return TEXT("button_purple_heavy.png");
 		case ESlice::Count:
 		default:
-			return TEXT("panel_large.png");
+			return TEXT("panel_large_alpha.png");
 		}
 	}
 
@@ -78,27 +88,29 @@ namespace T66MiniGeneratedChrome
 		switch (Slice)
 		{
 		case ESlice::TitlePlaque:
-			return FMargin(0.18f, 0.32f, 0.18f, 0.32f);
+			return FMargin(0.22f, 0.34f, 0.22f, 0.34f);
 		case ESlice::RowLong:
 		case ESlice::IdolOfferRow:
 		case ESlice::IdolOfferRowAction:
-			return FMargin(0.075f, 0.32f, 0.075f, 0.32f);
+		case ESlice::SummaryRow:
+			return FMargin(0.14f, 0.34f, 0.14f, 0.34f);
 		case ESlice::StatChip:
-			return FMargin(0.16f, 0.34f, 0.16f, 0.34f);
+		case ESlice::PanelSmall:
+			return FMargin(0.18f, 0.32f, 0.18f, 0.32f);
 		case ESlice::CardNormal:
 		case ESlice::CardSelected:
 		case ESlice::CardDisabled:
 		case ESlice::PortraitFrame:
+		case ESlice::BadgeFrame:
 			return FMargin(0.18f, 0.16f, 0.18f, 0.16f);
 		case ESlice::ButtonGreenNormal:
 		case ESlice::ButtonBlueNormal:
 		case ESlice::ButtonPurpleNormal:
-			return FMargin(0.18f, 0.32f, 0.18f, 0.32f);
+			return FMargin(0.20f, 0.34f, 0.20f, 0.34f);
 		case ESlice::PanelLarge:
 		case ESlice::PanelMedium:
-		case ESlice::PanelSmall:
 		default:
-			return FMargin(0.075f, 0.15f, 0.075f, 0.15f);
+			return FMargin(0.18f, 0.20f, 0.18f, 0.20f);
 		}
 	}
 
@@ -200,6 +212,54 @@ namespace T66MiniGeneratedChrome
 	}
 
 	inline TSharedRef<SWidget> MakeButton(
+		const FT66ButtonParams& Params)
+	{
+		const FSlateBrush* PlateBrush = ButtonPlateBrush(Params.Type);
+		const FMargin ContentPad = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(14.f, 8.f, 14.f, 6.f);
+		const TAttribute<FText> TextAttr = Params.DynamicLabel.IsBound()
+			? Params.DynamicLabel
+			: TAttribute<FText>(Params.Label);
+		const TAttribute<FSlateColor> TextColor = Params.bHasTextColorOverride
+			? Params.TextColorOverride
+			: TAttribute<FSlateColor>(FSlateColor(T66MiniUI::Text()));
+
+		return SNew(SBox)
+			.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
+			.HeightOverride(Params.Height > 0.f ? Params.Height : FOptionalSize())
+			.Visibility(Params.Visibility)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SImage)
+					.Visibility(PlateBrush ? EVisibility::HitTestInvisible : EVisibility::Collapsed)
+					.Image(PlateBrush)
+					.ColorAndOpacity(FLinearColor::White)
+				]
+				+ SOverlay::Slot()
+				[
+					SNew(SButton)
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					.OnClicked(Params.OnClicked)
+					.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+					.ButtonColorAndOpacity(FLinearColor::Transparent)
+					.ContentPadding(ContentPad)
+					.IsEnabled(Params.IsEnabled)
+					[
+						SNew(STextBlock)
+						.Text(TextAttr)
+						.Font(T66MiniUI::BoldFont(Params.FontSize > 0 ? Params.FontSize : 16))
+						.ColorAndOpacity(TextColor)
+						.Justification(ETextJustify::Center)
+						.ShadowOffset(FVector2D(1.f, 1.f))
+						.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
+					]
+				]
+			];
+	}
+
+	inline TSharedRef<SWidget> MakeButton(
 		const FText& Label,
 		const FOnClicked& OnClicked,
 		const ET66ButtonType Type,
@@ -207,6 +267,6 @@ namespace T66MiniGeneratedChrome
 		const float Height,
 		const int32 FontSize)
 	{
-		return FT66Style::MakeButton(MakeButtonParams(Label, OnClicked, Type, MinWidth, Height, FontSize));
+		return MakeButton(MakeButtonParams(Label, OnClicked, Type, MinWidth, Height, FontSize));
 	}
 }

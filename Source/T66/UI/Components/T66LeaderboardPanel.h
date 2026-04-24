@@ -15,6 +15,7 @@ class UT66LeaderboardSubsystem;
 class UT66BackendSubsystem;
 class UT66PlayerSettingsSubsystem;
 class UT66UIManager;
+class UT66SteamHelper;
 struct FComboButtonStyle;
 
 /**
@@ -131,7 +132,10 @@ private:
 	// Avatar brushes (keyed by URL, kept alive for SImage)
 	TMap<FString, TSharedPtr<FSlateBrush>> AvatarBrushes;
 
-	// Hero portrait brushes (used when no Steam avatar is available yet)
+	// Steam avatar brushes (keyed by SteamID, kept alive for SImage)
+	TMap<FString, TSharedPtr<FSlateBrush>> SteamAvatarBrushes;
+
+	// Hero portrait brushes (used by legacy non-Steam rows outside leaderboard identity slots)
 	TMap<FName, TSharedPtr<FSlateBrush>> HeroPortraitBrushes;
 
 	// Default avatar brush (used when no avatar URL or download pending)
@@ -158,11 +162,17 @@ private:
 	void NormalizeEntryIdentity(FLeaderboardEntry& Entry, int32 EntryIndex);
 	const FSlateBrush* GetPortraitBrushForEntry(const FLeaderboardEntry& Entry);
 	UT66PlayerSettingsSubsystem* GetPlayerSettings() const;
+	UT66SteamHelper* GetSteamHelper() const;
+	FString ResolveSteamDisplayName(const FString& SteamId) const;
+	FString ResolveEntryDisplayName(const FLeaderboardEntry& Entry) const;
+	FString ResolveEntryMemberDisplayName(const FLeaderboardEntry& Entry, int32 MemberIndex) const;
+	const FSlateBrush* GetPortraitBrushForEntryMember(const FLeaderboardEntry& Entry, int32 MemberIndex);
 	bool IsEntryFavoritable(const FLeaderboardEntry& Entry) const;
 	bool IsEntryFavorited(const FLeaderboardEntry& Entry) const;
 	FT66FavoriteLeaderboardRun MakeFavoriteRunFromEntry(const FLeaderboardEntry& Entry) const;
 
 	/** Create or retrieve a cached FSlateBrush for an avatar URL. */
 	const FSlateBrush* GetOrCreateAvatarBrush(const FString& AvatarUrl);
+	const FSlateBrush* GetOrCreateSteamAvatarBrush(const FString& SteamId);
 	const FSlateBrush* GetOrCreateHeroPortraitBrush(FName HeroID);
 };

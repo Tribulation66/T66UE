@@ -771,7 +771,7 @@
       56,
       56
     ],
-    "kind": "imagegen_slice"
+    "kind": "socket_frame"
   },
   {
     "source_sheet": "mainmenu_canonical_components_1920.png",

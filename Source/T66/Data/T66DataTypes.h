@@ -1576,6 +1576,14 @@ struct T66_API FLeaderboardEntry : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	TArray<FString> PlayerNames;
 
+	/** Primary SteamID that owns this row. Used to hydrate live profile names and avatars. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FString SteamId;
+
+	/** Party member SteamIDs in the same order as PlayerNames. Empty means use SteamId for the first player. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	TArray<FString> PlayerSteamIds;
+
 	/** Total score for this run */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	int64 Score = 0;

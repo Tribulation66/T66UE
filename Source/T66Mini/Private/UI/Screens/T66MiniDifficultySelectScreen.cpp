@@ -271,16 +271,18 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 					]
 				])
 			: StaticCastSharedRef<SWidget>(
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(SelectedHero ? SelectedHero->PlaceholderColor : T66MiniUI::RaisedFill())
-				.Padding(FMargin(8.f))
+				SNew(SBox)
+				.WidthOverride(Width)
+				.HeightOverride(Height)
 				[
-					SNew(STextBlock)
-					.Text(FText::FromString(SelectedHero ? SelectedHero->DisplayName.Left(1).ToUpper() : FString(TEXT("?"))))
-					.Font(T66MiniUI::BoldFont(40))
-					.ColorAndOpacity(FLinearColor::White)
-					.Justification(ETextJustify::Center)
+					T66MiniGeneratedChrome::MakePanel(
+						SNew(STextBlock)
+						.Text(FText::FromString(SelectedHero ? SelectedHero->DisplayName.Left(1).ToUpper() : FString(TEXT("?"))))
+						.Font(T66MiniUI::BoldFont(40))
+						.ColorAndOpacity(FLinearColor::White)
+						.Justification(ETextJustify::Center),
+						FMargin(4.f),
+						T66MiniGeneratedChrome::ESlice::PortraitFrame)
 				]);
 	};
 

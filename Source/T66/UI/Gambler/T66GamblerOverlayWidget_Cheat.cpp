@@ -34,12 +34,12 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Engine/Texture2D.h"
 
-static FString MakeInventoryStackKey(const FT66InventorySlot& Slot)
+static FString MakeGamblerCheatInventoryStackKey(const FT66InventorySlot& Slot)
 {
 	return FString::Printf(TEXT("%s|%d"), *Slot.ItemTemplateID.ToString(), static_cast<int32>(Slot.Rarity));
 }
 
-static FText BuildGamblerWagerText(const int32 WagerAmount)
+static FText BuildGamblerCheatWagerText(const int32 WagerAmount)
 {
 	return WagerAmount > 0
 		? FText::Format(NSLOCTEXT("T66.Gambler", "WagerFormat", "Wager: {0}"), FText::AsNumber(WagerAmount))
@@ -47,7 +47,7 @@ static FText BuildGamblerWagerText(const int32 WagerAmount)
 }
 
 template <typename TNpcType>
-static TNpcType* GetRegisteredGamblerOverlayNpc(UWorld* World)
+static TNpcType* GetRegisteredGamblerCheatNpc(UWorld* World)
 {
 	if (!World)
 	{
@@ -68,7 +68,7 @@ static TNpcType* GetRegisteredGamblerOverlayNpc(UWorld* World)
 	return nullptr;
 }
 
-static bool HasRegisteredGamblerOverlayBoss(UWorld* World)
+static bool HasRegisteredGamblerCheatBoss(UWorld* World)
 {
 	if (!World)
 	{
@@ -91,7 +91,7 @@ static bool HasRegisteredGamblerOverlayBoss(UWorld* World)
 
 namespace
 {
-	static int32 T66BuildNumberMask(const TSet<int32>& Numbers)
+	static int32 T66BuildGamblerCheatNumberMask(const TSet<int32>& Numbers)
 	{
 		int32 Mask = 0;
 		for (const int32 Number : Numbers)
@@ -104,7 +104,7 @@ namespace
 		return Mask;
 	}
 
-	static int32 T66BuildNumberMask(const TArray<int32>& Numbers)
+	static int32 T66BuildGamblerCheatNumberMask(const TArray<int32>& Numbers)
 	{
 		int32 Mask = 0;
 		for (const int32 Number : Numbers)
@@ -117,13 +117,13 @@ namespace
 		return Mask;
 	}
 
-	static int32 T66GetPlinkoPayoutTierFromSlot(const int32 SlotIndex)
+	static int32 T66GetGamblerCheatPlinkoPayoutTierFromSlot(const int32 SlotIndex)
 	{
 		static const int32 Tiers[9] = { 4, 3, 2, 1, 0, 1, 2, 3, 4 };
 		return Tiers[FMath::Clamp(SlotIndex, 0, 8)];
 	}
 
-	static ET66Rarity T66BoxOpeningIndexToRarity(const int32 ColorIndex)
+	static ET66Rarity T66GamblerCheatBoxOpeningIndexToRarity(const int32 ColorIndex)
 	{
 		switch (ColorIndex)
 		{

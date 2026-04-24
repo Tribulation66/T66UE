@@ -52,7 +52,7 @@ Where this document contradicts the archived backend/reference docs, prefer this
 - Production `run_summaries` schema drift was fixed live on 2026-04-19 by adding the missing anti-cheat and integrity columns that `/api/submit-run` already writes.
 - Checked-in backend code now models the redesigned progression as Easy/Medium/Hard/VeryHard = 4 local stages and Impossible = 3 local stages, using `local_stage_reached` plus normalization helpers.
 - Production was successfully redeployed on 2026-04-20 with deployment `dpl_9qrhYBkYE1Zxv8XoKGUgWAx1QEQR`, and the alias `https://t66-backend.vercel.app` now points at that deployment.
-- Steam build `22865517` is now the newest uploaded client payload. It keeps the prior history/export fixes and additionally stops saved history opens from clearing their loaded snapshot during activation, while the backend now rejects zero-score solo submissions as `unranked`.
+- Steam build `22947092` is now the newest uploaded client payload as of 2026-04-24. It contains the clean Steam leaderboard identity pass, including live Steam persona names and profile avatars in leaderboard rows, and remains not-live until the intended Steamworks branch is switched to that build.
 - Suspicion-level anti-cheat restrictions are now backend-authoritative and block new score submissions the same way the frontend does.
 - Automatic suspension reasons now distinguish `luck_rating` and `skill_rating` breaches over `100`, and the Account Status flow can open the reviewed backend run summary tied to the restriction.
 - All-time proof-of-run data now persists for the active PB leaderboard entry until that PB is replaced or the entry is removed; weekly proof-backed summaries are wiped by the weekly reset.

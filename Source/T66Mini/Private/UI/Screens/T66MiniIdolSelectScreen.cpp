@@ -377,38 +377,39 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 			const FT66MiniIdolDefinition* Idol = DataSubsystem && IdolID != NAME_None ? DataSubsystem->FindIdol(IdolID) : nullptr;
 			const FSlateBrush* IdolBrush = Idol ? FindIdolBrush(Idol->IdolID) : nullptr;
 			const FString IdolName = Idol ? T66MiniFormatIdolName(*Idol) : FString::Printf(TEXT("EMPTY SLOT %d"), SlotIndex + 1);
+			const FString SlotSubtitle = Idol ? Idol->Category : FString(TEXT("Open slot"));
 
 			EquippedRow->AddSlot()
 				.FillWidth(1.f)
 				.Padding(SlotIndex > 0 ? FMargin(10.f, 0.f, 0.f, 0.f) : FMargin(0.f))
 				[
-					T66MiniGeneratedChrome::MakePanel(
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
-						[
-							MakeIconWidget(IdolBrush, Idol ? IdolName.Left(1).ToUpper() : FString::FromInt(SlotIndex + 1), 46.f, 46.f, Idol ? T66MiniUI::AccentGold() : T66MiniUI::RaisedFill())
-						]
-						+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight()
+						T66MiniGeneratedChrome::MakePanel(
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+							[
+								MakeIconWidget(IdolBrush, Idol ? IdolName.Left(1).ToUpper() : FString::FromInt(SlotIndex + 1), 52.f, 52.f, Idol ? T66MiniUI::AccentGold() : T66MiniUI::RaisedFill())
+							]
+							+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+							[
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight()
 							[
 								SNew(STextBlock)
-								.Text(FText::FromString(IdolName))
-								.Font(T66MiniUI::BoldFont(Idol ? 14 : 13))
-								.ColorAndOpacity(Idol ? FLinearColor::White : MutedText)
-								.AutoWrapText(true)
-							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(FText::FromString(Idol ? FString::Printf(TEXT("%s | Base %.0f"), *Idol->Category, Idol->BaseDamage) : TEXT("Click an offer below to fill this slot.")))
-								.Font(T66MiniUI::BodyFont(10))
-								.ColorAndOpacity(Idol ? MutedText : BodyText)
-								.AutoWrapText(true)
-							]
-						],
-						FMargin(12.f, 8.f, 28.f, 8.f),
+									.Text(FText::FromString(IdolName))
+									.Font(T66MiniUI::BoldFont(Idol ? 14 : 13))
+									.ColorAndOpacity(Idol ? FLinearColor::White : MutedText)
+									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
+								[
+									SNew(STextBlock)
+									.Text(FText::FromString(SlotSubtitle))
+									.Font(T66MiniUI::BodyFont(10))
+									.ColorAndOpacity(Idol ? MutedText : BodyText)
+									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+								]
+							],
+						FMargin(12.f, 8.f, 18.f, 8.f),
 						T66MiniGeneratedChrome::ESlice::IdolOfferRow)
 				];
 		}
@@ -437,7 +438,7 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 16.f, 0.f)
 						[
 							MakeFramedPanel(
-								MakeIconWidget(IdolBrush, IdolName.Left(1).ToUpper(), 56.f, 56.f, T66MiniUI::RaisedFill()),
+								MakeIconWidget(IdolBrush, IdolName.Left(1).ToUpper(), 50.f, 50.f, T66MiniUI::RaisedFill()),
 								T66MiniUI::PanelOutline(),
 								T66MiniUI::ShellFill(),
 								FMargin(6.f))
@@ -455,10 +456,10 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 								[
 									SNew(STextBlock)
-									.Text(FText::FromString(FString::Printf(TEXT("%s idol | Base %.0f | Property %.0f"), *Idol->Category, Idol->BaseDamage, Idol->BaseProperty)))
-									.Font(T66MiniUI::BodyFont(12))
+									.Text(FText::FromString(FString::Printf(TEXT("%s | Base %.0f | Prop %.0f"), *Idol->Category, Idol->BaseDamage, Idol->BaseProperty)))
+									.Font(T66MiniUI::BodyFont(11))
 									.ColorAndOpacity(BodyText)
-									.AutoWrapText(true)
+									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 								]
 							]
 							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
@@ -470,11 +471,11 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 										return HandleTakeIdolClicked(IdolID);
 									}),
 									ET66ButtonType::Success,
-									96.f,
+									88.f,
 									44.f,
 									15)
 							]
-						, FMargin(16.f, 10.f, 34.f, 10.f),
+						, FMargin(14.f, 10.f, 30.f, 10.f),
 						T66MiniGeneratedChrome::ESlice::IdolOfferRowAction)
 				];
 	}

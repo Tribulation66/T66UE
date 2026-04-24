@@ -40,7 +40,6 @@
 #include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AchievementsSubsystem.h"
-#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
@@ -110,7 +109,6 @@ void AT66PlayerController::OpenWorldDialogueGambler(AT66GamblerNPC* Gambler)
 	const TArray<FText> Options =
 	{
 		Loc ? Loc->GetText_LetMeGamble() : NSLOCTEXT("T66.Gambler", "LetMeGamble", "Let me gamble"),
-		Loc ? Loc->GetText_TeleportMeToYourBrother() : NSLOCTEXT("T66.Gambler", "TeleportMeToYourBrother", "Teleport me to your brother"),
 		Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "Back"),
 	};
 
@@ -118,7 +116,7 @@ void AT66PlayerController::OpenWorldDialogueGambler(AT66GamblerNPC* Gambler)
 	WorldDialogueTargetNPC = Gambler;
 	WorldDialogueTargetCompanion.Reset();
 	WorldDialogueSelectedIndex = 0;
-	WorldDialogueNumOptions = 3;
+	WorldDialogueNumOptions = 2;
 	bWorldDialogueOpen = true;
 	LastWorldDialogueNavTimeSeconds = -1000.f;
 
@@ -228,30 +226,9 @@ void AT66PlayerController::ConfirmWorldDialogue()
 		return;
 	}
 
-	// Gambler: 0: main action, 1: teleport, 2: back
-	if (Choice == 2)
-	{
-		return;
-	}
-
+	// Gambler: 0: main action, 1: back
 	if (Choice == 1)
 	{
-		if (UWorld* World = GetWorld())
-		{
-			if (UGameInstance* GI = World->GetGameInstance())
-			{
-				if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-				{
-					// Mirror overlay behavior: no teleport once boss encounter starts.
-					if (RunState->GetBossActive())
-					{
-						return;
-					}
-				}
-			}
-		}
-
-		TeleportToNPC(FName(TEXT("Vendor")));
 		return;
 	}
 
@@ -305,32 +282,4 @@ void AT66PlayerController::UpdateWorldDialoguePosition()
 	ScreenPos.Y = FMath::Clamp(ScreenPos.Y, 12.f, FMath::Max(12.f, static_cast<float>(VY) - 180.f));
 
 	GameplayHUDWidget->SetWorldDialogueScreenPosition(ScreenPos);
-}
-
-
-void AT66PlayerController::TeleportToNPC(FName NPCID)
-{
-	UWorld* World = GetWorld();
-	if (!World) return;
-	APawn* PlayerPawn = GetPawn();
-	if (!PlayerPawn) return;
-
-	AT66HouseNPCBase* Target = nullptr;
-	if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
-	{
-		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
-		{
-			if (AT66HouseNPCBase* N = WeakNPC.Get())
-			{
-				if (N->NPCID == NPCID)
-				{
-					Target = N;
-					break;
-				}
-			}
-		}
-	}
-	if (!Target) return;
-
-	PlayerPawn->SetActorLocation(Target->GetActorLocation() + FVector(250.f, 0.f, 0.f), false, nullptr, ETeleportType::TeleportPhysics);
 }

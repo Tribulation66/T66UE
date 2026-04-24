@@ -1,0 +1,7 @@
+screen=casino_vendor_tab
+reference=C:\UE\T66\UI\screens\casino_vendor_tab\reference\canonical_reference_1920x1080.png
+packaged_output=C:\UE\T66\UI\screens\casino_vendor_tab\outputs\2026-04-24\packaged_runtime_1920x1080.png
+size=1920x1080
+mean_rgb_diff=32.64
+rms_rgb_diff=49.67
+max_channel_diff=255

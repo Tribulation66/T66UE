@@ -17,3 +17,21 @@ Verdict: close with blockers.
 - Upgrade disabled states are readable but still reuse generic button plates instead of a battle-specific disabled family.
 
 Next stage: battle-specific board frame/row/button sprite family, then a separate live TD map-art decision.
+
+## Sprite-Family Runtime Pass
+
+Packaged capture: `C:\UE\T66\UI\screens\td_battle\outputs\2026-04-24\packaged_capture_final.png`
+
+Verdict: first-pass mechanical gate passed; still not final 1:1.
+
+What changed:
+
+- Roster shell/rows, stats bar, board frame, status bar, right-side panels, and action buttons now use the TD battle component family under `SourceAssets/TD/UI/td_battle/Components`.
+- The battle board now displays the regenerated live Easy-tier map background art under `SourceAssets/TD/Maps/Backgrounds`.
+- The bottom status message was constrained into a fixed-height generated status bar so it no longer clips off the packaged 1920x1080 capture.
+
+Remaining risks:
+
+- Hero portraits/sprites, hero names, costs, wave values, materials, hearts, and status values remain runtime-owned, so they should be manually validated rather than strict-diffed.
+- The runtime board still owns pads, hit testing, tower placement, hover, and drag/drop behavior over the generated map art.
+- Some generated component edges still show slight green/despill tinting at high zoom.

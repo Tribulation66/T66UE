@@ -2030,16 +2030,6 @@ FText UT66LocalizationSubsystem::GetText_LetMeGamble() const
 	return NSLOCTEXT("T66.Gambler", "LetMeGamble", "LET ME GAMBLE");
 }
 
-FText UT66LocalizationSubsystem::GetText_TeleportMeToYourBrother() const
-{
-	return NSLOCTEXT("T66.Gambler", "TeleportMeToYourBrother", "TELEPORT ME TO YOUR BROTHER");
-}
-
-FText UT66LocalizationSubsystem::GetText_TeleportDisabledBossActive() const
-{
-	return NSLOCTEXT("T66.Gambler", "TeleportDisabledBossActive", "Teleport disabled (boss encounter started).");
-}
-
 FText UT66LocalizationSubsystem::GetText_Bet() const
 {
 	return NSLOCTEXT("T66.Gambler", "Bet", "Bet");

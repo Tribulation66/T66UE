@@ -13,6 +13,7 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
@@ -210,16 +211,28 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 						[
 							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(58.f)
 							[
-								SAssignNew(SpinButton, SButton)
-								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66WheelOverlayWidget::OnSpin))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Success)
-								.ContentPadding(FMargin(12.f, 8.f))
+								SNew(SOverlay)
+								+ SOverlay::Slot()
 								[
-									SNew(STextBlock)
-									.Text(SpinTxt)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+									SNew(SImage)
+									.Visibility(EVisibility::HitTestInvisible)
+									.Image(FT66Style::GetInRunButtonPlateBrush(ET66ButtonType::Primary))
+								]
+								+ SOverlay::Slot()
+								[
+									SAssignNew(SpinButton, SButton)
+									.HAlign(HAlign_Center).VAlign(VAlign_Center)
+									.OnClicked(FOnClicked::CreateUObject(this, &UT66WheelOverlayWidget::OnSpin))
+									.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.FlatTransparent"))
+									.ButtonColorAndOpacity(FLinearColor::White)
+									.ContentPadding(FMargin(12.f, 8.f))
+									[
+										SNew(STextBlock)
+										.Text(SpinTxt)
+										.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+										.ShadowOffset(FVector2D(1.f, 1.f))
+										.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.92f))
+									]
 								]
 							]
 						]
@@ -227,16 +240,28 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 						[
 							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(58.f)
 							[
-								SAssignNew(BackButton, SButton)
-								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66WheelOverlayWidget::OnBack))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-								.ContentPadding(FMargin(12.f, 8.f))
+								SNew(SOverlay)
+								+ SOverlay::Slot()
 								[
-									SNew(STextBlock)
-									.Text(BackTxt)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+									SNew(SImage)
+									.Visibility(EVisibility::HitTestInvisible)
+									.Image(FT66Style::GetInRunButtonPlateBrush(ET66ButtonType::Neutral))
+								]
+								+ SOverlay::Slot()
+								[
+									SAssignNew(BackButton, SButton)
+									.HAlign(HAlign_Center).VAlign(VAlign_Center)
+									.OnClicked(FOnClicked::CreateUObject(this, &UT66WheelOverlayWidget::OnBack))
+									.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.FlatTransparent"))
+									.ButtonColorAndOpacity(FLinearColor::White)
+									.ContentPadding(FMargin(12.f, 8.f))
+									[
+										SNew(STextBlock)
+										.Text(BackTxt)
+										.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+										.ShadowOffset(FVector2D(1.f, 1.f))
+										.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.92f))
+									]
 								]
 							]
 						]

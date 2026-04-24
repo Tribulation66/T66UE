@@ -63,6 +63,34 @@ TSharedRef<SWidget> UT66MiniRunSummaryScreen::BuildSlateUI()
 	const FString HeroDisplayName = Summary.HeroDisplayName.IsEmpty() ? FString(TEXT("Run Details")) : Summary.HeroDisplayName;
 	const FString DifficultyDisplayName = Summary.DifficultyDisplayName.IsEmpty() ? FString(TEXT("Not selected")) : Summary.DifficultyDisplayName;
 
+	auto MakeSummaryChip = [](const FText& Label, const FText& Value, const FLinearColor& Accent) -> TSharedRef<SWidget>
+	{
+		return SNew(SBox)
+			.HeightOverride(82.f)
+			[
+				T66MiniGeneratedChrome::MakePanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(Label)
+						.Font(T66MiniUI::BodyFont(11))
+						.ColorAndOpacity(T66MiniUI::MutedText())
+						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+					[
+						SNew(STextBlock)
+						.Text(Value)
+						.Font(T66MiniUI::BoldFont(18))
+						.ColorAndOpacity(Accent)
+						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					],
+					FMargin(12.f, 8.f, 18.f, 8.f),
+					T66MiniGeneratedChrome::ESlice::PanelSmall)
+			];
+	};
+
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
@@ -113,7 +141,7 @@ TSharedRef<SWidget> UT66MiniRunSummaryScreen::BuildSlateUI()
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("Wave reached: %d / 5"), Summary.WaveReached))).Font(T66MiniUI::BodyFont(17)).ColorAndOpacity(FLinearColor::White)]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("Materials banked: %d"), Summary.MaterialsCollected))).Font(T66MiniUI::BodyFont(17)).ColorAndOpacity(FLinearColor::White)]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("Run time: %.1fs"), Summary.RunSeconds))).Font(T66MiniUI::BodyFont(17)).ColorAndOpacity(FLinearColor::White)]
-						, FMargin(26.f, 22.f, 88.f, 26.f))
+						, FMargin(26.f, 22.f, 42.f, 26.f))
 					]
 					+ SHorizontalBox::Slot()
 					.FillWidth(1.f)
@@ -124,7 +152,41 @@ TSharedRef<SWidget> UT66MiniRunSummaryScreen::BuildSlateUI()
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("Idols equipped: %d"), Summary.EquippedIdolCount))).Font(T66MiniUI::BodyFont(17)).ColorAndOpacity(T66MiniUI::MutedText())]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("Items owned: %d"), Summary.OwnedItemCount))).Font(T66MiniUI::BodyFont(17)).ColorAndOpacity(T66MiniUI::MutedText())]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(TEXT("Use Play Again to jump straight back into idol selection with the same hero and difficulty."))).Font(T66MiniUI::BodyFont(15)).ColorAndOpacity(T66MiniUI::MutedText()).AutoWrapText(true)]
-						, FMargin(26.f, 22.f, 88.f, 26.f))
+						, FMargin(26.f, 22.f, 42.f, 26.f))
+					]
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.f, 16.f, 0.f, 0.f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 12.f, 0.f)
+					[
+						MakeSummaryChip(
+							NSLOCTEXT("T66Mini.RunSummary", "SummaryWave", "WAVE"),
+							FText::FromString(FString::Printf(TEXT("%d / 5"), Summary.WaveReached)),
+							FLinearColor::White)
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 12.f, 0.f)
+					[
+						MakeSummaryChip(
+							NSLOCTEXT("T66Mini.RunSummary", "SummaryMaterials", "MATERIALS"),
+							FText::AsNumber(Summary.MaterialsCollected),
+							T66MiniUI::AccentGold())
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 12.f, 0.f)
+					[
+						MakeSummaryChip(
+							NSLOCTEXT("T66Mini.RunSummary", "SummaryIdols", "IDOLS"),
+							FText::AsNumber(Summary.EquippedIdolCount),
+							T66MiniUI::AccentGreen())
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f)
+					[
+						MakeSummaryChip(
+							NSLOCTEXT("T66Mini.RunSummary", "SummaryTime", "TIME"),
+							FText::FromString(FString::Printf(TEXT("%.1fs"), Summary.RunSeconds)),
+							FLinearColor::White)
 					]
 				]
 				+ SVerticalBox::Slot()

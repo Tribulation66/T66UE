@@ -123,6 +123,7 @@ public:
 	FOnT66SteamLobbyJoinRequested& OnSteamLobbyJoinRequested() { return SteamLobbyJoinRequested; }
 	void HandleSteamJoinRequested(const FString& FriendSteamId);
 	void HandleSteamLobbyJoinRequested(const FString& FriendSteamId, const FString& LobbySteamId);
+	void HandleAvatarImageLoaded(const FString& SteamId, int32 ImageHandle);
 	void HandleWebApiTicketReady(uint32 InTicketHandle, bool bSuccess, const uint8* TicketBytes, int32 TicketByteCount);
 
 private:

@@ -12,7 +12,6 @@
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
-#include "Gameplay/T66HouseNPCBase.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
@@ -28,8 +27,6 @@
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "UI/Style/T66Style.h"
-#include "Gameplay/T66VendorNPC.h"
-#include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Engine/Texture2D.h"
@@ -44,28 +41,6 @@ static FText BuildGamblerWagerText(const int32 WagerAmount)
 	return WagerAmount > 0
 		? FText::Format(NSLOCTEXT("T66.Gambler", "WagerFormat", "Wager: {0}"), FText::AsNumber(WagerAmount))
 		: FText::GetEmpty();
-}
-
-template <typename TNpcType>
-static TNpcType* GetRegisteredGamblerOverlayNpc(UWorld* World)
-{
-	if (!World)
-	{
-		return nullptr;
-	}
-
-	if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
-	{
-		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNpc : Registry->GetNPCs())
-		{
-			if (TNpcType* Npc = Cast<TNpcType>(WeakNpc.Get()))
-			{
-				return Npc;
-			}
-		}
-	}
-
-	return nullptr;
 }
 
 static bool HasRegisteredGamblerOverlayBoss(UWorld* World)
@@ -180,31 +155,6 @@ FReply UT66GamblerOverlayWidget::OnBack()
 FReply UT66GamblerOverlayWidget::OnDialogueGamble()
 {
 	SetPage(EGamblerPage::Casino);
-	return FReply::Handled();
-}
-
-FReply UT66GamblerOverlayWidget::OnDialogueTeleport()
-{
-	if (IsBossActive())
-	{
-		UT66LocalizationSubsystem* Loc2 = nullptr;
-		if (UWorld* World = GetWorld())
-		{
-			if (UGameInstance* GI = World->GetGameInstance())
-			{
-				Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
-			}
-		}
-		SetStatus(Loc2 ? Loc2->GetText_TeleportDisabledBossActive() : NSLOCTEXT("T66.Gambler", "TeleportDisabledBossActive", "Teleport disabled (boss encounter started)."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
-		return FReply::Handled();
-	}
-	if (bEmbeddedInCasinoShell)
-	{
-		TeleportToVendor();
-		return FReply::Handled();
-	}
-	TeleportToVendor();
-	CloseOverlay();
 	return FReply::Handled();
 }
 
@@ -340,30 +290,6 @@ void UT66GamblerOverlayWidget::OpenCasinoPage()
 	RefreshBuyback();
 }
 
-
-void UT66GamblerOverlayWidget::TeleportToVendor()
-{
-	if (bEmbeddedInCasinoShell)
-	{
-		if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
-		{
-			PC->SwitchCasinoOverlayToVendor();
-		}
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	APawn* Pawn = GetOwningPlayerPawn();
-	if (!Pawn) return;
-
-	AT66VendorNPC* Vendor = GetRegisteredGamblerOverlayNpc<AT66VendorNPC>(World);
-	if (!Vendor) return;
-
-	const FVector VendorLoc = Vendor->GetActorLocation();
-	Pawn->SetActorLocation(VendorLoc + FVector(250.f, 0.f, 0.f), false, nullptr, ETeleportType::TeleportPhysics);
-}
 
 void UT66GamblerOverlayWidget::CloseOverlay()
 {

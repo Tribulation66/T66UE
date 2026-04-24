@@ -70,6 +70,7 @@ namespace T66MainMenuReferenceLayout
 		inline constexpr FT66ReferenceRect ToggleScoreSelected{1445.0f, 521.0f, 210.0f, 61.0f};
 		inline constexpr FT66ReferenceRect ToggleSpeedrunUnselected{1658.0f, 521.0f, 216.0f, 61.0f};
 		inline constexpr FT66ReferenceRect LeaderboardAvatarFrameSource{1533.0f, 631.0f, 56.0f, 56.0f};
+		inline constexpr FT66ReferenceRect LeaderboardAvatarLiveRect{1541.0f, 639.0f, 40.0f, 40.0f};
 	}
 
 	namespace MainMenu

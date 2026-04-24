@@ -547,5 +547,4 @@ private:
 	void NavigateWorldDialogue(int32 Delta);
 	void ConfirmWorldDialogue();
 	void UpdateWorldDialoguePosition();
-	void TeleportToNPC(FName NPCID);
 };

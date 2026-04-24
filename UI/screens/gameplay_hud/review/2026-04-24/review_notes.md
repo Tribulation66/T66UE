@@ -6,6 +6,8 @@ Packaged output: `C:\UE\T66\UI\screens\gameplay_hud\outputs\2026-04-24\packaged_
 
 Result: pass with known first-pass visual deltas.
 
+Diff artifacts: `diff_overlay_1920x1080.png`, `diff_metrics.txt` (mean RGB diff 47.56).
+
 - HUD layout intent is preserved at 1920x1080.
 - Runtime-owned text, bars, inventory contents, minimap data, portrait well, and gameplay state remain live.
 - Shell/frame surfaces now use the dark dungeon, stone, wood, and gold palette.

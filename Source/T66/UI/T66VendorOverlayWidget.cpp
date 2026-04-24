@@ -241,7 +241,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const float ShopIconSize = ShopCardSize - ShopCardPadding * 2.f;
 	const float InventorySlotSize = bCompactCasinoLayout ? 80.f : FT66Style::Tokens::InventorySlotSize;
 	const float AngerImageSize = bCompactCasinoLayout ? 136.f : 260.f;
-	const float SellPanelSize = bCompactCasinoLayout ? 88.f : 160.f;
+	const float SellPanelSize = bCompactCasinoLayout ? 128.f : 160.f;
 	const float BankSpinBoxWidth = bCompactCasinoLayout ? 68.f : FT66Style::Tokens::NPCBankSpinBoxWidth;
 	const float BankSpinBoxHeight = bCompactCasinoLayout ? 28.f : FT66Style::Tokens::NPCBankSpinBoxHeight;
 	const float CardButtonMinWidth = bCompactCasinoLayout ? 0.f : 100.f;
@@ -326,7 +326,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
 		TSharedRef<SWidget> BuyBtnWidget = FT66Style::MakeButton(
-			FT66ButtonParams(
+			FT66Style::MakeInRunButtonParams(
 				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuySlot, i),
 				ET66ButtonType::Primary)
@@ -343,7 +343,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		BuyButtons[i] = BuyBtnWidget;
 
 		TSharedRef<SWidget> StealBtnWidget = FT66Style::MakeButton(
-			FT66ButtonParams(
+			FT66Style::MakeInRunButtonParams(
 				Loc ? Loc->GetText_Steal() : NSLOCTEXT("T66.Vendor", "Steal", "STEAL"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnStealSlot, i),
 				ET66ButtonType::Danger)
@@ -448,7 +448,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	for (int32 i = 0; i < BuybackSlotCount; ++i)
 	{
 		TSharedRef<SWidget> BuybackBtnWidget = FT66Style::MakeButton(
-			FT66ButtonParams(
+			FT66Style::MakeInRunButtonParams(
 				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuybackSlot, i),
 				ET66ButtonType::Primary)
@@ -587,7 +587,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 				[
 					FT66Style::MakeButton(
-						FT66ButtonParams(
+						FT66Style::MakeInRunButtonParams(
 							NSLOCTEXT("T66.Vendor", "Stop", "STOP"),
 							FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnStealStop),
 							ET66ButtonType::Primary)
@@ -666,7 +666,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 
 	// Pre-create sell button (needs member reference for later SetEnabled).
 	TSharedRef<SWidget> SellBtnWidget = FT66Style::MakeButton(
-		FT66ButtonParams(
+		FT66Style::MakeInRunButtonParams(
 			Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL"),
 			FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSellSelectedClicked),
 			ET66ButtonType::Primary)
@@ -695,7 +695,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		];
 
 	TSharedRef<SWidget> ShopModeToggleButton = FT66Style::MakeButton(
-		FT66ButtonParams(
+		FT66Style::MakeInRunButtonParams(
 			BuybackTitle,
 			FOnClicked::CreateLambda([this]()
 			{
@@ -732,7 +732,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	);
 
 	TSharedRef<SWidget> ContextRerollButton = FT66Style::MakeButton(
-		FT66ButtonParams(
+		FT66Style::MakeInRunButtonParams(
 			RerollText,
 			FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnReroll),
 			ET66ButtonType::Neutral)
@@ -848,7 +848,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 								[
 									FT66Style::MakeButton(
-										FT66ButtonParams(
+										FT66Style::MakeInRunButtonParams(
 											Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Vendor", "Borrow_Button", "BORROW"),
 											FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBorrowClicked),
 											ET66ButtonType::Neutral)
@@ -877,7 +877,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 								[
 									FT66Style::MakeButton(
-										FT66ButtonParams(
+										FT66Style::MakeInRunButtonParams(
 											Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Vendor", "Payback_Button", "PAYBACK"),
 											FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnPaybackClicked),
 											ET66ButtonType::Neutral)
@@ -1096,7 +1096,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			.Visibility(EVisibility::Visible)
 			[
 				FT66Style::MakeButton(
-					FT66ButtonParams(CloseText,
+					FT66Style::MakeInRunButtonParams(CloseText,
 						FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack),
 						ET66ButtonType::Danger)
 					.SetMinWidth(0.f)

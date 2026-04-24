@@ -1,0 +1,7 @@
+screen,diff_mean,changed_pixels_gt32_percent
+mini_save_slots,27.9686,20.1020
+mini_character_select,28.2556,19.4635
+mini_companion_select,29.5866,20.8433
+mini_difficulty_select,33.2416,23.9864
+mini_idol_select,32.6760,22.4944
+mini_run_summary,25.5650,16.5775

@@ -51,7 +51,6 @@ public:
 	TSharedPtr<SWidgetSwitcher> CasinoSwitcher;
 	TSharedPtr<STextBlock> CasinoModeToggleText;
 	TSharedPtr<SWidget> CasinoRerollButtonWidget;
-	TSharedPtr<SWidget> DialogueTeleportButtonWidget;
 	TSharedPtr<SBox> CloseButtonBox;
 	TSharedPtr<STextBlock> NetWorthText;
 	TSharedPtr<STextBlock> GoldText;
@@ -278,7 +277,6 @@ public:
 
 	FReply OnBack();
 	FReply OnDialogueGamble();
-	FReply OnDialogueTeleport();
 
 	FReply OnSelectInventorySlot(int32 InventoryIndex);
 	FReply OnSellSelectedClicked();
@@ -346,8 +344,6 @@ public:
 	void HandleBJStand();
 	void HandleBJDouble();
 	void HandleBJSplit();
-
-	void TeleportToVendor();
 
 	UFUNCTION()
 	void HandleBuybackChanged();

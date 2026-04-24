@@ -34,12 +34,12 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Engine/Texture2D.h"
 
-static FString MakeInventoryStackKey(const FT66InventorySlot& Slot)
+static FString MakeChanceGamesInventoryStackKey(const FT66InventorySlot& Slot)
 {
 	return FString::Printf(TEXT("%s|%d"), *Slot.ItemTemplateID.ToString(), static_cast<int32>(Slot.Rarity));
 }
 
-static FText BuildGamblerWagerText(const int32 WagerAmount)
+static FText BuildChanceGamesWagerText(const int32 WagerAmount)
 {
 	return WagerAmount > 0
 		? FText::Format(NSLOCTEXT("T66.Gambler", "WagerFormat", "Wager: {0}"), FText::AsNumber(WagerAmount))
@@ -47,7 +47,7 @@ static FText BuildGamblerWagerText(const int32 WagerAmount)
 }
 
 template <typename TNpcType>
-static TNpcType* GetRegisteredGamblerOverlayNpc(UWorld* World)
+static TNpcType* GetRegisteredChanceGamesNpc(UWorld* World)
 {
 	if (!World)
 	{
@@ -68,7 +68,7 @@ static TNpcType* GetRegisteredGamblerOverlayNpc(UWorld* World)
 	return nullptr;
 }
 
-static bool HasRegisteredGamblerOverlayBoss(UWorld* World)
+static bool HasRegisteredChanceGamesBoss(UWorld* World)
 {
 	if (!World)
 	{
@@ -91,7 +91,7 @@ static bool HasRegisteredGamblerOverlayBoss(UWorld* World)
 
 namespace
 {
-	static int32 T66BuildNumberMask(const TSet<int32>& Numbers)
+	static int32 T66BuildChanceGamesNumberMask(const TSet<int32>& Numbers)
 	{
 		int32 Mask = 0;
 		for (const int32 Number : Numbers)
@@ -104,7 +104,7 @@ namespace
 		return Mask;
 	}
 
-	static int32 T66BuildNumberMask(const TArray<int32>& Numbers)
+	static int32 T66BuildChanceGamesNumberMask(const TArray<int32>& Numbers)
 	{
 		int32 Mask = 0;
 		for (const int32 Number : Numbers)
@@ -117,13 +117,13 @@ namespace
 		return Mask;
 	}
 
-	static int32 T66GetPlinkoPayoutTierFromSlot(const int32 SlotIndex)
+	static int32 T66GetChanceGamesPlinkoPayoutTierFromSlot(const int32 SlotIndex)
 	{
 		static const int32 Tiers[9] = { 4, 3, 2, 1, 0, 1, 2, 3, 4 };
 		return Tiers[FMath::Clamp(SlotIndex, 0, 8)];
 	}
 
-	static ET66Rarity T66BoxOpeningIndexToRarity(const int32 ColorIndex)
+	static ET66Rarity T66ChanceGamesBoxOpeningIndexToRarity(const int32 ColorIndex)
 	{
 		switch (ColorIndex)
 		{
@@ -258,8 +258,8 @@ void UT66GamblerOverlayWidget::TickLotteryRevealNext()
 					INDEX_NONE,
 					Matches,
 					0,
-					T66BuildNumberMask(LotterySelected),
-					T66BuildNumberMask(LotteryDrawn),
+					T66BuildChanceGamesNumberMask(LotterySelected),
+					T66BuildChanceGamesNumberMask(LotteryDrawn),
 					0,
 					LotteryShufflePreDrawSeed,
 					LotteryShuffleStartDrawIndex);
@@ -346,7 +346,7 @@ void UT66GamblerOverlayWidget::TickPlinkoDrop()
 			? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>()
 			: nullptr)
 		{
-			RunState->RecordLuckQuantityRoll(FName(TEXT("GamblerPlinkoPayoutTier")), T66GetPlinkoPayoutTierFromSlot(PlinkoBallSlot), 0, 4);
+			RunState->RecordLuckQuantityRoll(FName(TEXT("GamblerPlinkoPayoutTier")), T66GetChanceGamesPlinkoPayoutTierFromSlot(PlinkoBallSlot), 0, 4);
 			RunState->RecordAntiCheatGamblerRound(
 				ET66AntiCheatGamblerGameType::Plinko,
 				PendingBetAmount,
@@ -358,7 +358,7 @@ void UT66GamblerOverlayWidget::TickPlinkoDrop()
 				INDEX_NONE,
 				INDEX_NONE,
 				PlinkoBallSlot,
-				T66GetPlinkoPayoutTierFromSlot(PlinkoBallSlot),
+				T66GetChanceGamesPlinkoPayoutTierFromSlot(PlinkoBallSlot),
 				0,
 				0,
 				PlinkoPathBits,
@@ -450,7 +450,7 @@ void UT66GamblerOverlayWidget::TickBoxOpeningSpin()
 			ReplayWeights.White = 5.f;
 			RunState->RecordLuckQualityRarity(
 				FName(TEXT("GamblerBoxOpeningColor")),
-				T66BoxOpeningIndexToRarity(BoxOpeningResultIndex),
+				T66ChanceGamesBoxOpeningIndexToRarity(BoxOpeningResultIndex),
 				BoxOpeningDrawIndex,
 				BoxOpeningPreDrawSeed,
 				&ReplayWeights);

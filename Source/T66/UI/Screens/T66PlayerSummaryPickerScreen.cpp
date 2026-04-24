@@ -233,32 +233,41 @@ namespace
 			.MinDesiredWidth(MinWidth > 0.f ? MinWidth : FOptionalSize())
 			.HeightOverride(Height > 0.f ? Height : FOptionalSize())
 			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
+				SNew(SButton)
+				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+				.ButtonColorAndOpacity(FLinearColor::Transparent)
+				.ContentPadding(FMargin(0.f))
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				.OnClicked(OnClicked)
+				.OnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Hovered; }))
+				.OnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Normal; }))
+				.OnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Pressed; }))
+				.OnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Hovered; }))
 				[
-					SNew(SImage)
-					.Visibility(EVisibility::HitTestInvisible)
-					.Image(BrushAttr)
-				]
-				+ SOverlay::Slot()
-				[
-					SNew(SButton)
-					.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-					.ButtonColorAndOpacity(FLinearColor::Transparent)
-					.ContentPadding(FMargin(12.f, 7.f, 12.f, 6.f))
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.OnClicked(OnClicked)
-					.OnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Hovered; }))
-					.OnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Normal; }))
-					.OnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Pressed; }))
-					.OnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Hovered; }))
+					SNew(SOverlay)
+					+ SOverlay::Slot()
 					[
-						SNew(STextBlock)
-						.Text(Label)
-						.Font(FT66Style::Tokens::FontBold(FontSize))
-						.ColorAndOpacity(T66PickerFantasyText)
-						.Justification(ETextJustify::Center)
+						SNew(SImage)
+						.Visibility(EVisibility::HitTestInvisible)
+						.Image(BrushAttr)
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+						.Padding(FMargin(12.f, 7.f, 12.f, 6.f))
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(Label)
+							.Font(FT66Style::Tokens::FontBold(FontSize))
+							.ColorAndOpacity(T66PickerFantasyText)
+							.Justification(ETextJustify::Center)
+						]
 					]
 				]
 			];

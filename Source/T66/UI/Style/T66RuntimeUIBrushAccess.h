@@ -19,7 +19,7 @@ namespace T66RuntimeUIBrushAccess
 		Danger,
 	};
 
-	struct FOptionalTextureBrush
+	struct T66_API FOptionalTextureBrush
 	{
 		TStrongObjectPtr<UTexture2D> ImportedTexture;
 		TStrongObjectPtr<UTexture2D> FileTexture;
@@ -29,11 +29,11 @@ namespace T66RuntimeUIBrushAccess
 		UTexture2D* GetTexture() const;
 	};
 
-	const FString& GetDotaGeneratedSourceDir();
+	T66_API const FString& GetDotaGeneratedSourceDir();
 
-	const FSlateBrush* ResolveDotaButtonPlateBrush(ET66DotaPlateBrushKind Kind);
+	T66_API const FSlateBrush* ResolveDotaButtonPlateBrush(ET66DotaPlateBrushKind Kind);
 
-	UTexture2D* LoadOptionalTexture(
+	T66_API UTexture2D* LoadOptionalTexture(
 		FOptionalTextureBrush& Entry,
 		const TCHAR* ImportedAssetPath,
 		const FString& FallbackFilePath,
@@ -41,7 +41,7 @@ namespace T66RuntimeUIBrushAccess
 		const TCHAR* DebugLabel = nullptr,
 		TextureFilter Filter = TextureFilter::TF_Trilinear);
 
-	const FSlateBrush* ResolveOptionalTextureBrush(
+	T66_API const FSlateBrush* ResolveOptionalTextureBrush(
 		FOptionalTextureBrush& Entry,
 		const TCHAR* ImportedAssetPath,
 		const FString& FallbackFilePath,

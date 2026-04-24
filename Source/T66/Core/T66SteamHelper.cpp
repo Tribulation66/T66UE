@@ -20,6 +20,7 @@ public:
 		LobbyJoinRequestedCallback.Register(this, &FT66SteamJoinRequestBridge::OnLobbyJoinRequested);
 		RichPresenceJoinRequestedCallback.Register(this, &FT66SteamJoinRequestBridge::OnRichPresenceJoinRequested);
 		WebApiTicketResponseCallback.Register(this, &FT66SteamJoinRequestBridge::OnWebApiTicketResponse);
+		AvatarImageLoadedCallback.Register(this, &FT66SteamJoinRequestBridge::OnAvatarImageLoaded);
 	}
 
 	~FT66SteamJoinRequestBridge()
@@ -32,6 +33,7 @@ public:
 		LobbyJoinRequestedCallback.Unregister();
 		RichPresenceJoinRequestedCallback.Unregister();
 		WebApiTicketResponseCallback.Unregister();
+		AvatarImageLoadedCallback.Unregister();
 	}
 
 private:
@@ -40,6 +42,7 @@ private:
 	STEAM_CALLBACK_MANUAL(FT66SteamJoinRequestBridge, OnLobbyJoinRequested, GameLobbyJoinRequested_t, LobbyJoinRequestedCallback);
 	STEAM_CALLBACK_MANUAL(FT66SteamJoinRequestBridge, OnRichPresenceJoinRequested, GameRichPresenceJoinRequested_t, RichPresenceJoinRequestedCallback);
 	STEAM_CALLBACK_MANUAL(FT66SteamJoinRequestBridge, OnWebApiTicketResponse, GetTicketForWebApiResponse_t, WebApiTicketResponseCallback);
+	STEAM_CALLBACK_MANUAL(FT66SteamJoinRequestBridge, OnAvatarImageLoaded, AvatarImageLoaded_t, AvatarImageLoadedCallback);
 };
 
 namespace
@@ -160,6 +163,17 @@ void FT66SteamJoinRequestBridge::OnRichPresenceJoinRequested(GameRichPresenceJoi
 	}
 
 	Owner.HandleSteamJoinRequested(T66ResolveJoinSteamId(Param->m_rgchConnect, Param->m_steamIDFriend));
+}
+
+void FT66SteamJoinRequestBridge::OnAvatarImageLoaded(AvatarImageLoaded_t* Param)
+{
+	if (!Param || Param->m_iImage <= 0)
+	{
+		return;
+	}
+
+	const FString SteamId = FString::Printf(TEXT("%llu"), Param->m_steamID.ConvertToUint64());
+	Owner.HandleAvatarImageLoaded(SteamId, Param->m_iImage);
 }
 
 void FT66SteamJoinRequestBridge::OnWebApiTicketResponse(GetTicketForWebApiResponse_t* Param)
@@ -608,6 +622,20 @@ void UT66SteamHelper::HandleSteamLobbyJoinRequested(const FString& FriendSteamId
 
 	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: received Steam lobby join request from friend %s for lobby %s."), *FriendSteamId, *LobbySteamId);
 	SteamLobbyJoinRequested.Broadcast(FriendSteamId, LobbySteamId);
+}
+
+void UT66SteamHelper::HandleAvatarImageLoaded(const FString& SteamId, int32 ImageHandle)
+{
+	if (SteamId.IsEmpty() || ImageHandle <= 0)
+	{
+		return;
+	}
+
+	CacheAvatarForSteamId(SteamId, ImageHandle);
+	if (SteamId.Equals(LocalSteamIdStr, ESearchCase::CaseSensitive))
+	{
+		LocalAvatarTexture = FriendAvatarTextures.FindRef(LocalSteamIdStr);
+	}
 }
 
 void UT66SteamHelper::HandleWebApiTicketReady(uint32 InTicketHandle, bool bSuccess, const uint8* TicketBytes, int32 TicketByteCount)

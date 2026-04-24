@@ -1,0 +1,7 @@
+screen=wheel_overlay
+reference=C:\UE\T66\UI\screens\wheel_overlay\reference\canonical_reference_1920x1080.png
+packaged_output=C:\UE\T66\UI\screens\wheel_overlay\outputs\2026-04-24\packaged_runtime_1920x1080.png
+size=1920x1080
+mean_rgb_diff=31.72
+rms_rgb_diff=45.19
+max_channel_diff=255

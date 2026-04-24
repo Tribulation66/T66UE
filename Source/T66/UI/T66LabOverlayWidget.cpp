@@ -198,9 +198,10 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 			.Padding(2.f)
 			[
 				FT66Style::MakeButton(
-					FText::FromName(ItemID),
-					FOnClicked::CreateLambda([this, CapturedID]() { OnGrantItem(CapturedID); return FReply::Handled(); }),
-					ET66ButtonType::Neutral
+					FT66Style::MakeInRunButtonParams(
+						FText::FromName(ItemID),
+						FOnClicked::CreateLambda([this, CapturedID]() { OnGrantItem(CapturedID); return FReply::Handled(); }),
+						ET66ButtonType::Neutral)
 				)
 			];
 	}
@@ -226,10 +227,11 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						FT66Style::MakeButton(
-							Spawn,
-							FOnClicked::CreateLambda([this, CapturedEID, CapturedTab]() { OnSpawnEnemy(CapturedEID, CapturedTab); return FReply::Handled(); }),
-							ET66ButtonType::Neutral,
-							80.f
+							FT66Style::MakeInRunButtonParams(
+								Spawn,
+								FOnClicked::CreateLambda([this, CapturedEID, CapturedTab]() { OnSpawnEnemy(CapturedEID, CapturedTab); return FReply::Handled(); }),
+								ET66ButtonType::Neutral)
+							.SetMinWidth(80.f)
 						)
 					]
 				];
@@ -250,7 +252,7 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	{
 		TabRow->AddSlot().AutoWidth().Padding(2.f)
 			[
-			FT66Style::MakeButton(FT66ButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { LabTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }))
+			FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { LabTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }))
 				.SetMinWidth(0.f).SetFontSize(9).SetPadding(FMargin(6.f, 2.f)))
 			];
 	};
@@ -261,7 +263,7 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 
 	// Toggle button (like minimap): show "Lab" and expand/collapse state
 	TSharedRef<SWidget> ToggleButton = FT66Style::MakeButton(
-		FT66ButtonParams(bLabPanelExpanded ? LOCTEXT("LabHide", "Lab \u25BC") : LOCTEXT("LabShow", "Lab \u25B6"),
+		FT66Style::MakeInRunButtonParams(bLabPanelExpanded ? LOCTEXT("LabHide", "Lab \u25BC") : LOCTEXT("LabShow", "Lab \u25B6"),
 			FOnClicked::CreateLambda([this]() { OnToggleLabPanel(); return FReply::Handled(); }))
 		.SetMinWidth(0.f).SetFontSize(10).SetPadding(FMargin(8.f, 4.f)));
 
@@ -287,18 +289,19 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 		LabPanel->AddSlot().AutoHeight().Padding(0.f, 4.f)
 			[
 				FT66Style::MakeButton(
-					ResetLabel,
-					FOnClicked::CreateLambda([this, bIsItemsTab]() {
+					FT66Style::MakeInRunButtonParams(
+						ResetLabel,
+						FOnClicked::CreateLambda([this, bIsItemsTab]() {
 						if (bIsItemsTab) OnResetItems();
 						else OnResetEnemies();
 						return FReply::Handled();
 					}),
-					bIsItemsTab ? ET66ButtonType::Neutral : ET66ButtonType::Danger
+					bIsItemsTab ? ET66ButtonType::Neutral : ET66ButtonType::Danger)
 				)
 			];
 		LabPanel->AddSlot().AutoHeight().Padding(0.f, 4.f)
 			[
-				FT66Style::MakeButton(ExitLab, FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }), ET66ButtonType::Danger)
+				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(ExitLab, FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }), ET66ButtonType::Danger))
 			];
 	}
 

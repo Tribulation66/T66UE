@@ -139,6 +139,18 @@ Packaged review must use ownership-aware validation:
 - leaderboard avatars: `runtime-avatar` + `socket-frame`
 - friend names, statuses, leaderboard labels, ranks, names, scores, and tabs: `runtime-text` or `runtime-value`
 
+#### Main Menu Steam/Social/Leaderboard Runtime Contract
+
+- friends panel profile card: generated art owns the card shell and portrait well; Steam local display name, Steam ID/status text, action text, and local avatar remain runtime-owned `FText`/avatar brushes.
+- friend rows: generated art owns only avatar frames, favorite/invite/offline button plates, and neutral row chrome; friend names, presence, online/offline grouping, invite pending state, favorite state, and friend avatars remain runtime data from Steam/session systems.
+- invite/offline buttons: the visible plate must remain the real `SButton` content, not a hotspot over static art; generated assets are text-free plates, while `INVITE`, `INVITED`, `OFFLINE`, `In Party`, and `PARTY FULL` are runtime state text.
+- leaderboard rows: generated art owns shell/control chrome and reusable row/socket frames; row count, rank, player/team names, score/time, local-player/favorite state, clickability, and run-summary availability remain runtime-owned.
+- leaderboard avatars: generated art owns only the socket frame. Runtime first resolves the Steam avatar texture by leaderboard Steam ID, then falls back to a backend avatar URL if provided, then leaves the socket/default placeholder empty. Backend hero portraits are not a leaderboard identity fallback.
+- player names, ranks, and scores: always runtime `FText`/values, never baked into row plates or reference-derived chrome.
+- Steam connection/status text: runtime `FText` from `UT66SteamHelper`, `UT66PartySubsystem`, `UT66SessionSubsystem`, and backend/session state.
+
+Packaged review must mask or fixture-freeze the profile, friend, party, and leaderboard live-content interiors before strict shell diffs. For the main menu leaderboard avatar socket, the current mask rect is `Right.leaderboard_avatar_live_rect` in `SourceAssets/UI/MainMenuReference/reference_layout.json`.
+
 ### Settings
 
 - row labels and values: `runtime-text`

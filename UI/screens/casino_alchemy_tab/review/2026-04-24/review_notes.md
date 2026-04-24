@@ -6,6 +6,8 @@ Packaged output: `C:\UE\T66\UI\screens\casino_alchemy_tab\outputs\2026-04-24\pac
 
 Result: pass with empty-state caveat.
 
-- Casino tab shell and alchemy panel styling are applied.
+Diff artifacts: `diff_overlay_1920x1080.png`, `diff_metrics.txt` (mean RGB diff 19.99).
+
+- Casino tab shell, tab buttons, and alchemy action button styling are applied with the shared fantasy plate treatment.
 - Alchemy empty-state text and action visibility remain live.
 - Remaining delta: the packaged capture is an empty state, so item upgrade rows need a later populated-state review.

@@ -173,10 +173,30 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 						+ SVerticalBox::Slot()
 						.AutoHeight()
 						[
-							SNew(STextBlock)
-							.Text(FText::FromString(FString::Printf(TEXT("Mini Slot %d"), Summary.SlotIndex + 1)))
-							.Font(T66MiniUI::BoldFont(22))
-							.ColorAndOpacity(FLinearColor::White)
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 14.f, 0.f)
+							[
+								SNew(SBox)
+								.WidthOverride(54.f)
+								.HeightOverride(54.f)
+								[
+									T66MiniGeneratedChrome::MakePanel(
+										SNew(STextBlock)
+										.Text(FText::AsNumber(Summary.SlotIndex + 1))
+										.Font(T66MiniUI::BoldFont(20))
+										.ColorAndOpacity(T66MiniUI::AccentGold())
+										.Justification(ETextJustify::Center),
+										FMargin(4.f),
+										T66MiniGeneratedChrome::ESlice::BadgeFrame)
+								]
+							]
+							+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString(FString::Printf(TEXT("Mini Slot %d"), Summary.SlotIndex + 1)))
+								.Font(T66MiniUI::BoldFont(22))
+								.ColorAndOpacity(FLinearColor::White)
+							]
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
@@ -196,7 +216,7 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 							SNew(STextBlock)
 							.Text(FText::FromString(Summary.bOccupied
 								? FString::Printf(TEXT("Last Updated: %s"), *Summary.LastUpdatedUtc)
-								: TEXT("Mid-wave resume data will populate here once a mini run has been saved.")))
+								: TEXT("No mini run saved yet.")))
 							.Font(T66MiniUI::BodyFont(14))
 							.ColorAndOpacity(T66MiniUI::MutedText())
 							.AutoWrapText(true)
@@ -207,7 +227,7 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 						[
 							Summary.bOccupied
 								? StaticCastSharedRef<SWidget>(
-									FT66Style::MakeButton(
+									T66MiniGeneratedChrome::MakeButton(
 										T66MiniGeneratedChrome::MakeButtonParams(
 											NSLOCTEXT("T66Mini.SaveSlots", "Load", "LOAD"),
 											FOnClicked::CreateLambda([this, SlotIndex = Summary.SlotIndex]()
@@ -221,7 +241,7 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 										.SetEnabled(!bOnlinePartyActive || bIsPartyHost)))
 								: StaticCastSharedRef<SWidget>(SNew(SSpacer))
 						]
-					, FMargin(22.f, 20.f, 86.f, 18.f))
+					, FMargin(22.f, 18.f, 52.f, 18.f))
 				]
 			];
 	}

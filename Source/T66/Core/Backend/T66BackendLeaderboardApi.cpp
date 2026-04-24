@@ -343,23 +343,39 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 		Entry.Rank = static_cast<int32>(E->GetNumberField(TEXT("rank")));
 		Entry.PlayerName = E->GetStringField(TEXT("display_name"));
 		Entry.PlayerNames.Add(Entry.PlayerName);
+		E->TryGetStringField(TEXT("steam_id"), Entry.SteamId);
+		if (!Entry.SteamId.IsEmpty())
+		{
+			Entry.PlayerSteamIds.Add(Entry.SteamId);
+		}
 
 		// For co-op, add party member names
 		const TArray<TSharedPtr<FJsonValue>>* PartyMembers = nullptr;
 		if (E->TryGetArrayField(TEXT("party_members"), PartyMembers) && PartyMembers)
 		{
 			Entry.PlayerNames.Reset();
+			Entry.PlayerSteamIds.Reset();
 			for (const TSharedPtr<FJsonValue>& MVal : *PartyMembers)
 			{
 				const TSharedPtr<FJsonObject>* MObj = nullptr;
 				if (MVal.IsValid() && MVal->TryGetObject(MObj) && MObj && (*MObj).IsValid())
 				{
-					Entry.PlayerNames.Add((*MObj)->GetStringField(TEXT("display_name")));
+					FString MemberDisplayName;
+					(*MObj)->TryGetStringField(TEXT("display_name"), MemberDisplayName);
+					Entry.PlayerNames.Add(MemberDisplayName);
+
+					FString MemberSteamId;
+					(*MObj)->TryGetStringField(TEXT("steam_id"), MemberSteamId);
+					Entry.PlayerSteamIds.Add(MemberSteamId);
 				}
 			}
 			if (Entry.PlayerNames.Num() > 0)
 			{
 				Entry.PlayerName = Entry.PlayerNames[0];
+			}
+			if (Entry.PlayerSteamIds.Num() > 0 && !Entry.PlayerSteamIds[0].IsEmpty())
+			{
+				Entry.SteamId = Entry.PlayerSteamIds[0];
 			}
 		}
 

@@ -1,0 +1,7 @@
+screen=gameplay_hudinventory_inspect
+reference=C:\UE\T66\UI\screens\gameplay_hudinventory_inspect\reference\canonical_reference_1920x1080.png
+packaged_output=C:\UE\T66\UI\screens\gameplay_hudinventory_inspect\outputs\2026-04-24\packaged_runtime_1920x1080.png
+size=1920x1080
+mean_rgb_diff=53.44
+rms_rgb_diff=65.22
+max_channel_diff=255

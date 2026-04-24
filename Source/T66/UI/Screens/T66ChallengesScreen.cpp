@@ -327,28 +327,37 @@ namespace
 			.WidthOverride(MinWidth > 0.f ? MinWidth : FOptionalSize())
 			.HeightOverride(Height > 0.f ? Height : FOptionalSize())
 			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
+				SNew(SButton)
+				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+				.ButtonColorAndOpacity(FLinearColor::Transparent)
+				.ContentPadding(FMargin(0.f))
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				.OnClicked(OnClicked)
+				.OnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Hovered; }))
+				.OnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Normal; }))
+				.OnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Pressed; }))
+				.OnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Hovered; }))
 				[
-					SNew(SImage)
-					.Visibility(EVisibility::HitTestInvisible)
-					.Image(BrushAttr)
-				]
-				+ SOverlay::Slot()
-				[
-					SNew(SButton)
-					.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-					.ButtonColorAndOpacity(FLinearColor::Transparent)
-					.ContentPadding(ContentPadding)
-					.HAlign(HAlign_Fill)
-					.VAlign(VAlign_Center)
-					.OnClicked(OnClicked)
-					.OnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Hovered; }))
-					.OnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Normal; }))
-					.OnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Pressed; }))
-					.OnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Hovered; }))
+					SNew(SOverlay)
+					+ SOverlay::Slot()
 					[
-						Content
+						SNew(SImage)
+						.Visibility(EVisibility::HitTestInvisible)
+						.Image(BrushAttr)
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+						.Padding(ContentPadding)
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Center)
+						[
+							Content
+						]
 					]
 				]
 			];
@@ -896,18 +905,20 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 					[
 						SNew(SBox)
-						.WidthOverride(20.f)
-						.HeightOverride(20.f)
+						.WidthOverride(28.f)
+						.HeightOverride(28.f)
 						[
 							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(bConfirmed ? ChallengeSuccessTint() : FLinearColor(0.10f, 0.12f, 0.11f, 1.0f))
-							.Padding(2.f)
+							.BorderImage(GetChallengeButtonBrush(bConfirmed ? ET66ChallengeButtonFamily::ToggleOn : ET66ChallengeButtonFamily::CompactNeutral, ET66ChallengeButtonState::Normal))
+							.BorderBackgroundColor(FLinearColor::White)
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
+							.Padding(3.f)
 							[
 								SNew(STextBlock)
 								.Text(bConfirmed ? NSLOCTEXT("T66.Challenges", "ConfirmedMarker", "X") : FText::GetEmpty())
-								.Font(FT66Style::Tokens::FontBold(10))
-								.ColorAndOpacity(bConfirmed ? FLinearColor(0.08f, 0.09f, 0.07f, 1.0f) : FLinearColor::Transparent)
+								.Font(FT66Style::Tokens::FontBold(12))
+								.ColorAndOpacity(bConfirmed ? ChallengeFantasyText : FLinearColor::Transparent)
 								.Justification(ETextJustify::Center)
 							]
 						]

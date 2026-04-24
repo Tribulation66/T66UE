@@ -1368,7 +1368,7 @@ namespace
 					PathPoints.Add(FVector2f(static_cast<float>(LocalPoint.X), static_cast<float>(LocalPoint.Y)));
 				}
 
-				DrawLineStrip(PathPoints, 4.f, FLinearColor(1.f, 0.92f, 0.56f, 0.18f), PaintLayer + 1);
+				DrawLineStrip(PathPoints, 3.f, FLinearColor(1.f, 0.92f, 0.56f, 0.05f), PaintLayer + 1);
 			}
 
 			for (int32 PadIndex = 0; PadIndex < LayoutDefinition.Pads.Num(); ++PadIndex)
@@ -1376,7 +1376,7 @@ namespace
 				const FT66TDMapPadDefinition& Pad = LayoutDefinition.Pads[PadIndex];
 				const FVector2D PadCenter = ToLocalPoint(Pad.PositionNormalized, LocalSize);
 				const float PadRadius = FMath::Max(8.f, Pad.RadiusNormalized * LocalSize.X * 1.35f);
-				FLinearColor PadColor = FLinearColor(0.96f, 0.86f, 0.46f, 0.18f);
+				FLinearColor PadColor = FLinearColor(0.96f, 0.86f, 0.46f, 0.04f);
 				if (FindTowerIndexByPad(PadIndex) != INDEX_NONE)
 				{
 					PadColor = FLinearColor(0.18f, 0.18f, 0.20f, 0.36f);
@@ -2768,7 +2768,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 			.BorderBackgroundColor(FLinearColor::Transparent)
 			.Padding(FMargin(1.f))
 			[
-				T66TDUI::MakeContentPanel(
+				T66TDUI::MakeGeneratedPanel(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Top).Padding(0.f, 0.f, 10.f, 0.f)
 					[
@@ -2802,6 +2802,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 						]
 					]
 					,
+					TDBattleRosterRowBrush(),
+					T66TDUI::CardFill(),
 					FMargin(12.f, 9.f))
 			]
 		];
@@ -2838,7 +2840,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 			.SetPadding(FMargin(12.f, 8.f, 12.f, 6.f))
 			.SetUseGlow(false)
 			.SetUseDotaPlateOverlay(true)
-			.SetDotaPlateOverrideBrush(T66TDUI::ButtonPlateBrush(ButtonType))
+			.SetDotaPlateOverrideBrush(TDBattleButtonBrush(ButtonType))
 			.SetTextColor(T66TDUI::BrightText()));
 	};
 
@@ -2854,9 +2856,17 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 			.SetPadding(FMargin(12.f, 7.f, 12.f, 5.f))
 			.SetUseGlow(false)
 			.SetUseDotaPlateOverlay(true)
-			.SetDotaPlateOverrideBrush(T66TDUI::ButtonPlateBrush(ButtonType))
+			.SetDotaPlateOverrideBrush(TDBattleButtonBrush(ButtonType))
 			.SetTextColor(T66TDUI::BrightText()));
 	};
+
+	FT66ButtonParams BackButtonParams = T66TDUI::MakeUtilityButtonParams(
+		NSLOCTEXT("T66TD.Battle", "BackToMaps", "BACK TO MAPS"),
+		FOnClicked::CreateUObject(this, &UT66TDBattleScreen::HandleBackClicked),
+		260.f,
+		44.f,
+		10);
+	BackButtonParams.SetDotaPlateOverrideBrush(TDBattleButtonBrush(ET66ButtonType::Neutral));
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -2879,12 +2889,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 				.WidthOverride(260.f)
 				.HeightOverride(44.f)
 				[
-					FT66Style::MakeButton(T66TDUI::MakeUtilityButtonParams(
-						NSLOCTEXT("T66TD.Battle", "BackToMaps", "BACK TO MAPS"),
-						FOnClicked::CreateUObject(this, &UT66TDBattleScreen::HandleBackClicked),
-						260.f,
-						44.f,
-						10))
+					FT66Style::MakeButton(BackButtonParams)
 				]
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, 24.f, 0.f, 0.f)
@@ -2901,7 +2906,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 				[
 					SNew(SBox).WidthOverride(320.f)
 					[
-						T66TDUI::MakeLeftPanel(
+						T66TDUI::MakeGeneratedPanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight()
 							[
@@ -2927,6 +2932,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 								]
 							]
 							,
+							TDBattleRosterPanelBrush(),
+							T66TDUI::ShellFill(),
 							FMargin(22.f, 20.f))
 					]
 				]
@@ -2935,7 +2942,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-						T66TDUI::MakeCenterPanel(
+						T66TDUI::MakeGeneratedPanel(
 							SNew(SHorizontalBox)
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 18.f, 0.f)
 							[
@@ -2959,11 +2966,13 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 								.ColorAndOpacity(BrightText)
 							]
 							,
+							TDBattleStatsBarBrush(),
+							T66TDUI::PanelFill(),
 							FMargin(18.f, 12.f))
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
 					[
-						T66TDUI::MakeCenterPanel(
+						T66TDUI::MakeGeneratedPanel(
 							SNew(SBox)
 							.WidthOverride(TDBattleBoardSize.X)
 							.HeightOverride(TDBattleBoardSize.Y)
@@ -2985,15 +2994,27 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 								]
 							]
 							,
+							TDBattleBoardFrameBrush(),
+							T66TDUI::PanelFill(),
 							FMargin(10.f))
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
 					[
-						SNew(STextBlock)
-						.Text(StatusText)
-						.Font(FT66Style::MakeFont(TEXT("Regular"), 12))
-						.ColorAndOpacity(MutedText)
-						.AutoWrapText(true)
+						SNew(SBox)
+						.HeightOverride(42.f)
+						[
+							T66TDUI::MakeGeneratedPanel(
+								SNew(STextBlock)
+								.Text(StatusText)
+								.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
+								.ColorAndOpacity(MutedText)
+								.AutoWrapText(true)
+								.Justification(ETextJustify::Center)
+								,
+								TDBattleStatusBarBrush(),
+								T66TDUI::PanelFill(),
+								FMargin(14.f, 6.f))
+						]
 					]
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
@@ -3003,7 +3024,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight()
 						[
-							T66TDUI::MakeRightPanel(
+							T66TDUI::MakeGeneratedPanel(
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight()
 								[
@@ -3047,11 +3068,13 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 									.AutoWrapText(true)
 								]
 								,
+								TDBattleMatchPanelBrush(),
+								T66TDUI::ShellFill(),
 								FMargin(24.f, 22.f))
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 						[
-							T66TDUI::MakeRightPanel(
+							T66TDUI::MakeGeneratedPanel(
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight()
 								[
@@ -3101,6 +3124,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 										ET66ButtonType::Danger)
 								]
 								,
+								TDBattleUpgradePanelBrush(),
+								T66TDUI::ShellFill(),
 								FMargin(24.f, 22.f))
 						]
 					]

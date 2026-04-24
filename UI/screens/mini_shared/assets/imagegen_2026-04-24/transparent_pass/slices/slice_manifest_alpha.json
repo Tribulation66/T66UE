@@ -1,0 +1,249 @@
+{
+  "source": "C:\\UE\\T66\\UI\\screens\\mini_shared\\assets\\imagegen_2026-04-24\\transparent_pass\\mini_common_components_alpha_board.png",
+  "source_size": {
+    "width": 1536,
+    "height": 1024
+  },
+  "slices": {
+    "title_plaque_alpha": {
+      "file": "title_plaque_alpha.png",
+      "rect": {
+        "x": 24,
+        "y": 59,
+        "width": 377,
+        "height": 182
+      },
+      "size": {
+        "width": 377,
+        "height": 182
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/title_plaque_alpha.png",
+      "alpha_pixels": 41098
+    },
+    "panel_large_alpha": {
+      "file": "panel_large_alpha.png",
+      "rect": {
+        "x": 435,
+        "y": 31,
+        "width": 355,
+        "height": 233
+      },
+      "size": {
+        "width": 355,
+        "height": 233
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/panel_large_alpha.png",
+      "alpha_pixels": 66438
+    },
+    "panel_medium_alpha": {
+      "file": "panel_medium_alpha.png",
+      "rect": {
+        "x": 831,
+        "y": 54,
+        "width": 289,
+        "height": 198
+      },
+      "size": {
+        "width": 289,
+        "height": 198
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/panel_medium_alpha.png",
+      "alpha_pixels": 44822
+    },
+    "row_long_alpha": {
+      "file": "row_long_alpha.png",
+      "rect": {
+        "x": 1159,
+        "y": 120,
+        "width": 362,
+        "height": 78
+      },
+      "size": {
+        "width": 362,
+        "height": 78
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/row_long_alpha.png",
+      "alpha_pixels": 17436
+    },
+    "stat_chip_alpha": {
+      "file": "stat_chip_alpha.png",
+      "rect": {
+        "x": 94,
+        "y": 344,
+        "width": 244,
+        "height": 108
+      },
+      "size": {
+        "width": 244,
+        "height": 108
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/stat_chip_alpha.png",
+      "alpha_pixels": 19535
+    },
+    "portrait_frame_square_alpha": {
+      "file": "portrait_frame_square_alpha.png",
+      "rect": {
+        "x": 473,
+        "y": 281,
+        "width": 229,
+        "height": 250
+      },
+      "size": {
+        "width": 229,
+        "height": 250
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/portrait_frame_square_alpha.png",
+      "alpha_pixels": 21469
+    },
+    "card_normal_alpha": {
+      "file": "card_normal_alpha.png",
+      "rect": {
+        "x": 848,
+        "y": 258,
+        "width": 226,
+        "height": 290
+      },
+      "size": {
+        "width": 226,
+        "height": 290
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/card_normal_alpha.png",
+      "alpha_pixels": 50806
+    },
+    "card_selected_alpha": {
+      "file": "card_selected_alpha.png",
+      "rect": {
+        "x": 1182,
+        "y": 259,
+        "width": 256,
+        "height": 295
+      },
+      "size": {
+        "width": 256,
+        "height": 295
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/card_selected_alpha.png",
+      "alpha_pixels": 53203
+    },
+    "card_disabled_alpha": {
+      "file": "card_disabled_alpha.png",
+      "rect": {
+        "x": 93,
+        "y": 498,
+        "width": 208,
+        "height": 267
+      },
+      "size": {
+        "width": 208,
+        "height": 267
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/card_disabled_alpha.png",
+      "alpha_pixels": 42590
+    },
+    "button_green_normal_alpha": {
+      "file": "button_green_normal_alpha.png",
+      "rect": {
+        "x": 392,
+        "y": 590,
+        "width": 348,
+        "height": 159
+      },
+      "size": {
+        "width": 348,
+        "height": 159
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_green_normal_alpha.png",
+      "alpha_pixels": 33551
+    },
+    "button_blue_normal_alpha": {
+      "file": "button_blue_normal_alpha.png",
+      "rect": {
+        "x": 774,
+        "y": 589,
+        "width": 328,
+        "height": 160
+      },
+      "size": {
+        "width": 328,
+        "height": 160
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_blue_normal_alpha.png",
+      "alpha_pixels": 31576
+    },
+    "button_purple_normal_alpha": {
+      "file": "button_purple_normal_alpha.png",
+      "rect": {
+        "x": 1139,
+        "y": 590,
+        "width": 332,
+        "height": 159
+      },
+      "size": {
+        "width": 332,
+        "height": 159
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_purple_normal_alpha.png",
+      "alpha_pixels": 31690
+    },
+    "idol_offer_row_alpha": {
+      "file": "idol_offer_row_alpha.png",
+      "rect": {
+        "x": 21,
+        "y": 816,
+        "width": 406,
+        "height": 140
+      },
+      "size": {
+        "width": 406,
+        "height": 140
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/idol_offer_row_alpha.png",
+      "alpha_pixels": 36348
+    },
+    "idol_offer_row_action_alpha": {
+      "file": "idol_offer_row_action_alpha.png",
+      "rect": {
+        "x": 438,
+        "y": 826,
+        "width": 397,
+        "height": 127
+      },
+      "size": {
+        "width": 397,
+        "height": 127
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/idol_offer_row_action_alpha.png",
+      "alpha_pixels": 34367
+    },
+    "badge_frame_alpha": {
+      "file": "badge_frame_alpha.png",
+      "rect": {
+        "x": 865,
+        "y": 775,
+        "width": 192,
+        "height": 195
+      },
+      "size": {
+        "width": 192,
+        "height": 195
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/badge_frame_alpha.png",
+      "alpha_pixels": 23357
+    },
+    "summary_row_alpha": {
+      "file": "summary_row_alpha.png",
+      "rect": {
+        "x": 1112,
+        "y": 808,
+        "width": 401,
+        "height": 146
+      },
+      "size": {
+        "width": 401,
+        "height": 146
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/summary_row_alpha.png",
+      "alpha_pixels": 35598
+    }
+  }
+}

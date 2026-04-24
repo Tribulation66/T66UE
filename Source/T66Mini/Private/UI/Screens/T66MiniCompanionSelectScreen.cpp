@@ -282,16 +282,18 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 					]
 				])
 			: StaticCastSharedRef<SWidget>(
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(PlaceholderColor)
-				.Padding(FMargin(10.f))
+				SNew(SBox)
+				.WidthOverride(Width)
+				.HeightOverride(Height)
 				[
-					SNew(STextBlock)
-					.Text(FText::FromString(FallbackText))
-					.Font(T66MiniUI::BoldFont(FontSize))
-					.ColorAndOpacity(FLinearColor::White)
-					.Justification(ETextJustify::Center)
+					T66MiniGeneratedChrome::MakePanel(
+						SNew(STextBlock)
+						.Text(FText::FromString(FallbackText))
+						.Font(T66MiniUI::BoldFont(FontSize))
+						.ColorAndOpacity(FLinearColor::White)
+						.Justification(ETextJustify::Center),
+						FMargin(4.f),
+						T66MiniGeneratedChrome::ESlice::PortraitFrame)
 				]);
 	};
 
@@ -585,7 +587,7 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 			.WidthOverride(226.f)
 			.HeightOverride(58.f)
 			[
-				FT66Style::MakeButton(
+				T66MiniGeneratedChrome::MakeButton(
 					T66MiniGeneratedChrome::MakeButtonParams(
 						NSLOCTEXT("T66Mini.CompanionSelect", "Continue", "CONTINUE"),
 						FOnClicked::CreateUObject(this, &UT66MiniCompanionSelectScreen::HandleContinueClicked),

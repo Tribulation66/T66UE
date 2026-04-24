@@ -1,6 +1,6 @@
 # T66 Master Steamworks
 
-**Last updated:** 2026-04-20
+**Last updated:** 2026-04-24
 **Scope:** Steamworks memory file and operating guideline for future agents. This is the canonical handoff for T66 Steam app state, SteamPipe upload workflow, private-testing process, current known build state, and the repeatable PowerShell flow used on this machine.  
 **Companion docs:** `MASTER DOCS/MASTER_BACKEND.md`, `MASTER DOCS/T66_MASTER_GUIDELINES.md`  
 **Maintenance rule:** Update this file after any Steamworks change, Steam build upload, branch/live-build switch, key request, release-state change, or multiplayer-validation milestone. If the change also affects backend auth/routes, update `MASTER DOCS/MASTER_BACKEND.md` in the same pass.
@@ -10,8 +10,8 @@
 - **Steam app:** `CHADPOCALYPSE`
 - **AppID:** `4464300`
 - **Primary Windows depot:** `4464301`
-- **Last confirmed local Steam install state on this machine:** `appmanifest_4464300.acf` currently shows `buildid "22857450"` and `TargetBuildID "22857450"` on 2026-04-19. Re-check the manifest after setting the newest build live.
-- **Newest uploaded Steam build (not live until branch switch):** `22866715` uploaded on 2026-04-20 for the missing frontend top-bar recovery fix in the UI manager/deferred rebuild path
+- **Last confirmed local Steam install state on this machine:** `appmanifest_4464300.acf` currently shows `buildid "22891328"` and `TargetBuildID "22891328"` on 2026-04-24. Re-check the manifest after setting the newest build live.
+- **Newest uploaded Steam build (not live until branch switch):** `22947092` uploaded on 2026-04-24 for the clean Steam leaderboard identity pass
 - **Current release model:** unreleased app, private testing through Steam + Release Override keys
 - **Current default branch used for testing:** `default`
 - **Current Git backup snapshot:** branch `codex/version-2.4`, tag `v2.4`, commit `b4483160`
@@ -271,3 +271,41 @@ When resuming Steam/Steamworks work:
 - The successful upload path used the wrapper against `C:\UE\T66\Saved\StagedBuilds\Windows` and produced build `22857027`.
 - This upload contains the proper stage-clear leaderboard fix: speedrun-enabled difficulty clears now submit through one authoritative backend request instead of the previous score-submit plus completed-run-submit pair.
 - If the Steam client on this machine still shows `22856853`, the new build has not been set live on the branch yet or the client has not refreshed after the branch switch.
+
+## 13. 2026-04-24 Upload Note
+
+- Uploaded build: `22946412`
+- Build description: `Steam live content UI pass 2026-04-24`
+- Build source used: `C:\UE\T66\Saved\StagedBuilds\Windows`
+- Steam content root refreshed before upload: `C:\SteamworksSDK\sdk\tools\ContentBuilder\content\CHADPOCALYPSE`
+- Upload command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "C:\UE\T66\Tools\Steam\UploadToSteam.ps1" `
+  -BuildSource "C:\UE\T66\Saved\StagedBuilds\Windows" `
+  -Description "Steam live content UI pass 2026-04-24"
+```
+
+- SteamCMD used cached credentials for `tribulation66` and completed `run_app_build` successfully.
+- This upload was not set live by the wrapper. The user still needs to open the Steamworks builds page for AppID `4464300`, choose build `22946412`, preview the branch change, and set it live on the intended branch.
+- Last checked local Steam client install before the branch switch: `appmanifest_4464300.acf` had `buildid "22891328"` and `TargetBuildID "22891328"`.
+
+## 14. 2026-04-24 Clean Leaderboard Identity Upload Note
+
+- Clean uploaded build: `22947092`
+- Supersedes build `22947065`, which uploaded successfully but included the local-only `steam_appid.txt` warning and should not be published.
+- Build description: `Steam leaderboard identity pass 2026-04-24 clean depot`
+- Build source used: `C:\UE\T66\Saved\StagedBuilds\Windows`
+- Steam content root refreshed before upload: `C:\SteamworksSDK\sdk\tools\ContentBuilder\content\CHADPOCALYPSE`
+- Upload command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "C:\UE\T66\Tools\Steam\UploadToSteam.ps1" `
+  -BuildSource "C:\UE\T66\Saved\StagedBuilds\Windows" `
+  -Description "Steam leaderboard identity pass 2026-04-24 clean depot"
+```
+
+- `Tools\Steam\UploadToSteam.ps1` now removes local-only `steam_appid.txt` from the ContentBuilder content root before upload, because SteamPipe warned that file should not be included in depots.
+- SteamCMD used cached credentials for `tribulation66` and completed `run_app_build` successfully.
+- This upload was not set live by the wrapper. Publish build `22947092` from the Steamworks builds page when moving the intended branch forward.
+- Local packaged capture for the pass: `C:\UE\T66\UI\screens\main_menu\outputs\2026-04-24\steam_leaderboard_identity_pass_final.png`.

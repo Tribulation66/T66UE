@@ -167,37 +167,37 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 								+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
 								[
 									FT66Style::MakeButton(
-										FT66ButtonParams(
+										FT66Style::MakeInRunButtonParams(
 											VendorTabText,
 											FOnClicked::CreateLambda([this]() { OpenVendorTab(); return FReply::Handled(); }),
 									ET66ButtonType::Primary)
 									.SetPadding(ShellButtonPadding)
 									.SetFontSize(ShellButtonFontSize)
-									.SetUseDotaPlateOverlay(false)
+									.SetDotaPlateOverrideBrush(FT66Style::GetInRunTabPlateBrush(true))
 								)
 								]
 								+ SHorizontalBox::Slot().AutoWidth()
 								[
 									FT66Style::MakeButton(
-										FT66ButtonParams(
+										FT66Style::MakeInRunButtonParams(
 											GamblingTabText,
 											FOnClicked::CreateLambda([this]() { OpenGamblingTab(); return FReply::Handled(); }),
 									ET66ButtonType::Primary)
 									.SetPadding(ShellButtonPadding)
 									.SetFontSize(ShellButtonFontSize)
-									.SetUseDotaPlateOverlay(false)
+									.SetDotaPlateOverrideBrush(FT66Style::GetInRunTabPlateBrush(true))
 								)
 								]
 								+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
 								[
 									FT66Style::MakeButton(
-										FT66ButtonParams(
+										FT66Style::MakeInRunButtonParams(
 											AlchemyTabText,
 											FOnClicked::CreateLambda([this]() { OpenAlchemyTab(); return FReply::Handled(); }),
 									ET66ButtonType::Primary)
 									.SetPadding(ShellButtonPadding)
 									.SetFontSize(ShellButtonFontSize)
-									.SetUseDotaPlateOverlay(false)
+									.SetDotaPlateOverrideBrush(FT66Style::GetInRunTabPlateBrush(true))
 								)
 								]
 							]
@@ -208,13 +208,12 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 							+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Right).VAlign(VAlign_Center)
 							[
 								FT66Style::MakeButton(
-									FT66ButtonParams(
+									FT66Style::MakeInRunButtonParams(
 										CloseText,
 										FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }),
 								ET66ButtonType::Danger)
 								.SetPadding(ShellButtonPadding)
 								.SetFontSize(ShellButtonFontSize)
-								.SetUseDotaPlateOverlay(false)
 							)
 							],
 							FT66PanelParams(ET66PanelType::Panel2)
@@ -378,14 +377,13 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 	};
 
 	TSharedRef<SWidget> UpgradeButtonWidget = FT66Style::MakeButton(
-		FT66ButtonParams(
+		FT66Style::MakeInRunButtonParams(
 			UpgradeText,
 			FOnClicked::CreateUObject(this, &UT66CasinoOverlayWidget::OnAlchemyTransmuteClicked),
 		ET66ButtonType::Success)
 	.SetMinWidth(CardWidth)
 	.SetPadding(CompactButtonPadding)
 	.SetFontSize(SectionFontSize)
-	.SetUseDotaPlateOverlay(false)
 );
 	AlchemyUpgradeButton = UpgradeButtonWidget;
 

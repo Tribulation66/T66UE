@@ -962,12 +962,6 @@ public:
 	FText GetText_LetMeGamble() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_TeleportMeToYourBrother() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_TeleportDisabledBossActive() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_Bet() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")

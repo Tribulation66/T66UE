@@ -34,12 +34,12 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Engine/Texture2D.h"
 
-static FString MakeInventoryStackKey(const FT66InventorySlot& Slot)
+static FString MakeGamblerBuildInventoryStackKey(const FT66InventorySlot& Slot)
 {
 	return FString::Printf(TEXT("%s|%d"), *Slot.ItemTemplateID.ToString(), static_cast<int32>(Slot.Rarity));
 }
 
-static FText BuildGamblerWagerText(const int32 WagerAmount)
+static FText BuildGamblerBuildWagerText(const int32 WagerAmount)
 {
 	return WagerAmount > 0
 		? FText::Format(NSLOCTEXT("T66.Gambler", "WagerFormat", "Wager: {0}"), FText::AsNumber(WagerAmount))
@@ -47,7 +47,7 @@ static FText BuildGamblerWagerText(const int32 WagerAmount)
 }
 
 template <typename TNpcType>
-static TNpcType* GetRegisteredGamblerOverlayNpc(UWorld* World)
+static TNpcType* GetRegisteredGamblerBuildNpc(UWorld* World)
 {
 	if (!World)
 	{
@@ -68,7 +68,7 @@ static TNpcType* GetRegisteredGamblerOverlayNpc(UWorld* World)
 	return nullptr;
 }
 
-static bool HasRegisteredGamblerOverlayBoss(UWorld* World)
+static bool HasRegisteredGamblerBuildBoss(UWorld* World)
 {
 	if (!World)
 	{
@@ -91,7 +91,7 @@ static bool HasRegisteredGamblerOverlayBoss(UWorld* World)
 
 namespace
 {
-	static int32 T66BuildNumberMask(const TSet<int32>& Numbers)
+	static int32 T66BuildGamblerBuildNumberMask(const TSet<int32>& Numbers)
 	{
 		int32 Mask = 0;
 		for (const int32 Number : Numbers)
@@ -104,7 +104,7 @@ namespace
 		return Mask;
 	}
 
-	static int32 T66BuildNumberMask(const TArray<int32>& Numbers)
+	static int32 T66BuildGamblerBuildNumberMask(const TArray<int32>& Numbers)
 	{
 		int32 Mask = 0;
 		for (const int32 Number : Numbers)
@@ -117,13 +117,13 @@ namespace
 		return Mask;
 	}
 
-	static int32 T66GetPlinkoPayoutTierFromSlot(const int32 SlotIndex)
+	static int32 T66GetGamblerBuildPlinkoPayoutTierFromSlot(const int32 SlotIndex)
 	{
 		static const int32 Tiers[9] = { 4, 3, 2, 1, 0, 1, 2, 3, 4 };
 		return Tiers[FMath::Clamp(SlotIndex, 0, 8)];
 	}
 
-	static ET66Rarity T66BoxOpeningIndexToRarity(const int32 ColorIndex)
+	static ET66Rarity T66GamblerBuildBoxOpeningIndexToRarity(const int32 ColorIndex)
 	{
 		switch (ColorIndex)
 		{
@@ -377,24 +377,12 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
-			FT66Style::MakeButton(FT66ButtonParams(
+			FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 				Loc ? Loc->GetText_LetMeGamble() : FText::GetEmpty(),
 				FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnDialogueGamble),
 				ET66ButtonType::Primary)
 				.SetMinWidth(420.f)
 				.SetPadding(FMargin(18.f, 10.f)))
-		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-		[
-			SAssignNew(DialogueTeleportButtonWidget, SBox)
-			[
-				FT66Style::MakeButton(FT66ButtonParams(
-					Loc ? Loc->GetText_TeleportMeToYourBrother() : FText::GetEmpty(),
-					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnDialogueTeleport),
-					ET66ButtonType::Neutral)
-					.SetMinWidth(420.f)
-					.SetPadding(FMargin(18.f, 10.f)))
-			]
 		];
 
 	// --- Casino layout: left content switcher + right panel + bottom inventory ---
@@ -470,7 +458,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
-							FT66Style::MakeButton(FT66ButtonParams(
+							FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 								Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Vendor", "Borrow_Button", "BORROW"),
 								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBorrowClicked),
 								ET66ButtonType::Neutral)
@@ -497,7 +485,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
-							FT66Style::MakeButton(FT66ButtonParams(
+							FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 								Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Vendor", "Payback_Button", "PAYBACK"),
 								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackClicked),
 								ET66ButtonType::Neutral)
@@ -517,7 +505,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	{
 		const FText PlayText = NSLOCTEXT("T66.Gambler", "Play", "Play");
 		TSharedRef<SWidget> PlayBtn = FT66Style::MakeButton(
-			FT66ButtonParams(PlayText, OnClicked, ET66ButtonType::Primary)
+			FT66Style::MakeInRunButtonParams(PlayText, OnClicked, ET66ButtonType::Primary)
 			.SetMinWidth(bCompactCasinoLayout ? 0.f : 100.f)
 			.SetPadding(CardButtonPadding)
 			.SetFontSize(CardButtonFontSize));
@@ -593,7 +581,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, bCompactCasinoLayout ? 10.f : 28.f, 0.f, 0.f)
 		[
 			FT66Style::MakeButton(
-				FT66ButtonParams(MoreGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnMoreGamesClicked), ET66ButtonType::Neutral)
+				FT66Style::MakeInRunButtonParams(MoreGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnMoreGamesClicked), ET66ButtonType::Neutral)
 				.SetMinWidth(0.f)
 				.SetPadding(bCompactCasinoLayout ? FMargin(10.f, 6.f) : FMargin(20.f, 12.f))
 				.SetFontSize(bCompactCasinoLayout ? CardButtonFontSize : 16))
@@ -617,7 +605,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f, 0.f)
 		[
 			FT66Style::MakeButton(
-				FT66ButtonParams(BackToGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBackToMainGames), ET66ButtonType::Neutral)
+				FT66Style::MakeInRunButtonParams(BackToGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBackToMainGames), ET66ButtonType::Neutral)
 				.SetMinWidth(0.f)
 				.SetPadding(bCompactCasinoLayout ? FMargin(10.f, 6.f) : FMargin(20.f, 12.f))
 				.SetFontSize(bCompactCasinoLayout ? CardButtonFontSize : 16))
@@ -639,7 +627,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
+				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
 					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
@@ -705,7 +693,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
+				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Heads() : FText::GetEmpty(),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCoinFlipHeads),
 					ET66ButtonType::Primary)
@@ -714,7 +702,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
+				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Tails() : FText::GetEmpty(),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCoinFlipTails),
 					ET66ButtonType::Primary)
@@ -730,7 +718,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
+				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
 					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
@@ -812,7 +800,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
+				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Rock() : FText::GetEmpty(),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsRock),
 					ET66ButtonType::Primary)
@@ -821,7 +809,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
+				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Paper() : FText::GetEmpty(),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsPaper),
 					ET66ButtonType::Primary)
@@ -830,7 +818,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
+				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Scissors() : FText::GetEmpty(),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsScissors),
 					ET66ButtonType::Primary)
@@ -906,7 +894,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
+				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
 					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
@@ -975,7 +963,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackDealButtonBox, SBox)
 				.Visibility(EVisibility::Visible)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(
+					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 						NSLOCTEXT("T66.Gambler", "Deal", "Deal"),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJDealClicked),
 						ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
@@ -986,7 +974,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackHitButtonBox, SBox)
 				.Visibility(EVisibility::Collapsed)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(
+					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 						Loc ? Loc->GetText_Hit() : FText::GetEmpty(),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJHit),
 						ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
@@ -997,7 +985,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackStandButtonBox, SBox)
 				.Visibility(EVisibility::Collapsed)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(
+					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 						Loc ? Loc->GetText_Stand() : FText::GetEmpty(),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJStand),
 						ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
@@ -1008,7 +996,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackDoubleButtonBox, SBox)
 				.Visibility(EVisibility::Collapsed)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(
+					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 						Loc ? Loc->GetText_Double() : FText::GetEmpty(),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJDouble),
 						ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
@@ -1019,7 +1007,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackSplitButtonBox, SBox)
 				.Visibility(EVisibility::Collapsed)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(
+					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 						Loc ? Loc->GetText_Split() : FText::GetEmpty(),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJSplit),
 						ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
@@ -1033,7 +1021,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		return SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
+				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
 					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
@@ -1054,7 +1042,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		[
 			FT66Style::MakePanel(
 				FT66Style::MakeButton(
-					FT66ButtonParams(FText::AsNumber(Num), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnLotteryNumberClicked, Num), ET66ButtonType::Neutral)
+					FT66Style::MakeInRunButtonParams(FText::AsNumber(Num), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnLotteryNumberClicked, Num), ET66ButtonType::Neutral)
 					.SetMinWidth(0.f).SetPadding(FMargin(10.f, 8.f))),
 				FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f),
 				&LotteryNumberBorders[i])
@@ -1227,7 +1215,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		]
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 		[
-			FT66Style::MakeButton(FT66ButtonParams(
+			FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 				Loc ? Loc->GetText_Bet() : NSLOCTEXT("T66.Gambler", "Bet", "Bet"),
 				FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBetClicked),
 				ET66ButtonType::Neutral)
@@ -1280,7 +1268,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	for (int32 i = 0; i < BuybackSlotCount; ++i)
 	{
 		TSharedRef<SWidget> BuybackBtnWidget = FT66Style::MakeButton(
-			FT66ButtonParams(
+			FT66Style::MakeInRunButtonParams(
 				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
 				FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBuybackSlot, i),
 				ET66ButtonType::Primary)
@@ -1364,7 +1352,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
 			[
 				FT66Style::MakeButton(
-					FT66ButtonParams(
+					FT66Style::MakeInRunButtonParams(
 						BuybackTitle,
 						FOnClicked::CreateLambda([this]()
 						{
@@ -1410,7 +1398,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(CasinoRerollButtonWidget, SBox)
 				[
 					FT66Style::MakeButton(
-					FT66ButtonParams(
+					FT66Style::MakeInRunButtonParams(
 						RerollText,
 						FOnClicked::CreateLambda([this]()
 						{
@@ -1433,7 +1421,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
 			[
 				FT66Style::MakeButton(
-					FT66ButtonParams(CasinoTitle, FOnClicked::CreateLambda([this]() {
+					FT66Style::MakeInRunButtonParams(CasinoTitle, FOnClicked::CreateLambda([this]() {
 						if (CasinoBuybackSwitcher.IsValid()) { CasinoBuybackSwitcher->SetActiveWidgetIndex(0); }
 						RefreshCasinoGameChrome();
 						return FReply::Handled();
@@ -1444,7 +1432,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
 				FT66Style::MakeButton(
-					FT66ButtonParams(BuybackTitle, FOnClicked::CreateLambda([this]() {
+					FT66Style::MakeInRunButtonParams(BuybackTitle, FOnClicked::CreateLambda([this]() {
 						if (CasinoBuybackSwitcher.IsValid()) { CasinoBuybackSwitcher->SetActiveWidgetIndex(1); }
 						if (UT66RunStateSubsystem* RS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr) { if (RS) RS->GenerateBuybackDisplay(); }
 						RefreshBuyback();
@@ -1493,7 +1481,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						SAssignNew(CasinoRerollButtonWidget, SBox)
 						[
 							FT66Style::MakeButton(
-							FT66ButtonParams(RerollText,
+							FT66Style::MakeInRunButtonParams(RerollText,
 								FOnClicked::CreateLambda([this]() {
 									if (UT66RunStateSubsystem* RS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr) { if (RS) RS->RerollBuybackDisplay(); }
 									RefreshBuyback();
@@ -1555,7 +1543,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 
 	// Pre-create sell button for centralized styling
 	SellItemButton = FT66Style::MakeButton(
-		FT66ButtonParams(
+		FT66Style::MakeInRunButtonParams(
 			Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL"),
 			FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnSellSelectedClicked),
 			ET66ButtonType::Primary)
@@ -1793,7 +1781,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SAssignNew(CloseButtonBox, SBox)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(
+					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 						NSLOCTEXT("T66.Common", "Close", "CLOSE"),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBack),
 						ET66ButtonType::Danger)
@@ -1829,7 +1817,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
-							FT66Style::MakeButton(FT66ButtonParams(
+							FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 								Loc ? Loc->GetText_Yes() : FText::GetEmpty(),
 								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCheatYes),
 								ET66ButtonType::Danger)
@@ -1838,7 +1826,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						]
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
-							FT66Style::MakeButton(FT66ButtonParams(
+							FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
 								Loc ? Loc->GetText_No() : FText::GetEmpty(),
 								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCheatNo),
 								ET66ButtonType::Neutral)

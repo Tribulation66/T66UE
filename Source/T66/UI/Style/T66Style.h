@@ -429,6 +429,13 @@ public:
 	/** Full params overload — handles every button variant in the game. */
 	static TSharedRef<SWidget> MakeButton(const FT66ButtonParams& Params);
 
+	static FT66ButtonParams MakeInRunButtonParams(
+		const FText& Label,
+		FOnClicked OnClicked,
+		ET66ButtonType Type = ET66ButtonType::Neutral);
+	static const FSlateBrush* GetInRunButtonPlateBrush(ET66ButtonType Type);
+	static const FSlateBrush* GetInRunTabPlateBrush(bool bSelected);
+
 	/** Convenience overload for simple buttons (wraps the params version). */
 	static TSharedRef<SWidget> MakeButton(
 		const FText& Label,

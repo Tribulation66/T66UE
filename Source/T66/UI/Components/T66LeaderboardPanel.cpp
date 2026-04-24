@@ -4,7 +4,9 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66BackendSubsystem.h"
+#include "Core/T66PartySubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66SteamHelper.h"
 #include "Core/T66WebImageCache.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -83,25 +85,6 @@ namespace
 		case ET66PartySize::Quad: return 4;
 		default: return 1;
 		}
-	}
-
-	const TArray<FString>& GetFallbackLeaderboardNamePool()
-	{
-		static const TArray<FString> Pool = {
-			TEXT("BestBuddy"), TEXT("SquadLeader"), TEXT("NightOwl"), TEXT("LootGoblin"),
-			TEXT("DungeonDad"), TEXT("PixelPaladin"), TEXT("CouchWarrior"), TEXT("SneakySteve"),
-			TEXT("RiftRunner"), TEXT("AshenWolf"), TEXT("NorthStar"), TEXT("ShadyDealer"),
-			TEXT("GoldTooth"), TEXT("ArcLight"), TEXT("HollowKing"), TEXT("BrickHouse"),
-			TEXT("LuckyShot"), TEXT("ZeroMercy"), TEXT("OldFaithful"), TEXT("HexDoctor"),
-			TEXT("DeadeyeDan"), TEXT("SableFox"), TEXT("TorchBearer"), TEXT("SteelDrift"),
-			TEXT("Moondrop"), TEXT("VileSaint"), TEXT("RavenCrow"), TEXT("BluntForce"),
-			TEXT("WildCard"), TEXT("DustWalker"), TEXT("ColdBlood"), TEXT("WraithLine"),
-			TEXT("LastLaugh"), TEXT("IronHorn"), TEXT("HighRoller"), TEXT("GrimNorth"),
-			TEXT("Lockjaw"), TEXT("RatKing"), TEXT("Firebreak"), TEXT("Gravelord"),
-			TEXT("DreadMoon"), TEXT("Crowbar"), TEXT("LongRoad"), TEXT("BoneSaw"),
-			TEXT("RustBelt"), TEXT("SaintZero"), TEXT("BlackCoat"), TEXT("HardReset")
-		};
-		return Pool;
 	}
 
 	const TArray<FString>& GetSyntheticLeaderboardTokens()
@@ -1488,16 +1471,9 @@ void ST66LeaderboardPanel::RebuildEntryList()
 	if (bReferenceMirrorMode)
 	{
 		const FSlateBrush* AvatarFrameBrush = ReferenceAvatarFrameBrush.Brush.IsValid() ? ReferenceAvatarFrameBrush.Brush.Get() : nullptr;
-		const TArray<const FSlateBrush*> ReferenceFallbackPortraits = {
-			ReferenceAvatarFallbackBrush01.Brush.IsValid() ? ReferenceAvatarFallbackBrush01.Brush.Get() : nullptr,
-			ReferenceAvatarFallbackBrush02.Brush.IsValid() ? ReferenceAvatarFallbackBrush02.Brush.Get() : nullptr,
-			ReferenceAvatarFallbackBrush03.Brush.IsValid() ? ReferenceAvatarFallbackBrush03.Brush.Get() : nullptr,
-		};
 		const FSlateFontInfo ReferenceRankFont = FT66Style::MakeFont(TEXT("Bold"), 13);
 		const FSlateFontInfo ReferenceNameFont = FT66Style::MakeFont(TEXT("Regular"), 14);
 		const FSlateFontInfo ReferenceScoreFont = FT66Style::MakeFont(TEXT("Regular"), 14);
-		UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
-		UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
 
 		for (int32 EntryIndex = 0; EntryIndex < LeaderboardEntries.Num(); ++EntryIndex)
 		{
@@ -1517,40 +1493,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			const FString MetricString = (CurrentTimeFilter == ET66LeaderboardTime::Daily || CurrentType == ET66LeaderboardType::Score)
 				? FString::Printf(TEXT("%lld"), Entry.Score)
 				: FormatTime(Entry.TimeSeconds);
-			const FString DisplayName = GetLeaderboardEntryDisplayName(Entry);
-			const FSlateBrush* PortraitBrush = nullptr;
-			if (!Entry.AvatarUrl.IsEmpty())
-			{
-				const FSlateBrush* AvatarBrush = GetOrCreateAvatarBrush(Entry.AvatarUrl);
-				if (AvatarBrush && AvatarBrush != DefaultAvatarBrush.Get() && AvatarBrush->GetResourceObject() != nullptr)
-				{
-					PortraitBrush = AvatarBrush;
-				}
-			}
-			if (PortraitBrush == nullptr)
-			{
-				const FName ReferenceHeroID = FName(*FString::Printf(TEXT("Hero_%d"), (EntryIndex % 16) + 1));
-				const FName HeroIDForPortrait = bReferenceMirrorMode ? ReferenceHeroID : GetFallbackHeroId(T66GI, EntryIndex);
-				const FSlateBrush* HeroPortraitBrush = GetOrCreateHeroPortraitBrush(HeroIDForPortrait);
-				if (HeroPortraitBrush
-					&& HeroPortraitBrush != DefaultAvatarBrush.Get()
-					&& HeroPortraitBrush->GetResourceObject() != nullptr)
-				{
-					PortraitBrush = HeroPortraitBrush;
-				}
-				if (PortraitBrush == DefaultAvatarBrush.Get())
-				{
-					PortraitBrush = nullptr;
-				}
-				if (PortraitBrush == nullptr && ReferenceFallbackPortraits.Num() > 0)
-				{
-					PortraitBrush = ReferenceFallbackPortraits[EntryIndex % ReferenceFallbackPortraits.Num()];
-				}
-			}
-			if (PortraitBrush)
-			{
-				const_cast<FSlateBrush*>(PortraitBrush)->ImageSize = ReferenceAvatarInsetSize;
-			}
 
 			auto SetHovered = [bIsRowHovered](const bool bHovered)
 			{
@@ -1585,14 +1527,46 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				SNew(SBox)
 				.WidthOverride(ReferenceAvatarFrameSize.X)
 				.HeightOverride(ReferenceAvatarFrameSize.Y)
+				.Clipping(EWidgetClipping::ClipToBounds)
 				[
-					SNew(SBorder)
-					.BorderImage(AvatarFrameBrush ? AvatarFrameBrush : FCoreStyle::Get().GetBrush("NoBrush"))
-					.BorderBackgroundColor(AvatarFrameBrush ? FLinearColor::White : FLinearColor::Transparent)
-					.Padding(FMargin(4.f))
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						SNew(SBox)
+						.WidthOverride(ReferenceAvatarInsetSize.X)
+						.HeightOverride(ReferenceAvatarInsetSize.Y)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.035f, 0.037f, 0.045f, 1.0f))
+							.Padding(FMargin(0.f))
+							[
+								SNew(SImage)
+								.Image_Lambda([this, Entry]() -> const FSlateBrush*
+								{
+									const FSlateBrush* PortraitBrush = GetPortraitBrushForEntry(Entry);
+									if (PortraitBrush == DefaultAvatarBrush.Get())
+									{
+										return nullptr;
+									}
+									if (PortraitBrush)
+									{
+										const_cast<FSlateBrush*>(PortraitBrush)->ImageSize = ReferenceAvatarInsetSize;
+									}
+									return PortraitBrush;
+								})
+							]
+						]
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
 					[
 						SNew(SImage)
-						.Image(PortraitBrush)
+						.Image(AvatarFrameBrush)
+						.ColorAndOpacity(AvatarFrameBrush ? FLinearColor::White : FLinearColor::Transparent)
 					]
 				];
 
@@ -1620,7 +1594,10 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center).Padding(12.f, 0.f, 0.f, 0.f)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(DisplayName))
+					.Text_Lambda([this, Entry]()
+					{
+						return FText::FromString(ResolveEntryDisplayName(Entry));
+					})
 					.Font(ReferenceNameFont)
 					.ColorAndOpacity(ReferenceLeaderboardText)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
@@ -1704,8 +1681,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			DisplayNames.Add(Entry.PlayerName);
 		}
 
-		UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
-		UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
 		const float NameFontSize = static_cast<float>(LeaderboardBodyFontSize);
 		const float MemberPortraitSize = FMath::RoundToFloat(NameFontSize + 6.0f);
 		const float PartyStripMinHeight = FMath::Max(MemberPortraitSize, NameFontSize) - 1.0f;
@@ -1714,25 +1689,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 		TSharedRef<SHorizontalBox> NameColumn = SNew(SHorizontalBox);
 		for (int32 NameIndex = 0; NameIndex < DisplayNames.Num(); ++NameIndex)
 		{
-			const FString& DisplayName = DisplayNames[NameIndex];
-			FName MemberHeroID = (NameIndex == 0 && !Entry.HeroID.IsNone())
-				? Entry.HeroID
-				: GetFallbackHeroId(T66GI, (FMath::Max(1, Entry.Rank) - 1) * 4 + NameIndex);
-
-			const FSlateBrush* MemberPortrait = nullptr;
-			if (NameIndex == 0 && !Entry.AvatarUrl.IsEmpty())
-			{
-				const FSlateBrush* AvatarBrush = GetOrCreateAvatarBrush(Entry.AvatarUrl);
-				if (AvatarBrush && AvatarBrush != DefaultAvatarBrush.Get())
-				{
-					MemberPortrait = AvatarBrush;
-				}
-			}
-			if (MemberPortrait == nullptr)
-			{
-				MemberPortrait = GetOrCreateHeroPortraitBrush(MemberHeroID);
-			}
-
 			NameColumn->AddSlot()
 			.AutoWidth()
 			.VAlign(VAlign_Center)
@@ -1748,7 +1704,11 @@ void ST66LeaderboardPanel::RebuildEntryList()
 					.HeightOverride(MemberPortraitSize)
 					[
 						SNew(SImage)
-						.Image(MemberPortrait)
+						.Image_Lambda([this, Entry, NameIndex]() -> const FSlateBrush*
+						{
+							const FSlateBrush* MemberPortrait = GetPortraitBrushForEntryMember(Entry, NameIndex);
+							return MemberPortrait == DefaultAvatarBrush.Get() ? nullptr : MemberPortrait;
+						})
 					]
 				]
 				+ SHorizontalBox::Slot()
@@ -1757,7 +1717,10 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				.Padding(4.0f, 0.0f, 0.0f, 0.0f)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(DisplayName))
+					.Text_Lambda([this, Entry, NameIndex]()
+					{
+						return FText::FromString(ResolveEntryMemberDisplayName(Entry, NameIndex));
+					})
 					.Font(FT66Style::Tokens::FontRegular(NameFontSize))
 					.ColorAndOpacity(LeaderboardNameText)
 				]
@@ -1935,7 +1898,7 @@ FT66FavoriteLeaderboardRun ST66LeaderboardPanel::MakeFavoriteRunFromEntry(const 
 	Favorite.Difficulty = CurrentDifficulty;
 	Favorite.PartySize = CurrentPartySize;
 	Favorite.Rank = Entry.Rank;
-	Favorite.DisplayName = GetLeaderboardEntryDisplayName(Entry);
+	Favorite.DisplayName = ResolveEntryDisplayName(Entry);
 	Favorite.Score = Entry.Score;
 	Favorite.TimeSeconds = Entry.TimeSeconds;
 	Favorite.bHasRunSummary = Entry.bHasRunSummary;
@@ -2445,8 +2408,11 @@ void ST66LeaderboardPanel::NormalizeEntryIdentity(FLeaderboardEntry& Entry, int3
 	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
 
 	const int32 PartyMemberCount = GetPartyMemberCount(Entry.PartySize);
-	const TArray<FString>& FallbackNames = GetFallbackLeaderboardNamePool();
 	const int32 FallbackStartIndex = FMath::Max(0, EntryIndex) * 4;
+	if (Entry.PlayerSteamIds.Num() == 0 && !Entry.SteamId.IsEmpty())
+	{
+		Entry.PlayerSteamIds.Add(Entry.SteamId);
+	}
 
 	TArray<FString> CleanNames;
 	auto TryAddCleanName = [&CleanNames](const FString& Candidate)
@@ -2459,12 +2425,16 @@ void ST66LeaderboardPanel::NormalizeEntryIdentity(FLeaderboardEntry& Entry, int3
 		CleanNames.Add(Trimmed);
 	};
 
-	for (const FString& Name : Entry.PlayerNames)
+	for (int32 NameIndex = 0; NameIndex < Entry.PlayerNames.Num(); ++NameIndex)
 	{
-		TryAddCleanName(Name);
+		const FString SteamName = Entry.PlayerSteamIds.IsValidIndex(NameIndex)
+			? ResolveSteamDisplayName(Entry.PlayerSteamIds[NameIndex])
+			: FString();
+		TryAddCleanName(SteamName);
+		TryAddCleanName(Entry.PlayerNames[NameIndex]);
 	}
+	TryAddCleanName(ResolveSteamDisplayName(Entry.SteamId));
 	TryAddCleanName(Entry.PlayerName);
-	const bool bHasRuntimeProvidedName = CleanNames.Num() > 0;
 
 	if (CleanNames.Num() == 0)
 	{
@@ -2478,28 +2448,18 @@ void ST66LeaderboardPanel::NormalizeEntryIdentity(FLeaderboardEntry& Entry, int3
 		}
 	}
 
-	int32 FallbackCursor = 0;
-	while (CleanNames.Num() < PartyMemberCount)
-	{
-		const FString& Candidate = FallbackNames[(FallbackStartIndex + FallbackCursor) % FallbackNames.Num()];
-		++FallbackCursor;
-		if (!CleanNames.Contains(Candidate))
-		{
-			CleanNames.Add(Candidate);
-		}
-	}
-
 	if (CleanNames.Num() == 0)
 	{
-		CleanNames.Add(TEXT("Unknown"));
+		CleanNames.Add(TEXT("Steam Player"));
+	}
+
+	while (CleanNames.Num() < PartyMemberCount)
+	{
+		CleanNames.Add(FString::Printf(TEXT("Steam Player %d"), CleanNames.Num() + 1));
 	}
 
 	Entry.PlayerNames = CleanNames;
 	Entry.PlayerName = CleanNames[0];
-	if (bReferenceMirrorMode && !bHasRuntimeProvidedName)
-	{
-		Entry.AvatarUrl.Reset();
-	}
 
 	if (Entry.HeroID.IsNone())
 	{
@@ -2516,20 +2476,21 @@ void ST66LeaderboardPanel::NormalizeEntryIdentity(FLeaderboardEntry& Entry, int3
 
 const FSlateBrush* ST66LeaderboardPanel::GetPortraitBrushForEntry(const FLeaderboardEntry& Entry)
 {
-	if (!Entry.AvatarUrl.IsEmpty())
+	if (!Entry.SteamId.IsEmpty())
 	{
-		const FSlateBrush* AvatarBrush = GetOrCreateAvatarBrush(Entry.AvatarUrl);
-		if (AvatarBrush && AvatarBrush != DefaultAvatarBrush.Get())
+		const FSlateBrush* SteamAvatarBrush = GetOrCreateSteamAvatarBrush(Entry.SteamId);
+		if (SteamAvatarBrush && SteamAvatarBrush != DefaultAvatarBrush.Get() && SteamAvatarBrush->GetResourceObject() != nullptr)
 		{
-			return AvatarBrush;
+			return SteamAvatarBrush;
 		}
 	}
 
-	if (!Entry.HeroID.IsNone())
+	if (!Entry.AvatarUrl.IsEmpty())
 	{
-		if (const FSlateBrush* HeroBrush = GetOrCreateHeroPortraitBrush(Entry.HeroID))
+		const FSlateBrush* AvatarBrush = GetOrCreateAvatarBrush(Entry.AvatarUrl);
+		if (AvatarBrush && AvatarBrush != DefaultAvatarBrush.Get() && AvatarBrush->GetResourceObject() != nullptr)
 		{
-			return HeroBrush;
+			return AvatarBrush;
 		}
 	}
 
@@ -2607,6 +2568,174 @@ const FSlateBrush* ST66LeaderboardPanel::GetOrCreateAvatarBrush(const FString& A
 	});
 
 	return DefaultAvatarBrush.Get();
+}
+
+UT66SteamHelper* ST66LeaderboardPanel::GetSteamHelper() const
+{
+	UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
+	return GI ? GI->GetSubsystem<UT66SteamHelper>() : nullptr;
+}
+
+FString ST66LeaderboardPanel::ResolveSteamDisplayName(const FString& SteamId) const
+{
+	const FString TrimmedSteamId = SteamId.TrimStartAndEnd();
+	UT66SteamHelper* SteamHelper = GetSteamHelper();
+	if (!SteamHelper || TrimmedSteamId.IsEmpty())
+	{
+		return FString();
+	}
+
+	if (TrimmedSteamId.Equals(SteamHelper->GetLocalSteamId(), ESearchCase::CaseSensitive))
+	{
+		const FString LocalDisplayName = SteamHelper->GetLocalDisplayName().TrimStartAndEnd();
+		if (!LocalDisplayName.IsEmpty())
+		{
+			return LocalDisplayName;
+		}
+	}
+
+	for (const FT66SteamFriendInfo& FriendInfo : SteamHelper->GetFriendInfos())
+	{
+		if (TrimmedSteamId.Equals(FriendInfo.SteamId, ESearchCase::CaseSensitive))
+		{
+			return FriendInfo.DisplayName.TrimStartAndEnd();
+		}
+	}
+
+	if (UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr)
+	{
+		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
+		{
+			if (TrimmedSteamId.Equals(SteamHelper->GetLocalSteamId(), ESearchCase::CaseSensitive))
+			{
+				const FString PartyLocalName = PartySubsystem->GetLocalDisplayName().TrimStartAndEnd();
+				if (!PartyLocalName.IsEmpty() && !PartyLocalName.Equals(TEXT("You"), ESearchCase::IgnoreCase))
+				{
+					return PartyLocalName;
+				}
+			}
+
+			const FT66PartyFriendEntry* Friend = PartySubsystem->GetFriends().FindByPredicate(
+				[&TrimmedSteamId](const FT66PartyFriendEntry& Candidate)
+				{
+					return Candidate.PlayerId.Equals(TrimmedSteamId, ESearchCase::CaseSensitive);
+				});
+			if (Friend)
+			{
+				return Friend->DisplayName.TrimStartAndEnd();
+			}
+		}
+	}
+
+	return FString();
+}
+
+FString ST66LeaderboardPanel::ResolveEntryMemberDisplayName(const FLeaderboardEntry& Entry, int32 MemberIndex) const
+{
+	const FString MemberSteamId = Entry.PlayerSteamIds.IsValidIndex(MemberIndex)
+		? Entry.PlayerSteamIds[MemberIndex]
+		: (MemberIndex == 0 ? Entry.SteamId : FString());
+	const FString SteamDisplayName = ResolveSteamDisplayName(MemberSteamId).TrimStartAndEnd();
+	if (!SteamDisplayName.IsEmpty())
+	{
+		return SteamDisplayName;
+	}
+
+	TArray<FString> Candidates;
+	Candidates.Reserve(4);
+	if (Entry.PlayerNames.IsValidIndex(MemberIndex))
+	{
+		Candidates.Add(Entry.PlayerNames[MemberIndex]);
+	}
+	if (MemberIndex == 0)
+	{
+		Candidates.Add(Entry.PlayerName);
+	}
+
+	for (FString Candidate : Candidates)
+	{
+		Candidate = Candidate.TrimStartAndEnd();
+		if (!Candidate.IsEmpty() && !IsSyntheticLeaderboardName(Candidate))
+		{
+			return Candidate;
+		}
+	}
+
+	return MemberIndex == 0
+		? FString(TEXT("Steam Player"))
+		: FString::Printf(TEXT("Steam Player %d"), MemberIndex + 1);
+}
+
+FString ST66LeaderboardPanel::ResolveEntryDisplayName(const FLeaderboardEntry& Entry) const
+{
+	const int32 MemberCount = FMath::Max(1, Entry.PlayerNames.Num());
+	if (MemberCount == 1)
+	{
+		return ResolveEntryMemberDisplayName(Entry, 0);
+	}
+
+	TArray<FString> MemberNames;
+	MemberNames.Reserve(MemberCount);
+	for (int32 MemberIndex = 0; MemberIndex < MemberCount; ++MemberIndex)
+	{
+		MemberNames.Add(ResolveEntryMemberDisplayName(Entry, MemberIndex));
+	}
+	return FString::Join(MemberNames, TEXT(" / "));
+}
+
+const FSlateBrush* ST66LeaderboardPanel::GetPortraitBrushForEntryMember(const FLeaderboardEntry& Entry, int32 MemberIndex)
+{
+	const FString MemberSteamId = Entry.PlayerSteamIds.IsValidIndex(MemberIndex)
+		? Entry.PlayerSteamIds[MemberIndex]
+		: (MemberIndex == 0 ? Entry.SteamId : FString());
+	if (!MemberSteamId.IsEmpty())
+	{
+		const FSlateBrush* SteamAvatarBrush = GetOrCreateSteamAvatarBrush(MemberSteamId);
+		if (SteamAvatarBrush && SteamAvatarBrush != DefaultAvatarBrush.Get() && SteamAvatarBrush->GetResourceObject() != nullptr)
+		{
+			return SteamAvatarBrush;
+		}
+	}
+
+	if (MemberIndex == 0 && !Entry.AvatarUrl.IsEmpty())
+	{
+		const FSlateBrush* AvatarBrush = GetOrCreateAvatarBrush(Entry.AvatarUrl);
+		if (AvatarBrush && AvatarBrush != DefaultAvatarBrush.Get() && AvatarBrush->GetResourceObject() != nullptr)
+		{
+			return AvatarBrush;
+		}
+	}
+
+	return DefaultAvatarBrush.Get();
+}
+
+const FSlateBrush* ST66LeaderboardPanel::GetOrCreateSteamAvatarBrush(const FString& SteamId)
+{
+	const FString TrimmedSteamId = SteamId.TrimStartAndEnd();
+	if (TrimmedSteamId.IsEmpty())
+	{
+		return DefaultAvatarBrush.Get();
+	}
+
+	if (TSharedPtr<FSlateBrush>* Found = SteamAvatarBrushes.Find(TrimmedSteamId))
+	{
+		return Found->Get();
+	}
+
+	UT66SteamHelper* SteamHelper = GetSteamHelper();
+	UTexture2D* AvatarTexture = SteamHelper ? SteamHelper->GetAvatarTextureForSteamId(TrimmedSteamId) : nullptr;
+	if (!AvatarTexture)
+	{
+		return DefaultAvatarBrush.Get();
+	}
+
+	TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+	Brush->DrawAs = ESlateBrushDrawType::Image;
+	Brush->Tiling = ESlateBrushTileType::NoTile;
+	Brush->ImageSize = FVector2D(RowPortraitSize, RowPortraitSize);
+	Brush->SetResourceObject(AvatarTexture);
+	SteamAvatarBrushes.Add(TrimmedSteamId, Brush);
+	return Brush.Get();
 }
 
 const FSlateBrush* ST66LeaderboardPanel::GetOrCreateHeroPortraitBrush(FName HeroID)

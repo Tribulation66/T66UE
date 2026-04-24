@@ -213,6 +213,17 @@ void AT66PlayerController::QueueGameplayAutomationScreenshotIfRequested()
 		FParse::Param(FCommandLine::Get(), TEXT("T66GameplayKeepAliveAfterScreenshot"))
 		|| FParse::Param(FCommandLine::Get(), TEXT("T66KeepAliveAfterScreenshot"));
 
+	int32 AutomationResX = 0;
+	int32 AutomationResY = 0;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66AutomationResX="), AutomationResX)
+		&& FParse::Value(FCommandLine::Get(), TEXT("T66AutomationResY="), AutomationResY)
+		&& AutomationResX > 0
+		&& AutomationResY > 0)
+	{
+		const TCHAR* WindowModeSuffix = FParse::Param(FCommandLine::Get(), TEXT("T66AutomationWindowed")) ? TEXT("w") : TEXT("");
+		ConsoleCommand(FString::Printf(TEXT("r.SetRes %dx%d%s"), AutomationResX, AutomationResY, WindowModeSuffix), true);
+	}
+
 	GetWorldTimerManager().ClearTimer(GameplayAutomationPrepareTimerHandle);
 	GetWorldTimerManager().SetTimer(
 		GameplayAutomationPrepareTimerHandle,

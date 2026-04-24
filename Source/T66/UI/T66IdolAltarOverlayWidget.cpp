@@ -161,13 +161,25 @@ namespace
 			.ButtonStyle(FCoreStyle::Get(), "NoBorder")
 			.OnClicked(OnClicked)
 			[
-				SAssignNew(OutBackground, SBorder)
-				.BorderImage(GetWhiteBrush())
-				.BorderBackgroundColor(FT66Style::ButtonNeutral())
-				.Padding(FMargin(16.f, 10.f))
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SAssignNew(OutBackground, SBorder)
+					.BorderImage(GetWhiteBrush())
+					.BorderBackgroundColor(FT66Style::ButtonNeutral())
+					.Padding(FMargin(16.f, 10.f))
+				]
+				+ SOverlay::Slot()
+				[
+					SNew(SImage)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Image(FT66Style::GetInRunButtonPlateBrush(ET66ButtonType::Primary))
+				]
+				+ SOverlay::Slot()
 				[
 					SNew(SBox)
 					.MinDesiredWidth(MinWidth)
+					.Padding(FMargin(16.f, 10.f))
 					.HAlign(HAlign_Center)
 					[
 						SAssignNew(OutText, STextBlock)

@@ -29,6 +29,7 @@ TOPBAR_IMAGEGEN_BOARD = GENERATED_SOURCE_DIR / "mainmenu_topbar_family_imagegen_
 CTA_BUTTONS_IMAGEGEN_ATLAS = GENERATED_SOURCE_DIR / "mainmenu_cta_buttons_imagegen_v5.png"
 CTA_STACK_FRAME_IMAGEGEN = GENERATED_SOURCE_DIR / "mainmenu_cta_stack_frame_imagegen_v3.png"
 PANELS_IMAGEGEN_BOARD = GENERATED_SOURCE_DIR / "mainmenu_panels_family_imagegen_v1.png"
+LEADERBOARD_AVATAR_FRAME_IMAGEGEN_ALPHA = GENERATED_SOURCE_DIR / "leaderboard_avatar_socket_frame_imagegen_20260424_alpha.png"
 
 CANVAS = (1920, 1080)
 Box = tuple[int, int, int, int]
@@ -143,6 +144,7 @@ RIGHT_BOXES: dict[str, Box] = {
     "toggle_score_selected": (1445, 521, 1655, 582),
     "toggle_speedrun_unselected": (1658, 521, 1874, 582),
     "leaderboard_avatar_frame_source": (1533, 631, 1589, 687),
+    "leaderboard_avatar_live_rect": (1541, 639, 1581, 679),
 }
 
 EXTRA_LAYOUT_BOXES: dict[str, dict[str, Box]] = {
@@ -626,7 +628,10 @@ def build_pack() -> None:
         save_asset(crop_resize(panel_source, PANEL_IMAGEGEN_BOXES[name], size_of(RIGHT_BOXES[name])), RIGHT_DIR / f"{name}.png", manifest, group="RightPanel", kind="imagegen_slice", layout_key=f"Right.{name}", notes="Fresh imagegen right panel control shell.")
     copy_asset(RIGHT_DIR / "dropdown_shell_left.png", RIGHT_DIR / "dropdown_shell_left_clean.png", manifest, group="RightPanel", kind="alias_copy", notes="Runtime compatibility alias.")
     copy_asset(RIGHT_DIR / "dropdown_shell_right.png", RIGHT_DIR / "dropdown_shell_right_clean.png", manifest, group="RightPanel", kind="alias_copy", notes="Runtime compatibility alias.")
-    save_asset(crop_resize(panel_source, PANEL_IMAGEGEN_BOXES["friend_avatar_frame"], size_of(RIGHT_BOXES["leaderboard_avatar_frame_source"])), RIGHT_DIR / "leaderboard_avatar_frame.png", manifest, group="RightPanel", kind="imagegen_slice", layout_key="Right.leaderboard_avatar_frame_source", notes="Fresh imagegen leaderboard avatar frame. Runtime portrait renders over the center.")
+    leaderboard_avatar_frame = crop_visible_square_resize(
+        Image.open(LEADERBOARD_AVATAR_FRAME_IMAGEGEN_ALPHA),
+        size_of(RIGHT_BOXES["leaderboard_avatar_frame_source"]))
+    save_asset(leaderboard_avatar_frame, RIGHT_DIR / "leaderboard_avatar_frame.png", manifest, group="RightPanel", kind="socket_frame", layout_key="Right.leaderboard_avatar_frame_source", notes="Fresh Codex-native generated leaderboard avatar socket frame with transparent center aperture. Runtime Steam/API portrait renders underneath.")
 
     for i in range(1, 4):
         fallback = make_linear_gradient((30, 30), (72 + i * 8, 76, 69), (26, 28, 31))
@@ -760,6 +765,35 @@ def crop_ref(reference: Image.Image, box: Box) -> Image.Image:
 
 def crop_resize(source: Image.Image, box: Box, size: tuple[int, int]) -> Image.Image:
     return source.crop(box).convert("RGBA").resize(size, RESAMPLING.LANCZOS)
+
+
+def crop_visible_square_resize(source: Image.Image, size: tuple[int, int]) -> Image.Image:
+    source = source.convert("RGBA")
+    bbox = source.getchannel("A").getbbox()
+    if bbox is None:
+        raise ValueError("generated alpha source has no visible pixels")
+
+    left, top, right, bottom = bbox
+    side = max(right - left, bottom - top)
+    center_x = (left + right) / 2
+    center_y = (top + bottom) / 2
+    crop_box = (
+        int(round(center_x - side / 2)),
+        int(round(center_y - side / 2)),
+        int(round(center_x + side / 2)),
+        int(round(center_y + side / 2)),
+    )
+
+    cropped = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    src_box = (
+        max(0, crop_box[0]),
+        max(0, crop_box[1]),
+        min(source.width, crop_box[2]),
+        min(source.height, crop_box[3]),
+    )
+    dest = (src_box[0] - crop_box[0], src_box[1] - crop_box[1])
+    cropped.alpha_composite(source.crop(src_box), dest)
+    return cropped.resize(size, RESAMPLING.LANCZOS)
 
 
 def fill_rects_with_sample(image: Image.Image, rects: list[Box], sample_box: Box | None = None, blur: int = 8) -> Image.Image:

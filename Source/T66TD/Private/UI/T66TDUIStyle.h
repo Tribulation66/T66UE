@@ -140,7 +140,7 @@ namespace T66TDUI
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/MainMenuReference/LeftPanel/shell_clean.png")),
+			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/TD/UI/td_main_menu/Components/panel_left_shell.png")),
 			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
 			TEXT("TDLeftPanelShell"));
 	}
@@ -151,7 +151,7 @@ namespace T66TDUI
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/MainMenuReference/RightPanel/shell_clean.png")),
+			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/TD/UI/td_main_menu/Components/panel_right_shell.png")),
 			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
 			TEXT("TDRightPanelShell"));
 	}

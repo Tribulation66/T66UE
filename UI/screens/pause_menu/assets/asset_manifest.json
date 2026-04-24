@@ -15,6 +15,17 @@
       "source": "legacy rejected sprite-family generation",
       "status": "rejected",
       "notes": "Visually useful text-free family board, but rejected for production because generated resolution is 1672x941. Project workflow forbids promoting non-canonical generated outputs as production sprite sheets, slices, or runtime assets."
+    },
+    {
+      "path": "generated/20260424-113151-native-imagegen-pause-sprite-family-board-helper-only.png",
+      "kind": "helper_only_rejected_family_board",
+      "size": [
+        1672,
+        941
+      ],
+      "source": "native image_gen sprite-family generation test",
+      "status": "rejected",
+      "notes": "Native image generation produced a text-free pause shell/button family board, but the output resolution is 1672x941. It remains helper-only and was not sliced or integrated into runtime."
     }
   ],
   "notes": "Production sprite family generation is blocked until the image backend can emit acceptable canonical/native-proportion output. Runtime must not use the full reference as an overlay."

@@ -2,15 +2,19 @@
   "screen_slug": "td_battle",
   "canvas_size": [1920, 1080],
   "source_reference": "C:/UE/T66/UI/screens/td_battle/reference/canonical_reference_1920x1080.png",
-  "assets": [],
-  "runtime_shared_chrome": [
-    "C:/UE/T66/SourceAssets/UI/MainMenuReference/LeftPanel/shell_clean.png",
-    "C:/UE/T66/SourceAssets/UI/MainMenuReference/RightPanel/shell_clean.png",
-    "C:/UE/T66/SourceAssets/UI/MainMenuReference/LeftPanel/profile_card_shell.png",
-    "C:/UE/T66/SourceAssets/UI/MainMenuReference/Center/cta_stack_outer_frame.png",
-    "C:/UE/T66/SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_plate.png",
-    "C:/UE/T66/SourceAssets/UI/MainMenuReference/Center/cta_button_load_game_plate.png",
-    "C:/UE/T66/SourceAssets/UI/MainMenuReference/Center/cta_button_daily_challenge_plate.png"
+  "assets": [
+    "C:/UE/T66/SourceAssets/TD/UI/td_battle/Components/panel_left_roster_shell.png",
+    "C:/UE/T66/SourceAssets/TD/UI/td_battle/Components/roster_row_normal.png",
+    "C:/UE/T66/SourceAssets/TD/UI/td_battle/Components/stats_bar_shell.png",
+    "C:/UE/T66/SourceAssets/TD/UI/td_battle/Components/board_frame_shell.png",
+    "C:/UE/T66/SourceAssets/TD/UI/td_battle/Components/status_bar_shell.png",
+    "C:/UE/T66/SourceAssets/TD/UI/td_battle/Components/panel_right_match_shell.png",
+    "C:/UE/T66/SourceAssets/TD/UI/td_battle/Components/panel_right_upgrade_shell.png",
+    "C:/UE/T66/SourceAssets/TD/UI/td_battle/Components/button_green_normal.png",
+    "C:/UE/T66/SourceAssets/TD/UI/td_battle/Components/button_blue_normal.png",
+    "C:/UE/T66/SourceAssets/TD/UI/td_battle/Components/button_purple_normal.png",
+    "C:/UE/T66/SourceAssets/TD/Maps/Backgrounds/TD_Easy_01_CatacombSpiral.png"
   ],
-  "notes": "First-pass runtime keeps combat board, hero portraits, stats, costs, and action labels live. Dedicated text-free battle sprite families remain a follow-up asset pass."
+  "runtime_shared_chrome": [],
+  "notes": "Sprite-family pass keeps combat board interaction, hero portraits, hero names, costs, stats, and action labels live. Generated art owns the shell and button chrome."
 }

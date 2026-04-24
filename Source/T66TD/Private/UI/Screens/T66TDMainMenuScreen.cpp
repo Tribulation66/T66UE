@@ -233,8 +233,8 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 			,
 			FMargin(24.f, 22.f));
 
-	FSlateFontInfo TitleFont = FT66Style::MakeFont(TEXT("Black"), 44);
-	TitleFont.LetterSpacing = 46;
+	FSlateFontInfo TitleFont = FT66Style::MakeFont(TEXT("Black"), 40);
+	TitleFont.LetterSpacing = 2;
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -243,7 +243,7 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 			SNew(SOverlay)
 			+ SOverlay::Slot()[MakeOptionalImageLayer(BackdropBrush, 0.98f)]
 			+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.30f))]
-			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, 36.f, 0.f, 0.f)
+			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, 24.f, 0.f, 0.f)
 			[
 				SNew(SOverlay)
 				+ SOverlay::Slot()
@@ -251,19 +251,19 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66TD.MainMenu", "Title", "CHADPOCALYPSE TD"))
 					.Font(TitleFont)
-					.ColorAndOpacity(FLinearColor(0.92f, 0.72f, 0.30f, 0.34f))
-					.RenderTransform(FSlateRenderTransform(FVector2D(2.f, 2.f)))
-					.ShadowOffset(FVector2D(2.f, 2.f))
-					.ShadowColorAndOpacity(FLinearColor(0.48f, 0.82f, 0.38f, 0.36f))
+					.ColorAndOpacity(FLinearColor(0.05f, 0.03f, 0.015f, 0.88f))
+					.RenderTransform(FSlateRenderTransform(FVector2D(4.f, 4.f)))
+					.ShadowOffset(FVector2D(1.f, 1.f))
+					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.45f))
 				]
 				+ SOverlay::Slot()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66TD.MainMenu", "Title", "CHADPOCALYPSE TD"))
 					.Font(TitleFont)
-					.ColorAndOpacity(FLinearColor(0.03f, 0.02f, 0.02f, 0.98f))
+					.ColorAndOpacity(FLinearColor(0.94f, 0.76f, 0.38f, 0.98f))
 					.ShadowOffset(FVector2D(2.f, 2.f))
-					.ShadowColorAndOpacity(FLinearColor(1.0f, 0.72f, 0.18f, 0.42f))
+					.ShadowColorAndOpacity(FLinearColor(0.15f, 0.08f, 0.02f, 0.72f))
 				]
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(FMargin(20.f, 20.f, 0.f, 0.f))

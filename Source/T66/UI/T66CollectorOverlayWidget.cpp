@@ -136,7 +136,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	// Tab row
 	auto MakeTab = [&](const FText& Label, int32 Index) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakeButton(FT66ButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }))
+		return FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }))
 			.SetMinWidth(0.f).SetFontSize(11).SetPadding(FMargin(12.f, 6.f)));
 	};
 
@@ -181,7 +181,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)[SNew(STextBlock).Text(DescText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true)]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
 						[
-							FT66Style::MakeButton(AddBtn, FOnClicked::CreateLambda([this, CapturedID]() { OnAddItem(CapturedID); return FReply::Handled(); }), ET66ButtonType::Primary)
+							FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(AddBtn, FOnClicked::CreateLambda([this, CapturedID]() { OnAddItem(CapturedID); return FReply::Handled(); }), ET66ButtonType::Primary))
 						]
 					],
 					FT66PanelParams(ET66PanelType::Panel).SetPadding(8.f)
@@ -202,7 +202,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)[SNew(STextBlock).Text(DescText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true)]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
 						[
-							FT66Style::MakeButton(SpawnBtn, FOnClicked::CreateLambda([OnSpawn]() { OnSpawn(); return FReply::Handled(); }), ET66ButtonType::Neutral)
+							FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(SpawnBtn, FOnClicked::CreateLambda([OnSpawn]() { OnSpawn(); return FReply::Handled(); }), ET66ButtonType::Neutral))
 						]
 					],
 					FT66PanelParams(ET66PanelType::Panel).SetPadding(8.f)
@@ -272,9 +272,9 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
-			[FT66Style::MakeButton(CloseText, FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }), ET66ButtonType::Neutral)]
+			[FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(CloseText, FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }), ET66ButtonType::Neutral))]
 			+ SHorizontalBox::Slot().AutoWidth()
-			[FT66Style::MakeButton(ExitLab, FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }), ET66ButtonType::Danger)]
+			[FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(ExitLab, FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }), ET66ButtonType::Danger))]
 		];
 
 	const TAttribute<FMargin> SafePanelPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin

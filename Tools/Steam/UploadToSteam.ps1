@@ -54,6 +54,12 @@ Get-ChildItem -LiteralPath $ResolvedBuildSource -Force | ForEach-Object {
     Copy-Item -LiteralPath $_.FullName -Destination $ContentRoot -Recurse -Force
 }
 
+$SteamAppIdFiles = Get-ChildItem -LiteralPath $ContentRoot -Filter "steam_appid.txt" -Recurse -Force -ErrorAction SilentlyContinue
+if ($SteamAppIdFiles) {
+    Write-Host "Removing local-only steam_appid.txt from Steam upload content..."
+    $SteamAppIdFiles | Remove-Item -Force
+}
+
 if (-not [string]::IsNullOrWhiteSpace($Description) -or $Preview.IsPresent -or -not [string]::IsNullOrWhiteSpace($SetLiveBeta)) {
     $AppBuildText = Get-Content -LiteralPath $AppBuildScript -Raw
     if (-not [string]::IsNullOrWhiteSpace($Description)) {

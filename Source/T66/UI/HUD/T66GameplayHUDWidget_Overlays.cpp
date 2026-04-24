@@ -388,7 +388,7 @@ void UT66GameplayHUDWidget::UpdateTikTokVisibility(bool bForce)
 }
 
 
-static void T66_ApplyWorldDialogueSelection(
+static void T66_ApplyWorldDialogueSelectionOverlay(
 	const TArray<TSharedPtr<SBorder>>& OptionBorders,
 	const TArray<TSharedPtr<STextBlock>>& OptionTexts,
 	int32 SelectedIndex)
@@ -428,7 +428,7 @@ void UT66GameplayHUDWidget::ShowWorldDialogue(const TArray<FText>& Options, int3
 			WorldDialogueOptionBorders[i]->SetVisibility(bHasOption ? EVisibility::Visible : EVisibility::Collapsed);
 		}
 	}
-	T66_ApplyWorldDialogueSelection(WorldDialogueOptionBorders, WorldDialogueOptionTexts, SelectedIndex);
+	T66_ApplyWorldDialogueSelectionOverlay(WorldDialogueOptionBorders, WorldDialogueOptionTexts, SelectedIndex);
 	WorldDialogueBox->SetVisibility(EVisibility::Visible);
 }
 
@@ -442,7 +442,7 @@ void UT66GameplayHUDWidget::HideWorldDialogue()
 
 void UT66GameplayHUDWidget::SetWorldDialogueSelection(int32 SelectedIndex)
 {
-	T66_ApplyWorldDialogueSelection(WorldDialogueOptionBorders, WorldDialogueOptionTexts, SelectedIndex);
+	T66_ApplyWorldDialogueSelectionOverlay(WorldDialogueOptionBorders, WorldDialogueOptionTexts, SelectedIndex);
 }
 
 

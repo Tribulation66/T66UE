@@ -34,12 +34,12 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Engine/Texture2D.h"
 
-static FString MakeInventoryStackKey(const FT66InventorySlot& Slot)
+static FString MakeGamblerEconomyInventoryStackKey(const FT66InventorySlot& Slot)
 {
 	return FString::Printf(TEXT("%s|%d"), *Slot.ItemTemplateID.ToString(), static_cast<int32>(Slot.Rarity));
 }
 
-static FText BuildGamblerWagerText(const int32 WagerAmount)
+static FText BuildGamblerEconomyWagerText(const int32 WagerAmount)
 {
 	return WagerAmount > 0
 		? FText::Format(NSLOCTEXT("T66.Gambler", "WagerFormat", "Wager: {0}"), FText::AsNumber(WagerAmount))
@@ -47,7 +47,7 @@ static FText BuildGamblerWagerText(const int32 WagerAmount)
 }
 
 template <typename TNpcType>
-static TNpcType* GetRegisteredGamblerOverlayNpc(UWorld* World)
+static TNpcType* GetRegisteredGamblerEconomyNpc(UWorld* World)
 {
 	if (!World)
 	{
@@ -68,7 +68,7 @@ static TNpcType* GetRegisteredGamblerOverlayNpc(UWorld* World)
 	return nullptr;
 }
 
-static bool HasRegisteredGamblerOverlayBoss(UWorld* World)
+static bool HasRegisteredGamblerEconomyBoss(UWorld* World)
 {
 	if (!World)
 	{
@@ -91,7 +91,7 @@ static bool HasRegisteredGamblerOverlayBoss(UWorld* World)
 
 namespace
 {
-	static int32 T66BuildNumberMask(const TSet<int32>& Numbers)
+	static int32 T66BuildGamblerEconomyNumberMask(const TSet<int32>& Numbers)
 	{
 		int32 Mask = 0;
 		for (const int32 Number : Numbers)
@@ -104,7 +104,7 @@ namespace
 		return Mask;
 	}
 
-	static int32 T66BuildNumberMask(const TArray<int32>& Numbers)
+	static int32 T66BuildGamblerEconomyNumberMask(const TArray<int32>& Numbers)
 	{
 		int32 Mask = 0;
 		for (const int32 Number : Numbers)
@@ -117,13 +117,13 @@ namespace
 		return Mask;
 	}
 
-	static int32 T66GetPlinkoPayoutTierFromSlot(const int32 SlotIndex)
+	static int32 T66GetGamblerEconomyPlinkoPayoutTierFromSlot(const int32 SlotIndex)
 	{
 		static const int32 Tiers[9] = { 4, 3, 2, 1, 0, 1, 2, 3, 4 };
 		return Tiers[FMath::Clamp(SlotIndex, 0, 8)];
 	}
 
-	static ET66Rarity T66BoxOpeningIndexToRarity(const int32 ColorIndex)
+	static ET66Rarity T66GamblerEconomyBoxOpeningIndexToRarity(const int32 ColorIndex)
 	{
 		switch (ColorIndex)
 		{
@@ -303,11 +303,11 @@ void UT66GamblerOverlayWidget::RefreshCasinoGameChrome()
 	}
 	if (CoinFlipWagerText.IsValid())
 	{
-		CoinFlipWagerText->SetText(BuildGamblerWagerText(SharedWagerAmount));
+		CoinFlipWagerText->SetText(BuildGamblerEconomyWagerText(SharedWagerAmount));
 	}
 	if (RpsWagerText.IsValid())
 	{
-		RpsWagerText->SetText(BuildGamblerWagerText(SharedWagerAmount));
+		RpsWagerText->SetText(BuildGamblerEconomyWagerText(SharedWagerAmount));
 	}
 
 	const int32 BlackJackWagerAmount = (LockedBetAmount > 0)
@@ -315,7 +315,7 @@ void UT66GamblerOverlayWidget::RefreshCasinoGameChrome()
 		: ((BJBetAmount > 0) ? BJBetAmount : PendingBetAmount);
 	if (BlackJackWagerText.IsValid())
 	{
-		BlackJackWagerText->SetText(BuildGamblerWagerText(BlackJackWagerAmount));
+		BlackJackWagerText->SetText(BuildGamblerEconomyWagerText(BlackJackWagerAmount));
 	}
 
 	if (BlackJackDealerValueText.IsValid())
@@ -404,10 +404,6 @@ void UT66GamblerOverlayWidget::RefreshCasinoGameChrome()
 			&& bShowingBuyback
 			&& RunState->GetBuybackPoolSize() > UT66RunStateSubsystem::BuybackDisplaySlotCount;
 		CasinoRerollButtonWidget->SetEnabled(bCanReroll);
-	}
-	if (DialogueTeleportButtonWidget.IsValid())
-	{
-		DialogueTeleportButtonWidget->SetEnabled(!bCachedBossActive);
 	}
 	if (CloseButtonBox.IsValid())
 	{
@@ -630,7 +626,7 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 	{
 		if (InventorySlotData.IsValid())
 		{
-			StackCounts.FindOrAdd(MakeInventoryStackKey(InventorySlotData))++;
+			StackCounts.FindOrAdd(MakeGamblerEconomyInventoryStackKey(InventorySlotData))++;
 		}
 	}
 
@@ -664,7 +660,7 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 			InventorySlotButtons[i]->SetEnabled(bHasItem && !IsBossActive());
 		}
 		const int32 StackCount = (bHasItem && InvSlots.IsValidIndex(i) && InvSlots[i].IsValid())
-			? StackCounts.FindRef(MakeInventoryStackKey(InvSlots[i]))
+			? StackCounts.FindRef(MakeGamblerEconomyInventoryStackKey(InvSlots[i]))
 			: 0;
 		if (InventorySlotCountTexts.IsValidIndex(i) && InventorySlotCountTexts[i].IsValid())
 		{
@@ -830,7 +826,7 @@ void UT66GamblerOverlayWidget::TriggerGamblerBossIfAngry()
 
 	// Spawn GamblerBoss at gambler NPC location (and remove the NPC).
 	FVector SpawnLoc = FVector::ZeroVector;
-	AT66GamblerNPC* Gambler = GetRegisteredGamblerOverlayNpc<AT66GamblerNPC>(World);
+	AT66GamblerNPC* Gambler = GetRegisteredGamblerEconomyNpc<AT66GamblerNPC>(World);
 	if (Gambler)
 	{
 		SpawnLoc = Gambler->GetActorLocation();
@@ -845,7 +841,7 @@ void UT66GamblerOverlayWidget::TriggerGamblerBossIfAngry()
 	}
 
 	// Avoid duplicates
-	if (HasRegisteredGamblerOverlayBoss(World))
+	if (HasRegisteredGamblerEconomyBoss(World))
 	{
 		return;
 	}

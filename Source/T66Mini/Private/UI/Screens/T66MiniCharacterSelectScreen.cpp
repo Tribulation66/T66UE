@@ -231,16 +231,18 @@ TSharedRef<SWidget> UT66MiniCharacterSelectScreen::BuildSlateUI()
 					]
 				])
 			: StaticCastSharedRef<SWidget>(
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(PlaceholderColor)
-				.Padding(FMargin(8.f))
+				SNew(SBox)
+				.WidthOverride(Width)
+				.HeightOverride(Height)
 				[
-					SNew(STextBlock)
-					.Text(FText::FromString(FallbackText))
-					.Font(T66MiniUI::BoldFont(FontSize))
-					.ColorAndOpacity(FLinearColor::White)
-					.Justification(ETextJustify::Center)
+					T66MiniGeneratedChrome::MakePanel(
+						SNew(STextBlock)
+						.Text(FText::FromString(FallbackText))
+						.Font(T66MiniUI::BoldFont(FontSize))
+						.ColorAndOpacity(FLinearColor::White)
+						.Justification(ETextJustify::Center),
+						FMargin(4.f),
+						T66MiniGeneratedChrome::ESlice::PortraitFrame)
 				]);
 	};
 

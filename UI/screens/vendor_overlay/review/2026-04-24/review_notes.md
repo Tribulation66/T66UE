@@ -6,7 +6,10 @@ Packaged output: `C:\UE\T66\UI\screens\vendor_overlay\outputs\2026-04-24\package
 
 Result: pass with known first-pass visual deltas.
 
+Diff artifacts: `diff_overlay_1920x1080.png`, `diff_metrics.txt` (mean RGB diff 37.79).
+
 - Vendor now opens directly to the shop surface.
 - Item names, prices, gold, inventory, sell state, and selection controls remain live.
-- Obsolete dialogue choices were removed from code and localization.
+- Obsolete dialogue choices were removed from scoped code and localization accessors.
+- Shop action buttons now use the shared fantasy plate treatment.
 - Remaining delta: shop rows and frame details are still procedural and should be replaced by component sprites later.
