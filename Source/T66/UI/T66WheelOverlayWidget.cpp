@@ -88,7 +88,7 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 
 	TSharedRef<SWidget> Root = SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.9f))
+		.BorderBackgroundColor(FLinearColor(0.010f, 0.008f, 0.008f, 0.88f))
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -97,7 +97,7 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.f))
+				.BorderBackgroundColor(FLinearColor(0.034f, 0.029f, 0.024f, 0.98f))
 				.Padding(26.f)
 				[
 					SNew(SVerticalBox)
@@ -124,9 +124,9 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 							.WidthOverride(220.f)
 							.HeightOverride(220.f)
 							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.14f, 1.f))
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.58f, 0.42f, 0.22f, 0.96f))
 							]
 						]
 						+ SOverlay::Slot()
@@ -154,7 +154,7 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 										[
 											SNew(SBorder)
 											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-											.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 0.9f))
+											.BorderBackgroundColor(FLinearColor(0.030f, 0.026f, 0.022f, 0.92f))
 										]
 									]
 									+ SOverlay::Slot()
@@ -167,7 +167,7 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 										[
 											SNew(SBorder)
 											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-											.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 0.9f))
+											.BorderBackgroundColor(FLinearColor(0.030f, 0.026f, 0.022f, 0.92f))
 										]
 									]
 									// Marker so rotation is obvious
@@ -182,7 +182,7 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 										[
 											SNew(SBorder)
 											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-											.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 1.f))
+											.BorderBackgroundColor(FLinearColor(0.98f, 0.78f, 0.34f, 1.f))
 										]
 									]
 									// Hub
@@ -196,7 +196,7 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 										[
 											SNew(SBorder)
 											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-											.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.07f, 1.f))
+											.BorderBackgroundColor(FLinearColor(0.060f, 0.048f, 0.030f, 1.f))
 										]
 									]
 								]
@@ -208,13 +208,14 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
-							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(44.f)
+							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(58.f)
 							[
 								SAssignNew(SpinButton, SButton)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66WheelOverlayWidget::OnSpin))
 								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
 								.ButtonColorAndOpacity(FT66Style::Tokens::Success)
+								.ContentPadding(FMargin(12.f, 8.f))
 								[
 									SNew(STextBlock)
 									.Text(SpinTxt)
@@ -224,13 +225,14 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 						]
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
-							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(44.f)
+							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(58.f)
 							[
 								SAssignNew(BackButton, SButton)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66WheelOverlayWidget::OnBack))
 								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
 								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+								.ContentPadding(FMargin(12.f, 8.f))
 								[
 									SNew(STextBlock)
 									.Text(BackTxt)

@@ -44,15 +44,15 @@ namespace
 	const FLinearColor LeaderboardSelectedBorder(114.f / 255.f, 174.f / 255.f, 124.f / 255.f, 1.0f);
 	constexpr bool GMirrorWeeklyToAllTime = false;
 	const FString ReferenceRightPanelSourceDir = TEXT("SourceAssets/UI/MainMenuReference/RightPanel");
-	const FVector2D ReferenceFilterButtonSize(66.0f, 62.0f);
-	const FVector2D ReferenceWeeklyTabSize(182.0f, 56.0f);
-	const FVector2D ReferenceAllTimeTabSize(190.0f, 56.0f);
-	const FVector2D ReferenceLeftDropdownSize(181.0f, 50.0f);
-	const FVector2D ReferenceRightDropdownSize(184.0f, 50.0f);
-	const FVector2D ReferenceScoreToggleSize(183.0f, 53.0f);
-	const FVector2D ReferenceSpeedRunToggleSize(188.0f, 53.0f);
-	const FVector2D ReferenceAvatarFrameSize(49.0f, 49.0f);
-	const FVector2D ReferenceAvatarInsetSize(41.0f, 41.0f);
+	const FVector2D ReferenceFilterButtonSize(74.0f, 72.0f);
+	const FVector2D ReferenceWeeklyTabSize(209.0f, 65.0f);
+	const FVector2D ReferenceAllTimeTabSize(219.0f, 65.0f);
+	const FVector2D ReferenceLeftDropdownSize(208.0f, 57.0f);
+	const FVector2D ReferenceRightDropdownSize(211.0f, 57.0f);
+	const FVector2D ReferenceScoreToggleSize(210.0f, 61.0f);
+	const FVector2D ReferenceSpeedRunToggleSize(216.0f, 61.0f);
+	const FVector2D ReferenceAvatarFrameSize(56.0f, 56.0f);
+	const FVector2D ReferenceAvatarInsetSize(40.0f, 40.0f);
 	const FLinearColor ReferenceLeaderboardText(0.953f, 0.925f, 0.835f, 1.0f);
 	const FLinearColor ReferenceLeaderboardMuted(0.738f, 0.708f, 0.648f, 1.0f);
 	const FLinearColor ReferenceLeaderboardGold(0.860f, 0.670f, 0.247f, 1.0f);
@@ -136,6 +136,10 @@ namespace
 
 		TArray<FString> Tokens;
 		TokenBuffer.ParseIntoArrayWS(Tokens);
+		if (Tokens.Num() == 0)
+		{
+			return true;
+		}
 
 		int32 DescriptorMatches = 0;
 		bool bHasFilterPrefix = false;
@@ -236,9 +240,10 @@ namespace
 
 	FString GetLeaderboardEntryDisplayName(const FLeaderboardEntry& Entry)
 	{
-		if (!Entry.PlayerName.TrimStartAndEnd().IsEmpty())
+		const FString TrimmedPlayerName = Entry.PlayerName.TrimStartAndEnd();
+		if (!TrimmedPlayerName.IsEmpty() && !IsSyntheticLeaderboardName(TrimmedPlayerName))
 		{
-			return Entry.PlayerName.TrimStartAndEnd();
+			return TrimmedPlayerName;
 		}
 
 		TArray<FString> DisplayNames = Entry.PlayerNames;
@@ -246,7 +251,10 @@ namespace
 		{
 			Name = Name.TrimStartAndEnd();
 		}
-		DisplayNames.RemoveAll([](const FString& Name) { return Name.IsEmpty(); });
+		DisplayNames.RemoveAll([](const FString& Name)
+		{
+			return Name.IsEmpty() || IsSyntheticLeaderboardName(Name);
+		});
 
 		if (DisplayNames.Num() > 0)
 		{
@@ -512,6 +520,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		const FSlateFontInfo ReferenceHeaderFont = MakeReaverBoldFont(11, 84);
 		const FSlateFontInfo ReferenceDropdownFont = MakeRadianceFont(15);
 		const FSlateFontInfo ReferenceDailyFont = MakeReaverBoldFont(13, 92);
+		const FSlateFontInfo ReferenceToggleFont = MakeRadianceFont(15);
 
 		auto MakeReferenceOutline = [](const FLinearColor& Color) -> TSharedRef<SWidget>
 		{
@@ -573,9 +582,10 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				];
 		};
 
-		auto MakeReferenceStatePlateButton = [this, &NoBorderButtonStyle, &MakeReferenceOutline](
+		auto MakeReferenceStatePlateButton = [this, &NoBorderButtonStyle, &MakeReferenceOutline, ReferenceHeaderFont](
 			const FSlateBrush* Brush,
 			const FVector2D& Size,
+			const FText& Label,
 			TFunction<bool()> IsSelected,
 			const bool bSelectedAsset,
 			FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
@@ -592,13 +602,31 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							SNew(SImage)
-							.Image(Brush ? Brush : FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.ColorAndOpacity(Brush ? FLinearColor::White : ReferenceLeaderboardMuted)
-						]
-						+ SOverlay::Slot()
-						[
-							SNew(SBorder)
+								SNew(SImage)
+								.Image(Brush ? Brush : FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.ColorAndOpacity(Brush ? FLinearColor::White : ReferenceLeaderboardMuted)
+							]
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
+							.Padding(FMargin(12.f, 0.f))
+							[
+								SNew(STextBlock)
+								.Text(Label)
+								.Font(ReferenceHeaderFont)
+								.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsSelected]() -> FSlateColor
+								{
+									return IsSelected()
+										? FSlateColor(ReferenceLeaderboardText)
+										: FSlateColor(FLinearColor(0.78f, 0.74f, 0.66f, 0.92f));
+								}))
+								.Justification(ETextJustify::Center)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+								.Clipping(EWidgetClipping::ClipToBounds)
+							]
+							+ SOverlay::Slot()
+							[
+								SNew(SBorder)
 							.Visibility_Lambda([IsSelected, bSelectedAsset]() -> EVisibility
 							{
 								return (!bSelectedAsset && IsSelected()) ? EVisibility::Visible : EVisibility::Collapsed;
@@ -702,6 +730,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						MakeReferenceStatePlateButton(
 							ReferenceWeeklyBrush,
 							ReferenceWeeklyTabSize,
+							NSLOCTEXT("T66.Leaderboard", "Weekly", "WEEKLY"),
 							[this]() { return CurrentTimeFilter == ET66LeaderboardTime::Current; },
 							true,
 							&ST66LeaderboardPanel::HandleCurrentClicked)
@@ -711,6 +740,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						MakeReferenceStatePlateButton(
 							ReferenceAllTimeBrush,
 							ReferenceAllTimeTabSize,
+							NSLOCTEXT("T66.Leaderboard", "AllTime", "ALL TIME"),
 							[this]() { return CurrentTimeFilter == ET66LeaderboardTime::AllTime; },
 							false,
 							&ST66LeaderboardPanel::HandleAllTimeClicked)
@@ -812,6 +842,19 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 									.ColorAndOpacity(ReferenceScoreToggleBrush ? FLinearColor::White : ReferenceLeaderboardMuted)
 								]
 								+ SOverlay::Slot()
+								.HAlign(HAlign_Center)
+								.VAlign(VAlign_Center)
+								.Padding(FMargin(18.f, 0.f))
+								[
+									SNew(STextBlock)
+									.Text(GetTypeText(ET66LeaderboardType::Score))
+									.Font(ReferenceToggleFont)
+									.ColorAndOpacity(ReferenceLeaderboardText)
+									.Justification(ETextJustify::Center)
+									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+									.Clipping(EWidgetClipping::ClipToBounds)
+								]
+								+ SOverlay::Slot()
 								[
 									SNew(SBorder)
 									.Visibility_Lambda([this]() -> EVisibility
@@ -848,6 +891,19 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 										SNew(SImage)
 										.Image(ReferenceSpeedRunToggleBrush ? ReferenceSpeedRunToggleBrush : FCoreStyle::Get().GetBrush("WhiteBrush"))
 										.ColorAndOpacity(ReferenceSpeedRunToggleBrush ? FLinearColor::White : ReferenceLeaderboardMuted)
+									]
+									+ SOverlay::Slot()
+									.HAlign(HAlign_Center)
+									.VAlign(VAlign_Center)
+									.Padding(FMargin(18.f, 0.f))
+									[
+										SNew(STextBlock)
+										.Text(GetTypeText(ET66LeaderboardType::SpeedRun))
+										.Font(ReferenceToggleFont)
+										.ColorAndOpacity(FLinearColor(0.78f, 0.74f, 0.66f, 0.92f))
+										.Justification(ETextJustify::Center)
+										.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+										.Clipping(EWidgetClipping::ClipToBounds)
 									]
 									+ SOverlay::Slot()
 									[
@@ -1473,17 +1529,22 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			}
 			if (PortraitBrush == nullptr)
 			{
-				if (ReferenceFallbackPortraits.Num() > 0)
+				const FName ReferenceHeroID = FName(*FString::Printf(TEXT("Hero_%d"), (EntryIndex % 16) + 1));
+				const FName HeroIDForPortrait = bReferenceMirrorMode ? ReferenceHeroID : GetFallbackHeroId(T66GI, EntryIndex);
+				const FSlateBrush* HeroPortraitBrush = GetOrCreateHeroPortraitBrush(HeroIDForPortrait);
+				if (HeroPortraitBrush
+					&& HeroPortraitBrush != DefaultAvatarBrush.Get()
+					&& HeroPortraitBrush->GetResourceObject() != nullptr)
+				{
+					PortraitBrush = HeroPortraitBrush;
+				}
+				if (PortraitBrush == DefaultAvatarBrush.Get())
+				{
+					PortraitBrush = nullptr;
+				}
+				if (PortraitBrush == nullptr && ReferenceFallbackPortraits.Num() > 0)
 				{
 					PortraitBrush = ReferenceFallbackPortraits[EntryIndex % ReferenceFallbackPortraits.Num()];
-				}
-				if (PortraitBrush == nullptr)
-				{
-					PortraitBrush = GetOrCreateHeroPortraitBrush(GetFallbackHeroId(T66GI, EntryIndex));
-					if (PortraitBrush && PortraitBrush->GetResourceObject() == nullptr)
-					{
-						PortraitBrush = nullptr;
-					}
 				}
 			}
 			if (PortraitBrush)
@@ -1525,18 +1586,13 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				.WidthOverride(ReferenceAvatarFrameSize.X)
 				.HeightOverride(ReferenceAvatarFrameSize.Y)
 				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
+					SNew(SBorder)
+					.BorderImage(AvatarFrameBrush ? AvatarFrameBrush : FCoreStyle::Get().GetBrush("NoBrush"))
+					.BorderBackgroundColor(AvatarFrameBrush ? FLinearColor::White : FLinearColor::Transparent)
 					.Padding(FMargin(4.f))
 					[
 						SNew(SImage)
 						.Image(PortraitBrush)
-					]
-					+ SOverlay::Slot()
-					[
-						SNew(SImage)
-						.Image(AvatarFrameBrush ? AvatarFrameBrush : FCoreStyle::Get().GetBrush("NoBrush"))
-						.ColorAndOpacity(AvatarFrameBrush ? FLinearColor::White : FLinearColor::Transparent)
 					]
 				];
 
@@ -2408,6 +2464,7 @@ void ST66LeaderboardPanel::NormalizeEntryIdentity(FLeaderboardEntry& Entry, int3
 		TryAddCleanName(Name);
 	}
 	TryAddCleanName(Entry.PlayerName);
+	const bool bHasRuntimeProvidedName = CleanNames.Num() > 0;
 
 	if (CleanNames.Num() == 0)
 	{
@@ -2415,7 +2472,7 @@ void ST66LeaderboardPanel::NormalizeEntryIdentity(FLeaderboardEntry& Entry, int3
 			? (!Entry.PlayerName.TrimStartAndEnd().IsEmpty() ? Entry.PlayerName.TrimStartAndEnd() : TEXT("YOU"))
 			: FString();
 
-		if (!LocalFallbackName.IsEmpty())
+		if (!LocalFallbackName.IsEmpty() && !IsSyntheticLeaderboardName(LocalFallbackName))
 		{
 			CleanNames.Add(LocalFallbackName);
 		}
@@ -2439,6 +2496,10 @@ void ST66LeaderboardPanel::NormalizeEntryIdentity(FLeaderboardEntry& Entry, int3
 
 	Entry.PlayerNames = CleanNames;
 	Entry.PlayerName = CleanNames[0];
+	if (bReferenceMirrorMode && !bHasRuntimeProvidedName)
+	{
+		Entry.AvatarUrl.Reset();
+	}
 
 	if (Entry.HeroID.IsNone())
 	{
@@ -2569,7 +2630,20 @@ const FSlateBrush* ST66LeaderboardPanel::GetOrCreateHeroPortraitBrush(FName Hero
 	}
 
 	const TSoftObjectPtr<UTexture2D> PortraitSoft = T66GI->ResolveHeroPortrait(HeroID, ET66BodyType::TypeA, ET66HeroPortraitVariant::Low);
-	if (PortraitSoft.IsNull())
+	TSoftObjectPtr<UTexture2D> ReferencePortraitSoft;
+	if (bReferenceMirrorMode)
+	{
+		const FString HeroIdString = HeroID.ToString();
+		ReferencePortraitSoft = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(FString::Printf(
+			TEXT("/Game/UI/Sprites/Heroes/%s/T_%s_TypeA_Low.T_%s_TypeA_Low"),
+			*HeroIdString,
+			*HeroIdString,
+			*HeroIdString)));
+	}
+	const TSoftObjectPtr<UTexture2D>& EffectivePortraitSoft = (!ReferencePortraitSoft.IsNull())
+		? ReferencePortraitSoft
+		: PortraitSoft;
+	if (EffectivePortraitSoft.IsNull())
 	{
 		return DefaultAvatarBrush.Get();
 	}
@@ -2581,12 +2655,20 @@ const FSlateBrush* ST66LeaderboardPanel::GetOrCreateHeroPortraitBrush(FName Hero
 
 	if (TexPool)
 	{
-		Brush->SetResourceObject(T66SlateTexture::GetLoaded(TexPool, PortraitSoft));
-		if (UObject* Requester = UIManager ? static_cast<UObject*>(UIManager) : static_cast<UObject*>(GI))
+		UTexture2D* LoadedPortrait = T66SlateTexture::GetLoaded(TexPool, EffectivePortraitSoft);
+		if (!LoadedPortrait && bReferenceMirrorMode)
+		{
+			TexPool->EnsureTexturesLoadedSync({ EffectivePortraitSoft.ToSoftObjectPath() });
+			LoadedPortrait = T66SlateTexture::GetLoaded(TexPool, EffectivePortraitSoft);
+		}
+
+		Brush->SetResourceObject(LoadedPortrait);
+		UObject* Requester = UIManager ? static_cast<UObject*>(UIManager) : static_cast<UObject*>(GI);
+		if (!LoadedPortrait && Requester)
 		{
 			T66SlateTexture::BindSharedBrushAsync(
 				TexPool,
-				PortraitSoft,
+				EffectivePortraitSoft,
 				Requester,
 				Brush,
 				FName(*FString::Printf(TEXT("LBHero_%s"), *HeroID.ToString())),

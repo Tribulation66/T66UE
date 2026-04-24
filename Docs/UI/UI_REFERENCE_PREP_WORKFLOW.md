@@ -6,7 +6,11 @@ This document defines the helper workflow for preparing high-resolution UI refer
 
 This is not a replacement for measured layout or native-proportion runtime art generation. It is a support lane used to make reference work easier and cleaner.
 
-If the work needs a newly painted or cleaned reference frame rather than a larger helper image, route to native Codex `image_gen` through `ui-style-reference` first. Use the ChatGPT bridge only when native generation cannot satisfy the reference-input or reproducibility requirements.
+Full-screen helper outputs, including buttonless or textless variants, remain offline artifacts. They are not production runtime backgrounds unless a later sprite-family pass explicitly validates them as UI-free scene/background plates.
+
+If the work needs a newly generated reference frame rather than a larger helper image, route to native Codex `image_gen` through `ui-style-reference`. Do not use legacy browser-automation generation as a fallback.
+
+Hard asset rule: reference prep may produce deterministic resamples, helper upscales, crop guides, and classification notes. It may not manually pixel-edit, clean up, mask, erase/fill, cover-patch, clone, repaint, or repair generated assets or screenshots. If a runtime candidate needs corrected pixels, regenerate it through `ui-sprite-families` or `ui-style-reference`.
 
 ## What This Stage Is For
 
@@ -20,9 +24,12 @@ Use reference prep when you need to:
 Do not use it as the primary fix for:
 
 - wrong runtime plate proportions
+- active main menu assets born at the wrong canvas size
 - contaminated screenshot crops
 - baked localizable text
 - duplicated shell ownership
+
+For the active main menu pack, wrong-resolution generated assets should be deleted and rebuilt at canonical `1920x1080`. Do not use resample or upscale as a rescue path.
 
 ## Output Labels
 
@@ -41,6 +48,7 @@ Default assumption:
 - plain resamples are `layout-export`
 - AI upscales are `helper-only`
 - complex composites with baked text are `do-not-slice`
+- buttonless/textless full-screen composites are `helper-only` until they pass the UI-free scene plate gate
 
 ## No-Cost Stack
 
@@ -104,7 +112,7 @@ Use for:
 Use for:
 
 - reusable image-processing graphs
-- repeatable pipelines that combine resample, upscale, cleanup, and export
+- repeatable pipelines that combine resample, upscale, classification, and export
 
 ### Native Codex image generation
 
@@ -115,14 +123,6 @@ Use for:
 - family-board prompting support when prompt-only generation or thread-attached references are enough
 
 This is the preferred first generation path.
-
-### ChatGPT bridge fallback
-
-Use for:
-
-- multiple repo-local reference attachments
-- versioned bridge request manifests
-- explicit API-side controls or attachment behavior not exposed in the local tool surface
 
 ## Decision Rule
 
@@ -155,6 +155,8 @@ Instead:
 1. Keep one canonical `1x` master.
 2. Produce a deterministic `2x` export when needed.
 3. Use AI upscale only for helper inspection or style continuation support.
-4. Prefer native Codex `image_gen` before the bridge when a new helper render is actually needed.
+4. Use native Codex `image_gen` when a new helper render is actually needed.
 5. Never assume an AI-upscaled composite is safe to slice into runtime controls.
-6. Promote an output to `runtime-safe` only after a deliberate review.
+6. Never use a full reference, buttonless master, or textless master as the runtime background.
+7. Promote an output to `runtime-safe` only after a deliberate review.
+

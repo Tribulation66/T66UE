@@ -11,16 +11,49 @@
 #include "Data/T66MiniDataTypes.h"
 #include "Save/T66MiniRunSaveGame.h"
 #include "Save/T66MiniSaveSubsystem.h"
+#include "UI/Screens/T66MiniGeneratedScreenChrome.h"
 #include "UI/T66MiniUIStyle.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/Layout/SSpacer.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
+
+namespace
+{
+	const FSlateBrush* T66MiniSceneBackgroundBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/MainMenuReference/scene_background_purple_imagegen_1920x1080.png")),
+			FMargin(0.f),
+			TEXT("MiniSceneBackground"));
+	}
+
+	TSharedRef<SWidget> T66MiniMakeSceneBackground(const FLinearColor& FallbackColor)
+	{
+		if (const FSlateBrush* Brush = T66MiniSceneBackgroundBrush())
+		{
+			return SNew(SImage)
+				.Image(Brush)
+				.ColorAndOpacity(FLinearColor(0.82f, 0.82f, 0.88f, 1.0f));
+		}
+
+		return SNew(SBorder)
+			.BorderImage(T66MiniUI::WhiteBrush())
+			.BorderBackgroundColor(FallbackColor);
+	}
+}
 
 UT66MiniSaveSlotsScreen::UT66MiniSaveSlotsScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -135,11 +168,7 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 				.WidthOverride(520.f)
 				.HeightOverride(182.f)
 				[
-					SNew(SBorder)
-					.BorderImage(T66MiniUI::WhiteBrush())
-					.BorderBackgroundColor(T66MiniUI::PanelFill())
-					.Padding(FMargin(18.f))
-					[
+					T66MiniGeneratedChrome::MakePanel(
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot()
 						.AutoHeight()
@@ -168,7 +197,7 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 							.Text(FText::FromString(Summary.bOccupied
 								? FString::Printf(TEXT("Last Updated: %s"), *Summary.LastUpdatedUtc)
 								: TEXT("Mid-wave resume data will populate here once a mini run has been saved.")))
-							.Font(T66MiniUI::BodyFont(15))
+							.Font(T66MiniUI::BodyFont(14))
 							.ColorAndOpacity(T66MiniUI::MutedText())
 							.AutoWrapText(true)
 						]
@@ -176,22 +205,23 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 						.FillHeight(1.f)
 						.VAlign(VAlign_Bottom)
 						[
-							SNew(SButton)
-							.OnClicked(FOnClicked::CreateLambda([this, SlotIndex = Summary.SlotIndex]()
-							{
-								return HandleLoadSlotClicked(SlotIndex);
-							}))
-							.IsEnabled(Summary.bOccupied && (!bOnlinePartyActive || bIsPartyHost))
-							.ButtonColorAndOpacity((Summary.bOccupied && (!bOnlinePartyActive || bIsPartyHost)) ? T66MiniUI::AccentGreen() : T66MiniUI::RaisedFill())
-							[
-								SNew(STextBlock)
-								.Text(NSLOCTEXT("T66Mini.SaveSlots", "Load", "LOAD"))
-								.Font(T66MiniUI::BoldFont(18))
-								.ColorAndOpacity(Summary.bOccupied ? T66MiniUI::ButtonTextDark() : T66MiniUI::MutedText())
-								.Justification(ETextJustify::Center)
-							]
+							Summary.bOccupied
+								? StaticCastSharedRef<SWidget>(
+									FT66Style::MakeButton(
+										T66MiniGeneratedChrome::MakeButtonParams(
+											NSLOCTEXT("T66Mini.SaveSlots", "Load", "LOAD"),
+											FOnClicked::CreateLambda([this, SlotIndex = Summary.SlotIndex]()
+											{
+												return HandleLoadSlotClicked(SlotIndex);
+											}),
+											ET66ButtonType::Success,
+											128.f,
+											42.f,
+											16)
+										.SetEnabled(!bOnlinePartyActive || bIsPartyHost)))
+								: StaticCastSharedRef<SWidget>(SNew(SSpacer))
 						]
-					]
+					, FMargin(22.f, 20.f, 86.f, 18.f))
 				]
 			];
 	}
@@ -199,9 +229,13 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
+			T66MiniMakeSceneBackground(T66MiniUI::ShellFill())
+		]
+		+ SOverlay::Slot()
+		[
 			SNew(SBorder)
 			.BorderImage(T66MiniUI::WhiteBrush())
-			.BorderBackgroundColor(T66MiniUI::ShellFill())
+			.BorderBackgroundColor(FLinearColor(0.018f, 0.014f, 0.024f, 0.58f))
 			.Padding(FMargin(28.f, 22.f))
 			[
 				SNew(SVerticalBox)
@@ -210,10 +244,11 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 				.HAlign(HAlign_Center)
 				.Padding(0.f, 0.f, 0.f, 18.f)
 				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66Mini.SaveSlots", "Title", "Mini Save Slots"))
-					.Font(T66MiniUI::TitleFont(34))
-					.ColorAndOpacity(FLinearColor::White)
+					T66MiniGeneratedChrome::MakeTitlePlaque(
+						NSLOCTEXT("T66Mini.SaveSlots", "Title", "Mini Save Slots"),
+						34,
+						560.f,
+						86.f)
 				]
 				+ SVerticalBox::Slot()
 				.FillHeight(1.f)
@@ -222,13 +257,9 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(0.f, 12.f, 0.f, 0.f)
+				.Padding(172.f, 12.f, 0.f, 0.f)
 				[
-					SNew(SBorder)
-					.BorderImage(T66MiniUI::WhiteBrush())
-					.BorderBackgroundColor(T66MiniUI::PanelFill())
-					.Padding(FMargin(14.f))
-					[
+					T66MiniGeneratedChrome::MakeRowPanel(
 						SAssignNew(StatusTextBlock, STextBlock)
 						.Text(bOnlinePartyActive
 							? (bIsPartyHost
@@ -238,7 +269,7 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 						.Font(T66MiniUI::BodyFont(16))
 						.ColorAndOpacity(T66MiniUI::MutedText())
 						.AutoWrapText(true)
-					]
+					, FMargin(14.f))
 				]
 			]
 		]
@@ -251,16 +282,13 @@ TSharedRef<SWidget> UT66MiniSaveSlotsScreen::BuildSlateUI()
 			.WidthOverride(140.f)
 			.HeightOverride(48.f)
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniSaveSlotsScreen::HandleBackClicked))
-				.ButtonColorAndOpacity(T66MiniUI::AccentBlue())
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66Mini.SaveSlots", "Back", "BACK"))
-					.Font(T66MiniUI::BoldFont(18))
-					.ColorAndOpacity(FLinearColor::White)
-					.Justification(ETextJustify::Center)
-				]
+				T66MiniGeneratedChrome::MakeButton(
+					NSLOCTEXT("T66Mini.SaveSlots", "Back", "BACK"),
+					FOnClicked::CreateUObject(this, &UT66MiniSaveSlotsScreen::HandleBackClicked),
+					ET66ButtonType::Neutral,
+					140.f,
+					48.f,
+					18)
 			]
 		];
 }

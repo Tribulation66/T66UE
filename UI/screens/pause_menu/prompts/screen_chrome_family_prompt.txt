@@ -1,0 +1,28 @@
+Create one production sprite-family board for T66 screen `pause_menu`.
+
+Use the attached canonical main-menu style anchor and the attached `pause_menu` screen-specific reference. This is exact reconstruction of the reference art style, not a redesign.
+
+Output requirement:
+- exactly one 1920x1080 flat neutral presentation board
+- front-on orthographic UI components only
+- no full-screen screenshot composite
+- no baked localizable labels, names, numbers, descriptions, leaderboard rows, progress values, or typed/user text
+- no runtime-owned portraits, avatars, screenshots, save previews, or gameplay underlay
+- components should be isolated with transparent or flat-neutral spacing so deterministic slicing is possible
+- preserve the carved dark stone, gold trim, purple gem, green/blue/purple plate material language from the attached reference
+
+Families required for this screen:
+modal-shell, vertical-command-buttons
+
+Reference layout regions:
+- modal_scrim: 0,0,1920,1080 owner=runtime-overlay
+- pause_shell: 900,84,220,396 owner=generated-shell
+- title_well: 920,112,180,56 owner=runtime-text
+- resume_button: 912,184,196,32 owner=runtime-control
+- save_quit_button: 912,224,196,32 owner=runtime-control
+- restart_button: 912,264,196,32 owner=runtime-control
+- settings_button: 912,304,196,32 owner=runtime-control
+- achievements_button: 912,344,196,32 owner=runtime-control
+- leaderboard_button: 912,384,196,32 owner=runtime-control
+
+Generate text-free runtime assets only. For runtime-owned interiors, produce shell-only frames, empty wells, socket frames, or open apertures. Controls need normal, hover, pressed, disabled, and selected states where applicable with stable anchors.

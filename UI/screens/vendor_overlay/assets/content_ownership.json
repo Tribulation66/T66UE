@@ -1,0 +1,10 @@
+{
+  "screen": "VendorOverlay",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "vendor_outer_shell", "group": "Center", "content_type": "generated-shell", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66VendorOverlayWidget.cpp"], "notes": "Outer shell/page frames only." },
+    { "id": "offer_grid", "group": "Center", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/T66VendorOverlayWidget.cpp"], "notes": "Offer card sockets only; item icons, names, descriptions, prices, lock/sold states are live." },
+    { "id": "inventory_sell_panel", "group": "RightPanel", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/T66VendorOverlayWidget.cpp"], "notes": "Inventory/buyback slot frames only." },
+    { "id": "vendor_action_controls", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66VendorOverlayWidget.cpp"], "notes": "Buy, steal, reroll, lock, back, and status text remain real controls/live text." }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "screen": "GameplayHUDFullMap",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "full_map_scrim", "group": "Center", "content_type": "generated-shell", "render_contract": "shell-only", "outer_owner": "generated-shell", "inner_owner": "generated-shell", "code_refs": ["Source/T66/UI/HUD/T66GameplayHUDWidget_Build.cpp"], "notes": "Neutral backdrop/scrim can be generated." },
+    { "id": "full_map_outer_frame", "group": "Center", "content_type": "generated-shell", "render_contract": "shell-only", "outer_owner": "generated-shell", "inner_owner": "generated-shell", "code_refs": ["Source/T66/UI/HUD/T66GameplayHUDWidget_Build.cpp"], "notes": "Frame and header chrome only." },
+    { "id": "map_canvas_live_area", "group": "Center", "content_type": "runtime-media", "render_contract": "open-aperture", "outer_owner": "generated-shell", "inner_owner": "runtime-media", "code_refs": ["Source/T66/UI/HUD/T66GameplayHUDWidget_Map.cpp", "Source/T66/UI/HUD/T66GameplayHUDWidget_Private.h"], "notes": "ST66WorldMapWidget owns map draw, reveal mask, floor art, bounds, markers, player direction, and enemy/POI layers." },
+    { "id": "map_title_and_hints", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/HUD/T66GameplayHUDWidget_Build.cpp"], "notes": "Any title, legend, and keybind hints remain live/localizable." }
+  ]
+}

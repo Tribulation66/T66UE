@@ -3,6 +3,8 @@
 #include "UI/Screens/T66LanguageSelectScreen.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
@@ -34,19 +36,211 @@ namespace
 		return FT66Style::ButtonNeutral();
 	}
 
+	struct FLanguageReferenceButtonBrushSet
+	{
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush Normal;
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush Hovered;
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush Pressed;
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush Disabled;
+	};
+
+	struct FLanguageReferenceButtonStyleEntry
+	{
+		FButtonStyle Style;
+		bool bInitialized = false;
+	};
+
+	const FSlateBrush* ResolveLanguageReferenceBrush(
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
+		const FString& RelativePath,
+		const FMargin& Margin,
+		const TCHAR* DebugLabel)
+	{
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
+			Margin,
+			DebugLabel);
+	}
+
+	const TCHAR* GetLanguageReferenceButtonPrefix(ET66ButtonType Type)
+	{
+		switch (Type)
+		{
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::Success:
+		case ET66ButtonType::ToggleActive:
+			return TEXT("settings_toggle_on");
+		case ET66ButtonType::Danger:
+			return TEXT("settings_toggle_off");
+		default:
+			return TEXT("settings_compact_neutral");
+		}
+	}
+
+	FLanguageReferenceButtonBrushSet& GetLanguageReferenceButtonBrushSet(ET66ButtonType Type)
+	{
+		static FLanguageReferenceButtonBrushSet Neutral;
+		static FLanguageReferenceButtonBrushSet Success;
+		static FLanguageReferenceButtonBrushSet Danger;
+
+		switch (Type)
+		{
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::Success:
+		case ET66ButtonType::ToggleActive:
+			return Success;
+		case ET66ButtonType::Danger:
+			return Danger;
+		default:
+			return Neutral;
+		}
+	}
+
+	FLanguageReferenceButtonStyleEntry& GetLanguageReferenceButtonStyleEntry(ET66ButtonType Type)
+	{
+		static FLanguageReferenceButtonStyleEntry Neutral;
+		static FLanguageReferenceButtonStyleEntry Success;
+		static FLanguageReferenceButtonStyleEntry Danger;
+
+		switch (Type)
+		{
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::Success:
+		case ET66ButtonType::ToggleActive:
+			return Success;
+		case ET66ButtonType::Danger:
+			return Danger;
+		default:
+			return Neutral;
+		}
+	}
+
+	const FSlateBrush* ResolveLanguageReferenceButtonBrush(
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
+		const TCHAR* Prefix,
+		const TCHAR* State,
+		const TCHAR* DebugLabel)
+	{
+		return ResolveLanguageReferenceBrush(
+			Entry,
+			FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s_%s.png"), Prefix, State),
+			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
+			DebugLabel);
+	}
+
+	const FButtonStyle& GetLanguageReferenceButtonStyle(ET66ButtonType Type)
+	{
+		FLanguageReferenceButtonStyleEntry& StyleEntry = GetLanguageReferenceButtonStyleEntry(Type);
+		if (!StyleEntry.bInitialized)
+		{
+			StyleEntry.bInitialized = true;
+			StyleEntry.Style = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
+			StyleEntry.Style.SetNormalPadding(FMargin(0.f));
+			StyleEntry.Style.SetPressedPadding(FMargin(0.f));
+
+			FLanguageReferenceButtonBrushSet& BrushSet = GetLanguageReferenceButtonBrushSet(Type);
+			const TCHAR* Prefix = GetLanguageReferenceButtonPrefix(Type);
+			if (const FSlateBrush* Brush = ResolveLanguageReferenceButtonBrush(BrushSet.Normal, Prefix, TEXT("normal"), TEXT("LanguageButtonNormal")))
+			{
+				StyleEntry.Style.SetNormal(*Brush);
+			}
+			if (const FSlateBrush* Brush = ResolveLanguageReferenceButtonBrush(BrushSet.Hovered, Prefix, TEXT("hover"), TEXT("LanguageButtonHover")))
+			{
+				StyleEntry.Style.SetHovered(*Brush);
+			}
+			if (const FSlateBrush* Brush = ResolveLanguageReferenceButtonBrush(BrushSet.Pressed, Prefix, TEXT("pressed"), TEXT("LanguageButtonPressed")))
+			{
+				StyleEntry.Style.SetPressed(*Brush);
+			}
+			if (const FSlateBrush* Brush = ResolveLanguageReferenceButtonBrush(BrushSet.Disabled, TEXT("settings_toggle_inactive"), TEXT("normal"), TEXT("LanguageButtonDisabled")))
+			{
+				StyleEntry.Style.SetDisabled(*Brush);
+			}
+		}
+
+		return StyleEntry.Style;
+	}
+
+	const FSlateBrush* GetLanguageContentShellBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveLanguageReferenceBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
+			TEXT("LanguageContentShell"));
+	}
+
+	const FSlateBrush* GetLanguageRowShellBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveLanguageReferenceBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
+			TEXT("LanguageRowShell"));
+	}
+
 	TSharedRef<SWidget> MakeLanguageButton(const FT66ButtonParams& Params)
 	{
-		FT66ButtonParams FlatParams = Params;
-		FlatParams
-			.SetBorderVisual(ET66ButtonBorderVisual::None)
-			.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
-			.SetUseGlow(false);
+		const int32 FontSize = Params.FontSize > 0 ? Params.FontSize : 18;
+		const TAttribute<FText> ButtonText = Params.DynamicLabel.IsBound()
+			? Params.DynamicLabel
+			: TAttribute<FText>(Params.Label);
+		const TAttribute<FSlateColor> TextColor = Params.bHasTextColorOverride
+			? Params.TextColorOverride
+			: TAttribute<FSlateColor>(FSlateColor(FT66Style::Tokens::Text));
+		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(18.f, 8.f, 18.f, 7.f);
 
-		return FT66Style::MakeButton(FlatParams);
+		FSlateFontInfo ButtonFont = FT66Style::MakeFont(*Params.FontWeight, FontSize);
+		ButtonFont.LetterSpacing = 0;
+
+		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
+			? Params.CustomContent.ToSharedRef()
+			: StaticCastSharedRef<SWidget>(
+				SNew(STextBlock)
+				.Text(ButtonText)
+				.Font(ButtonFont)
+				.ColorAndOpacity(TextColor)
+				.Justification(ETextJustify::Center)
+				.ShadowOffset(FVector2D(0.f, 1.f))
+				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.70f))
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis));
+
+		return SNew(SBox)
+			.WidthOverride(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
+			.HeightOverride(Params.Height > 0.f ? Params.Height : 50.f)
+			.Visibility(Params.Visibility)
+			[
+				SNew(SButton)
+				.ButtonStyle(&GetLanguageReferenceButtonStyle(Params.Type))
+				.ContentPadding(ContentPadding)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				.IsEnabled(Params.IsEnabled)
+				.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
+				[
+					Content
+				]
+			];
 	}
 
 	TSharedRef<SWidget> MakeLanguagePanel(const TSharedRef<SWidget>& Content, ET66PanelType Type, const FLinearColor& FillColor, const FMargin& Padding)
 	{
+		if (const FSlateBrush* ReferenceBrush = Type == ET66PanelType::Panel ? GetLanguageContentShellBrush() : GetLanguageRowShellBrush())
+		{
+			return SNew(SBorder)
+				.BorderImage(ReferenceBrush)
+				.BorderBackgroundColor(FLinearColor::White)
+				.Padding(Padding)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				[
+					Content
+				];
+		}
+
 		return FT66Style::MakePanel(
 			Content,
 			FT66PanelParams(Type)
@@ -101,7 +295,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 			const auto GetRowBgColor = [this, Lang]()
 			{
 				const bool bIsSelected = (Lang == PreviewedLanguage);
-				return bIsSelected ? FT66Style::SelectionFill() : T66LanguageRowFill();
+				return bIsSelected ? FLinearColor(1.10f, 1.02f, 0.74f, 1.0f) : FLinearColor::White;
 			};
 
 			const auto GetRowTextColor = [this, Lang]()
@@ -117,7 +311,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 			.Padding(10.0f, 5.0f)
 			[
 				SNew(SBox)
-				.WidthOverride(400.0f)
+				.WidthOverride(560.0f)
 				.HeightOverride(60.0f)
 				[
 					SNew(SButton)
@@ -127,9 +321,9 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 					.OnClicked(FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleLanguageClicked, Lang))
 					[
 						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderImage(GetLanguageRowShellBrush())
 						.BorderBackgroundColor_Lambda(GetRowBgColor)
-						.Padding(FMargin(0.0f))
+						.Padding(FMargin(14.0f, 8.0f))
 						[
 							SNew(STextBlock)
 							.Text(LangName)

@@ -42,9 +42,9 @@ Update it whenever:
 - Added the master-guideline policy that Mini Chadpocalypse must remain file-isolated from the regular game except for narrow launch/registration touchpoints.
 - Prepared this checkpoint as the `v2.0` architecture baseline before implementation starts.
 - Added the `T66Mini` runtime module to the project and created the first mini-specific UI classes.
-- Replaced the Minigames screen's Snake button with a `Mini Chadpocalypse` launch path that navigates into the `T66Mini` shell.
+- Replaced the legacy Minigames screen entry with a `Mini Chadpocalypse` launch path that navigates into the `T66Mini` shell.
 - Built the first compiled mini-specific main menu shell with isolated left/right placeholder panels and center `New Game` / `Load Game` actions.
-- Added `Tools/Mini/T66MiniSpriteBatch.py` and `Docs/Mini/T66Mini_SpriteBatchManifest.json` for bridge-driven mini art generation.
+- Added the first mini art batch manifest and helper scripts; future mini art generation now uses Codex-native image generation.
 - Successfully generated four 2x2 hero source sheets covering all 16 launch heroes.
 - Added `Tools/Mini/T66MiniSplitHeroSheets.py` and split those four sheets into 16 individual hero source sprites under `SourceAssets/Mini/Heroes/Singles/`.
 - Duplicated the first mini-specific CSV authoring inputs under `Content/Mini/Data/` for heroes, idols, items, and bosses.

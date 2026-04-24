@@ -458,7 +458,7 @@ void AT66GameMode::SpawnStageStructuresAndInteractables(UWorld* World, bool bUsi
 
 	if (!IsUsingTowerMainMapLayout())
 	{
-		SpawnCircusInteractableIfNeeded();
+		SpawnCasinoInteractableIfNeeded();
 		SpawnSupportVendorAtStartIfNeeded();
 		SpawnGuaranteedStartAreaInteractables();
 	}

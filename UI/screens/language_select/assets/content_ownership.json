@@ -1,0 +1,107 @@
+{
+  "screen_slug": "language_select",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\language_select\\reference\\canonical_reference_1920x1080.png",
+  "runtime_owned": [
+    {
+      "name": "shared_topbar",
+      "rect": [
+        0,
+        0,
+        1920,
+        144
+      ],
+      "content_type": "shared-topbar",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "back_button",
+      "rect": [
+        30,
+        210,
+        212,
+        66
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "title_well",
+      "rect": [
+        620,
+        160,
+        680,
+        92
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "language_rows",
+      "rect": [
+        552,
+        344,
+        792,
+        540
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "scrollbar",
+      "rect": [
+        1795,
+        326,
+        20,
+        192
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "confirm_button",
+      "rect": [
+        832,
+        970,
+        256,
+        64
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    }
+  ],
+  "generated_owned": [
+    {
+      "name": "content_shell",
+      "rect": [
+        0,
+        148,
+        1920,
+        932
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    },
+    {
+      "name": "language_list_shell",
+      "rect": [
+        90,
+        308,
+        1740,
+        590
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    }
+  ],
+  "families_required": [
+    "content-shell",
+    "language-row-button",
+    "confirm-button",
+    "back-button",
+    "scrollbar"
+  ]
+}

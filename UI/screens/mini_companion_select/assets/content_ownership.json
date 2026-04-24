@@ -1,0 +1,21 @@
+{
+  "screen": "mini_companion_select",
+  "background": {
+    "owner": "scene_plate",
+    "must_not_contain": ["companion portraits", "companion names", "unlock statuses", "run pairing values", "buttons"]
+  },
+  "chrome": {
+    "owner": "generated panel, row, and button plates",
+    "notes": "Companion detail panels, metric chips, run-pairing fields, and roster card shells are art chrome only."
+  },
+  "runtime_owned": [
+    "title",
+    "companion names",
+    "companion portraits",
+    "companion descriptions",
+    "metric labels and values",
+    "unlock statuses",
+    "run pairing values",
+    "button labels"
+  ]
+}

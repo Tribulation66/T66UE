@@ -1,0 +1,17 @@
+{
+  "screen": "mini_run_summary",
+  "background": {
+    "owner": "scene_plate",
+    "must_not_contain": ["run values", "loadout values", "buttons"]
+  },
+  "chrome": {
+    "owner": "generated panel and button plates",
+    "notes": "Summary panels and bottom action buttons are chrome only."
+  },
+  "runtime_owned": [
+    "result title",
+    "run details",
+    "loadout snapshot",
+    "button labels"
+  ]
+}

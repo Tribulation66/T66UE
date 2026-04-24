@@ -193,7 +193,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 	for (int32 i = 0; i < StripItems.Num(); ++i)
 	{
 		const FCrateItemEntry& Entry = StripItems[i];
-		const FLinearColor FrameColor = Entry.Color * 0.45f + FLinearColor(0.06f, 0.06f, 0.08f, 0.55f);
+		const FLinearColor FrameColor = Entry.Color * 0.48f + FLinearColor(0.18f, 0.13f, 0.07f, 0.52f);
 
 		StripRow->AddSlot()
 			.AutoWidth()
@@ -210,7 +210,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 					[
 						SNew(SBorder)
 						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.05f, 1.f))
+						.BorderBackgroundColor(FLinearColor(0.030f, 0.026f, 0.022f, 0.98f))
 						.Padding(FMargin(6.f))
 						[
 							SNew(SOverlay)
@@ -298,7 +298,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 							[
 								SNew(SBorder)
 								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(1.f, 0.83f, 0.24f, 0.14f))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.72f, 0.28f, 0.18f))
 								.Padding(FMargin(0.f))
 							]
 						]
@@ -312,7 +312,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 							[
 								SNew(SBorder)
 								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(1.f, 0.82f, 0.22f, 0.92f))
+								.BorderBackgroundColor(FLinearColor(0.98f, 0.76f, 0.30f, 0.94f))
 							]
 						]
 					]
@@ -320,7 +320,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 					[
 						SNew(SBorder)
 						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.06f, 1.f))
+						.BorderBackgroundColor(FLinearColor(0.070f, 0.055f, 0.032f, 0.95f))
 						.Padding(FMargin(6.f, 3.f))
 						[
 							SAssignNew(SkipText, STextBlock)
@@ -330,7 +330,9 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 							.Justification(ETextJustify::Center)
 						]
 					],
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(6.f))
+					FT66PanelParams(ET66PanelType::Panel)
+						.SetPadding(FMargin(6.f))
+						.SetColor(FLinearColor(0.034f, 0.029f, 0.024f, 0.98f))
 				)
 			]
 		];

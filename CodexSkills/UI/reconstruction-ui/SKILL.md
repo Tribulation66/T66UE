@@ -19,10 +19,18 @@ This skill now exists to preserve legacy triggers and explicit `$reconstruction-
 When this skill is invoked:
 
 1. Determine whether the active blocker is reference usability.
-2. Determine whether runtime-owned regions have been audited into `content_ownership.json`.
-3. If reference usability is the blocker, route to `$ui-reference-prep`.
-4. Otherwise route to `$ui-reconstruction-orchestrator`.
-5. Let the specialist skills do the real work.
+2. Determine whether the target has the screen-specific generated reference at `C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png`, created from the canonical main-menu anchor, the current target screenshot, and the layout list.
+3. If that reference is missing, generic, or wrong-resolution, route only to `$ui-style-reference`; do not route to layout, sprites, runtime, or review.
+4. Determine whether the screen is using the main menu golden calibration contract or another approved anchor.
+5. Determine whether runtime-owned text, values, images, media, and states have been audited into `content_ownership.json`.
+6. Determine whether a UI-free scene/background plate and foreground component families are required or already trusted.
+7. If reference usability is the blocker, route to `$ui-reference-prep`.
+8. Otherwise route to `$ui-reconstruction-orchestrator`.
+9. Let the specialist skills do the real work.
+
+Hard rule: do not route generated asset defects to manual pixel repair. Cleanup, masks, erase/fill, cover patches, clone/repaint fixes, and screenshot repair are not valid production paths. Route bad generated pixels back to regeneration; allow only deterministic slicing/cropping and runtime overlays after generation.
+
+Resolution rule: `1672x941` and other non-canonical generated outputs are not production references, sprite sheets, scene plates, slices, or runtime assets for normal 16:9 work. Rebuild natively at `1920x1080`.
 
 ## Use `ui-reference-prep` When
 
@@ -54,3 +62,6 @@ If the user is already clearly asking for one specific stage, go directly to:
 - Do not duplicate the specialist skill instructions here.
 - Do not treat this compatibility layer as the place where implementation happens.
 - Do not skip the ownership audit just because the screen already has a reference image.
+- Do not treat a full reference screenshot, buttonless master, or textless master as a production runtime background.
+- Do not skip the strict baseline: canonical `1920x1080` packaged target for normal 16:9 screens, shell/control/live-content rect separation, asset validation, and packaged diff masks.
+- Do not skip the layered baseline: UI-free scene/background plate plus separate foreground component families for topbar, side panels, leaderboard chrome, and center CTA stack.

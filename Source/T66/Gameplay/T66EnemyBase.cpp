@@ -4,7 +4,7 @@
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyAIController.h"
-#include "Gameplay/T66CircusInteractable.h"
+#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66HeroBase.h"
@@ -101,21 +101,21 @@ namespace
 			T66ConsiderSafeZoneHit(QueryLocation, NPC->GetActorLocation(), NPC->GetSafeZoneRadius(), Result);
 		}
 
-		for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+		for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
 		{
-			const AT66CircusInteractable* Circus = WeakCircus.Get();
-			if (!Circus)
+			const AT66CasinoInteractable* Casino = WeakCasino.Get();
+			if (!Casino)
 			{
 				continue;
 			}
 
 			if (bTowerLayout && QueryFloorNumber != INDEX_NONE
-				&& GameMode->GetTowerFloorIndexForLocation(Circus->GetActorLocation()) != QueryFloorNumber)
+				&& GameMode->GetTowerFloorIndexForLocation(Casino->GetActorLocation()) != QueryFloorNumber)
 			{
 				continue;
 			}
 
-			T66ConsiderSafeZoneHit(QueryLocation, Circus->GetActorLocation(), Circus->GetSafeZoneRadius(), Result);
+			T66ConsiderSafeZoneHit(QueryLocation, Casino->GetActorLocation(), Casino->GetSafeZoneRadius(), Result);
 		}
 
 		return Result;

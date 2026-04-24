@@ -1,0 +1,72 @@
+{
+  "screen_slug": "quit_confirmation_modal",
+  "screen_key": "QuitConfirmation",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\quit_confirmation_modal\\reference\\canonical_reference_1920x1080.png",
+  "source_file": "Source/T66/UI/Screens/T66QuitConfirmationModal.cpp",
+  "regions": [
+    {
+      "name": "modal_scrim",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "owner": "runtime-overlay"
+    },
+    {
+      "name": "quit_shell",
+      "rect": {
+        "x": 592,
+        "y": 352,
+        "width": 736,
+        "height": 284
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "title_well",
+      "rect": {
+        "x": 672,
+        "y": 388,
+        "width": 576,
+        "height": 72
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "message_well",
+      "rect": {
+        "x": 704,
+        "y": 494,
+        "width": 512,
+        "height": 48
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "stay_button",
+      "rect": {
+        "x": 610,
+        "y": 556,
+        "width": 346,
+        "height": 64
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "quit_button",
+      "rect": {
+        "x": 974,
+        "y": 556,
+        "width": 346,
+        "height": 64
+      },
+      "owner": "runtime-control"
+    }
+  ]
+}

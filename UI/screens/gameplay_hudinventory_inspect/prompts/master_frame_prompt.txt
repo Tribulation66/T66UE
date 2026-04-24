@@ -1,0 +1,50 @@
+Use case: screen-specific T66 UI style reference gate
+Canvas: 1920x1080 exactly
+Target: # Gameplay HUD Inventory Inspect Layout List
+
+You are generating the canonical offline reference image for this exact in-game HUD or in-run overlay target. Use exactly these three inputs and no other visual references:
+1. Attached image 1: the approved main-menu canonical style anchor. Extract only the visual language: chunky fantasy stone, dark dungeon panels, dark wood, beveled frames, green/gold/blue/purple button families, readable cream/gold text treatment.
+2. Attached image 2: the current packaged runtime screenshot for this target. Preserve its layout intent, anchors, hierarchy, region count, proportions, visible controls, and live-data wells.
+3. The layout list below. Treat it as the ownership contract for generated shell art versus runtime-owned live content.
+
+Generate one full-screen target reference. This reference is not a runtime overlay and must not bake live/localizable data into art. Keep all runtime content sockets open: portraits, item icons, ability icons, idol icons, minimap/map pixels, markers, item names, gold/debt values, timers, cooldowns, damage numbers, selected idol data, tab labels, and status text must remain visually represented as live wells or editable/runtime text zones, not painted-in final data.
+
+Preserve behavior and layout intent. Do not redesign the screen, move major panels, add unrelated features, change gameplay state, or obscure current controls. Restyle plain/flat panels, frames, slots, tabs, buttons, and overlay shells into the approved Chadpocalypse stone/dungeon UI family. Separate shell/frame art from runtime-owned interiors. Use dark dungeon surfaces, beveled stone borders, carved wood accents, metal rivets where helpful, and readable cream/gold text zones.
+
+Avoid: full-screen reference-image-as-runtime-overlay look, baked item names or values, changed tab labels, illegible text wells, extra nonfunctional buttons, missing controls, missing sockets, changed minimap/map ownership, layout drift, watermark, UI covering gameplay-critical live regions.
+
+Layout list and ownership contract:
+
+# Gameplay HUD Inventory Inspect Layout List
+
+Reference gate target: in-run HUD with inventory inspect mode open. Preserve the existing inspect layout and slot hit targets.
+
+## Regions
+
+- `hud_background_context` - gameplay scene remains visible behind HUD; ownership: generated-scene-plate/runtime scene, not UI art.
+- `inventory_inspect_panel_shell` - expanded inspect surface anchored to inventory region; ownership: generated-shell.
+- `inventory_panel_scaled_state` - existing bottom-right inventory panel enlarged/interactive in inspect mode; ownership: generated-shell/runtime-state.
+- `inventory_slot_strip` - existing item slots, not a separate detail grid; ownership: socket-frame with runtime item icons and counts.
+- `rarity_accent_frames` - per-slot rarity border/highlight; ownership: generated-shell/runtime-state.
+- `economy_readouts` - gold/debt/score/timer text still live around the inspect surface; ownership: runtime-text/runtime-value.
+- `close_or_exit_affordance` - implicit real control via input/cursor mode; ownership: runtime control, no baked text.
+
+## Controls And States
+
+- `inspect_inventory_slot` - required states: normal, hover, selected, disabled/empty, rarity variants.
+- `inventory_panel_scaled_state` - required states: closed, inspect-open.
+
+## Live Runtime Content
+
+- Live text: keybind/inspect prompt if visible.
+- Live values: item stack counts, rarity state, selection index, economy/timer values.
+- Live image/icon/avatar wells: item icons and rarity icons.
+- Live preview/media areas: none.
+
+## Variants
+
+- Empty inventory inspect.
+- Populated inventory inspect.
+- Hovered slot.
+- Selected/hovered slot, with any native tooltip if runtime shows one.
+

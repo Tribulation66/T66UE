@@ -66,7 +66,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 			.AutoHeight()
 			.Padding(0.0f, 6.0f)
 			[
-				FT66Style::MakePanel(
+				MakeHeroSelectionRowShell(
 					SNew(STextBlock)
 					.Text(bCompanionSkins && SkinEntityID.IsNone()
 						? SelectCompanionForSkinsText
@@ -74,11 +74,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 					.Font(FT66Style::Tokens::FontRegular(SkinTitleFontSize))
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					.AutoWrapText(true),
-					FT66PanelParams(ET66PanelType::Panel2)
-						.SetColor(FT66Style::IsDotaTheme()
-							? FSlateColor(FLinearColor(0.028f, 0.028f, 0.031f, 1.0f))
-							: FT66Style::Tokens::Panel2)
-						.SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3)))
+					FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3))
 			];
 		return;
 	}
@@ -233,7 +229,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 						.WidgetIndex(bIsEquipped ? 1 : 0)
 						+ SWidgetSwitcher::Slot()
 						[
-							FT66Style::MakeButton(FT66ButtonParams(EquipText,
+							MakeHeroSelectionButton(FT66ButtonParams(EquipText,
 							FOnClicked::CreateLambda([ApplySkinSelection, SkinIDCopy]() { return ApplySkinSelection(SkinIDCopy); }),
 							ET66ButtonType::Primary)
 							.SetMinWidth(ActionMinWidth)
@@ -275,7 +271,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 						.WidgetIndex(!bIsOwned ? 0 : (bIsEquipped ? 2 : 1))
 						+ SWidgetSwitcher::Slot()
 						[
-							FT66Style::MakeButton(FT66ButtonParams(PreviewText,
+							MakeHeroSelectionButton(FT66ButtonParams(PreviewText,
 								FOnClicked::CreateLambda([TogglePreviewOverride, SkinIDCopy]() { return TogglePreviewOverride(SkinIDCopy); }),
 								ET66ButtonType::Neutral)
 								.SetMinWidth(ActionMinWidth)
@@ -285,7 +281,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 						]
 						+ SWidgetSwitcher::Slot()
 						[
-							FT66Style::MakeButton(FT66ButtonParams(EquipText,
+							MakeHeroSelectionButton(FT66ButtonParams(EquipText,
 								FOnClicked::CreateLambda([ApplySkinSelection, SkinIDCopy]() { return ApplySkinSelection(SkinIDCopy); }),
 								ET66ButtonType::Primary)
 								.SetMinWidth(ActionMinWidth)
@@ -321,7 +317,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 						.WidgetIndex(bIsOwned ? 1 : 0)
 						+ SWidgetSwitcher::Slot()
 						[
-						FT66Style::MakeButton(FT66ButtonParams(PriceText,
+						MakeHeroSelectionButton(FT66ButtonParams(PriceText,
 							FOnClicked::CreateLambda([PurchaseAndEquipSkin, SkinIDCopy, Price]() { return PurchaseAndEquipSkin(SkinIDCopy, Price); }),
 							ET66ButtonType::Primary)
 							.SetMinWidth(BuyButtonMinWidth)
@@ -382,7 +378,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 						]
 						+ SWidgetSwitcher::Slot()
 						[
-						FT66Style::MakeButton(FT66ButtonParams(RefundText,
+						MakeHeroSelectionButton(FT66ButtonParams(RefundText,
 							FOnClicked::CreateLambda([RefundOwnedSkin, SkinIDCopy, Price]() { return RefundOwnedSkin(SkinIDCopy, Price); }),
 							ET66ButtonType::Neutral)
 							.SetMinWidth(ActionMinWidth)
@@ -399,7 +395,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 			.AutoHeight()
 			.Padding(0.0f, 6.0f)
 			[
-				FT66Style::MakePanel(
+				MakeHeroSelectionRowShell(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
 					.FillWidth(1.0f)
@@ -417,11 +413,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 					[
 						ButtonRow
 					],
-					FT66PanelParams(ET66PanelType::Panel2)
-						.SetColor(FT66Style::IsDotaTheme()
-							? FSlateColor(FLinearColor(0.028f, 0.028f, 0.031f, 1.0f))
-							: FT66Style::Tokens::Panel2)
-						.SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3)))
+					FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3))
 			];
 	}
 }

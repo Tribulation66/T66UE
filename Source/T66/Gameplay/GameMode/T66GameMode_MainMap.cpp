@@ -245,15 +245,15 @@ bool AT66GameMode::TryFindRandomMainMapSurfaceLocation(int32 SeedOffset, FVector
 			}
 			if (!bBlockedByNPC)
 			{
-				for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+				for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
 				{
-					const AT66CircusInteractable* Circus = WeakCircus.Get();
-					if (!Circus)
+					const AT66CasinoInteractable* Casino = WeakCasino.Get();
+					if (!Casino)
 					{
 						continue;
 					}
-					const float Clearance = Circus->GetSafeZoneRadius() + SafeBubbleMargin;
-					if (FVector::DistSquared2D(Candidate, Circus->GetActorLocation()) < FMath::Square(Clearance))
+					const float Clearance = Casino->GetSafeZoneRadius() + SafeBubbleMargin;
+					if (FVector::DistSquared2D(Candidate, Casino->GetActorLocation()) < FMath::Square(Clearance))
 					{
 						bBlockedByNPC = true;
 						break;

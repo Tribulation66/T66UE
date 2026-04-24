@@ -1,0 +1,335 @@
+{
+  "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+  "items": [
+    {
+      "name": "td_battle_01",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        37,
+        35,
+        347,
+        629
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_01.png",
+      "size": [
+        310,
+        594
+      ]
+    },
+    {
+      "name": "td_battle_02",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        759,
+        36,
+        1373,
+        127
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_02.png",
+      "size": [
+        614,
+        91
+      ]
+    },
+    {
+      "name": "td_battle_03",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        369,
+        67,
+        751,
+        177
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_03.png",
+      "size": [
+        382,
+        110
+      ]
+    },
+    {
+      "name": "td_battle_04",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        1398,
+        77,
+        1646,
+        641
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_04.png",
+      "size": [
+        248,
+        564
+      ]
+    },
+    {
+      "name": "td_battle_05",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        1649,
+        77,
+        1894,
+        641
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_05.png",
+      "size": [
+        245,
+        564
+      ]
+    },
+    {
+      "name": "td_battle_06",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        770,
+        141,
+        1379,
+        641
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_06.png",
+      "size": [
+        609,
+        500
+      ]
+    },
+    {
+      "name": "td_battle_07",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        369,
+        188,
+        751,
+        298
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_07.png",
+      "size": [
+        382,
+        110
+      ]
+    },
+    {
+      "name": "td_battle_08",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        369,
+        306,
+        751,
+        417
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_08.png",
+      "size": [
+        382,
+        111
+      ]
+    },
+    {
+      "name": "td_battle_09",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        369,
+        428,
+        751,
+        538
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_09.png",
+      "size": [
+        382,
+        110
+      ]
+    },
+    {
+      "name": "td_battle_10",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        573,
+        654,
+        1475,
+        749
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_10.png",
+      "size": [
+        902,
+        95
+      ]
+    },
+    {
+      "name": "td_battle_11",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        161,
+        773,
+        493,
+        846
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_11.png",
+      "size": [
+        332,
+        73
+      ]
+    },
+    {
+      "name": "td_battle_12",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        550,
+        773,
+        884,
+        846
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_12.png",
+      "size": [
+        334,
+        73
+      ]
+    },
+    {
+      "name": "td_battle_13",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        951,
+        773,
+        1282,
+        846
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_13.png",
+      "size": [
+        331,
+        73
+      ]
+    },
+    {
+      "name": "td_battle_14",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        1340,
+        773,
+        1679,
+        846
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_14.png",
+      "size": [
+        339,
+        73
+      ]
+    },
+    {
+      "name": "td_battle_15",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        550,
+        865,
+        883,
+        940
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_15.png",
+      "size": [
+        333,
+        75
+      ]
+    },
+    {
+      "name": "td_battle_16",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        161,
+        866,
+        492,
+        940
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_16.png",
+      "size": [
+        331,
+        74
+      ]
+    },
+    {
+      "name": "td_battle_17",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        951,
+        866,
+        1281,
+        940
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_17.png",
+      "size": [
+        330,
+        74
+      ]
+    },
+    {
+      "name": "td_battle_18",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        1341,
+        866,
+        1678,
+        940
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_18.png",
+      "size": [
+        337,
+        74
+      ]
+    },
+    {
+      "name": "td_battle_19",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        161,
+        960,
+        492,
+        1035
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_19.png",
+      "size": [
+        331,
+        75
+      ]
+    },
+    {
+      "name": "td_battle_20",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        550,
+        960,
+        883,
+        1035
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_20.png",
+      "size": [
+        333,
+        75
+      ]
+    },
+    {
+      "name": "td_battle_21",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        951,
+        960,
+        1281,
+        1035
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_21.png",
+      "size": [
+        330,
+        75
+      ]
+    },
+    {
+      "name": "td_battle_22",
+      "source": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SpriteSheets/td_battle_components_v1.png",
+      "box": [
+        1340,
+        960,
+        1679,
+        1035
+      ],
+      "output": "C:/UE/T66/SourceAssets/TD/UI/td_battle/SheetSlices/Components/td_battle_22.png",
+      "size": [
+        339,
+        75
+      ]
+    }
+  ]
+}

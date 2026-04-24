@@ -1,0 +1,27 @@
+Create one production sprite-family board for T66 screen `language_select`.
+
+Use the attached canonical main-menu style anchor and the attached `language_select` screen-specific reference. This is exact reconstruction of the reference art style, not a redesign.
+
+Output requirement:
+- exactly one 1920x1080 flat neutral presentation board
+- front-on orthographic UI components only
+- no full-screen screenshot composite
+- no baked localizable labels, names, numbers, descriptions, leaderboard rows, progress values, or typed/user text
+- no runtime-owned portraits, avatars, screenshots, save previews, or gameplay underlay
+- components should be isolated with transparent or flat-neutral spacing so deterministic slicing is possible
+- preserve the carved dark stone, gold trim, purple gem, green/blue/purple plate material language from the attached reference
+
+Families required for this screen:
+content-shell, language-row-button, confirm-button, back-button, scrollbar
+
+Reference layout regions:
+- shared_topbar: 0,0,1920,144 owner=shared-topbar
+- content_shell: 0,148,1920,932 owner=generated-shell
+- back_button: 30,210,212,66 owner=runtime-control
+- title_well: 620,160,680,92 owner=runtime-text
+- language_list_shell: 90,308,1740,590 owner=generated-shell
+- language_rows: 552,344,792,540 owner=runtime-control
+- scrollbar: 1795,326,20,192 owner=runtime-control
+- confirm_button: 832,970,256,64 owner=runtime-control
+
+Generate text-free runtime assets only. For runtime-owned interiors, produce shell-only frames, empty wells, socket frames, or open apertures. Controls need normal, hover, pressed, disabled, and selected states where applicable with stable anchors.

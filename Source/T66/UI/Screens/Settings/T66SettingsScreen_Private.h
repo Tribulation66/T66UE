@@ -17,14 +17,21 @@
 #include "Framework/Application/SlateApplication.h"
 #include "GenericPlatform/GenericApplication.h"
 #include "Misc/DefaultValueHelper.h"
+#include "UI/Style/T66ButtonVisuals.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66RuntimeUIFontAccess.h"
 #include "UI/Style/T66Style.h"
+#include "Engine/Texture2D.h"
+#include "UObject/StrongObjectPtr.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Input/SSlider.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SSpacer.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SNullWidget.h"
@@ -36,6 +43,320 @@ namespace T66SettingsScreenPrivate
 	constexpr int32 SettingsFontDelta = -10;
 	constexpr int32 SettingsCompactButtonFontSize = 18;
 	constexpr float SettingsCompactButtonHeight = 44.f;
+
+	enum class ET66SettingsSpriteFamily : uint8
+	{
+		CompactNeutral,
+		ToggleOn,
+		ToggleOff,
+		ToggleInactive
+	};
+
+	struct FSettingsSpriteBrushEntry
+	{
+		TStrongObjectPtr<UTexture2D> Texture;
+		TSharedPtr<FSlateBrush> Brush;
+	};
+
+	struct FSettingsSpriteBrushSet
+	{
+		FSettingsSpriteBrushEntry Normal;
+		FSettingsSpriteBrushEntry Hover;
+		FSettingsSpriteBrushEntry Pressed;
+		FSettingsSpriteBrushEntry Disabled;
+	};
+
+	inline const FSlateBrush* ResolveSettingsSpriteBrush(
+		FSettingsSpriteBrushEntry& Entry,
+		const TCHAR* RelativePath,
+		const FVector2D& ImageSize,
+		const FMargin& Margin = FMargin(0.16f, 0.28f, 0.16f, 0.28f))
+	{
+		if (!Entry.Brush.IsValid())
+		{
+			Entry.Brush = MakeShared<FSlateBrush>();
+			Entry.Brush->DrawAs = ESlateBrushDrawType::Box;
+			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
+			Entry.Brush->TintColor = FSlateColor(FLinearColor::White);
+			Entry.Brush->ImageSize = ImageSize;
+			Entry.Brush->Margin = Margin;
+		}
+
+		if (!Entry.Texture.IsValid())
+		{
+			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+			{
+				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
+					CandidatePath,
+					TextureFilter::TF_Trilinear,
+					true,
+					TEXT("SettingsReferenceSprite")))
+				{
+					Entry.Texture.Reset(Texture);
+					break;
+				}
+			}
+		}
+
+		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
+		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+	}
+
+	inline FSettingsSpriteBrushSet& GetSettingsButtonSpriteSet(ET66SettingsSpriteFamily Family)
+	{
+		static FSettingsSpriteBrushSet CompactNeutral;
+		static FSettingsSpriteBrushSet ToggleOn;
+		static FSettingsSpriteBrushSet ToggleOff;
+		static FSettingsSpriteBrushSet ToggleInactive;
+
+		switch (Family)
+		{
+		case ET66SettingsSpriteFamily::ToggleOn:
+			return ToggleOn;
+		case ET66SettingsSpriteFamily::ToggleOff:
+			return ToggleOff;
+		case ET66SettingsSpriteFamily::ToggleInactive:
+			return ToggleInactive;
+		case ET66SettingsSpriteFamily::CompactNeutral:
+		default:
+			return CompactNeutral;
+		}
+	}
+
+	inline const TCHAR* GetSettingsButtonSpritePath(ET66SettingsSpriteFamily Family, ET66ButtonBorderState State)
+	{
+		const TCHAR* Prefix = TEXT("settings_compact_neutral");
+		switch (Family)
+		{
+		case ET66SettingsSpriteFamily::ToggleOn:
+			Prefix = TEXT("settings_toggle_on");
+			break;
+		case ET66SettingsSpriteFamily::ToggleOff:
+			Prefix = TEXT("settings_toggle_off");
+			break;
+		case ET66SettingsSpriteFamily::ToggleInactive:
+			Prefix = TEXT("settings_toggle_inactive");
+			break;
+		case ET66SettingsSpriteFamily::CompactNeutral:
+		default:
+			break;
+		}
+
+		const TCHAR* Suffix = TEXT("normal");
+		switch (State)
+		{
+		case ET66ButtonBorderState::Hovered:
+			Suffix = TEXT("hover");
+			break;
+		case ET66ButtonBorderState::Pressed:
+			Suffix = TEXT("pressed");
+			break;
+		case ET66ButtonBorderState::Normal:
+		default:
+			break;
+		}
+
+		static FString Path;
+		Path = FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s_%s.png"), Prefix, Suffix);
+		return *Path;
+	}
+
+	inline FVector2D GetSettingsButtonSpriteSize(ET66SettingsSpriteFamily Family, ET66ButtonBorderState State)
+	{
+		if (Family == ET66SettingsSpriteFamily::CompactNeutral)
+		{
+			return State == ET66ButtonBorderState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
+		}
+		if (Family == ET66SettingsSpriteFamily::ToggleOn)
+		{
+			return State == ET66ButtonBorderState::Pressed ? FVector2D(187.f, 67.f) : FVector2D(180.f, 68.f);
+		}
+		if (Family == ET66SettingsSpriteFamily::ToggleOff)
+		{
+			return State == ET66ButtonBorderState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
+		}
+		return State == ET66ButtonBorderState::Hovered ? FVector2D(186.f, 69.f) : FVector2D(180.f, 68.f);
+	}
+
+	inline const FSlateBrush* ResolveSettingsButtonSpriteBrush(ET66SettingsSpriteFamily Family, ET66ButtonBorderState State)
+	{
+		FSettingsSpriteBrushSet& Set = GetSettingsButtonSpriteSet(Family);
+		FSettingsSpriteBrushEntry* Entry = &Set.Normal;
+		if (State == ET66ButtonBorderState::Hovered)
+		{
+			Entry = &Set.Hover;
+		}
+		else if (State == ET66ButtonBorderState::Pressed)
+		{
+			Entry = &Set.Pressed;
+		}
+
+		return ResolveSettingsSpriteBrush(
+			*Entry,
+			GetSettingsButtonSpritePath(Family, State),
+			GetSettingsButtonSpriteSize(Family, State));
+	}
+
+	inline const FSlateBrush* ResolveSettingsDisabledButtonSpriteBrush()
+	{
+		FSettingsSpriteBrushSet& Set = GetSettingsButtonSpriteSet(ET66SettingsSpriteFamily::ToggleInactive);
+		return ResolveSettingsSpriteBrush(
+			Set.Disabled,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_normal.png"),
+			FVector2D(180.f, 69.f));
+	}
+
+	inline ET66SettingsSpriteFamily GetDefaultSettingsButtonFamily(ET66ButtonType Type)
+	{
+		switch (Type)
+		{
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::Success:
+		case ET66ButtonType::ToggleActive:
+			return ET66SettingsSpriteFamily::ToggleOn;
+		case ET66ButtonType::Danger:
+			return ET66SettingsSpriteFamily::ToggleOff;
+		case ET66ButtonType::Neutral:
+		case ET66ButtonType::Row:
+		default:
+			return ET66SettingsSpriteFamily::CompactNeutral;
+		}
+	}
+
+	inline const FSlateBrush* GetSettingsContentShellBrush()
+	{
+		static FSettingsSpriteBrushEntry Entry;
+		return ResolveSettingsSpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			FVector2D(1521.f, 463.f),
+			FMargin(0.035f, 0.12f, 0.035f, 0.12f));
+	}
+
+	inline const FSlateBrush* GetSettingsRowShellBrush()
+	{
+		static FSettingsSpriteBrushEntry Entry;
+		return ResolveSettingsSpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			FVector2D(861.f, 74.f),
+			FMargin(0.055f, 0.32f, 0.055f, 0.32f));
+	}
+
+	inline const FSlateBrush* GetSettingsDropdownFieldBrush()
+	{
+		static FSettingsSpriteBrushEntry Entry;
+		return ResolveSettingsSpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_dropdown_field.png"),
+			FVector2D(862.f, 77.f),
+			FMargin(0.06f, 0.34f, 0.06f, 0.34f));
+	}
+
+	class ST66SettingsSpriteButton : public SCompoundWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66SettingsSpriteButton)
+			: _SpriteFamily(ET66SettingsSpriteFamily::CompactNeutral)
+			, _MinWidth(0.f)
+			, _Height(0.f)
+			, _ContentPadding(FMargin(0.f))
+			, _IsEnabled(true)
+			, _Visibility(EVisibility::Visible)
+		{}
+			SLATE_ATTRIBUTE(ET66SettingsSpriteFamily, SpriteFamily)
+			SLATE_ARGUMENT(float, MinWidth)
+			SLATE_ARGUMENT(float, Height)
+			SLATE_ARGUMENT(FMargin, ContentPadding)
+			SLATE_ARGUMENT(TAttribute<bool>, IsEnabled)
+			SLATE_ARGUMENT(TAttribute<EVisibility>, Visibility)
+			SLATE_EVENT(FOnClicked, OnClicked)
+			SLATE_DEFAULT_SLOT(FArguments, Content)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			SpriteFamily = InArgs._SpriteFamily;
+			ContentPadding = InArgs._ContentPadding;
+			FButtonStyle ButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
+			ButtonStyle.SetNormalPadding(FMargin(0.f));
+			ButtonStyle.SetPressedPadding(FMargin(0.f));
+			OwnedButtonStyle = ButtonStyle;
+
+			TSharedRef<SButton> ButtonRef =
+				SAssignNew(Button, SButton)
+				.ButtonStyle(&OwnedButtonStyle)
+				.ContentPadding(FMargin(0.f))
+				.IsEnabled(InArgs._IsEnabled)
+				.OnClicked(InArgs._OnClicked)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SImage)
+						.Image(this, &ST66SettingsSpriteButton::GetCurrentBrush)
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						.Padding(this, &ST66SettingsSpriteButton::GetContentPadding)
+						[
+							InArgs._Content.Widget
+						]
+					]
+				];
+
+			ChildSlot
+			[
+				SNew(SBox)
+				.MinDesiredWidth(InArgs._MinWidth > 0.f ? InArgs._MinWidth : FOptionalSize())
+				.HeightOverride(InArgs._Height > 0.f ? InArgs._Height : FOptionalSize())
+				.Visibility(InArgs._Visibility)
+				[
+					ButtonRef
+				]
+			];
+		}
+
+	private:
+		const FSlateBrush* GetCurrentBrush() const
+		{
+			if (!Button.IsValid() || !Button->IsEnabled())
+			{
+				return ResolveSettingsDisabledButtonSpriteBrush();
+			}
+
+			const ET66SettingsSpriteFamily Family = SpriteFamily.Get(ET66SettingsSpriteFamily::CompactNeutral);
+			if (Button->IsPressed())
+			{
+				return ResolveSettingsButtonSpriteBrush(Family, ET66ButtonBorderState::Pressed);
+			}
+			if (Button->IsHovered())
+			{
+				return ResolveSettingsButtonSpriteBrush(Family, ET66ButtonBorderState::Hovered);
+			}
+			return ResolveSettingsButtonSpriteBrush(Family, ET66ButtonBorderState::Normal);
+		}
+
+		FMargin GetContentPadding() const
+		{
+			if (Button.IsValid() && Button->IsPressed())
+			{
+				return FMargin(ContentPadding.Left, ContentPadding.Top + 1.f, ContentPadding.Right, FMath::Max(0.f, ContentPadding.Bottom - 1.f));
+			}
+			return ContentPadding;
+		}
+
+		TAttribute<ET66SettingsSpriteFamily> SpriteFamily;
+		FMargin ContentPadding = FMargin(0.f);
+		FButtonStyle OwnedButtonStyle;
+		TSharedPtr<SButton> Button;
+	};
 
 	inline int32 AdjustSettingsFontSize(int32 BaseSize)
 	{
@@ -145,13 +466,67 @@ namespace T66SettingsScreenPrivate
 
 	inline TSharedRef<SWidget> MakeSettingsPanel(const TSharedRef<SWidget>& Content, ET66PanelType Type, const FLinearColor& FillColor, const FMargin& Padding)
 	{
-		return FT66Style::MakePanel(
-			Content,
-			FT66PanelParams(Type)
-				.SetBorderVisual(ET66ButtonBorderVisual::None)
-				.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
-				.SetColor(FillColor)
-				.SetPadding(Padding));
+		(void)Type;
+		(void)FillColor;
+		return SNew(SBorder)
+			.BorderImage(GetSettingsRowShellBrush())
+			.BorderBackgroundColor(FLinearColor::White)
+			.Padding(Padding)
+			[
+				Content
+			];
+	}
+
+	inline TSharedRef<SWidget> MakeSettingsContentShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+	{
+		return SNew(SBorder)
+			.BorderImage(GetSettingsContentShellBrush())
+			.BorderBackgroundColor(FLinearColor::White)
+			.Padding(Padding)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			[
+				Content
+			];
+	}
+
+	inline TSharedRef<SWidget> MakeSettingsSpriteButton(
+		const FT66ButtonParams& Params,
+		TAttribute<ET66SettingsSpriteFamily> SpriteFamily)
+	{
+		const int32 FontSize = Params.FontSize > 0 ? Params.FontSize : AdjustSettingsFontSize(SettingsCompactButtonFontSize);
+		const FSlateFontInfo Font = T66RuntimeUIFontAccess::IsBoldWeight(*Params.FontWeight)
+			? SettingsBoldFont(FontSize)
+			: SettingsRegularFont(FontSize);
+		const TAttribute<FText> Text = Params.DynamicLabel.IsBound()
+			? Params.DynamicLabel
+			: TAttribute<FText>(Params.Label);
+		const TAttribute<FSlateColor> TextColor = Params.bHasTextColorOverride
+			? Params.TextColorOverride
+			: TAttribute<FSlateColor>(FSlateColor(GetSettingsPageText()));
+		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(12.f, 6.f);
+
+		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
+			? Params.CustomContent.ToSharedRef()
+			: StaticCastSharedRef<SWidget>(
+				SNew(STextBlock)
+				.Text(Text)
+				.Font(Font)
+				.ColorAndOpacity(TextColor)
+				.ShadowOffset(FVector2D(1.f, 1.f))
+				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.65f))
+				.Justification(ETextJustify::Center));
+
+		return SNew(ST66SettingsSpriteButton)
+			.SpriteFamily(SpriteFamily)
+			.MinWidth(Params.MinWidth)
+			.Height(Params.Height > 0.f ? Params.Height : SettingsCompactButtonHeight)
+			.ContentPadding(ContentPadding)
+			.IsEnabled(Params.IsEnabled)
+			.Visibility(Params.Visibility)
+			.OnClicked(Params.OnClicked)
+			[
+				Content
+			];
 	}
 
 	inline TSharedRef<SWidget> MakeSettingsButton(const FT66ButtonParams& Params)
@@ -184,7 +559,9 @@ namespace T66SettingsScreenPrivate
 			FlatParams.SetColor(T66SettingsButtonNeutralFill());
 		}
 
-		return FT66Style::MakeButton(FlatParams);
+		return MakeSettingsSpriteButton(
+			FlatParams,
+			TAttribute<ET66SettingsSpriteFamily>(GetDefaultSettingsButtonFamily(FlatParams.Type)));
 	}
 
 	inline TSharedRef<SWidget> MakeSettingsButton(const FText& Label, FOnClicked OnClicked, ET66ButtonType Type = ET66ButtonType::Neutral, float MinWidth = 120.f)
@@ -198,15 +575,24 @@ namespace T66SettingsScreenPrivate
 		const FSlateColor& SelectedColor = FSlateColor(FT66Style::ButtonPrimary()),
 		const FSlateColor& UnselectedColor = FSlateColor(T66SettingsButtonNeutralFill()))
 	{
+		(void)SelectedColor;
+		(void)UnselectedColor;
 		FT66ButtonParams ButtonParams = Params;
-		ButtonParams.SetColor(MakeSelectedButtonColor(MoveTemp(IsSelected), SelectedColor, UnselectedColor));
-		return MakeSettingsButton(ButtonParams);
+		const ET66SettingsSpriteFamily SelectedFamily = GetDefaultSettingsButtonFamily(ButtonParams.Type == ET66ButtonType::Neutral ? ET66ButtonType::Primary : ButtonParams.Type);
+		TSharedRef<TFunction<bool()>> IsSelectedRef = MakeShared<TFunction<bool()>>(MoveTemp(IsSelected));
+		return MakeSettingsSpriteButton(
+			ButtonParams,
+			TAttribute<ET66SettingsSpriteFamily>::CreateLambda([IsSelectedRef, SelectedFamily]() -> ET66SettingsSpriteFamily
+			{
+				return (*IsSelectedRef)() ? SelectedFamily : ET66SettingsSpriteFamily::CompactNeutral;
+			}));
 	}
 
 	inline TSharedRef<SWidget> MakeSettingsRow(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(12.f, 10.f))
 	{
 		return SNew(SBorder)
-			.BorderBackgroundColor(T66SettingsRowFill())
+			.BorderImage(GetSettingsRowShellBrush())
+			.BorderBackgroundColor(FLinearColor::White)
 			.Padding(Padding)
 			[
 				Content
@@ -269,19 +655,21 @@ namespace T66SettingsScreenPrivate
 		return SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
-				MakeSelectableSettingsButton(
+				MakeSettingsSpriteButton(
 					OnButtonParams,
-					[GetValue]() { return GetValue(); },
-					Style.OnSelectedColor,
-					Style.UnselectedColor)
+					TAttribute<ET66SettingsSpriteFamily>::CreateLambda([GetValue]() -> ET66SettingsSpriteFamily
+					{
+						return GetValue() ? ET66SettingsSpriteFamily::ToggleOn : ET66SettingsSpriteFamily::ToggleInactive;
+					}))
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(4.f, 0.f, 0.f, 0.f)
 			[
-				MakeSelectableSettingsButton(
+				MakeSettingsSpriteButton(
 					OffButtonParams,
-					[GetValue]() { return !GetValue(); },
-					Style.OffSelectedColor,
-					Style.UnselectedColor)
+					TAttribute<ET66SettingsSpriteFamily>::CreateLambda([GetValue]() -> ET66SettingsSpriteFamily
+					{
+						return GetValue() ? ET66SettingsSpriteFamily::ToggleInactive : ET66SettingsSpriteFamily::ToggleOff;
+					}))
 			];
 	}
 
@@ -339,17 +727,20 @@ namespace T66SettingsScreenPrivate
 		TFunction<bool()> GetValue,
 		FOnClicked OnClicked)
 	{
-		return MakeSettingsButton(
-			FT66ButtonParams(FText::GetEmpty(), MoveTemp(OnClicked), ET66ButtonType::Neutral)
+		FT66ButtonParams ButtonParams(FText::GetEmpty(), MoveTemp(OnClicked), ET66ButtonType::Neutral);
+		ButtonParams
 			.SetMinWidth(0.f)
-			.SetColor(TAttribute<FSlateColor>::CreateLambda([GetValue]() -> FSlateColor
-			{
-				return GetValue() ? FT66Style::Tokens::Success : FT66Style::Tokens::Danger;
-			}))
 			.SetDynamicLabel(TAttribute<FText>::CreateLambda([Loc, GetValue]() -> FText
 			{
 				return GetValue() ? GetSettingsOnText(Loc) : GetSettingsOffText(Loc);
-			})));
+			}));
+
+		return MakeSettingsSpriteButton(
+			ButtonParams,
+			TAttribute<ET66SettingsSpriteFamily>::CreateLambda([GetValue]() -> ET66SettingsSpriteFamily
+			{
+				return GetValue() ? ET66SettingsSpriteFamily::ToggleOn : ET66SettingsSpriteFamily::ToggleOff;
+			}));
 	}
 
 	inline TSharedRef<SWidget> MakeSettingsPercentEntryRow(
@@ -461,10 +852,11 @@ namespace T66SettingsScreenPrivate
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(FMargin(4.f, 0.f))
 			[
-				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.Common", "DropdownArrow", "???"))
-				.Font(SettingsRegularFont(16))
-				.ColorAndOpacity(GetSettingsPageMuted())
+				SNew(SBox)
+				.WidthOverride(26.f)
+				[
+					SNew(SSpacer)
+				]
 			];
 
 		return MakeSettingsRow(
@@ -601,9 +993,9 @@ namespace T66SettingsScreenPrivate
 			.Visibility(Params.Visibility)
 			[
 				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(T66SettingsButtonNeutralFill())
-				.Padding(FMargin(1.f))
+				.BorderImage(GetSettingsDropdownFieldBrush())
+				.BorderBackgroundColor(FLinearColor::White)
+				.Padding(FMargin(4.f, 2.f))
 				[
 					Combo
 				]

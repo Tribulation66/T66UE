@@ -1,4 +1,6 @@
 interface:
   display_name: "UI Runtime Reconstruction"
   short_description: "Rebuild a reference screen in-engine with real controls"
-  default_prompt: "Use $ui-runtime-reconstruction to rebuild this screen in Unreal using the measured layout and runtime art."
+  default_prompt: >-
+    Use $ui-runtime-reconstruction for the target UI screen pack under C:\UE\T66\UI\screens\<screen_slug>.
+    Hard gates: do not patch runtime styling unless reference\canonical_reference_1920x1080.png exists and was generated from the canonical main-menu anchor, the exact current target screenshot, and the target layout list; use measured layout and accepted runtime art only; no manual pixel repair, masking, cover patches, or fake hotspots; reject 1672x941 and other non-canonical production outputs.

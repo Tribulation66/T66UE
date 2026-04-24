@@ -1,0 +1,102 @@
+{
+  "screen_slug": "pause_menu",
+  "screen_key": "PauseMenu",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\pause_menu\\reference\\canonical_reference_1920x1080.png",
+  "source_file": "Source/T66/UI/Screens/T66PauseMenuScreen.cpp",
+  "regions": [
+    {
+      "name": "modal_scrim",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "owner": "runtime-overlay"
+    },
+    {
+      "name": "pause_shell",
+      "rect": {
+        "x": 900,
+        "y": 84,
+        "width": 220,
+        "height": 396
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "title_well",
+      "rect": {
+        "x": 920,
+        "y": 112,
+        "width": 180,
+        "height": 56
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "resume_button",
+      "rect": {
+        "x": 912,
+        "y": 184,
+        "width": 196,
+        "height": 32
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "save_quit_button",
+      "rect": {
+        "x": 912,
+        "y": 224,
+        "width": 196,
+        "height": 32
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "restart_button",
+      "rect": {
+        "x": 912,
+        "y": 264,
+        "width": 196,
+        "height": 32
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "settings_button",
+      "rect": {
+        "x": 912,
+        "y": 304,
+        "width": 196,
+        "height": 32
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "achievements_button",
+      "rect": {
+        "x": 912,
+        "y": 344,
+        "width": 196,
+        "height": 32
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "leaderboard_button",
+      "rect": {
+        "x": 912,
+        "y": 384,
+        "width": 196,
+        "height": 32
+      },
+      "owner": "runtime-control"
+    }
+  ]
+}

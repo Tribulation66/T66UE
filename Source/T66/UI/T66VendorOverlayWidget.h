@@ -31,8 +31,7 @@ public:
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 	void CloseOverlay();
-	void SetEmbeddedInCircusShell(bool bEmbedded) { bEmbeddedInCircusShell = bEmbedded; }
-	void SetEmbeddedInCasinoShell(bool bEmbedded) { SetEmbeddedInCircusShell(bEmbedded); }
+	void SetEmbeddedInCasinoShell(bool bEmbedded) { bEmbeddedInCasinoShell = bEmbedded; }
 	void SetVendorAllowsSteal(bool bEnabled) { bVendorAllowsSteal = bEnabled; }
 
 	/** Skip dialogue and open shop page (used by in-world dialogue). */
@@ -41,16 +40,13 @@ public:
 private:
 	enum class EVendorPage : uint8
 	{
-		Dialogue = 0,
-		Shop = 1,
+		Shop = 0,
 	};
 
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
 	TSharedPtr<STextBlock> ShopPageTitleText;
 	TSharedPtr<STextBlock> ShopModeToggleButtonText;
 	TSharedPtr<SWidget> ContextRerollButtonWidget;
-	TSharedPtr<SWidget> DialogueShopButtonWidget;
-	TSharedPtr<SWidget> DialogueTeleportButtonWidget;
 	TSharedPtr<SBox> CloseButtonBox;
 
 	// Bottom bar (next to inventory title)
@@ -141,10 +137,7 @@ private:
 	void ReleaseCachedSlateResources();
 
 	FReply OnReroll();
-	FReply OnDialogueShop();
-	FReply OnDialogueTeleport();
 	void SetPage(EVendorPage Page);
-	void TeleportToGambler();
 
 	FReply OnBack();
 	FReply OnBorrowClicked();
@@ -179,6 +172,6 @@ private:
 	UFUNCTION()
 	void HandleBossChanged();
 
-	bool bEmbeddedInCircusShell = false;
+	bool bEmbeddedInCasinoShell = false;
 	bool bVendorAllowsSteal = true;
 };

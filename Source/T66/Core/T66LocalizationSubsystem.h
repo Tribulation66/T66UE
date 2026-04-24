@@ -689,12 +689,6 @@ public:
 	FText GetText_Vendor() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
-	FText GetText_VendorDialoguePrompt() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
-	FText GetText_IWantToShop() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
 	FText GetText_Shop() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
@@ -951,9 +945,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_Casino() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Circus() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_Bank() const;

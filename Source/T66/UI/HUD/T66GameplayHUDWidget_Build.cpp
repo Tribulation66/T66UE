@@ -27,13 +27,13 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	CowardiceRowBox.Reset();
 	BossPartBarRows.Reset();
 	const bool bDotaTheme = FT66Style::IsDotaTheme();
-	const FLinearColor SlotOuterColor = bDotaTheme ? FT66Style::SlotOuter() : FLinearColor(0.f, 0.f, 0.f, 0.25f);
-	const FLinearColor SlotFrameColor = bDotaTheme ? FT66Style::SlotInner() : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
-	const FLinearColor SlotFillColor = bDotaTheme ? FT66Style::SlotFill() : FLinearColor(0.f, 0.f, 0.f, 0.f);
+	const FLinearColor SlotOuterColor = bDotaTheme ? FLinearColor(0.018f, 0.014f, 0.012f, 0.98f) : FLinearColor(0.f, 0.f, 0.f, 0.25f);
+	const FLinearColor SlotFrameColor = bDotaTheme ? FLinearColor(0.56f, 0.42f, 0.23f, 0.88f) : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
+	const FLinearColor SlotFillColor = bDotaTheme ? FLinearColor(0.025f, 0.026f, 0.032f, 0.96f) : FLinearColor(0.f, 0.f, 0.f, 0.f);
 	const FLinearColor BossBarBackgroundColor = bDotaTheme ? FT66Style::BossBarBackground() : FLinearColor(0.08f, 0.08f, 0.08f, 0.9f);
 	const FLinearColor BossBarFillColor = bDotaTheme ? FT66Style::BossBarFill() : FLinearColor(0.9f, 0.1f, 0.1f, 0.95f);
-	const FLinearColor PromptBackgroundColor = bDotaTheme ? FT66Style::PromptBackground() : FLinearColor(0.02f, 0.02f, 0.03f, 0.65f);
-	const FLinearColor DialogueBackgroundColor = bDotaTheme ? FT66Style::PromptBackground() : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f);
+	const FLinearColor PromptBackgroundColor = bDotaTheme ? FLinearColor(0.026f, 0.022f, 0.020f, 0.90f) : FLinearColor(0.02f, 0.02f, 0.03f, 0.65f);
+	const FLinearColor DialogueBackgroundColor = bDotaTheme ? FLinearColor(0.030f, 0.026f, 0.024f, 0.94f) : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f);
 	const int32 InventorySlotWidgetCount = UT66RunStateSubsystem::MaxInventorySlots;
 
 	HeartBorders.SetNum(GT66DisplayedHeartCount);
@@ -452,15 +452,15 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const float AbilityInputBadgeHeight = 18.f;
 	const float AbilityIconInset = 6.f;
 	const float BottomLeftColumnGap = 0.f;
-	const FLinearColor BottomLeftPanelOuterColor(0.f, 0.f, 0.f, 0.95f);
-	const FLinearColor BottomLeftPanelInnerColor(0.f, 0.f, 0.f, 1.f);
-	const FLinearColor BottomLeftPanelTitleColor = FT66Style::TextMuted();
-	const FLinearColor BottomLeftPanelDividerColor = FT66Style::Border() * FLinearColor(1.f, 1.f, 1.f, 0.6f);
-	const FLinearColor IdolSectionBorderColor(0.45f, 0.63f, 0.78f, 0.95f);
-	const FLinearColor PortraitSectionBorderColor(0.72f, 0.58f, 0.32f, 0.95f);
-	const FLinearColor AbilitySectionBorderColor(0.54f, 0.74f, 0.94f, 0.95f);
-	const FLinearColor HeartsSectionBorderColor(0.72f, 0.34f, 0.34f, 0.95f);
-	const FLinearColor SharedSectionFillColor(0.03f, 0.03f, 0.04f, 1.f);
+	const FLinearColor BottomLeftPanelOuterColor(0.018f, 0.014f, 0.012f, 0.96f);
+	const FLinearColor BottomLeftPanelInnerColor(0.036f, 0.029f, 0.024f, 0.98f);
+	const FLinearColor BottomLeftPanelTitleColor(0.88f, 0.70f, 0.38f, 1.f);
+	const FLinearColor BottomLeftPanelDividerColor(0.70f, 0.52f, 0.26f, 0.66f);
+	const FLinearColor IdolSectionBorderColor(0.48f, 0.58f, 0.76f, 0.95f);
+	const FLinearColor PortraitSectionBorderColor(0.78f, 0.59f, 0.30f, 0.98f);
+	const FLinearColor AbilitySectionBorderColor(0.44f, 0.58f, 0.82f, 0.96f);
+	const FLinearColor HeartsSectionBorderColor(0.70f, 0.25f, 0.22f, 0.96f);
+	const FLinearColor SharedSectionFillColor(0.028f, 0.026f, 0.031f, 0.98f);
 	const FLinearColor LevelTextColor = bDotaTheme ? FT66Style::Accent2() : FLinearColor(0.90f, 0.75f, 0.20f, 1.f);
 	TSharedRef<SWidget> LevelBadgeRef =
 		SNew(SBox)
@@ -1294,7 +1294,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.f))
+					.BorderBackgroundColor(FLinearColor(0.030f, 0.025f, 0.021f, 0.98f))
 					.Padding(0.f)
 					[
 						SNew(SVerticalBox)
@@ -1302,7 +1302,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor::Black)
+							.BorderBackgroundColor(FLinearColor(0.055f, 0.043f, 0.032f, 0.98f))
 							.Padding(FMargin(8.f, 6.f))
 							[
 								SNew(SHorizontalBox)
@@ -1357,7 +1357,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.08f, 1.f))
+							.BorderBackgroundColor(FLinearColor(0.070f, 0.055f, 0.032f, 0.95f))
 							.Padding(FMargin(8.f, 4.f))
 							[
 								SAssignNew(WheelSpinSkipText, STextBlock)
@@ -1633,7 +1633,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 															[
 																SNew(SBorder)
 																.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-																.BorderBackgroundColor(FLinearColor::Black)
+																.BorderBackgroundColor(FLinearColor(0.055f, 0.043f, 0.032f, 0.98f))
 																.Padding(FMargin(0.f, 1.f))
 																[
 																	SNew(STextBlock)
@@ -1677,7 +1677,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 																[
 																	SNew(SBorder)
 																	.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-																	.BorderBackgroundColor(FLinearColor::Black)
+																	.BorderBackgroundColor(FLinearColor(0.055f, 0.043f, 0.032f, 0.98f))
 																	.Padding(FMargin(0.f, 1.f))
 																	[
 																		SNew(STextBlock)
@@ -1984,12 +1984,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			[
 				SAssignNew(AchievementNotificationBorder, SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.15f, 0.15f, 0.15f, 1.0f))
+				.BorderBackgroundColor(FLinearColor(0.58f, 0.42f, 0.22f, 0.96f))
 				.Padding(3.f)
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FT66Style::Tokens::Panel)
+					.BorderBackgroundColor(FLinearColor(0.58f, 0.42f, 0.22f, 0.96f))
 					.Padding(FMargin(10.f, 8.f))
 					[
 						SNew(SVerticalBox)
@@ -2026,12 +2026,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			[
 				SAssignNew(ChestRewardTileBorder, SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FT66Style::Tokens::Panel)
+				.BorderBackgroundColor(FLinearColor(0.58f, 0.42f, 0.22f, 0.96f))
 				.Padding(2.f)
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.f))
+					.BorderBackgroundColor(FLinearColor(0.030f, 0.025f, 0.021f, 0.98f))
 					.Padding(0.f)
 					[
 						SNew(SVerticalBox)
@@ -2039,7 +2039,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor::Black)
+							.BorderBackgroundColor(FLinearColor(0.055f, 0.043f, 0.032f, 0.98f))
 							.Padding(FMargin(8.f, 6.f))
 							[
 								SNew(SHorizontalBox)
@@ -2067,7 +2067,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.05f, 0.04f, 0.02f, 1.f))
+							.BorderBackgroundColor(FLinearColor(0.040f, 0.032f, 0.024f, 0.98f))
 							.Padding(FMargin(4.f, 6.f))
 							[
 								ChestRewardArtOverlay
@@ -2077,7 +2077,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.08f, 1.f))
+							.BorderBackgroundColor(FLinearColor(0.070f, 0.055f, 0.032f, 0.95f))
 							.Padding(FMargin(8.f, 4.f))
 							[
 								SAssignNew(ChestRewardSkipText, STextBlock)
@@ -2104,12 +2104,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			[
 				SAssignNew(PickupCardTileBorder, SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FT66Style::Tokens::Panel)
+				.BorderBackgroundColor(FLinearColor(0.58f, 0.42f, 0.22f, 0.96f))
 				.Padding(2.f)
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.f))
+					.BorderBackgroundColor(FLinearColor(0.030f, 0.025f, 0.021f, 0.98f))
 					.Padding(0.f)
 					[
 						SNew(SVerticalBox)
@@ -2117,7 +2117,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SAssignNew(PickupCardIconBorder, SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.05f, 1.f))
+							.BorderBackgroundColor(FLinearColor(0.028f, 0.026f, 0.032f, 0.98f))
 							.Padding(FMargin(6.f))
 							[
 								SNew(SBox)
@@ -2139,7 +2139,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor::Black)
+							.BorderBackgroundColor(FLinearColor(0.055f, 0.043f, 0.032f, 0.98f))
 							.Padding(FMargin(10.f, 8.f))
 							[
 								SNew(SVerticalBox)
@@ -2167,7 +2167,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.08f, 1.f))
+							.BorderBackgroundColor(FLinearColor(0.070f, 0.055f, 0.032f, 0.95f))
 							.Padding(FMargin(8.f, 4.f))
 							[
 								SAssignNew(PickupCardSkipText, STextBlock)
@@ -2343,7 +2343,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			SAssignNew(FullMapOverlayBorder, SBorder)
 			.Visibility(EVisibility::Collapsed)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.78f))
+			.BorderBackgroundColor(FLinearColor(0.010f, 0.008f, 0.008f, 0.84f))
 			[
 				SNew(SOverlay)
 				+ SOverlay::Slot()
@@ -2406,8 +2406,8 @@ static void T66_ApplyWorldDialogueSelection(
 		if (OptionBorders[i].IsValid())
 		{
 			OptionBorders[i]->SetBorderBackgroundColor(bSelected
-				? (FT66Style::IsDotaTheme() ? FT66Style::SelectionFill() : FLinearColor(0.18f, 0.18f, 0.26f, 0.95f))
-				: (FT66Style::IsDotaTheme() ? FT66Style::PromptBackground() : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f)));
+				? (FT66Style::IsDotaTheme() ? FLinearColor(0.34f, 0.25f, 0.13f, 0.98f) : FLinearColor(0.18f, 0.18f, 0.26f, 0.95f))
+				: (FT66Style::IsDotaTheme() ? FLinearColor(0.030f, 0.026f, 0.024f, 0.94f) : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f)));
 		}
 		if (OptionTexts.IsValidIndex(i) && OptionTexts[i].IsValid())
 		{

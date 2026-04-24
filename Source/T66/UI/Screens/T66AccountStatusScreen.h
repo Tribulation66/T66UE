@@ -62,6 +62,7 @@ private:
 	FString AppealDraftMessage;
 	FString AppealSubmitStatusMessage;
 	bool bAppealSubmitStatusIsError = false;
+	bool bAppealSubmitInFlight = false;
 
 	FReply HandleBackClicked();
 	FReply HandleSuspensionTabClicked();

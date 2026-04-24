@@ -1,6 +1,6 @@
 # T66 Mini Walksheet Pipeline
 
-This is the local, non-API process for generating minigame walk animation sheets through the ChatGPT Chrome bridge.
+This is the local process for generating minigame walk animation sheets with Codex-native image generation.
 
 ## Goal
 
@@ -29,7 +29,7 @@ Generating a full sheet first keeps:
 
 - reference portrait or sprite for the character
 - a manifest entry in [T66Mini_WalkCandidateManifest.json](/C:/UE/T66/Docs/Mini/T66Mini_WalkCandidateManifest.json)
-- the ChatGPT bridge
+- Codex-native image generation
 
 Arthur references currently used:
 
@@ -47,17 +47,9 @@ Arthur references currently used:
 
 ## Commands
 
-Start the debug Chrome session:
+Generate the walk candidates with Codex-native image generation from the manifest prompts and reference images. Save the raw candidates to `SourceAssets/Mini/Heroes/WalkCandidates/`.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File "C:\UE\T66\Tools\ChatGPTBridge\launch_debug_chrome.ps1"
-```
-
-Generate the walk candidates:
-
-```powershell
-python .\Tools\Mini\T66MiniSpriteBatch.py --manifest .\Docs\Mini\T66Mini_WalkCandidateManifest.json --only arthur_walk_candidate_01 arthur_walk_candidate_02 arthur_walk_candidate_03
-```
+Do not use browser-automation generation tooling or legacy request manifests.
 
 Normalize the frames:
 

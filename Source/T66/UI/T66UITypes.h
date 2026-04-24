@@ -39,7 +39,7 @@ enum class ET66ScreenType : uint8
 	LanguageSelect = 22 UMETA(DisplayName = "Language Select Modal"),
 	QuitConfirmation = 23 UMETA(DisplayName = "Quit Confirmation Modal"),
 	PartyInvite = 24 UMETA(DisplayName = "Party Invite Modal"),
-	SnakeGame = 25 UMETA(DisplayName = "Snake Game Modal"),
+	RemovedUtilitySlot = 25 UMETA(Hidden),
 	LobbyReadyCheck = 26 UMETA(DisplayName = "Lobby Ready Check Modal"),
 	LobbyBackConfirm = 27 UMETA(DisplayName = "Lobby Back Confirm Modal"),
 	AccountStatus = 28 UMETA(DisplayName = "Account Status Panel"),

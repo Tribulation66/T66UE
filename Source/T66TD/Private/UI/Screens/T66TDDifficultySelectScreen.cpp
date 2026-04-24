@@ -7,12 +7,15 @@
 #include "Data/T66TDDataTypes.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
+#include "UI/T66TDUIStyle.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
@@ -41,9 +44,103 @@ namespace
 			return SNew(SBox);
 		}
 
-		return SNew(SImage)
-			.Image(Brush.Get())
-			.ColorAndOpacity(FLinearColor::White);
+		return SNew(SScaleBox)
+			.Stretch(EStretch::Fill)
+			[
+				SNew(SImage)
+				.Image(Brush.Get())
+				.ColorAndOpacity(FLinearColor::White)
+			];
+	}
+
+	const FSlateBrush* ResolveScreenBrush(
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
+		const TCHAR* RelativePath,
+		const FMargin& Margin,
+		const TCHAR* DebugLabel)
+	{
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
+			Margin,
+			DebugLabel);
+	}
+
+	const FSlateBrush* TDDifficultyLeftPanelBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveScreenBrush(
+			Entry,
+			TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/panel_left_difficulty_shell.png"),
+			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
+			TEXT("TDDifficultyLeftPanel"));
+	}
+
+	const FSlateBrush* TDDifficultyCenterPanelBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveScreenBrush(
+			Entry,
+			TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/panel_center_map_grid_shell.png"),
+			FMargin(0.10f, 0.12f, 0.10f, 0.12f),
+			TEXT("TDDifficultyCenterPanel"));
+	}
+
+	const FSlateBrush* TDDifficultyRightPanelBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveScreenBrush(
+			Entry,
+			TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/panel_right_summary_shell.png"),
+			FMargin(0.12f, 0.12f, 0.12f, 0.12f),
+			TEXT("TDDifficultyRightPanel"));
+	}
+
+	const FSlateBrush* TDDifficultyItemBrush(const bool bIsSelected)
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush NormalEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush SelectedEntry;
+		return ResolveScreenBrush(
+			bIsSelected ? SelectedEntry : NormalEntry,
+			bIsSelected
+				? TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/difficulty_item_selected.png")
+				: TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/difficulty_item_normal.png"),
+			FMargin(0.16f, 0.30f, 0.16f, 0.30f),
+			bIsSelected ? TEXT("TDDifficultyItemSelected") : TEXT("TDDifficultyItem"));
+	}
+
+	const FSlateBrush* TDDifficultyMapCardBrush(const bool bIsSelected)
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush NormalEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush SelectedEntry;
+		return ResolveScreenBrush(
+			bIsSelected ? SelectedEntry : NormalEntry,
+			bIsSelected
+				? TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/map_card_selected.png")
+				: TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/map_card_normal.png"),
+			FMargin(0.17f, 0.18f, 0.17f, 0.22f),
+			bIsSelected ? TEXT("TDMapCardSelected") : TEXT("TDMapCard"));
+	}
+
+	const FSlateBrush* TDDifficultyButtonBrush(const ET66ButtonType Type)
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush GreenEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush BlueEntry;
+		if (Type == ET66ButtonType::Success || Type == ET66ButtonType::Primary)
+		{
+			return ResolveScreenBrush(
+				GreenEntry,
+				TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/button_green_normal.png"),
+				FMargin(0.18f, 0.32f, 0.18f, 0.32f),
+				TEXT("TDDifficultyButtonGreen"));
+		}
+
+		return ResolveScreenBrush(
+			BlueEntry,
+			TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/button_blue_normal.png"),
+			FMargin(0.18f, 0.32f, 0.18f, 0.32f),
+			TEXT("TDDifficultyButtonBlue"));
 	}
 }
 
@@ -83,11 +180,9 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 	const FT66TDMapDefinition* SelectedMap = (TDDataSubsystem && FrontendState) ? TDDataSubsystem->FindMap(FrontendState->GetSelectedMapID()) : nullptr;
 	const TArray<const FT66TDMapDefinition*> DifficultyMaps = (TDDataSubsystem && FrontendState) ? TDDataSubsystem->GetMapsForDifficulty(FrontendState->GetSelectedDifficultyID()) : TArray<const FT66TDMapDefinition*>();
 
-	const FLinearColor ShellFill(0.012f, 0.010f, 0.014f, 0.985f);
-	const FLinearColor PanelFill(0.050f, 0.032f, 0.040f, 0.98f);
-	const FLinearColor CardFill(0.080f, 0.044f, 0.054f, 1.0f);
-	const FLinearColor MutedText(0.78f, 0.74f, 0.72f, 1.0f);
-	const FLinearColor BrightText(0.95f, 0.93f, 0.92f, 1.0f);
+	const FLinearColor ShellFill = T66TDUI::ShellFill();
+	const FLinearColor MutedText = T66TDUI::MutedText();
+	const FLinearColor BrightText = T66TDUI::BrightText();
 
 	TSharedRef<SVerticalBox> DifficultyButtons = SNew(SVerticalBox);
 	if (TDDataSubsystem)
@@ -101,18 +196,14 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(bIsSelected ? Difficulty.AccentColor : CardFill)
+				.BorderBackgroundColor(T66TDUI::SelectionStroke(bIsSelected))
 				.Padding(FMargin(1.f))
 				[
 					SNew(SButton)
 					.ButtonStyle(FCoreStyle::Get(), "NoBorder")
 					.OnClicked(FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleDifficultyClicked, Difficulty.DifficultyID))
 					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(bIsSelected ? FLinearColor(0.10f, 0.05f, 0.06f, 1.0f) : FLinearColor(0.05f, 0.04f, 0.05f, 1.0f))
-						.Padding(FMargin(14.f, 12.f))
-						[
+						T66TDUI::MakeGeneratedPanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight()
 							[
@@ -129,7 +220,10 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 								.ColorAndOpacity(MutedText)
 								.AutoWrapText(true)
 							]
-						]
+							,
+							TDDifficultyItemBrush(bIsSelected),
+							T66TDUI::CardFill(),
+							FMargin(16.f, 12.f))
 					]
 				]
 			];
@@ -152,18 +246,14 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 		[
 			SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(bIsSelected && SelectedDifficulty ? SelectedDifficulty->AccentColor : CardFill)
+			.BorderBackgroundColor(T66TDUI::SelectionStroke(bIsSelected && SelectedDifficulty != nullptr))
 			.Padding(FMargin(1.f))
-			[
-				SNew(SButton)
-				.ButtonStyle(FCoreStyle::Get(), "NoBorder")
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleMapClicked, Map->MapID))
 				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.03f, 0.03f, 0.04f, 1.0f))
-					.Padding(FMargin(10.f))
+					SNew(SButton)
+					.ButtonStyle(FCoreStyle::Get(), "NoBorder")
+					.OnClicked(FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleMapClicked, Map->MapID))
 					[
+					T66TDUI::MakeGeneratedPanel(
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight()
 						[
@@ -194,7 +284,10 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 							.Font(FT66Style::MakeFont(TEXT("Regular"), 10))
 							.ColorAndOpacity(MutedText)
 						]
-					]
+						,
+						TDDifficultyMapCardBrush(bIsSelected),
+						T66TDUI::CardFill(),
+						FMargin(12.f))
 				]
 			]
 		];
@@ -216,19 +309,24 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 		}
 	}
 
+	const TSharedPtr<FSlateBrush> SelectedMapBackgroundBrush = SelectedMap ? FindOrLoadMapBrush(SelectedMap->BackgroundRelativePath) : nullptr;
+	FT66ButtonParams StartButtonParams = T66TDUI::MakePrimaryButtonParams(
+		NSLOCTEXT("T66TD.Difficulty", "StartMatch", "START MATCH"),
+		FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleStartMatchClicked),
+		308.f,
+		48.f,
+		14);
+	StartButtonParams.SetDotaPlateOverrideBrush(TDDifficultyButtonBrush(ET66ButtonType::Success));
+
 	const TSharedRef<SWidget> SummaryPanel =
-		SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(PanelFill)
-		.Padding(FMargin(16.f))
-		[
+		T66TDUI::MakeGeneratedPanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66TD.Difficulty", "SummaryTitle", "REGULAR ROTATION"))
 				.Font(FT66Style::MakeFont(TEXT("Bold"), 16))
-				.ColorAndOpacity(FLinearColor(0.94f, 0.74f, 0.32f, 1.0f))
+				.ColorAndOpacity(T66TDUI::AccentGold())
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 			[
@@ -287,18 +385,20 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 			[
-				FT66Style::MakeButton(
-					FT66ButtonParams(
-						NSLOCTEXT("T66TD.Difficulty", "StartMatch", "START MATCH"),
-						FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleStartMatchClicked),
-						ET66ButtonType::Success)
-					.SetMinWidth(308.f)
-					.SetHeight(48.f)
-					.SetFontSize(14)
-					.SetPadding(FMargin(12.f, 8.f, 12.f, 6.f))
-					.SetUseGlow(false))
+				FT66Style::MakeButton(StartButtonParams)
 			]
-		];
+			,
+			TDDifficultyRightPanelBrush(),
+			ShellFill,
+			FMargin(24.f, 22.f));
+
+	FT66ButtonParams BackButtonParams = T66TDUI::MakeUtilityButtonParams(
+		NSLOCTEXT("T66TD.Difficulty", "BackToTDMenu", "BACK TO TD"),
+		FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleBackClicked),
+		304.f,
+		44.f,
+		10);
+	BackButtonParams.SetDotaPlateOverrideBrush(TDDifficultyButtonBrush(ET66ButtonType::Neutral));
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -307,35 +407,30 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 			SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
+				MakeOptionalImage(SelectedMapBackgroundBrush)
+			]
+			+ SOverlay::Slot()
+			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.40f))
+				.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.70f))
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(FMargin(20.f, 20.f, 0.f, 0.f))
 			[
 				SNew(SBox)
 				.WidthOverride(304.f)
-				.HeightOverride(40.f)
+				.HeightOverride(44.f)
 				[
-					FT66Style::MakeButton(
-						FT66ButtonParams(
-							NSLOCTEXT("T66TD.Difficulty", "BackToTDMenu", "BACK TO TD"),
-							FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleBackClicked),
-							ET66ButtonType::Neutral)
-						.SetMinWidth(304.f)
-						.SetHeight(40.f)
-						.SetFontSize(12)
-						.SetPadding(FMargin(14.f, 8.f, 14.f, 6.f))
-						.SetUseGlow(false)
-						.SetTextColor(FLinearColor(0.94f, 0.95f, 0.97f, 1.0f)))
+					FT66Style::MakeButton(BackButtonParams)
 				]
 			]
-			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, 32.f, 0.f, 0.f)
+			+ SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Top).Padding(430.f, 46.f, 120.f, 0.f)
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66TD.Difficulty", "Title", "REGULAR DIFFICULTY AND MAP ROTATION"))
-				.Font(FT66Style::MakeFont(TEXT("Black"), 28))
-				.ColorAndOpacity(FLinearColor(0.96f, 0.80f, 0.38f, 1.0f))
+				.Font(FT66Style::MakeFont(TEXT("Black"), 18))
+				.ColorAndOpacity(T66TDUI::AccentGold())
+				.Justification(ETextJustify::Center)
 			]
 			+ SOverlay::Slot().Padding(FMargin(32.f, 100.f, 32.f, 24.f))
 			[
@@ -344,40 +439,29 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 				[
 					SNew(SBox).WidthOverride(340.f)
 					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(PanelFill)
-						.Padding(FMargin(16.f))
-						[
+						T66TDUI::MakeGeneratedPanel(
 							SNew(SScrollBox)
 							+ SScrollBox::Slot()[DifficultyButtons]
-						]
+							,
+							TDDifficultyLeftPanelBrush(),
+							ShellFill,
+							FMargin(22.f, 20.f))
 					]
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 16.f, 0.f)
 				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(PanelFill)
-					.Padding(FMargin(16.f))
-					[
+					T66TDUI::MakeGeneratedPanel(
 						MapGrid
-					]
+						,
+						TDDifficultyCenterPanelBrush(),
+						T66TDUI::PanelFill(),
+						FMargin(20.f))
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
 					SNew(SBox).WidthOverride(360.f)
 					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight()[SummaryPanel]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
-						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66TD.Difficulty", "RuntimeNote", "This pass locks the TD shell, 20-map rotation, and TD-owned data/assets. Gameplay runtime and placement/combat screens land next."))
-							.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
-							.ColorAndOpacity(MutedText)
-							.AutoWrapText(true)
-						]
+						SummaryPanel
 					]
 				]
 			]

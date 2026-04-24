@@ -1,14 +1,14 @@
 Use case: ui-mockup
-Asset type: layout-authority screen reference
-Primary request: create a Hero Selection screen master that preserves the exact structure of the current packaged Hero Selection screen while restaging it in the approved Main Menu visual family
-Style anchor image: C:/UE/T66/SourceAssets/UI/MainMenuReference/reference_main_menu_master.png
+Asset type: offline layout-authority screen reference
+Primary request: create a Hero Selection offline comparison target that preserves the exact structure of the current packaged Hero Selection screen while restaging it in the approved Main Menu visual family
+Style anchor image: C:/UE/T66/UI/screens/main_menu/reference/canonical_reference_1920x1080.png
 Structure anchor image: C:/UE/T66/SourceAssets/UI/HeroSelectionReference/current_runtime_anchor.png
 Helper anchor image: C:/UE/T66/SourceAssets/UI/HeroSelectionReference/current_runtime_anchor_2x.png
-Subject: the full Hero Selection screen as one deterministic reference frame
+Subject: the full Hero Selection screen as one deterministic offline reference frame, not a runtime background
 Style/medium: painted fantasy game UI matching the approved Main Menu family, not a redesign
 Composition/framing: fixed frame at 1920x1080, exact aspect ratio, no reframing
 Structural constraints: preserve the same major region contract as the structure anchor: top hero strip, left skins-or-stats panel, center preview stage, right info panel, bottom party and run controls
 Style transfer constraints: match the Main Menu surface language specifically, with chunkier bronze-and-stone framing, broader dark panel faces, and disciplined accent use; preserve the Hero Selection panel and group structure exactly from the runtime anchor; reduce ornament density compared with generic fantasy altar UI; avoid foliage, crown-gem caps, shrine-card nesting, or extra decorative micro-frames inside the side panels
-Runtime constraints: do not bake localizable text into runtime-intended chrome; keep controls and panel shells text-free where possible so buttonless and no-text variants can be derived; leave the center preview stage as an open aperture for the live 3D or media preview; leave the hero-strip and companion-strip portrait wells empty for live portraits; leave the party avatar wells, party hero portrait wells, temporary buff slots, and ult/passive icon sockets open or neutral for live runtime content
-Output expectation: canonical screen master first, then compatible no-buttons and no-text variants from that same composition
+Runtime constraints: do not bake localizable text into runtime-intended chrome; keep controls and panel shells text-free where possible so separate foreground component families can be derived; leave the center preview stage as an open aperture for the live 3D or media preview; leave the hero-strip and companion-strip portrait wells empty for live portraits; leave the party avatar wells, party hero portrait wells, temporary buff slots, and ult/passive icon sockets open or neutral for live runtime content
+Output expectation: canonical offline screen target first; any no-buttons or no-text variants are helper references only, not production runtime backgrounds
 Avoid: layout drift, changed panel hierarchy, moving the hero stage to a different region, removing party or run controls, beautifying the side columns into ornate shrine cards, copying old retro or Dota family art, painting fake hero portraits into live wells, or watermark

@@ -1,5 +1,6 @@
 interface:
   display_name: "UI Reference Prep"
   short_description: "Prepare helper references before UI reconstruction"
-  default_prompt: "Use $ui-reference-prep to choose between resample and AI upscale, produce 2x/4x helper references, and classify outputs before reconstruction."
-
+  default_prompt: >-
+    Use $ui-reference-prep only for helper references in the target UI screen pack under C:\UE\T66\UI\screens\<screen_slug>.
+    Hard gates: helper outputs do not replace the screen-specific reference generated from the canonical main-menu anchor, the exact current target screenshot, and the target layout list; classify helper-only versus runtime-safe; do not manually pixel-repair generated art; reject 1672x941 and other non-canonical production outputs.

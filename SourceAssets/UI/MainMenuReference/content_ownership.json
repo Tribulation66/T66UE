@@ -1,11 +1,48 @@
 {
   "screen": "MainMenu",
-  "status": "initial_audit",
+  "status": "expanded_runtime_audit",
   "notes": [
     "Main Menu shell art is reference-driven, but multiple portrait wells and identity slots are populated from Steam or live fallback portraits at runtime.",
-    "These interiors should be treated as socket-frame regions during generation and as masked or manually validated regions during packaged review."
+    "These interiors should be treated as socket-frame regions during generation and as masked or manually validated regions during packaged review.",
+    "The title lockup remains baked art. The tagline, top-bar labels, CTA labels, friend/profile/party text, leaderboard controls, leaderboard rows, and currency values are runtime text/value regions."
   ],
   "regions": [
+    {
+      "id": "scene_background_plate",
+      "reference_layout_key": "MainMenu.full_canvas",
+      "region_hint": "full-screen dungeon/idol environment behind all UI",
+      "content_type": "generated-scene-plate",
+      "render_contract": "background-only",
+      "validation_mode": "strict-no-foreground-ui",
+      "notes": "The runtime background is SourceAssets/UI/MainMenuReference/scene_background_purple_imagegen_1920x1080.png. It must contain only environment art, with no top bar, panels, CTA stack, labels, avatars, leaderboard rows, icons, or other foreground UI."
+    },
+    {
+      "id": "topbar_foreground_backdrop",
+      "reference_layout_key": "TopBar.topbar_strip_full",
+      "region_hint": "top-bar backing strip behind live top-bar buttons",
+      "content_type": "generated-component-art",
+      "render_contract": "punched-backdrop",
+      "validation_mode": "strict-component-layer",
+      "notes": "The top-bar backing is TopBar/topbar_backdrop_clean.png. Button rectangles are transparent so stateful button sprites and live labels own every control pixel."
+    },
+    {
+      "id": "main_menu_title_wordmark",
+      "reference_layout_key": "Center.title_lockup",
+      "region_hint": "baked CHADPOCALYPSE title art",
+      "content_type": "baked-title-art",
+      "render_contract": "transparent-foreground-art",
+      "validation_mode": "strict-component-layer",
+      "notes": "The title is Center/title_lockup_wordmark.png. The title can be baked art, but the tagline below it remains runtime/localizable text."
+    },
+    {
+      "id": "center_cta_art",
+      "reference_layout_key": "Center.cta_stack_full",
+      "region_hint": "center call-to-action stack frame and button plates",
+      "content_type": "generated-component-art",
+      "render_contract": "interactive-component-plates",
+      "validation_mode": "strict-component-layer",
+      "notes": "The stack frame and CTA button state plates are foreground component art. They must not include baked button labels; live FText owns the button text."
+    },
     {
       "id": "profile_avatar_well",
       "reference_layout_key": "Left.profile_card_reference",
@@ -92,6 +129,86 @@
           "file": "C:/UE/T66/Source/T66/UI/Components/T66LeaderboardPanel.cpp",
           "start_line": 2456,
           "end_line": 2587
+        }
+      ]
+    },
+    {
+      "id": "main_menu_tagline",
+      "reference_layout_key": "Center.subtitle_lockup",
+      "region_hint": "subtitle/tagline below the baked title art",
+      "content_type": "runtime-text",
+      "render_contract": "open-aperture",
+      "validation_mode": "strict-layout-manual-text",
+      "notes": "The main title stays baked into the art, but this tagline is localizable runtime text and must not be baked into the shell master.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/T66MainMenuScreen.cpp",
+          "start_line": 478,
+          "end_line": 478
+        }
+      ]
+    },
+    {
+      "id": "topbar_runtime_labels_and_values",
+      "reference_layout_key": "TopBar.topbar_strip_full",
+      "region_hint": "top-bar nav labels, coupon count, utility tooltips, and stateful button labels",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "validation_mode": "strict-layout-manual-text",
+      "notes": "Top-bar plates are generated art, while labels and changing values remain live/localizable.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/T66FrontendTopBarWidget.cpp",
+          "start_line": 1089,
+          "end_line": 1235
+        }
+      ]
+    },
+    {
+      "id": "center_cta_labels",
+      "reference_layout_key": "Center.cta_stack_full",
+      "region_hint": "center call-to-action button labels",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "validation_mode": "strict-layout-manual-text",
+      "notes": "CTA plates are runtime button art, but button labels are localizable FText.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/T66MainMenuScreen.cpp",
+          "start_line": 1468,
+          "end_line": 1509
+        }
+      ]
+    },
+    {
+      "id": "profile_friend_party_text",
+      "reference_layout_key": "Left.shell_full_reference",
+      "region_hint": "left social panel account strings, search text, friend names/statuses, group counts, invite states, and party labels",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "validation_mode": "strict-layout-manual-text",
+      "notes": "The social panel shell and frames are art; Steam/friend/party strings and button labels are runtime-owned.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Screens/T66MainMenuScreen.cpp",
+          "start_line": 789,
+          "end_line": 1455
+        }
+      ]
+    },
+    {
+      "id": "leaderboard_runtime_text_and_values",
+      "reference_layout_key": "Right.shell_full_reference",
+      "region_hint": "right leaderboard filters, dropdown labels, headers, row names, ranks, scores, and times",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "validation_mode": "strict-layout-manual-text",
+      "notes": "Leaderboard chrome can be generated art, but all row values and filter labels are live data or localizable text.",
+      "code_refs": [
+        {
+          "file": "C:/UE/T66/Source/T66/UI/Components/T66LeaderboardPanel.cpp",
+          "start_line": 634,
+          "end_line": 1588
         }
       ]
     }

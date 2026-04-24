@@ -1,0 +1,21 @@
+{
+  "screen_slug": "td_main_menu",
+  "canvas": { "width": 1920, "height": 1080 },
+  "source_files": [
+    "C:/UE/T66/Source/T66TD/Private/UI/Screens/T66TDMainMenuScreen.cpp",
+    "C:/UE/T66/Source/T66TD/Private/UI/T66TDUIStyle.h"
+  ],
+  "regions": [
+    { "name": "background_scene", "rect": [0, 0, 1920, 1080], "content_type": "generated-scene-plate", "render_contract": "shell-only" },
+    { "name": "back_button_plate", "rect": [34, 34, 434, 60], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "back_button_label", "rect": [80, 48, 300, 30], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "title", "rect": [540, 74, 830, 80], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "left_panel_shell", "rect": [37, 255, 540, 790], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "left_panel_text", "rect": [65, 285, 490, 555], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "cta_stack_shell", "rect": [577, 592, 777, 296], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "cta_button_labels", "rect": [587, 613, 746, 259], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "right_panel_shell", "rect": [1345, 255, 540, 790], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "right_panel_text", "rect": [1374, 285, 490, 620], "content_type": "runtime-text", "render_contract": "empty-backplate" }
+  ]
+}
+

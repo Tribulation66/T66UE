@@ -6,11 +6,11 @@ from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFo
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT_DIR = ROOT / "output" / "imagegen"
+OUT_DIR = ROOT / "UI" / "screens" / "achievements" / "outputs" / "2026-04-24" / "imagegen"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-CANVAS_SIZE = (1672, 941)
-TOPBAR_HEIGHT = 126
+CANVAS_SIZE = (1920, 1080)
+TOPBAR_HEIGHT = 145
 
 
 def load_rgba(path: Path) -> Image.Image:
@@ -19,7 +19,7 @@ def load_rgba(path: Path) -> Image.Image:
 
 ASSET_ROOT = ROOT / "SourceAssets" / "UI" / "MainMenuReference"
 TOPBAR = load_rgba(ASSET_ROOT / "TopBar" / "topbar_strip_full.png")
-REFERENCE_MENU = load_rgba(ROOT / "SourceAssets" / "Reference Main Menu.png")
+REFERENCE_MENU = load_rgba(ROOT / "UI" / "screens" / "main_menu" / "reference" / "canonical_reference_1920x1080.png")
 PANEL_TILE = load_rgba(ASSET_ROOT / "Tiles" / "panel_fill_dark.png")
 WARM_TILE = load_rgba(ASSET_ROOT / "Tiles" / "topbar_fill_warm.png")
 ACTIVE_SUBTAB = load_rgba(ASSET_ROOT / "RightPanel" / "tab_weekly_active.png")

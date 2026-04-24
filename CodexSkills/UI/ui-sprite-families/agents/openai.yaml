@@ -1,4 +1,7 @@
 interface:
   display_name: "UI Sprite Families"
   short_description: "Generate runtime-ready UI art family boards and slices"
-  default_prompt: "Use $ui-sprite-families to generate clean runtime UI families from a measured reference."
+  default_prompt: >-
+    Use $ui-sprite-families for the target UI screen pack under C:\UE\T66\UI\screens\<screen_slug>.
+    Hard gates: do not generate sprites until reference\canonical_reference_1920x1080.png exists and was generated from the canonical main-menu anchor, the exact current target screenshot, and the target layout list; use native Codex image generation only; do not use removed external generation tooling or request manifests; complete an element/state checklist first; do not manually pixel-repair, mask, cover-patch, clone, repaint, or screenshot-clean generated assets; reject 1672x941 and other non-canonical production outputs; do not report the full screen task complete from the asset stage alone.
+

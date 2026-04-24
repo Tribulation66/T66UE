@@ -1,0 +1,40 @@
+{
+  "screen_slug": "td_battle",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "source_reference": "C:/UE/T66/UI/screens/td_battle/reference/canonical_reference_1920x1080.png",
+  "groups": {
+    "Back": {
+      "back_button_visual": { "x": 34, "y": 34, "width": 370, "height": 59 }
+    },
+    "Title": {
+      "title_text_well": { "x": 638, "y": 42, "width": 644, "height": 68 }
+    },
+    "Left": {
+      "hero_roster_shell": { "x": 39, "y": 130, "width": 450, "height": 909 },
+      "roster_header_well": { "x": 66, "y": 164, "width": 390, "height": 124 },
+      "roster_list_well": { "x": 65, "y": 309, "width": 392, "height": 710 },
+      "roster_row": { "x": 76, "y": 315, "width": 370, "height": 103 }
+    },
+    "Center": {
+      "stats_bar_shell": { "x": 522, "y": 125, "width": 817, "height": 69 },
+      "gameplay_board_frame": { "x": 522, "y": 221, "width": 818, "height": 797 },
+      "gameplay_board_live": { "x": 540, "y": 238, "width": 780, "height": 760 },
+      "bottom_status_well": { "x": 518, "y": 1048, "width": 815, "height": 24 }
+    },
+    "Right": {
+      "match_control_shell": { "x": 1374, "y": 131, "width": 500, "height": 362 },
+      "primary_wave_button": { "x": 1403, "y": 232, "width": 448, "height": 76 },
+      "speed_button": { "x": 1403, "y": 326, "width": 448, "height": 57 },
+      "threat_text_well": { "x": 1403, "y": 405, "width": 448, "height": 72 },
+      "selected_panel_shell": { "x": 1373, "y": 533, "width": 501, "height": 465 },
+      "selected_text_well": { "x": 1402, "y": 565, "width": 450, "height": 136 },
+      "power_upgrade_button": { "x": 1403, "y": 720, "width": 448, "height": 52 },
+      "range_upgrade_button": { "x": 1403, "y": 788, "width": 448, "height": 52 },
+      "tempo_upgrade_button": { "x": 1403, "y": 852, "width": 448, "height": 52 },
+      "sell_hero_button": { "x": 1403, "y": 920, "width": 448, "height": 52 }
+    }
+  }
+}

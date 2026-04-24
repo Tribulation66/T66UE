@@ -1,7 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66LootBagPickup.h"
-#include "Gameplay/T66CircusInteractable.h"
+#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66WorldInteractableBase.h"
@@ -219,23 +219,23 @@ void AT66LootBagPickup::ResolveSpawnClearance()
 					NPC->GetSafeZoneRadius() + BagInteractionRadius + SafeZoneClearancePadding);
 			}
 
-			for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
 			{
-				const AT66CircusInteractable* Circus = WeakCircus.Get();
-				if (!Circus || Circus == GetOwner())
+				const AT66CasinoInteractable* Casino = WeakCasino.Get();
+				if (!Casino || Casino == GetOwner())
 				{
 					continue;
 				}
-				if (!IsSameTowerFloor(Circus))
+				if (!IsSameTowerFloor(Casino))
 				{
 					continue;
 				}
 
-				TotalAdjustment += T66BuildTriggerSeparation2D(CurrentLocation, Circus->TriggerBox, BagInteractionRadius + InteractableClearancePadding);
+				TotalAdjustment += T66BuildTriggerSeparation2D(CurrentLocation, Casino->TriggerBox, BagInteractionRadius + InteractableClearancePadding);
 				TotalAdjustment += T66BuildSeparationVector2D(
 					CurrentLocation,
-					Circus->GetActorLocation(),
-					Circus->GetSafeZoneRadius() + BagInteractionRadius + SafeZoneClearancePadding);
+					Casino->GetActorLocation(),
+					Casino->GetSafeZoneRadius() + BagInteractionRadius + SafeZoneClearancePadding);
 			}
 		}
 

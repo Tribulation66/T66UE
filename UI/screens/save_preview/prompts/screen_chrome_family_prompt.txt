@@ -1,0 +1,26 @@
+Create one production sprite-family board for T66 screen `save_preview`.
+
+Use the attached canonical main-menu style anchor and the attached `save_preview` screen-specific reference. This is exact reconstruction of the reference art style, not a redesign.
+
+Output requirement:
+- exactly one 1920x1080 flat neutral presentation board
+- front-on orthographic UI components only
+- no full-screen screenshot composite
+- no baked localizable labels, names, numbers, descriptions, leaderboard rows, progress values, or typed/user text
+- no runtime-owned portraits, avatars, screenshots, save previews, or gameplay underlay
+- components should be isolated with transparent or flat-neutral spacing so deterministic slicing is possible
+- preserve the carved dark stone, gold trim, purple gem, green/blue/purple plate material language from the attached reference
+
+Families required for this screen:
+bottom-panel-shell, compact-neutral-button, compact-primary-button
+
+Reference layout regions:
+- preview_underlay: 0,0,1920,1080 owner=runtime-image
+- preview_scrim: 0,0,1920,1080 owner=runtime-overlay
+- bottom_panel_shell: 580,780,760,244 owner=generated-shell
+- title_well: 720,812,480,42 owner=runtime-text
+- subtitle_well: 650,862,620,44 owner=runtime-text
+- back_button: 660,936,160,48 owner=runtime-control
+- load_button: 840,936,160,48 owner=runtime-control
+
+Generate text-free runtime assets only. For runtime-owned interiors, produce shell-only frames, empty wells, socket frames, or open apertures. Controls need normal, hover, pressed, disabled, and selected states where applicable with stable anchors.

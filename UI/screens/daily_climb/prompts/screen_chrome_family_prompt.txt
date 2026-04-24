@@ -1,0 +1,32 @@
+Create one production sprite-family board for T66 screen `daily_climb`.
+
+Use the attached canonical main-menu style anchor and the attached `daily_climb` screen-specific reference. This is exact reconstruction of the reference art style, not a redesign.
+
+Output requirement:
+- exactly one 1920x1080 flat neutral presentation board
+- front-on orthographic UI components only
+- no full-screen screenshot composite
+- no baked localizable labels, names, numbers, descriptions, leaderboard rows, progress values, or typed/user text
+- no runtime-owned portraits, avatars, screenshots, save previews, or gameplay underlay
+- components should be isolated with transparent or flat-neutral spacing so deterministic slicing is possible
+- preserve the carved dark stone, gold trim, purple gem, green/blue/purple plate material language from the attached reference
+
+Families required for this screen:
+scene-plate, rules-panel, cta-stack, leaderboard-shell, row-card, compact-back-button, wide-cta-buttons
+
+Reference layout regions:
+- scene_plate: 0,0,1920,1080 owner=generated-scene
+- back_button: 42,42,132,50 owner=runtime-control
+- title_group: 500,54,920,132 owner=runtime-text
+- rules_shell: 42,246,487,726 owner=generated-shell
+- rules_status: 74,356,423,80 owner=runtime-text
+- rules_info_cards: 74,452,423,210 owner=runtime-text
+- rules_list: 74,704,423,240 owner=runtime-text
+- cta_stack: 738,650,445,311 owner=generated-shell
+- start_button: 766,671,388,92 owner=runtime-control
+- continue_button: 766,768,388,97 owner=runtime-control
+- cta_note: 784,880,353,58 owner=runtime-text
+- leaderboard_shell: 1420,228,458,787 owner=generated-shell
+- leaderboard_live_rows: 1432,320,434,650 owner=runtime-text
+
+Generate text-free runtime assets only. For runtime-owned interiors, produce shell-only frames, empty wells, socket frames, or open apertures. Controls need normal, hover, pressed, disabled, and selected states where applicable with stable anchors.

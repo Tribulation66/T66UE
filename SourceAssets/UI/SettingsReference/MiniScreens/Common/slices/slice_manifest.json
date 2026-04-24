@@ -1,0 +1,472 @@
+{
+  "source": "C:\\UE\\T66\\UI\\screens\\mini_shared\\assets\\imagegen_2026-04-24\\mini_common_components_board.png",
+  "source_size": {
+    "width": 1672,
+    "height": 941
+  },
+  "slices": {
+    "title_plaque": {
+      "file": "title_plaque.png",
+      "rect": {
+        "x": 26,
+        "y": 36,
+        "width": 574,
+        "height": 122
+      },
+      "size": {
+        "width": 574,
+        "height": 122
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/title_plaque.png"
+    },
+    "panel_small_a": {
+      "file": "panel_small_a.png",
+      "rect": {
+        "x": 25,
+        "y": 190,
+        "width": 250,
+        "height": 146
+      },
+      "size": {
+        "width": 250,
+        "height": 146
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/panel_small_a.png"
+    },
+    "panel_small_b": {
+      "file": "panel_small_b.png",
+      "rect": {
+        "x": 294,
+        "y": 191,
+        "width": 245,
+        "height": 144
+      },
+      "size": {
+        "width": 245,
+        "height": 144
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/panel_small_b.png"
+    },
+    "panel_large": {
+      "file": "panel_large.png",
+      "rect": {
+        "x": 626,
+        "y": 31,
+        "width": 549,
+        "height": 309
+      },
+      "size": {
+        "width": 549,
+        "height": 309
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/panel_large.png"
+    },
+    "panel_medium": {
+      "file": "panel_medium.png",
+      "rect": {
+        "x": 1200,
+        "y": 31,
+        "width": 405,
+        "height": 306
+      },
+      "size": {
+        "width": 405,
+        "height": 306
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/panel_medium.png"
+    },
+    "row_long": {
+      "file": "row_long.png",
+      "rect": {
+        "x": 25,
+        "y": 363,
+        "width": 1157,
+        "height": 106
+      },
+      "size": {
+        "width": 1157,
+        "height": 106
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/row_long.png"
+    },
+    "stat_chip": {
+      "file": "stat_chip.png",
+      "rect": {
+        "x": 28,
+        "y": 550,
+        "width": 201,
+        "height": 96
+      },
+      "size": {
+        "width": 201,
+        "height": 96
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/stat_chip.png"
+    },
+    "portrait_frame_square": {
+      "file": "portrait_frame_square.png",
+      "rect": {
+        "x": 265,
+        "y": 487,
+        "width": 168,
+        "height": 165
+      },
+      "size": {
+        "width": 168,
+        "height": 165
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/portrait_frame_square.png"
+    },
+    "card_normal": {
+      "file": "card_normal.png",
+      "rect": {
+        "x": 468,
+        "y": 488,
+        "width": 149,
+        "height": 184
+      },
+      "size": {
+        "width": 149,
+        "height": 184
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/card_normal.png"
+    },
+    "card_selected": {
+      "file": "card_selected.png",
+      "rect": {
+        "x": 654,
+        "y": 487,
+        "width": 151,
+        "height": 184
+      },
+      "size": {
+        "width": 151,
+        "height": 184
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/card_selected.png"
+    },
+    "card_disabled": {
+      "file": "card_disabled.png",
+      "rect": {
+        "x": 841,
+        "y": 488,
+        "width": 147,
+        "height": 184
+      },
+      "size": {
+        "width": 147,
+        "height": 184
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/card_disabled.png"
+    },
+    "divider_jewel": {
+      "file": "divider_jewel.png",
+      "rect": {
+        "x": 1250,
+        "y": 414,
+        "width": 187,
+        "height": 49
+      },
+      "size": {
+        "width": 187,
+        "height": 49
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/divider_jewel.png"
+    },
+    "idol_offer_row": {
+      "file": "idol_offer_row.png",
+      "rect": {
+        "x": 1034,
+        "y": 496,
+        "width": 435,
+        "height": 94
+      },
+      "size": {
+        "width": 435,
+        "height": 94
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/idol_offer_row.png"
+    },
+    "idol_offer_row_action": {
+      "file": "idol_offer_row_action.png",
+      "rect": {
+        "x": 1034,
+        "y": 616,
+        "width": 436,
+        "height": 98
+      },
+      "size": {
+        "width": 436,
+        "height": 98
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/idol_offer_row_action.png"
+    },
+    "scroll_track": {
+      "file": "scroll_track.png",
+      "rect": {
+        "x": 1539,
+        "y": 469,
+        "width": 55,
+        "height": 390
+      },
+      "size": {
+        "width": 55,
+        "height": 390
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/scroll_track.png"
+    },
+    "scroll_thumb": {
+      "file": "scroll_thumb.png",
+      "rect": {
+        "x": 1617,
+        "y": 615,
+        "width": 42,
+        "height": 122
+      },
+      "size": {
+        "width": 42,
+        "height": 122
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/scroll_thumb.png"
+    },
+    "button_green_normal": {
+      "file": "button_green_normal.png",
+      "rect": {
+        "x": 31,
+        "y": 702,
+        "width": 249,
+        "height": 78
+      },
+      "size": {
+        "width": 249,
+        "height": 78
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_green_normal.png"
+    },
+    "button_green_hover": {
+      "file": "button_green_hover.png",
+      "rect": {
+        "x": 327,
+        "y": 702,
+        "width": 249,
+        "height": 78
+      },
+      "size": {
+        "width": 249,
+        "height": 78
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_green_hover.png"
+    },
+    "button_green_pressed": {
+      "file": "button_green_pressed.png",
+      "rect": {
+        "x": 623,
+        "y": 702,
+        "width": 248,
+        "height": 78
+      },
+      "size": {
+        "width": 248,
+        "height": 78
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_green_pressed.png"
+    },
+    "button_green_disabled": {
+      "file": "button_green_disabled.png",
+      "rect": {
+        "x": 918,
+        "y": 702,
+        "width": 232,
+        "height": 78
+      },
+      "size": {
+        "width": 232,
+        "height": 78
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_green_disabled.png"
+    },
+    "button_blue_normal": {
+      "file": "button_blue_normal.png",
+      "rect": {
+        "x": 31,
+        "y": 780,
+        "width": 249,
+        "height": 78
+      },
+      "size": {
+        "width": 249,
+        "height": 78
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_blue_normal.png"
+    },
+    "button_blue_hover": {
+      "file": "button_blue_hover.png",
+      "rect": {
+        "x": 327,
+        "y": 780,
+        "width": 249,
+        "height": 78
+      },
+      "size": {
+        "width": 249,
+        "height": 78
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_blue_hover.png"
+    },
+    "button_blue_pressed": {
+      "file": "button_blue_pressed.png",
+      "rect": {
+        "x": 623,
+        "y": 780,
+        "width": 248,
+        "height": 78
+      },
+      "size": {
+        "width": 248,
+        "height": 78
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_blue_pressed.png"
+    },
+    "button_blue_disabled": {
+      "file": "button_blue_disabled.png",
+      "rect": {
+        "x": 918,
+        "y": 780,
+        "width": 232,
+        "height": 78
+      },
+      "size": {
+        "width": 232,
+        "height": 78
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_blue_disabled.png"
+    },
+    "button_purple_normal": {
+      "file": "button_purple_normal.png",
+      "rect": {
+        "x": 31,
+        "y": 858,
+        "width": 249,
+        "height": 76
+      },
+      "size": {
+        "width": 249,
+        "height": 76
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_purple_normal.png"
+    },
+    "button_purple_hover": {
+      "file": "button_purple_hover.png",
+      "rect": {
+        "x": 327,
+        "y": 858,
+        "width": 249,
+        "height": 76
+      },
+      "size": {
+        "width": 249,
+        "height": 76
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_purple_hover.png"
+    },
+    "button_purple_pressed": {
+      "file": "button_purple_pressed.png",
+      "rect": {
+        "x": 623,
+        "y": 858,
+        "width": 248,
+        "height": 76
+      },
+      "size": {
+        "width": 248,
+        "height": 76
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_purple_pressed.png"
+    },
+    "button_purple_disabled": {
+      "file": "button_purple_disabled.png",
+      "rect": {
+        "x": 918,
+        "y": 858,
+        "width": 232,
+        "height": 76
+      },
+      "size": {
+        "width": 232,
+        "height": 76
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_purple_disabled.png"
+    },
+    "stat_chip_clean_wide": {
+      "file": "stat_chip_clean_wide.png",
+      "rect": {
+        "x": 47,
+        "y": 48,
+        "width": 358,
+        "height": 118
+      },
+      "size": {
+        "width": 358,
+        "height": 118
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/stat_chip_clean_wide.png"
+    },
+    "stat_chip_clean_wide_b": {
+      "file": "stat_chip_clean_wide_b.png",
+      "rect": {
+        "x": 452,
+        "y": 48,
+        "width": 356,
+        "height": 118
+      },
+      "size": {
+        "width": 356,
+        "height": 118
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/stat_chip_clean_wide_b.png"
+    },
+    "stat_chip_clean_narrow": {
+      "file": "stat_chip_clean_narrow.png",
+      "rect": {
+        "x": 106,
+        "y": 428,
+        "width": 278,
+        "height": 96
+      },
+      "size": {
+        "width": 278,
+        "height": 96
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/stat_chip_clean_narrow.png"
+    },
+    "summary_row_clean": {
+      "file": "summary_row_clean.png",
+      "rect": {
+        "x": 67,
+        "y": 578,
+        "width": 334,
+        "height": 108
+      },
+      "size": {
+        "width": 334,
+        "height": 108
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/summary_row_clean.png"
+    },
+    "badge_frame_clean": {
+      "file": "badge_frame_clean.png",
+      "rect": {
+        "x": 160,
+        "y": 780,
+        "width": 136,
+        "height": 128
+      },
+      "size": {
+        "width": 136,
+        "height": 128
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/badge_frame_clean.png"
+    }
+  },
+  "compact_chip_source": "C:\\UE\\T66\\UI\\screens\\mini_shared\\assets\\imagegen_2026-04-24\\mini_compact_chips_board.png"
+}

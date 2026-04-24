@@ -9,9 +9,9 @@
 #include "T66CasinoOverlayWidget.generated.h"
 
 class SBorder;
+class SBox;
 class SImage;
 class STextBlock;
-class SWidget;
 class SWidgetSwitcher;
 class FDragDropEvent;
 struct FGeometry;
@@ -45,6 +45,7 @@ private:
 
 	TSharedRef<SWidget> BuildAlchemyPage(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc);
 	void SetActiveTab(ECasinoTab NewTab);
+	void RefreshHeaderSummary();
 	void RefreshAlchemy();
 	void RefreshAlchemyTopBar();
 	void RefreshAlchemyInventory();
@@ -72,6 +73,12 @@ private:
 	UFUNCTION()
 	void HandleBossChanged();
 
+	UFUNCTION()
+	void HandleScoreChanged();
+
+	UFUNCTION()
+	void HandleStageTimerChanged();
+
 	UPROPERTY()
 	TObjectPtr<UT66GamblerOverlayWidget> GamblerTabWidget;
 
@@ -79,6 +86,8 @@ private:
 	TObjectPtr<UT66VendorOverlayWidget> VendorTabWidget;
 
 	TSharedPtr<SWidgetSwitcher> TabSwitcher;
+	TSharedPtr<STextBlock> HeaderTimerText;
+	TSharedPtr<STextBlock> HeaderScoreText;
 
 	TSharedPtr<STextBlock> AlchemyNetWorthText;
 	TSharedPtr<STextBlock> AlchemyGoldText;
@@ -86,9 +95,13 @@ private:
 	TSharedPtr<STextBlock> AlchemyAngerText;
 	TSharedPtr<STextBlock> AlchemyStatusText;
 	TSharedPtr<STextBlock> AlchemyTargetText;
-	TSharedPtr<STextBlock> AlchemyTargetCountText;
+	TSharedPtr<STextBlock> AlchemyTargetDetailText;
 	TSharedPtr<STextBlock> AlchemySacrificeText;
+	TSharedPtr<STextBlock> AlchemySacrificeDetailText;
+	TSharedPtr<STextBlock> AlchemyEmptyStateText;
 	TSharedPtr<STextBlock> AlchemyResultText;
+	TSharedPtr<SBox> AlchemyCardsRowContainer;
+	TSharedPtr<SWidget> AlchemyUpgradeButton;
 	TSharedPtr<SBorder> AlchemyTargetBorder;
 	TSharedPtr<SBorder> AlchemySacrificeBorder;
 	TSharedPtr<SImage> AlchemyTargetIconImage;
@@ -97,12 +110,10 @@ private:
 	TSharedPtr<FSlateBrush> AlchemySacrificeIconBrush;
 
 	TArray<TSharedPtr<SBorder>> AlchemyInventorySlotBorders;
-	TArray<TSharedPtr<SWidget>> AlchemyInventorySlotButtons;
 	TArray<TSharedPtr<STextBlock>> AlchemyInventorySlotCountTexts;
 	TArray<TSharedPtr<STextBlock>> AlchemyInventorySlotTexts;
 	TArray<TSharedPtr<SImage>> AlchemyInventorySlotImages;
 	TArray<TSharedPtr<FSlateBrush>> AlchemyInventorySlotBrushes;
-	TSharedPtr<SWidget> AlchemyUpgradeButton;
 
 	int32 AlchemyTargetInventoryIndex = INDEX_NONE;
 	int32 AlchemySacrificeInventoryIndex = INDEX_NONE;

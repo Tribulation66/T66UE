@@ -470,7 +470,7 @@ namespace T66GameModePrivate
 		}
 	}
 
-	bool T66HasRegisteredCircus(UWorld* World)
+	bool T66HasRegisteredCasino(UWorld* World)
 	{
 		if (!World)
 		{
@@ -479,9 +479,9 @@ namespace T66GameModePrivate
 
 		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
 		{
-			for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
 			{
-				if (WeakCircus.IsValid())
+				if (WeakCasino.IsValid())
 				{
 					return true;
 				}
@@ -1416,13 +1416,13 @@ void AT66GameMode::TrySpawnLoanSharkIfNeeded()
 		}
 		if (!bInSafe)
 		{
-			const TArray<TWeakObjectPtr<AT66CircusInteractable>>& Circuses = Registry ? Registry->GetCircuses() : TArray<TWeakObjectPtr<AT66CircusInteractable>>();
-			for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Circuses)
+			const TArray<TWeakObjectPtr<AT66CasinoInteractable>>& Casinos = Registry ? Registry->GetCasinos() : TArray<TWeakObjectPtr<AT66CasinoInteractable>>();
+			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Casinos)
 			{
-				AT66CircusInteractable* Circus = WeakCircus.Get();
-				if (!Circus) continue;
-				const float R = Circus->GetSafeZoneRadius();
-				if (FVector::DistSquared2D(SpawnLoc, Circus->GetActorLocation()) < (R * R))
+				AT66CasinoInteractable* Casino = WeakCasino.Get();
+				if (!Casino) continue;
+				const float R = Casino->GetSafeZoneRadius();
+				if (FVector::DistSquared2D(SpawnLoc, Casino->GetActorLocation()) < (R * R))
 				{
 					bInSafe = true;
 					break;

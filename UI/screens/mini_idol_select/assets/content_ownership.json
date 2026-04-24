@@ -1,0 +1,21 @@
+{
+  "screen": "mini_idol_select",
+  "background": {
+    "owner": "scene_plate",
+    "must_not_contain": ["idol icons", "idol names", "slot labels", "loadout values", "buttons"]
+  },
+  "chrome": {
+    "owner": "generated panel, row, and button plates",
+    "notes": "Slot cards, idol offer rows, metric wells, and action buttons are chrome only."
+  },
+  "runtime_owned": [
+    "title",
+    "idol icons",
+    "idol names",
+    "idol properties",
+    "slot labels and states",
+    "loadout summary values",
+    "button labels",
+    "button enabled state"
+  ]
+}

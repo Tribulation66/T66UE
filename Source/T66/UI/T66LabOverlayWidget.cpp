@@ -321,11 +321,11 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 				SNew(SBox)
 				.WidthOverride(LabPanelWidth)
 				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FT66Style::Tokens::Panel)
-					.Padding(8.f)
-					[LabPanel]
+					FT66Style::MakePanel(
+						LabPanel,
+						FT66PanelParams(ET66PanelType::Panel)
+							.SetPadding(8.f)
+							.SetColor(FLinearColor(0.034f, 0.029f, 0.024f, 0.98f)))
 				]
 			]
 		];

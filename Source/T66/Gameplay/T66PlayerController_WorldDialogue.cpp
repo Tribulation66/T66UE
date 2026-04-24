@@ -95,41 +95,6 @@
 #include "Widgets/Views/SListView.h"
 #include "Styling/CoreStyle.h"
 
-
-void AT66PlayerController::OpenWorldDialogueVendor(AT66VendorNPC* Vendor)
-{
-	if (!IsGameplayLevel()) return;
-	if (!GameplayHUDWidget) return;
-	if (!Vendor) return;
-	if (bInventoryInspectOpen)
-	{
-		SetInventoryInspectOpen(false);
-	}
-
-	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	const TArray<FText> Options =
-	{
-		Loc ? Loc->GetText_IWantToShop() : NSLOCTEXT("T66.Vendor", "IWantToShop", "I want to shop"),
-		Loc ? Loc->GetText_TeleportMeToYourBrother() : NSLOCTEXT("T66.Gambler", "TeleportMeToYourBrother", "Teleport me to your brother"),
-		Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "Back"),
-	};
-
-	WorldDialogueKind = ET66WorldDialogueKind::Vendor;
-	WorldDialogueTargetNPC = Vendor;
-	ActiveVendorNPC = Vendor;
-	WorldDialogueTargetCompanion.Reset();
-	WorldDialogueSelectedIndex = 0;
-	WorldDialogueNumOptions = 3;
-	bWorldDialogueOpen = true;
-	LastWorldDialogueNavTimeSeconds = -1000.f;
-
-	GameplayHUDWidget->ShowWorldDialogue(Options, WorldDialogueSelectedIndex);
-	UpdateWorldDialoguePosition();
-	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.1f, true);
-}
-
-
 void AT66PlayerController::OpenWorldDialogueGambler(AT66GamblerNPC* Gambler)
 {
 	if (!IsGameplayLevel()) return;
@@ -238,10 +203,6 @@ void AT66PlayerController::ConfirmWorldDialogue()
 		: 0;
 
 	CloseWorldDialogue();
-	if (!(Kind == ET66WorldDialogueKind::Vendor && Choice == 0))
-	{
-		ActiveVendorNPC.Reset();
-	}
 
 	if (Kind == ET66WorldDialogueKind::Companion)
 	{
@@ -267,7 +228,7 @@ void AT66PlayerController::ConfirmWorldDialogue()
 		return;
 	}
 
-	// Vendor/Gambler: 0: main action, 1: teleport, 2: back
+	// Gambler: 0: main action, 1: teleport, 2: back
 	if (Choice == 2)
 	{
 		return;
@@ -290,21 +251,12 @@ void AT66PlayerController::ConfirmWorldDialogue()
 			}
 		}
 
-		TeleportToNPC((Kind == ET66WorldDialogueKind::Vendor) ? FName(TEXT("Gambler")) : FName(TEXT("Vendor")));
+		TeleportToNPC(FName(TEXT("Vendor")));
 		return;
 	}
 
 	// Choice == 0
-	if (Kind == ET66WorldDialogueKind::Vendor)
-	{
-		OpenVendorOverlay();
-		if (VendorOverlayWidget)
-		{
-			// Skip overlay dialogue page; go straight to shop.
-			VendorOverlayWidget->OpenShopPage();
-		}
-	}
-	else if (Kind == ET66WorldDialogueKind::Gambler)
+	if (Kind == ET66WorldDialogueKind::Gambler)
 	{
 		OpenGamblerOverlay(GamblerWinGoldAmount);
 		if (GamblerOverlayWidget)

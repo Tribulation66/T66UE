@@ -11,9 +11,12 @@
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Styling/SlateBrush.h"
+#include "UI/Screens/T66MiniGeneratedScreenChrome.h"
 #include "UI/T66MiniUIStyle.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -27,6 +30,31 @@
 
 namespace
 {
+	const FSlateBrush* T66MiniSceneBackgroundBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/MainMenuReference/scene_background_purple_imagegen_1920x1080.png")),
+			FMargin(0.f),
+			TEXT("MiniSceneBackground"));
+	}
+
+	TSharedRef<SWidget> T66MiniMakeSceneBackground(const FLinearColor& FallbackColor)
+	{
+		if (const FSlateBrush* Brush = T66MiniSceneBackgroundBrush())
+		{
+			return SNew(SImage)
+				.Image(Brush)
+				.ColorAndOpacity(FLinearColor(0.82f, 0.82f, 0.88f, 1.0f));
+		}
+
+		return SNew(SBorder)
+			.BorderImage(T66MiniUI::WhiteBrush())
+			.BorderBackgroundColor(FallbackColor);
+	}
+
 	const FT66MiniCompanionDefinition* T66MiniResolveDefaultCompanion(
 		const UT66MiniDataSubsystem* DataSubsystem,
 		const UT66MiniSaveSubsystem* SaveSubsystem)
@@ -214,31 +242,28 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 		? SaveSubsystem->GetCompanionHealingPerSecond(SelectedCompanion->CompanionID, DataSubsystem)
 		: 0.0f;
 
-	const FLinearColor BackgroundFill(0.11f, 0.12f, 0.16f, 1.0f);
-	const FLinearColor ScreenTint(0.02f, 0.03f, 0.05f, 0.20f);
-	const FLinearColor PanelFill(0.07f, 0.08f, 0.11f, 0.97f);
-	const FLinearColor PanelOutline(0.55f, 0.56f, 0.62f, 0.95f);
-	const FLinearColor SelectedFill(0.25f, 0.27f, 0.15f, 0.96f);
-	const FLinearColor SelectedBorder(0.82f, 0.78f, 0.47f, 1.0f);
-	const FLinearColor BodyText(0.91f, 0.92f, 0.95f, 1.0f);
-	const FLinearColor MutedText(0.79f, 0.82f, 0.88f, 1.0f);
-	const FLinearColor AccentText(0.92f, 0.88f, 0.68f, 1.0f);
+	const FLinearColor BackgroundFill = T66MiniUI::ScreenBackground();
+	const FLinearColor ScreenTint = T66MiniUI::ScreenTint();
+	const FLinearColor PanelFill = T66MiniUI::PanelFill();
+	const FLinearColor PanelOutline = T66MiniUI::PanelOutline();
+	const FLinearColor SelectedFill = T66MiniUI::SelectedFill();
+	const FLinearColor SelectedBorder = T66MiniUI::SelectedBorder();
+	const FLinearColor BodyText = T66MiniUI::Text();
+	const FLinearColor MutedText = T66MiniUI::MutedText();
+	const FLinearColor AccentText = T66MiniUI::AccentGold();
 
 	auto MakeFramedPanel = [&](TSharedRef<SWidget> Content, const FLinearColor& OutlineColor, const FLinearColor& FillColor, const FMargin& InnerPadding) -> TSharedRef<SWidget>
 	{
-		return SNew(SBorder)
-			.BorderImage(T66MiniUI::WhiteBrush())
-			.BorderBackgroundColor(OutlineColor)
-			.Padding(1.f)
-			[
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(FillColor)
-				.Padding(InnerPadding)
-				[
-					Content
-				]
-			];
+		const bool bUseOrnamentSafePadding = InnerPadding.Left >= 16.f || InnerPadding.Right >= 16.f;
+		const FMargin SafePadding = bUseOrnamentSafePadding
+			? FMargin(InnerPadding.Left, InnerPadding.Top, FMath::Max(InnerPadding.Right, 76.f), InnerPadding.Bottom)
+			: InnerPadding;
+		return T66MiniGeneratedChrome::MakePanel(Content, SafePadding, T66MiniGeneratedChrome::ESlice::PanelLarge);
+	};
+
+	auto MakeRowPanel = [&](TSharedRef<SWidget> Content, const FMargin& InnerPadding) -> TSharedRef<SWidget>
+	{
+		return T66MiniGeneratedChrome::MakeRowPanel(Content, InnerPadding);
 	};
 
 	auto MakeSpriteWidget = [&](const FSlateBrush* Brush, const FString& FallbackText, const FLinearColor& PlaceholderColor, const float Width, const float Height, const int32 FontSize) -> TSharedRef<SWidget>
@@ -272,25 +297,25 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 
 	auto MakeMetricChip = [&](const FString& Label, const FString& Value, const FLinearColor& Accent) -> TSharedRef<SWidget>
 	{
-		return MakeFramedPanel(
+		return T66MiniGeneratedChrome::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Label))
-				.Font(T66MiniUI::BodyFont(12))
+				.Font(T66MiniUI::BodyFont(11))
 				.ColorAndOpacity(MutedText)
+				.AutoWrapText(true)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Value))
-				.Font(T66MiniUI::BoldFont(17))
+				.Font(T66MiniUI::BoldFont(Value.Len() > 6 ? 12 : (Value.Len() > 5 ? 13 : 16)))
 				.ColorAndOpacity(Accent)
 			],
-			FLinearColor(0.20f, 0.21f, 0.26f, 1.0f),
-			FLinearColor(0.05f, 0.06f, 0.08f, 1.0f),
-			FMargin(10.f, 8.f));
+			FMargin(10.f, 7.f, 12.f, 7.f),
+			T66MiniGeneratedChrome::ESlice::PanelSmall);
 	};
 
 	TSharedRef<SUniformGridPanel> CompanionMetrics = SNew(SUniformGridPanel).SlotPadding(FMargin(10.f, 10.f, 10.f, 10.f));
@@ -327,19 +352,10 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 				{
 					return HandleCompanionClicked(CompanionID);
 				}))
-				.ButtonColorAndOpacity(bIsSelected ? SelectedFill : (bIsUnlocked ? PanelFill : FLinearColor(0.05f, 0.05f, 0.06f, 0.84f)))
-				.ContentPadding(FMargin(8.f, 7.f))
+				.ButtonColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.01f))
+				.ContentPadding(FMargin(0.f))
 				[
-					SNew(SBorder)
-					.BorderImage(T66MiniUI::WhiteBrush())
-					.BorderBackgroundColor(bIsSelected ? SelectedBorder : (bIsUnlocked ? PanelOutline : FLinearColor(0.24f, 0.24f, 0.28f, 0.95f)))
-					.Padding(1.f)
-					[
-						SNew(SBorder)
-						.BorderImage(T66MiniUI::WhiteBrush())
-						.BorderBackgroundColor(FLinearColor(0.04f, 0.05f, 0.07f, 1.0f))
-						.Padding(FMargin(8.f, 6.f))
-						[
+					T66MiniGeneratedChrome::MakePanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
 							[
@@ -350,7 +366,7 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 								SNew(STextBlock)
 								.Text(FText::FromString(Companion.DisplayName))
 								.Font(T66MiniUI::BoldFont(12))
-								.ColorAndOpacity(!bIsUnlocked ? MutedText : (bIsSelected ? T66MiniUI::ButtonTextDark() : BodyText))
+								.ColorAndOpacity(!bIsUnlocked ? MutedText : (bIsSelected ? T66MiniUI::AccentGold() : BodyText))
 								.Justification(ETextJustify::Center)
 								.AutoWrapText(true)
 							]
@@ -362,8 +378,10 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 								.ColorAndOpacity(bIsUnlocked ? AccentText : FLinearColor(0.88f, 0.74f, 0.52f, 1.0f))
 								.Justification(ETextJustify::Center)
 							]
-						]
-					]
+						, FMargin(11.f, 9.f, 22.f, 9.f),
+						!bIsUnlocked
+							? T66MiniGeneratedChrome::ESlice::CardDisabled
+							: (bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal))
 				]
 			]
 		];
@@ -381,9 +399,13 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
+			T66MiniMakeSceneBackground(BackgroundFill)
+		]
+		+ SOverlay::Slot()
+		[
 			SNew(SBorder)
 			.BorderImage(T66MiniUI::WhiteBrush())
-			.BorderBackgroundColor(BackgroundFill)
+			.BorderBackgroundColor(FLinearColor(0.018f, 0.014f, 0.024f, 0.48f))
 			.Padding(FMargin(16.f, 14.f, 16.f, 14.f))
 			[
 				SNew(SOverlay)
@@ -401,12 +423,11 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 14.f)
 						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66Mini.CompanionSelect", "Title", "Companion Selection"))
-							.Font(T66MiniUI::TitleFont(30))
-							.ColorAndOpacity(FLinearColor::White)
-							.ShadowOffset(FVector2D(2.f, 2.f))
-							.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.95f))
+							T66MiniGeneratedChrome::MakeTitlePlaque(
+								NSLOCTEXT("T66Mini.CompanionSelect", "Title", "Companion Selection"),
+								30,
+								660.f,
+								78.f)
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 16.f)
 						[
@@ -443,22 +464,16 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 													.WidthOverride(240.f)
 													.HeightOverride(224.f)
 													[
-														SNew(SBorder)
-														.BorderImage(T66MiniUI::WhiteBrush())
-														.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.06f, 1.0f))
-														.Padding(FMargin(12.f))
-														[
-															MakeSpriteWidget(
-																SelectedBrush,
-																SelectedCompanion ? SelectedCompanion->DisplayName.Left(1).ToUpper() : FString(TEXT("?")),
-																SelectedCompanion ? SelectedCompanion->PlaceholderColor : T66MiniUI::RaisedFill(),
-																214.f,
-																214.f,
-																42)
-														]
+														MakeSpriteWidget(
+															SelectedBrush,
+															SelectedCompanion ? SelectedCompanion->DisplayName.Left(1).ToUpper() : FString(TEXT("?")),
+															SelectedCompanion ? SelectedCompanion->PlaceholderColor : T66MiniUI::RaisedFill(),
+															214.f,
+															214.f,
+															42)
 													],
-													FLinearColor(0.08f, 0.08f, 0.08f, 1.0f),
-													FLinearColor(0.06f, 0.06f, 0.06f, 1.0f),
+													T66MiniUI::PanelOutline(),
+													T66MiniUI::ShellFill(),
 													FMargin(2.f))
 											]
 											+ SHorizontalBox::Slot().FillWidth(1.f)
@@ -552,16 +567,13 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 			.WidthOverride(140.f)
 			.HeightOverride(48.f)
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniCompanionSelectScreen::HandleBackClicked))
-				.ButtonColorAndOpacity(T66MiniUI::AccentBlue())
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66Mini.CompanionSelect", "Back", "BACK"))
-					.Font(T66MiniUI::BoldFont(18))
-					.ColorAndOpacity(FLinearColor::White)
-					.Justification(ETextJustify::Center)
-				]
+				T66MiniGeneratedChrome::MakeButton(
+					NSLOCTEXT("T66Mini.CompanionSelect", "Back", "BACK"),
+					FOnClicked::CreateUObject(this, &UT66MiniCompanionSelectScreen::HandleBackClicked),
+					ET66ButtonType::Neutral,
+					140.f,
+					48.f,
+					18)
 			]
 		]
 		+ SOverlay::Slot()
@@ -570,20 +582,18 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 		.Padding(0.f, 0.f, 28.f, 24.f)
 		[
 			SNew(SBox)
-			.WidthOverride(200.f)
-			.HeightOverride(54.f)
+			.WidthOverride(226.f)
+			.HeightOverride(58.f)
 			[
-				SNew(SButton)
-				.IsEnabled(SelectedCompanion != nullptr)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniCompanionSelectScreen::HandleContinueClicked))
-				.ButtonColorAndOpacity(T66MiniUI::AccentGreen())
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66Mini.CompanionSelect", "Continue", "CONTINUE"))
-					.Font(T66MiniUI::BoldFont(20))
-					.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-					.Justification(ETextJustify::Center)
-				]
+				FT66Style::MakeButton(
+					T66MiniGeneratedChrome::MakeButtonParams(
+						NSLOCTEXT("T66Mini.CompanionSelect", "Continue", "CONTINUE"),
+						FOnClicked::CreateUObject(this, &UT66MiniCompanionSelectScreen::HandleContinueClicked),
+						ET66ButtonType::Success,
+						226.f,
+						58.f,
+						18)
+					.SetEnabled(SelectedCompanion != nullptr))
 			]
 		];
 }

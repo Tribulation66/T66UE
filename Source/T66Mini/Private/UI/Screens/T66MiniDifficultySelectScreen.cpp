@@ -11,9 +11,12 @@
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Styling/SlateBrush.h"
+#include "UI/Screens/T66MiniGeneratedScreenChrome.h"
 #include "UI/T66MiniUIStyle.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -27,6 +30,31 @@
 
 namespace
 {
+	const FSlateBrush* T66MiniSceneBackgroundBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/MainMenuReference/scene_background_purple_imagegen_1920x1080.png")),
+			FMargin(0.f),
+			TEXT("MiniSceneBackground"));
+	}
+
+	TSharedRef<SWidget> T66MiniMakeSceneBackground(const FLinearColor& FallbackColor)
+	{
+		if (const FSlateBrush* Brush = T66MiniSceneBackgroundBrush())
+		{
+			return SNew(SImage)
+				.Image(Brush)
+				.ColorAndOpacity(FLinearColor(0.82f, 0.82f, 0.88f, 1.0f));
+		}
+
+		return SNew(SBorder)
+			.BorderImage(T66MiniUI::WhiteBrush())
+			.BorderBackgroundColor(FallbackColor);
+	}
+
 	FName T66MiniDifficultyResolveUnlockedCompanionID(const UT66MiniDataSubsystem* DataSubsystem, const UT66MiniSaveSubsystem* SaveSubsystem)
 	{
 		return SaveSubsystem ? SaveSubsystem->GetFirstUnlockedCompanionID(DataSubsystem) : NAME_None;
@@ -202,38 +230,29 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 	const FT66MiniCompanionDefinition* SelectedCompanion = (DataSubsystem && FrontendState) ? DataSubsystem->FindCompanion(FrontendState->GetSelectedCompanionID()) : nullptr;
 	const FT66MiniDifficultyDefinition* SelectedDifficulty = (DataSubsystem && FrontendState) ? DataSubsystem->FindDifficulty(FrontendState->GetSelectedDifficultyID()) : nullptr;
 	const TArray<FT66MiniDifficultyDefinition> Difficulties = DataSubsystem ? DataSubsystem->GetDifficulties() : TArray<FT66MiniDifficultyDefinition>();
-	const int32 CompanionUnityStages = (SaveSubsystem && DataSubsystem && SelectedCompanion)
-		? SaveSubsystem->GetCompanionUnityStagesCleared(SelectedCompanion->CompanionID, DataSubsystem)
-		: 0;
-	const float CompanionHealingPerSecond = (SaveSubsystem && DataSubsystem && SelectedCompanion)
-		? SaveSubsystem->GetCompanionHealingPerSecond(SelectedCompanion->CompanionID, DataSubsystem)
-		: 0.0f;
 	LastSessionUiStateKey = BuildSessionUiStateKey();
 	RefreshSelectedHeroBrush(SelectedHero);
 	const FSlateBrush* HeroBrush = SelectedHeroBrush.Get();
 
-	const FLinearColor BackgroundFill(0.11f, 0.12f, 0.16f, 1.0f);
-	const FLinearColor ScreenTint(0.02f, 0.03f, 0.05f, 0.20f);
-	const FLinearColor PanelFill(0.07f, 0.08f, 0.11f, 0.97f);
-	const FLinearColor PanelOutline(0.55f, 0.56f, 0.62f, 0.95f);
-	const FLinearColor MutedText(0.79f, 0.82f, 0.88f, 1.0f);
-	const FLinearColor BodyText(0.93f, 0.94f, 0.96f, 1.0f);
+	const FLinearColor BackgroundFill = T66MiniUI::ScreenBackground();
+	const FLinearColor ScreenTint = T66MiniUI::ScreenTint();
+	const FLinearColor PanelFill = T66MiniUI::PanelFill();
+	const FLinearColor PanelOutline = T66MiniUI::PanelOutline();
+	const FLinearColor MutedText = T66MiniUI::MutedText();
+	const FLinearColor BodyText = T66MiniUI::Text();
 
 	auto MakeFramedPanel = [&](TSharedRef<SWidget> Content, const FLinearColor& OutlineColor, const FLinearColor& FillColor, const FMargin& InnerPadding) -> TSharedRef<SWidget>
 	{
-		return SNew(SBorder)
-			.BorderImage(T66MiniUI::WhiteBrush())
-			.BorderBackgroundColor(OutlineColor)
-			.Padding(1.f)
-			[
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(FillColor)
-				.Padding(InnerPadding)
-				[
-					Content
-				]
-			];
+		const bool bUseOrnamentSafePadding = InnerPadding.Left >= 16.f || InnerPadding.Right >= 16.f;
+		const FMargin SafePadding = bUseOrnamentSafePadding
+			? FMargin(InnerPadding.Left, InnerPadding.Top, FMath::Max(InnerPadding.Right, 76.f), InnerPadding.Bottom)
+			: InnerPadding;
+		return T66MiniGeneratedChrome::MakePanel(Content, SafePadding, T66MiniGeneratedChrome::ESlice::PanelLarge);
+	};
+
+	auto MakeRowPanel = [&](TSharedRef<SWidget> Content, const FMargin& InnerPadding) -> TSharedRef<SWidget>
+	{
+		return T66MiniGeneratedChrome::MakeRowPanel(Content, InnerPadding);
 	};
 
 	auto MakeSpriteWidget = [&](const float Width, const float Height) -> TSharedRef<SWidget>
@@ -267,28 +286,28 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 
 	auto MakeMetricChip = [&](const FString& Label, const FString& Value, const FLinearColor& Accent) -> TSharedRef<SWidget>
 	{
-		return MakeFramedPanel(
+		return T66MiniGeneratedChrome::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Label))
-				.Font(T66MiniUI::BodyFont(12))
+				.Font(T66MiniUI::BodyFont(10))
 				.ColorAndOpacity(MutedText)
+				.AutoWrapText(true)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Value))
-				.Font(T66MiniUI::BoldFont(16))
+				.Font(T66MiniUI::BoldFont(15))
 				.ColorAndOpacity(Accent)
 			],
-			FLinearColor(0.20f, 0.21f, 0.26f, 1.0f),
-			FLinearColor(0.05f, 0.06f, 0.08f, 1.0f),
-			FMargin(10.f, 8.f));
+			FMargin(10.f, 7.f, 18.f, 7.f),
+			T66MiniGeneratedChrome::ESlice::PanelSmall);
 	};
 
-	TSharedRef<SUniformGridPanel> HeroStatWrap = SNew(SUniformGridPanel).SlotPadding(FMargin(10.f, 10.f, 10.f, 10.f));
+	TSharedRef<SUniformGridPanel> HeroStatWrap = SNew(SUniformGridPanel).SlotPadding(FMargin(7.f, 7.f, 7.f, 7.f));
 
 	if (SelectedHero)
 	{
@@ -298,12 +317,9 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 		HeroStatWrap->AddSlot(0, 1)[MakeMetricChip(TEXT("Armor"), FString::Printf(TEXT("%.0f"), SelectedHero->BaseArmor), FLinearColor::White)];
 		HeroStatWrap->AddSlot(1, 1)[MakeMetricChip(TEXT("Luck"), FString::Printf(TEXT("%.0f"), SelectedHero->BaseLuck), FLinearColor::White)];
 		HeroStatWrap->AddSlot(2, 1)[MakeMetricChip(TEXT("Speed"), FString::Printf(TEXT("%.0f"), SelectedHero->BaseSpeed), FLinearColor::White)];
-		HeroStatWrap->AddSlot(0, 2)[MakeMetricChip(TEXT("Companion"), SelectedCompanion ? SelectedCompanion->DisplayName : FString(TEXT("--")), T66MiniUI::AccentGreen())];
-		HeroStatWrap->AddSlot(1, 2)[MakeMetricChip(TEXT("Heal / Sec"), FString::Printf(TEXT("%.1f"), CompanionHealingPerSecond), FLinearColor::White)];
-		HeroStatWrap->AddSlot(2, 2)[MakeMetricChip(TEXT("Unity"), FString::Printf(TEXT("%d / %d"), CompanionUnityStages, UT66MiniSaveSubsystem::CompanionUnityTierHyperStages), FLinearColor::White)];
 	}
 
-	TSharedRef<SUniformGridPanel> DifficultyStatWrap = SNew(SUniformGridPanel).SlotPadding(FMargin(10.f, 10.f, 10.f, 10.f));
+	TSharedRef<SUniformGridPanel> DifficultyStatWrap = SNew(SUniformGridPanel).SlotPadding(FMargin(8.f, 8.f, 8.f, 8.f));
 
 	if (SelectedDifficulty)
 	{
@@ -320,15 +336,14 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 	{
 		const FT66MiniDifficultyDefinition& Difficulty = Difficulties[Index];
 		const bool bIsSelected = SelectedDifficulty && SelectedDifficulty->DifficultyID == Difficulty.DifficultyID;
-		const FLinearColor CardFill = bIsSelected ? Difficulty.AccentColor : PanelFill;
-		const FLinearColor TitleColor = bIsSelected ? T66MiniUI::ButtonTextDark() : FLinearColor::White;
-		const FLinearColor SubtitleColor = bIsSelected ? T66MiniUI::ButtonTextDark() : MutedText;
+		const FLinearColor TitleColor = bIsSelected ? Difficulty.AccentColor : FLinearColor::White;
+		const FLinearColor SubtitleColor = bIsSelected ? FLinearColor::White : MutedText;
 
 		DifficultyGrid->AddSlot(Index, 0)
 		[
 			SNew(SBox)
-			.WidthOverride(216.f)
-			.HeightOverride(116.f)
+			.WidthOverride(242.f)
+			.HeightOverride(118.f)
 			[
 				SNew(SButton)
 				.IsEnabled(!bDifficultyLockedToHost)
@@ -336,25 +351,16 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 				{
 					return HandleDifficultyClicked(DifficultyID);
 				}))
-				.ButtonColorAndOpacity(CardFill)
-				.ContentPadding(FMargin(10.f))
+				.ButtonColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.01f))
+				.ContentPadding(FMargin(2.f))
 				[
-					SNew(SBorder)
-					.BorderImage(T66MiniUI::WhiteBrush())
-					.BorderBackgroundColor(bIsSelected ? FLinearColor(0.93f, 0.94f, 0.95f, 0.35f) : PanelOutline)
-					.Padding(1.f)
-					[
-						SNew(SBorder)
-						.BorderImage(T66MiniUI::WhiteBrush())
-						.BorderBackgroundColor(bIsSelected ? Difficulty.AccentColor : FLinearColor(0.05f, 0.06f, 0.08f, 1.0f))
-						.Padding(FMargin(12.f, 10.f))
-						[
+					T66MiniGeneratedChrome::MakePanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 							[
 								SNew(STextBlock)
 								.Text(FText::FromString(Difficulty.DisplayName))
-								.Font(T66MiniUI::BoldFont(Difficulty.DisplayName.Len() > 8 ? 20 : 23))
+								.Font(T66MiniUI::BoldFont(Difficulty.DisplayName.Len() > 8 ? 16 : (Difficulty.DisplayName.Len() > 6 ? 18 : 22)))
 								.ColorAndOpacity(TitleColor)
 								.Justification(ETextJustify::Center)
 								.AutoWrapText(true)
@@ -367,8 +373,8 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 								.ColorAndOpacity(SubtitleColor)
 								.Justification(ETextJustify::Center)
 							]
-						]
-					]
+						, FMargin(14.f, 12.f, 24.f, 12.f),
+						bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal)
 				]
 			]
 		];
@@ -377,9 +383,13 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
+			T66MiniMakeSceneBackground(BackgroundFill)
+		]
+		+ SOverlay::Slot()
+		[
 			SNew(SBorder)
 			.BorderImage(T66MiniUI::WhiteBrush())
-			.BorderBackgroundColor(BackgroundFill)
+			.BorderBackgroundColor(FLinearColor(0.018f, 0.014f, 0.024f, 0.48f))
 			.Padding(FMargin(16.f, 14.f, 16.f, 14.f))
 			[
 				SNew(SOverlay)
@@ -397,12 +407,11 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 14.f)
 						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66Mini.DifficultySelect", "Title", "Difficulty Selection"))
-							.Font(T66MiniUI::TitleFont(30))
-							.ColorAndOpacity(FLinearColor::White)
-							.ShadowOffset(FVector2D(2.f, 2.f))
-							.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.95f))
+							T66MiniGeneratedChrome::MakeTitlePlaque(
+								NSLOCTEXT("T66Mini.DifficultySelect", "Title", "Difficulty Selection"),
+								30,
+								640.f,
+								78.f)
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 16.f)
 						[
@@ -441,13 +450,7 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 													.WidthOverride(246.f)
 													.HeightOverride(228.f)
 													[
-														SNew(SBorder)
-														.BorderImage(T66MiniUI::WhiteBrush())
-														.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.06f, 1.0f))
-														.Padding(FMargin(12.f))
-														[
-															MakeSpriteWidget(222.f, 222.f)
-														]
+														MakeSpriteWidget(222.f, 222.f)
 													],
 													FLinearColor(0.08f, 0.08f, 0.08f, 1.0f),
 													FLinearColor(0.06f, 0.06f, 0.06f, 1.0f),
@@ -545,16 +548,13 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 			.WidthOverride(140.f)
 			.HeightOverride(48.f)
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniDifficultySelectScreen::HandleBackClicked))
-				.ButtonColorAndOpacity(T66MiniUI::AccentBlue())
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66Mini.DifficultySelect", "Back", "BACK"))
-					.Font(T66MiniUI::BoldFont(18))
-					.ColorAndOpacity(FLinearColor::White)
-					.Justification(ETextJustify::Center)
-				]
+				T66MiniGeneratedChrome::MakeButton(
+					NSLOCTEXT("T66Mini.DifficultySelect", "Back", "BACK"),
+					FOnClicked::CreateUObject(this, &UT66MiniDifficultySelectScreen::HandleBackClicked),
+					ET66ButtonType::Neutral,
+					140.f,
+					48.f,
+					18)
 			]
 		]
 		+ SOverlay::Slot()
@@ -563,19 +563,16 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 		.Padding(0.f, 0.f, 28.f, 24.f)
 		[
 			SNew(SBox)
-			.WidthOverride(200.f)
-			.HeightOverride(54.f)
+			.WidthOverride(226.f)
+			.HeightOverride(58.f)
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniDifficultySelectScreen::HandleContinueClicked))
-				.ButtonColorAndOpacity(T66MiniUI::AccentGreen())
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66Mini.DifficultySelect", "Continue", "CONTINUE"))
-					.Font(T66MiniUI::BoldFont(20))
-					.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-					.Justification(ETextJustify::Center)
-				]
+				T66MiniGeneratedChrome::MakeButton(
+					NSLOCTEXT("T66Mini.DifficultySelect", "Continue", "CONTINUE"),
+					FOnClicked::CreateUObject(this, &UT66MiniDifficultySelectScreen::HandleContinueClicked),
+					ET66ButtonType::Success,
+					226.f,
+					58.f,
+					18)
 			]
 		];
 }

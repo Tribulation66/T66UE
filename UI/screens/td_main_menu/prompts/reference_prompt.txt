@@ -1,0 +1,30 @@
+Use case: ui-mockup
+Asset type: game UI full-screen offline canonical reference
+
+Generate one 1920x1080 screen-specific canonical reference for the Chadpocalypse TD Main Menu.
+
+Input 1 is the canonical main-menu style anchor: C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png
+Use this as the only visual style anchor: fantasy stone and bronze frames, warm torchlit dungeon atmosphere, carved bevels, green primary CTA plates, blue utility plates, dark readable interiors, and polished game UI composition.
+
+Input 2 is the current runtime screenshot: C:\UE\T66\UI\screens\td_main_menu\current\2026-04-24\current_runtime_1920x1080.png
+Use it only for layout and live-content ownership. Do not copy its black background or mechanically stretched reused plates.
+
+Input 3 is the layout list: C:\UE\T66\UI\screens\td_main_menu\layout\layout_list.md
+Preserve the regions described there:
+- full-screen background scene
+- top-left Back to Menu button
+- top-center title well
+- left Regular Mode panel with three content cards
+- lower-center CTA frame with two wide buttons
+- right Tier Preview panel with four content cards
+
+Keep all labels, counts, descriptions, and button text as live text wells. The reference may show representative text placement, but runtime sprites generated from it must be text-free.
+
+Constraints:
+- Preserve the target layout and relative positions. Do not redesign the hierarchy.
+- Match the main-menu visual family closely, but create a TD-specific scene/reference.
+- No screenshot overlay, no pasted current UI, no manual pixel repair look.
+- Leave clean, readable interiors for runtime text.
+- Use real-looking fantasy UI plates, not flat wireframes.
+- Do not include watermarks.
+

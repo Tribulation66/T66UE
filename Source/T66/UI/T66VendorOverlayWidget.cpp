@@ -3,14 +3,11 @@
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "Core/T66AchievementsSubsystem.h"
-#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
-#include "Gameplay/T66GamblerNPC.h"
-#include "Gameplay/T66HouseNPCBase.h"
 #include "Data/T66DataTypes.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
@@ -35,28 +32,6 @@ static UT66RunStateSubsystem* GetRunStateFromWorld(UWorld* World)
 {
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-}
-
-template <typename TNpcType>
-static TNpcType* GetRegisteredNpcFromWorld(UWorld* World)
-{
-	if (!World)
-	{
-		return nullptr;
-	}
-
-	if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
-	{
-		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNpc : Registry->GetNPCs())
-		{
-			if (TNpcType* Npc = Cast<TNpcType>(WeakNpc.Get()))
-			{
-				return Npc;
-			}
-		}
-	}
-
-	return nullptr;
 }
 
 static FString MakeInventoryStackKey(const FT66InventorySlot& Slot)
@@ -189,9 +164,9 @@ void UT66VendorOverlayWidget::CloseOverlay()
 	}
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		if (bEmbeddedInCircusShell)
+		if (bEmbeddedInCasinoShell)
 		{
-			PC->CloseCircusOverlay();
+			PC->CloseCasinoOverlay();
 			return;
 		}
 	}
@@ -252,36 +227,36 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const FTextBlockStyle& TextHeading = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
 	const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
-	const bool bCompactCircusLayout = bEmbeddedInCircusShell;
-	const float OverlayPadding = bCompactCircusLayout ? 12.f : FT66Style::Tokens::NPCOverlayPadding;
-	const float AngerFaceSize = bCompactCircusLayout ? 85.f : FT66Style::Tokens::NPCAngerCircleSize;
-	const float StatsPanelWidth = bCompactCircusLayout ? 150.f : FT66Style::Tokens::NPCVendorStatsPanelWidth;
-	const float RightPanelWidth = bCompactCircusLayout ? 200.f : FT66Style::Tokens::NPCRightPanelWidth;
-	const float MainRowHeight = bCompactCircusLayout ? 320.f : FT66Style::Tokens::NPCMainRowHeight;
-	const float ShopCardSize = bCompactCircusLayout ? FT66Style::Tokens::NPCCompactShopCardWidth : FT66Style::Tokens::NPCShopCardWidth;
-	const float ShopCardHeight = bCompactCircusLayout ? FT66Style::Tokens::NPCCompactShopCardHeight : FT66Style::Tokens::NPCShopCardHeight;
-	const float ShopCardGap = bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4;
-	const float ShopCardPadding = bCompactCircusLayout ? 5.f : FT66Style::Tokens::Space4;
-	const float ShopNameBoxHeight = bCompactCircusLayout ? 28.f : 60.f;
+	const bool bCompactCasinoLayout = bEmbeddedInCasinoShell;
+	const float OverlayPadding = bCompactCasinoLayout ? 12.f : FT66Style::Tokens::NPCOverlayPadding;
+	const float AngerFaceSize = bCompactCasinoLayout ? 85.f : FT66Style::Tokens::NPCAngerCircleSize;
+	const float StatsPanelWidth = bCompactCasinoLayout ? 150.f : FT66Style::Tokens::NPCVendorStatsPanelWidth;
+	const float RightPanelWidth = bCompactCasinoLayout ? 200.f : FT66Style::Tokens::NPCRightPanelWidth;
+	const float MainRowHeight = bCompactCasinoLayout ? 320.f : FT66Style::Tokens::NPCMainRowHeight;
+	const float ShopCardSize = bCompactCasinoLayout ? FT66Style::Tokens::NPCCompactShopCardWidth : FT66Style::Tokens::NPCShopCardWidth;
+	const float ShopCardHeight = bCompactCasinoLayout ? FT66Style::Tokens::NPCCompactShopCardHeight : FT66Style::Tokens::NPCShopCardHeight;
+	const float ShopCardGap = bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4;
+	const float ShopCardPadding = bCompactCasinoLayout ? 5.f : FT66Style::Tokens::Space4;
+	const float ShopNameBoxHeight = bCompactCasinoLayout ? 28.f : 60.f;
 	const float ShopIconSize = ShopCardSize - ShopCardPadding * 2.f;
-	const float InventorySlotSize = bCompactCircusLayout ? 80.f : FT66Style::Tokens::InventorySlotSize;
-	const float AngerImageSize = bCompactCircusLayout ? 136.f : 260.f;
-	const float SellPanelSize = bCompactCircusLayout ? 88.f : 160.f;
-	const float BankSpinBoxWidth = bCompactCircusLayout ? 68.f : FT66Style::Tokens::NPCBankSpinBoxWidth;
-	const float BankSpinBoxHeight = bCompactCircusLayout ? 28.f : FT66Style::Tokens::NPCBankSpinBoxHeight;
-	const float CardButtonMinWidth = bCompactCircusLayout ? 0.f : 100.f;
-	const FMargin ShopButtonPadding = bCompactCircusLayout ? FMargin(5.f, 3.f) : FMargin(8.f, 6.f);
-	const FMargin ActionButtonPadding = bCompactCircusLayout ? FMargin(8.f, 5.f) : FMargin(16.f, 10.f);
-	const int32 StatsPanelFontAdjustment = bCompactCircusLayout ? -5 : 0;
-	const int32 CardHeadingFontSize = bCompactCircusLayout ? 9 : 16;
-	const int32 CardBodyFontSize = bCompactCircusLayout ? 7 : 12;
-	const int32 CardButtonFontSize = bCompactCircusLayout ? 9 : 14;
-	const int32 InventoryCountFontSize = bCompactCircusLayout ? 8 : 14;
-	const int32 InventoryDashFontSize = bCompactCircusLayout ? 10 : 16;
-	const int32 SectionHeadingFontSize = bCompactCircusLayout ? 10 : 16;
-	const int32 PageTitleFontSize = bCompactCircusLayout ? 32 : 64;
-	const int32 StatusFontSize = bCompactCircusLayout ? 8 : 12;
-	const int32 SpinBoxFontSize = bCompactCircusLayout ? 10 : 16;
+	const float InventorySlotSize = bCompactCasinoLayout ? 80.f : FT66Style::Tokens::InventorySlotSize;
+	const float AngerImageSize = bCompactCasinoLayout ? 136.f : 260.f;
+	const float SellPanelSize = bCompactCasinoLayout ? 88.f : 160.f;
+	const float BankSpinBoxWidth = bCompactCasinoLayout ? 68.f : FT66Style::Tokens::NPCBankSpinBoxWidth;
+	const float BankSpinBoxHeight = bCompactCasinoLayout ? 28.f : FT66Style::Tokens::NPCBankSpinBoxHeight;
+	const float CardButtonMinWidth = bCompactCasinoLayout ? 0.f : 100.f;
+	const FMargin ShopButtonPadding = bCompactCasinoLayout ? FMargin(5.f, 3.f) : FMargin(8.f, 6.f);
+	const FMargin ActionButtonPadding = bCompactCasinoLayout ? FMargin(8.f, 5.f) : FMargin(16.f, 10.f);
+	const int32 StatsPanelFontAdjustment = bCompactCasinoLayout ? -5 : 0;
+	const int32 CardHeadingFontSize = bCompactCasinoLayout ? 9 : 16;
+	const int32 CardBodyFontSize = bCompactCasinoLayout ? 7 : 12;
+	const int32 CardButtonFontSize = bCompactCasinoLayout ? 9 : 14;
+	const int32 InventoryCountFontSize = bCompactCasinoLayout ? 8 : 14;
+	const int32 InventoryDashFontSize = bCompactCasinoLayout ? 10 : 16;
+	const int32 SectionHeadingFontSize = bCompactCasinoLayout ? 10 : 16;
+	const int32 PageTitleFontSize = bCompactCasinoLayout ? 32 : 64;
+	const int32 StatusFontSize = bCompactCasinoLayout ? 8 : 12;
+	const int32 SpinBoxFontSize = bCompactCasinoLayout ? 10 : 16;
 
 	// --- NPC anger face sprites ---
 	auto InitFaceBrush = [AngerFaceSize](FSlateBrush& B) {
@@ -554,8 +529,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	// Steal prompt (created once, overlaid and toggled visible when needed).
 	TSharedRef<SWidget> StealPromptWidget =
 		SAssignNew(StealPromptContainer, SBox)
-		.WidthOverride(bCompactCircusLayout ? 360.f : 560.f)
-		.HeightOverride(bCompactCircusLayout ? 160.f : 220.f)
+		.WidthOverride(bCompactCasinoLayout ? 360.f : 560.f)
+		.HeightOverride(bCompactCasinoLayout ? 160.f : 220.f)
 		.Visibility(EVisibility::Collapsed)
 		[
 			FT66Style::MakePanel(
@@ -571,7 +546,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 				[
 					SNew(SBox)
-					.WidthOverride(bCompactCircusLayout ? 220.f : 360.f)
+					.WidthOverride(bCompactCasinoLayout ? 220.f : 360.f)
 					.HeightOverride(28.f)
 					[
 						SNew(SOverlay)
@@ -631,46 +606,6 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			.TextStyle(&TextTitle)
 			.ColorAndOpacity(FT66Style::Tokens::Text);
 	};
-
-	const FText VendorPrompt = Loc ? Loc->GetText_VendorDialoguePrompt() : NSLOCTEXT("T66.Vendor", "VendorDialoguePrompt", "What do you want?");
-	const FText ShopChoice = Loc ? Loc->GetText_IWantToShop() : NSLOCTEXT("T66.Vendor", "IWantToShop", "I want to shop");
-	const FText TeleportChoice = Loc ? Loc->GetText_TeleportMeToYourBrother() : NSLOCTEXT("T66.Gambler", "TeleportMeToYourBrother", "Teleport me to your brother");
-
-	TSharedRef<SWidget> DialoguePage =
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 20.f)
-		[ MakeTitle(VendorTitle) ]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f)
-		[
-			SNew(STextBlock)
-			.Text(VendorPrompt)
-			.TextStyle(&TextBody)
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f)
-		[
-			SAssignNew(DialogueShopButtonWidget, SBox)
-			[
-				FT66Style::MakeButton(
-				FT66ButtonParams(ShopChoice,
-					FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnDialogueShop),
-					ET66ButtonType::Primary)
-				.SetMinWidth(420.f)
-				.SetPadding(FMargin(18.f, 10.f)))
-			]
-		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f)
-		[
-			SAssignNew(DialogueTeleportButtonWidget, SBox)
-			[
-				FT66Style::MakeButton(
-				FT66ButtonParams(TeleportChoice,
-					FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnDialogueTeleport),
-					ET66ButtonType::Neutral)
-				.SetMinWidth(420.f)
-				.SetPadding(FMargin(18.f, 10.f)))
-			]
-		];
 
 	// Pre-create inventory grid (buttons use centralized MakeButton).
 	TSharedRef<SUniformGridPanel> InventoryGrid = SNew(SUniformGridPanel)
@@ -787,12 +722,12 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			}),
 			ET66ButtonType::Neutral)
 		.SetMinWidth(0.f)
-		.SetPadding(bCompactCircusLayout ? FMargin(8.f, 5.f) : FMargin(12.f, 8.f))
-		.SetFontSize(bCompactCircusLayout ? 11 : 16)
+		.SetPadding(bCompactCasinoLayout ? FMargin(8.f, 5.f) : FMargin(12.f, 8.f))
+		.SetFontSize(bCompactCasinoLayout ? 11 : 16)
 		.SetContent(
 			SAssignNew(ShopModeToggleButtonText, STextBlock)
 			.Text(BuybackTitle)
-			.Font(FT66Style::Tokens::FontBold(bCompactCircusLayout ? 11 : 16))
+			.Font(FT66Style::Tokens::FontBold(bCompactCasinoLayout ? 11 : 16))
 			.ColorAndOpacity(FT66Style::Tokens::Text))
 	);
 
@@ -803,13 +738,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			ET66ButtonType::Neutral)
 		.SetMinWidth(0.f)
 		.SetPadding(ActionButtonPadding)
-		.SetFontSize(bCompactCircusLayout ? 11 : 16)
+		.SetFontSize(bCompactCasinoLayout ? 11 : 16)
 	);
 	ContextRerollButtonWidget = ContextRerollButton;
 
 	// Build main 3-column row (Stats | Shop | Bank) as a separate widget to avoid Slate parser issues with SBox::FArguments.
 	TSharedRef<SWidget> MainRowContent = SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
+		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
 		[
 			SAssignNew(StatsPanelBox, SBox)
 			.WidthOverride(StatsPanelWidth)
@@ -818,7 +753,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), StatsPanelWidth, true, StatsPanelFontAdjustment)
 			]
 		]
-		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
+		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
 		[
 			SNew(SBox)
 			.MinDesiredHeight(MainRowHeight)
@@ -953,10 +888,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								]
 							]
 						,
-							FT66PanelParams(ET66PanelType::Panel2).SetPadding(bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space5))
+							FT66PanelParams(ET66PanelType::Panel2).SetPadding(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space5))
 					]
 				,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
 			]
 		];
 
@@ -972,10 +907,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				.TextStyle(&TextTitle)
 				.Font(FT66Style::Tokens::FontBold(PageTitleFontSize))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
-				.Visibility(bCompactCircusLayout ? EVisibility::Collapsed : EVisibility::Visible)
+				.Visibility(bCompactCasinoLayout ? EVisibility::Collapsed : EVisibility::Visible)
 			]
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCircusLayout ? 0.f : 12.f, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? 0.f : 12.f, 0.f, 0.f)
 		[
 			SAssignNew(StatusText, STextBlock)
 			.Text(FText::GetEmpty())
@@ -983,11 +918,11 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			.Font(FT66Style::Tokens::FontRegular(StatusFontSize))
 			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCircusLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6, 0.f, 0.f)
 		[
 			MainRowContent
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCircusLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6, 0.f, 0.f)
 		[
 			FT66Style::MakePanel(
 					SNew(SVerticalBox)
@@ -1002,7 +937,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(bCompactCircusLayout ? 10.f : 18.f, 0.f, bCompactCircusLayout ? 10.f : 16.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(bCompactCasinoLayout ? 10.f : 18.f, 0.f, bCompactCasinoLayout ? 10.f : 16.f, 0.f)
 					[
 						SAssignNew(NetWorthText, STextBlock)
 						.Text(FText::Format(
@@ -1012,7 +947,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, bCompactCircusLayout ? 10.f : 16.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, bCompactCasinoLayout ? 10.f : 16.f, 0.f)
 					[
 						SAssignNew(GoldText, STextBlock)
 						.Text(FText::Format(
@@ -1050,7 +985,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							InventoryGrid
 						]
 					]
-					+ SHorizontalBox::Slot().AutoWidth().Padding(bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f, 0.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f, 0.f, 0.f)
 					[
 						// Sell details for selected item (sized to match inventory slot: 160x160)
 						SAssignNew(SellPanelContainer, SBox)
@@ -1088,18 +1023,18 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 								[ SellBtnWidget ]
 							,
-								FT66PanelParams(ET66PanelType::Panel2).SetPadding(bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4))
+								FT66PanelParams(ET66PanelType::Panel2).SetPadding(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4))
 						]
 					]
 				]
 			,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4).SetColor(FT66Style::Tokens::Panel))
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4).SetColor(FT66Style::Tokens::Panel))
 		];
 
 	const TAttribute<FOptionalSize> ShopPageWidthAttr = TAttribute<FOptionalSize>::CreateLambda([this, OverlayPadding]() -> FOptionalSize
 	{
-		const FVector2D Bounds = bEmbeddedInCircusShell ? FT66Style::GetViewportLogicalSize() : FT66Style::GetSafeFrameSize();
-		const float HorizontalMargins = bEmbeddedInCircusShell
+		const FVector2D Bounds = bEmbeddedInCasinoShell ? FT66Style::GetViewportLogicalSize() : FT66Style::GetSafeFrameSize();
+		const float HorizontalMargins = bEmbeddedInCasinoShell
 			? (OverlayPadding * 4.f)
 			: (OverlayPadding * 2.f);
 		return FOptionalSize(FMath::Max(1.f, Bounds.X - HorizontalMargins));
@@ -1119,7 +1054,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 
 	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
 	{
-		return bEmbeddedInCircusShell ? FMargin(0.f) : FT66Style::GetSafeFrameInsets();
+		return bEmbeddedInCasinoShell ? FMargin(0.f) : FT66Style::GetSafeFrameInsets();
 	});
 
 	const TAttribute<FMargin> SafeClosePadding = TAttribute<FMargin>::CreateLambda([this, OverlayPadding]() -> FMargin
@@ -1129,7 +1064,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			OverlayPadding,
 			OverlayPadding,
 			0.f);
-		return bEmbeddedInCircusShell ? LocalPadding : FT66Style::GetSafePadding(LocalPadding);
+		return bEmbeddedInCasinoShell ? LocalPadding : FT66Style::GetSafePadding(LocalPadding);
 	});
 
 	TSharedRef<SWidget> Root =
@@ -1144,15 +1079,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					SAssignNew(PageSwitcher, SWidgetSwitcher)
 					+ SWidgetSwitcher::Slot()
 					[
-						DialoguePage
-					]
-					+ SWidgetSwitcher::Slot()
-					[
 						ShopPage
 					]
 				]
 			,
-				FT66PanelParams(ET66PanelType::Bg).SetPadding(OverlayPadding).SetColor(FT66Style::Tokens::Bg))
+				FT66PanelParams(ET66PanelType::Bg)
+					.SetPadding(OverlayPadding)
+					.SetColor(FLinearColor(0.014f, 0.011f, 0.010f, 0.96f)))
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
@@ -1178,10 +1111,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			StealPromptWidget
 		];
 
-	SetPage(EVendorPage::Dialogue);
+	SetPage(EVendorPage::Shop);
 	RefreshAll();
 	RefreshShopChrome();
-	return bEmbeddedInCircusShell ? Root : FT66Style::MakeResponsiveRoot(Root);
+	return bEmbeddedInCasinoShell ? Root : FT66Style::MakeResponsiveRoot(Root);
 }
 
 void UT66VendorOverlayWidget::HandleGoldOrDebtChanged()
@@ -1256,19 +1189,9 @@ void UT66VendorOverlayWidget::RefreshShopChrome()
 		ContextRerollButtonWidget->SetEnabled(bEnabled);
 	}
 
-	if (DialogueShopButtonWidget.IsValid())
-	{
-		DialogueShopButtonWidget->SetEnabled(!bCachedBossActive);
-	}
-
-	if (DialogueTeleportButtonWidget.IsValid())
-	{
-		DialogueTeleportButtonWidget->SetEnabled(!bCachedBossActive);
-	}
-
 	if (CloseButtonBox.IsValid())
 	{
-		CloseButtonBox->SetVisibility(bEmbeddedInCircusShell ? EVisibility::Collapsed : EVisibility::Visible);
+		CloseButtonBox->SetVisibility(bEmbeddedInCasinoShell ? EVisibility::Collapsed : EVisibility::Visible);
 	}
 }
 
@@ -1626,71 +1549,6 @@ void UT66VendorOverlayWidget::OpenShopPage()
 		ShopBuybackSwitcher->SetActiveWidgetIndex(0);
 	}
 	RefreshAll();
-}
-
-FReply UT66VendorOverlayWidget::OnDialogueShop()
-{
-	SetPage(EVendorPage::Shop);
-	if (ShopBuybackSwitcher.IsValid())
-	{
-		ShopBuybackSwitcher->SetActiveWidgetIndex(0);
-	}
-	RefreshAll();
-	return FReply::Handled();
-}
-
-FReply UT66VendorOverlayWidget::OnDialogueTeleport()
-{
-	if (IsBossActive())
-	{
-		// Keep UI open but report status.
-		if (StatusText.IsValid())
-		{
-			UT66LocalizationSubsystem* Loc2 = nullptr;
-			if (UWorld* World = GetWorld())
-			{
-				if (UGameInstance* GI = World->GetGameInstance())
-				{
-					Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
-				}
-			}
-			StatusText->SetText(Loc2 ? Loc2->GetText_TeleportDisabledBossActive() : NSLOCTEXT("T66.Vendor", "TeleportDisabledBossActive", "Teleport disabled (boss encounter started)."));
-		}
-		return FReply::Handled();
-	}
-	if (bEmbeddedInCircusShell)
-	{
-		TeleportToGambler();
-		return FReply::Handled();
-	}
-
-	TeleportToGambler();
-	CloseOverlay();
-	return FReply::Handled();
-}
-
-void UT66VendorOverlayWidget::TeleportToGambler()
-{
-	if (bEmbeddedInCircusShell)
-	{
-		if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
-		{
-			PC->SwitchCircusOverlayToGambling();
-		}
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	APawn* Pawn = GetOwningPlayerPawn();
-	if (!Pawn) return;
-
-	AT66GamblerNPC* Gambler = GetRegisteredNpcFromWorld<AT66GamblerNPC>(World);
-	if (!Gambler) return;
-
-	const FVector GamblerLoc = Gambler->GetActorLocation();
-	Pawn->SetActorLocation(GamblerLoc + FVector(250.f, 0.f, 0.f), false, nullptr, ETeleportType::TeleportPhysics);
 }
 
 void UT66VendorOverlayWidget::RefreshInventory()
@@ -2166,7 +2024,7 @@ void UT66VendorOverlayWidget::TriggerVendorBossIfAngry()
 {
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		PC->TriggerCircusBossIfAngry();
+		PC->TriggerCasinoBossIfAngry();
 	}
 }
 

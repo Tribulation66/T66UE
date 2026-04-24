@@ -1,0 +1,9 @@
+{
+  "screen": "CrateOverlay",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "crate_overlay_shell", "group": "Center", "content_type": "generated-shell", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CrateOverlayWidget.cpp"], "notes": "Presentation shell and strip frame only." },
+    { "id": "item_tile_sockets", "group": "Center", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/T66CrateOverlayWidget.cpp"], "notes": "Tile frames may be generated; icons, rarity, winner, and scroll state are runtime-owned." },
+    { "id": "skip_and_result_text", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CrateOverlayWidget.cpp"], "notes": "Skip hint and resolved item text remain live/localizable." }
+  ]
+}

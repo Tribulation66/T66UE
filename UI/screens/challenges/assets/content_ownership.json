@@ -1,0 +1,165 @@
+{
+  "screen_slug": "challenges",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\challenges\\reference\\canonical_reference_1920x1080.png",
+  "runtime_owned": [
+    {
+      "name": "mode_tabs",
+      "rect": [
+        1280,
+        98,
+        370,
+        58
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "close_button",
+      "rect": [
+        1664,
+        96,
+        54,
+        58
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "source_tabs",
+      "rect": [
+        230,
+        170,
+        520,
+        60
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "status_line",
+      "rect": [
+        222,
+        238,
+        1120,
+        32
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "list_row_selected",
+      "rect": [
+        232,
+        318,
+        700,
+        92
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "list_row_normal",
+      "rect": [
+        232,
+        430,
+        700,
+        92
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "detail_title",
+      "rect": [
+        1020,
+        326,
+        620,
+        70
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "detail_body",
+      "rect": [
+        1020,
+        430,
+        640,
+        260
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "confirm_button",
+      "rect": [
+        1512,
+        858,
+        210,
+        58
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    }
+  ],
+  "generated_owned": [
+    {
+      "name": "modal_shell",
+      "rect": [
+        180,
+        60,
+        1560,
+        940
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    },
+    {
+      "name": "header",
+      "rect": [
+        210,
+        88,
+        1500,
+        174
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    },
+    {
+      "name": "list_shell",
+      "rect": [
+        206,
+        296,
+        760,
+        690
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    },
+    {
+      "name": "detail_shell",
+      "rect": [
+        992,
+        296,
+        744,
+        690
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    }
+  ],
+  "families_required": [
+    "modal-shell",
+    "header-shell",
+    "list-shell",
+    "detail-shell",
+    "row-plate",
+    "compact-buttons",
+    "status-badge",
+    "checkbox-marker"
+  ]
+}

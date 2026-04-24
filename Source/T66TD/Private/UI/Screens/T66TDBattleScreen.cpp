@@ -14,6 +14,8 @@
 #include "Misc/Paths.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
+#include "UI/T66TDUIStyle.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
@@ -21,6 +23,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SLeafWidget.h"
@@ -29,7 +32,7 @@
 
 namespace
 {
-	const FVector2D TDBattleBoardSize(1120.f, 630.f);
+	const FVector2D TDBattleBoardSize(960.f, 540.f);
 
 	void EnsureBrush(const TSharedPtr<FSlateBrush>& Brush, const FVector2D& ImageSize)
 	{
@@ -63,9 +66,127 @@ namespace
 			return SNew(SBox);
 		}
 
-		return SNew(SImage)
-			.Image(Brush.Get())
-			.ColorAndOpacity(FLinearColor::White);
+		return SNew(SScaleBox)
+			.Stretch(EStretch::Fill)
+			[
+				SNew(SImage)
+				.Image(Brush.Get())
+				.ColorAndOpacity(FLinearColor::White)
+			];
+	}
+
+	const FSlateBrush* ResolveBattleBrush(
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
+		const TCHAR* RelativePath,
+		const FMargin& Margin,
+		const TCHAR* DebugLabel)
+	{
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
+			Margin,
+			DebugLabel);
+	}
+
+	const FSlateBrush* TDBattleRosterPanelBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveBattleBrush(
+			Entry,
+			TEXT("SourceAssets/TD/UI/td_battle/Components/panel_left_roster_shell.png"),
+			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
+			TEXT("TDBattleRosterPanel"));
+	}
+
+	const FSlateBrush* TDBattleRosterRowBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveBattleBrush(
+			Entry,
+			TEXT("SourceAssets/TD/UI/td_battle/Components/roster_row_normal.png"),
+			FMargin(0.15f, 0.25f, 0.12f, 0.25f),
+			TEXT("TDBattleRosterRow"));
+	}
+
+	const FSlateBrush* TDBattleStatsBarBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveBattleBrush(
+			Entry,
+			TEXT("SourceAssets/TD/UI/td_battle/Components/stats_bar_shell.png"),
+			FMargin(0.14f, 0.34f, 0.14f, 0.34f),
+			TEXT("TDBattleStatsBar"));
+	}
+
+	const FSlateBrush* TDBattleBoardFrameBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveBattleBrush(
+			Entry,
+			TEXT("SourceAssets/TD/UI/td_battle/Components/board_frame_shell.png"),
+			FMargin(0.12f, 0.12f, 0.12f, 0.12f),
+			TEXT("TDBattleBoardFrame"));
+	}
+
+	const FSlateBrush* TDBattleStatusBarBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveBattleBrush(
+			Entry,
+			TEXT("SourceAssets/TD/UI/td_battle/Components/status_bar_shell.png"),
+			FMargin(0.10f, 0.35f, 0.10f, 0.35f),
+			TEXT("TDBattleStatusBar"));
+	}
+
+	const FSlateBrush* TDBattleMatchPanelBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveBattleBrush(
+			Entry,
+			TEXT("SourceAssets/TD/UI/td_battle/Components/panel_right_match_shell.png"),
+			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
+			TEXT("TDBattleMatchPanel"));
+	}
+
+	const FSlateBrush* TDBattleUpgradePanelBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveBattleBrush(
+			Entry,
+			TEXT("SourceAssets/TD/UI/td_battle/Components/panel_right_upgrade_shell.png"),
+			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
+			TEXT("TDBattleUpgradePanel"));
+	}
+
+	const FSlateBrush* TDBattleButtonBrush(const ET66ButtonType Type)
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush GreenEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush BlueEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush PurpleEntry;
+
+		if (Type == ET66ButtonType::Success || Type == ET66ButtonType::Primary)
+		{
+			return ResolveBattleBrush(
+				GreenEntry,
+				TEXT("SourceAssets/TD/UI/td_battle/Components/button_green_normal.png"),
+				FMargin(0.18f, 0.32f, 0.18f, 0.32f),
+				TEXT("TDBattleButtonGreen"));
+		}
+		if (Type == ET66ButtonType::Danger)
+		{
+			return ResolveBattleBrush(
+				PurpleEntry,
+				TEXT("SourceAssets/TD/UI/td_battle/Components/button_purple_normal.png"),
+				FMargin(0.18f, 0.32f, 0.18f, 0.32f),
+				TEXT("TDBattleButtonPurple"));
+		}
+
+		return ResolveBattleBrush(
+			BlueEntry,
+			TEXT("SourceAssets/TD/UI/td_battle/Components/button_blue_normal.png"),
+			FMargin(0.18f, 0.32f, 0.18f, 0.32f),
+			TEXT("TDBattleButtonBlue"));
 	}
 
 	TSharedRef<SWidget> MakeSpriteWidget(const TSharedPtr<FSlateBrush>& Brush, const FString& FallbackText, const FLinearColor& PlaceholderColor, const FVector2D& Size, const int32 FontSize)
@@ -937,8 +1058,8 @@ namespace
 		{
 			const FT66TDPlacedTower* SelectedTower = FindTowerByPad(SelectedPadIndex);
 			return SelectedTower
-				? FText::FromString(SelectedTower->DisplayName)
-				: NSLOCTEXT("T66TD.Battle", "NoTowerSelected", "No Hero Selected");
+				? FText::FromString(SelectedTower->DisplayName.ToUpper())
+				: NSLOCTEXT("T66TD.Battle", "NoTowerSelected", "NO HERO SELECTED");
 		}
 
 		FText GetSelectedTowerBody() const
@@ -2554,7 +2675,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 	{
 		return SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.01f, 0.01f, 0.02f, 1.0f))
+			.BorderBackgroundColor(T66TDUI::ShellFill())
 			[
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight().Padding(24.f)
@@ -2562,19 +2683,16 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66TD.Battle", "UnavailableTitle", "TD battle data is unavailable."))
 					.Font(FT66Style::MakeFont(TEXT("Black"), 28))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(T66TDUI::BrightText())
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(24.f, 0.f, 24.f, 24.f)
 				[
-					FT66Style::MakeButton(
-						FT66ButtonParams(
-							NSLOCTEXT("T66TD.Battle", "Back", "BACK"),
-							FOnClicked::CreateUObject(this, &UT66TDBattleScreen::HandleBackClicked),
-							ET66ButtonType::Neutral)
-						.SetMinWidth(180.f)
-						.SetHeight(42.f)
-						.SetFontSize(14)
-						.SetUseGlow(false))
+					FT66Style::MakeButton(T66TDUI::MakeUtilityButtonParams(
+						NSLOCTEXT("T66TD.Battle", "Back", "BACK"),
+						FOnClicked::CreateUObject(this, &UT66TDBattleScreen::HandleBackClicked),
+						180.f,
+						42.f,
+						14))
 				]
 			];
 	}
@@ -2639,7 +2757,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 		const FT66TDHeroCombatProfile Profile = BuildHeroProfile(HeroDefinition);
 		HeroRoster->AddSlot()
 		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 10.f)
+		.Padding(0.f, 0.f, 0.f, 8.f)
 		[
 			SNew(ST66TDHeroRosterTile)
 			.HeroID(HeroDefinition.HeroID)
@@ -2647,14 +2765,10 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 			.Cost(Profile.Cost)
 			.Tint(HeroDefinition.PlaceholderColor)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.09f, 0.05f, 0.06f, 0.98f))
+			.BorderBackgroundColor(FLinearColor::Transparent)
 			.Padding(FMargin(1.f))
 			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.05f, 0.03f, 0.04f, 1.0f))
-				.Padding(FMargin(12.f))
-				[
+				T66TDUI::MakeContentPanel(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Top).Padding(0.f, 0.f, 10.f, 0.f)
 					[
@@ -2662,8 +2776,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 							HeroSpriteBrushes.FindRef(HeroDefinition.HeroID),
 							HeroDefinition.DisplayName.Left(1).ToUpper(),
 							HeroDefinition.PlaceholderColor,
-							FVector2D(60.f, 60.f),
-							18)
+							FVector2D(54.f, 54.f),
+							16)
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
@@ -2672,8 +2786,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(FText::FromString(HeroDefinition.DisplayName))
-							.Font(FT66Style::MakeFont(TEXT("Bold"), 16))
-							.ColorAndOpacity(FLinearColor::White)
+							.Font(FT66Style::MakeFont(TEXT("Bold"), 15))
+							.ColorAndOpacity(T66TDUI::BrightText())
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 						[
@@ -2682,12 +2796,13 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 								NSLOCTEXT("T66TD.Battle", "HeroRosterMetaFmt", "{0}  |  {1} materials"),
 								FText::FromString(Profile.CombatLabel),
 								FText::AsNumber(Profile.Cost)))
-							.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
-							.ColorAndOpacity(FLinearColor(0.88f, 0.90f, 0.92f, 1.0f))
+							.Font(FT66Style::MakeFont(TEXT("Regular"), 10))
+							.ColorAndOpacity(T66TDUI::MutedText())
 							.AutoWrapText(true)
 						]
 					]
-				]
+					,
+					FMargin(12.f, 9.f))
 			]
 		];
 	}
@@ -2710,39 +2825,21 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 	const TAttribute<bool> CanUpgradeTempo = TAttribute<bool>::CreateSP(BattleBoard.Get(), &ST66TDBattleBoardWidget::CanUpgradeTempo);
 	const TAttribute<bool> CanSellSelectedTower = TAttribute<bool>::CreateSP(BattleBoard.Get(), &ST66TDBattleBoardWidget::CanSellSelectedTower);
 
-	const FLinearColor PanelFill(0.07f, 0.04f, 0.05f, 0.96f);
-	const FLinearColor InnerFill(0.04f, 0.03f, 0.04f, 0.92f);
-	const FLinearColor BrightText(0.95f, 0.94f, 0.92f, 1.0f);
-	const FLinearColor MutedText(0.80f, 0.78f, 0.76f, 1.0f);
-	const auto MakeDynamicActionButton = [&](const TAttribute<FText>& Label, const FOnClicked& OnClicked, const FLinearColor& Outer, const FLinearColor& Inner, const FVector2D& Size, const int32 FontSize) -> TSharedRef<SWidget>
+	const FLinearColor BrightText = T66TDUI::BrightText();
+	const FLinearColor MutedText = T66TDUI::MutedText();
+	const auto MakeDynamicActionButton = [&](const TAttribute<FText>& Label, const FOnClicked& OnClicked, const ET66ButtonType ButtonType, const FVector2D& Size, const int32 FontSize) -> TSharedRef<SWidget>
 	{
-		return SNew(SBox)
-			.WidthOverride(Size.X)
-			.HeightOverride(Size.Y)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(Outer)
-				.Padding(FMargin(1.f))
-				[
-					SNew(SButton)
-					.ButtonStyle(FCoreStyle::Get(), "NoBorder")
-					.OnClicked(OnClicked)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(Inner)
-						.Padding(FMargin(12.f, 8.f))
-						[
-							SNew(STextBlock)
-							.Text(Label)
-							.Font(FT66Style::MakeFont(TEXT("Black"), FontSize))
-							.ColorAndOpacity(FLinearColor(0.96f, 0.96f, 0.95f, 1.0f))
-							.Justification(ETextJustify::Center)
-						]
-					]
-				]
-			];
+		return FT66Style::MakeButton(
+			FT66ButtonParams(FText::GetEmpty(), OnClicked, ButtonType)
+			.SetDynamicLabel(Label)
+			.SetMinWidth(Size.X)
+			.SetHeight(Size.Y)
+			.SetFontSize(FontSize)
+			.SetPadding(FMargin(12.f, 8.f, 12.f, 6.f))
+			.SetUseGlow(false)
+			.SetUseDotaPlateOverlay(true)
+			.SetDotaPlateOverrideBrush(T66TDUI::ButtonPlateBrush(ButtonType))
+			.SetTextColor(T66TDUI::BrightText()));
 	};
 
 	const auto MakeUpgradeButton = [&](const TAttribute<FText>& Label, const TAttribute<bool>& bEnabled, const FOnClicked& OnClicked, const ET66ButtonType ButtonType) -> TSharedRef<SWidget>
@@ -2756,48 +2853,46 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 			.SetFontSize(11)
 			.SetPadding(FMargin(12.f, 7.f, 12.f, 5.f))
 			.SetUseGlow(false)
-			.SetTextColor(FLinearColor(0.96f, 0.96f, 0.95f, 1.0f)));
+			.SetUseDotaPlateOverlay(true)
+			.SetDotaPlateOverrideBrush(T66TDUI::ButtonPlateBrush(ButtonType))
+			.SetTextColor(T66TDUI::BrightText()));
 	};
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.01f, 0.01f, 0.02f, 1.0f))
+		.BorderBackgroundColor(T66TDUI::ShellFill())
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
+				MakeOptionalImage(BackgroundBrush)
+			]
+			+ SOverlay::Slot()
+			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.52f))
+				.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.76f))
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(FMargin(20.f, 20.f, 0.f, 0.f))
 			[
 				SNew(SBox)
 				.WidthOverride(260.f)
-				.HeightOverride(40.f)
+				.HeightOverride(44.f)
 				[
-					FT66Style::MakeButton(
-						FT66ButtonParams(
-							NSLOCTEXT("T66TD.Battle", "BackToMaps", "BACK TO MAPS"),
-							FOnClicked::CreateUObject(this, &UT66TDBattleScreen::HandleBackClicked),
-							ET66ButtonType::Neutral)
-						.SetMinWidth(260.f)
-						.SetHeight(40.f)
-						.SetFontSize(12)
-						.SetPadding(FMargin(14.f, 8.f, 14.f, 6.f))
-						.SetUseGlow(false)
-						.SetTextColor(FLinearColor(0.94f, 0.95f, 0.97f, 1.0f)))
+					FT66Style::MakeButton(T66TDUI::MakeUtilityButtonParams(
+						NSLOCTEXT("T66TD.Battle", "BackToMaps", "BACK TO MAPS"),
+						FOnClicked::CreateUObject(this, &UT66TDBattleScreen::HandleBackClicked),
+						260.f,
+						44.f,
+						10))
 				]
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, 24.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
-				.Text(FText::Format(
-					NSLOCTEXT("T66TD.Battle", "TitleFmt", "{0}  |  {1}"),
-					FText::FromString(SelectedMap->DisplayName),
-					FText::FromString(SelectedDifficulty->DisplayName)))
+				.Text(FText::FromString(FString::Printf(TEXT("%s | %s"), *SelectedMap->DisplayName.ToUpper(), *SelectedDifficulty->DisplayName.ToUpper())))
 				.Font(FT66Style::MakeFont(TEXT("Black"), 30))
-				.ColorAndOpacity(FLinearColor(0.98f, 0.88f, 0.54f, 1.0f))
+				.ColorAndOpacity(T66TDUI::AccentGold())
 			]
 			+ SOverlay::Slot().Padding(FMargin(22.f, 84.f, 22.f, 22.f))
 			[
@@ -2806,18 +2901,14 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 				[
 					SNew(SBox).WidthOverride(320.f)
 					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(PanelFill)
-						.Padding(FMargin(14.f))
-						[
+						T66TDUI::MakeLeftPanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight()
 							[
 								SNew(STextBlock)
 								.Text(NSLOCTEXT("T66TD.Battle", "RosterTitle", "HERO ROSTER"))
 								.Font(FT66Style::MakeFont(TEXT("Black"), 20))
-								.ColorAndOpacity(FLinearColor(0.98f, 0.90f, 0.58f, 1.0f))
+								.ColorAndOpacity(T66TDUI::AccentGold())
 							]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 12.f)
 							[
@@ -2835,7 +2926,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 									HeroRoster
 								]
 							]
-						]
+							,
+							FMargin(22.f, 20.f))
 					]
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 16.f, 0.f)
@@ -2843,11 +2935,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(PanelFill)
-						.Padding(FMargin(16.f))
-						[
+						T66TDUI::MakeCenterPanel(
 							SNew(SHorizontalBox)
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 18.f, 0.f)
 							[
@@ -2870,15 +2958,12 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 								.Font(FT66Style::MakeFont(TEXT("Bold"), 14))
 								.ColorAndOpacity(BrightText)
 							]
-						]
+							,
+							FMargin(18.f, 12.f))
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
 					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(InnerFill)
-						.Padding(FMargin(8.f))
-						[
+						T66TDUI::MakeCenterPanel(
 							SNew(SBox)
 							.WidthOverride(TDBattleBoardSize.X)
 							.HeightOverride(TDBattleBoardSize.Y)
@@ -2892,14 +2977,15 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 								[
 									SNew(SBorder)
 									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.18f))
+									.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.14f))
 								]
 								+ SOverlay::Slot()
 								[
 									BattleBoard.ToSharedRef()
 								]
 							]
-						]
+							,
+							FMargin(10.f))
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
 					[
@@ -2917,26 +3003,21 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight()
 						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(PanelFill)
-							.Padding(FMargin(16.f))
-							[
+							T66TDUI::MakeRightPanel(
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight()
 								[
 									SNew(STextBlock)
 									.Text(NSLOCTEXT("T66TD.Battle", "MatchPanelTitle", "MATCH CONTROL"))
 									.Font(FT66Style::MakeFont(TEXT("Black"), 20))
-									.ColorAndOpacity(FLinearColor(0.98f, 0.90f, 0.58f, 1.0f))
+									.ColorAndOpacity(T66TDUI::AccentGold())
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
 								[
 									MakeDynamicActionButton(
 										PrimaryActionText,
 										FOnClicked::CreateSP(BattleBoard.ToSharedRef(), &ST66TDBattleBoardWidget::HandlePrimaryActionClicked),
-										FLinearColor(0.20f, 0.42f, 0.28f, 1.0f),
-										FLinearColor(0.12f, 0.24f, 0.16f, 1.0f),
+										ET66ButtonType::Success,
 										FVector2D(320.f, 54.f),
 										15)
 								]
@@ -2945,8 +3026,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 									MakeDynamicActionButton(
 										SpeedText,
 										FOnClicked::CreateSP(BattleBoard.ToSharedRef(), &ST66TDBattleBoardWidget::HandleSpeedClicked),
-										FLinearColor(0.24f, 0.26f, 0.31f, 1.0f),
-										FLinearColor(0.12f, 0.13f, 0.16f, 1.0f),
+										ET66ButtonType::Neutral,
 										FVector2D(320.f, 42.f),
 										13)
 								]
@@ -2963,18 +3043,15 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 									SNew(STextBlock)
 									.Text(ThreatText)
 									.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
-									.ColorAndOpacity(FLinearColor(0.86f, 0.90f, 0.94f, 1.0f))
+									.ColorAndOpacity(BrightText)
 									.AutoWrapText(true)
 								]
-							]
+								,
+								FMargin(24.f, 22.f))
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(PanelFill)
-							.Padding(FMargin(16.f))
-							[
+							T66TDUI::MakeRightPanel(
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight()
 								[
@@ -3023,21 +3100,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 										FOnClicked::CreateSP(BattleBoard.ToSharedRef(), &ST66TDBattleBoardWidget::HandleSellSelectedTowerClicked),
 										ET66ButtonType::Danger)
 								]
-							]
-						]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(PanelFill)
-							.Padding(FMargin(16.f))
-							[
-								SNew(STextBlock)
-								.Text(NSLOCTEXT("T66TD.Battle", "PlayHint", "Drag heroes to pads, start waves, buy upgrades from the selected-hero panel, and right-click or use SELL HERO to cash out a tower at 70% of invested materials. Hidden enemies need vision, armored enemies want armor-pierce, and shielded enemies fold faster to anti-shield heroes."))
-								.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
-								.ColorAndOpacity(MutedText)
-								.AutoWrapText(true)
-							]
+								,
+								FMargin(24.f, 22.f))
 						]
 					]
 				]

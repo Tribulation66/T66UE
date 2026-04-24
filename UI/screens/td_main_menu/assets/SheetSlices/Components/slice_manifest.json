@@ -1,0 +1,20 @@
+{
+  "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+  "items": [
+    {
+      "name": "td_main_menu_01",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        0,
+        0,
+        1536,
+        1024
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components/td_main_menu_01.png",
+      "size": [
+        1536,
+        1024
+      ]
+    }
+  ]
+}

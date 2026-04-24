@@ -1515,16 +1515,6 @@ FText UT66LocalizationSubsystem::GetText_Vendor() const
 	return NSLOCTEXT("T66.Vendor", "VendorTitle", "VENDOR");
 }
 
-FText UT66LocalizationSubsystem::GetText_VendorDialoguePrompt() const
-{
-	return NSLOCTEXT("T66.Vendor", "VendorDialoguePrompt", "What do you want?");
-}
-
-FText UT66LocalizationSubsystem::GetText_IWantToShop() const
-{
-	return NSLOCTEXT("T66.Vendor", "IWantToShop", "I want to shop");
-}
-
 FText UT66LocalizationSubsystem::GetText_Shop() const
 {
 	return NSLOCTEXT("T66.Vendor", "ShopTitle", "SHOP");
@@ -2011,12 +2001,7 @@ FText UT66LocalizationSubsystem::GetText_Gambler() const
 
 FText UT66LocalizationSubsystem::GetText_Casino() const
 {
-	return GetText_Circus();
-}
-
-FText UT66LocalizationSubsystem::GetText_Circus() const
-{
-	return NSLOCTEXT("T66.Gambler", "Circus", "CIRCUS");
+	return NSLOCTEXT("T66.Gambler", "Casino", "CASINO");
 }
 
 FText UT66LocalizationSubsystem::GetText_Bank() const

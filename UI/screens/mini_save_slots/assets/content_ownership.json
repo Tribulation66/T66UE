@@ -1,0 +1,19 @@
+{
+  "screen": "mini_save_slots",
+  "background": {
+    "owner": "scene_plate",
+    "must_not_contain": ["slot labels", "slot data", "buttons", "status text"]
+  },
+  "chrome": {
+    "owner": "generated panel and button plates",
+    "notes": "Chrome owns borders, fills, and ornamental material only."
+  },
+  "runtime_owned": [
+    "screen title",
+    "save slot names",
+    "empty or occupied slot descriptions",
+    "status/help text",
+    "button labels",
+    "button enabled state"
+  ]
+}

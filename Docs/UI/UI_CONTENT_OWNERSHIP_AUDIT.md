@@ -10,6 +10,10 @@ The core rule is simple:
 
 Many T66 screens combine reconstructed shell art with live-injected content such as portraits, icons, media, 3D previews, leaderboard avatars, or localizable text. Those regions must be identified from code before image generation work begins.
 
+For the current workflow, the main menu is the golden calibration screen. Its approved reference establishes the visual family, but the packaged target and ownership audit establish what may be baked. The title wordmark may be baked display art; the tagline and all menu/social/leaderboard labels, names, values, and states must remain live and localizable.
+
+The full-screen reference and any buttonless/textless variants are offline comparison or prompting artifacts only. Runtime ownership must be expressed as a UI-free scene/background plate plus separate foreground component families and live-content wells.
+
 ## Required Artifact
 
 Each screen reference pack should contain:
@@ -22,7 +26,8 @@ Typical location:
 
 This file is a companion to:
 
-- `screen_master.png`
+- `screen_master.png` as the offline comparison target
+- `scene_plate.png` or the screen's equivalent UI-free background plate
 - `reference_layout.json`
 - `asset_manifest.json`
 
@@ -31,14 +36,22 @@ This file is a companion to:
 Use one of these `content_type` values for each region:
 
 - `generated-shell`
+- `generated-scene-plate`
 - `runtime-text`
+- `runtime-value`
 - `runtime-image`
 - `runtime-icon`
 - `runtime-avatar`
 - `runtime-media`
 - `runtime-3d-preview`
+- `runtime-state`
+- `baked-title-art`
 
 The point is to say what owns the visible interior of the region at runtime.
+
+Use `generated-scene-plate` only for background environment pixels that remain after all UI chrome, controls, panels, leaderboard rows, labels, values, avatars, icons, media, and preview content have been removed.
+
+Treat every visible runtime-sourced string, number, image, and value as owned content. That includes subtitles, taglines, menu labels, friend names, leaderboard rows, scores, timers, prices, keybinds, selected values, toggle states, progress fills, avatars, badges, icons, preview thumbnails, media panels, and async-loaded images.
 
 ## Render Contracts
 
@@ -63,6 +76,7 @@ Every mixed-ownership region should declare a `render_contract`:
    - sprite-family prompting
    - manifest rect separation
    - packaged review masks
+   - scene/background plate generation and acceptance
 
 ## Code-First Clues
 
@@ -91,16 +105,20 @@ Examples:
 For mixed-ownership regions, `reference_layout.json` should separate:
 
 - outer shell rect
+- visible control rect
 - inner live-content rect
 
-Do not use one crop box for both.
+Do not use one crop box for shell art, interaction, and live content. A control may share a shell visually, but the manifest still needs a distinct control rect for hit testing and state anchoring.
 
 ## Review Rule
 
 Packaged review must use ownership-aware validation:
 
 - strict-diff only the generated shell region
+- strict-diff the scene plate only in visible background areas where foreground UI does not cover it
 - manually validate or mask the runtime-owned interior
+- keep packaged captures at the canonical target size, normally `1920x1080`
+- store or describe the mask set used for strict diffs
 
 ## Example Cases
 
@@ -113,9 +131,13 @@ Packaged review must use ownership-aware validation:
 
 ### Main Menu
 
+- title wordmark: `baked-title-art` + `shell-only`
+- tagline/subtitle: `runtime-text`
+- center CTA labels: `runtime-text`
 - profile avatar: `runtime-avatar` + `socket-frame`
 - friend avatars: `runtime-avatar` + `socket-frame`
 - leaderboard avatars: `runtime-avatar` + `socket-frame`
+- friend names, statuses, leaderboard labels, ranks, names, scores, and tabs: `runtime-text` or `runtime-value`
 
 ### Settings
 
@@ -129,5 +151,5 @@ The ownership audit is correct when:
 
 - style references stop painting over live slots
 - family boards produce sockets/frames instead of fake baked content
-- manifests expose shell rects and live-content rects separately
+- manifests expose shell rects, visible control rects, and live-content rects separately
 - packaged diffs stop flagging expected runtime images as fixed-art misses

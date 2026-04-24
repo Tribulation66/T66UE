@@ -12,6 +12,8 @@
 #include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
 #include "Styling/CoreStyle.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -20,6 +22,147 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SNullWidget.h"
+
+namespace
+{
+	constexpr float T66PartyPickerCardWidth = 560.f;
+	constexpr float T66PartyPickerCardHeight = 560.f;
+	constexpr float T66PartyPickerButtonHeight = 48.f;
+
+	FLinearColor T66PartyPickerBrightText()
+	{
+		return FLinearColor(0.97f, 0.94f, 0.86f, 1.0f);
+	}
+
+	FLinearColor T66PartyPickerGoldText()
+	{
+		return FLinearColor(0.94f, 0.76f, 0.34f, 1.0f);
+	}
+
+	FLinearColor T66PartyPickerMutedText()
+	{
+		return FLinearColor(0.72f, 0.67f, 0.56f, 1.0f);
+	}
+
+	const FSlateBrush* ResolvePartyPickerBrush(
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
+		const TCHAR* RelativePath,
+		const FMargin& Margin,
+		const TCHAR* DebugLabel)
+	{
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
+			Margin,
+			DebugLabel);
+	}
+
+	const FSlateBrush* GetPartyPickerSceneBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolvePartyPickerBrush(
+			Entry,
+			TEXT("SourceAssets/UI/MainMenuReference/scene_background_1920x1080.png"),
+			FMargin(0.f),
+			TEXT("PartyPickerScene"));
+	}
+
+	const FSlateBrush* GetPartyPickerShellBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolvePartyPickerBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
+			TEXT("PartyPickerShell"));
+	}
+
+	const FSlateBrush* GetPartyPickerSlotFrameBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolvePartyPickerBrush(
+			Entry,
+			TEXT("SourceAssets/UI/MainMenuReference/LeftPanel/party_slot_frame.png"),
+			FMargin(0.f),
+			TEXT("PartyPickerSlotFrame"));
+	}
+
+	const FSlateBrush* GetPartyPickerButtonPlateBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolvePartyPickerBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_compact_neutral_normal.png"),
+			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
+			TEXT("PartyPickerButtonNeutral"));
+	}
+
+	TSharedRef<SWidget> MakePartyPickerShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+	{
+		if (const FSlateBrush* ShellBrush = GetPartyPickerShellBrush())
+		{
+			return SNew(SBorder)
+				.BorderImage(ShellBrush)
+				.BorderBackgroundColor(FLinearColor::White)
+				.Padding(Padding)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				[
+					Content
+				];
+		}
+
+		return FT66Style::MakePanel(
+			Content,
+			FT66PanelParams(ET66PanelType::Panel2).SetPadding(Padding));
+	}
+
+	TSharedRef<SWidget> MakePartyPickerPlateButton(FT66ButtonParams Params)
+	{
+		Params
+			.SetUseGlow(false)
+			.SetUseDotaPlateOverlay(true)
+			.SetDotaPlateOverrideBrush(GetPartyPickerButtonPlateBrush())
+			.SetStateTextColors(T66PartyPickerBrightText(), T66PartyPickerGoldText(), T66PartyPickerBrightText())
+			.SetStateTextShadowColors(FLinearColor(0.f, 0.f, 0.f, 0.70f), FLinearColor(0.f, 0.f, 0.f, 0.78f), FLinearColor(0.f, 0.f, 0.f, 0.85f))
+			.SetTextShadowOffset(FVector2D(1.f, 1.f));
+		return FT66Style::MakeButton(Params);
+	}
+
+	TSharedRef<SWidget> MakePartyPickerSlot(const int32 Index, const bool bActive)
+	{
+		return SNew(SBox)
+			.WidthOverride(76.f)
+			.HeightOverride(84.f)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					SNew(SImage)
+					.Image(GetPartyPickerSlotFrameBrush())
+					.ColorAndOpacity(bActive ? FLinearColor::White : FLinearColor(0.55f, 0.55f, 0.55f, 0.78f))
+				]
+				+ SOverlay::Slot()
+				.Padding(12.f, 12.f, 12.f, 14.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(bActive ? FLinearColor(0.10f, 0.14f, 0.11f, 0.96f) : FLinearColor(0.06f, 0.07f, 0.06f, 0.82f))
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(FText::AsNumber(Index + 1))
+						.Font(FT66Style::Tokens::FontBold(16))
+						.ColorAndOpacity(bActive ? T66PartyPickerGoldText() : T66PartyPickerMutedText())
+						.Justification(ETextJustify::Center)
+					]
+				]
+			];
+	}
+}
 
 UT66PartySizePickerScreen::UT66PartySizePickerScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -33,61 +176,31 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 {
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 
-	FText SoloText = Loc ? Loc->GetText_Solo() : NSLOCTEXT("T66.PartySize", "Solo", "SOLO");
-	FText CoopText = Loc ? Loc->GetText_Coop() : NSLOCTEXT("T66.PartySize", "Coop", "CO-OP");
-	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
-
-	// Brushes for the party picker card images.
-	SoloCardBrush = T66ScreenSlateHelpers::MakeSlateBrush(FVector2D(560.f, 560.f));
-	CoopCardBrush = T66ScreenSlateHelpers::MakeSlateBrush(FVector2D(560.f, 560.f));
-
-	const FLinearColor LabelColor = FLinearColor::White;
-	const TSoftObjectPtr<UTexture2D> SoloSoft(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloDark.SoloDark")));
-	const TSoftObjectPtr<UTexture2D> CoopSoft(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopDark.CoopDark")));
-
-	if (TexPool)
-	{
-		if (UTexture2D* SoloTex = TexPool->GetLoadedTexture(SoloSoft))
-		{
-			SoloCardBrush->SetResourceObject(SoloTex);
-		}
-		else
-		{
-			T66SlateTexture::BindSharedBrushAsync(TexPool, SoloSoft, this, SoloCardBrush, FName("PartyPickerSolo"), false);
-		}
-		if (UTexture2D* CoopTex = TexPool->GetLoadedTexture(CoopSoft))
-		{
-			CoopCardBrush->SetResourceObject(CoopTex);
-		}
-		else
-		{
-			T66SlateTexture::BindSharedBrushAsync(TexPool, CoopSoft, this, CoopCardBrush, FName("PartyPickerCoop"), false);
-		}
-	}
-
-	// Main menu background — same as the main menu.
-	MainMenuBackgroundBrush = T66ScreenSlateHelpers::MakeSlateBrush(FVector2D::ZeroVector, ESlateBrushDrawType::Box);
-	if (TexPool)
-	{
-		const TSoftObjectPtr<UTexture2D> BgSoft(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));
-		if (UTexture2D* Cached = TexPool->GetLoadedTexture(BgSoft))
-		{
-			MainMenuBackgroundBrush->SetResourceObject(Cached);
-		}
-		else
-		{
-			T66SlateTexture::BindSharedBrushAsync(TexPool, BgSoft, this, MainMenuBackgroundBrush, FName("PartyPickerBg"), false);
-		}
-	}
+	const FText TitleText = Loc ? Loc->GetText_SelectPartySize() : NSLOCTEXT("T66.PartySize", "Title", "SELECT PARTY SIZE");
+	const FText SoloText = Loc ? Loc->GetText_Solo() : NSLOCTEXT("T66.PartySize", "Solo", "SOLO");
+	const FText CoopText = Loc ? Loc->GetText_Coop() : NSLOCTEXT("T66.PartySize", "Coop", "CO-OP");
+	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
+	const FText SoloDetailText = NSLOCTEXT("T66.PartySize", "SoloDetail", "One saved party slot. Fastest route into a run.");
+	const FText CoopDetailText = NSLOCTEXT("T66.PartySize", "CoopDetail", "Create a party lobby and continue with allies.");
 
 	const FButtonStyle& NoBorderStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
 	FOnClicked SafeSoloClick = FT66Style::DebounceClick(FOnClicked::CreateUObject(this, &UT66PartySizePickerScreen::HandleSoloClicked));
 	FOnClicked SafeCoopClick = FT66Style::DebounceClick(FOnClicked::CreateUObject(this, &UT66PartySizePickerScreen::HandleCoopClicked));
 
-	auto MakePartySizeCard = [this, &NoBorderStyle, LabelColor](const TSharedPtr<FSlateBrush>& ImageBrush, const FText& LabelText, FOnClicked OnClick) -> TSharedRef<SWidget>
+	auto MakePartySizeCard = [&NoBorderStyle](const FText& LabelText, const FText& DetailText, const int32 ActiveSlots, FOnClicked OnClick) -> TSharedRef<SWidget>
 	{
+		TSharedRef<SHorizontalBox> SlotRow = SNew(SHorizontalBox);
+		for (int32 Index = 0; Index < 4; ++Index)
+		{
+			SlotRow->AddSlot()
+				.AutoWidth()
+				.Padding(Index > 0 ? FMargin(12.f, 0.f, 0.f, 0.f) : FMargin(0.f))
+				[
+					MakePartyPickerSlot(Index, Index < ActiveSlots)
+				];
+		}
+
 		return SNew(SBox)
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
@@ -100,58 +213,110 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 				.VAlign(VAlign_Center)
 				.ContentPadding(0.0f)
 				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.FillHeight(1.0f)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.Padding(0.0f, 0.0f, 0.0f, 12.0f)
+					SNew(SBox)
+					.WidthOverride(T66PartyPickerCardWidth)
+					.HeightOverride(T66PartyPickerCardHeight)
 					[
-						FT66Style::MakePanel(
-							SNew(SBox)
-								.WidthOverride(560.0f)
-								.HeightOverride(560.0f)
-								.HAlign(HAlign_Fill)
-								.VAlign(VAlign_Fill)
-								[
-									SNew(SImage)
-									.Image(ImageBrush.IsValid() ? ImageBrush.Get() : nullptr)
-									.ColorAndOpacity(FLinearColor::White)
-								],
-							FT66PanelParams(ET66PanelType::Panel2).SetPadding(4.f))
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					[
-						FT66Style::MakePanel(
-							SNew(STextBlock)
+						MakePartyPickerShell(
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.HAlign(HAlign_Center)
+							.Padding(0.f, 0.f, 0.f, 20.f)
+							[
+								SNew(STextBlock)
 								.Text(LabelText)
-								.Font(FT66Style::Tokens::FontBold(32))
-								.ColorAndOpacity(LabelColor),
-							FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(12.f, 8.f)))
+								.Font(FT66Style::Tokens::FontBold(34))
+								.ColorAndOpacity(T66PartyPickerGoldText())
+								.Justification(ETextJustify::Center)
+								.ShadowOffset(FVector2D(1.f, 1.f))
+								.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
+							]
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.HAlign(HAlign_Center)
+							.Padding(0.f, 0.f, 0.f, 34.f)
+							[
+								SNew(SBox)
+								.WidthOverride(410.f)
+								[
+									SNew(STextBlock)
+									.Text(DetailText)
+									.Font(FT66Style::Tokens::FontRegular(16))
+									.ColorAndOpacity(T66PartyPickerMutedText())
+									.AutoWrapText(true)
+									.Justification(ETextJustify::Center)
+								]
+							]
+							+ SVerticalBox::Slot()
+							.FillHeight(1.f)
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
+							[
+								SlotRow
+							]
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.HAlign(HAlign_Center)
+							.Padding(0.f, 34.f, 0.f, 0.f)
+							[
+								SNew(SBox)
+								.WidthOverride(220.f)
+								.HeightOverride(T66PartyPickerButtonHeight)
+								[
+									SNew(SBorder)
+									.BorderImage(GetPartyPickerButtonPlateBrush())
+									.BorderBackgroundColor(FLinearColor::White)
+									.HAlign(HAlign_Center)
+									.VAlign(VAlign_Center)
+									.Padding(FMargin(18.f, 8.f, 18.f, 7.f))
+									[
+										SNew(STextBlock)
+										.Text(LabelText)
+										.Font(FT66Style::Tokens::FontBold(14))
+										.ColorAndOpacity(T66PartyPickerBrightText())
+										.Justification(ETextJustify::Center)
+										.ShadowOffset(FVector2D(1.f, 1.f))
+										.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
+									]
+								]
+							],
+							FMargin(42.f, 40.f, 42.f, 42.f))
 					]
 				]
 			];
 	};
 
 	return SNew(SOverlay)
-		// Theme-colored underlay (fallback if main menu texture not loaded yet)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
 		[
-			FT66Style::MakePanel(SNullWidget::NullWidget, FT66PanelParams(ET66PanelType::Bg).SetPadding(0.f))
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.015f, 0.014f, 0.011f, 1.0f))
 		]
-		// Main menu background image.
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
 		[
 			SAssignNew(MainMenuBackgroundImage, SImage)
-			.Image(TAttribute<const FSlateBrush*>::Create([this]() -> const FSlateBrush* { return MainMenuBackgroundBrush.IsValid() ? MainMenuBackgroundBrush.Get() : nullptr; }))
+			.Image(GetPartyPickerSceneBrush())
+			.ColorAndOpacity(FLinearColor(0.76f, 0.76f, 0.76f, 1.0f))
 		]
-		// Party size cards
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Top)
+		.Padding(0.f, 240.f, 0.f, 0.f)
+		[
+			SNew(STextBlock)
+			.Text(TitleText)
+			.Font(FT66Style::Tokens::FontBold(38))
+			.ColorAndOpacity(T66PartyPickerGoldText())
+			.Justification(ETextJustify::Center)
+			.ShadowOffset(FVector2D(1.f, 1.f))
+			.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.78f))
+		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
@@ -161,26 +326,29 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 			.FillHeight(1.0f)
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
-			.Padding(20.0f, 380.0f, 20.0f, 60.0f)
+			.Padding(20.0f, 330.0f, 20.0f, 74.0f)
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(0.5f)
 				[
-					MakePartySizeCard(SoloCardBrush, SoloText, SafeSoloClick)
+					MakePartySizeCard(SoloText, SoloDetailText, 1, SafeSoloClick)
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.5f)
 				[
-					MakePartySizeCard(CoopCardBrush, CoopText, SafeCoopClick)
+					MakePartySizeCard(CoopText, CoopDetailText, 4, SafeCoopClick)
 				]
 			]
 		]
-		// Back button
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
 		.VAlign(VAlign_Bottom)
 		.Padding(20.0f, 0.0f, 0.0f, 20.0f)
 		[
-			FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66PartySizePickerScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f)
+			MakePartyPickerPlateButton(
+				FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66PartySizePickerScreen::HandleBackClicked), ET66ButtonType::Neutral)
+				.SetMinWidth(126.f)
+				.SetHeight(T66PartyPickerButtonHeight)
+				.SetFontSize(11))
 		];
 }
 

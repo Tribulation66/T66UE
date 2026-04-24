@@ -1,0 +1,31 @@
+Create one production sprite-family board for T66 screen `account_status`.
+
+Use the attached canonical main-menu style anchor and the attached `account_status` screen-specific reference. This is exact reconstruction of the reference art style, not a redesign.
+
+Output requirement:
+- exactly one 1920x1080 flat neutral presentation board
+- front-on orthographic UI components only
+- no full-screen screenshot composite
+- no baked localizable labels, names, numbers, descriptions, leaderboard rows, progress values, or typed/user text
+- no runtime-owned portraits, avatars, screenshots, save previews, or gameplay underlay
+- components should be isolated with transparent or flat-neutral spacing so deterministic slicing is possible
+- preserve the carved dark stone, gold trim, purple gem, green/blue/purple plate material language from the attached reference
+
+Families required for this screen:
+outer-frame, section-shell, row-shell, tab-button, dropdown-field, table-row, progress-trough, scrollbar
+
+Reference layout regions:
+- shared_topbar: 0,0,1920,144 owner=shared-topbar
+- back_button: 30,212,212,66 owner=runtime-control
+- outer_frame: 0,232,1920,848 owner=generated-shell
+- tab_strip: 730,236,460,62 owner=runtime-control
+- status_panel: 20,310,920,214 owner=generated-shell
+- progress_panel: 20,548,920,526 owner=generated-shell
+- progress_rows: 50,628,858,400 owner=runtime-text
+- progress_fills: 52,842,856,118 owner=runtime-value
+- pb_filters: 1000,338,830,58 owner=runtime-control
+- score_table: 990,420,860,420 owner=runtime-text
+- speed_table: 990,858,860,220 owner=runtime-text
+- scrollbar: 1866,306,28,586 owner=runtime-control
+
+Generate text-free runtime assets only. For runtime-owned interiors, produce shell-only frames, empty wells, socket frames, or open apertures. Controls need normal, hover, pressed, disabled, and selected states where applicable with stable anchors.

@@ -1,0 +1,27 @@
+{
+  "screen_slug": "td_difficulty_select",
+  "canvas": { "width": 1920, "height": 1080 },
+  "source_files": [
+    "C:/UE/T66/Source/T66TD/Private/UI/Screens/T66TDDifficultySelectScreen.cpp",
+    "C:/UE/T66/Source/T66TD/Private/UI/T66TDUIStyle.h",
+    "C:/UE/T66/Content/TD/Data/T66TD_Difficulties.csv",
+    "C:/UE/T66/Content/TD/Data/T66TD_Maps.csv"
+  ],
+  "regions": [
+    { "name": "selected_map_background", "rect": [0, 0, 1920, 1080], "content_type": "runtime-image", "render_contract": "empty-backplate" },
+    { "name": "back_button_plate", "rect": [34, 34, 434, 60], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "back_button_label", "rect": [90, 48, 270, 30], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "title", "rect": [344, 56, 1235, 58], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "difficulty_panel_shell", "rect": [55, 154, 477, 881], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "difficulty_list_text", "rect": [80, 180, 410, 830], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "difficulty_scrollbar", "rect": [493, 181, 14, 802], "content_type": "runtime-state", "render_contract": "empty-backplate" },
+    { "name": "map_grid_shell", "rect": [566, 150, 761, 878], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "map_card_previews", "rect": [620, 190, 665, 812], "content_type": "runtime-image", "render_contract": "socket-frame" },
+    { "name": "map_card_text", "rect": [620, 442, 665, 535], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "summary_panel_shell", "rect": [1358, 154, 478, 881], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "summary_text", "rect": [1388, 186, 448, 420], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "start_match_plate", "rect": [1388, 626, 448, 66], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "start_match_label", "rect": [1450, 648, 320, 34], "content_type": "runtime-text", "render_contract": "empty-backplate" }
+  ]
+}
+

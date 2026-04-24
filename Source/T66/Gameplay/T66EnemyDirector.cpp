@@ -2,7 +2,7 @@
 
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyBase.h"
-#include "Gameplay/T66CircusInteractable.h"
+#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/Enemies/T66EnemyFamilyResolver.h"
 #include "Gameplay/Enemies/T66MeleeEnemy.h"
 #include "Gameplay/T66GameMode.h"
@@ -484,17 +484,17 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 				return true;
 			}
 		}
-		for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+		for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
 		{
-			AT66CircusInteractable* Circus = WeakCircus.Get();
-			if (!Circus) continue;
+			AT66CasinoInteractable* Casino = WeakCasino.Get();
+			if (!Casino) continue;
 			if (bTowerLayout && GameMode && CandidateFloorNumber != INDEX_NONE
-				&& GameMode->GetTowerFloorIndexForLocation(Circus->GetActorLocation()) != CandidateFloorNumber)
+				&& GameMode->GetTowerFloorIndexForLocation(Casino->GetActorLocation()) != CandidateFloorNumber)
 			{
 				continue;
 			}
-			const float R = Circus->GetSafeZoneRadius();
-			if (FVector::DistSquared2D(Loc, Circus->GetActorLocation()) < (R * R))
+			const float R = Casino->GetSafeZoneRadius();
+			if (FVector::DistSquared2D(Loc, Casino->GetActorLocation()) < (R * R))
 			{
 				return true;
 			}
@@ -823,18 +823,18 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 					break;
 				}
 			}
-			for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
 			{
-				AT66CircusInteractable* Circus = WeakCircus.Get();
-				if (!Circus) continue;
-				const float R = Circus->GetSafeZoneRadius();
-				FVector ToSpawnPt = SpawnLoc - Circus->GetActorLocation();
+				AT66CasinoInteractable* Casino = WeakCasino.Get();
+				if (!Casino) continue;
+				const float R = Casino->GetSafeZoneRadius();
+				FVector ToSpawnPt = SpawnLoc - Casino->GetActorLocation();
 				ToSpawnPt.Z = 0.f;
 				const float Dist2D = ToSpawnPt.Size();
 				if (Dist2D < R && Dist2D > 1.f)
 				{
 					FVector Dir = ToSpawnPt / Dist2D;
-					SpawnLoc = Circus->GetActorLocation() + FVector(Dir.X, Dir.Y, 0.f) * (R + SafeZonePushMargin);
+					SpawnLoc = Casino->GetActorLocation() + FVector(Dir.X, Dir.Y, 0.f) * (R + SafeZonePushMargin);
 					SpawnLoc.Z = PlayerGroundZ;
 					break;
 				}
@@ -844,7 +844,7 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 					Dir.Z = 0.f;
 					if (Dir.Normalize())
 					{
-						SpawnLoc = Circus->GetActorLocation() + Dir * (R + SafeZonePushMargin);
+						SpawnLoc = Casino->GetActorLocation() + Dir * (R + SafeZonePushMargin);
 						SpawnLoc.Z = PlayerGroundZ;
 					}
 					break;

@@ -1,0 +1,21 @@
+{
+  "screen": "mini_difficulty_select",
+  "background": {
+    "owner": "scene_plate",
+    "must_not_contain": ["hero portrait", "difficulty labels", "modifier values", "buttons"]
+  },
+  "chrome": {
+    "owner": "generated panel, row, and button plates",
+    "notes": "Hero panel, difficulty panel, modifier chips, and difficulty card shells are chrome only."
+  },
+  "runtime_owned": [
+    "title",
+    "hero portrait",
+    "hero stats",
+    "difficulty names",
+    "difficulty descriptions",
+    "modifier labels and values",
+    "selected state",
+    "button labels"
+  ]
+}

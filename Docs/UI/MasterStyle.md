@@ -8,6 +8,8 @@ Do not invent the taste for a screen when an approved reference image already ex
 
 The approved reference image is the artistic authority. The job is to reproduce it faithfully with production-safe runtime UI.
 
+The approved full-screen reference is an offline target only. Runtime composition must use a UI-free scene/background plate plus separate foreground component families for chrome, controls, panels, leaderboard framing, and CTA stacks.
+
 ## Current Source Of Truth
 
 The main-menu reference image is the seed for the new frontend UI family.
@@ -34,6 +36,7 @@ Future screens should inherit this shared language unless a different approved r
 ## What The Runtime Must Avoid
 
 - flattened screenshot overlays as the shipped implementation
+- buttonless or textless full-screen masters as shipped runtime backgrounds
 - invisible hotspot grids as the shipped interaction layer
 - baked localizable text inside control textures
 - reuse of retired exploration material or superseded taste boards as design guidance
@@ -42,20 +45,22 @@ Future screens should inherit this shared language unless a different approved r
 
 When reconstructing a screen, derive reusable assets from the reference by family:
 
+- UI-free scene/background plate
 - top bar
 - CTA buttons
 - tabs and dropdowns
 - left and right panels
+- leaderboard chrome
 - icon buttons
 - separators and decorative pieces
 
 Preferred generation order:
 
 1. lock the approved reference
-2. generate or reconstruct family boards from that reference
-3. slice or export runtime-ready assets from those boards
-4. rebuild the screen with real widgets and live text
-5. validate with a live screenshot
+2. generate or reconstruct a UI-free scene plate and family boards from that reference
+3. slice or export runtime-ready foreground assets from those boards
+4. rebuild the screen with real widgets, live text, and layered foreground components
+5. validate with a packaged screenshot
 
 For controls with text, the preferred runtime form is:
 

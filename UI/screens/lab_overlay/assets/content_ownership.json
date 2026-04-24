@@ -1,0 +1,9 @@
+{
+  "screen": "LabOverlay",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "lab_outer_shell", "group": "Center", "content_type": "generated-shell", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66LabOverlayWidget.cpp"], "notes": "Lab panel shell and section frames only." },
+    { "id": "lab_item_enemy_lists", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66LabOverlayWidget.cpp"], "notes": "Item/enemy names, tabs, counts, and spawn/grant actions are live real controls." },
+    { "id": "lab_reset_exit_controls", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66LabOverlayWidget.cpp"], "notes": "Reset/exit/status labels stay live/localizable." }
+  ]
+}

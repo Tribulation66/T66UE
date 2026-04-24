@@ -1,0 +1,32 @@
+Create one production sprite-family board for T66 screen `challenges`.
+
+Use the attached canonical main-menu style anchor and the attached `challenges` screen-specific reference. This is exact reconstruction of the reference art style, not a redesign.
+
+Output requirement:
+- exactly one 1920x1080 flat neutral presentation board
+- front-on orthographic UI components only
+- no full-screen screenshot composite
+- no baked localizable labels, names, numbers, descriptions, leaderboard rows, progress values, or typed/user text
+- no runtime-owned portraits, avatars, screenshots, save previews, or gameplay underlay
+- components should be isolated with transparent or flat-neutral spacing so deterministic slicing is possible
+- preserve the carved dark stone, gold trim, purple gem, green/blue/purple plate material language from the attached reference
+
+Families required for this screen:
+modal-shell, header-shell, list-shell, detail-shell, row-plate, compact-buttons, status-badge, checkbox-marker
+
+Reference layout regions:
+- modal_shell: 180,60,1560,940 owner=generated-shell
+- header: 210,88,1500,174 owner=generated-shell
+- mode_tabs: 1280,98,370,58 owner=runtime-control
+- close_button: 1664,96,54,58 owner=runtime-control
+- source_tabs: 230,170,520,60 owner=runtime-control
+- status_line: 222,238,1120,32 owner=runtime-text
+- list_shell: 206,296,760,690 owner=generated-shell
+- list_row_selected: 232,318,700,92 owner=runtime-control
+- list_row_normal: 232,430,700,92 owner=runtime-control
+- detail_shell: 992,296,744,690 owner=generated-shell
+- detail_title: 1020,326,620,70 owner=runtime-text
+- detail_body: 1020,430,640,260 owner=runtime-text
+- confirm_button: 1512,858,210,58 owner=runtime-control
+
+Generate text-free runtime assets only. For runtime-owned interiors, produce shell-only frames, empty wells, socket frames, or open apertures. Controls need normal, hover, pressed, disabled, and selected states where applicable with stable anchors.

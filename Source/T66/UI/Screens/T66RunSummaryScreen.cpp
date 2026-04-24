@@ -25,6 +25,7 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66TemporaryBuffUIUtils.h"
 #include "UI/T66StatsPanelSlate.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66HeroPreviewStage.h"
@@ -54,6 +55,7 @@
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Views/STableRow.h"
 #include "Styling/CoreStyle.h"
+#include "UObject/StrongObjectPtr.h"
 #include "HAL/PlatformProcess.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66RunSummary, Log, All);
@@ -216,6 +218,286 @@ void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 namespace
 {
 	constexpr int32 T66RunSummaryFontDelta = -8;
+
+	enum class ET66RunSummaryButtonFamily : uint8
+	{
+		CompactNeutral,
+		ToggleOn,
+		ToggleOff,
+		CtaGreen,
+		CtaBlue
+	};
+
+	enum class ET66RunSummaryButtonState : uint8
+	{
+		Normal,
+		Hovered,
+		Pressed
+	};
+
+	struct FT66RunSummarySpriteBrushEntry
+	{
+		TStrongObjectPtr<UTexture2D> Texture;
+		TSharedPtr<FSlateBrush> Brush;
+	};
+
+	struct FT66RunSummaryButtonBrushSet
+	{
+		FT66RunSummarySpriteBrushEntry Normal;
+		FT66RunSummarySpriteBrushEntry Hover;
+		FT66RunSummarySpriteBrushEntry Pressed;
+	};
+
+	const FLinearColor RunSummaryFantasyText(0.953f, 0.925f, 0.835f, 1.0f);
+
+	const FSlateBrush* ResolveRunSummarySpriteBrush(
+		FT66RunSummarySpriteBrushEntry& Entry,
+		const FString& RelativePath,
+		const FVector2D& ImageSize,
+		const FMargin& Margin,
+		const ESlateBrushDrawType::Type DrawAs)
+	{
+		if (!Entry.Brush.IsValid())
+		{
+			Entry.Brush = MakeShared<FSlateBrush>();
+			Entry.Brush->DrawAs = DrawAs;
+			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
+			Entry.Brush->TintColor = FSlateColor(FLinearColor::White);
+			Entry.Brush->ImageSize = ImageSize;
+			Entry.Brush->Margin = Margin;
+		}
+
+		if (!Entry.Texture.IsValid())
+		{
+			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+			{
+				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
+					CandidatePath,
+					TextureFilter::TF_Trilinear,
+					true,
+					TEXT("RunSummaryReferenceSprite")))
+				{
+					Entry.Texture.Reset(Texture);
+					break;
+				}
+			}
+		}
+
+		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
+		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+	}
+
+	const FSlateBrush* GetRunSummaryContentShellBrush()
+	{
+		static FT66RunSummarySpriteBrushEntry Entry;
+		return ResolveRunSummarySpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			FVector2D(1521.f, 463.f),
+			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
+			ESlateBrushDrawType::Box);
+	}
+
+	const FSlateBrush* GetRunSummaryRowShellBrush()
+	{
+		static FT66RunSummarySpriteBrushEntry Entry;
+		return ResolveRunSummarySpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			FVector2D(861.f, 74.f),
+			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
+			ESlateBrushDrawType::Box);
+	}
+
+	FString GetRunSummaryButtonPath(const ET66RunSummaryButtonFamily Family, const ET66RunSummaryButtonState State)
+	{
+		if (Family == ET66RunSummaryButtonFamily::CtaGreen || Family == ET66RunSummaryButtonFamily::CtaBlue)
+		{
+			const TCHAR* Prefix = Family == ET66RunSummaryButtonFamily::CtaGreen
+				? TEXT("cta_button_new_game_wide_plate")
+				: TEXT("cta_button_load_game_wide_plate");
+			const TCHAR* Suffix = TEXT("");
+			if (State == ET66RunSummaryButtonState::Hovered)
+			{
+				Suffix = TEXT("_hover");
+			}
+			else if (State == ET66RunSummaryButtonState::Pressed)
+			{
+				Suffix = TEXT("_pressed");
+			}
+			return FString::Printf(TEXT("SourceAssets/UI/MainMenuReference/Center/%s%s.png"), Prefix, Suffix);
+		}
+
+		const TCHAR* Prefix = TEXT("settings_compact_neutral");
+		if (Family == ET66RunSummaryButtonFamily::ToggleOn)
+		{
+			Prefix = TEXT("settings_toggle_on");
+		}
+		else if (Family == ET66RunSummaryButtonFamily::ToggleOff)
+		{
+			Prefix = TEXT("settings_toggle_off");
+		}
+
+		const TCHAR* Suffix = TEXT("normal");
+		if (State == ET66RunSummaryButtonState::Hovered)
+		{
+			Suffix = TEXT("hover");
+		}
+		else if (State == ET66RunSummaryButtonState::Pressed)
+		{
+			Suffix = TEXT("pressed");
+		}
+		return FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s_%s.png"), Prefix, Suffix);
+	}
+
+	FVector2D GetRunSummaryButtonSize(const ET66RunSummaryButtonFamily Family, const ET66RunSummaryButtonState State)
+	{
+		if (Family == ET66RunSummaryButtonFamily::CtaGreen)
+		{
+			return FVector2D(388.f, 100.f);
+		}
+		if (Family == ET66RunSummaryButtonFamily::CtaBlue)
+		{
+			return FVector2D(388.f, 97.f);
+		}
+		if (Family == ET66RunSummaryButtonFamily::ToggleOn)
+		{
+			return State == ET66RunSummaryButtonState::Pressed ? FVector2D(187.f, 67.f) : FVector2D(180.f, 68.f);
+		}
+		if (Family == ET66RunSummaryButtonFamily::ToggleOff)
+		{
+			return State == ET66RunSummaryButtonState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
+		}
+		return State == ET66RunSummaryButtonState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
+	}
+
+	FT66RunSummaryButtonBrushSet& GetRunSummaryButtonBrushSet(const ET66RunSummaryButtonFamily Family)
+	{
+		static FT66RunSummaryButtonBrushSet CompactNeutral;
+		static FT66RunSummaryButtonBrushSet ToggleOn;
+		static FT66RunSummaryButtonBrushSet ToggleOff;
+		static FT66RunSummaryButtonBrushSet CtaGreen;
+		static FT66RunSummaryButtonBrushSet CtaBlue;
+		switch (Family)
+		{
+		case ET66RunSummaryButtonFamily::ToggleOn: return ToggleOn;
+		case ET66RunSummaryButtonFamily::ToggleOff: return ToggleOff;
+		case ET66RunSummaryButtonFamily::CtaGreen: return CtaGreen;
+		case ET66RunSummaryButtonFamily::CtaBlue: return CtaBlue;
+		case ET66RunSummaryButtonFamily::CompactNeutral:
+		default: return CompactNeutral;
+		}
+	}
+
+	const FSlateBrush* GetRunSummaryButtonBrush(const ET66RunSummaryButtonFamily Family, const ET66RunSummaryButtonState State)
+	{
+		FT66RunSummaryButtonBrushSet& Set = GetRunSummaryButtonBrushSet(Family);
+		FT66RunSummarySpriteBrushEntry* Entry = &Set.Normal;
+		if (State == ET66RunSummaryButtonState::Hovered)
+		{
+			Entry = &Set.Hover;
+		}
+		else if (State == ET66RunSummaryButtonState::Pressed)
+		{
+			Entry = &Set.Pressed;
+		}
+		return ResolveRunSummarySpriteBrush(
+			*Entry,
+			GetRunSummaryButtonPath(Family, State),
+			GetRunSummaryButtonSize(Family, State),
+			(Family == ET66RunSummaryButtonFamily::CtaGreen || Family == ET66RunSummaryButtonFamily::CtaBlue)
+				? FMargin(0.16f, 0.30f, 0.16f, 0.30f)
+				: FMargin(0.14f, 0.30f, 0.14f, 0.30f),
+			ESlateBrushDrawType::Box);
+	}
+
+	TSharedRef<SWidget> MakeRunSummarySpritePanel(
+		const TSharedRef<SWidget>& Content,
+		const FSlateBrush* Brush,
+		const FMargin& Padding,
+		const FLinearColor& FallbackColor = FLinearColor(0.025f, 0.023f, 0.034f, 0.97f))
+	{
+		return SNew(SBorder)
+			.BorderImage(Brush ? Brush : FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(Brush ? FLinearColor::White : FallbackColor)
+			.Padding(Padding)
+			[
+				Content
+			];
+	}
+
+	TSharedRef<SWidget> MakeRunSummarySpriteButton(
+		const FText& Label,
+		const FOnClicked& OnClicked,
+		const ET66RunSummaryButtonFamily Family,
+		const float MinWidth,
+		const float Height,
+		const int32 FontSize,
+		const FMargin& ContentPadding = FMargin(12.f, 7.f, 12.f, 6.f))
+	{
+		const FSlateBrush* NormalBrush = GetRunSummaryButtonBrush(Family, ET66RunSummaryButtonState::Normal);
+		const FSlateBrush* HoverBrush = GetRunSummaryButtonBrush(Family, ET66RunSummaryButtonState::Hovered);
+		const FSlateBrush* PressedBrush = GetRunSummaryButtonBrush(Family, ET66RunSummaryButtonState::Pressed);
+		if (!NormalBrush)
+		{
+			return FT66Style::MakeButton(
+				FT66ButtonParams(Label, OnClicked, Family == ET66RunSummaryButtonFamily::ToggleOff ? ET66ButtonType::Danger : ET66ButtonType::Primary)
+				.SetMinWidth(MinWidth)
+				.SetHeight(Height)
+				.SetFontSize(FontSize)
+				.SetPadding(ContentPadding));
+		}
+
+		const TSharedPtr<ET66RunSummaryButtonState> ButtonState = MakeShared<ET66RunSummaryButtonState>(ET66RunSummaryButtonState::Normal);
+		const TAttribute<const FSlateBrush*> BrushAttr = TAttribute<const FSlateBrush*>::CreateLambda(
+			[ButtonState, NormalBrush, HoverBrush, PressedBrush]() -> const FSlateBrush*
+			{
+				if (ButtonState.IsValid() && *ButtonState == ET66RunSummaryButtonState::Pressed)
+				{
+					return PressedBrush ? PressedBrush : NormalBrush;
+				}
+				if (ButtonState.IsValid() && *ButtonState == ET66RunSummaryButtonState::Hovered)
+				{
+					return HoverBrush ? HoverBrush : NormalBrush;
+				}
+				return NormalBrush;
+			});
+
+		return SNew(SBox)
+			.MinDesiredWidth(MinWidth > 0.f ? MinWidth : FOptionalSize())
+			.HeightOverride(Height > 0.f ? Height : FOptionalSize())
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SImage)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Image(BrushAttr)
+				]
+				+ SOverlay::Slot()
+				[
+					SNew(SButton)
+					.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+					.ButtonColorAndOpacity(FLinearColor::Transparent)
+					.ContentPadding(ContentPadding)
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					.OnClicked(OnClicked)
+					.OnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Hovered; }))
+					.OnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Normal; }))
+					.OnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Pressed; }))
+					.OnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Hovered; }))
+					[
+						SNew(STextBlock)
+						.Text(Label)
+						.Font(FT66Style::Tokens::FontBold(FontSize))
+						.ColorAndOpacity(RunSummaryFantasyText)
+						.Justification(ETextJustify::Center)
+						.AutoWrapText(true)
+					]
+				]
+			];
+	}
 
 	static FText FormatRunSummaryDurationText(float TotalSeconds)
 	{
@@ -1023,7 +1305,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	auto MakeSectionPanel = [](const FText& Header, const TSharedRef<SWidget>& Body) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakePanel(
+		return MakeRunSummarySpritePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
@@ -1036,8 +1318,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				Body
 			],
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4)
-		);
+			GetRunSummaryRowShellBrush(),
+			FT66Style::Tokens::Space4);
 	};
 
 	auto ResolveDisplayedRank = [WeakScreen, WeakLB, SummaryDifficulty, SummaryPartySize](bool bScoreRank, bool bWeeklyRank) -> int32
@@ -1132,7 +1414,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	auto MakeRankSectionPanel = [&](const FText& Header, TAttribute<FText> ScoreRankText, TAttribute<FText> SpeedRunRankText) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakePanel(
+		return MakeRunSummarySpritePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
@@ -1174,8 +1456,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					]
 				]
 			],
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4)
-		);
+			GetRunSummaryRowShellBrush(),
+			FT66Style::Tokens::Space4);
 	};
 
 	auto MakeRatingSectionPanel = [](const FText& Header, const TSharedRef<SWidget>& Body) -> TSharedRef<SWidget>
@@ -1183,7 +1465,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		FSlateFontInfo SmallerHeadingFont = RunSummaryHeadingFont();
 		SmallerHeadingFont.Size = FMath::Max(SmallerHeadingFont.Size - 6, 8);
 
-		return FT66Style::MakePanel(
+		return MakeRunSummarySpritePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
@@ -1196,8 +1478,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				Body
 			],
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4)
-		);
+			GetRunSummaryRowShellBrush(),
+			FT66Style::Tokens::Space4);
 	};
 
 	TSharedRef<SWidget> WeeklyRankPanel = MakeRankSectionPanel(
@@ -1209,7 +1491,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		TAttribute<FText>::CreateLambda([ResolveDisplayedRank]() { return FormatRunSummaryRankText(ResolveDisplayedRank(true, false)); }),
 		TAttribute<FText>::CreateLambda([ResolveDisplayedRank]() { return FormatRunSummaryRankText(ResolveDisplayedRank(false, false)); }));
 	TSharedRef<SWidget> DailyRankPanel =
-		FT66Style::MakePanel(
+		MakeRunSummarySpritePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
@@ -1277,11 +1559,12 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					]
 				]
 			],
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4));
+			GetRunSummaryRowShellBrush(),
+			FT66Style::Tokens::Space4);
 
 	auto MakeHeroPreview = [bDotaTheme](const TSharedPtr<FSlateBrush>& Brush) -> TSharedRef<SWidget>
 	{
-		constexpr float PreviewSize = 260.f;
+		constexpr float PreviewSize = 220.f;
 		TSharedRef<SWidget> PreviewContent = Brush.IsValid()
 			? StaticCastSharedRef<SWidget>(SNew(SBox)
 				.WidthOverride(PreviewSize)
@@ -1301,16 +1584,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				]);
 		return bDotaTheme
 			? StaticCastSharedRef<SWidget>(FT66Style::MakeViewportFrame(PreviewContent, FMargin(8.f)))
-			: StaticCastSharedRef<SWidget>(FT66Style::MakePanel(PreviewContent, FT66PanelParams(ET66PanelType::Panel).SetPadding(0.f)));
+			: StaticCastSharedRef<SWidget>(MakeRunSummarySpritePanel(PreviewContent, GetRunSummaryRowShellBrush(), FMargin(0.f)));
 	};
 
 	// Event log (hidden by default; opened via "EVENT LOG" button).
 	TSharedRef<SWidget> EventLogPanel =
 		MakeSectionPanel(
 			NSLOCTEXT("T66.RunSummary", "EventLogTitle", "EVENT LOG"),
-			FT66Style::MakePanel(
+			MakeRunSummarySpritePanel(
 				LogListView.IsValid() ? StaticCastSharedRef<SWidget>(LogListView.ToSharedRef()) : StaticCastSharedRef<SWidget>(SNew(SSpacer)),
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space2)
+				GetRunSummaryRowShellBrush(),
+				FT66Style::Tokens::Space2
 			)
 		);
 
@@ -1351,13 +1635,15 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 			[
-				FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "Edit", "EDIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofEditClicked)))
-					.SetPadding(FMargin(14.f, 8.f))
-					.SetVisibility(TAttribute<EVisibility>::CreateLambda([this, bIsOwnerOfViewedRun]()
-					{
-						const bool bBackendLockedEntry = LoadedSavedSummary && !LoadedSavedSummary->EntryId.IsEmpty();
-						return (bIsOwnerOfViewedRun && bProofOfRunLocked && !bBackendLockedEntry) ? EVisibility::Visible : EVisibility::Collapsed;
-					})))
+				SNew(SBox)
+				.Visibility(TAttribute<EVisibility>::CreateLambda([this, bIsOwnerOfViewedRun]()
+				{
+					const bool bBackendLockedEntry = LoadedSavedSummary && !LoadedSavedSummary->EntryId.IsEmpty();
+					return (bIsOwnerOfViewedRun && bProofOfRunLocked && !bBackendLockedEntry) ? EVisibility::Visible : EVisibility::Collapsed;
+				}))
+				[
+					MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "Edit", "EDIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofEditClicked), ET66RunSummaryButtonFamily::CompactNeutral, 86.f, 34.f, 12, FMargin(14.f, 8.f))
+				]
 			]
 		]
 		// Edit view (textbox) + Confirm button
@@ -1379,8 +1665,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 			[
-				FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "Confirm", "CONFIRM"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofConfirmClicked), ET66ButtonType::Success))
-					.SetPadding(FMargin(14.f, 8.f)))
+				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "Confirm", "CONFIRM"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofConfirmClicked), ET66RunSummaryButtonFamily::ToggleOn, 120.f, 34.f, 12, FMargin(14.f, 8.f))
 			]
 		];
 
@@ -1392,11 +1677,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	// Cheat report UI (available to everyone).
 	TSharedRef<SWidget> ReportCheatButton =
-		FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "TheyreCheating", "THEY'RE CHEATING"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCheatingClicked), ET66ButtonType::Danger))
-			.SetPadding(FMargin(14.f, 10.f)));
+		MakeRunSummarySpriteButton(
+			NSLOCTEXT("T66.RunSummary", "TheyreCheating", "THEY'RE CHEATING"),
+			FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCheatingClicked),
+			ET66RunSummaryButtonFamily::ToggleOff,
+			180.f,
+			38.f,
+			12,
+			FMargin(14.f, 10.f));
 
 	TSharedRef<SWidget> ReportPrompt =
-		FT66Style::MakePanel(
+		MakeRunSummarySpritePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 			[
@@ -1416,22 +1707,27 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
 				[
-					FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "Submit", "SUBMIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportSubmitClicked), ET66ButtonType::Primary))
-						.SetPadding(FMargin(14.f, 8.f)))
+					MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "Submit", "SUBMIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportSubmitClicked), ET66RunSummaryButtonFamily::ToggleOn, 110.f, 34.f, 12, FMargin(14.f, 8.f))
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
 				[
-					FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "Close", "CLOSE"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCloseClicked)))
-						.SetPadding(FMargin(14.f, 8.f)))
+					MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "Close", "CLOSE"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCloseClicked), ET66RunSummaryButtonFamily::CompactNeutral, 110.f, 34.f, 12, FMargin(14.f, 8.f))
 				]
 			]
 		,
-		FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space3));
+		GetRunSummaryRowShellBrush(),
+		FT66Style::Tokens::Space3);
 
 	auto MakeEventLogButton = [&](const FText& Text) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(Text, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleViewLogClicked)))
-			.SetMinWidth(160.f).SetPadding(FMargin(14.f, 8.f)));
+		return MakeRunSummarySpriteButton(
+			Text,
+			FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleViewLogClicked),
+			ET66RunSummaryButtonFamily::CompactNeutral,
+			160.f,
+			36.f,
+			12,
+			FMargin(14.f, 8.f));
 	};
 
 	// Stats panel: same width and content as Vendor/Gambler (primary + secondary, scroll). Header "STATS".
@@ -1440,11 +1736,15 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	{
 		if (RunState && !bViewingSavedLeaderboardRunSummary)
 		{
-			return T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, StatsPanelWidth, true, T66RunSummaryFontDelta);
+			return T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, StatsPanelWidth, false, T66RunSummaryFontDelta);
 		}
 		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary && LoadedSavedSummary->SecondaryStatValues.Num() > 0)
 		{
-			return T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(LoadedSavedSummary, Loc, StatsPanelWidth, T66RunSummaryFontDelta);
+			T66StatsPanelSlate::FT66SnapshotStatsPanelOptions RunSummaryStatsOptions;
+			RunSummaryStatsOptions.WidthOverride = StatsPanelWidth;
+			RunSummaryStatsOptions.FontSizeAdjustment = T66RunSummaryFontDelta;
+			RunSummaryStatsOptions.bExtended = false;
+			return T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithOptions(LoadedSavedSummary, Loc, RunSummaryStatsOptions);
 		}
 		TSharedRef<SVerticalBox> PrimaryStatsBox = SNew(SVerticalBox);
 		const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
@@ -1530,8 +1830,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	const TArray<uint8> EmptyIdolTiers;
 	const TArray<uint8>& IdolTiers = IdolTiersPtr ? *IdolTiersPtr : EmptyIdolTiers;
 
-	static constexpr float IdolSlotPad = 4.f;
-	static constexpr float IdolSlotSize = 52.f;
+	static constexpr float IdolSlotPad = 3.f;
+	static constexpr float IdolSlotSize = 46.f;
 	TSharedRef<SHorizontalBox> IdolSlotsRow = SNew(SHorizontalBox);
 	for (int32 i = 0; i < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++i)
 	{
@@ -1594,8 +1894,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	// Inventory: slot grid (2x10), sprites only — larger slots than in-game.
 	static constexpr int32 InvCols = 10;
 	static constexpr int32 InvRows = 2;
-	static constexpr float InvSlotSize = 56.f;
-	static constexpr float InvSlotPad = 3.f;
+	static constexpr float InvSlotSize = 44.f;
+	static constexpr float InvSlotPad = 2.f;
 	const FLinearColor InvSlotBorderColor(0.45f, 0.55f, 0.50f, 0.5f);
 	InventoryItemIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxInventorySlots; ++i)
@@ -1673,8 +1973,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				InvGridRef
 			]);
 
-	static constexpr float TempBuffSlotSize = 48.f;
-	static constexpr float TempBuffSlotPad = 4.f;
+	static constexpr float TempBuffSlotSize = 40.f;
+	static constexpr float TempBuffSlotPad = 3.f;
 	TemporaryBuffIconBrushes.Reset();
 	TemporaryBuffIconBrushes.SetNum(UT66BuffSubsystem::MaxSelectedSingleUseBuffs);
 
@@ -1753,8 +2053,14 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	// Back button (when viewing saved run) — shown in overlay bottom-left; Restart + Main Menu stay in panel.
 	TSharedRef<SWidget> BackButton =
-		FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked)))
-			.SetMinWidth(120.f).SetPadding(FMargin(18.f, 10.f)));
+		MakeRunSummarySpriteButton(
+			Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"),
+			FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked),
+			ET66RunSummaryButtonFamily::CompactNeutral,
+			120.f,
+			38.f,
+			12,
+			FMargin(18.f, 10.f));
 
 	TSharedRef<SWidget> ButtonsStack = [&]() -> TSharedRef<SWidget>
 	{
@@ -1764,8 +2070,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight()
 				[
-					FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked)))
-						.SetMinWidth(220.f).SetPadding(FMargin(18.f, 10.f)))
+					MakeRunSummarySpriteButton(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), ET66RunSummaryButtonFamily::CtaBlue, 220.f, 44.f, 12, FMargin(18.f, 10.f))
 				]);
 		}
 
@@ -1782,8 +2087,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					{
 						DifficultyClearButtons->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 						[
-							FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "Continue", "CONTINUE"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleContinueDifficultyClicked), ET66ButtonType::Success))
-								.SetMinWidth(220.f).SetPadding(FMargin(18.f, 10.f)))
+							MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "Continue", "CONTINUE"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleContinueDifficultyClicked), ET66RunSummaryButtonFamily::CtaGreen, 220.f, 44.f, 12, FMargin(18.f, 10.f))
 						];
 					}
 				}
@@ -1791,14 +2095,12 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 			DifficultyClearButtons->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "SaveGame", "SAVE GAME"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleSaveAndQuitClicked)))
-					.SetMinWidth(220.f).SetPadding(FMargin(18.f, 10.f)))
+				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "SaveGame", "SAVE GAME"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleSaveAndQuitClicked), ET66RunSummaryButtonFamily::CompactNeutral, 220.f, 42.f, 12, FMargin(18.f, 10.f))
 			];
 
 			DifficultyClearButtons->AddSlot().AutoHeight()
 			[
-				FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "QuitRun", "QUIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleQuitToMainMenuClicked), ET66ButtonType::Primary))
-					.SetMinWidth(220.f).SetPadding(FMargin(18.f, 10.f)))
+				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "QuitRun", "QUIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleQuitToMainMenuClicked), ET66RunSummaryButtonFamily::ToggleOff, 220.f, 42.f, 12, FMargin(18.f, 10.f))
 			];
 
 			return StaticCastSharedRef<SWidget>(DifficultyClearButtons);
@@ -1808,13 +2110,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "GoAgain", "GO AGAIN!"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66ButtonType::Success))
-					.SetMinWidth(180.f).SetPadding(FMargin(18.f, 10.f)))
+				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "GoAgain", "GO AGAIN!"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66RunSummaryButtonFamily::CtaGreen, 180.f, 44.f, 12, FMargin(18.f, 10.f))
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked)))
-					.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f)))
+				MakeRunSummarySpriteButton(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), ET66RunSummaryButtonFamily::CtaBlue, 200.f, 44.f, 12, FMargin(18.f, 10.f))
 			]);
 	}();
 
@@ -1993,6 +2293,18 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		return FOptionalSize(FMath::Clamp(SafeFrame.Y - 140.f, 420.f, 620.f));
 	});
 
+	const TAttribute<FOptionalSize> MainPanelWidthAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
+	{
+		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize();
+		return FOptionalSize(FMath::Clamp(SafeFrame.X - 96.f, 1320.f, 1720.f));
+	});
+
+	const TAttribute<FOptionalSize> MainPanelHeightAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
+	{
+		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize();
+		return FOptionalSize(FMath::Clamp(SafeFrame.Y - 56.f, 760.f, 990.f));
+	});
+
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(bDotaTheme ? FT66Style::ScreenBackground() : FT66Style::Tokens::Bg)
@@ -2007,19 +2319,28 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			]
 			// Main full-screen panel
 			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(SafeContentInsets)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
 				[
-					FT66Style::MakePanel(
-						SNew(SScrollBox)
-						.Orientation(Orient_Vertical)
-						.ScrollBarVisibility(EVisibility::Visible)
-						.ConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible)
-						+ SScrollBox::Slot()
-						[
-							SNew(SVerticalBox)
+					SNew(SBox)
+					.WidthOverride(MainPanelWidthAttr)
+					.HeightOverride(MainPanelHeightAttr)
+					[
+						MakeRunSummarySpritePanel(
+							SNew(SScrollBox)
+							.Orientation(Orient_Vertical)
+							.ScrollBarVisibility(EVisibility::Visible)
+							.ConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible)
+							+ SScrollBox::Slot()
+							.Padding(0.f, 0.f, 10.f, 48.f)
+							[
+								SNew(SVerticalBox)
 						// Header row: title left, Event Log button right
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 						[
@@ -2085,7 +2406,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							.ColorAndOpacity(FT66Style::Tokens::Success)
 						]
 						// Main content: Left = Seed Luck, Integrity, buttons/proof. Center = Hero (middle), idols (1x6), inventory. Right = Stats, Damage.
-						+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 0.f, 0.f, 18.f)
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 26.f)
 						[
 							SNew(SHorizontalBox)
 							// Left side: Seed Luck, Integrity, buttons/proof.
@@ -2137,8 +2458,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							]
 						]
 						],
-						FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6)
-					)
+							GetRunSummaryContentShellBrush(),
+							FT66Style::Tokens::Space6
+						)
+					]
 				]
 			]
 			// Back button (bottom-left) — when viewing a saved leaderboard run
@@ -2177,11 +2500,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Center)
 				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(bDotaTheme ? FT66Style::Scrim() : FLinearColor(0.04f, 0.04f, 0.07f, 0.96f))
-					.Padding(0.f)
-					[
+					MakeRunSummarySpritePanel(
 						SNew(SBox)
 						.WidthOverride(320.f)
 						.Padding(24.f)
@@ -2259,12 +2578,19 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 							[
-								FT66Style::MakeButton(FlattenRunSummaryButton(FT66ButtonParams(
+								MakeRunSummarySpriteButton(
 									NSLOCTEXT("T66.RunSummary", "PowerCouponsThankYou", "Nice!"),
-									FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandlePowerCouponsThankYouClicked))))
+									FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandlePowerCouponsThankYouClicked),
+									ET66RunSummaryButtonFamily::ToggleOn,
+									140.f,
+									38.f,
+									12)
 							]
 						]
-					]
+						,
+						GetRunSummaryRowShellBrush(),
+						FMargin(0.f),
+						bDotaTheme ? FT66Style::Scrim() : FLinearColor(0.04f, 0.04f, 0.07f, 0.96f))
 				]
 			]
 		];

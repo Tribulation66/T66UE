@@ -1,0 +1,33 @@
+{
+  "screen_slug": "td_battle",
+  "canvas": { "width": 1920, "height": 1080 },
+  "source_files": [
+    "C:/UE/T66/Source/T66TD/Private/UI/Screens/T66TDBattleScreen.cpp",
+    "C:/UE/T66/Source/T66TD/Private/UI/T66TDUIStyle.h",
+    "C:/UE/T66/Content/TD/Data/T66TD_Maps.csv",
+    "C:/UE/T66/Content/TD/Data/T66TD_Heroes.csv"
+  ],
+  "regions": [
+    { "name": "selected_map_background", "rect": [0, 0, 1920, 1080], "content_type": "runtime-image", "render_contract": "empty-backplate" },
+    { "name": "back_button_plate", "rect": [34, 34, 370, 59], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "back_button_label", "rect": [96, 50, 220, 28], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "title", "rect": [638, 42, 644, 68], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "hero_roster_shell", "rect": [39, 130, 450, 909], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "hero_roster_text", "rect": [66, 164, 390, 124], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "hero_roster_rows", "rect": [65, 309, 392, 710], "content_type": "runtime-text", "render_contract": "socket-frame" },
+    { "name": "hero_portrait_slots", "rect": [84, 320, 80, 650], "content_type": "runtime-image", "render_contract": "socket-frame" },
+    { "name": "stats_bar_shell", "rect": [522, 125, 817, 69], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "stats_values", "rect": [545, 146, 490, 34], "content_type": "runtime-value", "render_contract": "empty-backplate" },
+    { "name": "gameplay_board_frame", "rect": [522, 221, 818, 797], "content_type": "generated-shell", "render_contract": "open-aperture" },
+    { "name": "gameplay_board_live", "rect": [540, 238, 780, 760], "content_type": "runtime-state", "render_contract": "open-aperture" },
+    { "name": "bottom_status", "rect": [518, 1048, 815, 24], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "match_control_shell", "rect": [1374, 131, 500, 362], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "match_control_text", "rect": [1403, 164, 448, 314], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "match_control_buttons", "rect": [1403, 232, 448, 151], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "selected_panel_shell", "rect": [1373, 533, 501, 465], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "selected_panel_text", "rect": [1402, 565, 450, 136], "content_type": "runtime-text", "render_contract": "empty-backplate" },
+    { "name": "upgrade_buttons", "rect": [1403, 720, 448, 252], "content_type": "generated-shell", "render_contract": "shell-only" },
+    { "name": "upgrade_labels_values", "rect": [1450, 730, 350, 232], "content_type": "runtime-value", "render_contract": "empty-backplate" }
+  ]
+}
+

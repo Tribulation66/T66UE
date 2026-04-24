@@ -120,10 +120,8 @@ private:
 	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
 	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
 	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
-	TSharedPtr<FSlateBrush> FireMoonBrush;
-	TStrongObjectPtr<UTexture2D> FireMoonTexture;
-	TSharedPtr<FSlateBrush> PyramidChadBrush;
-	TStrongObjectPtr<UTexture2D> PyramidChadTexture;
+	TSharedPtr<FSlateBrush> TitleLockupBrush;
+	TStrongObjectPtr<UTexture2D> TitleLockupTexture;
 	TSharedPtr<FSlateBrush> LeftPanelShellBrush;
 	TStrongObjectPtr<UTexture2D> LeftPanelShellTexture;
 	TSharedPtr<FSlateBrush> RightPanelShellBrush;
@@ -146,15 +144,9 @@ private:
 	TStrongObjectPtr<UTexture2D> PartySlotFrameTexture;
 	TSharedPtr<FSlateBrush> CloseButtonBrush;
 	TStrongObjectPtr<UTexture2D> CloseButtonTexture;
-	TSharedPtr<FSlateBrush> RightUpperStripBrush;
-	TStrongObjectPtr<UTexture2D> RightUpperStripTexture;
 	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
 	TSharedPtr<FSlateBrush> ProfileAvatarFallbackBrush;
 	TStrongObjectPtr<UTexture2D> ProfileAvatarFallbackTexture;
-	TSharedPtr<FSlateBrush> TopBarShellBrush;
-	TStrongObjectPtr<UTexture2D> TopBarShellTexture;
-	TSharedPtr<FSlateBrush> CenterStackEnvironmentBrush;
-	TStrongObjectPtr<UTexture2D> CenterStackEnvironmentTexture;
 	TSharedPtr<FSlateBrush> CenterStackFrameBrush;
 	TStrongObjectPtr<UTexture2D> CenterStackFrameTexture;
 	FButtonStateBrushSet NewGameButtonBrushes;

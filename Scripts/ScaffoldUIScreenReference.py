@@ -35,36 +35,48 @@ def to_pascal_case(value: str) -> str:
     return "".join(part[:1].upper() + part[1:] for part in parts)
 
 
+def to_slug_case(value: str) -> str:
+    spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", value.strip())
+    parts = [part.lower() for part in re.split(r"[^A-Za-z0-9]+", spaced) if part]
+    if not parts:
+        raise ValueError("Screen name must contain at least one alphanumeric character.")
+    return "_".join(parts)
+
+
 def humanize_pascal(value: str) -> str:
     spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", value)
     return spaced.strip()
 
 
 def render_reference_readme(screen_token: str, canvas_width: int, canvas_height: int, families: list[FamilySpec]) -> str:
-    family_lines = "\n".join(f"- `{family.asset_dir_name}/`" for family in families)
-    slice_lines = "\n".join(f"- `SheetSlices/{family.asset_dir_name}/`" for family in families)
+    family_lines = "\n".join(f"- `assets/{family.asset_dir_name}/`" for family in families)
+    slice_lines = "\n".join(f"- `assets/SheetSlices/{family.asset_dir_name}/`" for family in families)
     return f"""# {screen_token} Reference Pack
 
-This folder stores the immutable and derived artifacts used to reconstruct `{screen_token}`.
+This folder stores the canonical UI reconstruction artifacts used to reconstruct `{screen_token}`.
 
 ## Canonical Canvas
 
-- layout master target: `{canvas_width}x{canvas_height}`
-- hi-res companion target: `{canvas_width * 2}x{canvas_height * 2}`
+- generated screen-specific reference target: `{canvas_width}x{canvas_height}`
+- optional hi-res helper target: `{canvas_width * 2}x{canvas_height * 2}`
 
 ## Expected Files
 
-- `reference_layout.json`
-- `content_ownership.json`
-- `asset_manifest.json`
-- `debug/`
-- `SpriteSheets/`
+- `reference/canonical_reference_1920x1080.png`
+- `current/YYYY-MM-DD/`
+- `layout/layout_list.md`
+- `layout/reference_layout.json`
+- `assets/content_ownership.json`
+- `assets/asset_manifest.json`
+- `assets/SpriteSheets/`
+- `outputs/YYYY-MM-DD/`
+- `review/`
 - sliced family outputs:
 {slice_lines}
 - promoted runtime assets:
 {family_lines}
 
-Keep the approved layout reference separate from generated family sheets and runtime-ready slices.
+Do not start sprite generation or runtime placement until the screen-specific reference has been generated from the canonical main-menu anchor, the current target screenshot, and the layout list.
 """
 
 
@@ -94,18 +106,29 @@ def render_screen_intake(
 
 ## Canonical Canvas
 
-- Canonical layout master path: `{(reference_root / 'screen_master.png').as_posix()}`
+- Canonical layout master path: `{(reference_root / 'reference' / 'canonical_reference_1920x1080.png').as_posix()}`
 - Canonical layout master resolution: `{canvas_width}x{canvas_height}`
-- Hi-res art master path: `{(reference_root / 'screen_master_2x.png').as_posix()}`
+- Hi-res art master path: `{(reference_root / 'reference' / 'helper_2x.png').as_posix()}`
 - Hi-res art master resolution: `{canvas_width * 2}x{canvas_height * 2}`
 - Runtime target viewport: `{canvas_width}x{canvas_height}`
 
+## Blocking Style-Reference Gate
+
+- Canonical main-menu style anchor: `{(ROOT / 'UI' / 'screens' / 'main_menu' / 'reference' / 'canonical_reference_1920x1080.png').as_posix()}`
+- Current target screenshot path: `{(reference_root / 'current' / 'YYYY-MM-DD' / 'current.png').as_posix()}`
+- Layout list path: `{(reference_root / 'layout' / 'layout_list.md').as_posix()}`
+- Image generation used all three required inputs: `[yes/no]`
+- Generated screen-specific reference path: `{(reference_root / 'reference' / 'canonical_reference_1920x1080.png').as_posix()}`
+- Generated reference preserves target layout: `[yes/no]`
+- Generated reference matches canonical main-menu style: `[yes/no]`
+- Gate verdict: `[blocked / approved for sprite generation]`
+
 ## Reference Variants
 
-- Primary comparison frame: `{(reference_root / 'screen_master.png').as_posix()}`
-- No-buttons variant: `{(reference_root / 'screen_master_no_buttons.png').as_posix()}`
-- No-text variant: `{(reference_root / 'screen_master_no_text.png').as_posix()}`
-- No-dynamic variant: `{(reference_root / 'screen_master_no_dynamic.png').as_posix()}`
+- Primary comparison frame: `{(reference_root / 'reference' / 'canonical_reference_1920x1080.png').as_posix()}`
+- No-buttons variant: `[optional helper only]`
+- No-text variant: `[optional helper only]`
+- No-dynamic variant: `[optional helper only]`
 
 ## Regions
 
@@ -122,7 +145,7 @@ def render_screen_intake(
 
 ## Content Ownership Audit
 
-- Ownership artifact: `{(reference_root / 'content_ownership.json').as_posix()}`
+- Ownership artifact: `{(reference_root / 'assets' / 'content_ownership.json').as_posix()}`
 - Ownership audit completed: `[yes/no]`
 - `generated-shell` regions: `[list]`
 - `runtime-text` regions: `[list]`
@@ -145,7 +168,7 @@ def render_screen_intake(
 
 ## Layout Artifacts
 
-- `reference_layout.json`: `{(reference_root / 'reference_layout.json').as_posix()}`
+- `reference_layout.json`: `{(reference_root / 'layout' / 'reference_layout.json').as_posix()}`
 - Generated layout header: `{header_path.as_posix()}`
 - Coordinate authority: `[reference layout json / generated header / other]`
 
@@ -162,7 +185,7 @@ def render_screen_intake(
 
 ## Validation
 
-- Packaged screenshot command: `[command]`
+- Packaged screenshot command: `powershell -ExecutionPolicy Bypass -File C:/UE/T66/Scripts/CaptureT66UIScreen.ps1 -Screen {screen_token} -Output {(reference_root / 'outputs' / 'YYYY-MM-DD' / 'packaged_capture.png').as_posix()}`
 - Strict-diff regions: `[list]`
 - Manual validation regions: `[list]`
 - Acceptance bar: `[exact enough / close with blockers / blocked]`
@@ -271,6 +294,36 @@ def render_content_ownership(screen_token: str, canvas_width: int, canvas_height
     return json.dumps(payload, indent=2) + "\n"
 
 
+def render_layout_list(screen_token: str) -> str:
+    return f"""# {screen_token} Layout List
+
+Fill this before image generation. The screen-specific reference is blocked until this file describes the target screen structure.
+
+## Regions
+
+- `[RegionName]` — purpose: `` — ownership: `static/stateful/live`
+- `[RegionName]` — purpose: `` — ownership: `static/stateful/live`
+- `[RegionName]` — purpose: `` — ownership: `static/stateful/live`
+
+## Controls And States
+
+- `[ControlName]` — required states: `normal, hover, pressed, disabled, selected`
+- `[ControlName]` — required states: `normal, hover, pressed, disabled, selected`
+
+## Live Runtime Content
+
+- Live text:
+- Live values:
+- Live image/icon/avatar wells:
+- Live preview/media areas:
+
+## Variants
+
+- Modal/tab/state variant:
+- Modal/tab/state variant:
+"""
+
+
 def render_layout_header(screen_token: str, canvas_width: int, canvas_height: int, families: list[FamilySpec]) -> str:
     namespace_name = f"T66{screen_token}ReferenceLayout"
     family_blocks = "\n\n".join(
@@ -334,19 +387,25 @@ def main() -> int:
     human_name = humanize_pascal(screen_token)
     families = [FAMILY_SPECS[key] for key in args.families]
 
-    reference_root = ROOT / "SourceAssets" / "UI" / f"{screen_token}Reference"
-    prompt_root = ROOT / "Docs" / "UI" / "PromptPacks" / f"{screen_token}SpriteSheets"
+    screen_slug = to_slug_case(screen_token)
+    reference_root = ROOT / "UI" / "screens" / screen_slug
+    prompt_root = reference_root / "prompts"
     header_path = ROOT / "Source" / "T66" / "UI" / "Style" / f"T66{screen_token}ReferenceLayout.generated.h"
 
     directories = [
         reference_root,
-        reference_root / "debug",
-        reference_root / "SpriteSheets",
-        reference_root / "SheetSlices",
+        reference_root / "reference",
+        reference_root / "current",
+        reference_root / "layout",
+        reference_root / "assets",
+        reference_root / "assets" / "SpriteSheets",
+        reference_root / "assets" / "SheetSlices",
+        reference_root / "outputs",
+        reference_root / "review",
         prompt_root,
     ]
-    directories.extend(reference_root / family.asset_dir_name for family in families)
-    directories.extend(reference_root / "SheetSlices" / family.asset_dir_name for family in families)
+    directories.extend(reference_root / "assets" / family.asset_dir_name for family in families)
+    directories.extend(reference_root / "assets" / "SheetSlices" / family.asset_dir_name for family in families)
 
     actions: list[str] = []
     for directory in directories:
@@ -360,28 +419,35 @@ def main() -> int:
         actions,
     )
     write_text_file(
-        reference_root / "reference_layout.json",
+        reference_root / "layout" / "reference_layout.json",
         render_layout_json(screen_token, args.canvas_width, args.canvas_height, families),
         args.force,
         args.dry_run,
         actions,
     )
     write_text_file(
-        reference_root / "asset_manifest.json",
+        reference_root / "layout" / "layout_list.md",
+        render_layout_list(screen_token),
+        args.force,
+        args.dry_run,
+        actions,
+    )
+    write_text_file(
+        reference_root / "assets" / "asset_manifest.json",
         render_asset_manifest(screen_token, args.canvas_width, args.canvas_height),
         args.force,
         args.dry_run,
         actions,
     )
     write_text_file(
-        reference_root / "content_ownership.json",
+        reference_root / "assets" / "content_ownership.json",
         render_content_ownership(screen_token, args.canvas_width, args.canvas_height),
         args.force,
         args.dry_run,
         actions,
     )
     write_text_file(
-        prompt_root / "screen_intake.md",
+        reference_root / "layout" / "screen_intake.md",
         render_screen_intake(
             screen_token,
             human_name,

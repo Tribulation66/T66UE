@@ -105,7 +105,7 @@ void UT66HeroSelectionScreen::RefreshHeroStatsPanels()
 			SummaryOptions.bShowAdjectiveSummaries = false;
 			SummaryOptions.bIncludeHeader = false;
 			SummaryOptions.bIncludeLevel = false;
-			SummaryOptions.FontSizeAdjustment = -4;
+			SummaryOptions.FontSizeAdjustment = -12;
 			HeroSummaryStatsHost->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithOptions(HeroStatsSnapshot, Loc, SummaryOptions));
 		}
 		else

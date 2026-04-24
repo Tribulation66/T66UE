@@ -35,7 +35,7 @@
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66CircusInteractable.h"
+#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66ArcadeTruckInteractable.h"
 #include "Gameplay/T66WhackAMoleArcadeInteractable.h"
@@ -146,7 +146,7 @@ namespace T66GameModePrivate
 	AActor* T66FindTaggedActor(UWorld* World, FName Tag);
 	void T66RememberTaggedActor(AActor* Actor, FName Tag);
 	void T66ForgetTaggedActor(UWorld* World, FName Tag);
-	bool T66HasRegisteredCircus(UWorld* World);
+	bool T66HasRegisteredCasino(UWorld* World);
 	bool T66ShouldIgnoreTowerCeilingHit(const FHitResult& Hit);
 	FName T66MakeTowerFloorTag(int32 FloorNumber);
 	int32 T66ReadTowerFloorTag(const AActor* Actor);

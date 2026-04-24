@@ -811,7 +811,7 @@ void UT66GamblerOverlayWidget::TriggerGamblerBossIfAngry()
 {
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		if (PC->TriggerCircusBossIfAngry())
+		if (PC->TriggerCasinoBossIfAngry())
 		{
 			return;
 		}

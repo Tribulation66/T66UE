@@ -13,7 +13,7 @@
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
-#include "Gameplay/T66CircusInteractable.h"
+#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HouseNPCBase.h"
@@ -540,16 +540,16 @@ int32 AT66MiasmaManager::SpawnLegacyStageLavaPatchesForCurrentStage()
 				}
 			}
 
-			for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
 			{
-				const AT66CircusInteractable* Circus = WeakCircus.Get();
-				if (!Circus)
+				const AT66CasinoInteractable* Casino = WeakCasino.Get();
+				if (!Casino)
 				{
 					continue;
 				}
 
-				const float Radius = Circus->GetSafeZoneRadius() + SafeBubbleMargin + CandidateRadius * 0.35f;
-				if (FVector::DistSquared2D(Location, Circus->GetActorLocation()) < (Radius * Radius))
+				const float Radius = Casino->GetSafeZoneRadius() + SafeBubbleMargin + CandidateRadius * 0.35f;
+				if (FVector::DistSquared2D(Location, Casino->GetActorLocation()) < (Radius * Radius))
 				{
 					return false;
 				}

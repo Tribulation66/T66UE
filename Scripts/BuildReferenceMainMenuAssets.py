@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_IMAGE = ROOT / "SourceAssets" / "Reference Main Menu.png"
+SOURCE_IMAGE = ROOT / "UI" / "screens" / "main_menu" / "reference" / "canonical_reference_1920x1080.png"
 OUTPUT_ROOT = ROOT / "SourceAssets" / "UI" / "MainMenuReference"
 TOPBAR_DIR = OUTPUT_ROOT / "TopBar"
 CENTER_DIR = OUTPUT_ROOT / "Center"
@@ -17,12 +17,14 @@ TILES_DIR = OUTPUT_ROOT / "Tiles"
 DEBUG_DIR = OUTPUT_ROOT / "debug"
 MANIFEST_PATH = OUTPUT_ROOT / "asset_manifest.json"
 PREVIEW_PATH = OUTPUT_ROOT / "asset_pack_preview.png"
-OVERLAY_PATH = DEBUG_DIR / "reference_crop_overlay.png"
+OVERLAY_PATH = ROOT / "UI" / "screens" / "main_menu" / "review" / "reference_crop_overlay.png"
 REFERENCE_LAYOUT_PATH = OUTPUT_ROOT / "reference_layout.json"
-REFERENCE_COPY_PATH = OUTPUT_ROOT / "reference_main_menu_master.png"
-REFERENCE_NO_TOPBAR_COPY_PATH = OUTPUT_ROOT / "reference_main_menu_master_notopbarbuttons.png"
-REFERENCE_NO_BUTTONS_COPY_PATH = OUTPUT_ROOT / "reference_main_menu_master_nobuttons.png"
+SCENE_BACKGROUND_SOURCE_PATH = OUTPUT_ROOT / "scene_background_generated_source.png"
+SCENE_BACKGROUND_CANONICAL_PATH = OUTPUT_ROOT / "scene_background_1920x1080.png"
+CONTENT_OWNERSHIP_PATH = OUTPUT_ROOT / "content_ownership.json"
 TOPBAR_SHELL_CLEAN_PATH = TOPBAR_DIR / "topbar_shell_clean.png"
+TOPBAR_BACKDROP_CLEAN_PATH = TOPBAR_DIR / "topbar_backdrop_clean.png"
+CENTER_TITLE_WORDMARK_PATH = CENTER_DIR / "title_lockup_wordmark.png"
 CENTER_STACK_FRAME_SLICE_PATH = OUTPUT_ROOT / "SheetSlices" / "Center" / "stack_frame.png"
 GENERATED_LAYOUT_HEADER_PATH = ROOT / "Source" / "T66" / "UI" / "Style" / "T66MainMenuReferenceLayout.generated.h"
 
@@ -47,88 +49,93 @@ except AttributeError:
 
 Box = tuple[int, int, int, int]
 
+CANONICAL_CANVAS_SIZE = (1920, 1080)
+CANONICAL_CANVAS_WIDTH = 1920.0
+CANONICAL_CANVAS_HEIGHT = 1080.0
+
 
 TOPBAR_BOXES: dict[str, Box] = {
-    "topbar_strip_full": (0, 0, 1672, 126),
-    "button_settings": (12, 16, 108, 108),
-    "button_chat": (126, 16, 222, 108),
-    "tab_account": (278, 16, 500, 105),
-    "badge_profile": (521, 12, 600, 119),
-    "tab_power_up": (616, 16, 836, 105),
-    "tab_achievements": (848, 16, 1091, 105),
-    "tab_minigames": (1104, 16, 1328, 105),
-    "currency_slot": (1369, 23, 1534, 98),
-    "button_power": (1551, 16, 1656, 108),
+    "topbar_strip_full": (0, 0, 1920, 145),
+    "button_settings": (14, 18, 124, 124),
+    "button_chat": (145, 18, 255, 124),
+    "tab_account": (319, 18, 574, 121),
+    "badge_profile": (598, 14, 689, 137),
+    "tab_power_up": (707, 18, 960, 121),
+    "tab_achievements": (974, 18, 1253, 121),
+    "tab_minigames": (1268, 18, 1525, 121),
+    "currency_slot": (1572, 26, 1762, 112),
+    "button_power": (1781, 18, 1902, 124),
 }
 
 TOPBAR_ICON_BOXES: dict[str, Box] = {
-    "icon_powerup": (628, 30, 666, 72),
-    "icon_achievements": (860, 31, 900, 72),
-    "icon_minigames": (1116, 30, 1158, 74),
+    "icon_powerup": (721, 34, 765, 83),
+    "icon_achievements": (988, 36, 1033, 83),
+    "icon_minigames": (1282, 34, 1330, 85),
 }
 
 CENTER_BOXES: dict[str, Box] = {
-    "center_backdrop_full": (401, 120, 1274, 941),
-    "title_lockup": (400, 120, 1275, 284),
-    "subtitle_lockup": (631, 220, 1088, 281),
-    "hero_stage": (414, 260, 1263, 622),
-    "cta_stack_full": (646, 608, 1132, 879),
-    "cta_button_new_game": (662, 627, 1116, 713),
-    "cta_button_load_game": (662, 715, 1112, 797),
-    "cta_button_daily_challenge": (664, 799, 1113, 878),
+    "center_backdrop_full": (460, 138, 1463, 1080),
+    "title_lockup": (459, 138, 1464, 326),
+    "subtitle_lockup": (725, 252, 1249, 323),
+    "hero_stage": (475, 298, 1450, 714),
+    "cta_stack_full": (742, 698, 1300, 1009),
+    "cta_button_new_game": (760, 720, 1282, 818),
+    "cta_button_load_game": (760, 821, 1277, 915),
+    "cta_button_daily_challenge": (762, 917, 1278, 1008),
 }
 
 LEFT_BOXES: dict[str, Box] = {
-    "shell_full_reference": (18, 304, 442, 937),
-    "profile_card_reference": (35, 314, 404, 408),
-    "search_field_reference": (40, 427, 392, 474),
-    "search_icon": (353, 435, 382, 463),
-    "friend_star_button": (253, 521, 307, 571),
-    "friend_invite_button": (309, 521, 393, 571),
-    "friend_offline_button": (309, 672, 394, 722),
-    "friend_avatar_frame_source": (39, 519, 87, 568),
-    "party_slot_source": (38, 798, 119, 888),
-    "close_button": (361, 751, 406, 793),
+    "shell_full_reference": (21, 349, 508, 1075),
+    "profile_card_reference": (40, 360, 464, 468),
+    "search_field_reference": (46, 490, 450, 544),
+    "search_icon": (405, 499, 439, 531),
+    "friend_star_button": (291, 598, 353, 655),
+    "friend_invite_button": (355, 598, 451, 655),
+    "friend_offline_button": (355, 771, 452, 829),
+    "friend_avatar_frame_source": (45, 596, 100, 652),
+    "party_slot_source": (44, 916, 137, 1019),
+    "close_button": (415, 862, 466, 910),
 }
 
 RIGHT_BOXES: dict[str, Box] = {
-    "shell_full_reference": (1245, 321, 1644, 938),
-    "filter_world_button": (1304, 253, 1368, 315),
-    "filter_friends_button": (1374, 253, 1439, 315),
-    "filter_crown_button": (1445, 253, 1511, 315),
-    "tab_weekly_active": (1258, 334, 1440, 390),
-    "tab_all_time_inactive": (1439, 334, 1629, 390),
-    "dropdown_shell_left": (1260, 397, 1441, 447),
-    "dropdown_shell_right": (1444, 397, 1628, 447),
-    "toggle_score_selected": (1258, 454, 1441, 507),
-    "toggle_speedrun_unselected": (1444, 454, 1632, 507),
-    "leaderboard_avatar_frame_source": (1335, 550, 1384, 599),
+    "shell_full_reference": (1430, 368, 1888, 1077),
+    "filter_world_button": (1497, 290, 1571, 362),
+    "filter_friends_button": (1578, 290, 1652, 362),
+    "filter_crown_button": (1659, 290, 1735, 362),
+    "tab_weekly_active": (1445, 383, 1654, 448),
+    "tab_all_time_inactive": (1652, 383, 1871, 448),
+    "dropdown_shell_left": (1447, 456, 1655, 513),
+    "dropdown_shell_right": (1658, 456, 1869, 513),
+    "toggle_score_selected": (1445, 521, 1655, 582),
+    "toggle_speedrun_unselected": (1658, 521, 1874, 582),
+    "leaderboard_avatar_frame_source": (1533, 631, 1589, 687),
 }
 
 LAYOUT_METRICS: dict[str, float] = {
-    "canvas_width": 1672.0,
-    "canvas_height": 941.0,
-    "topbar_reserved_height": 142.0,
-    "topbar_surface_height": 126.0,
-    "topbar_surface_offset_y": 14.0,
+    "canvas_width": CANONICAL_CANVAS_WIDTH,
+    "canvas_height": CANONICAL_CANVAS_HEIGHT,
+    "topbar_reserved_height": 163.0,
+    "topbar_surface_height": 145.0,
+    "topbar_surface_offset_y": 0.0,
 }
 
 EXTRA_LAYOUT_BOXES: dict[str, dict[str, Box]] = {
     "MainMenu": {
-        "left_panel_assembly": (18, 304, 442, 937),
-        "right_panel_assembly": (1245, 253, 1644, 938),
+        "full_canvas": (0, 0, 1920, 1080),
+        "left_panel_assembly": (21, 349, 508, 1075),
+        "right_panel_assembly": (1430, 290, 1888, 1077),
     }
 }
 
 CENTER_RUNTIME_PLATE_BOXES: dict[str, Box] = {
-    "cta_button_new_game_plate": (662, 627, 1085, 713),
-    "cta_button_load_game_plate": (662, 715, 1082, 797),
-    "cta_button_daily_challenge_plate": (664, 799, 1083, 878),
+    "cta_button_new_game_plate": (760, 720, 1246, 818),
+    "cta_button_load_game_plate": (760, 821, 1242, 915),
+    "cta_button_daily_challenge_plate": (762, 917, 1244, 1008),
 }
 
 FILL_BOXES: dict[str, Box] = {
-    "panel_fill_dark": (1290, 742, 1374, 826),
-    "topbar_fill_warm": (226, 18, 270, 92),
+    "panel_fill_dark": (1481, 852, 1578, 948),
+    "topbar_fill_warm": (260, 21, 310, 106),
 }
 
 
@@ -174,9 +181,46 @@ def transparent_center(base: Image.Image, inner_box: Box) -> Image.Image:
     return result
 
 
+def transparent_rectangles(base: Image.Image, rectangles: list[Box]) -> Image.Image:
+    result = base.copy()
+    alpha = result.getchannel("A")
+    draw = ImageDraw.Draw(alpha)
+    for rectangle in rectangles:
+        draw.rectangle(rectangle, fill=0)
+    result.putalpha(alpha)
+    return result
+
+
 def save(image: Image.Image, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     image.save(path)
+
+
+def canonicalize_image(image: Image.Image) -> Image.Image:
+    rgba = image.convert("RGBA")
+    if rgba.size == CANONICAL_CANVAS_SIZE:
+        return rgba
+    return rgba.resize(CANONICAL_CANVAS_SIZE, RESAMPLING.LANCZOS)
+
+
+def load_canonical_reference() -> Image.Image:
+    with Image.open(SOURCE_IMAGE) as source:
+        original_size = source.size
+        reference = canonicalize_image(source)
+    if reference.size != original_size:
+        reference.save(SOURCE_IMAGE)
+    return reference
+
+
+def canonicalize_image_file(path: Path) -> bool:
+    if not path.exists():
+        return False
+    with Image.open(path) as source:
+        original_size = source.size
+        image = canonicalize_image(source)
+    if image.size != original_size:
+        image.save(path)
+    return True
 
 
 def flood_clear_background(image: Image.Image, threshold: int = 18) -> Image.Image:
@@ -392,6 +436,114 @@ def fill_rectangles_from_sample(base: Image.Image, rectangles: list[Box], sample
     return fill_rectangles(base, rectangles, tile)
 
 
+def soften_tagline_for_runtime_master(base: Image.Image) -> Image.Image:
+    """Remove baked tagline glyphs while preserving the painted title lockup."""
+    result = base.copy()
+    subtitle_box = CENTER_BOXES["subtitle_lockup"]
+    expanded_box = (
+        max(0, subtitle_box[0] - 21),
+        max(0, subtitle_box[1] - 15),
+        min(result.width, subtitle_box[2] + 32),
+        min(result.height, subtitle_box[3] - 6),
+    )
+    region = result.crop(expanded_box)
+    blurred_region = result.filter(ImageFilter.GaussianBlur(14)).crop(expanded_box)
+    mask = Image.new("L", region.size, 0)
+    region_pixels = region.load()
+    mask_pixels = mask.load()
+
+    for y in range(region.height):
+        for x in range(region.width):
+            red, green, blue, alpha = region_pixels[x, y]
+            strongest = max(red, green, blue)
+            weakest = min(red, green, blue)
+            if alpha and strongest > 125 and (red > 115 or blue > 135) and (strongest - weakest) > 20:
+                mask_pixels[x, y] = 255
+
+    mask = mask.filter(ImageFilter.MaxFilter(7)).filter(ImageFilter.GaussianBlur(3))
+    region.paste(blurred_region, (0, 0), mask)
+    result.paste(region, expanded_box[:2])
+    return result
+
+
+def extract_title_wordmark(reference: Image.Image) -> Image.Image:
+    """Extract the baked title art while removing the localizable tagline."""
+    title = crop(reference, CENTER_BOXES["title_lockup"])
+    mask = Image.new("L", title.size, 0)
+    pixels = title.load()
+    mask_pixels = mask.load()
+
+    for y in range(title.height):
+        for x in range(title.width):
+            red, green, blue, alpha = pixels[x, y]
+            if not alpha or y > 112:
+                continue
+
+            strongest = max(red, green, blue)
+            weakest = min(red, green, blue)
+            saturation = strongest - weakest
+            is_gold = (
+                red > 116
+                and green > 82
+                and blue > 42
+                and strongest > 118
+                and (red >= blue + 18 or green >= blue + 8)
+            )
+            is_purple_gem = (
+                (x < 120 or x > 755)
+                and blue > 105
+                and red > 60
+                and green < 135
+                and saturation > 32
+            )
+            is_top_highlight = y < 86 and strongest > 168 and saturation > 25
+            if is_gold or is_purple_gem or is_top_highlight:
+                mask_pixels[x, y] = 255
+
+    soft_mask = mask.filter(ImageFilter.MaxFilter(7)).filter(ImageFilter.GaussianBlur(1.0))
+    soft_pixels = soft_mask.load()
+    for y in range(title.height):
+        for x in range(title.width):
+            if 170 <= x <= 730 and y >= 92:
+                soft_pixels[x, y] = 0
+            elif y > 110:
+                soft_pixels[x, y] = 0
+
+    result = title.copy()
+    result.putalpha(soft_mask)
+    result_pixels = result.load()
+    for y in range(result.height):
+        for x in range(result.width):
+            red, green, blue, alpha = result_pixels[x, y]
+            if alpha < 12:
+                result_pixels[x, y] = (red, green, blue, 0)
+    return result
+
+
+def soften_text_for_runtime_plate(base: Image.Image, search_rects: list[Box]) -> Image.Image:
+    result = base.copy()
+    blurred = base.filter(ImageFilter.GaussianBlur(8))
+    mask = Image.new("L", base.size, 0)
+    pixels = base.load()
+    mask_pixels = mask.load()
+
+    for left, top, right, bottom in search_rects:
+        for y in range(max(0, top), min(base.height, bottom)):
+            for x in range(max(0, left), min(base.width, right)):
+                red, green, blue, alpha = pixels[x, y]
+                if not alpha:
+                    continue
+
+                strongest = max(red, green, blue)
+                weakest = min(red, green, blue)
+                if strongest > 130 and weakest > 92 and (strongest - weakest) < 85:
+                    mask_pixels[x, y] = 255
+
+    mask = mask.filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(1.2))
+    result.paste(blurred, (0, 0), mask)
+    return result
+
+
 def stretch_fill_rectangles_from_sample(base: Image.Image, rectangles: list[Box], sample_rect: Box) -> Image.Image:
     result = base.copy()
     sample = base.crop(sample_rect).filter(ImageFilter.GaussianBlur(radius=6))
@@ -418,8 +570,13 @@ def add_alias_entries(
     group: str,
     notes: str,
 ) -> None:
+    existing_paths = {entry.get("path") for entry in manifest}
+    source_relative = source_path.relative_to(OUTPUT_ROOT).as_posix()
     for alias in aliases:
         alias_path = copy_alias(source_path, alias)
+        alias_relative = alias_path.relative_to(OUTPUT_ROOT).as_posix()
+        if alias_relative == source_relative or alias_relative in existing_paths:
+            continue
         add_manifest_entry(
             manifest,
             path=alias_path,
@@ -428,15 +585,44 @@ def add_alias_entries(
             source_box=source_box,
             notes=notes,
         )
+        existing_paths.add(alias_relative)
 
 
 def build_assets() -> None:
+    from BuildCanonicalMainMenuReferencePack import build_pack
+
+    build_pack()
+    return
+
     ensure_dirs()
-    reference = Image.open(SOURCE_IMAGE).convert("RGBA")
+    reference = load_canonical_reference()
     master_background = reference.copy()
 
     manifest: list[dict[str, object]] = []
     preview_paths: list[tuple[str, Path]] = []
+
+    scene_plate_specs = [
+        (
+            SCENE_BACKGROUND_SOURCE_PATH,
+            "ui_free_scene_plate_source",
+            "AI-generated UI-free dungeon/idol scene plate source. This is the production background family input, not the full reference screenshot.",
+        ),
+        (
+            SCENE_BACKGROUND_CANONICAL_PATH,
+            "ui_free_scene_plate_canonical",
+            "Canonical 1920x1080 UI-free scene/background plate.",
+        ),
+    ]
+    for scene_path, kind, notes in scene_plate_specs:
+        if canonicalize_image_file(scene_path):
+            add_manifest_entry(
+                manifest,
+                path=scene_path,
+                group="Scene",
+                kind=kind,
+                notes=notes,
+            )
+            preview_paths.append((f"Scene/{scene_path.stem}", scene_path))
 
     for name, box in FILL_BOXES.items():
         path = TILES_DIR / f"{name}.png"
@@ -598,6 +784,14 @@ def build_assets() -> None:
         Image.open(nav_clean_paths[1]).convert("RGBA").save(generic_nav_idle)
         Image.open(nav_clean_paths[1].with_name("topbar_button_nav_power_up_hover.png")).convert("RGBA").save(generic_nav_hover)
         Image.open(nav_clean_paths[1].with_name("topbar_button_nav_power_up_pressed.png")).convert("RGBA").save(generic_nav_pressed)
+        add_manifest_entry(
+            manifest,
+            path=generic_nav_idle,
+            group="TopBar",
+            kind="alias_copy",
+            source_box=TOPBAR_BOXES["tab_power_up"],
+            notes="Canonical shared nav plate copied from the cleaned power-up nav plate for the top-bar widget loader.",
+        )
         add_alias_entries(
             manifest,
             source_box=TOPBAR_BOXES["tab_power_up"],
@@ -608,6 +802,22 @@ def build_assets() -> None:
             ],
             group="TopBar",
             notes="Compatibility alias for cleaned shared nav plate.",
+        )
+        add_manifest_entry(
+            manifest,
+            path=generic_nav_hover,
+            group="TopBar",
+            kind="state_variant",
+            source_box=TOPBAR_BOXES["tab_power_up"],
+            notes="Compatibility hover-state pass for the cleaned shared nav plate.",
+        )
+        add_manifest_entry(
+            manifest,
+            path=generic_nav_pressed,
+            group="TopBar",
+            kind="state_variant",
+            source_box=TOPBAR_BOXES["tab_power_up"],
+            notes="Compatibility pressed-state pass for the cleaned shared nav plate.",
         )
 
     account_active_path = TOPBAR_DIR / "topbar_button_account_active.png"
@@ -645,21 +855,33 @@ def build_assets() -> None:
         )
         preview_paths.append((f"Center/{name}", path))
 
+    title_wordmark = extract_title_wordmark(reference)
+    save(title_wordmark, CENTER_TITLE_WORDMARK_PATH)
+    add_manifest_entry(
+        manifest,
+        path=CENTER_TITLE_WORDMARK_PATH,
+        group="Center",
+        kind="baked_title_art",
+        source_box=CENTER_BOXES["title_lockup"],
+        notes="Transparent title wordmark and side crystal art. The tagline below it is deliberately removed and remains live localizable text.",
+    )
+    preview_paths.append(("Center/title_lockup_wordmark", CENTER_TITLE_WORDMARK_PATH))
+
     center_runtime_plate_specs = [
         {
             "layout_name": "cta_button_new_game_plate",
             "output_name": "cta_button_new_game_plate",
-            "state_prefix": "green",
+            "text_search_rects": [(42, 12, 374, 72)],
         },
         {
             "layout_name": "cta_button_load_game_plate",
             "output_name": "cta_button_load_game_plate",
-            "state_prefix": "blue",
+            "text_search_rects": [(42, 8, 370, 68)],
         },
         {
             "layout_name": "cta_button_daily_challenge_plate",
             "output_name": "cta_button_daily_challenge_plate",
-            "state_prefix": "purple",
+            "text_search_rects": [(36, 6, 382, 64)],
         },
     ]
 
@@ -671,15 +893,15 @@ def build_assets() -> None:
         pressed_path = CENTER_DIR / f"{spec['output_name']}_pressed.png"
         disabled_path = CENTER_DIR / f"{spec['output_name']}_disabled.png"
 
-        normal_source = OUTPUT_ROOT / "SheetSlices" / "Center" / f"{spec['state_prefix']}_normal.png"
-        hover_source = OUTPUT_ROOT / "SheetSlices" / "Center" / f"{spec['state_prefix']}_hover.png"
-        pressed_source = OUTPUT_ROOT / "SheetSlices" / "Center" / f"{spec['state_prefix']}_pressed.png"
-        disabled_source = OUTPUT_ROOT / "SheetSlices" / "Center" / f"{spec['state_prefix']}_disabled.png"
+        normal_plate = soften_text_for_runtime_plate(crop(reference, plate_box), spec["text_search_rects"])
+        hover_plate = brighten_region(normal_plate, (0, 0, plate_size[0], plate_size[1]), 1.08)
+        pressed_plate = brighten_region(normal_plate, (0, 0, plate_size[0], plate_size[1]), 0.88)
+        disabled_plate = ImageEnhance.Brightness(ImageEnhance.Color(normal_plate).enhance(0.45)).enhance(0.66)
 
-        save(Image.open(normal_source).convert("RGBA").resize(plate_size, RESAMPLING.LANCZOS), normal_path)
-        save(Image.open(hover_source).convert("RGBA").resize(plate_size, RESAMPLING.LANCZOS), hover_path)
-        save(Image.open(pressed_source).convert("RGBA").resize(plate_size, RESAMPLING.LANCZOS), pressed_path)
-        save(Image.open(disabled_source).convert("RGBA").resize(plate_size, RESAMPLING.LANCZOS), disabled_path)
+        save(normal_plate, normal_path)
+        save(hover_plate, hover_path)
+        save(pressed_plate, pressed_path)
+        save(disabled_plate, disabled_path)
 
         add_manifest_entry(
             manifest,
@@ -687,7 +909,7 @@ def build_assets() -> None:
             group="Center",
             kind="runtime_plate",
             source_box=plate_box,
-            notes="Family-authored CTA runtime plate sized to the measured reference bounds with no baked label.",
+            notes="Exact reference CTA plate with baked label removed for live localizable text.",
         )
         add_manifest_entry(
             manifest,
@@ -714,6 +936,43 @@ def build_assets() -> None:
             notes="Disabled-state CTA runtime plate promoted from the generated center family.",
         )
         preview_paths.append((f"Center/{spec['output_name']}", normal_path))
+
+    center_runtime_wide_plate_specs = [
+        {
+            "layout_name": "cta_button_new_game",
+            "output_name": "cta_button_new_game_wide_plate",
+        },
+        {
+            "layout_name": "cta_button_load_game",
+            "output_name": "cta_button_load_game_wide_plate",
+        },
+        {
+            "layout_name": "cta_button_daily_challenge",
+            "output_name": "cta_button_daily_challenge_wide_plate",
+        },
+    ]
+    for spec in center_runtime_wide_plate_specs:
+        source_box = CENTER_BOXES[spec["layout_name"]]
+        for suffix, kind in (
+            ("", "runtime_plate"),
+            ("_hover", "state_variant"),
+            ("_pressed", "state_variant"),
+            ("_disabled", "state_variant"),
+        ):
+            plate_path = CENTER_DIR / f"{spec['output_name']}{suffix}.png"
+            if not plate_path.exists():
+                continue
+            add_manifest_entry(
+                manifest,
+                path=plate_path,
+                group="Center",
+                kind=kind,
+                source_box=source_box,
+                notes="Clean wide CTA runtime plate promoted from the generated center family with no baked label text.",
+            )
+        normal_wide_path = CENTER_DIR / f"{spec['output_name']}.png"
+        if normal_wide_path.exists():
+            preview_paths.append((f"Center/{spec['output_name']}", normal_wide_path))
 
     left_shell_inner = (31, 317, 429, 921)
     left_shell_clean = fill_rectangles(
@@ -960,7 +1219,18 @@ def build_assets() -> None:
     preview_paths.append(("Right/dropdown_right_clean", right_dropdown_shell_path))
     preview_paths.append(("Right/leaderboard_avatar_frame", leaderboard_avatar_frame_path))
 
-    save(master_background, REFERENCE_COPY_PATH)
+    # The canonical full-screen comparison target lives in UI/screens/main_menu/reference.
+    # Do not duplicate full-screen main-menu reference masters in SourceAssets.
+    cta_stack_outer_frame_path = CENTER_DIR / "cta_stack_outer_frame.png"
+    if cta_stack_outer_frame_path.exists():
+        add_manifest_entry(
+            manifest,
+            path=cta_stack_outer_frame_path,
+            group="Center",
+            kind="runtime_frame",
+            source_box=CENTER_BOXES["cta_stack_full"],
+            notes="Runtime CTA stack frame generated from the native-aspect CTA family board.",
+        )
     topbar_shell_clean = fill_rectangles(
         crop(reference, TOPBAR_BOXES["topbar_strip_full"]),
         [rect_relative_to(box, TOPBAR_BOXES["topbar_strip_full"]) for name, box in TOPBAR_BOXES.items() if name != "topbar_strip_full"],
@@ -975,17 +1245,25 @@ def build_assets() -> None:
         source_box=TOPBAR_BOXES["topbar_strip_full"],
         notes="Full-width top-bar strip with all baked buttons removed so the live top-bar controls are the only button layer.",
     )
-    master_without_topbar_buttons = master_background.copy()
-    master_without_topbar_buttons.alpha_composite(topbar_shell_clean, (0, 0))
-    save(master_without_topbar_buttons, REFERENCE_NO_TOPBAR_COPY_PATH)
+    topbar_backdrop_clean = transparent_rectangles(
+        crop(reference, TOPBAR_BOXES["topbar_strip_full"]),
+        [rect_relative_to(box, TOPBAR_BOXES["topbar_strip_full"]) for name, box in TOPBAR_BOXES.items() if name != "topbar_strip_full"],
+    )
+    save(topbar_backdrop_clean, TOPBAR_BACKDROP_CLEAN_PATH)
     add_manifest_entry(
         manifest,
-        path=REFERENCE_NO_TOPBAR_COPY_PATH,
-        group="Master",
-        kind="derived_master",
+        path=TOPBAR_BACKDROP_CLEAN_PATH,
+        group="TopBar",
+        kind="foreground_backdrop",
         source_box=TOPBAR_BOXES["topbar_strip_full"],
-        notes="Full reference frame with the unlabeled top-bar shell composited in to remove baked top-bar labels and coupon count.",
+        clean_boxes=[box for name, box in TOPBAR_BOXES.items() if name != "topbar_strip_full"],
+        notes="Top-bar foreground backing with all button rectangles punched transparent so live button sprites own every control pixel.",
     )
+    preview_paths.append(("TopBar/topbar_backdrop_clean", TOPBAR_BACKDROP_CLEAN_PATH))
+    master_without_topbar_buttons = master_background.copy()
+    master_without_topbar_buttons.alpha_composite(topbar_shell_clean, (0, 0))
+    # Helper full-screen variants are intentionally not written. Regenerate screen
+    # references through UI/SCREEN_WORKFLOW.md instead of preserving stale masters.
 
     center_stack_without_buttons = crop(reference, CENTER_BOXES["cta_stack_full"])
     center_button_rects = [
@@ -1005,26 +1283,30 @@ def build_assets() -> None:
     center_stack_without_buttons = fill_rectangles(center_stack_without_buttons, center_button_rects, center_fill_tile)
     master_without_buttons = master_without_topbar_buttons.copy()
     master_without_buttons.alpha_composite(center_stack_without_buttons, CENTER_BOXES["cta_stack_full"][:2])
-    save(master_without_buttons, REFERENCE_NO_BUTTONS_COPY_PATH)
-    add_manifest_entry(
-        manifest,
-        path=REFERENCE_NO_BUTTONS_COPY_PATH,
-        group="Master",
-        kind="derived_master",
-        source_box=CENTER_BOXES["cta_stack_full"],
-        notes="Full reference frame with baked top-bar buttons and CTA button plates removed so only live interactive buttons render.",
-    )
+    # Do not write no-buttons full-screen masters; they caused agents to use
+    # helper composites as runtime or style authority.
+    runtime_clean_master = soften_tagline_for_runtime_master(master_without_topbar_buttons)
+    _ = runtime_clean_master
+    if CONTENT_OWNERSHIP_PATH.exists():
+        add_manifest_entry(
+            manifest,
+            path=CONTENT_OWNERSHIP_PATH,
+            group="Metadata",
+            kind="ownership_audit",
+            source_box=(0, 0, 0, 0),
+            notes="Code-first ownership audit covering live text, live data, and avatar wells that must remain runtime-owned.",
+        )
     write_reference_layout_artifacts()
     build_overlay(reference)
     build_preview(preview_paths)
 
     manifest_payload = {
         "source_image": str(SOURCE_IMAGE),
-        "source_size": [reference.width, reference.height],
+        "canvas_size": [reference.width, reference.height],
         "output_root": str(OUTPUT_ROOT),
         "assets": manifest,
     }
-    MANIFEST_PATH.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
+    MANIFEST_PATH.write_text(json.dumps(manifest_payload, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 #include "Core/T66InteractionPromptSubsystem.h"
 
 #include "Gameplay/T66ChestInteractable.h"
-#include "Gameplay/T66CircusInteractable.h"
+#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66PilotableTractor.h"
@@ -73,7 +73,7 @@ namespace
 		case ET66InteractionPromptAction::OpenCrate:
 			return NSLOCTEXT("T66.InteractionPrompt", "OpenCrate", "open crate");
 		case ET66InteractionPromptAction::EnterCasino:
-			return NSLOCTEXT("T66.InteractionPrompt", "EnterCircus", "enter circus");
+			return NSLOCTEXT("T66.InteractionPrompt", "EnterCasino", "enter casino");
 		case ET66InteractionPromptAction::GetQuickRevive:
 			return NSLOCTEXT("T66.InteractionPrompt", "GetQuickRevive", "get quick revive");
 		case ET66InteractionPromptAction::UseTeleporter:
@@ -117,7 +117,7 @@ ET66InteractionPromptAction UT66InteractionPromptSubsystem::GetPromptActionForAc
 	{
 		return ET66InteractionPromptAction::OpenCrate;
 	}
-	if (Cast<AT66CircusInteractable>(Actor))
+	if (Cast<AT66CasinoInteractable>(Actor))
 	{
 		return ET66InteractionPromptAction::EnterCasino;
 	}

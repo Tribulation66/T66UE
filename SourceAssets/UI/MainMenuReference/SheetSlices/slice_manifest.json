@@ -1,647 +1,803 @@
 [
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "settings_normal",
-    "box": [
-      33,
-      118,
-      141,
-      230
-    ],
-    "output": "SheetSlices/TopBar/settings_normal.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_shell_clean.png",
     "size": [
-      108,
-      112
-    ]
+      1920,
+      145
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "settings_hover",
-    "box": [
-      170,
-      117,
-      283,
-      230
-    ],
-    "output": "SheetSlices/TopBar/settings_hover.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_backdrop_clean.png",
     "size": [
-      113,
-      113
-    ]
+      1920,
+      145
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "settings_pressed",
-    "box": [
-      311,
-      118,
-      421,
-      230
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_strip_full.png",
+    "size": [
+      1920,
+      145
     ],
-    "output": "SheetSlices/TopBar/settings_pressed.png",
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/button_settings.png",
     "size": [
       110,
-      112
-    ]
-  },
-  {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "settings_disabled",
-    "box": [
-      446,
-      118,
-      555,
-      230
+      106
     ],
-    "output": "SheetSlices/TopBar/settings_disabled.png",
-    "size": [
-      109,
-      112
-    ]
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "chat_normal",
-    "box": [
-      33,
-      247,
-      141,
-      358
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/button_chat.png",
+    "size": [
+      110,
+      106
     ],
-    "output": "SheetSlices/TopBar/chat_normal.png",
-    "size": [
-      108,
-      111
-    ]
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "chat_hover",
-    "box": [
-      169,
-      246,
-      282,
-      360
-    ],
-    "output": "SheetSlices/TopBar/chat_hover.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/button_power.png",
     "size": [
-      113,
-      114
-    ]
-  },
-  {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "chat_pressed",
-    "box": [
-      312,
-      248,
-      420,
-      360
-    ],
-    "output": "SheetSlices/TopBar/chat_pressed.png",
-    "size": [
-      108,
-      112
-    ]
-  },
-  {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "chat_disabled",
-    "box": [
-      446,
-      247,
-      555,
-      359
-    ],
-    "output": "SheetSlices/TopBar/chat_disabled.png",
-    "size": [
-      109,
-      112
-    ]
-  },
-  {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "nav_normal",
-    "box": [
-      602,
-      122,
-      852,
-      237
-    ],
-    "output": "SheetSlices/TopBar/nav_normal.png",
-    "size": [
-      250,
-      115
-    ]
-  },
-  {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "nav_hover",
-    "box": [
-      875,
       121,
-      1211,
-      238
+      106
     ],
-    "output": "SheetSlices/TopBar/nav_hover.png",
-    "size": [
-      336,
-      117
-    ]
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "nav_pressed",
-    "box": [
-      1233,
-      124,
-      1514,
-      239
-    ],
-    "output": "SheetSlices/TopBar/nav_pressed.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/badge_profile.png",
     "size": [
-      281,
-      115
-    ]
+      91,
+      123
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "nav_disabled",
-    "box": [
-      1539,
-      125,
-      1794,
-      241
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/currency_slot_blank.png",
+    "size": [
+      190,
+      86
     ],
-    "output": "SheetSlices/TopBar/nav_disabled.png",
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_account.png",
     "size": [
       255,
-      116
-    ]
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "portrait_normal",
-    "box": [
-      35,
-      471,
-      152,
-      615
-    ],
-    "output": "SheetSlices/TopBar/portrait_normal.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_account_hover.png",
     "size": [
-      117,
-      144
-    ]
+      255,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "portrait_hover",
-    "box": [
-      220,
-      471,
-      339,
-      615
-    ],
-    "output": "SheetSlices/TopBar/portrait_hover.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_account_pressed.png",
     "size": [
-      119,
-      144
-    ]
+      255,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "portrait_pressed",
-    "box": [
-      410,
-      471,
-      529,
-      615
-    ],
-    "output": "SheetSlices/TopBar/portrait_pressed.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_account_active.png",
     "size": [
-      119,
-      144
-    ]
+      255,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "portrait_disabled",
-    "box": [
-      598,
-      471,
-      715,
-      615
-    ],
-    "output": "SheetSlices/TopBar/portrait_disabled.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_home.png",
     "size": [
-      117,
-      144
-    ]
+      91,
+      123
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "coupon_normal",
-    "box": [
-      895,
-      476,
-      1064,
-      586
-    ],
-    "output": "SheetSlices/TopBar/coupon_normal.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_home_hover.png",
     "size": [
-      169,
-      110
-    ]
+      91,
+      123
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "coupon_hover",
-    "box": [
-      1109,
-      476,
-      1284,
-      586
-    ],
-    "output": "SheetSlices/TopBar/coupon_hover.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_home_pressed.png",
     "size": [
-      175,
-      110
-    ]
+      91,
+      123
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "coupon_pressed",
-    "box": [
-      1338,
-      477,
-      1524,
-      587
-    ],
-    "output": "SheetSlices/TopBar/coupon_pressed.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_home_active.png",
     "size": [
-      186,
-      110
-    ]
+      91,
+      123
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "coupon_disabled",
-    "box": [
-      1575,
-      478,
-      1780,
-      588
-    ],
-    "output": "SheetSlices/TopBar/coupon_disabled.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_power_up.png",
     "size": [
-      205,
-      110
-    ]
+      253,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "power_normal",
-    "box": [
-      33,
-      719,
-      132,
-      819
-    ],
-    "output": "SheetSlices/TopBar/power_normal.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_power_up_hover.png",
     "size": [
-      99,
-      100
-    ]
+      253,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "power_hover",
-    "box": [
-      168,
-      719,
-      268,
-      819
-    ],
-    "output": "SheetSlices/TopBar/power_hover.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_power_up_pressed.png",
     "size": [
-      100,
-      100
-    ]
+      253,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "power_pressed",
-    "box": [
-      298,
-      719,
-      397,
-      818
-    ],
-    "output": "SheetSlices/TopBar/power_pressed.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_achievements.png",
     "size": [
-      99,
-      99
-    ]
+      279,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "power_disabled",
-    "box": [
-      425,
-      719,
-      523,
-      819
-    ],
-    "output": "SheetSlices/TopBar/power_disabled.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_achievements_hover.png",
     "size": [
-      98,
-      100
-    ]
+      279,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "leaf_cluster_small_01",
-    "box": [
-      601,
-      722,
-      744,
-      791
-    ],
-    "output": "SheetSlices/TopBar/leaf_cluster_small_01.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_achievements_pressed.png",
     "size": [
-      143,
-      69
-    ]
+      279,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "leaf_cluster_small_02",
-    "box": [
-      758,
-      723,
-      865,
-      794
-    ],
-    "output": "SheetSlices/TopBar/leaf_cluster_small_02.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_minigames.png",
     "size": [
-      107,
-      71
-    ]
+      257,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "leaf_cluster_small_03",
-    "box": [
-      879,
-      724,
-      931,
-      793
-    ],
-    "output": "SheetSlices/TopBar/leaf_cluster_small_03.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_minigames_hover.png",
     "size": [
-      52,
-      69
-    ]
+      257,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "separator_short",
-    "box": [
-      1214,
-      745,
-      1328,
-      782
-    ],
-    "output": "SheetSlices/TopBar/separator_short.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_minigames_pressed.png",
     "size": [
-      114,
-      37
-    ]
+      257,
+      103
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "separator_medium",
-    "box": [
-      1350,
-      745,
-      1494,
-      782
-    ],
-    "output": "SheetSlices/TopBar/separator_medium.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav.png",
     "size": [
-      144,
-      37
-    ]
+      253,
+      103
+    ],
+    "kind": "alias_copy"
   },
   {
-    "source_sheet": "mainmenu_topbar_sheet_gen_v1.png",
-    "name": "separator_diamond",
-    "box": [
-      1517,
-      744,
-      1791,
-      783
-    ],
-    "output": "SheetSlices/TopBar/separator_diamond.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_hover.png",
     "size": [
-      274,
-      39
-    ]
+      253,
+      103
+    ],
+    "kind": "alias_copy"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "stack_frame",
-    "box": [
-      33,
-      154,
-      421,
-      479
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/topbar_button_nav_pressed.png",
+    "size": [
+      253,
+      103
     ],
-    "output": "SheetSlices/Center/stack_frame.png",
+    "kind": "alias_copy"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "SheetSlices/TopBar/nav.png",
+    "size": [
+      253,
+      103
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "SheetSlices/TopBar/nav_hover.png",
+    "size": [
+      253,
+      103
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "SheetSlices/TopBar/nav_pressed.png",
+    "size": [
+      253,
+      103
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "SheetSlices/TopBar/nav_disabled.png",
+    "size": [
+      253,
+      103
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "SheetSlices/TopBar/nav_normal.png",
+    "size": [
+      253,
+      103
+    ],
+    "kind": "alias_copy"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/icon_powerup.png",
+    "size": [
+      44,
+      49
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/icon_achievements.png",
+    "size": [
+      45,
+      47
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "TopBar/icon_minigames.png",
+    "size": [
+      48,
+      51
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/title_lockup_wordmark.png",
+    "size": [
+      1005,
+      188
+    ],
+    "kind": "baked_title_art"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_stack_outer_frame.png",
+    "size": [
+      445,
+      311
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_new_game_wide_plate.png",
     "size": [
       388,
-      325
-    ]
+      100
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "green_normal",
-    "box": [
-      472,
-      145,
-      762,
-      289
-    ],
-    "output": "SheetSlices/Center/green_normal.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_new_game_plate.png",
     "size": [
-      290,
-      144
-    ]
+      388,
+      100
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "green_hover",
-    "box": [
-      783,
-      145,
-      1072,
-      289
-    ],
-    "output": "SheetSlices/Center/green_hover.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_new_game_wide_plate_hover.png",
     "size": [
-      289,
-      144
-    ]
+      388,
+      100
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "green_pressed",
-    "box": [
-      1093,
-      148,
-      1380,
-      293
-    ],
-    "output": "SheetSlices/Center/green_pressed.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_new_game_plate_hover.png",
     "size": [
-      287,
-      145
-    ]
+      388,
+      100
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "green_disabled",
-    "box": [
-      1404,
-      146,
-      1688,
-      289
-    ],
-    "output": "SheetSlices/Center/green_disabled.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_new_game_wide_plate_pressed.png",
     "size": [
-      284,
-      143
-    ]
+      388,
+      100
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "blue_normal",
-    "box": [
-      471,
-      414,
-      760,
-      559
-    ],
-    "output": "SheetSlices/Center/blue_normal.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_new_game_plate_pressed.png",
     "size": [
-      289,
-      145
-    ]
+      388,
+      100
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "blue_hover",
-    "box": [
-      782,
-      414,
-      1072,
-      559
-    ],
-    "output": "SheetSlices/Center/blue_hover.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_new_game_wide_plate_disabled.png",
     "size": [
-      290,
-      145
-    ]
+      388,
+      100
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "blue_pressed",
-    "box": [
-      1093,
-      417,
-      1380,
-      562
-    ],
-    "output": "SheetSlices/Center/blue_pressed.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_new_game_plate_disabled.png",
     "size": [
-      287,
-      145
-    ]
+      388,
+      100
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "blue_disabled",
-    "box": [
-      1405,
-      417,
-      1688,
-      560
-    ],
-    "output": "SheetSlices/Center/blue_disabled.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_load_game_wide_plate.png",
     "size": [
-      283,
-      143
-    ]
+      388,
+      97
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "purple_normal",
-    "box": [
-      471,
-      684,
-      760,
-      829
-    ],
-    "output": "SheetSlices/Center/purple_normal.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_load_game_plate.png",
     "size": [
-      289,
-      145
-    ]
+      388,
+      97
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "purple_hover",
-    "box": [
-      782,
-      684,
-      1072,
-      829
-    ],
-    "output": "SheetSlices/Center/purple_hover.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_load_game_wide_plate_hover.png",
     "size": [
-      290,
-      145
-    ]
+      388,
+      97
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "purple_pressed",
-    "box": [
-      1093,
-      687,
-      1380,
-      832
-    ],
-    "output": "SheetSlices/Center/purple_pressed.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_load_game_plate_hover.png",
     "size": [
-      287,
-      145
-    ]
+      388,
+      97
+    ],
+    "kind": "imagegen_slice"
   },
   {
-    "source_sheet": "mainmenu_cta_sheet_gen_v1.png",
-    "name": "purple_disabled",
-    "box": [
-      1404,
-      686,
-      1688,
-      829
-    ],
-    "output": "SheetSlices/Center/purple_disabled.png",
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_load_game_wide_plate_pressed.png",
     "size": [
-      284,
-      143
-    ]
+      388,
+      97
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_load_game_plate_pressed.png",
+    "size": [
+      388,
+      97
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_load_game_wide_plate_disabled.png",
+    "size": [
+      388,
+      97
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_load_game_plate_disabled.png",
+    "size": [
+      388,
+      97
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_daily_challenge_wide_plate.png",
+    "size": [
+      388,
+      92
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_daily_challenge_plate.png",
+    "size": [
+      388,
+      92
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_daily_challenge_wide_plate_hover.png",
+    "size": [
+      388,
+      92
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_daily_challenge_plate_hover.png",
+    "size": [
+      388,
+      92
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_daily_challenge_wide_plate_pressed.png",
+    "size": [
+      388,
+      92
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_daily_challenge_plate_pressed.png",
+    "size": [
+      388,
+      92
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_daily_challenge_wide_plate_disabled.png",
+    "size": [
+      388,
+      92
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "Center/cta_button_daily_challenge_plate_disabled.png",
+    "size": [
+      388,
+      92
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/shell_clean.png",
+    "size": [
+      487,
+      726
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/profile_card_shell.png",
+    "size": [
+      424,
+      108
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/search_field_shell.png",
+    "size": [
+      404,
+      54
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/friend_star_button.png",
+    "size": [
+      62,
+      57
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/friend_invite_button.png",
+    "size": [
+      96,
+      57
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/friend_offline_button.png",
+    "size": [
+      97,
+      58
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/friend_avatar_frame.png",
+    "size": [
+      55,
+      56
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/party_slot_frame.png",
+    "size": [
+      93,
+      103
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/close_button.png",
+    "size": [
+      51,
+      48
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/search_icon.png",
+    "size": [
+      34,
+      32
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "LeftPanel/profile_avatar_reference.png",
+    "size": [
+      101,
+      93
+    ],
+    "kind": "fallback_avatar"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/shell_clean.png",
+    "size": [
+      458,
+      709
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/filter_world_button.png",
+    "size": [
+      74,
+      72
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/filter_friends_button.png",
+    "size": [
+      74,
+      72
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/filter_crown_button.png",
+    "size": [
+      76,
+      72
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/tab_weekly_active.png",
+    "size": [
+      209,
+      65
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/tab_all_time_inactive.png",
+    "size": [
+      219,
+      65
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/dropdown_shell_left.png",
+    "size": [
+      208,
+      57
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/dropdown_shell_right.png",
+    "size": [
+      211,
+      57
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/toggle_score_selected.png",
+    "size": [
+      210,
+      61
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/toggle_speedrun_unselected.png",
+    "size": [
+      216,
+      61
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/dropdown_shell_left_clean.png",
+    "size": [
+      208,
+      57
+    ],
+    "kind": "alias_copy"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/dropdown_shell_right_clean.png",
+    "size": [
+      211,
+      57
+    ],
+    "kind": "alias_copy"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/leaderboard_avatar_frame.png",
+    "size": [
+      56,
+      56
+    ],
+    "kind": "imagegen_slice"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/leaderboard_avatar_fallback_01.png",
+    "size": [
+      30,
+      30
+    ],
+    "kind": "fallback_avatar"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/leaderboard_avatar_fallback_02.png",
+    "size": [
+      30,
+      30
+    ],
+    "kind": "fallback_avatar"
+  },
+  {
+    "source_sheet": "mainmenu_canonical_components_1920.png",
+    "output": "RightPanel/leaderboard_avatar_fallback_03.png",
+    "size": [
+      30,
+      30
+    ],
+    "kind": "fallback_avatar"
   }
 ]

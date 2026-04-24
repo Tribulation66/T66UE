@@ -1,0 +1,115 @@
+{
+  "screen_slug": "pause_menu",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\pause_menu\\reference\\canonical_reference_1920x1080.png",
+  "runtime_owned": [
+    {
+      "name": "modal_scrim",
+      "rect": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "content_type": "runtime-overlay",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "title_well",
+      "rect": [
+        920,
+        112,
+        180,
+        56
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "resume_button",
+      "rect": [
+        912,
+        184,
+        196,
+        32
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "save_quit_button",
+      "rect": [
+        912,
+        224,
+        196,
+        32
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "restart_button",
+      "rect": [
+        912,
+        264,
+        196,
+        32
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "settings_button",
+      "rect": [
+        912,
+        304,
+        196,
+        32
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "achievements_button",
+      "rect": [
+        912,
+        344,
+        196,
+        32
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "leaderboard_button",
+      "rect": [
+        912,
+        384,
+        196,
+        32
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    }
+  ],
+  "generated_owned": [
+    {
+      "name": "pause_shell",
+      "rect": [
+        900,
+        84,
+        220,
+        396
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    }
+  ],
+  "families_required": [
+    "modal-shell",
+    "vertical-command-buttons"
+  ]
+}

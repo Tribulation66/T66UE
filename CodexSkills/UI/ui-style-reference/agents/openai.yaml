@@ -1,5 +1,7 @@
 interface:
   display_name: "UI Style Reference"
   short_description: "Create canonical reference screens in an approved UI style"
-  default_prompt: "Use $ui-style-reference to create a new screen reference set that matches the approved T66 UI style."
+  default_prompt: >-
+    Use $ui-style-reference for the target UI screen pack under C:\UE\T66\UI\screens\<screen_slug>.
+    Hard gates: generate the screen-specific canonical reference from the canonical main-menu anchor, the exact current target screenshot, and the target layout list using native Codex image generation only; save it as reference\canonical_reference_1920x1080.png; do not use removed external generation tooling or request manifests; do not proceed from general main-menu vibes; do not manually pixel-repair, mask, cover-patch, clone, repaint, or screenshot-clean generated outputs; reject 1672x941 and other non-canonical production outputs; do not report the full screen task complete after reference generation alone.
 

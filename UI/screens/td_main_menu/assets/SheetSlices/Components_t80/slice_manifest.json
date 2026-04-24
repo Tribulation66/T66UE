@@ -1,0 +1,245 @@
+{
+  "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+  "items": [
+    {
+      "name": "td_main_menu_01",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        42,
+        16,
+        408,
+        641
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_01.png",
+      "size": [
+        366,
+        625
+      ]
+    },
+    {
+      "name": "td_main_menu_02",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        475,
+        16,
+        1055,
+        375
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_02.png",
+      "size": [
+        580,
+        359
+      ]
+    },
+    {
+      "name": "td_main_menu_03",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        1116,
+        16,
+        1489,
+        642
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_03.png",
+      "size": [
+        373,
+        626
+      ]
+    },
+    {
+      "name": "td_main_menu_04",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        466,
+        393,
+        1064,
+        653
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_04.png",
+      "size": [
+        598,
+        260
+      ]
+    },
+    {
+      "name": "td_main_menu_05",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        23,
+        673,
+        372,
+        767
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_05.png",
+      "size": [
+        349,
+        94
+      ]
+    },
+    {
+      "name": "td_main_menu_06",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        402,
+        673,
+        749,
+        767
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_06.png",
+      "size": [
+        347,
+        94
+      ]
+    },
+    {
+      "name": "td_main_menu_07",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        781,
+        673,
+        1124,
+        767
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_07.png",
+      "size": [
+        343,
+        94
+      ]
+    },
+    {
+      "name": "td_main_menu_08",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        1157,
+        673,
+        1502,
+        767
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_08.png",
+      "size": [
+        345,
+        94
+      ]
+    },
+    {
+      "name": "td_main_menu_09",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        23,
+        796,
+        375,
+        878
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_09.png",
+      "size": [
+        352,
+        82
+      ]
+    },
+    {
+      "name": "td_main_menu_10",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        402,
+        797,
+        752,
+        878
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_10.png",
+      "size": [
+        350,
+        81
+      ]
+    },
+    {
+      "name": "td_main_menu_11",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        780,
+        797,
+        1130,
+        878
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_11.png",
+      "size": [
+        350,
+        81
+      ]
+    },
+    {
+      "name": "td_main_menu_12",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        1158,
+        797,
+        1507,
+        878
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_12.png",
+      "size": [
+        349,
+        81
+      ]
+    },
+    {
+      "name": "td_main_menu_13",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        23,
+        904,
+        375,
+        986
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_13.png",
+      "size": [
+        352,
+        82
+      ]
+    },
+    {
+      "name": "td_main_menu_14",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        402,
+        904,
+        751,
+        987
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_14.png",
+      "size": [
+        349,
+        83
+      ]
+    },
+    {
+      "name": "td_main_menu_15",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        780,
+        904,
+        1129,
+        987
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_15.png",
+      "size": [
+        349,
+        83
+      ]
+    },
+    {
+      "name": "td_main_menu_16",
+      "source": "C:/UE/T66/UI/screens/td_main_menu/assets/SpriteSheets/td_main_menu_components_v1.png",
+      "box": [
+        1158,
+        904,
+        1507,
+        987
+      ],
+      "output": "C:/UE/T66/UI/screens/td_main_menu/assets/SheetSlices/Components_t80/td_main_menu_16.png",
+      "size": [
+        349,
+        83
+      ]
+    }
+  ]
+}

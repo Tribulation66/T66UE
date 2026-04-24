@@ -79,13 +79,13 @@ void AT66GameMode::SpawnStageEffectsForStage()
 			const float R = NPC->GetSafeZoneRadius() + SafeBubbleMargin + CandidateRadius * 0.35f;
 			if (FVector::DistSquared2D(L, NPC->GetActorLocation()) < (R * R)) return false;
 		}
-		const TArray<TWeakObjectPtr<AT66CircusInteractable>>& Circuses = Registry ? Registry->GetCircuses() : TArray<TWeakObjectPtr<AT66CircusInteractable>>();
-		for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Circuses)
+		const TArray<TWeakObjectPtr<AT66CasinoInteractable>>& Casinos = Registry ? Registry->GetCasinos() : TArray<TWeakObjectPtr<AT66CasinoInteractable>>();
+		for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Casinos)
 		{
-			const AT66CircusInteractable* Circus = WeakCircus.Get();
-			if (!Circus) continue;
-			const float R = Circus->GetSafeZoneRadius() + SafeBubbleMargin + CandidateRadius * 0.35f;
-			if (FVector::DistSquared2D(L, Circus->GetActorLocation()) < (R * R)) return false;
+			const AT66CasinoInteractable* Casino = WeakCasino.Get();
+			if (!Casino) continue;
+			const float R = Casino->GetSafeZoneRadius() + SafeBubbleMargin + CandidateRadius * 0.35f;
+			if (FVector::DistSquared2D(L, Casino->GetActorLocation()) < (R * R)) return false;
 		}
 		return true;
 	};
@@ -249,7 +249,7 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 	}
 }
 
-void AT66GameMode::SpawnCircusInteractableIfNeeded()
+void AT66GameMode::SpawnCasinoInteractableIfNeeded()
 {
 	if (IsLabLevel())
 	{
@@ -267,7 +267,7 @@ void AT66GameMode::SpawnCircusInteractableIfNeeded()
 		return;
 	}
 
-	if (T66HasRegisteredCircus(World))
+	if (T66HasRegisteredCasino(World))
 	{
 		return;
 	}
@@ -279,15 +279,15 @@ void AT66GameMode::SpawnCircusInteractableIfNeeded()
 	float RefY = 0.f;
 	if (bUsingMainMapTerrain)
 	{
-		FVector CircusLoc = FVector::ZeroVector;
-		if (!TryFindRandomMainMapSurfaceLocation(3201, CircusLoc, 450.f))
+		FVector CasinoLoc = FVector::ZeroVector;
+		if (!TryFindRandomMainMapSurfaceLocation(3201, CasinoLoc, 450.f))
 		{
 			return;
 		}
 
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		World->SpawnActor<AT66CircusInteractable>(AT66CircusInteractable::StaticClass(), CircusLoc, FRotator::ZeroRotator, SpawnParams);
+		World->SpawnActor<AT66CasinoInteractable>(AT66CasinoInteractable::StaticClass(), CasinoLoc, FRotator::ZeroRotator, SpawnParams);
 		return;
 	}
 
@@ -326,7 +326,7 @@ void AT66GameMode::SpawnCircusInteractableIfNeeded()
 	const FVector FlatLoc = FindClosestFlatSurface(RefX, RefY);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	World->SpawnActor<AT66CircusInteractable>(AT66CircusInteractable::StaticClass(), FlatLoc, FRotator::ZeroRotator, SpawnParams);
+	World->SpawnActor<AT66CasinoInteractable>(AT66CasinoInteractable::StaticClass(), FlatLoc, FRotator::ZeroRotator, SpawnParams);
 }
 
 void AT66GameMode::SpawnSupportVendorAtStartIfNeeded()
@@ -953,26 +953,26 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 				return false;
 			}
 		}
-		const TArray<TWeakObjectPtr<AT66CircusInteractable>>& Circuses = Registry ? Registry->GetCircuses() : TArray<TWeakObjectPtr<AT66CircusInteractable>>();
-		for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Circuses)
+		const TArray<TWeakObjectPtr<AT66CasinoInteractable>>& Casinos = Registry ? Registry->GetCasinos() : TArray<TWeakObjectPtr<AT66CasinoInteractable>>();
+		for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Casinos)
 		{
-			const AT66CircusInteractable* Circus = WeakCircus.Get();
-			if (!Circus) continue;
+			const AT66CasinoInteractable* Casino = WeakCasino.Get();
+			if (!Casino) continue;
 			if (bTowerLayout)
 			{
 				const int32 CandidateFloor = GetTowerFloorIndexForLocation(L);
-				const int32 CircusFloor = ResolveTowerFloorForActor(Circus);
-				if (CandidateFloor == INDEX_NONE || CircusFloor == INDEX_NONE || CandidateFloor != CircusFloor)
+				const int32 CasinoFloor = ResolveTowerFloorForActor(Casino);
+				if (CandidateFloor == INDEX_NONE || CasinoFloor == INDEX_NONE || CandidateFloor != CasinoFloor)
 				{
 					continue;
 				}
 			}
-			else if (!IsSameTowerFloor(L, Circus->GetActorLocation()))
+			else if (!IsSameTowerFloor(L, Casino->GetActorLocation()))
 			{
 				continue;
 			}
-			const float R = Circus->GetSafeZoneRadius() + SafeBubbleMargin;
-			if (FVector::DistSquared2D(L, Circus->GetActorLocation()) < (R * R))
+			const float R = Casino->GetSafeZoneRadius() + SafeBubbleMargin;
+			if (FVector::DistSquared2D(L, Casino->GetActorLocation()) < (R * R))
 			{
 				return false;
 			}
@@ -1396,31 +1396,31 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 
 		for (const int32 FloorNumber : GameplayFloorNumbers)
 		{
-			const FName CircusTag(*FString::Printf(TEXT("T66_Tower_Circus_%02d"), FloorNumber));
-			if (!ExistingTowerOccupantTags.Contains(CircusTag))
+			const FName CasinoTag(*FString::Printf(TEXT("T66_Tower_Casino_%02d"), FloorNumber));
+			if (!ExistingTowerOccupantTags.Contains(CasinoTag))
 			{
 				if (RunState)
 				{
 					RunState->RecordLuckQuantityBool(
-						FName(TEXT("TowerCircusFloorSpawned")),
+						FName(TEXT("TowerCasinoFloorSpawned")),
 						true,
 						1.f,
 						INDEX_NONE,
 						RunSeed + StageNum * 1901 + 5100 + FloorNumber * 53);
 				}
-				FVector CircusLoc = FVector::ZeroVector;
-				if (TryFindTowerFloorLocation(FloorNumber, 5100, 1800.f, 2200.f, CircusLoc))
+				FVector CasinoLoc = FVector::ZeroVector;
+				if (TryFindTowerFloorLocation(FloorNumber, 5100, 1800.f, 2200.f, CasinoLoc))
 				{
-					if (AT66CircusInteractable* Circus = World->SpawnActor<AT66CircusInteractable>(
-						AT66CircusInteractable::StaticClass(), CircusLoc, FRotator::ZeroRotator, OccupantSpawnParams))
+					if (AT66CasinoInteractable* Casino = World->SpawnActor<AT66CasinoInteractable>(
+						AT66CasinoInteractable::StaticClass(), CasinoLoc, FRotator::ZeroRotator, OccupantSpawnParams))
 					{
-						T66TrySnapActorToTowerFloor(World, Circus, CachedTowerMainMapLayout, FloorNumber, CircusLoc);
-						T66AssignTowerFloorTag(Circus, FloorNumber);
-						Circus->ConfigureCompactTowerVariant();
-						Circus->Tags.AddUnique(CircusTag);
-						ExistingTowerOccupantTags.Add(CircusTag);
-						T66RememberTaggedActor(Circus, CircusTag);
-						UsedLocs.Add(CircusLoc);
+						T66TrySnapActorToTowerFloor(World, Casino, CachedTowerMainMapLayout, FloorNumber, CasinoLoc);
+						T66AssignTowerFloorTag(Casino, FloorNumber);
+						Casino->ConfigureCompactTowerVariant();
+						Casino->Tags.AddUnique(CasinoTag);
+						ExistingTowerOccupantTags.Add(CasinoTag);
+						T66RememberTaggedActor(Casino, CasinoTag);
+						UsedLocs.Add(CasinoLoc);
 					}
 				}
 			}

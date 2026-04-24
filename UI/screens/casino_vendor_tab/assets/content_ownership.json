@@ -1,0 +1,10 @@
+{
+  "screen": "CasinoVendorTab",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "casino_main_shell", "group": "Center", "content_type": "generated-shell", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CasinoOverlayWidget.cpp"], "notes": "Casino shell/header/tab backing only." },
+    { "id": "header_summary_bar", "group": "TopBar", "content_type": "runtime-value", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-value", "code_refs": ["Source/T66/UI/T66CasinoOverlayWidget.cpp"], "notes": "Score, timer, economy, and anger values remain live." },
+    { "id": "tab_button_row", "group": "TopBar", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CasinoOverlayWidget.cpp"], "notes": "Tabs are real controls with live labels and selected state." },
+    { "id": "vendor_content_panel", "group": "Center", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/T66VendorOverlayWidget.cpp"], "notes": "Embedded vendor card shells only; stock, buyback, inventory, item icons, prices, and status remain live." }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "screen": "GameplayHUDInventoryInspect",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "inventory_panel_scaled_state", "group": "RightPanel", "content_type": "runtime-state", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-state", "code_refs": ["Source/T66/UI/T66GameplayHUDWidget.h", "Source/T66/UI/HUD/T66GameplayHUDWidget_Build.cpp", "Source/T66/Gameplay/T66PlayerController_Input.cpp"], "notes": "Inspect mode is a runtime state of the existing inventory panel; do not invent a separate detail panel unless code adds one." },
+    { "id": "inventory_slot_strip", "group": "RightPanel", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/HUD/T66GameplayHUDWidget_Refresh.cpp"], "notes": "Slot frames may be generated; item icon, count, rarity, hover and selected state remain live." },
+    { "id": "economy_readouts", "group": "RightPanel", "content_type": "runtime-value", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-value", "code_refs": ["Source/T66/UI/HUD/T66GameplayHUDWidget_Refresh.cpp"], "notes": "Gold, debt, score, timer, and inspect prompts remain runtime text/values." }
+  ]
+}

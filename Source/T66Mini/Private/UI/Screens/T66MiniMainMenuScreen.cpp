@@ -16,6 +16,7 @@
 #include "UI/ST66AnimatedBorderGlow.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
+#include "UI/T66MiniUIStyle.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
 #include "Widgets/Images/SImage.h"
@@ -282,7 +283,6 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 	UT66SteamHelper* SteamHelper = GameInstance ? GameInstance->GetSubsystem<UT66SteamHelper>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
 
-	const FLinearColor ShellFill(0.004f, 0.005f, 0.010f, 0.985f);
 	const FLinearColor BrightText(0.86f, 0.87f, 0.89f, 1.0f);
 	const FLinearColor HeaderText(0.66f, 0.68f, 0.71f, 1.0f);
 	const FLinearColor MutedText(0.50f, 0.52f, 0.56f, 1.0f);
@@ -297,8 +297,7 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 	const float CenterButtonHeight = 72.f;
 	const float CenterButtonGap = 16.f;
 	const float CenterHeight = (CenterButtonHeight * 2.f) + CenterButtonGap + 30.f;
-	const float TitleTopPadding = 42.f;
-	const float SceneOffset = 128.f;
+	const float TitleTopPadding = 50.f;
 
 	TArray<FT66PartyFriendEntry> OnlineFriends;
 	TArray<FT66PartyFriendEntry> OfflineFriends;
@@ -614,11 +613,7 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 	}
 
 	const TSharedRef<SWidget> LeftShell =
-		SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(ShellFill)
-		.Padding(FMargin(12.f, 12.f, 12.f, 10.f))
-		[
+		T66MiniUI::MakeSpritePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
@@ -677,12 +672,19 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 				+ SVerticalBox::Slot().AutoHeight()[MakeSectionTitle(NSLOCTEXT("T66Mini.MainMenu", "PartySection", "PARTY"))]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[PartySlots]
 			]
-		];
+		,
+		FMargin(18.f, 16.f, 18.f, 14.f));
 
 	auto MakeMenuButton = [&](const FText& Text, FReply (UT66MiniMainMenuScreen::*ClickFunc)(), const bool bGlow, const bool bEnabled) -> TSharedRef<SWidget>
 	{
-		FT66ButtonParams Params(Text, FOnClicked::CreateUObject(this, ClickFunc), ET66ButtonType::Success);
-		Params.SetMinWidth(CenterButtonWidth).SetHeight(CenterButtonHeight).SetFontSize(24).SetPadding(FMargin(16.f, 10.f, 16.f, 8.f)).SetUseGlow(false).SetUseDotaPlateOverlay(true).SetDotaPlateOverrideBrush(PrimaryCTAFillBrush.Get()).SetTextColor(FLinearColor(0.96f, 0.96f, 0.94f, 1.0f)).SetStateTextShadowColors(FLinearColor(0.f, 0.f, 0.f, 0.36f), FLinearColor(0.f, 0.f, 0.f, 0.42f), FLinearColor(0.f, 0.f, 0.f, 0.28f)).SetTextShadowOffset(FVector2D(0.f, 1.f)).SetEnabled(bEnabled);
+		FT66ButtonParams Params = T66MiniUI::MakeButtonParams(
+			Text,
+			FOnClicked::CreateUObject(this, ClickFunc),
+			bEnabled ? ET66ButtonType::Success : ET66ButtonType::Neutral,
+			CenterButtonWidth,
+			CenterButtonHeight,
+			24);
+		Params.SetEnabled(bEnabled);
 		TSharedRef<SWidget> Button = FT66Style::MakeButton(Params);
 		if (!bGlow)
 		{
@@ -726,40 +728,28 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 		.WidthOverride(CenterWidth)
 		.HeightOverride(CenterHeight)
 		[
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.01f, 0.01f, 0.015f, 0.82f))
-			.Padding(FMargin(18.f, 16.f))
-			[
+			T66MiniUI::MakeSpritePanel(
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[MakeMenuButton(NSLOCTEXT("T66Mini.MainMenu", "Start", "START"), &UT66MiniMainMenuScreen::HandleNewGameClicked, true, true)]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, CenterButtonGap, 0.f, 0.f)
 				[
 					MakeMenuButton(NSLOCTEXT("T66Mini.MainMenu", "Continue", "CONTINUE"), &UT66MiniMainMenuScreen::HandleLoadGameClicked, false, bCanLoadMiniSave)
 				]
-			]
+			,
+			FMargin(18.f, 16.f))
 		];
 
-	FT66ButtonParams BackButtonParams(
-		NSLOCTEXT("T66Mini.MainMenu", "BackToMainMenu", "BACK TO MAIN MENU"),
+	FT66ButtonParams BackButtonParams = T66MiniUI::MakeButtonParams(
+		NSLOCTEXT("T66Mini.MainMenu", "BackToMainMenuShort", "BACK"),
 		FOnClicked::CreateUObject(this, &UT66MiniMainMenuScreen::HandleBackToMainMenuClicked),
-		ET66ButtonType::Neutral);
-	BackButtonParams
-		.SetMinWidth(224.f)
-		.SetHeight(40.f)
-		.SetFontSize(14)
-		.SetPadding(FMargin(14.f, 8.f, 14.f, 6.f))
-		.SetUseGlow(false)
-		.SetTextColor(FLinearColor(0.94f, 0.95f, 0.97f, 1.0f))
-		.SetStateTextShadowColors(
-			FLinearColor(0.f, 0.f, 0.f, 0.32f),
-			FLinearColor(0.f, 0.f, 0.f, 0.38f),
-			FLinearColor(0.f, 0.f, 0.f, 0.24f))
-		.SetTextShadowOffset(FVector2D(0.f, 1.f));
+		ET66ButtonType::Neutral,
+		150.f,
+		42.f,
+		14);
 	const TSharedRef<SWidget> BackToMainMenuButton =
 		SNew(SBox)
-		.WidthOverride(224.f)
-		.HeightOverride(40.f)
+		.WidthOverride(150.f)
+		.HeightOverride(42.f)
 		[
 			FT66Style::MakeButton(BackButtonParams)
 		];
@@ -771,36 +761,17 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 		.PartySubsystem(PartySubsystem);
 
 	TArray<FT66AnimatedBackgroundLayer> BackgroundLayers;
-	BackgroundLayers.Reserve(3);
+	BackgroundLayers.Reserve(1);
 	auto& SkyLayer = BackgroundLayers.AddDefaulted_GetRef();
 	SkyLayer.Brush = SkyBackgroundBrush.Get();
-	SkyLayer.SwayAmplitude = FVector2D(15.f, 5.f);
-	SkyLayer.SwayFrequency = 0.15f;
+	SkyLayer.SwayAmplitude = FVector2D(3.f, 1.5f);
+	SkyLayer.SwayFrequency = 0.06f;
 	SkyLayer.OpacityMin = 1.f;
 	SkyLayer.OpacityMax = 1.f;
-	auto& FireLayer = BackgroundLayers.AddDefaulted_GetRef();
-	FireLayer.Brush = FireMoonBrush.Get();
-	FireLayer.BaseOffset = FVector2D(0.f, SceneOffset * 0.72f);
-	FireLayer.SwayAmplitude = FVector2D(3.f, 2.f);
-	FireLayer.SwayFrequency = 0.10f;
-	FireLayer.ScalePulseAmplitude = 0.05f;
-	FireLayer.ScalePulseFrequency = 0.30f;
-	FireLayer.OpacityMin = 0.70f;
-	FireLayer.OpacityMax = 1.00f;
-	FireLayer.OpacityFrequency = 0.40f;
-	FireLayer.PhaseOffset = 0.21f;
-	auto& PyramidLayer = BackgroundLayers.AddDefaulted_GetRef();
-	PyramidLayer.Brush = PyramidChadBrush.Get();
-	PyramidLayer.BaseOffset = FVector2D(0.f, SceneOffset);
-	PyramidLayer.SwayAmplitude = FVector2D(2.f, 1.f);
-	PyramidLayer.SwayFrequency = 0.08f;
-	PyramidLayer.OpacityMin = 1.f;
-	PyramidLayer.OpacityMax = 1.f;
-	PyramidLayer.PhaseOffset = 0.43f;
 
 	auto MakeTitle = [](const FLinearColor& Color, const FVector2D& Offset) -> TSharedRef<SWidget>
 	{
-		FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Black"), 38);
+		FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Black"), 40);
 		Font.LetterSpacing = 46;
 		return SNew(STextBlock)
 			.Text(NSLOCTEXT("T66Mini.MainMenu", "MiniTitle", "MINI CHADPOCALYPSE"))
@@ -817,12 +788,12 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()[SNew(ST66AnimatedBackground).Layers(BackgroundLayers)]
-			+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.36f))]
+			+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.20f))]
 			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, TitleTopPadding, 0.f, 0.f)
 			[
 				SNew(SOverlay)
-				+ SOverlay::Slot()[MakeTitle(FLinearColor(0.98f, 0.68f, 0.18f, 0.30f), FVector2D(2.f, 2.f))]
-				+ SOverlay::Slot()[MakeTitle(FLinearColor(0.02f, 0.01f, 0.01f, 0.98f), FVector2D::ZeroVector)]
+				+ SOverlay::Slot()[MakeTitle(FLinearColor(0.02f, 0.01f, 0.01f, 0.98f), FVector2D(3.f, 3.f))]
+				+ SOverlay::Slot()[MakeTitle(FLinearColor(0.98f, 0.84f, 0.43f, 0.98f), FVector2D::ZeroVector)]
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(FMargin(20.f, 20.f, 0.f, 0.f))
 			[
@@ -849,7 +820,10 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 				[
 					SNew(SBox).WidthOverride(SideWidth).HeightOverride(SideHeight + 58.f).Clipping(EWidgetClipping::ClipToBounds)
 					[
-						SNew(SInvalidationPanel)[LeaderboardShell]
+						SNew(SInvalidationPanel)
+						[
+							T66MiniUI::MakeSpritePanel(LeaderboardShell, FMargin(18.f, 16.f, 18.f, 14.f))
+						]
 					]
 				]
 			]
@@ -979,10 +953,8 @@ void UT66MiniMainMenuScreen::HandleFriendSearchTextChanged(const FText& InText)
 
 void UT66MiniMainMenuScreen::RequestMiniMenuTextures()
 {
-	SetupCookedBrush(SkyBackgroundBrush, SkyBackgroundTexture, TEXT("/Game/UI/MainMenu/sky_bg.sky_bg"), MiniBgSize, TEXT("MiniMainMenuSky"));
-	SetupCookedBrush(FireMoonBrush, FireMoonTexture, TEXT("/Game/UI/MainMenu/fire_moon.fire_moon"), MiniBgSize, TEXT("MiniMainMenuFire"));
-	SetupCookedBrush(PyramidChadBrush, PyramidChadTexture, TEXT("/Game/UI/MainMenu/pyramid_chad.pyramid_chad"), MiniBgSize, TEXT("MiniMainMenuPyramid"));
-	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("RuntimeDependencies/T66/UI/MiniMainMenu/mini_mainmenu_cta_fill_green.png"), FVector2D(1024.f, 232.f), false, TEXT("MiniMainMenuCTA"));
+	SetupLooseBrush(SkyBackgroundBrush, SkyBackgroundTexture, TEXT("SourceAssets/UI/MainMenuReference/scene_background_1920x1080.png"), MiniBgSize, true, TEXT("MiniMainMenuScene"));
+	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_wide_plate.png"), FVector2D(388.f, 100.f), false, TEXT("MiniMainMenuCTA"));
 }
 
 void UT66MiniMainMenuScreen::ReleaseRetainedSlateState()

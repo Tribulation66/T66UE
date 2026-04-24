@@ -56,6 +56,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
 	const float SurfaceW = FMath::Max(1.f, SafeFrameSize.X);
 	const float SurfaceH = FMath::Max(1.f, SafeFrameSize.Y - TopInset);
+	const FMargin ContentAreaPadding = bModalPresentation
+		? FMargin(8.f)
+		: FMargin(8.f, 82.f, 8.f, 8.f);
 
 	const TSharedRef<SWidget> SettingsContent =
 		SNew(SVerticalBox)
@@ -96,7 +99,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 		// Content area
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
-		.Padding(8.0f)
+		.Padding(ContentAreaPadding)
 		[
 			SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
@@ -140,18 +143,15 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 		];
 
 	const TSharedRef<SWidget> SettingsSurface =
-		MakeSettingsPanel(
+		MakeSettingsContentShell(
 			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(GetSettingsPageBackground())
+			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 			.Clipping(EWidgetClipping::ClipToBounds)
 			.Padding(FMargin(8.f, 0.f, 8.f, 8.f))
 			[
 				SettingsContent
 			],
-			ET66PanelType::Panel,
-			T66SettingsShellFill(),
-			FMargin(0.f));
+			FMargin(26.f, 0.f, 26.f, 30.f));
 
 	TSharedRef<SOverlay> Root = SNew(SOverlay);
 

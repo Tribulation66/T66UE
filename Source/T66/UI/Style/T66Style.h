@@ -372,7 +372,7 @@ public:
 		/** Vendor shop item card: width and height (each of the 3 cards). */
 		static constexpr float NPCShopCardWidth = 248.f;
 		static constexpr float NPCShopCardHeight = 500.f;
-		/** Compact embedded circus/casino item card footprint shared by vendor, gambling, and alchemy. */
+		/** Compact embedded casino item card footprint shared by vendor, gambling, and alchemy. */
 		static constexpr float NPCCompactShopCardWidth = 148.f;
 		static constexpr float NPCCompactShopCardHeight = 264.f;
 		/** Anger face circle size (Vendor and Gambler right panel). */

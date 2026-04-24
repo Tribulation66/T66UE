@@ -16,9 +16,12 @@
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
 #include "Rendering/DrawElements.h"
+#include "Styling/CoreStyle.h"
 #include "UObject/SoftObjectPath.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/Images/SImage.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SScaleBox.h"
@@ -41,7 +44,11 @@ namespace
 	const FLinearColor ShopPermanentCardFill(0.14f, 0.11f, 0.07f, 1.0f);
 	const FLinearColor ShopPermanentCardInsetFill(0.09f, 0.07f, 0.04f, 1.0f);
 	const FLinearColor ShopPermanentCardAccent(0.80f, 0.70f, 0.46f, 1.0f);
+	const TCHAR* ShopSettingsAssetRoot = TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/");
+	const TCHAR* ShopMainMenuAssetRoot = TEXT("SourceAssets/UI/MainMenuReference/");
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GShopFileTextureCache;
+	TMap<FString, TSharedPtr<FSlateBrush>> GShopGeneratedBrushCache;
+	TMap<FString, TSharedPtr<FButtonStyle>> GShopGeneratedButtonStyleCache;
 
 	int32 AdjustShopFontSize(int32 BaseSize)
 	{
@@ -86,6 +93,16 @@ namespace
 	FLinearColor T66ShopNeutralButtonFill()
 	{
 		return FT66Style::ButtonNeutral();
+	}
+
+	FLinearColor T66ShopTabActiveText()
+	{
+		return FLinearColor(0.99f, 0.93f, 0.74f, 1.0f);
+	}
+
+	FLinearColor T66ShopTabInactiveText()
+	{
+		return FLinearColor(0.86f, 0.80f, 0.68f, 1.0f);
 	}
 
 	FT66ButtonParams FlattenShopButton(FT66ButtonParams Params)
@@ -152,6 +169,175 @@ namespace
 		return Brush
 			&& Brush->DrawAs != ESlateBrushDrawType::NoDrawType
 			&& (Brush->GetResourceObject() != nullptr || Brush->GetResourceName() != NAME_None);
+	}
+
+	FString MakeShopSettingsAssetPath(const TCHAR* FileName)
+	{
+		return FString(ShopSettingsAssetRoot) / FileName;
+	}
+
+	FString MakeShopMainMenuAssetPath(const TCHAR* FileName)
+	{
+		return FString(ShopMainMenuAssetRoot) / FileName;
+	}
+
+	void EnsureShopRuntimeImageBrush(const TSharedPtr<FSlateBrush>& Brush, const FVector2D& ImageSize);
+	FVector2D ResolveShopImageSize(UTexture2D* Texture, const FVector2D& FallbackImageSize);
+
+	const FSlateBrush* ResolveShopGeneratedBrush(const FString& SourceRelativePath, const FVector2D& ImageSize = FVector2D::ZeroVector)
+	{
+		const FString BrushKey = FString::Printf(TEXT("%s::%.0fx%.0f"), *SourceRelativePath, ImageSize.X, ImageSize.Y);
+		if (const TSharedPtr<FSlateBrush>* CachedBrush = GShopGeneratedBrushCache.Find(BrushKey))
+		{
+			return CachedBrush->Get();
+		}
+
+		UTexture2D* Texture = nullptr;
+		for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(SourceRelativePath))
+		{
+			if (!FPaths::FileExists(CandidatePath))
+			{
+				continue;
+			}
+
+			Texture = LoadShopFileTexture(CandidatePath);
+			if (Texture)
+			{
+				break;
+			}
+		}
+
+		if (!Texture)
+		{
+			return nullptr;
+		}
+
+		const FVector2D ResolvedSize = ResolveShopImageSize(Texture, ImageSize);
+		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+		EnsureShopRuntimeImageBrush(Brush, ResolvedSize);
+		Brush->TintColor = FSlateColor(FLinearColor::White);
+		Brush->SetResourceObject(Texture);
+
+		GShopGeneratedBrushCache.Add(BrushKey, Brush);
+		return Brush.Get();
+	}
+
+	const FButtonStyle* ResolveShopGeneratedButtonStyle(
+		const FString& Key,
+		const FString& NormalPath,
+		const FString& HoverPath,
+		const FString& PressedPath,
+		const FString& DisabledPath)
+	{
+		if (const TSharedPtr<FButtonStyle>* CachedStyle = GShopGeneratedButtonStyleCache.Find(Key))
+		{
+			return CachedStyle->Get();
+		}
+
+		const FButtonStyle& NoBorderStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
+		TSharedPtr<FButtonStyle> Style = MakeShared<FButtonStyle>(NoBorderStyle);
+		if (const FSlateBrush* NormalBrush = ResolveShopGeneratedBrush(NormalPath))
+		{
+			Style->SetNormal(*NormalBrush);
+		}
+		if (const FSlateBrush* HoverBrush = ResolveShopGeneratedBrush(HoverPath))
+		{
+			Style->SetHovered(*HoverBrush);
+		}
+		if (const FSlateBrush* PressedBrush = ResolveShopGeneratedBrush(PressedPath))
+		{
+			Style->SetPressed(*PressedBrush);
+		}
+		if (const FSlateBrush* DisabledBrush = ResolveShopGeneratedBrush(DisabledPath))
+		{
+			Style->SetDisabled(*DisabledBrush);
+		}
+		Style->SetNormalPadding(FMargin(0.f));
+		Style->SetPressedPadding(FMargin(0.f));
+
+		GShopGeneratedButtonStyleCache.Add(Key, Style);
+		return Style.Get();
+	}
+
+	const FButtonStyle* ResolveShopCompactButtonStyle()
+	{
+		return ResolveShopGeneratedButtonStyle(
+			TEXT("Shop.CompactButton"),
+			MakeShopSettingsAssetPath(TEXT("settings_compact_neutral_normal.png")),
+			MakeShopSettingsAssetPath(TEXT("settings_compact_neutral_hover.png")),
+			MakeShopSettingsAssetPath(TEXT("settings_compact_neutral_pressed.png")),
+			MakeShopSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")));
+	}
+
+	const FButtonStyle* ResolveShopToggleButtonStyle(const bool bActive)
+	{
+		return bActive
+			? ResolveShopGeneratedButtonStyle(
+				TEXT("Shop.ToggleOn"),
+				MakeShopSettingsAssetPath(TEXT("settings_toggle_on_normal.png")),
+				MakeShopSettingsAssetPath(TEXT("settings_toggle_on_hover.png")),
+				MakeShopSettingsAssetPath(TEXT("settings_toggle_on_pressed.png")),
+				MakeShopSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")))
+			: ResolveShopGeneratedButtonStyle(
+				TEXT("Shop.ToggleOff"),
+				MakeShopSettingsAssetPath(TEXT("settings_toggle_off_normal.png")),
+				MakeShopSettingsAssetPath(TEXT("settings_toggle_off_hover.png")),
+				MakeShopSettingsAssetPath(TEXT("settings_toggle_off_pressed.png")),
+				MakeShopSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")));
+	}
+
+	TSharedRef<SWidget> MakeShopGeneratedPanel(
+		const FString& SourceRelativePath,
+		const TSharedRef<SWidget>& Content,
+		const FMargin& Padding,
+		const FLinearColor& Tint = FLinearColor::White,
+		const FLinearColor& FallbackFill = T66ShopPanelFill())
+	{
+		if (const FSlateBrush* Brush = ResolveShopGeneratedBrush(SourceRelativePath))
+		{
+			return SNew(SBorder)
+				.BorderImage(Brush)
+				.BorderBackgroundColor(Tint)
+				.Padding(Padding)
+				[
+					Content
+				];
+		}
+
+		return MakeShopPanel(Content, FallbackFill, Padding);
+	}
+
+	TSharedRef<SWidget> MakeShopGeneratedButton(
+		const FT66ButtonParams& Params,
+		const FButtonStyle* ButtonStyle,
+		const FSlateFontInfo& Font,
+		const FLinearColor& TextColor,
+		const FMargin& ContentPadding)
+	{
+		TSharedRef<SButton> Button = SNew(SButton)
+			.ButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+			.ContentPadding(ContentPadding)
+			.IsEnabled(Params.IsEnabled)
+			.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
+			[
+				SNew(STextBlock)
+				.Text(Params.Label)
+				.Font(Font)
+				.ColorAndOpacity(TextColor)
+				.Justification(ETextJustify::Center)
+			];
+
+		TSharedRef<SBox> Box = SNew(SBox)
+			.MinDesiredWidth(Params.MinWidth)
+			.Visibility(Params.Visibility)
+			[
+				Button
+			];
+		if (Params.Height > 0.f)
+		{
+			Box->SetHeightOverride(Params.Height);
+		}
+		return Box;
 	}
 
 	class ST66ShopStatueFillWidget : public SLeafWidget
@@ -577,7 +763,6 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	OwnedBrushes.Reset();
 
-	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const FText PermanentTabText = NSLOCTEXT("T66.Shop", "PermanentTab", "PERMANENT");
 	const FText SingleUseTabText = NSLOCTEXT("T66.Shop", "SingleUseTab", "SINGLE USE");
 	const FText ForbiddenChadSetText = NSLOCTEXT("T66.Shop", "ForbiddenChadSet", "FORBIDDEN CHAD");
@@ -585,6 +770,7 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 	const FText SingleUseBonusText = NSLOCTEXT("T66.Shop", "SingleUseBonus", "+10% when selected");
 
 	const int32 Balance = Achievements ? Achievements->GetChadCouponBalance() : (Buffs ? Buffs->GetChadCouponBalance() : 0);
+	const FText BalanceBadgeText = FText::Format(NSLOCTEXT("T66.Shop", "BalanceBadge", "{0} CC"), FText::AsNumber(Balance));
 
 	auto GetStatLabel = [Loc](ET66HeroStatType Stat) -> FText
 	{
@@ -694,7 +880,8 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				]);
 
-		return MakeShopPanel(
+		return MakeShopGeneratedPanel(
+			MakeShopSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 			[
@@ -722,7 +909,8 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
-				MakeShopPanel(
+				MakeShopGeneratedPanel(
+					MakeShopSettingsAssetPath(TEXT("settings_row_shell_full.png")),
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
 					[
@@ -736,17 +924,16 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 						.ColorAndOpacity(ShopPermanentCardAccent)
 						.Justification(ETextJustify::Center)
 					],
-					ShopPermanentCardInsetFill,
-					FMargin(10.f, 8.f),
-					ET66PanelType::Panel2)
+					FMargin(14.f, 10.f),
+					FLinearColor(0.94f, 0.90f, 0.78f, 1.0f),
+					ShopPermanentCardInsetFill)
 			]
 			+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom).Padding(0.f, 10.f, 0.f, 0.f)
 			[
-				MakeShopButton(
+				MakeShopGeneratedButton(
 					FT66ButtonParams(ButtonText, FOnClicked::CreateUObject(this, &UT66ShopScreen::HandleUnlockClicked, StatType), ET66ButtonType::Primary)
 					.SetMinWidth(0.f)
 					.SetHeight(44.f)
-					.SetFontSize(16)
 					.SetColor(TAttribute<FSlateColor>::CreateLambda([bMaxed, Balance, Cost]() -> FSlateColor
 					{
 						if (bMaxed)
@@ -757,10 +944,16 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 						return FSlateColor(Balance >= Cost ? T66ShopButtonFill() : T66ShopButtonDisabledFill());
 					}))
 					.SetEnabled(TAttribute<bool>::CreateLambda([bMaxed, Balance, Cost]() { return !bMaxed && Balance >= Cost; }))
+					,
+					ResolveShopCompactButtonStyle(),
+					ShopBoldFont(16),
+					FT66Style::Tokens::Text,
+					FMargin(14.f, 7.f, 14.f, 6.f)
 				)
 			],
-		ShopPermanentCardFill,
-		FMargin(12.f, 10.f, 12.f, 12.f));
+			FMargin(16.f, 14.f, 16.f, 16.f),
+			FLinearColor::White,
+			ShopPermanentCardFill);
 	};
 
 	auto MakeSingleUseSecondaryCard = [&](ET66SecondaryStatType StatType) -> TSharedRef<SWidget>
@@ -792,7 +985,8 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				]);
 
-		return MakeShopPanel(
+		return MakeShopGeneratedPanel(
+			MakeShopSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 			[
@@ -830,20 +1024,25 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom)
 			[
-				MakeShopButton(
+				MakeShopGeneratedButton(
 					FT66ButtonParams(ButtonText, FOnClicked::CreateUObject(this, &UT66ShopScreen::HandlePurchaseSingleUseClicked, StatType), ET66ButtonType::Primary)
 					.SetMinWidth(0.f)
 					.SetHeight(34.f)
-					.SetFontSize(12)
 					.SetColor(TAttribute<FSlateColor>::CreateLambda([Balance, Cost]() -> FSlateColor
 					{
 						return FSlateColor(Balance >= Cost ? T66ShopButtonFill() : T66ShopButtonDisabledFill());
 					}))
 					.SetEnabled(TAttribute<bool>::CreateLambda([Balance, Cost]() { return Balance >= Cost; }))
+					,
+					ResolveShopCompactButtonStyle(),
+					ShopBoldFont(12),
+					FT66Style::Tokens::Text,
+					FMargin(10.f, 5.f, 10.f, 4.f)
 				)
 			],
-			T66ShopPanelFill(),
-			FMargin(8.f, 8.f, 8.f, 8.f));
+			FMargin(12.f, 10.f, 12.f, 12.f),
+			FLinearColor::White,
+			T66ShopPanelFill());
 	};
 
 	auto MakeStatRow = [&](const TArray<ET66HeroStatType>& DisplayOrder, int32 StartIndex, const TFunction<TSharedRef<SWidget>(ET66HeroStatType)>& CardBuilder) -> TSharedRef<SWidget>
@@ -884,15 +1083,16 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 	TSharedRef<SVerticalBox> SingleUseRowsBox = SNew(SVerticalBox);
 	SingleUseRowsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 	[
-		MakeShopPanel(
+		MakeShopGeneratedPanel(
+			MakeShopSettingsAssetPath(TEXT("settings_row_shell_full.png")),
 			SNew(STextBlock)
 			.Text(SingleUseHintText)
 			.Font(ShopRegularFont(13))
 			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 			.Justification(ETextJustify::Center),
-			T66ShopInsetFill(),
-			FMargin(14.f, 10.f),
-			ET66PanelType::Panel2)
+			FMargin(18.f, 12.f),
+			FLinearColor::White,
+			T66ShopInsetFill())
 	];
 
 	for (int32 RowIndex = 0; RowIndex < SingleUseRows.Num(); ++RowIndex)
@@ -914,11 +1114,13 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 			.AutoHeight()
 			.Padding(0.f, RowIndex > 0 ? ShopCardGap : 0.f, 0.f, 0.f)
 			[
-				MakeShopPanel(
+				MakeShopGeneratedPanel(
+					MakeShopSettingsAssetPath(TEXT("settings_row_shell_split.png")),
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, ShopCardGap, 0.f)
 					[
-						MakeShopPanel(
+						MakeShopGeneratedPanel(
+							MakeShopSettingsAssetPath(TEXT("settings_row_shell_full.png")),
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Center)
 							[
@@ -938,16 +1140,17 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 								.Justification(ETextJustify::Center)
 							],
-							T66ShopInsetFill(),
-							FMargin(14.f, 12.f),
-							ET66PanelType::Panel2)
+							FMargin(16.f, 12.f),
+							FLinearColor::White,
+							T66ShopInsetFill())
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
 						CardsRow
 					],
-					T66ShopPanelFill(),
-					FMargin(10.f, 10.f, 10.f, 10.f))
+					FMargin(14.f, 12.f),
+					FLinearColor::White,
+					T66ShopPanelFill())
 			];
 	}
 
@@ -964,14 +1167,12 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 	const float TopInset = UIManager
 		? FMath::Max(0.f, (UIManager->GetFrontendTopBarContentHeight() - TopBarOverlapPx) / ResponsiveScale)
 		: 0.f;
-	const bool bShowBackButton = !(UIManager && UIManager->IsFrontendTopBarVisible());
-	const float PageBottomPadding = bShowBackButton ? 58.f : 0.f;
-
 	const TSharedRef<SWidget> Root =
 		SNew(SBox)
 		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
 		[
-			MakeShopPanel(
+			MakeShopGeneratedPanel(
+				MakeShopSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
 		SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
@@ -984,28 +1185,51 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
 						[
-							MakeShopButton(
+							MakeShopGeneratedButton(
 								FT66ButtonParams(PermanentTabText, FOnClicked::CreateUObject(this, &UT66ShopScreen::HandleShowPermanentClicked), ET66ButtonType::Primary)
 								.SetMinWidth(180.f)
 								.SetHeight(52.f)
-								.SetFontSize(18)
-								.SetColor(!bShowingSingleUse ? T66ShopButtonFill() : T66ShopNeutralButtonFill()))
+								.SetColor(!bShowingSingleUse ? T66ShopButtonFill() : T66ShopNeutralButtonFill()),
+								ResolveShopToggleButtonStyle(!bShowingSingleUse),
+								ShopBoldFont(18),
+								!bShowingSingleUse ? T66ShopTabActiveText() : T66ShopTabInactiveText(),
+								FMargin(18.f, 10.f, 18.f, 8.f))
 						]
 						+ SHorizontalBox::Slot().AutoWidth()
 						[
-							MakeShopButton(
+							MakeShopGeneratedButton(
 								FT66ButtonParams(SingleUseTabText, FOnClicked::CreateUObject(this, &UT66ShopScreen::HandleShowSingleUseClicked), ET66ButtonType::Neutral)
 								.SetMinWidth(180.f)
 								.SetHeight(52.f)
-								.SetFontSize(18)
-								.SetColor(bShowingSingleUse ? T66ShopButtonFill() : T66ShopNeutralButtonFill()))
+								.SetColor(bShowingSingleUse ? T66ShopButtonFill() : T66ShopNeutralButtonFill()),
+								ResolveShopToggleButtonStyle(bShowingSingleUse),
+								ShopBoldFont(18),
+								bShowingSingleUse ? T66ShopTabActiveText() : T66ShopTabInactiveText(),
+								FMargin(18.f, 10.f, 18.f, 8.f))
+						]
+						+ SHorizontalBox::Slot().AutoWidth().Padding(18.f, 0.f, 0.f, 0.f)
+						[
+							SNew(SBox)
+							.WidthOverride(154.f)
+							.HeightOverride(52.f)
+							[
+								MakeShopGeneratedPanel(
+									MakeShopMainMenuAssetPath(TEXT("TopBar/currency_slot_blank.png")),
+									SNew(STextBlock)
+									.Text(BalanceBadgeText)
+									.Font(ShopBoldFont(16))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
+									.Justification(ETextJustify::Center),
+									FMargin(18.f, 10.f, 18.f, 8.f),
+									FLinearColor::White,
+									T66ShopInsetFill())
+							]
 						]
 					]
 				]
 				+ SVerticalBox::Slot().FillHeight(1.f)
 				[
 					SNew(SBox)
-					.Padding(FMargin(0.f, 0.f, 0.f, PageBottomPadding))
 					[
 						SAssignNew(PageSwitcher, SWidgetSwitcher)
 						.WidgetIndex(bShowingSingleUse ? 1 : 0)
@@ -1014,26 +1238,10 @@ TSharedRef<SWidget> UT66ShopScreen::BuildSlateUI()
 					]
 				]
 			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Left)
-			.VAlign(VAlign_Bottom)
-			.Padding(20.f, 0.f, 0.f, 20.f)
-			[
-				SNew(SBox)
-				.Visibility(bShowBackButton ? EVisibility::Visible : EVisibility::Collapsed)
-				[
-					MakeShopButton(FT66ButtonParams(BackText,
-						FOnClicked::CreateUObject(this, &UT66ShopScreen::HandleBackClicked),
-						ET66ButtonType::Neutral)
-						.SetMinWidth(108.f)
-						.SetFontSize(18)
-						.SetColor(T66ShopNeutralButtonFill())
-					)
-				]
-			]
 		,
-		T66ShopShellFill(),
-		FMargin(18.f))
+		FMargin(18.f),
+		FLinearColor::White,
+		T66ShopShellFill())
 		];
 
 	return Root;

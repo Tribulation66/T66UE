@@ -6,10 +6,15 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/Paths.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UIManager.h"
 #include "Styling/CoreStyle.h"
+#include "UObject/StrongObjectPtr.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -24,6 +29,11 @@ namespace
 {
 	constexpr int32 T66AchievementsFontDelta = -6;
 	constexpr int32 T66SecretPlaceholderRowCount = 10;
+	const TCHAR* T66SettingsAssetRoot = TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/");
+
+	TMap<FString, TStrongObjectPtr<UTexture2D>> GAchievementsGeneratedTextureCache;
+	TMap<FString, TSharedPtr<FSlateBrush>> GAchievementsGeneratedBrushCache;
+	TMap<FString, TSharedPtr<FButtonStyle>> GAchievementsGeneratedButtonStyleCache;
 
 	bool T66IsPausedGameplayWidget(const UUserWidget* Widget)
 	{
@@ -59,6 +69,16 @@ namespace
 	FLinearColor T66AchievementsTabInactiveFill()
 	{
 		return FLinearColor(0.10f, 0.11f, 0.15f, 1.0f);
+	}
+
+	FLinearColor T66AchievementsTabActiveText()
+	{
+		return FLinearColor(0.99f, 0.93f, 0.74f, 1.0f);
+	}
+
+	FLinearColor T66AchievementsTabInactiveText()
+	{
+		return FLinearColor(0.86f, 0.80f, 0.68f, 1.0f);
 	}
 
 	float T66AchievementProgress01(const FAchievementData& Achievement)
@@ -103,6 +123,199 @@ namespace
 	FSlateFontInfo AchievementsRegularFont(int32 BaseSize)
 	{
 		return FT66Style::Tokens::FontRegular(AdjustAchievementsFontSize(BaseSize));
+	}
+
+	FString MakeSettingsAssetPath(const TCHAR* FileName)
+	{
+		return FString(T66SettingsAssetRoot) / FileName;
+	}
+
+	UTexture2D* LoadAchievementsGeneratedTexture(const FString& SourceRelativePath)
+	{
+		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GAchievementsGeneratedTextureCache.Find(SourceRelativePath))
+		{
+			return CachedTexture->Get();
+		}
+
+		for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(SourceRelativePath))
+		{
+			if (!FPaths::FileExists(CandidatePath))
+			{
+				continue;
+			}
+
+			UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
+				CandidatePath,
+				TextureFilter::TF_Trilinear,
+				true,
+				TEXT("AchievementsGeneratedUI"));
+			if (!Texture)
+			{
+				Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
+					CandidatePath,
+					TextureFilter::TF_Trilinear,
+					TEXT("AchievementsGeneratedUI"));
+			}
+
+			if (Texture)
+			{
+				GAchievementsGeneratedTextureCache.Add(SourceRelativePath, TStrongObjectPtr<UTexture2D>(Texture));
+				return Texture;
+			}
+		}
+
+		return nullptr;
+	}
+
+	const FSlateBrush* ResolveAchievementsGeneratedBrush(const FString& SourceRelativePath, const FVector2D& ImageSize = FVector2D::ZeroVector)
+	{
+		const FString BrushKey = FString::Printf(TEXT("%s::%.0fx%.0f"), *SourceRelativePath, ImageSize.X, ImageSize.Y);
+		if (const TSharedPtr<FSlateBrush>* CachedBrush = GAchievementsGeneratedBrushCache.Find(BrushKey))
+		{
+			return CachedBrush->Get();
+		}
+
+		UTexture2D* Texture = LoadAchievementsGeneratedTexture(SourceRelativePath);
+		if (!Texture)
+		{
+			return nullptr;
+		}
+
+		const FVector2D ResolvedSize = ImageSize.X > 0.f && ImageSize.Y > 0.f
+			? ImageSize
+			: FVector2D(static_cast<float>(Texture->GetSizeX()), static_cast<float>(Texture->GetSizeY()));
+
+		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+		Brush->DrawAs = ESlateBrushDrawType::Image;
+		Brush->Tiling = ESlateBrushTileType::NoTile;
+		Brush->ImageSize = ResolvedSize;
+		Brush->TintColor = FSlateColor(FLinearColor::White);
+		Brush->SetResourceObject(Texture);
+
+		GAchievementsGeneratedBrushCache.Add(BrushKey, Brush);
+		return Brush.Get();
+	}
+
+	const FButtonStyle* ResolveAchievementsGeneratedButtonStyle(
+		const FString& Key,
+		const FString& NormalPath,
+		const FString& HoverPath,
+		const FString& PressedPath,
+		const FString& DisabledPath)
+	{
+		if (const TSharedPtr<FButtonStyle>* CachedStyle = GAchievementsGeneratedButtonStyleCache.Find(Key))
+		{
+			return CachedStyle->Get();
+		}
+
+		const FButtonStyle& NoBorderStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
+		TSharedPtr<FButtonStyle> Style = MakeShared<FButtonStyle>(NoBorderStyle);
+		if (const FSlateBrush* NormalBrush = ResolveAchievementsGeneratedBrush(NormalPath))
+		{
+			Style->SetNormal(*NormalBrush);
+		}
+		if (const FSlateBrush* HoverBrush = ResolveAchievementsGeneratedBrush(HoverPath))
+		{
+			Style->SetHovered(*HoverBrush);
+		}
+		if (const FSlateBrush* PressedBrush = ResolveAchievementsGeneratedBrush(PressedPath))
+		{
+			Style->SetPressed(*PressedBrush);
+		}
+		if (const FSlateBrush* DisabledBrush = ResolveAchievementsGeneratedBrush(DisabledPath))
+		{
+			Style->SetDisabled(*DisabledBrush);
+		}
+		Style->SetNormalPadding(FMargin(0.f));
+		Style->SetPressedPadding(FMargin(0.f));
+
+		GAchievementsGeneratedButtonStyleCache.Add(Key, Style);
+		return Style.Get();
+	}
+
+	const FButtonStyle* ResolveAchievementsCompactButtonStyle()
+	{
+		return ResolveAchievementsGeneratedButtonStyle(
+			TEXT("Achievements.CompactButton"),
+			MakeSettingsAssetPath(TEXT("settings_compact_neutral_normal.png")),
+			MakeSettingsAssetPath(TEXT("settings_compact_neutral_hover.png")),
+			MakeSettingsAssetPath(TEXT("settings_compact_neutral_pressed.png")),
+			MakeSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")));
+	}
+
+	const FButtonStyle* ResolveAchievementsToggleButtonStyle(const bool bActive)
+	{
+		return bActive
+			? ResolveAchievementsGeneratedButtonStyle(
+				TEXT("Achievements.ToggleOn"),
+				MakeSettingsAssetPath(TEXT("settings_toggle_on_normal.png")),
+				MakeSettingsAssetPath(TEXT("settings_toggle_on_hover.png")),
+				MakeSettingsAssetPath(TEXT("settings_toggle_on_pressed.png")),
+				MakeSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")))
+			: ResolveAchievementsGeneratedButtonStyle(
+				TEXT("Achievements.ToggleOff"),
+				MakeSettingsAssetPath(TEXT("settings_toggle_off_normal.png")),
+				MakeSettingsAssetPath(TEXT("settings_toggle_off_hover.png")),
+				MakeSettingsAssetPath(TEXT("settings_toggle_off_pressed.png")),
+				MakeSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")));
+	}
+
+	TSharedRef<SWidget> MakeAchievementsGeneratedPanel(
+		const FString& SourceRelativePath,
+		const TSharedRef<SWidget>& Content,
+		const FMargin& Padding,
+		const FLinearColor& Tint = FLinearColor::White,
+		const FLinearColor& FallbackFill = T66AchievementsInsetFill())
+	{
+		if (const FSlateBrush* Brush = ResolveAchievementsGeneratedBrush(SourceRelativePath))
+		{
+			return SNew(SBorder)
+				.BorderImage(Brush)
+				.BorderBackgroundColor(Tint)
+				.Padding(Padding)
+				[
+					Content
+				];
+		}
+
+		return FT66Style::MakePanel(
+			Content,
+			FT66PanelParams(ET66PanelType::Panel)
+				.SetColor(FallbackFill)
+				.SetPadding(Padding));
+	}
+
+	TSharedRef<SWidget> MakeAchievementsGeneratedButton(
+		const FT66ButtonParams& Params,
+		const FButtonStyle* ButtonStyle,
+		const FSlateFontInfo& Font,
+		const FLinearColor& TextColor,
+		const FMargin& ContentPadding)
+	{
+		TSharedRef<SButton> Button = SNew(SButton)
+			.ButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+			.ContentPadding(ContentPadding)
+			.IsEnabled(Params.IsEnabled)
+			.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
+			[
+				SNew(STextBlock)
+				.Text(Params.Label)
+				.Font(Font)
+				.ColorAndOpacity(TextColor)
+				.Justification(ETextJustify::Center)
+			];
+
+		TSharedRef<SBox> Box = SNew(SBox)
+			.MinDesiredWidth(Params.MinWidth)
+			.Visibility(Params.Visibility)
+			[
+				Button
+			];
+		if (Params.Height > 0.f)
+		{
+			Box->SetHeightOverride(Params.Height);
+		}
+		return Box;
 	}
 }
 
@@ -297,7 +510,6 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 
 	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
 	const FText SecretText = NSLOCTEXT("T66.Achievements", "SecretTab", "SECRET");
-	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const FLinearColor ShellFill = T66AchievementsShellFill();
 	const FLinearColor InsetFill = T66AchievementsInsetFill();
 	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
@@ -305,7 +517,6 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	const float TopInset = UIManager
 		? FMath::Max(0.f, (UIManager->GetFrontendTopBarContentHeight() - TopBarOverlapPx) / ResponsiveScale)
 		: 0.f;
-	const bool bShowBackButton = !(UIManager && UIManager->IsFrontendTopBarVisible());
 
 	RefreshAchievements();
 	const TArray<FAchievementData> StandardAchievements = GetAchievementsForCategory(ET66AchievementCategory::Standard);
@@ -317,24 +528,22 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 
 	auto MakeTabButton = [this](const FText& Label, bool bActive, FReply(UT66AchievementsScreen::*Handler)()) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakeButton(
+		return MakeAchievementsGeneratedButton(
 			FT66ButtonParams(Label, FOnClicked::CreateUObject(this, Handler), bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
-			.SetBorderVisual(ET66ButtonBorderVisual::None)
-			.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
 			.SetMinWidth(172.f)
-			.SetHeight(0.f)
-			.SetFontSize(AdjustAchievementsFontSize(20))
-			.SetPadding(FMargin(18.f, 11.f, 18.f, 9.f))
-			.SetColor(bActive ? T66AchievementsTabActiveFill() : T66AchievementsTabInactiveFill())
-			.SetTextColor(bActive ? FLinearColor(0.07f, 0.08f, 0.06f, 1.0f) : FT66Style::Tokens::Text)
-			.SetUseGlow(false));
+			.SetHeight(48.f),
+			ResolveAchievementsToggleButtonStyle(bActive),
+			AchievementsBoldFont(20),
+			bActive ? T66AchievementsTabActiveText() : T66AchievementsTabInactiveText(),
+			FMargin(18.f, 11.f, 18.f, 9.f));
 	};
 
 	const TSharedRef<SWidget> Root =
 		SNew(SBox)
 		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
 		[
-			FT66Style::MakePanel(
+			MakeAchievementsGeneratedPanel(
+				MakeSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
 				SNew(SOverlay)
 				+ SOverlay::Slot()
 				[
@@ -380,7 +589,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 						.AutoHeight()
 						.Padding(0.f, 14.f, 0.f, 0.f)
 						[
-							FT66Style::MakePanel(
+							MakeAchievementsGeneratedPanel(
+								MakeSettingsAssetPath(TEXT("settings_row_shell_split.png")),
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot()
 								.AutoHeight()
@@ -431,9 +641,9 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 									})
 									.FillColorAndOpacity(FLinearColor(0.40f, 0.68f, 0.41f, 1.0f))
 								],
-								FT66PanelParams(ET66PanelType::Panel)
-									.SetColor(InsetFill)
-									.SetPadding(FMargin(12.f, 12.f)))
+								FMargin(20.f, 18.f),
+								FLinearColor::White,
+								InsetFill)
 						]
 					]
 					+ SVerticalBox::Slot()
@@ -446,25 +656,10 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 							SAssignNew(AchievementListBox, SVerticalBox)
 						]
 					]
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Bottom)
-				.Padding(18.f, 0.f, 0.f, 18.f)
-				[
-					SNew(SBox)
-					.Visibility(bShowBackButton ? EVisibility::Visible : EVisibility::Collapsed)
-					[
-							FT66Style::MakeButton(
-								FT66ButtonParams(
-									BackText,
-									FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked),
-									ET66ButtonType::Neutral)
-							.SetMinWidth(108.f)
-							.SetFontSize(AdjustAchievementsFontSize(18)))
-					]
 				],
-				FT66PanelParams(ET66PanelType::Panel).SetColor(ShellFill))
+				FMargin(18.f),
+				FLinearColor::White,
+				ShellFill)
 		];
 
 	RebuildAchievementList();
@@ -543,10 +738,8 @@ void UT66AchievementsScreen::RebuildAchievementList()
 			.AutoHeight()
 			.Padding(0.f, 0.f, 0.f, 5.f)
 			[
-				SNew(SBorder)
-				.BorderBackgroundColor(RowBackground)
-				.Padding(FMargin(16.f, 12.f))
-				[
+				MakeAchievementsGeneratedPanel(
+					MakeSettingsAssetPath(TEXT("settings_row_shell_full.png")),
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
 					.FillWidth(0.55f)
@@ -648,18 +841,25 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						.HAlign(HAlign_Right)
 						.Padding(0.f, 4.f, 0.f, 0.f)
 						[
-							FT66Style::MakeButton(
+							MakeAchievementsGeneratedButton(
 								FT66ButtonParams(
 									ActionText,
 									FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleClaimClicked, Achievement.AchievementID),
 									ET66ButtonType::Primary)
 								.SetMinWidth(0.f)
-								.SetFontSize(AdjustAchievementsFontSize(18))
+								.SetHeight(38.f)
 								.SetEnabled(bCanClaim)
-								.SetVisibility(bCanClaim ? EVisibility::Visible : EVisibility::Collapsed))
+								.SetVisibility(bCanClaim ? EVisibility::Visible : EVisibility::Collapsed),
+								ResolveAchievementsCompactButtonStyle(),
+								AchievementsBoldFont(18),
+								FT66Style::Tokens::Text,
+								FMargin(16.f, 7.f, 16.f, 6.f))
 						]
 					]
-				]
+					,
+					FMargin(20.f, 14.f),
+					Achievement.bIsUnlocked ? FLinearColor(0.92f, 1.0f, 0.88f, 1.0f) : FLinearColor::White,
+					RowBackground)
 			];
 		}
 	};
@@ -689,10 +889,8 @@ void UT66AchievementsScreen::RebuildAchievementList()
 		.AutoHeight()
 		.Padding(0.f, 0.f, 0.f, 5.f)
 		[
-			SNew(SBorder)
-			.BorderBackgroundColor(RowIndex % 2 == 0 ? T66AchievementsRowFill() : T66AchievementsUnlockedRowFill())
-			.Padding(FMargin(16.f, 12.f))
-			[
+			MakeAchievementsGeneratedPanel(
+				MakeSettingsAssetPath(TEXT("settings_row_shell_full.png")),
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
 				.FillWidth(0.55f)
@@ -748,7 +946,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 					.HAlign(HAlign_Right)
 					.Padding(0.f, 4.f, 0.f, 0.f)
 					[
-						FT66Style::MakeButton(
+						MakeAchievementsGeneratedButton(
 							FT66ButtonParams(
 								MaskedText,
 								FOnClicked::CreateLambda([]()
@@ -757,11 +955,18 @@ void UT66AchievementsScreen::RebuildAchievementList()
 								}),
 								ET66ButtonType::Primary)
 							.SetMinWidth(0.f)
-							.SetFontSize(AdjustAchievementsFontSize(18))
-							.SetEnabled(false))
+							.SetHeight(38.f)
+							.SetEnabled(false),
+							ResolveAchievementsCompactButtonStyle(),
+							AchievementsBoldFont(18),
+							FT66Style::Tokens::TextMuted,
+							FMargin(16.f, 7.f, 16.f, 6.f))
 					]
 				]
-			]
+				,
+				FMargin(20.f, 14.f),
+				RowIndex % 2 == 0 ? FLinearColor::White : FLinearColor(0.92f, 1.0f, 0.88f, 1.0f),
+				RowIndex % 2 == 0 ? T66AchievementsRowFill() : T66AchievementsUnlockedRowFill())
 		];
 	}
 }

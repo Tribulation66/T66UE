@@ -6,6 +6,7 @@
 #include "Core/T66TDFrontendStateSubsystem.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
+#include "UI/T66TDUIStyle.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UIManager.h"
@@ -13,6 +14,7 @@
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SInvalidationPanel.h"
@@ -79,9 +81,13 @@ namespace
 			return SNew(SBox);
 		}
 
-		return SNew(SImage)
-			.Image(Brush.Get())
-			.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, Opacity));
+		return SNew(SScaleBox)
+			.Stretch(EStretch::Fill)
+			[
+				SNew(SImage)
+				.Image(Brush.Get())
+				.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, Opacity))
+			];
 	}
 }
 
@@ -119,71 +125,51 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 	const int32 DifficultyCount = TDDataSubsystem ? TDDataSubsystem->GetDifficulties().Num() : 0;
 	const int32 MapCount = TDDataSubsystem ? TDDataSubsystem->GetMaps().Num() : 0;
 
-	const FLinearColor BrightText(0.95f, 0.93f, 0.92f, 1.0f);
-	const FLinearColor MutedText(0.78f, 0.74f, 0.72f, 1.0f);
-	const FLinearColor ShellFill(0.020f, 0.010f, 0.014f, 0.90f);
-	const FLinearColor PanelFill(0.090f, 0.050f, 0.058f, 0.92f);
-	const FLinearColor CardFill(0.120f, 0.060f, 0.070f, 0.95f);
+	const FLinearColor BrightText = T66TDUI::BrightText();
+	const FLinearColor MutedText = T66TDUI::MutedText();
 
 	auto MakeSectionTitle = [&](const FText& Text) -> TSharedRef<SWidget>
 	{
 		FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Bold"), 13);
 		Font.LetterSpacing = 112;
-		return SNew(STextBlock).Text(Text).Font(Font).ColorAndOpacity(FLinearColor(0.92f, 0.74f, 0.42f, 1.0f));
+		return SNew(STextBlock).Text(Text).Font(Font).ColorAndOpacity(T66TDUI::AccentGold());
 	};
 
 	auto MakeInfoCard = [&](const FText& Title, const FText& Body) -> TSharedRef<SWidget>
 	{
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(CardFill)
-			.Padding(FMargin(12.f))
+		return T66TDUI::MakeContentPanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight()
 			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
-				[
-					SNew(STextBlock)
-					.Text(Title)
-					.Font(FT66Style::MakeFont(TEXT("Bold"), 12))
-					.ColorAndOpacity(BrightText)
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-				[
-					SNew(STextBlock)
-					.Text(Body)
-					.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
-					.ColorAndOpacity(MutedText)
-					.AutoWrapText(true)
-				]
-			];
+				SNew(STextBlock)
+				.Text(Title)
+				.Font(FT66Style::MakeFont(TEXT("Bold"), 12))
+				.ColorAndOpacity(BrightText)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(Body)
+				.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
+				.ColorAndOpacity(MutedText)
+				.AutoWrapText(true)
+			],
+			FMargin(16.f, 12.f));
 	};
 
 	auto MakeMenuButton = [&](const FText& Text, FReply (UT66TDMainMenuScreen::*ClickFunc)()) -> TSharedRef<SWidget>
 	{
-		FT66ButtonParams Params(Text, FOnClicked::CreateUObject(this, ClickFunc), ET66ButtonType::Success);
+		FT66ButtonParams Params = T66TDUI::MakePrimaryButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc), 520.f, 82.f, 20);
 		Params
-			.SetMinWidth(520.f)
-			.SetHeight(82.f)
-			.SetFontSize(20)
 			.SetPadding(FMargin(16.f, 10.f, 16.f, 8.f))
-			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(true)
 			.SetDotaPlateOverrideBrush(PrimaryCTAFillBrush.Get())
-			.SetTextColor(FLinearColor(0.97f, 0.96f, 0.94f, 1.0f))
-			.SetStateTextShadowColors(
-				FLinearColor(0.f, 0.f, 0.f, 0.36f),
-				FLinearColor(0.f, 0.f, 0.f, 0.42f),
-				FLinearColor(0.f, 0.f, 0.f, 0.28f))
-			.SetTextShadowOffset(FVector2D(0.f, 1.f));
+			.SetStateTextSecondaryColors(T66TDUI::AccentGold(), T66TDUI::AccentGold(), T66TDUI::AccentGold())
+			.SetTextDualToneSplit(0.62f);
 		return SNew(SBox).WidthOverride(520.f)[FT66Style::MakeButton(Params)];
 	};
 
 	const TSharedRef<SWidget> LeftShell =
-		SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(ShellFill)
-		.Padding(FMargin(14.f))
-		[
+		T66TDUI::MakeLeftPanel(
 			SNew(SScrollBox)
 			+ SScrollBox::Slot()
 			[
@@ -211,27 +197,21 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 							NSLOCTEXT("T66TD.MainMenu", "ScopeBody", "{0} difficulties x 4 maps each = {1} launch maps. Every tier maps to the same tower themes already used by the main game."),
 							FText::AsNumber(DifficultyCount),
 							FText::AsNumber(MapCount)))
-				]
+					]
 			]
-		];
+			,
+			FMargin(24.f, 22.f));
 
 	const TSharedRef<SWidget> CenterShell =
-		SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.82f))
-		.Padding(FMargin(18.f, 16.f))
-		[
+		T66TDUI::MakeCenterPanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[MakeMenuButton(NSLOCTEXT("T66TD.MainMenu", "RegularCTA", "REGULAR"), &UT66TDMainMenuScreen::HandleNewGameClicked)]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 16.f, 0.f, 0.f)[MakeMenuButton(NSLOCTEXT("T66TD.MainMenu", "MapsCTA", "DIFFICULTIES & MAPS"), &UT66TDMainMenuScreen::HandleMapBrowserClicked)]
-		];
+			,
+			FMargin(20.f, 18.f));
 
 	const TSharedRef<SWidget> RightShell =
-		SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(ShellFill)
-		.Padding(FMargin(14.f))
-		[
+		T66TDUI::MakeRightPanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()[MakeSectionTitle(NSLOCTEXT("T66TD.MainMenu", "TierPreviewTitle", "TIER PREVIEW"))]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
@@ -250,9 +230,10 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 			[
 				MakeInfoCard(NSLOCTEXT("T66TD.MainMenu", "EndTitle", "Very Hard / Impossible"), NSLOCTEXT("T66TD.MainMenu", "EndBody", "Martian and Hell tiers push multi-lane pressure, shielded waves, and boss checks without needing a separate campaign mode."))
 			]
-		];
+			,
+			FMargin(24.f, 22.f));
 
-	FSlateFontInfo TitleFont = FT66Style::MakeFont(TEXT("Black"), 38);
+	FSlateFontInfo TitleFont = FT66Style::MakeFont(TEXT("Black"), 44);
 	TitleFont.LetterSpacing = 46;
 
 	return SNew(SBorder)
@@ -261,9 +242,8 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()[MakeOptionalImageLayer(BackdropBrush, 0.98f)]
-			+ SOverlay::Slot()[MakeOptionalImageLayer(ForegroundBrush, 0.96f)]
-			+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.42f))]
-			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, 42.f, 0.f, 0.f)
+			+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.30f))]
+			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, 36.f, 0.f, 0.f)
 			[
 				SNew(SOverlay)
 				+ SOverlay::Slot()
@@ -271,10 +251,10 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66TD.MainMenu", "Title", "CHADPOCALYPSE TD"))
 					.Font(TitleFont)
-					.ColorAndOpacity(FLinearColor(0.98f, 0.74f, 0.26f, 0.30f))
+					.ColorAndOpacity(FLinearColor(0.92f, 0.72f, 0.30f, 0.34f))
 					.RenderTransform(FSlateRenderTransform(FVector2D(2.f, 2.f)))
 					.ShadowOffset(FVector2D(2.f, 2.f))
-					.ShadowColorAndOpacity(FLinearColor(1.0f, 0.72f, 0.18f, 0.42f))
+					.ShadowColorAndOpacity(FLinearColor(0.48f, 0.82f, 0.38f, 0.36f))
 				]
 				+ SOverlay::Slot()
 				[
@@ -290,19 +270,14 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 			[
 				SNew(SBox)
 				.WidthOverride(304.f)
-				.HeightOverride(40.f)
+				.HeightOverride(44.f)
 				[
-						FT66Style::MakeButton(
-							FT66ButtonParams(
-								NSLOCTEXT("T66TD.MainMenu", "BackToMainMenu", "BACK TO MENU"),
-								FOnClicked::CreateUObject(this, &UT66TDMainMenuScreen::HandleBackToMainMenuClicked),
-								ET66ButtonType::Neutral)
-						.SetMinWidth(304.f)
-						.SetHeight(40.f)
-						.SetFontSize(12)
-						.SetPadding(FMargin(14.f, 8.f, 14.f, 6.f))
-						.SetUseGlow(false)
-						.SetTextColor(FLinearColor(0.94f, 0.95f, 0.97f, 1.0f)))
+						FT66Style::MakeButton(T66TDUI::MakeUtilityButtonParams(
+							NSLOCTEXT("T66TD.MainMenu", "BackToMainMenu", "BACK TO MENU"),
+							FOnClicked::CreateUObject(this, &UT66TDMainMenuScreen::HandleBackToMainMenuClicked),
+							304.f,
+							44.f,
+							10))
 				]
 			]
 			+ SOverlay::Slot()
@@ -357,9 +332,9 @@ FReply UT66TDMainMenuScreen::HandleMapBrowserClicked()
 
 void UT66TDMainMenuScreen::RequestMenuTextures()
 {
-	SetupLooseBrush(BackdropBrush, BackdropTexture, TEXT("SourceAssets/TD/Maps/Backgrounds/TD_Menu_Backdrop_01.png"), TDBgSize, true, TEXT("TDMenuBackdrop"));
-	SetupLooseBrush(ForegroundBrush, ForegroundTexture, TEXT("SourceAssets/TD/Maps/Backgrounds/TD_Menu_Foreground_01.png"), TDBgSize, true, TEXT("TDMenuForeground"));
-	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("RuntimeDependencies/T66/UI/MiniMainMenu/mini_mainmenu_cta_fill_green.png"), FVector2D(1024.f, 232.f), false, TEXT("TDMenuCTA"));
+	SetupLooseBrush(BackdropBrush, BackdropTexture, TEXT("SourceAssets/TD/UI/td_main_menu/Scene/scene_plate.png"), TDBgSize, true, TEXT("TDMenuBackdrop"));
+	SetupLooseBrush(ForegroundBrush, ForegroundTexture, TEXT("SourceAssets/TD/Maps/Backgrounds/TD_Menu_Backdrop_01.png"), TDBgSize, true, TEXT("TDMenuForeground"));
+	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("SourceAssets/TD/UI/td_main_menu/Components/button_green_normal.png"), FVector2D(349.f, 94.f), false, TEXT("TDMenuCTA"));
 }
 
 void UT66TDMainMenuScreen::ReleaseRetainedSlateState()

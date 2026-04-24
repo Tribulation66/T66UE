@@ -1,0 +1,27 @@
+Create one production sprite-family board for T66 screen `player_summary_picker`.
+
+Use the attached canonical main-menu style anchor and the attached `player_summary_picker` screen-specific reference. This is exact reconstruction of the reference art style, not a redesign.
+
+Output requirement:
+- exactly one 1920x1080 flat neutral presentation board
+- front-on orthographic UI components only
+- no full-screen screenshot composite
+- no baked localizable labels, names, numbers, descriptions, leaderboard rows, progress values, or typed/user text
+- no runtime-owned portraits, avatars, screenshots, save previews, or gameplay underlay
+- components should be isolated with transparent or flat-neutral spacing so deterministic slicing is possible
+- preserve the carved dark stone, gold trim, purple gem, green/blue/purple plate material language from the attached reference
+
+Families required for this screen:
+empty-modal-shell, populated-modal-shell, player-card-shell, portrait-frame, select-button
+
+Reference layout regions:
+- modal_scrim: 0,0,1920,1080 owner=runtime-overlay
+- empty_shell: 496,364,928,242 owner=generated-shell
+- title_well: 748,400,424,58 owner=runtime-text
+- empty_message_well: 704,502,512,42 owner=runtime-text
+- populated_shell: 360,268,1200,520 owner=generated-shell
+- player_card: 432,390,330,300 owner=generated-shell
+- portrait_socket: 470,426,254,160 owner=runtime-image
+- select_button: 486,620,220,58 owner=runtime-control
+
+Generate text-free runtime assets only. For runtime-owned interiors, produce shell-only frames, empty wells, socket frames, or open apertures. Controls need normal, hover, pressed, disabled, and selected states where applicable with stable anchors.

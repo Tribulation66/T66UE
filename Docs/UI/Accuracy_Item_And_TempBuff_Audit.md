@@ -204,41 +204,32 @@ Current placeholder reuse:
 
 This is acceptable as a temporary placeholder but should not be treated as final content.
 
-## 5. ChatGPT Art Workflow Reference
+## 5. Native Art Workflow Reference
 
 Canonical workflow doc:
 
-- `C:\UE\T66\Docs\UI\ChatGPT_Image_Production_Workflow.md`
+- `C:\UE\T66\Docs\UI\UI_IMAGE_BACKEND_POLICY.md`
 
 The repo-standard workflow is:
 
-- use the ChatGPT web UI through the local bridge
-- preview one image first
-- keep one conversation for the batch
-- let rate limits cool down instead of resending prompts
-- skip assets already present on disk
-- harvest existing chat outputs before regenerating
-
-This workflow does **not** use the OpenAI image API.
+- use Codex-native image generation
+- generate or regenerate assets until the checklist is complete
+- reject bad generated pixels instead of manually repairing them
+- skip assets already present on disk only if they pass current validation
+- continue through runtime implementation and packaged review before reporting completion
 
 ### 5.1 Item generation path
 
-Canonical scripts:
+Canonical process:
 
-- `C:\UE\T66\Tools\ChatGPTBridge\batch_generate.py`
-- `C:\UE\T66\Tools\ChatGPTBridge\server.py`
+- follow `C:\UE\T66\Docs\UI\UI_IMAGE_BACKEND_POLICY.md`
+- save accepted generated assets under the relevant UI or item asset folder
 
-Recommended item preview command:
+Recommended item generation path:
 
-```powershell
-cd C:\UE\T66\Tools\ChatGPTBridge
-.\.venv\Scripts\python.exe .\batch_generate.py `
-  --grid-sheet `
-  --same-chat `
-  --filter "Accuracy" `
-  --limit 1 `
-  --pause-seconds 8
-```
+- use Codex-native image generation from the item checklist and reference assets
+- save accepted outputs directly under `C:\UE\T66\SourceAssets\ItemSprites`
+- import only after dimensions, transparency, and readability are validated
 
 Item import staging path:
 

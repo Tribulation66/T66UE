@@ -163,7 +163,7 @@ namespace
 			[
 				SAssignNew(OutBackground, SBorder)
 				.BorderImage(GetWhiteBrush())
-				.BorderBackgroundColor(FT66DotaTheme::ButtonNeutral())
+				.BorderBackgroundColor(FT66Style::ButtonNeutral())
 				.Padding(FMargin(16.f, 10.f))
 				[
 					SNew(SBox)
@@ -197,7 +197,7 @@ namespace
 			Background->SetBorderBackgroundColor(
 				bEnabled
 					? (bDanger ? FT66DotaTheme::DangerButton() : FT66DotaTheme::SuccessButton())
-					: FT66DotaTheme::ButtonPressed());
+					: FT66Style::ButtonPressed());
 		}
 
 		if (Text.IsValid())
@@ -488,7 +488,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 		[
 			SNew(SBorder)
 			.BorderImage(GetWhiteBrush())
-			.BorderBackgroundColor(FLinearColor::Black)
+			.BorderBackgroundColor(FT66Style::Scrim())
 		]
 		+ SOverlay::Slot()
 		[
@@ -554,7 +554,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						SNew(SSpacer)
 					],
 					FT66PanelParams(ET66PanelType::Panel)
-						.SetColor(FLinearColor::Black)
+						.SetColor(FLinearColor(0.030f, 0.026f, 0.022f, 0.98f))
 						.SetPadding(FMargin(28.f)))
 				]
 			]

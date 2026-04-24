@@ -2140,7 +2140,7 @@ TSharedRef<SWidget> FT66Style::MakeHudPanel(const TSharedRef<SWidget>& Content, 
 				SNew(STextBlock)
 				.Text(Title)
 				.Font(FT66Style::MakeFont(TEXT("Bold"), 14))
-				.ColorAndOpacity(FT66Style::TextMuted())
+				.ColorAndOpacity(FLinearColor(0.86f, 0.68f, 0.34f, 1.f))
 				.Justification(ETextJustify::Center)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 4.f)
@@ -2152,7 +2152,13 @@ TSharedRef<SWidget> FT66Style::MakeHudPanel(const TSharedRef<SWidget>& Content, 
 				Content
 			]);
 
-	return MakeScreenSurface(PanelContent, Padding);
+	return MakeLayeredSurface(
+		PanelContent,
+		FLinearColor(0.018f, 0.014f, 0.012f, 0.98f),
+		FLinearColor(0.58f, 0.42f, 0.22f, 0.92f),
+		FLinearColor(0.030f, 0.026f, 0.022f, 0.96f),
+		FLinearColor(0.95f, 0.72f, 0.34f, 0.18f),
+		Padding);
 }
 
 TSharedRef<SWidget> FT66Style::MakeHudPanel(const TSharedRef<SWidget>& Content, const FMargin& Padding)
@@ -2167,7 +2173,7 @@ TSharedRef<SWidget> FT66Style::MakeDivider(float Height)
 		[
 			SNew(SBorder)
 			.BorderImage(GetWhiteBrush())
-			.BorderBackgroundColor(FT66Style::Stroke() * FLinearColor(1.f, 1.f, 1.f, 0.45f))
+			.BorderBackgroundColor(FLinearColor(0.70f, 0.52f, 0.26f, 0.55f))
 		];
 }
 
@@ -2178,10 +2184,10 @@ TSharedRef<SWidget> FT66Style::MakeMinimapFrame(const TSharedRef<SWidget>& Conte
 		[
 			MakeLayeredSurface(
 				Content,
-				FT66Style::PanelOuter(),
-				FT66Style::Border(),
-				FT66Style::Background(),
-				FT66Style::Accent() * FLinearColor(1.f, 1.f, 1.f, 0.75f),
+				FLinearColor(0.018f, 0.014f, 0.012f, 0.99f),
+				FLinearColor(0.63f, 0.48f, 0.27f, 0.96f),
+				FLinearColor(0.012f, 0.014f, 0.016f, 0.98f),
+				FLinearColor(0.95f, 0.78f, 0.38f, 0.22f),
 				Padding)
 		]
 		+ SOverlay::Slot()
@@ -2193,7 +2199,7 @@ TSharedRef<SWidget> FT66Style::MakeMinimapFrame(const TSharedRef<SWidget>& Conte
 			[
 				SNew(SBorder)
 				.BorderImage(GetWhiteBrush())
-				.BorderBackgroundColor(FT66Style::Accent2())
+				.BorderBackgroundColor(FLinearColor(0.86f, 0.70f, 0.38f, 1.f))
 			]
 		]
 		+ SOverlay::Slot()
@@ -2205,7 +2211,7 @@ TSharedRef<SWidget> FT66Style::MakeMinimapFrame(const TSharedRef<SWidget>& Conte
 			[
 				SNew(SBorder)
 				.BorderImage(GetWhiteBrush())
-				.BorderBackgroundColor(FT66Style::Accent2())
+				.BorderBackgroundColor(FLinearColor(0.86f, 0.70f, 0.38f, 1.f))
 			]
 		]
 		+ SOverlay::Slot()
@@ -2217,7 +2223,7 @@ TSharedRef<SWidget> FT66Style::MakeMinimapFrame(const TSharedRef<SWidget>& Conte
 			[
 				SNew(SBorder)
 				.BorderImage(GetWhiteBrush())
-				.BorderBackgroundColor(FT66Style::Accent2())
+				.BorderBackgroundColor(FLinearColor(0.86f, 0.70f, 0.38f, 1.f))
 			]
 		]
 		+ SOverlay::Slot()
@@ -2229,7 +2235,7 @@ TSharedRef<SWidget> FT66Style::MakeMinimapFrame(const TSharedRef<SWidget>& Conte
 			[
 				SNew(SBorder)
 				.BorderImage(GetWhiteBrush())
-				.BorderBackgroundColor(FT66Style::Accent2())
+				.BorderBackgroundColor(FLinearColor(0.86f, 0.70f, 0.38f, 1.f))
 			]
 		];
 }

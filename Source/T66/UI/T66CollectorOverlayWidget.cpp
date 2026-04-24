@@ -287,15 +287,19 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 			SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.85f))
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.010f, 0.008f, 0.008f, 0.86f))
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(SafePanelPadding)
 			[
 				SNew(SBox).WidthOverride(520.f)
 				[
-					FT66Style::MakePanel(MainPanel, FT66PanelParams(ET66PanelType::Panel).SetPadding(24.f))
+					FT66Style::MakePanel(
+						MainPanel,
+						FT66PanelParams(ET66PanelType::Panel)
+							.SetPadding(24.f)
+							.SetColor(FLinearColor(0.034f, 0.029f, 0.024f, 0.98f)))
 				]
 			]
 		];

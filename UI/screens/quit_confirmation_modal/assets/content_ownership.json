@@ -1,0 +1,83 @@
+{
+  "screen_slug": "quit_confirmation_modal",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\quit_confirmation_modal\\reference\\canonical_reference_1920x1080.png",
+  "runtime_owned": [
+    {
+      "name": "modal_scrim",
+      "rect": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "content_type": "runtime-overlay",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "title_well",
+      "rect": [
+        672,
+        388,
+        576,
+        72
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "message_well",
+      "rect": [
+        704,
+        494,
+        512,
+        48
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "stay_button",
+      "rect": [
+        610,
+        556,
+        346,
+        64
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "quit_button",
+      "rect": [
+        974,
+        556,
+        346,
+        64
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    }
+  ],
+  "generated_owned": [
+    {
+      "name": "quit_shell",
+      "rect": [
+        592,
+        352,
+        736,
+        284
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    }
+  ],
+  "families_required": [
+    "modal-shell",
+    "wide-success-button",
+    "wide-danger-button"
+  ]
+}

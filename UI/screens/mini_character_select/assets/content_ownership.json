@@ -1,0 +1,21 @@
+{
+  "screen": "mini_character_select",
+  "background": {
+    "owner": "scene_plate",
+    "must_not_contain": ["hero portraits", "hero names", "record values", "stat values", "buttons"]
+  },
+  "chrome": {
+    "owner": "generated panel, row, and button plates",
+    "notes": "Hero detail panels, stat chips, records panel, and hero card shells are art chrome only."
+  },
+  "runtime_owned": [
+    "title",
+    "hero names",
+    "hero portraits",
+    "hero descriptions",
+    "hero stats",
+    "record values",
+    "selected state",
+    "button labels"
+  ]
+}

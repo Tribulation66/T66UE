@@ -1,0 +1,132 @@
+{
+  "screen_slug": "account_status",
+  "screen_key": "AccountStatus",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\account_status\\reference\\canonical_reference_1920x1080.png",
+  "source_file": "Source/T66/UI/Screens/T66AccountStatusScreen.cpp",
+  "regions": [
+    {
+      "name": "shared_topbar",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 144
+      },
+      "owner": "shared-topbar"
+    },
+    {
+      "name": "back_button",
+      "rect": {
+        "x": 30,
+        "y": 212,
+        "width": 212,
+        "height": 66
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "outer_frame",
+      "rect": {
+        "x": 0,
+        "y": 232,
+        "width": 1920,
+        "height": 848
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "tab_strip",
+      "rect": {
+        "x": 730,
+        "y": 236,
+        "width": 460,
+        "height": 62
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "status_panel",
+      "rect": {
+        "x": 20,
+        "y": 310,
+        "width": 920,
+        "height": 214
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "progress_panel",
+      "rect": {
+        "x": 20,
+        "y": 548,
+        "width": 920,
+        "height": 526
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "progress_rows",
+      "rect": {
+        "x": 50,
+        "y": 628,
+        "width": 858,
+        "height": 400
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "progress_fills",
+      "rect": {
+        "x": 52,
+        "y": 842,
+        "width": 856,
+        "height": 118
+      },
+      "owner": "runtime-value"
+    },
+    {
+      "name": "pb_filters",
+      "rect": {
+        "x": 1000,
+        "y": 338,
+        "width": 830,
+        "height": 58
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "score_table",
+      "rect": {
+        "x": 990,
+        "y": 420,
+        "width": 860,
+        "height": 420
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "speed_table",
+      "rect": {
+        "x": 990,
+        "y": 858,
+        "width": 860,
+        "height": 220
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "scrollbar",
+      "rect": {
+        "x": 1866,
+        "y": 306,
+        "width": 28,
+        "height": 586
+      },
+      "owner": "runtime-control"
+    }
+  ]
+}

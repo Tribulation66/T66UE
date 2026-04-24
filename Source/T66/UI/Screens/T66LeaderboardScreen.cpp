@@ -7,14 +7,99 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 
+#include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Styling/CoreStyle.h"
+#include "Styling/SlateBrush.h"
+#include "UObject/StrongObjectPtr.h"
+
+namespace
+{
+	struct FT66LeaderboardShellBrushEntry
+	{
+		TStrongObjectPtr<UTexture2D> Texture;
+		TSharedPtr<FSlateBrush> Brush;
+	};
+
+	const FSlateBrush* ResolveLeaderboardShellBrush(
+		FT66LeaderboardShellBrushEntry& Entry,
+		const TCHAR* RelativePath,
+		const FVector2D& ImageSize,
+		const FMargin& Margin)
+	{
+		if (!Entry.Brush.IsValid())
+		{
+			Entry.Brush = MakeShared<FSlateBrush>();
+			Entry.Brush->DrawAs = ESlateBrushDrawType::Box;
+			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
+			Entry.Brush->TintColor = FSlateColor(FLinearColor::White);
+			Entry.Brush->ImageSize = ImageSize;
+			Entry.Brush->Margin = Margin;
+		}
+
+		if (!Entry.Texture.IsValid())
+		{
+			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+			{
+				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
+					CandidatePath,
+					TextureFilter::TF_Trilinear,
+					true,
+					TEXT("LeaderboardScreenReferenceSprite")))
+				{
+					Entry.Texture.Reset(Texture);
+					break;
+				}
+			}
+		}
+
+		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
+		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+	}
+
+	const FSlateBrush* GetLeaderboardModalShellBrush()
+	{
+		static FT66LeaderboardShellBrushEntry Entry;
+		return ResolveLeaderboardShellBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			FVector2D(1521.f, 463.f),
+			FMargin(0.035f, 0.12f, 0.035f, 0.12f));
+	}
+
+	const FSlateBrush* GetLeaderboardListShellBrush()
+	{
+		static FT66LeaderboardShellBrushEntry Entry;
+		return ResolveLeaderboardShellBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			FVector2D(861.f, 74.f),
+			FMargin(0.055f, 0.32f, 0.055f, 0.32f));
+	}
+
+	TSharedRef<SWidget> MakeLeaderboardSpritePanel(
+		const TSharedRef<SWidget>& Content,
+		const FMargin& Padding,
+		const FSlateBrush* Brush = nullptr,
+		const FLinearColor& FallbackColor = FLinearColor(0.025f, 0.023f, 0.034f, 0.97f))
+	{
+		const FSlateBrush* ShellBrush = Brush ? Brush : GetLeaderboardModalShellBrush();
+		return SNew(SBorder)
+			.BorderImage(ShellBrush ? ShellBrush : FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(ShellBrush ? FLinearColor::White : FallbackColor)
+			.Padding(Padding)
+			[
+				Content
+			];
+	}
+}
 
 UT66LeaderboardScreen::UT66LeaderboardScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -69,10 +154,18 @@ TSharedRef<SWidget> UT66LeaderboardScreen::BuildSlateUI()
 		]
 		+ SVerticalBox::Slot().FillHeight(1.f)
 		[
-			SAssignNew(LeaderboardPanel, ST66LeaderboardPanel)
-			.LocalizationSubsystem(Loc)
-			.LeaderboardSubsystem(LB)
-			.UIManager(UIManager)
+			MakeLeaderboardSpritePanel(
+				SNew(SBox)
+				.Padding(FMargin(8.f, 4.f))
+				[
+					SAssignNew(LeaderboardPanel, ST66LeaderboardPanel)
+					.LocalizationSubsystem(Loc)
+					.LeaderboardSubsystem(LB)
+					.UIManager(UIManager)
+				],
+				FMargin(18.f, 16.f),
+				GetLeaderboardListShellBrush(),
+				FLinearColor(0.035f, 0.032f, 0.045f, 0.96f))
 		];
 
 	return SNew(SBorder)
@@ -80,9 +173,7 @@ TSharedRef<SWidget> UT66LeaderboardScreen::BuildSlateUI()
 		.BorderBackgroundColor(ScrimColor)
 		.Padding(FMargin(40.f))
 		[
-			FT66Style::IsDotaTheme()
-				? FT66Style::MakeScreenSurface(Content, FMargin(20.f))
-				: Content
+			MakeLeaderboardSpritePanel(Content, FMargin(24.f))
 		];
 }
 

@@ -1,0 +1,107 @@
+{
+  "screen_slug": "player_summary_picker",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\player_summary_picker\\reference\\canonical_reference_1920x1080.png",
+  "runtime_owned": [
+    {
+      "name": "modal_scrim",
+      "rect": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "content_type": "runtime-overlay",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "title_well",
+      "rect": [
+        748,
+        400,
+        424,
+        58
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "empty_message_well",
+      "rect": [
+        704,
+        502,
+        512,
+        42
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "portrait_socket",
+      "rect": [
+        470,
+        426,
+        254,
+        160
+      ],
+      "content_type": "runtime-image",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "select_button",
+      "rect": [
+        486,
+        620,
+        220,
+        58
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    }
+  ],
+  "generated_owned": [
+    {
+      "name": "empty_shell",
+      "rect": [
+        496,
+        364,
+        928,
+        242
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    },
+    {
+      "name": "populated_shell",
+      "rect": [
+        360,
+        268,
+        1200,
+        520
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    },
+    {
+      "name": "player_card",
+      "rect": [
+        432,
+        390,
+        330,
+        300
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    }
+  ],
+  "families_required": [
+    "empty-modal-shell",
+    "populated-modal-shell",
+    "player-card-shell",
+    "portrait-frame",
+    "select-button"
+  ]
+}

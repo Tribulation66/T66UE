@@ -1,0 +1,15 @@
+{
+  "screen": "GamblerOverlay",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "metrics": {},
+  "groups": {
+    "TopBar": {},
+    "Center": {},
+    "Left": {},
+    "Right": {},
+    "Decor": {}
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "screen_slug": "td_difficulty_select",
+  "canvas_size": [1920, 1080],
+  "source_reference": "C:/UE/T66/UI/screens/td_difficulty_select/reference/canonical_reference_1920x1080.png",
+  "assets": [],
+  "runtime_shared_chrome": [
+    "C:/UE/T66/SourceAssets/UI/MainMenuReference/LeftPanel/shell_clean.png",
+    "C:/UE/T66/SourceAssets/UI/MainMenuReference/RightPanel/shell_clean.png",
+    "C:/UE/T66/SourceAssets/UI/MainMenuReference/LeftPanel/profile_card_shell.png",
+    "C:/UE/T66/SourceAssets/UI/MainMenuReference/Center/cta_stack_outer_frame.png",
+    "C:/UE/T66/SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_plate.png"
+  ],
+  "notes": "First-pass runtime keeps map previews and selected-map backdrop live from TD data while using the already generated fantasy chrome family."
+}

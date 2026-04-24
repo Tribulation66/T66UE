@@ -1,0 +1,9 @@
+{
+  "screen_slug": "daily_climb",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "assets": [],
+  "notes": "Sprite family board generation pending. Runtime must not use the full reference as an overlay."
+}

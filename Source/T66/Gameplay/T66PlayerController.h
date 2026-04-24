@@ -15,7 +15,7 @@ class UT66GameplayHUDWidget;
 class UT66LabOverlayWidget;
 class UT66RunStateSubsystem;
 class UT66GamblerOverlayWidget;
-class UT66CircusOverlayWidget;
+class UT66CasinoOverlayWidget;
 class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
 class AT66EnemyBase;
@@ -147,20 +147,21 @@ public:
 	/** Open the Gambler overlay (non-pausing). */
 	void OpenGamblerOverlay(int32 WinGoldAmount);
 
-	/** Open the shared circus shell overlay (gambling + vendor + alchemy). */
-	void OpenCircusOverlay();
+	/** Open the shared casino shell overlay (gambling + vendor + alchemy). */
+	void OpenCasinoOverlay();
 
-	/** Close the shared circus shell overlay and return to gameplay input. */
-	void CloseCircusOverlay();
+	/** Close the shared casino shell overlay and return to gameplay input. */
+	void CloseCasinoOverlay();
 
-	void SwitchCircusOverlayToGambling();
-	void SwitchCircusOverlayToVendor();
-	void SwitchCircusOverlayToAlchemy();
-	bool IsCircusOverlayOpen() const;
-	bool TriggerCircusBossIfAngry();
+	void SwitchCasinoOverlayToGambling();
+	void SwitchCasinoOverlayToVendor();
+	void SwitchCasinoOverlayToAlchemy();
+	bool IsCasinoOverlayOpen() const;
+	bool TriggerCasinoBossIfAngry();
 
 	/** Open the Vendor overlay (non-pausing). */
 	void OpenVendorOverlay();
+	void OpenVendorOverlayForVendor(AT66VendorNPC* Vendor);
 
 	/** Open the Lab Collector full-screen overlay (non-pausing). */
 	void OpenCollectorOverlay();
@@ -171,8 +172,7 @@ public:
 	void CloseArcadePopup(bool bSucceeded);
 	bool IsArcadePopupOpen() const;
 
-	/** In-world dialogue (open-world) for vendor/gambler interactions (non-pausing). */
-	void OpenWorldDialogueVendor(AT66VendorNPC* Vendor);
+	/** In-world dialogue (open-world) for gambler/companion interactions (non-pausing). */
 	void OpenWorldDialogueGambler(AT66GamblerNPC* Gambler);
 	void OpenWorldDialogueCompanion(AT66RecruitableCompanion* Companion);
 
@@ -304,7 +304,7 @@ private:
 	TSubclassOf<UT66ScreenBase> ResolveScreenClass(ET66ScreenType ScreenType) const;
 	TSubclassOf<UT66GameplayHUDWidget> ResolveGameplayHUDClass() const;
 	TSubclassOf<UT66GamblerOverlayWidget> ResolveGamblerOverlayClass() const;
-	TSubclassOf<UT66CircusOverlayWidget> ResolveCircusOverlayClass() const;
+	TSubclassOf<UT66CasinoOverlayWidget> ResolveCasinoOverlayClass() const;
 	TSubclassOf<UT66VendorOverlayWidget> ResolveVendorOverlayClass() const;
 	TSubclassOf<UT66CollectorOverlayWidget> ResolveCollectorOverlayClass() const;
 	TSubclassOf<UT66CowardicePromptWidget> ResolveCowardicePromptClass() const;
@@ -322,7 +322,7 @@ private:
 	TObjectPtr<UT66GamblerOverlayWidget> GamblerOverlayWidget;
 
 	UPROPERTY()
-	TObjectPtr<UT66CircusOverlayWidget> CircusOverlayWidget;
+	TObjectPtr<UT66CasinoOverlayWidget> CasinoOverlayWidget;
 
 	UPROPERTY()
 	TObjectPtr<UT66CowardicePromptWidget> CowardicePromptWidget;
@@ -377,6 +377,11 @@ private:
 	void QueueFrontendAutomationScreenshotIfRequested();
 	void HandleFrontendAutomationScreenshot();
 	void HandleFrontendAutomationQuit();
+	void QueueGameplayAutomationScreenshotIfRequested();
+	void HandleGameplayAutomationPrepare();
+	void HandleGameplayAutomationScreenshot();
+	void HandleGameplayAutomationQuit();
+	void ApplyGameplayAutomationCaptureMode();
 	void BindPartyInviteEvents();
 	void UnbindPartyInviteEvents();
 	void HandlePendingPartyInvitesChanged();
@@ -385,8 +390,16 @@ private:
 	FString FrontendAutomationScreenshotPath;
 	float FrontendAutomationScreenshotDelaySeconds = 0.f;
 	bool bFrontendAutomationKeepAliveAfterScreenshot = false;
+	ET66ScreenType FrontendAutomationModalToShow = ET66ScreenType::None;
 	FTimerHandle FrontendAutomationScreenshotTimerHandle;
 	FTimerHandle FrontendAutomationQuitTimerHandle;
+	FString GameplayAutomationScreenshotPath;
+	FString GameplayAutomationCaptureMode;
+	float GameplayAutomationScreenshotDelaySeconds = 0.f;
+	bool bGameplayAutomationKeepAliveAfterScreenshot = false;
+	FTimerHandle GameplayAutomationPrepareTimerHandle;
+	FTimerHandle GameplayAutomationScreenshotTimerHandle;
+	FTimerHandle GameplayAutomationQuitTimerHandle;
 	FTimerHandle FrontendLaunchPolicyTimeoutTimerHandle;
 	FTimerHandle GameplayViewTargetRetryTimerHandle;
 	FTimerHandle ClientGameplayWorldSetupRetryTimerHandle;
@@ -457,7 +470,7 @@ private:
 	TSubclassOf<UT66GamblerOverlayWidget> DotaGamblerOverlayClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
-	TSubclassOf<UT66CircusOverlayWidget> DotaCircusOverlayClass;
+	TSubclassOf<UT66CasinoOverlayWidget> DotaCasinoOverlayClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
 	TSubclassOf<UT66VendorOverlayWidget> DotaVendorOverlayClass;
@@ -502,12 +515,11 @@ private:
 	float RawMoveRightValue = 0.f;
 
 	// ============================================================
-	// In-world NPC dialogue (Vendor/Gambler)
+	// In-world NPC dialogue (Gambler/Companion)
 	// ============================================================
 	enum class ET66WorldDialogueKind : uint8
 	{
 		None,
-		Vendor,
 		Gambler,
 		Companion,
 	};

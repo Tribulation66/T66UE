@@ -49,26 +49,18 @@ void ST66MiniLeaderboardPanel::Construct(const FArguments& InArgs)
 
 	BuildDifficultyOptions();
 
-	auto MakeFilterButton = [this](const FText& Label, const ET66MiniLeaderboardFilter Filter, const FLinearColor& Accent) -> TSharedRef<SWidget>
+	auto MakeFilterButton = [this](const FText& Label, const ET66MiniLeaderboardFilter Filter) -> TSharedRef<SWidget>
 	{
-		return SNew(SButton)
-			.OnClicked(Filter == ET66MiniLeaderboardFilter::Global
+		const ET66ButtonType Type = CurrentFilter == Filter ? ET66ButtonType::Success : ET66ButtonType::Neutral;
+		return T66MiniUI::MakeButton(
+			Label,
+			Filter == ET66MiniLeaderboardFilter::Global
 				? FOnClicked::CreateSP(this, &ST66MiniLeaderboardPanel::HandleGlobalClicked)
-				: FOnClicked::CreateSP(this, &ST66MiniLeaderboardPanel::HandleFriendsClicked))
-			.ButtonColorAndOpacity_Lambda([this, Filter, Accent]()
-			{
-				return CurrentFilter == Filter ? Accent : T66MiniUI::RaisedFill();
-			})
-			.ContentPadding(FMargin(12.f, 8.f))
-			[
-				SNew(STextBlock)
-				.Text(Label)
-				.Font(T66MiniUI::BoldFont(13))
-				.ColorAndOpacity_Lambda([this, Filter]()
-				{
-					return CurrentFilter == Filter ? T66MiniUI::ButtonTextDark() : FLinearColor::White;
-				})
-			];
+				: FOnClicked::CreateSP(this, &ST66MiniLeaderboardPanel::HandleFriendsClicked),
+			Type,
+			124.f,
+			42.f,
+			10);
 	};
 
 	TSharedRef<SVerticalBox> Content = SNew(SVerticalBox)
@@ -97,11 +89,11 @@ void ST66MiniLeaderboardPanel::Construct(const FArguments& InArgs)
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
 			[
-				MakeFilterButton(FText::FromString(TEXT("GLOBAL")), ET66MiniLeaderboardFilter::Global, T66MiniUI::AccentGreen())
+				MakeFilterButton(FText::FromString(TEXT("GLOBAL")), ET66MiniLeaderboardFilter::Global)
 			]
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
-				MakeFilterButton(FText::FromString(TEXT("FRIENDS")), ET66MiniLeaderboardFilter::Friends, T66MiniUI::AccentBlue())
+				MakeFilterButton(FText::FromString(TEXT("FRIENDS")), ET66MiniLeaderboardFilter::Friends)
 			]
 		]
 		+ SVerticalBox::Slot()
@@ -161,8 +153,8 @@ void ST66MiniLeaderboardPanel::Construct(const FArguments& InArgs)
 		.Padding(0.f, 12.f, 0.f, 0.f)
 		[
 			SNew(SBorder)
-			.BorderImage(T66MiniUI::WhiteBrush())
-			.BorderBackgroundColor(T66MiniUI::PanelFill())
+			.BorderImage(T66MiniUI::RowShellBrush() ? T66MiniUI::RowShellBrush() : T66MiniUI::WhiteBrush())
+			.BorderBackgroundColor(T66MiniUI::RowShellBrush() ? FLinearColor::White : T66MiniUI::PanelFill())
 			.Padding(FMargin(12.f))
 			[
 				SNew(SScrollBox)
@@ -186,8 +178,8 @@ void ST66MiniLeaderboardPanel::Construct(const FArguments& InArgs)
 	ChildSlot
 	[
 		SNew(SBorder)
-		.BorderImage(T66MiniUI::WhiteBrush())
-		.BorderBackgroundColor(T66MiniUI::ShellFill())
+		.BorderImage(T66MiniUI::ContentShellBrush() ? T66MiniUI::ContentShellBrush() : T66MiniUI::WhiteBrush())
+		.BorderBackgroundColor(T66MiniUI::ContentShellBrush() ? FLinearColor::White : T66MiniUI::ShellFill())
 		.Padding(FMargin(18.f))
 		[
 			Content

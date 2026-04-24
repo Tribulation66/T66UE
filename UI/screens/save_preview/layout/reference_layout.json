@@ -1,0 +1,82 @@
+{
+  "screen_slug": "save_preview",
+  "screen_key": "SavePreview",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\save_preview\\reference\\canonical_reference_1920x1080.png",
+  "source_file": "Source/T66/UI/Screens/T66SavePreviewScreen.cpp",
+  "regions": [
+    {
+      "name": "preview_underlay",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "owner": "runtime-image"
+    },
+    {
+      "name": "preview_scrim",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "owner": "runtime-overlay"
+    },
+    {
+      "name": "bottom_panel_shell",
+      "rect": {
+        "x": 580,
+        "y": 780,
+        "width": 760,
+        "height": 244
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "title_well",
+      "rect": {
+        "x": 720,
+        "y": 812,
+        "width": 480,
+        "height": 42
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "subtitle_well",
+      "rect": {
+        "x": 650,
+        "y": 862,
+        "width": 620,
+        "height": 44
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "back_button",
+      "rect": {
+        "x": 660,
+        "y": 936,
+        "width": 160,
+        "height": 48
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "load_button",
+      "rect": {
+        "x": 840,
+        "y": 936,
+        "width": 160,
+        "height": 48
+      },
+      "owner": "runtime-control"
+    }
+  ]
+}

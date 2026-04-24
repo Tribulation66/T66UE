@@ -1,0 +1,53 @@
+Use case: screen-specific T66 UI style reference gate
+Canvas: 1920x1080 exactly
+Target: # Idol Altar Overlay Layout List
+
+You are generating the canonical offline reference image for this exact in-game HUD or in-run overlay target. Use exactly these three inputs and no other visual references:
+1. Attached image 1: the approved main-menu canonical style anchor. Extract only the visual language: chunky fantasy stone, dark dungeon panels, dark wood, beveled frames, green/gold/blue/purple button families, readable cream/gold text treatment.
+2. Attached image 2: the current packaged runtime screenshot for this target. Preserve its layout intent, anchors, hierarchy, region count, proportions, visible controls, and live-data wells.
+3. The layout list below. Treat it as the ownership contract for generated shell art versus runtime-owned live content.
+
+Generate one full-screen target reference. This reference is not a runtime overlay and must not bake live/localizable data into art. Keep all runtime content sockets open: portraits, item icons, ability icons, idol icons, minimap/map pixels, markers, item names, gold/debt values, timers, cooldowns, damage numbers, selected idol data, tab labels, and status text must remain visually represented as live wells or editable/runtime text zones, not painted-in final data.
+
+Preserve behavior and layout intent. Do not redesign the screen, move major panels, add unrelated features, change gameplay state, or obscure current controls. Restyle plain/flat panels, frames, slots, tabs, buttons, and overlay shells into the approved Chadpocalypse stone/dungeon UI family. Separate shell/frame art from runtime-owned interiors. Use dark dungeon surfaces, beveled stone borders, carved wood accents, metal rivets where helpful, and readable cream/gold text zones.
+
+Avoid: full-screen reference-image-as-runtime-overlay look, baked item names or values, changed tab labels, illegible text wells, extra nonfunctional buttons, missing controls, missing sockets, changed minimap/map ownership, layout drift, watermark, UI covering gameplay-critical live regions.
+
+Layout list and ownership contract:
+
+# Idol Altar Overlay Layout List
+
+Reference gate target: in-run Idol Altar selection overlay. Preserve existing card count, action locations, and source altar behavior.
+
+## Regions
+
+- `modal_scrim` - centered overlay context over gameplay; ownership: neutral generated-shell.
+- `altar_panel_shell` - main stone/dungeon modal frame; ownership: generated-shell.
+- `title_header` - "IDOL ALTAR" title area; ownership: runtime-text on generated-shell.
+- `idol_offer_card_row` - offer card shells for current stock; ownership: socket-frame with runtime idol icons/text.
+- `idol_icon_socket` - icon well inside each offer card; ownership: runtime-icon.
+- `idol_description_well` - live name/description/level text; ownership: runtime-text/runtime-value.
+- `status_footer` - status/error/success message area; ownership: runtime-text.
+- `button_row` - back/reroll/take/return controls; ownership: generated button shells with live labels.
+
+## Controls And States
+
+- `idol_offer_card` - required states: normal, hover, selected, disabled/unavailable.
+- `take_return_button` - required states: normal, hover, pressed, disabled.
+- `reroll_button` - required states: normal, hover, pressed, disabled.
+- `back_button` - required states: normal, hover, pressed.
+
+## Live Runtime Content
+
+- Live text: title, idol names, descriptions, upgrade/selection status, button labels.
+- Live values: remaining selections, idol level, reroll availability/cost if visible.
+- Live image/icon/avatar wells: idol icons.
+- Live preview/media areas: none.
+
+## Variants
+
+- Normal multi-offer altar.
+- Tutorial single-offer altar.
+- Offer selected.
+- No selections remaining.
+

@@ -39,6 +39,8 @@ public class T66Mini : ModuleRules
 		}
 
 		AddLooseMiniRuntimeDependency("Content/Mini/Data/...");
+		AddLooseMiniRuntimeDependency("SourceAssets/UI/SettingsReference/MiniScreens/...");
+		AddLooseMiniRuntimeDependency("SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/stat_chip_clean_wide.png");
 		AddLooseMiniRuntimeDependency("SourceAssets/Mini/...");
 		AddLooseMiniRuntimeDependency("SourceAssets/ItemSprites/...");
 

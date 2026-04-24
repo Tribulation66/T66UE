@@ -15,9 +15,12 @@
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66SessionPlayerState.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 
 #include "Data/T66DataTypes.h"
@@ -34,6 +37,92 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
+
+namespace
+{
+	constexpr float PauseMenuButtonHeight = 58.0f;
+
+	const FSlateBrush* ResolvePauseMenuSettingsReferenceBrush(
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
+		const FString& RelativePath,
+		const FMargin& Margin,
+		const TCHAR* DebugLabel)
+	{
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
+			Margin,
+			DebugLabel);
+	}
+
+	const TCHAR* GetPauseMenuButtonPlateFile(ET66ButtonType Type)
+	{
+		switch (Type)
+		{
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::Success:
+		case ET66ButtonType::ToggleActive:
+			return TEXT("settings_toggle_on_normal.png");
+		case ET66ButtonType::Danger:
+			return TEXT("settings_toggle_off_normal.png");
+		default:
+			return TEXT("settings_compact_neutral_normal.png");
+		}
+	}
+
+	const FSlateBrush* GetPauseMenuButtonPlateBrush(ET66ButtonType Type)
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Neutral;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Success;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Danger;
+
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush* Entry = &Neutral;
+		if (Type == ET66ButtonType::Primary || Type == ET66ButtonType::Success || Type == ET66ButtonType::ToggleActive)
+		{
+			Entry = &Success;
+		}
+		else if (Type == ET66ButtonType::Danger)
+		{
+			Entry = &Danger;
+		}
+
+		return ResolvePauseMenuSettingsReferenceBrush(
+			*Entry,
+			FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s"), GetPauseMenuButtonPlateFile(Type)),
+			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
+			TEXT("PauseMenuButtonPlate"));
+	}
+
+	const FSlateBrush* GetPauseMenuShellBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Shell;
+		return ResolvePauseMenuSettingsReferenceBrush(
+			Shell,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
+			TEXT("PauseMenuShell"));
+	}
+
+	TSharedRef<SWidget> MakePauseMenuShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+	{
+		if (const FSlateBrush* ShellBrush = GetPauseMenuShellBrush())
+		{
+			return SNew(SBorder)
+				.BorderImage(ShellBrush)
+				.BorderBackgroundColor(FLinearColor::White)
+				.Padding(Padding)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				[
+					Content
+				];
+		}
+
+		return FT66Style::MakePanel(
+			Content,
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(Padding));
+	}
+}
 
 UT66PauseMenuScreen::UT66PauseMenuScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -52,8 +141,8 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UT66LocalizationSubsystem* Loc = GameInstance ? GameInstance->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	const bool bDotaTheme = FT66Style::IsDotaTheme();
-	const float ButtonColumnWidth = bDotaTheme ? 320.f : 360.f;
-	const float ButtonMinWidth = bDotaTheme ? 280.f : 312.f;
+	const float ButtonColumnWidth = bDotaTheme ? 430.f : 420.f;
+	const float ButtonMinWidth = bDotaTheme ? 340.f : 332.f;
 	const FMargin OverlaySafePadding = FT66Style::GetSafePadding(FMargin(24.f, 24.f));
 
 	const FText ResumeText = Loc ? Loc->GetText_Resume() : NSLOCTEXT("T66.PauseMenu", "Resume", "RESUME GAME");
@@ -73,9 +162,12 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 					FT66ButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc), Type)
 					.SetFontSize(bDotaTheme ? 20 : 28)
 					.SetFontWeight(bDotaTheme ? TEXT("Regular") : TEXT("Bold"))
-					.SetPadding(bDotaTheme ? FMargin(18.f, 10.f, 18.f, 8.f) : FMargin(18.f, 12.f))
+					.SetPadding(bDotaTheme ? FMargin(20.f, 9.f, 20.f, 8.f) : FMargin(18.f, 12.f))
 					.SetMinWidth(ButtonMinWidth)
-					.SetHeight(bDotaTheme ? 60.f : 66.f))
+					.SetHeight(bDotaTheme ? PauseMenuButtonHeight : 66.f)
+					.SetUseGlow(false)
+					.SetUseDotaPlateOverlay(true)
+					.SetDotaPlateOverrideBrush(GetPauseMenuButtonPlateBrush(Type)))
 			];
 	};
 
@@ -85,7 +177,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		PauseTitleFont.LetterSpacing = 120;
 	}
 
-	TSharedRef<SWidget> ButtonsPanel = FT66Style::MakePanel(
+	TSharedRef<SWidget> ButtonsPanel = MakePauseMenuShell(
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 18.f)
 		[
@@ -106,27 +198,18 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		[ MakePauseButton(AchievementsText, &UT66PauseMenuScreen::HandleAchievementsClicked, ET66ButtonType::Neutral) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
 		[ MakePauseButton(LeaderboardText, &UT66PauseMenuScreen::HandleLeaderboardClicked, ET66ButtonType::Neutral) ],
-		FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(FT66Style::Tokens::Space5, FT66Style::Tokens::Space4)));
+		FMargin(38.f, 34.f, 38.f, 38.f));
 
-	return SNew(SOverlay)
-		.Visibility(EVisibility::SelfHitTestInvisible)
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
+	return T66ScreenSlateHelpers::MakeCenteredScrimModal(
+		SNew(SBox)
+		.WidthOverride(ButtonColumnWidth)
 		[
-			SNew(SBox)
-		]
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
-		.Padding(OverlaySafePadding)
-		[
-			SNew(SBox)
-			.WidthOverride(ButtonColumnWidth)
-			[
-				ButtonsPanel
-			]
-		];
+			ButtonsPanel
+		],
+		OverlaySafePadding,
+		0.0f,
+		0.0f,
+		true);
 }
 
 FReply UT66PauseMenuScreen::HandleResumeClicked() { OnResumeClicked(); return FReply::Handled(); }

@@ -1,0 +1,92 @@
+{
+  "screen_slug": "language_select",
+  "screen_key": "LanguageSelect",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\language_select\\reference\\canonical_reference_1920x1080.png",
+  "source_file": "Source/T66/UI/Screens/T66LanguageSelectScreen.cpp",
+  "regions": [
+    {
+      "name": "shared_topbar",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 144
+      },
+      "owner": "shared-topbar"
+    },
+    {
+      "name": "content_shell",
+      "rect": {
+        "x": 0,
+        "y": 148,
+        "width": 1920,
+        "height": 932
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "back_button",
+      "rect": {
+        "x": 30,
+        "y": 210,
+        "width": 212,
+        "height": 66
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "title_well",
+      "rect": {
+        "x": 620,
+        "y": 160,
+        "width": 680,
+        "height": 92
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "language_list_shell",
+      "rect": {
+        "x": 90,
+        "y": 308,
+        "width": 1740,
+        "height": 590
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "language_rows",
+      "rect": {
+        "x": 552,
+        "y": 344,
+        "width": 792,
+        "height": 540
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "scrollbar",
+      "rect": {
+        "x": 1795,
+        "y": 326,
+        "width": 20,
+        "height": 192
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "confirm_button",
+      "rect": {
+        "x": 832,
+        "y": 970,
+        "width": 256,
+        "height": 64
+      },
+      "owner": "runtime-control"
+    }
+  ]
+}

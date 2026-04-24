@@ -15,9 +15,12 @@
 #include "Save/T66MiniRunSaveGame.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Styling/SlateBrush.h"
+#include "UI/Screens/T66MiniGeneratedScreenChrome.h"
 #include "UI/T66MiniUIStyle.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -31,6 +34,31 @@
 
 namespace
 {
+	const FSlateBrush* T66MiniSceneBackgroundBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/MainMenuReference/scene_background_purple_imagegen_1920x1080.png")),
+			FMargin(0.f),
+			TEXT("MiniSceneBackground"));
+	}
+
+	TSharedRef<SWidget> T66MiniMakeSceneBackground(const FLinearColor& FallbackColor)
+	{
+		if (const FSlateBrush* Brush = T66MiniSceneBackgroundBrush())
+		{
+			return SNew(SImage)
+				.Image(Brush)
+				.ColorAndOpacity(FLinearColor(0.82f, 0.82f, 0.88f, 1.0f));
+		}
+
+		return SNew(SBorder)
+			.BorderImage(T66MiniUI::WhiteBrush())
+			.BorderBackgroundColor(FallbackColor);
+	}
+
 	FName T66MiniIdolResolveUnlockedCompanionID(const UT66MiniDataSubsystem* DataSubsystem, const UT66MiniSaveSubsystem* SaveSubsystem)
 	{
 		return SaveSubsystem ? SaveSubsystem->GetFirstUnlockedCompanionID(DataSubsystem) : NAME_None;
@@ -255,12 +283,6 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 	const FT66MiniHeroDefinition* SelectedHero = (DataSubsystem && FrontendState) ? DataSubsystem->FindHero(FrontendState->GetSelectedHeroID()) : nullptr;
 	const FT66MiniCompanionDefinition* SelectedCompanion = (DataSubsystem && FrontendState) ? DataSubsystem->FindCompanion(FrontendState->GetSelectedCompanionID()) : nullptr;
 	const FT66MiniDifficultyDefinition* SelectedDifficulty = (DataSubsystem && FrontendState) ? DataSubsystem->FindDifficulty(FrontendState->GetSelectedDifficultyID()) : nullptr;
-	const int32 CompanionUnityStages = (SaveSubsystem && DataSubsystem && SelectedCompanion)
-		? SaveSubsystem->GetCompanionUnityStagesCleared(SelectedCompanion->CompanionID, DataSubsystem)
-		: 0;
-	const float CompanionHealingPerSecond = (SaveSubsystem && DataSubsystem && SelectedCompanion)
-		? SaveSubsystem->GetCompanionHealingPerSecond(SelectedCompanion->CompanionID, DataSubsystem)
-		: 0.0f;
 	LastSessionUiStateKey = BuildSessionUiStateKey();
 	RebuildIdolBrushes(Idols);
 
@@ -269,28 +291,25 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 		CurrentStatusText = NSLOCTEXT("T66Mini.IdolSelect", "DefaultStatus", "Select up to four idols, then continue into the run with the hero and difficulty you already locked in.");
 	}
 
-	const FLinearColor BackgroundFill(0.11f, 0.12f, 0.16f, 1.0f);
-	const FLinearColor ScreenTint(0.02f, 0.03f, 0.05f, 0.20f);
-	const FLinearColor PanelFill(0.07f, 0.08f, 0.11f, 0.97f);
-	const FLinearColor PanelOutline(0.55f, 0.56f, 0.62f, 0.95f);
-	const FLinearColor MutedText(0.79f, 0.82f, 0.88f, 1.0f);
-	const FLinearColor BodyText(0.93f, 0.94f, 0.96f, 1.0f);
+	const FLinearColor BackgroundFill = T66MiniUI::ScreenBackground();
+	const FLinearColor ScreenTint = T66MiniUI::ScreenTint();
+	const FLinearColor PanelFill = T66MiniUI::PanelFill();
+	const FLinearColor PanelOutline = T66MiniUI::PanelOutline();
+	const FLinearColor MutedText = T66MiniUI::MutedText();
+	const FLinearColor BodyText = T66MiniUI::Text();
 
 	auto MakeFramedPanel = [&](TSharedRef<SWidget> Content, const FLinearColor& OutlineColor, const FLinearColor& FillColor, const FMargin& InnerPadding) -> TSharedRef<SWidget>
 	{
-		return SNew(SBorder)
-			.BorderImage(T66MiniUI::WhiteBrush())
-			.BorderBackgroundColor(OutlineColor)
-			.Padding(1.f)
-			[
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(FillColor)
-				.Padding(InnerPadding)
-				[
-					Content
-				]
-			];
+		const bool bUseOrnamentSafePadding = InnerPadding.Left >= 16.f || InnerPadding.Right >= 16.f;
+		const FMargin SafePadding = bUseOrnamentSafePadding
+			? FMargin(InnerPadding.Left, InnerPadding.Top, FMath::Max(InnerPadding.Right, 76.f), InnerPadding.Bottom)
+			: InnerPadding;
+		return T66MiniGeneratedChrome::MakePanel(Content, SafePadding, T66MiniGeneratedChrome::ESlice::PanelLarge);
+	};
+
+	auto MakeRowPanel = [&](TSharedRef<SWidget> Content, const FMargin& InnerPadding) -> TSharedRef<SWidget>
+	{
+		return T66MiniGeneratedChrome::MakeRowPanel(Content, InnerPadding);
 	};
 
 	auto MakeIconWidget = [&](const FSlateBrush* Brush, const FString& FallbackLabel, const float Width, const float Height, const FLinearColor& PlaceholderColor) -> TSharedRef<SWidget>
@@ -309,40 +328,42 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 					]
 				])
 			: StaticCastSharedRef<SWidget>(
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(PlaceholderColor)
-				.Padding(FMargin(6.f))
+				SNew(SBox)
+				.WidthOverride(Width)
+				.HeightOverride(Height)
 				[
-					SNew(STextBlock)
-					.Text(FText::FromString(FallbackLabel))
-					.Font(T66MiniUI::BoldFont(22))
-					.ColorAndOpacity(FLinearColor::White)
-					.Justification(ETextJustify::Center)
+					T66MiniGeneratedChrome::MakePanel(
+						SNew(STextBlock)
+						.Text(FText::FromString(FallbackLabel))
+						.Font(T66MiniUI::BoldFont(Width <= 48.f ? 15 : 22))
+						.ColorAndOpacity(FLinearColor::White)
+						.Justification(ETextJustify::Center),
+						FMargin(4.f),
+						T66MiniGeneratedChrome::ESlice::PortraitFrame)
 				]);
 	};
 
 	auto MakeMetricChip = [&](const FString& Label, const FString& Value, const FLinearColor& Accent) -> TSharedRef<SWidget>
 	{
-		return MakeFramedPanel(
+		return T66MiniGeneratedChrome::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Label))
-				.Font(T66MiniUI::BodyFont(12))
+				.Font(T66MiniUI::BodyFont(10))
 				.ColorAndOpacity(MutedText)
+				.AutoWrapText(true)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Value))
-				.Font(T66MiniUI::BoldFont(16))
+				.Font(T66MiniUI::BoldFont(15))
 				.ColorAndOpacity(Accent)
 			],
-			FLinearColor(0.20f, 0.21f, 0.26f, 1.0f),
-			FLinearColor(0.05f, 0.06f, 0.08f, 1.0f),
-			FMargin(10.f, 8.f));
+			FMargin(10.f, 7.f, 18.f, 7.f),
+			T66MiniGeneratedChrome::ESlice::PanelSmall);
 	};
 
 	TSharedRef<SHorizontalBox> EquippedRow = SNew(SHorizontalBox);
@@ -361,11 +382,11 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 				.FillWidth(1.f)
 				.Padding(SlotIndex > 0 ? FMargin(10.f, 0.f, 0.f, 0.f) : FMargin(0.f))
 				[
-					MakeFramedPanel(
+					T66MiniGeneratedChrome::MakePanel(
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
 						[
-							MakeIconWidget(IdolBrush, Idol ? IdolName.Left(1).ToUpper() : FString::FromInt(SlotIndex + 1), 62.f, 62.f, Idol ? T66MiniUI::AccentGold() : T66MiniUI::RaisedFill())
+							MakeIconWidget(IdolBrush, Idol ? IdolName.Left(1).ToUpper() : FString::FromInt(SlotIndex + 1), 46.f, 46.f, Idol ? T66MiniUI::AccentGold() : T66MiniUI::RaisedFill())
 						]
 						+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 						[
@@ -374,7 +395,7 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 							[
 								SNew(STextBlock)
 								.Text(FText::FromString(IdolName))
-								.Font(T66MiniUI::BoldFont(Idol ? 17 : 16))
+								.Font(T66MiniUI::BoldFont(Idol ? 14 : 13))
 								.ColorAndOpacity(Idol ? FLinearColor::White : MutedText)
 								.AutoWrapText(true)
 							]
@@ -382,14 +403,13 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 							[
 								SNew(STextBlock)
 								.Text(FText::FromString(Idol ? FString::Printf(TEXT("%s | Base %.0f"), *Idol->Category, Idol->BaseDamage) : TEXT("Click an offer below to fill this slot.")))
-								.Font(T66MiniUI::BodyFont(12))
+								.Font(T66MiniUI::BodyFont(10))
 								.ColorAndOpacity(Idol ? MutedText : BodyText)
 								.AutoWrapText(true)
 							]
 						],
-						Idol ? T66MiniUI::AccentGold() : PanelOutline,
-						Idol ? FLinearColor(0.17f, 0.15f, 0.07f, 0.98f) : PanelFill,
-						FMargin(14.f, 12.f))
+						FMargin(12.f, 8.f, 28.f, 8.f),
+						T66MiniGeneratedChrome::ESlice::IdolOfferRow)
 				];
 		}
 	}
@@ -412,27 +432,15 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 				.AutoHeight()
 				.Padding(0.f, 0.f, 0.f, 12.f)
 				[
-						SNew(SButton)
-						.OnClicked(FOnClicked::CreateLambda([this, IdolID]()
-						{
-							return HandleTakeIdolClicked(IdolID);
-						}))
-						.ButtonColorAndOpacity(T66MiniUI::AccentBlue())
-						.ContentPadding(FMargin(6.f))
+					T66MiniGeneratedChrome::MakePanel(
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 16.f, 0.f)
 						[
-							SNew(SBorder)
-							.BorderImage(T66MiniUI::WhiteBrush())
-							.BorderBackgroundColor(FLinearColor(0.05f, 0.06f, 0.08f, 1.0f))
-							.Padding(FMargin(10.f, 8.f))
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 16.f, 0.f)
-								[
-									MakeFramedPanel(
-										MakeIconWidget(IdolBrush, IdolName.Left(1).ToUpper(), 56.f, 56.f, T66MiniUI::RaisedFill()),
-										FLinearColor(0.20f, 0.21f, 0.26f, 1.0f),
-										FLinearColor(0.06f, 0.06f, 0.06f, 1.0f),
-										FMargin(6.f))
+							MakeFramedPanel(
+								MakeIconWidget(IdolBrush, IdolName.Left(1).ToUpper(), 56.f, 56.f, T66MiniUI::RaisedFill()),
+								T66MiniUI::PanelOutline(),
+								T66MiniUI::ShellFill(),
+								FMargin(6.f))
 							]
 							+ SHorizontalBox::Slot().FillWidth(1.f)
 							[
@@ -455,22 +463,24 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 							]
 							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 							[
-								MakeFramedPanel(
-									SNew(STextBlock)
-									.Text(NSLOCTEXT("T66Mini.IdolSelect", "Take", "TAKE"))
-									.Font(T66MiniUI::BoldFont(18))
-									.ColorAndOpacity(T66MiniUI::AccentGreen()),
-									FLinearColor(0.22f, 0.24f, 0.19f, 1.0f),
-									FLinearColor(0.10f, 0.12f, 0.08f, 1.0f),
-									FMargin(14.f, 10.f))
+								T66MiniGeneratedChrome::MakeButton(
+									NSLOCTEXT("T66Mini.IdolSelect", "Take", "TAKE"),
+									FOnClicked::CreateLambda([this, IdolID]()
+									{
+										return HandleTakeIdolClicked(IdolID);
+									}),
+									ET66ButtonType::Success,
+									96.f,
+									44.f,
+									15)
 							]
-						]
-					]
+						, FMargin(16.f, 10.f, 34.f, 10.f),
+						T66MiniGeneratedChrome::ESlice::IdolOfferRowAction)
 				];
-		}
+	}
 	}
 
-	TSharedRef<SUniformGridPanel> StatusMetrics = SNew(SUniformGridPanel).SlotPadding(FMargin(10.f, 10.f, 10.f, 10.f));
+	TSharedRef<SUniformGridPanel> StatusMetrics = SNew(SUniformGridPanel).SlotPadding(FMargin(7.f, 7.f, 7.f, 7.f));
 
 	if (FrontendState)
 	{
@@ -479,9 +489,7 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 		StatusMetrics->AddSlot(0, 1)[MakeMetricChip(TEXT("Hero"), SelectedHero ? SelectedHero->DisplayName : FString(TEXT("--")), T66MiniUI::AccentGreen())];
 		StatusMetrics->AddSlot(1, 1)[MakeMetricChip(TEXT("Difficulty"), SelectedDifficulty ? SelectedDifficulty->DisplayName : FString(TEXT("--")), SelectedDifficulty ? SelectedDifficulty->AccentColor : FLinearColor::White)];
 		StatusMetrics->AddSlot(0, 2)[MakeMetricChip(TEXT("Companion"), SelectedCompanion ? SelectedCompanion->DisplayName : FString(TEXT("--")), T66MiniUI::AccentGold())];
-		StatusMetrics->AddSlot(1, 2)[MakeMetricChip(TEXT("Heal / Sec"), FString::Printf(TEXT("%.1f"), CompanionHealingPerSecond), FLinearColor::White)];
-		StatusMetrics->AddSlot(0, 3)[MakeMetricChip(TEXT("Unity"), FString::Printf(TEXT("%d / %d"), CompanionUnityStages, UT66MiniSaveSubsystem::CompanionUnityTierHyperStages), FLinearColor::White)];
-		StatusMetrics->AddSlot(1, 3)[MakeMetricChip(TEXT("Party"), bOnlineMiniParty ? FString::Printf(TEXT("%d / 2"), LobbyProfiles.Num()) : FString(TEXT("SOLO")), bOnlineMiniParty ? T66MiniUI::AccentGreen() : FLinearColor::White)];
+		StatusMetrics->AddSlot(1, 2)[MakeMetricChip(TEXT("Party"), bOnlineMiniParty ? FString::Printf(TEXT("%d / 2"), LobbyProfiles.Num()) : FString(TEXT("SOLO")), bOnlineMiniParty ? T66MiniUI::AccentGreen() : FLinearColor::White)];
 	}
 
 	const FText ContinueLabel = bOnlineMiniParty
@@ -495,9 +503,13 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
+			T66MiniMakeSceneBackground(BackgroundFill)
+		]
+		+ SOverlay::Slot()
+		[
 			SNew(SBorder)
 			.BorderImage(T66MiniUI::WhiteBrush())
-			.BorderBackgroundColor(BackgroundFill)
+			.BorderBackgroundColor(FLinearColor(0.018f, 0.014f, 0.024f, 0.48f))
 			.Padding(FMargin(16.f, 14.f, 16.f, 14.f))
 			[
 				SNew(SOverlay)
@@ -515,12 +527,11 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 14.f)
 						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66Mini.IdolSelect", "Title", "Idol Selection"))
-							.Font(T66MiniUI::TitleFont(30))
-							.ColorAndOpacity(FLinearColor::White)
-							.ShadowOffset(FVector2D(2.f, 2.f))
-							.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.95f))
+							T66MiniGeneratedChrome::MakeTitlePlaque(
+								NSLOCTEXT("T66Mini.IdolSelect", "Title", "Idol Selection"),
+								30,
+								560.f,
+								78.f)
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 16.f)
 						[
@@ -539,7 +550,7 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 									],
 									PanelOutline,
 									PanelFill,
-									FMargin(18.f, 16.f, 18.f, 60.f))
+									FMargin(18.f, 16.f, 18.f, 86.f))
 							]
 							+ SHorizontalBox::Slot().FillWidth(0.82f)
 							[
@@ -562,7 +573,7 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 										.Text(FText::FromString(SelectedDifficulty
 											? FString::Printf(TEXT("%s pressure with %s on point and %s on support."), *SelectedDifficulty->DisplayName, SelectedHero ? *SelectedHero->DisplayName : TEXT("your hero"), SelectedCompanion ? *SelectedCompanion->DisplayName : TEXT("no companion"))
 											: FString(TEXT("Lock in your idols before heading into the run."))))
-										.Font(T66MiniUI::BodyFont(15))
+										.Font(T66MiniUI::BodyFont(14))
 										.ColorAndOpacity(BodyText)
 										.AutoWrapText(true)
 									]
@@ -570,13 +581,13 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 									[
 										SAssignNew(StatusTextBlock, STextBlock)
 										.Text(CurrentStatusText)
-										.Font(T66MiniUI::BodyFont(16))
+										.Font(T66MiniUI::BodyFont(14))
 										.ColorAndOpacity(MutedText)
 										.AutoWrapText(true)
 									],
 									PanelOutline,
 									PanelFill,
-									FMargin(18.f, 16.f, 18.f, 60.f))
+									FMargin(18.f, 16.f, 18.f, 98.f))
 							]
 						]
 					]
@@ -592,16 +603,13 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 			.WidthOverride(140.f)
 			.HeightOverride(48.f)
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniIdolSelectScreen::HandleBackClicked))
-				.ButtonColorAndOpacity(T66MiniUI::AccentBlue())
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66Mini.IdolSelect", "Back", "BACK"))
-					.Font(T66MiniUI::BoldFont(18))
-					.ColorAndOpacity(FLinearColor::White)
-					.Justification(ETextJustify::Center)
-				]
+				T66MiniGeneratedChrome::MakeButton(
+					NSLOCTEXT("T66Mini.IdolSelect", "Back", "BACK"),
+					FOnClicked::CreateUObject(this, &UT66MiniIdolSelectScreen::HandleBackClicked),
+					ET66ButtonType::Neutral,
+					140.f,
+					48.f,
+					18)
 			]
 		]
 		+ SOverlay::Slot()
@@ -610,19 +618,16 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 		.Padding(0.f, 0.f, 0.f, 24.f)
 		[
 			SNew(SBox)
-			.WidthOverride(170.f)
-			.HeightOverride(48.f)
+			.WidthOverride(190.f)
+			.HeightOverride(58.f)
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniIdolSelectScreen::HandleRerollClicked))
-				.ButtonColorAndOpacity(T66MiniUI::AccentGold())
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66Mini.IdolSelect", "Reroll", "REROLL"))
-					.Font(T66MiniUI::BoldFont(18))
-					.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-					.Justification(ETextJustify::Center)
-				]
+				T66MiniGeneratedChrome::MakeButton(
+					NSLOCTEXT("T66Mini.IdolSelect", "Reroll", "REROLL"),
+					FOnClicked::CreateUObject(this, &UT66MiniIdolSelectScreen::HandleRerollClicked),
+					ET66ButtonType::Primary,
+					190.f,
+					58.f,
+					18)
 			]
 		]
 		+ SOverlay::Slot()
@@ -631,19 +636,16 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 		.Padding(0.f, 0.f, 28.f, 24.f)
 		[
 			SNew(SBox)
-			.WidthOverride(200.f)
-			.HeightOverride(54.f)
+			.WidthOverride(226.f)
+			.HeightOverride(58.f)
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniIdolSelectScreen::HandleContinueClicked))
-				.ButtonColorAndOpacity(T66MiniUI::AccentGreen())
-				[
-					SNew(STextBlock)
-					.Text(ContinueLabel)
-					.Font(T66MiniUI::BoldFont(20))
-					.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-					.Justification(ETextJustify::Center)
-				]
+				T66MiniGeneratedChrome::MakeButton(
+					ContinueLabel,
+					FOnClicked::CreateUObject(this, &UT66MiniIdolSelectScreen::HandleContinueClicked),
+					ET66ButtonType::Success,
+					226.f,
+					58.f,
+					18)
 			]
 		];
 }

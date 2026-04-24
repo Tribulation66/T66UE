@@ -1,0 +1,26 @@
+Create one production sprite-family board for T66 screen `report_bug`.
+
+Use the attached canonical main-menu style anchor and the attached `report_bug` screen-specific reference. This is exact reconstruction of the reference art style, not a redesign.
+
+Output requirement:
+- exactly one 1920x1080 flat neutral presentation board
+- front-on orthographic UI components only
+- no full-screen screenshot composite
+- no baked localizable labels, names, numbers, descriptions, leaderboard rows, progress values, or typed/user text
+- no runtime-owned portraits, avatars, screenshots, save previews, or gameplay underlay
+- components should be isolated with transparent or flat-neutral spacing so deterministic slicing is possible
+- preserve the carved dark stone, gold trim, purple gem, green/blue/purple plate material language from the attached reference
+
+Families required for this screen:
+modal-shell, multiline-input-shell, compact-buttons
+
+Reference layout regions:
+- modal_scrim: 0,0,1920,1080 owner=runtime-overlay
+- report_shell: 620,314,684,450 owner=generated-shell
+- title_well: 724,360,472,72 owner=runtime-text
+- text_field_shell: 682,458,556,156 owner=generated-shell
+- textbox_live_text: 704,476,514,120 owner=runtime-text
+- submit_button: 744,654,198,74 owner=runtime-control
+- cancel_button: 978,654,198,74 owner=runtime-control
+
+Generate text-free runtime assets only. For runtime-owned interiors, produce shell-only frames, empty wells, socket frames, or open apertures. Controls need normal, hover, pressed, disabled, and selected states where applicable with stable anchors.

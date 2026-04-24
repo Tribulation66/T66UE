@@ -1,0 +1,21 @@
+{
+  "screen_slug": "pause_menu",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "assets": [
+    {
+      "path": "generated/20260424-131534-create-one-production-sprite-family-board-for-t6.png",
+      "kind": "helper_only_rejected_family_board",
+      "size": [
+        1672,
+        941
+      ],
+      "source": "legacy rejected sprite-family generation",
+      "status": "rejected",
+      "notes": "Visually useful text-free family board, but rejected for production because generated resolution is 1672x941. Project workflow forbids promoting non-canonical generated outputs as production sprite sheets, slices, or runtime assets."
+    }
+  ],
+  "notes": "Production sprite family generation is blocked until the image backend can emit acceptable canonical/native-proportion output. Runtime must not use the full reference as an overlay."
+}

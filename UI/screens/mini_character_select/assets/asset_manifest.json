@@ -1,0 +1,39 @@
+{
+  "screen": "mini_character_select",
+  "canvas_size": [1920, 1080],
+  "asset_phase": "accepted existing generated runtime assets",
+  "assets": [
+    {
+      "id": "scene_plate",
+      "path": "SourceAssets/UI/MainMenuReference/scene_background_purple_imagegen_1920x1080.png",
+      "kind": "ui_free_scene_plate",
+      "runtime_safe": true
+    },
+    {
+      "id": "content_shell",
+      "path": "SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png",
+      "kind": "nine_slice_panel_shell",
+      "runtime_safe": true,
+      "nine_slice_margin": [0.035, 0.12, 0.035, 0.12]
+    },
+    {
+      "id": "row_shell",
+      "path": "SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png",
+      "kind": "nine_slice_row_shell",
+      "runtime_safe": true,
+      "nine_slice_margin": [0.055, 0.32, 0.055, 0.32]
+    },
+    {
+      "id": "button_continue",
+      "path": "SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_plate.png",
+      "kind": "button_plate",
+      "runtime_safe": true
+    },
+    {
+      "id": "button_back",
+      "path": "SourceAssets/UI/MainMenuReference/Center/cta_button_load_game_plate.png",
+      "kind": "button_plate",
+      "runtime_safe": true
+    }
+  ]
+}

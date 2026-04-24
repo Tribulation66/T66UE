@@ -1,0 +1,92 @@
+{
+  "screen_slug": "player_summary_picker",
+  "screen_key": "PlayerSummaryPicker",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\player_summary_picker\\reference\\canonical_reference_1920x1080.png",
+  "source_file": "Source/T66/UI/Screens/T66PlayerSummaryPickerScreen.cpp",
+  "regions": [
+    {
+      "name": "modal_scrim",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "owner": "runtime-overlay"
+    },
+    {
+      "name": "empty_shell",
+      "rect": {
+        "x": 496,
+        "y": 364,
+        "width": 928,
+        "height": 242
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "title_well",
+      "rect": {
+        "x": 748,
+        "y": 400,
+        "width": 424,
+        "height": 58
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "empty_message_well",
+      "rect": {
+        "x": 704,
+        "y": 502,
+        "width": 512,
+        "height": 42
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "populated_shell",
+      "rect": {
+        "x": 360,
+        "y": 268,
+        "width": 1200,
+        "height": 520
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "player_card",
+      "rect": {
+        "x": 432,
+        "y": 390,
+        "width": 330,
+        "height": 300
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "portrait_socket",
+      "rect": {
+        "x": 470,
+        "y": 426,
+        "width": 254,
+        "height": 160
+      },
+      "owner": "runtime-image"
+    },
+    {
+      "name": "select_button",
+      "rect": {
+        "x": 486,
+        "y": 620,
+        "width": 220,
+        "height": 58
+      },
+      "owner": "runtime-control"
+    }
+  ]
+}

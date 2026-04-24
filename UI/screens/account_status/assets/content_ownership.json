@@ -1,0 +1,154 @@
+{
+  "screen_slug": "account_status",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\account_status\\reference\\canonical_reference_1920x1080.png",
+  "runtime_owned": [
+    {
+      "name": "shared_topbar",
+      "rect": [
+        0,
+        0,
+        1920,
+        144
+      ],
+      "content_type": "shared-topbar",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "back_button",
+      "rect": [
+        30,
+        212,
+        212,
+        66
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "tab_strip",
+      "rect": [
+        730,
+        236,
+        460,
+        62
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "progress_rows",
+      "rect": [
+        50,
+        628,
+        858,
+        400
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "progress_fills",
+      "rect": [
+        52,
+        842,
+        856,
+        118
+      ],
+      "content_type": "runtime-value",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "pb_filters",
+      "rect": [
+        1000,
+        338,
+        830,
+        58
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "score_table",
+      "rect": [
+        990,
+        420,
+        860,
+        420
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "speed_table",
+      "rect": [
+        990,
+        858,
+        860,
+        220
+      ],
+      "content_type": "runtime-text",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    },
+    {
+      "name": "scrollbar",
+      "rect": [
+        1866,
+        306,
+        28,
+        586
+      ],
+      "content_type": "runtime-control",
+      "render_contract": "live/runtime-owned; do not bake into generated art"
+    }
+  ],
+  "generated_owned": [
+    {
+      "name": "outer_frame",
+      "rect": [
+        0,
+        232,
+        1920,
+        848
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    },
+    {
+      "name": "status_panel",
+      "rect": [
+        20,
+        310,
+        920,
+        214
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    },
+    {
+      "name": "progress_panel",
+      "rect": [
+        20,
+        548,
+        920,
+        526
+      ],
+      "content_type": "generated-shell",
+      "render_contract": "screen-local generated shell/chrome; no localizable text"
+    }
+  ],
+  "families_required": [
+    "outer-frame",
+    "section-shell",
+    "row-shell",
+    "tab-button",
+    "dropdown-field",
+    "table-row",
+    "progress-trough",
+    "scrollbar"
+  ]
+}

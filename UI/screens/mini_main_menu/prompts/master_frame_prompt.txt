@@ -1,0 +1,34 @@
+Use case: screen-specific T66 UI style reference gate
+Canvas: 1920x1080 exactly
+Target: Mini Chadpocalypse Main Menu
+
+Generate one full-screen canonical reference image for the Mini Chadpocalypse Main Menu.
+
+Use exactly these three inputs:
+1. Attached image 1: the approved main-menu canonical style anchor. Extract only the visual language: chunky fantasy stone, dark dungeon surfaces, dark wood, bronze/gold bevels, green/blue/purple button families, gem accents, readable cream/gold typography zones.
+2. Attached image 2: the current packaged runtime screenshot for Mini Main Menu. Preserve its layout intent: Back button top-left, title top-center, social panel bottom-left, center Start/Continue stack, and leaderboard panel bottom-right.
+3. The layout contract below.
+
+Do not redesign the screen, move major panels, add unrelated features, or turn it into a marketing screen. Restyle the existing functional layout into the canonical Chadpocalypse fantasy material language. The output is an offline comparison target, not a runtime overlay.
+
+Runtime ownership rules:
+- Keep display text, labels, friend names, Steam state, leaderboard values, dropdown values, party names, and button labels as runtime/live regions.
+- Keep avatars, friend portraits, party portraits, and leaderboard portraits as open live-data wells.
+- Do not bake localizable or API-driven content into runtime-intended component art.
+- Do not use the full generated reference as a production background.
+
+Required visual structure:
+- UI-free dungeon background with the mini-menu statue/scene feeling.
+- Back button at top-left.
+- Large centered title zone for MINI CHADPOCALYPSE.
+- Left social shell with profile card, search field, online/offline lists, and party strip.
+- Center CTA shell with green START and blue CONTINUE buttons.
+- Right leaderboard shell with title, description, Global/Friends filters, party/difficulty dropdowns, list/status area, and footer status.
+
+Important constraints:
+- Preserve the three-zone layout and approximate proportions from the current screenshot.
+- Use the canonical main-menu style, not only a vague fantasy style.
+- Make panels and buttons feel like individual reusable components.
+- Leave clear sockets for text and live images.
+- No watermark, no extra buttons, no layout drift, no 1672x941 output.
+

@@ -74,10 +74,7 @@ public class T66 : ModuleRules
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/PowerUp/Statues/forbidden_chad/...");
 		AddLooseRuntimeDependency("SourceAssets/OuterWallTexture.png");
 		AddLooseRuntimeDependency("SourceAssets/UI/MainMenuReference/...");
-		AddLooseRuntimeDependency("SourceAssets/UI/MainMenuReference/SheetSlices/...");
-		AddLooseRuntimeDependency("SourceAssets/UI/MainMenuReference/reference_main_menu_master_notopbarbuttons.png");
-		AddLooseRuntimeDependency("SourceAssets/UI/MainMenuReference/reference_main_menu_master_nobuttons.png");
-		AddLooseRuntimeDependency("SourceAssets/UI/MainMenuReference/TopBar/topbar_shell_clean.png");
+		AddLooseRuntimeDependency("SourceAssets/UI/SettingsReference/...");
 
 		// Add all subdirectories as include paths
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory));

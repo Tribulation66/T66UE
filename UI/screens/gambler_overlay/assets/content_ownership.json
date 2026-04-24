@@ -1,0 +1,11 @@
+{
+  "screen": "GamblerOverlay",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "gambler_outer_shell", "group": "Center", "content_type": "generated-shell", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/Gambler/T66GamblerOverlayWidget_Build.cpp"], "notes": "Outer shell and page frames only." },
+    { "id": "economy_header", "group": "TopBar", "content_type": "runtime-value", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-value", "code_refs": ["Source/T66/UI/T66GamblerOverlayWidget.cpp", "Source/T66/UI/Gambler/T66GamblerOverlayWidget_Economy.cpp"], "notes": "Net worth, gold, debt, anger, and status values are live." },
+    { "id": "game_selection_grid", "group": "Center", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/Gambler/T66GamblerOverlayWidget_Build.cpp"], "notes": "Game card frames only; labels/icons/game state are live." },
+    { "id": "minigame_live_wells", "group": "Center", "content_type": "runtime-media", "render_contract": "open-aperture", "outer_owner": "generated-shell", "inner_owner": "runtime-media", "code_refs": ["Source/T66/UI/T66GamblerOverlayWidget.h", "Source/T66/UI/Gambler"], "notes": "Coin, blackjack cards, lottery numbers, plinko, box-opening strip, buyback, and cheat prompt internals are runtime-owned." },
+    { "id": "inventory_sell_panel", "group": "RightPanel", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/Gambler/T66GamblerOverlayWidget_Economy.cpp"], "notes": "Inventory/buyback slot frames only; item content is live." }
+  ]
+}

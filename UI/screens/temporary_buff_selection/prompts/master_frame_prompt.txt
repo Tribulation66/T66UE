@@ -1,0 +1,35 @@
+Use case: screen-specific T66 UI style reference gate
+Canvas: 1920x1080 exactly
+Target: Temporary Buff Selection modal
+
+Generate one full-screen canonical reference image for the Temporary Buff Selection modal.
+
+Use exactly these three inputs:
+1. Attached image 1: the approved main-menu canonical style anchor. Extract only the visual language: chunky fantasy stone, dark dungeon panels, dark wood, bronze/gold bevels, green CTA treatment, blue/purple/neutral secondary controls, gem accents, readable cream/gold typography zones.
+2. Attached image 2: the current packaged runtime screenshot for Temporary Buff Selection. Preserve its modal layout: near-full-screen shell, title/helper text, four loadout slots, coupon counter, six-column buff card grid, bottom party strip, Done button, difficulty dropdown, and Enter Tribulation CTA.
+3. The layout contract below.
+
+Do not redesign the modal, add unrelated features, move the grid/footer/header, or simplify the structure. Restyle the current functional modal into the canonical Chadpocalypse fantasy material language. The output is an offline comparison target, not a runtime overlay.
+
+Runtime ownership rules:
+- Keep all localizable text, buff names/descriptions, counts, coupon value, difficulty value, party labels, and button labels as runtime/live regions.
+- Keep buff icons and party avatars as runtime image wells.
+- Do not bake API-driven or save-data-driven values into runtime-intended component art.
+- Modal background/scrim can be represented in the reference, but production art must not bake the underlying screen into a modal asset.
+
+Required visual structure:
+- Near-full-screen dark fantasy modal shell.
+- Header title and helper-copy zone at upper left.
+- Chad Coupons compact counter at upper right.
+- Four top loadout slots with selectable empty/filled treatment.
+- Scrollable six-column card grid with icon wells, text wells, count wells, and action button wells.
+- Footer party strip with four avatar sockets.
+- Compact DONE button, difficulty dropdown, and large green ENTER TRIBULATION CTA.
+
+Important constraints:
+- Preserve the current modal layout and proportions from the current screenshot.
+- Use the canonical main-menu style, not only a vague fantasy style.
+- Make buff cards, slots, dropdowns, buttons, and panels feel like individual reusable components.
+- Leave clear sockets for text and live images.
+- No watermark, no extra buttons, no layout drift, no 1672x941 output.
+

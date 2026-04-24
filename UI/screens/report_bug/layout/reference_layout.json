@@ -1,0 +1,82 @@
+{
+  "screen_slug": "report_bug",
+  "screen_key": "ReportBug",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\report_bug\\reference\\canonical_reference_1920x1080.png",
+  "source_file": "Source/T66/UI/Screens/T66ReportBugScreen.cpp",
+  "regions": [
+    {
+      "name": "modal_scrim",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "owner": "runtime-overlay"
+    },
+    {
+      "name": "report_shell",
+      "rect": {
+        "x": 620,
+        "y": 314,
+        "width": 684,
+        "height": 450
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "title_well",
+      "rect": {
+        "x": 724,
+        "y": 360,
+        "width": 472,
+        "height": 72
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "text_field_shell",
+      "rect": {
+        "x": 682,
+        "y": 458,
+        "width": 556,
+        "height": 156
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "textbox_live_text",
+      "rect": {
+        "x": 704,
+        "y": 476,
+        "width": 514,
+        "height": 120
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "submit_button",
+      "rect": {
+        "x": 744,
+        "y": 654,
+        "width": 198,
+        "height": 74
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "cancel_button",
+      "rect": {
+        "x": 978,
+        "y": 654,
+        "width": 198,
+        "height": 74
+      },
+      "owner": "runtime-control"
+    }
+  ]
+}

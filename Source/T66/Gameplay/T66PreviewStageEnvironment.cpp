@@ -9,6 +9,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/Actor.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -286,6 +287,26 @@ namespace
 		return LoadObject<UMaterialInterface>(nullptr, PreviewFallbackBlockMaterialPath);
 	}
 
+	UMaterialInterface* CreateSelectionDungeonMaterial(
+		UObject* Outer,
+		const FLinearColor& BaseColor)
+	{
+		UMaterialInterface* PreviewBaseMaterial = FT66VisualUtil::GetFlatColorMaterial();
+		if (!PreviewBaseMaterial)
+		{
+			return nullptr;
+		}
+
+		UMaterialInstanceDynamic* MaterialInstance = UMaterialInstanceDynamic::Create(PreviewBaseMaterial, Outer);
+		if (!MaterialInstance)
+		{
+			return PreviewBaseMaterial;
+		}
+
+		FT66VisualUtil::ConfigureFlatColorMaterial(MaterialInstance, BaseColor);
+		return MaterialInstance;
+	}
+
 	void ConfigureDecorSlot(
 		UStaticMeshComponent* Component,
 		const FT66PreviewDecorSpec* Spec,
@@ -384,6 +405,31 @@ void T66PreviewStageEnvironment::ApplyPreviewEnvironment(
 	UMaterialInterface* GroundMaterial = ResolvePreviewSurfaceMaterial(GroundComponent, ThemeProfile, false, false);
 	UMaterialInterface* WallMaterial = ResolvePreviewSurfaceMaterial(Owner, ThemeProfile, true, false);
 	UMaterialInterface* RoofMaterial = ResolvePreviewSurfaceMaterial(Owner, ThemeProfile, false, true);
+	const bool bSelectionDungeonStage =
+		PreviewStageMode == ET66PreviewStageMode::Selection
+		&& ThemeProfile.Theme == T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon;
+
+	if (bSelectionDungeonStage)
+	{
+		if (UMaterialInterface* SelectionGroundMaterial = CreateSelectionDungeonMaterial(
+			GroundComponent,
+			FLinearColor(0.065f, 0.055f, 0.047f, 1.0f)))
+		{
+			GroundMaterial = SelectionGroundMaterial;
+		}
+		if (UMaterialInterface* SelectionWallMaterial = CreateSelectionDungeonMaterial(
+			Owner,
+			FLinearColor(0.038f, 0.032f, 0.042f, 1.0f)))
+		{
+			WallMaterial = SelectionWallMaterial;
+		}
+		if (UMaterialInterface* SelectionRoofMaterial = CreateSelectionDungeonMaterial(
+			Owner,
+			FLinearColor(0.018f, 0.015f, 0.024f, 1.0f)))
+		{
+			RoofMaterial = SelectionRoofMaterial;
+		}
+	}
 
 	if (!WallMaterial)
 	{

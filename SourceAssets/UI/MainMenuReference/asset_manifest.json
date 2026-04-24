@@ -1,1298 +1,1323 @@
 {
   "source_image": "C:\\UE\\T66\\SourceAssets\\Reference Main Menu.png",
-  "source_size": [
-    1672,
-    941
+  "canvas_size": [
+    1920,
+    1080
   ],
   "output_root": "C:\\UE\\T66\\SourceAssets\\UI\\MainMenuReference",
   "assets": [
     {
-      "path": "Tiles/panel_fill_dark.png",
-      "group": "Tiles",
-      "kind": "fill_tile",
-      "notes": "Reference fill sample for shell cleanup or textured repeats.",
+      "path": "scene_background_1920x1080.png",
+      "group": "Scene",
+      "kind": "ui_free_scene_plate",
       "source_box": [
-        1290,
-        742,
-        1374,
-        826
-      ]
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "layout_key": null,
+      "notes": "Fresh imagegen UI-free 1920x1080 scene/background plate."
     },
     {
-      "path": "Tiles/topbar_fill_warm.png",
-      "group": "Tiles",
-      "kind": "fill_tile",
-      "notes": "Reference fill sample for shell cleanup or textured repeats.",
+      "path": "scene_background_purple_imagegen_1920x1080.png",
+      "group": "Scene",
+      "kind": "ui_free_scene_plate",
       "source_box": [
-        226,
-        18,
-        270,
-        92
-      ]
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "layout_key": null,
+      "notes": "Fresh purple crystal/idol UI-free scene plate generated from the approved earlier main menu visual direction."
+    },
+    {
+      "path": "scene_background_generated_source.png",
+      "group": "Scene",
+      "kind": "ui_free_scene_plate_source",
+      "source_box": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "layout_key": null,
+      "notes": "Fresh imagegen scene plate source, fit to the runtime canvas without pixel cleanup."
+    },
+    {
+      "path": "TopBar/topbar_shell_clean.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        1920,
+        145
+      ],
+      "layout_key": "TopBar.topbar_strip_full",
+      "notes": "Fresh imagegen top-bar backing strip; buttons own their chrome."
+    },
+    {
+      "path": "TopBar/topbar_backdrop_clean.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        1920,
+        145
+      ],
+      "layout_key": "TopBar.topbar_strip_full",
+      "notes": "Fresh imagegen top-bar backing strip; buttons own their chrome."
     },
     {
       "path": "TopBar/topbar_strip_full.png",
       "group": "TopBar",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the static top-bar rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
         0,
         0,
-        1672,
-        126
-      ]
-    },
-    {
-      "path": "TopBar/button_settings.png",
-      "group": "TopBar",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the static top-bar rebuild.",
-      "source_box": [
-        12,
-        16,
-        108,
-        108
-      ]
-    },
-    {
-      "path": "TopBar/button_chat.png",
-      "group": "TopBar",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the static top-bar rebuild.",
-      "source_box": [
-        126,
-        16,
-        222,
-        108
-      ]
-    },
-    {
-      "path": "TopBar/tab_account.png",
-      "group": "TopBar",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the static top-bar rebuild.",
-      "source_box": [
-        278,
-        16,
-        500,
-        105
-      ]
-    },
-    {
-      "path": "TopBar/badge_profile.png",
-      "group": "TopBar",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the static top-bar rebuild.",
-      "source_box": [
-        521,
-        12,
-        600,
-        119
-      ]
-    },
-    {
-      "path": "TopBar/tab_power_up.png",
-      "group": "TopBar",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the static top-bar rebuild.",
-      "source_box": [
-        616,
-        16,
-        836,
-        105
-      ]
-    },
-    {
-      "path": "TopBar/tab_achievements.png",
-      "group": "TopBar",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the static top-bar rebuild.",
-      "source_box": [
-        848,
-        16,
-        1091,
-        105
-      ]
-    },
-    {
-      "path": "TopBar/tab_minigames.png",
-      "group": "TopBar",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the static top-bar rebuild.",
-      "source_box": [
-        1104,
-        16,
-        1328,
-        105
-      ]
-    },
-    {
-      "path": "TopBar/currency_slot.png",
-      "group": "TopBar",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the static top-bar rebuild.",
-      "source_box": [
-        1369,
-        23,
-        1534,
-        98
-      ]
-    },
-    {
-      "path": "TopBar/button_power.png",
-      "group": "TopBar",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the static top-bar rebuild.",
-      "source_box": [
-        1551,
-        16,
-        1656,
-        108
-      ]
-    },
-    {
-      "path": "TopBar/icon_powerup.png",
-      "group": "TopBar",
-      "kind": "transparent_icon",
-      "notes": "Transparent icon crop derived from the approved reference for live top-bar icon layering.",
-      "source_box": [
-        628,
-        30,
-        666,
-        72
-      ]
-    },
-    {
-      "path": "TopBar/icon_achievements.png",
-      "group": "TopBar",
-      "kind": "transparent_icon",
-      "notes": "Transparent icon crop derived from the approved reference for live top-bar icon layering.",
-      "source_box": [
-        860,
-        31,
-        900,
-        72
-      ]
-    },
-    {
-      "path": "TopBar/icon_minigames.png",
-      "group": "TopBar",
-      "kind": "transparent_icon",
-      "notes": "Transparent icon crop derived from the approved reference for live top-bar icon layering.",
-      "source_box": [
-        1116,
-        30,
-        1158,
-        74
-      ]
+        1920,
+        145
+      ],
+      "layout_key": "TopBar.topbar_strip_full",
+      "notes": "Fresh imagegen top-bar strip."
     },
     {
       "path": "topbar_shell.png",
       "group": "TopBar",
       "kind": "alias_copy",
-      "notes": "Compatibility alias for the top-bar widget loader.",
       "source_box": [
         0,
         0,
-        1672,
-        126
-      ]
+        1920,
+        145
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias."
     },
     {
-      "path": "TopBar/topbar_shell.png",
+      "path": "topbar_backdrop.png",
       "group": "TopBar",
       "kind": "alias_copy",
-      "notes": "Compatibility alias for the top-bar widget loader.",
       "source_box": [
         0,
         0,
-        1672,
-        126
-      ]
+        1920,
+        145
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias."
     },
     {
-      "path": "TopBar/topbar_button_utility.png",
+      "path": "TopBar/button_settings.png",
       "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for the top-bar widget loader.",
+      "kind": "imagegen_slice",
       "source_box": [
-        12,
-        16,
-        108,
-        108
-      ]
+        0,
+        0,
+        110,
+        106
+      ],
+      "layout_key": "TopBar.button_settings",
+      "notes": "Fresh imagegen top-bar plate with no baked runtime-owned text."
     },
     {
-      "path": "TopBar/topbar_button_square.png",
+      "path": "TopBar/button_chat.png",
       "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for the top-bar widget loader.",
+      "kind": "imagegen_slice",
       "source_box": [
-        12,
-        16,
-        108,
-        108
-      ]
+        0,
+        0,
+        110,
+        106
+      ],
+      "layout_key": "TopBar.button_chat",
+      "notes": "Fresh imagegen top-bar plate with no baked runtime-owned text."
     },
     {
-      "path": "TopBar/topbar_button_chat.png",
+      "path": "TopBar/button_power.png",
       "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for the top-bar widget loader.",
+      "kind": "imagegen_slice",
       "source_box": [
-        12,
-        16,
-        108,
-        108
-      ]
+        0,
+        0,
+        121,
+        106
+      ],
+      "layout_key": "TopBar.button_power",
+      "notes": "Fresh imagegen top-bar plate with no baked runtime-owned text."
     },
     {
-      "path": "TopBar/topbar_button_power.png",
+      "path": "TopBar/badge_profile.png",
       "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for the top-bar widget loader.",
+      "kind": "imagegen_slice",
       "source_box": [
-        12,
-        16,
-        108,
-        108
-      ]
-    },
-    {
-      "path": "TopBar/topbar_button_home.png",
-      "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for the top-bar widget loader.",
-      "source_box": [
-        12,
-        16,
-        108,
-        108
-      ]
-    },
-    {
-      "path": "TopBar/topbar_button_home_active.png",
-      "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for the top-bar widget loader.",
-      "source_box": [
-        12,
-        16,
-        108,
-        108
-      ]
-    },
-    {
-      "path": "TopBar/topbar_button_currency.png",
-      "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for the top-bar widget loader.",
-      "source_box": [
-        12,
-        16,
-        108,
-        108
-      ]
-    },
-    {
-      "path": "TopBar/topbar_button_coupon.png",
-      "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for the top-bar widget loader.",
-      "source_box": [
-        12,
-        16,
-        108,
-        108
-      ]
+        0,
+        0,
+        91,
+        123
+      ],
+      "layout_key": "TopBar.badge_profile",
+      "notes": "Fresh imagegen top-bar plate with no baked runtime-owned text."
     },
     {
       "path": "TopBar/currency_slot_blank.png",
       "group": "TopBar",
-      "kind": "clean_component",
-      "notes": "Coupon slot with the baked count removed so the live currency value can render cleanly.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1369,
-        23,
-        1534,
-        98
+        0,
+        0,
+        190,
+        86
       ],
-      "clean_boxes": [
-        [
-          1457,
-          31,
-          1519,
-          87
-        ]
-      ]
+      "layout_key": "TopBar.currency_slot",
+      "notes": "Fresh imagegen top-bar plate with no baked runtime-owned text."
     },
     {
       "path": "TopBar/topbar_button_account.png",
       "group": "TopBar",
-      "kind": "clean_component",
-      "notes": "Top-bar plate with baked label removed for live localizable text.",
+      "kind": "imagegen_slice",
       "source_box": [
-        278,
-        16,
-        500,
-        105
-      ]
+        0,
+        0,
+        255,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_account",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_account_hover.png",
       "group": "TopBar",
-      "kind": "state_variant",
-      "notes": "Hover-state brightness pass for the cleaned top-bar plate.",
+      "kind": "imagegen_slice",
       "source_box": [
-        278,
-        16,
-        500,
-        105
-      ]
+        0,
+        0,
+        255,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_account",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_account_pressed.png",
       "group": "TopBar",
-      "kind": "state_variant",
-      "notes": "Pressed-state brightness pass for the cleaned top-bar plate.",
+      "kind": "imagegen_slice",
       "source_box": [
-        278,
-        16,
-        500,
-        105
-      ]
+        0,
+        0,
+        255,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_account",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
-      "path": "topbar_button_account.png",
+      "path": "TopBar/topbar_button_account_active.png",
       "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for cleaned top-bar account plate.",
+      "kind": "imagegen_slice",
       "source_box": [
-        278,
-        16,
-        500,
-        105
-      ]
+        0,
+        0,
+        255,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_account",
+      "notes": "Fresh imagegen top-bar active plate reuse."
     },
     {
-      "path": "TopBar/topbar_button_account.png",
+      "path": "TopBar/topbar_button_home.png",
       "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for cleaned top-bar account plate.",
+      "kind": "imagegen_slice",
       "source_box": [
-        278,
-        16,
-        500,
-        105
-      ]
+        0,
+        0,
+        91,
+        123
+      ],
+      "layout_key": "TopBar.topbar_button_home",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
+    },
+    {
+      "path": "TopBar/topbar_button_home_hover.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        91,
+        123
+      ],
+      "layout_key": "TopBar.topbar_button_home",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
+    },
+    {
+      "path": "TopBar/topbar_button_home_pressed.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        91,
+        123
+      ],
+      "layout_key": "TopBar.topbar_button_home",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
+    },
+    {
+      "path": "TopBar/topbar_button_home_active.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        91,
+        123
+      ],
+      "layout_key": "TopBar.topbar_button_home",
+      "notes": "Fresh imagegen top-bar active plate reuse."
     },
     {
       "path": "TopBar/topbar_button_nav_power_up.png",
       "group": "TopBar",
-      "kind": "clean_component",
-      "notes": "Top-bar plate with baked label removed for live localizable text.",
+      "kind": "imagegen_slice",
       "source_box": [
-        616,
-        16,
-        836,
-        105
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_nav_power_up",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_nav_power_up_hover.png",
       "group": "TopBar",
-      "kind": "state_variant",
-      "notes": "Hover-state brightness pass for the cleaned top-bar plate.",
+      "kind": "imagegen_slice",
       "source_box": [
-        616,
-        16,
-        836,
-        105
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_nav_power_up",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_nav_power_up_pressed.png",
       "group": "TopBar",
-      "kind": "state_variant",
-      "notes": "Pressed-state brightness pass for the cleaned top-bar plate.",
+      "kind": "imagegen_slice",
       "source_box": [
-        616,
-        16,
-        836,
-        105
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_nav_power_up",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_nav_achievements.png",
       "group": "TopBar",
-      "kind": "clean_component",
-      "notes": "Top-bar plate with baked label removed for live localizable text.",
+      "kind": "imagegen_slice",
       "source_box": [
-        848,
-        16,
-        1091,
-        105
-      ]
+        0,
+        0,
+        279,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_nav_achievements",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_nav_achievements_hover.png",
       "group": "TopBar",
-      "kind": "state_variant",
-      "notes": "Hover-state brightness pass for the cleaned top-bar plate.",
+      "kind": "imagegen_slice",
       "source_box": [
-        848,
-        16,
-        1091,
-        105
-      ]
+        0,
+        0,
+        279,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_nav_achievements",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_nav_achievements_pressed.png",
       "group": "TopBar",
-      "kind": "state_variant",
-      "notes": "Pressed-state brightness pass for the cleaned top-bar plate.",
+      "kind": "imagegen_slice",
       "source_box": [
-        848,
-        16,
-        1091,
-        105
-      ]
+        0,
+        0,
+        279,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_nav_achievements",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_nav_minigames.png",
       "group": "TopBar",
-      "kind": "clean_component",
-      "notes": "Top-bar plate with baked label removed for live localizable text.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1104,
-        16,
-        1328,
-        105
-      ]
+        0,
+        0,
+        257,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_nav_minigames",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_nav_minigames_hover.png",
       "group": "TopBar",
-      "kind": "state_variant",
-      "notes": "Hover-state brightness pass for the cleaned top-bar plate.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1104,
-        16,
-        1328,
-        105
-      ]
+        0,
+        0,
+        257,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_nav_minigames",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_nav_minigames_pressed.png",
       "group": "TopBar",
-      "kind": "state_variant",
-      "notes": "Pressed-state brightness pass for the cleaned top-bar plate.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1104,
-        16,
-        1328,
-        105
-      ]
-    },
-    {
-      "path": "topbar_button_nav.png",
-      "group": "TopBar",
-      "kind": "alias_copy",
-      "notes": "Compatibility alias for cleaned shared nav plate.",
-      "source_box": [
-        616,
-        16,
-        836,
-        105
-      ]
+        0,
+        0,
+        257,
+        103
+      ],
+      "layout_key": "TopBar.topbar_button_nav_minigames",
+      "notes": "Fresh imagegen top-bar plate. Hover/pressed reuse the generated plate until a generated state board exists."
     },
     {
       "path": "TopBar/topbar_button_nav.png",
       "group": "TopBar",
       "kind": "alias_copy",
-      "notes": "Compatibility alias for cleaned shared nav plate.",
       "source_box": [
-        616,
-        16,
-        836,
-        105
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Canonical shared nav state alias."
     },
     {
-      "path": "TopBar/topbar_button_account_active.png",
+      "path": "TopBar/topbar_button_nav_hover.png",
       "group": "TopBar",
-      "kind": "state_variant",
-      "notes": "Active-state brightness pass for the cleaned account plate.",
+      "kind": "alias_copy",
       "source_box": [
-        278,
-        16,
-        500,
-        105
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Canonical shared nav state alias."
+    },
+    {
+      "path": "TopBar/topbar_button_nav_pressed.png",
+      "group": "TopBar",
+      "kind": "alias_copy",
+      "source_box": [
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Canonical shared nav state alias."
+    },
+    {
+      "path": "topbar_button_account.png",
+      "group": "TopBar",
+      "kind": "alias_copy",
+      "source_box": [
+        0,
+        0,
+        255,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias."
     },
     {
       "path": "topbar_button_account_active.png",
       "group": "TopBar",
       "kind": "alias_copy",
-      "notes": "Compatibility alias for cleaned active account plate.",
       "source_box": [
-        278,
-        16,
-        500,
-        105
-      ]
+        0,
+        0,
+        255,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias."
     },
     {
-      "path": "TopBar/topbar_button_account_active.png",
+      "path": "topbar_button_nav.png",
       "group": "TopBar",
       "kind": "alias_copy",
-      "notes": "Compatibility alias for cleaned active account plate.",
       "source_box": [
-        278,
-        16,
-        500,
-        105
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias."
     },
     {
-      "path": "Center/center_backdrop_full.png",
-      "group": "Center",
-      "kind": "exact_crop",
-      "notes": "Exact center-scene reference crop for the mirror build.",
+      "path": "SheetSlices/TopBar/nav.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
       "source_box": [
-        401,
-        120,
-        1274,
-        941
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Generated generic nav state plate alias."
     },
     {
-      "path": "Center/title_lockup.png",
-      "group": "Center",
-      "kind": "exact_crop",
-      "notes": "Exact center-scene reference crop for the mirror build.",
+      "path": "SheetSlices/TopBar/nav_hover.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
       "source_box": [
-        400,
-        120,
-        1275,
-        284
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Generated generic nav state plate alias."
     },
     {
-      "path": "Center/subtitle_lockup.png",
-      "group": "Center",
-      "kind": "exact_crop",
-      "notes": "Exact center-scene reference crop for the mirror build.",
+      "path": "SheetSlices/TopBar/nav_pressed.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
       "source_box": [
-        631,
-        220,
-        1088,
-        281
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Generated generic nav state plate alias."
     },
     {
-      "path": "Center/hero_stage.png",
-      "group": "Center",
-      "kind": "exact_crop",
-      "notes": "Exact center-scene reference crop for the mirror build.",
+      "path": "SheetSlices/TopBar/nav_disabled.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
       "source_box": [
-        414,
-        260,
-        1263,
-        622
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Generated generic nav state plate alias."
     },
     {
-      "path": "Center/cta_stack_full.png",
-      "group": "Center",
-      "kind": "exact_crop",
-      "notes": "Exact center-scene reference crop for the mirror build.",
+      "path": "SheetSlices/TopBar/nav_normal.png",
+      "group": "TopBar",
+      "kind": "alias_copy",
       "source_box": [
-        646,
-        608,
-        1132,
-        879
-      ]
+        0,
+        0,
+        253,
+        103
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias for the canonical generic nav normal state."
     },
     {
-      "path": "Center/cta_button_new_game.png",
-      "group": "Center",
-      "kind": "exact_crop",
-      "notes": "Exact center-scene reference crop for the mirror build.",
+      "path": "TopBar/icon_powerup.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
       "source_box": [
-        662,
-        627,
-        1116,
-        713
-      ]
+        0,
+        0,
+        44,
+        49
+      ],
+      "layout_key": "TopBar.icon_powerup",
+      "notes": "Generated icon crop. Runtime nav icon overlay is disabled while nav plates bake icons."
     },
     {
-      "path": "Center/cta_button_load_game.png",
-      "group": "Center",
-      "kind": "exact_crop",
-      "notes": "Exact center-scene reference crop for the mirror build.",
+      "path": "icon_powerup.png",
+      "group": "TopBar",
+      "kind": "alias_copy",
       "source_box": [
-        662,
-        715,
-        1112,
-        797
-      ]
+        0,
+        0,
+        44,
+        49
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias."
     },
     {
-      "path": "Center/cta_button_daily_challenge.png",
-      "group": "Center",
-      "kind": "exact_crop",
-      "notes": "Exact center-scene reference crop for the mirror build.",
+      "path": "TopBar/icon_achievements.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
       "source_box": [
-        664,
-        799,
-        1113,
-        878
-      ]
+        0,
+        0,
+        45,
+        47
+      ],
+      "layout_key": "TopBar.icon_achievements",
+      "notes": "Generated icon crop. Runtime nav icon overlay is disabled while nav plates bake icons."
+    },
+    {
+      "path": "icon_achievements.png",
+      "group": "TopBar",
+      "kind": "alias_copy",
+      "source_box": [
+        0,
+        0,
+        45,
+        47
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias."
+    },
+    {
+      "path": "TopBar/icon_minigames.png",
+      "group": "TopBar",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        48,
+        51
+      ],
+      "layout_key": "TopBar.icon_minigames",
+      "notes": "Generated icon crop. Runtime nav icon overlay is disabled while nav plates bake icons."
+    },
+    {
+      "path": "icon_minigames.png",
+      "group": "TopBar",
+      "kind": "alias_copy",
+      "source_box": [
+        0,
+        0,
+        48,
+        51
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias."
+    },
+    {
+      "path": "Center/title_lockup_wordmark.png",
+      "group": "Center",
+      "kind": "baked_title_art",
+      "source_box": [
+        0,
+        0,
+        1005,
+        188
+      ],
+      "layout_key": "Center.title_lockup",
+      "notes": "Baked title art only. Tagline remains runtime/localizable text."
+    },
+    {
+      "path": "Center/cta_stack_outer_frame.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        445,
+        311
+      ],
+      "layout_key": "Center.cta_stack_full",
+      "notes": "Fresh imagegen CTA stack frame. Runtime buttons and labels render above it."
+    },
+    {
+      "path": "Center/cta_button_new_game_wide_plate.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        100
+      ],
+      "layout_key": "Center.cta_button_new_game",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_new_game_plate.png",
       "group": "Center",
-      "kind": "runtime_plate",
-      "notes": "Family-authored CTA runtime plate sized to the measured reference bounds with no baked label.",
+      "kind": "imagegen_slice",
       "source_box": [
-        662,
-        627,
-        1085,
-        713
-      ]
+        0,
+        0,
+        388,
+        100
+      ],
+      "layout_key": "Center.cta_button_new_game",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_new_game_wide_plate_hover.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        100
+      ],
+      "layout_key": "Center.cta_button_new_game",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_new_game_plate_hover.png",
       "group": "Center",
-      "kind": "state_variant",
-      "notes": "Hover-state CTA runtime plate promoted from the generated center family.",
+      "kind": "imagegen_slice",
       "source_box": [
-        662,
-        627,
-        1085,
-        713
-      ]
+        0,
+        0,
+        388,
+        100
+      ],
+      "layout_key": "Center.cta_button_new_game",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_new_game_wide_plate_pressed.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        100
+      ],
+      "layout_key": "Center.cta_button_new_game",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_new_game_plate_pressed.png",
       "group": "Center",
-      "kind": "state_variant",
-      "notes": "Pressed-state CTA runtime plate promoted from the generated center family.",
+      "kind": "imagegen_slice",
       "source_box": [
-        662,
-        627,
-        1085,
-        713
-      ]
+        0,
+        0,
+        388,
+        100
+      ],
+      "layout_key": "Center.cta_button_new_game",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_new_game_wide_plate_disabled.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        100
+      ],
+      "layout_key": "Center.cta_button_new_game",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_new_game_plate_disabled.png",
       "group": "Center",
-      "kind": "state_variant",
-      "notes": "Disabled-state CTA runtime plate promoted from the generated center family.",
+      "kind": "imagegen_slice",
       "source_box": [
-        662,
-        627,
-        1085,
-        713
-      ]
+        0,
+        0,
+        388,
+        100
+      ],
+      "layout_key": "Center.cta_button_new_game",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_load_game_wide_plate.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        97
+      ],
+      "layout_key": "Center.cta_button_load_game",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_load_game_plate.png",
       "group": "Center",
-      "kind": "runtime_plate",
-      "notes": "Family-authored CTA runtime plate sized to the measured reference bounds with no baked label.",
+      "kind": "imagegen_slice",
       "source_box": [
-        662,
-        715,
-        1082,
-        797
-      ]
+        0,
+        0,
+        388,
+        97
+      ],
+      "layout_key": "Center.cta_button_load_game",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_load_game_wide_plate_hover.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        97
+      ],
+      "layout_key": "Center.cta_button_load_game",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_load_game_plate_hover.png",
       "group": "Center",
-      "kind": "state_variant",
-      "notes": "Hover-state CTA runtime plate promoted from the generated center family.",
+      "kind": "imagegen_slice",
       "source_box": [
-        662,
-        715,
-        1082,
-        797
-      ]
+        0,
+        0,
+        388,
+        97
+      ],
+      "layout_key": "Center.cta_button_load_game",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_load_game_wide_plate_pressed.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        97
+      ],
+      "layout_key": "Center.cta_button_load_game",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_load_game_plate_pressed.png",
       "group": "Center",
-      "kind": "state_variant",
-      "notes": "Pressed-state CTA runtime plate promoted from the generated center family.",
+      "kind": "imagegen_slice",
       "source_box": [
-        662,
-        715,
-        1082,
-        797
-      ]
+        0,
+        0,
+        388,
+        97
+      ],
+      "layout_key": "Center.cta_button_load_game",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_load_game_wide_plate_disabled.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        97
+      ],
+      "layout_key": "Center.cta_button_load_game",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_load_game_plate_disabled.png",
       "group": "Center",
-      "kind": "state_variant",
-      "notes": "Disabled-state CTA runtime plate promoted from the generated center family.",
+      "kind": "imagegen_slice",
       "source_box": [
-        662,
-        715,
-        1082,
-        797
-      ]
+        0,
+        0,
+        388,
+        97
+      ],
+      "layout_key": "Center.cta_button_load_game",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_daily_challenge_wide_plate.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        92
+      ],
+      "layout_key": "Center.cta_button_daily_challenge",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_daily_challenge_plate.png",
       "group": "Center",
-      "kind": "runtime_plate",
-      "notes": "Family-authored CTA runtime plate sized to the measured reference bounds with no baked label.",
+      "kind": "imagegen_slice",
       "source_box": [
-        664,
-        799,
-        1083,
-        878
-      ]
+        0,
+        0,
+        388,
+        92
+      ],
+      "layout_key": "Center.cta_button_daily_challenge",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_daily_challenge_wide_plate_hover.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        92
+      ],
+      "layout_key": "Center.cta_button_daily_challenge",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_daily_challenge_plate_hover.png",
       "group": "Center",
-      "kind": "state_variant",
-      "notes": "Hover-state CTA runtime plate promoted from the generated center family.",
+      "kind": "imagegen_slice",
       "source_box": [
-        664,
-        799,
-        1083,
-        878
-      ]
+        0,
+        0,
+        388,
+        92
+      ],
+      "layout_key": "Center.cta_button_daily_challenge",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_daily_challenge_wide_plate_pressed.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        92
+      ],
+      "layout_key": "Center.cta_button_daily_challenge",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_daily_challenge_plate_pressed.png",
       "group": "Center",
-      "kind": "state_variant",
-      "notes": "Pressed-state CTA runtime plate promoted from the generated center family.",
+      "kind": "imagegen_slice",
       "source_box": [
-        664,
-        799,
-        1083,
-        878
-      ]
+        0,
+        0,
+        388,
+        92
+      ],
+      "layout_key": "Center.cta_button_daily_challenge",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
+    },
+    {
+      "path": "Center/cta_button_daily_challenge_wide_plate_disabled.png",
+      "group": "Center",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        388,
+        92
+      ],
+      "layout_key": "Center.cta_button_daily_challenge",
+      "notes": "Fresh imagegen CTA button state plate with no baked text."
     },
     {
       "path": "Center/cta_button_daily_challenge_plate_disabled.png",
       "group": "Center",
-      "kind": "state_variant",
-      "notes": "Disabled-state CTA runtime plate promoted from the generated center family.",
+      "kind": "imagegen_slice",
       "source_box": [
-        664,
-        799,
-        1083,
-        878
-      ]
+        0,
+        0,
+        388,
+        92
+      ],
+      "layout_key": "Center.cta_button_daily_challenge",
+      "notes": "Fresh imagegen CTA plate alias with no baked text."
     },
     {
       "path": "LeftPanel/shell_clean.png",
       "group": "LeftPanel",
-      "kind": "clean_shell",
-      "notes": "Outer left panel shell with the interior reset to dark fill for live Slate content.",
+      "kind": "imagegen_slice",
       "source_box": [
-        18,
-        304,
-        442,
-        937
+        0,
+        0,
+        487,
+        726
       ],
-      "clean_boxes": [
-        [
-          31,
-          317,
-          429,
-          921
-        ]
-      ],
-      "recommended_margin_px": 22
+      "layout_key": "Left.shell_full_reference",
+      "notes": "Fresh imagegen left panel shell with live content interior."
     },
     {
       "path": "LeftPanel/profile_card_shell.png",
       "group": "LeftPanel",
-      "kind": "clean_component",
-      "notes": "Profile card frame cleaned for live avatar and account text.",
+      "kind": "imagegen_slice",
       "source_box": [
-        35,
-        314,
-        404,
-        408
+        0,
+        0,
+        424,
+        108
       ],
-      "clean_boxes": [
-        [
-          41,
-          320,
-          129,
-          401
-        ],
-        [
-          142,
-          323,
-          397,
-          398
-        ]
-      ]
-    },
-    {
-      "path": "LeftPanel/profile_avatar_reference.png",
-      "group": "LeftPanel",
-      "kind": "exact_crop",
-      "notes": "Exact profile portrait fallback crop from the reference card.",
-      "source_box": [
-        41,
-        320,
-        129,
-        401
-      ]
+      "layout_key": "Left.profile_card_reference",
+      "notes": "Fresh imagegen profile card shell for live avatar and text."
     },
     {
       "path": "LeftPanel/search_field_shell.png",
       "group": "LeftPanel",
-      "kind": "clean_component",
-      "notes": "Search field shell with placeholder text removed and icon preserved.",
+      "kind": "imagegen_slice",
       "source_box": [
-        40,
-        427,
-        392,
-        474
-      ],
-      "clean_boxes": [
-        [
-          55,
-          437,
-          338,
-          465
-        ]
-      ]
-    },
-    {
-      "path": "LeftPanel/friend_avatar_frame.png",
-      "group": "LeftPanel",
-      "kind": "frame",
-      "notes": "Friend avatar frame with transparent center for live Steam portraits.",
-      "source_box": [
-        39,
-        519,
-        87,
-        568
-      ],
-      "clean_boxes": [
-        [
-          43,
-          523,
-          84,
-          565
-        ]
-      ]
-    },
-    {
-      "path": "LeftPanel/party_slot_frame.png",
-      "group": "LeftPanel",
-      "kind": "frame",
-      "notes": "Party slot frame with transparent center for party member portraits.",
-      "source_box": [
-        38,
-        798,
-        119,
-        888
-      ],
-      "clean_boxes": [
-        [
-          44,
-          804,
-          113,
-          881
-        ]
-      ]
-    },
-    {
-      "path": "LeftPanel/shell_full_reference.png",
-      "group": "LeftPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the left social panel rebuild.",
-      "source_box": [
-        18,
-        304,
-        442,
-        937
-      ]
-    },
-    {
-      "path": "LeftPanel/profile_card_reference.png",
-      "group": "LeftPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the left social panel rebuild.",
-      "source_box": [
-        35,
-        314,
+        0,
+        0,
         404,
-        408
-      ]
-    },
-    {
-      "path": "LeftPanel/search_field_reference.png",
-      "group": "LeftPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the left social panel rebuild.",
-      "source_box": [
-        40,
-        427,
-        392,
-        474
-      ]
-    },
-    {
-      "path": "LeftPanel/search_icon.png",
-      "group": "LeftPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the left social panel rebuild.",
-      "source_box": [
-        353,
-        435,
-        382,
-        463
-      ]
+        54
+      ],
+      "layout_key": "Left.search_field_reference",
+      "notes": "Fresh imagegen search shell for live text."
     },
     {
       "path": "LeftPanel/friend_star_button.png",
       "group": "LeftPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the left social panel rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        253,
-        521,
-        307,
-        571
-      ]
+        0,
+        0,
+        62,
+        57
+      ],
+      "layout_key": "Left.friend_star_button",
+      "notes": "Fresh imagegen friend favorite button."
     },
     {
       "path": "LeftPanel/friend_invite_button.png",
       "group": "LeftPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the left social panel rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        309,
-        521,
-        393,
-        571
-      ]
+        0,
+        0,
+        96,
+        57
+      ],
+      "layout_key": "Left.friend_invite_button",
+      "notes": "Fresh imagegen friend invite button."
     },
     {
       "path": "LeftPanel/friend_offline_button.png",
       "group": "LeftPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the left social panel rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        309,
-        672,
-        394,
-        722
-      ]
+        0,
+        0,
+        97,
+        58
+      ],
+      "layout_key": "Left.friend_offline_button",
+      "notes": "Fresh imagegen friend disabled/offline button."
+    },
+    {
+      "path": "LeftPanel/friend_avatar_frame.png",
+      "group": "LeftPanel",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        55,
+        56
+      ],
+      "layout_key": "Left.friend_avatar_frame_source",
+      "notes": "Fresh imagegen friend avatar frame. Runtime portrait renders over the center."
+    },
+    {
+      "path": "LeftPanel/party_slot_frame.png",
+      "group": "LeftPanel",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        93,
+        103
+      ],
+      "layout_key": "Left.party_slot_source",
+      "notes": "Fresh imagegen party portrait frame. Runtime portrait renders over the center."
     },
     {
       "path": "LeftPanel/close_button.png",
       "group": "LeftPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the left social panel rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        361,
-        751,
-        406,
-        793
-      ]
+        0,
+        0,
+        51,
+        48
+      ],
+      "layout_key": "Left.close_button",
+      "notes": "Fresh imagegen close/leave button."
+    },
+    {
+      "path": "LeftPanel/search_icon.png",
+      "group": "LeftPanel",
+      "kind": "imagegen_slice",
+      "source_box": [
+        0,
+        0,
+        34,
+        32
+      ],
+      "layout_key": "Left.search_icon",
+      "notes": "Fresh imagegen search/filter icon crop."
+    },
+    {
+      "path": "LeftPanel/profile_avatar_reference.png",
+      "group": "LeftPanel",
+      "kind": "fallback_avatar",
+      "source_box": [
+        0,
+        0,
+        101,
+        93
+      ],
+      "layout_key": null,
+      "notes": "Fallback portrait only; Steam avatar remains live."
     },
     {
       "path": "RightPanel/shell_clean.png",
       "group": "RightPanel",
-      "kind": "clean_shell",
-      "notes": "Outer leaderboard shell with live-content area reset to dark fill.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1245,
-        321,
-        1644,
-        938
+        0,
+        0,
+        458,
+        709
       ],
-      "clean_boxes": [
-        [
-          1258,
-          334,
-          1631,
-          892
-        ]
-      ],
-      "recommended_margin_px": 22
-    },
-    {
-      "path": "RightPanel/dropdown_shell_left_clean.png",
-      "group": "RightPanel",
-      "kind": "clean_component",
-      "notes": "Left leaderboard dropdown shell with label area removed and chevron preserved.",
-      "source_box": [
-        1260,
-        397,
-        1441,
-        447
-      ],
-      "clean_boxes": [
-        [
-          1274,
-          407,
-          1373,
-          436
-        ]
-      ]
-    },
-    {
-      "path": "RightPanel/dropdown_shell_right_clean.png",
-      "group": "RightPanel",
-      "kind": "clean_component",
-      "notes": "Right leaderboard dropdown shell with label area removed and chevron preserved.",
-      "source_box": [
-        1444,
-        397,
-        1628,
-        447
-      ],
-      "clean_boxes": [
-        [
-          1460,
-          407,
-          1548,
-          436
-        ]
-      ]
-    },
-    {
-      "path": "RightPanel/leaderboard_avatar_frame.png",
-      "group": "RightPanel",
-      "kind": "frame",
-      "notes": "Leaderboard avatar frame with transparent center for live avatars.",
-      "source_box": [
-        1335,
-        550,
-        1384,
-        599
-      ],
-      "clean_boxes": [
-        [
-          1339,
-          554,
-          1380,
-          595
-        ]
-      ]
-    },
-    {
-      "path": "RightPanel/leaderboard_avatar_fallback_01.png",
-      "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Reference fallback leaderboard portrait used when live avatar data is unavailable.",
-      "source_box": [
-        1346,
-        559,
-        1372,
-        585
-      ]
-    },
-    {
-      "path": "RightPanel/leaderboard_avatar_fallback_02.png",
-      "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Reference fallback leaderboard portrait used when live avatar data is unavailable.",
-      "source_box": [
-        1346,
-        618,
-        1372,
-        644
-      ]
-    },
-    {
-      "path": "RightPanel/leaderboard_avatar_fallback_03.png",
-      "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Reference fallback leaderboard portrait used when live avatar data is unavailable.",
-      "source_box": [
-        1346,
-        676,
-        1372,
-        702
-      ]
-    },
-    {
-      "path": "RightPanel/shell_full_reference.png",
-      "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the leaderboard rebuild.",
-      "source_box": [
-        1245,
-        321,
-        1644,
-        938
-      ]
+      "layout_key": "Right.shell_full_reference",
+      "notes": "Fresh imagegen right leaderboard shell."
     },
     {
       "path": "RightPanel/filter_world_button.png",
       "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the leaderboard rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1304,
-        253,
-        1368,
-        315
-      ]
+        0,
+        0,
+        74,
+        72
+      ],
+      "layout_key": "Right.filter_world_button",
+      "notes": "Fresh imagegen right panel control shell."
     },
     {
       "path": "RightPanel/filter_friends_button.png",
       "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the leaderboard rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1374,
-        253,
-        1439,
-        315
-      ]
+        0,
+        0,
+        74,
+        72
+      ],
+      "layout_key": "Right.filter_friends_button",
+      "notes": "Fresh imagegen right panel control shell."
     },
     {
       "path": "RightPanel/filter_crown_button.png",
       "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the leaderboard rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1445,
-        253,
-        1511,
-        315
-      ]
+        0,
+        0,
+        76,
+        72
+      ],
+      "layout_key": "Right.filter_crown_button",
+      "notes": "Fresh imagegen right panel control shell."
     },
     {
       "path": "RightPanel/tab_weekly_active.png",
       "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the leaderboard rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1258,
-        334,
-        1440,
-        390
-      ]
+        0,
+        0,
+        209,
+        65
+      ],
+      "layout_key": "Right.tab_weekly_active",
+      "notes": "Fresh imagegen right panel control shell."
     },
     {
       "path": "RightPanel/tab_all_time_inactive.png",
       "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the leaderboard rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1439,
-        334,
-        1629,
-        390
-      ]
+        0,
+        0,
+        219,
+        65
+      ],
+      "layout_key": "Right.tab_all_time_inactive",
+      "notes": "Fresh imagegen right panel control shell."
     },
     {
       "path": "RightPanel/dropdown_shell_left.png",
       "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the leaderboard rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1260,
-        397,
-        1441,
-        447
-      ]
+        0,
+        0,
+        208,
+        57
+      ],
+      "layout_key": "Right.dropdown_shell_left",
+      "notes": "Fresh imagegen right panel control shell."
     },
     {
       "path": "RightPanel/dropdown_shell_right.png",
       "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the leaderboard rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1444,
-        397,
-        1628,
-        447
-      ]
+        0,
+        0,
+        211,
+        57
+      ],
+      "layout_key": "Right.dropdown_shell_right",
+      "notes": "Fresh imagegen right panel control shell."
     },
     {
       "path": "RightPanel/toggle_score_selected.png",
       "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the leaderboard rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1258,
-        454,
-        1441,
-        507
-      ]
+        0,
+        0,
+        210,
+        61
+      ],
+      "layout_key": "Right.toggle_score_selected",
+      "notes": "Fresh imagegen right panel control shell."
     },
     {
       "path": "RightPanel/toggle_speedrun_unselected.png",
       "group": "RightPanel",
-      "kind": "exact_crop",
-      "notes": "Exact reference crop for the leaderboard rebuild.",
+      "kind": "imagegen_slice",
       "source_box": [
-        1444,
-        454,
-        1632,
-        507
-      ]
+        0,
+        0,
+        216,
+        61
+      ],
+      "layout_key": "Right.toggle_speedrun_unselected",
+      "notes": "Fresh imagegen right panel control shell."
     },
     {
-      "path": "TopBar/topbar_shell_clean.png",
-      "group": "TopBar",
-      "kind": "derived_shell",
-      "notes": "Full-width top-bar strip with all baked buttons removed so the live top-bar controls are the only button layer.",
+      "path": "RightPanel/dropdown_shell_left_clean.png",
+      "group": "RightPanel",
+      "kind": "alias_copy",
       "source_box": [
         0,
         0,
-        1672,
-        126
-      ]
+        208,
+        57
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias."
     },
     {
-      "path": "reference_main_menu_master_notopbarbuttons.png",
-      "group": "Master",
-      "kind": "derived_master",
-      "notes": "Full reference frame with the unlabeled top-bar shell composited in to remove baked top-bar labels and coupon count.",
+      "path": "RightPanel/dropdown_shell_right_clean.png",
+      "group": "RightPanel",
+      "kind": "alias_copy",
       "source_box": [
         0,
         0,
-        1672,
-        126
-      ]
+        211,
+        57
+      ],
+      "layout_key": null,
+      "notes": "Runtime compatibility alias."
     },
     {
-      "path": "reference_main_menu_master_nobuttons.png",
-      "group": "Master",
-      "kind": "derived_master",
-      "notes": "Full reference frame with baked top-bar buttons and CTA button plates removed so only live interactive buttons render.",
+      "path": "RightPanel/leaderboard_avatar_frame.png",
+      "group": "RightPanel",
+      "kind": "imagegen_slice",
       "source_box": [
-        646,
-        608,
-        1132,
-        879
-      ]
+        0,
+        0,
+        56,
+        56
+      ],
+      "layout_key": "Right.leaderboard_avatar_frame_source",
+      "notes": "Fresh imagegen leaderboard avatar frame. Runtime portrait renders over the center."
     },
     {
-      "path": "content_ownership.json",
-      "group": "Metadata",
-      "kind": "ownership_audit",
-      "notes": "Code-first ownership audit covering the profile avatar, friend avatars, party portraits, and leaderboard avatar wells that must remain live at runtime.",
+      "path": "RightPanel/leaderboard_avatar_fallback_01.png",
+      "group": "RightPanel",
+      "kind": "fallback_avatar",
       "source_box": [
         0,
         0,
+        30,
+        30
+      ],
+      "layout_key": null,
+      "notes": "Fallback leaderboard avatar only."
+    },
+    {
+      "path": "RightPanel/leaderboard_avatar_fallback_02.png",
+      "group": "RightPanel",
+      "kind": "fallback_avatar",
+      "source_box": [
         0,
-        0
-      ]
+        0,
+        30,
+        30
+      ],
+      "layout_key": null,
+      "notes": "Fallback leaderboard avatar only."
+    },
+    {
+      "path": "RightPanel/leaderboard_avatar_fallback_03.png",
+      "group": "RightPanel",
+      "kind": "fallback_avatar",
+      "source_box": [
+        0,
+        0,
+        30,
+        30
+      ],
+      "layout_key": null,
+      "notes": "Fallback leaderboard avatar only."
+    },
+    {
+      "path": "SpriteSheets/mainmenu_canonical_components_1920.png",
+      "group": "SpriteSheet",
+      "kind": "contact_sheet",
+      "source_box": [
+        0,
+        0,
+        1600,
+        1200
+      ],
+      "layout_key": null,
+      "notes": "Canonical 1920 component family sheet for review."
     }
   ]
 }

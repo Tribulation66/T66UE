@@ -190,7 +190,7 @@ protected:
 	void SpawnBossForCurrentStage();
 	void SpawnBossBeaconIfNeeded();
 
-	void SpawnCircusInteractableIfNeeded();
+	void SpawnCasinoInteractableIfNeeded();
 	void SpawnSupportVendorAtStartIfNeeded();
 
 	/** Called one frame after BeginPlay so the landscape/collision is ready. Spawns all ground-dependent content (NPCs, interactables, tiles, boss, etc.). */

@@ -446,7 +446,9 @@ Recommended runtime classes:
 
 ## 7.1 Generation workflow
 
-Use the documented ChatGPT Chrome bridge workflow for mini-game sprite generation.
+Use Codex-native image generation for mini-game sprite generation.
+
+Do not use browser-automation generation tooling or legacy request manifests.
 
 Generation rule:
 
@@ -481,7 +483,6 @@ Author or add mini-specific helper scripts to:
 Proposed script area:
 
 ```text
-Tools/ChatGPTBridge/
 Tools/Mini/
 ```
 

@@ -1,0 +1,25 @@
+Create one production sprite-family board for T66 screen `quit_confirmation_modal`.
+
+Use the attached canonical main-menu style anchor and the attached `quit_confirmation_modal` screen-specific reference. This is exact reconstruction of the reference art style, not a redesign.
+
+Output requirement:
+- exactly one 1920x1080 flat neutral presentation board
+- front-on orthographic UI components only
+- no full-screen screenshot composite
+- no baked localizable labels, names, numbers, descriptions, leaderboard rows, progress values, or typed/user text
+- no runtime-owned portraits, avatars, screenshots, save previews, or gameplay underlay
+- components should be isolated with transparent or flat-neutral spacing so deterministic slicing is possible
+- preserve the carved dark stone, gold trim, purple gem, green/blue/purple plate material language from the attached reference
+
+Families required for this screen:
+modal-shell, wide-success-button, wide-danger-button
+
+Reference layout regions:
+- modal_scrim: 0,0,1920,1080 owner=runtime-overlay
+- quit_shell: 592,352,736,284 owner=generated-shell
+- title_well: 672,388,576,72 owner=runtime-text
+- message_well: 704,494,512,48 owner=runtime-text
+- stay_button: 610,556,346,64 owner=runtime-control
+- quit_button: 974,556,346,64 owner=runtime-control
+
+Generate text-free runtime assets only. For runtime-owned interiors, produce shell-only frames, empty wells, socket frames, or open apertures. Controls need normal, hover, pressed, disabled, and selected states where applicable with stable anchors.

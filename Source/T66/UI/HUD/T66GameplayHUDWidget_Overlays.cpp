@@ -399,8 +399,8 @@ static void T66_ApplyWorldDialogueSelection(
 		if (OptionBorders[i].IsValid())
 		{
 			OptionBorders[i]->SetBorderBackgroundColor(bSelected
-				? (FT66Style::IsDotaTheme() ? FT66Style::SelectionFill() : FLinearColor(0.18f, 0.18f, 0.26f, 0.95f))
-				: (FT66Style::IsDotaTheme() ? FT66Style::PromptBackground() : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f)));
+				? (FT66Style::IsDotaTheme() ? FLinearColor(0.34f, 0.25f, 0.13f, 0.98f) : FLinearColor(0.18f, 0.18f, 0.26f, 0.95f))
+				: (FT66Style::IsDotaTheme() ? FLinearColor(0.030f, 0.026f, 0.024f, 0.94f) : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f)));
 		}
 		if (OptionTexts.IsValidIndex(i) && OptionTexts[i].IsValid())
 		{

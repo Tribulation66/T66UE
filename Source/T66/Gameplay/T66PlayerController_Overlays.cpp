@@ -26,7 +26,7 @@
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66LabOverlayWidget.h"
-#include "UI/T66CircusOverlayWidget.h"
+#include "UI/T66CasinoOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
@@ -34,13 +34,14 @@
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66ArcadePopupWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
+#include "UI/T66WheelOverlayWidget.h"
 #include "UI/T66WhackAMoleArcadeWidget.h"
 #include "Gameplay/T66FountainOfLifeInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66ArcadeInteractableBase.h"
-#include "Gameplay/T66CircusInteractable.h"
+#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
 #include "Gameplay/T66StageCatchUpGate.h"
@@ -89,7 +90,12 @@
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
 #include "Engine/GameViewportClient.h"
+#include "HAL/FileManager.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+#include "Misc/Paths.h"
+#include "UnrealClient.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SWeakWidget.h"
 #include "Widgets/Input/SButton.h"
@@ -125,7 +131,7 @@ namespace
 		return nullptr;
 	}
 
-	AT66CircusInteractable* T66FindRegisteredCircus(UWorld* World)
+	AT66CasinoInteractable* T66FindRegisteredCasino(UWorld* World)
 	{
 		if (!World)
 		{
@@ -134,11 +140,11 @@ namespace
 
 		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
 		{
-			for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
 			{
-				if (AT66CircusInteractable* Circus = WeakCircus.Get())
+				if (AT66CasinoInteractable* Casino = WeakCasino.Get())
 				{
-					return Circus;
+					return Casino;
 				}
 			}
 		}
@@ -178,9 +184,251 @@ void AT66PlayerController::SetupGameplayHUD()
 	if (GameplayHUDWidget)
 	{
 		GameplayHUDWidget->AddToViewport(0);
+		QueueGameplayAutomationScreenshotIfRequested();
 	}
 	// The Lab: no floating panel; player interacts with The Collector NPC to open full-screen Collector UI.
 	// (LabOverlayWidget not created when in Lab.)
+}
+
+void AT66PlayerController::QueueGameplayAutomationScreenshotIfRequested()
+{
+	if (!IsGameplayLevel() || !GetWorld())
+	{
+		return;
+	}
+
+	FString RequestedScreenshotPath;
+	if (!FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoScreenshot="), RequestedScreenshotPath))
+	{
+		return;
+	}
+
+	GameplayAutomationScreenshotPath = FPaths::ConvertRelativePathToFull(RequestedScreenshotPath);
+	GameplayAutomationScreenshotDelaySeconds = 4.0f;
+	FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoScreenshotDelay="), GameplayAutomationScreenshotDelaySeconds);
+
+	GameplayAutomationCaptureMode = TEXT("HUD");
+	FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoCapture="), GameplayAutomationCaptureMode);
+	bGameplayAutomationKeepAliveAfterScreenshot =
+		FParse::Param(FCommandLine::Get(), TEXT("T66GameplayKeepAliveAfterScreenshot"))
+		|| FParse::Param(FCommandLine::Get(), TEXT("T66KeepAliveAfterScreenshot"));
+
+	GetWorldTimerManager().ClearTimer(GameplayAutomationPrepareTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		GameplayAutomationPrepareTimerHandle,
+		this,
+		&AT66PlayerController::HandleGameplayAutomationPrepare,
+		FMath::Max(0.1f, GameplayAutomationScreenshotDelaySeconds),
+		false);
+}
+
+void AT66PlayerController::HandleGameplayAutomationPrepare()
+{
+	if (GameplayAutomationScreenshotPath.IsEmpty())
+	{
+		return;
+	}
+
+	ApplyGameplayAutomationCaptureMode();
+
+	if (GetWorld())
+	{
+		GetWorldTimerManager().ClearTimer(GameplayAutomationScreenshotTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			GameplayAutomationScreenshotTimerHandle,
+			this,
+			&AT66PlayerController::HandleGameplayAutomationScreenshot,
+			0.5f,
+			false);
+	}
+}
+
+void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
+{
+	const FString Mode = GameplayAutomationCaptureMode.TrimStartAndEnd().ToLower();
+
+	if (Mode == TEXT("inventory") || Mode == TEXT("inspect") || Mode == TEXT("inventoryinspect"))
+	{
+		SetInventoryInspectOpen(true);
+		return;
+	}
+
+	if (Mode == TEXT("fullmap") || Mode == TEXT("map"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetFullMapOpen(true);
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}
+		return;
+	}
+
+	if (Mode == TEXT("idol") || Mode == TEXT("idolaltar"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
+		AT66IdolAltar* AutomationAltar = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			const FVector AutomationAltarLocation = GetPawn() ? GetPawn()->GetActorLocation() + FVector(300.f, 0.f, 0.f) : FVector::ZeroVector;
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AutomationAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), AutomationAltarLocation, FRotator::ZeroRotator, SpawnParams);
+			if (AutomationAltar)
+			{
+				AutomationAltar->SetActorHiddenInGame(true);
+				AutomationAltar->SetActorEnableCollision(false);
+				AutomationAltar->RemainingSelections = FMath::Max(1, AutomationAltar->RemainingSelections);
+			}
+		}
+
+		UT66IdolAltarOverlayWidget* W = CreateWidget<UT66IdolAltarOverlayWidget>(this, ResolveIdolAltarOverlayClass());
+		if (W)
+		{
+			W->SetSourceAltar(AutomationAltar);
+			IdolAltarOverlayWidget = W;
+			W->AddToViewport(150);
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}
+		return;
+	}
+
+	if (Mode == TEXT("casino") || Mode == TEXT("casinovendor") || Mode == TEXT("vendor") || Mode == TEXT("casinotabvendor"))
+	{
+		OpenCasinoOverlay();
+		SwitchCasinoOverlayToVendor();
+		return;
+	}
+
+	if (Mode == TEXT("casinogambling") || Mode == TEXT("gambling") || Mode == TEXT("casinotabgambling"))
+	{
+		OpenCasinoOverlay();
+		SwitchCasinoOverlayToGambling();
+		return;
+	}
+
+	if (Mode == TEXT("casinoalchemy") || Mode == TEXT("alchemy") || Mode == TEXT("casinotabalchemy"))
+	{
+		OpenCasinoOverlay();
+		SwitchCasinoOverlayToAlchemy();
+		return;
+	}
+
+	if (Mode == TEXT("gambler") || Mode == TEXT("gambleroverlay"))
+	{
+		OpenGamblerOverlay(50);
+		if (GamblerOverlayWidget)
+		{
+			GamblerOverlayWidget->OpenCasinoPage();
+		}
+		return;
+	}
+
+	if (Mode == TEXT("vendoroverlay") || Mode == TEXT("standalonevendor"))
+	{
+		OpenVendorOverlay();
+		return;
+	}
+
+	if (Mode == TEXT("collector") || Mode == TEXT("collectoroverlay"))
+	{
+		OpenCollectorOverlay();
+		return;
+	}
+
+	if (Mode == TEXT("lab") || Mode == TEXT("laboverlay"))
+	{
+		if (!LabOverlayWidget)
+		{
+			LabOverlayWidget = CreateWidget<UT66LabOverlayWidget>(this, UT66LabOverlayWidget::StaticClass());
+		}
+		if (LabOverlayWidget && !LabOverlayWidget->IsInViewport())
+		{
+			LabOverlayWidget->AddToViewport(100);
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}
+		return;
+	}
+
+	if (Mode == TEXT("wheel") || Mode == TEXT("wheeloverlay"))
+	{
+		if (UT66WheelOverlayWidget* WheelOverlay = CreateWidget<UT66WheelOverlayWidget>(this, UT66WheelOverlayWidget::StaticClass()))
+		{
+			WheelOverlay->SetWheelRarity(ET66Rarity::Red);
+			WheelOverlay->AddToViewport(110);
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}
+		return;
+	}
+
+	if (Mode == TEXT("crate") || Mode == TEXT("crateoverlay"))
+	{
+		if (UT66CrateOverlayWidget* CrateOverlay = CreateWidget<UT66CrateOverlayWidget>(this, UT66CrateOverlayWidget::StaticClass()))
+		{
+			CrateOverlay->SetPresentationHost(GameplayHUDWidget);
+			CrateOverlay->AddToViewport(110);
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}
+		return;
+	}
+
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->SetFullMapOpen(false);
+	}
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
+}
+
+void AT66PlayerController::HandleGameplayAutomationScreenshot()
+{
+	if (GameplayAutomationScreenshotPath.IsEmpty())
+	{
+		return;
+	}
+
+	IFileManager::Get().MakeDirectory(*FPaths::GetPath(GameplayAutomationScreenshotPath), true);
+	FScreenshotRequest::RequestScreenshot(GameplayAutomationScreenshotPath, true, false, false);
+
+	if (!bGameplayAutomationKeepAliveAfterScreenshot && GetWorld())
+	{
+		GetWorldTimerManager().ClearTimer(GameplayAutomationQuitTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			GameplayAutomationQuitTimerHandle,
+			this,
+			&AT66PlayerController::HandleGameplayAutomationQuit,
+			1.5f,
+			false);
+	}
+}
+
+void AT66PlayerController::HandleGameplayAutomationQuit()
+{
+	ConsoleCommand(TEXT("quit"));
 }
 
 void AT66PlayerController::RebuildThemeAwareUI()
@@ -198,9 +446,9 @@ void AT66PlayerController::RebuildThemeAwareUI()
 	{
 		FT66Style::DeferRebuild(GamblerOverlayWidget, 100);
 	}
-	if (CircusOverlayWidget && CircusOverlayWidget->IsInViewport())
+	if (CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport())
 	{
-		FT66Style::DeferRebuild(CircusOverlayWidget, 100);
+		FT66Style::DeferRebuild(CasinoOverlayWidget, 100);
 	}
 	if (VendorOverlayWidget && VendorOverlayWidget->IsInViewport())
 	{
@@ -246,7 +494,7 @@ void AT66PlayerController::OpenGamblerOverlay(int32 WinGoldAmount)
 }
 
 
-void AT66PlayerController::OpenCircusOverlay()
+void AT66PlayerController::OpenCasinoOverlay()
 {
 	if (!IsGameplayLevel()) return;
 	ActiveVendorNPC.Reset();
@@ -255,17 +503,17 @@ void AT66PlayerController::OpenCircusOverlay()
 		SetInventoryInspectOpen(false);
 	}
 
-	if (!CircusOverlayWidget)
+	if (!CasinoOverlayWidget)
 	{
-		CircusOverlayWidget = CreateWidget<UT66CircusOverlayWidget>(this, ResolveCircusOverlayClass());
+		CasinoOverlayWidget = CreateWidget<UT66CasinoOverlayWidget>(this, ResolveCasinoOverlayClass());
 	}
 
-	if (CircusOverlayWidget)
+	if (CasinoOverlayWidget)
 	{
-		CircusOverlayWidget->OpenVendorTab();
-		if (!CircusOverlayWidget->IsInViewport())
+		CasinoOverlayWidget->OpenVendorTab();
+		if (!CasinoOverlayWidget->IsInViewport())
 		{
-			CircusOverlayWidget->AddToViewport(100);
+			CasinoOverlayWidget->AddToViewport(100);
 		}
 
 		FInputModeGameAndUI InputMode;
@@ -275,45 +523,45 @@ void AT66PlayerController::OpenCircusOverlay()
 	}
 }
 
-void AT66PlayerController::CloseCircusOverlay()
+void AT66PlayerController::CloseCasinoOverlay()
 {
-	if (CircusOverlayWidget && CircusOverlayWidget->IsInViewport())
+	if (CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport())
 	{
-		CircusOverlayWidget->RemoveFromParent();
+		CasinoOverlayWidget->RemoveFromParent();
 	}
 	RestoreGameplayInputMode();
 }
 
-void AT66PlayerController::SwitchCircusOverlayToGambling()
+void AT66PlayerController::SwitchCasinoOverlayToGambling()
 {
-	if (CircusOverlayWidget)
+	if (CasinoOverlayWidget)
 	{
-		CircusOverlayWidget->OpenGamblingTab();
+		CasinoOverlayWidget->OpenGamblingTab();
 	}
 }
 
-void AT66PlayerController::SwitchCircusOverlayToVendor()
+void AT66PlayerController::SwitchCasinoOverlayToVendor()
 {
-	if (CircusOverlayWidget)
+	if (CasinoOverlayWidget)
 	{
-		CircusOverlayWidget->OpenVendorTab();
+		CasinoOverlayWidget->OpenVendorTab();
 	}
 }
 
-void AT66PlayerController::SwitchCircusOverlayToAlchemy()
+void AT66PlayerController::SwitchCasinoOverlayToAlchemy()
 {
-	if (CircusOverlayWidget)
+	if (CasinoOverlayWidget)
 	{
-		CircusOverlayWidget->OpenAlchemyTab();
+		CasinoOverlayWidget->OpenAlchemyTab();
 	}
 }
 
-bool AT66PlayerController::IsCircusOverlayOpen() const
+bool AT66PlayerController::IsCasinoOverlayOpen() const
 {
-	return CircusOverlayWidget && CircusOverlayWidget->IsInViewport();
+	return CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport();
 }
 
-bool AT66PlayerController::TriggerCircusBossIfAngry()
+bool AT66PlayerController::TriggerCasinoBossIfAngry()
 {
 	if (!IsGameplayLevel()) return false;
 
@@ -333,9 +581,9 @@ bool AT66PlayerController::TriggerCircusBossIfAngry()
 
 	FVector SpawnLoc = FVector::ZeroVector;
 	bool bHasSpawnLoc = false;
-	if (AT66CircusInteractable* Circus = T66FindRegisteredCircus(World))
+	if (AT66CasinoInteractable* Casino = T66FindRegisteredCasino(World))
 	{
-		SpawnLoc = Circus->GetActorLocation();
+		SpawnLoc = Casino->GetActorLocation();
 		bHasSpawnLoc = true;
 	}
 
@@ -366,9 +614,9 @@ bool AT66PlayerController::TriggerCircusBossIfAngry()
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	World->SpawnActor<AT66GamblerBoss>(AT66GamblerBoss::StaticClass(), SpawnLoc + FVector(0.f, 0.f, 200.f), FRotator::ZeroRotator, Params);
 
-	if (CircusOverlayWidget && CircusOverlayWidget->IsInViewport())
+	if (CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport())
 	{
-		CircusOverlayWidget->RemoveFromParent();
+		CasinoOverlayWidget->RemoveFromParent();
 	}
 	if (GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
 	{
@@ -397,7 +645,7 @@ void AT66PlayerController::OpenVendorOverlay()
 
 	if (VendorOverlayWidget)
 	{
-		VendorOverlayWidget->SetEmbeddedInCircusShell(false);
+		VendorOverlayWidget->SetEmbeddedInCasinoShell(false);
 		VendorOverlayWidget->SetVendorAllowsSteal(ActiveVendorNPC.IsValid() ? ActiveVendorNPC->DoesAllowSteal() : true);
 		if (!VendorOverlayWidget->IsInViewport())
 		{
@@ -407,6 +655,19 @@ void AT66PlayerController::OpenVendorOverlay()
 			SetInputMode(InputMode);
 			bShowMouseCursor = true;
 		}
+	}
+}
+
+void AT66PlayerController::OpenVendorOverlayForVendor(AT66VendorNPC* Vendor)
+{
+	if (!IsGameplayLevel()) return;
+	if (!Vendor) return;
+
+	ActiveVendorNPC = Vendor;
+	OpenVendorOverlay();
+	if (VendorOverlayWidget)
+	{
+		VendorOverlayWidget->OpenShopPage();
 	}
 }
 

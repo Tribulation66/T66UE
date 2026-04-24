@@ -171,7 +171,7 @@ namespace
 	{
 		const TSharedPtr<FSlateBrush> Brush = T66MiniMakeBrush(Size);
 		T66MiniBindBrush(Owner, TexPool, TexturePath, Brush, BrushKey);
-		return FT66Style::MakePanel(
+		return T66MiniUI::MakeSpritePanel(
 			SNew(SBox)
 			.WidthOverride(Size.X)
 			.HeightOverride(Size.Y)
@@ -202,12 +202,13 @@ namespace
 					.Justification(ETextJustify::Center)
 				]
 			],
-			FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f));
+			FMargin(0.f),
+			true);
 	}
 
 	TSharedRef<SWidget> T66MiniMakeMetricChip(const FText& Label, const FText& Value, const FLinearColor& ValueColor)
 	{
-		return FT66Style::MakePanel(
+		return T66MiniUI::MakeSpritePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
@@ -223,7 +224,46 @@ namespace
 				.Font(FT66Style::MakeFont(TEXT("Bold"), 12))
 				.ColorAndOpacity(ValueColor)
 			],
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(8.f, 6.f)));
+			FMargin(8.f, 6.f),
+			true);
+	}
+
+	TSharedRef<SWidget> T66MiniMakeShopPanel(const TSharedRef<SWidget>& Content, const FMargin& Padding, const bool bRow = false)
+	{
+		return T66MiniUI::MakeSpritePanel(Content, Padding, bRow);
+	}
+
+	TSharedRef<SWidget> T66MiniMakeShopPanel(const TSharedRef<SWidget>& Content, const FT66PanelParams& Params)
+	{
+		return T66MiniMakeShopPanel(Content, Params.Padding, Params.Type == ET66PanelType::Panel2);
+	}
+
+	FT66ButtonParams T66MiniMakeShopButtonParams(
+		const FText& Label,
+		const FOnClicked& OnClicked,
+		const ET66ButtonType Type,
+		const int32 FontSize,
+		const FMargin& Padding,
+		const float MinWidth = 0.f,
+		const float Height = 0.f,
+		const bool bEnabled = true)
+	{
+		return T66MiniUI::MakeButtonParams(Label, OnClicked, Type, MinWidth, Height, FontSize)
+			.SetPadding(Padding)
+			.SetEnabled(bEnabled);
+	}
+
+	TSharedRef<SWidget> T66MiniMakeShopButton(
+		const FText& Label,
+		const FOnClicked& OnClicked,
+		const ET66ButtonType Type,
+		const int32 FontSize,
+		const FMargin& Padding,
+		const float MinWidth = 0.f,
+		const float Height = 0.f,
+		const bool bEnabled = true)
+	{
+		return FT66Style::MakeButton(T66MiniMakeShopButtonParams(Label, OnClicked, Type, FontSize, Padding, MinWidth, Height, bEnabled));
 	}
 
 	TSharedRef<SWidget> T66MiniMakeInfoRow(const FText& Label, const FText& Value)
@@ -433,7 +473,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 
 				OwnedItemsPanel->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 				[
-					FT66Style::MakePanel(
+					T66MiniMakeShopPanel(
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
@@ -448,30 +488,29 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
-							FT66Style::MakeButton(
-								FT66ButtonParams(
+							T66MiniMakeShopButton(
 									FText::Format(NSLOCTEXT("T66Mini.Shop", "SellFmt", "SELL +{0}"), FText::AsNumber(Item->BaseSellGold)),
 									FOnClicked::CreateLambda([this, ItemID = Item->ItemID]() { return HandleSellItemClicked(ItemID); }),
-									ET66ButtonType::Danger)
-								.SetFontSize(9)
-								.SetPadding(FMargin(8.f, 5.f))
-								.SetMinWidth(0.f))
+									ET66ButtonType::Danger,
+									9,
+									FMargin(8.f, 5.f))
 						],
-						FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(8.f)))
+						FMargin(8.f),
+						true)
 				];
 			}
 		}
 
 		const auto MakeRunPanel = [&]() -> TSharedRef<SWidget>
 		{
-			return FT66Style::MakePanel(
+			return T66MiniMakeShopPanel(
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "RunTitle", "RUN")).Font(FT66Style::MakeFont(TEXT("Bold"), 16)).ColorAndOpacity(FT66Style::Text())]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[T66MiniMakeInfoRow(NSLOCTEXT("T66Mini.Shop", "HeroLabel", "Hero"), HeroDef ? FText::FromString(HeroDef->DisplayName) : FText::FromName(ActiveRun->HeroID))]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[T66MiniMakeInfoRow(NSLOCTEXT("T66Mini.Shop", "CompanionLabel", "Companion"), CompanionDef ? FText::FromString(CompanionDef->DisplayName) : FText::FromName(ActiveRun->CompanionID))]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[T66MiniMakeInfoRow(NSLOCTEXT("T66Mini.Shop", "DifficultyLabel", "Difficulty"), DifficultyDef ? FText::FromString(DifficultyDef->DisplayName) : FText::FromName(ActiveRun->DifficultyID))]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[T66MiniMakeInfoRow(NSLOCTEXT("T66Mini.Shop", "WaveLabel", "Wave"), FText::AsNumber(ActiveRun->WaveIndex))],
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(14.f)));
+				FMargin(14.f));
 		};
 
 		TSharedRef<SWidget> ActiveTabContent = OwnedItemsPanel;
@@ -491,7 +530,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 				[
 					SNew(SBox).WidthOverride(CardWidth).HeightOverride(CardHeight)
 					[
-						FT66Style::MakePanel(
+						T66MiniMakeShopPanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(T66MiniReadableName(Item->ItemID).ToUpper())).Font(FT66Style::MakeFont(TEXT("Bold"), 9)).ColorAndOpacity(FT66Style::Text()).AutoWrapText(true).WrapTextAt(CardWidth - 10.f)]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)[T66MiniMakeIconPanel(this, TexPool, Item->IconPath, FString::Printf(TEXT("MiniOffer_%s"), *Item->ItemID.ToString()), FText::FromString(T66MiniReadableName(Item->ItemID).Left(2)), FVector2D(CardIconSize, CardIconSize))]]
@@ -501,11 +540,11 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 								SNew(SHorizontalBox)
 								+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 6.f, 0.f)
 								[
-									FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66Mini.Shop", "Buy", "BUY"), FOnClicked::CreateLambda([this, ItemID = Item->ItemID]() { return HandleBuyItemClicked(ItemID); }), ET66ButtonType::Success).SetFontSize(9).SetPadding(FMargin(8.f, 5.f)).SetMinWidth(0.f).SetEnabled(bAffordable))
+									T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "Buy", "BUY"), FOnClicked::CreateLambda([this, ItemID = Item->ItemID]() { return HandleBuyItemClicked(ItemID); }), ET66ButtonType::Success, 9, FMargin(8.f, 5.f), 0.f, 0.f, bAffordable)
 								]
 								+ SHorizontalBox::Slot().FillWidth(1.f)
 								[
-									FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66Mini.Shop", "Steal", "STEAL"), FOnClicked::CreateLambda([this, ItemID = Item->ItemID]() { return HandleStealItemClicked(ItemID); }), ET66ButtonType::Danger).SetFontSize(9).SetPadding(FMargin(8.f, 5.f)).SetMinWidth(0.f))
+									T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "Steal", "STEAL"), FOnClicked::CreateLambda([this, ItemID = Item->ItemID]() { return HandleStealItemClicked(ItemID); }), ET66ButtonType::Danger, 9, FMargin(8.f, 5.f))
 								]
 							],
 							FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(5.f)))
@@ -514,19 +553,19 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 			}
 			ActiveTabContent = SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f)[SNew(SBox).WidthOverride(186.f)[MakeRunPanel()]]
-				+ SHorizontalBox::Slot().FillWidth(1.f)[FT66Style::MakePanel(SNew(SVerticalBox)
+				+ SHorizontalBox::Slot().FillWidth(1.f)[T66MiniMakeShopPanel(SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "VendorTitle", "VENDOR")).Font(FT66Style::MakeFont(TEXT("Bold"), 24)).ColorAndOpacity(FT66Style::Text())]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[SNew(SScrollBox).Orientation(Orient_Horizontal) + SScrollBox::Slot()[OfferRow]]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "OwnedItemsTitle", "OWNED ITEMS")).Font(FT66Style::MakeFont(TEXT("Bold"), 10)).ColorAndOpacity(FT66Style::Text())]
 					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 8.f, 0.f, 0.f)[SNew(SScrollBox) + SScrollBox::Slot()[OwnedItemsPanel]], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(16.f)))]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f)[SNew(SBox).WidthOverride(220.f)[FT66Style::MakePanel(SNew(SVerticalBox)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f)[SNew(SBox).WidthOverride(220.f)[T66MiniMakeShopPanel(SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "HouseTitleVendor", "CIRCUS HOUSE")).Font(FT66Style::MakeFont(TEXT("Bold"), 16)).ColorAndOpacity(FT66Style::Text())]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 0.f)[FT66Style::MakePanel(SNew(STextBlock).Text(FText::Format(NSLOCTEXT("T66Mini.Shop", "AngerFmt", "ANGER {0}%"), FText::AsNumber(AngerPct))).Font(FT66Style::MakeFont(TEXT("Bold"), 18)).ColorAndOpacity(AngerPct >= 75 ? FT66Style::Danger() : FT66Style::Accent2()), FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(10.f)))]
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 0.f)[T66MiniMakeShopPanel(SNew(STextBlock).Text(FText::Format(NSLOCTEXT("T66Mini.Shop", "AngerFmt", "ANGER {0}%"), FText::AsNumber(AngerPct))).Font(FT66Style::MakeFont(TEXT("Bold"), 18)).ColorAndOpacity(AngerPct >= 75 ? FT66Style::Danger() : FT66Style::Accent2()), FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(10.f)))]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[T66MiniMakeInfoRow(NSLOCTEXT("T66Mini.Shop", "DebtLabel", "Debt"), FText::AsNumber(Debt))]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[T66MiniMakeInfoRow(NSLOCTEXT("T66Mini.Shop", "GoldLabel", "Gold"), FText::AsNumber(Gold))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[FT66Style::MakeButton(FT66ButtonParams(FText::Format(NSLOCTEXT("T66Mini.Shop", "RerollFmt", "REROLL ({0}G)"), FText::AsNumber(RerollCost)), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleRerollClicked), ET66ButtonType::Primary).SetFontSize(12).SetPadding(FMargin(10.f, 6.f)).SetEnabled(Gold >= RerollCost))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66Mini.Shop", "BorrowForty", "BORROW 40G"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleBorrowGoldClicked, 40), ET66ButtonType::Neutral).SetFontSize(12).SetPadding(FMargin(10.f, 6.f)))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66Mini.Shop", "PayForty", "PAY 40 DEBT"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandlePayDebtClicked, 40), ET66ButtonType::Success).SetFontSize(12).SetPadding(FMargin(10.f, 6.f)).SetEnabled(Debt > 0 && Gold > 0))], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(14.f)))]];
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[T66MiniMakeShopButton(FText::Format(NSLOCTEXT("T66Mini.Shop", "RerollFmt", "REROLL ({0}G)"), FText::AsNumber(RerollCost)), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleRerollClicked), ET66ButtonType::Primary, 12, FMargin(10.f, 6.f), 0.f, 0.f, Gold >= RerollCost)]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "BorrowForty", "BORROW 40G"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleBorrowGoldClicked, 40), ET66ButtonType::Neutral, 12, FMargin(10.f, 6.f))]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "PayForty", "PAY 40 DEBT"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandlePayDebtClicked, 40), ET66ButtonType::Success, 12, FMargin(10.f, 6.f), 0.f, 0.f, Debt > 0 && Gold > 0)], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(14.f)))]];
 		}
 		else if (ActiveTab == EMiniCircusTab::Gambling)
 		{
@@ -554,50 +593,50 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 				[
 					SNew(SBox).WidthOverride(CardWidth).HeightOverride(CardHeight)
 					[
-						FT66Style::MakePanel(
+						T66MiniMakeShopPanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(GameDef.Title)).Font(FT66Style::MakeFont(TEXT("Bold"), 9)).ColorAndOpacity(FT66Style::Text()).AutoWrapText(true).WrapTextAt(CardWidth - 10.f)]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)[T66MiniMakeIconPanel(this, TexPool, GameDef.IconPath, FString::Printf(TEXT("MiniGame_%s"), GameDef.GameID), FText::FromString(FString(GameDef.Title).Left(2)), FVector2D(CardIconSize, CardIconSize))]]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(GameDef.Description)).Font(FT66Style::MakeFont(TEXT("Regular"), 7)).ColorAndOpacity(FT66Style::TextMuted()).AutoWrapText(true).WrapTextAt(CardWidth - 10.f)]
-							+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Bottom).Padding(0.f, 8.f, 0.f, 0.f)[FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66Mini.Shop", "OpenGame", "OPEN"), FOnClicked::CreateLambda([this, GameName = FName(GameDef.GameID), Title = FString(GameDef.Title)]() { return HandleCircusGameClicked(GameName, Title); }), ET66ButtonType::Primary).SetFontSize(9).SetPadding(FMargin(8.f, 5.f)).SetMinWidth(0.f))],
+							+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Bottom).Padding(0.f, 8.f, 0.f, 0.f)[T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "OpenGame", "OPEN"), FOnClicked::CreateLambda([this, GameName = FName(GameDef.GameID), Title = FString(GameDef.Title)]() { return HandleCircusGameClicked(GameName, Title); }), ET66ButtonType::Primary, 9, FMargin(8.f, 5.f))],
 							FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(5.f)))
 					]
 				];
 			}
 			ActiveTabContent = SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f)[SNew(SBox).WidthOverride(186.f)[MakeRunPanel()]]
-				+ SHorizontalBox::Slot().FillWidth(1.f)[FT66Style::MakePanel(SNew(SVerticalBox)
+				+ SHorizontalBox::Slot().FillWidth(1.f)[T66MiniMakeShopPanel(SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "GamblingTitle", "GAMBLING")).Font(FT66Style::MakeFont(TEXT("Bold"), 24)).ColorAndOpacity(FT66Style::Text())]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[GameGrid], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(16.f)))]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f)[SNew(SBox).WidthOverride(220.f)[FT66Style::MakePanel(SNew(SVerticalBox)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f)[SNew(SBox).WidthOverride(220.f)[T66MiniMakeShopPanel(SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "HouseTitleGambling", "CASINO HOUSE")).Font(FT66Style::MakeFont(TEXT("Bold"), 16)).ColorAndOpacity(FT66Style::Text())]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 0.f)[FT66Style::MakePanel(SNew(STextBlock).Text(FText::Format(NSLOCTEXT("T66Mini.Shop", "AngerFmt", "ANGER {0}%"), FText::AsNumber(AngerPct))).Font(FT66Style::MakeFont(TEXT("Bold"), 18)).ColorAndOpacity(AngerPct >= 75 ? FT66Style::Danger() : FT66Style::Accent2()), FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(10.f)))]
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 0.f)[T66MiniMakeShopPanel(SNew(STextBlock).Text(FText::Format(NSLOCTEXT("T66Mini.Shop", "AngerFmt", "ANGER {0}%"), FText::AsNumber(AngerPct))).Font(FT66Style::MakeFont(TEXT("Bold"), 18)).ColorAndOpacity(AngerPct >= 75 ? FT66Style::Danger() : FT66Style::Accent2()), FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(10.f)))]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[T66MiniMakeInfoRow(NSLOCTEXT("T66Mini.Shop", "DebtLabel", "Debt"), FText::AsNumber(Debt))]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[T66MiniMakeInfoRow(NSLOCTEXT("T66Mini.Shop", "GoldLabel", "Gold"), FText::AsNumber(Gold))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66Mini.Shop", "BorrowForty", "BORROW 40G"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleBorrowGoldClicked, 40), ET66ButtonType::Neutral).SetFontSize(12).SetPadding(FMargin(10.f, 6.f)))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66Mini.Shop", "PayForty", "PAY 40 DEBT"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandlePayDebtClicked, 40), ET66ButtonType::Success).SetFontSize(12).SetPadding(FMargin(10.f, 6.f)).SetEnabled(Debt > 0 && Gold > 0))], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(14.f)))]];
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "BorrowForty", "BORROW 40G"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleBorrowGoldClicked, 40), ET66ButtonType::Neutral, 12, FMargin(10.f, 6.f))]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "PayForty", "PAY 40 DEBT"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandlePayDebtClicked, 40), ET66ButtonType::Success, 12, FMargin(10.f, 6.f), 0.f, 0.f, Debt > 0 && Gold > 0)], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(14.f)))]];
 		}
 		else
 		{
 			DefaultStatus = NSLOCTEXT("T66Mini.Shop", "AlchemyShellStatus", "Alchemy now lives in the same compact circus language as the main game.");
 			ActiveTabContent = SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f)[SNew(SBox).WidthOverride(186.f)[MakeRunPanel()]]
-				+ SHorizontalBox::Slot().FillWidth(1.f)[FT66Style::MakePanel(SNew(SVerticalBox)
+				+ SHorizontalBox::Slot().FillWidth(1.f)[T66MiniMakeShopPanel(SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "AlchemyTitle", "ALCHEMY")).Font(FT66Style::MakeFont(TEXT("Bold"), 24)).ColorAndOpacity(FT66Style::Text())]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)[T66MiniMakeMetricChip(NSLOCTEXT("T66Mini.Shop", "GoldChip", "GOLD"), FText::AsNumber(Gold), FT66Style::Text())]
 						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)[T66MiniMakeMetricChip(NSLOCTEXT("T66Mini.Shop", "DebtChip", "DEBT"), FText::AsNumber(Debt), Debt > 0 ? FT66Style::Danger() : FT66Style::TextMuted())]
 						+ SHorizontalBox::Slot().AutoWidth()[T66MiniMakeMetricChip(NSLOCTEXT("T66Mini.Shop", "AngerChip", "ANGER"), FText::Format(NSLOCTEXT("T66Mini.Shop", "AngerShortFmt", "{0}%"), FText::AsNumber(AngerPct)), FT66Style::Accent2())]]
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 12.f, 0.f, 0.f)[SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth()[SNew(SBox).WidthOverride(CardWidth).HeightOverride(CardHeight)[FT66Style::MakePanel(T66MiniMakeIconPanel(this, TexPool, AlchemySourceItem ? AlchemySourceItem->IconPath : FString(), TEXT("MiniAlchemySource"), NSLOCTEXT("T66Mini.Shop", "AlchemyFallback", "--"), FVector2D(CardIconSize, CardIconSize)), FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(5.f)))]]
+						+ SHorizontalBox::Slot().AutoWidth()[SNew(SBox).WidthOverride(CardWidth).HeightOverride(CardHeight)[T66MiniMakeShopPanel(T66MiniMakeIconPanel(this, TexPool, AlchemySourceItem ? AlchemySourceItem->IconPath : FString(), TEXT("MiniAlchemySource"), NSLOCTEXT("T66Mini.Shop", "AlchemyFallback", "--"), FVector2D(CardIconSize, CardIconSize)), FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(5.f)))]]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(16.f, 0.f)[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "AlchemyArrow", "=>")).Font(FT66Style::MakeFont(TEXT("Bold"), 24)).ColorAndOpacity(FT66Style::Text())]
-						+ SHorizontalBox::Slot().AutoWidth()[SNew(SBox).WidthOverride(CardWidth).HeightOverride(CardHeight)[FT66Style::MakePanel(T66MiniMakeIconPanel(this, TexPool, AlchemyItem ? AlchemyItem->IconPath : FString(), TEXT("MiniAlchemyResult"), NSLOCTEXT("T66Mini.Shop", "AlchemyResultFallback", "AL"), FVector2D(CardIconSize, CardIconSize)), FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(5.f)))]]]
+						+ SHorizontalBox::Slot().AutoWidth()[SNew(SBox).WidthOverride(CardWidth).HeightOverride(CardHeight)[T66MiniMakeShopPanel(T66MiniMakeIconPanel(this, TexPool, AlchemyItem ? AlchemyItem->IconPath : FString(), TEXT("MiniAlchemyResult"), NSLOCTEXT("T66Mini.Shop", "AlchemyResultFallback", "AL"), FVector2D(CardIconSize, CardIconSize)), FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(5.f)))]]]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "OwnedItemsTitle", "OWNED ITEMS")).Font(FT66Style::MakeFont(TEXT("Bold"), 10)).ColorAndOpacity(FT66Style::Text())]
 					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 8.f, 0.f, 0.f)[SNew(SScrollBox) + SScrollBox::Slot()[OwnedItemsPanel]], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(16.f)))]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f)[SNew(SBox).WidthOverride(220.f)[FT66Style::MakePanel(SNew(SVerticalBox)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f)[SNew(SBox).WidthOverride(220.f)[T66MiniMakeShopPanel(SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "HouseTitleAlchemy", "ALCHEMY HOUSE")).Font(FT66Style::MakeFont(TEXT("Bold"), 16)).ColorAndOpacity(FT66Style::Text())]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66Mini.Shop", "AlchemyTransmute", "TRANSMUTE 2 ITEMS"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyTransmuteClicked), ET66ButtonType::Primary).SetFontSize(12).SetPadding(FMargin(10.f, 6.f)).SetEnabled(ActiveRun->OwnedItemIDs.Num() >= 2))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66Mini.Shop", "AlchemyDissolve", "DISSOLVE OLDEST"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyDissolveClicked), ET66ButtonType::Danger).SetFontSize(12).SetPadding(FMargin(10.f, 6.f)).SetEnabled(ActiveRun->OwnedItemIDs.Num() > 0))], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(14.f)))]];
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "AlchemyTransmute", "TRANSMUTE 2 ITEMS"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyTransmuteClicked), ET66ButtonType::Primary, 12, FMargin(10.f, 6.f), 0.f, 0.f, ActiveRun->OwnedItemIDs.Num() >= 2)]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "AlchemyDissolve", "DISSOLVE OLDEST"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyDissolveClicked), ET66ButtonType::Danger, 12, FMargin(10.f, 6.f), 0.f, 0.f, ActiveRun->OwnedItemIDs.Num() > 0)], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(14.f)))]];
 		}
 
 		const auto MakeTabButton = [this](const EMiniCircusTab Tab, const FText& Label) -> TSharedRef<SWidget>
@@ -607,16 +646,16 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 				: (Tab == EMiniCircusTab::Gambling)
 					? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleGamblingTabClicked)
 					: FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyTabClicked);
-			return FT66Style::MakeButton(FT66ButtonParams(Label, OnClicked, ActiveTab == Tab ? ET66ButtonType::Primary : ET66ButtonType::Neutral).SetPadding(FMargin(10.f, 6.f)).SetFontSize(14).SetMinWidth(140.f));
+			return T66MiniMakeShopButton(Label, OnClicked, ActiveTab == Tab ? ET66ButtonType::Primary : ET66ButtonType::Neutral, 14, FMargin(10.f, 6.f), 140.f);
 		};
 
 		const FText StatusToShow = CurrentStatusText.IsEmpty() ? DefaultStatus : CurrentStatusText;
 		return FT66Style::MakeResponsiveRoot(
 			FT66Style::MakeSafeFrame(
-				FT66Style::MakePanel(
+				T66MiniMakeShopPanel(
 					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[FT66Style::MakePanel(SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[FT66Style::MakePanel(SNew(SHorizontalBox)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[T66MiniMakeShopPanel(SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[T66MiniMakeShopPanel(SNew(SHorizontalBox)
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[T66MiniMakeMetricChip(NSLOCTEXT("T66Mini.Shop", "HeaderGold", "GOLD"), FText::AsNumber(Gold), FT66Style::Text())]
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[T66MiniMakeMetricChip(NSLOCTEXT("T66Mini.Shop", "HeaderMaterials", "MATS"), FText::AsNumber(Materials), FT66Style::Text())]
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[T66MiniMakeMetricChip(NSLOCTEXT("T66Mini.Shop", "HeaderDebt", "DEBT"), FText::AsNumber(Debt), Debt > 0 ? FT66Style::Danger() : FT66Style::TextMuted())]
@@ -627,14 +666,105 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(EMiniCircusTab::Gambling, NSLOCTEXT("T66Mini.Shop", "GamblingTab", "GAMBLING"))]
 							+ SHorizontalBox::Slot().AutoWidth()[MakeTabButton(EMiniCircusTab::Alchemy, NSLOCTEXT("T66Mini.Shop", "AlchemyTab", "ALCHEMY"))]]
 						+ SHorizontalBox::Slot().FillWidth(1.f)[SNew(SSpacer)]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66Mini.Shop", "Continue", "CONTINUE"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleContinueClicked), ET66ButtonType::Success).SetPadding(FMargin(10.f, 6.f)).SetFontSize(14).SetMinWidth(150.f))], FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(10.f, 8.f)))]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "Continue", "CONTINUE"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleContinueClicked), ET66ButtonType::Success, 14, FMargin(10.f, 6.f), 150.f)], FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(10.f, 8.f)))]
 					+ SVerticalBox::Slot().FillHeight(1.f)[ActiveTabContent]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[FT66Style::MakePanel(SAssignNew(StatusTextBlock, STextBlock).Text(StatusToShow).Font(FT66Style::MakeFont(TEXT("Regular"), 11)).ColorAndOpacity(CurrentStatusText.IsEmpty() ? FT66Style::TextMuted() : FT66Style::Text()).AutoWrapText(true), FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f)))],
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[T66MiniMakeShopPanel(SAssignNew(StatusTextBlock, STextBlock).Text(StatusToShow).Font(FT66Style::MakeFont(TEXT("Regular"), 11)).ColorAndOpacity(CurrentStatusText.IsEmpty() ? FT66Style::TextMuted() : FT66Style::Text()).AutoWrapText(true), FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f)))],
 					FT66PanelParams(ET66PanelType::Bg).SetPadding(0.f).SetColor(FT66Style::Background())),
 				FMargin(16.f)));
 	}
 
-	TSharedRef<SUniformGridPanel> OfferGrid = SNew(SUniformGridPanel).SlotPadding(FMargin(12.f));
+	if (!ActiveRun)
+	{
+		const auto MakeTabButton = [this](const EMiniCircusTab Tab, const FText& Label) -> TSharedRef<SWidget>
+		{
+			const FOnClicked OnClicked = (Tab == EMiniCircusTab::Vendor)
+				? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleVendorTabClicked)
+				: (Tab == EMiniCircusTab::Gambling)
+					? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleGamblingTabClicked)
+					: FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyTabClicked);
+			return T66MiniMakeShopButton(Label, OnClicked, ActiveTab == Tab ? ET66ButtonType::Primary : ET66ButtonType::Neutral, 14, FMargin(10.f, 6.f), 140.f);
+		};
+
+		const FText UnavailableStatus = CurrentStatusText.IsEmpty()
+			? NSLOCTEXT("T66Mini.Shop", "NoActiveRunStatus", "No active mini run is available. Start or load a run before entering the circus.")
+			: CurrentStatusText;
+
+		return FT66Style::MakeResponsiveRoot(
+			FT66Style::MakeSafeFrame(
+				T66MiniMakeShopPanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[T66MiniMakeShopPanel(SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[T66MiniMakeShopPanel(SNew(STextBlock)
+							.Text(NSLOCTEXT("T66Mini.Shop", "NoRunHeader", "MINI RUN UNAVAILABLE"))
+							.Font(FT66Style::MakeFont(TEXT("Bold"), 14))
+							.ColorAndOpacity(FT66Style::TextMuted()), FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f)))]
+						+ SHorizontalBox::Slot().FillWidth(1.f)[SNew(SSpacer)]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(EMiniCircusTab::Vendor, NSLOCTEXT("T66Mini.Shop", "VendorTab", "VENDOR"))]
+							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(EMiniCircusTab::Gambling, NSLOCTEXT("T66Mini.Shop", "GamblingTab", "GAMBLING"))]
+							+ SHorizontalBox::Slot().AutoWidth()[MakeTabButton(EMiniCircusTab::Alchemy, NSLOCTEXT("T66Mini.Shop", "AlchemyTab", "ALCHEMY"))]]
+						+ SHorizontalBox::Slot().FillWidth(1.f)[SNew(SSpacer)]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[T66MiniMakeShopButton(
+							NSLOCTEXT("T66Mini.Shop", "Continue", "CONTINUE"),
+							FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleContinueClicked),
+							ET66ButtonType::Success,
+							14,
+							FMargin(10.f, 6.f),
+							150.f,
+							0.f,
+							false)], FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(10.f, 8.f)))]
+					+ SVerticalBox::Slot().FillHeight(1.f)
+					[
+						T66MiniMakeShopPanel(
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Center).HAlign(HAlign_Center)
+							[
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+								[
+									SNew(STextBlock)
+									.Text(NSLOCTEXT("T66Mini.Shop", "NoActiveRunTitle", "THE CIRCUS WAGON IS CLOSED"))
+									.Font(FT66Style::MakeFont(TEXT("Bold"), 24))
+									.ColorAndOpacity(FT66Style::Text())
+									.Justification(ETextJustify::Center)
+								]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 0.f)
+								[
+									SNew(STextBlock)
+									.Text(NSLOCTEXT("T66Mini.Shop", "NoActiveRunBody", "Vendor offers, gambling tables, and alchemy inputs appear here only while a mini run is active."))
+									.Font(FT66Style::MakeFont(TEXT("Regular"), 13))
+									.ColorAndOpacity(FT66Style::TextMuted())
+									.AutoWrapText(true)
+									.WrapTextAt(620.f)
+									.Justification(ETextJustify::Center)
+								]
+							],
+							FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(28.f)))
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[T66MiniMakeShopPanel(SAssignNew(StatusTextBlock, STextBlock)
+						.Text(UnavailableStatus)
+						.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
+						.ColorAndOpacity(CurrentStatusText.IsEmpty() ? FT66Style::TextMuted() : FT66Style::Text())
+						.AutoWrapText(true), FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f)))]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f).HAlign(HAlign_Right)
+					[
+						T66MiniMakeShopButton(
+							NSLOCTEXT("T66Mini.Shop", "Back", "BACK"),
+							FOnClicked::CreateLambda([this]()
+							{
+								NavigateTo(ET66ScreenType::MiniMainMenu);
+								return FReply::Handled();
+							}),
+							ET66ButtonType::Neutral,
+							14,
+							FMargin(10.f, 6.f),
+							150.f)
+					],
+					FT66PanelParams(ET66PanelType::Bg).SetPadding(0.f).SetColor(FT66Style::Background())),
+				FMargin(16.f)));
+	}
+
+	TSharedRef<SUniformGridPanel> OfferGrid = SNew(SUniformGridPanel).SlotPadding(FMargin(16.f));
 	TSharedRef<SVerticalBox> OwnedItemsPanel = SNew(SVerticalBox);
 	TSharedRef<SVerticalBox> AlchemyItemsPanel = SNew(SVerticalBox);
 	TSharedRef<SVerticalBox> BuybackItemsPanel = SNew(SVerticalBox);
@@ -651,54 +781,54 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 
 			const bool bLocked = CircusSubsystem->IsVendorOfferLocked(Item->ItemID);
 			const bool bAffordable = ActiveRun && ActiveRun->Gold >= Item->BaseBuyGold;
-			const FLinearColor BuyColor = bAffordable ? T66MiniUI::AccentGreen() : T66MiniUI::RaisedFill();
-
 			OfferGrid->AddSlot(Index % 2, Index / 2)
 			[
 				SNew(SBox)
 				.WidthOverride(520.f)
-				.HeightOverride(210.f)
+				.HeightOverride(240.f)
+				.Clipping(EWidgetClipping::ClipToBounds)
 				[
-					SNew(SBorder)
-					.BorderImage(T66MiniUI::WhiteBrush())
-					.BorderBackgroundColor(T66MiniUI::PanelFill())
-					.Padding(FMargin(18.f))
-					[
+					T66MiniMakeShopPanel(
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot()
 						.AutoHeight()
 						[
 							SNew(STextBlock)
 							.Text(FText::FromName(Item->ItemID))
-							.Font(T66MiniUI::BoldFont(22))
+							.Font(T66MiniUI::BoldFont(16))
 							.ColorAndOpacity(FLinearColor::White)
+							.AutoWrapText(true)
+							.WrapTextAt(460.f)
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
-						.Padding(0.f, 8.f, 0.f, 0.f)
+						.Padding(0.f, 5.f, 0.f, 0.f)
 						[
 							SNew(STextBlock)
 							.Text(FText::FromString(FString::Printf(TEXT("%s  |  %s"), *Item->PrimaryStatType, *Item->SecondaryStatType)))
-							.Font(T66MiniUI::BodyFont(16))
+							.Font(T66MiniUI::BodyFont(12))
 							.ColorAndOpacity(T66MiniUI::MutedText())
+							.AutoWrapText(true)
+							.WrapTextAt(460.f)
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
-						.Padding(0.f, 10.f, 0.f, 0.f)
+						.Padding(0.f, 6.f, 0.f, 0.f)
 						[
 							SNew(STextBlock)
 							.Text(FText::FromString(T66MiniDescribeItemEffect(*Item)))
-							.Font(T66MiniUI::BodyFont(16))
+							.Font(T66MiniUI::BodyFont(12))
 							.ColorAndOpacity(FLinearColor::White)
 							.AutoWrapText(true)
+							.WrapTextAt(460.f)
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
-						.Padding(0.f, 10.f, 0.f, 0.f)
+						.Padding(0.f, 6.f, 0.f, 0.f)
 						[
 							SNew(STextBlock)
 							.Text(FText::FromString(FString::Printf(TEXT("Cost: %d gold"), Item->BaseBuyGold)))
-							.Font(T66MiniUI::BoldFont(18))
+							.Font(T66MiniUI::BoldFont(13))
 							.ColorAndOpacity(T66MiniUI::AccentGold())
 						]
 						+ SVerticalBox::Slot()
@@ -710,57 +840,46 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 							.FillWidth(1.f)
 							.Padding(0.f, 0.f, 10.f, 0.f)
 							[
-								SNew(SButton)
-								.OnClicked(FOnClicked::CreateLambda([this, ItemID = Item->ItemID]()
-								{
-									return HandleBuyItemClicked(ItemID);
-								}))
-								.ButtonColorAndOpacity(BuyColor)
-								[
-									SNew(STextBlock)
-									.Text(NSLOCTEXT("T66Mini.Shop", "Buy", "BUY"))
-									.Font(T66MiniUI::BoldFont(18))
-									.ColorAndOpacity(bAffordable ? T66MiniUI::ButtonTextDark() : T66MiniUI::MutedText())
-									.Justification(ETextJustify::Center)
-								]
+								T66MiniMakeShopButton(
+									NSLOCTEXT("T66Mini.Shop", "Buy", "BUY"),
+									FOnClicked::CreateLambda([this, ItemID = Item->ItemID]() { return HandleBuyItemClicked(ItemID); }),
+									ET66ButtonType::Success,
+									12,
+									FMargin(8.f, 5.f),
+									0.f,
+									34.f,
+									bAffordable)
 							]
 							+ SHorizontalBox::Slot()
 							.FillWidth(1.f)
 							.Padding(0.f, 0.f, 10.f, 0.f)
 							[
-								SNew(SButton)
-								.OnClicked(FOnClicked::CreateLambda([this, ItemID = Item->ItemID]()
-								{
-									return HandleStealItemClicked(ItemID);
-								}))
-								.ButtonColorAndOpacity(T66MiniUI::AccentGold())
-								[
-									SNew(STextBlock)
-									.Text(NSLOCTEXT("T66Mini.Shop", "Steal", "STEAL"))
-									.Font(T66MiniUI::BoldFont(18))
-									.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-									.Justification(ETextJustify::Center)
-								]
+								T66MiniMakeShopButton(
+									NSLOCTEXT("T66Mini.Shop", "Steal", "STEAL"),
+									FOnClicked::CreateLambda([this, ItemID = Item->ItemID]() { return HandleStealItemClicked(ItemID); }),
+									ET66ButtonType::Danger,
+									12,
+									FMargin(8.f, 5.f),
+									0.f,
+									34.f,
+									ActiveRun != nullptr)
 							]
 							+ SHorizontalBox::Slot()
 							.FillWidth(1.f)
 							[
-								SNew(SButton)
-								.OnClicked(FOnClicked::CreateLambda([this, ItemID = Item->ItemID]()
-								{
-									return HandleLockClicked(ItemID);
-								}))
-								.ButtonColorAndOpacity(bLocked ? T66MiniUI::AccentGold() : T66MiniUI::AccentBlue())
-								[
-									SNew(STextBlock)
-									.Text(FText::FromString(bLocked ? TEXT("UNLOCK") : TEXT("LOCK")))
-									.Font(T66MiniUI::BoldFont(18))
-									.ColorAndOpacity(bLocked ? T66MiniUI::ButtonTextDark() : FLinearColor::White)
-									.Justification(ETextJustify::Center)
-								]
+								T66MiniMakeShopButton(
+									FText::FromString(bLocked ? TEXT("UNLOCK") : TEXT("LOCK")),
+									FOnClicked::CreateLambda([this, ItemID = Item->ItemID]() { return HandleLockClicked(ItemID); }),
+									bLocked ? ET66ButtonType::Success : ET66ButtonType::Neutral,
+									12,
+									FMargin(8.f, 5.f),
+									0.f,
+									34.f,
+									ActiveRun != nullptr)
 							]
 						]
-					]
+					,
+					FMargin(18.f, 16.f))
 				]
 			];
 		}
@@ -792,11 +911,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 			.AutoHeight()
 			.Padding(0.f, 0.f, 0.f, 8.f)
 			[
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(T66MiniUI::RaisedFill())
-				.Padding(FMargin(12.f, 10.f))
-				[
+				T66MiniMakeShopPanel(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
 					.FillWidth(1.f)
@@ -809,37 +924,31 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
 					[
-						SNew(SButton)
-						.OnClicked(FOnClicked::CreateLambda([this, ItemID = Pair.Key]()
-						{
-							return HandleSellItemClicked(ItemID);
-						}))
-						.ButtonColorAndOpacity(T66MiniUI::AccentGold())
-						[
-							SNew(STextBlock)
-							.Text(FText::FromString(FString::Printf(TEXT("SELL +%d"), Item->BaseSellGold)))
-							.Font(T66MiniUI::BoldFont(15))
-							.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-						]
+						T66MiniMakeShopButton(
+							FText::FromString(FString::Printf(TEXT("SELL +%d"), Item->BaseSellGold)),
+							FOnClicked::CreateLambda([this, ItemID = Pair.Key]() { return HandleSellItemClicked(ItemID); }),
+							ET66ButtonType::Danger,
+							15,
+							FMargin(10.f, 6.f))
 					]
-				]
+				,
+				FMargin(12.f, 10.f),
+				true)
 			];
 
 			AlchemyItemsPanel->AddSlot()
 			.AutoHeight()
 			.Padding(0.f, 0.f, 0.f, 8.f)
 			[
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(T66MiniUI::RaisedFill())
-				.Padding(FMargin(12.f, 10.f))
-				[
+				T66MiniMakeShopPanel(
 					SNew(STextBlock)
 					.Text(FText::FromString(FString::Printf(TEXT("%s  x%d  |  ready for future transmutation inputs"), *Pair.Key.ToString(), Pair.Value)))
 					.Font(T66MiniUI::BodyFont(15))
 					.ColorAndOpacity(FLinearColor::White)
 					.AutoWrapText(true)
-				]
+				,
+				FMargin(12.f, 10.f),
+				true)
 			];
 
 			++RenderedOwnedRows;
@@ -888,31 +997,29 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 				.AutoHeight()
 				.Padding(0.f, 0.f, 0.f, 8.f)
 				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot()
-					.FillWidth(1.f)
-					[
-						SNew(STextBlock)
-						.Text(FText::FromString(ItemID.ToString()))
-						.Font(T66MiniUI::BodyFont(15))
-						.ColorAndOpacity(FLinearColor::White)
-					]
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					[
-						SNew(SButton)
-						.OnClicked(FOnClicked::CreateLambda([this, ItemID]()
-						{
-							return HandleBuybackClicked(ItemID);
-						}))
-						.ButtonColorAndOpacity(T66MiniUI::AccentGreen())
+					T66MiniMakeShopPanel(
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.f)
+						.VAlign(VAlign_Center)
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(FString::Printf(TEXT("BUYBACK %d"), FMath::Max(1, Item->BaseSellGold))))
-							.Font(T66MiniUI::BoldFont(14))
-							.ColorAndOpacity(T66MiniUI::ButtonTextDark())
+							.Text(FText::FromString(ItemID.ToString()))
+							.Font(T66MiniUI::BodyFont(15))
+							.ColorAndOpacity(FLinearColor::White)
 						]
-					]
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							T66MiniMakeShopButton(
+								FText::FromString(FString::Printf(TEXT("BUYBACK %d"), FMath::Max(1, Item->BaseSellGold))),
+								FOnClicked::CreateLambda([this, ItemID]() { return HandleBuybackClicked(ItemID); }),
+								ET66ButtonType::Success,
+								14,
+								FMargin(10.f, 6.f))
+						],
+						FMargin(12.f, 10.f),
+						true)
 				];
 
 				++RenderedBuybackRows;
@@ -949,11 +1056,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 			.AutoHeight()
 			.Padding(0.f, 12.f, 0.f, 0.f)
 			[
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(T66MiniUI::CardFill())
-				.Padding(FMargin(16.f))
-				[
+				T66MiniMakeShopPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -983,7 +1086,8 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 					[
 						BuybackItemsPanel
 					]
-				]
+				,
+				FMargin(16.f))
 			];
 	}
 	else if (ActiveTab == EMiniCircusTab::Gambling)
@@ -1015,11 +1119,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 				.WidthOverride(340.f)
 				.HeightOverride(188.f)
 				[
-					SNew(SBorder)
-					.BorderImage(T66MiniUI::WhiteBrush())
-					.BorderBackgroundColor(T66MiniUI::PanelFill())
-					.Padding(FMargin(18.f))
-					[
+					T66MiniMakeShopPanel(
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot()
 						.AutoHeight()
@@ -1043,21 +1143,15 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 						.AutoHeight()
 						.VAlign(VAlign_Bottom)
 						[
-							SNew(SButton)
-							.OnClicked(FOnClicked::CreateLambda([this, GameID = FName(Card.GameID), Title = FString(Card.Title)]()
-							{
-								return HandleCircusGameClicked(GameID, Title);
-							}))
-							.ButtonColorAndOpacity(T66MiniUI::AccentGold())
-							[
-								SNew(STextBlock)
-								.Text(NSLOCTEXT("T66Mini.Shop", "OpenGame", "OPEN"))
-								.Font(T66MiniUI::BoldFont(18))
-								.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-								.Justification(ETextJustify::Center)
-							]
+							T66MiniMakeShopButton(
+								NSLOCTEXT("T66Mini.Shop", "OpenGame", "OPEN"),
+								FOnClicked::CreateLambda([this, GameID = FName(Card.GameID), Title = FString(Card.Title)]() { return HandleCircusGameClicked(GameID, Title); }),
+								ET66ButtonType::Primary,
+								18,
+								FMargin(12.f, 8.f))
 						]
-					]
+					,
+					FMargin(18.f))
 				]
 			];
 		}
@@ -1076,29 +1170,11 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 				[
-					SNew(SButton)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleBorrowGoldClicked, 40))
-					.ButtonColorAndOpacity(T66MiniUI::AccentBlue())
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66Mini.Shop", "BorrowGold", "BORROW 40G"))
-						.Font(T66MiniUI::BoldFont(18))
-						.ColorAndOpacity(FLinearColor::White)
-						.Justification(ETextJustify::Center)
-					]
+					T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "BorrowGold", "BORROW 40G"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleBorrowGoldClicked, 40), ET66ButtonType::Neutral, 18, FMargin(12.f, 8.f))
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f)
 				[
-					SNew(SButton)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandlePayDebtClicked, 40))
-					.ButtonColorAndOpacity(T66MiniUI::AccentGreen())
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66Mini.Shop", "PayDebt", "PAY 40 DEBT"))
-						.Font(T66MiniUI::BoldFont(18))
-						.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-						.Justification(ETextJustify::Center)
-					]
+					T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "PayDebt", "PAY 40 DEBT"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandlePayDebtClicked, 40), ET66ButtonType::Success, 18, FMargin(12.f, 8.f))
 				]
 			];
 	}
@@ -1110,11 +1186,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			[
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(T66MiniUI::PanelFill())
-				.Padding(FMargin(18.f))
-				[
+				T66MiniMakeShopPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -1134,19 +1206,14 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 						.ColorAndOpacity(T66MiniUI::MutedText())
 						.AutoWrapText(true)
 					]
-				]
+				,
+				FMargin(18.f))
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(0.f, 12.f, 0.f, 0.f)
 			[
-				SNew(SBorder)
-				.BorderImage(T66MiniUI::WhiteBrush())
-				.BorderBackgroundColor(T66MiniUI::CardFill())
-				.Padding(FMargin(16.f))
-				[
-					AlchemyItemsPanel
-				]
+				T66MiniMakeShopPanel(AlchemyItemsPanel, FMargin(16.f))
 			];
 		ActiveTabContent =
 			SNew(SVerticalBox)
@@ -1162,34 +1229,16 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 				[
-					SNew(SButton)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyTransmuteClicked))
-					.ButtonColorAndOpacity(T66MiniUI::AccentBlue())
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66Mini.Shop", "AlchemyTransmute", "TRANSMUTE 2 ITEMS"))
-						.Font(T66MiniUI::BoldFont(18))
-						.ColorAndOpacity(FLinearColor::White)
-						.Justification(ETextJustify::Center)
-					]
+					T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "AlchemyTransmute", "TRANSMUTE 2 ITEMS"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyTransmuteClicked), ET66ButtonType::Primary, 18, FMargin(12.f, 8.f), 0.f, 0.f, ActiveRun && ActiveRun->OwnedItemIDs.Num() >= 2)
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f)
 				[
-					SNew(SButton)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyDissolveClicked))
-					.ButtonColorAndOpacity(T66MiniUI::AccentGold())
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66Mini.Shop", "AlchemyDissolve", "DISSOLVE OLDEST"))
-						.Font(T66MiniUI::BoldFont(18))
-						.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-						.Justification(ETextJustify::Center)
-					]
+					T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "AlchemyDissolve", "DISSOLVE OLDEST"), FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyDissolveClicked), ET66ButtonType::Danger, 18, FMargin(12.f, 8.f), 0.f, 0.f, ActiveRun && ActiveRun->OwnedItemIDs.Num() > 0)
 				]
 			];
 	}
 
-	const auto MakeTabButton = [this](const EMiniCircusTab Tab, const FText& Label, const FLinearColor& ActiveColor) -> TSharedRef<SWidget>
+	const auto MakeTabButton = [this](const EMiniCircusTab Tab, const FText& Label) -> TSharedRef<SWidget>
 	{
 		const bool bIsActive = ActiveTab == Tab;
 		const FOnClicked OnClicked = (Tab == EMiniCircusTab::Vendor)
@@ -1198,23 +1247,10 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 				? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleGamblingTabClicked)
 				: FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyTabClicked);
 
-		return SNew(SButton)
-			.OnClicked(OnClicked)
-			.ButtonColorAndOpacity(bIsActive ? ActiveColor : T66MiniUI::RaisedFill())
-			[
-				SNew(STextBlock)
-				.Text(Label)
-				.Font(T66MiniUI::BoldFont(18))
-				.ColorAndOpacity(bIsActive ? T66MiniUI::ButtonTextDark() : FLinearColor::White)
-				.Justification(ETextJustify::Center)
-			];
+		return T66MiniMakeShopButton(Label, OnClicked, bIsActive ? ET66ButtonType::Primary : ET66ButtonType::Neutral, 18, FMargin(12.f, 8.f));
 	};
 
-	TSharedRef<SWidget> BottomLeftWidget = SNew(SBorder)
-		.BorderImage(T66MiniUI::WhiteBrush())
-		.BorderBackgroundColor(T66MiniUI::RaisedFill())
-		.Padding(FMargin(12.f))
-		[
+	TSharedRef<SWidget> BottomLeftWidget = T66MiniMakeShopPanel(
 			SNew(STextBlock)
 			.Text(ActiveTab == EMiniCircusTab::Gambling
 				? NSLOCTEXT("T66Mini.Shop", "GamblingHint", "ANGER AND DEBT CARRY FORWARD")
@@ -1222,30 +1258,27 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 			.Font(T66MiniUI::BoldFont(16))
 			.ColorAndOpacity(T66MiniUI::MutedText())
 			.Justification(ETextJustify::Center)
-		];
+		,
+		FMargin(12.f),
+		true);
 	if (ActiveTab == EMiniCircusTab::Vendor)
 	{
 		BottomLeftWidget =
-			SNew(SButton)
-			.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleRerollClicked))
-			.ButtonColorAndOpacity(T66MiniUI::AccentGold())
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(FString::Printf(TEXT("REROLL (%dG)"), RerollCost)))
-				.Font(T66MiniUI::BoldFont(18))
-				.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-				.Justification(ETextJustify::Center)
-			];
+			T66MiniMakeShopButton(
+				FText::FromString(FString::Printf(TEXT("REROLL (%dG)"), RerollCost)),
+				FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleRerollClicked),
+				ET66ButtonType::Primary,
+				18,
+				FMargin(12.f, 8.f),
+				0.f,
+				0.f,
+				ActiveRun != nullptr);
 	}
 
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
-			SNew(SBorder)
-			.BorderImage(T66MiniUI::WhiteBrush())
-			.BorderBackgroundColor(T66MiniUI::ShellFill())
-			.Padding(FMargin(28.f, 22.f))
-			[
+			T66MiniMakeShopPanel(
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot()
 				.AutoHeight()
@@ -1265,11 +1298,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 					+ SHorizontalBox::Slot()
 					.FillWidth(1.f)
 					[
-						SNew(SBorder)
-						.BorderImage(T66MiniUI::WhiteBrush())
-						.BorderBackgroundColor(T66MiniUI::PanelFill())
-						.Padding(FMargin(12.f))
-						[
+						T66MiniMakeShopPanel(
 							SNew(STextBlock)
 							.Text(FText::FromString(ActiveRun
 								? FString::Printf(TEXT("Gold: %d  |  Materials: %d  |  Debt: %d  |  Anger: %d%%  |  Wave Complete: %d"),
@@ -1281,7 +1310,8 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 								: TEXT("Mini run unavailable.")))
 							.Font(T66MiniUI::BoldFont(18))
 							.ColorAndOpacity(FLinearColor::White)
-						]
+						,
+						FMargin(12.f))
 					]
 				]
 				+ SVerticalBox::Slot()
@@ -1291,15 +1321,15 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 					[
-						MakeTabButton(EMiniCircusTab::Vendor, NSLOCTEXT("T66Mini.Shop", "VendorTab", "VENDOR"), T66MiniUI::AccentGreen())
+						MakeTabButton(EMiniCircusTab::Vendor, NSLOCTEXT("T66Mini.Shop", "VendorTab", "VENDOR"))
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 					[
-						MakeTabButton(EMiniCircusTab::Gambling, NSLOCTEXT("T66Mini.Shop", "GamblingTab", "GAMBLING"), T66MiniUI::AccentGold())
+						MakeTabButton(EMiniCircusTab::Gambling, NSLOCTEXT("T66Mini.Shop", "GamblingTab", "GAMBLING"))
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
-						MakeTabButton(EMiniCircusTab::Alchemy, NSLOCTEXT("T66Mini.Shop", "AlchemyTab", "ALCHEMY"), T66MiniUI::AccentBlue())
+						MakeTabButton(EMiniCircusTab::Alchemy, NSLOCTEXT("T66Mini.Shop", "AlchemyTab", "ALCHEMY"))
 					]
 				]
 				+ SVerticalBox::Slot()
@@ -1318,7 +1348,8 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 					.ColorAndOpacity(T66MiniUI::MutedText())
 					.AutoWrapText(true)
 				]
-			]
+			,
+			FMargin(28.f, 22.f, 28.f, 112.f))
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
@@ -1341,16 +1372,14 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 			.WidthOverride(220.f)
 			.HeightOverride(54.f)
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleContinueClicked))
-				.ButtonColorAndOpacity(T66MiniUI::AccentGreen())
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66Mini.Shop", "Continue", "CONTINUE"))
-					.Font(T66MiniUI::BoldFont(20))
-					.ColorAndOpacity(T66MiniUI::ButtonTextDark())
-					.Justification(ETextJustify::Center)
-				]
+				T66MiniMakeShopButton(
+					NSLOCTEXT("T66Mini.Shop", "Continue", "CONTINUE"),
+					FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleContinueClicked),
+					ET66ButtonType::Success,
+					20,
+					FMargin(12.f, 8.f),
+					220.f,
+					54.f)
 			]
 		];
 }

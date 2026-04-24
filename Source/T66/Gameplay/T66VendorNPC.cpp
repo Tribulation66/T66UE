@@ -30,6 +30,6 @@ bool AT66VendorNPC::Interact(APlayerController* PC)
 {
 	AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC);
 	if (!T66PC) return false;
-	T66PC->OpenWorldDialogueVendor(this);
+	T66PC->OpenVendorOverlayForVendor(this);
 	return true;
 }

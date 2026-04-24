@@ -23,6 +23,12 @@ Prepare better working references before reconstruction. This skill exists to ma
 
 Produce higher-utility reference images for downstream UI work.
 
+Reference prep does not change the acceptance target. Normal 16:9 screens still measure and validate against the canonical packaged frame, normally `1920x1080`. The main menu remains the golden calibration screen; helper images must not blur the title/tagline ownership contract or any shell/control/live-content separation.
+
+Prepared full-screen references, including no-buttons or no-text variants, remain offline/helper artifacts. They do not become runtime background plates unless a later `$ui-sprite-families` pass explicitly validates them as UI-free scene/background plates.
+
+Hard rule: reference prep must not manually pixel-edit, clean up, mask, erase/fill, cover-patch, clone, repaint, or screenshot-repair generated assets. It may create deterministic resamples, helper upscales, crop guides, and classification notes. If pixels need correction, route to generation and regenerate.
+
 Typical outputs:
 - `*_2x.png`
 - `*_4x.png`
@@ -58,10 +64,13 @@ AI upscale is for helper references, not for automatically trusted runtime slice
 - the source crop contains baked localizable text
 - the control plate has the wrong aspect ratio
 - the source is contaminated by neighboring art or background
+- the source is a buttonless/textless full-screen composite that still contains foreground UI chrome
+- the active main menu asset was generated at a non-canonical canvas
 - the target needs true stateful runtime art such as normal, hover, or pressed buttons
 - the issue is ownership or composition, not pixel density
 
 If the plate or shell is fundamentally wrong, move to `$ui-style-reference` or `$ui-sprite-families` instead of trying to rescue it with upscale.
+For the active main menu pack, delete and rebuild wrong-resolution generated assets at `1920x1080`; do not resample them into compliance.
 
 ## Workflow
 
@@ -100,6 +109,7 @@ Record the risk briefly. A larger bad source is still a bad source.
 - Keep the composition identical to the approved reference.
 - Produce separate files from the original so the source of truth remains untouched.
 - Treat outputs as provisional until classified.
+- Preserve transparent regions and alpha edges when preparing already-isolated assets.
 
 If a free local stack exists, prefer it before paid tools. Typical no-cost choices are Real-ESRGAN or Upscayl. If only simple resizing is available, fall back to plain resample and be explicit about the limitation.
 
@@ -133,6 +143,8 @@ Use only when:
 - the image contains no baked localizable text
 - the crop is clean and isolated
 - the shape is already correct
+- alpha edges and transparent padding are clean
+- nine-slice margins and state anchors remain trustworthy when applicable
 - no neighboring contamination is present
 - the asset is suitable for direct slicing or import without interpretive cleanup
 
@@ -170,8 +182,10 @@ Then route to the next skill:
 - Do not mark an image `runtime-safe` just because it is larger.
 - Do not try to fix bad proportions with upscale.
 - Do not use helper images as silent production inputs; classify them first.
-- Do not crop or clean pixels by hand if the better fix is to regenerate a clean family board.
+- Do not mark full-screen reference variants as runtime backgrounds unless they pass the UI-free scene plate gate.
+- Do not crop or clean pixels by hand; regenerate a clean family board when pixels are wrong.
 - Do not use upscale to rescue mixed ownership problems that should be handled by the content ownership audit.
+- Do not mark prepared assets `runtime-safe` without checking dimensions, alpha, nine-slice requirements, and state anchors.
 
 ## Success Bar
 

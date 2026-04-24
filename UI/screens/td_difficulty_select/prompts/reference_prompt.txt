@@ -1,0 +1,31 @@
+Use case: ui-mockup
+Asset type: game UI full-screen offline canonical reference
+
+Generate one 1920x1080 screen-specific canonical reference for the Chadpocalypse TD Difficulty Select screen.
+
+Input 1 is the canonical main-menu style anchor: C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png
+Use this as the only visual style anchor: fantasy stone and bronze frames, warm torchlit dungeon atmosphere, carved bevels, green primary CTA plates, blue utility plates, gold title accents, dark readable interiors, and polished game UI composition.
+
+Input 2 is the current runtime screenshot: C:\UE\T66\UI\screens\td_difficulty_select\current\2026-04-24\current_runtime_1920x1080.png
+Use it only for layout, map-image ownership, and control structure. Do not copy its crowded title, stretched columns, distorted card image treatment, or overly subtle selected states.
+
+Input 3 is the layout list: C:\UE\T66\UI\screens\td_difficulty_select\layout\layout_list.md
+Preserve the regions described there:
+- selected map background concept
+- top-left Back to TD button
+- top centered long title well
+- left scrollable difficulty list with five selectable items
+- center framed 2x2 map-card grid
+- right selected-map summary panel and Start Match button
+
+Keep all difficulty names, map names, descriptions, stats, featured heroes, and button labels as live text wells. Keep map preview/background imagery as runtime-owned image sockets. The reference may show representative text and route imagery for comparison, but runtime sprites generated from it must be text-free and must not bake map data.
+
+Constraints:
+- Preserve the three-column decision flow and map-card grid.
+- Match the main-menu visual family closely, but create a TD-specific decision screen.
+- Reduce title/back overlap and improve spacing without changing the screen contract.
+- No screenshot overlay, no pasted current UI, no manual pixel repair look.
+- Leave clean, readable interiors for runtime text and map preview sockets.
+- Use real-looking fantasy UI plates, not flat wireframes.
+- Do not include watermarks.
+

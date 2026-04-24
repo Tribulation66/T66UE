@@ -28,6 +28,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66FrontendTopBar, Log, All);
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SConstraintCanvas.h"
+#include "Widgets/Layout/SDPIScaler.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SNullWidget.h"
@@ -421,6 +422,7 @@ namespace
 				SAssignNew(Button, SButton)
 				.ButtonStyle(&ButtonStyle)
 				.ContentPadding(FMargin(0.f))
+				.Clipping(EWidgetClipping::ClipToBounds)
 				.ToolTipText(InArgs._ToolTipText)
 				.OnClicked(InArgs._OnClicked)
 				[
@@ -428,10 +430,12 @@ namespace
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 					.BorderBackgroundColor(FLinearColor::Transparent)
 					.Padding(0.f)
+					.Clipping(EWidgetClipping::ClipToBounds)
 					.RenderTransform(this, &ST66TopBarStatefulButton::GetVisualTransform)
 					.RenderTransformPivot(FVector2D(0.5f, 0.5f))
 					[
 						SNew(SOverlay)
+						.Clipping(EWidgetClipping::ClipToBounds)
 						+ SOverlay::Slot()
 						.HAlign(HAlign_Fill)
 						.VAlign(VAlign_Fill)
@@ -851,12 +855,12 @@ UT66FrontendTopBarWidget::UT66FrontendTopBarWidget(const FObjectInitializer& Obj
 
 float UT66FrontendTopBarWidget::GetReservedHeight()
 {
-	return SnapPixel(GetTopBarViewportTransform().MapY(T66MainMenuReferenceLayout::TopBarReservedHeight));
+	return T66MainMenuReferenceLayout::TopBarReservedHeight;
 }
 
 float UT66FrontendTopBarWidget::GetVisibleContentHeight()
 {
-	return SnapPixel(GetTopBarViewportTransform().MapY(T66MainMenuReferenceLayout::TopBarSurfaceHeight));
+	return T66MainMenuReferenceLayout::TopBarSurfaceHeight;
 }
 
 TSharedRef<SWidget> UT66FrontendTopBarWidget::RebuildWidget()
@@ -948,9 +952,7 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 {
 	LoadLooseBrushFromCandidatePaths(
 		{
-			TEXT("SourceAssets/UI/MainMenuReference/topbar_shell.png"),
-			TEXT("SourceAssets/UI/MainMenuReference/topbar_backdrop.png"),
-			TEXT("SourceAssets/UI/MainMenuReference/TopBar/topbar_shell.png")
+			TEXT("SourceAssets/UI/MainMenuReference/TopBar/topbar_backdrop_clean.png")
 		},
 		TopBarBackdropBrush);
 
@@ -1159,9 +1161,9 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 	const FT66ReferenceRect& QuitRect = T66MainMenuReferenceLayout::TopBar::ButtonPower;
 
 	FSlateFontInfo NavFont = FT66Style::MakeFont(TEXT("Bold"), 18);
-	NavFont.LetterSpacing = 2;
+	NavFont.LetterSpacing = 0;
 	FSlateFontInfo CurrencyFont = FT66Style::MakeFont(TEXT("Bold"), 19);
-	CurrencyFont.LetterSpacing = 2;
+	CurrencyFont.LetterSpacing = 0;
 
 	const FLinearColor LabelColor(0.96f, 0.90f, 0.75f, 1.0f);
 	const FLinearColor LabelShadowColor(0.12f, 0.07f, 0.03f, 0.98f);
@@ -1226,6 +1228,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		return SNew(SBox)
 			.WidthOverride(Width)
 			.HeightOverride(Height)
+			.Clipping(EWidgetClipping::ClipToBounds)
 			[
 				SNew(ST66TopBarStatefulButton)
 				.ButtonStyle(&FlatButtonStyle)
@@ -1337,8 +1340,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		PowerUpRect.Height,
 		PowerUpText,
 		&UT66FrontendTopBarWidget::HandleShopClicked,
-		MakeNavContent(MakeLabelWidget(PowerUpText), PowerUpNavIcon),
-		FMargin(22.f, 20.f, 22.f, 24.f),
+		MakeNavContent(MakeLabelWidget(PowerUpText), TSharedPtr<SWidget>()),
+		FMargin(64.f, 20.f, 18.f, 24.f),
 		NavOuter,
 		NavMid,
 		NavInner);
@@ -1348,8 +1351,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		AchievementsRect.Height,
 		AchievementsText,
 		&UT66FrontendTopBarWidget::HandleAchievementsClicked,
-		MakeNavContent(MakeLabelWidget(AchievementsText), AchievementsNavIcon),
-		FMargin(22.f, 20.f, 22.f, 24.f),
+		MakeNavContent(MakeLabelWidget(AchievementsText), TSharedPtr<SWidget>()),
+		FMargin(58.f, 20.f, 14.f, 24.f),
 		NavOuter,
 		NavMid,
 		NavInner);
@@ -1359,8 +1362,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		MiniGamesRect.Height,
 		MiniGamesText,
 		&UT66FrontendTopBarWidget::HandleMiniGamesClicked,
-		MakeNavContent(MakeLabelWidget(MiniGamesText), MiniGamesNavIcon),
-		FMargin(22.f, 20.f, 22.f, 24.f),
+		MakeNavContent(MakeLabelWidget(MiniGamesText), TSharedPtr<SWidget>()),
+		FMargin(64.f, 20.f, 18.f, 24.f),
 		NavOuter,
 		NavMid,
 		NavInner);
@@ -1402,50 +1405,45 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 
 	const TSharedRef<SWidget> ButtonsCanvas =
 		SNew(SConstraintCanvas)
-		+ SConstraintCanvas::Slot().Offset(FMargin(SettingsRect.X, SettingsRect.Y, SettingsRect.Width, SettingsRect.Height))
+		+ SConstraintCanvas::Slot().Alignment(FVector2D(0.f, 0.f)).Offset(FMargin(SettingsRect.X, SettingsRect.Y, SettingsRect.Width, SettingsRect.Height))
 		[
 			SettingsButtonWidget
 		]
-		+ SConstraintCanvas::Slot().Offset(FMargin(LanguageRect.X, LanguageRect.Y, LanguageRect.Width, LanguageRect.Height))
+		+ SConstraintCanvas::Slot().Alignment(FVector2D(0.f, 0.f)).Offset(FMargin(LanguageRect.X, LanguageRect.Y, LanguageRect.Width, LanguageRect.Height))
 		[
 			LanguageButtonWidget
 		]
-		+ SConstraintCanvas::Slot().Offset(FMargin(AccountRect.X, AccountRect.Y, AccountRect.Width, AccountRect.Height))
+		+ SConstraintCanvas::Slot().Alignment(FVector2D(0.f, 0.f)).Offset(FMargin(AccountRect.X, AccountRect.Y, AccountRect.Width, AccountRect.Height))
 		[
 			AccountButtonWidget
 		]
-		+ SConstraintCanvas::Slot().Offset(FMargin(PortraitRect.X, PortraitRect.Y, PortraitRect.Width, PortraitRect.Height))
+		+ SConstraintCanvas::Slot().Alignment(FVector2D(0.f, 0.f)).Offset(FMargin(PortraitRect.X, PortraitRect.Y, PortraitRect.Width, PortraitRect.Height))
 		[
 			HomeButtonWidget
 		]
-		+ SConstraintCanvas::Slot().Offset(FMargin(PowerUpRect.X, PowerUpRect.Y, PowerUpRect.Width, PowerUpRect.Height))
+		+ SConstraintCanvas::Slot().Alignment(FVector2D(0.f, 0.f)).Offset(FMargin(PowerUpRect.X, PowerUpRect.Y, PowerUpRect.Width, PowerUpRect.Height))
 		[
 			PowerUpButtonWidget
 		]
-		+ SConstraintCanvas::Slot().Offset(FMargin(AchievementsRect.X, AchievementsRect.Y, AchievementsRect.Width, AchievementsRect.Height))
+		+ SConstraintCanvas::Slot().Alignment(FVector2D(0.f, 0.f)).Offset(FMargin(AchievementsRect.X, AchievementsRect.Y, AchievementsRect.Width, AchievementsRect.Height))
 		[
 			AchievementsButtonWidget
 		]
-		+ SConstraintCanvas::Slot().Offset(FMargin(MiniGamesRect.X, MiniGamesRect.Y, MiniGamesRect.Width, MiniGamesRect.Height))
+		+ SConstraintCanvas::Slot().Alignment(FVector2D(0.f, 0.f)).Offset(FMargin(MiniGamesRect.X, MiniGamesRect.Y, MiniGamesRect.Width, MiniGamesRect.Height))
 		[
 			MiniGamesButtonWidget
 		]
-		+ SConstraintCanvas::Slot().Offset(FMargin(CouponRect.X, CouponRect.Y, CouponRect.Width, CouponRect.Height))
+		+ SConstraintCanvas::Slot().Alignment(FVector2D(0.f, 0.f)).Offset(FMargin(CouponRect.X, CouponRect.Y, CouponRect.Width, CouponRect.Height))
 		[
 			ChadCouponsWidget
 		]
-		+ SConstraintCanvas::Slot().Offset(FMargin(QuitRect.X, QuitRect.Y, QuitRect.Width, QuitRect.Height))
+		+ SConstraintCanvas::Slot().Alignment(FVector2D(0.f, 0.f)).Offset(FMargin(QuitRect.X, QuitRect.Y, QuitRect.Width, QuitRect.Height))
 		[
 			QuitButtonWidget
 		];
 
 	auto MakeSurfaceBackground = [this, BarFallbackOuter, BarFallbackInner]() -> TSharedRef<SWidget>
 	{
-		if (UIManager && UIManager->GetCurrentScreenType() == ET66ScreenType::MainMenu)
-		{
-			return SNullWidget::NullWidget;
-		}
-
 		if (TopBarBackdropBrush.IsValid())
 		{
 			return SNew(SImage)
@@ -1505,12 +1503,21 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		.AutoHeight()
 		[
 			SNew(SBox)
-			.HeightOverride(SnapPixel(GetTopBarViewportTransform().MapY(T66MainMenuReferenceLayout::TopBarReservedHeight)))
+			.HeightOverride(T66MainMenuReferenceLayout::TopBarReservedHeight)
 			[
-				SNew(SScaleBox)
-				.Stretch(EStretch::Fill)
+				SNew(SDPIScaler)
+				.DPIScale(TAttribute<float>::CreateLambda([]() -> float
+				{
+					return 1.f / FMath::Max(0.01f, FT66Style::GetEngineDPIScale());
+				}))
 				[
-					ReservedReferenceCanvas
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Left)
+					.VAlign(VAlign_Top)
+					[
+						ReservedReferenceCanvas
+					]
 				]
 			]
 		]

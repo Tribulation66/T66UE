@@ -8,12 +8,179 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/Texture2D.h"
+#include "Styling/CoreStyle.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SSpacer.h"
+#include "Widgets/SBoxPanel.h"
+#include "Widgets/SOverlay.h"
+
+namespace
+{
+	const FSlateBrush* ResolveHeroGridBrush(
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
+		const TCHAR* RelativePath,
+		const FMargin& Margin,
+		const TCHAR* DebugLabel)
+	{
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
+			Margin,
+			DebugLabel);
+	}
+
+	const FSlateBrush* GetHeroGridModalShellBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveHeroGridBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
+			TEXT("HeroGridModalShell"));
+	}
+
+	const FSlateBrush* GetHeroGridTileBrush(const bool bSelected)
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Neutral;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Selected;
+		return bSelected
+			? ResolveHeroGridBrush(
+				Selected,
+				TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_on_normal.png"),
+				FMargin(0.16f, 0.28f, 0.16f, 0.28f),
+				TEXT("HeroGridTileSelected"))
+			: ResolveHeroGridBrush(
+				Neutral,
+				TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+				FMargin(0.055f, 0.32f, 0.055f, 0.32f),
+				TEXT("HeroGridTileNeutral"));
+	}
+
+	const FSlateBrush* GetHeroGridCompactButtonBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveHeroGridBrush(
+			Entry,
+			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_compact_neutral_normal.png"),
+			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
+			TEXT("HeroGridCompactButton"));
+	}
+
+	const FSlateBrush* GetHeroGridAvatarFrameBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveHeroGridBrush(
+			Entry,
+			TEXT("SourceAssets/UI/MainMenuReference/LeftPanel/friend_avatar_frame.png"),
+			FMargin(0.f),
+			TEXT("HeroGridAvatarFrame"));
+	}
+
+	TSharedRef<SWidget> MakeHeroGridModalShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+	{
+		if (const FSlateBrush* ShellBrush = GetHeroGridModalShellBrush())
+		{
+			return SNew(SBorder)
+				.BorderImage(ShellBrush)
+				.BorderBackgroundColor(FLinearColor::White)
+				.Padding(Padding)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				[
+					Content
+				];
+		}
+
+		return FT66Style::MakePanel(
+			Content,
+			FT66PanelParams(ET66PanelType::Panel)
+				.SetColor(FT66Style::Tokens::Panel)
+				.SetPadding(Padding));
+	}
+
+	TSharedRef<SWidget> MakeHeroGridTextButton(const FT66ButtonParams& Params)
+	{
+		FT66ButtonParams ButtonParams = Params;
+		ButtonParams
+			.SetUseGlow(false)
+			.SetUseDotaPlateOverlay(true)
+			.SetDotaPlateOverrideBrush(GetHeroGridCompactButtonBrush())
+			.SetTextColor(FLinearColor(0.97f, 0.94f, 0.84f, 1.f))
+			.SetTextShadowOffset(FVector2D(1.f, 1.f))
+			.SetStateTextShadowColors(
+				FLinearColor(0.f, 0.f, 0.f, 0.68f),
+				FLinearColor(0.f, 0.f, 0.f, 0.78f),
+				FLinearColor(0.f, 0.f, 0.f, 0.85f));
+		return FT66Style::MakeButton(ButtonParams);
+	}
+
+	TSharedRef<SWidget> MakeHeroGridTile(
+		const FT66ButtonParams& ButtonParams,
+		const FLinearColor& BackgroundColor,
+		const TSharedRef<SWidget>& Content,
+		const T66ScreenSlateHelpers::FResponsiveGridModalMetrics& Metrics,
+		const bool bSelected)
+	{
+		const float TileSize = Metrics.TileSize;
+		const float InnerInset = FMath::Clamp(TileSize * 0.08f, 6.f, 16.f);
+		const FLinearColor InteriorColor = BackgroundColor.CopyWithNewOpacity(ButtonParams.IsEnabled.Get(true) ? 0.86f : 0.38f);
+
+		TSharedRef<SOverlay> TileContent = SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(InteriorColor * (bSelected ? 1.18f : 1.0f))
+			]
+			+ SOverlay::Slot()
+			.Padding(InnerInset + 5.f)
+			[
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				[
+					Content
+				]
+			];
+
+		if (const FSlateBrush* AvatarFrame = GetHeroGridAvatarFrameBrush())
+		{
+			TileContent->AddSlot()
+			[
+				SNew(SImage)
+				.Image(AvatarFrame)
+				.ColorAndOpacity(bSelected
+					? FLinearColor(1.15f, 1.06f, 0.78f, 1.0f)
+					: FLinearColor(0.82f, 0.86f, 0.78f, 0.92f))
+			];
+		}
+
+		return SNew(SBox)
+			.WidthOverride(TileSize)
+			.HeightOverride(TileSize)
+			[
+				SNew(SButton)
+				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+				.ButtonColorAndOpacity(FLinearColor::Transparent)
+				.ContentPadding(FMargin(0.f))
+				.IsEnabled(ButtonParams.IsEnabled)
+				.OnClicked(FT66Style::DebounceClick(ButtonParams.OnClicked))
+				[
+					TileContent
+				]
+			];
+	}
+}
 
 UT66HeroGridScreen::UT66HeroGridScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -78,6 +245,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 		FName HeroID = AllHeroIDs[Index];
 		FHeroData HeroData;
 		FLinearColor SpriteColor = FLinearColor(0.25f, 0.25f, 0.3f, 1.0f);
+		const bool bSelected = GI && GI->SelectedHeroID == HeroID;
 		TSharedPtr<FSlateBrush> PortraitBrush;
 		if (GI && GI->GetHeroData(HeroID, HeroData))
 		{
@@ -100,22 +268,65 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 		GridPanel->AddSlot(Col, Row)
 			.Padding(GridMetrics.TileGap * 0.5f)
 			[
-				T66ScreenSlateHelpers::MakeResponsiveGridTile(
+				MakeHeroGridTile(
 					FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, HeroIDCopy]() { return HandleHeroClicked(HeroIDCopy); })),
 					SpriteColor,
 					PortraitContent,
-					GridMetrics)
+					GridMetrics,
+					bSelected)
 			];
 	}
 
 	T66ScreenSlateHelpers::AddUniformGridPaddingSlots(*GridPanel, AllHeroIDs.Num(), GridMetrics);
 
-	return T66ScreenSlateHelpers::MakeResponsiveGridModal(
-		TitleText,
-		GridPanel,
-		FT66Style::MakeButton(FT66ButtonParams(CloseText, FOnClicked::CreateUObject(this, &UT66HeroGridScreen::HandleCloseClicked))
-			.SetMinWidth(120.0f)),
-		GridMetrics);
+	const TSharedRef<SWidget> FooterButton = MakeHeroGridTextButton(
+		FT66ButtonParams(CloseText, FOnClicked::CreateUObject(this, &UT66HeroGridScreen::HandleCloseClicked), ET66ButtonType::Neutral)
+		.SetMinWidth(132.f)
+		.SetHeight(44.f)
+		.SetFontSize(13)
+		.SetPadding(FMargin(18.f, 8.f, 18.f, 7.f)));
+
+	const TSharedRef<SWidget> ModalContent = MakeHeroGridModalShell(
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Center)
+		.Padding(0.f, 0.f, 0.f, 18.f)
+		[
+			SNew(STextBlock)
+			.Text(TitleText)
+			.Font(FT66Style::Tokens::FontBold(28))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.ShadowOffset(FVector2D(1.f, 1.f))
+			.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.7f))
+		]
+		+ SVerticalBox::Slot()
+		.FillHeight(1.f)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SNew(SBox)
+			.WidthOverride(GridMetrics.GridWidth)
+			.HeightOverride(GridMetrics.GridHeight)
+			[
+				GridPanel
+			]
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Center)
+		.Padding(0.f, 18.f, 0.f, 0.f)
+		[
+			FooterButton
+		],
+		FMargin(36.f, 28.f, 36.f, 30.f));
+
+	return T66ScreenSlateHelpers::MakeCenteredScrimModal(
+		ModalContent,
+		FMargin(0.f),
+		GridMetrics.ModalWidth,
+		GridMetrics.ModalHeight,
+		true);
 }
 
 FReply UT66HeroGridScreen::HandleHeroClicked(FName HeroID)

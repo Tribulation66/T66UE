@@ -1,0 +1,11 @@
+# Gambler Overlay Packaged Review
+
+Reference: `C:\UE\T66\UI\screens\gambler_overlay\reference\canonical_reference_1920x1080.png`
+
+Packaged output: `C:\UE\T66\UI\screens\gambler_overlay\outputs\2026-04-24\packaged_runtime_1920x1080.png`
+
+Result: pass with known first-pass visual deltas.
+
+- Standalone gambling overlay behavior and live values are preserved.
+- Overlay background now uses the dark dungeon surface.
+- Remaining delta: card shells and betting controls need sprite-family art to match the generated reference.

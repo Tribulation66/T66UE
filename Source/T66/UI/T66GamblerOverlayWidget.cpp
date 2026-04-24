@@ -347,7 +347,7 @@ void UT66GamblerOverlayWidget::TeleportToVendor()
 	{
 		if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 		{
-			PC->SwitchCircusOverlayToVendor();
+			PC->SwitchCasinoOverlayToVendor();
 		}
 		return;
 	}
@@ -379,7 +379,7 @@ void UT66GamblerOverlayWidget::CloseOverlay()
 	{
 		if (bEmbeddedInCasinoShell)
 		{
-			PC->CloseCircusOverlay();
+			PC->CloseCasinoOverlay();
 			return;
 		}
 	}

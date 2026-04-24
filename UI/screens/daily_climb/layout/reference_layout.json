@@ -1,0 +1,142 @@
+{
+  "screen_slug": "daily_climb",
+  "screen_key": "DailyClimb",
+  "canvas_size": [
+    1920,
+    1080
+  ],
+  "canonical_reference": "C:\\UE\\T66\\UI\\screens\\daily_climb\\reference\\canonical_reference_1920x1080.png",
+  "source_file": "Source/T66/UI/Screens/T66DailyClimbScreen.cpp",
+  "regions": [
+    {
+      "name": "scene_plate",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "owner": "generated-scene"
+    },
+    {
+      "name": "back_button",
+      "rect": {
+        "x": 42,
+        "y": 42,
+        "width": 132,
+        "height": 50
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "title_group",
+      "rect": {
+        "x": 500,
+        "y": 54,
+        "width": 920,
+        "height": 132
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "rules_shell",
+      "rect": {
+        "x": 42,
+        "y": 246,
+        "width": 487,
+        "height": 726
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "rules_status",
+      "rect": {
+        "x": 74,
+        "y": 356,
+        "width": 423,
+        "height": 80
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "rules_info_cards",
+      "rect": {
+        "x": 74,
+        "y": 452,
+        "width": 423,
+        "height": 210
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "rules_list",
+      "rect": {
+        "x": 74,
+        "y": 704,
+        "width": 423,
+        "height": 240
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "cta_stack",
+      "rect": {
+        "x": 738,
+        "y": 650,
+        "width": 445,
+        "height": 311
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "start_button",
+      "rect": {
+        "x": 766,
+        "y": 671,
+        "width": 388,
+        "height": 92
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "continue_button",
+      "rect": {
+        "x": 766,
+        "y": 768,
+        "width": 388,
+        "height": 97
+      },
+      "owner": "runtime-control"
+    },
+    {
+      "name": "cta_note",
+      "rect": {
+        "x": 784,
+        "y": 880,
+        "width": 353,
+        "height": 58
+      },
+      "owner": "runtime-text"
+    },
+    {
+      "name": "leaderboard_shell",
+      "rect": {
+        "x": 1420,
+        "y": 228,
+        "width": 458,
+        "height": 787
+      },
+      "owner": "generated-shell"
+    },
+    {
+      "name": "leaderboard_live_rows",
+      "rect": {
+        "x": 1432,
+        "y": 320,
+        "width": 434,
+        "height": 650
+      },
+      "owner": "runtime-text"
+    }
+  ]
+}
