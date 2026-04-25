@@ -20,7 +20,7 @@ Create the approved offline reference frame for a new screen. This skill is for 
 
 Produce an offline reference set that keeps the approved T66 visual language while preserving the target screen structure.
 
-Use the main menu as the golden style/calibration anchor when applicable. Preserve its calibrated contract: canonical `1920x1080` packaged target, baked title wordmark allowed only as display art, and live/localizable tagline plus runtime labels, values, avatars, icons, media, and list content.
+Use the main menu as the golden style/calibration anchor when applicable. Preserve its calibrated contract: canonical `1920x1080` authoring/baseline packaged target, baked title wordmark allowed only as display art, and live/localizable tagline plus runtime labels, values, avatars, icons, media, and list content.
 
 Hard blocking rule: every target screen, modal, HUD overlay, tab, and mini-game UI needs its own generated screen-specific full-screen reference before any sprite-family or runtime placement work begins. Do not proceed from a general description of the main-menu style.
 
@@ -35,7 +35,7 @@ Save the approved output at:
 
 The full reference screenshot is an offline target only. Do not promote `screen_master`, no-buttons, no-text, or no-dynamic variants as production runtime background layers.
 
-Hard rule: generated style references must come correct from image generation. Do not manually pixel-edit, clean up, mask, erase/fill, cover-patch, clone, repaint, or screenshot-repair generated references. If the output is structurally wrong or contaminated, revise the prompt/request and regenerate. Deterministic export/crop helpers are allowed only for inspection and downstream measurement.
+Hard rule: generated style references must come correct from image generation. Do not manually pixel-edit, clean up, mask, erase/fill, cover-patch, clone, repaint, or screenshot-repair generated references. If the output is structurally wrong or contaminated, revise the prompt/request and regenerate. Deterministic export/crop helpers are allowed for inspection, downstream measurement, and target-canvas normalization.
 
 Expected outputs:
 - `screen_master.png` as the offline comparison target
@@ -58,8 +58,9 @@ This skill only clears the first gate. Do not report the overall screen task com
 - Capture the current runtime screenshot of the target screen.
 - Write the target screen layout list before image generation.
 - Lock the canvas size before generating anything.
-- Use `1920x1080` for normal 16:9 offline targets and packaged acceptance unless the intake explicitly locks another size.
-- For the active main menu pack, generate the canonical target natively at `1920x1080`; do not convert an alternate canvas into the pack.
+- Use `1920x1080` for normal 16:9 offline targets and baseline packaged review unless the intake explicitly locks another size.
+- For the active main menu pack, approve the canonical target only after it exists as a visually inspected `1920x1080` normalized output.
+- Keep raw imagegen sources archived when normalization is used.
 - Run the content ownership audit first.
 - Mark dynamic, localizable, or live regions up front.
 
@@ -74,6 +75,7 @@ Keep a short list of:
 ### 3. Generate the reference set
 
 - Generate one canonical offline target first from the main-menu anchor, current target screenshot, and layout list.
+- If imagegen returns a landscape-safe non-1920 output, normalize a copy with `Scripts\InvokeDeterministicResample.py --target-width 1920 --target-height 1080`; reject it if the crop removes important structure.
 - Derive the clean variants from the same composition.
 - Keep localizable labels removable from runtime art.
 - Keep taglines/subtitles removable unless explicitly approved as baked display art.
@@ -99,7 +101,7 @@ Check:
 - Do not ask image generation to invent the target screen structure from style alone.
 - Do not skip the screen-specific generated reference and jump directly to sprites or Slate styling.
 - Do not treat a hi-res repaint as the source of truth if it drifts from the canonical frame.
-- Do not rescue wrong-resolution active main menu outputs with resize passes; rebuild them at the canonical canvas.
+- Do not rescue badly framed or structurally wrong active main menu outputs with resize passes; regenerate them.
 - Do not import scenic anchor motifs into utilitarian target screens unless the target layout explicitly calls for them.
 - Do not paint portraits, icons, media, or preview content into regions that runtime owns.
 - Do not bake runtime values, names, ranks, prices, timers, settings values, or localizable taglines into variants that may inform runtime component families.

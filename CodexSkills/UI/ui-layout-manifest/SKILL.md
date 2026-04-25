@@ -32,7 +32,7 @@ Produce one placement source of truth:
 - A prepared `layout-export` is acceptable, but keep the original canonical pixel size and scale factor explicit.
 - Confirm the exact pixel size before measuring boxes.
 - Normal 16:9 screens use `1920x1080` as the canonical measurement and packaged acceptance target unless the intake locks another size.
-- Reject `1672x941` and other non-canonical generated outputs as production measurement sources for normal 16:9 screens.
+- Reject raw non-canonical generated outputs as production measurement sources for normal 16:9 screens unless they have been deterministically normalized to the approved `1920x1080` authoring baseline and visually accepted.
 - If multiple reference variants exist, keep one primary comparison frame.
 - Load `content_ownership.json` before measuring mixed-ownership regions.
 
@@ -87,7 +87,7 @@ Hand off:
 - generated layout header
 - labeled overlay or equivalent proof
 - `content_ownership.json`
-- canonical canvas and packaged target size
+- canonical authoring canvas, packaged baseline target size, and supported aspect-bucket validation expectations
 - shell/control/live-content rect notes
 - scene plate and foreground component ownership notes
 

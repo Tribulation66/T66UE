@@ -35,9 +35,9 @@ For each assigned screen:
 5. Do not begin sprite generation or Unreal styling until that target reference exists and preserves the target layout in the main-menu style.
 6. Create the element/state checklist. Generate scene plates/component boards/buttons/panels/icons from image generation until the checklist is complete.
 7. No manual pixel repair, masking, cover patches, clone painting, or screenshot cleanup. If an asset is wrong, regenerate it.
-8. No `1672x941` or other non-canonical generated output may become a production reference, sprite sheet, scene plate, slice, or runtime asset. Rebuild natively at `1920x1080`; do not resize or convert wrong-size outputs as a rescue.
+8. Raw non-canonical generated output may not become a production reference, sprite sheet, scene plate, slice, or runtime asset. For acceptable landscape outputs, archive the raw source and normalize a copy with `python C:\UE\T66\Scripts\InvokeDeterministicResample.py <raw_image.png> <normalized_output.png> --target-width 1920 --target-height 1080`. Reject and regenerate square, portrait, badly framed, or structurally cropped outputs.
 9. Build the runtime from individual assets with real controls and live/localizable text/data.
-10. Capture packaged runtime with `C:\UE\T66\Scripts\CaptureT66UIScreen.ps1` so the game opens on display 1 and rejects wrong-size captures. Save outputs under outputs\YYYY-MM-DD\ and review notes under review\.
+10. Capture packaged runtime with `C:\UE\T66\Scripts\CaptureT66UIScreen.ps1` so the game opens on display 1 and rejects wrong-size baseline captures. Save outputs under outputs\YYYY-MM-DD\ and review notes under review\. Before final approval, also validate the supported aspect buckets: `16:9`, `16:10`, ultrawide `21:9`, and one smaller/windowed size when supported.
 
 If your current work skipped the screen-specific generated reference step, stop and restart that screen from step 1. Do not continue polishing the current implementation.
 

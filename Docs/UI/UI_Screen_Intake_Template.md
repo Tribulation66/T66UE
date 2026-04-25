@@ -12,13 +12,15 @@ Use this template before generating or reconstructing a new screen. Fill it in b
 ## Canonical Canvas
 
 - Offline comparison target path: `[path]`
+- Authoring baseline resolution: `[width]x[height]`, normally `1920x1080` for 16:9
 - Offline comparison target resolution: `[width]x[height]`
 - Hi-res helper/reference path: `[path]`
 - Hi-res helper/reference resolution: `[width]x[height]`
 - UI-free scene/background plate path: `[path or TODO]`
 - UI-free scene/background plate resolution: `[width]x[height]`
-- Runtime target viewport: `[width]x[height]`
-- Packaged acceptance capture resolution: `[width]x[height]`, normally `1920x1080` for 16:9
+- Runtime target viewport(s): `[width]x[height list]`
+- Packaged baseline capture resolution: `[width]x[height]`, normally `1920x1080` for 16:9
+- Responsive validation matrix: `[16:9 / 16:10 / 21:9 / smaller-windowed]`
 - Calibration anchor: `[main menu / other approved golden screen]`
 
 ## Blocking Style-Reference Gate
@@ -31,6 +33,9 @@ Use Codex-native `image_gen` only. Do not use legacy browser-automation image ge
 - Current target runtime screenshot path: `[path in C:\UE\T66\UI\screens\<screen_slug>\current\YYYY-MM-DD\]`
 - Layout list path: `[path in C:\UE\T66\UI\screens\<screen_slug>\layout\layout_list.md]`
 - Image generation used all three required inputs: `[yes/no]`
+- Raw imagegen source path: `[path or n/a]`
+- Normalized with `InvokeDeterministicResample.py --target-width 1920 --target-height 1080`: `[yes/no/n/a]`
+- Normalization accepted after visual inspection: `[yes/no/n/a]`
 - Generated screen-specific reference path: `[C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png]`
 - Generated reference preserves target layout: `[yes/no]`
 - Generated reference matches canonical main-menu style: `[yes/no]`
@@ -107,6 +112,7 @@ Add additional families if the screen requires them.
 ## Asset Validation
 
 - Asset manifest: `[path]`
+- Normalization metadata: `[raw size / crop rect / target size / resampling method / n/a]`
 - Scene plate ownership validation: `[passed/TODO]`
 - Dimension validation: `[passed/TODO]`
 - Alpha validation: `[passed/TODO]`
@@ -129,7 +135,8 @@ Add additional families if the screen requires them.
 ## Validation
 
 - Packaged screenshot command: `powershell -ExecutionPolicy Bypass -File C:\UE\T66\Scripts\CaptureT66UIScreen.ps1 -Screen [ScreenKey] -Output C:\UE\T66\UI\screens\<screen_slug>\outputs\YYYY-MM-DD\packaged_capture.png`
-- Packaged capture path: `[path]`
+- Baseline packaged capture path: `[path]`
+- Aspect validation capture paths or notes: `[16:9 / 16:10 / 21:9 / smaller-windowed]`
 - Scene plate contamination check: `[passed/TODO]`
 - Foreground component ownership check: `[passed/TODO]`
 - Strict-diff regions: `[list]`

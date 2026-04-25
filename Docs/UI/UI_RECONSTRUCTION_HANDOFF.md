@@ -16,8 +16,9 @@ The first active target is the main menu.
 Treat the main menu as the golden calibration screen for the stricter workflow. It must establish the reusable acceptance pattern before future screens are considered process-complete:
 
 - canonical packaged comparison target: `1920x1080`
-- active main menu pack assets must originate at `1920x1080`, not from a resized alternate canvas
-- wrong-resolution generated assets are rebuild candidates, not recovery candidates
+- `1920x1080` is the authoring and baseline review canvas, not the only supported runtime resolution
+- acceptable landscape imagegen outputs may be archived and deterministically normalized into the baseline canvas
+- badly framed or structurally cropped generated assets are rebuild candidates, not recovery candidates
 - approved reference pack owns the offline visual target, not a runtime background
 - runtime composition uses a UI-free scene/background plate plus separate foreground component families
 - title wordmark may be baked display art
@@ -102,6 +103,8 @@ Any future pass should fix ownership first before touching polish.
 
 The recurring stretched-button problem was not only placement. It was also caused by feeding the runtime the wrong aspect-ratio art and then forcing it into measured slots.
 
+This now extends to runtime scaling. The implementation should transform the `1920x1080` reference coordinate system into supported viewports with anchors, safe zones, DPI scaling, and nine-slice/stretch rules; it should not rely on bespoke per-resolution art.
+
 ### 4. Packaged validation is mandatory
 
 Several passes that looked plausible in theory failed immediately in packaged runtime because of brush behavior, background contamination, or duplicated baked regions.
@@ -118,6 +121,7 @@ Latest packaged capture:
 
 - new captures should be stored under `C:\UE\T66\UI\screens\main_menu\outputs\YYYY-MM-DD\`
 - legacy captures were archived under `C:\UE\T66\UI\_archive\output_pre_reference_gate_20260424`
+- stale screen-pack artifacts, including raw imagegen sources, old references, prompts, manifests, masks, review notes, diff metrics, and packaged captures, should be archived under `C:\UE\T66\UI\_archive\...` before the final style pass
 
 Current implementation state:
 
@@ -155,7 +159,7 @@ Use them only as diagnostics. They are not acceptance captures.
 
 1. Asset phase: improve only the weakest foreground families or scene plate that fail the reference comparison.
 2. Placement phase: keep the single reference canvas and semantic anchors; do not reintroduce whole-reference alignment overlays.
-3. Review phase: package, capture `1920x1080`, and classify remaining deltas as asset, layout, text-fit, live-data mismatch, or ownership.
+3. Review phase: package, capture the `1920x1080` baseline, validate the supported aspect buckets, and classify remaining deltas as asset, layout, text-fit, live-data mismatch, or ownership.
 
 ## Hard Rules For The Next Model
 

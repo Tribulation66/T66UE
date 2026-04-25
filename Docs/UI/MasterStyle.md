@@ -32,6 +32,7 @@ Future screens should inherit this shared language unless a different approved r
 - reference-matched spacing and hierarchy
 - explicit visual states for controls
 - scalable assets suitable for multiple resolutions and aspect ratios
+- aspect-bucket validation after the `1920x1080` authoring baseline looks correct
 
 ## What The Runtime Must Avoid
 
@@ -93,3 +94,5 @@ If the mismatch is visible, it is still part of the work.
 ## Retirement Policy
 
 Retired visual directions, old mockup families, and superseded style assets should not remain as active guidance once a reconstruction-first replacement exists. Keep neutral plumbing. Remove artistic bias.
+
+Archive stale generated artifacts rather than leaving them in active screen folders. This applies to PNGs, prompt packs, manifests, masks, diff metrics, review notes, raw imagegen outputs, helper boards, and packaged captures that belong to a retired direction.

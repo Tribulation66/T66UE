@@ -20,6 +20,7 @@ All helper skills and scripts exist only to support those two production contrac
 - Runtime UI code: `C:\UE\T66\Source\T66\UI`
 - Main menu runtime component pack: `C:\UE\T66\SourceAssets\UI\MainMenuReference`
 - Reconstruction scripts: `C:\UE\T66\Scripts`
+- Reference normalization helper: `C:\UE\T66\Scripts\InvokeDeterministicResample.py --target-width 1920 --target-height 1080`
 - UI docs: `C:\UE\T66\Docs\UI`
 - Content ownership audit: `C:\UE\T66\Docs\UI\UI_CONTENT_OWNERSHIP_AUDIT.md`
 - Image generation policy: `C:\UE\T66\Docs\UI\UI_IMAGE_BACKEND_POLICY.md`
@@ -76,6 +77,8 @@ Save the result as:
 
 `C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png`
 
+If image generation produces a landscape-safe non-1920 output, keep that raw source and normalize a copy with `Scripts\InvokeDeterministicResample.py --target-width 1920 --target-height 1080`. That helper center-crops to 16:9 and resamples with Lanczos. Treat it as deterministic authoring-canvas normalization only, not repair. If the normalized image crops off important title, UI, character, or layout content, reject it and regenerate.
+
 Do not proceed if this reference is missing. Do not accept a screen that only has a vague main-menu-inspired style pass. If the generated reference does not preserve the target layout or does not match the canonical main-menu visual language, regenerate it before continuing.
 
 ### 0B. Complete the whole screen pipeline
@@ -88,8 +91,9 @@ A UI task is not complete when the reference image is generated. The minimum com
 4. sprite/component families generated and validated
 5. accepted assets sliced or staged
 6. Unreal runtime rebuilt with real controls and live text/data
-7. packaged `1920x1080` capture produced through the display-1 launcher
+7. packaged `1920x1080` baseline capture produced through the display-1 launcher
 8. packaged review notes classify remaining deltas
+9. runtime scaling validated across the standard aspect buckets before the screen is called production-ready
 
 If a chat or agent cannot continue, it must report `blocked`, name the missing artifact or failing command, and state the next required step. Do not report `done`, `complete`, or final status after only a reference-generation pass.
 
@@ -99,10 +103,10 @@ The main menu is the golden calibration screen for this reconstruction process. 
 
 For the main menu specifically:
 
-- canonical comparison target is a `1920x1080` packaged capture
-- the active main menu pack must be created natively at `1920x1080`, not converted from another canvas
-- no `1672x941` or other non-canonical generated image may be promoted as a production reference, sprite sheet, scene plate, slice, or runtime asset
-- old wrong-resolution generated assets should be deleted and rebuilt, not rescued
+- canonical comparison target is a `1920x1080` authoring-baseline packaged capture
+- the active main menu pack must be normalized to `1920x1080` before approval; raw imagegen sources remain provenance artifacts
+- raw non-canonical generated images may not be promoted directly as production references, sprite sheets, scene plates, slices, or runtime assets
+- old wrong-resolution or badly cropped generated assets should be archived and regenerated, not silently rescued
 - the approved reference pack is the visual authority
 - the title wordmark may be baked display art
 - the tagline and all navigational/social/leaderboard labels remain live, localizable text
@@ -117,7 +121,14 @@ The full reference screenshot is an offline target for measurement, style matchi
 
 The measured reference layout manifest is the placement source of truth. Runtime widgets, crops, and art families should all derive from the same measured boxes.
 
-All normal 16:9 reconstruction work targets a canonical `1920x1080` packaged viewport unless the screen intake explicitly locks a different size. Helper exports may be larger, but they do not replace the canonical target.
+All normal 16:9 reconstruction work targets a canonical `1920x1080` authoring baseline unless the screen intake explicitly locks a different size. Helper exports may be larger, but they do not replace the canonical target.
+
+The runtime implementation must remain resolution-scalable. Build screens with semantic anchors, safe zones, DPI scaling, nine-slice/stretch rules, and live text/content wells. Do not create bespoke art/layouts for every common resolution unless a specific platform requirement demands it. Validate with a small aspect-bucket matrix instead:
+
+- `16:9`: baseline `1920x1080`, plus larger 16:9 when needed
+- `16:10`: Steam Deck/windowed style validation
+- `21:9`: ultrawide scene/backdrop extension with functional UI kept in safe bounds
+- smaller/windowed: text fit and minimum usable layout
 
 For runtime placement, prefer semantic anchors over pixel nudging:
 
@@ -209,7 +220,7 @@ Optional helper step:
 
 ### 2. Place the assets
 
-- assemble a single fixed reference canvas in Unreal
+- assemble from the fixed reference coordinate system through responsive Unreal anchors and scaling
 - place major regions by semantic anchors, not manual nudges over the full reference
 - keep visible controls as real buttons
 - keep localizable labels, values, social rows, leaderboard rows, portraits, avatars, and dynamic data live
@@ -219,6 +230,12 @@ Optional helper step:
 ### 3. Review through the gate
 
 Every pass should clear `C:\UE\T66\Docs\UI\SCREEN_REVIEW_GATE.md` before it is treated as a meaningful improvement.
+
+## Workspace Hygiene
+
+The active `UI\screens\<screen_slug>` folders should stay small during the final style pass. Keep only the current-state PNG and, once approved, `reference\canonical_reference_1920x1080.png` in the active folder. Archive stale generated boards, masks, diffs, temporary prompts, review outputs, old packaged captures, and obsolete placeholder references under `UI\_archive` with relative paths preserved.
+
+Mini-game screen folders should be cleaned the same way, but their final reference generation remains deferred until the main-game style anchor is approved.
 
 ## Current Priority
 

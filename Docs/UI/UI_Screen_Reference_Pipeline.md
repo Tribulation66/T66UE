@@ -19,7 +19,7 @@ And one required companion artifact:
 
 5. `content ownership audit`
 
-Hard asset rule: generated UI assets must come correct from image generation. After generation, do not manually pixel-edit, clean up, mask, erase/fill, cover-patch, clone, repaint, or repair screenshots/assets. The permitted post-generation operations are deterministic slicing/cropping from an accepted generated board, deterministic format/export steps, and runtime placement with live text/content overlays. If the generated pixels are wrong, regenerate the board, plate, or family.
+Hard asset rule: generated UI assets must come correct from image generation. After generation, do not manually pixel-edit, clean up, mask, erase/fill, cover-patch, clone, repaint, or repair screenshots/assets. The permitted post-generation operations are deterministic slicing/cropping from an accepted generated board, center-crop plus Lanczos resize for reference-canvas normalization, deterministic format/export steps, and runtime placement with live text/content overlays. If the generated pixels are wrong, regenerate the board, plate, or family.
 
 ## Non-Negotiable Per-Screen Reference Gate
 
@@ -50,11 +50,12 @@ The main menu is the calibration target for this whole model. It must prove the 
 The offline comparison target is the canonical source of truth for measurement, placement, style matching, and packaged diffing.
 
 - use one fixed canvas size per screen
-- default to `1920x1080` for 16:9 screens and packaged acceptance captures
+- default to `1920x1080` as the 16:9 authoring and baseline review canvas
 - if the screen uses a different aspect ratio, lock it once and keep it fixed everywhere
-- for the active main menu pack, generate the canonical frame at `1920x1080` from the start
-- never promote `1672x941` or any other non-canonical generated output as a production reference, sprite sheet, scene plate, slice, or runtime asset
-- delete and rebuild wrong-resolution generated assets instead of converting or salvaging them
+- for the active main menu pack, approve only a normalized `1920x1080` canonical frame
+- never promote raw non-canonical generated output directly as a production reference, sprite sheet, scene plate, slice, or runtime asset
+- archive raw imagegen outputs and record normalization metadata before promoting a normalized reference
+- reject and regenerate wrong-composition or structurally cropped outputs instead of converting or salvaging them
 - use this artifact to derive:
   - `reference_layout.json`
   - generated layout headers
@@ -191,7 +192,8 @@ Use local scripts for:
 Use packaged-build screenshots for validation.
 
 - compare the full packaged composition against the locked offline target
-- capture at the canonical target size, normally `1920x1080`
+- capture at the canonical authoring target, normally `1920x1080`
+- validate supported runtime aspect buckets after the baseline comparison: primary `16:9`, `16:10`, ultrawide `21:9`, and one smaller/windowed size where supported
 - diff strict static regions
 - verify the scene plate separately for contamination by foreground UI chrome
 - validate dynamic/live regions separately
@@ -220,7 +222,10 @@ before generating family boards or packaged-review masks.
 
 ### Resolution rules
 
-- one canonical canvas per screen
+- one canonical authoring canvas per screen
+- default `1920x1080` for normal 16:9 screen references
+- supported runtime viewports are reached through anchors, safe zones, DPI scaling, stretch rules, and one documented transform path
+- validate against aspect buckets instead of building bespoke art for every common resolution
 - one hi-res companion at the same aspect ratio
 - all manifest boxes recorded in canonical reference pixels
 - runtime transforms convert `reference pixels -> widget pixels` through one transform path
@@ -314,6 +319,8 @@ Source/T66/UI/Style/T66SettingsMenuReferenceLayout.generated.h
 Every screen reference pack should aim to contain:
 
 - `screen_master.png` as the offline comparison target
+- raw imagegen source for the accepted reference, archived or stored beside the normalized output
+- normalization metadata when the accepted reference came from a non-1920 raw source: source size, crop rect, target size, resampling method
 - optional `screen_master_no_buttons.png`, `screen_master_no_text.png`, and `screen_master_no_dynamic.png` for analysis or prompting only
 - `scene_plate.png` or equivalent UI-free background plate
 - `content_ownership.json`
@@ -321,6 +328,7 @@ Every screen reference pack should aim to contain:
 - `asset_manifest.json`
 - family boards for all major foreground chrome families
 - packaged capture at the canonical target size
+- responsive/aspect validation captures or notes
 - diff masks or mask notes for runtime-owned regions
 
 If a variant cannot be produced immediately, track it in the screen intake file instead of silently skipping it.
@@ -332,18 +340,20 @@ If a variant cannot be produced immediately, track it in the screen intake file 
 3. Capture the current runtime target screenshot.
 4. Write the target layout list.
 5. Generate the offline comparison target from the canonical main-menu anchor, current target screenshot, and layout list.
-6. Optionally run reference prep for deterministic `2x/4x` exports or helper-only AI upscales.
-7. Export or create the hi-res companion at the same aspect ratio.
-8. Audit content ownership from code and record `content_ownership.json`.
-9. Fill the element checklist with every required plate, shell, icon, control, aperture, family board, and required state.
-10. Partition the screen into the UI-free scene plate, foreground component families, and live regions.
-11. Generate the scene plate and verify it contains no foreground UI.
-12. Generate family boards at measured target proportions until the checklist is complete.
-13. Slice and stage runtime assets.
-14. Validate dimensions, alpha, nine-slice margins, state anchors, and ownership masks.
-15. Rebuild with real widgets and layered foreground components only after the checklist is complete.
-16. Validate in packaged build with strict diffs and ownership masks.
-17. Only then report the screen pass complete. If blocked earlier, report `blocked` with the exact missing artifact or failing command.
+6. If the raw imagegen output is landscape-safe but not `1920x1080`, archive the raw source and normalize a copy with `InvokeDeterministicResample.py --target-width 1920 --target-height 1080`.
+7. Reject and regenerate any output whose normalization crops important layout, title, UI, character, or content.
+8. Optionally run reference prep for deterministic `2x/4x` exports or helper-only AI upscales.
+9. Export or create the hi-res companion at the same aspect ratio.
+10. Audit content ownership from code and record `content_ownership.json`.
+11. Fill the element checklist with every required plate, shell, icon, control, aperture, family board, and required state.
+12. Partition the screen into the UI-free scene plate, foreground component families, and live regions.
+13. Generate the scene plate and verify it contains no foreground UI.
+14. Generate family boards at measured target proportions until the checklist is complete.
+15. Slice and stage runtime assets.
+16. Validate dimensions, alpha, nine-slice margins, state anchors, and ownership masks.
+17. Rebuild with real widgets and layered foreground components only after the checklist is complete.
+18. Validate in packaged build with strict diffs, ownership masks, and supported aspect-bucket captures.
+19. Only then report the screen pass complete. If blocked earlier, report `blocked` with the exact missing artifact or failing command.
 
 ## Scaffold Script
 

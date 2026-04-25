@@ -117,7 +117,8 @@ Packaged review must use ownership-aware validation:
 - strict-diff only the generated shell region
 - strict-diff the scene plate only in visible background areas where foreground UI does not cover it
 - manually validate or mask the runtime-owned interior
-- keep packaged captures at the canonical target size, normally `1920x1080`
+- keep the baseline packaged capture at the canonical authoring target, normally `1920x1080`
+- keep ownership masks in reference-coordinate space and transform them for supported aspect-bucket validation captures
 - store or describe the mask set used for strict diffs
 
 ## Example Cases

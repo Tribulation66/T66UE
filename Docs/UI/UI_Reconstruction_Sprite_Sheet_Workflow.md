@@ -23,7 +23,7 @@ Use the scaffold script before starting a new screen pack so the offline target,
 3. Treat the reference canvas as measured pixel space, not a loose mockup:
    - all widget placements should come from the manifest/header
    - do not invent new offsets in runtime code if a box already exists in the layout artifact
-   - validate against a canonical `1920x1080` packaged capture
+   - validate against a canonical `1920x1080` baseline packaged capture and supported aspect buckets before final approval
 4. Keep the runtime and scripts on the same measured boxes:
    - scripts use the JSON for crops, overlays, and future slice automation
    - Unreal runtime uses the generated header for actual widget placement
@@ -117,13 +117,14 @@ Use the scaffold script before starting a new screen pack so the offline target,
 ## Coordinate Rules
 
 - Each reconstructed screen gets one canonical canvas size taken from the source reference.
-- Normal 16:9 packaged acceptance captures use `1920x1080`.
+- Normal 16:9 references use `1920x1080` as the authoring and baseline review canvas.
 - Boxes should be recorded in reference pixels as:
   - `x`
   - `y`
   - `width`
   - `height`
 - Runtime code should transform `reference pixels -> widget pixels` through one explicit transform helper.
+- Runtime code must preserve anchors, safe zones, DPI scaling, and aspect behavior when transforming into `16:9`, `16:10`, ultrawide, and smaller/windowed captures.
 - Debugging should compare runtime captures against:
   - the original reference
   - the generated layout overlay
@@ -131,7 +132,8 @@ Use the scaffold script before starting a new screen pack so the offline target,
 
 ## Validation Rules
 
-- Compare the rebuilt layered composition against the original reference screenshot at the same canonical resolution.
+- Compare the rebuilt layered composition against the original reference screenshot at the same canonical baseline resolution.
+- Then validate supported runtime aspect buckets for layout distortion, text fit, and background/safe-zone behavior.
 - Reject the pass if the runtime background layer contains baked foreground UI chrome, controls, labels, leaderboard rows, or live content.
 - Freeze live regions when possible, or mask only the truly dynamic content.
 - Strict-diff shell regions; mask runtime-owned text, values, avatars, icons, images, media, and previews.

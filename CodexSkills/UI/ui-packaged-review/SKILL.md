@@ -57,7 +57,8 @@ Use these labels:
 
 - Use packaged screenshots as the primary evidence.
 - Do not let editor correctness hide a packaged regression.
-- Confirm the capture matches the locked target size, normally `1920x1080`.
+- Confirm the baseline capture matches the locked authoring target size, normally `1920x1080`.
+- For final approval, confirm supported aspect buckets have been captured or reviewed for layout distortion, text fit, and safe-zone behavior.
 - Confirm the capture and review artifacts are saved under `C:\UE\T66\UI\screens\<screen_slug>\outputs\YYYY-MM-DD\` or `review\`.
 - Confirm the packaged screen is a layered composition, not a full reference screenshot or buttonless/textless master used as the background.
 

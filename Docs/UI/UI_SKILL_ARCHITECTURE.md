@@ -51,10 +51,11 @@ Operational mapping:
 
 Strict baseline:
 - the main menu is the golden calibration screen before this process is generalized
-- normal 16:9 packaged acceptance targets are `1920x1080`
+- normal 16:9 references use `1920x1080` as the authoring and baseline review canvas
 - every screen, modal, HUD overlay, tab, and mini-game UI must have `C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png` generated from the canonical main-menu anchor, the current target screenshot, and the target layout list before sprite generation, runtime styling, or review
 - no chat or agent may report completion after producing only the reference image
-- no `1672x941` or other non-canonical generated output may be promoted as a production reference, sprite sheet, scene plate, slice, or runtime asset
+- raw non-canonical generated output must be archived and deterministically normalized before it can become a production reference, sprite sheet, scene plate, slice, or runtime asset
+- runtime screens must scale from the authoring baseline into supported aspect buckets through anchors, safe zones, DPI scaling, and one transform path
 - full reference screenshots are offline targets only, never shipped runtime backgrounds
 - production composition uses a UI-free scene/background plate plus foreground component families
 - the main menu title wordmark may be baked display art
@@ -200,6 +201,7 @@ Must do:
 - distinguish visual crop rects from actual runtime control rects
 - distinguish shell rects from live-content rects when ownership is mixed
 - record canonical canvas and packaged target size
+- record supported viewport/aspect metadata and the expected validation captures
 - act as the single placement source of truth
 
 Must not do:
@@ -255,6 +257,7 @@ Must do:
 - generate shell-only, socket-frame, empty-backplate, or open-aperture assets when runtime owns the interior
 - generate assets that fit the manifest slots without visible distortion
 - validate dimensions, clean alpha, nine-slice margins, and state anchor alignment before runtime handoff
+- record normalization metadata for generated boards or slices that came from non-1920 raw sources: source size, crop rect, target size, and resampling method
 - keep family ownership clean
 
 Must not do:
@@ -289,6 +292,8 @@ Outputs:
 
 Must do:
 - use the manifest as placement truth
+- transform reference pixels into runtime pixels through a responsive/scalable path, not one-off per-resolution placement
+- respect safe zones, DPI scaling, and aspect-bucket behavior
 - compose the screen from the UI-free scene plate plus foreground components, not from a full-screen screenshot background
 - keep labels as real `FText`
 - keep the visible control as the actual button
@@ -337,7 +342,8 @@ Root-cause classes:
 
 Must do:
 - review packaged output, not just editor behavior
-- use the canonical packaged target frame, normally `1920x1080`
+- use the canonical baseline packaged target frame, normally `1920x1080`
+- validate supported aspect buckets after the baseline capture, including `16:9`, `16:10`, ultrawide `21:9`, and one smaller/windowed size where supported
 - compare the final layered composition against the offline target
 - verify the scene plate gate separately: no baked foreground UI in the runtime background layer
 - separate static-region failures from live-region differences

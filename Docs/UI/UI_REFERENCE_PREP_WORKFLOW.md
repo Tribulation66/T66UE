@@ -10,7 +10,7 @@ Full-screen helper outputs, including buttonless or textless variants, remain of
 
 If the work needs a newly generated reference frame rather than a larger helper image, route to native Codex `image_gen` through `ui-style-reference`. Do not use legacy browser-automation generation as a fallback.
 
-Hard asset rule: reference prep may produce deterministic resamples, helper upscales, crop guides, and classification notes. It may not manually pixel-edit, clean up, mask, erase/fill, cover-patch, clone, repaint, or repair generated assets or screenshots. If a runtime candidate needs corrected pixels, regenerate it through `ui-sprite-families` or `ui-style-reference`.
+Hard asset rule: reference prep may produce deterministic resamples, helper upscales, crop guides, reference-canvas normalization, and classification notes. It may not manually pixel-edit, clean up, mask, erase/fill, cover-patch, clone, repaint, or repair generated assets or screenshots. If a runtime candidate needs corrected pixels, regenerate it through `ui-sprite-families` or `ui-style-reference`.
 
 ## What This Stage Is For
 
@@ -24,12 +24,12 @@ Use reference prep when you need to:
 Do not use it as the primary fix for:
 
 - wrong runtime plate proportions
-- active main menu assets born at the wrong canvas size
+- badly framed or structurally wrong generated assets
 - contaminated screenshot crops
 - baked localizable text
 - duplicated shell ownership
 
-For the active main menu pack, wrong-resolution generated assets should be deleted and rebuilt at canonical `1920x1080`. Do not use resample or upscale as a rescue path.
+For the active main menu pack, raw imagegen outputs that are landscape-safe may be archived and normalized into the canonical `1920x1080` authoring baseline. If the crop would remove important UI/title/content or the composition is wrong, regenerate instead. Do not use upscale as a rescue path for bad composition or ownership.
 
 ## Output Labels
 
@@ -86,10 +86,17 @@ Use for:
 
 - safe `2x/4x` helper exports from the approved master
 - measurement, diffing, and close inspection where exact composition matters more than invented detail
+- normalizing acceptable landscape imagegen outputs into the `1920x1080` authoring baseline through center-crop plus Lanczos resize
 
 Use:
 
 - `C:\UE\T66\Scripts\InvokeDeterministicResample.py`
+
+Reference-canvas normalization example:
+
+```powershell
+python C:\UE\T66\Scripts\InvokeDeterministicResample.py <raw_image.png> <normalized_output.png> --target-width 1920 --target-height 1080
+```
 
 ### Real-ESRGAN
 

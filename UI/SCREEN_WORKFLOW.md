@@ -8,6 +8,14 @@ Use Codex-native `image_gen` only. Do not use legacy browser-automation generati
 
 If native generation cannot produce the required reference, scene plate, component board, icon, or state family, mark the screen blocked and name that artifact. Do not fall back to removed external generation tooling.
 
+Imagegen does not have to emit `1920x1080` directly. For landscape-safe outputs, keep the raw generation and normalize a copy with:
+
+```powershell
+python C:\UE\T66\Scripts\InvokeDeterministicResample.py <raw_image.png> C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png --target-width 1920 --target-height 1080
+```
+
+This conversion is only an authoring-canvas normalization step: center-crop to 16:9, Lanczos resize, then inspect. If the crop loses important UI, title, character, or screen structure, reject the output and regenerate instead of repairing pixels.
+
 ## Blocking Reference Gate
 
 Before asset generation or Unreal placement begins, the target screen must have a generated screen-specific reference image.
@@ -39,9 +47,10 @@ For each screen folder:
 5. Generate or regenerate component boards until the checklist is complete.
 6. Slice only accepted generated boards. Do not manually repair pixels.
 7. Place assets in Unreal using semantic anchors and real controls.
-8. Capture packaged runtime at the locked canvas, normally `1920x1080`.
+8. Capture packaged runtime at the authoring baseline, normally `1920x1080`.
 9. Save captures, diffs, and review notes under `outputs/YYYY-MM-DD/` and `review/`.
 10. Iterate by comparing packaged capture against the screen-specific reference, not against a vague style description.
+11. Before calling the screen production-ready, validate scalable runtime behavior across the standard aspect buckets: primary `16:9`, `16:10`, ultrawide `21:9`, and one smaller/windowed size if supported.
 
 Do not send a final/completed answer after steps 1-3 alone. A screen is complete only after steps 1-10 have run, or after a concrete blocker is reported with the exact missing artifact, failing command, and next required step.
 
@@ -79,7 +88,7 @@ This launcher resolves Windows display 1 and passes `-WinX` and `-WinY` so the g
 ## Hard Rules
 
 - No screen may be styled from "general main-menu vibes" alone.
-- No `1672x941` or other non-canonical generated image may become a production reference, sprite sheet, scene plate, slice, or runtime asset. Rebuild natively at `1920x1080` for normal 16:9 screens.
+- No raw non-canonical generated image may become a production reference, sprite sheet, scene plate, slice, or runtime asset. Normalize acceptable landscape generations into the canonical `1920x1080` authoring baseline with `Scripts\InvokeDeterministicResample.py --target-width 1920 --target-height 1080`; reject square, portrait, badly framed, or structurally cropped outputs.
 - No full-screen reference image may ship as the runtime background.
 - No generated asset may be manually pixel-edited, masked, cover-patched, clone-painted, or repaired.
 - No UI pass may use legacy browser-automation image generation or request manifests.
@@ -89,6 +98,7 @@ This launcher resolves Windows display 1 and passes `-WinX` and `-WinY` so the g
 - Localizable labels, names, values, scores, prices, timers, and dynamic data stay live.
 - Visible controls must be real controls, not invisible hotspots.
 - Outputs go under `UI\screens\<screen_slug>\outputs\YYYY-MM-DD\`, not the repo-root `output` folder.
+- Active screen folders should stay clean between passes: keep only the current-state PNG and the approved canonical reference PNG in active `current`/`reference` folders; archive stale boards, masks, prompts, review outputs, and packaged captures under `UI\_archive`.
 
 ## Iteration Loop
 

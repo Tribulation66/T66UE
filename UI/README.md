@@ -19,7 +19,9 @@ Stopping after step 4 is also a process failure. Reference generation is not com
 
 Use Codex-native `image_gen` only for UI image generation. Do not use legacy browser-automation generation, request manifests, token-driven local services, or removed external image-generation tooling.
 
-No `1672x941` or other non-canonical generated output may be promoted as a production reference, sprite sheet, scene plate, slice, or runtime asset. Normal 16:9 UI work must be rebuilt natively at `1920x1080`, not converted from a wrong-size output.
+`1920x1080` is the canonical authoring and review baseline, not the only supported runtime resolution. Imagegen outputs that are already landscape-safe may be normalized into that baseline with `Scripts\InvokeDeterministicResample.py --target-width 1920 --target-height 1080`, which center-crops to 16:9 and resamples with Lanczos while preserving the raw source beside it. If normalization crops important UI/title/content, reject the output and regenerate it. Square, portrait, or badly framed generations are not repair candidates.
+
+Runtime UI must be scalable. Build from anchors, safe zones, DPI scaling, nine-slice/stretch rules, and live text/content wells, then validate packaged captures across aspect buckets instead of authoring separate bespoke art for every resolution.
 
 ## Folder Contract
 
@@ -37,6 +39,8 @@ C:\UE\T66\UI\screens\<screen_slug>\
 ```
 
 Use `reference` for the generated canonical target image. Use `current` for the pre-style runtime capture. Use `layout` for the layout list and measurement notes. Use `assets` for source image-generation boards and slice notes. Use `outputs/YYYY-MM-DD` for packaged captures, diffs, and pass artifacts.
+
+During style discovery and before the final reference pass, keep each screen folder lean: one current-state PNG where available, one approved canonical reference PNG when it exists, and no stale generated boards, masks, diffs, temporary prompts, or packaged captures in the active folder. Move old artifacts to `UI\_archive\...` with their relative paths preserved.
 
 Runtime-imported final assets may still live under `SourceAssets` or `RuntimeDependencies` if the code expects them there, but their source, reference, and review artifacts belong in this UI workspace.
 

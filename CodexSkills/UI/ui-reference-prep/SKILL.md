@@ -23,11 +23,11 @@ Prepare better working references before reconstruction. This skill exists to ma
 
 Produce higher-utility reference images for downstream UI work.
 
-Reference prep does not change the acceptance target. Normal 16:9 screens still measure and validate against the canonical packaged frame, normally `1920x1080`. The main menu remains the golden calibration screen; helper images must not blur the title/tagline ownership contract or any shell/control/live-content separation.
+Reference prep does not change the acceptance target. Normal 16:9 screens still measure and baseline-review against the canonical authoring frame, normally `1920x1080`. The main menu remains the golden calibration screen; helper images must not blur the title/tagline ownership contract or any shell/control/live-content separation.
 
 Prepared full-screen references, including no-buttons or no-text variants, remain offline/helper artifacts. They do not become runtime background plates unless a later `$ui-sprite-families` pass explicitly validates them as UI-free scene/background plates.
 
-Hard rule: reference prep must not manually pixel-edit, clean up, mask, erase/fill, cover-patch, clone, repaint, or screenshot-repair generated assets. It may create deterministic resamples, helper upscales, crop guides, and classification notes. If pixels need correction, route to generation and regenerate.
+Hard rule: reference prep must not manually pixel-edit, clean up, mask, erase/fill, cover-patch, clone, repaint, or screenshot-repair generated assets. It may create deterministic resamples, target-canvas normalization, helper upscales, crop guides, and classification notes. If pixels need correction, route to generation and regenerate.
 
 Typical outputs:
 - `*_2x.png`
@@ -65,12 +65,12 @@ AI upscale is for helper references, not for automatically trusted runtime slice
 - the control plate has the wrong aspect ratio
 - the source is contaminated by neighboring art or background
 - the source is a buttonless/textless full-screen composite that still contains foreground UI chrome
-- the active main menu asset was generated at a non-canonical canvas
+- the active main menu asset would lose important structure during target-canvas normalization
 - the target needs true stateful runtime art such as normal, hover, or pressed buttons
 - the issue is ownership or composition, not pixel density
 
 If the plate or shell is fundamentally wrong, move to `$ui-style-reference` or `$ui-sprite-families` instead of trying to rescue it with upscale.
-For the active main menu pack, delete and rebuild wrong-resolution generated assets at `1920x1080`; do not resample them into compliance.
+For the active main menu pack, archive raw landscape-safe imagegen outputs and normalize a copy into `1920x1080` when the crop preserves the composition. Regenerate square, portrait, badly framed, or structurally wrong outputs instead of resampling them into compliance.
 
 ## Workflow
 
@@ -102,6 +102,18 @@ Record the risk briefly. A larger bad source is still a bad source.
 - Use deterministic scaling such as `2x` or `4x`.
 - Keep the original aspect ratio exactly.
 - Use Figma only as a controlled export or canvas tool, not as a true detail-restoration tool.
+
+#### Target-canvas normalization path
+
+- Use only for acceptable landscape imagegen outputs that need the `1920x1080` authoring baseline.
+- Keep the raw generated source as provenance.
+- Use deterministic center-crop to 16:9 plus Lanczos resize:
+
+```powershell
+python C:\UE\T66\Scripts\InvokeDeterministicResample.py <raw_image.png> <normalized_output.png> --target-width 1920 --target-height 1080
+```
+
+- Inspect the normalized output before promotion. If important UI/title/content is cropped, regenerate.
 
 #### AI upscale path
 

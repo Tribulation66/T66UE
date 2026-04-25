@@ -87,7 +87,7 @@ Image-generation rule:
 - Match aspect ratios before generating anything.
 - Generate native-proportion art instead of stretching a fixed plate later.
 - For the active main menu pack, generate assets from a native `1920x1080` canonical frame.
-- Delete and rebuild wrong-resolution main menu generated assets instead of resizing or repairing them.
+- Archive raw generated sources and normalize acceptable landscape outputs into the `1920x1080` authoring baseline when needed; regenerate badly framed or structurally wrong outputs instead of resizing or repairing them.
 - Helper-prepped images may guide prompting or inspection, but they remain `helper-only` unless explicitly reviewed as `runtime-safe`.
 - Full reference screenshots, buttonless masters, and textless masters are not runtime backgrounds.
 - Generate the scene/background plate with all topbar, side panel, leaderboard, CTA, text, button, avatar, icon, media, preview, and live-content pixels removed.

@@ -26,6 +26,7 @@ Backend choice does not permit post-generation pixel repair. Generated UI assets
 Allowed deterministic operations:
 
 - slicing or cropping from an accepted generated board
+- center-crop to the target aspect and Lanczos resize for reference-canvas normalization
 - format/export conversion
 - alpha or dimension validation
 - runtime placement
@@ -36,9 +37,15 @@ If generated pixels are wrong, regenerate the reference, plate, board, icon, or 
 
 ## Resolution Rule
 
-`1672x941` and other non-canonical wide outputs are helper-only unless the user explicitly approves a separate conversion stage. They must not become production references, sprite sheets, scene plates, slices, or runtime assets.
+Raw non-canonical imagegen outputs are provenance artifacts, not production assets. Acceptable landscape outputs may be normalized into the canonical `1920x1080` authoring baseline with deterministic center-crop plus Lanczos resize:
 
-Normal 16:9 production UI work rebuilds natively at `1920x1080`.
+```powershell
+python C:\UE\T66\Scripts\InvokeDeterministicResample.py <raw_image.png> <normalized_output.png> --target-width 1920 --target-height 1080
+```
+
+The raw source should stay archived beside the normalized output or in the screen archive. If normalization crops important structure, title, controls, or content, reject the output and regenerate. Square, portrait, badly framed, or structurally wrong outputs remain helper-only or blocked.
+
+Normal 16:9 production UI work uses `1920x1080` as the authoring and review baseline, then validates the runtime layout across supported aspect buckets.
 
 ## Stage Guidance
 

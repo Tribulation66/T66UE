@@ -42,11 +42,11 @@ Identify which of these already exist:
 
 Then route to the earliest missing stage, unless the real blocker is reference usability.
 
-The main menu is the golden calibration screen. Before routing another screen as production-ready, confirm the main menu contract is understood: canonical `1920x1080` packaged target, full reference screenshots are offline targets only, baked title wordmark allowed, live/localizable tagline and runtime labels/values, UI-free scene plate plus foreground component families, separated shell/control/live-content rects, validated assets, and ownership-aware packaged masks.
+The main menu is the golden calibration screen. Before routing another screen as production-ready, confirm the main menu contract is understood: canonical `1920x1080` authoring/baseline packaged target, full reference screenshots are offline targets only, baked title wordmark allowed, live/localizable tagline and runtime labels/values, UI-free scene plate plus foreground component families, separated shell/control/live-content rects, validated assets, ownership-aware packaged masks, and responsive/aspect validation before final approval.
 
 For any non-main-menu target, if `C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png` does not exist or was not generated from all three required inputs, route immediately to `$ui-style-reference`. Do not allow component generation, runtime styling, or packaged review to continue from a generic style interpretation.
 
-For the active main menu pack, route wrong-resolution generated assets back to rebuild at native `1920x1080`. Do not route them through reference prep as a resize rescue.
+For the active main menu pack, acceptable landscape imagegen outputs may be archived and normalized to `1920x1080` with `Scripts\InvokeDeterministicResample.py --target-width 1920 --target-height 1080`. Route badly framed, portrait/square, structurally cropped, or composition-wrong outputs back to regeneration.
 
 Hard rule: never route a bad generated asset to manual pixel repair. Manual cleanup, masks, erase/fill, cover patches, clone/repaint fixes, and screenshot repair are not valid stages. Route bad pixels back to `ui-sprite-families` or `ui-style-reference` for regeneration; allow only deterministic slicing/cropping and runtime overlays after generation.
 
@@ -105,10 +105,10 @@ Do not use this stack yet. Use the lighter discovery workflow first, then re-ent
 - Do not skip a missing earlier-stage artifact just because a later-stage workaround seems faster.
 - Do not skip the per-screen generated reference gate for any screen, modal, HUD overlay, tab, or mini-game UI.
 - Do not use `ui-reference-prep` to paper over wrong proportions or ownership problems.
-- Do not preserve wrong-resolution active main menu generated assets by converting them to the canonical canvas.
+- Do not preserve bad active main menu generated assets by converting them to the canonical canvas; normalization is allowed only for acceptable landscape outputs that survive visual inspection.
 - Do not route a buttonless or textless full-screen master into runtime as a background layer.
 - Do not route into style-reference, sprite families, or packaged diffing until runtime-owned regions are classified.
-- Do not treat a packaged capture as acceptable unless it matches the locked target size, normally `1920x1080`.
+- Do not treat a packaged capture as acceptable unless the baseline capture matches the locked target size, normally `1920x1080`, and final approval also checks supported aspect buckets.
 - Do not declare success without a packaged review.
 - Do not declare success after reference generation alone.
 - Do not use removed external generation tooling as an image-generation fallback.
