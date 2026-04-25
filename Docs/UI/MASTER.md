@@ -16,7 +16,7 @@ All helper skills and scripts exist only to support those two production contrac
 
 - Canonical UI workspace: `C:\UE\T66\UI`
 - Per-screen packs: `C:\UE\T66\UI\screens\<screen_slug>`
-- Canonical main-menu style anchor: `C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png`
+- Canonical main-menu style anchor: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
 - Runtime UI code: `C:\UE\T66\Source\T66\UI`
 - Main menu runtime component pack: `C:\UE\T66\SourceAssets\UI\MainMenuReference`
 - Reconstruction scripts: `C:\UE\T66\Scripts`
@@ -46,7 +46,7 @@ Good parallel splits:
 - asset/component checklist and sprite-family validation
 - packaged screenshot review, blocker classification, and diff/mask notes
 
-Do not assign two agents to edit the same source file or asset folder. Each agent must be told the canonical anchor path, its target `UI\screens\<screen_slug>` folder, its owned files, and the rule that runtime styling is blocked until `reference\canonical_reference_1920x1080.png` exists for that screen.
+Do not assign two agents to edit the same source file or asset folder. Each agent must be told the canonical anchor path, its target `UI\screens\<screen_slug>` folder, its owned files, and the rule that runtime styling is blocked until `reference\<screen_slug>_reference_1920x1080.png` exists for that screen.
 
 Reference generation is only the first gate. Agents must not finish their answer after creating references alone. Unless a concrete blocker prevents progress, each assigned screen must continue through sprite/component generation, slicing/import or staging, runtime implementation, packaged capture, and packaged review before the agent reports the screen as complete.
 
@@ -69,17 +69,23 @@ Every screen, modal, HUD overlay, tab, and mini-game UI must have its own genera
 
 For each target screen, feed these three inputs to image generation:
 
-- the canonical main-menu style anchor: `C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png`
+- the canonical main-menu style anchor: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
 - the current runtime screenshot of the exact target screen or modal
 - a layout list for the exact target screen, including regions, controls, live-data wells, tab/modal variants, and required states
 
+The current runtime screenshot is authoritative for layout, content count, and arrangement. The main-menu reference is only the style anchor. A generated reference must preserve the exact runtime content count and arrangement; it must not add ability slots, idol slots, extra buttons, invented panels, icons, meters, currencies, menu entries, tabs, explanatory labels, or any other structure not present in the current screenshot and layout list.
+
+The active visual direction is sleek, modern, minimalist, clean planar surfaces, crisp borders, flat or satin metallic accents, restrained gold, and a clean red/black/charcoal scheme while preserving the same font, layout, and content. Do not prompt toward grain, cracked stone, gemstone/crystal/beveled fantasy surfaces, noisy distressed panels, rubble texture, or micro-detail borders.
+
 Save the result as:
 
-`C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png`
+`C:\UE\T66\UI\screens\<screen_slug>\reference\<screen_slug>_reference_1920x1080.png`
 
 If image generation produces a landscape-safe non-1920 output, keep that raw source and normalize a copy with `Scripts\InvokeDeterministicResample.py --target-width 1920 --target-height 1080`. That helper center-crops to 16:9 and resamples with Lanczos. Treat it as deterministic authoring-canvas normalization only, not repair. If the normalized image crops off important title, UI, character, or layout content, reject it and regenerate.
 
 Do not proceed if this reference is missing. Do not accept a screen that only has a vague main-menu-inspired style pass. If the generated reference does not preserve the target layout or does not match the canonical main-menu visual language, regenerate it before continuing.
+
+Deprecated or stale targets are not valid generation tasks. Do not create active screen-specific references for `wheel_overlay`, `party_size_picker`, `casino_overlay`, `gambler_overlay`, `vendor_overlay`, standalone `leaderboard`, legacy `Lobby`, `LobbyReadyCheck`, `LobbyBackConfirm`, `HeroLore`, or `CompanionLore` screens. Canonical active naming is `powerup` instead of `shop`, and `minigames` instead of `unlocks`.
 
 ### 0B. Complete the whole screen pipeline
 
@@ -233,7 +239,7 @@ Every pass should clear `C:\UE\T66\Docs\UI\SCREEN_REVIEW_GATE.md` before it is t
 
 ## Workspace Hygiene
 
-The active `UI\screens\<screen_slug>` folders should stay small during the final style pass. Keep only the current-state PNG and, once approved, `reference\canonical_reference_1920x1080.png` in the active folder. Archive stale generated boards, masks, diffs, temporary prompts, review outputs, old packaged captures, and obsolete placeholder references under `UI\_archive` with relative paths preserved.
+The active `UI\screens\<screen_slug>` folders should stay small during the final style pass. Keep only the current-state PNG and, once approved, `reference\<screen_slug>_reference_1920x1080.png` in the active folder. Archive stale generated boards, masks, diffs, temporary prompts, review outputs, old packaged captures, and obsolete placeholder references under `UI\archive` with relative paths preserved.
 
 Mini-game screen folders should be cleaned the same way, but their final reference generation remains deferred until the main-game style anchor is approved.
 
@@ -243,7 +249,7 @@ The first active screen under this process is the main menu. See:
 
 - `C:\UE\T66\Docs\UI\UI_RECONSTRUCTION_HANDOFF.md`
 - `C:\UE\T66\Docs\UI\UI_SKILL_ARCHITECTURE.md`
-- `C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png`
+- `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
 - `C:\UE\T66\SourceAssets\UI\MainMenuReference` for runtime component assets only
 
 ## Useful Carryover From Old Frontend Docs

@@ -12,11 +12,11 @@ Copy this checklist into `UI\screens\<screen_slug>\layout\layout_list.md` before
 
 ## Image-Generation Inputs
 
-- Main-menu anchor: `C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png`
+- Main-menu anchor: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
 - Current target screenshot:
 - Layout list path:
 - Raw imagegen output:
-- Normalized reference command: `python C:\UE\T66\Scripts\InvokeDeterministicResample.py <raw_image.png> reference\canonical_reference_1920x1080.png --target-width 1920 --target-height 1080`
+- Normalized reference command: `python C:\UE\T66\Scripts\InvokeDeterministicResample.py <raw_image.png> reference\<screen_slug>_reference_1920x1080.png --target-width 1920 --target-height 1080`
 
 ## Layout List
 

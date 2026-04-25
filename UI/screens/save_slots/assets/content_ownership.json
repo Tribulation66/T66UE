@@ -1,0 +1,33 @@
+{
+  "screen": "save_slots",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "top_navigation",
+      "content_type": "runtime-text",
+      "render_contract": "socket-frame",
+      "notes": "Top labels, icons, currency, and state remain runtime-owned."
+    },
+    {
+      "name": "save_filters",
+      "content_type": "runtime-text",
+      "render_contract": "shell-only",
+      "notes": "Dropdown plate can be generated, but value and explanatory copy remain runtime-owned."
+    },
+    {
+      "name": "save_list_area",
+      "content_type": "runtime-value",
+      "render_contract": "empty-backplate",
+      "notes": "Save rows or empty-state text remain runtime-owned."
+    },
+    {
+      "name": "pagination",
+      "content_type": "runtime-state",
+      "render_contract": "shell-only",
+      "notes": "Prev/Next plates may be generated, but labels, disabled state, and page count remain runtime-owned."
+    }
+  ]
+}

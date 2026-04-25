@@ -52,21 +52,21 @@ Required control states use `normal`, `hover`, `pressed`, `disabled`, and `selec
 - Runtime-owned live text/data/image regions: achievement names/descriptions, category/secret masking, completion counts/percent, progress values, rewards, claim/claimed state, favorite glyph/state.
 - Automated capture key: not known; screen class exists as `ET66ScreenType::Achievements`, but current `T66FrontendScreen` resolver does not map `Achievements`.
 
-## Unlocks/Minigames
+## Minigames
 
 - Scene/background needs: UI-free frontend background; no baked minigame names, status tags, descriptions, availability text, or future slot labels.
 - Panel/shell families: inherited frontend top bar, centered minigames container, slice panel family for available and unavailable entries, tag pill/socket, back affordance.
 - Button/control families: clickable minigame slice panels, disabled coming-soon slice panels, back. States: clickable slices/buttons `normal/hover/pressed/disabled`; active/available slices may use `selected` or highlighted treatment; unavailable slots need disabled state.
 - Runtime-owned live text/data/image regions: minigame titles, descriptions, availability tags, launch targets, future slot copy, localized back label.
-- Automated capture key: known, `-T66FrontendScreen=Unlocks` or alias `-T66FrontendScreen=Minigames`.
+- Automated capture key: known, `-T66FrontendScreen=Minigames`.
 
-## Shop/PowerUp
+## PowerUp
 
-- Scene/background needs: UI-free frontend shop background; no baked stat names, prices, owned counts, progress, coupon balance, buff icons, or statue-fill values.
-- Panel/shell families: inherited frontend top bar, shop shell, permanent/single-use tab strip, permanent stat card family, statue art socket/inset, single-use row/card family, secondary buff icon sockets, scroll shell, back/footer region.
+- Scene/background needs: UI-free frontend powerup background; no baked stat names, prices, owned counts, progress, coupon balance, buff icons, or statue-fill values.
+- Panel/shell families: inherited frontend top bar, powerup shell, permanent/single-use tab strip, permanent stat card family, statue art socket/inset, single-use row/card family, secondary buff icon sockets, scroll shell, back/footer region.
 - Button/control families: Permanent/Single Use tabs, permanent unlock buttons, single-use buy buttons, back. States: buttons `normal/hover/pressed/disabled`; active tab needs `selected`; maxed stat and insufficient-balance states need disabled or max-state visuals.
 - Runtime-owned live text/data/image regions: tab labels, stat labels, Forbidden Chad part labels, statue art/fill fraction, progress counts, costs, coupon balance, secondary buff icons/names, owned counts, buy/max text.
-- Automated capture key: not known; screen class exists as legacy enum `ET66ScreenType::PowerUp` with display name `Shop`, but current `T66FrontendScreen` resolver does not map `PowerUp` or `Shop`.
+- Automated capture key: known, `-T66FrontendScreen=PowerUp`.
 
 ## DailyClimb
 

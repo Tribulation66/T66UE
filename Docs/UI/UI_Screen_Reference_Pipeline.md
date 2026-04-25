@@ -27,17 +27,23 @@ Every target screen, modal, HUD overlay, tab, or mini-game UI must first receive
 
 Generate the target reference by giving image generation all three inputs:
 
-1. Canonical main-menu style anchor: `C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png`
+1. Canonical main-menu style anchor: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
 2. Current screenshot of the exact target screen, modal, HUD overlay, tab, or mini-game UI.
 3. Layout list for the exact target screen, including regions, controls, panels, live-data wells, tab/modal variants, and required states.
+
+The current screenshot is authoritative for layout, content count, and arrangement. The main-menu reference is only the style anchor. Do not add ability slots, idol slots, extra buttons, invented panels, icons, meters, currencies, menu entries, tabs, explanatory labels, or any structure not present in the current screenshot and layout list.
+
+Style direction for new references is sleek, modern, minimalist, clean planar surfaces, crisp borders, flat/satin metallic accents, restrained gold, and a clean red/black/charcoal scheme with the same font/layout/content. Negative guardrails: no grain, no cracked stone, no gemstone/crystal/beveled fantasy surface, no noisy distressed panels, no rubble texture, and no micro-detail borders.
 
 Save the approved result to:
 
 ```text
-C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png
+C:\UE\T66\UI\screens\<screen_slug>\reference\<screen_slug>_reference_1920x1080.png
 ```
 
 Nothing downstream may start without this file. Do not generate sprites, slice assets, patch Slate code, or run packaged diffing from a general style description alone. If the reference misses the layout or visual family, regenerate it.
+
+Deprecated or stale targets are not valid generation tasks. Do not generate active references for `wheel_overlay`, `party_size_picker`, `casino_overlay`, `gambler_overlay`, `vendor_overlay`, standalone `leaderboard`, legacy `Lobby`, `LobbyReadyCheck`, `LobbyBackConfirm`, `HeroLore`, or `CompanionLore`. Use `powerup` instead of `shop`, and `minigames` instead of `unlocks`.
 
 Generating this reference is not completion. It is only the first gate. A screen pass must continue through content ownership, element/state checklist, sprite-family generation, slicing/staging, runtime implementation, packaged capture, and packaged review unless a concrete blocker is recorded.
 
@@ -265,7 +271,7 @@ For a screen slug like `settings`, use the canonical UI workspace:
 ```text
 UI/screens/settings/
   reference/
-    canonical_reference_1920x1080.png
+    <screen_slug>_reference_1920x1080.png
     optional_helper_2x.png
   current/
     YYYY-MM-DD/

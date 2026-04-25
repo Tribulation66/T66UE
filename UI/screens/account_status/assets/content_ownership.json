@@ -1,0 +1,33 @@
+{
+  "screen": "account_status",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "top_navigation",
+      "content_type": "runtime-text",
+      "render_contract": "socket-frame",
+      "notes": "Navigation shells and icon sockets may be styled, but tab labels, icon meanings, currency value, and state remain runtime-owned."
+    },
+    {
+      "name": "status_panel",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "notes": "Account standing, help icon, explanatory copy, and appeal status remain live text."
+    },
+    {
+      "name": "progress_rows",
+      "content_type": "runtime-value",
+      "render_contract": "empty-backplate",
+      "notes": "Progress labels, values, and bar fills remain runtime-owned."
+    },
+    {
+      "name": "record_tables",
+      "content_type": "runtime-value",
+      "render_contract": "empty-backplate",
+      "notes": "Filters, headers, rows, ranks, scores, times, and empty-state values remain runtime-owned."
+    }
+  ]
+}

@@ -11,7 +11,7 @@ If native generation cannot produce the required reference, scene plate, compone
 Imagegen does not have to emit `1920x1080` directly. For landscape-safe outputs, keep the raw generation and normalize a copy with:
 
 ```powershell
-python C:\UE\T66\Scripts\InvokeDeterministicResample.py <raw_image.png> C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png --target-width 1920 --target-height 1080
+python C:\UE\T66\Scripts\InvokeDeterministicResample.py <raw_image.png> C:\UE\T66\UI\screens\<screen_slug>\reference\<screen_slug>_reference_1920x1080.png --target-width 1920 --target-height 1080
 ```
 
 This conversion is only an authoring-canvas normalization step: center-crop to 16:9, Lanczos resize, then inspect. If the crop loses important UI, title, character, or screen structure, reject the output and regenerate instead of repairing pixels.
@@ -22,14 +22,20 @@ Before asset generation or Unreal placement begins, the target screen must have 
 
 Required inputs to image generation:
 
-- canonical style anchor: `C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png`
+- canonical style anchor: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
 - current screenshot: the exact current runtime screenshot of the target screen or modal
 - layout list: the exact list of regions, controls, live-data wells, states, and modal/tab variants for the target screen
+
+The current target screenshot is authoritative for layout, content count, and arrangement. Use the main-menu reference only for visual style. Do not add ability slots, idol slots, extra buttons, invented panels, icons, meters, currencies, menu entries, tabs, explanatory labels, or any other structure not present in the current screenshot and layout list.
+
+Style-positive direction: sleek, modern, minimalist, clean planar surfaces, crisp borders, flat or satin metallic accents, restrained gold, and a clean red/black/charcoal scheme while keeping the same font, layout, and content.
+
+Style-negative direction: no grain, no cracked stone, no gemstone/crystal/beveled fantasy surface, no noisy distressed panels, no rubble texture, and no micro-detail borders.
 
 Required output:
 
 ```text
-C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png
+C:\UE\T66\UI\screens\<screen_slug>\reference\<screen_slug>_reference_1920x1080.png
 ```
 
 Do not proceed to sprites, Slate/C++ styling, or packaged comparison without this file. If the generated reference does not preserve the target layout or does not match the canonical main-menu style, regenerate it.
@@ -70,7 +76,7 @@ Each agent must receive:
 - the canonical anchor path
 - the target `UI\screens\<screen_slug>` folder
 - the exact files it owns
-- the rule that no runtime styling starts without `reference\canonical_reference_1920x1080.png`
+- the rule that no runtime styling starts without `reference\<screen_slug>_reference_1920x1080.png`
 - the rule that reference generation alone is not completion; agents must continue through sprite generation, runtime implementation, packaged capture, and packaged review unless blocked
 
 Do not let two agents write the same runtime file or asset folder. If file ownership cannot be separated, keep that part local in the main thread.
@@ -88,6 +94,12 @@ This launcher resolves Windows display 1 and passes `-WinX` and `-WinY` so the g
 ## Hard Rules
 
 - No screen may be styled from "general main-menu vibes" alone.
+- Deprecated or stale targets are not valid generation tasks. Do not generate active references for `wheel_overlay`, `party_size_picker`, `casino_overlay`, `gambler_overlay`, `vendor_overlay`, standalone `leaderboard`, legacy `Lobby`, `LobbyReadyCheck`, `LobbyBackConfirm`, `HeroLore`, or `CompanionLore` screens.
+- Use canonical active naming: `powerup` instead of `shop`, and `minigames` instead of `unlocks`.
+- The current target screenshot owns layout, content count, and arrangement; the main-menu anchor owns style only.
+- Do not add ability slots, idol slots, extra buttons, invented panels, icons, meters, currencies, menu entries, tabs, or explanatory labels.
+- Positive style is sleek, modern, minimalist, clean planar surfaces, crisp borders, flat/satin metallic accents, restrained gold, and a clean red/black/charcoal scheme with the same font/layout/content.
+- Negative style guardrails: no grain, no cracked stone, no gemstone/crystal/beveled fantasy surface, no noisy distressed panels, no rubble texture, and no micro-detail borders.
 - No raw non-canonical generated image may become a production reference, sprite sheet, scene plate, slice, or runtime asset. Normalize acceptable landscape generations into the canonical `1920x1080` authoring baseline with `Scripts\InvokeDeterministicResample.py --target-width 1920 --target-height 1080`; reject square, portrait, badly framed, or structurally cropped outputs.
 - No full-screen reference image may ship as the runtime background.
 - No generated asset may be manually pixel-edited, masked, cover-patched, clone-painted, or repaired.
@@ -98,7 +110,7 @@ This launcher resolves Windows display 1 and passes `-WinX` and `-WinY` so the g
 - Localizable labels, names, values, scores, prices, timers, and dynamic data stay live.
 - Visible controls must be real controls, not invisible hotspots.
 - Outputs go under `UI\screens\<screen_slug>\outputs\YYYY-MM-DD\`, not the repo-root `output` folder.
-- Active screen folders should stay clean between passes: keep only the current-state PNG and the approved canonical reference PNG in active `current`/`reference` folders; archive stale boards, masks, prompts, review outputs, and packaged captures under `UI\_archive`.
+- Active screen folders should stay clean between passes: keep only the current-state PNG and the approved canonical reference PNG in active `current`/`reference` folders; archive stale boards, masks, prompts, review outputs, and packaged captures under `UI\archive`.
 
 ## Iteration Loop
 

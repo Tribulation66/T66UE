@@ -29,16 +29,22 @@ Do not begin sprite generation or runtime placement until this section is comple
 
 Use Codex-native `image_gen` only. Do not use legacy browser-automation image generation or request manifests.
 
-- Canonical main-menu style anchor: `C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png`
+- Canonical main-menu style anchor: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
 - Current target runtime screenshot path: `[path in C:\UE\T66\UI\screens\<screen_slug>\current\YYYY-MM-DD\]`
 - Layout list path: `[path in C:\UE\T66\UI\screens\<screen_slug>\layout\layout_list.md]`
 - Image generation used all three required inputs: `[yes/no]`
 - Raw imagegen source path: `[path or n/a]`
 - Normalized with `InvokeDeterministicResample.py --target-width 1920 --target-height 1080`: `[yes/no/n/a]`
 - Normalization accepted after visual inspection: `[yes/no/n/a]`
-- Generated screen-specific reference path: `[C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png]`
+- Generated screen-specific reference path: `[C:\UE\T66\UI\screens\<screen_slug>\reference\<screen_slug>_reference_1920x1080.png]`
 - Generated reference preserves target layout: `[yes/no]`
 - Generated reference matches canonical main-menu style: `[yes/no]`
+- Current screenshot used as layout/content authority: `[yes/no]`
+- Main-menu reference used for style only: `[yes/no]`
+- No invented slots/buttons/panels/icons/meters/currencies/menu entries/tabs/labels: `[yes/no]`
+- Negative style guardrails applied: no grain, cracked stone, gemstone/crystal/beveled fantasy surfaces, noisy distressed panels, rubble texture, or micro-detail borders: `[yes/no]`
+- Positive style direction applied: sleek, modern, minimalist, clean planar surfaces, crisp borders, flat/satin metallic accents, restrained gold, clean red/black/charcoal scheme, same font/layout/content: `[yes/no]`
+- Target is not deprecated or stale: `[yes/no]`
 - Gate verdict: `[blocked / approved for sprite generation]`
 
 This gate does not complete the screen. It only allows the work to continue into the element checklist, sprite/component generation, runtime implementation, packaged capture, and review.

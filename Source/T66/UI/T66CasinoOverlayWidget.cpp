@@ -37,11 +37,15 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 		this,
 		GamblerTabWidget,
 		VendorTabWidget,
-		[](UT66GamblerOverlayWidget* Widget) { Widget->SetEmbeddedInCasinoShell(true); },
-		[](UT66VendorOverlayWidget* Widget)
+		[this](UT66GamblerOverlayWidget* Widget)
 		{
 			Widget->SetEmbeddedInCasinoShell(true);
-			Widget->SetVendorAllowsSteal(true);
+			Widget->SetWinGoldAmount(PendingGamblingWinGoldAmount);
+		},
+		[this](UT66VendorOverlayWidget* Widget)
+		{
+			Widget->SetEmbeddedInCasinoShell(true);
+			Widget->SetVendorAllowsSteal(bVendorAllowsSteal);
 		});
 
 	if (RunState)
@@ -286,6 +290,24 @@ void UT66CasinoOverlayWidget::OpenAlchemyTab()
 	SharedOverlay::OpenAlchemyTab(
 		[this]() { SetActiveTab(ECasinoTab::Alchemy); },
 		[this]() { RefreshAlchemy(); });
+}
+
+void UT66CasinoOverlayWidget::SetGamblingWinGoldAmount(int32 InAmount)
+{
+	PendingGamblingWinGoldAmount = FMath::Max(0, InAmount);
+	if (GamblerTabWidget)
+	{
+		GamblerTabWidget->SetWinGoldAmount(PendingGamblingWinGoldAmount);
+	}
+}
+
+void UT66CasinoOverlayWidget::SetVendorAllowsSteal(bool bInAllowsSteal)
+{
+	bVendorAllowsSteal = bInAllowsSteal;
+	if (VendorTabWidget)
+	{
+		VendorTabWidget->SetVendorAllowsSteal(bVendorAllowsSteal);
+	}
 }
 
 TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc)

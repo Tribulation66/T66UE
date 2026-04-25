@@ -184,7 +184,7 @@ The remaining art-side code follow-up after new Accuracy icon art exists:
 
 - `Source/T66/UI/T66TemporaryBuffUIUtils.cpp`
   - change `ET66SecondaryStatType::Accuracy` slug from `range` to `accuracy`
-- `Source/T66/UI/Screens/T66ShopScreen.cpp`
+- `Source/T66/UI/Screens/T66PowerUpScreen.cpp`
   - change the shop-side Accuracy slug from `range` to `accuracy`
 
 Do not make those slug changes until the new file exists, or the UI will temporarily lose the Accuracy icon.
@@ -199,7 +199,7 @@ Current placeholder reuse:
   - synthetic `Item_Accuracy` fallback also points to the `Item_AttackRange_*` sprites
 - `Source/T66/UI/T66TemporaryBuffUIUtils.cpp`
   - `Accuracy` currently resolves to `range.png`
-- `Source/T66/UI/Screens/T66ShopScreen.cpp`
+- `Source/T66/UI/Screens/T66PowerUpScreen.cpp`
   - shop-side `Accuracy` also resolves to `range.png`
 
 This is acceptable as a temporary placeholder but should not be treated as final content.

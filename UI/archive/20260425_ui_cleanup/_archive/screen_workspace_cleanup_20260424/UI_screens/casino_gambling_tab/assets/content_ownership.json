@@ -1,0 +1,10 @@
+{
+  "screen": "CasinoGamblingTab",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "casino_main_shell", "group": "Center", "content_type": "generated-shell", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CasinoOverlayWidget.cpp"], "notes": "Casino frame only." },
+    { "id": "tab_button_row", "group": "TopBar", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CasinoOverlayWidget.cpp"], "notes": "Tab labels and selected state remain live." },
+    { "id": "gambler_content_panel", "group": "Center", "content_type": "runtime-state", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-state", "code_refs": ["Source/T66/UI/T66GamblerOverlayWidget.cpp", "Source/T66/UI/Gambler/T66GamblerOverlayWidget_Build.cpp"], "notes": "Embedded Gambler pages, game cards, banking controls, buyback, minigame wells, and status text remain live." },
+    { "id": "game_card_grid", "group": "Center", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/Gambler/T66GamblerOverlayWidget_Build.cpp"], "notes": "Card frames may be generated; game icons/text/states are live." }
+  ]
+}

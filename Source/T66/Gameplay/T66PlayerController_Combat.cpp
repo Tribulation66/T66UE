@@ -19,14 +19,12 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
-#include "UI/Screens/T66ShopScreen.h"
+#include "UI/Screens/T66PowerUpScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
-#include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
-#include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
 #include "Gameplay/T66FountainOfLifeInteractable.h"
@@ -820,10 +818,9 @@ bool AT66PlayerController::CanUseCombatMouseInput() const
 		&& !bInventoryInspectOpen
 		&& !IsArcadePopupOpen()
 		&& !(GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
-		&& !(GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
+		&& !IsCasinoOverlayOpen()
 		&& !(CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
-		&& !(IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport())
-		&& !(VendorOverlayWidget && VendorOverlayWidget->IsInViewport());
+		&& !(IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport());
 }
 
 

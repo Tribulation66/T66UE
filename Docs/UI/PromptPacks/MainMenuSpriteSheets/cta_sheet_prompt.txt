@@ -5,8 +5,8 @@ Scene/background: flat near-black presentation board with no environment art, no
 Subject: isolated reusable assets for the central stacked menu buttons and their outer frame, all derived from the exact reference image style
 Style/medium: painted game UI asset sheet, exact reconstruction of the reference art style, not a redesign
 Composition/framing: wide board with grouped rows by state and by color family, front-on orthographic presentation, no overlap
-Lighting/mood: same warm beveled highlights and grounded shadow depth from the reference
+Lighting/mood: same clean warm highlights and grounded shadow depth from the reference
 Color palette: moss green, dusty teal-blue, rich violet, dark bronze frame, warm parchment text area feel without actual text
-Materials/textures: beveled carved borders, chipped painted fills, small scratches, subtle edge wear, dark stone-metal outer frame
-Constraints: include the outer stack frame plus empty button plates for the green, blue, and purple center buttons; NO baked words; provide normal, hover, pressed, and disabled states for each color family; keep exact silhouette, border thickness, corner cuts, and proportions from the reference; no full menu art; no watermark
-Avoid: any text on the buttons, fake generic UI kits, flat gradients, oversaturated neon, softened silhouettes, decorative flourishes not present in the reference
+Materials/textures: clean satin borders, smooth painted fills, restrained flat edge highlights, dark charcoal/metal outer frame; no carved stone, chips, scratches, cracks, crystal, gems, or noisy distress
+Constraints: include the outer stack frame plus empty button plates for the green, blue, and purple center buttons; NO baked words; provide normal, hover, pressed, and disabled states for each color family; keep exact silhouette, border thickness, corner cuts, and proportions from the reference; no full menu art; no watermark; do not add content or new motifs
+Avoid: any text on the buttons, grain, cracked stone, gemstone/crystal surfaces, noisy distressed panels, rubble texture, chipped edges, micro-detail borders, fantasy jewel ornaments, fake generic UI kits, flat gradients, oversaturated neon, softened silhouettes, decorative flourishes not present in the reference

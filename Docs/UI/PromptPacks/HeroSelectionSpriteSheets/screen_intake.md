@@ -17,7 +17,7 @@
 - Runtime target viewport: `1920x1080`
 - Current packaged structure anchor: `C:/UE/T66/SourceAssets/UI/HeroSelectionReference/current_runtime_anchor.png`
 - Current packaged helper anchor: `C:/UE/T66/SourceAssets/UI/HeroSelectionReference/current_runtime_anchor_2x.png`
-- Approved style anchor: `C:/UE/T66/UI/screens/main_menu/reference/canonical_reference_1920x1080.png`
+- Approved style anchor: `C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png`
 
 ## Reference Variants
 

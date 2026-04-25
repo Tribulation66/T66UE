@@ -445,24 +445,18 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Leaderboard")
 	FText GetText_QuadRuns() const;
 	
-	// Party Size Picker
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
-	FText GetText_SelectPartySize() const;
-	
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
+	// Party size labels used by leaderboard, saves, settings, and party-aware summaries.
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Party")
 	FText GetText_Solo() const;
 	
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Party")
 	FText GetText_Duo() const;
 	
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Party")
 	FText GetText_Trio() const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Party")
 	FText GetText_Quad() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
-	FText GetText_Coop() const;
 
 	// Hero Selection
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")

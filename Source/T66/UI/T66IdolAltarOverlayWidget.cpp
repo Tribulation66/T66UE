@@ -37,7 +37,7 @@ namespace
 		return GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
 	}
 
-	const FSlateBrush* GetWhiteBrush()
+	const FSlateBrush* GetIdolAltarWhiteBrush()
 	{
 		return FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
 	}
@@ -165,7 +165,7 @@ namespace
 				+ SOverlay::Slot()
 				[
 					SAssignNew(OutBackground, SBorder)
-					.BorderImage(GetWhiteBrush())
+					.BorderImage(GetIdolAltarWhiteBrush())
 					.BorderBackgroundColor(FT66Style::ButtonNeutral())
 					.Padding(FMargin(16.f, 10.f))
 				]
@@ -404,17 +404,17 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 			.HeightOverride(452.f)
 			[
 				SNew(SBorder)
-				.BorderImage(GetWhiteBrush())
+				.BorderImage(GetIdolAltarWhiteBrush())
 				.BorderBackgroundColor(FT66DotaTheme::SlotOuter())
 				.Padding(1.f)
 				[
 					SAssignNew(OfferTileBorders[SlotIndex], SBorder)
-					.BorderImage(GetWhiteBrush())
+					.BorderImage(GetIdolAltarWhiteBrush())
 					.BorderBackgroundColor(FT66DotaTheme::Border())
 					.Padding(1.f)
 					[
 						SNew(SBorder)
-						.BorderImage(GetWhiteBrush())
+						.BorderImage(GetIdolAltarWhiteBrush())
 						.BorderBackgroundColor(FT66DotaTheme::SlotFill())
 						.Padding(FMargin(16.f))
 						[
@@ -436,7 +436,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 14.f, 0.f, 0.f)
 							[
 								SAssignNew(OfferIconBorders[SlotIndex], SBorder)
-								.BorderImage(GetWhiteBrush())
+								.BorderImage(GetIdolAltarWhiteBrush())
 								.BorderBackgroundColor(FT66DotaTheme::Border())
 								.Padding(4.f)
 								[
@@ -499,13 +499,13 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 		+ SOverlay::Slot()
 		[
 			SNew(SBorder)
-			.BorderImage(GetWhiteBrush())
+			.BorderImage(GetIdolAltarWhiteBrush())
 			.BorderBackgroundColor(FT66Style::Scrim())
 		]
 		+ SOverlay::Slot()
 		[
 			SNew(SBorder)
-			.BorderImage(GetWhiteBrush())
+			.BorderImage(GetIdolAltarWhiteBrush())
 			.BorderBackgroundColor(FLinearColor::Transparent)
 			.Padding(VerticalSafeInsets)
 			[

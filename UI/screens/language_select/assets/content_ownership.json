@@ -1,0 +1,33 @@
+{
+  "screen": "language_select",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "top_navigation",
+      "content_type": "runtime-text",
+      "render_contract": "socket-frame",
+      "notes": "Navigation labels, icons, currency, and selected states remain runtime-owned."
+    },
+    {
+      "name": "title",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "notes": "The title remains localizable runtime text."
+    },
+    {
+      "name": "language_options",
+      "content_type": "runtime-text",
+      "render_contract": "shell-only",
+      "notes": "Button shells may be generated, but all language names and selected state remain runtime-owned."
+    },
+    {
+      "name": "confirm_button",
+      "content_type": "runtime-text",
+      "render_contract": "shell-only",
+      "notes": "Button plate may be generated, label remains runtime-owned."
+    }
+  ]
+}

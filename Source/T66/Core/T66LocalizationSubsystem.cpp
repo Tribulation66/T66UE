@@ -1249,11 +1249,6 @@ FText UT66LocalizationSubsystem::GetText_QuadRuns() const
 
 // ========== Party Size Picker ==========
 
-FText UT66LocalizationSubsystem::GetText_SelectPartySize() const
-{
-	return NSLOCTEXT("T66.PartySize", "Title", "SELECT PARTY SIZE");
-}
-
 FText UT66LocalizationSubsystem::GetText_Solo() const
 {
 	return NSLOCTEXT("T66.PartySize", "Solo", "Solo");
@@ -1272,11 +1267,6 @@ FText UT66LocalizationSubsystem::GetText_Trio() const
 FText UT66LocalizationSubsystem::GetText_Quad() const
 {
 	return NSLOCTEXT("T66.PartySize", "Quad", "Quad");
-}
-
-FText UT66LocalizationSubsystem::GetText_Coop() const
-{
-	return NSLOCTEXT("T66.PartySize", "Coop", "CO-OP");
 }
 
 // ========== Hero Selection ==========

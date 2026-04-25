@@ -1,0 +1,21 @@
+{
+  "source": "C:\\UE\\T66\\SourceAssets\\Reference 3.png",
+  "raw_copy": "main_menu_raw_reference_3_1672x941.png",
+  "canonical_output": "main_menu_reference_1920x1080.png",
+  "source_size": {
+    "width": 1672,
+    "height": 941
+  },
+  "target_size": {
+    "width": 1920,
+    "height": 1080
+  },
+  "crop_rect": {
+    "x": 0,
+    "y": 0,
+    "width": 1672,
+    "height": 940
+  },
+  "resample": "Lanczos",
+  "source_sha256": "BF48B5B56F35E54973ECDD87C5AFED18702281DB98A17754472C56EE346E5508"
+}

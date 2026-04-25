@@ -34,7 +34,7 @@
 
 namespace
 {
-	const FSlateBrush* T66MiniSceneBackgroundBrush()
+	const FSlateBrush* T66MiniIdolSceneBackgroundBrush()
 	{
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
@@ -45,9 +45,9 @@ namespace
 			TEXT("MiniSceneBackground"));
 	}
 
-	TSharedRef<SWidget> T66MiniMakeSceneBackground(const FLinearColor& FallbackColor)
+	TSharedRef<SWidget> T66MiniMakeIdolSceneBackground(const FLinearColor& FallbackColor)
 	{
-		if (const FSlateBrush* Brush = T66MiniSceneBackgroundBrush())
+		if (const FSlateBrush* Brush = T66MiniIdolSceneBackgroundBrush())
 		{
 			return SNew(SImage)
 				.Image(Brush)
@@ -504,7 +504,7 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
-			T66MiniMakeSceneBackground(BackgroundFill)
+			T66MiniMakeIdolSceneBackground(BackgroundFill)
 		]
 		+ SOverlay::Slot()
 		[

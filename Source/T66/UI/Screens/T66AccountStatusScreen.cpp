@@ -1923,7 +1923,7 @@ FReply UT66AccountStatusScreen::HandleBackClicked()
 			{
 				if (PC->IsPaused())
 				{
-					UIManager->ShowModal(ET66ScreenType::Leaderboard);
+					UIManager->ShowModal(ET66ScreenType::PauseMenu);
 					return FReply::Handled();
 				}
 			}

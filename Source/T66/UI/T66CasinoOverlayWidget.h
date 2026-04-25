@@ -34,6 +34,8 @@ public:
 	void OpenGamblingTab();
 	void OpenVendorTab();
 	void OpenAlchemyTab();
+	void SetGamblingWinGoldAmount(int32 InAmount);
+	void SetVendorAllowsSteal(bool bInAllowsSteal);
 
 private:
 	enum class ECasinoTab : uint8
@@ -120,4 +122,6 @@ private:
 	ECasinoTab ActiveTab = ECasinoTab::Vendor;
 	FText AlchemyStatusMessage;
 	FLinearColor AlchemyStatusColor = FLinearColor::White;
+	int32 PendingGamblingWinGoldAmount = 10;
+	bool bVendorAllowsSteal = true;
 };

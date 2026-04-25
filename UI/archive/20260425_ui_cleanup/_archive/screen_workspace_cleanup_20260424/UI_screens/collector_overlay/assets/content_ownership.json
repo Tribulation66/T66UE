@@ -1,0 +1,9 @@
+{
+  "screen": "CollectorOverlay",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "collector_outer_shell", "group": "Center", "content_type": "generated-shell", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CollectorOverlayWidget.cpp"], "notes": "Outer shell and section frames only." },
+    { "id": "spawn_card_sections", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CollectorOverlayWidget.cpp"], "notes": "Item/NPC/enemy/interactable card labels and actions are runtime-owned real controls." },
+    { "id": "collector_status_footer", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CollectorOverlayWidget.cpp"], "notes": "Status and exit text remain live/localizable." }
+  ]
+}

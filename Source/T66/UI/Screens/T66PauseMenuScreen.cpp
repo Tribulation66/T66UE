@@ -150,7 +150,6 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	const FText RestartText = Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.PauseMenu", "Restart", "RESTART");
 	const FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.PauseMenu", "Settings", "SETTINGS");
 	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
-	const FText LeaderboardText = Loc ? Loc->GetText_Leaderboard() : NSLOCTEXT("T66.Leaderboard", "Title", "LEADERBOARD");
 
 	auto MakePauseButton = [this, bDotaTheme, ButtonMinWidth](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)(), ET66ButtonType Type) -> TSharedRef<SWidget>
 	{
@@ -195,9 +194,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
 		[ MakePauseButton(SettingsText, &UT66PauseMenuScreen::HandleSettingsClicked, ET66ButtonType::Neutral) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
-		[ MakePauseButton(AchievementsText, &UT66PauseMenuScreen::HandleAchievementsClicked, ET66ButtonType::Neutral) ]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
-		[ MakePauseButton(LeaderboardText, &UT66PauseMenuScreen::HandleLeaderboardClicked, ET66ButtonType::Neutral) ],
+		[ MakePauseButton(AchievementsText, &UT66PauseMenuScreen::HandleAchievementsClicked, ET66ButtonType::Neutral) ],
 		FMargin(38.f, 34.f, 38.f, 38.f));
 
 	return T66ScreenSlateHelpers::MakeCenteredScrimModal(
@@ -217,7 +214,6 @@ FReply UT66PauseMenuScreen::HandleSaveAndQuitClicked() { OnSaveAndQuitClicked();
 FReply UT66PauseMenuScreen::HandleRestartClicked() { OnRestartClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleSettingsClicked() { OnSettingsClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleAchievementsClicked() { OnAchievementsClicked(); return FReply::Handled(); }
-FReply UT66PauseMenuScreen::HandleLeaderboardClicked() { OnLeaderboardClicked(); return FReply::Handled(); }
 
 void UT66PauseMenuScreen::OnResumeClicked()
 {
@@ -276,10 +272,5 @@ void UT66PauseMenuScreen::OnSettingsClicked()
 void UT66PauseMenuScreen::OnAchievementsClicked()
 {
 	ShowModal(ET66ScreenType::Achievements);
-}
-
-void UT66PauseMenuScreen::OnLeaderboardClicked()
-{
-	ShowModal(ET66ScreenType::Leaderboard);
 }
 

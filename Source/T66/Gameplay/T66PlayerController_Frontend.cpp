@@ -16,7 +16,6 @@
 #include "UI/Screens/T66HeroGridScreen.h"
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66SaveSlotsScreen.h"
-#include "UI/Screens/T66PartySizePickerScreen.h"
 #include "UI/Screens/T66AchievementsScreen.h"
 #include "UI/Screens/T66PauseMenuScreen.h"
 #include "UI/Screens/T66ReportBugScreen.h"
@@ -25,11 +24,10 @@
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
 #include "UI/Screens/T66SavePreviewScreen.h"
-#include "UI/Screens/T66ShopScreen.h"
+#include "UI/Screens/T66PowerUpScreen.h"
 #include "UI/Screens/T66TemporaryBuffSelectionScreen.h"
 #include "UI/Screens/T66TemporaryBuffShopScreen.h"
-#include "UI/Screens/T66UnlocksScreen.h"
-#include "UI/Screens/T66LeaderboardScreen.h"
+#include "UI/Screens/T66MinigamesScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/Screens/T66ChallengesScreen.h"
 #include "UI/Screens/T66DailyClimbScreen.h"
@@ -37,10 +35,8 @@
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66CasinoOverlayWidget.h"
-#include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
-#include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
 #include "Core/T66SessionSubsystem.h"
@@ -392,11 +388,6 @@ namespace
 			OutScreenType = ET66ScreenType::HeroSelection;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("PartySizePicker"), ESearchCase::IgnoreCase))
-		{
-			OutScreenType = ET66ScreenType::PartySizePicker;
-			return true;
-		}
 		if (Normalized.Equals(TEXT("SaveSlots"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("SaveSlot"), ESearchCase::IgnoreCase))
 		{
@@ -426,14 +417,9 @@ namespace
 			OutScreenType = ET66ScreenType::Achievements;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("Unlocks"), ESearchCase::IgnoreCase) || Normalized.Equals(TEXT("Minigames"), ESearchCase::IgnoreCase))
+		if (Normalized.Equals(TEXT("Minigames"), ESearchCase::IgnoreCase))
 		{
-			OutScreenType = ET66ScreenType::Unlocks;
-			return true;
-		}
-		if (Normalized.Equals(TEXT("Leaderboard"), ESearchCase::IgnoreCase))
-		{
-			OutScreenType = ET66ScreenType::Leaderboard;
+			OutScreenType = ET66ScreenType::Minigames;
 			return true;
 		}
 		if (Normalized.Equals(TEXT("PauseMenu"), ESearchCase::IgnoreCase)
@@ -452,8 +438,7 @@ namespace
 			OutScreenType = ET66ScreenType::RunSummary;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("PowerUp"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("Shop"), ESearchCase::IgnoreCase))
+		if (Normalized.Equals(TEXT("PowerUp"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::PowerUp;
 			return true;
@@ -608,22 +593,12 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66CompanionGridScreen::StaticClass();
 	case ET66ScreenType::SaveSlots:
 		return UT66SaveSlotsScreen::StaticClass();
-	case ET66ScreenType::PartySizePicker:
-		return UT66PartySizePickerScreen::StaticClass();
-	case ET66ScreenType::Lobby:
-	case ET66ScreenType::LobbyReadyCheck:
-	case ET66ScreenType::LobbyBackConfirm:
-		if (const TSubclassOf<UT66ScreenBase>* MainMenuClass = ScreenClasses.Find(ET66ScreenType::MainMenu))
-		{
-			return *MainMenuClass;
-		}
-		return nullptr;
 	case ET66ScreenType::PauseMenu:
 		return UT66PauseMenuScreen::StaticClass();
 	case ET66ScreenType::Achievements:
 		return UT66AchievementsScreen::StaticClass();
-	case ET66ScreenType::Unlocks:
-		return UT66UnlocksScreen::StaticClass();
+	case ET66ScreenType::Minigames:
+		return UT66MinigamesScreen::StaticClass();
 	case ET66ScreenType::MiniMainMenu:
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniMainMenuScreen"));
 	case ET66ScreenType::MiniSaveSlots:
@@ -659,13 +634,11 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 	case ET66ScreenType::SavePreview:
 		return UT66SavePreviewScreen::StaticClass();
 	case ET66ScreenType::PowerUp:
-		return UT66ShopScreen::StaticClass();
+		return UT66PowerUpScreen::StaticClass();
 	case ET66ScreenType::TemporaryBuffSelection:
 		return UT66TemporaryBuffSelectionScreen::StaticClass();
 	case ET66ScreenType::TemporaryBuffShop:
 		return UT66TemporaryBuffShopScreen::StaticClass();
-	case ET66ScreenType::Leaderboard:
-		return UT66LeaderboardScreen::StaticClass();
 	case ET66ScreenType::AccountStatus:
 		return UT66AccountStatusScreen::StaticClass();
 	case ET66ScreenType::Challenges:
@@ -689,16 +662,6 @@ TSubclassOf<UT66GameplayHUDWidget> AT66PlayerController::ResolveGameplayHUDClass
 	return UT66GameplayHUDWidget::StaticClass();
 }
 
-TSubclassOf<UT66GamblerOverlayWidget> AT66PlayerController::ResolveGamblerOverlayClass() const
-{
-	if (FT66Style::IsDotaTheme() && DotaGamblerOverlayClass)
-	{
-		return DotaGamblerOverlayClass;
-	}
-
-	return UT66GamblerOverlayWidget::StaticClass();
-}
-
 TSubclassOf<UT66CasinoOverlayWidget> AT66PlayerController::ResolveCasinoOverlayClass() const
 {
 	if (FT66Style::IsDotaTheme() && DotaCasinoOverlayClass)
@@ -707,16 +670,6 @@ TSubclassOf<UT66CasinoOverlayWidget> AT66PlayerController::ResolveCasinoOverlayC
 	}
 
 	return UT66CasinoOverlayWidget::StaticClass();
-}
-
-TSubclassOf<UT66VendorOverlayWidget> AT66PlayerController::ResolveVendorOverlayClass() const
-{
-	if (FT66Style::IsDotaTheme() && DotaVendorOverlayClass)
-	{
-		return DotaVendorOverlayClass;
-	}
-
-	return UT66VendorOverlayWidget::StaticClass();
 }
 
 TSubclassOf<UT66CollectorOverlayWidget> AT66PlayerController::ResolveCollectorOverlayClass() const
@@ -918,9 +871,6 @@ void AT66PlayerController::AutoLoadScreenClasses()
 	{
 		ScreenClasses.Add(ET66ScreenType::CompanionGrid, UT66CompanionGridScreen::StaticClass());
 	}
-	ScreenClasses.Remove(ET66ScreenType::Lobby);
-	ScreenClasses.Remove(ET66ScreenType::LobbyReadyCheck);
-	ScreenClasses.Remove(ET66ScreenType::LobbyBackConfirm);
 }
 
 void AT66PlayerController::ApplyFrontendCommandLineOverrides(ET66ScreenType& ScreenToShow)
@@ -1248,10 +1198,6 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::SavePreview, SavePreviewClass);
 	}
-	if (TSubclassOf<UT66ScreenBase> PartySizePickerClass = ResolveScreenClass(ET66ScreenType::PartySizePicker))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::PartySizePicker, PartySizePickerClass);
-	}
 	if (TSubclassOf<UT66ScreenBase> LanguageSelectClass = ResolveScreenClass(ET66ScreenType::LanguageSelect))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::LanguageSelect, LanguageSelectClass);
@@ -1272,9 +1218,9 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::TemporaryBuffShop, TemporaryBuffShopClass);
 	}
-	if (TSubclassOf<UT66ScreenBase> UnlocksClass = ResolveScreenClass(ET66ScreenType::Unlocks))
+	if (TSubclassOf<UT66ScreenBase> MinigamesClass = ResolveScreenClass(ET66ScreenType::Minigames))
 	{
-		UIManager->RegisterScreenClass(ET66ScreenType::Unlocks, UnlocksClass);
+		UIManager->RegisterScreenClass(ET66ScreenType::Minigames, MinigamesClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> MiniMainMenuClass = ResolveScreenClass(ET66ScreenType::MiniMainMenu))
 	{
@@ -1319,10 +1265,6 @@ void AT66PlayerController::InitializeUI()
 	if (TSubclassOf<UT66ScreenBase> TDBattleClass = ResolveScreenClass(ET66ScreenType::TDBattle))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::TDBattle, TDBattleClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> LeaderboardClass = ResolveScreenClass(ET66ScreenType::Leaderboard))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::Leaderboard, LeaderboardClass);
 	}
 	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
 	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))

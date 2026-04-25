@@ -19,22 +19,18 @@
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
 #include "UI/Screens/T66SavePreviewScreen.h"
-#include "UI/Screens/T66ShopScreen.h"
-#include "UI/Screens/T66LeaderboardScreen.h"
+#include "UI/Screens/T66PowerUpScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66CasinoOverlayWidget.h"
-#include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
-#include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66ArcadePopupWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
-#include "UI/T66WheelOverlayWidget.h"
 #include "UI/T66WhackAMoleArcadeWidget.h"
 #include "Gameplay/T66FountainOfLifeInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
@@ -317,7 +313,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		return;
 	}
 
-	if (Mode == TEXT("casino") || Mode == TEXT("casinovendor") || Mode == TEXT("vendor") || Mode == TEXT("casinotabvendor"))
+	if (Mode == TEXT("casinovendor") || Mode == TEXT("vendor") || Mode == TEXT("casinotabvendor"))
 	{
 		OpenCasinoOverlay();
 		SwitchCasinoOverlayToVendor();
@@ -338,22 +334,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		return;
 	}
 
-	if (Mode == TEXT("gambler") || Mode == TEXT("gambleroverlay"))
-	{
-		OpenGamblerOverlay(50);
-		if (GamblerOverlayWidget)
-		{
-			GamblerOverlayWidget->OpenCasinoPage();
-		}
-		return;
-	}
-
-	if (Mode == TEXT("vendoroverlay") || Mode == TEXT("standalonevendor"))
-	{
-		OpenVendorOverlay();
-		return;
-	}
-
 	if (Mode == TEXT("collector") || Mode == TEXT("collectoroverlay"))
 	{
 		OpenCollectorOverlay();
@@ -369,20 +349,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		if (LabOverlayWidget && !LabOverlayWidget->IsInViewport())
 		{
 			LabOverlayWidget->AddToViewport(100);
-			FInputModeGameAndUI InputMode;
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-			SetInputMode(InputMode);
-			bShowMouseCursor = true;
-		}
-		return;
-	}
-
-	if (Mode == TEXT("wheel") || Mode == TEXT("wheeloverlay"))
-	{
-		if (UT66WheelOverlayWidget* WheelOverlay = CreateWidget<UT66WheelOverlayWidget>(this, UT66WheelOverlayWidget::StaticClass()))
-		{
-			WheelOverlay->SetWheelRarity(ET66Rarity::Red);
-			WheelOverlay->AddToViewport(110);
 			FInputModeGameAndUI InputMode;
 			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			SetInputMode(InputMode);
@@ -453,17 +419,9 @@ void AT66PlayerController::RebuildThemeAwareUI()
 	{
 		FT66Style::DeferRebuild(GameplayHUDWidget, 0);
 	}
-	if (GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
-	{
-		FT66Style::DeferRebuild(GamblerOverlayWidget, 100);
-	}
 	if (CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport())
 	{
 		FT66Style::DeferRebuild(CasinoOverlayWidget, 100);
-	}
-	if (VendorOverlayWidget && VendorOverlayWidget->IsInViewport())
-	{
-		FT66Style::DeferRebuild(VendorOverlayWidget, 100);
 	}
 	if (CollectorOverlayWidget && CollectorOverlayWidget->IsInViewport())
 	{
@@ -480,35 +438,9 @@ void AT66PlayerController::RebuildThemeAwareUI()
 }
 
 
-void AT66PlayerController::OpenGamblerOverlay(int32 WinGoldAmount)
-{
-	if (!IsGameplayLevel()) return;
-	if (bInventoryInspectOpen)
-	{
-		SetInventoryInspectOpen(false);
-	}
-
-	if (!GamblerOverlayWidget)
-	{
-		GamblerOverlayWidget = CreateWidget<UT66GamblerOverlayWidget>(this, ResolveGamblerOverlayClass());
-	}
-
-	if (GamblerOverlayWidget && !GamblerOverlayWidget->IsInViewport())
-	{
-		GamblerOverlayWidget->SetWinGoldAmount(WinGoldAmount);
-		GamblerOverlayWidget->AddToViewport(100); // above HUD
-		FInputModeGameAndUI InputMode;
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		SetInputMode(InputMode);
-		bShowMouseCursor = true;
-	}
-}
-
-
 void AT66PlayerController::OpenCasinoOverlay()
 {
 	if (!IsGameplayLevel()) return;
-	ActiveVendorNPC.Reset();
 	if (bInventoryInspectOpen)
 	{
 		SetInventoryInspectOpen(false);
@@ -629,56 +561,20 @@ bool AT66PlayerController::TriggerCasinoBossIfAngry()
 	{
 		CasinoOverlayWidget->RemoveFromParent();
 	}
-	if (GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
-	{
-		GamblerOverlayWidget->RemoveFromParent();
-	}
-	if (VendorOverlayWidget && VendorOverlayWidget->IsInViewport())
-	{
-		VendorOverlayWidget->RemoveFromParent();
-	}
 	RestoreGameplayInputMode();
 	return true;
 }
 
-void AT66PlayerController::OpenVendorOverlay()
-{
-	if (!IsGameplayLevel()) return;
-	if (bInventoryInspectOpen)
-	{
-		SetInventoryInspectOpen(false);
-	}
-
-	if (!VendorOverlayWidget)
-	{
-		VendorOverlayWidget = CreateWidget<UT66VendorOverlayWidget>(this, ResolveVendorOverlayClass());
-	}
-
-	if (VendorOverlayWidget)
-	{
-		VendorOverlayWidget->SetEmbeddedInCasinoShell(false);
-		VendorOverlayWidget->SetVendorAllowsSteal(ActiveVendorNPC.IsValid() ? ActiveVendorNPC->DoesAllowSteal() : true);
-		if (!VendorOverlayWidget->IsInViewport())
-		{
-			VendorOverlayWidget->AddToViewport(100); // above HUD
-			FInputModeGameAndUI InputMode;
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-			SetInputMode(InputMode);
-			bShowMouseCursor = true;
-		}
-	}
-}
-
-void AT66PlayerController::OpenVendorOverlayForVendor(AT66VendorNPC* Vendor)
+void AT66PlayerController::OpenCasinoVendorTabForVendor(AT66VendorNPC* Vendor)
 {
 	if (!IsGameplayLevel()) return;
 	if (!Vendor) return;
 
-	ActiveVendorNPC = Vendor;
-	OpenVendorOverlay();
-	if (VendorOverlayWidget)
+	OpenCasinoOverlay();
+	if (CasinoOverlayWidget)
 	{
-		VendorOverlayWidget->OpenShopPage();
+		CasinoOverlayWidget->SetVendorAllowsSteal(Vendor->DoesAllowSteal());
+		CasinoOverlayWidget->OpenVendorTab();
 	}
 }
 
@@ -1105,10 +1001,6 @@ void AT66PlayerController::EnsureGameplayUIManager()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, ShopClass);
 	}
-	if (TSubclassOf<UT66ScreenBase> LeaderboardClass = ResolveScreenClass(ET66ScreenType::Leaderboard))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::Leaderboard, LeaderboardClass);
-	}
 	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, AccountStatusClass);
@@ -1217,18 +1109,11 @@ void AT66PlayerController::HandleEscapePressed()
 		if (ClosingModal == ET66ScreenType::Settings
 			|| ClosingModal == ET66ScreenType::ReportBug
 			|| ClosingModal == ET66ScreenType::Achievements
-			|| ClosingModal == ET66ScreenType::Leaderboard
 			|| ClosingModal == ET66ScreenType::PlayerSummaryPicker
 			|| ClosingModal == ET66ScreenType::AccountStatus
 			|| ClosingModal == ET66ScreenType::RunSummary)
 		{
 			UIManager->CloseModal();
-
-			if (ClosingModal == ET66ScreenType::PlayerSummaryPicker || ClosingModal == ET66ScreenType::AccountStatus)
-			{
-				UIManager->ShowModal(ET66ScreenType::Leaderboard);
-				return;
-			}
 
 			if (ClosingModal == ET66ScreenType::RunSummary)
 			{

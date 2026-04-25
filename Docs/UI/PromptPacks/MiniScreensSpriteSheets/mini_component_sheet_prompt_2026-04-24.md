@@ -9,7 +9,7 @@ Use the six visible T66 mini-game UI reference screenshots as source references:
 - Mini Idol Select
 - Mini Run Summary
 
-Create one production sprite sheet / component board for runtime UI reconstruction in the same fantasy stone-and-crystal material style as the references.
+Create one production sprite sheet / component board for runtime UI reconstruction in the same clean red/black/charcoal/gold material direction as the approved main-menu reference.
 
 Requirements:
 
@@ -22,7 +22,7 @@ Requirements:
 - No icons that represent live data.
 - No full-screen screenshot layout.
 - No watermark.
-- Preserve the carved dark stone, bronze-gold bevels, purple crystal ornaments, green ivy/leaves, worn edges, and hand-painted fantasy material language from the references.
+- Preserve the current component count, states, and functional silhouettes only. Use clean planar charcoal surfaces, restrained satin bronze-gold borders, and flat/satin enamel accents. Avoid grain, cracked stone, gemstone/crystal surfaces, noisy distressed panels, rubble texture, carved stone, chipped edges, micro-detail borders, ivy/vines, and fantasy jewel ornaments.
 
 Include these text-free components:
 
@@ -40,6 +40,6 @@ Include these text-free components:
 - Blue button plate in normal, hover, pressed, and disabled states.
 - Purple button plate in normal, hover, pressed, and disabled states.
 - Vertical scrollbar track and thumb.
-- Small decorative divider jewel.
+- Small clean divider plate.
 
 Output should be crisp enough for deterministic slicing and runtime nine-slice use.

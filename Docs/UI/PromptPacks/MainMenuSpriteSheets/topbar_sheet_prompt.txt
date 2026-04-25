@@ -5,8 +5,8 @@ Scene/background: flat near-black presentation board with no scene art, no shado
 Subject: isolated reusable top-bar assets derived from the exact visual language of the reference image
 Style/medium: painted game UI asset sheet, exact reconstruction of the reference art style, not a redesign
 Composition/framing: wide horizontal board, assets front-on, separated into neat rows and columns, no overlap, no perspective skew
-Lighting/mood: same warm highlights, gold trim, dark stone-metal materials, subtle cracks and bevels from the reference
-Color palette: dark charcoal, bronze-gold trim, muted blue fill, warm brown wood, restrained purple accents
-Materials/textures: carved stone-metal borders, worn painted fills, bevel depth, chips, hairline cracks, tiny moss/leaf accents where appropriate
-Constraints: include only the top-bar family; generate empty reusable button plates with NO baked words or numerals; include separate icon assets where the icon itself is meant to be reusable; include normal, hover, pressed, and disabled states for the square utility buttons and the wide nav plate; include the emblem tile, coupon/ticket counter plate, power button plate, and small leaf/vine trim accents; preserve exact proportions and style from the reference screen; no full-screen composition; no watermark
-Avoid: redesign, simplification, modern flat UI, blurry edges, exaggerated glow, toy-like materials, extra ornaments, embedded text labels inside assets
+Lighting/mood: clean warm highlights, restrained gold trim, charcoal planar materials, crisp edge definition from the reference
+Color palette: dark charcoal, bronze-gold trim, muted blue fill, warm brown only where already present in the reference, restrained red accents
+Materials/textures: clean satin metal borders, smooth painted fills, subtle flat edge highlights, no cracks, no chips, no stone, no crystal, no moss or leaf clutter
+Constraints: include only the top-bar family; generate empty reusable button plates with NO baked words or numerals; include separate icon assets where the icon itself is meant to be reusable; include normal, hover, pressed, and disabled states for the square utility buttons and the wide nav plate; include the emblem tile, coupon/ticket counter plate, power button plate, and only clean trim accents present in the reference; preserve exact proportions and style from the reference screen; no full-screen composition; no watermark; do not add content or new motifs
+Avoid: grain, cracked stone, gemstone/crystal surfaces, noisy distressed panels, rubble texture, chipped edges, micro-detail borders, fantasy jewel ornaments, redesign, blurry edges, exaggerated glow, toy-like materials, extra ornaments, embedded text labels inside assets

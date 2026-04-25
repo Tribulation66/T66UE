@@ -900,7 +900,7 @@ UT66FrontendTopBarWidget::ETopBarSection UT66FrontendTopBarWidget::GetActiveSect
 		return ETopBarSection::PowerUp;
 	case ET66ScreenType::Achievements:
 		return ETopBarSection::Achievements;
-	case ET66ScreenType::Unlocks:
+	case ET66ScreenType::Minigames:
 		return ETopBarSection::MiniGames;
 	case ET66ScreenType::MainMenu:
 	default:
@@ -1371,7 +1371,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		CouponButtonBrushes,
 		CouponRect.Width,
 		CouponRect.Height,
-		NSLOCTEXT("T66.Shop", "ChadCouponsBalanceTooltip", "Chad Coupons"),
+		NSLOCTEXT("T66.PowerUp", "ChadCouponsBalanceTooltip", "Chad Coupons"),
 		&UT66FrontendTopBarWidget::HandleShopClicked,
 		SNew(SBox)
 		.HAlign(HAlign_Right)
@@ -1601,7 +1601,7 @@ FReply UT66FrontendTopBarWidget::HandleShopClicked()
 
 FReply UT66FrontendTopBarWidget::HandleMiniGamesClicked()
 {
-	NavigateWithTopBar(ET66ScreenType::Unlocks);
+	NavigateWithTopBar(ET66ScreenType::Minigames);
 	return FReply::Handled();
 }
 

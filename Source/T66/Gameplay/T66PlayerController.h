@@ -14,14 +14,12 @@ class UT66ScreenBase;
 class UT66GameplayHUDWidget;
 class UT66LabOverlayWidget;
 class UT66RunStateSubsystem;
-class UT66GamblerOverlayWidget;
 class UT66CasinoOverlayWidget;
 class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
 class AT66EnemyBase;
 class UT66IdolAltarOverlayWidget;
 class UNiagaraSystem;
-class UT66VendorOverlayWidget;
 class UT66CollectorOverlayWidget;
 class UT66ArcadePopupWidget;
 class UT66LoadingScreenWidget;
@@ -144,9 +142,6 @@ public:
 	/** Dev console overlay: Enter to open, Esc to close. Non-shipping builds only. */
 	void ToggleDevConsole();
 
-	/** Open the Gambler overlay (non-pausing). */
-	void OpenGamblerOverlay(int32 WinGoldAmount);
-
 	/** Open the shared casino shell overlay (gambling + vendor + alchemy). */
 	void OpenCasinoOverlay();
 
@@ -159,9 +154,7 @@ public:
 	bool IsCasinoOverlayOpen() const;
 	bool TriggerCasinoBossIfAngry();
 
-	/** Open the Vendor overlay (non-pausing). */
-	void OpenVendorOverlay();
-	void OpenVendorOverlayForVendor(AT66VendorNPC* Vendor);
+	void OpenCasinoVendorTabForVendor(AT66VendorNPC* Vendor);
 
 	/** Open the Lab Collector full-screen overlay (non-pausing). */
 	void OpenCollectorOverlay();
@@ -303,9 +296,7 @@ private:
 
 	TSubclassOf<UT66ScreenBase> ResolveScreenClass(ET66ScreenType ScreenType) const;
 	TSubclassOf<UT66GameplayHUDWidget> ResolveGameplayHUDClass() const;
-	TSubclassOf<UT66GamblerOverlayWidget> ResolveGamblerOverlayClass() const;
 	TSubclassOf<UT66CasinoOverlayWidget> ResolveCasinoOverlayClass() const;
-	TSubclassOf<UT66VendorOverlayWidget> ResolveVendorOverlayClass() const;
 	TSubclassOf<UT66CollectorOverlayWidget> ResolveCollectorOverlayClass() const;
 	TSubclassOf<UT66CowardicePromptWidget> ResolveCowardicePromptClass() const;
 	TSubclassOf<UT66IdolAltarOverlayWidget> ResolveIdolAltarOverlayClass() const;
@@ -319,16 +310,10 @@ private:
 	TObjectPtr<UT66LabOverlayWidget> LabOverlayWidget;
 
 	UPROPERTY()
-	TObjectPtr<UT66GamblerOverlayWidget> GamblerOverlayWidget;
-
-	UPROPERTY()
 	TObjectPtr<UT66CasinoOverlayWidget> CasinoOverlayWidget;
 
 	UPROPERTY()
 	TObjectPtr<UT66CowardicePromptWidget> CowardicePromptWidget;
-
-	UPROPERTY()
-	TObjectPtr<UT66VendorOverlayWidget> VendorOverlayWidget;
 
 	/** Quick revive input suppression must be applied on state transitions only. */
 	bool bQuickReviveInputSuppressed = false;
@@ -341,7 +326,6 @@ private:
 	TObjectPtr<UT66ArcadePopupWidget> ArcadePopupWidget;
 
 	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
-	TWeakObjectPtr<AT66VendorNPC> ActiveVendorNPC;
 
 	/** Niagara system for jump VFX (legacy round ball: VFX_Attack1). */
 	UPROPERTY(EditDefaultsOnly, Category = "Game|VFX")
@@ -467,13 +451,7 @@ private:
 	TSubclassOf<UT66GameplayHUDWidget> DotaGameplayHUDClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
-	TSubclassOf<UT66GamblerOverlayWidget> DotaGamblerOverlayClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
 	TSubclassOf<UT66CasinoOverlayWidget> DotaCasinoOverlayClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
-	TSubclassOf<UT66VendorOverlayWidget> DotaVendorOverlayClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
 	TSubclassOf<UT66CollectorOverlayWidget> DotaCollectorOverlayClass;

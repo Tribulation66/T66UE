@@ -10,7 +10,7 @@ A screen can look closer in one region while regressing badly in another. This g
 
 Every pass must clear all of these:
 
-- screen-specific generated reference exists at `C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png`
+- screen-specific generated reference exists at `C:\UE\T66\UI\screens\<screen_slug>\reference\<screen_slug>_reference_1920x1080.png`
 - that reference was generated from the canonical main-menu anchor, the current target screenshot, and the target layout list
 - packaged captures and review artifacts are saved under `C:\UE\T66\UI\screens\<screen_slug>\outputs\YYYY-MM-DD\` or `review\`
 - packaged captures are launched through `C:\UE\T66\Scripts\CaptureT66UIScreen.ps1` or equivalent display-1 `-WinX`/`-WinY` flags

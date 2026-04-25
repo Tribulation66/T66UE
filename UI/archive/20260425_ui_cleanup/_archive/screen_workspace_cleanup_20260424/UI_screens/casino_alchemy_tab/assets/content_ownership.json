@@ -1,0 +1,10 @@
+{
+  "screen": "CasinoAlchemyTab",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "casino_main_shell", "group": "Center", "content_type": "generated-shell", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CasinoOverlayWidget.cpp"], "notes": "Casino shell and alchemy panel chrome only." },
+    { "id": "alchemy_drop_sockets", "group": "Center", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/T66CasinoOverlayWidget.cpp"], "notes": "Target/sacrifice socket frames may be generated; item icons/text/drop states are runtime-owned." },
+    { "id": "alchemy_inventory_card_row", "group": "Center", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/T66CasinoOverlayWidget.cpp"], "notes": "Inventory card shells only; icons, names, counts, and drag state stay live." },
+    { "id": "alchemy_result_status", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66CasinoOverlayWidget.cpp"], "notes": "Result/status and all values are live/localizable." }
+  ]
+}

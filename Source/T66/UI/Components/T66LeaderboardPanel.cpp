@@ -1945,10 +1945,6 @@ void ST66LeaderboardPanel::OnBackendRunSummaryReady(const FString& EntryId)
 	UT66LeaderboardRunSummarySaveGame* Snap = Backend->GetCachedRunSummary(EntryId);
 	if (Snap)
 	{
-		if (UIManager->GetCurrentModalType() == ET66ScreenType::Leaderboard)
-		{
-			LeaderboardSubsystem->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::Leaderboard);
-		}
 		LeaderboardSubsystem->SetPendingFakeRunSummarySnapshot(Snap);
 		UIManager->ShowModal(ET66ScreenType::RunSummary);
 	}
@@ -2376,10 +2372,6 @@ FReply ST66LeaderboardPanel::HandleEntryClicked(const FLeaderboardEntry& Entry)
 			UT66LeaderboardRunSummarySaveGame* Snap = Backend->GetCachedRunSummary(Entry.EntryId);
 			if (Snap)
 			{
-				if (UIManager->GetCurrentModalType() == ET66ScreenType::Leaderboard)
-				{
-					LeaderboardSubsystem->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::Leaderboard);
-				}
 				LeaderboardSubsystem->SetPendingFakeRunSummarySnapshot(Snap);
 				UIManager->ShowModal(ET66ScreenType::RunSummary);
 				return FReply::Handled();
@@ -2516,10 +2508,6 @@ FReply ST66LeaderboardPanel::HandleLocalEntryClicked(const FLeaderboardEntry& En
 	}
 
 	LeaderboardSubsystem->RequestOpenLocalBestScoreRunSummary(CurrentDifficulty, CurrentPartySize);
-	if (UIManager->GetCurrentModalType() == ET66ScreenType::Leaderboard)
-	{
-		LeaderboardSubsystem->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::Leaderboard);
-	}
 	UIManager->ShowModal(ET66ScreenType::RunSummary);
 	return FReply::Handled();
 }

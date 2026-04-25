@@ -1,0 +1,27 @@
+{
+  "screen": "minigames",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "top_navigation",
+      "content_type": "runtime-text",
+      "render_contract": "socket-frame",
+      "notes": "Navigation labels, icons, currency, and state remain runtime-owned."
+    },
+    {
+      "name": "feature_rows",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "notes": "Feature titles, descriptions, and availability text remain runtime-owned."
+    },
+    {
+      "name": "status_actions",
+      "content_type": "runtime-state",
+      "render_contract": "shell-only",
+      "notes": "Status button plates may be generated, but labels and availability state remain runtime-owned."
+    }
+  ]
+}

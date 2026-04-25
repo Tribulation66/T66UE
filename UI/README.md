@@ -7,11 +7,17 @@ The required process for every screen or modal is:
 1. Capture the current runtime screenshot for that exact screen.
 2. Write the layout list for that exact screen.
 3. Feed all three inputs to image generation:
-   - `C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png`
+   - `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
    - the current runtime screenshot of the target screen
    - the target screen layout list
 4. Save the generated target reference in the target screen folder.
 5. Only then create sprite/component families, place them in Unreal, capture packaged runtime, compare, and iterate.
+
+The current runtime screenshot is the authority for layout, content count, and arrangement. The main-menu reference is only the style anchor. Future reference generations must not add ability slots, idol slots, extra buttons, invented panels, icons, meters, currencies, menu entries, tabs, explanatory labels, or any other structure not present in the current screenshot and layout list.
+
+Current style direction is sleek, modern, minimalist, clean planar surfaces, crisp borders, flat/satin metallic accents, restrained gold, and a clean red/black/charcoal scheme while preserving the same font, layout, and content. Do not prompt toward grain, cracked stone, gemstone/crystal/beveled fantasy surfaces, noisy distressed panels, rubble texture, or micro-detail borders.
+
+Deprecated or stale targets are not valid generation tasks. Do not create active screen-specific references for `wheel_overlay`, `party_size_picker`, `casino_overlay`, `gambler_overlay`, `vendor_overlay`, standalone `leaderboard`, legacy `Lobby`, `LobbyReadyCheck`, `LobbyBackConfirm`, `HeroLore`, or `CompanionLore` screens. Use canonical active names: `powerup` instead of `shop`, and `minigames` instead of `unlocks`.
 
 Skipping step 3 is a blocking process failure. A screen that only borrows the general main-menu style without a generated screen-specific reference is not production work.
 
@@ -40,7 +46,7 @@ C:\UE\T66\UI\screens\<screen_slug>\
 
 Use `reference` for the generated canonical target image. Use `current` for the pre-style runtime capture. Use `layout` for the layout list and measurement notes. Use `assets` for source image-generation boards and slice notes. Use `outputs/YYYY-MM-DD` for packaged captures, diffs, and pass artifacts.
 
-During style discovery and before the final reference pass, keep each screen folder lean: one current-state PNG where available, one approved canonical reference PNG when it exists, and no stale generated boards, masks, diffs, temporary prompts, or packaged captures in the active folder. Move old artifacts to `UI\_archive\...` with their relative paths preserved.
+During style discovery and before the final reference pass, keep each screen folder lean: one current-state PNG where available, one approved canonical reference PNG when it exists, and no stale generated boards, masks, diffs, temporary prompts, or packaged captures in the active folder. Move old artifacts to `UI\archive\...` with their relative paths preserved.
 
 Runtime-imported final assets may still live under `SourceAssets` or `RuntimeDependencies` if the code expects them there, but their source, reference, and review artifacts belong in this UI workspace.
 
@@ -74,7 +80,7 @@ Every agent must also follow the completion gate: do not final-answer after refe
 The single canonical main-menu anchor is:
 
 ```text
-C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png
+C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png
 ```
 
 Do not use older main-menu screenshots from `SourceAssets` or the archived root `output` folder as style anchors.

@@ -51,8 +51,8 @@ Use native Codex `image_gen` only. Do not use legacy browser-automation generati
 
 ### Primary reference files
 
-- `C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png`
-- per-screen generated references: `C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png`
+- `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
+- per-screen generated references: `C:\UE\T66\UI\screens\<screen_slug>\reference\<screen_slug>_reference_1920x1080.png`
 - `C:\UE\T66\SourceAssets\UI\MainMenuReference\content_ownership.json`
 - `C:\UE\T66\SourceAssets\UI\MainMenuReference\reference_layout.json`
 
@@ -120,8 +120,8 @@ Blunt status: `close with blockers`.
 Latest packaged capture:
 
 - new captures should be stored under `C:\UE\T66\UI\screens\main_menu\outputs\YYYY-MM-DD\`
-- legacy captures were archived under `C:\UE\T66\UI\_archive\output_pre_reference_gate_20260424`
-- stale screen-pack artifacts, including raw imagegen sources, old references, prompts, manifests, masks, review notes, diff metrics, and packaged captures, should be archived under `C:\UE\T66\UI\_archive\...` before the final style pass
+- legacy captures were archived under `C:\UE\T66\UI\archive\output_pre_reference_gate_20260424`
+- stale screen-pack artifacts, including raw imagegen sources, old references, prompts, manifests, masks, review notes, diff metrics, and packaged captures, should be archived under `C:\UE\T66\UI\archive\...` before the final style pass
 
 Current implementation state:
 
@@ -151,7 +151,7 @@ The main remaining blockers are:
 ### Recent packaged screenshots
 
 - Use `C:\UE\T66\UI\screens\main_menu\outputs\YYYY-MM-DD\` for new captures.
-- Legacy root-output captures were archived under `C:\UE\T66\UI\_archive\output_pre_reference_gate_20260424`.
+- Legacy root-output captures were archived under `C:\UE\T66\UI\archive\output_pre_reference_gate_20260424`.
 
 Use them only as diagnostics. They are not acceptance captures.
 

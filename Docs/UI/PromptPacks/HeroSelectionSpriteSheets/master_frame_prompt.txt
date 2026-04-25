@@ -1,7 +1,7 @@
 Use case: ui-mockup
 Asset type: offline layout-authority screen reference
 Primary request: create a Hero Selection offline comparison target that preserves the exact structure of the current packaged Hero Selection screen while restaging it in the approved Main Menu visual family
-Style anchor image: C:/UE/T66/UI/screens/main_menu/reference/canonical_reference_1920x1080.png
+Style anchor image: C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png
 Structure anchor image: C:/UE/T66/SourceAssets/UI/HeroSelectionReference/current_runtime_anchor.png
 Helper anchor image: C:/UE/T66/SourceAssets/UI/HeroSelectionReference/current_runtime_anchor_2x.png
 Subject: the full Hero Selection screen as one deterministic offline reference frame, not a runtime background

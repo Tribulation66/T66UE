@@ -52,7 +52,7 @@ Operational mapping:
 Strict baseline:
 - the main menu is the golden calibration screen before this process is generalized
 - normal 16:9 references use `1920x1080` as the authoring and baseline review canvas
-- every screen, modal, HUD overlay, tab, and mini-game UI must have `C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png` generated from the canonical main-menu anchor, the current target screenshot, and the target layout list before sprite generation, runtime styling, or review
+- every screen, modal, HUD overlay, tab, and mini-game UI must have `C:\UE\T66\UI\screens\<screen_slug>\reference\<screen_slug>_reference_1920x1080.png` generated from the canonical main-menu anchor, the current target screenshot, and the target layout list before sprite generation, runtime styling, or review
 - no chat or agent may report completion after producing only the reference image
 - raw non-canonical generated output must be archived and deterministically normalized before it can become a production reference, sprite sheet, scene plate, slice, or runtime asset
 - runtime screens must scale from the authoring baseline into supported aspect buckets through anchors, safe zones, DPI scaling, and one transform path
@@ -153,9 +153,9 @@ Inputs:
 - explicit bans such as no baked localizable text
 
 Outputs:
-- `screen_master.png` as the offline comparison target
-- `screen_master_2x.png` as helper/reference art
-- optional `screen_master_nobuttons.png`, `screen_master_notext.png`, and `screen_master_nodynamic.png` for analysis or prompting only
+- `C:\UE\T66\UI\screens\<screen_slug>\reference\<screen_slug>_reference_1920x1080.png` as the offline comparison target
+- archived raw imagegen output when normalization was needed
+- optional no-buttons, no-text, and no-dynamic variants for analysis or prompting only
 - scene/background plate requirement notes for `$ui-sprite-families`
 - short note on what was inferred vs held fixed
 
@@ -417,7 +417,7 @@ Do not insert it after runtime work starts.
 
 ### Existing approved reference already exists
 
-The reference must be the screen-specific generated reference at `C:\UE\T66\UI\screens\<screen_slug>\reference\canonical_reference_1920x1080.png`, with proof that it was generated from the canonical main-menu anchor, current target screenshot, and layout list. If that proof is missing, route back to `ui-style-reference` before any manifest, sprite, runtime, or review work.
+The reference must be the screen-specific generated reference at `C:\UE\T66\UI\screens\<screen_slug>\reference\<screen_slug>_reference_1920x1080.png`, with proof that it was generated from the canonical main-menu anchor, current target screenshot, and layout list. If that proof is missing, route back to `ui-style-reference` before any manifest, sprite, runtime, or review work.
 
 Run:
 1. content ownership audit

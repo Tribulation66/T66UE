@@ -1,0 +1,27 @@
+{
+  "screen": "save_preview",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "dimmed_main_menu_background",
+      "content_type": "runtime-value",
+      "render_contract": "empty-backplate",
+      "notes": "The background contains live social, leaderboard, navigation, and menu content; it remains a reference context, not runtime art."
+    },
+    {
+      "name": "preview_modal_shell",
+      "content_type": "generated-shell",
+      "render_contract": "shell-only",
+      "notes": "The modal frame and button plates are generated shell candidates."
+    },
+    {
+      "name": "preview_modal_text",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "notes": "Title, body copy, and action labels remain runtime-owned."
+    }
+  ]
+}

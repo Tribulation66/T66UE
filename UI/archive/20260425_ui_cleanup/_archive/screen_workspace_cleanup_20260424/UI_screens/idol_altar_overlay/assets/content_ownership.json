@@ -1,0 +1,10 @@
+{
+  "screen": "IdolAltarOverlay",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "altar_panel_shell", "group": "Center", "content_type": "generated-shell", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66IdolAltarOverlayWidget.cpp"], "notes": "Main frame and neutral card backs only." },
+    { "id": "idol_offer_card_row", "group": "Center", "content_type": "runtime-icon", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-icon", "code_refs": ["Source/T66/UI/T66IdolAltarOverlayWidget.cpp"], "notes": "Offer card shells are generated; idol icons, names, descriptions, levels, and availability are live." },
+    { "id": "button_row", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66IdolAltarOverlayWidget.cpp"], "notes": "Visible buttons remain real controls with live labels." },
+    { "id": "status_footer", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66IdolAltarOverlayWidget.cpp"], "notes": "Selection/reroll/status text remains runtime-owned." }
+  ]
+}

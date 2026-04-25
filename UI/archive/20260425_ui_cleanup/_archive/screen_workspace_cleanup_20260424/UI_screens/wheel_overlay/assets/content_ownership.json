@@ -1,0 +1,9 @@
+{
+  "screen": "WheelOverlay",
+  "canvas": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "wheel_overlay_shell", "group": "Center", "content_type": "generated-shell", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66WheelOverlayWidget.cpp"], "notes": "Popup shell only." },
+    { "id": "wheel_disk_socket", "group": "Center", "content_type": "runtime-state", "render_contract": "socket-frame", "outer_owner": "generated-shell", "inner_owner": "runtime-state", "code_refs": ["Source/T66/UI/T66WheelOverlayWidget.cpp"], "notes": "Wheel frame can be generated; spin angle, rarity color, and resolved state are runtime-owned." },
+    { "id": "spin_back_controls", "group": "Center", "content_type": "runtime-text", "render_contract": "empty-backplate", "outer_owner": "generated-shell", "inner_owner": "runtime-text", "code_refs": ["Source/T66/UI/T66WheelOverlayWidget.cpp"], "notes": "Spin/back buttons remain real controls with live labels and enabled state." }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "screen": "powerup",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "top_navigation",
+      "content_type": "runtime-text",
+      "render_contract": "socket-frame",
+      "notes": "Top labels, icons, currency, and state remain runtime-owned."
+    },
+    {
+      "name": "powerup_tabs",
+      "content_type": "runtime-text",
+      "render_contract": "shell-only",
+      "notes": "Tab plates may be generated, but labels, state, and currency values remain live."
+    },
+    {
+      "name": "item_cards",
+      "content_type": "runtime-value",
+      "render_contract": "empty-backplate",
+      "notes": "Item names, stat labels, progress values, progress fills, and prices remain runtime-owned."
+    },
+    {
+      "name": "purchase_buttons",
+      "content_type": "runtime-text",
+      "render_contract": "shell-only",
+      "notes": "Button plates may be generated, but price/label text and disabled state remain runtime-owned."
+    }
+  ]
+}

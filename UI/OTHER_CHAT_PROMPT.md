@@ -13,7 +13,7 @@ Read these files first:
 - C:\UE\T66\Docs\UI\UI_Screen_Intake_Template.md
 
 The single canonical style anchor is:
-- C:\UE\T66\UI\screens\main_menu\reference\canonical_reference_1920x1080.png
+- C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png
 
 Deploy agents immediately if your assignment covers more than one independent screen, modal, HUD overlay, tab, asset family, or review task. Use explicit ownership:
 - capture/layout agent owns screenshots and layout_list.md files
@@ -25,13 +25,19 @@ Do not assign two agents to edit the same source file or asset folder. Every age
 
 Use Codex-native image generation only. Do not use legacy browser-automation generation, request manifests, token-driven local services, or removed external image-generation tooling.
 
+Deprecated or stale targets are not valid generation tasks. Do not generate active references for wheel_overlay, party_size_picker, casino_overlay, gambler_overlay, vendor_overlay, standalone leaderboard, legacy Lobby, LobbyReadyCheck, LobbyBackConfirm, HeroLore, or CompanionLore screens. Use powerup instead of shop, and minigames instead of unlocks.
+
+The current target screenshot is authoritative for layout, content count, and arrangement. The main-menu reference is style-only. Preserve the exact runtime content count and arrangement; do not add ability slots, idol slots, extra buttons, invented panels, icons, meters, currencies, menu entries, tabs, or explanatory labels.
+
+Style direction: sleek, modern, minimalist, clean planar surfaces, crisp borders, flat/satin metallic accents, restrained gold, clean red/black/charcoal scheme, same font/layout/content. Negative guardrails: no grain, no cracked stone, no gemstone/crystal/beveled fantasy surface, no noisy distressed panels, no rubble texture, no micro-detail borders.
+
 Reference generation is not completion. Do not finish your answer after generating references. Unless blocked, keep going through sprite/component generation, runtime implementation, packaged capture, and packaged review.
 
 For each assigned screen:
 1. Create/use C:\UE\T66\UI\screens\<screen_slug>\.
 2. Capture the current packaged/runtime screenshot of that exact screen into current\YYYY-MM-DD\.
 3. Write layout\layout_list.md listing all regions, controls, panels, live-data wells, modal variants/tabs, and required states.
-4. Feed exactly these three inputs to image generation: the canonical main-menu anchor, the current target screenshot, and the layout list. Generate the screen-specific target reference and save it as reference\canonical_reference_1920x1080.png.
+4. Feed exactly these three inputs to image generation: the canonical main-menu anchor, the current target screenshot, and the layout list. Generate the screen-specific target reference and save it as reference\<screen_slug>_reference_1920x1080.png.
 5. Do not begin sprite generation or Unreal styling until that target reference exists and preserves the target layout in the main-menu style.
 6. Create the element/state checklist. Generate scene plates/component boards/buttons/panels/icons from image generation until the checklist is complete.
 7. No manual pixel repair, masking, cover patches, clone painting, or screenshot cleanup. If an asset is wrong, regenerate it.

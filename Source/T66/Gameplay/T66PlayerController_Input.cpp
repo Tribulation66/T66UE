@@ -20,14 +20,12 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
-#include "UI/Screens/T66ShopScreen.h"
+#include "UI/Screens/T66PowerUpScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
-#include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
-#include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
 #include "Gameplay/T66FountainOfLifeInteractable.h"
@@ -469,11 +467,9 @@ void AT66PlayerController::HandleInspectInventoryPressed()
 	const bool bHasBlockingOverlay =
 		(GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
 		|| IsArcadePopupOpen()
-		|| (GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
 		|| IsCasinoOverlayOpen()
 		|| (CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
 		|| (IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport())
-		|| (VendorOverlayWidget && VendorOverlayWidget->IsInViewport())
 		|| (CollectorOverlayWidget && CollectorOverlayWidget->IsInViewport())
 		|| bWorldDialogueOpen;
 	if (bHasBlockingOverlay)

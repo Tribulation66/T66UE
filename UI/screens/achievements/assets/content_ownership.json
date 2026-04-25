@@ -1,0 +1,33 @@
+{
+  "screen": "achievements",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "top_navigation",
+      "content_type": "runtime-text",
+      "render_contract": "socket-frame",
+      "notes": "Top labels, icons, currency, and selected states remain runtime-owned."
+    },
+    {
+      "name": "category_tabs",
+      "content_type": "runtime-text",
+      "render_contract": "shell-only",
+      "notes": "Tab plate art can be generated, but tab labels and selected state remain live."
+    },
+    {
+      "name": "progress_summary",
+      "content_type": "runtime-value",
+      "render_contract": "empty-backplate",
+      "notes": "Count, percent, and progress fill remain runtime-owned."
+    },
+    {
+      "name": "achievement_rows",
+      "content_type": "runtime-value",
+      "render_contract": "empty-backplate",
+      "notes": "Names, descriptions, progress, rewards, and star state remain runtime-owned."
+    }
+  ]
+}

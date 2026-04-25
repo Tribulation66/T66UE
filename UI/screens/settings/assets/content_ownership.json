@@ -1,0 +1,33 @@
+{
+  "screen": "settings",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "top_navigation",
+      "content_type": "runtime-text",
+      "render_contract": "socket-frame",
+      "notes": "Top labels, icons, currency, and states remain runtime-owned."
+    },
+    {
+      "name": "settings_tabs",
+      "content_type": "runtime-text",
+      "render_contract": "shell-only",
+      "notes": "Tab plate art can be generated, but labels and selected states remain live."
+    },
+    {
+      "name": "settings_rows",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "notes": "Setting labels, dropdown values, toggle text, and selected states remain runtime-owned."
+    },
+    {
+      "name": "settings_controls",
+      "content_type": "runtime-state",
+      "render_contract": "shell-only",
+      "notes": "Control plates may be generated, but the active/inactive values and interaction states remain runtime-owned."
+    }
+  ]
+}

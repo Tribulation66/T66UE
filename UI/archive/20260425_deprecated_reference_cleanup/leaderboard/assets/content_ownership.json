@@ -1,0 +1,27 @@
+{
+  "screen": "leaderboard",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "leaderboard_shell",
+      "content_type": "generated-shell",
+      "render_contract": "shell-only",
+      "notes": "Outer panel, separators, and control frames can be generated shell art."
+    },
+    {
+      "name": "filters_and_tabs",
+      "content_type": "runtime-text",
+      "render_contract": "shell-only",
+      "notes": "Tabs, dropdown values, mode labels, selected states, and icon tab states remain runtime-owned."
+    },
+    {
+      "name": "leaderboard_rows",
+      "content_type": "runtime-value",
+      "render_contract": "empty-backplate",
+      "notes": "Ranks, player names, avatars, scores, favorites, and row count remain runtime-owned."
+    }
+  ]
+}

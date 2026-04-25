@@ -2463,7 +2463,7 @@ void UT66MainMenuScreen::OnPowerUpClicked()
 
 void UT66MainMenuScreen::OnMinigamesClicked()
 {
-	NavigateTo(ET66ScreenType::Unlocks);
+	NavigateTo(ET66ScreenType::Minigames);
 }
 
 void UT66MainMenuScreen::OnSettingsClicked()
