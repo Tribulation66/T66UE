@@ -69,12 +69,15 @@ public class T66 : ModuleRules
 		}
 
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/Fonts/...");
-		AddLooseRuntimeDependency("RuntimeDependencies/T66/ThemeFonts/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/PowerUp/Statues/forbidden_chad/...");
 		AddLooseRuntimeDependency("SourceAssets/OuterWallTexture.png");
-		AddLooseRuntimeDependency("SourceAssets/UI/MainMenuReference/...");
+		AddLooseRuntimeDependency("SourceAssets/Arcade/...");
+		AddLooseRuntimeDependency("SourceAssets/UI/MasterLibrary/...");
+		AddLooseRuntimeDependency("SourceAssets/UI/RunFlowReference/...");
+		AddLooseRuntimeDependency("SourceAssets/UI/RunFlowReference/Backgrounds/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/SettingsReference/...");
+		AddLooseRuntimeDependency("SourceAssets/UI/Worker2Reference/...");
 
 		// Add all subdirectories as include paths
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory));

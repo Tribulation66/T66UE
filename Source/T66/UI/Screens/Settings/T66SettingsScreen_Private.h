@@ -40,9 +40,10 @@
 
 namespace T66SettingsScreenPrivate
 {
-	constexpr int32 SettingsFontDelta = -10;
-	constexpr int32 SettingsCompactButtonFontSize = 18;
-	constexpr float SettingsCompactButtonHeight = 44.f;
+	constexpr int32 SettingsFontDelta = -8;
+	constexpr int32 SettingsCompactButtonFontSize = 19;
+	constexpr float SettingsCompactButtonHeight = 46.f;
+	inline const TCHAR* const SettingsWorkerAssetRoot = TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/");
 
 	enum class ET66SettingsSpriteFamily : uint8
 	{
@@ -157,7 +158,7 @@ namespace T66SettingsScreenPrivate
 		}
 
 		static FString Path;
-		Path = FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s_%s.png"), Prefix, Suffix);
+		Path = FString::Printf(TEXT("%s%s_%s.png"), SettingsWorkerAssetRoot, Prefix, Suffix);
 		return *Path;
 	}
 
@@ -202,7 +203,7 @@ namespace T66SettingsScreenPrivate
 		FSettingsSpriteBrushSet& Set = GetSettingsButtonSpriteSet(ET66SettingsSpriteFamily::ToggleInactive);
 		return ResolveSettingsSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_normal.png"),
+			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_inactive_normal.png"),
 			FVector2D(180.f, 69.f));
 	}
 
@@ -228,7 +229,7 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_content_shell_frame.png"),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f));
 	}
@@ -238,7 +239,7 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_row_shell_full.png"),
 			FVector2D(861.f, 74.f),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f));
 	}
@@ -248,7 +249,7 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_dropdown_field.png"),
+			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_dropdown_field.png"),
 			FVector2D(862.f, 77.f),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f));
 	}
@@ -588,7 +589,7 @@ namespace T66SettingsScreenPrivate
 			}));
 	}
 
-	inline TSharedRef<SWidget> MakeSettingsRow(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(12.f, 10.f))
+	inline TSharedRef<SWidget> MakeSettingsRow(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(12.f, 14.f))
 	{
 		return SNew(SBorder)
 			.BorderImage(GetSettingsRowShellBrush())

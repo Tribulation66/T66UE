@@ -1,0 +1,32 @@
+{
+  "version": "2026-04-25.main-menu-art-v1",
+  "source_background": "C:\\Users\\DoPra\\.codex\\generated_images\\019dc5ad-1d23-7e33-8c50-f0888f1f449a\\ig_06e2d52ea76911530169ed4b5122a481999ba87ab5bffa0e50.png",
+  "source_title_chromakey": "C:\\Users\\DoPra\\.codex\\generated_images\\019dc5ad-1d23-7e33-8c50-f0888f1f449a\\ig_06e2d52ea76911530169ed4b99c79c81999dcf7980660c300d.png",
+  "runtime_assets": {
+    "scene_plate": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ScreenArt\\MainMenu\\main_menu_scene_plate_imagegen_20260425_v1.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "runtime_role": "background art only, no UI chrome or text"
+    },
+    "wordmark": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ScreenArt\\MainMenu\\main_menu_wordmark_imagegen_20260425_v1.png",
+      "size": [
+        1005,
+        188
+      ],
+      "runtime_role": "title art only"
+    },
+    "wordmark_chromakey_source": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ScreenArt\\MainMenu\\main_menu_wordmark_chromakey_source_imagegen_20260425_v1.png",
+      "size": [
+        2172,
+        724
+      ],
+      "runtime_role": "source audit only"
+    }
+  },
+  "runtime_text_note": "Subtitle and all values remain Slate FText/widgets, not baked into art."
+}

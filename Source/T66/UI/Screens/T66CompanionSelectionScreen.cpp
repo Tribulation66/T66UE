@@ -145,32 +145,24 @@ namespace
 
 		if (Family == ET66CompanionReferenceButtonFamily::CtaPrimary)
 		{
-			if (State == ET66CompanionReferenceButtonState::Normal)
-			{
-				return TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_wide_plate.png");
-			}
-			if (State == ET66CompanionReferenceButtonState::Disabled)
-			{
-				return TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_wide_plate_disabled.png");
-			}
-			return FString::Printf(TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_wide_plate_%s.png"), StateSuffix);
+			return FString::Printf(TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/button_success_%s.png"), StateSuffix);
 		}
 
-		const TCHAR* Prefix = TEXT("settings_compact_neutral");
+		const TCHAR* Prefix = TEXT("button_neutral");
 		if (Family == ET66CompanionReferenceButtonFamily::ToggleOn)
 		{
-			Prefix = TEXT("settings_toggle_on");
+			Prefix = TEXT("button_success");
 		}
 		else if (Family == ET66CompanionReferenceButtonFamily::ToggleOff)
 		{
-			Prefix = TEXT("settings_toggle_off");
+			Prefix = TEXT("button_danger");
 		}
 
 		if (State == ET66CompanionReferenceButtonState::Disabled)
 		{
-			return TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_normal.png");
+			return TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/button_neutral_disabled.png");
 		}
-		return FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s_%s.png"), Prefix, StateSuffix);
+		return FString::Printf(TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/%s_%s.png"), Prefix, StateSuffix);
 	}
 
 	FMargin GetCompanionReferenceButtonMargin(const ET66CompanionReferenceButtonFamily Family)
@@ -211,7 +203,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MainMenuReference/LeftPanel/shell_clean.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_side.png"),
 			FMargin(0.10f, 0.12f, 0.10f, 0.12f),
 			TEXT("CompanionLeftShell"));
 	}
@@ -221,7 +213,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MainMenuReference/RightPanel/shell_clean.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_side.png"),
 			FMargin(0.10f, 0.12f, 0.10f, 0.12f),
 			TEXT("CompanionRightShell"));
 	}
@@ -231,7 +223,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/row_shell.png"),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			TEXT("CompanionRowShell"));
 	}
@@ -241,7 +233,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_dropdown_field.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/dropdown_field.png"),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
 			TEXT("CompanionFieldShell"));
 	}
@@ -251,7 +243,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MainMenuReference/LeftPanel/friend_avatar_frame.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/portrait_socket.png"),
 			FMargin(0.f),
 			TEXT("CompanionAvatarFrame"));
 	}
@@ -887,8 +879,8 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	const FTextBlockStyle& TxtButton = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
 	const float SidePanelFill = 0.30f;
 	const float CenterPanelFill = 0.40f;
-	const float TopBarBottomGap = 6.f;
-	const float ContentTopGap = 4.f;
+	const float TopBarBottomGap = 0.f;
+	const float ContentTopGap = 0.f;
 	const float PanelBottomInset = 0.f;
 	const float PanelGap = 8.f;
 	const int32 ScreenHeaderFontSize = 16;
@@ -900,15 +892,13 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	const float ArrowButtonWidth = bDotaTheme ? 38.f : 32.f;
 	const float ArrowButtonHeight = bDotaTheme ? 32.f : 28.f;
 	const int32 ArrowFontSize = 12;
-	const TAttribute<FMargin> ScreenSafePadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	const TAttribute<FMargin> ScreenSafePadding = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
 	{
-		return FMargin(0.f, 2.f, 0.f, 0.f);
+		const float TopInset = (UIManager && UIManager->IsFrontendTopBarVisible())
+			? UIManager->GetFrontendTopBarContentHeight()
+			: 0.f;
+		return FMargin(0.f, TopInset, 0.f, 0.f);
 	});
-	const TAttribute<FMargin> BackButtonPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
-	{
-		return FMargin(0.f, 0.f, 0.f, 0.f);
-	});
-
 	auto MakeFocusMaskFill = [SelectionShellFill]() -> TSharedRef<SWidget>
 	{
 		return SNew(SBorder)
@@ -1461,7 +1451,10 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 					.AutoHeight()
 					.Padding(0.0f, 0.0f, 0.0f, TopBarBottomGap)
 					[
-						TopBarWidget
+						SNew(SBox)
+						[
+							TopBarWidget
+						]
 					]
 					+ SVerticalBox::Slot()
 					.FillHeight(1.0f)
@@ -1489,19 +1482,6 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						]
 					]
 				]
-			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Left)
-			.VAlign(VAlign_Bottom)
-			.Padding(BackButtonPadding)
-			[
-				FT66Style::MakeButton(
-					FT66ButtonParams(
-						BackText,
-						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleBackClicked),
-						ET66ButtonType::Neutral)
-					.SetMinWidth(72.f)
-					.SetFontSize(12))
 			]
 		];
 }

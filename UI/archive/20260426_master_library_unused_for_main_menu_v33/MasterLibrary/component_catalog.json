@@ -1,0 +1,1910 @@
+{
+  "version": "2026-04-25.ui-library-v2",
+  "process": "C:\\UE\\T66\\Docs\\UI\\UI_RECONSTRUCTION_LOCKED_PROCESS.md",
+  "reference_anchor": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+  "font": {
+    "family": "Jersey 10",
+    "runtime_path": "C:\\UE\\T66\\RuntimeDependencies\\T66\\Fonts\\Jersey10-Regular.ttf",
+    "source_path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Jersey10-Regular.ttf",
+    "license": "SIL Open Font License 1.1",
+    "usage": "Locked retro pixel/8-bit UI font. Workers must not choose substitutes."
+  },
+  "topbar_allowed_screens": [
+    "main_menu",
+    "account_status",
+    "achievements",
+    "settings",
+    "language_select",
+    "minigames",
+    "powerup"
+  ],
+  "assets": {
+    "Buttons/cta_large_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_large_normal.png",
+      "size": [
+        520,
+        108
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        32,
+        26,
+        32,
+        26
+      ],
+      "state": "normal",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Buttons/cta_large_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_large_hover.png",
+      "size": [
+        520,
+        108
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        32,
+        26,
+        32,
+        26
+      ],
+      "state": "hover",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Buttons/cta_large_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_large_pressed.png",
+      "size": [
+        520,
+        108
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        32,
+        26,
+        32,
+        26
+      ],
+      "state": "pressed",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Buttons/cta_large_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_large_selected.png",
+      "size": [
+        520,
+        108
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        32,
+        26,
+        32,
+        26
+      ],
+      "state": "selected",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Buttons/cta_large_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_large_disabled.png",
+      "size": [
+        520,
+        108
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        32,
+        26,
+        32,
+        26
+      ],
+      "state": "disabled",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Buttons/invite_small_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\invite_small_normal.png",
+      "size": [
+        122,
+        52
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        20,
+        14,
+        20,
+        14
+      ],
+      "state": "normal",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Buttons/invite_small_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\invite_small_hover.png",
+      "size": [
+        122,
+        52
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        20,
+        14,
+        20,
+        14
+      ],
+      "state": "hover",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Buttons/invite_small_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\invite_small_pressed.png",
+      "size": [
+        122,
+        52
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        20,
+        14,
+        20,
+        14
+      ],
+      "state": "pressed",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Buttons/invite_small_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\invite_small_selected.png",
+      "size": [
+        122,
+        52
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        20,
+        14,
+        20,
+        14
+      ],
+      "state": "selected",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Buttons/invite_small_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\invite_small_disabled.png",
+      "size": [
+        122,
+        52
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        20,
+        14,
+        20,
+        14
+      ],
+      "state": "disabled",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_square_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_normal.png",
+      "size": [
+        116,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        24,
+        22,
+        24,
+        22
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_square_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_hover.png",
+      "size": [
+        116,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        24,
+        22,
+        24,
+        22
+      ],
+      "state": "hover",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_square_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_pressed.png",
+      "size": [
+        116,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        24,
+        22,
+        24,
+        22
+      ],
+      "state": "pressed",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_square_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_selected.png",
+      "size": [
+        116,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        24,
+        22,
+        24,
+        22
+      ],
+      "state": "selected",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_square_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_disabled.png",
+      "size": [
+        116,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        24,
+        22,
+        24,
+        22
+      ],
+      "state": "disabled",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_nav_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_normal.png",
+      "size": [
+        270,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_nav_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_hover.png",
+      "size": [
+        270,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "hover",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_nav_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_pressed.png",
+      "size": [
+        270,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "pressed",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_nav_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_selected.png",
+      "size": [
+        270,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "selected",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_nav_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_disabled.png",
+      "size": [
+        270,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "disabled",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_currency_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_normal.png",
+      "size": [
+        180,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_currency_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_hover.png",
+      "size": [
+        180,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "hover",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_currency_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_pressed.png",
+      "size": [
+        180,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "pressed",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_currency_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_selected.png",
+      "size": [
+        180,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "selected",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_currency_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_disabled.png",
+      "size": [
+        180,
+        88
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "disabled",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "TopBar/topbar_strip_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_strip_normal.png",
+      "size": [
+        920,
+        72
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Panels/panel_large_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\panel_large_normal.png",
+      "size": [
+        480,
+        800
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        32,
+        34,
+        32,
+        34
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Panels/panel_medium_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\panel_medium_normal.png",
+      "size": [
+        480,
+        520
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        32,
+        34,
+        32,
+        34
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Panels/modal_frame_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\modal_frame_normal.png",
+      "size": [
+        620,
+        340
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        32,
+        32,
+        32,
+        32
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Panels/profile_card_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\profile_card_normal.png",
+      "size": [
+        120,
+        112
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Panels/profile_card_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\profile_card_selected.png",
+      "size": [
+        120,
+        112
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "state": "selected",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Panels/profile_card_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\profile_card_disabled.png",
+      "size": [
+        120,
+        112
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "state": "disabled",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Fields/search_field_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Fields\\search_field_normal.png",
+      "size": [
+        428,
+        52
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Fields/search_field_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Fields\\search_field_hover.png",
+      "size": [
+        428,
+        52
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ],
+      "state": "hover",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Fields/search_field_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Fields\\search_field_disabled.png",
+      "size": [
+        428,
+        52
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ],
+      "state": "disabled",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Slots/party_slot_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\party_slot_normal.png",
+      "size": [
+        96,
+        100
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Slots/party_slot_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\party_slot_hover.png",
+      "size": [
+        96,
+        100
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "state": "hover",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Slots/party_slot_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\party_slot_selected.png",
+      "size": [
+        96,
+        100
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "state": "selected",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Slots/party_slot_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\party_slot_disabled.png",
+      "size": [
+        96,
+        100
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "state": "disabled",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Slots/avatar_slot_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\avatar_slot_normal.png",
+      "size": [
+        78,
+        78
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Slots/avatar_slot_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\avatar_slot_selected.png",
+      "size": [
+        78,
+        78
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "state": "selected",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Slots/avatar_slot_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\avatar_slot_disabled.png",
+      "size": [
+        78,
+        78
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "state": "disabled",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Tabs/wide_tab_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\wide_tab_normal.png",
+      "size": [
+        220,
+        48
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Tabs/wide_tab_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\wide_tab_hover.png",
+      "size": [
+        220,
+        48
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "state": "hover",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Tabs/wide_tab_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\wide_tab_pressed.png",
+      "size": [
+        220,
+        48
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "state": "pressed",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Tabs/wide_tab_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\wide_tab_selected.png",
+      "size": [
+        220,
+        48
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "state": "selected",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Tabs/wide_tab_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\wide_tab_disabled.png",
+      "size": [
+        220,
+        48
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "state": "disabled",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Controls/dropdown_field_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_field_normal.png",
+      "size": [
+        218,
+        50
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Controls/dropdown_field_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_field_hover.png",
+      "size": [
+        218,
+        50
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ],
+      "state": "hover",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Controls/dropdown_field_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_field_disabled.png",
+      "size": [
+        218,
+        50
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ],
+      "state": "disabled",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Controls/toggle_wide_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\toggle_wide_normal.png",
+      "size": [
+        218,
+        50
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Controls/toggle_wide_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\toggle_wide_hover.png",
+      "size": [
+        218,
+        50
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "state": "hover",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Controls/toggle_wide_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\toggle_wide_pressed.png",
+      "size": [
+        218,
+        50
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "state": "pressed",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Controls/toggle_wide_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\toggle_wide_selected.png",
+      "size": [
+        218,
+        50
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "state": "selected",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Controls/toggle_wide_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\toggle_wide_disabled.png",
+      "size": [
+        218,
+        50
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "state": "disabled",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Rows/leaderboard_row_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Rows\\leaderboard_row_normal.png",
+      "size": [
+        446,
+        54
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        10,
+        8,
+        10,
+        8
+      ],
+      "state": "normal",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Rows/leaderboard_row_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Rows\\leaderboard_row_hover.png",
+      "size": [
+        446,
+        54
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        10,
+        8,
+        10,
+        8
+      ],
+      "state": "hover",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Rows/leaderboard_row_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Rows\\leaderboard_row_selected.png",
+      "size": [
+        446,
+        54
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        10,
+        8,
+        10,
+        8
+      ],
+      "state": "selected",
+      "shape": "round",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Misc/progress_bar_shell_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Misc\\progress_bar_shell_normal.png",
+      "size": [
+        282,
+        24
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "normal",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Misc/progress_bar_shell_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Misc\\progress_bar_shell_disabled.png",
+      "size": [
+        282,
+        24
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "disabled",
+      "shape": "pill",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "Misc/divider_horizontal_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Misc\\divider_horizontal_normal.png",
+      "size": [
+        424,
+        4
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        4,
+        1,
+        4,
+        1
+      ],
+      "state": "normal",
+      "shape": "rect",
+      "notes": "Polished v2 chrome: uniform rim brightness/thickness, rounded shape-following fill, no baked text or live data."
+    },
+    "IconsGenerated/settings_gear": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_01_settings_gear_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        0,
+        0,
+        314,
+        314
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/translation_language": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_02_translation_language_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        314,
+        0,
+        313,
+        314
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/account_profile": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_03_account_profile_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        627,
+        0,
+        313,
+        314
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/powerup_lightning": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_04_powerup_lightning_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        940,
+        0,
+        314,
+        314
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/achievements_trophy": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_05_achievements_trophy_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        0,
+        314,
+        314,
+        313
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/minigames_gamepad": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_06_minigames_gamepad_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        314,
+        314,
+        313,
+        313
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/coupon_ticket": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_07_coupon_ticket_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        627,
+        314,
+        313,
+        313
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/power_quit": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_08_power_quit_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        940,
+        314,
+        314,
+        313
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/leaderboard_globe": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_09_leaderboard_globe_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        0,
+        627,
+        314,
+        313
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/leaderboard_friends": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_10_leaderboard_friends_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        314,
+        627,
+        313,
+        313
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/leaderboard_streamers": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_11_leaderboard_streamers_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        627,
+        627,
+        313,
+        313
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/search_magnifier": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_12_search_magnifier_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        940,
+        627,
+        314,
+        313
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/favorite_star": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_13_favorite_star_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        0,
+        940,
+        314,
+        314
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/invite_plus_person": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_14_invite_plus_person_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        314,
+        940,
+        313,
+        314
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/party_add_plus": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_15_party_add_plus_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        627,
+        940,
+        313,
+        314
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "IconsGenerated/dropdown_chevron": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_16_dropdown_chevron_imagegen_20260425_v2.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2",
+      "imagegen_generated": true,
+      "source_atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "atlas_cell_xywh": [
+        940,
+        940,
+        314,
+        314
+      ],
+      "state": "normal",
+      "notes": "Specific main-menu icon v2, chroma-key cleaned to alpha. No generic unused replacement."
+    },
+    "Controls/dropdown_square_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_square_normal.png",
+      "size": [
+        96,
+        72
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2.1",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        20,
+        18,
+        20,
+        18
+      ],
+      "state": "normal",
+      "shape": "rounded_square",
+      "notes": "Reusable compact square/dropdown chrome. No baked labels, values, icons, or live data."
+    },
+    "Controls/dropdown_square_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_square_hover.png",
+      "size": [
+        96,
+        72
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2.1",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        20,
+        18,
+        20,
+        18
+      ],
+      "state": "hover",
+      "shape": "rounded_square",
+      "notes": "Reusable compact square/dropdown chrome. No baked labels, values, icons, or live data."
+    },
+    "Controls/dropdown_square_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_square_pressed.png",
+      "size": [
+        96,
+        72
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2.1",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        20,
+        18,
+        20,
+        18
+      ],
+      "state": "pressed",
+      "shape": "rounded_square",
+      "notes": "Reusable compact square/dropdown chrome. No baked labels, values, icons, or live data."
+    },
+    "Controls/dropdown_square_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_square_selected.png",
+      "size": [
+        96,
+        72
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2.1",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        20,
+        18,
+        20,
+        18
+      ],
+      "state": "selected",
+      "shape": "rounded_square",
+      "notes": "Reusable compact square/dropdown chrome. No baked labels, values, icons, or live data."
+    },
+    "Controls/dropdown_square_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_square_disabled.png",
+      "size": [
+        96,
+        72
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2.1",
+      "reference_style_source": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+      "nine_slice_margin": [
+        20,
+        18,
+        20,
+        18
+      ],
+      "state": "disabled",
+      "shape": "rounded_square",
+      "notes": "Reusable compact square/dropdown chrome. No baked labels, values, icons, or live data."
+    },
+    "IconsGenerated/home_gigachad_face": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_17_home_gigachad_face_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v2.1",
+      "imagegen_derived": true,
+      "source_image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ScreenArt\\MainMenu\\main_menu_scene_plate_imagegen_20260425_v1.png",
+      "state": "normal",
+      "notes": "Home/top-bar icon derived from approved main-menu generated art. No text or live data."
+    },
+    "Controls/filter_button_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\filter_button_normal.png",
+      "size": [
+        366,
+        192
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v3",
+      "imagegen_generated": true,
+      "source_sheet": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_alpha.png",
+      "nine_slice_margin": [
+        53,
+        50,
+        53,
+        50
+      ],
+      "state": "normal",
+      "shape": "rounded_rect",
+      "notes": "Imagegen-generated bitmap chrome. No baked labels, icons, values, portraits, scores, or live data."
+    },
+    "Controls/filter_button_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\filter_button_selected.png",
+      "size": [
+        366,
+        192
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v3",
+      "imagegen_generated": true,
+      "source_sheet": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_alpha.png",
+      "nine_slice_margin": [
+        53,
+        50,
+        53,
+        50
+      ],
+      "state": "selected",
+      "shape": "rounded_rect",
+      "notes": "Imagegen-generated bitmap chrome. No baked labels, icons, values, portraits, scores, or live data."
+    },
+    "TopBar/home_square_chad_crop": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\home_square_chad_crop.png",
+      "size": [
+        512,
+        512
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v3.1",
+      "derived_from": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ScreenArt\\MainMenu\\main_menu_scene_plate_imagegen_20260425_v1.png",
+      "nine_slice_margin": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "normal",
+      "shape": "square_crop",
+      "notes": "Approved borderless square crop for the main-menu home button. No added frame, coded border, baked label, score, portrait, or live data."
+    },
+    "TopBar/home_circle_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\home_circle_normal.png",
+      "size": [
+        271,
+        271
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v3",
+      "imagegen_generated": true,
+      "source_sheet": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_alpha.png",
+      "nine_slice_margin": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "normal",
+      "shape": "circle",
+      "notes": "Imagegen-generated bitmap chrome. No baked labels, icons, values, portraits, scores, or live data."
+    },
+    "TopBar/home_circle_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\home_circle_selected.png",
+      "size": [
+        272,
+        270
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v3",
+      "imagegen_generated": true,
+      "source_sheet": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_alpha.png",
+      "nine_slice_margin": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "state": "selected",
+      "shape": "circle",
+      "notes": "Imagegen-generated bitmap chrome. No baked labels, icons, values, portraits, scores, or live data."
+    },
+    "Buttons/cta_rect_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_rect_normal.png",
+      "size": [
+        850,
+        237
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v3",
+      "imagegen_generated": true,
+      "source_sheet": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_alpha.png",
+      "nine_slice_margin": [
+        76,
+        55,
+        76,
+        55
+      ],
+      "state": "normal",
+      "shape": "rounded_rect",
+      "notes": "Imagegen-generated bitmap chrome. No baked labels, icons, values, portraits, scores, or live data."
+    },
+    "Buttons/cta_rect_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_rect_hover.png",
+      "size": [
+        856,
+        237
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v3",
+      "imagegen_generated": true,
+      "source_sheet": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_alpha.png",
+      "nine_slice_margin": [
+        77,
+        55,
+        77,
+        55
+      ],
+      "state": "hover",
+      "shape": "rounded_rect",
+      "notes": "Imagegen-generated bitmap chrome. No baked labels, icons, values, portraits, scores, or live data."
+    },
+    "Buttons/cta_rect_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_rect_pressed.png",
+      "size": [
+        856,
+        237
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v3",
+      "imagegen_generated": true,
+      "source_sheet": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_alpha.png",
+      "nine_slice_margin": [
+        77,
+        55,
+        77,
+        55
+      ],
+      "state": "pressed",
+      "shape": "rounded_rect",
+      "notes": "Imagegen-generated bitmap chrome. No baked labels, icons, values, portraits, scores, or live data."
+    },
+    "Buttons/cta_rect_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_rect_selected.png",
+      "size": [
+        856,
+        237
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v3",
+      "imagegen_generated": true,
+      "source_sheet": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_alpha.png",
+      "nine_slice_margin": [
+        77,
+        55,
+        77,
+        55
+      ],
+      "state": "selected",
+      "shape": "rounded_rect",
+      "notes": "Imagegen-generated bitmap chrome. No baked labels, icons, values, portraits, scores, or live data."
+    },
+    "Buttons/cta_rect_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_rect_disabled.png",
+      "size": [
+        850,
+        237
+      ],
+      "safe_for_runtime": true,
+      "library_version": "v3",
+      "imagegen_generated": true,
+      "source_sheet": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_alpha.png",
+      "nine_slice_margin": [
+        76,
+        55,
+        76,
+        55
+      ],
+      "state": "disabled",
+      "shape": "rounded_rect",
+      "notes": "Imagegen-generated bitmap chrome. No baked labels, icons, values, portraits, scores, or live data."
+    }
+  },
+  "sprite_sheets": [
+    {
+      "category": "Buttons",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_buttons_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_buttons_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "TopBar",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_topbar_4096.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_topbar_4096.json",
+      "size": [
+        4096,
+        2048
+      ]
+    },
+    {
+      "category": "Panels",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_panels_4096.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_panels_4096.json",
+      "size": [
+        4096,
+        2048
+      ]
+    },
+    {
+      "category": "Fields",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_fields_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_fields_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "Tabs",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_tabs_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_tabs_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "Controls",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_controls_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_controls_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "Slots",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_slots_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_slots_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "Rows",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_rows_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_rows_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "Misc",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_misc_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_misc_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "AllChrome",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_all_chrome_4096.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_all_chrome_4096.json",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "category": "IconsGeneratedV2",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2_manifest.json",
+      "size": [
+        1254,
+        1254
+      ],
+      "review_atlas_chroma_key": true
+    }
+  ],
+  "proofs": {
+    "chrome_proof": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Preview\\ui_library_v2_proof.png",
+    "chrome_slices_preview": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Preview\\ui_library_v2_slices_preview.png",
+    "icon_dark_preview": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Preview\\icons_v2_dark_preview.png",
+    "v2_1_new_assets_preview": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Preview\\ui_library_v2_1_new_assets_preview.png",
+    "v3_controls_preview": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Preview\\ui_library_v3_controls_preview.png"
+  },
+  "rules": [
+    "Use this v2 catalog as active Part 0 library.",
+    "Chrome slices use uniform border thickness/brightness and rounded shape-following state fills.",
+    "Use nine_slice_margin for variable-size Slate/UMG box brushes.",
+    "Runtime labels, scores, names, values, portraits, avatars, and live data are not baked into chrome.",
+    "Icons are the specific main-menu set requested; do not use generic v1 lock/backpack/coin/map replacements.",
+    "Do not create visual chrome or decorative art with C++/Slate primitive drawing; use locked bitmap assets from this library."
+  ]
+}

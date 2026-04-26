@@ -58,7 +58,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	const float SurfaceH = FMath::Max(1.f, SafeFrameSize.Y - TopInset);
 	const FMargin ContentAreaPadding = bModalPresentation
 		? FMargin(8.f)
-		: FMargin(8.f, 82.f, 8.f, 8.f);
+		: FMargin(8.f);
 
 	const TSharedRef<SWidget> SettingsContent =
 		SNew(SVerticalBox)

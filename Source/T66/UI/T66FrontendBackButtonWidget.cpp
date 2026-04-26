@@ -115,7 +115,7 @@ namespace
 					SAssignNew(Button, SButton)
 					.ButtonStyle(&OwnedButtonStyle)
 					.ContentPadding(FMargin(0.f))
-					.OnClicked(InArgs._OnClicked)
+					.OnClicked(FT66Style::DebounceClick(InArgs._OnClicked))
 					[
 						SNew(SOverlay)
 						+ SOverlay::Slot()

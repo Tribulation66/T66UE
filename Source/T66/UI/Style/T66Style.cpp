@@ -4,6 +4,7 @@
 #include "UI/Style/T66ButtonVisuals.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUIFontAccess.h"
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "T66.h"
 
@@ -420,16 +421,13 @@ namespace
 
 	FSlateFontInfo MakeCurrentUIFont(const TCHAR* Weight, int32 Size)
 	{
-		if (T66RuntimeUIFontAccess::IsBoldWeight(Weight))
+		const FString LockedFontPath = T66RuntimeUIFontAccess::ResolveLockedUIFontPath();
+		if (!LockedFontPath.IsEmpty())
 		{
-			const FString ReaverPath = T66RuntimeUIFontAccess::ResolveReaverBoldFontPath();
-			if (!ReaverPath.IsEmpty())
-			{
-				return T66RuntimeUIFontAccess::MakeFontFromAbsoluteFile(ReaverPath, Size);
-			}
+			return T66RuntimeUIFontAccess::MakeFontFromAbsoluteFile(LockedFontPath, Size);
 		}
 
-		return T66RuntimeUIFontAccess::MakeFontFromAbsoluteFile(T66RuntimeUIFontAccess::ResolveRadianceFontPath(), Size);
+		return T66RuntimeUIFontAccess::MakeLocalizedEngineFont(Size, T66RuntimeUIFontAccess::IsBoldWeight(Weight));
 	}
 
 	FVector2D GetViewportSizeOrFallback()
@@ -856,6 +854,7 @@ FOnClicked FT66Style::DebounceClick(const FOnClicked& InnerDelegate)
 			return FReply::Handled();
 		}
 		GLastClickTime = Now;
+		UT66AudioSubsystem::PlayUIEventFromAnyWorld(FName(TEXT("UI.Click")));
 		return InnerDelegate.Execute();
 	});
 }

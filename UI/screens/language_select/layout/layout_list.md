@@ -4,7 +4,7 @@ Canvas: 1920x1080.
 
 Fixed structure:
 - Full-width frontend top navigation bar across the top.
-- Left back button below the top bar.
+- No standalone Back button. Reclaim the space below the global top bar without adding replacement navigation.
 - Large centered title at the top of the body.
 - Large centered scroll panel occupying most of the body.
 - Vertical stack of centered language option buttons inside the panel.
@@ -16,4 +16,4 @@ Runtime-owned regions:
 
 Visual restyle target:
 - Preserve the simple centered language list and confirm placement.
-- Restyle the panel, option button plates, confirm button, and scroll rail in the main-menu neon-purple fantasy arcade style, with live text clearly removable later.
+- Restyle the panel, option button plates, confirm button, and scroll rail in the V2 main-menu style: sleek dark charcoal surfaces, crisp uniform purple borders, restrained gold accents, clean planar panels, rounded controls, and low-grain presentation. Avoid cracked stone, gemstones/crystals, bevel-heavy fantasy frames, noisy borders, screws, rivets, chipped edges, and distressed texture.

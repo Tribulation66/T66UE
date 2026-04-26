@@ -1,0 +1,93 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_slots_2048.png",
+  "size": [
+    2048,
+    2048
+  ],
+  "sprites": {
+    "Slots/party_slot_normal": {
+      "x": 24,
+      "y": 24,
+      "w": 96,
+      "h": 100,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Slots/party_slot_hover": {
+      "x": 144,
+      "y": 24,
+      "w": 96,
+      "h": 100,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Slots/party_slot_selected": {
+      "x": 264,
+      "y": 24,
+      "w": 96,
+      "h": 100,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Slots/party_slot_disabled": {
+      "x": 384,
+      "y": 24,
+      "w": 96,
+      "h": 100,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Slots/avatar_slot_normal": {
+      "x": 504,
+      "y": 24,
+      "w": 78,
+      "h": 78,
+      "nine_slice_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "Slots/avatar_slot_selected": {
+      "x": 606,
+      "y": 24,
+      "w": 78,
+      "h": 78,
+      "nine_slice_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "Slots/avatar_slot_disabled": {
+      "x": 708,
+      "y": 24,
+      "w": 78,
+      "h": 78,
+      "nine_slice_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    }
+  }
+}

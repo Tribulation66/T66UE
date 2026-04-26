@@ -161,8 +161,8 @@ public:
 
 	/** Open a run-time arcade popup without pausing gameplay. */
 	bool OpenArcadePopup(const FT66ArcadeInteractableData& ArcadeData, AT66ArcadeInteractableBase* SourceInteractable);
-	void HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, bool bSucceeded);
-	void CloseArcadePopup(bool bSucceeded);
+	void HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, bool bSucceeded, int32 FinalScore);
+	void CloseArcadePopup(bool bSucceeded, int32 FinalScore = 0);
 	bool IsArcadePopupOpen() const;
 
 	/** In-world dialogue (open-world) for gambler/companion interactions (non-pausing). */

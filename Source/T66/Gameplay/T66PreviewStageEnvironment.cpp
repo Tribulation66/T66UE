@@ -401,7 +401,13 @@ void T66PreviewStageEnvironment::ApplyPreviewEnvironment(
 
 	EnsurePreviewEnvironmentBuilt(Owner, Owner->GetRootComponent());
 
-	const FT66PreviewThemeProfile ThemeProfile = ResolvePreviewThemeProfile(Difficulty);
+	FT66PreviewThemeProfile ThemeProfile = ResolvePreviewThemeProfile(Difficulty);
+	if (PreviewStageMode == ET66PreviewStageMode::Selection)
+	{
+		ThemeProfile.Theme = T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon;
+		ThemeProfile.bHideBackdropWalls = false;
+		ThemeProfile.bShowCeiling = true;
+	}
 	UMaterialInterface* GroundMaterial = ResolvePreviewSurfaceMaterial(GroundComponent, ThemeProfile, false, false);
 	UMaterialInterface* WallMaterial = ResolvePreviewSurfaceMaterial(Owner, ThemeProfile, true, false);
 	UMaterialInterface* RoofMaterial = ResolvePreviewSurfaceMaterial(Owner, ThemeProfile, false, true);
@@ -413,19 +419,19 @@ void T66PreviewStageEnvironment::ApplyPreviewEnvironment(
 	{
 		if (UMaterialInterface* SelectionGroundMaterial = CreateSelectionDungeonMaterial(
 			GroundComponent,
-			FLinearColor(0.065f, 0.055f, 0.047f, 1.0f)))
+			FLinearColor(0.055f, 0.035f, 0.080f, 1.0f)))
 		{
 			GroundMaterial = SelectionGroundMaterial;
 		}
 		if (UMaterialInterface* SelectionWallMaterial = CreateSelectionDungeonMaterial(
 			Owner,
-			FLinearColor(0.038f, 0.032f, 0.042f, 1.0f)))
+			FLinearColor(0.020f, 0.012f, 0.036f, 1.0f)))
 		{
 			WallMaterial = SelectionWallMaterial;
 		}
 		if (UMaterialInterface* SelectionRoofMaterial = CreateSelectionDungeonMaterial(
 			Owner,
-			FLinearColor(0.018f, 0.015f, 0.024f, 1.0f)))
+			FLinearColor(0.010f, 0.006f, 0.020f, 1.0f)))
 		{
 			RoofMaterial = SelectionRoofMaterial;
 		}

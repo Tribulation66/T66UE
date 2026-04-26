@@ -142,18 +142,18 @@ private:
 	TStrongObjectPtr<UTexture2D> FriendAvatarFrameTexture;
 	TSharedPtr<FSlateBrush> PartySlotFrameBrush;
 	TStrongObjectPtr<UTexture2D> PartySlotFrameTexture;
+	TSharedPtr<FSlateBrush> PartyPlusIconBrush;
+	TStrongObjectPtr<UTexture2D> PartyPlusIconTexture;
 	TSharedPtr<FSlateBrush> CloseButtonBrush;
 	TStrongObjectPtr<UTexture2D> CloseButtonTexture;
 	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
-	TSharedPtr<FSlateBrush> ProfileAvatarFallbackBrush;
-	TStrongObjectPtr<UTexture2D> ProfileAvatarFallbackTexture;
+	TSharedPtr<FSlateBrush> ProfileAvatarFrameBrush;
+	TStrongObjectPtr<UTexture2D> ProfileAvatarFrameTexture;
 	TSharedPtr<FSlateBrush> CenterStackFrameBrush;
 	TStrongObjectPtr<UTexture2D> CenterStackFrameTexture;
 	FButtonStateBrushSet NewGameButtonBrushes;
 	FButtonStateBrushSet LoadGameButtonBrushes;
 	FButtonStateBrushSet DailyChallengeButtonBrushes;
-	TSharedPtr<FSlateBrush> SettingsIconBrush;
-	TSharedPtr<FSlateBrush> LanguageIconBrush;
 	TArray<TSharedPtr<FSlateBrush>> FriendPortraitBrushes;
 	TArray<TSharedPtr<FSlateBrush>> PartyPortraitBrushes;
 	TSharedPtr<SVerticalBox> FriendsListContainer;
@@ -189,9 +189,8 @@ private:
 
 	/** Load or bind the main menu animated background layers. */
 	void RequestBackgroundTexture();
-	void RequestReferencePanelBrushes();
-	void RequestGeneratedCTAButtonBrushes();
-	void RequestUtilityButtonIcons();
+	void RequestMainMenuChromeBrushes();
+	void RequestCTAButtonBrushes();
 	void HandlePartyStateChanged();
 	void HandleSessionStateChanged();
 	void SyncToSharedPartyScreen();

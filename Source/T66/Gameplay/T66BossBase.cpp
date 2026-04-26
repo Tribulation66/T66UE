@@ -6,6 +6,7 @@
 #include "Gameplay/T66BossProjectile.h"
 #include "Gameplay/T66BossGroundAOE.h"
 #include "Gameplay/T66GameMode.h"
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
@@ -183,6 +184,36 @@ namespace
 	{
 		const FVector PlanarForward = FVector(Forward.X, Forward.Y, 0.f).GetSafeNormal();
 		return FVector(-PlanarForward.Y, PlanarForward.X, 0.f).GetSafeNormal();
+	}
+
+	const TCHAR* T66BossAttackProfileAudioSuffix(const ET66BossAttackProfile Profile)
+	{
+		switch (Profile)
+		{
+		case ET66BossAttackProfile::Sharpshooter: return TEXT("Sharpshooter");
+		case ET66BossAttackProfile::Juggernaut:   return TEXT("Juggernaut");
+		case ET66BossAttackProfile::Duelist:      return TEXT("Duelist");
+		case ET66BossAttackProfile::Vendor:       return TEXT("Vendor");
+		case ET66BossAttackProfile::Gambler:      return TEXT("Gambler");
+		case ET66BossAttackProfile::Balanced:
+		default:                                  return TEXT("Balanced");
+		}
+	}
+
+	bool T66PlayBossProfileAudioEvent(AT66BossBase* Boss, const TCHAR* EventPrefix, const FName FallbackEventID, const FVector& Location)
+	{
+		if (!Boss || !EventPrefix)
+		{
+			return false;
+		}
+
+		const FName ProfileEventID(*FString::Printf(TEXT("%s.%s"), EventPrefix, T66BossAttackProfileAudioSuffix(Boss->AttackProfile)));
+		if (UT66AudioSubsystem::PlayEventFromWorldContext(Boss, ProfileEventID, Location, Boss))
+		{
+			return true;
+		}
+
+		return UT66AudioSubsystem::PlayEventFromWorldContext(Boss, FallbackEventID, Location, Boss);
 	}
 }
 
@@ -865,6 +896,7 @@ void AT66BossBase::SpawnProjectileInDirection(const FVector& Direction, const fl
 		Proj->DamageHearts = ProjectileDamageHearts;
 		Proj->ConfigureVisualStyle(AttackProfile, AttackPrimaryColor, AttackSecondaryColor, bUseSecondaryTint);
 		Proj->SetTargetLocation(SpawnLoc + ShotDirection * 1000.f, ProjectileSpeed * FMath::Max(0.35f, SpeedScale));
+		T66PlayBossProfileAudioEvent(this, TEXT("Boss.Projectile.Fire"), FName(TEXT("Boss.Projectile.Fire")), SpawnLoc);
 	}
 }
 
@@ -988,6 +1020,7 @@ void AT66BossBase::SpawnGroundAOEAtLocation(const FVector& WorldLocation, const 
 		UT66RunStateSubsystem* RS = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		const int32 Stage = RS ? FMath::Max(1, RS->GetCurrentStage()) : 1;
 		AOE->DamageHP = FMath::Max(10, FMath::RoundToInt(static_cast<float>(GroundAOEBaseDamageHP) * FMath::Pow(1.25f, static_cast<float>(Stage - 1))));
+		T66PlayBossProfileAudioEvent(this, TEXT("Boss.AOE.Warning"), FName(TEXT("Boss.AOE.Warning")), AOE->GetActorLocation());
 	}
 }
 
@@ -1440,6 +1473,7 @@ bool AT66BossBase::TakeDamageFromHeroHitZone(int32 DamageAmount, const FT66Comba
 		return true;
 	}
 
+	UT66AudioSubsystem::PlayEventAtActorFromWorldContext(this, FName(TEXT("Combat.Hit.Boss")), this);
 	return false;
 }
 
@@ -1568,6 +1602,7 @@ void AT66BossBase::Die()
 		World->GetTimerManager().ClearTimer(FireTimerHandle);
 		World->GetTimerManager().ClearTimer(AOETimerHandle);
 		UT66CombatComponent::SpawnDeathBurstAtLocation(World, GetActorLocation(), 32, 120.f);
+		UT66AudioSubsystem::PlayEventAtActorFromWorldContext(this, FName(TEXT("Combat.Boss.Death")), this);
 	}
 
 	if (AT66GameMode* GM = World ? World->GetAuthGameMode<AT66GameMode>() : nullptr)

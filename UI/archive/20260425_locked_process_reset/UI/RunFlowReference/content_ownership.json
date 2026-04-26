@@ -1,0 +1,93 @@
+{
+  "screens": {
+    "challenges": [
+      {
+        "region": "top_bar",
+        "content_type": "generated-shell",
+        "render_contract": "shared-top-bar"
+      },
+      {
+        "region": "challenge_rows",
+        "content_type": "runtime-text",
+        "render_contract": "empty-backplate"
+      },
+      {
+        "region": "challenge_state_sockets",
+        "content_type": "runtime-icon",
+        "render_contract": "socket-frame"
+      }
+    ],
+    "daily_climb": [
+      {
+        "region": "rules_panel",
+        "content_type": "runtime-text",
+        "render_contract": "empty-backplate"
+      },
+      {
+        "region": "start_cta",
+        "content_type": "runtime-text",
+        "render_contract": "shell-only"
+      }
+    ],
+    "temporary_buff_selection": [
+      {
+        "region": "buff_cards",
+        "content_type": "runtime-text",
+        "render_contract": "empty-backplate"
+      },
+      {
+        "region": "buff_icons",
+        "content_type": "runtime-icon",
+        "render_contract": "socket-frame"
+      },
+      {
+        "region": "party_slots",
+        "content_type": "runtime-avatar",
+        "render_contract": "socket-frame"
+      }
+    ],
+    "temporary_buff_shop": [
+      {
+        "region": "shop_cards",
+        "content_type": "runtime-text",
+        "render_contract": "empty-backplate"
+      },
+      {
+        "region": "buff_icons",
+        "content_type": "runtime-icon",
+        "render_contract": "socket-frame"
+      }
+    ],
+    "run_summary": [
+      {
+        "region": "summary_values",
+        "content_type": "runtime-value",
+        "render_contract": "empty-backplate"
+      },
+      {
+        "region": "preview",
+        "content_type": "runtime-3d-preview",
+        "render_contract": "open-aperture"
+      },
+      {
+        "region": "inventory_and_buff_slots",
+        "content_type": "runtime-icon",
+        "render_contract": "socket-frame"
+      }
+    ],
+    "pause_menu": [
+      {
+        "region": "button_stack",
+        "content_type": "runtime-text",
+        "render_contract": "shell-only"
+      }
+    ],
+    "cowardice_prompt": [
+      {
+        "region": "screen",
+        "content_type": "blocked",
+        "render_contract": "missing-current-screenshot"
+      }
+    ]
+  }
+}

@@ -279,30 +279,27 @@ namespace T66HeroSelectionPrivate
 
 	inline FString GetHeroSelectionButtonSpritePath(ET66HeroSpriteFamily Family, ET66ButtonBorderState State)
 	{
-		const TCHAR* Prefix = TEXT("settings_compact_neutral");
-		const TCHAR* BasePath = TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center");
+		const TCHAR* Prefix = TEXT("button_neutral");
+		const TCHAR* BasePath = TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow");
 		switch (Family)
 		{
 		case ET66HeroSpriteFamily::ToggleOn:
-			Prefix = TEXT("settings_toggle_on");
+			Prefix = TEXT("button_success");
 			break;
 		case ET66HeroSpriteFamily::ToggleOff:
-			Prefix = TEXT("settings_toggle_off");
+			Prefix = TEXT("button_danger");
 			break;
 		case ET66HeroSpriteFamily::ToggleInactive:
-			Prefix = TEXT("settings_toggle_inactive");
+			Prefix = TEXT("button_neutral");
 			break;
 		case ET66HeroSpriteFamily::CtaGreen:
-			BasePath = TEXT("SourceAssets/UI/MainMenuReference/Center");
-			Prefix = TEXT("cta_button_new_game_plate");
+			Prefix = TEXT("button_success");
 			break;
 		case ET66HeroSpriteFamily::CtaBlue:
-			BasePath = TEXT("SourceAssets/UI/MainMenuReference/Center");
-			Prefix = TEXT("cta_button_load_game_plate");
+			Prefix = TEXT("button_neutral");
 			break;
 		case ET66HeroSpriteFamily::CtaPurple:
-			BasePath = TEXT("SourceAssets/UI/MainMenuReference/Center");
-			Prefix = TEXT("cta_button_daily_challenge_plate");
+			Prefix = TEXT("button_danger");
 			break;
 		case ET66HeroSpriteFamily::CompactNeutral:
 		default:
@@ -319,7 +316,7 @@ namespace T66HeroSelectionPrivate
 				return FString::Printf(TEXT("%s/%s_pressed.png"), BasePath, Prefix);
 			case ET66ButtonBorderState::Normal:
 			default:
-				return FString::Printf(TEXT("%s/%s.png"), BasePath, Prefix);
+				return FString::Printf(TEXT("%s/%s_normal.png"), BasePath, Prefix);
 			}
 		}
 
@@ -390,7 +387,7 @@ namespace T66HeroSelectionPrivate
 		FHeroSelectionSpriteBrushSet& Set = GetHeroSelectionButtonSpriteSet(ET66HeroSpriteFamily::ToggleInactive);
 		return ResolveHeroSelectionSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_normal.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/button_neutral_disabled.png"),
 			FVector2D(180.f, 69.f));
 	}
 
@@ -416,7 +413,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MainMenuReference/LeftPanel/shell_clean.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_side.png"),
 			FVector2D(487.f, 726.f),
 			FMargin(0.12f, 0.08f, 0.12f, 0.08f));
 	}
@@ -426,7 +423,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MainMenuReference/RightPanel/shell_clean.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_side.png"),
 			FVector2D(458.f, 709.f),
 			FMargin(0.12f, 0.08f, 0.12f, 0.08f));
 	}
@@ -436,7 +433,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_large.png"),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f));
 	}
@@ -446,7 +443,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/row_shell.png"),
 			FVector2D(861.f, 74.f),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f));
 	}
@@ -456,7 +453,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_dropdown_field.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/dropdown_field.png"),
 			FVector2D(862.f, 77.f),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f));
 	}
@@ -466,7 +463,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MainMenuReference/LeftPanel/party_slot_frame.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/party_slot_frame.png"),
 			FVector2D(93.f, 103.f),
 			FMargin(0.20f, 0.18f, 0.20f, 0.18f));
 	}

@@ -1,0 +1,675 @@
+{
+  "generated_by": "Worker Chat 1",
+  "date": "2026-04-25",
+  "method": "deterministic procedural top-bar foreground component family matching accepted global top-bar reference; nav labels and currency amount remain runtime text",
+  "source_reference": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBar/topbar_global_reference_sprite_1920x140.png",
+  "assets": [
+    {
+      "role": "topbar_backdrop",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_backdrop_clean.png",
+      "size": [
+        1920,
+        145
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.02,
+        0.16,
+        0.02,
+        0.2
+      ]
+    },
+    {
+      "role": "topbar_shell",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_shell_clean.png",
+      "size": [
+        1920,
+        145
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.02,
+        0.16,
+        0.02,
+        0.2
+      ]
+    },
+    {
+      "role": "topbar_strip",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_strip_full.png",
+      "size": [
+        1920,
+        145
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.02,
+        0.16,
+        0.02,
+        0.2
+      ]
+    },
+    {
+      "role": "button_settings",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/button_settings.png",
+      "size": [
+        110,
+        106
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "button_chat",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/button_chat.png",
+      "size": [
+        110,
+        106
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "account_plate",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_account.png",
+      "size": [
+        255,
+        103
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "account_plate",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_account_hover.png",
+      "size": [
+        255,
+        103
+      ],
+      "states": [
+        "hover"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "account_plate",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_account_pressed.png",
+      "size": [
+        255,
+        103
+      ],
+      "states": [
+        "pressed"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "account_plate",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_account_active.png",
+      "size": [
+        255,
+        103
+      ],
+      "states": [
+        "selected"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_home",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_home.png",
+      "size": [
+        91,
+        123
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_home",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_home_hover.png",
+      "size": [
+        91,
+        123
+      ],
+      "states": [
+        "hover"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_home",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_home_pressed.png",
+      "size": [
+        91,
+        123
+      ],
+      "states": [
+        "pressed"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_home",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_home_active.png",
+      "size": [
+        91,
+        123
+      ],
+      "states": [
+        "selected"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_hover.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "hover"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_pressed.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "pressed"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_active.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "selected"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_power_up",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_power_up.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_power_up",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_power_up_hover.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "hover"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_power_up",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_power_up_pressed.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "pressed"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_power_up",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_power_up_active.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "selected"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_achievements",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_achievements.png",
+      "size": [
+        279,
+        103
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_achievements",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_achievements_hover.png",
+      "size": [
+        279,
+        103
+      ],
+      "states": [
+        "hover"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_achievements",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_achievements_pressed.png",
+      "size": [
+        279,
+        103
+      ],
+      "states": [
+        "pressed"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_achievements",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_achievements_active.png",
+      "size": [
+        279,
+        103
+      ],
+      "states": [
+        "selected"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_minigames",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_minigames.png",
+      "size": [
+        257,
+        103
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_minigames",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_minigames_hover.png",
+      "size": [
+        257,
+        103
+      ],
+      "states": [
+        "hover"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_minigames",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_minigames_pressed.png",
+      "size": [
+        257,
+        103
+      ],
+      "states": [
+        "pressed"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "topbar_button_nav_minigames",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/topbar_button_nav_minigames_active.png",
+      "size": [
+        257,
+        103
+      ],
+      "states": [
+        "selected"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "currency_slot_blank",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/currency_slot_blank.png",
+      "size": [
+        190,
+        86
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "button_power",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/button_power.png",
+      "size": [
+        121,
+        106
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "nav_generic",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/nav_normal.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "nav_generic",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/nav_hover.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "hover"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "nav_generic",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/nav_pressed.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "pressed"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "nav_generic",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/nav_disabled.png",
+      "size": [
+        253,
+        103
+      ],
+      "states": [
+        "disabled"
+      ],
+      "nine_slice_margin": [
+        0.11,
+        0.18,
+        0.11,
+        0.28
+      ]
+    },
+    {
+      "role": "lightning_icon",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/icon_powerup.png",
+      "size": [
+        64,
+        64
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "role": "trophy_icon",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/icon_achievements.png",
+      "size": [
+        64,
+        64
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "role": "gamepad_icon",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/icon_minigames.png",
+      "size": [
+        64,
+        64
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "role": "account_icon",
+      "output": "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBarWorker1/icon_account.png",
+      "size": [
+        64,
+        64
+      ],
+      "states": [
+        "normal"
+      ],
+      "nine_slice_margin": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "validation_notes": [
+    "Nav/account plates are text-free; Settings, language, portrait, ticket, and power images contain icon glyphs only.",
+    "normal, hover, pressed, disabled/selected states are stable-size families where applicable."
+  ]
+}

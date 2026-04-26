@@ -1,22 +1,30 @@
-# Reference Generation Notes - challenges
+# Challenges Reference Generation Notes - V2
 
-- Chat number: 3
+- Chat number: Chat 3
+- Status: accepted
 - Source current screenshot: `C:\UE\T66\UI\screens\challenges\current\current_state_1920x1080.png`
-- Anchor path: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
-- Layout/component list: `C:\UE\T66\UI\screens\challenges\layout\layout_list.md`
-- Source screenshot status: existed before this chat's generation pass
-- Raw generated source kept at: `C:\UE\T66\UI\screens\challenges\reference\challenges_raw_imagegen_1672x941.png`
-- Normalization: raw `1672x941` was deterministically resampled to `1920x1080` with `Scripts\InvokeDeterministicResample.py`
-- Accepted output: `C:\UE\T66\UI\screens\challenges\reference\challenges_reference_1920x1080.png`
-- Status: accepted for integrator review
+- Accepted reference: `C:\UE\T66\UI\screens\challenges\reference\challenges_reference_1920x1080.png`
+- Raw imagegen output: `C:\UE\T66\UI\screens\challenges\reference\challenges_raw_imagegen_1672x941_v2.png`
+- Normalization: deterministic resample to 1920x1080 with `C:\UE\T66\Scripts\InvokeDeterministicResample.py`
+
+## Style Sources
+
+- Main-menu anchor: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
+- 4K helper: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_3840x2160_realesrgan_x4plus_anime.png`
+- Global top-bar sprite: `C:\UE\T66\SourceAssets\UI\MainMenuReference\TopBar\topbar_global_reference_sprite_1920x140.png`
+- Imagegen chrome sheet: `C:\UE\T66\SourceAssets\UI\MainMenuReference\SpriteSheets\mainmenu_chrome_sprite_sheet_imagegen_20260425_v1_4096.png`
+
+## Layout And Rule Handling
+
+- Current screenshot existed: yes
+- Top bar: included as fixed shared chrome at the top.
+- Back button handling: removed the current red `X` close/back affordance because this is a main-menu/top-bar child screen.
+- Replaced back affordance: no
+- Preserved components: title, `Official`, `Community`, `Create Challenge`, `Challenges`, `Mods`, status line, two challenge rows, selected challenge detail panel, two requirements, reward block, and `Confirm`.
+- Explicitly not added: extra rows, weekly/expert/legacy labels, filters, sidebars, extra currencies, footer navigation, or replacement back controls.
 
 ## Runtime-Owned Regions To Preserve Later
 
-- Challenge tab labels, category tabs, status text, row names, rewards, category badges, author/source text, selected-challenge detail text, rule text, reward values, and confirm label.
-- Challenge row icon/checkbox sockets and selected state.
-- Later runtime reconstruction must keep the two-column shell and mask/replace text and icon wells with live Slate data.
-
-## Notes
-
-- An earlier generated draft added unowned sidebar and extra tabs; that draft was rejected and not copied into this screen pack.
-- The accepted reference was generated only after the exact component list was written.
+- Challenge row data, selected challenge details, rule text, reward text, tags, and confirm action remain runtime-owned.
+- Empty icon slots are placeholders for runtime challenge art or state.
+- The shared top bar should remain shared chrome rather than duplicated per screen.

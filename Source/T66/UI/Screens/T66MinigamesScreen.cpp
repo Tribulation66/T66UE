@@ -14,13 +14,14 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace
 {
-	const TCHAR* T66SettingsAssetRoot = TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/");
+	const TCHAR* T66SettingsAssetRoot = TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/");
 
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GMinigamesGeneratedTextureCache;
 	TMap<FString, TSharedPtr<FSlateBrush>> GMinigamesGeneratedBrushCache;
@@ -261,7 +262,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 	{
 		TSharedRef<SWidget> SliceContent =
 			SNew(SBox)
-			.HeightOverride(132.f)
+			.HeightOverride(112.f)
 			[
 				MakeMinigamesGeneratedPanel(
 					MakeSettingsAssetPath(TEXT("settings_row_shell_split.png")),
@@ -276,16 +277,16 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(Title)
-							.Font(FT66Style::Tokens::FontBold(30))
+							.Font(FT66Style::Tokens::FontBold(26))
 							.ColorAndOpacity(FT66Style::Tokens::Text)
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
-						.Padding(0.f, 8.f, 40.f, 0.f)
+						.Padding(0.f, 6.f, 40.f, 0.f)
 						[
 							SNew(STextBlock)
 							.Text(Body)
-							.Font(FT66Style::Tokens::FontRegular(18))
+							.Font(FT66Style::Tokens::FontRegular(14))
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 							.AutoWrapText(true)
 						]
@@ -295,17 +296,23 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 					.VAlign(VAlign_Center)
 					.HAlign(HAlign_Right)
 					[
-						MakeMinigamesGeneratedPanel(
-							MakeSettingsAssetPath(bClickable ? TEXT("settings_toggle_on_normal.png") : TEXT("settings_toggle_inactive_normal.png")),
-							SNew(STextBlock)
-							.Text(Tag)
-							.Font(FT66Style::Tokens::FontBold(14))
-							.ColorAndOpacity(bClickable ? FLinearColor(0.99f, 0.93f, 0.74f, 1.f) : FT66Style::Tokens::TextMuted),
-							FMargin(18.f, 8.f),
-							FLinearColor::White,
-							bClickable ? Accent : FLinearColor(0.18f, 0.20f, 0.24f, 1.f))
+						SNew(SBox)
+						.WidthOverride(280.f)
+						.HeightOverride(44.f)
+						[
+							MakeMinigamesGeneratedPanel(
+								MakeSettingsAssetPath(bClickable ? TEXT("settings_toggle_on_normal.png") : TEXT("settings_toggle_inactive_normal.png")),
+								SNew(STextBlock)
+								.Text(Tag)
+								.Font(FT66Style::Tokens::FontBold(13))
+								.ColorAndOpacity(bClickable ? FLinearColor(0.99f, 0.93f, 0.74f, 1.f) : FT66Style::Tokens::TextMuted)
+								.Justification(ETextJustify::Center),
+								FMargin(18.f, 8.f),
+								FLinearColor::White,
+								bClickable ? Accent : FLinearColor(0.18f, 0.20f, 0.24f, 1.f))
+						]
 					],
-					FMargin(28.f, 20.f),
+					FMargin(28.f, 14.f),
 					bClickable ? FLinearColor::White : FLinearColor(0.72f, 0.76f, 0.82f, 1.f),
 					FLinearColor(0.018f, 0.020f, 0.026f, 1.0f))
 			];
@@ -335,46 +342,27 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 					.Padding(SafeContentInsets)
 					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot()
-						.FillHeight(1.f)
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						.Padding(0.f, 18.f, 0.f, 18.f)
+						SNew(SScrollBox)
+						.ScrollBarVisibility(EVisibility::Visible)
+						+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
 						[
-							SNew(SBox)
-							.WidthOverride(1120.f)
-							[
-								MakeMinigamesGeneratedPanel(
-									MakeSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
-									SNew(SVerticalBox)
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.Padding(0.f, 0.f, 0.f, 18.f)
-									[
-										MakeSlicePanel(ActiveSliceTitle, ActiveSliceBody, ActiveSliceTag, FT66Style::Success(), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked))
-									]
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.Padding(0.f, 0.f, 0.f, 18.f)
-									[
-										MakeSlicePanel(TDTitle, TDBody, TDTag, FLinearColor(0.88f, 0.34f, 0.22f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked))
-									]
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.Padding(0.f, 0.f, 0.f, 18.f)
-									[
-										MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
-									]
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									[
-										MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
-									],
-									FMargin(30.f),
-									FLinearColor::White,
-									T66MinigamesInsetFill())
-							]
+							MakeSlicePanel(ActiveSliceTitle, ActiveSliceBody, ActiveSliceTag, FT66Style::Success(), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked))
+						]
+						+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
+						[
+							MakeSlicePanel(TDTitle, TDBody, TDTag, FLinearColor(0.88f, 0.34f, 0.22f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked))
+						]
+						+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
+						[
+							MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
+						]
+						+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
+						[
+							MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
+						]
+						+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 0.f)
+						[
+							MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
 						]
 					]
 				],

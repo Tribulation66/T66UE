@@ -14,5 +14,7 @@ Runtime-owned regions:
 - Gameplay scene, player character, crosshair, level geometry, minimap content, stage text, score/time values, health/currency values, hero portrait, ability icons, passive icon, inventory item sockets and item icons.
 
 Style target:
-- Preserve the exact inventory-panel size and the open gameplay area above it.
-- Replace placeholder chrome with the Chadpocalypse main-menu visual language: dark metal slabs, purple neon bevels, pixel-art highlights, readable socket frames, gold/red/green currency sockets, and restrained glow that does not cover gameplay.
+- Preserve the exact inventory-panel size, header/currency positions, two-row slot count, and the open gameplay area above it.
+- Replace placeholder chrome with the accepted V2 main-menu language: sleek dark charcoal panels, smooth satin surfaces, crisp uniform purple outlines, cream text treatment, restrained gold accents only where useful, and clean readable socket frames.
+- Do not add inventory slots, ability slots, idol slots, currencies, meters, panels, icons, rows, labels, or controls beyond what is visible in the current screenshot.
+- Avoid grain, cracked stone, rubble, gem/crystal surfaces, distressed metal, chipped edges, screws, rivets, bolts, heavy bevel stacks, noisy borders, and extra glow clutter.

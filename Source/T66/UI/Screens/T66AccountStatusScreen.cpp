@@ -37,6 +37,7 @@
 namespace
 {
 	constexpr int32 AccountFontDelta = -2;
+	const TCHAR* AccountWorkerAssetRoot = TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/");
 
 	int32 AdjustAccountFontSize(int32 BaseSize)
 	{
@@ -203,7 +204,7 @@ namespace
 	{
 		return ResolveAccountReferenceBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s_%s.png"), Prefix, State),
+			FString::Printf(TEXT("%s%s_%s.png"), AccountWorkerAssetRoot, Prefix, State),
 			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
 			DebugLabel);
 	}
@@ -246,7 +247,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_content_shell_frame.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("AccountContentShell"));
 	}
@@ -266,7 +267,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_row_shell_full.png"),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			TEXT("AccountRowShell"));
 	}
@@ -276,7 +277,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_dropdown_field.png"),
+			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_dropdown_field.png"),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
 			TEXT("AccountFieldShell"));
 	}
@@ -621,13 +622,12 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 	const bool bModalPresentation = UIManager && UIManager->GetCurrentModalType() == ScreenType;
 	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
 	const float TopBarOverlapPx = 22.f;
-	const float BackButtonClearancePx = 68.f;
 	// Frontend screens are inside the responsive root, but the top bar is not.
 	// Convert the visible top-bar height back into screen-local units, then apply a small overlap
 	// so the screen surface meets the bar with no seam.
 	const float TopInset = bModalPresentation
 		? 0.f
-		: FMath::Max(0.f, ((UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f) - TopBarOverlapPx + BackButtonClearancePx) / ResponsiveScale);
+		: FMath::Max(0.f, ((UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f) - TopBarOverlapPx) / ResponsiveScale);
 	const FT66AccountRestrictionRecord Restriction = LB ? LB->GetAccountRestrictionRecord() : FT66AccountRestrictionRecord();
 	const bool bAccountEligible = LB ? LB->IsAccountEligibleForLeaderboard() : true;
 	const bool bHasSuspension = Restriction.Restriction != ET66AccountRestrictionKind::None;

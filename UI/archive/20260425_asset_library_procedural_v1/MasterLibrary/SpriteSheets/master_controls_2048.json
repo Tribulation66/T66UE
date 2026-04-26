@@ -1,0 +1,101 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\master_controls_2048.png",
+  "sprites": {
+    "Misc/divider_horizontal": {
+      "x": 24,
+      "y": 24,
+      "w": 640,
+      "h": 8
+    },
+    "Misc/icon_well": {
+      "x": 688,
+      "y": 24,
+      "w": 132,
+      "h": 72
+    },
+    "Misc/search_field": {
+      "x": 844,
+      "y": 24,
+      "w": 420,
+      "h": 64
+    },
+    "Scroll/scroll_rail_vertical": {
+      "x": 1288,
+      "y": 24,
+      "w": 28,
+      "h": 560
+    },
+    "Scroll/scroll_thumb_vertical": {
+      "x": 1340,
+      "y": 24,
+      "w": 24,
+      "h": 140
+    },
+    "Slots/avatar_slot_disabled": {
+      "x": 1388,
+      "y": 24,
+      "w": 116,
+      "h": 116
+    },
+    "Slots/avatar_slot_normal": {
+      "x": 1528,
+      "y": 24,
+      "w": 116,
+      "h": 116
+    },
+    "Slots/avatar_slot_selected": {
+      "x": 1668,
+      "y": 24,
+      "w": 116,
+      "h": 116
+    },
+    "Slots/item_slot_disabled": {
+      "x": 1808,
+      "y": 24,
+      "w": 92,
+      "h": 92
+    },
+    "Slots/item_slot_normal": {
+      "x": 1924,
+      "y": 24,
+      "w": 92,
+      "h": 92
+    },
+    "Slots/item_slot_selected": {
+      "x": 24,
+      "y": 608,
+      "w": 92,
+      "h": 92
+    },
+    "Tabs/tab_disabled": {
+      "x": 140,
+      "y": 608,
+      "w": 260,
+      "h": 70
+    },
+    "Tabs/tab_hover": {
+      "x": 424,
+      "y": 608,
+      "w": 260,
+      "h": 70
+    },
+    "Tabs/tab_normal": {
+      "x": 708,
+      "y": 608,
+      "w": 260,
+      "h": 70
+    },
+    "Tabs/tab_pressed": {
+      "x": 992,
+      "y": 608,
+      "w": 260,
+      "h": 70
+    },
+    "Tabs/tab_selected": {
+      "x": 1276,
+      "y": 608,
+      "w": 260,
+      "h": 70
+    }
+  }
+}

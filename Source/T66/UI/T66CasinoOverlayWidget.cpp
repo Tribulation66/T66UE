@@ -13,6 +13,7 @@
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66VendorOverlayWidget.h"
+#include "UI/Style/T66OverlayChromeStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Input/DragAndDrop.h"
 #include "Styling/CoreStyle.h"
@@ -90,7 +91,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 	TSharedRef<SWidget> GamblingPage = GamblerTabWidget ? GamblerTabWidget->TakeWidget() : SNullWidget::NullWidget;
 	TSharedRef<SWidget> AlchemyPage = BuildAlchemyPage(RunState, GetLocalization());
 	TSharedRef<SWidget> HeaderSummaryPanel =
-		FT66Style::MakePanel(
+		T66OverlayChromeStyle::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
@@ -128,7 +129,8 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			],
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(HeaderPanelPaddingX, HeaderPanelPaddingY))
+			ET66OverlayChromeBrush::HeaderSummaryBar,
+			FMargin(HeaderPanelPaddingX, HeaderPanelPaddingY)
 		);
 
 	const TAttribute<FMargin> VerticalSafeInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
@@ -142,9 +144,8 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 		return FOptionalSize(FMath::Max(1.f, FT66Style::GetViewportLogicalSize().X));
 	});
 
-	TSharedRef<SWidget> Root =
-		FT66Style::MakePanel(
-			SNew(SBorder)
+	TSharedRef<SWidget> ShellLayout =
+		SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 			.Padding(VerticalSafeInsets)
 			[
@@ -155,7 +156,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight()
 					.Padding(ShellOuterPadding, ShellTopPadding, ShellOuterPadding, 0.f)
 					[
-						FT66Style::MakePanel(
+						T66OverlayChromeStyle::MakePanel(
 							SNew(SHorizontalBox)
 							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 							[
@@ -170,38 +171,38 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 								SNew(SHorizontalBox)
 								+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
 								[
-									FT66Style::MakeButton(
-										FT66Style::MakeInRunButtonParams(
+									T66OverlayChromeStyle::MakeButton(
+										T66OverlayChromeStyle::MakeButtonParams(
 											VendorTabText,
 											FOnClicked::CreateLambda([this]() { OpenVendorTab(); return FReply::Handled(); }),
-									ET66ButtonType::Primary)
-									.SetPadding(ShellButtonPadding)
-									.SetFontSize(ShellButtonFontSize)
-									.SetDotaPlateOverrideBrush(FT66Style::GetInRunTabPlateBrush(true))
+											ET66OverlayChromeButtonFamily::Tab)
+										.SetPadding(ShellButtonPadding)
+										.SetFontSize(ShellButtonFontSize)
+										.SetSelected(TAttribute<bool>::CreateLambda([this]() { return ActiveTab == ECasinoTab::Vendor; }))
 								)
 								]
 								+ SHorizontalBox::Slot().AutoWidth()
 								[
-									FT66Style::MakeButton(
-										FT66Style::MakeInRunButtonParams(
+									T66OverlayChromeStyle::MakeButton(
+										T66OverlayChromeStyle::MakeButtonParams(
 											GamblingTabText,
 											FOnClicked::CreateLambda([this]() { OpenGamblingTab(); return FReply::Handled(); }),
-									ET66ButtonType::Primary)
-									.SetPadding(ShellButtonPadding)
-									.SetFontSize(ShellButtonFontSize)
-									.SetDotaPlateOverrideBrush(FT66Style::GetInRunTabPlateBrush(true))
+											ET66OverlayChromeButtonFamily::Tab)
+										.SetPadding(ShellButtonPadding)
+										.SetFontSize(ShellButtonFontSize)
+										.SetSelected(TAttribute<bool>::CreateLambda([this]() { return ActiveTab == ECasinoTab::Gambling; }))
 								)
 								]
 								+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
 								[
-									FT66Style::MakeButton(
-										FT66Style::MakeInRunButtonParams(
+									T66OverlayChromeStyle::MakeButton(
+										T66OverlayChromeStyle::MakeButtonParams(
 											AlchemyTabText,
 											FOnClicked::CreateLambda([this]() { OpenAlchemyTab(); return FReply::Handled(); }),
-									ET66ButtonType::Primary)
-									.SetPadding(ShellButtonPadding)
-									.SetFontSize(ShellButtonFontSize)
-									.SetDotaPlateOverrideBrush(FT66Style::GetInRunTabPlateBrush(true))
+											ET66OverlayChromeButtonFamily::Tab)
+										.SetPadding(ShellButtonPadding)
+										.SetFontSize(ShellButtonFontSize)
+										.SetSelected(TAttribute<bool>::CreateLambda([this]() { return ActiveTab == ECasinoTab::Alchemy; }))
 								)
 								]
 							]
@@ -211,18 +212,17 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 							]
 							+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Right).VAlign(VAlign_Center)
 							[
-								FT66Style::MakeButton(
-									FT66Style::MakeInRunButtonParams(
+								T66OverlayChromeStyle::MakeButton(
+									T66OverlayChromeStyle::MakeButtonParams(
 										CloseText,
 										FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }),
-								ET66ButtonType::Danger)
-								.SetPadding(ShellButtonPadding)
-								.SetFontSize(ShellButtonFontSize)
+										ET66OverlayChromeButtonFamily::Danger)
+									.SetPadding(ShellButtonPadding)
+									.SetFontSize(ShellButtonFontSize)
 							)
 							],
-							FT66PanelParams(ET66PanelType::Panel2)
-								.SetPadding(ShellTopBarPadding)
-								.SetColor(FLinearColor(0.040f, 0.034f, 0.028f, 0.98f))
+							ET66OverlayChromeBrush::HeaderSummaryBar,
+							ShellTopBarPadding
 						)
 					]
 					+ SVerticalBox::Slot().FillHeight(1.f)
@@ -243,11 +243,20 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 						]
 					]
 				]
-			],
-			FT66PanelParams(ET66PanelType::Bg)
-				.SetPadding(0.f)
-				.SetColor(FLinearColor(0.014f, 0.011f, 0.010f, 0.96f))
-		);
+			];
+
+	TSharedRef<SWidget> Root =
+		SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.010f, 0.013f, 0.022f, 0.97f))
+		]
+		+ SOverlay::Slot()
+		[
+			ShellLayout
+		];
 
 	RefreshAlchemy();
 	RefreshHeaderSummary();
@@ -344,7 +353,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 			.WidthOverride(CardWidth)
 			.HeightOverride(CardHeight)
 			[
-				FT66Style::MakePanel(
+				T66OverlayChromeStyle::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -371,7 +380,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							FT66Style::MakePanel(
+							T66OverlayChromeStyle::MakePanel(
 								SNew(SBox)
 								.WidthOverride(CardIconSize)
 								.HeightOverride(CardIconSize)
@@ -381,7 +390,8 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 									.ColorAndOpacity(FLinearColor::White)
 									.Visibility(EVisibility::Hidden)
 								],
-								FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f))
+								ET66OverlayChromeBrush::SlotNormal,
+								FMargin(0.f))
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
@@ -393,16 +403,17 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 						.AutoWrapText(true)
 						.WrapTextAt(CardWidth - CardPadding * 2.f)
 					],
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(CardPadding),
+					ET66OverlayChromeBrush::OfferCardNormal,
+					FMargin(CardPadding),
 					&OutBorder)
 			];
 	};
 
-	TSharedRef<SWidget> UpgradeButtonWidget = FT66Style::MakeButton(
-		FT66Style::MakeInRunButtonParams(
+	TSharedRef<SWidget> UpgradeButtonWidget = T66OverlayChromeStyle::MakeButton(
+		T66OverlayChromeStyle::MakeButtonParams(
 			UpgradeText,
 			FOnClicked::CreateUObject(this, &UT66CasinoOverlayWidget::OnAlchemyTransmuteClicked),
-		ET66ButtonType::Success)
+			ET66OverlayChromeButtonFamily::Primary)
 	.SetMinWidth(CardWidth)
 	.SetPadding(CompactButtonPadding)
 	.SetFontSize(SectionFontSize)
@@ -410,7 +421,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 	AlchemyUpgradeButton = UpgradeButtonWidget;
 
 	TSharedRef<SWidget> RootWidget =
-		FT66Style::MakePanel(
+		T66OverlayChromeStyle::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 			[
@@ -421,7 +432,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				FT66Style::MakePanel(
+				T66OverlayChromeStyle::MakePanel(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
 					[
@@ -451,7 +462,8 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 						.Font(FT66Style::Tokens::FontBold(TopBarFontSize))
 						.ColorAndOpacity(FLinearColor(0.95f, 0.65f, 0.20f, 1.f))
 					],
-					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(10.f))
+					ET66OverlayChromeBrush::HeaderSummaryBar,
+					FMargin(10.f)
 				)
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
@@ -516,7 +528,8 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 				.ColorAndOpacity(FLinearColor::White)
 				.Justification(ETextJustify::Center)
 			],
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(20.f))
+			ET66OverlayChromeBrush::ContentPanelWide,
+			FMargin(20.f)
 		);
 
 	return RootWidget;

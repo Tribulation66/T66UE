@@ -11,6 +11,7 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66CombatHitZoneComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
@@ -41,6 +42,35 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Enemy, Log, All);
 
 namespace
 {
+	const TCHAR* T66EnemyFamilyAudioSuffix(const ET66EnemyFamily Family)
+	{
+		switch (Family)
+		{
+		case ET66EnemyFamily::Flying:  return TEXT("Flying");
+		case ET66EnemyFamily::Ranged:  return TEXT("Ranged");
+		case ET66EnemyFamily::Rush:    return TEXT("Rush");
+		case ET66EnemyFamily::Special: return TEXT("Special");
+		case ET66EnemyFamily::Melee:
+		default:                       return TEXT("Melee");
+		}
+	}
+
+	bool T66PlayEnemyAudioEvent(AT66EnemyBase* Enemy, const TCHAR* EventPrefix, const FName FallbackEventID)
+	{
+		if (!Enemy || !EventPrefix)
+		{
+			return false;
+		}
+
+		const FName FamilyEventID(*FString::Printf(TEXT("%s.%s"), EventPrefix, T66EnemyFamilyAudioSuffix(Enemy->EnemyFamily)));
+		if (UT66AudioSubsystem::PlayEventAtActorFromWorldContext(Enemy, FamilyEventID, Enemy))
+		{
+			return true;
+		}
+
+		return UT66AudioSubsystem::PlayEventAtActorFromWorldContext(Enemy, FallbackEventID, Enemy);
+	}
+
 	struct FT66SafeZoneHit
 	{
 		bool bInside = false;
@@ -1169,10 +1199,12 @@ bool AT66EnemyBase::ApplyResolvedDamage(int32 Damage, const bool bCreditHeroKill
 			UT66CombatComponent::SpawnDeathBurstAtLocation(World, GetActorLocation(), 16, 60.f);
 		}
 
+		T66PlayEnemyAudioEvent(this, TEXT("Combat.Enemy.Death"), FName(TEXT("Combat.Enemy.Death")));
 		OnDeath();
 		return true;
 	}
 
+	T66PlayEnemyAudioEvent(this, TEXT("Combat.Hit.Enemy"), FName(TEXT("Combat.Hit.Enemy")));
 	return false;
 }
 

@@ -63,11 +63,11 @@ namespace
 		case ET66ButtonType::Primary:
 		case ET66ButtonType::Success:
 		case ET66ButtonType::ToggleActive:
-			return TEXT("settings_toggle_on_normal.png");
+			return TEXT("runflow_pause_button_primary_normal.png");
 		case ET66ButtonType::Danger:
-			return TEXT("settings_toggle_off_normal.png");
+			return TEXT("runflow_pause_button_danger_normal.png");
 		default:
-			return TEXT("settings_compact_neutral_normal.png");
+			return TEXT("runflow_pause_button_neutral_normal.png");
 		}
 	}
 
@@ -89,7 +89,7 @@ namespace
 
 		return ResolvePauseMenuSettingsReferenceBrush(
 			*Entry,
-			FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s"), GetPauseMenuButtonPlateFile(Type)),
+			FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/%s"), GetPauseMenuButtonPlateFile(Type)),
 			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
 			TEXT("PauseMenuButtonPlate"));
 	}
@@ -99,7 +99,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Shell;
 		return ResolvePauseMenuSettingsReferenceBrush(
 			Shell,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_pause_modal_shell.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("PauseMenuShell"));
 	}
@@ -150,6 +150,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	const FText RestartText = Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.PauseMenu", "Restart", "RESTART");
 	const FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.PauseMenu", "Settings", "SETTINGS");
 	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
+	const FText LeaderboardText = NSLOCTEXT("T66.PauseMenu", "Leaderboard", "LEADERBOARD");
 
 	auto MakePauseButton = [this, bDotaTheme, ButtonMinWidth](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)(), ET66ButtonType Type) -> TSharedRef<SWidget>
 	{
@@ -194,7 +195,9 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
 		[ MakePauseButton(SettingsText, &UT66PauseMenuScreen::HandleSettingsClicked, ET66ButtonType::Neutral) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
-		[ MakePauseButton(AchievementsText, &UT66PauseMenuScreen::HandleAchievementsClicked, ET66ButtonType::Neutral) ],
+		[ MakePauseButton(AchievementsText, &UT66PauseMenuScreen::HandleAchievementsClicked, ET66ButtonType::Neutral) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
+		[ MakePauseButton(LeaderboardText, &UT66PauseMenuScreen::HandleLeaderboardClicked, ET66ButtonType::Neutral) ],
 		FMargin(38.f, 34.f, 38.f, 38.f));
 
 	return T66ScreenSlateHelpers::MakeCenteredScrimModal(
@@ -214,6 +217,7 @@ FReply UT66PauseMenuScreen::HandleSaveAndQuitClicked() { OnSaveAndQuitClicked();
 FReply UT66PauseMenuScreen::HandleRestartClicked() { OnRestartClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleSettingsClicked() { OnSettingsClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleAchievementsClicked() { OnAchievementsClicked(); return FReply::Handled(); }
+FReply UT66PauseMenuScreen::HandleLeaderboardClicked() { OnLeaderboardClicked(); return FReply::Handled(); }
 
 void UT66PauseMenuScreen::OnResumeClicked()
 {
@@ -272,5 +276,10 @@ void UT66PauseMenuScreen::OnSettingsClicked()
 void UT66PauseMenuScreen::OnAchievementsClicked()
 {
 	ShowModal(ET66ScreenType::Achievements);
+}
+
+void UT66PauseMenuScreen::OnLeaderboardClicked()
+{
+	ShowModal(ET66ScreenType::AccountStatus);
 }
 

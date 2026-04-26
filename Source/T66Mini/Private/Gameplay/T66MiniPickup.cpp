@@ -89,8 +89,8 @@ AT66MiniPickup::AT66MiniPickup()
 	PrimaryActorTick.TickInterval = 1.f / 30.f;
 	bReplicates = true;
 	SetReplicateMovement(true);
-	NetUpdateFrequency = 12.f;
-	MinNetUpdateFrequency = 6.f;
+	SetNetUpdateFrequency(12.f);
+	SetMinNetUpdateFrequency(6.f);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);

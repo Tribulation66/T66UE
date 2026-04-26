@@ -1,0 +1,57 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_slots_2048.png",
+  "size": [
+    2048,
+    2048
+  ],
+  "sprites": {
+    "Slots/party_slot_normal": {
+      "x": 20,
+      "y": 20,
+      "w": 95,
+      "h": 99,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Slots/party_slot_hover": {
+      "x": 135,
+      "y": 20,
+      "w": 95,
+      "h": 99,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Slots/party_slot_selected": {
+      "x": 250,
+      "y": 20,
+      "w": 95,
+      "h": 99,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Slots/party_slot_disabled": {
+      "x": 365,
+      "y": 20,
+      "w": 95,
+      "h": 99,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    }
+  }
+}

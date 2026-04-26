@@ -4,6 +4,7 @@
 
 #include "Gameplay/Traps/T66TrapArrowProjectile.h"
 
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Gameplay/T66ArthurSwordVisuals.h"
 #include "Gameplay/T66HeroBase.h"
@@ -278,6 +279,7 @@ void AT66WallArrowTrap::HandleFireCycleStart()
 	}
 
 	SpawnWindupBurst(PendingAimDirection);
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Arrow.Windup")), MuzzleLocation, this);
 	const float WindupSeconds = ScaleTrapDuration(WindupDurationSeconds);
 	if (WindupSeconds <= KINDA_SMALL_NUMBER)
 	{
@@ -320,6 +322,7 @@ void AT66WallArrowTrap::FireProjectile()
 	}
 
 	const FVector SpawnLocation = GetMuzzleLocation();
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Arrow.Fire")), SpawnLocation, this);
 	const FTransform SpawnTransform(AimDirection.Rotation(), SpawnLocation);
 	AT66TrapArrowProjectile* Projectile = World->SpawnActorDeferred<AT66TrapArrowProjectile>(
 		AT66TrapArrowProjectile::StaticClass(),

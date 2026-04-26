@@ -1,0 +1,149 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\master_topbar_4096.png",
+  "sprites": {
+    "Icons/icon_account": {
+      "x": 24,
+      "y": 24,
+      "w": 72,
+      "h": 72
+    },
+    "Icons/icon_gamepad": {
+      "x": 120,
+      "y": 24,
+      "w": 72,
+      "h": 72
+    },
+    "Icons/icon_gear": {
+      "x": 216,
+      "y": 24,
+      "w": 72,
+      "h": 72
+    },
+    "Icons/icon_language": {
+      "x": 312,
+      "y": 24,
+      "w": 72,
+      "h": 72
+    },
+    "Icons/icon_power": {
+      "x": 408,
+      "y": 24,
+      "w": 72,
+      "h": 72
+    },
+    "Icons/icon_poweroff": {
+      "x": 504,
+      "y": 24,
+      "w": 72,
+      "h": 72
+    },
+    "Icons/icon_ticket": {
+      "x": 600,
+      "y": 24,
+      "w": 72,
+      "h": 72
+    },
+    "Icons/icon_trophy": {
+      "x": 696,
+      "y": 24,
+      "w": 72,
+      "h": 72
+    },
+    "TopBar/topbar_currency_disabled": {
+      "x": 792,
+      "y": 24,
+      "w": 220,
+      "h": 84
+    },
+    "TopBar/topbar_currency_hover": {
+      "x": 1036,
+      "y": 24,
+      "w": 220,
+      "h": 84
+    },
+    "TopBar/topbar_currency_normal": {
+      "x": 1280,
+      "y": 24,
+      "w": 220,
+      "h": 84
+    },
+    "TopBar/topbar_currency_pressed": {
+      "x": 1524,
+      "y": 24,
+      "w": 220,
+      "h": 84
+    },
+    "TopBar/topbar_currency_selected": {
+      "x": 1768,
+      "y": 24,
+      "w": 220,
+      "h": 84
+    },
+    "TopBar/topbar_nav_disabled": {
+      "x": 2012,
+      "y": 24,
+      "w": 300,
+      "h": 84
+    },
+    "TopBar/topbar_nav_hover": {
+      "x": 2336,
+      "y": 24,
+      "w": 300,
+      "h": 84
+    },
+    "TopBar/topbar_nav_normal": {
+      "x": 2660,
+      "y": 24,
+      "w": 300,
+      "h": 84
+    },
+    "TopBar/topbar_nav_pressed": {
+      "x": 2984,
+      "y": 24,
+      "w": 300,
+      "h": 84
+    },
+    "TopBar/topbar_nav_selected": {
+      "x": 3308,
+      "y": 24,
+      "w": 300,
+      "h": 84
+    },
+    "TopBar/topbar_square_disabled": {
+      "x": 3632,
+      "y": 24,
+      "w": 112,
+      "h": 112
+    },
+    "TopBar/topbar_square_hover": {
+      "x": 3768,
+      "y": 24,
+      "w": 112,
+      "h": 112
+    },
+    "TopBar/topbar_square_normal": {
+      "x": 3904,
+      "y": 24,
+      "w": 112,
+      "h": 112
+    },
+    "TopBar/topbar_square_pressed": {
+      "x": 24,
+      "y": 160,
+      "w": 112,
+      "h": 112
+    },
+    "TopBar/topbar_square_selected": {
+      "x": 160,
+      "y": 160,
+      "w": 112,
+      "h": 112
+    },
+    "TopBar/topbar_strip": {
+      "x": 296,
+      "y": 160,
+      "w": 1920,
+      "h": 140
+    }
+  }
+}

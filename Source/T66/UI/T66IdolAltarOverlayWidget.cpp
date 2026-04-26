@@ -11,6 +11,7 @@
 #include "Gameplay/T66PlayerController.h"
 #include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/Style/T66OverlayChromeStyle.h"
 #include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
@@ -152,48 +153,32 @@ namespace
 	TSharedRef<SWidget> MakeAltarButton(
 		const FText& Label,
 		const FOnClicked& OnClicked,
-		TSharedPtr<SButton>& OutButton,
+		TSharedPtr<SWidget>& OutButton,
 		TSharedPtr<SBorder>& OutBackground,
 		TSharedPtr<STextBlock>& OutText,
 		float MinWidth = 150.f)
 	{
-		return SAssignNew(OutButton, SButton)
-			.ButtonStyle(FCoreStyle::Get(), "NoBorder")
-			.OnClicked(OnClicked)
-			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					SAssignNew(OutBackground, SBorder)
-					.BorderImage(GetIdolAltarWhiteBrush())
-					.BorderBackgroundColor(FT66Style::ButtonNeutral())
-					.Padding(FMargin(16.f, 10.f))
-				]
-				+ SOverlay::Slot()
-				[
-					SNew(SImage)
-					.Visibility(EVisibility::HitTestInvisible)
-					.Image(FT66Style::GetInRunButtonPlateBrush(ET66ButtonType::Primary))
-				]
-				+ SOverlay::Slot()
-				[
-					SNew(SBox)
-					.MinDesiredWidth(MinWidth)
-					.Padding(FMargin(16.f, 10.f))
-					.HAlign(HAlign_Center)
-					[
-						SAssignNew(OutText, STextBlock)
-						.Text(Label)
-						.Font(FT66DotaTheme::MakeFont(TEXT("Bold"), 16))
-						.ColorAndOpacity(FT66DotaTheme::Text())
-						.Justification(ETextJustify::Center)
-					]
-				]
-			];
+		OutBackground.Reset();
+		TSharedPtr<STextBlock> TextWidget;
+		TSharedRef<SWidget> Button = T66OverlayChromeStyle::MakeButton(
+			T66OverlayChromeStyle::MakeButtonParams(Label, OnClicked, ET66OverlayChromeButtonFamily::Primary)
+			.SetMinWidth(MinWidth)
+			.SetMinHeight(46.f)
+			.SetPadding(FMargin(16.f, 10.f))
+			.SetContent(
+				SAssignNew(TextWidget, STextBlock)
+				.Text(Label)
+				.Font(FT66DotaTheme::MakeFont(TEXT("Bold"), 16))
+				.ColorAndOpacity(FT66DotaTheme::Text())
+				.Justification(ETextJustify::Center)));
+
+		OutButton = Button;
+		OutText = TextWidget;
+		return Button;
 	}
 
 	void SetActionButtonState(
-		const TSharedPtr<SButton>& Button,
+		const TSharedPtr<SWidget>& Button,
 		const TSharedPtr<SBorder>& Background,
 		const TSharedPtr<STextBlock>& Text,
 		const bool bEnabled,
@@ -214,7 +199,7 @@ namespace
 
 		if (Text.IsValid())
 		{
-			Text->SetColorAndOpacity(bEnabled ? FT66DotaTheme::Text() : FT66DotaTheme::TextMuted());
+			Text->SetColorAndOpacity(bEnabled ? (bDanger ? FT66DotaTheme::DangerButton() : FT66DotaTheme::Text()) : FT66DotaTheme::TextMuted());
 		}
 	}
 }
@@ -381,7 +366,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 	{
 		OfferIconBrushes[SlotIndex] = MakeShared<FSlateBrush>();
 		OfferIconBrushes[SlotIndex]->DrawAs = ESlateBrushDrawType::Image;
-		OfferIconBrushes[SlotIndex]->ImageSize = FVector2D(184.f, 184.f);
+		OfferIconBrushes[SlotIndex]->ImageSize = FVector2D(292.f, 292.f);
 	}
 
 	TSharedRef<SHorizontalBox> CardRow = SNew(SHorizontalBox);
@@ -393,85 +378,79 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 			OfferButtons[SlotIndex],
 			OfferButtonBorders[SlotIndex],
 			OfferButtonTexts[SlotIndex],
-			200.f);
+			300.f);
 
 		CardRow->AddSlot()
 		.AutoWidth()
-		.Padding(SlotIndex > 0 ? FMargin(14.f, 0.f, 0.f, 0.f) : FMargin(0.f))
+		.Padding(SlotIndex > 0 ? FMargin(32.f, 0.f, 0.f, 0.f) : FMargin(0.f))
 		[
 			SAssignNew(OfferCardBoxes[SlotIndex], SBox)
-			.WidthOverride(272.f)
-			.HeightOverride(452.f)
+			.WidthOverride(392.f)
+			.HeightOverride(704.f)
 			[
-				SNew(SBorder)
-				.BorderImage(GetIdolAltarWhiteBrush())
-				.BorderBackgroundColor(FT66DotaTheme::SlotOuter())
-				.Padding(1.f)
+				SAssignNew(OfferTileBorders[SlotIndex], SBorder)
+				.BorderImage(T66OverlayChromeStyle::GetBrush(ET66OverlayChromeBrush::OfferCardNormal))
+				.BorderBackgroundColor(FT66DotaTheme::Border())
+				.Padding(FMargin(16.f))
 				[
-					SAssignNew(OfferTileBorders[SlotIndex], SBorder)
-					.BorderImage(GetIdolAltarWhiteBrush())
-					.BorderBackgroundColor(FT66DotaTheme::Border())
-					.Padding(1.f)
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+					.BorderBackgroundColor(FT66DotaTheme::SlotFill())
+					.Padding(FMargin(0.f))
 					[
-						SNew(SBorder)
-						.BorderImage(GetIdolAltarWhiteBrush())
-						.BorderBackgroundColor(FT66DotaTheme::SlotFill())
-						.Padding(FMargin(16.f))
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight()
 						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight()
+							SNew(SBox)
+							.HeightOverride(84.f)
+							.VAlign(VAlign_Center)
+							[
+								SAssignNew(OfferNameTexts[SlotIndex], STextBlock)
+								.Text(FText::GetEmpty())
+								.Font(FT66DotaTheme::MakeFont(TEXT("Bold"), 18))
+								.ColorAndOpacity(FT66DotaTheme::Text())
+								.Justification(ETextJustify::Center)
+								.AutoWrapText(true)
+							]
+						]
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 14.f, 0.f, 0.f)
+						[
+							SAssignNew(OfferIconBorders[SlotIndex], SBorder)
+							.BorderImage(T66OverlayChromeStyle::GetBrush(ET66OverlayChromeBrush::SlotNormal))
+							.BorderBackgroundColor(FT66DotaTheme::Border())
+							.Padding(4.f)
 							[
 								SNew(SBox)
-								.HeightOverride(74.f)
-								.VAlign(VAlign_Center)
+								.WidthOverride(292.f)
+								.HeightOverride(292.f)
 								[
-									SAssignNew(OfferNameTexts[SlotIndex], STextBlock)
-									.Text(FText::GetEmpty())
-									.Font(FT66DotaTheme::MakeFont(TEXT("Bold"), 18))
-									.ColorAndOpacity(FT66DotaTheme::Text())
-									.Justification(ETextJustify::Center)
-									.AutoWrapText(true)
+									SAssignNew(OfferIconImages[SlotIndex], SImage)
+									.Image(OfferIconBrushes[SlotIndex].Get())
+									.ColorAndOpacity(FLinearColor::White)
 								]
 							]
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 14.f, 0.f, 0.f)
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+						[
+							SNew(SBox)
+							.HeightOverride(124.f)
+							.VAlign(VAlign_Center)
 							[
-								SAssignNew(OfferIconBorders[SlotIndex], SBorder)
-								.BorderImage(GetIdolAltarWhiteBrush())
-								.BorderBackgroundColor(FT66DotaTheme::Border())
-								.Padding(4.f)
-								[
-									SNew(SBox)
-									.WidthOverride(184.f)
-									.HeightOverride(184.f)
-									[
-										SAssignNew(OfferIconImages[SlotIndex], SImage)
-										.Image(OfferIconBrushes[SlotIndex].Get())
-										.ColorAndOpacity(FLinearColor::White)
-									]
-								]
+								SAssignNew(OfferDescriptionTexts[SlotIndex], SRichTextBlock)
+								.Text(FText::GetEmpty())
+								.TextStyle(&GetIdolCardBodyStyle())
+								.DecoratorStyleSet(&GetIdolCardRichTextStyle())
+								.AutoWrapText(true)
+								.Justification(ETextJustify::Center)
 							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
-							[
-								SNew(SBox)
-								.HeightOverride(92.f)
-								.VAlign(VAlign_Center)
-								[
-									SAssignNew(OfferDescriptionTexts[SlotIndex], SRichTextBlock)
-									.Text(FText::GetEmpty())
-									.TextStyle(&GetIdolCardBodyStyle())
-									.DecoratorStyleSet(&GetIdolCardRichTextStyle())
-									.AutoWrapText(true)
-									.Justification(ETextJustify::Center)
-								]
-							]
-							+ SVerticalBox::Slot().FillHeight(1.f)
-							[
-								SNew(SSpacer)
-							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
-							[
-								ActionButton
-							]
+						]
+						+ SVerticalBox::Slot().FillHeight(1.f)
+						[
+							SNew(SSpacer)
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+						[
+							ActionButton
 						]
 					]
 				]
@@ -479,7 +458,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 		];
 	}
 
-	TSharedPtr<SButton> BackButton;
+	TSharedPtr<SWidget> BackButton;
 	TSharedPtr<SBorder> BackButtonBorder;
 	TSharedPtr<STextBlock> BackButtonText;
 
@@ -500,7 +479,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 		[
 			SNew(SBorder)
 			.BorderImage(GetIdolAltarWhiteBrush())
-			.BorderBackgroundColor(FT66Style::Scrim())
+			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.98f))
 		]
 		+ SOverlay::Slot()
 		[
@@ -512,7 +491,10 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 				SNew(SBox)
 				.WidthOverride(SurfaceWidthAttr)
 				[
-					FT66Style::MakePanel(
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+					.Padding(FMargin(28.f))
+					[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -547,7 +529,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						.Font(FT66DotaTheme::MakeFont(TEXT("Regular"), 15))
 						.ColorAndOpacity(FT66DotaTheme::TextMuted())
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f).HAlign(HAlign_Center)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f).HAlign(HAlign_Center)
 					[
 						CardRow
 					]
@@ -564,10 +546,8 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().FillHeight(1.f)
 					[
 						SNew(SSpacer)
-					],
-					FT66PanelParams(ET66PanelType::Panel)
-						.SetColor(FLinearColor(0.030f, 0.026f, 0.022f, 0.98f))
-						.SetPadding(FMargin(28.f)))
+					]
+					]
 				]
 			]
 		];
@@ -697,7 +677,7 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 		}
 
 		SetActionButtonState(
-			OfferButtons.IsValidIndex(VisibleSlotIndex) ? OfferButtons[VisibleSlotIndex] : TSharedPtr<SButton>(),
+			OfferButtons.IsValidIndex(VisibleSlotIndex) ? OfferButtons[VisibleSlotIndex] : TSharedPtr<SWidget>(),
 			OfferButtonBorders.IsValidIndex(VisibleSlotIndex) ? OfferButtonBorders[VisibleSlotIndex] : TSharedPtr<SBorder>(),
 			OfferButtonTexts.IsValidIndex(VisibleSlotIndex) ? OfferButtonTexts[VisibleSlotIndex] : TSharedPtr<STextBlock>(),
 			bSelected || bCanTake,

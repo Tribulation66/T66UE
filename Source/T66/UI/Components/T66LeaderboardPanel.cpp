@@ -46,13 +46,15 @@ namespace
 	const FLinearColor LeaderboardSelectedBorder(114.f / 255.f, 174.f / 255.f, 124.f / 255.f, 1.0f);
 	constexpr bool GMirrorWeeklyToAllTime = false;
 	const FString ReferenceRightPanelSourceDir = TEXT("SourceAssets/UI/MainMenuReference/RightPanel");
-	const FVector2D ReferenceFilterButtonSize(74.0f, 72.0f);
-	const FVector2D ReferenceWeeklyTabSize(209.0f, 65.0f);
+	const FString MasterLibrarySliceSourceDir = TEXT("SourceAssets/UI/MasterLibrary/Slices");
+	const FVector2D ReferenceFilterButtonSize(136.0f, 72.0f);
+	const FVector2D ReferenceFilterIconSize(52.0f, 52.0f);
+	const FVector2D ReferenceWeeklyTabSize(219.0f, 65.0f);
 	const FVector2D ReferenceAllTimeTabSize(219.0f, 65.0f);
-	const FVector2D ReferenceLeftDropdownSize(208.0f, 57.0f);
-	const FVector2D ReferenceRightDropdownSize(211.0f, 57.0f);
-	const FVector2D ReferenceScoreToggleSize(210.0f, 61.0f);
-	const FVector2D ReferenceSpeedRunToggleSize(216.0f, 61.0f);
+	const FVector2D ReferenceLeftDropdownSize(219.0f, 57.0f);
+	const FVector2D ReferenceRightDropdownSize(219.0f, 57.0f);
+	const FVector2D ReferenceScoreToggleSize(219.0f, 61.0f);
+	const FVector2D ReferenceSpeedRunToggleSize(219.0f, 61.0f);
 	const FVector2D ReferenceAvatarFrameSize(56.0f, 56.0f);
 	const FVector2D ReferenceAvatarInsetSize(40.0f, 40.0f);
 	const FLinearColor ReferenceLeaderboardText(0.953f, 0.925f, 0.835f, 1.0f);
@@ -71,6 +73,21 @@ namespace
 			Entry,
 			nullptr,
 			T66RuntimeUITextureAccess::MakeProjectDirPath(ReferenceRightPanelSourceDir / FileName),
+			Margin,
+			DebugLabel,
+			TextureFilter::TF_Trilinear);
+	}
+
+	const FSlateBrush* ResolveMasterLibrarySliceBrush(
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
+		const TCHAR* FileName,
+		const FMargin Margin,
+		const TCHAR* DebugLabel)
+	{
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterLibrarySliceSourceDir / FileName),
 			Margin,
 			DebugLabel,
 			TextureFilter::TF_Trilinear);
@@ -405,76 +422,101 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	LeaderboardDropdownStyle->ButtonStyle.SetPressedPadding(FMargin(0.f));
 	const FSlateBrush* DropdownArrowBrush = &FCoreStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton").DownArrowImage;
 	const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
-	auto MakeRadianceFont = [](int32 Size, int32 LetterSpacing = 0) -> FSlateFontInfo
+	auto MakeLockedRegularFont = [](int32 Size, int32 LetterSpacing = 0) -> FSlateFontInfo
 	{
 		FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Regular"), Size);
 		Font.LetterSpacing = LetterSpacing;
 		return Font;
 	};
-	auto MakeReaverBoldFont = [](int32 Size, int32 LetterSpacing = 0) -> FSlateFontInfo
+	auto MakeLockedBoldFont = [](int32 Size, int32 LetterSpacing = 0) -> FSlateFontInfo
 	{
 		FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Bold"), Size);
 		Font.LetterSpacing = LetterSpacing;
 		return Font;
 	};
-	const FSlateFontInfo LeaderboardTitleFont = MakeRadianceFont(LeaderboardTitleFontSize, 88);
-	const FSlateFontInfo LeaderboardBodyFont = MakeRadianceFont(LeaderboardBodyFontSize);
-	const FSlateFontInfo LeaderboardDropdownFont = MakeRadianceFont(12);
-	const FSlateFontInfo LeaderboardTimeToggleFont = MakeReaverBoldFont(LeaderboardTitleFontSize, 88);
-	const FSlateFontInfo LeaderboardTypeGlyphFont = MakeReaverBoldFont(14);
+	const FSlateFontInfo LeaderboardTitleFont = MakeLockedRegularFont(LeaderboardTitleFontSize, 88);
+	const FSlateFontInfo LeaderboardBodyFont = MakeLockedRegularFont(LeaderboardBodyFontSize);
+	const FSlateFontInfo LeaderboardDropdownFont = MakeLockedRegularFont(12);
+	const FSlateFontInfo LeaderboardTimeToggleFont = MakeLockedBoldFont(LeaderboardTitleFontSize, 88);
+	const FSlateFontInfo LeaderboardTypeGlyphFont = MakeLockedBoldFont(14);
 
 	if (bReferenceMirrorMode)
 	{
-		const FSlateBrush* ReferenceFilterWorldBrush = ResolveReferenceRightPanelBrush(
+		const FMargin FilterButtonMargin(0.208f, 0.250f, 0.208f, 0.250f);
+		const FMargin WideTabMargin(0.128f, 0.306f, 0.128f, 0.306f);
+		const FMargin DropdownFieldMargin(0.157f, 0.292f, 0.157f, 0.292f);
+		const FMargin ToggleMargin(0.101f, 0.260f, 0.101f, 0.260f);
+		const FMargin AvatarSlotMargin(0.205f, 0.205f, 0.205f, 0.205f);
+		const FSlateBrush* ReferenceFilterButtonBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceFilterWorldButtonBrush,
-			TEXT("filter_world_button.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceFilterWorld"));
-		const FSlateBrush* ReferenceFilterFriendsBrush = ResolveReferenceRightPanelBrush(
+			TEXT("Controls/dropdown_square_normal.png"),
+			FilterButtonMargin,
+			TEXT("LBMasterFilterNormal"));
+		const FSlateBrush* ReferenceFilterSelectedBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceFilterFriendsButtonBrush,
-			TEXT("filter_friends_button.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceFilterFriends"));
-		const FSlateBrush* ReferenceFilterCrownBrush = ResolveReferenceRightPanelBrush(
+			TEXT("Controls/dropdown_square_normal.png"),
+			FilterButtonMargin,
+			TEXT("LBMasterFilterSelected"));
+		ResolveMasterLibrarySliceBrush(
 			ReferenceFilterCrownButtonBrush,
-			TEXT("filter_crown_button.png"),
+			TEXT("Controls/dropdown_square_normal.png"),
+			FilterButtonMargin,
+			TEXT("LBMasterFilterPressed"));
+		const FSlateBrush* ReferenceFilterGlobalIcon = ResolveMasterLibrarySliceBrush(
+			ReferenceFilterGlobalIconBrush,
+			TEXT("IconsGenerated/icon_09_leaderboard_globe_imagegen_20260425_v2.png"),
 			FMargin(0.f),
-			TEXT("LBReferenceFilterCrown"));
-		const FSlateBrush* ReferenceWeeklyBrush = ResolveReferenceRightPanelBrush(
+			TEXT("LBMasterFilterGlobalIcon"));
+		const FSlateBrush* ReferenceFilterFriendsIcon = ResolveMasterLibrarySliceBrush(
+			ReferenceFilterFriendsIconBrush,
+			TEXT("IconsGenerated/icon_10_leaderboard_friends_imagegen_20260425_v2.png"),
+			FMargin(0.f),
+			TEXT("LBMasterFilterFriendsIcon"));
+		const FSlateBrush* ReferenceFilterStreamersIcon = ResolveMasterLibrarySliceBrush(
+			ReferenceFilterStreamersIconBrush,
+			TEXT("IconsGenerated/icon_11_leaderboard_streamers_imagegen_20260425_v2.png"),
+			FMargin(0.f),
+			TEXT("LBMasterFilterStreamersIcon"));
+		const FSlateBrush* ReferenceWeeklyBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceTabWeeklyActiveBrush,
-			TEXT("tab_weekly_active.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceWeekly"));
-		const FSlateBrush* ReferenceAllTimeBrush = ResolveReferenceRightPanelBrush(
+			TEXT("Tabs/wide_tab_selected.png"),
+			WideTabMargin,
+			TEXT("LBMasterWeekly"));
+		const FSlateBrush* ReferenceAllTimeBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceTabAllTimeInactiveBrush,
-			TEXT("tab_all_time_inactive.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceAllTime"));
-		const FSlateBrush* ReferenceLeftDropdownBrush = ResolveReferenceRightPanelBrush(
+			TEXT("Tabs/wide_tab_normal.png"),
+			WideTabMargin,
+			TEXT("LBMasterAllTime"));
+		const FSlateBrush* ReferenceLeftDropdownBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceDropdownLeftBrush,
-			TEXT("dropdown_shell_left_clean.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceDropdownLeft"));
-		const FSlateBrush* ReferenceRightDropdownBrush = ResolveReferenceRightPanelBrush(
+			TEXT("Controls/dropdown_field_normal.png"),
+			DropdownFieldMargin,
+			TEXT("LBMasterDropdownLeft"));
+		const FSlateBrush* ReferenceRightDropdownBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceDropdownRightBrush,
-			TEXT("dropdown_shell_right_clean.png"),
+			TEXT("Controls/dropdown_field_normal.png"),
+			DropdownFieldMargin,
+			TEXT("LBMasterDropdownRight"));
+		const FSlateBrush* ReferenceChevronBrush = ResolveMasterLibrarySliceBrush(
+			ReferenceDropdownChevronBrush,
+			TEXT("IconsGenerated/icon_16_dropdown_chevron_imagegen_20260425_v2.png"),
 			FMargin(0.f),
-			TEXT("LBReferenceDropdownRight"));
-		const FSlateBrush* ReferenceScoreToggleBrush = ResolveReferenceRightPanelBrush(
+			TEXT("LBMasterDropdownChevron"));
+		const FSlateBrush* ReferenceScoreToggleBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceToggleScoreSelectedBrush,
-			TEXT("toggle_score_selected.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceToggleScore"));
-		const FSlateBrush* ReferenceSpeedRunToggleBrush = ResolveReferenceRightPanelBrush(
+			TEXT("Controls/toggle_wide_selected.png"),
+			ToggleMargin,
+			TEXT("LBMasterToggleScore"));
+		const FSlateBrush* ReferenceSpeedRunToggleBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceToggleSpeedRunUnselectedBrush,
-			TEXT("toggle_speedrun_unselected.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceToggleSpeedRun"));
-		ResolveReferenceRightPanelBrush(
+			TEXT("Controls/toggle_wide_normal.png"),
+			ToggleMargin,
+			TEXT("LBMasterToggleSpeedRun"));
+		ResolveMasterLibrarySliceBrush(
 			ReferenceAvatarFrameBrush,
-			TEXT("leaderboard_avatar_frame.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceAvatarFrame"));
+			TEXT("Slots/avatar_slot_normal.png"),
+			AvatarSlotMargin,
+			TEXT("LBMasterAvatarFrame"));
 		const FSlateBrush* ReferenceAvatarFallback01 = ResolveReferenceRightPanelBrush(
 			ReferenceAvatarFallbackBrush01,
 			TEXT("leaderboard_avatar_fallback_01.png"),
@@ -500,10 +542,10 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			return (bDailyChallengeMode || CurrentTimeFilter == ET66LeaderboardTime::Daily) ? EVisibility::Collapsed : EVisibility::Visible;
 		};
 
-		const FSlateFontInfo ReferenceHeaderFont = MakeReaverBoldFont(11, 84);
-		const FSlateFontInfo ReferenceDropdownFont = MakeRadianceFont(15);
-		const FSlateFontInfo ReferenceDailyFont = MakeReaverBoldFont(13, 92);
-		const FSlateFontInfo ReferenceToggleFont = MakeRadianceFont(15);
+		const FSlateFontInfo ReferenceHeaderFont = MakeLockedBoldFont(21, 0);
+		const FSlateFontInfo ReferenceDropdownFont = MakeLockedRegularFont(22);
+		const FSlateFontInfo ReferenceDailyFont = MakeLockedBoldFont(21, 0);
+		const FSlateFontInfo ReferenceToggleFont = MakeLockedRegularFont(26);
 
 		auto MakeReferenceOutline = [](const FLinearColor& Color) -> TSharedRef<SWidget>
 		{
@@ -518,11 +560,11 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				];
 		};
 
-		auto MakeReferenceFilterButton = [this, &NoBorderButtonStyle, &MakeReferenceOutline](
+		auto MakeReferenceFilterButton = [this, &NoBorderButtonStyle, ReferenceFilterButtonBrush, ReferenceFilterSelectedBrush](
 			ET66LeaderboardFilter Filter,
 			FReply (ST66LeaderboardPanel::*ClickHandler)(),
-			const FSlateBrush* Brush,
-			const bool bDefaultSelectedAsset) -> TSharedRef<SWidget>
+			const FSlateBrush* IconBrush,
+			const FString& FallbackLetter) -> TSharedRef<SWidget>
 		{
 			return SNew(SBox)
 				.WidthOverride(ReferenceFilterButtonSize.X)
@@ -537,29 +579,35 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						+ SOverlay::Slot()
 						[
 							SNew(SImage)
-							.Image(Brush ? Brush : FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.ColorAndOpacity(Brush ? FLinearColor::White : ReferenceLeaderboardMuted)
+							.Image(TAttribute<const FSlateBrush*>::CreateLambda([this, Filter, ReferenceFilterButtonBrush, ReferenceFilterSelectedBrush]() -> const FSlateBrush*
+							{
+								const bool bSelected = CurrentFilter == Filter;
+								const FSlateBrush* SelectedBrush = ReferenceFilterSelectedBrush ? ReferenceFilterSelectedBrush : ReferenceFilterButtonBrush;
+								const FSlateBrush* ChosenBrush = bSelected ? SelectedBrush : ReferenceFilterButtonBrush;
+								return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
+							}))
+							.ColorAndOpacity((ReferenceFilterButtonBrush || ReferenceFilterSelectedBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
 						]
 						+ SOverlay::Slot()
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
 						[
 							SNew(SBox)
-							.Visibility_Lambda([this, Filter, bDefaultSelectedAsset]() -> EVisibility
-							{
-								return (!bDefaultSelectedAsset && CurrentFilter == Filter) ? EVisibility::Visible : EVisibility::Collapsed;
-							})
+							.WidthOverride(ReferenceFilterIconSize.X)
+							.HeightOverride(ReferenceFilterIconSize.Y)
 							[
-								MakeReferenceOutline(ReferenceMirrorSelectGlow)
+								IconBrush
+								? StaticCastSharedRef<SWidget>(
+									SNew(SImage)
+									.Image(IconBrush)
+									.ColorAndOpacity(FLinearColor::White))
+								: StaticCastSharedRef<SWidget>(
+									SNew(STextBlock)
+									.Text(FText::FromString(FallbackLetter))
+									.Font(FT66Style::MakeFont(TEXT("Bold"), 18))
+									.ColorAndOpacity(ReferenceLeaderboardMuted)
+									.Justification(ETextJustify::Center))
 							]
-						]
-						+ SOverlay::Slot()
-						[
-							SNew(SBorder)
-							.Visibility_Lambda([this, Filter, bDefaultSelectedAsset]() -> EVisibility
-							{
-								return (bDefaultSelectedAsset && CurrentFilter != Filter) ? EVisibility::Visible : EVisibility::Collapsed;
-							})
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(ReferenceMirrorDim)
 						]
 					]
 				];
@@ -642,7 +690,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				];
 		};
 
-		auto MakeReferenceDropdown = [this, ReferenceDropdownFont](
+		auto MakeReferenceDropdown = [this, ReferenceDropdownFont, ReferenceChevronBrush](
 			const FSlateBrush* ShellBrush,
 			const FVector2D& Size,
 			const TAttribute<FText>& Label,
@@ -668,7 +716,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 							.ColorAndOpacity(ShellBrush ? FLinearColor::White : FLinearColor(0.10f, 0.10f, 0.12f, 1.0f))
 						]
 						+ SOverlay::Slot()
-						.Padding(FMargin(18.f, 10.f, 44.f, 8.f))
+						.Padding(FMargin(18.f, 10.f, 54.f, 8.f))
 						.VAlign(VAlign_Center)
 						[
 							SNew(STextBlock)
@@ -676,6 +724,20 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 							.Font(ReferenceDropdownFont)
 							.ColorAndOpacity(ReferenceLeaderboardText)
 							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Right)
+						.VAlign(VAlign_Center)
+						.Padding(FMargin(0.f, 0.f, 22.f, 0.f))
+						[
+							SNew(SBox)
+							.WidthOverride(18.f)
+							.HeightOverride(18.f)
+							[
+								SNew(SImage)
+								.Image(ReferenceChevronBrush)
+								.ColorAndOpacity(ReferenceChevronBrush ? FLinearColor::White : ReferenceLeaderboardText)
+							]
 						]
 					]
 				];
@@ -685,11 +747,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
+			.Padding(FMargin(0.f, 8.f, 0.f, 0.f))
 			[
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(FMargin(-7.f, 0.f, 0.f, 0.f))
+				.Padding(FMargin(0.f, 0.f, 0.f, 0.f))
 				[
 					SNew(SBox)
 					.Visibility_Lambda(GetDailyModeVisibility)
@@ -704,7 +767,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(FMargin(-7.f, 0.f, 0.f, 0.f))
+				.Padding(FMargin(0.f, 0.f, 0.f, 0.f))
 				[
 					SNew(SHorizontalBox)
 					.Visibility_Lambda(GetStandardModeVisibility)
@@ -718,7 +781,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 							true,
 							&ST66LeaderboardPanel::HandleCurrentClicked)
 					]
-					+ SHorizontalBox::Slot().AutoWidth()
+					+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
 					[
 						MakeReferenceStatePlateButton(
 							ReferenceAllTimeBrush,
@@ -731,7 +794,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(FMargin(-7.f, 7.f, 0.f, 0.f))
+				.Padding(FMargin(0.f, -6.f, 0.f, 0.f))
 				[
 					SNew(SHorizontalBox)
 					.Visibility_Lambda(GetStandardModeVisibility)
@@ -765,7 +828,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 								return Box;
 							})
 					]
-					+ SHorizontalBox::Slot().AutoWidth().Padding(3.f, 0.f, 0.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
 					[
 						MakeReferenceDropdown(
 							ReferenceRightDropdownBrush,
@@ -798,7 +861,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(FMargin(-7.f, 7.f, 0.f, 0.f))
+				.Padding(FMargin(0.f, 3.f, 0.f, 0.f))
 				[
 					SNew(SHorizontalBox)
 					.Visibility_Lambda(GetStandardModeVisibility)
@@ -850,7 +913,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 							]
 						]
 					]
-					+ SHorizontalBox::Slot().AutoWidth().Padding(3.f, 0.f, 0.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
 					[
 						SNew(SBox)
 						.Visibility_Lambda(GetStandardModeVisibility)
@@ -916,7 +979,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(FMargin(6.f, 14.f, 0.f, 0.f))
+				.Padding(FMargin(6.f, 10.f, 0.f, 0.f))
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth()
@@ -975,7 +1038,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Top)
-			.Padding(FMargin(39.f, -82.f, 0.f, 0.f))
+			.Padding(FMargin(-2.f, -82.f, 0.f, 0.f))
 			[
 				SNew(SHorizontalBox)
 				.Visibility_Lambda(GetStandardModeVisibility)
@@ -984,24 +1047,24 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					MakeReferenceFilterButton(
 						ET66LeaderboardFilter::Global,
 						&ST66LeaderboardPanel::HandleGlobalClicked,
-						ReferenceFilterWorldBrush,
-						true)
+						ReferenceFilterGlobalIcon,
+						TEXT("G"))
 				]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(14.f, 0.f, 0.f, 0.f)
 				[
 					MakeReferenceFilterButton(
 						ET66LeaderboardFilter::Friends,
 						&ST66LeaderboardPanel::HandleFriendsClicked,
-						ReferenceFilterFriendsBrush,
-						false)
+						ReferenceFilterFriendsIcon,
+						TEXT("F"))
 				]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(14.f, 0.f, 0.f, 0.f)
 				[
 					MakeReferenceFilterButton(
 						ET66LeaderboardFilter::Streamers,
 						&ST66LeaderboardPanel::HandleStreamersClicked,
-						ReferenceFilterCrownBrush,
-						false)
+						ReferenceFilterStreamersIcon,
+						TEXT("S"))
 				]
 			]
 		];
@@ -1471,9 +1534,9 @@ void ST66LeaderboardPanel::RebuildEntryList()
 	if (bReferenceMirrorMode)
 	{
 		const FSlateBrush* AvatarFrameBrush = ReferenceAvatarFrameBrush.Brush.IsValid() ? ReferenceAvatarFrameBrush.Brush.Get() : nullptr;
-		const FSlateFontInfo ReferenceRankFont = FT66Style::MakeFont(TEXT("Bold"), 13);
-		const FSlateFontInfo ReferenceNameFont = FT66Style::MakeFont(TEXT("Regular"), 14);
-		const FSlateFontInfo ReferenceScoreFont = FT66Style::MakeFont(TEXT("Regular"), 14);
+		const FSlateFontInfo ReferenceRankFont = FT66Style::MakeFont(TEXT("Bold"), 22);
+		const FSlateFontInfo ReferenceNameFont = FT66Style::MakeFont(TEXT("Regular"), 23);
+		const FSlateFontInfo ReferenceScoreFont = FT66Style::MakeFont(TEXT("Regular"), 21);
 
 		for (int32 EntryIndex = 0; EntryIndex < LeaderboardEntries.Num(); ++EntryIndex)
 		{

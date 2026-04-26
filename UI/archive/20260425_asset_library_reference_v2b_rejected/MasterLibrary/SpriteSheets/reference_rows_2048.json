@@ -1,0 +1,45 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_rows_2048.png",
+  "size": [
+    2048,
+    2048
+  ],
+  "sprites": {
+    "Rows/leaderboard_row_normal": {
+      "x": 20,
+      "y": 20,
+      "w": 446,
+      "h": 54,
+      "nine_slice_margin": [
+        12,
+        8,
+        12,
+        8
+      ]
+    },
+    "Rows/leaderboard_row_hover": {
+      "x": 486,
+      "y": 20,
+      "w": 446,
+      "h": 54,
+      "nine_slice_margin": [
+        12,
+        8,
+        12,
+        8
+      ]
+    },
+    "Rows/leaderboard_row_selected": {
+      "x": 952,
+      "y": 20,
+      "w": 446,
+      "h": 54,
+      "nine_slice_margin": [
+        12,
+        8,
+        12,
+        8
+      ]
+    }
+  }
+}

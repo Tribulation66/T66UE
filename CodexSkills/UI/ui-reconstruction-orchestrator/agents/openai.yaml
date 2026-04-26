@@ -1,7 +1,0 @@
-interface:
-  display_name: "UI Reconstruction Orchestrator"
-  short_description: "Route screen reconstruction work to the right stage skill"
-  default_prompt: >-
-    Use $ui-reconstruction-orchestrator to choose the correct T66 UI stage for the target pack under C:\UE\T66\UI\screens\<screen_slug>.
-    Hard gates: every screen/modal/HUD/tab/mini-game needs reference\canonical_reference_1920x1080.png generated from the canonical main-menu anchor, the exact current target screenshot, and the target layout list before sprites/runtime/review; use native Codex image generation only; do not use removed external generation tooling or request manifests; deploy agents for independent capture/reference/asset/review work; reject 1672x941 and other non-canonical production outputs; no manual pixel repair; do not report completion until runtime implementation, packaged capture, and packaged review are done unless blocked.
-

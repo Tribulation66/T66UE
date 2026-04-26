@@ -105,8 +105,8 @@ AT66MiniEnemyBase::AT66MiniEnemyBase()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	SetReplicateMovement(true);
-	NetUpdateFrequency = 16.f;
-	MinNetUpdateFrequency = 8.f;
+	SetNetUpdateFrequency(16.f);
+	SetMinNetUpdateFrequency(8.f);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);

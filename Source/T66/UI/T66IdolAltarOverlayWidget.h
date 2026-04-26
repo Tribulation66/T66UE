@@ -9,8 +9,8 @@
 
 class SBorder;
 class SBox;
-class SButton;
 class SImage;
+class SWidget;
 class SRichTextBlock;
 class STextBlock;
 class SWidget;
@@ -39,12 +39,12 @@ private:
 	TArray<TSharedPtr<FSlateBrush>> OfferIconBrushes;
 	TArray<TSharedPtr<SBorder>> OfferTileBorders;
 	TArray<TSharedPtr<SBorder>> OfferIconBorders;
-	TArray<TSharedPtr<SButton>> OfferButtons;
+	TArray<TSharedPtr<SWidget>> OfferButtons;
 	TArray<TSharedPtr<SBorder>> OfferButtonBorders;
 	TArray<TSharedPtr<STextBlock>> OfferButtonTexts;
 
 	TSharedPtr<STextBlock> StatusText;
-	TSharedPtr<SButton> RerollButton;
+	TSharedPtr<SWidget> RerollButton;
 	TSharedPtr<SBorder> RerollButtonBorder;
 	TSharedPtr<STextBlock> RerollButtonText;
 	TWeakObjectPtr<AT66IdolAltar> SourceAltar;

@@ -8,7 +8,6 @@
 
 class AT66MiniFlipbookVFXActor;
 class AT66MiniGroundTelegraphActor;
-class USoundBase;
 class UTexture;
 
 UCLASS()
@@ -30,7 +29,6 @@ public:
 private:
 	AT66MiniGroundTelegraphActor* AcquireGroundTelegraph(UWorld* World);
 	AT66MiniFlipbookVFXActor* AcquirePulseActor(UWorld* World);
-	USoundBase* LoadMiniSfx();
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<AT66MiniGroundTelegraphActor>> GroundTelegraphPool;

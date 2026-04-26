@@ -1,0 +1,583 @@
+{
+  "owner": "Worker Chat 2",
+  "generated": "2026-04-25",
+  "usage": "Reference-derived slices from accepted UI sprite boards; no full-screen reference background, no baked localizable text in promoted controls.",
+  "source_boards": [
+    "SourceAssets\\UI\\MainMenuReference\\SpriteSheets\\mainmenu_chrome_sprite_sheet_imagegen_20260425_v1_4096.png",
+    "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+    "SourceAssets\\UI\\HeroSelectionReference\\ABTests\\hero_selection_native_fullscreen_shell_board.png",
+    "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Panels\\runflow_summary_surface_shell.png",
+    "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_neutral_normal.png"
+  ],
+  "slices": {
+    "SheetSlices\\Common\\panel_large.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Panels\\runflow_summary_surface_shell.png",
+      "source_box": [
+        0,
+        0,
+        1680,
+        860
+      ],
+      "size": [
+        1400,
+        720
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\panel_modal.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Panels\\runflow_panel_shell.png",
+      "source_box": [
+        0,
+        0,
+        1521,
+        463
+      ],
+      "size": [
+        1120,
+        560
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\panel_side.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Panels\\runflow_pause_modal_shell.png",
+      "source_box": [
+        0,
+        0,
+        520,
+        690
+      ],
+      "size": [
+        560,
+        760
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\row_shell.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Panels\\runflow_summary_row_shell.png",
+      "source_box": [
+        0,
+        0,
+        1180,
+        86
+      ],
+      "size": [
+        900,
+        86
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\dropdown_field.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Panels\\runflow_row_shell.png",
+      "source_box": [
+        0,
+        0,
+        861,
+        74
+      ],
+      "size": [
+        900,
+        88
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\portrait_socket.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Slots\\runflow_icon_socket.png",
+      "source_box": [
+        0,
+        0,
+        74,
+        74
+      ],
+      "size": [
+        260,
+        260
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\grid_tile_normal.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Slots\\runflow_icon_socket.png",
+      "source_box": [
+        0,
+        0,
+        74,
+        74
+      ],
+      "size": [
+        260,
+        260
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\grid_tile_selected.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Slots\\runflow_icon_socket.png",
+      "source_box": [
+        0,
+        0,
+        74,
+        74
+      ],
+      "size": [
+        260,
+        260
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\grid_tile_disabled.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Slots\\runflow_icon_socket.png",
+      "source_box": [
+        0,
+        0,
+        74,
+        74
+      ],
+      "size": [
+        260,
+        260
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\party_slot_frame.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Slots\\runflow_party_socket.png",
+      "source_box": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "size": [
+        150,
+        160
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_neutral_normal.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_neutral_normal.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_neutral_hover.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_neutral_hover.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_neutral_pressed.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_neutral_pressed.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_neutral_disabled.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_neutral_disabled.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_success_normal.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_primary_normal.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_success_hover.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_primary_hover.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_success_pressed.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_primary_pressed.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_success_disabled.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_primary_disabled.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_danger_normal.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_danger_normal.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_danger_hover.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_danger_hover.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_danger_pressed.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_danger_pressed.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_danger_disabled.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_danger_disabled.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\Common\\button_disabled.png": {
+      "source": "SourceAssets\\UI\\RunFlowReference\\SheetSlices\\Buttons\\runflow_button_neutral_disabled.png",
+      "source_box": [
+        0,
+        0,
+        180,
+        68
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "Common"
+    },
+    "SheetSlices\\HeroFlow\\row_shell.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\ABTests\\hero_selection_native_fullscreen_shell_board.png",
+      "source_box": [
+        34,
+        184,
+        481,
+        250
+      ],
+      "size": [
+        900,
+        86
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\dropdown_field.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        184,
+        753,
+        1487,
+        824
+      ],
+      "size": [
+        900,
+        88
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\party_slot_frame.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        559,
+        221,
+        679,
+        340
+      ],
+      "size": [
+        150,
+        160
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\portrait_socket.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        774,
+        219,
+        899,
+        343
+      ],
+      "size": [
+        260,
+        260
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_neutral_normal.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        850,
+        635,
+        1154,
+        719
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_neutral_hover.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        518,
+        630,
+        822,
+        719
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_neutral_pressed.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        1196,
+        635,
+        1488,
+        719
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_neutral_disabled.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        1203,
+        635,
+        1488,
+        719
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_success_normal.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\ABTests\\hero_selection_native_fullscreen_shell_board.png",
+      "source_box": [
+        1310,
+        817,
+        1552,
+        894
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_success_hover.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\ABTests\\hero_selection_native_fullscreen_shell_board.png",
+      "source_box": [
+        1310,
+        817,
+        1552,
+        894
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_success_pressed.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\ABTests\\hero_selection_native_fullscreen_shell_board.png",
+      "source_box": [
+        1310,
+        817,
+        1552,
+        894
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_success_disabled.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        1203,
+        635,
+        1488,
+        719
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_danger_normal.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        850,
+        635,
+        1154,
+        719
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_danger_hover.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        518,
+        630,
+        822,
+        719
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_danger_pressed.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        1196,
+        635,
+        1488,
+        719
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_danger_disabled.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        1203,
+        635,
+        1488,
+        719
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    },
+    "SheetSlices\\HeroFlow\\button_disabled.png": {
+      "source": "SourceAssets\\UI\\HeroSelectionReference\\SpriteSheets\\20260423-121115-use-case-ui-mockup-asset-type-game-ui-runtime-co.png",
+      "source_box": [
+        1203,
+        635,
+        1488,
+        719
+      ],
+      "size": [
+        480,
+        112
+      ],
+      "family": "HeroFlow"
+    }
+  },
+  "recommended_margins": {
+    "panel_large": "0.035,0.12,0.035,0.12",
+    "panel_side": "0.10,0.12,0.10,0.12",
+    "panel_modal": "0.055,0.12,0.055,0.12",
+    "row_shell": "0.055,0.32,0.055,0.32",
+    "dropdown_field": "0.06,0.34,0.06,0.34",
+    "button": "0.16,0.28,0.16,0.28",
+    "grid_tile": "0.14,0.14,0.14,0.14"
+  }
+}

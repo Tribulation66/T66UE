@@ -1,0 +1,105 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_controls_2048.png",
+  "size": [
+    2048,
+    2048
+  ],
+  "sprites": {
+    "Controls/dropdown_field_normal": {
+      "x": 20,
+      "y": 20,
+      "w": 217,
+      "h": 49,
+      "nine_slice_margin": [
+        18,
+        12,
+        18,
+        12
+      ]
+    },
+    "Controls/dropdown_field_hover": {
+      "x": 257,
+      "y": 20,
+      "w": 217,
+      "h": 49,
+      "nine_slice_margin": [
+        18,
+        12,
+        18,
+        12
+      ]
+    },
+    "Controls/dropdown_field_disabled": {
+      "x": 494,
+      "y": 20,
+      "w": 217,
+      "h": 49,
+      "nine_slice_margin": [
+        18,
+        12,
+        18,
+        12
+      ]
+    },
+    "Controls/toggle_wide_normal": {
+      "x": 731,
+      "y": 20,
+      "w": 217,
+      "h": 48,
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ]
+    },
+    "Controls/toggle_wide_hover": {
+      "x": 968,
+      "y": 20,
+      "w": 217,
+      "h": 48,
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ]
+    },
+    "Controls/toggle_wide_pressed": {
+      "x": 1205,
+      "y": 20,
+      "w": 217,
+      "h": 48,
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ]
+    },
+    "Controls/toggle_wide_selected": {
+      "x": 1442,
+      "y": 20,
+      "w": 217,
+      "h": 48,
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ]
+    },
+    "Controls/toggle_wide_disabled": {
+      "x": 1679,
+      "y": 20,
+      "w": 217,
+      "h": 48,
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ]
+    }
+  }
+}

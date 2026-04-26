@@ -107,7 +107,7 @@ namespace
 		static FT66TempBuffSpriteBrushEntry Entry;
 		return ResolveTempBuffSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_panel_shell.png"),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			ESlateBrushDrawType::Box);
@@ -118,9 +118,26 @@ namespace
 		static FT66TempBuffSpriteBrushEntry Entry;
 		return ResolveTempBuffSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_row_shell.png"),
 			FVector2D(861.f, 74.f),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
+			ESlateBrushDrawType::Box);
+	}
+
+	const FSlateBrush* GetTempBuffCardShellBrush(const bool bSelected, const bool bDisabled = false)
+	{
+		static FT66TempBuffSpriteBrushEntry Normal;
+		static FT66TempBuffSpriteBrushEntry Selected;
+		static FT66TempBuffSpriteBrushEntry Disabled;
+		FT66TempBuffSpriteBrushEntry& Entry = bDisabled ? Disabled : (bSelected ? Selected : Normal);
+		const TCHAR* FileName = bDisabled
+			? TEXT("runflow_buff_card_disabled.png")
+			: (bSelected ? TEXT("runflow_buff_card_selected.png") : TEXT("runflow_buff_card_normal.png"));
+		return ResolveTempBuffSpriteBrush(
+			Entry,
+			FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Cards/%s"), FileName),
+			FVector2D(198.f, 236.f),
+			FMargin(0.09f, 0.12f, 0.09f, 0.12f),
 			ESlateBrushDrawType::Box);
 	}
 
@@ -128,25 +145,18 @@ namespace
 	{
 		if (Family == ET66TempBuffButtonFamily::CtaGreen)
 		{
-			if (State == ET66TempBuffButtonState::Hovered)
-			{
-				return TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_wide_plate_hover.png");
-			}
-			if (State == ET66TempBuffButtonState::Pressed)
-			{
-				return TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_wide_plate_pressed.png");
-			}
-			return TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_wide_plate.png");
+			const TCHAR* Suffix = State == ET66TempBuffButtonState::Hovered ? TEXT("hover") : (State == ET66TempBuffButtonState::Pressed ? TEXT("pressed") : TEXT("normal"));
+			return FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_cta_primary_%s.png"), Suffix);
 		}
 
-		const TCHAR* Prefix = TEXT("settings_compact_neutral");
+		const TCHAR* Prefix = TEXT("runflow_button_neutral");
 		if (Family == ET66TempBuffButtonFamily::ToggleOn)
 		{
-			Prefix = TEXT("settings_toggle_on");
+			Prefix = TEXT("runflow_button_primary");
 		}
 		else if (Family == ET66TempBuffButtonFamily::ToggleInactive)
 		{
-			Prefix = TEXT("settings_toggle_inactive");
+			Prefix = TEXT("runflow_button_neutral");
 		}
 
 		const TCHAR* Suffix = TEXT("normal");
@@ -159,7 +169,7 @@ namespace
 			Suffix = TEXT("pressed");
 		}
 
-		return FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s_%s.png"), Prefix, Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/%s_%s.png"), Prefix, Suffix);
 	}
 
 	FVector2D GetTempBuffButtonSize(const ET66TempBuffButtonFamily Family, const ET66TempBuffButtonState State)
@@ -227,7 +237,7 @@ namespace
 		FT66TempBuffButtonBrushSet& Set = GetTempBuffButtonBrushSet(ET66TempBuffButtonFamily::ToggleInactive);
 		return ResolveTempBuffSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_normal.png"),
+			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_button_neutral_disabled.png"),
 			FVector2D(180.f, 69.f),
 			FMargin(0.14f, 0.30f, 0.14f, 0.30f),
 			ESlateBrushDrawType::Box);
@@ -509,7 +519,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 				SNew(STextBlock)
 				.Text(EmptySlotText)
 				.Font(FT66Style::Tokens::FontBold(24))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted));
+				.ColorAndOpacity(FLinearColor(0.76f, 0.13f, 0.95f, 1.0f)));
 
 		const TSharedRef<SWidget> SlotAction = !bFilled
 			? StaticCastSharedRef<SWidget>(
@@ -526,41 +536,46 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 					26.f,
 					9));
 
-		return MakeTempBuffSpritePanel(
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
+		return SNew(SBox)
+			.WidthOverride(90.f)
+			.HeightOverride(84.f)
 			[
-				FT66Style::MakeButton(
-					FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66TemporaryBuffSelectionScreen::HandleLoadoutSlotClicked, SlotIndex), ET66ButtonType::Neutral)
-					.SetMinWidth(0.f)
-					.SetHeight(72.f)
-					.SetPadding(FMargin(0.f))
-					.SetColor(InnerColor)
-					.SetContent(
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(InnerColor)
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						[
-							SlotContent
-						]))
-			]
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(0.f, 6.f, 0.f, 0.f)
-			[
-				SlotAction
-			],
-			GetTempBuffRowShellBrush(),
-			FMargin(6.f, 5.f),
-			ShellColor);
+				MakeTempBuffSpritePanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						FT66Style::MakeButton(
+							FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66TemporaryBuffSelectionScreen::HandleLoadoutSlotClicked, SlotIndex), ET66ButtonType::Neutral)
+							.SetMinWidth(0.f)
+							.SetHeight(52.f)
+							.SetPadding(FMargin(0.f))
+							.SetColor(bFilled ? InnerColor : FLinearColor(0.01f, 0.02f, 0.035f, 1.0f))
+							.SetContent(
+								SNew(SOverlay)
+								+ SOverlay::Slot()
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(bFilled ? InnerColor : FLinearColor(0.01f, 0.02f, 0.035f, 1.0f))
+								]
+								+ SOverlay::Slot()
+								.HAlign(HAlign_Center)
+								.VAlign(VAlign_Center)
+								[
+									SlotContent
+								]))
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 6.f, 0.f, 0.f)
+					[
+						SlotAction
+					],
+					GetTempBuffRowShellBrush(),
+					FMargin(6.f, 5.f),
+					ShellColor)
+			];
 	};
 
 	auto MakePartyBox = [this, PartyMembers]() -> TSharedRef<SWidget>
@@ -706,7 +721,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 	{
 		LoadoutSlotsRow->AddSlot()
 		.AutoWidth()
-		.Padding(SlotIndex + 1 < UT66BuffSubsystem::MaxSelectedSingleUseBuffs ? FMargin(0.f, 0.f, 10.f, 0.f) : FMargin(0.f))
+		.Padding(SlotIndex + 1 < UT66BuffSubsystem::MaxSelectedSingleUseBuffs ? FMargin(0.f, 0.f, 33.f, 0.f) : FMargin(0.f))
 		[
 			MakeLoadoutSlotWidget(SlotIndex)
 		];
@@ -821,7 +836,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 								9,
 								bCanUseOwnedCopy || bCanAffordPurchase)
 						],
-						GetTempBuffRowShellBrush(),
+						GetTempBuffCardShellBrush(bFocusedSlotMatches, !(bCanUseOwnedCopy || bCanAffordPurchase)),
 						FMargin(10.f),
 						bFocusedSlotMatches ? FLinearColor(0.20f, 0.28f, 0.20f, 1.0f) : FT66Style::Tokens::Panel)
 				]
@@ -880,7 +895,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 							]
 							+ SVerticalBox::Slot()
 							.AutoHeight()
-							.Padding(0.f, 10.f, 0.f, 0.f)
+							.Padding(0.f, 2.f, 0.f, 0.f)
 							[
 								SNew(STextBlock)
 								.Text(SlotHintText)
@@ -917,7 +932,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
-					.Padding(0.f, 16.f, 0.f, 18.f)
+					.Padding(0.f, 8.f, 0.f, 18.f)
 					[
 						LoadoutSlotsRow
 					]
@@ -958,7 +973,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 					]
 					,
 					GetTempBuffContentShellBrush(),
-					FMargin(24.f, 20.f, 24.f, 18.f),
+					FMargin(24.f, 8.f, 24.f, 18.f),
 					FT66Style::Panel())
 			]
 		];

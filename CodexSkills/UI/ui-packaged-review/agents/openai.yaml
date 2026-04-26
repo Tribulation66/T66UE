@@ -1,6 +1,0 @@
-interface:
-  display_name: "UI Packaged Review"
-  short_description: "Classify packaged-build deltas against the reference"
-  default_prompt: >-
-    Use $ui-packaged-review for the target UI screen pack under C:\UE\T66\UI\screens\<screen_slug>.
-    Hard gates: the approved reference must be the screen-specific reference generated from the canonical main-menu anchor, the exact current target screenshot, and the target layout list; block review if reference\canonical_reference_1920x1080.png is missing or generic; packaged captures must be 1920x1080; reject 1672x941 and other non-canonical production outputs; review masks are validation only, never manual pixel repair.

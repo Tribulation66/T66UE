@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/RunState/T66RunStateSubsystem_Private.h"
+#include "Core/T66AudioSubsystem.h"
 
 using namespace T66RunStatePrivate;
 
@@ -306,6 +307,26 @@ void UT66RunStateSubsystem::ApplyStageSpeedBoost(float MoveSpeedMultiplier, floa
 }
 
 
+void UT66RunStateSubsystem::ApplyTemporaryPrimaryStatAmplifier(
+	const ET66HeroStatType StatType,
+	const int32 BonusStatPoints,
+	const float DurationSeconds)
+{
+	const int32 BonusTenths = WholeStatToTenths(FMath::Max(1, BonusStatPoints));
+	const float Duration = FMath::Clamp(DurationSeconds, 0.f, 60.f);
+	if (BonusTenths <= 0 || Duration <= 0.f)
+	{
+		return;
+	}
+
+	FT66TemporaryPrimaryStatAmplifier& Amplifier = TemporaryPrimaryStatAmplifiers.AddDefaulted_GetRef();
+	Amplifier.StatType = StatType;
+	Amplifier.BonusTenths = BonusTenths;
+	Amplifier.SecondsRemaining = Duration;
+	HeroProgressChanged.Broadcast();
+}
+
+
 bool UT66RunStateSubsystem::ApplyTrueDamage(int32 /*DamageHP*/)
 {
 	return false;
@@ -388,6 +409,22 @@ void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 			StageMoveSpeedMultiplier = 1.f;
 			HeroProgressChanged.Broadcast();
 		}
+	}
+
+	bool bAmplifiersChanged = false;
+	for (int32 Index = TemporaryPrimaryStatAmplifiers.Num() - 1; Index >= 0; --Index)
+	{
+		FT66TemporaryPrimaryStatAmplifier& Amplifier = TemporaryPrimaryStatAmplifiers[Index];
+		Amplifier.SecondsRemaining = FMath::Max(0.f, Amplifier.SecondsRemaining - DeltaTime);
+		if (Amplifier.SecondsRemaining <= 0.f)
+		{
+			TemporaryPrimaryStatAmplifiers.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+			bAmplifiersChanged = true;
+		}
+	}
+	if (bAmplifiersChanged)
+	{
+		HeroProgressChanged.Broadcast();
 	}
 
 	// Status effects removed — enemies no longer apply Burn/Chill/Curse.
@@ -740,6 +777,7 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 
 	LastDamageTime = Now;
 	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
+	UT66AudioSubsystem::PlayEventFromWorldContext(World, FName(TEXT("Hero.Damage")), FVector::ZeroVector, nullptr);
 	AntiCheatDamageTakenHitCount = FMath::Clamp(AntiCheatDamageTakenHitCount + 1, 0, 1000000);
 	AntiCheatCurrentConsecutiveDodges = 0;
 	RecordAntiCheatHitCheckEvent(Evade, false, true);

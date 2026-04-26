@@ -3,21 +3,35 @@
 - Chat number: 2
 - Screen slug: `companion_grid`
 - Source current screenshot: `C:\UE\T66\UI\screens\companion_grid\current\current_state_1920x1080.png`
-- Anchor path: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
 - Source screenshot state: existed before generation
-- Raw native image output: `C:\Users\DoPra\.codex\generated_images\019dc448-af5d-72b1-8abf-524ea1622a8b\ig_0de50fc64c2798b60169eca59284488198a45ca7c8db0764fc.png`
-- Normalization: deterministic resample from `1672x941` to `1920x1080`
 - Accepted reference: `C:\UE\T66\UI\screens\companion_grid\reference\companion_grid_reference_1920x1080.png`
-- Status: accepted for first reference-generation pass
+- Archived previous reference: `C:\UE\T66\UI\archive\reference_generation_v1_20260425\companion_grid\companion_grid_reference_1920x1080.png`
+- Archived previous notes: `C:\UE\T66\UI\archive\reference_generation_v1_20260425\companion_grid\reference_generation_notes.md`
+- Main-menu anchor: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_1920x1080.png`
+- Main-menu 4K helper: `C:\UE\T66\UI\screens\main_menu\reference\main_menu_reference_3840x2160_realesrgan_x4plus_anime.png`
+- Global top-bar sprite: `C:\UE\T66\SourceAssets\UI\MainMenuReference\TopBar\topbar_global_reference_sprite_1920x140.png`
+- Global top-bar 4K helper: `C:\UE\T66\SourceAssets\UI\MainMenuReference\TopBar\topbar_global_reference_sprite_3840x280.png`
+- Chrome helper sheet: `C:\UE\T66\SourceAssets\UI\MainMenuReference\SpriteSheets\mainmenu_chrome_sprite_sheet_imagegen_20260425_v1_4096.png`
+- Chrome prompt source: `C:\UE\T66\Docs\UI\PromptPacks\MainMenuSpriteSheets\chrome_sheet_imagegen_prompt_20260425_v1.txt`
+- Raw native image output: `C:\Users\DoPra\.codex\generated_images\019dc448-af5d-72b1-8abf-524ea1622a8b\ig_0f05a5b534baab010169eced1f4118819a8a0bb00c7eb94441.png`
+- Normalization: deterministic resample from `1672x941` to `1920x1080`
+- Status: accepted
+
+## Required Handling
+
+- Global top bar: applied as fixed shared chrome at the top.
+- Standalone Back button: removed; no replacement back arrow or footer added.
+- Deprecated/deferred target: no.
+- Generated only a full-screen offline reference; no sprite sheets, runtime code, layout manifest, or packaged review were created.
 
 ## Runtime-Owned Regions To Preserve Later
 
-- companion portrait sockets
-- selected, hover, locked, and unavailable states
-- title text and back button label/state
-- any future companion names, rarity frames, or status markers
+- all fifteen companion portrait placeholders
+- selected/hover/locked wide slot states
+- companion roster content and portrait imagery
+- title text and `3 x 5` wide-slot spacing
 
 ## Integrator Notes
 
-- Generated slots are neutral sockets by design; runtime owns companion identity.
-- Full-screen reference is an offline comparison target only.
+- Current screenshot remained authority for the `3 x 5` wide-slot count and panel hierarchy.
+- Portraits are represented as runtime-owned placeholders, not final baked runtime art.

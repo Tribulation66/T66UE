@@ -1,0 +1,2111 @@
+{
+  "version": "2026-04-25.reference-derived.v2b",
+  "process": "C:\\UE\\T66\\Docs\\UI\\UI_RECONSTRUCTION_LOCKED_PROCESS.md",
+  "reference_anchor": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+  "font": {
+    "family": "Jersey 10",
+    "runtime_path": "C:\\UE\\T66\\RuntimeDependencies\\T66\\Fonts\\Jersey10-Regular.ttf",
+    "source_path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Jersey10-Regular.ttf",
+    "license": "SIL Open Font License 1.1",
+    "usage": "Locked retro pixel/8-bit UI font. Workers must not choose substitutes."
+  },
+  "topbar_allowed_screens": [
+    "main_menu",
+    "account_status",
+    "achievements",
+    "settings",
+    "language_select",
+    "minigames",
+    "powerup"
+  ],
+  "assets": {
+    "Buttons/cta_large_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_large_normal.png",
+      "size": [
+        490,
+        106
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        716,
+        716,
+        490,
+        106
+      ],
+      "nine_slice_margin": [
+        38,
+        28,
+        38,
+        28
+      ],
+      "cleanup_inset": [
+        14,
+        14,
+        14,
+        14
+      ],
+      "state": "normal",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Buttons/cta_large_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_large_hover.png",
+      "size": [
+        490,
+        106
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        716,
+        716,
+        490,
+        106
+      ],
+      "nine_slice_margin": [
+        38,
+        28,
+        38,
+        28
+      ],
+      "cleanup_inset": [
+        14,
+        14,
+        14,
+        14
+      ],
+      "state": "hover",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Buttons/cta_large_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_large_pressed.png",
+      "size": [
+        490,
+        106
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        716,
+        716,
+        490,
+        106
+      ],
+      "nine_slice_margin": [
+        38,
+        28,
+        38,
+        28
+      ],
+      "cleanup_inset": [
+        14,
+        14,
+        14,
+        14
+      ],
+      "state": "pressed",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Buttons/cta_large_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_large_disabled.png",
+      "size": [
+        490,
+        106
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        716,
+        716,
+        490,
+        106
+      ],
+      "nine_slice_margin": [
+        38,
+        28,
+        38,
+        28
+      ],
+      "cleanup_inset": [
+        14,
+        14,
+        14,
+        14
+      ],
+      "state": "disabled",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Buttons/cta_large_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_large_selected.png",
+      "size": [
+        490,
+        106
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        716,
+        716,
+        490,
+        106
+      ],
+      "nine_slice_margin": [
+        38,
+        28,
+        38,
+        28
+      ],
+      "cleanup_inset": [
+        14,
+        14,
+        14,
+        14
+      ],
+      "state": "selected",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Buttons/invite_small_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\invite_small_normal.png",
+      "size": [
+        113,
+        48
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        349,
+        399,
+        113,
+        48
+      ],
+      "nine_slice_margin": [
+        22,
+        14,
+        22,
+        14
+      ],
+      "cleanup_inset": [
+        9,
+        8,
+        9,
+        8
+      ],
+      "state": "normal",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Buttons/invite_small_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\invite_small_hover.png",
+      "size": [
+        113,
+        48
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        349,
+        399,
+        113,
+        48
+      ],
+      "nine_slice_margin": [
+        22,
+        14,
+        22,
+        14
+      ],
+      "cleanup_inset": [
+        9,
+        8,
+        9,
+        8
+      ],
+      "state": "hover",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Buttons/invite_small_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\invite_small_pressed.png",
+      "size": [
+        113,
+        48
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        349,
+        399,
+        113,
+        48
+      ],
+      "nine_slice_margin": [
+        22,
+        14,
+        22,
+        14
+      ],
+      "cleanup_inset": [
+        9,
+        8,
+        9,
+        8
+      ],
+      "state": "pressed",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Buttons/invite_small_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\invite_small_disabled.png",
+      "size": [
+        113,
+        48
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        349,
+        399,
+        113,
+        48
+      ],
+      "nine_slice_margin": [
+        22,
+        14,
+        22,
+        14
+      ],
+      "cleanup_inset": [
+        9,
+        8,
+        9,
+        8
+      ],
+      "state": "disabled",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Buttons/invite_small_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\invite_small_selected.png",
+      "size": [
+        113,
+        48
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        349,
+        399,
+        113,
+        48
+      ],
+      "nine_slice_margin": [
+        22,
+        14,
+        22,
+        14
+      ],
+      "cleanup_inset": [
+        9,
+        8,
+        9,
+        8
+      ],
+      "state": "selected",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_square_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_normal.png",
+      "size": [
+        115,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        34,
+        29,
+        115,
+        88
+      ],
+      "nine_slice_margin": [
+        27,
+        23,
+        27,
+        23
+      ],
+      "cleanup_inset": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "state": "normal",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_square_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_hover.png",
+      "size": [
+        115,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        34,
+        29,
+        115,
+        88
+      ],
+      "nine_slice_margin": [
+        27,
+        23,
+        27,
+        23
+      ],
+      "cleanup_inset": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "state": "hover",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_square_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_pressed.png",
+      "size": [
+        115,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        34,
+        29,
+        115,
+        88
+      ],
+      "nine_slice_margin": [
+        27,
+        23,
+        27,
+        23
+      ],
+      "cleanup_inset": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "state": "pressed",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_square_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_disabled.png",
+      "size": [
+        115,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        34,
+        29,
+        115,
+        88
+      ],
+      "nine_slice_margin": [
+        27,
+        23,
+        27,
+        23
+      ],
+      "cleanup_inset": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "state": "disabled",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_square_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_selected.png",
+      "size": [
+        115,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        34,
+        29,
+        115,
+        88
+      ],
+      "nine_slice_margin": [
+        27,
+        23,
+        27,
+        23
+      ],
+      "cleanup_inset": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "state": "selected",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_nav_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_normal.png",
+      "size": [
+        265,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        307,
+        29,
+        265,
+        88
+      ],
+      "nine_slice_margin": [
+        30,
+        23,
+        30,
+        23
+      ],
+      "cleanup_inset": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "state": "normal",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_nav_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_hover.png",
+      "size": [
+        265,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        307,
+        29,
+        265,
+        88
+      ],
+      "nine_slice_margin": [
+        30,
+        23,
+        30,
+        23
+      ],
+      "cleanup_inset": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "state": "hover",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_nav_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_pressed.png",
+      "size": [
+        265,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        307,
+        29,
+        265,
+        88
+      ],
+      "nine_slice_margin": [
+        30,
+        23,
+        30,
+        23
+      ],
+      "cleanup_inset": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "state": "pressed",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_nav_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_disabled.png",
+      "size": [
+        265,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        307,
+        29,
+        265,
+        88
+      ],
+      "nine_slice_margin": [
+        30,
+        23,
+        30,
+        23
+      ],
+      "cleanup_inset": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "state": "disabled",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_nav_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_selected.png",
+      "size": [
+        265,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        307,
+        29,
+        265,
+        88
+      ],
+      "nine_slice_margin": [
+        30,
+        23,
+        30,
+        23
+      ],
+      "cleanup_inset": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "state": "selected",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_currency_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_normal.png",
+      "size": [
+        176,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1580,
+        29,
+        176,
+        88
+      ],
+      "nine_slice_margin": [
+        30,
+        23,
+        30,
+        23
+      ],
+      "cleanup_inset": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "state": "normal",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_currency_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_hover.png",
+      "size": [
+        176,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1580,
+        29,
+        176,
+        88
+      ],
+      "nine_slice_margin": [
+        30,
+        23,
+        30,
+        23
+      ],
+      "cleanup_inset": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "state": "hover",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_currency_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_pressed.png",
+      "size": [
+        176,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1580,
+        29,
+        176,
+        88
+      ],
+      "nine_slice_margin": [
+        30,
+        23,
+        30,
+        23
+      ],
+      "cleanup_inset": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "state": "pressed",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_currency_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_disabled.png",
+      "size": [
+        176,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1580,
+        29,
+        176,
+        88
+      ],
+      "nine_slice_margin": [
+        30,
+        23,
+        30,
+        23
+      ],
+      "cleanup_inset": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "state": "disabled",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_currency_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_selected.png",
+      "size": [
+        176,
+        88
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1580,
+        29,
+        176,
+        88
+      ],
+      "nine_slice_margin": [
+        30,
+        23,
+        30,
+        23
+      ],
+      "cleanup_inset": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "state": "selected",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "TopBar/topbar_strip_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_strip_normal.png",
+      "size": [
+        1898,
+        118
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        11,
+        12,
+        1898,
+        118
+      ],
+      "nine_slice_margin": [
+        30,
+        28,
+        30,
+        28
+      ],
+      "cleanup_inset": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "state": "normal",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Panels/left_panel_frame_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\left_panel_frame_normal.png",
+      "size": [
+        467,
+        889
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        17,
+        146,
+        467,
+        889
+      ],
+      "nine_slice_margin": [
+        30,
+        34,
+        30,
+        34
+      ],
+      "cleanup_inset": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "state": "normal",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Panels/right_panel_frame_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\right_panel_frame_normal.png",
+      "size": [
+        478,
+        800
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1424,
+        230,
+        478,
+        800
+      ],
+      "nine_slice_margin": [
+        30,
+        34,
+        30,
+        34
+      ],
+      "cleanup_inset": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "state": "normal",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Panels/profile_card_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\profile_card_normal.png",
+      "size": [
+        119,
+        113
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        35,
+        163,
+        119,
+        113
+      ],
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "cleanup_inset": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "state": "normal",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Panels/profile_card_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\profile_card_selected.png",
+      "size": [
+        119,
+        113
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        35,
+        163,
+        119,
+        113
+      ],
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "cleanup_inset": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "state": "selected",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Panels/profile_card_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\profile_card_disabled.png",
+      "size": [
+        119,
+        113
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        35,
+        163,
+        119,
+        113
+      ],
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "cleanup_inset": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "state": "disabled",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Fields/search_field_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Fields\\search_field_normal.png",
+      "size": [
+        425,
+        51
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        36,
+        290,
+        425,
+        51
+      ],
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ],
+      "cleanup_inset": [
+        7,
+        7,
+        7,
+        7
+      ],
+      "state": "normal",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Fields/search_field_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Fields\\search_field_hover.png",
+      "size": [
+        425,
+        51
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        36,
+        290,
+        425,
+        51
+      ],
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ],
+      "cleanup_inset": [
+        7,
+        7,
+        7,
+        7
+      ],
+      "state": "hover",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Fields/search_field_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Fields\\search_field_disabled.png",
+      "size": [
+        425,
+        51
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        36,
+        290,
+        425,
+        51
+      ],
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ],
+      "cleanup_inset": [
+        7,
+        7,
+        7,
+        7
+      ],
+      "state": "disabled",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Slots/party_slot_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\party_slot_normal.png",
+      "size": [
+        95,
+        99
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        151,
+        907,
+        95,
+        99
+      ],
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "cleanup_inset": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "state": "normal",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Slots/party_slot_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\party_slot_hover.png",
+      "size": [
+        95,
+        99
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        151,
+        907,
+        95,
+        99
+      ],
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "cleanup_inset": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "state": "hover",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Slots/party_slot_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\party_slot_selected.png",
+      "size": [
+        95,
+        99
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        151,
+        907,
+        95,
+        99
+      ],
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "cleanup_inset": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "state": "selected",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Slots/party_slot_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\party_slot_disabled.png",
+      "size": [
+        95,
+        99
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        151,
+        907,
+        95,
+        99
+      ],
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "cleanup_inset": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "state": "disabled",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Tabs/wide_tab_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\wide_tab_normal.png",
+      "size": [
+        219,
+        47
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1437,
+        237,
+        219,
+        47
+      ],
+      "nine_slice_margin": [
+        24,
+        13,
+        24,
+        13
+      ],
+      "cleanup_inset": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "normal",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Tabs/wide_tab_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\wide_tab_hover.png",
+      "size": [
+        219,
+        47
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1437,
+        237,
+        219,
+        47
+      ],
+      "nine_slice_margin": [
+        24,
+        13,
+        24,
+        13
+      ],
+      "cleanup_inset": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "hover",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Tabs/wide_tab_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\wide_tab_pressed.png",
+      "size": [
+        219,
+        47
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1437,
+        237,
+        219,
+        47
+      ],
+      "nine_slice_margin": [
+        24,
+        13,
+        24,
+        13
+      ],
+      "cleanup_inset": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "pressed",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Tabs/wide_tab_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\wide_tab_selected.png",
+      "size": [
+        219,
+        47
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1437,
+        237,
+        219,
+        47
+      ],
+      "nine_slice_margin": [
+        24,
+        13,
+        24,
+        13
+      ],
+      "cleanup_inset": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "selected",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Tabs/wide_tab_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\wide_tab_disabled.png",
+      "size": [
+        219,
+        47
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1437,
+        237,
+        219,
+        47
+      ],
+      "nine_slice_margin": [
+        24,
+        13,
+        24,
+        13
+      ],
+      "cleanup_inset": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "disabled",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Controls/dropdown_field_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_field_normal.png",
+      "size": [
+        217,
+        49
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        294,
+        217,
+        49
+      ],
+      "nine_slice_margin": [
+        18,
+        12,
+        18,
+        12
+      ],
+      "cleanup_inset": [
+        7,
+        7,
+        7,
+        7
+      ],
+      "state": "normal",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Controls/dropdown_field_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_field_hover.png",
+      "size": [
+        217,
+        49
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        294,
+        217,
+        49
+      ],
+      "nine_slice_margin": [
+        18,
+        12,
+        18,
+        12
+      ],
+      "cleanup_inset": [
+        7,
+        7,
+        7,
+        7
+      ],
+      "state": "hover",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Controls/dropdown_field_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\dropdown_field_disabled.png",
+      "size": [
+        217,
+        49
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        294,
+        217,
+        49
+      ],
+      "nine_slice_margin": [
+        18,
+        12,
+        18,
+        12
+      ],
+      "cleanup_inset": [
+        7,
+        7,
+        7,
+        7
+      ],
+      "state": "disabled",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Controls/toggle_wide_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\toggle_wide_normal.png",
+      "size": [
+        217,
+        48
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        352,
+        217,
+        48
+      ],
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "cleanup_inset": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "normal",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Controls/toggle_wide_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\toggle_wide_hover.png",
+      "size": [
+        217,
+        48
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        352,
+        217,
+        48
+      ],
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "cleanup_inset": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "hover",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Controls/toggle_wide_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\toggle_wide_pressed.png",
+      "size": [
+        217,
+        48
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        352,
+        217,
+        48
+      ],
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "cleanup_inset": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "pressed",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Controls/toggle_wide_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\toggle_wide_selected.png",
+      "size": [
+        217,
+        48
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        352,
+        217,
+        48
+      ],
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "cleanup_inset": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "selected",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Controls/toggle_wide_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\toggle_wide_disabled.png",
+      "size": [
+        217,
+        48
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        352,
+        217,
+        48
+      ],
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ],
+      "cleanup_inset": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "state": "disabled",
+      "shape": "chamfer",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Rows/leaderboard_row_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Rows\\leaderboard_row_normal.png",
+      "size": [
+        446,
+        54
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        510,
+        446,
+        54
+      ],
+      "nine_slice_margin": [
+        12,
+        8,
+        12,
+        8
+      ],
+      "cleanup_inset": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "state": "normal",
+      "shape": "rect",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Rows/leaderboard_row_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Rows\\leaderboard_row_hover.png",
+      "size": [
+        446,
+        54
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        510,
+        446,
+        54
+      ],
+      "nine_slice_margin": [
+        12,
+        8,
+        12,
+        8
+      ],
+      "cleanup_inset": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "state": "hover",
+      "shape": "rect",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Rows/leaderboard_row_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Rows\\leaderboard_row_selected.png",
+      "size": [
+        446,
+        54
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        1438,
+        510,
+        446,
+        54
+      ],
+      "nine_slice_margin": [
+        12,
+        8,
+        12,
+        8
+      ],
+      "cleanup_inset": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "state": "selected",
+      "shape": "rect",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Misc/progress_bar_shell_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Misc\\progress_bar_shell_normal.png",
+      "size": [
+        280,
+        24
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        176,
+        250,
+        280,
+        24
+      ],
+      "nine_slice_margin": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "cleanup_inset": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "state": "normal",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Misc/progress_bar_shell_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Misc\\progress_bar_shell_disabled.png",
+      "size": [
+        280,
+        24
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        176,
+        250,
+        280,
+        24
+      ],
+      "nine_slice_margin": [
+        8,
+        7,
+        8,
+        7
+      ],
+      "cleanup_inset": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "state": "disabled",
+      "shape": "rounded",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "Misc/divider_horizontal_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Misc\\divider_horizontal_normal.png",
+      "size": [
+        424,
+        3
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": true,
+      "source_reference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+      "source_box_xywh": [
+        36,
+        615,
+        424,
+        3
+      ],
+      "nine_slice_margin": [
+        4,
+        1,
+        4,
+        1
+      ],
+      "cleanup_inset": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "state": "normal",
+      "shape": "rect",
+      "notes": "No baked text. Outer rim/corners derive from the approved main-menu reference; live-content interior is repainted."
+    },
+    "IconsGenerated/settings_gear": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_01_settings_gear_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/language_speech": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_02_language_speech_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/account_profile": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_03_account_profile_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/powerup_lightning": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_04_powerup_lightning_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/achievements_trophy": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_05_achievements_trophy_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/minigames_gamepad": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_06_minigames_gamepad_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/power_quit": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_07_power_quit_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/ticket_coupon": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_08_ticket_coupon_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/search_magnifier": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_09_search_magnifier_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/close_x": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_10_close_x_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/star_favorite": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_11_star_favorite_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/invite_plus_person": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_12_invite_plus_person_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/lock": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_13_lock_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/coin_gold": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_14_coin_gold_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/inventory_bag": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_15_inventory_bag_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    },
+    "IconsGenerated/map_minimap": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_16_map_minimap_imagegen_20260425_v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "safe_for_runtime": true,
+      "reference_derived": false,
+      "imagegen_generated": true,
+      "source_manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "state": "normal",
+      "notes": "Imagegen icon slice with local chroma-key alpha cleanup. No text."
+    }
+  },
+  "sprite_sheets": [
+    {
+      "category": "Buttons",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_buttons_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_buttons_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "TopBar",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_topbar_4096.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_topbar_4096.json",
+      "size": [
+        4096,
+        2048
+      ]
+    },
+    {
+      "category": "Panels",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_panels_4096.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_panels_4096.json",
+      "size": [
+        4096,
+        2048
+      ]
+    },
+    {
+      "category": "Fields",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_fields_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_fields_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "Tabs",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_tabs_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_tabs_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "Controls",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_controls_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_controls_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "Slots",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_slots_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_slots_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "Rows",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_rows_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_rows_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "Misc",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_misc_2048.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_misc_2048.json",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "category": "AllChrome",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_all_components_4096.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_all_components_4096.json",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "category": "IconsGenerated",
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1.png",
+      "manifest": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1_manifest.json",
+      "size": [
+        1254,
+        1254
+      ],
+      "review_atlas_chroma_key": true
+    }
+  ],
+  "proofs": {
+    "reference_derived_library_proof": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Preview\\reference_derived_library_proof.png",
+    "reference_derived_library_preview": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Preview\\reference_derived_library_preview.png"
+  },
+  "rules": [
+    "Runtime assets are reference-derived transparent PNG chrome pieces, not full-screen references.",
+    "Use nine_slice_margin for variable-size Slate/UMG box brushes.",
+    "No baked runtime labels, names, values, timers, scores, portraits, inventory items, or offers.",
+    "Icons generated by imagegen live in IconGeneration and Slices/IconsGenerated, separate from chrome sheets.",
+    "Top bar is allowed only on main_menu, account_status, achievements, settings, language_select, minigames, and powerup."
+  ]
+}

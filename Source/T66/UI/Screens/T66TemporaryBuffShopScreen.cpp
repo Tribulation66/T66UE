@@ -100,7 +100,7 @@ namespace
 		static FT66BuffShopSpriteBrushEntry Entry;
 		return ResolveBuffShopSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_panel_shell.png"),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			ESlateBrushDrawType::Box);
@@ -111,22 +111,22 @@ namespace
 		static FT66BuffShopSpriteBrushEntry Entry;
 		return ResolveBuffShopSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
-			FVector2D(861.f, 74.f),
-			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
+			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Cards/runflow_shop_card_normal.png"),
+			FVector2D(208.f, 188.f),
+			FMargin(0.09f, 0.14f, 0.09f, 0.14f),
 			ESlateBrushDrawType::Box);
 	}
 
 	FString GetBuffShopButtonPath(const ET66BuffShopButtonFamily Family, const ET66BuffShopButtonState State)
 	{
-		const TCHAR* Prefix = TEXT("settings_compact_neutral");
+		const TCHAR* Prefix = TEXT("runflow_button_neutral");
 		if (Family == ET66BuffShopButtonFamily::ToggleOn)
 		{
-			Prefix = TEXT("settings_toggle_on");
+			Prefix = TEXT("runflow_button_primary");
 		}
 		else if (Family == ET66BuffShopButtonFamily::ToggleInactive)
 		{
-			Prefix = TEXT("settings_toggle_inactive");
+			Prefix = TEXT("runflow_button_neutral");
 		}
 
 		const TCHAR* Suffix = TEXT("normal");
@@ -139,7 +139,7 @@ namespace
 			Suffix = TEXT("pressed");
 		}
 
-		return FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s_%s.png"), Prefix, Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/%s_%s.png"), Prefix, Suffix);
 	}
 
 	FVector2D GetBuffShopButtonSize(const ET66BuffShopButtonFamily Family, const ET66BuffShopButtonState State)
@@ -198,7 +198,7 @@ namespace
 		FT66BuffShopButtonBrushSet& Set = GetBuffShopButtonBrushSet(ET66BuffShopButtonFamily::ToggleInactive);
 		return ResolveBuffShopSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_normal.png"),
+			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_button_neutral_disabled.png"),
 			FVector2D(180.f, 69.f),
 			FMargin(0.14f, 0.30f, 0.14f, 0.30f),
 			ESlateBrushDrawType::Box);
@@ -344,9 +344,8 @@ TSharedRef<SWidget> UT66TemporaryBuffShopScreen::BuildSlateUI()
 		TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
 	}
 
-	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
-	const float ModalWidth = FMath::Min(SafeFrameSize.X * 0.90f, 1160.0f);
-	const float ModalHeight = FMath::Min(SafeFrameSize.Y * 0.90f, 680.0f);
+	const float ModalWidth = 1880.0f;
+	const float ModalHeight = 1058.0f;
 	const int32 Columns = 5;
 	const float CardGap = 10.0f;
 
@@ -379,12 +378,16 @@ TSharedRef<SWidget> UT66TemporaryBuffShopScreen::BuildSlateUI()
 		Grid->AddSlot(Col, Row)
 			.Padding(Col < Columns - 1 ? FMargin(0.f, 0.f, CardGap, CardGap) : FMargin(0.f, 0.f, 0.f, CardGap))
 			[
-				MakeBuffShopSpritePanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.f, 0.f, 0.f, 6.f)
+				SNew(SBox)
+				.WidthOverride(230.f)
+				.HeightOverride(196.f)
+				[
+					MakeBuffShopSpritePanel(
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.HAlign(HAlign_Center)
+						.Padding(0.f, 0.f, 0.f, 6.f)
 					[
 						SNew(SBox)
 						.WidthOverride(52.f)
@@ -448,15 +451,16 @@ TSharedRef<SWidget> UT66TemporaryBuffShopScreen::BuildSlateUI()
 							10,
 							Balance >= Cost)
 					],
-					GetBuffShopCardShellBrush(),
-					FMargin(10.f),
-					FT66Style::Tokens::Panel)
+						GetBuffShopCardShellBrush(),
+						FMargin(10.f),
+						FT66Style::Tokens::Panel)
+				]
 			];
 	}
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::Scrim())
+		.BorderBackgroundColor(FLinearColor(0.009f, 0.011f, 0.016f, 1.0f))
 		[
 			SNew(SBox)
 			.WidthOverride(ModalWidth)

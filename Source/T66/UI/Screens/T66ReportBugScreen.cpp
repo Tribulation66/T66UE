@@ -69,11 +69,11 @@ namespace
 		case ET66ButtonType::Primary:
 		case ET66ButtonType::Success:
 		case ET66ButtonType::ToggleActive:
-			return TEXT("settings_toggle_on");
+			return TEXT("button_success");
 		case ET66ButtonType::Danger:
-			return TEXT("settings_toggle_off");
+			return TEXT("button_danger");
 		default:
-			return TEXT("settings_compact_neutral");
+			return TEXT("button_neutral");
 		}
 	}
 
@@ -123,7 +123,7 @@ namespace
 	{
 		return ResolveReportBugReferenceBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s_%s.png"), Prefix, State),
+			FString::Printf(TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/%s_%s.png"), Prefix, State),
 			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
 			DebugLabel);
 	}
@@ -152,7 +152,7 @@ namespace
 			{
 				StyleEntry.Style.SetPressed(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveReportBugButtonBrush(BrushSet.Disabled, TEXT("settings_toggle_inactive"), TEXT("normal"), TEXT("ReportBugButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolveReportBugButtonBrush(BrushSet.Disabled, TEXT("button_neutral"), TEXT("disabled"), TEXT("ReportBugButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}
@@ -166,7 +166,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveReportBugReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_modal.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("ReportBugShell"));
 	}
@@ -176,7 +176,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveReportBugReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_dropdown_field.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/dropdown_field.png"),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
 			TEXT("ReportBugField"));
 	}

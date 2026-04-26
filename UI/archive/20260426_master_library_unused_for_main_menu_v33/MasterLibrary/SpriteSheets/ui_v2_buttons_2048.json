@@ -1,0 +1,129 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_buttons_2048.png",
+  "size": [
+    2048,
+    2048
+  ],
+  "sprites": {
+    "Buttons/cta_large_normal": {
+      "x": 24,
+      "y": 24,
+      "w": 520,
+      "h": 108,
+      "nine_slice_margin": [
+        32,
+        26,
+        32,
+        26
+      ]
+    },
+    "Buttons/cta_large_hover": {
+      "x": 568,
+      "y": 24,
+      "w": 520,
+      "h": 108,
+      "nine_slice_margin": [
+        32,
+        26,
+        32,
+        26
+      ]
+    },
+    "Buttons/cta_large_pressed": {
+      "x": 1112,
+      "y": 24,
+      "w": 520,
+      "h": 108,
+      "nine_slice_margin": [
+        32,
+        26,
+        32,
+        26
+      ]
+    },
+    "Buttons/cta_large_selected": {
+      "x": 24,
+      "y": 156,
+      "w": 520,
+      "h": 108,
+      "nine_slice_margin": [
+        32,
+        26,
+        32,
+        26
+      ]
+    },
+    "Buttons/cta_large_disabled": {
+      "x": 568,
+      "y": 156,
+      "w": 520,
+      "h": 108,
+      "nine_slice_margin": [
+        32,
+        26,
+        32,
+        26
+      ]
+    },
+    "Buttons/invite_small_normal": {
+      "x": 1112,
+      "y": 156,
+      "w": 122,
+      "h": 52,
+      "nine_slice_margin": [
+        20,
+        14,
+        20,
+        14
+      ]
+    },
+    "Buttons/invite_small_hover": {
+      "x": 1258,
+      "y": 156,
+      "w": 122,
+      "h": 52,
+      "nine_slice_margin": [
+        20,
+        14,
+        20,
+        14
+      ]
+    },
+    "Buttons/invite_small_pressed": {
+      "x": 1404,
+      "y": 156,
+      "w": 122,
+      "h": 52,
+      "nine_slice_margin": [
+        20,
+        14,
+        20,
+        14
+      ]
+    },
+    "Buttons/invite_small_selected": {
+      "x": 1550,
+      "y": 156,
+      "w": 122,
+      "h": 52,
+      "nine_slice_margin": [
+        20,
+        14,
+        20,
+        14
+      ]
+    },
+    "Buttons/invite_small_disabled": {
+      "x": 1696,
+      "y": 156,
+      "w": 122,
+      "h": 52,
+      "nine_slice_margin": [
+        20,
+        14,
+        20,
+        14
+      ]
+    }
+  }
+}

@@ -4,7 +4,7 @@ Canvas: 1920x1080.
 
 Fixed structure:
 - Full-width frontend top navigation bar across the top.
-- Left back button below the top bar.
+- No standalone Back button. Reclaim the space below the global top bar without adding replacement navigation.
 - Centered powerup category tabs near the top of the body: Permanent selected, Single Use inactive, plus currency cost block.
 - Main body uses a three-column card grid.
 - Cards contain category/name labels at top, stat label, progress track/value in the middle, and a large purchase button at bottom.
@@ -16,4 +16,4 @@ Runtime-owned regions:
 
 Visual restyle target:
 - Preserve the three-column card grid, tab controls, price strip, and scroll position.
-- Restyle cards, progress tracks, purchase plates, and tabs in the sleek main-menu Chadpocalypse style while leaving card interiors as live-data sockets.
+- Restyle cards, progress tracks, purchase plates, and tabs in the V2 main-menu style: sleek dark charcoal surfaces, crisp uniform purple borders, restrained gold accents, clean planar panels, rounded controls, and low-grain presentation while leaving card interiors as live-data sockets. Avoid cracked stone, gemstones/crystals, bevel-heavy fantasy frames, noisy borders, screws, rivets, chipped edges, and distressed texture.

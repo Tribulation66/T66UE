@@ -7,6 +7,7 @@
 #include "Gameplay/T66HeroOneAttackVFX.h"
 #include "Gameplay/T66CombatShared.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
@@ -15,19 +16,16 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
-#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
-#include "Kismet/GameplayStatics.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
 #include "Components/CapsuleComponent.h"
 #include "HAL/IConsoleManager.h"
-#include "Sound/SoundBase.h"
 #include "TimerManager.h"
 #include "UObject/SoftObjectPath.h"
 
@@ -44,6 +42,18 @@ namespace
 		case ET66AttackCategory::Bounce: return TEXT("Bounce");
 		case ET66AttackCategory::DOT:    return TEXT("DOT");
 		default:                         return TEXT("Unknown");
+		}
+	}
+
+	FName GetT66AttackCategoryAudioEvent(const ET66AttackCategory Category)
+	{
+		switch (Category)
+		{
+		case ET66AttackCategory::Pierce: return FName(TEXT("Hero.Attack.Pierce"));
+		case ET66AttackCategory::AOE:    return FName(TEXT("Hero.Attack.AOE"));
+		case ET66AttackCategory::Bounce: return FName(TEXT("Hero.Attack.Bounce"));
+		case ET66AttackCategory::DOT:    return FName(TEXT("Hero.Attack.DOT"));
+		default:                         return FName(TEXT("Hero.Attack.Generic"));
 		}
 	}
 
@@ -152,17 +162,12 @@ UT66CombatComponent::UT66CombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	ShotSfx = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/Audio/SFX/Shot.Shot")));
 	SlashVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
 	PixelVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
 }
 
 void UT66CombatComponent::PrimeCombatPresentationAssetsAsync()
 {
-	if (!CachedShotSfx)
-	{
-		CachedShotSfx = ShotSfx.Get();
-	}
 	if (!CachedSlashVFXNiagara)
 	{
 		CachedSlashVFXNiagara = SlashVFXNiagara.Get();
@@ -171,16 +176,12 @@ void UT66CombatComponent::PrimeCombatPresentationAssetsAsync()
 	{
 		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
 	}
-	if ((CachedShotSfx && CachedSlashVFXNiagara && CachedPixelVFXNiagara) || CombatPresentationAssetsLoadHandle.IsValid())
+	if ((CachedSlashVFXNiagara && CachedPixelVFXNiagara) || CombatPresentationAssetsLoadHandle.IsValid())
 	{
 		return;
 	}
 
 	TArray<FSoftObjectPath> AssetPaths;
-	if (!CachedShotSfx && !ShotSfx.IsNull())
-	{
-		AssetPaths.AddUnique(ShotSfx.ToSoftObjectPath());
-	}
 	if (!CachedSlashVFXNiagara && !SlashVFXNiagara.IsNull())
 	{
 		AssetPaths.AddUnique(SlashVFXNiagara.ToSoftObjectPath());
@@ -206,10 +207,6 @@ void UT66CombatComponent::PrimeCombatPresentationAssetsAsync()
 void UT66CombatComponent::HandleCombatPresentationAssetsLoaded()
 {
 	CombatPresentationAssetsLoadHandle.Reset();
-	if (!CachedShotSfx)
-	{
-		CachedShotSfx = ShotSfx.Get();
-	}
 	if (!CachedSlashVFXNiagara)
 	{
 		CachedSlashVFXNiagara = SlashVFXNiagara.Get();
@@ -284,7 +281,7 @@ void UT66CombatComponent::PerformScopedPiercingShot(const FVector& Start, const 
 	}
 
 	SpawnPierceVFX(Start, End, FLinearColor(0.95f, 0.95f, 1.f));
-	PlayShotSfx();
+	PlayCombatAudioEvent(FName(TEXT("Hero.Ultimate.ScopedSniper.Fire")), (Start + End) * 0.5f);
 }
 
 // ---------------------------------------------------------------------------
@@ -791,43 +788,32 @@ void UT66CombatComponent::RecomputeFromRunState()
 	}
 }
 
-void UT66CombatComponent::PlayShotSfx()
+void UT66CombatComponent::PlayCombatAudioEvent(const FName EventID, const FVector& Location) const
 {
-	UWorld* World = GetWorld();
-	if (!World) return;
+	AActor* OwnerActor = GetOwner();
+	UT66AudioSubsystem::PlayEventFromWorldContext(OwnerActor ? static_cast<UObject*>(OwnerActor) : const_cast<UT66CombatComponent*>(this), EventID, Location, OwnerActor);
+}
 
-	// Apply user SFX volume even if SoundClass assets aren't set up yet.
-	UGameInstance* GI = World->GetGameInstance();
-	UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
-	const float MasterVol = PS ? FMath::Clamp(PS->GetMasterVolume(), 0.f, 1.f) : 1.f;
-	const float SfxVol = PS ? FMath::Clamp(PS->GetSfxVolume(), 0.f, 1.f) : 1.f;
-	const float EffectiveSfx = MasterVol * SfxVol;
-	if (EffectiveSfx <= KINDA_SMALL_NUMBER)
-	{
-		return;
-	}
+void UT66CombatComponent::PlayHeroAttackSfx(const FName& HeroID, const ET66AttackCategory AttackCategory, const FVector& Location) const
+{
+	AActor* OwnerActor = GetOwner();
+	UObject* WorldContext = OwnerActor ? static_cast<UObject*>(OwnerActor) : const_cast<UT66CombatComponent*>(this);
 
-	USoundBase* Sound = CachedShotSfx;
-	if (!Sound)
+	if (!HeroID.IsNone())
 	{
-		CachedShotSfx = ShotSfx.Get();
-		Sound = CachedShotSfx;
-		if (!Sound && !ShotSfx.IsNull())
+		const FName HeroEventID(*FString::Printf(TEXT("Hero.Attack.%s"), *HeroID.ToString()));
+		if (UT66AudioSubsystem::PlayEventFromWorldContext(WorldContext, HeroEventID, Location, OwnerActor))
 		{
-			PrimeCombatPresentationAssetsAsync();
 			return;
 		}
+	}
 
-		if (!bShotSfxWarnedMissing)
-		{
-			bShotSfxWarnedMissing = true;
-			UE_LOG(LogT66Combat, Warning, TEXT("Shot SFX not found. Import your Shot audio into UE so '/Game/Audio/SFX/Shot' exists (SoundWave/SoundCue)."));
-		}
+	if (UT66AudioSubsystem::PlayEventFromWorldContext(WorldContext, GetT66AttackCategoryAudioEvent(AttackCategory), Location, OwnerActor))
+	{
 		return;
 	}
 
-	// Auto attack is effectively UI-ish for now; play 2D so it always reads clearly.
-	UGameplayStatics::PlaySound2D(World, Sound, EffectiveSfx);
+	UT66AudioSubsystem::PlayEventFromWorldContext(WorldContext, FName(TEXT("Hero.Attack.Generic")), Location, OwnerActor);
 }
 
 float UT66CombatComponent::GetAutoAttackCooldownProgress() const
@@ -1117,7 +1103,7 @@ void UT66CombatComponent::TryFire()
 			const FLinearColor HeroTint = bHaveHeroData ? HeroDataForPrimary.PlaceholderColor : FLinearColor::White;
 			SpawnHeroPierceVFX(VFXStart, VFXEnd, ImpactLoc, HeroTint, CurrentHeroID);
 		}
-		PlayShotSfx();
+		PlayHeroAttackSfx(CurrentHeroID, AttackCategory, TargetLoc);
 		return true;
 	};
 
@@ -1167,7 +1153,7 @@ void UT66CombatComponent::TryFire()
 
 		const FLinearColor HeroTint = bHaveHeroData ? HeroDataForPrimary.PlaceholderColor : FLinearColor::White;
 		SpawnHeroSlashVFX(SlashCenter, EffectiveSlashRadius, HeroTint, CurrentHeroID);
-		PlayShotSfx();
+		PlayHeroAttackSfx(CurrentHeroID, AttackCategory, SlashCenter);
 		return true;
 	};
 
@@ -1228,7 +1214,7 @@ void UT66CombatComponent::TryFire()
 		}
 		const FLinearColor HeroTint = bHaveHeroData ? HeroDataForPrimary.PlaceholderColor : FLinearColor::White;
 		SpawnHeroBounceVFX(ChainPositions, HeroTint, CurrentHeroID);
-		PlayShotSfx();
+		PlayHeroAttackSfx(CurrentHeroID, AttackCategory, PrimaryLoc);
 		return true;
 	};
 
@@ -1261,7 +1247,7 @@ void UT66CombatComponent::TryFire()
 		}
 		const FLinearColor HeroTint = bHaveHeroData ? HeroDataForPrimary.PlaceholderColor : FLinearColor::White;
 		SpawnHeroDOTVFX(PrimaryTarget, GetTargetAimPoint(PrimaryHandle), Duration, 80.f, HeroTint, CurrentHeroID);
-		PlayShotSfx();
+		PlayHeroAttackSfx(CurrentHeroID, AttackCategory, GetTargetAimPoint(PrimaryHandle));
 		return true;
 	};
 
@@ -2122,7 +2108,6 @@ void UT66CombatComponent::PerformUltimateSpearStorm(int32 UltimateDamage, const 
 	}
 
 	SpawnArthurUltimateSwordVFX(Start, End);
-	PlayShotSfx();
 }
 
 void UT66CombatComponent::PerformUltimateChainLightning(int32 UltimateDamage)

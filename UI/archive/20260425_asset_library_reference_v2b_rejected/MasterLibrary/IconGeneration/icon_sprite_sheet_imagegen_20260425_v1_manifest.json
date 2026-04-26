@@ -1,0 +1,393 @@
+{
+  "name": "icon_sprite_sheet_imagegen_20260425_v1",
+  "createdDate": "2026-04-25",
+  "sourceReference": "C:\\UE\\T66\\UI\\screens\\main_menu\\reference\\main_menu_reference_1920x1080.png",
+  "sourceGeneratedImage": "C:\\Users\\DoPra\\.codex\\generated_images\\019dc6c2-7d58-7f70-b5e8-b4d26c2b6f39\\ig_07b0681034d07cfa0169ed40429db48198a8cef5e97d349910.png",
+  "atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v1.png",
+  "atlasSize": {
+    "w": 1254,
+    "h": 1254
+  },
+  "grid": {
+    "columns": 4,
+    "rows": 4
+  },
+  "sliceDirectory": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated",
+  "toolPath": "built-in image_gen, then local Pillow chroma-key cleanup/slicing",
+  "prompt": "Use case: stylized-concept\nAsset type: game UI icon sprite sheet / review atlas\nPrimary request: Create a 4 by 4 sprite sheet of sixteen separate fantasy UI icons, no text anywhere. Icons in reading order: settings gear, language/speech bubble, account/profile bust, powerup lightning or flame, achievements trophy, minigames gamepad, power/quit symbol, ticket/coupon, search magnifier, close X, star/favorite, invite/plus-person, lock, coin/gold, inventory bag, map/minimap.\nStyle/medium: high-quality retro pixel fantasy game UI icons, chunky pixel-art silhouette with painterly highlights, polished mobile/PC game asset quality, similar to a dark fantasy arcade main menu.\nComposition/framing: square 4x4 atlas, each icon centered in its own equal square cell with generous padding, isolated icon only, no labels, no numbers, no UI button frames, no text, no watermark. Keep icons separated with clean empty space between cells so they can be sliced.\nLighting/mood: glossy bronze/gold highlights, neon purple rim light, teal accent glow, strong readable silhouette at small sizes.\nColor palette: blackened bronze, gold, orange flame, saturated purple, cyan/teal accents, cream highlights; avoid flat vector style.\nMaterials/textures: pixel-fantasy metal, enamel, gem-like glow, beveled edges, crunchy pixel detail.\nBackground: perfectly flat solid #00ff00 chroma-key background across the entire sheet, no shadows, no gradients, no texture, no floor plane.\nConstraints: Do not use #00ff00 or neon green inside any icon. No text, no letters, no numbers, no captions, no watermark. Each icon must be complete and fully inside its cell.",
+  "icons": [
+    {
+      "index": 1,
+      "id": "settings_gear",
+      "label": "settings gear",
+      "atlasCell": {
+        "x": 0,
+        "y": 0,
+        "w": 314,
+        "h": 314
+      },
+      "sourceTrimInCell": {
+        "x": 51,
+        "y": 53,
+        "w": 232,
+        "h": 237
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_01_settings_gear_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 2,
+      "id": "language_speech",
+      "label": "language/speech",
+      "atlasCell": {
+        "x": 314,
+        "y": 0,
+        "w": 313,
+        "h": 314
+      },
+      "sourceTrimInCell": {
+        "x": 52,
+        "y": 73,
+        "w": 215,
+        "h": 208
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_02_language_speech_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 3,
+      "id": "account_profile",
+      "label": "account/profile",
+      "atlasCell": {
+        "x": 627,
+        "y": 0,
+        "w": 313,
+        "h": 314
+      },
+      "sourceTrimInCell": {
+        "x": 33,
+        "y": 55,
+        "w": 222,
+        "h": 231
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_03_account_profile_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 4,
+      "id": "powerup_lightning",
+      "label": "powerup/lightning or flame",
+      "atlasCell": {
+        "x": 940,
+        "y": 0,
+        "w": 314,
+        "h": 314
+      },
+      "sourceTrimInCell": {
+        "x": 36,
+        "y": 50,
+        "w": 205,
+        "h": 246
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_04_powerup_lightning_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 5,
+      "id": "achievements_trophy",
+      "label": "achievements/trophy",
+      "atlasCell": {
+        "x": 0,
+        "y": 314,
+        "w": 314,
+        "h": 313
+      },
+      "sourceTrimInCell": {
+        "x": 44,
+        "y": 42,
+        "w": 245,
+        "h": 228
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_05_achievements_trophy_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 6,
+      "id": "minigames_gamepad",
+      "label": "minigames/gamepad",
+      "atlasCell": {
+        "x": 314,
+        "y": 314,
+        "w": 313,
+        "h": 313
+      },
+      "sourceTrimInCell": {
+        "x": 23,
+        "y": 65,
+        "w": 272,
+        "h": 193
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_06_minigames_gamepad_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 7,
+      "id": "power_quit",
+      "label": "power/quit",
+      "atlasCell": {
+        "x": 627,
+        "y": 314,
+        "w": 313,
+        "h": 313
+      },
+      "sourceTrimInCell": {
+        "x": 36,
+        "y": 42,
+        "w": 219,
+        "h": 226
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_07_power_quit_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 8,
+      "id": "ticket_coupon",
+      "label": "ticket/coupon",
+      "atlasCell": {
+        "x": 940,
+        "y": 314,
+        "w": 314,
+        "h": 313
+      },
+      "sourceTrimInCell": {
+        "x": 12,
+        "y": 37,
+        "w": 255,
+        "h": 226
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_08_ticket_coupon_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 9,
+      "id": "search_magnifier",
+      "label": "search/magnifier",
+      "atlasCell": {
+        "x": 0,
+        "y": 627,
+        "w": 314,
+        "h": 313
+      },
+      "sourceTrimInCell": {
+        "x": 41,
+        "y": 23,
+        "w": 230,
+        "h": 227
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_09_search_magnifier_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 10,
+      "id": "close_x",
+      "label": "close/x",
+      "atlasCell": {
+        "x": 314,
+        "y": 627,
+        "w": 313,
+        "h": 313
+      },
+      "sourceTrimInCell": {
+        "x": 24,
+        "y": 14,
+        "w": 251,
+        "h": 242
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_10_close_x_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 11,
+      "id": "star_favorite",
+      "label": "star/favorite",
+      "atlasCell": {
+        "x": 627,
+        "y": 627,
+        "w": 313,
+        "h": 313
+      },
+      "sourceTrimInCell": {
+        "x": 28,
+        "y": 16,
+        "w": 236,
+        "h": 233
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_11_star_favorite_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 12,
+      "id": "invite_plus_person",
+      "label": "invite/plus-person",
+      "atlasCell": {
+        "x": 940,
+        "y": 627,
+        "w": 314,
+        "h": 313
+      },
+      "sourceTrimInCell": {
+        "x": 17,
+        "y": 26,
+        "w": 251,
+        "h": 215
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_12_invite_plus_person_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 13,
+      "id": "lock",
+      "label": "lock",
+      "atlasCell": {
+        "x": 0,
+        "y": 940,
+        "w": 314,
+        "h": 314
+      },
+      "sourceTrimInCell": {
+        "x": 67,
+        "y": 0,
+        "w": 179,
+        "h": 233
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_13_lock_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 14,
+      "id": "coin_gold",
+      "label": "coin/gold",
+      "atlasCell": {
+        "x": 314,
+        "y": 940,
+        "w": 313,
+        "h": 314
+      },
+      "sourceTrimInCell": {
+        "x": 36,
+        "y": 2,
+        "w": 228,
+        "h": 231
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_14_coin_gold_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 15,
+      "id": "inventory_bag",
+      "label": "inventory/bag",
+      "atlasCell": {
+        "x": 627,
+        "y": 940,
+        "w": 313,
+        "h": 314
+      },
+      "sourceTrimInCell": {
+        "x": 24,
+        "y": 0,
+        "w": 241,
+        "h": 244
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_15_inventory_bag_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 16,
+      "id": "map_minimap",
+      "label": "map/minimap",
+      "atlasCell": {
+        "x": 940,
+        "y": 940,
+        "w": 314,
+        "h": 314
+      },
+      "sourceTrimInCell": {
+        "x": 4,
+        "y": 9,
+        "w": 258,
+        "h": 228
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_16_map_minimap_imagegen_20260425_v1.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    }
+  ],
+  "limitations": [
+    "The atlas remains a review/source sheet with chroma-key background, as requested.",
+    "Transparent slices were derived locally from chroma-key removal because built-in image_gen does not expose native transparent PNG output.",
+    "The generated language icon uses speech-bubble dots instead of letters to satisfy the no-text constraint."
+  ]
+}

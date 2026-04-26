@@ -18,7 +18,7 @@ public:
 	virtual bool Interact(APlayerController* PC) override;
 
 	const FT66ArcadeInteractableData& GetArcadeData() const { return ResolvedArcadeData; }
-	void HandleArcadePopupClosed(bool bSucceeded);
+	void HandleArcadePopupClosed(bool bSucceeded, int32 FinalScore);
 
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
@@ -28,6 +28,7 @@ protected:
 	virtual FVector GetImportedVisualScale() const override;
 
 	void RefreshResolvedArcadeData();
+	FT66ArcadeInteractableData BuildArcadeSessionData() const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Arcade")
 	FName ArcadeRowID = NAME_None;
@@ -42,4 +43,12 @@ protected:
 
 private:
 	FText ResolveInteractionVerb() const;
+	ET66ArcadeGameType ResolveRandomGameType(const FT66ArcadeInteractableData& Data) const;
+	void SpawnCompletionRewards(int32 FinalScore);
+	void SpawnLootBagReward(const FVector& SpawnLocation, FRandomStream& Rng);
+	void SpawnChestReward(const FVector& SpawnLocation);
+	void SpawnWeaponCrateReward(const FVector& SpawnLocation, FRandomStream& Rng);
+	void SpawnAmplifierReward(const FVector& SpawnLocation, FRandomStream& Rng, int32 BonusStatPoints, float DurationSeconds);
+	FVector BuildRewardSpawnLocation(int32 RewardIndex, int32 RewardCount) const;
+	void PlayCompletionEffects(int32 FinalScore);
 };

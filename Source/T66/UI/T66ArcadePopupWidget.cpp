@@ -13,7 +13,7 @@ void UT66ArcadePopupWidget::InitializeArcadePopup(
 	SourceInteractable = InSourceInteractable;
 }
 
-void UT66ArcadePopupWidget::StartCloseSequence(const bool bSucceeded)
+void UT66ArcadePopupWidget::StartCloseSequence(const bool bSucceeded, const int32 FinalScore)
 {
 	if (bCloseSequenceStarted)
 	{
@@ -24,13 +24,13 @@ void UT66ArcadePopupWidget::StartCloseSequence(const bool bSucceeded)
 
 	if (AT66PlayerController* T66PC = GetOwningPlayer<AT66PlayerController>())
 	{
-		T66PC->HandleArcadePopupResult(this, bSucceeded);
+		T66PC->HandleArcadePopupResult(this, bSucceeded, FinalScore);
 		return;
 	}
 
 	if (AT66ArcadeInteractableBase* SourceInteractablePtr = SourceInteractable.Get())
 	{
-		SourceInteractablePtr->HandleArcadePopupClosed(bSucceeded);
+		SourceInteractablePtr->HandleArcadePopupClosed(bSucceeded, FinalScore);
 	}
 
 	RemoveFromParent();

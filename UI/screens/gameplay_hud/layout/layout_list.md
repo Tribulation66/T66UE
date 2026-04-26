@@ -14,5 +14,7 @@ Runtime-owned regions:
 - Score, score-to-beat, timer, time-to-beat, stage number, health values, currency values, item counts, keybind labels, cooldown values, hero portrait, ability icons, passive icon, idol slots, inventory item slots.
 
 Style target:
-- Preserve the exact HUD locations, compact information density, and open gameplay visibility.
-- Replace flat gray placeholder chrome with the Chadpocalypse main-menu language: dark metal shells, purple neon bevels, pixel-art highlights, high-contrast arcade-fantasy trim, and readable socket frames.
+- Preserve the exact HUD locations, compact information density, slot counts, and open gameplay visibility.
+- Replace flat gray placeholder chrome with the accepted V2 main-menu language: sleek dark charcoal panels, smooth satin surfaces, crisp uniform purple outlines, cream text treatment, restrained gold accents only where useful, and clean readable socket frames.
+- Do not add ability slots, idol slots, currencies, meters, panels, icons, rows, labels, or controls beyond what is visible in the current screenshot.
+- Avoid grain, cracked stone, rubble, gem/crystal surfaces, distressed metal, chipped edges, screws, rivets, bolts, heavy bevel stacks, noisy borders, and extra glow clutter.

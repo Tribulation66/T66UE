@@ -16,8 +16,8 @@ AT66MiniEnemyProjectile::AT66MiniEnemyProjectile()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	SetReplicateMovement(true);
-	NetUpdateFrequency = 24.f;
-	MinNetUpdateFrequency = 12.f;
+	SetNetUpdateFrequency(24.f);
+	SetMinNetUpdateFrequency(12.f);
 
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	SetRootComponent(CollisionComponent);

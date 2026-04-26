@@ -1,0 +1,107 @@
+[
+  {
+    "screen": "casino_alchemy_tab",
+    "mean_abs_diff": 13.26,
+    "rms_diff": 33.3,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "reference": "C:\\UE\\T66\\UI\\screens\\casino_alchemy_tab\\reference\\casino_alchemy_tab_reference_1920x1080.png",
+    "capture": "C:\\UE\\T66\\UI\\screens\\casino_alchemy_tab\\outputs\\2026-04-25\\casino_alchemy_tab_packaged_1920x1080.png",
+    "diff": "C:\\UE\\T66\\UI\\screens\\casino_alchemy_tab\\outputs\\2026-04-25\\casino_alchemy_tab_diff_x4.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\casino_alchemy_tab\\outputs\\2026-04-25\\casino_alchemy_tab_review_triptych.png"
+  },
+  {
+    "screen": "casino_gambling_tab",
+    "mean_abs_diff": 39.12,
+    "rms_diff": 63.93,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "reference": "C:\\UE\\T66\\UI\\screens\\casino_gambling_tab\\reference\\casino_gambling_tab_reference_1920x1080.png",
+    "capture": "C:\\UE\\T66\\UI\\screens\\casino_gambling_tab\\outputs\\2026-04-25\\casino_gambling_tab_packaged_1920x1080.png",
+    "diff": "C:\\UE\\T66\\UI\\screens\\casino_gambling_tab\\outputs\\2026-04-25\\casino_gambling_tab_diff_x4.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\casino_gambling_tab\\outputs\\2026-04-25\\casino_gambling_tab_review_triptych.png"
+  },
+  {
+    "screen": "casino_vendor_tab",
+    "mean_abs_diff": 30.27,
+    "rms_diff": 52.18,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "reference": "C:\\UE\\T66\\UI\\screens\\casino_vendor_tab\\reference\\casino_vendor_tab_reference_1920x1080.png",
+    "capture": "C:\\UE\\T66\\UI\\screens\\casino_vendor_tab\\outputs\\2026-04-25\\casino_vendor_tab_packaged_1920x1080.png",
+    "diff": "C:\\UE\\T66\\UI\\screens\\casino_vendor_tab\\outputs\\2026-04-25\\casino_vendor_tab_diff_x4.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\casino_vendor_tab\\outputs\\2026-04-25\\casino_vendor_tab_review_triptych.png"
+  },
+  {
+    "screen": "collector_overlay",
+    "mean_abs_diff": 17.22,
+    "rms_diff": 27.5,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "reference": "C:\\UE\\T66\\UI\\screens\\collector_overlay\\reference\\collector_overlay_reference_1920x1080.png",
+    "capture": "C:\\UE\\T66\\UI\\screens\\collector_overlay\\outputs\\2026-04-25\\collector_overlay_packaged_1920x1080.png",
+    "diff": "C:\\UE\\T66\\UI\\screens\\collector_overlay\\outputs\\2026-04-25\\collector_overlay_diff_x4.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\collector_overlay\\outputs\\2026-04-25\\collector_overlay_review_triptych.png"
+  },
+  {
+    "screen": "crate_overlay",
+    "mean_abs_diff": 55.62,
+    "rms_diff": 66.89,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "reference": "C:\\UE\\T66\\UI\\screens\\crate_overlay\\reference\\crate_overlay_reference_1920x1080.png",
+    "capture": "C:\\UE\\T66\\UI\\screens\\crate_overlay\\outputs\\2026-04-25\\crate_overlay_packaged_1920x1080.png",
+    "diff": "C:\\UE\\T66\\UI\\screens\\crate_overlay\\outputs\\2026-04-25\\crate_overlay_diff_x4.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\crate_overlay\\outputs\\2026-04-25\\crate_overlay_review_triptych.png"
+  },
+  {
+    "screen": "idol_altar_overlay",
+    "mean_abs_diff": 46.61,
+    "rms_diff": 72.69,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "reference": "C:\\UE\\T66\\UI\\screens\\idol_altar_overlay\\reference\\idol_altar_overlay_reference_1920x1080.png",
+    "capture": "C:\\UE\\T66\\UI\\screens\\idol_altar_overlay\\outputs\\2026-04-25\\idol_altar_overlay_packaged_1920x1080.png",
+    "diff": "C:\\UE\\T66\\UI\\screens\\idol_altar_overlay\\outputs\\2026-04-25\\idol_altar_overlay_diff_x4.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\idol_altar_overlay\\outputs\\2026-04-25\\idol_altar_overlay_review_triptych.png"
+  },
+  {
+    "screen": "lab_overlay",
+    "mean_abs_diff": 52.4,
+    "rms_diff": 65.32,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "reference": "C:\\UE\\T66\\UI\\screens\\lab_overlay\\reference\\lab_overlay_reference_1920x1080.png",
+    "capture": "C:\\UE\\T66\\UI\\screens\\lab_overlay\\outputs\\2026-04-25\\lab_overlay_packaged_1920x1080.png",
+    "diff": "C:\\UE\\T66\\UI\\screens\\lab_overlay\\outputs\\2026-04-25\\lab_overlay_diff_x4.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\lab_overlay\\outputs\\2026-04-25\\lab_overlay_review_triptych.png"
+  }
+]

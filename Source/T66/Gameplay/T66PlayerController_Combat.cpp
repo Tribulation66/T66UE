@@ -38,6 +38,7 @@
 #include "Gameplay/T66StageCatchUpGoldInteractable.h"
 #include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66CommunityContentSubsystem.h"
@@ -174,6 +175,43 @@ namespace
 	static bool T66UsesMouseTriggeredUltimate(const FHeroData& HeroData)
 	{
 		return HeroData.UltimateType == ET66UltimateType::SpearStorm;
+	}
+
+	static FName T66GetUltimateAudioEventID(const ET66UltimateType UltimateType)
+	{
+		if (UltimateType == ET66UltimateType::None)
+		{
+			return NAME_None;
+		}
+
+		const UEnum* Enum = StaticEnum<ET66UltimateType>();
+		const FString UltimateName = Enum
+			? Enum->GetNameStringByValue(static_cast<int64>(UltimateType))
+			: FString();
+		return UltimateName.IsEmpty()
+			? NAME_None
+			: FName(*FString::Printf(TEXT("Hero.Ultimate.%s"), *UltimateName));
+	}
+
+	static bool T66PlayUltimateAudio(AT66PlayerController* PlayerController, const ET66UltimateType UltimateType, AActor* Hero)
+	{
+		if (!PlayerController)
+		{
+			return false;
+		}
+
+		const FVector Location = Hero
+			? Hero->GetActorLocation()
+			: (PlayerController->GetPawn() ? PlayerController->GetPawn()->GetActorLocation() : FVector::ZeroVector);
+
+		const FName UltimateEventID = T66GetUltimateAudioEventID(UltimateType);
+		if (!UltimateEventID.IsNone()
+			&& UT66AudioSubsystem::PlayEventFromWorldContext(PlayerController, UltimateEventID, Location, Hero))
+		{
+			return true;
+		}
+
+		return UT66AudioSubsystem::PlayEventFromWorldContext(PlayerController, FName(TEXT("Combat.Ultimate.Cast")), Location, Hero);
 	}
 
 	static bool T66ProjectTargetHandleToScreen(
@@ -682,6 +720,7 @@ void AT66PlayerController::HandleUltimatePressed()
 	const int32 UltDmg = UT66RunStateSubsystem::UltimateDamage;
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
 	UT66CombatComponent* Combat = Hero ? Hero->FindComponentByClass<UT66CombatComponent>() : nullptr;
+	T66PlayUltimateAudio(this, UltType, Hero);
 
 	switch (UltType)
 	{
@@ -954,6 +993,7 @@ void AT66PlayerController::HandleAttackUnlockPressed()
 			const float DistSq = FVector::DistSquared(P->GetActorLocation(), Bag->GetActorLocation());
 			if (DistSq <= (250.f * 250.f))
 			{
+				UT66AudioSubsystem::PlayEventAtActorFromWorldContext(this, FName(TEXT("Pickup.Discard")), Bag);
 				Bag->ConsumeAndDestroy();
 				NearbyLootBag.Reset();
 				return;
@@ -1216,51 +1256,63 @@ void AT66PlayerController::HandleInteractPressed()
 	}
 
 	AT66HeroBase* HeroPawn = Cast<AT66HeroBase>(ControlledPawn);
+	auto PlayInteractAudio = [this, HeroPawn](const FName EventID, AActor* SourceActor)
+	{
+		UT66AudioSubsystem::PlayEventAtActorFromWorldContext(this, EventID, SourceActor ? SourceActor : HeroPawn);
+	};
 
 	if (ClosestTractor && ClosestTractor->IsMountedByHero(HeroPawn) && ClosestTractor->Interact(this))
 	{
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestTractor);
 		return;
 	}
 
 	// Recruitable companion should take priority over stage gate so you can recruit right after boss death.
 	if (ClosestRecruitableCompanion && ClosestRecruitableCompanion->Interact(this))
 	{
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestRecruitableCompanion);
 		return;
 	}
 
 	// Interact with Stage Gate (F) advances to next stage and reloads level
 	if (ClosestStageGate && ClosestStageGate->AdvanceToNextStage())
 	{
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestStageGate);
 		return;
 	}
 
 	// Tutorial portal (teleport within the same map; no load)
 	if (ClosestTutorialPortal && ClosestTutorialPortal->Interact(this))
 	{
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestTutorialPortal);
 		return;
 	}
 
 	// Stage Catch Up gate (F) enters the chosen difficulty start stage
 	if (ClosestCatchUpGate && ClosestCatchUpGate->EnterChosenStage())
 	{
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestCatchUpGate);
 		return;
 	}
 
 	// Difficulty totem (F) increases difficulty tier
 	if (ClosestTotem && ClosestTotem->Interact(this))
 	{
+		PlayInteractAudio(FName(TEXT("Interact.Totem.Activate")), ClosestTotem);
 		return;
 	}
 
 	// Cowardice Gate (F) opens yes/no prompt
 	if (ClosestCowardiceGate && ClosestCowardiceGate->Interact(this))
 	{
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestCowardiceGate);
 		return;
 	}
 
 	// NPCs (Vendor/Gambler/Saint/Ouroboros)
 	if (ClosestNPC && ClosestNPC->Interact(this))
 	{
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestNPC);
 		return;
 	}
 
@@ -1331,6 +1383,7 @@ void AT66PlayerController::HandleInteractPressed()
 			{
 				const int32 TokenLevel = SelectedLootBag->HasExplicitLine1RolledValue() ? SelectedLootBag->GetExplicitLine1RolledValue() : 1;
 				RunState->ApplyGamblersTokenPickup(TokenLevel);
+				PlayInteractAudio(FName(TEXT("Pickup.LootBag")), SelectedLootBag);
 				SelectedLootBag->ConsumeAndDestroy();
 				ClearNearbyLootBag(SelectedLootBag);
 				if (GameplayHUDWidget)
@@ -1341,6 +1394,7 @@ void AT66PlayerController::HandleInteractPressed()
 			else if (RunState->HasInventorySpace())
 			{
 				RunState->AddItemWithRarity(PickedItemID, PickedItemRarity);
+				PlayInteractAudio(FName(TEXT("Pickup.LootBag")), SelectedLootBag);
 				SelectedLootBag->ConsumeAndDestroy();
 				ClearNearbyLootBag(SelectedLootBag);
 				if (GameplayHUDWidget)
@@ -1355,6 +1409,7 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		if (SelectedTractor->Interact(this))
 		{
+			PlayInteractAudio(FName(TEXT("Interact.Generic")), SelectedTractor);
 			return;
 		}
 	}
@@ -1362,6 +1417,7 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		if (SelectedFountain->Interact(this))
 		{
+			PlayInteractAudio(FName(TEXT("Interact.Generic")), SelectedFountain);
 			return;
 		}
 	}
@@ -1369,6 +1425,7 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		if (SelectedChest->Interact(this))
 		{
+			PlayInteractAudio(FName(TEXT("Interact.Chest.Open")), SelectedChest);
 			return;
 		}
 	}
@@ -1376,6 +1433,7 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		if (SelectedWheel->Interact(this))
 		{
+			PlayInteractAudio(FName(TEXT("Interact.Generic")), SelectedWheel);
 			return;
 		}
 	}
@@ -1383,6 +1441,7 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		if (SelectedCrate->Interact(this))
 		{
+			PlayInteractAudio(FName(TEXT("Interact.Crate.Open")), SelectedCrate);
 			return;
 		}
 	}
@@ -1390,6 +1449,7 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		if (SelectedCatchUpGold->Interact(this))
 		{
+			PlayInteractAudio(FName(TEXT("Pickup.Gold")), SelectedCatchUpGold);
 			return;
 		}
 	}
@@ -1397,6 +1457,7 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		if (SelectedCatchUpLoot->Interact(this))
 		{
+			PlayInteractAudio(FName(TEXT("Pickup.Item")), SelectedCatchUpLoot);
 			return;
 		}
 	}
@@ -1418,12 +1479,14 @@ void AT66PlayerController::HandleInteractPressed()
 			SetInputMode(InputMode);
 			bShowMouseCursor = true;
 		}
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), SelectedIdolAltar);
 		return;
 	}
 	if (AT66WorldInteractableBase* SelectedWorldInteractable = Cast<AT66WorldInteractableBase>(SecondaryInteract.Actor))
 	{
 		if (SelectedWorldInteractable->Interact(this))
 		{
+			PlayInteractAudio(FName(TEXT("Interact.Generic")), SelectedWorldInteractable);
 			return;
 		}
 	}
@@ -1435,6 +1498,7 @@ void AT66PlayerController::HandleInteractPressed()
 			if (RunState->HasInventorySpace())
 			{
 				RunState->AddItem(ClosestPickup->GetItemID());
+				PlayInteractAudio(FName(TEXT("Pickup.Item")), ClosestPickup);
 				ClosestPickup->Destroy();
 			}
 			return;

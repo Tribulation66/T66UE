@@ -1,0 +1,100 @@
+[
+  {
+    "slug": "casino_alchemy_tab",
+    "mean_abs_diff": 14.2893359375,
+    "rms": 33.53778426988405,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "packaged": "C:\\UE\\T66\\UI\\screens\\casino_alchemy_tab\\outputs\\2026-04-25-pass2\\casino_alchemy_tab_packaged_1920x1080.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\casino_alchemy_tab\\outputs\\2026-04-25-pass2\\casino_alchemy_tab_review_triptych.png",
+    "diff_x4": "C:\\UE\\T66\\UI\\screens\\casino_alchemy_tab\\outputs\\2026-04-25-pass2\\casino_alchemy_tab_diff_x4.png"
+  },
+  {
+    "slug": "casino_gambling_tab",
+    "mean_abs_diff": 39.5598922968107,
+    "rms": 63.831845347386555,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "packaged": "C:\\UE\\T66\\UI\\screens\\casino_gambling_tab\\outputs\\2026-04-25-pass2\\casino_gambling_tab_packaged_1920x1080.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\casino_gambling_tab\\outputs\\2026-04-25-pass2\\casino_gambling_tab_review_triptych.png",
+    "diff_x4": "C:\\UE\\T66\\UI\\screens\\casino_gambling_tab\\outputs\\2026-04-25-pass2\\casino_gambling_tab_diff_x4.png"
+  },
+  {
+    "slug": "casino_vendor_tab",
+    "mean_abs_diff": 31.02519917052469,
+    "rms": 51.88022850187873,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "packaged": "C:\\UE\\T66\\UI\\screens\\casino_vendor_tab\\outputs\\2026-04-25-pass2\\casino_vendor_tab_packaged_1920x1080.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\casino_vendor_tab\\outputs\\2026-04-25-pass2\\casino_vendor_tab_review_triptych.png",
+    "diff_x4": "C:\\UE\\T66\\UI\\screens\\casino_vendor_tab\\outputs\\2026-04-25-pass2\\casino_vendor_tab_diff_x4.png"
+  },
+  {
+    "slug": "collector_overlay",
+    "mean_abs_diff": 16.65572064686214,
+    "rms": 26.716838186360736,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "packaged": "C:\\UE\\T66\\UI\\screens\\collector_overlay\\outputs\\2026-04-25-pass2\\collector_overlay_packaged_1920x1080.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\collector_overlay\\outputs\\2026-04-25-pass2\\collector_overlay_review_triptych.png",
+    "diff_x4": "C:\\UE\\T66\\UI\\screens\\collector_overlay\\outputs\\2026-04-25-pass2\\collector_overlay_diff_x4.png"
+  },
+  {
+    "slug": "crate_overlay",
+    "mean_abs_diff": 55.6086730002572,
+    "rms": 67.12678707383681,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "packaged": "C:\\UE\\T66\\UI\\screens\\crate_overlay\\outputs\\2026-04-25-pass2\\crate_overlay_packaged_1920x1080.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\crate_overlay\\outputs\\2026-04-25-pass2\\crate_overlay_review_triptych.png",
+    "diff_x4": "C:\\UE\\T66\\UI\\screens\\crate_overlay\\outputs\\2026-04-25-pass2\\crate_overlay_diff_x4.png"
+  },
+  {
+    "slug": "idol_altar_overlay",
+    "mean_abs_diff": 45.497352912808644,
+    "rms": 69.43682699078049,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "packaged": "C:\\UE\\T66\\UI\\screens\\idol_altar_overlay\\outputs\\2026-04-25-pass2\\idol_altar_overlay_packaged_1920x1080.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\idol_altar_overlay\\outputs\\2026-04-25-pass2\\idol_altar_overlay_review_triptych.png",
+    "diff_x4": "C:\\UE\\T66\\UI\\screens\\idol_altar_overlay\\outputs\\2026-04-25-pass2\\idol_altar_overlay_diff_x4.png"
+  },
+  {
+    "slug": "lab_overlay",
+    "mean_abs_diff": 50.94405205118313,
+    "rms": 64.36756343013825,
+    "bbox": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "packaged": "C:\\UE\\T66\\UI\\screens\\lab_overlay\\outputs\\2026-04-25-pass2\\lab_overlay_packaged_1920x1080.png",
+    "triptych": "C:\\UE\\T66\\UI\\screens\\lab_overlay\\outputs\\2026-04-25-pass2\\lab_overlay_review_triptych.png",
+    "diff_x4": "C:\\UE\\T66\\UI\\screens\\lab_overlay\\outputs\\2026-04-25-pass2\\lab_overlay_diff_x4.png"
+  }
+]

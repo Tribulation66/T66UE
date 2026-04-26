@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66BossProjectile.h"
 
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -227,6 +228,8 @@ void AT66BossProjectile::SetTargetLocation(const FVector& TargetLoc, const float
 
 void AT66BossProjectile::SpawnImpactEffect()
 {
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Boss.Projectile.Impact")), GetActorLocation(), GetOwner());
+
 	if (!CachedImpactSystem || !GetWorld())
 	{
 		return;

@@ -11,6 +11,7 @@
 #include "Data/T66DataTypes.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/Style/T66OverlayChromeStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
@@ -325,12 +326,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
-		TSharedRef<SWidget> BuyBtnWidget = FT66Style::MakeButton(
-			FT66Style::MakeInRunButtonParams(
+		TSharedRef<SWidget> BuyBtnWidget = T66OverlayChromeStyle::MakeButton(
+			T66OverlayChromeStyle::MakeButtonParams(
 				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuySlot, i),
-				ET66ButtonType::Primary)
+				ET66OverlayChromeButtonFamily::Primary)
 			.SetMinWidth(CardButtonMinWidth)
+			.SetMinHeight(36.f)
 			.SetPadding(ShopButtonPadding)
 			.SetFontSize(CardButtonFontSize)
 			.SetContent(
@@ -342,12 +344,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		);
 		BuyButtons[i] = BuyBtnWidget;
 
-		TSharedRef<SWidget> StealBtnWidget = FT66Style::MakeButton(
-			FT66Style::MakeInRunButtonParams(
+		TSharedRef<SWidget> StealBtnWidget = T66OverlayChromeStyle::MakeButton(
+			T66OverlayChromeStyle::MakeButtonParams(
 				Loc ? Loc->GetText_Steal() : NSLOCTEXT("T66.Vendor", "Steal", "STEAL"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnStealSlot, i),
-				ET66ButtonType::Danger)
+				ET66OverlayChromeButtonFamily::Danger)
 			.SetMinWidth(CardButtonMinWidth)
+			.SetMinHeight(36.f)
 			.SetPadding(ShopButtonPadding)
 			.SetFontSize(CardButtonFontSize)
 		);
@@ -361,7 +364,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			.WidthOverride(ShopCardSize)
 			.HeightOverride(ShopCardHeight)
 			[
-				FT66Style::MakePanel(
+				T66OverlayChromeStyle::MakePanel(
 					SNew(SVerticalBox)
 					// 1. Name at top
 					+ SVerticalBox::Slot().AutoHeight()
@@ -384,7 +387,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							FT66Style::MakePanel(
+							T66OverlayChromeStyle::MakePanel(
 								SNew(SBox)
 								.WidthOverride(ShopIconSize)
 								.HeightOverride(ShopIconSize)
@@ -393,7 +396,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 									.Image(ItemIconBrushes[i].Get())
 									.ColorAndOpacity(FLinearColor::White)
 								],
-								FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f),
+								ET66OverlayChromeBrush::SlotNormal,
+								FMargin(0.f),
 								&ItemIconBorders[i])
 						]
 					]
@@ -421,7 +425,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						[ StealBtnWidget ]
 					]
 				,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(ShopCardPadding),
+					ET66OverlayChromeBrush::OfferCardNormal,
+					FMargin(ShopCardPadding),
 					&ItemTileBorders[i])
 			]
 		];
@@ -447,12 +452,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	TSharedRef<SHorizontalBox> BuybackRow = SNew(SHorizontalBox);
 	for (int32 i = 0; i < BuybackSlotCount; ++i)
 	{
-		TSharedRef<SWidget> BuybackBtnWidget = FT66Style::MakeButton(
-			FT66Style::MakeInRunButtonParams(
+		TSharedRef<SWidget> BuybackBtnWidget = T66OverlayChromeStyle::MakeButton(
+			T66OverlayChromeStyle::MakeButtonParams(
 				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuybackSlot, i),
-				ET66ButtonType::Primary)
+				ET66OverlayChromeButtonFamily::Primary)
 			.SetMinWidth(CardButtonMinWidth)
+			.SetMinHeight(36.f)
 			.SetPadding(ShopButtonPadding)
 			.SetFontSize(CardButtonFontSize)
 			.SetContent(
@@ -471,7 +477,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			.WidthOverride(ShopCardSize)
 			.HeightOverride(ShopCardHeight)
 			[
-				FT66Style::MakePanel(
+				T66OverlayChromeStyle::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -492,7 +498,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							FT66Style::MakePanel(
+							T66OverlayChromeStyle::MakePanel(
 								SNew(SBox)
 								.WidthOverride(ShopIconSize)
 								.HeightOverride(ShopIconSize)
@@ -501,7 +507,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 									.Image(BuybackIconBrushes[i].Get())
 									.ColorAndOpacity(FLinearColor::White)
 								],
-								FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f),
+								ET66OverlayChromeBrush::SlotNormal,
+								FMargin(0.f),
 								&BuybackIconBorders[i])
 						]
 					]
@@ -520,7 +527,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						BuybackBtnWidget
 					]
 				,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(ShopCardPadding),
+					ET66OverlayChromeBrush::OfferCardNormal,
+					FMargin(ShopCardPadding),
 					&BuybackTileBorders[i])
 			]
 		];
@@ -621,7 +629,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			.SetMinWidth(InventorySlotSize).SetHeight(InventorySlotSize)
 			.SetPadding(FMargin(0.f))
 			.SetContent(
-				FT66Style::MakePanel(
+				T66OverlayChromeStyle::MakePanel(
 					SNew(SOverlay)
 					+ SOverlay::Slot()
 					[
@@ -648,7 +656,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				,
-					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(0.f)),
+					ET66OverlayChromeBrush::SlotNormal,
+					FMargin(0.f),
 					&InventorySlotBorders[Inv])
 			)
 		);
@@ -665,11 +674,11 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	}
 
 	// Pre-create sell button (needs member reference for later SetEnabled).
-	TSharedRef<SWidget> SellBtnWidget = FT66Style::MakeButton(
-		FT66Style::MakeInRunButtonParams(
+	TSharedRef<SWidget> SellBtnWidget = T66OverlayChromeStyle::MakeButton(
+		T66OverlayChromeStyle::MakeButtonParams(
 			Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL"),
 			FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSellSelectedClicked),
-			ET66ButtonType::Primary)
+			ET66OverlayChromeButtonFamily::Primary)
 		.SetMinWidth(0.f)
 		.SetPadding(ActionButtonPadding)
 		.SetFontSize(CardButtonFontSize)
@@ -694,8 +703,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			BuybackRow
 		];
 
-	TSharedRef<SWidget> ShopModeToggleButton = FT66Style::MakeButton(
-		FT66Style::MakeInRunButtonParams(
+	TSharedRef<SWidget> ShopModeToggleButton = T66OverlayChromeStyle::MakeButton(
+		T66OverlayChromeStyle::MakeButtonParams(
 			BuybackTitle,
 			FOnClicked::CreateLambda([this]()
 			{
@@ -720,7 +729,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				RefreshShopChrome();
 				return FReply::Handled();
 			}),
-			ET66ButtonType::Neutral)
+			ET66OverlayChromeButtonFamily::Tab)
 		.SetMinWidth(0.f)
 		.SetPadding(bCompactCasinoLayout ? FMargin(8.f, 5.f) : FMargin(12.f, 8.f))
 		.SetFontSize(bCompactCasinoLayout ? 11 : 16)
@@ -731,11 +740,11 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			.ColorAndOpacity(FT66Style::Tokens::Text))
 	);
 
-	TSharedRef<SWidget> ContextRerollButton = FT66Style::MakeButton(
-		FT66Style::MakeInRunButtonParams(
+	TSharedRef<SWidget> ContextRerollButton = T66OverlayChromeStyle::MakeButton(
+		T66OverlayChromeStyle::MakeButtonParams(
 			RerollText,
 			FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnReroll),
-			ET66ButtonType::Neutral)
+			ET66OverlayChromeButtonFamily::Neutral)
 		.SetMinWidth(0.f)
 		.SetPadding(ActionButtonPadding)
 		.SetFontSize(bCompactCasinoLayout ? 11 : 16)
@@ -773,7 +782,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					]
 					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, FT66Style::Tokens::Space4, 0.f, 0.f)
 					[
-						FT66Style::MakePanel(
+						T66OverlayChromeStyle::MakePanel(
 							SAssignNew(ShopBuybackSwitcher, SWidgetSwitcher)
 							+ SWidgetSwitcher::Slot()
 							[
@@ -783,7 +792,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							[
 								BuybackCardsScroller
 							],
-							FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6))
+							ET66OverlayChromeBrush::ContentPanelWide,
+							FMargin(FT66Style::Tokens::Space6))
 					]
 					]
 				]
@@ -793,7 +803,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			.WidthOverride(RightPanelWidth)
 			.MinDesiredHeight(MainRowHeight)
 			[
-				FT66Style::MakePanel(
+				T66OverlayChromeStyle::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
 					[
@@ -811,7 +821,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
 					[
-						FT66Style::MakePanel(
+						T66OverlayChromeStyle::MakePanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
 							[
@@ -847,11 +857,11 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 								[
-									FT66Style::MakeButton(
-										FT66Style::MakeInRunButtonParams(
+									T66OverlayChromeStyle::MakeButton(
+										T66OverlayChromeStyle::MakeButtonParams(
 											Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Vendor", "Borrow_Button", "BORROW"),
 											FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBorrowClicked),
-											ET66ButtonType::Neutral)
+											ET66OverlayChromeButtonFamily::Neutral)
 										.SetMinWidth(0.f)
 										.SetPadding(ActionButtonPadding)
 										.SetFontSize(CardButtonFontSize)
@@ -876,11 +886,11 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 								[
-									FT66Style::MakeButton(
-										FT66Style::MakeInRunButtonParams(
+									T66OverlayChromeStyle::MakeButton(
+										T66OverlayChromeStyle::MakeButtonParams(
 											Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Vendor", "Payback_Button", "PAYBACK"),
 											FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnPaybackClicked),
-											ET66ButtonType::Neutral)
+											ET66OverlayChromeButtonFamily::Neutral)
 										.SetMinWidth(0.f)
 										.SetPadding(ActionButtonPadding)
 										.SetFontSize(CardButtonFontSize)
@@ -888,10 +898,12 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								]
 							]
 						,
-							FT66PanelParams(ET66PanelType::Panel2).SetPadding(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space5))
+							ET66OverlayChromeBrush::InnerPanel,
+							FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space5))
 					]
 				,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
+					ET66OverlayChromeBrush::ContentPanelTall,
+					FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6))
 			]
 		];
 
@@ -924,7 +936,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6, 0.f, 0.f)
 		[
-			FT66Style::MakePanel(
+			T66OverlayChromeStyle::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -993,7 +1005,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						.HeightOverride(SellPanelSize)
 						.Visibility(EVisibility::Visible)
 						[
-							FT66Style::MakePanel(
+							T66OverlayChromeStyle::MakePanel(
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight()
 								[
@@ -1023,12 +1035,14 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 								[ SellBtnWidget ]
 							,
-								FT66PanelParams(ET66PanelType::Panel2).SetPadding(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4))
+								ET66OverlayChromeBrush::InnerPanel,
+								FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4))
 						]
 					]
 				]
 			,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4).SetColor(FT66Style::Tokens::Panel))
+				ET66OverlayChromeBrush::ContentPanelWide,
+				FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4))
 		];
 
 	const TAttribute<FOptionalSize> ShopPageWidthAttr = TAttribute<FOptionalSize>::CreateLambda([this, OverlayPadding]() -> FOptionalSize
@@ -1071,7 +1085,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
-			FT66Style::MakePanel(
+			T66OverlayChromeStyle::MakePanel(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(SafeContentInsets)
@@ -1083,9 +1097,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					]
 				]
 			,
-				FT66PanelParams(ET66PanelType::Bg)
-					.SetPadding(OverlayPadding)
-					.SetColor(FLinearColor(0.014f, 0.011f, 0.010f, 0.96f)))
+				ET66OverlayChromeBrush::ContentPanelWide,
+				FMargin(OverlayPadding))
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
@@ -1095,10 +1108,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			SAssignNew(CloseButtonBox, SBox)
 			.Visibility(EVisibility::Visible)
 			[
-				FT66Style::MakeButton(
-					FT66Style::MakeInRunButtonParams(CloseText,
+				T66OverlayChromeStyle::MakeButton(
+					T66OverlayChromeStyle::MakeButtonParams(CloseText,
 						FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack),
-						ET66ButtonType::Danger)
+						ET66OverlayChromeButtonFamily::Danger)
 					.SetMinWidth(0.f)
 					.SetPadding(FMargin(20.f, 12.f))
 				)

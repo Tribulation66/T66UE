@@ -9,8 +9,7 @@
 // dependencies have a single owner.
 namespace T66RuntimeUIFontAccess
 {
-	FString ResolveRadianceFontPath();
-	FString ResolveReaverBoldFontPath();
+	FString ResolveLockedUIFontPath();
 	bool IsBoldWeight(const TCHAR* Weight);
 	FSlateFontInfo MakeFontFromAbsoluteFile(const FString& Path, int32 Size);
 	FSlateFontInfo MakeLocalizedEngineFont(int32 Size, bool bBold);

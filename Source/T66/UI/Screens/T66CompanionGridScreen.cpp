@@ -89,34 +89,31 @@ namespace
 	{
 		if (State == ET66CompanionGridPlateState::Disabled)
 		{
-			return TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_normal.png");
+			return TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/button_neutral_disabled.png");
 		}
 
 		if (Family == ET66CompanionGridPlateFamily::TileSelected)
 		{
-			const TCHAR* Suffix = State == ET66CompanionGridPlateState::Pressed
-				? TEXT("pressed")
-				: (State == ET66CompanionGridPlateState::Hovered ? TEXT("hover") : TEXT("normal"));
-			return FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_on_%s.png"), Suffix);
+			return TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/grid_tile_selected.png");
 		}
 
 		if (Family == ET66CompanionGridPlateFamily::TileNeutral)
 		{
 			if (State == ET66CompanionGridPlateState::Hovered)
 			{
-				return TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_dropdown_field.png");
+				return TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/grid_tile_selected.png");
 			}
 			if (State == ET66CompanionGridPlateState::Pressed)
 			{
-				return TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_on_hover.png");
+				return TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/grid_tile_selected.png");
 			}
-			return TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png");
+			return TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/grid_tile_normal.png");
 		}
 
 		const TCHAR* Suffix = State == ET66CompanionGridPlateState::Pressed
 			? TEXT("pressed")
 			: (State == ET66CompanionGridPlateState::Hovered ? TEXT("hover") : TEXT("normal"));
-		return FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_compact_neutral_%s.png"), Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/button_neutral_%s.png"), Suffix);
 	}
 
 	FMargin GetCompanionGridPlateMargin(const ET66CompanionGridPlateFamily Family, const ET66CompanionGridPlateState State)
@@ -163,7 +160,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_large.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("CompanionGridModalShell"));
 	}
@@ -173,7 +170,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MainMenuReference/LeftPanel/friend_avatar_frame.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/portrait_socket.png"),
 			FMargin(0.f),
 			TEXT("CompanionGridAvatarFrame"));
 	}
@@ -327,14 +324,17 @@ namespace
 
 	TSharedRef<SWidget> MakeCompanionGridTile(
 		const FT66ButtonParams& ButtonParams,
-		const FLinearColor& BackgroundColor,
+		const FLinearColor& /*BackgroundColor*/,
 		const TSharedRef<SWidget>& Content,
 		const T66ScreenSlateHelpers::FResponsiveGridModalMetrics& Metrics,
 		const bool bSelected)
 	{
 		const float TileSize = Metrics.TileSize;
 		const float InnerInset = FMath::Clamp(TileSize * 0.11f, 8.f, 22.f);
-		const FLinearColor InteriorColor = BackgroundColor.CopyWithNewOpacity(ButtonParams.IsEnabled.Get(true) ? 0.82f : 0.38f);
+		const bool bEnabled = ButtonParams.IsEnabled.Get(true);
+		const FLinearColor InteriorColor = bSelected
+			? FLinearColor(0.050f, 0.055f, 0.070f, bEnabled ? 0.94f : 0.38f)
+			: FLinearColor(0.012f, 0.018f, 0.026f, bEnabled ? 0.92f : 0.34f);
 
 		TSharedRef<SOverlay> TileContent = SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -436,9 +436,11 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	FText TitleText = Loc ? Loc->GetText_CompanionGrid() : NSLOCTEXT("T66.CompanionGrid", "Title", "COMPANION GRID");
-	FText CloseText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	FText NoCompanionText = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionGrid", "NoCompanion", "NO COMPANION");
 	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
+	const float SharedTopInset = (UIManager && UIManager->IsFrontendTopBarVisible())
+		? UIManager->GetFrontendTopBarContentHeight()
+		: 0.f;
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
@@ -531,14 +533,6 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 
 	T66ScreenSlateHelpers::AddUniformGridPaddingSlots(*GridPanel, IDsWithNone.Num(), GridMetrics);
 
-	const TSharedRef<SWidget> FooterButton = MakeCompanionGridTextButton(
-		FT66ButtonParams(CloseText, FOnClicked::CreateUObject(this, &UT66CompanionGridScreen::HandleCloseClicked), ET66ButtonType::Neutral)
-		.SetMinWidth(132.0f)
-		.SetHeight(44.f)
-		.SetFontSize(13)
-		.SetPadding(FMargin(18.f, 8.f, 18.f, 7.f)),
-		ET66CompanionGridPlateFamily::CompactNeutral);
-
 	const TSharedRef<SWidget> ModalContent = MakeCompanionGridModalShell(
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
@@ -565,18 +559,12 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 				GridPanel
 			]
 		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.HAlign(HAlign_Center)
-		.Padding(0.0f, 18.0f, 0.0f, 0.0f)
-		[
-			FooterButton
-		],
+		,
 		FMargin(36.f, 28.f, 36.f, 30.f));
 
 	return T66ScreenSlateHelpers::MakeCenteredScrimModal(
 		ModalContent,
-		FMargin(0.0f),
+		FMargin(0.0f, SharedTopInset, 0.0f, 0.0f),
 		GridMetrics.ModalWidth,
 		GridMetrics.ModalHeight,
 		true);

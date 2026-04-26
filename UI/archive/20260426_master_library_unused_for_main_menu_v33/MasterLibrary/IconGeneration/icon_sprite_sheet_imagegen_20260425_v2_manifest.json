@@ -1,0 +1,292 @@
+{
+  "name": "icon_sprite_sheet_imagegen_20260425_v2",
+  "createdDate": "2026-04-25",
+  "sourceReference": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+  "sourceGeneratedImage": "C:\\Users\\DoPra\\.codex\\generated_images\\019dc5ad-1d23-7e33-8c50-f0888f1f449a\\ig_06e2d52ea76911530169ed44bf043c8199955ad6b630112b50.png",
+  "atlas": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\IconGeneration\\icon_sprite_sheet_imagegen_20260425_v2.png",
+  "atlasSize": {
+    "w": 1254,
+    "h": 1254
+  },
+  "grid": {
+    "columns": 4,
+    "rows": 4
+  },
+  "sliceDirectory": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated",
+  "toolPath": "built-in image_gen, then local Pillow chroma-key cleanup/slicing",
+  "prompt": "Specific T66 main-menu icon atlas: settings gear, translation/language A+glyph, account profile, powerup lightning, achievements trophy, minigames gamepad, coupon ticket, power quit, leaderboard globe, leaderboard friends, leaderboard streamers broadcast, search magnifier, favorite star, invite plus-person, party add plus, dropdown chevron. Retro pixel fantasy gold/bronze/purple/teal style. No lock/backpack/coin/map generic icons.",
+  "icons": [
+    {
+      "index": 1,
+      "id": "settings_gear",
+      "label": "settings gear",
+      "atlasCell": {
+        "x": 0,
+        "y": 0,
+        "w": 314,
+        "h": 314
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_01_settings_gear_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 2,
+      "id": "translation_language",
+      "label": "translation / language",
+      "atlasCell": {
+        "x": 314,
+        "y": 0,
+        "w": 313,
+        "h": 314
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_02_translation_language_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 3,
+      "id": "account_profile",
+      "label": "account / profile",
+      "atlasCell": {
+        "x": 627,
+        "y": 0,
+        "w": 313,
+        "h": 314
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_03_account_profile_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 4,
+      "id": "powerup_lightning",
+      "label": "power up lightning",
+      "atlasCell": {
+        "x": 940,
+        "y": 0,
+        "w": 314,
+        "h": 314
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_04_powerup_lightning_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 5,
+      "id": "achievements_trophy",
+      "label": "achievements trophy",
+      "atlasCell": {
+        "x": 0,
+        "y": 314,
+        "w": 314,
+        "h": 313
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_05_achievements_trophy_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 6,
+      "id": "minigames_gamepad",
+      "label": "minigames gamepad",
+      "atlasCell": {
+        "x": 314,
+        "y": 314,
+        "w": 313,
+        "h": 313
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_06_minigames_gamepad_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 7,
+      "id": "coupon_ticket",
+      "label": "coupon ticket",
+      "atlasCell": {
+        "x": 627,
+        "y": 314,
+        "w": 313,
+        "h": 313
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_07_coupon_ticket_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 8,
+      "id": "power_quit",
+      "label": "power / quit",
+      "atlasCell": {
+        "x": 940,
+        "y": 314,
+        "w": 314,
+        "h": 313
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_08_power_quit_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 9,
+      "id": "leaderboard_globe",
+      "label": "leaderboard globe",
+      "atlasCell": {
+        "x": 0,
+        "y": 627,
+        "w": 314,
+        "h": 313
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_09_leaderboard_globe_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 10,
+      "id": "leaderboard_friends",
+      "label": "leaderboard friends",
+      "atlasCell": {
+        "x": 314,
+        "y": 627,
+        "w": 313,
+        "h": 313
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_10_leaderboard_friends_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 11,
+      "id": "leaderboard_streamers",
+      "label": "leaderboard streamers",
+      "atlasCell": {
+        "x": 627,
+        "y": 627,
+        "w": 313,
+        "h": 313
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_11_leaderboard_streamers_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 12,
+      "id": "search_magnifier",
+      "label": "search magnifier",
+      "atlasCell": {
+        "x": 940,
+        "y": 627,
+        "w": 314,
+        "h": 313
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_12_search_magnifier_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 13,
+      "id": "favorite_star",
+      "label": "favorite star",
+      "atlasCell": {
+        "x": 0,
+        "y": 940,
+        "w": 314,
+        "h": 314
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_13_favorite_star_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 14,
+      "id": "invite_plus_person",
+      "label": "invite plus person",
+      "atlasCell": {
+        "x": 314,
+        "y": 940,
+        "w": 313,
+        "h": 314
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_14_invite_plus_person_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 15,
+      "id": "party_add_plus",
+      "label": "party add plus",
+      "atlasCell": {
+        "x": 627,
+        "y": 940,
+        "w": 313,
+        "h": 314
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_15_party_add_plus_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    },
+    {
+      "index": 16,
+      "id": "dropdown_chevron",
+      "label": "dropdown chevron",
+      "atlasCell": {
+        "x": 940,
+        "y": 940,
+        "w": 314,
+        "h": 314
+      },
+      "slice": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\IconsGenerated\\icon_16_dropdown_chevron_imagegen_20260425_v2.png",
+      "sliceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "alpha": true
+    }
+  ]
+}

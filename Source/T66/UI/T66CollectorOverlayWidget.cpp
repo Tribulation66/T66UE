@@ -6,6 +6,7 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
+#include "UI/Style/T66OverlayChromeStyle.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "Gameplay/T66GameMode.h"
@@ -136,8 +137,15 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	// Tab row
 	auto MakeTab = [&](const FText& Label, int32 Index) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }))
-			.SetMinWidth(0.f).SetFontSize(11).SetPadding(FMargin(12.f, 6.f)));
+		return T66OverlayChromeStyle::MakeButton(
+			T66OverlayChromeStyle::MakeButtonParams(
+				Label,
+				FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }),
+				ET66OverlayChromeButtonFamily::Tab)
+			.SetMinWidth(0.f)
+			.SetFontSize(11)
+			.SetPadding(FMargin(12.f, 6.f))
+			.SetSelected(TAttribute<bool>::CreateLambda([this, Index]() { return CollectorTabIndex == Index; })));
 	};
 
 	TSharedRef<SHorizontalBox> TabRow = SNew(SHorizontalBox)
@@ -165,7 +173,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		}
 		Scroll->AddSlot().Padding(6.f)
 			[
-				FT66Style::MakePanel(
+				T66OverlayChromeStyle::MakePanel(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f)
 					[
@@ -181,10 +189,15 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)[SNew(STextBlock).Text(DescText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true)]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
 						[
-							FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(AddBtn, FOnClicked::CreateLambda([this, CapturedID]() { OnAddItem(CapturedID); return FReply::Handled(); }), ET66ButtonType::Primary))
+							T66OverlayChromeStyle::MakeButton(
+								T66OverlayChromeStyle::MakeButtonParams(
+									AddBtn,
+									FOnClicked::CreateLambda([this, CapturedID]() { OnAddItem(CapturedID); return FReply::Handled(); }),
+									ET66OverlayChromeButtonFamily::Primary))
 						]
 					],
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(8.f)
+					ET66OverlayChromeBrush::OfferCardNormal,
+					FMargin(8.f)
 				)
 			];
 	};
@@ -193,7 +206,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	{
 		Scroll->AddSlot().Padding(6.f)
 			[
-				FT66Style::MakePanel(
+				T66OverlayChromeStyle::MakePanel(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
@@ -202,10 +215,15 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)[SNew(STextBlock).Text(DescText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true)]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
 						[
-							FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(SpawnBtn, FOnClicked::CreateLambda([OnSpawn]() { OnSpawn(); return FReply::Handled(); }), ET66ButtonType::Neutral))
+							T66OverlayChromeStyle::MakeButton(
+								T66OverlayChromeStyle::MakeButtonParams(
+									SpawnBtn,
+									FOnClicked::CreateLambda([OnSpawn]() { OnSpawn(); return FReply::Handled(); }),
+									ET66OverlayChromeButtonFamily::Neutral))
 						]
 					],
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(8.f)
+					ET66OverlayChromeBrush::OfferCardNormal,
+					FMargin(8.f)
 				)
 			];
 	};
@@ -267,19 +285,31 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 		[SNew(STextBlock).Text(TitleCollector).Font(FT66Style::Tokens::FontBold(20)).ColorAndOpacity(FT66Style::Tokens::Text)]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[TabRow]
-		+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SBox).HeightOverride(400.f)[Scroll]]
+		+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SBox).HeightOverride(360.f)[Scroll]]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
-			[FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(CloseText, FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }), ET66ButtonType::Neutral))]
+			[
+				T66OverlayChromeStyle::MakeButton(
+					T66OverlayChromeStyle::MakeButtonParams(
+						CloseText,
+						FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }),
+						ET66OverlayChromeButtonFamily::Neutral))
+			]
 			+ SHorizontalBox::Slot().AutoWidth()
-			[FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(ExitLab, FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }), ET66ButtonType::Danger))]
+			[
+				T66OverlayChromeStyle::MakeButton(
+					T66OverlayChromeStyle::MakeButtonParams(
+						ExitLab,
+						FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }),
+						ET66OverlayChromeButtonFamily::Danger))
+			]
 		];
 
 	const TAttribute<FMargin> SafePanelPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
-		return FT66Style::GetSafePadding(FMargin(40.f));
+		return FT66Style::GetSafePadding(FMargin(40.f, 126.f, 40.f, 40.f));
 	});
 
 	TSharedRef<SWidget> Root = SNew(SBox).HAlign(HAlign_Fill).VAlign(VAlign_Fill)
@@ -291,15 +321,14 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			.BorderBackgroundColor(FLinearColor(0.010f, 0.008f, 0.008f, 0.86f))
 			]
-			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(SafePanelPadding)
+			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(SafePanelPadding)
 			[
-				SNew(SBox).WidthOverride(520.f)
+				SNew(SBox).WidthOverride(564.f)
 				[
-					FT66Style::MakePanel(
+					T66OverlayChromeStyle::MakePanel(
 						MainPanel,
-						FT66PanelParams(ET66PanelType::Panel)
-							.SetPadding(24.f)
-							.SetColor(FLinearColor(0.034f, 0.029f, 0.024f, 0.98f)))
+						ET66OverlayChromeBrush::OverlayModalPanel,
+						FMargin(24.f))
 				]
 			]
 		];

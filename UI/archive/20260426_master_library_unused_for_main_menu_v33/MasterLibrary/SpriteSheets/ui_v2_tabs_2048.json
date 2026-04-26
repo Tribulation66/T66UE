@@ -1,0 +1,69 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_tabs_2048.png",
+  "size": [
+    2048,
+    2048
+  ],
+  "sprites": {
+    "Tabs/wide_tab_normal": {
+      "x": 24,
+      "y": 24,
+      "w": 220,
+      "h": 48,
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ]
+    },
+    "Tabs/wide_tab_hover": {
+      "x": 268,
+      "y": 24,
+      "w": 220,
+      "h": 48,
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ]
+    },
+    "Tabs/wide_tab_pressed": {
+      "x": 512,
+      "y": 24,
+      "w": 220,
+      "h": 48,
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ]
+    },
+    "Tabs/wide_tab_selected": {
+      "x": 756,
+      "y": 24,
+      "w": 220,
+      "h": 48,
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ]
+    },
+    "Tabs/wide_tab_disabled": {
+      "x": 1000,
+      "y": 24,
+      "w": 220,
+      "h": 48,
+      "nine_slice_margin": [
+        22,
+        13,
+        22,
+        13
+      ]
+    }
+  }
+}

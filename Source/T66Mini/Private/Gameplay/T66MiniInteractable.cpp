@@ -90,8 +90,8 @@ AT66MiniInteractable::AT66MiniInteractable()
 	PrimaryActorTick.TickInterval = 1.f / 30.f;
 	bReplicates = true;
 	SetReplicateMovement(false);
-	NetUpdateFrequency = 10.f;
-	MinNetUpdateFrequency = 5.f;
+	SetNetUpdateFrequency(10.f);
+	SetMinNetUpdateFrequency(5.f);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);

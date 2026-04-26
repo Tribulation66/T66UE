@@ -4,6 +4,7 @@
 
 #include "Gameplay/Traps/T66TrapDamageUtils.h"
 
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -172,6 +173,7 @@ void AT66FloorSpikePatchTrap::BeginWarningCycle()
 	WarningVFXAccum = 0.f;
 	SetActorTickEnabled(true);
 	UpdateMarkerVisuals();
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Spike.Warning")), GetActorLocation(), this);
 
 	if (UWorld* World = GetWorld())
 	{
@@ -195,6 +197,7 @@ void AT66FloorSpikePatchTrap::BeginRiseCycle()
 	SpawnRiseNiagaraBurst();
 	SpawnRiseBurst();
 	SetActorTickEnabled(true);
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Spike.Rise")), GetActorLocation(), this);
 
 	if (UWorld* World = GetWorld())
 	{

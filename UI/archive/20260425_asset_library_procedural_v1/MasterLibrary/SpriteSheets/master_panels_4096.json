@@ -1,0 +1,35 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\master_panels_4096.png",
+  "sprites": {
+    "Panels/content_panel": {
+      "x": 24,
+      "y": 24,
+      "w": 1500,
+      "h": 720
+    },
+    "Panels/leaderboard_panel": {
+      "x": 1548,
+      "y": 24,
+      "w": 480,
+      "h": 900
+    },
+    "Panels/modal_frame": {
+      "x": 2052,
+      "y": 24,
+      "w": 760,
+      "h": 420
+    },
+    "Panels/panel_large": {
+      "x": 2836,
+      "y": 24,
+      "w": 560,
+      "h": 920
+    },
+    "Panels/panel_wide": {
+      "x": 24,
+      "y": 968,
+      "w": 1280,
+      "h": 760
+    }
+  }
+}

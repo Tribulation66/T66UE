@@ -29,7 +29,7 @@ namespace
 {
 	constexpr int32 T66AchievementsFontDelta = -6;
 	constexpr int32 T66SecretPlaceholderRowCount = 10;
-	const TCHAR* T66SettingsAssetRoot = TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/");
+	const TCHAR* T66SettingsAssetRoot = TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/");
 
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GAchievementsGeneratedTextureCache;
 	TMap<FString, TSharedPtr<FSlateBrush>> GAchievementsGeneratedBrushCache;

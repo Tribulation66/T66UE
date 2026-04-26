@@ -56,6 +56,20 @@ int32 UT66RunStateSubsystem::GetPermanentPrimaryBuffTenths(const ET66HeroStatTyp
 }
 
 
+int32 UT66RunStateSubsystem::GetTemporaryPrimaryStatAmplifierTenths(const ET66HeroStatType StatType) const
+{
+	int32 TotalTenths = 0;
+	for (const FT66TemporaryPrimaryStatAmplifier& Amplifier : TemporaryPrimaryStatAmplifiers)
+	{
+		if (Amplifier.StatType == StatType && Amplifier.SecondsRemaining > 0.f)
+		{
+			TotalTenths += FMath::Max(0, Amplifier.BonusTenths);
+		}
+	}
+	return TotalTenths;
+}
+
+
 int32 UT66RunStateSubsystem::GetPrecisePrimaryStatTenths(const ET66HeroStatType StatType) const
 {
 	int32 TotalTenths = 0;
@@ -74,6 +88,7 @@ int32 UT66RunStateSubsystem::GetPrecisePrimaryStatTenths(const ET66HeroStatType 
 
 	TotalTenths += GetItemPrimaryStatTenths(StatType);
 	TotalTenths += GetPermanentPrimaryBuffTenths(StatType);
+	TotalTenths += GetTemporaryPrimaryStatAmplifierTenths(StatType);
 	return ClampHeroStatTenths(TotalTenths);
 }
 

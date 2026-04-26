@@ -99,7 +99,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_modal.png"),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			ESlateBrushDrawType::Box);
@@ -110,7 +110,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/row_shell.png"),
 			FVector2D(861.f, 74.f),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			ESlateBrushDrawType::Box);
@@ -121,7 +121,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MainMenuReference/RightPanel/leaderboard_avatar_frame.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/portrait_socket.png"),
 			FVector2D(56.f, 56.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image);
@@ -129,7 +129,7 @@ namespace
 
 	FString GetPickerButtonPath(const ET66PickerButtonFamily Family, const ET66PickerButtonState State)
 	{
-		const TCHAR* Prefix = Family == ET66PickerButtonFamily::ToggleOn ? TEXT("settings_toggle_on") : TEXT("settings_compact_neutral");
+		const TCHAR* Prefix = Family == ET66PickerButtonFamily::ToggleOn ? TEXT("button_success") : TEXT("button_neutral");
 		const TCHAR* Suffix = TEXT("normal");
 		if (State == ET66PickerButtonState::Hovered)
 		{
@@ -139,7 +139,7 @@ namespace
 		{
 			Suffix = TEXT("pressed");
 		}
-		return FString::Printf(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/%s_%s.png"), Prefix, Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/%s_%s.png"), Prefix, Suffix);
 	}
 
 	FVector2D GetPickerButtonSize(const ET66PickerButtonFamily Family, const ET66PickerButtonState State)

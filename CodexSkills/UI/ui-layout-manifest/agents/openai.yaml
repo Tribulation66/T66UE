@@ -1,6 +1,0 @@
-interface:
-  display_name: "UI Layout Manifest"
-  short_description: "Turn a locked reference into measured runtime boxes"
-  default_prompt: >-
-    Use $ui-layout-manifest for the target UI screen pack under C:\UE\T66\UI\screens\<screen_slug>.
-    Hard gates: measure only the screen-specific reference at reference\canonical_reference_1920x1080.png generated from the canonical main-menu anchor, the exact current target screenshot, and the target layout list; block manifest work if the reference is missing or generic; reject 1672x941 and other non-canonical production outputs; do not manually nudge pixels or repair generated art.

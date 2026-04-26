@@ -1,0 +1,508 @@
+{
+  "name": "Chat4OverlayChrome",
+  "generated_by": "Scripts/BuildChat4OverlayChromeAssets.py",
+  "anchors": {
+    "mainmenu_chrome_sheet": "SourceAssets/UI/MainMenuReference/SpriteSheets/mainmenu_chrome_sprite_sheet_imagegen_20260425_v1_4096.png",
+    "global_topbar": "SourceAssets/UI/MainMenuReference/TopBar/topbar_global_reference_sprite_1920x140.png"
+  },
+  "style_contract": "text-free dark charcoal casino/lab overlay chrome with crisp purple borders and restrained gold/green/red states",
+  "slices": {
+    "overlay_modal_panel.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/overlay_modal_panel.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/overlay_modal_panel.png",
+      "size": [
+        640,
+        520
+      ],
+      "nine_slice_margin": [
+        0.055,
+        0.07,
+        0.055,
+        0.07
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "casino_shell_panel.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/casino_shell_panel.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/casino_shell_panel.png",
+      "size": [
+        1180,
+        650
+      ],
+      "nine_slice_margin": [
+        0.035,
+        0.045,
+        0.035,
+        0.045
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "content_panel_wide.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/content_panel_wide.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/content_panel_wide.png",
+      "size": [
+        960,
+        420
+      ],
+      "nine_slice_margin": [
+        0.04,
+        0.07,
+        0.04,
+        0.07
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "content_panel_tall.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/content_panel_tall.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/content_panel_tall.png",
+      "size": [
+        520,
+        620
+      ],
+      "nine_slice_margin": [
+        0.06,
+        0.055,
+        0.06,
+        0.055
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "inner_panel.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/inner_panel.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/inner_panel.png",
+      "size": [
+        420,
+        260
+      ],
+      "nine_slice_margin": [
+        0.06,
+        0.1,
+        0.06,
+        0.1
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "header_summary_bar.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/header_summary_bar.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/header_summary_bar.png",
+      "size": [
+        920,
+        74
+      ],
+      "nine_slice_margin": [
+        0.035,
+        0.24,
+        0.035,
+        0.24
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "crate_strip_frame.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/crate_strip_frame.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/crate_strip_frame.png",
+      "size": [
+        500,
+        116
+      ],
+      "nine_slice_margin": [
+        0.055,
+        0.24,
+        0.055,
+        0.24
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "slot_normal.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/slot_normal.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/slot_normal.png",
+      "size": [
+        96,
+        96
+      ],
+      "nine_slice_margin": [
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "slot_hover.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/slot_hover.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/slot_hover.png",
+      "size": [
+        96,
+        96
+      ],
+      "nine_slice_margin": [
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "slot_selected.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/slot_selected.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/slot_selected.png",
+      "size": [
+        96,
+        96
+      ],
+      "nine_slice_margin": [
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "slot_disabled.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/slot_disabled.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/slot_disabled.png",
+      "size": [
+        96,
+        96
+      ],
+      "nine_slice_margin": [
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "tab_normal.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/tab_normal.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/tab_normal.png",
+      "size": [
+        168,
+        48
+      ],
+      "nine_slice_margin": [
+        0.16,
+        0.32,
+        0.16,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "tab_hover.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/tab_hover.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/tab_hover.png",
+      "size": [
+        168,
+        48
+      ],
+      "nine_slice_margin": [
+        0.16,
+        0.32,
+        0.16,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "tab_pressed.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/tab_pressed.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/tab_pressed.png",
+      "size": [
+        168,
+        48
+      ],
+      "nine_slice_margin": [
+        0.16,
+        0.32,
+        0.16,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "tab_selected.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/tab_selected.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/tab_selected.png",
+      "size": [
+        168,
+        48
+      ],
+      "nine_slice_margin": [
+        0.16,
+        0.32,
+        0.16,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "tab_disabled.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/tab_disabled.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/tab_disabled.png",
+      "size": [
+        168,
+        48
+      ],
+      "nine_slice_margin": [
+        0.16,
+        0.32,
+        0.16,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_neutral_normal.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_neutral_normal.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_neutral_normal.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_neutral_hover.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_neutral_hover.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_neutral_hover.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_neutral_pressed.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_neutral_pressed.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_neutral_pressed.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_neutral_disabled.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_neutral_disabled.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_neutral_disabled.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_primary_normal.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_primary_normal.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_primary_normal.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_primary_hover.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_primary_hover.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_primary_hover.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_primary_pressed.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_primary_pressed.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_primary_pressed.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_primary_disabled.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_primary_disabled.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_primary_disabled.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_danger_normal.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_danger_normal.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_danger_normal.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_danger_hover.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_danger_hover.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_danger_hover.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_danger_pressed.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_danger_pressed.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_danger_pressed.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "button_danger_disabled.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/button_danger_disabled.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/button_danger_disabled.png",
+      "size": [
+        190,
+        60
+      ],
+      "nine_slice_margin": [
+        0.14,
+        0.32,
+        0.14,
+        0.32
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "offer_card_normal.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/offer_card_normal.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/offer_card_normal.png",
+      "size": [
+        272,
+        452
+      ],
+      "nine_slice_margin": [
+        0.1,
+        0.07,
+        0.1,
+        0.07
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "offer_card_hover.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/offer_card_hover.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/offer_card_hover.png",
+      "size": [
+        272,
+        452
+      ],
+      "nine_slice_margin": [
+        0.1,
+        0.07,
+        0.1,
+        0.07
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "offer_card_selected.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/offer_card_selected.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/offer_card_selected.png",
+      "size": [
+        272,
+        452
+      ],
+      "nine_slice_margin": [
+        0.1,
+        0.07,
+        0.1,
+        0.07
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "offer_card_disabled.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/offer_card_disabled.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/offer_card_disabled.png",
+      "size": [
+        272,
+        452
+      ],
+      "nine_slice_margin": [
+        0.1,
+        0.07,
+        0.1,
+        0.07
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    },
+    "crate_winner_marker.png": {
+      "source": "SourceAssets/UI/Chat4OverlayChrome/Slices/crate_winner_marker.png",
+      "runtime": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices/crate_winner_marker.png",
+      "size": [
+        94,
+        98
+      ],
+      "nine_slice_margin": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_content": "text/icons/values remain Slate-owned; this slice is text-free chrome"
+    }
+  },
+  "sprite_sheet": "SourceAssets/UI/Chat4OverlayChrome/SpriteSheets/chat4_overlay_chrome_sheet.png",
+  "runtime_sprite_sheet": "RuntimeDependencies/T66/UI/Chat4OverlayChrome/chat4_overlay_chrome_sheet.png"
+}

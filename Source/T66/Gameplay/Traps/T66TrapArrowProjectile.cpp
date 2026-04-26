@@ -5,6 +5,7 @@
 #include "Gameplay/Traps/T66TrapBase.h"
 #include "Gameplay/Traps/T66TrapDamageUtils.h"
 
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Gameplay/T66ArthurSwordVisuals.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -190,5 +191,6 @@ void AT66TrapArrowProjectile::OnSphereOverlap(
 	}
 
 	FT66TrapDamageUtils::ApplyTrapDamageToActor(OwningTrap, OtherActor, DamageHP);
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Arrow.Impact")), GetActorLocation(), OwningTrap);
 	Destroy();
 }

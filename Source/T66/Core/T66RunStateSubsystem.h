@@ -1320,6 +1320,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState|StageEffects")
 	void ApplyStageSpeedBoost(float MoveSpeedMultiplier, float DurationSeconds);
 
+	/** Temporary stat boost from arcade amplifier pickups. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|StageEffects")
+	void ApplyTemporaryPrimaryStatAmplifier(ET66HeroStatType StatType, int32 BonusStatPoints, float DurationSeconds);
+
 	// ============================================
 	// Hero status effects (Unique enemy debuffs)
 	// ============================================
@@ -1418,6 +1422,13 @@ public:
 		const FString& ActionSequence = FString());
 
 private:
+	struct FT66TemporaryPrimaryStatAmplifier
+	{
+		ET66HeroStatType StatType = ET66HeroStatType::Damage;
+		int32 BonusTenths = 0;
+		float SecondsRemaining = 0.f;
+	};
+
 	struct FT66LuckAccumulator
 	{
 		double Sum01 = 0.0;
@@ -1481,6 +1492,7 @@ private:
 	int32 GetPrecisePrimaryStatTenths(ET66HeroStatType StatType) const;
 	int32 GetItemPrimaryStatTenths(ET66HeroStatType StatType) const;
 	int32 GetPermanentPrimaryBuffTenths(ET66HeroStatType StatType) const;
+	int32 GetTemporaryPrimaryStatAmplifierTenths(ET66HeroStatType StatType) const;
 	int32 GetSecondaryStatBonusTenths(ET66SecondaryStatType StatType) const;
 	float GetSecondaryStatBonusValue(ET66SecondaryStatType StatType) const;
 	int32 GetCategoryBaseStatTenths(ET66SecondaryStatType StatType) const;
@@ -1876,6 +1888,7 @@ private:
 	// Stage effects
 	float StageMoveSpeedMultiplier = 1.f;
 	float StageMoveSpeedSecondsRemaining = 0.f;
+	TArray<FT66TemporaryPrimaryStatAmplifier> TemporaryPrimaryStatAmplifiers;
 
 	// Status effects
 	float StatusBurnSecondsRemaining = 0.f;

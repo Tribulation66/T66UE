@@ -459,6 +459,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	// Clear transient stage/status effects at run start.
 	StageMoveSpeedMultiplier = 1.f;
 	StageMoveSpeedSecondsRemaining = 0.f;
+	TemporaryPrimaryStatAmplifiers.Reset();
 	StatusBurnSecondsRemaining = 0.f;
 	StatusBurnDamagePerSecond = 0.f;
 	StatusBurnAccumDamage = 0.f;

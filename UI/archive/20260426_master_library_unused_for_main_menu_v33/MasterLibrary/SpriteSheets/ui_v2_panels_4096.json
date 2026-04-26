@@ -1,0 +1,81 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_panels_4096.png",
+  "size": [
+    4096,
+    2048
+  ],
+  "sprites": {
+    "Panels/panel_large_normal": {
+      "x": 24,
+      "y": 24,
+      "w": 480,
+      "h": 800,
+      "nine_slice_margin": [
+        32,
+        34,
+        32,
+        34
+      ]
+    },
+    "Panels/panel_medium_normal": {
+      "x": 528,
+      "y": 24,
+      "w": 480,
+      "h": 520,
+      "nine_slice_margin": [
+        32,
+        34,
+        32,
+        34
+      ]
+    },
+    "Panels/modal_frame_normal": {
+      "x": 1032,
+      "y": 24,
+      "w": 620,
+      "h": 340,
+      "nine_slice_margin": [
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    "Panels/profile_card_normal": {
+      "x": 1676,
+      "y": 24,
+      "w": 120,
+      "h": 112,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Panels/profile_card_selected": {
+      "x": 1820,
+      "y": 24,
+      "w": 120,
+      "h": 112,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Panels/profile_card_disabled": {
+      "x": 1964,
+      "y": 24,
+      "w": 120,
+      "h": 112,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    }
+  }
+}

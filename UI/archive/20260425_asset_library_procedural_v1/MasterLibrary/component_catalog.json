@@ -1,0 +1,1561 @@
+{
+  "version": "2026-04-25.reset.v1",
+  "process": "C:/UE/T66/Docs/UI/UI_RECONSTRUCTION_LOCKED_PROCESS.md",
+  "reference_anchor": "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+  "font": {
+    "family": "Jersey 10",
+    "runtime_path": "C:/UE/T66/RuntimeDependencies/T66/Fonts/Jersey10-Regular.ttf",
+    "source_path": "C:/UE/T66/SourceAssets/UI/MasterLibrary/Jersey10-Regular.ttf",
+    "license": "SIL Open Font License 1.1",
+    "usage": "Locked retro pixel/8-bit UI font. Workers must not choose substitutes."
+  },
+  "topbar_allowed_screens": [
+    "main_menu",
+    "account_status",
+    "achievements",
+    "settings",
+    "language_select",
+    "minigames",
+    "powerup"
+  ],
+  "assets": {
+    "Buttons/cta_danger_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_danger_disabled.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Buttons/cta_danger_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_danger_hover.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ]
+    },
+    "Buttons/cta_danger_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_danger_normal.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Buttons/cta_danger_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_danger_pressed.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ]
+    },
+    "Buttons/cta_danger_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_danger_selected.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "Buttons/cta_primary_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_primary_disabled.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Buttons/cta_primary_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_primary_hover.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ]
+    },
+    "Buttons/cta_primary_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_primary_normal.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Buttons/cta_primary_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_primary_pressed.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ]
+    },
+    "Buttons/cta_primary_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_primary_selected.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "Buttons/cta_success_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_success_disabled.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Buttons/cta_success_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_success_hover.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ]
+    },
+    "Buttons/cta_success_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_success_normal.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Buttons/cta_success_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_success_pressed.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ]
+    },
+    "Buttons/cta_success_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_success_selected.png",
+      "size": [
+        520,
+        104
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "Buttons/nav_primary_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\nav_primary_disabled.png",
+      "size": [
+        300,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Buttons/nav_primary_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\nav_primary_hover.png",
+      "size": [
+        300,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ]
+    },
+    "Buttons/nav_primary_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\nav_primary_normal.png",
+      "size": [
+        300,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Buttons/nav_primary_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\nav_primary_pressed.png",
+      "size": [
+        300,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ]
+    },
+    "Buttons/nav_primary_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\nav_primary_selected.png",
+      "size": [
+        300,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "Buttons/small_danger_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_danger_disabled.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Buttons/small_danger_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_danger_hover.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ]
+    },
+    "Buttons/small_danger_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_danger_normal.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Buttons/small_danger_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_danger_pressed.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ]
+    },
+    "Buttons/small_danger_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_danger_selected.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "Buttons/small_primary_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_primary_disabled.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Buttons/small_primary_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_primary_hover.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ]
+    },
+    "Buttons/small_primary_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_primary_normal.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Buttons/small_primary_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_primary_pressed.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ]
+    },
+    "Buttons/small_primary_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_primary_selected.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "Buttons/small_success_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_success_disabled.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Buttons/small_success_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_success_hover.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ]
+    },
+    "Buttons/small_success_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_success_normal.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Buttons/small_success_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_success_pressed.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ]
+    },
+    "Buttons/small_success_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\small_success_selected.png",
+      "size": [
+        190,
+        68
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "Buttons/square_primary_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\square_primary_disabled.png",
+      "size": [
+        112,
+        112
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Buttons/square_primary_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\square_primary_hover.png",
+      "size": [
+        112,
+        112
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ]
+    },
+    "Buttons/square_primary_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\square_primary_normal.png",
+      "size": [
+        112,
+        112
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Buttons/square_primary_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\square_primary_pressed.png",
+      "size": [
+        112,
+        112
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ]
+    },
+    "Buttons/square_primary_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\square_primary_selected.png",
+      "size": [
+        112,
+        112
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "Icons/icon_account": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Icons\\icon_account.png",
+      "size": [
+        72,
+        72
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Icons/icon_gamepad": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Icons\\icon_gamepad.png",
+      "size": [
+        72,
+        72
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Icons/icon_gear": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Icons\\icon_gear.png",
+      "size": [
+        72,
+        72
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Icons/icon_language": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Icons\\icon_language.png",
+      "size": [
+        72,
+        72
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Icons/icon_power": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Icons\\icon_power.png",
+      "size": [
+        72,
+        72
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Icons/icon_poweroff": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Icons\\icon_poweroff.png",
+      "size": [
+        72,
+        72
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Icons/icon_ticket": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Icons\\icon_ticket.png",
+      "size": [
+        72,
+        72
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Icons/icon_trophy": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Icons\\icon_trophy.png",
+      "size": [
+        72,
+        72
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Misc/divider_horizontal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Misc\\divider_horizontal.png",
+      "size": [
+        640,
+        8
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Misc/icon_well": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Misc\\icon_well.png",
+      "size": [
+        132,
+        72
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Misc/search_field": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Misc\\search_field.png",
+      "size": [
+        420,
+        64
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    "Panels/content_panel": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\content_panel.png",
+      "size": [
+        1500,
+        720
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    "Panels/leaderboard_panel": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\leaderboard_panel.png",
+      "size": [
+        480,
+        900
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    "Panels/modal_frame": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\modal_frame.png",
+      "size": [
+        760,
+        420
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    "Panels/panel_large": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\panel_large.png",
+      "size": [
+        560,
+        920
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    "Panels/panel_wide": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Panels\\panel_wide.png",
+      "size": [
+        1280,
+        760
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    "Scroll/scroll_rail_vertical": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Scroll\\scroll_rail_vertical.png",
+      "size": [
+        28,
+        560
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        8,
+        12,
+        8,
+        12
+      ]
+    },
+    "Scroll/scroll_thumb_vertical": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Scroll\\scroll_thumb_vertical.png",
+      "size": [
+        24,
+        140
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        8,
+        12,
+        8,
+        12
+      ]
+    },
+    "Slots/avatar_slot_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\avatar_slot_disabled.png",
+      "size": [
+        116,
+        116
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Slots/avatar_slot_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\avatar_slot_normal.png",
+      "size": [
+        116,
+        116
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Slots/avatar_slot_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\avatar_slot_selected.png",
+      "size": [
+        116,
+        116
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "Slots/item_slot_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\item_slot_disabled.png",
+      "size": [
+        92,
+        92
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Slots/item_slot_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\item_slot_normal.png",
+      "size": [
+        92,
+        92
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Slots/item_slot_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Slots\\item_slot_selected.png",
+      "size": [
+        92,
+        92
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "Tabs/tab_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\tab_disabled.png",
+      "size": [
+        260,
+        70
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ]
+    },
+    "Tabs/tab_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\tab_hover.png",
+      "size": [
+        260,
+        70
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ]
+    },
+    "Tabs/tab_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\tab_normal.png",
+      "size": [
+        260,
+        70
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ]
+    },
+    "Tabs/tab_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\tab_pressed.png",
+      "size": [
+        260,
+        70
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ]
+    },
+    "Tabs/tab_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Tabs\\tab_selected.png",
+      "size": [
+        260,
+        70
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ]
+    },
+    "TopBar/topbar_currency_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_disabled.png",
+      "size": [
+        220,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_currency_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_hover.png",
+      "size": [
+        220,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_currency_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_normal.png",
+      "size": [
+        220,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_currency_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_pressed.png",
+      "size": [
+        220,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_currency_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_currency_selected.png",
+      "size": [
+        220,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_nav_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_disabled.png",
+      "size": [
+        300,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_nav_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_hover.png",
+      "size": [
+        300,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_nav_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_normal.png",
+      "size": [
+        300,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_nav_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_pressed.png",
+      "size": [
+        300,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_nav_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_nav_selected.png",
+      "size": [
+        300,
+        84
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_square_disabled": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_disabled.png",
+      "size": [
+        112,
+        112
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "disabled"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_square_hover": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_hover.png",
+      "size": [
+        112,
+        112
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "hover"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_square_normal": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_normal.png",
+      "size": [
+        112,
+        112
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "normal"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_square_pressed": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_pressed.png",
+      "size": [
+        112,
+        112
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "pressed"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_square_selected": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_square_selected.png",
+      "size": [
+        112,
+        112
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "states": [
+        "selected"
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    },
+    "TopBar/topbar_strip": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\topbar_strip.png",
+      "size": [
+        1920,
+        140
+      ],
+      "safe_for_runtime": true,
+      "nine_slice_margin": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "allowed_screens": [
+        "main_menu",
+        "account_status",
+        "achievements",
+        "settings",
+        "language_select",
+        "minigames",
+        "powerup"
+      ]
+    }
+  },
+  "rules": [
+    "No per-screen sprite sheets.",
+    "No baked localizable labels in runtime chrome.",
+    "No full-screen references as runtime backgrounds.",
+    "Missing component means return to Part 0; do not invent per-screen art."
+  ]
+}

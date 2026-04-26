@@ -65,7 +65,7 @@ struct FT66ButtonParams
 	float MinWidth      = 120.f;
 	float Height        = 0.f;            // 0 = content-driven (recommended), >0 = explicit override
 	int32 FontSize      = 0;              // 0 = use T66.Text.Button default (16pt bold)
-	FString FontWeight  = TEXT("Bold");   // Defaults to Reaver-style button text; set to "Regular" for Radiance.
+	FString FontWeight  = TEXT("Bold");   // Uses the locked UI font; weight is kept for call-site intent.
 	FMargin Padding     = FMargin(-1.f);  // Negative = use ButtonStyle default padding
 
 	// === Dynamic State ===
@@ -401,7 +401,7 @@ public:
 		static constexpr float ButtonPressedGlowIntensity = 1.10f;
 		static constexpr float ButtonGlowFallbackOpacity = 0.28f;
 
-		// Font: all text uses the finalized Radiance/Reaver stack.
+		// Font: all text uses the locked Jersey 10 UI stack.
 		static FSlateFontInfo FontRegular(int32 Size);
 		static FSlateFontInfo FontBold(int32 Size);
 		static FSlateFontInfo FontTitle();

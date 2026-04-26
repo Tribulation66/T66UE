@@ -3,6 +3,7 @@
 #include "Gameplay/Movement/T66HeroMovementComponent.h"
 
 #include "Gameplay/T66HeroBase.h"
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66HeroSpeedSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -168,6 +169,7 @@ bool UT66HeroMovementComponent::TryJump()
 	}
 
 	Hero->Jump();
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Hero.Movement.Jump")), Hero->GetActorLocation(), Hero);
 	return true;
 }
 
@@ -320,5 +322,6 @@ bool UT66HeroMovementComponent::TryDashInWorldDirection(const FVector& DesiredWo
 
 	LastDashTime = Now;
 	Hero->LaunchCharacter(DashDirection * DashStrength, true, true);
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Hero.Movement.Dash")), Hero->GetActorLocation(), Hero);
 	return true;
 }

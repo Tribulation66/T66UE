@@ -4,6 +4,7 @@
 
 #include "Gameplay/Traps/T66TrapDamageUtils.h"
 
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
@@ -212,6 +213,7 @@ void AT66FloorFlameTrap::BeginWarningCycle()
 	ActiveVFXAccum = 0.f;
 	SetActorTickEnabled(true);
 	UpdateMarkerVisuals();
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Flame.Warning")), GetActorLocation(), this);
 
 	if (UWorld* World = GetWorld())
 	{
@@ -232,6 +234,7 @@ void AT66FloorFlameTrap::ActivateFlames()
 	const bool bUseNiagaraThisCycle = ShouldUseFireNiagara();
 	SetActorTickEnabled(!bUseNiagaraThisCycle);
 	UpdateMarkerVisuals();
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Flame.Activate")), GetActorLocation(), this);
 
 	if (bUseNiagaraThisCycle)
 	{

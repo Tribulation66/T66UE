@@ -7,7 +7,7 @@
       "InteractionVerb": "pilot truck",
       "ExitInteractionVerb": "exit truck",
       "ArcadeClass": "WorldMode",
-      "PopupGameType": "None",
+      "ArcadeGameType": "None",
       "bConsumeOnSuccess": false,
       "bConsumeOnFailure": false,
       "DisplayMesh": "/Game/World/Props/Tractor.Tractor",
@@ -40,16 +40,73 @@
     }
   },
   {
+    "Name": "Arcade_Machine",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_Machine",
+      "DisplayName": "Arcade Cabinet",
+      "InteractionVerb": "play arcade",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "Random",
+      "RandomGameTypes": [
+        "WhackAMole",
+        "Topwar"
+      ],
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "DisplayMeshScale": {
+        "X": 1.1,
+        "Y": 0.75,
+        "Z": 1.85
+      },
+      "DisplayMeshOffset": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 95.0
+      },
+      "Tint": {
+        "R": 0.14,
+        "G": 0.36,
+        "B": 0.92,
+        "A": 1.0
+      },
+      "Modifiers": {
+        "FloatValues": {
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.7,
+          "ArcadeEndInterval": 0.24
+        },
+        "IntValues": {}
+      },
+      "RewardTuning": {
+        "ScoreForFullRewardChance": 100,
+        "LootBagBaseChance": 0.35,
+        "LootBagMaxChance": 0.85,
+        "MaxLootBags": 3,
+        "ChestBaseChance": 0.08,
+        "ChestMaxChance": 0.35,
+        "WeaponCrateBaseChance": 0.1,
+        "WeaponCrateMaxChance": 0.4,
+        "MaxWeaponCrates": 1,
+        "AmplifierBaseChance": 0.25,
+        "AmplifierMaxChance": 0.75,
+        "MaxAmplifiers": 2,
+        "AmplifierStatBonus": 8,
+        "AmplifierDurationSeconds": 10.0
+      }
+    }
+  },
+  {
     "Name": "Arcade_WhackAMole",
     "ArcadeData": {
       "ArcadeID": "Arcade_WhackAMole",
       "DisplayName": "Whack-a-Mole",
       "InteractionVerb": "play Whack-a-Mole",
       "ExitInteractionVerb": "",
-      "ArcadeClass": "PopupMinigame",
-      "PopupGameType": "WhackAMole",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "WhackAMole",
       "bConsumeOnSuccess": true,
-      "bConsumeOnFailure": false,
+      "bConsumeOnFailure": true,
       "DisplayMeshScale": {
         "X": 1.3,
         "Y": 1.3,
@@ -68,12 +125,55 @@
       },
       "Modifiers": {
         "FloatValues": {
-          "PopupRoundSeconds": 12.0,
-          "PopupSpawnInterval": 0.65
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.7,
+          "ArcadeEndInterval": 0.24
         },
         "IntValues": {
-          "PopupTargetHits": 10,
-          "PopupSuccessGold": 150
+          "ArcadeTargetScore": 100,
+          "ArcadeScorePerHit": 10,
+          "ArcadeMissPenalty": 2
+        }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_Topwar",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_Topwar",
+      "DisplayName": "Topwar",
+      "InteractionVerb": "play Topwar",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "Topwar",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "DisplayMeshScale": {
+        "X": 1.2,
+        "Y": 0.9,
+        "Z": 1.55
+      },
+      "DisplayMeshOffset": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 82.0
+      },
+      "Tint": {
+        "R": 0.18,
+        "G": 0.46,
+        "B": 0.94,
+        "A": 1.0
+      },
+      "Modifiers": {
+        "FloatValues": {
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.9,
+          "ArcadeEndInterval": 0.28
+        },
+        "IntValues": {
+          "TopwarStartingSquad": 4,
+          "TopwarChoiceScore": 9,
+          "TopwarSquadGain": 2
         }
       }
     }

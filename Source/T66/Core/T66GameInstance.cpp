@@ -425,7 +425,6 @@ void UT66GameInstance::PrimeCorePresentationAssetsAsync()
 	Paths.Reserve(3);
 	Paths.AddUnique(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
 	Paths.AddUnique(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
-	Paths.AddUnique(FSoftObjectPath(TEXT("/Game/Audio/SFX/Shot.Shot")));
 
 	Paths.RemoveAll([](const FSoftObjectPath& Path)
 	{
@@ -1429,7 +1428,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		static const TCHAR* CombatEffectPaths[] = {
 			TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"),
 			TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"),
-			TEXT("/Game/Audio/SFX/Shot.Shot"),
 			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Portal.P_Cosmic_Portal"),
 			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Fire.P_Fire"),
 			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Poison_02.P_Poison_02"),

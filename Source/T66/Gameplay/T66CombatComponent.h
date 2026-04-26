@@ -14,7 +14,6 @@ class AT66BossBase;
 class UT66RunStateSubsystem;
 class UT66FloatingCombatTextSubsystem;
 class UT66IdolManagerSubsystem;
-class USoundBase;
 class UNiagaraSystem;
 struct FStreamableHandle;
 
@@ -147,14 +146,6 @@ protected:
 
 	TArray<FCachedIdolSlot> CachedIdolSlots;
 
-	// Auto-attack sound effect (optional).
-	UPROPERTY()
-	TSoftObjectPtr<USoundBase> ShotSfx;
-
-	UPROPERTY(Transient)
-	TObjectPtr<USoundBase> CachedShotSfx = nullptr;
-
-	bool bShotSfxWarnedMissing = false;
 	TSharedPtr<FStreamableHandle> CombatPresentationAssetsLoadHandle;
 
 	/** Legacy Niagara system (round ball). Asset: /Game/VFX/VFX_Attack1 */
@@ -178,7 +169,8 @@ protected:
 	/** Returns the active VFX system: pixel if available, otherwise legacy. */
 	UNiagaraSystem* GetActiveVFXSystem() const;
 
-	void PlayShotSfx();
+	void PlayCombatAudioEvent(FName EventID, const FVector& Location) const;
+	void PlayHeroAttackSfx(const FName& HeroID, ET66AttackCategory AttackCategory, const FVector& Location) const;
 
 	/** Apply damage to a single actor. EventType for floating text. SourceID for damage log (NAME_None = AutoAttack, or IdolID for idol/DOT). */
 	void ApplyDamageToTargetHandle(const FT66CombatTargetHandle& TargetHandle, int32 DamageAmount, FName EventType = NAME_None, FName SourceID = NAME_None, FName RangeEventForHero = NAME_None);

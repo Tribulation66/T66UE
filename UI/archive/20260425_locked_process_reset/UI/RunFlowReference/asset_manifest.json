@@ -1,0 +1,32 @@
+{
+  "source": "deterministic Worker Chat 3 run-flow chrome builder",
+  "style_anchor": "SourceAssets/UI/MainMenuReference/SpriteSheets/mainmenu_chrome_sprite_sheet_imagegen_20260425_v1_4096.png",
+  "slices_root": "SourceAssets/UI/RunFlowReference/SheetSlices",
+  "sprite_sheet": "SourceAssets/UI/RunFlowReference/SpriteSheets/worker3_runflow_chrome_sheet_20260425.png",
+  "states": {
+    "buttons": [
+      "normal",
+      "hover",
+      "pressed",
+      "disabled"
+    ],
+    "cards": [
+      "normal",
+      "hover",
+      "pressed",
+      "selected",
+      "disabled"
+    ]
+  },
+  "runtime_owned": [
+    "labels",
+    "values",
+    "challenge rows",
+    "buff icons",
+    "buff prices",
+    "party avatars",
+    "run-summary preview",
+    "run-summary stats",
+    "damage/event rows"
+  ]
+}

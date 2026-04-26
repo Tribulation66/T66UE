@@ -1,0 +1,72 @@
+[
+  {
+    "screen": "account_status",
+    "mean_abs_rgb_diff": 40.11,
+    "changed_fraction_gt24_gray": 0.3486,
+    "bbox_gt24_gray": [
+      0,
+      0,
+      1920,
+      1080
+    ],
+    "capture": "C:\\UE\\T66\\UI\\screens\\account_status\\outputs\\2026-04-25\\account_status_worker1_pass2_1920x1080.png",
+    "review_sheet": "C:\\UE\\T66\\UI\\screens\\account_status\\review\\2026-04-25\\account_status_worker1_pass2_review_sheet.png",
+    "diff_heat": "C:\\UE\\T66\\UI\\screens\\account_status\\review\\2026-04-25\\account_status_worker1_pass2_diff_heat.png"
+  },
+  {
+    "screen": "achievements",
+    "mean_abs_rgb_diff": 31.67,
+    "changed_fraction_gt24_gray": 0.2753,
+    "bbox_gt24_gray": [
+      0,
+      1,
+      1920,
+      1080
+    ],
+    "capture": "C:\\UE\\T66\\UI\\screens\\achievements\\outputs\\2026-04-25\\achievements_worker1_pass2_1920x1080.png",
+    "review_sheet": "C:\\UE\\T66\\UI\\screens\\achievements\\review\\2026-04-25\\achievements_worker1_pass2_review_sheet.png",
+    "diff_heat": "C:\\UE\\T66\\UI\\screens\\achievements\\review\\2026-04-25\\achievements_worker1_pass2_diff_heat.png"
+  },
+  {
+    "screen": "settings",
+    "mean_abs_rgb_diff": 36.66,
+    "changed_fraction_gt24_gray": 0.3347,
+    "bbox_gt24_gray": [
+      0,
+      1,
+      1920,
+      1080
+    ],
+    "capture": "C:\\UE\\T66\\UI\\screens\\settings\\outputs\\2026-04-25\\settings_worker1_pass2_1920x1080.png",
+    "review_sheet": "C:\\UE\\T66\\UI\\screens\\settings\\review\\2026-04-25\\settings_worker1_pass2_review_sheet.png",
+    "diff_heat": "C:\\UE\\T66\\UI\\screens\\settings\\review\\2026-04-25\\settings_worker1_pass2_diff_heat.png"
+  },
+  {
+    "screen": "minigames",
+    "mean_abs_rgb_diff": 44.3,
+    "changed_fraction_gt24_gray": 0.3661,
+    "bbox_gt24_gray": [
+      0,
+      1,
+      1920,
+      1080
+    ],
+    "capture": "C:\\UE\\T66\\UI\\screens\\minigames\\outputs\\2026-04-25\\minigames_worker1_pass2_1920x1080.png",
+    "review_sheet": "C:\\UE\\T66\\UI\\screens\\minigames\\review\\2026-04-25\\minigames_worker1_pass2_review_sheet.png",
+    "diff_heat": "C:\\UE\\T66\\UI\\screens\\minigames\\review\\2026-04-25\\minigames_worker1_pass2_diff_heat.png"
+  },
+  {
+    "screen": "powerup",
+    "mean_abs_rgb_diff": 32.7,
+    "changed_fraction_gt24_gray": 0.255,
+    "bbox_gt24_gray": [
+      0,
+      1,
+      1920,
+      1080
+    ],
+    "capture": "C:\\UE\\T66\\UI\\screens\\powerup\\outputs\\2026-04-25\\powerup_worker1_pass2_1920x1080.png",
+    "review_sheet": "C:\\UE\\T66\\UI\\screens\\powerup\\review\\2026-04-25\\powerup_worker1_pass2_review_sheet.png",
+    "diff_heat": "C:\\UE\\T66\\UI\\screens\\powerup\\review\\2026-04-25\\powerup_worker1_pass2_diff_heat.png"
+  }
+]

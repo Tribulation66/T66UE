@@ -1,0 +1,293 @@
+{
+  "generated_by": "Worker Chat 1",
+  "date": "2026-04-25",
+  "method": "deterministic procedural shell/button generation from accepted frontend style targets; no baked localizable text in shell/control plates",
+  "source_references": [
+    "C:/UE/T66/UI/screens/main_menu/reference/main_menu_reference_1920x1080.png",
+    "C:/UE/T66/SourceAssets/UI/MainMenuReference/TopBar/topbar_global_reference_sprite_1920x140.png",
+    "C:/UE/T66/UI/screens/settings/reference/settings_reference_1920x1080.png",
+    "C:/UE/T66/UI/screens/account_status/reference/account_status_reference_1920x1080.png",
+    "C:/UE/T66/UI/screens/achievements/reference/achievements_reference_1920x1080.png",
+    "C:/UE/T66/UI/screens/minigames/reference/minigames_reference_1920x1080.png",
+    "C:/UE/T66/UI/screens/powerup/reference/powerup_reference_1920x1080.png"
+  ],
+  "assets": [
+    {
+      "role": "content_shell_frame",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_content_shell_frame.png",
+      "size": [
+        1521,
+        463
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.035,
+        0.12,
+        0.035,
+        0.12
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "scrollbar_vertical",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_scrollbar_vertical.png",
+      "size": [
+        46,
+        373
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.35,
+        0.08,
+        0.35,
+        0.08
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "row_shell_full",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_row_shell_full.png",
+      "size": [
+        861,
+        74
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.055,
+        0.32,
+        0.055,
+        0.32
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "row_shell_split",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_row_shell_split.png",
+      "size": [
+        861,
+        83
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.055,
+        0.3,
+        0.055,
+        0.3
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "dropdown_field",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_dropdown_field.png",
+      "size": [
+        862,
+        77
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.06,
+        0.34,
+        0.06,
+        0.34
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_compact_neutral_normal",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_compact_neutral_normal.png",
+      "size": [
+        180,
+        68
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_compact_neutral_hover",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_compact_neutral_hover.png",
+      "size": [
+        180,
+        67
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_compact_neutral_pressed",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_compact_neutral_pressed.png",
+      "size": [
+        186,
+        68
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_toggle_on_normal",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_on_normal.png",
+      "size": [
+        180,
+        68
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_toggle_on_hover",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_on_hover.png",
+      "size": [
+        180,
+        67
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_toggle_on_pressed",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_on_pressed.png",
+      "size": [
+        187,
+        67
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_toggle_off_normal",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_off_normal.png",
+      "size": [
+        180,
+        68
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_toggle_off_hover",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_off_hover.png",
+      "size": [
+        180,
+        68
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_toggle_off_pressed",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_off_pressed.png",
+      "size": [
+        186,
+        68
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_toggle_inactive_normal",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_inactive_normal.png",
+      "size": [
+        180,
+        69
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_toggle_inactive_hover",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_inactive_hover.png",
+      "size": [
+        186,
+        69
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    },
+    {
+      "role": "settings_toggle_inactive_pressed",
+      "output": "C:/UE/T66/SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_inactive_pressed.png",
+      "size": [
+        180,
+        68
+      ],
+      "states": [],
+      "nine_slice_margin": [
+        0.16,
+        0.28,
+        0.16,
+        0.28
+      ],
+      "runtime_owned": "text/value/icon/fill content remains live; asset owns shell only"
+    }
+  ],
+  "validation_notes": [
+    "All frontend shell/control slices are text-free except icon-only utility glyphs.",
+    "Runtime labels, values, progress fills, account state, achievement rows, toggles, prices, and currency amount remain Slate widgets.",
+    "Nine-slice margins are recorded per role for stretchable plates."
+  ]
+}

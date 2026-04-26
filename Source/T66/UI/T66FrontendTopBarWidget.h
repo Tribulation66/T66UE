@@ -58,7 +58,7 @@ private:
 	FReply HandleSettingsClicked();
 	FReply HandleLanguageClicked();
 	FReply HandleHomeClicked();
-	FReply HandleShopClicked();
+	FReply HandlePowerUpClicked();
 	FReply HandleMiniGamesClicked();
 	FReply HandleAchievementsClicked();
 	FReply HandleAccountStatusClicked();
@@ -86,12 +86,9 @@ private:
 	TSharedPtr<FSlateBrush> HomeButtonBrush;
 	TSharedPtr<FSlateBrush> HomeButtonActiveBrush;
 	TSharedPtr<FSlateBrush> CurrencyButtonBrush;
+	TSharedPtr<FSlateBrush> HomeIconBrush;
 	TSharedPtr<FSlateBrush> SettingsIconBrush;
 	TSharedPtr<FSlateBrush> SocialIconBrush;
-	TSharedPtr<FSlateBrush> ProfileIconBrush;
-	TSharedPtr<FSlateBrush> PowerUpIconBrush;
-	TSharedPtr<FSlateBrush> AchievementsIconBrush;
-	TSharedPtr<FSlateBrush> MiniGamesIconBrush;
 	TSharedPtr<FSlateBrush> CurrencyIconBrush;
 	TSharedPtr<FSlateBrush> QuitIconBrush;
 	FVector2D CachedViewportSize = FVector2D::ZeroVector;

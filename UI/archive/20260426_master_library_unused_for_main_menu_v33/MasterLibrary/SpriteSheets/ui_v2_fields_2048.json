@@ -1,0 +1,45 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_fields_2048.png",
+  "size": [
+    2048,
+    2048
+  ],
+  "sprites": {
+    "Fields/search_field_normal": {
+      "x": 24,
+      "y": 24,
+      "w": 428,
+      "h": 52,
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ]
+    },
+    "Fields/search_field_hover": {
+      "x": 476,
+      "y": 24,
+      "w": 428,
+      "h": 52,
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ]
+    },
+    "Fields/search_field_disabled": {
+      "x": 928,
+      "y": 24,
+      "w": 428,
+      "h": 52,
+      "nine_slice_margin": [
+        16,
+        12,
+        16,
+        12
+      ]
+    }
+  }
+}

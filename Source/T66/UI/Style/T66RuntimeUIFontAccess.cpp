@@ -106,18 +106,10 @@ namespace T66RuntimeUIFontAccess
 		}
 	}
 
-	FString ResolveRadianceFontPath()
+	FString ResolveLockedUIFontPath()
 	{
 		return ResolveFirstExistingProjectPath({
-			TEXT("RuntimeDependencies/T66/Fonts/radiance.ttf")
-		});
-	}
-
-	FString ResolveReaverBoldFontPath()
-	{
-		return ResolveFirstExistingProjectPath({
-			TEXT("RuntimeDependencies/T66/Fonts/Reaver-Bold.woff"),
-			TEXT("RuntimeDependencies/T66/Fonts/Reaver-Bold.ttf")
+			TEXT("RuntimeDependencies/T66/Fonts/Jersey10-Regular.ttf")
 		});
 	}
 

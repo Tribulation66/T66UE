@@ -13,5 +13,7 @@ Runtime-owned regions:
 - Full gameplay scene behind the modal, all underlying HUD data, map contents, player marker, route/fog data, keybind text, and close label.
 
 Style target:
-- Preserve the modal size, map well position, and background dimming.
-- Reinterpret only the shell, border, title bar, and inset frame in Chadpocalypse style: dark fantasy metal, purple neon bevels, pixel-paint treatment, crisp inner map socket, and high-contrast readable trim.
+- Preserve the modal size, map well position, background dimming, and map/content region.
+- Reinterpret only the shell, border, title bar, and inset frame in the accepted V2 main-menu language: sleek dark charcoal panels, smooth satin surfaces, crisp uniform purple outlines, cream text treatment, restrained gold accents only where useful, and a clean inner map socket.
+- Do not add map controls, tabs, legends, icons, meters, rows, explanatory labels, or side panels beyond what is visible in the current screenshot.
+- Avoid grain, cracked stone, rubble, gem/crystal surfaces, distressed metal, chipped edges, screws, rivets, bolts, heavy bevel stacks, noisy borders, and extra glow clutter.

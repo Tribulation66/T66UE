@@ -21,7 +21,7 @@ public:
 	AT66ArcadeInteractableBase* GetSourceInteractable() const { return SourceInteractable.Get(); }
 
 protected:
-	void StartCloseSequence(bool bSucceeded);
+	void StartCloseSequence(bool bSucceeded, int32 FinalScore = 0);
 
 	UPROPERTY(Transient)
 	FT66ArcadeInteractableData ArcadeData;

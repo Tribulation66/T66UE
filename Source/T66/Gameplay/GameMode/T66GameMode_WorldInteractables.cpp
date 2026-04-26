@@ -597,7 +597,7 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 		LootBag,
 		Crate,
 		ArcadeTruck,
-		WhackAMole,
+		ArcadeMachine,
 	};
 
 	struct FGuaranteedStartSpec
@@ -615,8 +615,8 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 		{ EGuaranteedStartInteractable::Chest,       TEXT("T66_StartGuaranteed_Chest"),       FVector(   0.f,  1800.f, 0.f), -0.20f,  1.30f },
 		{ EGuaranteedStartInteractable::LootBag,     TEXT("T66_StartGuaranteed_LootBag"),     FVector( 900.f, -1400.f, 0.f),  0.35f,  0.45f },
 		{ EGuaranteedStartInteractable::Crate,       TEXT("T66_StartGuaranteed_Crate"),       FVector(   0.f, -1800.f, 0.f),  0.00f,  0.55f },
-		{ EGuaranteedStartInteractable::ArcadeTruck, TEXT("T66_StartGuaranteed_ArcadeTruck"), FVector(1500.f,   900.f, 0.f),  0.95f, -0.05f },
-		{ EGuaranteedStartInteractable::WhackAMole,  TEXT("T66_StartGuaranteed_WhackAMole"),  FVector(1500.f,  -900.f, 0.f),  1.05f,  0.70f },
+		{ EGuaranteedStartInteractable::ArcadeTruck,   TEXT("T66_StartGuaranteed_ArcadeTruck"),   FVector(1500.f,   900.f, 0.f),  0.95f, -0.05f },
+		{ EGuaranteedStartInteractable::ArcadeMachine, TEXT("T66_StartGuaranteed_ArcadeMachine"), FVector(1500.f,  -900.f, 0.f),  1.05f,  0.70f },
 	};
 
 	FActorSpawnParameters SpawnParams;
@@ -735,9 +735,9 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 				AT66ArcadeTruckInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
 			break;
 
-		case EGuaranteedStartInteractable::WhackAMole:
-			SpawnedActor = World->SpawnActor<AT66WhackAMoleArcadeInteractable>(
-				AT66WhackAMoleArcadeInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
+		case EGuaranteedStartInteractable::ArcadeMachine:
+			SpawnedActor = World->SpawnActor<AT66ArcadeMachineInteractable>(
+				AT66ArcadeMachineInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
 			break;
 		}
 

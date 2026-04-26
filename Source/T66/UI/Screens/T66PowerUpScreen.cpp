@@ -34,7 +34,7 @@
 
 namespace
 {
-	constexpr int32 ShopFontDelta = -10;
+	constexpr int32 ShopFontDelta = -6;
 	constexpr float ShopPermanentCardArtFrameWidth = 178.f;
 	constexpr float ShopPermanentCardArtFrameHeight = 154.f;
 	constexpr float ShopCardGap = 12.f;
@@ -44,7 +44,7 @@ namespace
 	const FLinearColor ShopPermanentCardFill(0.14f, 0.11f, 0.07f, 1.0f);
 	const FLinearColor ShopPermanentCardInsetFill(0.09f, 0.07f, 0.04f, 1.0f);
 	const FLinearColor ShopPermanentCardAccent(0.80f, 0.70f, 0.46f, 1.0f);
-	const TCHAR* ShopSettingsAssetRoot = TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/");
+	const TCHAR* ShopSettingsAssetRoot = TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/");
 	const TCHAR* ShopMainMenuAssetRoot = TEXT("SourceAssets/UI/MainMenuReference/");
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GShopFileTextureCache;
 	TMap<FString, TSharedPtr<FSlateBrush>> GShopGeneratedBrushCache;
@@ -848,38 +848,6 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			NSLOCTEXT("T66.PowerUp", "PermanentProgress", "{0}/{1}"),
 			FText::AsNumber(UnlockedSteps),
 			FText::AsNumber(UT66BuffSubsystem::MaxFillStepsPerStat));
-		const TSharedPtr<FSlateBrush> PartBrush = GetShopForbiddenChadPartBrush(OwnedBrushes, TexPool, this, StatType, FVector2D::ZeroVector);
-		const TSharedRef<SWidget> PartWidget = PartBrush.IsValid()
-			? StaticCastSharedRef<SWidget>(
-				SNew(SBox)
-				.WidthOverride(ShopPermanentCardArtFrameWidth)
-				.HeightOverride(ShopPermanentCardArtFrameHeight)
-				[
-					SNew(SScaleBox)
-					.Stretch(EStretch::ScaleToFit)
-					.StretchDirection(EStretchDirection::Both)
-					[
-						SNew(ST66PowerUpStatueFillWidget)
-						.StatueBrush(PartBrush.Get())
-						.DesiredSize(PartBrush->GetImageSize())
-						.FillFraction(FillFraction)
-						.LockedTint(ShopLockedTint)
-						.FillTint(ShopFillTint)
-					]
-				])
-			: StaticCastSharedRef<SWidget>(
-				SNew(SBox)
-				.WidthOverride(ShopPermanentCardArtFrameWidth)
-				.HeightOverride(ShopPermanentCardArtFrameHeight)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.PowerUp", "MissingForbiddenChadArt", "ART"))
-					.Font(ShopBoldFont(16))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-				]);
-
 		return MakeShopGeneratedPanel(
 			MakeShopSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
 			SNew(SVerticalBox)
@@ -909,14 +877,35 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
+				SNew(SSpacer)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
+			[
 				MakeShopGeneratedPanel(
 					MakeShopSettingsAssetPath(TEXT("settings_row_shell_full.png")),
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 					[
-						PartWidget
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.045f, 0.040f, 0.052f, 1.0f))
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Left)
+						[
+							SNew(SBox)
+							.WidthOverride(FMath::Clamp(FillFraction, 0.f, 1.f) * 220.f)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(ShopPermanentCardAccent)
+							]
+						]
 					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 					[
 						SNew(STextBlock)
 						.Text(ProgressText)
@@ -924,16 +913,16 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 						.ColorAndOpacity(ShopPermanentCardAccent)
 						.Justification(ETextJustify::Center)
 					],
-					FMargin(14.f, 10.f),
+					FMargin(12.f, 5.f),
 					FLinearColor(0.94f, 0.90f, 0.78f, 1.0f),
 					ShopPermanentCardInsetFill)
 			]
-			+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom).Padding(0.f, 10.f, 0.f, 0.f)
+			+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom).Padding(0.f, 8.f, 0.f, 0.f)
 			[
 				MakeShopGeneratedButton(
 					FT66ButtonParams(ButtonText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType), ET66ButtonType::Primary)
 					.SetMinWidth(0.f)
-					.SetHeight(44.f)
+					.SetHeight(36.f)
 					.SetColor(TAttribute<FSlateColor>::CreateLambda([bMaxed, Balance, Cost]() -> FSlateColor
 					{
 						if (bMaxed)
@@ -948,10 +937,10 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					ResolveShopCompactButtonStyle(),
 					ShopBoldFont(16),
 					FT66Style::Tokens::Text,
-					FMargin(14.f, 7.f, 14.f, 6.f)
+					FMargin(14.f, 5.f, 14.f, 4.f)
 				)
 			],
-			FMargin(16.f, 14.f, 16.f, 16.f),
+			FMargin(16.f, 12.f, 16.f, 12.f),
 			FLinearColor::White,
 			ShopPermanentCardFill);
 	};
@@ -1056,7 +1045,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				.Padding(LocalIndex < ShopStatsPerRow - 1 ? FMargin(0.f, 0.f, ShopCardGap, 0.f) : FMargin(0.f))
 				[
 					StatIndex < DisplayOrder.Num()
-						? CardBuilder(DisplayOrder[StatIndex])
+						? StaticCastSharedRef<SWidget>(SNew(SBox).HeightOverride(190.f)[CardBuilder(DisplayOrder[StatIndex])])
 						: StaticCastSharedRef<SWidget>(SNew(SSpacer))
 				];
 		}
@@ -1068,7 +1057,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 	for (int32 StartIndex = 0; StartIndex < PermanentCardOrder.Num(); StartIndex += ShopStatsPerRow)
 	{
 		PermanentRowsBox->AddSlot()
-			.FillHeight(1.f)
+			.AutoHeight()
 			.Padding(0.f, StartIndex > 0 ? ShopCardGap : 0.f, 0.f, 0.f)
 			[
 				MakeStatRow(PermanentCardOrder, StartIndex, TFunction<TSharedRef<SWidget>(ET66HeroStatType)>([&](ET66HeroStatType StatType)
@@ -1078,7 +1067,13 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			];
 	}
 
-	TSharedRef<SWidget> PermanentPage = StaticCastSharedRef<SWidget>(PermanentRowsBox);
+	TSharedRef<SWidget> PermanentPage =
+		SNew(SScrollBox)
+		.ScrollBarVisibility(EVisibility::Visible)
+		+ SScrollBox::Slot()
+		[
+			PermanentRowsBox
+		];
 
 	TSharedRef<SVerticalBox> SingleUseRowsBox = SNew(SVerticalBox);
 	SingleUseRowsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
@@ -1163,7 +1158,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		];
 
 	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
-	const float TopBarOverlapPx = 22.f;
+	const float TopBarOverlapPx = 42.f;
 	const float TopInset = UIManager
 		? FMath::Max(0.f, (UIManager->GetFrontendTopBarContentHeight() - TopBarOverlapPx) / ResponsiveScale)
 		: 0.f;
@@ -1214,7 +1209,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 							.HeightOverride(52.f)
 							[
 								MakeShopGeneratedPanel(
-									MakeShopMainMenuAssetPath(TEXT("TopBar/currency_slot_blank.png")),
+									TEXT("SourceAssets/UI/MainMenuReference/TopBarWorker1/currency_slot_blank.png"),
 									SNew(STextBlock)
 									.Text(BalanceBadgeText)
 									.Font(ShopBoldFont(16))

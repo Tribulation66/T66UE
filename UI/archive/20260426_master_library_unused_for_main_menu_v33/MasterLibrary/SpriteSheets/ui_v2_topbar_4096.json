@@ -1,0 +1,201 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\ui_v2_topbar_4096.png",
+  "size": [
+    4096,
+    2048
+  ],
+  "sprites": {
+    "TopBar/topbar_square_normal": {
+      "x": 24,
+      "y": 24,
+      "w": 116,
+      "h": 88,
+      "nine_slice_margin": [
+        24,
+        22,
+        24,
+        22
+      ]
+    },
+    "TopBar/topbar_square_hover": {
+      "x": 164,
+      "y": 24,
+      "w": 116,
+      "h": 88,
+      "nine_slice_margin": [
+        24,
+        22,
+        24,
+        22
+      ]
+    },
+    "TopBar/topbar_square_pressed": {
+      "x": 304,
+      "y": 24,
+      "w": 116,
+      "h": 88,
+      "nine_slice_margin": [
+        24,
+        22,
+        24,
+        22
+      ]
+    },
+    "TopBar/topbar_square_selected": {
+      "x": 444,
+      "y": 24,
+      "w": 116,
+      "h": 88,
+      "nine_slice_margin": [
+        24,
+        22,
+        24,
+        22
+      ]
+    },
+    "TopBar/topbar_square_disabled": {
+      "x": 584,
+      "y": 24,
+      "w": 116,
+      "h": 88,
+      "nine_slice_margin": [
+        24,
+        22,
+        24,
+        22
+      ]
+    },
+    "TopBar/topbar_nav_normal": {
+      "x": 724,
+      "y": 24,
+      "w": 270,
+      "h": 88,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    },
+    "TopBar/topbar_nav_hover": {
+      "x": 1018,
+      "y": 24,
+      "w": 270,
+      "h": 88,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    },
+    "TopBar/topbar_nav_pressed": {
+      "x": 1312,
+      "y": 24,
+      "w": 270,
+      "h": 88,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    },
+    "TopBar/topbar_nav_selected": {
+      "x": 1606,
+      "y": 24,
+      "w": 270,
+      "h": 88,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    },
+    "TopBar/topbar_nav_disabled": {
+      "x": 1900,
+      "y": 24,
+      "w": 270,
+      "h": 88,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    },
+    "TopBar/topbar_currency_normal": {
+      "x": 2194,
+      "y": 24,
+      "w": 180,
+      "h": 88,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    },
+    "TopBar/topbar_currency_hover": {
+      "x": 2398,
+      "y": 24,
+      "w": 180,
+      "h": 88,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    },
+    "TopBar/topbar_currency_pressed": {
+      "x": 2602,
+      "y": 24,
+      "w": 180,
+      "h": 88,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    },
+    "TopBar/topbar_currency_selected": {
+      "x": 2806,
+      "y": 24,
+      "w": 180,
+      "h": 88,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    },
+    "TopBar/topbar_currency_disabled": {
+      "x": 3010,
+      "y": 24,
+      "w": 180,
+      "h": 88,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    },
+    "TopBar/topbar_strip_normal": {
+      "x": 24,
+      "y": 136,
+      "w": 920,
+      "h": 72,
+      "nine_slice_margin": [
+        28,
+        22,
+        28,
+        22
+      ]
+    }
+  }
+}

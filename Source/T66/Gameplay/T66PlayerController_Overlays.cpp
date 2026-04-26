@@ -31,6 +31,7 @@
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66ArcadePopupWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
+#include "UI/T66TopwarArcadeWidget.h"
 #include "UI/T66WhackAMoleArcadeWidget.h"
 #include "Gameplay/T66FountainOfLifeInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
@@ -607,7 +608,7 @@ bool AT66PlayerController::OpenArcadePopup(
 	AT66ArcadeInteractableBase* SourceInteractable)
 {
 	if (!IsGameplayLevel()
-		|| ArcadeData.ArcadeClass != ET66ArcadeInteractableClass::PopupMinigame
+		|| ArcadeData.ArcadeClass != ET66ArcadeInteractableClass::PopupArcade
 		|| IsArcadePopupOpen()
 		|| !CanUseCombatMouseInput())
 	{
@@ -623,13 +624,18 @@ bool AT66PlayerController::OpenArcadePopup(
 	TSubclassOf<UT66ArcadePopupWidget> PopupWidgetClass = ArcadeData.PopupWidgetClass;
 	if (!PopupWidgetClass)
 	{
-		switch (ArcadeData.PopupGameType)
+		switch (ArcadeData.ArcadeGameType)
 		{
-		case ET66ArcadePopupGameType::WhackAMole:
+		case ET66ArcadeGameType::WhackAMole:
 			PopupWidgetClass = UT66WhackAMoleArcadeWidget::StaticClass();
 			break;
 
-		case ET66ArcadePopupGameType::None:
+		case ET66ArcadeGameType::Topwar:
+			PopupWidgetClass = UT66TopwarArcadeWidget::StaticClass();
+			break;
+
+		case ET66ArcadeGameType::None:
+		case ET66ArcadeGameType::Random:
 		default:
 			break;
 		}
@@ -658,17 +664,17 @@ bool AT66PlayerController::OpenArcadePopup(
 	return true;
 }
 
-void AT66PlayerController::HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, const bool bSucceeded)
+void AT66PlayerController::HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, const bool bSucceeded, const int32 FinalScore)
 {
 	if (PopupWidget != ArcadePopupWidget)
 	{
 		return;
 	}
 
-	CloseArcadePopup(bSucceeded);
+	CloseArcadePopup(bSucceeded, FinalScore);
 }
 
-void AT66PlayerController::CloseArcadePopup(const bool bSucceeded)
+void AT66PlayerController::CloseArcadePopup(const bool bSucceeded, const int32 FinalScore)
 {
 	UT66ArcadePopupWidget* PopupWidget = ArcadePopupWidget;
 	if (!PopupWidget)
@@ -686,7 +692,7 @@ void AT66PlayerController::CloseArcadePopup(const bool bSucceeded)
 
 	if (SourceInteractable)
 	{
-		SourceInteractable->HandleArcadePopupClosed(bSucceeded);
+		SourceInteractable->HandleArcadePopupClosed(bSucceeded, FinalScore);
 	}
 
 	if (!IsPaused() && !(UIManager && UIManager->IsModalActive()))

@@ -1,0 +1,245 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\master_buttons_2048.png",
+  "sprites": {
+    "Buttons/cta_danger_disabled": {
+      "x": 24,
+      "y": 24,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_danger_hover": {
+      "x": 568,
+      "y": 24,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_danger_normal": {
+      "x": 1112,
+      "y": 24,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_danger_pressed": {
+      "x": 24,
+      "y": 152,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_danger_selected": {
+      "x": 568,
+      "y": 152,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_primary_disabled": {
+      "x": 1112,
+      "y": 152,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_primary_hover": {
+      "x": 24,
+      "y": 280,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_primary_normal": {
+      "x": 568,
+      "y": 280,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_primary_pressed": {
+      "x": 1112,
+      "y": 280,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_primary_selected": {
+      "x": 24,
+      "y": 408,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_success_disabled": {
+      "x": 568,
+      "y": 408,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_success_hover": {
+      "x": 1112,
+      "y": 408,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_success_normal": {
+      "x": 24,
+      "y": 536,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_success_pressed": {
+      "x": 568,
+      "y": 536,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/cta_success_selected": {
+      "x": 1112,
+      "y": 536,
+      "w": 520,
+      "h": 104
+    },
+    "Buttons/nav_primary_disabled": {
+      "x": 1656,
+      "y": 536,
+      "w": 300,
+      "h": 84
+    },
+    "Buttons/nav_primary_hover": {
+      "x": 24,
+      "y": 664,
+      "w": 300,
+      "h": 84
+    },
+    "Buttons/nav_primary_normal": {
+      "x": 348,
+      "y": 664,
+      "w": 300,
+      "h": 84
+    },
+    "Buttons/nav_primary_pressed": {
+      "x": 672,
+      "y": 664,
+      "w": 300,
+      "h": 84
+    },
+    "Buttons/nav_primary_selected": {
+      "x": 996,
+      "y": 664,
+      "w": 300,
+      "h": 84
+    },
+    "Buttons/small_danger_disabled": {
+      "x": 1320,
+      "y": 664,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_danger_hover": {
+      "x": 1534,
+      "y": 664,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_danger_normal": {
+      "x": 1748,
+      "y": 664,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_danger_pressed": {
+      "x": 24,
+      "y": 772,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_danger_selected": {
+      "x": 238,
+      "y": 772,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_primary_disabled": {
+      "x": 452,
+      "y": 772,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_primary_hover": {
+      "x": 666,
+      "y": 772,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_primary_normal": {
+      "x": 880,
+      "y": 772,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_primary_pressed": {
+      "x": 1094,
+      "y": 772,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_primary_selected": {
+      "x": 1308,
+      "y": 772,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_success_disabled": {
+      "x": 1522,
+      "y": 772,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_success_hover": {
+      "x": 1736,
+      "y": 772,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_success_normal": {
+      "x": 24,
+      "y": 864,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_success_pressed": {
+      "x": 238,
+      "y": 864,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/small_success_selected": {
+      "x": 452,
+      "y": 864,
+      "w": 190,
+      "h": 68
+    },
+    "Buttons/square_primary_disabled": {
+      "x": 666,
+      "y": 864,
+      "w": 112,
+      "h": 112
+    },
+    "Buttons/square_primary_hover": {
+      "x": 802,
+      "y": 864,
+      "w": 112,
+      "h": 112
+    },
+    "Buttons/square_primary_normal": {
+      "x": 938,
+      "y": 864,
+      "w": 112,
+      "h": 112
+    },
+    "Buttons/square_primary_pressed": {
+      "x": 1074,
+      "y": 864,
+      "w": 112,
+      "h": 112
+    },
+    "Buttons/square_primary_selected": {
+      "x": 1210,
+      "y": 864,
+      "w": 112,
+      "h": 112
+    }
+  }
+}

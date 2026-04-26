@@ -1,0 +1,45 @@
+{
+  "image": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\SpriteSheets\\reference_misc_2048.png",
+  "size": [
+    2048,
+    2048
+  ],
+  "sprites": {
+    "Misc/progress_bar_shell_normal": {
+      "x": 20,
+      "y": 20,
+      "w": 280,
+      "h": 24,
+      "nine_slice_margin": [
+        8,
+        7,
+        8,
+        7
+      ]
+    },
+    "Misc/progress_bar_shell_disabled": {
+      "x": 320,
+      "y": 20,
+      "w": 280,
+      "h": 24,
+      "nine_slice_margin": [
+        8,
+        7,
+        8,
+        7
+      ]
+    },
+    "Misc/divider_horizontal_normal": {
+      "x": 620,
+      "y": 20,
+      "w": 424,
+      "h": 3,
+      "nine_slice_margin": [
+        4,
+        1,
+        4,
+        1
+      ]
+    }
+  }
+}

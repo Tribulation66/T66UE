@@ -106,7 +106,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	FText ReadyText = NSLOCTEXT("T66.HeroSelection", "Ready", "READY");
 	FText UnreadyText = NSLOCTEXT("T66.HeroSelection", "Unready", "UNREADY");
 	FText WaitingForPartyText = NSLOCTEXT("T66.HeroSelection", "WaitingForParty", "WAITING FOR PARTY");
-	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
 	FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
@@ -519,7 +518,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const float PanelGap = 0.f;
 	const auto ShrinkFont = [](int32 BaseSize, int32 Minimum = 7) -> int32 { return FMath::Max(Minimum, BaseSize - 4); };
 	const float SidePanelMinWidth = 404.f;
-	const float BackButtonWidth = 84.f;
 	const float FooterToggleWidth = 70.f;
 	const float FooterToggleHeight = 28.f;
 	const float FooterActionHeight = 46.f;
@@ -534,13 +532,15 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const int32 SecondaryButtonFontSize = ShrinkFont(9, 7);
 	const int32 EntityDropdownFontSize = SecondaryButtonFontSize + 3;
 	const int32 BodyTextFontSize = ShrinkFont(10, 7);
-	const int32 BackButtonFontSize = ShrinkFont(14, 10);
 	const int32 DifficultyMenuFontSize = PrimaryCtaFontSize;
 	const float HeroArrowButtonWidth = bDotaTheme ? 30.f : 28.f;
 	const float HeroArrowButtonHeight = bDotaTheme ? 26.f : 24.f;
-	const TAttribute<FMargin> ScreenSafePadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	const TAttribute<FMargin> ScreenSafePadding = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
 	{
-		return FMargin(0.f, 0.f, 0.f, 0.f);
+		const float TopInset = (UIManager && UIManager->IsFrontendTopBarVisible())
+			? UIManager->GetFrontendTopBarContentHeight()
+			: 0.f;
+		return FMargin(0.f, TopInset, 0.f, 0.f);
 	});
 
 	auto MakeTemporaryBuffLoadoutPanel = [this,
@@ -1689,21 +1689,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Center)
-			[
-				SNew(SBox)
-				.WidthOverride(BackButtonWidth)
-				[
-					MakeHeroSelectionButton(FT66ButtonParams(
-						BackText,
-						FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackClicked),
-						ET66ButtonType::Neutral)
-						.SetMinWidth(0.f)
-						.SetFontSize(BackButtonFontSize))
-				]
-			]
-			+ SHorizontalBox::Slot()
 			.FillWidth(1.0f)
 			[
 				SNew(SBox)
@@ -1727,15 +1712,18 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		[
-			MakeSelectionBar(
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					MakeHeroStripControls()
-				])
+			SNew(SBox)
+			[
+				MakeSelectionBar(
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.0f)
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						MakeHeroStripControls()
+					])
+			]
 		]
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)

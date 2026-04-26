@@ -4,6 +4,7 @@
 
 #include "Gameplay/Traps/T66TrapBase.h"
 
+#include "Core/T66AudioSubsystem.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroBase.h"
@@ -91,6 +92,7 @@ void AT66TrapPressurePlate::HandleTriggerZoneBeginOverlap(
 
 	bArmed = false;
 	UpdateVisuals();
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.PressurePlate.Trigger")), GetActorLocation(), this);
 	TriggerLinkedTraps(OtherActor);
 
 	if (UWorld* World = GetWorld())

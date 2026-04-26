@@ -1,0 +1,33 @@
+{
+  "screen": "loading_screen",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "loading_panel",
+      "content_type": "shell",
+      "render_contract": "shell-only",
+      "notes": "Panel and decorative rail chrome may be generated as runtime art."
+    },
+    {
+      "name": "loading_text",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "notes": "Loading label remains localizable live FText."
+    },
+    {
+      "name": "loading_progress",
+      "content_type": "runtime-value",
+      "render_contract": "socket-frame",
+      "notes": "If implemented, progress/activity fill remains runtime-driven."
+    },
+    {
+      "name": "loading_status",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "notes": "Tip/status/build/session text remains runtime-owned."
+    }
+  ]
+}

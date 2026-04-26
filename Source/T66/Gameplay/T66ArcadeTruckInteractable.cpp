@@ -66,7 +66,7 @@ AT66ArcadeTruckInteractable::AT66ArcadeTruckInteractable()
 	ArcadeData.InteractionVerb = NSLOCTEXT("T66.Arcade", "TruckInteractVerb", "pilot truck");
 	ArcadeData.ExitInteractionVerb = NSLOCTEXT("T66.Arcade", "TruckExitVerb", "exit truck");
 	ArcadeData.ArcadeClass = ET66ArcadeInteractableClass::WorldMode;
-	ArcadeData.PopupGameType = ET66ArcadePopupGameType::None;
+	ArcadeData.ArcadeGameType = ET66ArcadeGameType::None;
 	ArcadeData.DisplayMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
 	ArcadeData.DisplayMeshScale = FVector(1.f, 1.f, 1.f);
 	ArcadeData.Tint = FLinearColor(0.94f, 0.53f, 0.17f, 1.f);
@@ -166,7 +166,7 @@ void AT66ArcadeTruckInteractable::RefreshResolvedArcadeData()
 		ResolvedArcadeData.ArcadeID = EffectiveRowID;
 	}
 	ResolvedArcadeData.ArcadeClass = ET66ArcadeInteractableClass::WorldMode;
-	ResolvedArcadeData.PopupGameType = ET66ArcadePopupGameType::None;
+	ResolvedArcadeData.ArcadeGameType = ET66ArcadeGameType::None;
 }
 
 void AT66ArcadeTruckInteractable::ApplyArcadeTruckTuning()

@@ -207,6 +207,12 @@ void UT66UIManager::ShowModal(ET66ScreenType ModalType)
 	const FString PerfLabel = FString::Printf(TEXT("UIManager::ShowModal[%s][%s]"), *T66ScreenTypeToDebugName(ModalType), bWarmShow ? TEXT("warm") : TEXT("cold"));
 	FLagScopedScope LagScope(World, *PerfLabel);
 
+	if (ModalType == ET66ScreenType::Challenges || ModalType == ET66ScreenType::DailyClimb)
+	{
+		ShowScreen(ModalType);
+		return;
+	}
+
 	if (CurrentModal && CurrentModal->ScreenType == ModalType)
 	{
 		return;
@@ -349,13 +355,14 @@ bool UT66UIManager::ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const
 	switch (ScreenType)
 	{
 	case ET66ScreenType::MainMenu:
-	case ET66ScreenType::SaveSlots:
 	case ET66ScreenType::Settings:
 	case ET66ScreenType::LanguageSelect:
 	case ET66ScreenType::AccountStatus:
 	case ET66ScreenType::PowerUp:
 	case ET66ScreenType::Achievements:
 	case ET66ScreenType::Minigames:
+	case ET66ScreenType::Challenges:
+	case ET66ScreenType::DailyClimb:
 		return true;
 	default:
 		return false;
@@ -364,6 +371,20 @@ bool UT66UIManager::ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const
 
 bool UT66UIManager::ShouldShowFrontendBackButton() const
 {
+	switch (CurrentScreenType)
+	{
+	case ET66ScreenType::Settings:
+	case ET66ScreenType::AccountStatus:
+	case ET66ScreenType::PowerUp:
+	case ET66ScreenType::Achievements:
+	case ET66ScreenType::Minigames:
+	case ET66ScreenType::Challenges:
+	case ET66ScreenType::DailyClimb:
+		return false;
+	default:
+		break;
+	}
+
 	return !CurrentModal
 		&& CurrentScreenType != ET66ScreenType::None
 		&& CurrentScreenType != ET66ScreenType::MainMenu

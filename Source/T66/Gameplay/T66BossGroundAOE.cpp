@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66BossGroundAOE.h"
 
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Gameplay/T66BossBase.h"
@@ -168,6 +169,7 @@ void AT66BossGroundAOE::ActivateDamage()
 {
 	bDamageActivated = true;
 	WarningElapsed = 0.f;
+	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Boss.AOE.Impact")), GetActorLocation(), GetOwner());
 
 	if (WarningMesh)
 	{

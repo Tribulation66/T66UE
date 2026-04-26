@@ -9,6 +9,7 @@
 #include "Gameplay/T66PlayerController.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/Style/T66OverlayChromeStyle.h"
 #include "UI/Style/T66Style.h"
 
 #include "Widgets/Images/SImage.h"
@@ -203,15 +204,11 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 				.WidthOverride(ItemTileWidth)
 				.HeightOverride(ItemTileHeight)
 				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FrameColor)
-					.Padding(FMargin(2.f))
-					[
+					T66OverlayChromeStyle::MakeSlotPanel(
 						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(0.030f, 0.026f, 0.022f, 0.98f))
-						.Padding(FMargin(6.f))
+						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+						.BorderBackgroundColor(FrameColor)
+						.Padding(FMargin(3.f))
 						[
 							SNew(SOverlay)
 							+ SOverlay::Slot()
@@ -245,8 +242,10 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 									.BorderBackgroundColor(Entry.Color)
 								]
 							]
-						]
-					]
+						],
+						i == WinnerPosition,
+						true,
+						FMargin(6.f))
 				]
 			];
 	}
@@ -268,71 +267,70 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 			.WidthOverride(CratePanelWidth)
 			.HeightOverride(CratePanelHeight)
 			[
-				FT66Style::MakePanel(
+				T66OverlayChromeStyle::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).VAlign(VAlign_Center)
 					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SBox)
-							.WidthOverride(CrateStripViewportWidth)
-							.HeightOverride(ItemTileHeight + 4.f)
-							.Clipping(EWidgetClipping::ClipToBounds)
+						T66OverlayChromeStyle::MakePanel(
+							SNew(SOverlay)
+							+ SOverlay::Slot()
 							[
-								SAssignNew(StripContainer, SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-								.Padding(0.f)
+								SNew(SBox)
+								.WidthOverride(CrateStripViewportWidth)
+								.HeightOverride(ItemTileHeight + 4.f)
+								.Clipping(EWidgetClipping::ClipToBounds)
 								[
-									StripRow.ToSharedRef()
+									SAssignNew(StripContainer, SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+									.Padding(0.f)
+									[
+										StripRow.ToSharedRef()
+									]
 								]
 							]
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						[
-							SNew(SBox)
-							.WidthOverride(ItemTileWidth + 4.f)
-							.HeightOverride(ItemTileHeight + 4.f)
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
 							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.72f, 0.28f, 0.18f))
-								.Padding(FMargin(0.f))
+								SNew(SBox)
+								.WidthOverride(ItemTileWidth + 8.f)
+								.HeightOverride(ItemTileHeight + 8.f)
+								[
+									T66OverlayChromeStyle::MakePanel(
+										SNew(SSpacer),
+										ET66OverlayChromeBrush::CrateWinnerMarker,
+										FMargin(0.f))
+								]
 							]
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Top)
-						[
-							SNew(SBox)
-							.WidthOverride(3.f)
-							.HeightOverride(ItemTileHeight + 4.f)
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Top)
 							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.98f, 0.76f, 0.30f, 0.94f))
-							]
-						]
+								SNew(SBox)
+								.WidthOverride(3.f)
+								.HeightOverride(ItemTileHeight + 8.f)
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.98f, 0.76f, 0.30f, 0.94f))
+								]
+							],
+							ET66OverlayChromeBrush::CrateStripFrame,
+							FMargin(5.f))
 					]
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 0.f)
 					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(0.070f, 0.055f, 0.032f, 0.95f))
-						.Padding(FMargin(6.f, 3.f))
-						[
+						T66OverlayChromeStyle::MakePanel(
 							SAssignNew(SkipText, STextBlock)
 							.Text(BuildSkipCountdownText(ScrollDuration))
 							.Font(FT66Style::Tokens::FontRegular(8))
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-							.Justification(ETextJustify::Center)
-						]
+							.Justification(ETextJustify::Center),
+							ET66OverlayChromeBrush::HeaderSummaryBar,
+							FMargin(6.f, 3.f))
 					],
-					FT66PanelParams(ET66PanelType::Panel)
-						.SetPadding(FMargin(6.f))
-						.SetColor(FLinearColor(0.034f, 0.029f, 0.024f, 0.98f))
+					ET66OverlayChromeBrush::ContentPanelWide,
+					FMargin(6.f)
 				)
 			]
 		];

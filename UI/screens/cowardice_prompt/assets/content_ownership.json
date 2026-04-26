@@ -1,0 +1,39 @@
+{
+  "screen": "cowardice_prompt",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "name": "gameplay_underlay",
+      "content_type": "runtime-scene",
+      "render_contract": "open-aperture",
+      "notes": "The world and any HUD under the modal remain live runtime content; do not bake into overlay art."
+    },
+    {
+      "name": "modal_shell",
+      "content_type": "shell",
+      "render_contract": "shell-only",
+      "notes": "Modal frame/panel chrome may be generated as reusable runtime art."
+    },
+    {
+      "name": "prompt_title",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "notes": "Prompt title remains localizable live FText."
+    },
+    {
+      "name": "status_line",
+      "content_type": "runtime-text",
+      "render_contract": "empty-backplate",
+      "notes": "Failure/status text remains runtime-owned."
+    },
+    {
+      "name": "choice_buttons",
+      "content_type": "runtime-text",
+      "render_contract": "shell-only",
+      "notes": "Button plates may be generated, but YES/NO labels and interaction states remain runtime-owned."
+    }
+  ]
+}

@@ -7,13 +7,12 @@
 #include "UI/T66ScreenBase.h"
 #include "T66DailyClimbScreen.generated.h"
 
-class ST66LeaderboardPanel;
 struct FSlateBrush;
 class UTexture2D;
 
 /**
  * Full-screen Daily Climb frontend.
- * Mirrors the main menu shell while presenting a Daily-only rules panel and leaderboard.
+ * Mirrors the main menu shell while presenting a Daily-only rules panel and action flow.
  */
 UCLASS(Blueprintable)
 class T66_API UT66DailyClimbScreen : public UT66ScreenBase
@@ -37,7 +36,6 @@ private:
 	int32 ComputeSeedQualityPreview(int32 RunSeed) const;
 	void RequestBackgroundTexture();
 
-	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
 	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
 	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
 	TSharedPtr<FSlateBrush> FireMoonBrush;

@@ -22,6 +22,7 @@
 #include "UI/T66UIManager.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SComboButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SGridPanel.h"
@@ -84,7 +85,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_large.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("SaveSlotsContentShell"));
 	}
@@ -94,7 +95,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/row_shell.png"),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			TEXT("SaveSlotsRowShell"));
 	}
@@ -104,7 +105,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_dropdown_field.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/dropdown_field.png"),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
 			TEXT("SaveSlotsDropdownField"));
 	}
@@ -114,7 +115,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MainMenuReference/LeftPanel/party_slot_frame.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/party_slot_frame.png"),
 			FMargin(0.f),
 			TEXT("SaveSlotsPartySlotFrame"));
 	}
@@ -130,7 +131,7 @@ namespace
 		{
 			return ResolveSaveFlowBrush(
 				Disabled,
-				TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_inactive_normal.png"),
+				TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/button_neutral_disabled.png"),
 				FMargin(0.16f, 0.28f, 0.16f, 0.28f),
 				TEXT("SaveSlotsButtonDisabled"));
 		}
@@ -139,7 +140,7 @@ namespace
 		{
 			return ResolveSaveFlowBrush(
 				Primary,
-				TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_on_normal.png"),
+				TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/button_success_normal.png"),
 				FMargin(0.16f, 0.28f, 0.16f, 0.28f),
 				TEXT("SaveSlotsButtonPrimary"));
 		}
@@ -148,14 +149,14 @@ namespace
 		{
 			return ResolveSaveFlowBrush(
 				Danger,
-				TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_off_normal.png"),
+				TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/button_danger_normal.png"),
 				FMargin(0.16f, 0.28f, 0.16f, 0.28f),
 				TEXT("SaveSlotsButtonDanger"));
 		}
 
 		return ResolveSaveFlowBrush(
 			Neutral,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_compact_neutral_normal.png"),
+			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/button_neutral_normal.png"),
 			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
 			TEXT("SaveSlotsButtonNeutral"));
 	}
@@ -240,6 +241,36 @@ namespace
 		}
 
 		return Content;
+	}
+
+	TSharedRef<SWidget> MakeSaveFlowDropdown(const FT66DropdownParams& Params)
+	{
+		static FComboButtonStyle FlatComboStyle = []()
+		{
+			FComboButtonStyle Style = FT66Style::GetDropdownComboButtonStyle();
+			Style.ButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
+			return Style;
+		}();
+
+		TSharedRef<SComboButton> Combo = SNew(SComboButton)
+			.ComboButtonStyle(&FlatComboStyle)
+			.OnGetMenuContent_Lambda([OnGet = Params.OnGetMenuContent]()
+			{
+				return MakeSaveFlowShell(OnGet(), FMargin(8.f));
+			})
+			.ContentPadding(Params.Padding)
+			.ButtonContent()
+			[
+				Params.Content
+			];
+
+		return SNew(SBox)
+			.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
+			.HeightOverride(Params.Height > 0.f ? Params.Height : FOptionalSize())
+			.Visibility(Params.Visibility)
+			[
+				MakeSaveFlowDropdownFrame(Combo)
+			];
 	}
 
 	TSharedRef<SWidget> MakeSaveFlowPlateButton(FT66ButtonParams Params, const bool bEnabled)
@@ -458,7 +489,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 		}
 	}
 
-	const float SafeTopInset = UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
+	const float SafeTopInset = (UIManager && UIManager->IsFrontendTopBarVisible()) ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
 	const float TopGap = (UIManager && UIManager->IsFrontendTopBarVisible()) ? 20.f : 0.f;
 	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
 	const float SurfaceWidth = FMath::Max(960.f, SafeFrameSize.X - 64.f);
@@ -845,17 +876,16 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 						.AutoWidth()
 						.Padding(132.f, 0.f, 0.f, 0.f)
 						[
-							MakeSaveFlowDropdownFrame(
-								FT66Style::MakeDropdown(
-									FT66DropdownParams(
-										SNew(STextBlock)
-										.Text(T66PartySizeText(Loc, ActivePartySizeFilter))
-										.Font(FT66Style::Tokens::FontBold(12))
-										.ColorAndOpacity(T66SaveFlowBrightText()),
-										MakePartySizeMenu)
-									.SetMinWidth(156.f)
-									.SetHeight(38.f)
-									.SetPadding(FMargin(12.f, 8.f))))
+							MakeSaveFlowDropdown(
+								FT66DropdownParams(
+									SNew(STextBlock)
+									.Text(T66PartySizeText(Loc, ActivePartySizeFilter))
+									.Font(FT66Style::Tokens::FontBold(12))
+									.ColorAndOpacity(T66SaveFlowBrightText()),
+									MakePartySizeMenu)
+								.SetMinWidth(156.f)
+								.SetHeight(38.f)
+								.SetPadding(FMargin(12.f, 8.f)))
 						]
 						+ SHorizontalBox::Slot()
 						.FillWidth(1.f)

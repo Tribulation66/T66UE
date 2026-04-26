@@ -1,6 +1,0 @@
-interface:
-  display_name: "Reconstruction UI"
-  short_description: "Rebuild UI screens from references"
-  default_prompt: >-
-    Use $reconstruction-ui to route this T66 UI reconstruction task for the target pack under C:\UE\T66\UI\screens\<screen_slug>.
-    Hard gates: if reference\canonical_reference_1920x1080.png is missing, generic, or not generated from the canonical main-menu anchor, the exact current target screenshot, and the target layout list, route only to $ui-style-reference; do not route to sprites/runtime/review; reject 1672x941 and other non-canonical production outputs; never route bad generated pixels to manual repair.

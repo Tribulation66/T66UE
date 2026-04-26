@@ -1,0 +1,89 @@
+{
+  "source_chromakey": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_chromakey_source.png",
+  "source_alpha": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\ChromeGeneration\\chrome_controls_imagegen_20260426_v3_alpha.png",
+  "generated_assets": {
+    "Controls/filter_button_normal.png": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\filter_button_normal.png",
+      "source_box": [
+        180,
+        120,
+        546,
+        312
+      ]
+    },
+    "Controls/filter_button_selected.png": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Controls\\filter_button_selected.png",
+      "source_box": [
+        635,
+        120,
+        1001,
+        312
+      ]
+    },
+    "TopBar/home_circle_normal.png": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\home_circle_normal.png",
+      "source_box": [
+        1218,
+        73,
+        1489,
+        344
+      ]
+    },
+    "TopBar/home_circle_selected.png": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\TopBar\\home_circle_selected.png",
+      "source_box": [
+        1595,
+        73,
+        1867,
+        343
+      ]
+    },
+    "Buttons/cta_rect_normal.png": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_rect_normal.png",
+      "source_box": [
+        125,
+        435,
+        975,
+        672
+      ]
+    },
+    "Buttons/cta_rect_hover.png": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_rect_hover.png",
+      "source_box": [
+        1067,
+        435,
+        1923,
+        672
+      ]
+    },
+    "Buttons/cta_rect_pressed.png": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_rect_pressed.png",
+      "source_box": [
+        1067,
+        435,
+        1923,
+        672
+      ]
+    },
+    "Buttons/cta_rect_selected.png": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_rect_selected.png",
+      "source_box": [
+        1067,
+        435,
+        1923,
+        672
+      ]
+    },
+    "Buttons/cta_rect_disabled.png": {
+      "path": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Slices\\Buttons\\cta_rect_disabled.png",
+      "source_box": [
+        125,
+        435,
+        975,
+        672
+      ]
+    }
+  },
+  "preview": "C:\\UE\\T66\\SourceAssets\\UI\\MasterLibrary\\Preview\\ui_library_v3_controls_preview.png",
+  "notes": "Imagegen-generated bitmap chrome slices. Runtime text/icons/live data are not baked."
+}
