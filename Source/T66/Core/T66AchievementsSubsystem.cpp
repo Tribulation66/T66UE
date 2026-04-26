@@ -399,6 +399,64 @@ int32 UT66AchievementsSubsystem::GetChadCouponBalance() const
 	return Profile ? FMath::Max(0, Profile->ChadCouponsBalance) : 0;
 }
 
+int32 UT66AchievementsSubsystem::GetAccountLevel() const
+{
+	if (!Profile)
+	{
+		return 1;
+	}
+
+	constexpr int32 MaxAccountExperience = (AccountMaxLevel - 1) * AccountExperiencePerLevel;
+	const int32 TotalExperience = FMath::Clamp(Profile->LifetimeRunsCompleted * AccountExperiencePerCompletedRun, 0, MaxAccountExperience);
+	const int32 ClampedExperience = FMath::Clamp(TotalExperience, 0, MaxAccountExperience);
+	return FMath::Clamp(1 + (ClampedExperience / AccountExperiencePerLevel), 1, AccountMaxLevel);
+}
+
+int32 UT66AchievementsSubsystem::GetAccountMaxLevel() const
+{
+	return AccountMaxLevel;
+}
+
+int32 UT66AchievementsSubsystem::GetAccountNextLevel() const
+{
+	return FMath::Clamp(GetAccountLevel() + 1, 1, AccountMaxLevel);
+}
+
+int32 UT66AchievementsSubsystem::GetAccountExperienceIntoLevel() const
+{
+	if (!Profile)
+	{
+		return 0;
+	}
+
+	if (GetAccountLevel() >= AccountMaxLevel)
+	{
+		return AccountExperiencePerLevel;
+	}
+
+	constexpr int32 MaxAccountExperience = (AccountMaxLevel - 1) * AccountExperiencePerLevel;
+	const int32 TotalExperience = FMath::Clamp(Profile->LifetimeRunsCompleted * AccountExperiencePerCompletedRun, 0, MaxAccountExperience);
+	return TotalExperience % AccountExperiencePerLevel;
+}
+
+int32 UT66AchievementsSubsystem::GetAccountExperienceToNextLevel() const
+{
+	return AccountExperiencePerLevel;
+}
+
+float UT66AchievementsSubsystem::GetAccountLevelProgress01() const
+{
+	if (GetAccountLevel() >= AccountMaxLevel)
+	{
+		return 1.f;
+	}
+
+	return FMath::Clamp(
+		static_cast<float>(GetAccountExperienceIntoLevel()) / static_cast<float>(FMath::Max(1, AccountExperiencePerLevel)),
+		0.f,
+		1.f);
+}
+
 bool UT66AchievementsSubsystem::SpendChadCoupons(int32 Amount)
 {
 	if (!Profile)
@@ -1063,11 +1121,23 @@ void UT66AchievementsSubsystem::NotifyRunCompleted(UT66RunStateSubsystem* RunSta
 	if (!Profile) LoadOrCreateProfile();
 	if (!Profile) return;
 
+	const int32 OldAccountLevel = GetAccountLevel();
 	const int32 Delta = 1;
 	Profile->LifetimeRunsCompleted = FMath::Clamp(Profile->LifetimeRunsCompleted + Delta, 0, 2000000000);
 	const int32 TotalRuns = Profile->LifetimeRunsCompleted;
 	TArray<FName> NewlyUnlocked;
-	bool bAnyChanged = false;
+	bool bAnyChanged = true;
+	const int32 NewAccountLevel = GetAccountLevel();
+	const int32 AccountLevelsGained = FMath::Max(0, NewAccountLevel - OldAccountLevel);
+	if (AccountLevelsGained > 0 && ChadCouponsPerAccountLevel > 0)
+	{
+		Profile->ChadCouponsBalance = FMath::Clamp(
+			Profile->ChadCouponsBalance + (AccountLevelsGained * ChadCouponsPerAccountLevel),
+			0,
+			2000000000);
+		AchievementCoinsChanged.Broadcast();
+	}
+
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_007")), TotalRuns, 1, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_YEL_001")), TotalRuns, 25, &NewlyUnlocked);
 	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_RUN_"), GetExtraRunCompletionThresholds(), TotalRuns, &NewlyUnlocked);

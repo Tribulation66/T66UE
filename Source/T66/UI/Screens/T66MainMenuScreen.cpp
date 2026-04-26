@@ -6,6 +6,7 @@
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "UI/Style/T66ReferenceLayout.h"
 #include "Core/T66PartySubsystem.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -33,6 +34,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Notifications/SProgressBar.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SNullWidget.h"
 #include "Styling/SlateBrush.h"
@@ -347,6 +349,12 @@ uint32 UT66MainMenuScreen::CaptureMenuStateHash() const
 			StateHash = HashCombine(StateHash, GetTypeHash(SessionSubsystem->IsLocalPlayerPartyHost()));
 			StateHash = HashCombine(StateHash, GetTypeHash(static_cast<uint8>(SessionSubsystem->GetDesiredPartyFrontendScreen())));
 		}
+
+		if (const UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			StateHash = HashCombine(StateHash, GetTypeHash(Achievements->GetAccountLevel()));
+			StateHash = HashCombine(StateHash, GetTypeHash(Achievements->GetAccountExperienceIntoLevel()));
+		}
 	}
 
 	return StateHash;
@@ -393,6 +401,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	bViewportResponsiveRebuildQueued = false;
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
 	UT66PlayerSettingsSubsystem* PlayerSettings = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
@@ -413,7 +422,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	{
 		FString PlayerId;
 		FString Name;
-		FString Status;
+		int32 Level = 1;
 		bool bOnline = false;
 		bool bFavorite = false;
 		bool bInvitePending = false;
@@ -483,7 +492,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			Friends.Add({
 				Friend.PlayerId,
 				Friend.DisplayName,
-				Friend.PresenceText,
+				1,
 				Friend.bOnline,
 				PlayerSettings ? PlayerSettings->IsFavoriteFriend(Friend.PlayerId) : false,
 				SessionSubsystem ? SessionSubsystem->IsFriendInvitePending(Friend.PlayerId) : false
@@ -574,7 +583,6 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const FLinearColor MutedText(0.50f, 0.52f, 0.56f, 1.0f);
 	const FLinearColor OfflineNameText(0.40f, 0.41f, 0.45f, 1.0f);
 	const FLinearColor OnlineHeaderText(0.42f, 0.67f, 0.96f, 1.0f);
-	const FLinearColor OnlineStatusText(0.34f, 0.61f, 0.90f, 1.0f);
 	const FLinearColor DividerColor(0.20f, 0.22f, 0.25f, 0.48f);
 	const FLinearColor AvatarAccentOnline(0.13f, 0.22f, 0.30f, 1.0f);
 	const FLinearColor AvatarAccentOffline(0.08f, 0.09f, 0.11f, 1.0f);
@@ -733,12 +741,16 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			];
 	};
 
-	auto MakeFriendRow = [&, BrightText, MutedText, OfflineNameText, OnlineStatusText, AvatarAccentOnline, AvatarAccentOffline](
+	auto MakeFriendRow = [&, BrightText, MutedText, OfflineNameText, AvatarAccentOnline, AvatarAccentOffline](
 		const FMenuFriendEntry& Friend,
 		int32 FriendIndex) -> TSharedRef<SWidget>
 	{
 		const FLinearColor NameColor = Friend.bOnline ? BrightText : OfflineNameText;
 		const FLinearColor AccentColor = Friend.bOnline ? AvatarAccentOnline : AvatarAccentOffline;
+		const FText FriendLevelText = FText::Format(
+			NSLOCTEXT("T66.MainMenu", "FriendLevelFormat", "Level {0}/{1}"),
+			FText::AsNumber(FMath::Clamp(Friend.Level, 1, UT66AchievementsSubsystem::AccountMaxLevel)),
+			FText::AsNumber(UT66AchievementsSubsystem::AccountMaxLevel));
 		auto IsFriendInParty = [PartySubsystem, PlayerId = Friend.PlayerId]() -> bool
 		{
 			return PartySubsystem && PartySubsystem->IsFriendInParty(PlayerId);
@@ -753,14 +765,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		};
 		auto ResolveFavoriteGlyph = [PlayerSettings, PlayerId = Friend.PlayerId]() -> FText
 		{
-			return FText::FromString(TEXT("\u2605"));
+			return FText::FromString(TEXT("\u2606"));
 		};
 		auto ResolveFavoriteGlyphColor = [PlayerSettings, PlayerId = Friend.PlayerId]() -> FSlateColor
 		{
 			const bool bFavorite = PlayerSettings && PlayerSettings->IsFavoriteFriend(PlayerId);
 			return FSlateColor(bFavorite
 				? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f)
-				: FLinearColor(0.55f, 0.58f, 0.62f, 1.0f));
+				: FLinearColor(0.72f, 0.58f, 0.88f, 0.92f));
 		};
 		auto ResolveActionText = [
 			PartySubsystem,
@@ -797,7 +809,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		};
 		TSharedPtr<SBox> RowRootBox;
 		TSharedPtr<SBorder> RowBorder;
-		TSharedPtr<STextBlock> StatusTextWidget;
+		TSharedPtr<STextBlock> LevelTextWidget;
 		TSharedPtr<SButton> FavoriteButton;
 		TSharedPtr<STextBlock> FavoriteGlyphText;
 		TSharedPtr<SButton> ActionButton;
@@ -838,21 +850,19 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-					SNew(STextBlock)
-					.Text(FText::FromString(Friend.Name))
-					.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
-					.ColorAndOpacity(NameColor)
-					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-					.Clipping(EWidgetClipping::ClipToBounds)
+						SNew(STextBlock)
+						.Text(FText::FromString(Friend.Name))
+						.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 1))
+						.ColorAndOpacity(NameColor)
+						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+						.Clipping(EWidgetClipping::ClipToBounds)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 1.f, 0.f, 0.f)
 					[
-						SAssignNew(StatusTextWidget, STextBlock)
-						.Text(IsFriendInParty() ? InPartyText : FText::FromString(Friend.Status))
-						.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
-						.ColorAndOpacity(IsFriendInParty()
-							? OnlineStatusText
-							: (Friend.bOnline ? OnlineStatusText : MutedText))
+						SAssignNew(LevelTextWidget, STextBlock)
+						.Text(FriendLevelText)
+						.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize - 1))
+						.ColorAndOpacity(Friend.bOnline ? MutedText : OfflineNameText)
 						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 						.Clipping(EWidgetClipping::ClipToBounds)
 					]
@@ -881,20 +891,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 						[
 							SNew(SOverlay)
 							+ SOverlay::Slot()
-							[
-								SNew(SImage)
-								.Image(FriendStarButtonBrush.Get())
-							]
-							+ SOverlay::Slot()
-							.Padding(FMargin(0.f, 1.f, 0.f, 0.f))
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
 							[
 								SAssignNew(FavoriteGlyphText, STextBlock)
 								.Text(ResolveFavoriteGlyph())
-								.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 6))
+								.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 21))
 								.ColorAndOpacity(ResolveFavoriteGlyphColor())
-								.Visibility((PlayerSettings && PlayerSettings->IsFavoriteFriend(Friend.PlayerId))
-									? EVisibility::Visible
-									: EVisibility::Collapsed)
+								.Visibility(EVisibility::Visible)
 								.Justification(ETextJustify::Center)
 							]
 						]
@@ -975,11 +979,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		FFriendRowWidgetRefs& RowRefs = FriendRowWidgetRefs.AddDefaulted_GetRef();
 		RowRefs.PlayerId = Friend.PlayerId;
 		RowRefs.FriendName = Friend.Name;
-		RowRefs.BaseStatus = Friend.Status;
+		RowRefs.Level = Friend.Level;
 		RowRefs.bOnline = Friend.bOnline;
 		RowRefs.RootBox = RowRootBox;
 		RowRefs.RowBorder = RowBorder;
-		RowRefs.StatusText = StatusTextWidget;
+		RowRefs.LevelText = LevelTextWidget;
 		RowRefs.FavoriteButton = FavoriteButton;
 		RowRefs.FavoriteGlyphText = FavoriteGlyphText;
 		RowRefs.ActionButton = ActionButton;
@@ -1152,12 +1156,17 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const FText ProfileNameText = !LocalSteamName.IsEmpty()
 		? FText::FromString(LocalSteamName)
 		: NSLOCTEXT("T66.MainMenu", "ProfileNameFallback", "Local Player");
-	const FText ProfileConnectionText = (SteamHelper && SteamHelper->IsSteamReady())
-		? NSLOCTEXT("T66.MainMenu", "ProfileConnected", "Steam Connected")
-		: NSLOCTEXT("T66.MainMenu", "ProfileOffline", "Steam Unavailable");
-	const FLinearColor ProfileConnectionColor = (SteamHelper && SteamHelper->IsSteamReady())
-		? FLinearColor(0.44f, 0.80f, 0.43f, 1.0f)
-		: MutedText;
+	const int32 ProfileLevel = Achievements ? Achievements->GetAccountLevel() : 1;
+	const int32 ProfileMaxLevel = Achievements ? Achievements->GetAccountMaxLevel() : UT66AchievementsSubsystem::AccountMaxLevel;
+	const int32 ProfileNextLevel = Achievements ? Achievements->GetAccountNextLevel() : 2;
+	const float ProfileLevelProgress = Achievements ? Achievements->GetAccountLevelProgress01() : 0.f;
+	const FText ProfileLevelText = FText::Format(
+		NSLOCTEXT("T66.MainMenu", "ProfileLevelFormat", "Level {0}/{1}"),
+		FText::AsNumber(ProfileLevel),
+		FText::AsNumber(ProfileMaxLevel));
+	const FText ProfileNextLevelText = FText::Format(
+		NSLOCTEXT("T66.MainMenu", "ProfileNextLevelFormat", "Level {0}"),
+		FText::AsNumber(ProfileNextLevel));
 
 	const TSharedRef<SWidget> ProfileCardContent =
 		SNew(SHorizontalBox)
@@ -1199,7 +1208,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(ProfileNameText)
-				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 2))
+				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 8))
 				.ColorAndOpacity(BrightText)
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				.Clipping(EWidgetClipping::ClipToBounds)
@@ -1207,11 +1216,32 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
-				.Text(ProfileConnectionText)
-				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 2))
-				.ColorAndOpacity(ProfileConnectionColor)
+				.Text(ProfileLevelText)
+				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
+				.ColorAndOpacity(FLinearColor(0.72f, 0.28f, 0.95f, 1.0f))
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				.Clipping(EWidgetClipping::ClipToBounds)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+				[
+					SNew(SBox)
+					.HeightOverride(13.f)
+					[
+						SNew(SProgressBar)
+						.Percent(ProfileLevelProgress)
+						.FillColorAndOpacity(FLinearColor(0.73f, 0.08f, 0.91f, 1.0f))
+					]
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(9.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(ProfileNextLevelText)
+					.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize - 2))
+					.ColorAndOpacity(MutedText)
+				]
 			]
 		];
 
@@ -1233,12 +1263,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			[
 				SNew(SOverlay)
 				+ SOverlay::Slot()
-				[
-					SNew(SImage)
-					.Image(ProfileCardShellBrush.Get())
-				]
-				+ SOverlay::Slot()
-				.Padding(FMargin(10.f, 8.f, 12.f, 8.f))
+				.Padding(FMargin(0.f, 8.f, 0.f, 8.f))
 				[
 					ProfileCardContent
 				]
@@ -1701,14 +1726,10 @@ void UT66MainMenuScreen::ReleaseRetainedSlateState()
 	LeftPanelShellTexture.Reset();
 	RightPanelShellBrush.Reset();
 	RightPanelShellTexture.Reset();
-	ProfileCardShellBrush.Reset();
-	ProfileCardShellTexture.Reset();
 	SearchFieldShellBrush.Reset();
 	SearchFieldShellTexture.Reset();
 	SearchIconBrush.Reset();
 	SearchIconTexture.Reset();
-	FriendStarButtonBrush.Reset();
-	FriendStarButtonTexture.Reset();
 	FriendInviteButtonBrush.Reset();
 	FriendInviteButtonTexture.Reset();
 	FriendOfflineButtonBrush.Reset();
@@ -1824,15 +1845,16 @@ void UT66MainMenuScreen::RefreshFriendListVisualState()
 			RowRefs.RowBorder->SetBorderBackgroundColor(FLinearColor::Transparent);
 		}
 
-		if (RowRefs.StatusText.IsValid())
+		if (RowRefs.LevelText.IsValid())
 		{
-			RowRefs.StatusText->SetText(bFriendInParty ? NSLOCTEXT("T66.MainMenu", "InParty", "In Party") : FText::FromString(RowRefs.BaseStatus));
-			RowRefs.StatusText->SetColorAndOpacity(
-				bFriendInParty
-					? FLinearColor(0.50f, 0.88f, 0.55f, 1.0f)
-					: (RowRefs.bOnline
-						? FLinearColor(0.50f, 0.88f, 0.55f, 1.0f)
-						: FLinearColor(0.56f, 0.59f, 0.63f, 1.0f)));
+			RowRefs.LevelText->SetText(FText::Format(
+				NSLOCTEXT("T66.MainMenu", "FriendLevelFormat", "Level {0}/{1}"),
+				FText::AsNumber(FMath::Clamp(RowRefs.Level, 1, UT66AchievementsSubsystem::AccountMaxLevel)),
+				FText::AsNumber(UT66AchievementsSubsystem::AccountMaxLevel)));
+			RowRefs.LevelText->SetColorAndOpacity(
+				RowRefs.bOnline
+					? FLinearColor(0.50f, 0.52f, 0.56f, 1.0f)
+					: FLinearColor(0.40f, 0.41f, 0.45f, 1.0f));
 		}
 
 		if (RowRefs.FavoriteButton.IsValid())
@@ -1845,12 +1867,12 @@ void UT66MainMenuScreen::RefreshFriendListVisualState()
 
 		if (RowRefs.FavoriteGlyphText.IsValid())
 		{
-			RowRefs.FavoriteGlyphText->SetText(FText::FromString(bFavorite ? TEXT("\u2605") : TEXT("\u2606")));
+			RowRefs.FavoriteGlyphText->SetText(FText::FromString(TEXT("\u2606")));
 			RowRefs.FavoriteGlyphText->SetColorAndOpacity(
 				bFavorite
 					? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f)
-					: FLinearColor(0.55f, 0.58f, 0.62f, 1.0f));
-			RowRefs.FavoriteGlyphText->SetVisibility(bFavorite ? EVisibility::Visible : EVisibility::Collapsed);
+					: FLinearColor(0.72f, 0.58f, 0.88f, 0.92f));
+			RowRefs.FavoriteGlyphText->SetVisibility(EVisibility::Visible);
 		}
 
 		if (RowRefs.ActionButton.IsValid())
@@ -1998,14 +2020,6 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 {
 	SetupT66MainMenuRuntimeImageBrush(
-		ProfileCardShellBrush,
-		ProfileCardShellTexture,
-		nullptr,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/profile_card_normal.png"),
-		FVector2D(T66MainMenuReferenceLayout::Left::ProfileCardReference.Width, T66MainMenuReferenceLayout::Left::ProfileCardReference.Height));
-	ConfigureMainMenuBoxBrush(ProfileCardShellBrush, FMargin(0.150f, 0.161f, 0.150f, 0.161f));
-
-	SetupT66MainMenuRuntimeImageBrush(
 		SearchFieldShellBrush,
 		SearchFieldShellTexture,
 		nullptr,
@@ -2019,14 +2033,6 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		nullptr,
 		TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_12_search_magnifier_imagegen_20260425_v2.png"),
 		FVector2D(T66MainMenuReferenceLayout::Left::SearchIcon.Width, T66MainMenuReferenceLayout::Left::SearchIcon.Height));
-
-	SetupT66MainMenuRuntimeImageBrush(
-		FriendStarButtonBrush,
-		FriendStarButtonTexture,
-		nullptr,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/invite_small_normal.png"),
-		FVector2D(T66MainMenuReferenceLayout::Left::FriendStarButton.Width, T66MainMenuReferenceLayout::Left::FriendStarButton.Height));
-	ConfigureMainMenuBoxBrush(FriendStarButtonBrush, FMargin(0.164f, 0.269f, 0.164f, 0.269f));
 
 	SetupT66MainMenuRuntimeImageBrush(
 		FriendInviteButtonBrush,

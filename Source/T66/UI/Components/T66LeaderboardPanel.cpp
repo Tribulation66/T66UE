@@ -35,8 +35,6 @@ namespace
 	// Shared column widths so header and row columns align (Rank | Name | Score/Time).
 	constexpr float RankColumnWidth = 60.0f;   // content + padding to name
 	constexpr float ScoreColumnWidth = 98.0f; // content + padding, aligned with score digits (used for both Score and Time)
-	constexpr float FavoriteButtonWidth = 18.0f;
-	constexpr float FavoriteToRankGap = 4.0f;
 	constexpr float RowPortraitSize = 30.0f;
 	constexpr int32 LeaderboardBodyFontSize = 12;
 	constexpr int32 LeaderboardTitleFontSize = 12;
@@ -59,7 +57,6 @@ namespace
 	const FVector2D ReferenceAvatarInsetSize(40.0f, 40.0f);
 	const FLinearColor ReferenceLeaderboardText(0.953f, 0.925f, 0.835f, 1.0f);
 	const FLinearColor ReferenceLeaderboardMuted(0.738f, 0.708f, 0.648f, 1.0f);
-	const FLinearColor ReferenceLeaderboardGold(0.860f, 0.670f, 0.247f, 1.0f);
 	const FLinearColor ReferenceMirrorSelectGlow(0.478f, 0.702f, 0.243f, 0.38f);
 	const FLinearColor ReferenceMirrorDim(0.02f, 0.02f, 0.025f, 0.48f);
 
@@ -1542,8 +1539,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 		{
 			const FLeaderboardEntry& Entry = LeaderboardEntries[EntryIndex];
 			const TSharedRef<bool> bIsRowHovered = MakeShared<bool>(false);
-			const bool bCanFavorite = IsEntryFavoritable(Entry);
-			const bool bIsFavorited = IsEntryFavorited(Entry);
 			const bool bCanOpenSummary = Entry.bIsLocalPlayer || (Entry.bHasRunSummary && !Entry.EntryId.IsEmpty());
 			const FLinearColor BaseRowColor = Entry.bIsLocalPlayer
 				? FLinearColor(0.24f, 0.36f, 0.18f, 0.18f)
@@ -1561,30 +1556,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			{
 				*bIsRowHovered = bHovered;
 			};
-
-			const TSharedRef<SWidget> FavoriteButton =
-				SNew(SBox)
-				.WidthOverride(22.f)
-				.HeightOverride(22.f)
-				[
-					SNew(SButton)
-					.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-					.ContentPadding(FMargin(0.f))
-					.IsEnabled(bCanFavorite)
-					.ToolTipText(bIsFavorited
-						? NSLOCTEXT("T66.Leaderboard", "FavoriteRemoveTooltip", "Remove favorite run")
-						: NSLOCTEXT("T66.Leaderboard", "FavoriteAddTooltip", "Favorite this run"))
-					.OnHovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(true); }))
-					.OnUnhovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(false); }))
-					.OnClicked(FOnClicked::CreateLambda([this, Entry]() { return HandleFavoriteClicked(Entry); }))
-					[
-						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("★")))
-						.Font(FT66Style::MakeFont(TEXT("Bold"), 15))
-						.ColorAndOpacity(bIsFavorited ? ReferenceLeaderboardGold : FLinearColor(0.62f, 0.53f, 0.30f, 0.92f))
-						.Justification(ETextJustify::Center)
-					]
-				];
 
 			const TSharedRef<SWidget> AvatarWidget =
 				SNew(SBox)
@@ -1636,10 +1607,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			const TSharedRef<SWidget> RowContents =
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-				[
-					FavoriteButton
-				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
 				[
 					SNew(SBox)
 					.WidthOverride(33.f)
@@ -1708,7 +1675,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(FMargin(34.f, 4.f, 0.f, 0.f))
+				.Padding(FMargin(0.f, 4.f, 0.f, 0.f))
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -1748,7 +1715,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 		const float MemberPortraitSize = FMath::RoundToFloat(NameFontSize + 6.0f);
 		const float PartyStripMinHeight = FMath::Max(MemberPortraitSize, NameFontSize) - 1.0f;
 		const float RowVerticalPadding = FMath::Max(2.0f, FMath::RoundToFloat(NameFontSize * 0.18f));
-		const float RankLabelWidth = FMath::Max(24.0f, RankColumnWidth - FavoriteButtonWidth - FavoriteToRankGap);
+		const float RankLabelWidth = FMath::Max(24.0f, RankColumnWidth);
 		TSharedRef<SHorizontalBox> NameColumn = SNew(SHorizontalBox);
 		for (int32 NameIndex = 0; NameIndex < DisplayNames.Num(); ++NameIndex)
 		{
@@ -1810,8 +1777,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			PartyStripScrollBox->SetConsumeMouseWheel(EConsumeMouseWheel::Always);
 		}
 
-		const bool bCanFavorite = IsEntryFavoritable(Entry);
-		const bool bIsFavorited = IsEntryFavorited(Entry);
 		const bool bCanOpenSummary = Entry.bIsLocalPlayer || (Entry.bHasRunSummary && !Entry.EntryId.IsEmpty());
 		auto SetHovered = [bIsRowHovered](bool bHovered)
 		{
@@ -1823,7 +1788,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			.VAlign(VAlign_Center)
-			.Padding(FavoriteToRankGap, 0.0f, 0.0f, 0.0f)
 			[
 				SNew(SBox).WidthOverride(RankLabelWidth)
 				[
@@ -1872,31 +1836,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				]
 			];
 
-		const TSharedRef<SWidget> FavoriteButton =
-			SNew(SBox)
-			.WidthOverride(FavoriteButtonWidth)
-			.HeightOverride(FavoriteButtonWidth)
-			[
-				SNew(SButton)
-				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-				.ContentPadding(FMargin(0.f))
-				.IsEnabled(bCanFavorite)
-				.Visibility(bCanFavorite ? EVisibility::Visible : EVisibility::Hidden)
-				.ToolTipText(bIsFavorited
-					? NSLOCTEXT("T66.Leaderboard", "FavoriteRemoveTooltip", "Remove favorite run")
-					: NSLOCTEXT("T66.Leaderboard", "FavoriteAddTooltip", "Favorite this run"))
-				.OnHovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(true); }))
-				.OnUnhovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(false); }))
-				.OnClicked(FOnClicked::CreateLambda([this, Entry]() { return HandleFavoriteClicked(Entry); }))
-				[
-					SNew(STextBlock)
-					.Text(FText::FromString(bIsFavorited ? TEXT("★") : TEXT("☆")))
-					.Font(FT66Style::Tokens::FontRegular(LeaderboardBodyFontSize + 2))
-					.ColorAndOpacity(bIsFavorited ? FSlateColor(FT66Style::Tokens::Accent) : FSlateColor(FT66Style::Tokens::TextMuted))
-					.Justification(ETextJustify::Center)
-				]
-			];
-
 		const TSharedRef<SWidget> RowWidget =
 			SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
@@ -1907,12 +1846,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			.Padding(FMargin(7.0f, RowVerticalPadding))
 			[
 				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				[
-					FavoriteButton
-				]
 				+ SHorizontalBox::Slot()
 				.FillWidth(1.0f)
 				[

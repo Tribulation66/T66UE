@@ -30,6 +30,10 @@ class T66_API UT66AchievementsSubsystem : public UGameInstanceSubsystem
 public:
 	static const FString ProfileSaveSlotName;
 	static constexpr int32 ProfileSaveUserIndex = 0;
+	static constexpr int32 AccountMaxLevel = 100;
+	static constexpr int32 AccountExperiencePerLevel = 100;
+	static constexpr int32 AccountExperiencePerCompletedRun = 100;
+	static constexpr int32 ChadCouponsPerAccountLevel = 1;
 
 	// ============================================
 	// Companion Union (profile progression)
@@ -61,6 +65,30 @@ public:
 	/** Current Chad Coupons balance. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
 	int32 GetChadCouponBalance() const;
+
+	/** Persistent account level shown in frontend profile chrome. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetAccountLevel() const;
+
+	/** Maximum persistent account level. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetAccountMaxLevel() const;
+
+	/** Next account level target shown beside the XP bar. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetAccountNextLevel() const;
+
+	/** XP earned inside the current account level. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetAccountExperienceIntoLevel() const;
+
+	/** XP needed for the next account level. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetAccountExperienceToNextLevel() const;
+
+	/** 0..1 account XP progress toward the next level. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	float GetAccountLevelProgress01() const;
 
 	/** Spend Chad Coupons. Returns true if balance was sufficient and amount was deducted. Persists profile. */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")

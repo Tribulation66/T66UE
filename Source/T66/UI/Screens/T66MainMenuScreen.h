@@ -90,11 +90,11 @@ private:
 	{
 		FString PlayerId;
 		FString FriendName;
-		FString BaseStatus;
+		int32 Level = 1;
 		bool bOnline = false;
 		TSharedPtr<SBox> RootBox;
 		TSharedPtr<SBorder> RowBorder;
-		TSharedPtr<STextBlock> StatusText;
+		TSharedPtr<STextBlock> LevelText;
 		TSharedPtr<SButton> FavoriteButton;
 		TSharedPtr<STextBlock> FavoriteGlyphText;
 		TSharedPtr<SButton> ActionButton;
@@ -126,14 +126,10 @@ private:
 	TStrongObjectPtr<UTexture2D> LeftPanelShellTexture;
 	TSharedPtr<FSlateBrush> RightPanelShellBrush;
 	TStrongObjectPtr<UTexture2D> RightPanelShellTexture;
-	TSharedPtr<FSlateBrush> ProfileCardShellBrush;
-	TStrongObjectPtr<UTexture2D> ProfileCardShellTexture;
 	TSharedPtr<FSlateBrush> SearchFieldShellBrush;
 	TStrongObjectPtr<UTexture2D> SearchFieldShellTexture;
 	TSharedPtr<FSlateBrush> SearchIconBrush;
 	TStrongObjectPtr<UTexture2D> SearchIconTexture;
-	TSharedPtr<FSlateBrush> FriendStarButtonBrush;
-	TStrongObjectPtr<UTexture2D> FriendStarButtonTexture;
 	TSharedPtr<FSlateBrush> FriendInviteButtonBrush;
 	TStrongObjectPtr<UTexture2D> FriendInviteButtonTexture;
 	TSharedPtr<FSlateBrush> FriendOfflineButtonBrush;

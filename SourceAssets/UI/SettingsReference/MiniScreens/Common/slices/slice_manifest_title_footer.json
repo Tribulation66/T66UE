@@ -1,0 +1,135 @@
+{
+  "source": "C:\\UE\\T66\\UI\\screens\\mini_shared\\assets\\imagegen_2026-04-24\\title_footer_pass\\mini_title_footer_alpha_board.png",
+  "source_size": {
+    "width": 1774,
+    "height": 887
+  },
+  "slices": {
+    "title_plaque_heavy_wide": {
+      "file": "title_plaque_heavy_wide.png",
+      "rect": {
+        "x": 20,
+        "y": 69,
+        "width": 764,
+        "height": 264
+      },
+      "size": {
+        "width": 764,
+        "height": 264
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/title_plaque_heavy_wide.png"
+    },
+    "title_plaque_heavy_medium": {
+      "file": "title_plaque_heavy_medium.png",
+      "rect": {
+        "x": 799,
+        "y": 94,
+        "width": 528,
+        "height": 231
+      },
+      "size": {
+        "width": 528,
+        "height": 231
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/title_plaque_heavy_medium.png"
+    },
+    "title_plaque_heavy_compact": {
+      "file": "title_plaque_heavy_compact.png",
+      "rect": {
+        "x": 1349,
+        "y": 125,
+        "width": 393,
+        "height": 186
+      },
+      "size": {
+        "width": 393,
+        "height": 186
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/title_plaque_heavy_compact.png"
+    },
+    "footer_bar_heavy": {
+      "file": "footer_bar_heavy.png",
+      "rect": {
+        "x": 28,
+        "y": 417,
+        "width": 834,
+        "height": 143
+      },
+      "size": {
+        "width": 834,
+        "height": 143
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/footer_bar_heavy.png"
+    },
+    "button_green_heavy": {
+      "file": "button_green_heavy.png",
+      "rect": {
+        "x": 905,
+        "y": 373,
+        "width": 421,
+        "height": 200
+      },
+      "size": {
+        "width": 421,
+        "height": 200
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_green_heavy.png"
+    },
+    "button_blue_heavy": {
+      "file": "button_blue_heavy.png",
+      "rect": {
+        "x": 1359,
+        "y": 384,
+        "width": 379,
+        "height": 188
+      },
+      "size": {
+        "width": 379,
+        "height": 188
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_blue_heavy.png"
+    },
+    "button_purple_heavy": {
+      "file": "button_purple_heavy.png",
+      "rect": {
+        "x": 110,
+        "y": 612,
+        "width": 380,
+        "height": 192
+      },
+      "size": {
+        "width": 380,
+        "height": 192
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/button_purple_heavy.png"
+    },
+    "summary_row_heavy": {
+      "file": "summary_row_heavy.png",
+      "rect": {
+        "x": 548,
+        "y": 608,
+        "width": 690,
+        "height": 214
+      },
+      "size": {
+        "width": 690,
+        "height": 214
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/summary_row_heavy.png"
+    },
+    "metric_chip_heavy": {
+      "file": "metric_chip_heavy.png",
+      "rect": {
+        "x": 1286,
+        "y": 618,
+        "width": 386,
+        "height": 196
+      },
+      "size": {
+        "width": 386,
+        "height": 196
+      },
+      "runtime_path": "SourceAssets/UI/SettingsReference/MiniScreens/Common/slices/metric_chip_heavy.png"
+    }
+  }
+}

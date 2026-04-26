@@ -1202,9 +1202,9 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 	const FT66ReferenceRect& QuitRect = T66MainMenuReferenceLayout::TopBar::ButtonPower;
 	const FT66ReferenceRect& StripRect = T66MainMenuReferenceLayout::TopBar::TopbarStripFull;
 
-	FSlateFontInfo NavFont = FT66Style::MakeFont(TEXT("Bold"), 30);
+	FSlateFontInfo NavFont = FT66Style::MakeFont(TEXT("Bold"), 34);
 	NavFont.LetterSpacing = 0;
-	FSlateFontInfo CurrencyFont = FT66Style::MakeFont(TEXT("Bold"), 30);
+	FSlateFontInfo CurrencyFont = FT66Style::MakeFont(TEXT("Bold"), 34);
 	CurrencyFont.LetterSpacing = 0;
 
 	const FLinearColor LabelColor(0.96f, 0.90f, 0.75f, 1.0f);
