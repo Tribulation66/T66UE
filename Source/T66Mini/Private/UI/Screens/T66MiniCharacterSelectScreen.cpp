@@ -295,12 +295,10 @@ TSharedRef<SWidget> UT66MiniCharacterSelectScreen::BuildSlateUI()
 			.WidthOverride(126.f)
 			.HeightOverride(102.f)
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateLambda([this, HeroID = Hero.HeroID]() { return HandleHeroClicked(HeroID); }))
-				.ButtonColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.01f))
-				.ContentPadding(FMargin(0.f))
-				[
-					T66MiniGeneratedChrome::MakePanel(
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						FOnClicked::CreateLambda([this, HeroID = Hero.HeroID]() { return HandleHeroClicked(HeroID); }),
+						T66MiniGeneratedChrome::MakePanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
 							[
@@ -316,8 +314,9 @@ TSharedRef<SWidget> UT66MiniCharacterSelectScreen::BuildSlateUI()
 								.AutoWrapText(true)
 							]
 						, FMargin(10.f, 8.f, 18.f, 8.f),
-						bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal)
-				]
+						bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal))
+					.SetColor(FLinearColor(1.f, 1.f, 1.f, 0.01f))
+					.SetPadding(FMargin(0.f)))
 			]
 		];
 	}

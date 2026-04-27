@@ -419,16 +419,12 @@ namespace
 
 			ChildSlot
 			[
-				SAssignNew(Button, SButton)
-				.ButtonStyle(&ButtonStyle)
-				.ContentPadding(FMargin(0.f))
-				.Clipping(EWidgetClipping::ClipToBounds)
-				.ToolTipText(InArgs._ToolTipText)
-				.OnClicked(InArgs._OnClicked)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor::Transparent)
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						InArgs._OnClicked,
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor::Transparent)
 					.Padding(0.f)
 					.Clipping(EWidgetClipping::ClipToBounds)
 					.RenderTransform(this, &ST66TopBarStatefulButton::GetVisualTransform)
@@ -457,9 +453,16 @@ namespace
 								InArgs._Content.Widget
 							]
 						]
-					]
-				]
+					])
+					.SetButtonStyle(&ButtonStyle)
+					.SetPadding(FMargin(0.f)),
+					&Button)
 			];
+			if (Button.IsValid())
+			{
+				Button->SetClipping(EWidgetClipping::ClipToBounds);
+				Button->SetToolTipText(InArgs._ToolTipText);
+			}
 		}
 
 	private:

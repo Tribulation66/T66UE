@@ -210,16 +210,13 @@ namespace
 			.HeightOverride(Params.Height > 0.0f ? Params.Height : QuitModalButtonHeight)
 			.Visibility(Params.Visibility)
 			[
-				SNew(SButton)
-				.ButtonStyle(&GetSettingsReferenceButtonStyle(Params.Type))
-				.ContentPadding(ContentPadding)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				.IsEnabled(Params.IsEnabled)
-				.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
-				[
-					ButtonContent
-				]
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(Params.OnClicked, ButtonContent)
+					.SetButtonStyle(&GetSettingsReferenceButtonStyle(Params.Type))
+					.SetPadding(ContentPadding)
+					.SetHAlign(HAlign_Center)
+					.SetVAlign(VAlign_Center)
+					.SetEnabled(Params.IsEnabled))
 			];
 	}
 }

@@ -316,13 +316,12 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 		return SNew(SBox)
 			.HeightOverride(Height)
 			[
-				SNew(SButton)
-				.OnClicked(OnClicked)
-				.ButtonColorAndOpacity(Fill)
-				.ContentPadding(FMargin(10.f, 8.f))
-				[
-					SNew(STextBlock).Text(Label).Font(T66MiniUI::BoldFont(18)).ColorAndOpacity(TextColor).Justification(ETextJustify::Center)
-				]
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						OnClicked,
+						SNew(STextBlock).Text(Label).Font(T66MiniUI::BoldFont(18)).ColorAndOpacity(TextColor).Justification(ETextJustify::Center))
+					.SetColor(Fill)
+					.SetPadding(FMargin(10.f, 8.f)))
 			];
 	};
 
@@ -397,22 +396,22 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
-					SAssignNew(ToggleButton, SButton)
-					.OnClicked_Lambda([this, RowId, GetValue, SetValue]()
-					{
-						const bool bNewValue = !GetValue();
-						SetValue(bNewValue);
-						UpdateToggleState(RowId, bNewValue);
-						return FReply::Handled();
-					})
-					.ButtonColorAndOpacity(bInitialValue ? T66MiniUI::AccentGreen() : T66MiniUI::AccentBlue())
-					.ContentPadding(FMargin(14.f, 8.f))
-					[
-						SAssignNew(ToggleValueText, STextBlock)
-						.Text(BoolToText(bInitialValue))
-						.Font(T66MiniUI::BoldFont(13))
-						.ColorAndOpacity(bInitialValue ? T66MiniUI::ButtonTextDark() : FLinearColor::White)
-					]
+					FT66Style::MakeBareButton(
+						FT66BareButtonParams(
+							FOnClicked::CreateLambda([this, RowId, GetValue, SetValue]()
+							{
+								const bool bNewValue = !GetValue();
+								SetValue(bNewValue);
+								UpdateToggleState(RowId, bNewValue);
+								return FReply::Handled();
+							}),
+							SAssignNew(ToggleValueText, STextBlock)
+							.Text(BoolToText(bInitialValue))
+							.Font(T66MiniUI::BoldFont(13))
+							.ColorAndOpacity(bInitialValue ? T66MiniUI::ButtonTextDark() : FLinearColor::White))
+						.SetColor(bInitialValue ? T66MiniUI::AccentGreen() : T66MiniUI::AccentBlue())
+						.SetPadding(FMargin(14.f, 8.f)),
+						&ToggleButton)
 				]
 			];
 
@@ -447,7 +446,12 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(SButton).OnClicked_Lambda([this, RowId, AdjustValue, GetValueText]() { AdjustValue(-1); UpdateCycleValueText(RowId, GetValueText()); return FReply::Handled(); }).ButtonColorAndOpacity(T66MiniUI::AccentBlue()).ContentPadding(FMargin(10.f, 6.f))[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "PrevValue", "<")).Font(T66MiniUI::BoldFont(16)).ColorAndOpacity(FLinearColor::White)]
+						FT66Style::MakeBareButton(
+							FT66BareButtonParams(
+								FOnClicked::CreateLambda([this, RowId, AdjustValue, GetValueText]() { AdjustValue(-1); UpdateCycleValueText(RowId, GetValueText()); return FReply::Handled(); }),
+								SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "PrevValue", "<")).Font(T66MiniUI::BoldFont(16)).ColorAndOpacity(FLinearColor::White))
+							.SetColor(T66MiniUI::AccentBlue())
+							.SetPadding(FMargin(10.f, 6.f)))
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f)
 					[
@@ -458,7 +462,12 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 					]
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(SButton).OnClicked_Lambda([this, RowId, AdjustValue, GetValueText]() { AdjustValue(1); UpdateCycleValueText(RowId, GetValueText()); return FReply::Handled(); }).ButtonColorAndOpacity(T66MiniUI::AccentBlue()).ContentPadding(FMargin(10.f, 6.f))[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "NextValue", ">")).Font(T66MiniUI::BoldFont(16)).ColorAndOpacity(FLinearColor::White)]
+						FT66Style::MakeBareButton(
+							FT66BareButtonParams(
+								FOnClicked::CreateLambda([this, RowId, AdjustValue, GetValueText]() { AdjustValue(1); UpdateCycleValueText(RowId, GetValueText()); return FReply::Handled(); }),
+								SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "NextValue", ">")).Font(T66MiniUI::BoldFont(16)).ColorAndOpacity(FLinearColor::White))
+							.SetColor(T66MiniUI::AccentBlue())
+							.SetPadding(FMargin(10.f, 6.f)))
 					]
 				]
 			];
@@ -496,7 +505,12 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 					]
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(SButton).OnClicked(FOnClicked::CreateUObject(this, &UT66MiniPauseMenuWidget::HandleStartRebind, ActionName, bAllowMouseButtons)).ButtonColorAndOpacity(T66MiniUI::AccentGold()).ContentPadding(FMargin(12.f, 8.f))[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "Rebind", "REBIND")).Font(T66MiniUI::BoldFont(13)).ColorAndOpacity(T66MiniUI::ButtonTextDark())]
+						FT66Style::MakeBareButton(
+							FT66BareButtonParams(
+								FOnClicked::CreateUObject(this, &UT66MiniPauseMenuWidget::HandleStartRebind, ActionName, bAllowMouseButtons),
+								SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Pause", "Rebind", "REBIND")).Font(T66MiniUI::BoldFont(13)).ColorAndOpacity(T66MiniUI::ButtonTextDark()))
+							.SetColor(T66MiniUI::AccentGold())
+							.SetPadding(FMargin(12.f, 8.f)))
 					]
 				]
 			];
@@ -604,16 +618,16 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 		TSharedPtr<SButton> TabButton;
 		TSharedPtr<STextBlock> TabText;
 		TSharedRef<SWidget> Button =
-			SAssignNew(TabButton, SButton)
-			.OnClicked(FOnClicked::CreateUObject(this, &UT66MiniPauseMenuWidget::HandleSettingsTabClicked, Tab))
-			.ButtonColorAndOpacity(bIsActive ? T66MiniUI::AccentGold() : T66MiniUI::RaisedFill())
-			.ContentPadding(FMargin(12.f, 10.f))
-			[
-				SAssignNew(TabText, STextBlock)
-				.Text(Label)
-				.Font(T66MiniUI::BoldFont(13))
-				.ColorAndOpacity(bIsActive ? T66MiniUI::ButtonTextDark() : FLinearColor::White)
-			];
+			FT66Style::MakeBareButton(
+				FT66BareButtonParams(
+					FOnClicked::CreateUObject(this, &UT66MiniPauseMenuWidget::HandleSettingsTabClicked, Tab),
+					SAssignNew(TabText, STextBlock)
+					.Text(Label)
+					.Font(T66MiniUI::BoldFont(13))
+					.ColorAndOpacity(bIsActive ? T66MiniUI::ButtonTextDark() : FLinearColor::White))
+				.SetColor(bIsActive ? T66MiniUI::AccentGold() : T66MiniUI::RaisedFill())
+				.SetPadding(FMargin(12.f, 10.f)),
+				&TabButton);
 
 		SettingsTabButtonMap.Add(TabKey, TabButton);
 		SettingsTabTextMap.Add(TabKey, TabText);

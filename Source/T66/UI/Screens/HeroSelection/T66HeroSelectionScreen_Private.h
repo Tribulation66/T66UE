@@ -548,43 +548,37 @@ namespace T66HeroSelectionPrivate
 			ButtonStyle.SetPressedPadding(FMargin(0.f));
 			OwnedButtonStyle = ButtonStyle;
 
-			TSharedRef<SButton> ButtonRef =
-				SAssignNew(Button, SButton)
-				.ButtonStyle(&OwnedButtonStyle)
-				.ContentPadding(FMargin(0.f))
-				.IsEnabled(InArgs._IsEnabled)
-				.OnClicked(InArgs._OnClicked)
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-						SNew(SImage)
-						.Image(this, &ST66HeroSelectionSpriteButton::GetCurrentBrush)
-					]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Fill)
-					.VAlign(VAlign_Fill)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						.Padding(this, &ST66HeroSelectionSpriteButton::GetContentPadding)
-						[
-							InArgs._Content.Widget
-						]
-					]
-				];
-
 			ChildSlot
 			[
-				SNew(SBox)
-				.WidthOverride(InArgs._MinWidth > 0.f ? InArgs._MinWidth : FOptionalSize())
-				.HeightOverride(InArgs._Height > 0.f ? InArgs._Height : FOptionalSize())
-				.Visibility(InArgs._Visibility)
-				[
-					ButtonRef
-				]
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						InArgs._OnClicked,
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SNew(SImage)
+							.Image(this, &ST66HeroSelectionSpriteButton::GetCurrentBrush)
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Fill)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
+							.Padding(this, &ST66HeroSelectionSpriteButton::GetContentPadding)
+							[
+								InArgs._Content.Widget
+							]
+						])
+					.SetButtonStyle(&OwnedButtonStyle)
+					.SetPadding(FMargin(0.f))
+					.SetEnabled(InArgs._IsEnabled)
+					.SetWidth(InArgs._MinWidth)
+					.SetHeight(InArgs._Height)
+					.SetVisibility(InArgs._Visibility),
+					&Button)
 			];
 		}
 

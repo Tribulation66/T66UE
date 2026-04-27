@@ -1751,33 +1751,33 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							]
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 							[
-								SAssignNew(ImmortalityButton, SButton)
-								.Visibility(EVisibility::Collapsed)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnToggleImmortality))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-								.ContentPadding(FMargin(5.f, 2.f))
-								[
-									SAssignNew(ImmortalityButtonText, STextBlock)
-									.Text(NSLOCTEXT("T66.Dev", "ImmortalityOff", "IMMORTALITY: OFF"))
-									.Font(FT66Style::Tokens::FontBold(7))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-								]
+								FT66Style::MakeBareButton(
+									FT66BareButtonParams(
+										FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnToggleImmortality),
+										SAssignNew(ImmortalityButtonText, STextBlock)
+										.Text(NSLOCTEXT("T66.Dev", "ImmortalityOff", "IMMORTALITY: OFF"))
+										.Font(FT66Style::Tokens::FontBold(7))
+										.ColorAndOpacity(FT66Style::Tokens::Text))
+									.SetButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+									.SetColor(FT66Style::Tokens::Panel2)
+									.SetPadding(FMargin(5.f, 2.f))
+									.SetVisibility(EVisibility::Collapsed),
+									&ImmortalityButton)
 							]
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 							[
-								SAssignNew(PowerButton, SButton)
-								.Visibility(EVisibility::Collapsed)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnTogglePower))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-								.ContentPadding(FMargin(5.f, 2.f))
-								[
-									SAssignNew(PowerButtonText, STextBlock)
-									.Text(NSLOCTEXT("T66.Dev", "PowerOff", "POWER: OFF"))
-									.Font(FT66Style::Tokens::FontBold(7))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-								]
+								FT66Style::MakeBareButton(
+									FT66BareButtonParams(
+										FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnTogglePower),
+										SAssignNew(PowerButtonText, STextBlock)
+										.Text(NSLOCTEXT("T66.Dev", "PowerOff", "POWER: OFF"))
+										.Font(FT66Style::Tokens::FontBold(7))
+										.ColorAndOpacity(FT66Style::Tokens::Text))
+									.SetButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+									.SetColor(FT66Style::Tokens::Panel2)
+									.SetPadding(FMargin(5.f, 2.f))
+									.SetVisibility(EVisibility::Collapsed),
+									&PowerButton)
 							],
 							FMargin(6.f, 4.f))
 							: FT66Style::MakePanel(
@@ -1809,34 +1809,34 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							// Dev toggles are hidden in the current HUD pass.
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 							[
-								SAssignNew(ImmortalityButton, SButton)
-								.Visibility(EVisibility::Collapsed)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnToggleImmortality))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-								.ContentPadding(FMargin(5.f, 2.f))
-								[
-									SAssignNew(ImmortalityButtonText, STextBlock)
-									.Text(NSLOCTEXT("T66.Dev", "ImmortalityOff", "IMMORTALITY: OFF"))
-									.Font(FT66Style::Tokens::FontBold(7))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-								]
+								FT66Style::MakeBareButton(
+									FT66BareButtonParams(
+										FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnToggleImmortality),
+										SAssignNew(ImmortalityButtonText, STextBlock)
+										.Text(NSLOCTEXT("T66.Dev", "ImmortalityOff", "IMMORTALITY: OFF"))
+										.Font(FT66Style::Tokens::FontBold(7))
+										.ColorAndOpacity(FT66Style::Tokens::Text))
+									.SetButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+									.SetColor(FT66Style::Tokens::Panel2)
+									.SetPadding(FMargin(5.f, 2.f))
+									.SetVisibility(EVisibility::Collapsed),
+									&ImmortalityButton)
 							]
 							// Dev toggles are hidden in the current HUD pass.
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 							[
-								SAssignNew(PowerButton, SButton)
-								.Visibility(EVisibility::Collapsed)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnTogglePower))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-								.ContentPadding(FMargin(5.f, 2.f))
-								[
-									SAssignNew(PowerButtonText, STextBlock)
-									.Text(NSLOCTEXT("T66.Dev", "PowerOff", "POWER: OFF"))
-									.Font(FT66Style::Tokens::FontBold(7))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-								]
+								FT66Style::MakeBareButton(
+									FT66BareButtonParams(
+										FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnTogglePower),
+										SAssignNew(PowerButtonText, STextBlock)
+										.Text(NSLOCTEXT("T66.Dev", "PowerOff", "POWER: OFF"))
+										.Font(FT66Style::Tokens::FontBold(7))
+										.ColorAndOpacity(FT66Style::Tokens::Text))
+									.SetButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+									.SetColor(FT66Style::Tokens::Panel2)
+									.SetPadding(FMargin(5.f, 2.f))
+									.SetVisibility(EVisibility::Collapsed),
+									&PowerButton)
 							],
 							FT66PanelParams(ET66PanelType::Panel).SetPadding(6.f))
 					]

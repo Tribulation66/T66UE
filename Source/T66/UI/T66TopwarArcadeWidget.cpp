@@ -111,42 +111,42 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 	};
 
 	const TSharedRef<SWidget> LeftGateButton =
-		SNew(SButton)
-		.ButtonColorAndOpacity(FLinearColor::Transparent)
-		.ContentPadding(0.f)
-		.OnClicked(FOnClicked::CreateUObject(this, &UT66TopwarArcadeWidget::HandleGateClicked, true))
-		[
-			SAssignNew(LeftGateBorder, SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.10f, 0.28f, 0.82f, 1.f))
+		FT66Style::MakeBareButton(
+			FT66BareButtonParams(
+				FOnClicked::CreateUObject(this, &UT66TopwarArcadeWidget::HandleGateClicked, true),
+				SAssignNew(LeftGateBorder, SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.10f, 0.28f, 0.82f, 1.f))
 			.Padding(FMargin(20.f))
 			[
 				SAssignNew(LeftGateTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
 				.Font(FT66Style::Tokens::FontBold(30))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-				.Justification(ETextJustify::Center)
-			]
-		];
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Center)
+				]
+		)
+		.SetColor(FLinearColor::Transparent)
+		.SetPadding(FMargin(0.f)));
 
 	const TSharedRef<SWidget> RightGateButton =
-		SNew(SButton)
-		.ButtonColorAndOpacity(FLinearColor::Transparent)
-		.ContentPadding(0.f)
-		.OnClicked(FOnClicked::CreateUObject(this, &UT66TopwarArcadeWidget::HandleGateClicked, false))
-		[
-			SAssignNew(RightGateBorder, SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.78f, 0.18f, 0.12f, 1.f))
+		FT66Style::MakeBareButton(
+			FT66BareButtonParams(
+				FOnClicked::CreateUObject(this, &UT66TopwarArcadeWidget::HandleGateClicked, false),
+				SAssignNew(RightGateBorder, SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.78f, 0.18f, 0.12f, 1.f))
 			.Padding(FMargin(20.f))
 			[
 				SAssignNew(RightGateTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
 				.Font(FT66Style::Tokens::FontBold(30))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-				.Justification(ETextJustify::Center)
-			]
-		];
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Center)
+				]
+		)
+		.SetColor(FLinearColor::Transparent)
+		.SetPadding(FMargin(0.f)));
 
 	const TSharedRef<SWidget> InfoPanel =
 		FT66Style::MakePanel(

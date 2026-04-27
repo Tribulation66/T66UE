@@ -156,6 +156,7 @@ Rules:
 - Build real Slate/UMG widgets.
 - Use live `FText`, runtime values, real buttons, real anchors, and responsive layout.
 - Use only the locked master UI asset library for chrome.
+- Production buttons, custom clickable areas, panels, tabs, slots, rows, and top-bar controls must use the project shared UI construction helpers whenever an appropriate helper exists (`FT66Style`, `T66OverlayChromeStyle`, `T66MiniUI`, `T66MiniGeneratedChrome`, or an approved screen-family helper). Do not add raw `SButton` or production chrome `SBorder` directly in screen code unless the task first adds or extends a shared helper. Helpers must preserve the locked master UI asset library, live text/data, text-fit policy, enabled/disabled behavior, and cursor policy.
 - Do not create new visual art in code. Slate/UMG may place, scale, clip, tint-disabled, or nine-slice locked assets, but must not draw substitute chrome, decorative borders, filled patches, rays, glows, or icon art.
 - Do not generate new art unless the task explicitly returns to Part 0.
 - Do not add top bar outside the allowed top-bar list.

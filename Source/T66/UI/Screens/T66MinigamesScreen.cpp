@@ -257,30 +257,20 @@ namespace
 		const FLinearColor& TextColor,
 		const FMargin& ContentPadding)
 	{
-		TSharedRef<SButton> Button = SNew(SButton)
-			.ButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-			.ContentPadding(ContentPadding)
-			.IsEnabled(Params.IsEnabled)
-			.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
-			[
+		return FT66Style::MakeBareButton(
+			FT66BareButtonParams(
+				Params.OnClicked,
 				SNew(STextBlock)
 				.Text(Params.Label)
 				.Font(Font)
 				.ColorAndOpacity(TextColor)
-				.Justification(ETextJustify::Center)
-			];
-
-		TSharedRef<SBox> Box = SNew(SBox)
-			.MinDesiredWidth(Params.MinWidth)
-			.Visibility(Params.Visibility)
-			[
-				Button
-			];
-		if (Params.Height > 0.f)
-		{
-			Box->SetHeightOverride(Params.Height);
-		}
-		return Box;
+				.Justification(ETextJustify::Center))
+			.SetButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+			.SetPadding(ContentPadding)
+			.SetEnabled(Params.IsEnabled)
+			.SetMinWidth(Params.MinWidth)
+			.SetHeight(Params.Height)
+			.SetVisibility(Params.Visibility));
 	}
 }
 
@@ -384,12 +374,9 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 			return SliceContent;
 		}
 
-		return SNew(SButton)
-			.ButtonStyle(FCoreStyle::Get(), "NoBorder")
-			.OnClicked(ClickDelegate)
-			[
-				SliceContent
-			];
+		return FT66Style::MakeBareButton(
+			FT66BareButtonParams(ClickDelegate, SliceContent)
+			.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder")));
 	};
 
 	const TSharedRef<SWidget> Root = SNew(SBox)

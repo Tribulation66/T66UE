@@ -348,16 +348,13 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 			.WidthOverride(168.f)
 			.HeightOverride(132.f)
 			[
-				SNew(SButton)
-				.IsEnabled(bIsUnlocked)
-				.OnClicked(FOnClicked::CreateLambda([this, CompanionID = Companion.CompanionID]()
-				{
-					return HandleCompanionClicked(CompanionID);
-				}))
-				.ButtonColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.01f))
-				.ContentPadding(FMargin(0.f))
-				[
-					T66MiniGeneratedChrome::MakePanel(
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						FOnClicked::CreateLambda([this, CompanionID = Companion.CompanionID]()
+						{
+							return HandleCompanionClicked(CompanionID);
+						}),
+						T66MiniGeneratedChrome::MakePanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
 							[
@@ -383,8 +380,10 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 						, FMargin(11.f, 9.f, 22.f, 9.f),
 						!bIsUnlocked
 							? T66MiniGeneratedChrome::ESlice::CardDisabled
-							: (bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal))
-				]
+							: (bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal)))
+					.SetColor(FLinearColor(1.f, 1.f, 1.f, 0.01f))
+					.SetPadding(FMargin(0.f))
+					.SetEnabled(bIsUnlocked))
 			]
 		];
 	}

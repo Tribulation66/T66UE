@@ -211,42 +211,36 @@ namespace
 			OwnedButtonStyle.SetNormalPadding(FMargin(0.f));
 			OwnedButtonStyle.SetPressedPadding(FMargin(0.f));
 
-			TSharedRef<SButton> ButtonRef =
-				SAssignNew(Button, SButton)
-				.ButtonStyle(&OwnedButtonStyle)
-				.ContentPadding(FMargin(0.f))
-				.IsEnabled(InArgs._IsEnabled)
-				.OnClicked(FT66Style::DebounceClick(InArgs._OnClicked))
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-						SNew(SImage)
-						.Image(this, &ST66CompanionGridPlateButton::GetCurrentBrush)
-					]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Fill)
-					.VAlign(VAlign_Fill)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-						.Padding(this, &ST66CompanionGridPlateButton::GetContentPadding)
+			ChildSlot
+			[
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						InArgs._OnClicked,
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SNew(SImage)
+							.Image(this, &ST66CompanionGridPlateButton::GetCurrentBrush)
+						]
+						+ SOverlay::Slot()
 						.HAlign(HAlign_Fill)
 						.VAlign(VAlign_Fill)
 						[
-							InArgs._Content.Widget
-						]
-					]
-				];
-
-			ChildSlot
-			[
-				SNew(SBox)
-				.WidthOverride(InArgs._MinWidth > 0.f ? InArgs._MinWidth : FOptionalSize())
-				.HeightOverride(InArgs._Height > 0.f ? InArgs._Height : FOptionalSize())
-				[
-					ButtonRef
-				]
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+							.Padding(this, &ST66CompanionGridPlateButton::GetContentPadding)
+							.HAlign(HAlign_Fill)
+							.VAlign(VAlign_Fill)
+							[
+								InArgs._Content.Widget
+							]
+						])
+					.SetButtonStyle(&OwnedButtonStyle)
+					.SetPadding(FMargin(0.f))
+					.SetEnabled(InArgs._IsEnabled)
+					.SetWidth(InArgs._MinWidth)
+					.SetHeight(InArgs._Height),
+					&Button)
 			];
 		}
 

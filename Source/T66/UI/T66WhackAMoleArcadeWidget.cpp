@@ -65,14 +65,12 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 				.WidthOverride(GWhackCellWidth)
 				.HeightOverride(GWhackCellHeight)
 				[
-					SNew(SButton)
-					.ButtonColorAndOpacity(FLinearColor::Transparent)
-					.ContentPadding(0.f)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66WhackAMoleArcadeWidget::HandleCellClicked, CellIndex))
-					[
-						SAssignNew(CellBorder, SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FT66Style::Tokens::Panel2)
+					FT66Style::MakeBareButton(
+						FT66BareButtonParams(
+							FOnClicked::CreateUObject(this, &UT66WhackAMoleArcadeWidget::HandleCellClicked, CellIndex),
+							SAssignNew(CellBorder, SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 						.Padding(FMargin(6.f))
 						[
 							SNew(SBorder)
@@ -115,8 +113,9 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 									]
 								]
 							]
-						]
-					]
+						])
+						.SetColor(FLinearColor::Transparent)
+						.SetPadding(FMargin(0.f)))
 				]
 			];
 

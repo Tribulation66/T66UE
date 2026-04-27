@@ -194,15 +194,12 @@ namespace
 			.WidthOverride(TileSize)
 			.HeightOverride(TileSize)
 			[
-				SNew(SButton)
-				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-				.ButtonColorAndOpacity(FLinearColor::Transparent)
-				.ContentPadding(FMargin(0.f))
-				.IsEnabled(ButtonParams.IsEnabled)
-				.OnClicked(FT66Style::DebounceClick(ButtonParams.OnClicked))
-				[
-					TileContent
-				]
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(ButtonParams.OnClicked, TileContent)
+					.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+					.SetColor(FLinearColor::Transparent)
+					.SetPadding(FMargin(0.f))
+					.SetEnabled(ButtonParams.IsEnabled))
 			];
 	}
 }

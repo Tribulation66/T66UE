@@ -153,6 +153,56 @@ struct FT66ButtonParams
 	FT66ButtonParams& SetContent(const TSharedRef<SWidget>& W)            { CustomContent = W; return *this; }
 };
 
+/**
+ * Parameters for custom-art clickable buttons that should not use the standard
+ * T66 visual skin, but still need shared interaction policy.
+ */
+struct FT66BareButtonParams
+{
+	FOnClicked OnClicked;
+	TSharedPtr<SWidget> Content;
+	const FButtonStyle* ButtonStyle = nullptr;
+	TAttribute<FSlateColor> ButtonColorAndOpacity = TAttribute<FSlateColor>(FSlateColor(FLinearColor::White));
+	FMargin ContentPadding = FMargin(0.f);
+	TAttribute<bool> IsEnabled = true;
+	TAttribute<EVisibility> Visibility = EVisibility::Visible;
+	FText ToolTipText;
+	FSimpleDelegate OnHovered;
+	FSimpleDelegate OnUnhovered;
+	FSimpleDelegate OnPressed;
+	FSimpleDelegate OnReleased;
+	EHorizontalAlignment HAlign = HAlign_Fill;
+	EVerticalAlignment VAlign = VAlign_Fill;
+	EMouseCursor::Type Cursor = EMouseCursor::Hand;
+	float MinWidth = 0.f;
+	float WidthOverride = 0.f;
+	float HeightOverride = 0.f;
+	bool bDebounceClick = true;
+
+	FT66BareButtonParams() = default;
+	FT66BareButtonParams(FOnClicked InOnClicked, const TSharedRef<SWidget>& InContent)
+		: OnClicked(MoveTemp(InOnClicked)), Content(InContent) {}
+
+	FT66BareButtonParams& SetButtonStyle(const FButtonStyle* InButtonStyle) { ButtonStyle = InButtonStyle; return *this; }
+	FT66BareButtonParams& SetColor(const TAttribute<FSlateColor>& InColor) { ButtonColorAndOpacity = InColor; return *this; }
+	FT66BareButtonParams& SetColor(const FLinearColor& InColor) { ButtonColorAndOpacity = FSlateColor(InColor); return *this; }
+	FT66BareButtonParams& SetPadding(const FMargin& InPadding) { ContentPadding = InPadding; return *this; }
+	FT66BareButtonParams& SetEnabled(const TAttribute<bool>& InEnabled) { IsEnabled = InEnabled; return *this; }
+	FT66BareButtonParams& SetVisibility(const TAttribute<EVisibility>& InVisibility) { Visibility = InVisibility; return *this; }
+	FT66BareButtonParams& SetToolTipText(const FText& InToolTipText) { ToolTipText = InToolTipText; return *this; }
+	FT66BareButtonParams& SetOnHovered(FSimpleDelegate InOnHovered) { OnHovered = MoveTemp(InOnHovered); return *this; }
+	FT66BareButtonParams& SetOnUnhovered(FSimpleDelegate InOnUnhovered) { OnUnhovered = MoveTemp(InOnUnhovered); return *this; }
+	FT66BareButtonParams& SetOnPressed(FSimpleDelegate InOnPressed) { OnPressed = MoveTemp(InOnPressed); return *this; }
+	FT66BareButtonParams& SetOnReleased(FSimpleDelegate InOnReleased) { OnReleased = MoveTemp(InOnReleased); return *this; }
+	FT66BareButtonParams& SetHAlign(EHorizontalAlignment InHAlign) { HAlign = InHAlign; return *this; }
+	FT66BareButtonParams& SetVAlign(EVerticalAlignment InVAlign) { VAlign = InVAlign; return *this; }
+	FT66BareButtonParams& SetCursor(EMouseCursor::Type InCursor) { Cursor = InCursor; return *this; }
+	FT66BareButtonParams& SetMinWidth(float InMinWidth) { MinWidth = InMinWidth; return *this; }
+	FT66BareButtonParams& SetWidth(float InWidth) { WidthOverride = InWidth; return *this; }
+	FT66BareButtonParams& SetHeight(float InHeight) { HeightOverride = InHeight; return *this; }
+	FT66BareButtonParams& SetDebounceClick(bool bInDebounceClick) { bDebounceClick = bInDebounceClick; return *this; }
+};
+
 /** Panel semantic types for MakePanel. */
 enum class ET66PanelType : uint8
 {
@@ -428,6 +478,13 @@ public:
 
 	/** Full params overload — handles every button variant in the game. */
 	static TSharedRef<SWidget> MakeButton(const FT66ButtonParams& Params);
+
+	/**
+	 * Create a shared-policy bare button for custom-art controls.
+	 * Use this when a screen owns the button visuals itself but still needs
+	 * shared debounce, cursor, sizing, and enabled-state behavior.
+	 */
+	static TSharedRef<SWidget> MakeBareButton(const FT66BareButtonParams& Params, TSharedPtr<SButton>* OutButton = nullptr);
 
 	static FT66ButtonParams MakeInRunButtonParams(
 		const FText& Label,

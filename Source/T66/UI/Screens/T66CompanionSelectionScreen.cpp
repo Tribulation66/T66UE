@@ -378,43 +378,37 @@ namespace
 			OwnedButtonStyle.SetNormalPadding(FMargin(0.f));
 			OwnedButtonStyle.SetPressedPadding(FMargin(0.f));
 
-			TSharedRef<SButton> ButtonRef =
-				SAssignNew(Button, SButton)
-				.ButtonStyle(&OwnedButtonStyle)
-				.ContentPadding(FMargin(0.f))
-				.IsEnabled(InArgs._IsEnabled)
-				.OnClicked(FT66Style::DebounceClick(InArgs._OnClicked))
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-						SNew(SImage)
-						.Image(this, &ST66CompanionReferenceButton::GetCurrentBrush)
-					]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Fill)
-					.VAlign(VAlign_Fill)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						.Padding(this, &ST66CompanionReferenceButton::GetContentPadding)
-						[
-							InArgs._Content.Widget
-						]
-					]
-				];
-
 			ChildSlot
 			[
-				SNew(SBox)
-				.MinDesiredWidth(InArgs._MinWidth > 0.f ? InArgs._MinWidth : FOptionalSize())
-				.HeightOverride(InArgs._Height > 0.f ? InArgs._Height : FOptionalSize())
-				.Visibility(InArgs._Visibility)
-				[
-					ButtonRef
-				]
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						InArgs._OnClicked,
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SNew(SImage)
+							.Image(this, &ST66CompanionReferenceButton::GetCurrentBrush)
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Fill)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
+							.Padding(this, &ST66CompanionReferenceButton::GetContentPadding)
+							[
+								InArgs._Content.Widget
+							]
+						])
+					.SetButtonStyle(&OwnedButtonStyle)
+					.SetPadding(FMargin(0.f))
+					.SetEnabled(InArgs._IsEnabled)
+					.SetMinWidth(InArgs._MinWidth)
+					.SetHeight(InArgs._Height)
+					.SetVisibility(InArgs._Visibility),
+					&Button)
 			];
 		}
 

@@ -113,6 +113,7 @@ Button labels must use the Main Menu CTA text-fit approach instead of tiny fixed
 - Layout must come from the target screen, not from a different screen.
 - Localizable labels, names, values, scores, prices, timers, and dynamic data stay live.
 - Visible controls must be real controls, not invisible hotspots.
+- Buttons, custom clickable areas, panels, tabs, rows, slots, and top-bar controls must route through the shared UI helpers (`FT66Style`, `T66OverlayChromeStyle`, `T66MiniUI`, `T66MiniGeneratedChrome`, or an approved screen-family helper). If a production screen needs a new visual/control variant, extend a helper first instead of adding raw `SButton` or production chrome `SBorder` directly in the screen.
 - Outputs go under `UI\screens\<screen_slug>\outputs\YYYY-MM-DD\`, not the repo-root `output` folder.
 - Active screen folders should stay clean between passes: keep only the current-state PNG and the approved canonical reference PNG in active `current`/`reference` folders; archive stale boards, masks, prompts, review outputs, and packaged captures under `UI\archive`.
 

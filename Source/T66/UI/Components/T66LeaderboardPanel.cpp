@@ -552,46 +552,45 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.WidthOverride(ReferenceFilterButtonSize.X)
 				.HeightOverride(ReferenceFilterButtonSize.Y)
 				[
-					SNew(SButton)
-					.ButtonStyle(&NoBorderButtonStyle)
-					.ContentPadding(FMargin(0.f))
-					.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
-					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SImage)
-							.Image(TAttribute<const FSlateBrush*>::CreateLambda([this, Filter, ReferenceFilterButtonBrush, ReferenceFilterSelectedBrush]() -> const FSlateBrush*
-							{
-								const bool bSelected = CurrentFilter == Filter;
-								const FSlateBrush* SelectedBrush = ReferenceFilterSelectedBrush ? ReferenceFilterSelectedBrush : ReferenceFilterButtonBrush;
-								const FSlateBrush* ChosenBrush = bSelected ? SelectedBrush : ReferenceFilterButtonBrush;
-								return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
-							}))
-							.ColorAndOpacity((ReferenceFilterButtonBrush || ReferenceFilterSelectedBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						[
-							SNew(SBox)
-							.WidthOverride(ReferenceFilterIconSize.X)
-							.HeightOverride(ReferenceFilterIconSize.Y)
+					FT66Style::MakeBareButton(
+						FT66BareButtonParams(
+							FOnClicked::CreateSP(this, ClickHandler),
+							SNew(SOverlay)
+							+ SOverlay::Slot()
 							[
-								IconBrush
-								? StaticCastSharedRef<SWidget>(
-									SNew(SImage)
-									.Image(IconBrush)
-									.ColorAndOpacity(FLinearColor::White))
-								: StaticCastSharedRef<SWidget>(
-									SNew(STextBlock)
-									.Text(FText::FromString(FallbackLetter))
-									.Font(FT66Style::MakeFont(TEXT("Bold"), 18))
-									.ColorAndOpacity(ReferenceLeaderboardMuted)
-									.Justification(ETextJustify::Center))
+								SNew(SImage)
+								.Image(TAttribute<const FSlateBrush*>::CreateLambda([this, Filter, ReferenceFilterButtonBrush, ReferenceFilterSelectedBrush]() -> const FSlateBrush*
+								{
+									const bool bSelected = CurrentFilter == Filter;
+									const FSlateBrush* SelectedBrush = ReferenceFilterSelectedBrush ? ReferenceFilterSelectedBrush : ReferenceFilterButtonBrush;
+									const FSlateBrush* ChosenBrush = bSelected ? SelectedBrush : ReferenceFilterButtonBrush;
+									return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
+								}))
+								.ColorAndOpacity((ReferenceFilterButtonBrush || ReferenceFilterSelectedBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
 							]
-						]
-					]
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
+							[
+								SNew(SBox)
+								.WidthOverride(ReferenceFilterIconSize.X)
+								.HeightOverride(ReferenceFilterIconSize.Y)
+								[
+									IconBrush
+									? StaticCastSharedRef<SWidget>(
+										SNew(SImage)
+										.Image(IconBrush)
+										.ColorAndOpacity(FLinearColor::White))
+									: StaticCastSharedRef<SWidget>(
+										SNew(STextBlock)
+										.Text(FText::FromString(FallbackLetter))
+										.Font(FT66Style::MakeFont(TEXT("Bold"), 18))
+										.ColorAndOpacity(ReferenceLeaderboardMuted)
+										.Justification(ETextJustify::Center))
+								]
+							])
+						.SetButtonStyle(&NoBorderButtonStyle)
+						.SetPadding(FMargin(0.f)))
 				];
 		};
 
@@ -607,41 +606,40 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.WidthOverride(Size.X)
 				.HeightOverride(Size.Y)
 				[
-					SNew(SButton)
-					.ButtonStyle(&NoBorderButtonStyle)
-					.ContentPadding(FMargin(0.f))
-					.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
-					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-								SNew(SImage)
-								.Image(TAttribute<const FSlateBrush*>::CreateLambda([SelectedBrush, NormalBrush, IsSelected]() -> const FSlateBrush*
-								{
-									const FSlateBrush* ChosenBrush = IsSelected() ? SelectedBrush : NormalBrush;
-									return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
-								}))
-								.ColorAndOpacity((SelectedBrush || NormalBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
-							]
+					FT66Style::MakeBareButton(
+						FT66BareButtonParams(
+							FOnClicked::CreateSP(this, ClickHandler),
+							SNew(SOverlay)
 							+ SOverlay::Slot()
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							.Padding(FMargin(12.f, 0.f))
 							[
-								SNew(STextBlock)
-								.Text(Label)
-								.Font(ReferenceHeaderFont)
-								.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsSelected]() -> FSlateColor
-								{
-									return IsSelected()
-										? FSlateColor(ReferenceLeaderboardText)
-										: FSlateColor(FLinearColor(0.78f, 0.74f, 0.66f, 0.92f));
-								}))
-								.Justification(ETextJustify::Center)
-								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-								.Clipping(EWidgetClipping::ClipToBounds)
-							]
-					]
+									SNew(SImage)
+									.Image(TAttribute<const FSlateBrush*>::CreateLambda([SelectedBrush, NormalBrush, IsSelected]() -> const FSlateBrush*
+									{
+										const FSlateBrush* ChosenBrush = IsSelected() ? SelectedBrush : NormalBrush;
+										return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
+									}))
+									.ColorAndOpacity((SelectedBrush || NormalBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
+								]
+								+ SOverlay::Slot()
+								.HAlign(HAlign_Center)
+								.VAlign(VAlign_Center)
+								.Padding(FMargin(12.f, 0.f))
+								[
+									SNew(STextBlock)
+									.Text(Label)
+									.Font(ReferenceHeaderFont)
+									.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsSelected]() -> FSlateColor
+									{
+										return IsSelected()
+											? FSlateColor(ReferenceLeaderboardText)
+											: FSlateColor(FLinearColor(0.78f, 0.74f, 0.66f, 0.92f));
+									}))
+									.Justification(ETextJustify::Center)
+									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+									.Clipping(EWidgetClipping::ClipToBounds)
+								])
+						.SetButtonStyle(&NoBorderButtonStyle)
+						.SetPadding(FMargin(0.f)))
 				];
 		};
 
@@ -653,26 +651,24 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.WidthOverride(Size.X)
 				.HeightOverride(Size.Y)
 				[
-					SNew(SButton)
-					.ButtonStyle(&NoBorderButtonStyle)
-					.ContentPadding(FMargin(0.f))
-					.OnClicked(FOnClicked::CreateLambda([this, Type]()
-					{
-						SetLeaderboardType(Type);
-						return FReply::Handled();
-					}))
-					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SImage)
-							.Image(TAttribute<const FSlateBrush*>::CreateLambda([this, Type, ReferenceToggleSelectedBrush, ReferenceToggleNormalBrush]() -> const FSlateBrush*
+					FT66Style::MakeBareButton(
+						FT66BareButtonParams(
+							FOnClicked::CreateLambda([this, Type]()
 							{
-								const FSlateBrush* ChosenBrush = CurrentType == Type ? ReferenceToggleSelectedBrush : ReferenceToggleNormalBrush;
-								return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
-							}))
-							.ColorAndOpacity((ReferenceToggleSelectedBrush || ReferenceToggleNormalBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
-						]
+								SetLeaderboardType(Type);
+								return FReply::Handled();
+							}),
+							SNew(SOverlay)
+							+ SOverlay::Slot()
+							[
+								SNew(SImage)
+								.Image(TAttribute<const FSlateBrush*>::CreateLambda([this, Type, ReferenceToggleSelectedBrush, ReferenceToggleNormalBrush]() -> const FSlateBrush*
+								{
+									const FSlateBrush* ChosenBrush = CurrentType == Type ? ReferenceToggleSelectedBrush : ReferenceToggleNormalBrush;
+									return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
+								}))
+								.ColorAndOpacity((ReferenceToggleSelectedBrush || ReferenceToggleNormalBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
+							]
 						+ SOverlay::Slot()
 						.HAlign(HAlign_Center)
 						.VAlign(VAlign_Center)
@@ -691,7 +687,9 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 							.Clipping(EWidgetClipping::ClipToBounds)
 						]
-					]
+					)
+					.SetButtonStyle(&NoBorderButtonStyle)
+					.SetPadding(FMargin(0.f)))
 				];
 		};
 
@@ -983,26 +981,25 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			.WidthOverride(SquareIconSize)
 			.HeightOverride(SquareIconSize)
 			[
-				SNew(SButton)
-				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-				.ContentPadding(FMargin(0.f))
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Fill)
-				.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
-				[
-					IconBrush.IsValid()
-					? StaticCastSharedRef<SWidget>(
-						SNew(SImage)
-						.Image(IconBrush.Get())
-					)
-					: StaticCastSharedRef<SWidget>(
-						SNew(STextBlock)
-						.Text(FText::FromString(FallbackLetter))
-						.Font(LeaderboardTitleFont)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-						.Justification(ETextJustify::Center)
-					)
-				]
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						FOnClicked::CreateSP(this, ClickHandler),
+						IconBrush.IsValid()
+						? StaticCastSharedRef<SWidget>(
+							SNew(SImage)
+							.Image(IconBrush.Get())
+						)
+						: StaticCastSharedRef<SWidget>(
+							SNew(STextBlock)
+							.Text(FText::FromString(FallbackLetter))
+							.Font(LeaderboardTitleFont)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Justification(ETextJustify::Center)
+						))
+					.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+					.SetPadding(FMargin(0.f))
+					.SetHAlign(HAlign_Fill)
+					.SetVAlign(VAlign_Fill))
 			];
 	};
 
@@ -1028,11 +1025,9 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 
 	auto MakeFlatTimeButton = [this, &NoBorderButtonStyle, LeaderboardTimeToggleFont](const FText& Text, const FLinearColor& FillColor, FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
 	{
-		return SNew(SButton)
-			.ButtonStyle(&NoBorderButtonStyle)
-			.ContentPadding(FMargin(0.f))
-			.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
-			[
+		return FT66Style::MakeBareButton(
+			FT66BareButtonParams(
+				FOnClicked::CreateSP(this, ClickHandler),
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 				.BorderBackgroundColor(FillColor)
@@ -1044,7 +1039,9 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.ColorAndOpacity(FLinearColor(0.96f, 0.96f, 0.94f, 1.0f))
 					.Justification(ETextJustify::Center)
 				]
-			];
+			)
+			.SetButtonStyle(&NoBorderButtonStyle)
+			.SetPadding(FMargin(0.f)));
 	};
 
 	auto MakeTimeButton = [this, &MakeFlatTimeButton](const FText& Text, ET66LeaderboardTime Time, FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
@@ -1085,15 +1082,13 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 
 	auto MakeTypeButton = [this, &NoBorderButtonStyle, LeaderboardDropdownFont, LeaderboardTypeGlyphFont](ET66LeaderboardType Type) -> TSharedRef<SWidget>
 	{
-		return SNew(SButton)
-			.ButtonStyle(&NoBorderButtonStyle)
-			.ContentPadding(FMargin(0.f))
-			.OnClicked(FOnClicked::CreateLambda([this, Type]()
-			{
-				SetLeaderboardType(Type);
-				return FReply::Handled();
-			}))
-			[
+		return FT66Style::MakeBareButton(
+			FT66BareButtonParams(
+				FOnClicked::CreateLambda([this, Type]()
+				{
+					SetLeaderboardType(Type);
+					return FReply::Handled();
+				}),
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([this, Type]() -> FSlateColor
@@ -1130,7 +1125,9 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						]
 					]
 				]
-			];
+			)
+			.SetButtonStyle(&NoBorderButtonStyle)
+			.SetPadding(FMargin(0.f)));
 	};
 
 	auto MakeLeaderboardDropdown = [this, DropdownHeight, DropdownArrowBrush](const TSharedRef<SWidget>& TriggerContent, TFunction<TSharedRef<SWidget>()> OnGetMenuContent, float MinWidth, const TAttribute<EVisibility>& Visibility = EVisibility::Visible) -> TSharedRef<SWidget>
@@ -1566,16 +1563,15 @@ void ST66LeaderboardPanel::RebuildEntryList()
 					}))
 					.Padding(FMargin(6.f, 5.f, 6.f, 5.f))
 					[
-						SNew(SButton)
-						.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-						.ContentPadding(FMargin(0.f))
-						.IsEnabled(bCanOpenSummary)
-						.OnHovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(true); }))
-						.OnUnhovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(false); }))
-						.OnClicked(FOnClicked::CreateLambda([this, Entry]() { return HandleEntryClicked(Entry); }))
-						[
-							RowContents
-						]
+						FT66Style::MakeBareButton(
+							FT66BareButtonParams(
+								FOnClicked::CreateLambda([this, Entry]() { return HandleEntryClicked(Entry); }),
+								RowContents)
+							.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+							.SetPadding(FMargin(0.f))
+							.SetEnabled(bCanOpenSummary)
+							.SetOnHovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(true); }))
+							.SetOnUnhovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(false); })))
 					]
 				]
 				+ SVerticalBox::Slot()
@@ -1724,22 +1720,21 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			];
 
 		const TSharedRef<SWidget> SummaryButton =
-			SNew(SButton)
-			.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-			.ContentPadding(FMargin(0.f))
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			.IsEnabled(bCanOpenSummary)
-			.OnHovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(true); }))
-			.OnUnhovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(false); }))
-			.OnClicked(FOnClicked::CreateLambda([this, Entry]() { return HandleEntryClicked(Entry); }))
-			[
-				SNew(ST66LeaderboardRowWheelProxy)
-				.ScrollBox(PartyStripScrollBox)
-				[
-					SummaryContents
-				]
-			];
+			FT66Style::MakeBareButton(
+				FT66BareButtonParams(
+					FOnClicked::CreateLambda([this, Entry]() { return HandleEntryClicked(Entry); }),
+					SNew(ST66LeaderboardRowWheelProxy)
+					.ScrollBox(PartyStripScrollBox)
+					[
+						SummaryContents
+					])
+				.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+				.SetPadding(FMargin(0.f))
+				.SetHAlign(HAlign_Fill)
+				.SetVAlign(VAlign_Fill)
+				.SetEnabled(bCanOpenSummary)
+				.SetOnHovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(true); }))
+				.SetOnUnhovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(false); })));
 
 		const TSharedRef<SWidget> RowWidget =
 			SNew(SBorder)

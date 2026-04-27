@@ -249,32 +249,32 @@ namespace
 
 			ChildSlot
 			[
-				SAssignNew(Button, SButton)
-				.ButtonStyle(&ButtonStyle)
-				.ContentPadding(FMargin(0.f))
-				.IsEnabled(InArgs._IsEnabled)
-				.OnClicked(InArgs._OnClicked)
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-						SNew(SImage)
-						.Image(this, &ST66DailyClimbPlateButton::GetCurrentBrush)
-					]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Fill)
-					.VAlign(VAlign_Fill)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						.Padding(this, &ST66DailyClimbPlateButton::GetContentPadding)
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						InArgs._OnClicked,
+						SNew(SOverlay)
+						+ SOverlay::Slot()
 						[
-							InArgs._Content.Widget
+							SNew(SImage)
+							.Image(this, &ST66DailyClimbPlateButton::GetCurrentBrush)
 						]
-					]
-				]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Fill)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
+							.Padding(this, &ST66DailyClimbPlateButton::GetContentPadding)
+							[
+								InArgs._Content.Widget
+							]
+						])
+					.SetButtonStyle(&ButtonStyle)
+					.SetPadding(FMargin(0.f))
+					.SetEnabled(InArgs._IsEnabled),
+					&Button)
 			];
 		}
 

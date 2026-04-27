@@ -385,16 +385,13 @@ namespace
 			.HeightOverride(Params.Height > 0.f ? Params.Height : FOptionalSize())
 			.Visibility(Params.Visibility)
 			[
-				SNew(SButton)
-				.ButtonStyle(&GetAccountReferenceButtonStyle(Params.Type))
-				.ContentPadding(ContentPadding)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				.IsEnabled(Params.IsEnabled)
-				.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
-				[
-					ButtonContent
-				]
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(Params.OnClicked, ButtonContent)
+					.SetButtonStyle(&GetAccountReferenceButtonStyle(Params.Type))
+					.SetPadding(ContentPadding)
+					.SetHAlign(HAlign_Center)
+					.SetVAlign(VAlign_Center)
+					.SetEnabled(Params.IsEnabled))
 			];
 	}
 

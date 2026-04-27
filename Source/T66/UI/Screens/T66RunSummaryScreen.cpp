@@ -476,25 +476,24 @@ namespace
 				]
 				+ SOverlay::Slot()
 				[
-					SNew(SButton)
-					.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-					.ButtonColorAndOpacity(FLinearColor::Transparent)
-					.ContentPadding(ContentPadding)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.OnClicked(OnClicked)
-					.OnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Hovered; }))
-					.OnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Normal; }))
-					.OnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Pressed; }))
-					.OnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Hovered; }))
-					[
-						SNew(STextBlock)
-						.Text(Label)
-						.Font(FT66Style::Tokens::FontBold(FontSize))
-						.ColorAndOpacity(RunSummaryFantasyText)
-						.Justification(ETextJustify::Center)
-						.AutoWrapText(true)
-					]
+					FT66Style::MakeBareButton(
+						FT66BareButtonParams(
+							OnClicked,
+							SNew(STextBlock)
+							.Text(Label)
+							.Font(FT66Style::Tokens::FontBold(FontSize))
+							.ColorAndOpacity(RunSummaryFantasyText)
+							.Justification(ETextJustify::Center)
+							.AutoWrapText(true))
+						.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+						.SetColor(FLinearColor::Transparent)
+						.SetPadding(ContentPadding)
+						.SetHAlign(HAlign_Center)
+						.SetVAlign(VAlign_Center)
+						.SetOnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Hovered; }))
+						.SetOnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Normal; }))
+						.SetOnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Pressed; }))
+						.SetOnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Hovered; })))
 				]
 			];
 	}

@@ -362,30 +362,20 @@ namespace
 		const FLinearColor& TextColor,
 		const FMargin& ContentPadding)
 	{
-		TSharedRef<SButton> Button = SNew(SButton)
-			.ButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-			.ContentPadding(ContentPadding)
-			.IsEnabled(Params.IsEnabled)
-			.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
-			[
+		return FT66Style::MakeBareButton(
+			FT66BareButtonParams(
+				Params.OnClicked,
 				SNew(STextBlock)
 				.Text(Params.Label)
 				.Font(Font)
 				.ColorAndOpacity(TextColor)
-				.Justification(ETextJustify::Center)
-			];
-
-		TSharedRef<SBox> Box = SNew(SBox)
-			.MinDesiredWidth(Params.MinWidth)
-			.Visibility(Params.Visibility)
-			[
-				Button
-			];
-		if (Params.Height > 0.f)
-		{
-			Box->SetHeightOverride(Params.Height);
-		}
-		return Box;
+				.Justification(ETextJustify::Center))
+			.SetButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+			.SetPadding(ContentPadding)
+			.SetEnabled(Params.IsEnabled)
+			.SetMinWidth(Params.MinWidth)
+			.SetHeight(Params.Height)
+			.SetVisibility(Params.Visibility));
 	}
 
 	TSharedRef<SWidget> MakeAchievementsProgressBar(const float Percent, const float Height)
@@ -924,33 +914,32 @@ void UT66AchievementsScreen::RebuildAchievementList()
 								.WidthOverride(28.f)
 								.HeightOverride(28.f)
 								[
-									SNew(SButton)
-									.ButtonStyle(&NoBorderButtonStyle)
-									.ContentPadding(FMargin(0.f))
-									.IsEnabled(PlayerSettings != nullptr)
-									.ToolTipText(bIsFavorited ? UnfavoriteAchievementTooltip : FavoriteAchievementTooltip)
-									.OnClicked(FOnClicked::CreateLambda([this, PlayerSettings, AchievementID = Achievement.AchievementID]()
-									{
-										if (PlayerSettings)
-										{
-											PlayerSettings->SetFavoriteAchievement(AchievementID, !PlayerSettings->IsFavoriteAchievement(AchievementID));
-											ForceRebuildSlate();
-										}
-										return FReply::Handled();
-									}))
-									[
-										SNew(SBorder)
-										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-										.BorderBackgroundColor(FLinearColor(0.10f, 0.11f, 0.14f, 0.94f))
-										.Padding(FMargin(0.f))
-										[
-											SNew(STextBlock)
-											.Text(FavoriteGlyph)
-											.Font(FT66Style::Tokens::FontRegular(20))
-											.ColorAndOpacity(FavoriteGlyphColor)
-											.Justification(ETextJustify::Center)
-										]
-									]
+									FT66Style::MakeBareButton(
+										FT66BareButtonParams(
+											FOnClicked::CreateLambda([this, PlayerSettings, AchievementID = Achievement.AchievementID]()
+											{
+												if (PlayerSettings)
+												{
+													PlayerSettings->SetFavoriteAchievement(AchievementID, !PlayerSettings->IsFavoriteAchievement(AchievementID));
+													ForceRebuildSlate();
+												}
+												return FReply::Handled();
+											}),
+											SNew(SBorder)
+											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+											.BorderBackgroundColor(FLinearColor(0.10f, 0.11f, 0.14f, 0.94f))
+											.Padding(FMargin(0.f))
+											[
+												SNew(STextBlock)
+												.Text(FavoriteGlyph)
+												.Font(FT66Style::Tokens::FontRegular(20))
+												.ColorAndOpacity(FavoriteGlyphColor)
+												.Justification(ETextJustify::Center)
+											])
+										.SetButtonStyle(&NoBorderButtonStyle)
+										.SetPadding(FMargin(0.f))
+										.SetEnabled(PlayerSettings != nullptr)
+										.SetToolTipText(bIsFavorited ? UnfavoriteAchievementTooltip : FavoriteAchievementTooltip))
 								]
 							]
 						]

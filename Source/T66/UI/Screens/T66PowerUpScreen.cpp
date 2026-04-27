@@ -382,26 +382,14 @@ namespace
 				.ColorAndOpacity(TextColor)
 				.Justification(ETextJustify::Center));
 
-		TSharedRef<SButton> Button = SNew(SButton)
-			.ButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-			.ContentPadding(ContentPadding)
-			.IsEnabled(Params.IsEnabled)
-			.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
-			[
-				ButtonContent
-			];
-
-		TSharedRef<SBox> Box = SNew(SBox)
-			.MinDesiredWidth(Params.MinWidth)
-			.Visibility(Params.Visibility)
-			[
-				Button
-			];
-		if (Params.Height > 0.f)
-		{
-			Box->SetHeightOverride(Params.Height);
-		}
-		return Box;
+		return FT66Style::MakeBareButton(
+			FT66BareButtonParams(Params.OnClicked, ButtonContent)
+			.SetButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+			.SetPadding(ContentPadding)
+			.SetEnabled(Params.IsEnabled)
+			.SetMinWidth(Params.MinWidth)
+			.SetHeight(Params.Height)
+			.SetVisibility(Params.Visibility));
 	}
 
 	class ST66PowerUpStatueFillWidget : public SLeafWidget

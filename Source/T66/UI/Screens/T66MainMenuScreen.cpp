@@ -200,33 +200,36 @@ namespace
 
 			ChildSlot
 			[
-				SAssignNew(Button, SButton)
-				.ButtonStyle(&ButtonStyle)
-				.ContentPadding(FMargin(0.f))
-				.ToolTipText(InArgs._ToolTipText)
-				.OnClicked(InArgs._OnClicked)
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-						SNew(SImage)
-						.Image(this, &ST66MainMenuPlateButton::GetCurrentBrush)
-					]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Fill)
-					.VAlign(VAlign_Fill)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-						.Padding(this, &ST66MainMenuPlateButton::GetContentPadding)
-						.RenderTransform(this, &ST66MainMenuPlateButton::GetContentTransform)
-						.RenderTransformPivot(FVector2D(0.5f, 0.5f))
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						InArgs._OnClicked,
+						SNew(SOverlay)
+						+ SOverlay::Slot()
 						[
-							InArgs._Content.Widget
+							SNew(SImage)
+							.Image(this, &ST66MainMenuPlateButton::GetCurrentBrush)
 						]
-					]
-				]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Fill)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+							.Padding(this, &ST66MainMenuPlateButton::GetContentPadding)
+							.RenderTransform(this, &ST66MainMenuPlateButton::GetContentTransform)
+							.RenderTransformPivot(FVector2D(0.5f, 0.5f))
+							[
+								InArgs._Content.Widget
+							]
+						])
+					.SetButtonStyle(&ButtonStyle)
+					.SetPadding(FMargin(0.f)),
+					&Button)
 			];
+			if (Button.IsValid())
+			{
+				Button->SetToolTipText(InArgs._ToolTipText);
+			}
 		}
 
 	private:
@@ -627,38 +630,37 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
-				SNew(SButton)
-				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-				.ContentPadding(FMargin(0.f))
-				.OnClicked(FOnClicked::CreateLambda([this, bOnlineGroup]()
-				{
-					if (bOnlineGroup)
-					{
-						bShowOnlineFriends = !bShowOnlineFriends;
-					}
-					else
-					{
-						bShowOfflineFriends = !bShowOfflineFriends;
-					}
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						FOnClicked::CreateLambda([this, bOnlineGroup]()
+						{
+							if (bOnlineGroup)
+							{
+								bShowOnlineFriends = !bShowOnlineFriends;
+							}
+							else
+							{
+								bShowOfflineFriends = !bShowOfflineFriends;
+							}
 
-					RefreshFriendListVisualState();
-					return FReply::Handled();
-				}))
-				[
-					SNew(SBox)
-					.WidthOverride(16.f)
-					.HeightOverride(16.f)
-					[
-						SAssignNew(ExpandArrowImage, SImage)
-						.Image(DownArrowBrush)
-						.ColorAndOpacity(HeaderText)
-						.RenderTransformPivot(FVector2D(0.5f, 0.5f))
-						.RenderTransform(
-							bExpanded
-								? FSlateRenderTransform(FTransform2D())
-								: FSlateRenderTransform(FTransform2D(FQuat2D(FMath::DegreesToRadians(90.f)))))
-					]
-				]
+							RefreshFriendListVisualState();
+							return FReply::Handled();
+						}),
+						SNew(SBox)
+						.WidthOverride(16.f)
+						.HeightOverride(16.f)
+						[
+							SAssignNew(ExpandArrowImage, SImage)
+							.Image(DownArrowBrush)
+							.ColorAndOpacity(HeaderText)
+							.RenderTransformPivot(FVector2D(0.5f, 0.5f))
+							.RenderTransform(
+								bExpanded
+									? FSlateRenderTransform(FTransform2D())
+									: FSlateRenderTransform(FTransform2D(FQuat2D(FMath::DegreesToRadians(90.f)))))
+						])
+					.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+					.SetPadding(FMargin(0.f)))
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 			[
@@ -714,29 +716,28 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			.WidthOverride(80.f)
 			.HeightOverride(30.f)
 			[
-				SNew(SButton)
-				.ButtonStyle(&NoBorderButtonStyle)
-				.ContentPadding(FMargin(0.f))
-				.IsEnabled(IsEnabled)
-				.OnClicked(OnClicked)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FillColor)
-					.Padding(FMargin(8.f, 5.f))
-					[
-						SNew(STextBlock)
-						.Text(Text)
-						.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
-						.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsEnabled]() -> FSlateColor
-						{
-							return IsEnabled.Get()
-								? FSlateColor(FLinearColor(0.96f, 0.97f, 0.94f, 1.0f))
-								: FSlateColor(FLinearColor(0.88f, 0.90f, 0.84f, 0.72f));
-						}))
-						.Justification(ETextJustify::Center)
-					]
-				]
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						OnClicked,
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FillColor)
+						.Padding(FMargin(8.f, 5.f))
+						[
+							SNew(STextBlock)
+							.Text(Text)
+							.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
+							.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsEnabled]() -> FSlateColor
+							{
+								return IsEnabled.Get()
+									? FSlateColor(FLinearColor(0.96f, 0.97f, 0.94f, 1.0f))
+									: FSlateColor(FLinearColor(0.88f, 0.90f, 0.84f, 0.72f));
+							}))
+							.Justification(ETextJustify::Center)
+						])
+					.SetButtonStyle(&NoBorderButtonStyle)
+					.SetPadding(FMargin(0.f))
+					.SetEnabled(IsEnabled))
 			];
 	};
 
@@ -872,35 +873,33 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					.WidthOverride(T66MainMenuReferenceLayout::Left::FriendStarButton.Width)
 					.HeightOverride(T66MainMenuReferenceLayout::Left::FriendStarButton.Height)
 					[
-						SAssignNew(FavoriteButton, SButton)
-						.ButtonStyle(&NoBorderButtonStyle)
-						.ContentPadding(FMargin(0.f))
-						.ToolTipText((PlayerSettings && PlayerSettings->IsFavoriteFriend(Friend.PlayerId))
-							? UnfavoriteFriendTooltip
-							: FavoriteFriendTooltip)
-						.OnClicked(FOnClicked::CreateLambda([this, PlayerSettings, PlayerId = Friend.PlayerId]()
-						{
-							if (PlayerSettings)
-							{
-								PlayerSettings->SetFavoriteFriend(PlayerId, !PlayerSettings->IsFavoriteFriend(PlayerId));
-								RefreshFriendListVisualState();
-							}
-							return FReply::Handled();
-						}))
-						[
-							SNew(SOverlay)
-							+ SOverlay::Slot()
-							.HAlign(HAlign_Center)
+						FT66Style::MakeBareButton(
+							FT66BareButtonParams(
+								FOnClicked::CreateLambda([this, PlayerSettings, PlayerId = Friend.PlayerId]()
+								{
+									if (PlayerSettings)
+									{
+										PlayerSettings->SetFavoriteFriend(PlayerId, !PlayerSettings->IsFavoriteFriend(PlayerId));
+										RefreshFriendListVisualState();
+									}
+									return FReply::Handled();
+								}),
+								SNew(SOverlay)
+								+ SOverlay::Slot()
+								.HAlign(HAlign_Center)
 							.VAlign(VAlign_Center)
 							[
 								SAssignNew(FavoriteGlyphText, STextBlock)
 								.Text(ResolveFavoriteGlyph())
 								.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 21))
 								.ColorAndOpacity(ResolveFavoriteGlyphColor())
-								.Visibility(EVisibility::Visible)
-								.Justification(ETextJustify::Center)
-							]
-						]
+									.Visibility(EVisibility::Visible)
+									.Justification(ETextJustify::Center)
+								]
+							)
+							.SetButtonStyle(&NoBorderButtonStyle)
+							.SetPadding(FMargin(0.f)),
+							&FavoriteButton)
 					]
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
@@ -909,27 +908,24 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					.WidthOverride(T66MainMenuReferenceLayout::Left::FriendInviteButton.Width)
 					.HeightOverride(T66MainMenuReferenceLayout::Left::FriendInviteButton.Height)
 					[
-						SAssignNew(ActionButton, SButton)
-						.ButtonStyle(&NoBorderButtonStyle)
-						.ContentPadding(FMargin(0.f))
-						.IsEnabled(CanInviteFriend())
-						.OnClicked(FOnClicked::CreateLambda([this, PartySubsystem, PlayerId = Friend.PlayerId, PlayerName = Friend.Name]()
-						{
-							if (!PartySubsystem)
-							{
-								return FReply::Handled();
-							}
+						FT66Style::MakeBareButton(
+							FT66BareButtonParams(
+								FOnClicked::CreateLambda([this, PartySubsystem, PlayerId = Friend.PlayerId, PlayerName = Friend.Name]()
+								{
+									if (!PartySubsystem)
+									{
+										return FReply::Handled();
+									}
 
-							if (PartySubsystem->InviteFriend(PlayerId, PlayerName))
-							{
-								RefreshFriendListVisualState();
-							}
-							return FReply::Handled();
-						}))
-						[
-							SAssignNew(ActionFillBorder, SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
-							.BorderBackgroundColor(FLinearColor::Transparent)
+									if (PartySubsystem->InviteFriend(PlayerId, PlayerName))
+									{
+										RefreshFriendListVisualState();
+									}
+									return FReply::Handled();
+								}),
+								SAssignNew(ActionFillBorder, SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
+								.BorderBackgroundColor(FLinearColor::Transparent)
 							.Padding(FMargin(0.f))
 							[
 								SNew(SOverlay)
@@ -953,13 +949,23 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 										? FLinearColor(0.96f, 0.97f, 0.94f, 1.0f)
 										: FLinearColor(0.88f, 0.90f, 0.84f, 0.72f))
 									.Visibility(ShouldShowActionOverlayText() ? EVisibility::Visible : EVisibility::Collapsed)
-									.Justification(ETextJustify::Center)
+										.Justification(ETextJustify::Center)
+									]
 								]
-							]
-						]
+							)
+							.SetButtonStyle(&NoBorderButtonStyle)
+							.SetPadding(FMargin(0.f))
+							.SetEnabled(CanInviteFriend()),
+							&ActionButton)
 					]
 				]
 			];
+		if (FavoriteButton.IsValid())
+		{
+			FavoriteButton->SetToolTipText((PlayerSettings && PlayerSettings->IsFavoriteFriend(Friend.PlayerId))
+				? UnfavoriteFriendTooltip
+				: FavoriteFriendTooltip);
+		}
 
 		const bool bSearchActive = !FriendSearchQuery.TrimStartAndEnd().IsEmpty();
 		const bool bExpanded = Friend.bOnline ? bShowOnlineFriends : bShowOfflineFriends;
@@ -1285,23 +1291,22 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		.HeightOverride(T66MainMenuReferenceLayout::Left::ProfileCardReference.Height)
 		.Clipping(EWidgetClipping::ClipToBounds)
 		[
-			SNew(SButton)
-			.ButtonStyle(&NoBorderButtonStyle)
-			.ContentPadding(FMargin(0.f))
-			.ToolTipText(NSLOCTEXT("T66.MainMenu", "OpenProfileTooltip", "Open your account page"))
-			.OnClicked(FOnClicked::CreateLambda([this]()
-			{
-				OnAccountStatusClicked();
-				return FReply::Handled();
-			}))
-			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				.Padding(FMargin(0.f, 8.f, 0.f, 8.f))
-				[
-					ProfileCardContent
-				]
-			]
+			FT66Style::MakeBareButton(
+				FT66BareButtonParams(
+					FOnClicked::CreateLambda([this]()
+					{
+						OnAccountStatusClicked();
+						return FReply::Handled();
+					}),
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					.Padding(FMargin(0.f, 8.f, 0.f, 8.f))
+					[
+						ProfileCardContent
+					])
+				.SetButtonStyle(&NoBorderButtonStyle)
+				.SetPadding(FMargin(0.f))
+				.SetToolTipText(NSLOCTEXT("T66.MainMenu", "OpenProfileTooltip", "Open your account page")))
 		];
 
 	const TSharedRef<SWidget> LeftSocialContent =

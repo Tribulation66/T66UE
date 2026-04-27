@@ -418,13 +418,10 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		if (Offset == 0)
 		{
 			InteractiveCarouselSlot =
-				SNew(SButton)
-				.ButtonStyle(FCoreStyle::Get(), "NoBorder")
-				.ContentPadding(0.f)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleHeroGridClicked))
-				[
-					CarouselSlotWidget
-				];
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleHeroGridClicked), CarouselSlotWidget)
+					.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+					.SetPadding(FMargin(0.f)));
 		}
 
 		HeroCarousel->AddSlot()
@@ -531,13 +528,10 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		if (Offset == 0)
 		{
 			InteractiveCompanionSlot =
-				SNew(SButton)
-				.ButtonStyle(FCoreStyle::Get(), "NoBorder")
-				.ContentPadding(0.f)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionGridClicked))
-				[
-					CompanionSlotWidget
-				];
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionGridClicked), CompanionSlotWidget)
+					.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+					.SetPadding(FMargin(0.f)));
 		}
 
 		CompanionCarousel->AddSlot()
@@ -2016,33 +2010,30 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								: (Loc ? Loc->GetText_PassiveDescription(HeroData.PassiveType) : FText::GetEmpty()));
 					}))
 					[
-						SNew(SButton)
-						.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-						.ButtonColorAndOpacity(FLinearColor::Transparent)
-						.ContentPadding(FMargin(0.f))
-						.OnClicked(OnClicked)
-						[
-							SNew(SBox)
-							.WidthOverride(58.f)
-							.HeightOverride(58.f)
-							[
-								SNew(SOverlay)
-								+ SOverlay::Slot()
+						FT66Style::MakeBareButton(
+							FT66BareButtonParams(
+								OnClicked,
+								SNew(SBox)
+								.WidthOverride(58.f)
+								.HeightOverride(58.f)
 								[
-									SNew(SImage)
-									.Image_Lambda([IconBrush]() -> const FSlateBrush*
-									{
-										return IconBrush.IsValid() ? IconBrush.Get() : nullptr;
-									})
-								]
-								+ SOverlay::Slot()
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								[
-									SNew(STextBlock)
-									.Visibility_Lambda([IconBrush]() -> EVisibility
-									{
-										return IconBrush.IsValid() && ::IsValid(IconBrush->GetResourceObject())
+									SNew(SOverlay)
+									+ SOverlay::Slot()
+									[
+										SNew(SImage)
+										.Image_Lambda([IconBrush]() -> const FSlateBrush*
+										{
+											return IconBrush.IsValid() ? IconBrush.Get() : nullptr;
+										})
+									]
+									+ SOverlay::Slot()
+									.HAlign(HAlign_Center)
+									.VAlign(VAlign_Center)
+									[
+										SNew(STextBlock)
+										.Visibility_Lambda([IconBrush]() -> EVisibility
+										{
+											return IconBrush.IsValid() && ::IsValid(IconBrush->GetResourceObject())
 											? EVisibility::Collapsed
 											: EVisibility::Visible;
 									})
@@ -2051,7 +2042,10 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 								]
 							]
-						]
+						)
+						.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+						.SetColor(FLinearColor::Transparent)
+						.SetPadding(FMargin(0.f)))
 					]
 				];
 		};
@@ -2268,16 +2262,13 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				.AutoHeight()
 				.Padding(0.0f, 2.0f, 0.0f, 0.0f)
 				[
-					SNew(SButton)
-					.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-					.ButtonColorAndOpacity(FLinearColor::Transparent)
-					.ContentPadding(FMargin(0.f))
-					.OnClicked(FOnClicked::CreateLambda([this]() -> FReply
-					{
-						return bShowingHeroRecordInfoPanel ? FReply::Handled() : HandleOpenStatsPanelClicked();
-					}))
-					[
-						MakeHeroSelectionRowShell(
+					FT66Style::MakeBareButton(
+						FT66BareButtonParams(
+							FOnClicked::CreateLambda([this]() -> FReply
+							{
+								return bShowingHeroRecordInfoPanel ? FReply::Handled() : HandleOpenStatsPanelClicked();
+							}),
+							MakeHeroSelectionRowShell(
 								SNew(SHorizontalBox)
 								+ SHorizontalBox::Slot()
 								.FillWidth(1.0f)
@@ -2477,8 +2468,10 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 										]
 									]
 								],
-								FMargin(6.f, 8.f))
-					]
+								FMargin(6.f, 8.f)))
+						.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+						.SetColor(FLinearColor::Transparent)
+						.SetPadding(FMargin(0.f)))
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()

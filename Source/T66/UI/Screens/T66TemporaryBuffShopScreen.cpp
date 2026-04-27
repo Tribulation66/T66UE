@@ -278,26 +278,25 @@ namespace
 				]
 				+ SOverlay::Slot()
 				[
-					SNew(SButton)
-					.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-					.ButtonColorAndOpacity(FLinearColor::Transparent)
-					.ContentPadding(FMargin(12.f, 7.f, 12.f, 6.f))
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.IsEnabled(IsEnabled)
-					.OnClicked(OnClicked)
-					.OnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Hovered; }))
-					.OnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Normal; }))
-					.OnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Pressed; }))
-					.OnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Hovered; }))
-					[
-						SNew(STextBlock)
-						.Text(Label)
-						.Font(FT66Style::Tokens::FontBold(FontSize))
-						.ColorAndOpacity(TextColorAttr)
-						.Justification(ETextJustify::Center)
-						.AutoWrapText(true)
-					]
+					FT66Style::MakeBareButton(
+						FT66BareButtonParams(
+							OnClicked,
+							SNew(STextBlock)
+							.Text(Label)
+							.Font(FT66Style::Tokens::FontBold(FontSize))
+							.ColorAndOpacity(TextColorAttr)
+							.Justification(ETextJustify::Center)
+							.AutoWrapText(true))
+						.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+						.SetColor(FLinearColor::Transparent)
+						.SetPadding(FMargin(12.f, 7.f, 12.f, 6.f))
+						.SetHAlign(HAlign_Center)
+						.SetVAlign(VAlign_Center)
+						.SetEnabled(IsEnabled)
+						.SetOnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Hovered; }))
+						.SetOnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Normal; }))
+						.SetOnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Pressed; }))
+						.SetOnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Hovered; })))
 				]
 			];
 	}

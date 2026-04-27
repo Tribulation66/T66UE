@@ -112,15 +112,13 @@ namespace
 				.WidthOverride(InArgs._Width)
 				.HeightOverride(InArgs._Height)
 				[
-					SAssignNew(Button, SButton)
-					.ButtonStyle(&OwnedButtonStyle)
-					.ContentPadding(FMargin(0.f))
-					.OnClicked(FT66Style::DebounceClick(InArgs._OnClicked))
-					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SImage)
+					FT66Style::MakeBareButton(
+						FT66BareButtonParams(
+							InArgs._OnClicked,
+							SNew(SOverlay)
+							+ SOverlay::Slot()
+							[
+								SNew(SImage)
 							.Image(this, &ST66FrontendBackPlateButton::GetCurrentBrush)
 						]
 						+ SOverlay::Slot()
@@ -140,9 +138,12 @@ namespace
 								.ShadowOffset(FVector2D(1.f, 1.f))
 								.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.65f))
 								.Justification(ETextJustify::Center)
-							]
-						]
-					]
+									]
+								]
+						)
+						.SetButtonStyle(&OwnedButtonStyle)
+						.SetPadding(FMargin(0.f)),
+						&Button)
 				]
 			];
 		}

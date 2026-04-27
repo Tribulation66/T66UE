@@ -240,16 +240,13 @@ namespace
 			.HeightOverride(Params.Height > 0.f ? Params.Height : PartyInviteButtonHeight)
 			.Visibility(Params.Visibility)
 			[
-				SNew(SButton)
-				.ButtonStyle(&GetPartyInviteButtonStyle(Params.Type))
-				.ContentPadding(ContentPadding)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				.IsEnabled(Params.IsEnabled)
-				.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
-				[
-					Content
-				]
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(Params.OnClicked, Content)
+					.SetButtonStyle(&GetPartyInviteButtonStyle(Params.Type))
+					.SetPadding(ContentPadding)
+					.SetHAlign(HAlign_Center)
+					.SetVAlign(VAlign_Center)
+					.SetEnabled(Params.IsEnabled))
 			];
 	}
 

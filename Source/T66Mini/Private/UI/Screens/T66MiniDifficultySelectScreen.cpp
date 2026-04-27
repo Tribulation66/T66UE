@@ -347,16 +347,13 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 			.WidthOverride(242.f)
 			.HeightOverride(118.f)
 			[
-				SNew(SButton)
-				.IsEnabled(!bDifficultyLockedToHost)
-				.OnClicked(FOnClicked::CreateLambda([this, DifficultyID = Difficulty.DifficultyID]()
-				{
-					return HandleDifficultyClicked(DifficultyID);
-				}))
-				.ButtonColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.01f))
-				.ContentPadding(FMargin(2.f))
-				[
-					T66MiniGeneratedChrome::MakePanel(
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						FOnClicked::CreateLambda([this, DifficultyID = Difficulty.DifficultyID]()
+						{
+							return HandleDifficultyClicked(DifficultyID);
+						}),
+						T66MiniGeneratedChrome::MakePanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 							[
@@ -376,8 +373,10 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 								.Justification(ETextJustify::Center)
 							]
 						, FMargin(14.f, 12.f, 24.f, 12.f),
-						bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal)
-				]
+						bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal))
+					.SetColor(FLinearColor(1.f, 1.f, 1.f, 0.01f))
+					.SetPadding(FMargin(2.f))
+					.SetEnabled(!bDifficultyLockedToHost))
 			]
 		];
 	}

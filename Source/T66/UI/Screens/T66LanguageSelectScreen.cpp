@@ -226,16 +226,13 @@ namespace
 			.HeightOverride(Params.Height > 0.f ? Params.Height : 50.f)
 			.Visibility(Params.Visibility)
 			[
-				SNew(SButton)
-				.ButtonStyle(&GetLanguageReferenceButtonStyle(Params.Type))
-				.ContentPadding(ContentPadding)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				.IsEnabled(Params.IsEnabled)
-				.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
-				[
-					Content
-				]
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(Params.OnClicked, Content)
+					.SetButtonStyle(&GetLanguageReferenceButtonStyle(Params.Type))
+					.SetPadding(ContentPadding)
+					.SetHAlign(HAlign_Center)
+					.SetVAlign(VAlign_Center)
+					.SetEnabled(Params.IsEnabled))
 			];
 	}
 
@@ -326,24 +323,23 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 				.WidthOverride(560.0f)
 				.HeightOverride(60.0f)
 				[
-					SNew(SButton)
-					.ButtonStyle(FCoreStyle::Get(), "NoBorder")
-					.HAlign(HAlign_Fill)
-					.VAlign(VAlign_Center)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleLanguageClicked, Lang))
-					[
-						SNew(SBorder)
-						.BorderImage(GetLanguageRowShellBrush())
-						.BorderBackgroundColor_Lambda(GetRowBgColor)
-						.Padding(FMargin(14.0f, 8.0f))
-						[
-							SNew(STextBlock)
-							.Text(LangName)
-							.Font(T66LanguageNameFont())
-							.ColorAndOpacity_Lambda(GetRowTextColor)
-							.Justification(ETextJustify::Center)
-						]
-					]
+					FT66Style::MakeBareButton(
+						FT66BareButtonParams(
+							FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleLanguageClicked, Lang),
+							SNew(SBorder)
+							.BorderImage(GetLanguageRowShellBrush())
+							.BorderBackgroundColor_Lambda(GetRowBgColor)
+							.Padding(FMargin(14.0f, 8.0f))
+							[
+								SNew(STextBlock)
+								.Text(LangName)
+								.Font(T66LanguageNameFont())
+								.ColorAndOpacity_Lambda(GetRowTextColor)
+								.Justification(ETextJustify::Center)
+							])
+						.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+						.SetHAlign(HAlign_Fill)
+						.SetVAlign(VAlign_Center))
 				]
 			];
 		}

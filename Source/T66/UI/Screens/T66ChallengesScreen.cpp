@@ -328,39 +328,38 @@ namespace
 			.WidthOverride(MinWidth > 0.f ? MinWidth : FOptionalSize())
 			.HeightOverride(Height > 0.f ? Height : FOptionalSize())
 			[
-				SNew(SButton)
-				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-				.ButtonColorAndOpacity(FLinearColor::Transparent)
-				.ContentPadding(FMargin(0.f))
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Fill)
-				.OnClicked(OnClicked)
-				.OnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Hovered; }))
-				.OnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Normal; }))
-				.OnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Pressed; }))
-				.OnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Hovered; }))
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-						SNew(SImage)
-						.Visibility(EVisibility::HitTestInvisible)
-						.Image(BrushAttr)
-					]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Fill)
-					.VAlign(VAlign_Fill)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-						.Padding(ContentPadding)
-						.HAlign(HAlign_Fill)
-						.VAlign(VAlign_Center)
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						OnClicked,
+						SNew(SOverlay)
+						+ SOverlay::Slot()
 						[
-							Content
+							SNew(SImage)
+							.Visibility(EVisibility::HitTestInvisible)
+							.Image(BrushAttr)
 						]
-					]
-				]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Fill)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+							.Padding(ContentPadding)
+							.HAlign(HAlign_Fill)
+							.VAlign(VAlign_Center)
+							[
+								Content
+							]
+						])
+					.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+					.SetColor(FLinearColor::Transparent)
+					.SetPadding(FMargin(0.f))
+					.SetHAlign(HAlign_Fill)
+					.SetVAlign(VAlign_Fill)
+					.SetOnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Hovered; }))
+					.SetOnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Normal; }))
+					.SetOnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Pressed; }))
+					.SetOnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66ChallengeButtonState::Hovered; })))
 			];
 	}
 

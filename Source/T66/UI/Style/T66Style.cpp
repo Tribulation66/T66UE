@@ -1805,6 +1805,63 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 		];
 }
 
+TSharedRef<SWidget> FT66Style::MakeBareButton(const FT66BareButtonParams& Params, TSharedPtr<SButton>* OutButton)
+{
+	const FButtonStyle& ResolvedStyle = Params.ButtonStyle
+		? *Params.ButtonStyle
+		: FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
+	const FOnClicked ClickDelegate = Params.bDebounceClick
+		? DebounceClick(Params.OnClicked)
+		: Params.OnClicked;
+
+	TSharedRef<SButton> Button =
+		SNew(SButton)
+		.Cursor(Params.Cursor)
+		.HAlign(Params.HAlign)
+		.VAlign(Params.VAlign)
+		.Visibility(Params.Visibility)
+		.ToolTipText(Params.ToolTipText)
+		.OnClicked(ClickDelegate)
+		.OnHovered(Params.OnHovered)
+		.OnUnhovered(Params.OnUnhovered)
+		.OnPressed(Params.OnPressed)
+		.OnReleased(Params.OnReleased)
+		.ButtonStyle(&ResolvedStyle)
+		.ButtonColorAndOpacity(Params.ButtonColorAndOpacity)
+		.ContentPadding(Params.ContentPadding)
+		.IsEnabled(Params.IsEnabled)
+		[
+			Params.Content.IsValid()
+				? Params.Content.ToSharedRef()
+				: StaticCastSharedRef<SWidget>(SNew(SBox))
+		];
+
+	if (OutButton)
+	{
+		*OutButton = Button;
+	}
+
+	if (Params.MinWidth > 0.f || Params.WidthOverride > 0.f || Params.HeightOverride > 0.f)
+	{
+		TSharedRef<SBox> SizedButton = SNew(SBox)[Button];
+		if (Params.MinWidth > 0.f)
+		{
+			SizedButton->SetMinDesiredWidth(Params.MinWidth);
+		}
+		if (Params.WidthOverride > 0.f)
+		{
+			SizedButton->SetWidthOverride(Params.WidthOverride);
+		}
+		if (Params.HeightOverride > 0.f)
+		{
+			SizedButton->SetHeightOverride(Params.HeightOverride);
+		}
+		return SizedButton;
+	}
+
+	return Button;
+}
+
 // ---------------------------------------------------------------------------
 // Convenience overload — thin wrapper around the params version.
 // ---------------------------------------------------------------------------
