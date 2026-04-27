@@ -3,6 +3,7 @@
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 
 #include "Styling/CoreStyle.h"
+#include "UI/T66UIManager.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SGridPanel.h"
@@ -14,6 +15,31 @@
 
 namespace T66ScreenSlateHelpers
 {
+	const FFrontendChromeMetrics& GetFrontendChromeMetrics()
+	{
+		static const FFrontendChromeMetrics Metrics;
+		return Metrics;
+	}
+
+	float GetFrontendChromeTopInset(const UT66UIManager* UIManager)
+	{
+		const FFrontendChromeMetrics& Metrics = GetFrontendChromeMetrics();
+		const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
+		return UIManager
+			? FMath::Max(0.0f, (UIManager->GetFrontendTopBarContentHeight() - Metrics.TopBarOverlapPx) / ResponsiveScale)
+			: 0.0f;
+	}
+
+	FSlateFontInfo MakeFrontendChromeTitleFont()
+	{
+		return FT66Style::Tokens::FontBold(GetFrontendChromeMetrics().TitleFontSize);
+	}
+
+	FSlateFontInfo MakeFrontendChromeTabFont()
+	{
+		return FT66Style::Tokens::FontBold(GetFrontendChromeMetrics().TabFontSize);
+	}
+
 	TSharedPtr<FSlateBrush> MakeSlateBrush(const FVector2D& ImageSize, ESlateBrushDrawType::Type DrawAs)
 	{
 		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
@@ -63,6 +89,69 @@ namespace T66ScreenSlateHelpers
 					]
 				];
 		}
+	}
+
+	TSharedRef<SWidget> MakeFilledButtonText(
+		const FT66ButtonParams& Params,
+		float ButtonHeight,
+		const TAttribute<FSlateColor>& DefaultTextColor,
+		const TAttribute<FLinearColor>& DefaultShadowColor)
+	{
+		const TAttribute<FText> Text = Params.DynamicLabel.IsBound()
+			? Params.DynamicLabel
+			: TAttribute<FText>(Params.Label);
+		const int32 HeightFallbackFontSize = ButtonHeight > 0.f
+			? FMath::RoundToInt(ButtonHeight * 0.42f)
+			: 16;
+		const int32 RequestedFontSize = Params.FontSize > 0 ? Params.FontSize : HeightFallbackFontSize;
+		const int32 HeightCapFontSize = ButtonHeight > 0.f
+			? FMath::FloorToInt(ButtonHeight * 0.52f)
+			: 64;
+		const int32 FontSize = FMath::Clamp(FMath::Min(RequestedFontSize, HeightCapFontSize), 12, 64);
+
+		FSlateFontInfo Font = FT66Style::MakeFont(*Params.FontWeight, FontSize);
+		Font.LetterSpacing = 1;
+
+		TAttribute<FSlateColor> TextColor;
+		if (Params.bHasStateTextColors)
+		{
+			TextColor = TAttribute<FSlateColor>(Params.NormalStateTextColor);
+		}
+		else if (Params.bHasTextColorOverride)
+		{
+			TextColor = Params.TextColorOverride;
+		}
+		else
+		{
+			TextColor = DefaultTextColor;
+		}
+
+		const TAttribute<FVector2D> ShadowOffset = Params.bHasTextShadowOffset
+			? TAttribute<FVector2D>(Params.TextShadowOffset)
+			: TAttribute<FVector2D>(FVector2D(1.f, 1.f));
+		const TAttribute<FLinearColor> ShadowColor = Params.bHasStateTextShadowColors
+			? TAttribute<FLinearColor>(Params.NormalStateTextShadowColor)
+			: DefaultShadowColor;
+
+		return SNew(SBox)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					SNew(STextBlock)
+					.Text(Text)
+					.Font(Font)
+					.ColorAndOpacity(TextColor)
+					.ShadowOffset(ShadowOffset)
+					.ShadowColorAndOpacity(ShadowColor)
+					.Justification(ETextJustify::Center)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)
+				]
+			];
 	}
 
 	TSharedRef<SWidget> MakeResponsiveGridTile(

@@ -70,10 +70,12 @@ public class T66 : ModuleRules
 
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/Fonts/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/...");
+		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/PowerUp/SecondaryBuffs/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/PowerUp/Statues/forbidden_chad/...");
 		AddLooseRuntimeDependency("SourceAssets/OuterWallTexture.png");
 		AddLooseRuntimeDependency("SourceAssets/Arcade/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/MasterLibrary/...");
+		AddLooseRuntimeDependency("SourceAssets/UI/PowerUp/Diplomas/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/RunFlowReference/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/RunFlowReference/Backgrounds/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/SettingsReference/...");

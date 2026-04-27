@@ -46,8 +46,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_large.png"),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("HeroGridModalShell"));
 	}
 
@@ -58,13 +58,13 @@ namespace
 		return bSelected
 			? ResolveHeroGridBrush(
 				Selected,
-				TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/grid_tile_selected.png"),
-				FMargin(0.16f, 0.28f, 0.16f, 0.28f),
+				TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
+				FMargin(0.052f, 0.094f, 0.052f, 0.094f),
 				TEXT("HeroGridTileSelected"))
 			: ResolveHeroGridBrush(
 				Neutral,
-				TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/grid_tile_normal.png"),
-				FMargin(0.055f, 0.32f, 0.055f, 0.32f),
+				TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
+				FMargin(0.052f, 0.094f, 0.052f, 0.094f),
 				TEXT("HeroGridTileNeutral"));
 	}
 
@@ -73,8 +73,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/button_neutral_normal.png"),
-			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_normal.png"),
+			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 			TEXT("HeroGridCompactButton"));
 	}
 
@@ -83,9 +83,19 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/portrait_socket.png"),
-			FMargin(0.f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/avatar_slot_normal.png"),
+			FMargin(0.20f, 0.20f, 0.20f, 0.20f),
 			TEXT("HeroGridAvatarFrame"));
+	}
+
+	const FSlateBrush* GetHeroGridSceneBackgroundBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveHeroGridBrush(
+			Entry,
+			TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png"),
+			FMargin(0.f),
+			TEXT("HeroGridSceneBackground"));
 	}
 
 	TSharedRef<SWidget> MakeHeroGridModalShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
@@ -112,6 +122,18 @@ namespace
 	TSharedRef<SWidget> MakeHeroGridTextButton(const FT66ButtonParams& Params)
 	{
 		FT66ButtonParams ButtonParams = Params;
+		if (!ButtonParams.CustomContent.IsValid())
+		{
+			const float ButtonHeight = ButtonParams.Height > 0.f ? ButtonParams.Height : 44.f;
+			ButtonParams
+				.SetPadding(FMargin(6.f, 2.f))
+				.SetContent(T66ScreenSlateHelpers::MakeFilledButtonText(
+					ButtonParams,
+					ButtonHeight,
+					TAttribute<FSlateColor>(FSlateColor(FLinearColor(0.97f, 0.94f, 0.84f, 1.f))),
+					TAttribute<FLinearColor>(FLinearColor(0.f, 0.f, 0.f, 0.68f))));
+		}
+
 		ButtonParams
 			.SetUseGlow(false)
 			.SetUseDotaPlateOverlay(true)
@@ -313,12 +335,37 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 		,
 		FMargin(36.f, 28.f, 36.f, 30.f));
 
-	return T66ScreenSlateHelpers::MakeCenteredScrimModal(
+	const TSharedRef<SWidget> Modal = T66ScreenSlateHelpers::MakeCenteredScrimModal(
 		ModalContent,
 		FMargin(0.f, SharedTopInset, 0.f, 0.f),
 		GridMetrics.ModalWidth,
 		GridMetrics.ModalHeight,
 		true);
+	if (const FSlateBrush* SceneBackgroundBrush = GetHeroGridSceneBackgroundBrush())
+	{
+		return SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SImage)
+				.Image(SceneBackgroundBrush)
+				.ColorAndOpacity(FLinearColor(0.88f, 0.88f, 0.88f, 1.0f))
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.02f, 0.025f, 0.035f, 0.48f))
+			]
+			+ SOverlay::Slot()
+			[
+				Modal
+			];
+	}
+	return Modal;
 }
 
 FReply UT66HeroGridScreen::HandleHeroClicked(FName HeroID)

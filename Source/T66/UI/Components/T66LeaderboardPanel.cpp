@@ -57,8 +57,6 @@ namespace
 	const FVector2D ReferenceAvatarInsetSize(40.0f, 40.0f);
 	const FLinearColor ReferenceLeaderboardText(0.953f, 0.925f, 0.835f, 1.0f);
 	const FLinearColor ReferenceLeaderboardMuted(0.738f, 0.708f, 0.648f, 1.0f);
-	const FLinearColor ReferenceMirrorSelectGlow(0.478f, 0.702f, 0.243f, 0.38f);
-	const FLinearColor ReferenceMirrorDim(0.02f, 0.02f, 0.025f, 0.48f);
 
 	const FSlateBrush* ResolveReferenceRightPanelBrush(
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
@@ -446,40 +444,40 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		const FMargin AvatarSlotMargin(0.205f, 0.205f, 0.205f, 0.205f);
 		const FSlateBrush* ReferenceFilterButtonBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceFilterWorldButtonBrush,
-			TEXT("Controls/dropdown_square_normal.png"),
+			TEXT("TopBar/topbar_square_normal.png"),
 			FilterButtonMargin,
 			TEXT("LBMasterFilterNormal"));
 		const FSlateBrush* ReferenceFilterSelectedBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceFilterFriendsButtonBrush,
-			TEXT("Controls/dropdown_square_normal.png"),
+			TEXT("TopBar/topbar_square_pressed.png"),
 			FilterButtonMargin,
 			TEXT("LBMasterFilterSelected"));
 		ResolveMasterLibrarySliceBrush(
 			ReferenceFilterCrownButtonBrush,
-			TEXT("Controls/dropdown_square_normal.png"),
+			TEXT("TopBar/topbar_square_hover.png"),
 			FilterButtonMargin,
 			TEXT("LBMasterFilterPressed"));
 		const FSlateBrush* ReferenceFilterGlobalIcon = ResolveMasterLibrarySliceBrush(
 			ReferenceFilterGlobalIconBrush,
-			TEXT("IconsGenerated/icon_09_leaderboard_globe_imagegen_20260425_v2.png"),
+			TEXT("IconsGenerated/icon_09_leaderboard_globe_purple_imagegen_20260427.png"),
 			FMargin(0.f),
 			TEXT("LBMasterFilterGlobalIcon"));
 		const FSlateBrush* ReferenceFilterFriendsIcon = ResolveMasterLibrarySliceBrush(
 			ReferenceFilterFriendsIconBrush,
-			TEXT("IconsGenerated/icon_10_leaderboard_friends_imagegen_20260425_v2.png"),
+			TEXT("IconsGenerated/icon_10_leaderboard_friends_purple_imagegen_20260427.png"),
 			FMargin(0.f),
 			TEXT("LBMasterFilterFriendsIcon"));
 		const FSlateBrush* ReferenceFilterStreamersIcon = ResolveMasterLibrarySliceBrush(
 			ReferenceFilterStreamersIconBrush,
-			TEXT("IconsGenerated/icon_11_leaderboard_streamers_imagegen_20260425_v2.png"),
+			TEXT("IconsGenerated/icon_11_leaderboard_streamers_purple_imagegen_20260427.png"),
 			FMargin(0.f),
 			TEXT("LBMasterFilterStreamersIcon"));
-		const FSlateBrush* ReferenceWeeklyBrush = ResolveMasterLibrarySliceBrush(
+		const FSlateBrush* ReferenceWideTabSelectedBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceTabWeeklyActiveBrush,
 			TEXT("Tabs/wide_tab_selected.png"),
 			WideTabMargin,
 			TEXT("LBMasterWeekly"));
-		const FSlateBrush* ReferenceAllTimeBrush = ResolveMasterLibrarySliceBrush(
+		const FSlateBrush* ReferenceWideTabNormalBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceTabAllTimeInactiveBrush,
 			TEXT("Tabs/wide_tab_normal.png"),
 			WideTabMargin,
@@ -499,12 +497,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			TEXT("IconsGenerated/icon_16_dropdown_chevron_imagegen_20260425_v2.png"),
 			FMargin(0.f),
 			TEXT("LBMasterDropdownChevron"));
-		const FSlateBrush* ReferenceScoreToggleBrush = ResolveMasterLibrarySliceBrush(
+		const FSlateBrush* ReferenceToggleSelectedBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceToggleScoreSelectedBrush,
 			TEXT("Controls/toggle_wide_selected.png"),
 			ToggleMargin,
 			TEXT("LBMasterToggleScore"));
-		const FSlateBrush* ReferenceSpeedRunToggleBrush = ResolveMasterLibrarySliceBrush(
+		const FSlateBrush* ReferenceToggleNormalBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceToggleSpeedRunUnselectedBrush,
 			TEXT("Controls/toggle_wide_normal.png"),
 			ToggleMargin,
@@ -543,19 +541,6 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		const FSlateFontInfo ReferenceDropdownFont = MakeLockedRegularFont(22);
 		const FSlateFontInfo ReferenceDailyFont = MakeLockedBoldFont(21, 0);
 		const FSlateFontInfo ReferenceToggleFont = MakeLockedRegularFont(26);
-
-		auto MakeReferenceOutline = [](const FLinearColor& Color) -> TSharedRef<SWidget>
-		{
-			return SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(Color)
-				.Padding(2.f)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
-					.BorderBackgroundColor(FLinearColor::Transparent)
-				];
-		};
 
 		auto MakeReferenceFilterButton = [this, &NoBorderButtonStyle, ReferenceFilterButtonBrush, ReferenceFilterSelectedBrush](
 			ET66LeaderboardFilter Filter,
@@ -610,12 +595,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				];
 		};
 
-		auto MakeReferenceStatePlateButton = [this, &NoBorderButtonStyle, &MakeReferenceOutline, ReferenceHeaderFont](
-			const FSlateBrush* Brush,
+		auto MakeReferenceStatePlateButton = [this, &NoBorderButtonStyle, ReferenceHeaderFont](
+			const FSlateBrush* SelectedBrush,
+			const FSlateBrush* NormalBrush,
 			const FVector2D& Size,
 			const FText& Label,
 			TFunction<bool()> IsSelected,
-			const bool bSelectedAsset,
 			FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
 		{
 			return SNew(SBox)
@@ -631,8 +616,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						+ SOverlay::Slot()
 						[
 								SNew(SImage)
-								.Image(Brush ? Brush : FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.ColorAndOpacity(Brush ? FLinearColor::White : ReferenceLeaderboardMuted)
+								.Image(TAttribute<const FSlateBrush*>::CreateLambda([SelectedBrush, NormalBrush, IsSelected]() -> const FSlateBrush*
+								{
+									const FSlateBrush* ChosenBrush = IsSelected() ? SelectedBrush : NormalBrush;
+									return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
+								}))
+								.ColorAndOpacity((SelectedBrush || NormalBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
 							]
 							+ SOverlay::Slot()
 							.HAlign(HAlign_Center)
@@ -652,36 +641,55 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 								.Clipping(EWidgetClipping::ClipToBounds)
 							]
-							+ SOverlay::Slot()
-							[
-								SNew(SBorder)
-							.Visibility_Lambda([IsSelected, bSelectedAsset]() -> EVisibility
-							{
-								return (!bSelectedAsset && IsSelected()) ? EVisibility::Visible : EVisibility::Collapsed;
-							})
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.30f, 0.48f, 0.20f, 0.22f))
-						]
+					]
+				];
+		};
+
+		auto MakeReferenceTypeButton = [this, &NoBorderButtonStyle, ReferenceToggleFont, ReferenceToggleSelectedBrush, ReferenceToggleNormalBrush](
+			const ET66LeaderboardType Type,
+			const FVector2D& Size) -> TSharedRef<SWidget>
+		{
+			return SNew(SBox)
+				.WidthOverride(Size.X)
+				.HeightOverride(Size.Y)
+				[
+					SNew(SButton)
+					.ButtonStyle(&NoBorderButtonStyle)
+					.ContentPadding(FMargin(0.f))
+					.OnClicked(FOnClicked::CreateLambda([this, Type]()
+					{
+						SetLeaderboardType(Type);
+						return FReply::Handled();
+					}))
+					[
+						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							SNew(SBox)
-							.Visibility_Lambda([IsSelected, bSelectedAsset]() -> EVisibility
+							SNew(SImage)
+							.Image(TAttribute<const FSlateBrush*>::CreateLambda([this, Type, ReferenceToggleSelectedBrush, ReferenceToggleNormalBrush]() -> const FSlateBrush*
 							{
-								return (!bSelectedAsset && IsSelected()) ? EVisibility::Visible : EVisibility::Collapsed;
-							})
-							[
-								MakeReferenceOutline(ReferenceMirrorSelectGlow)
-							]
+								const FSlateBrush* ChosenBrush = CurrentType == Type ? ReferenceToggleSelectedBrush : ReferenceToggleNormalBrush;
+								return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
+							}))
+							.ColorAndOpacity((ReferenceToggleSelectedBrush || ReferenceToggleNormalBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
 						]
 						+ SOverlay::Slot()
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						.Padding(FMargin(18.f, 0.f))
 						[
-							SNew(SBorder)
-							.Visibility_Lambda([IsSelected, bSelectedAsset]() -> EVisibility
+							SNew(STextBlock)
+							.Text(GetTypeText(Type))
+							.Font(ReferenceToggleFont)
+							.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([this, Type]() -> FSlateColor
 							{
-								return (bSelectedAsset && !IsSelected()) ? EVisibility::Visible : EVisibility::Collapsed;
-							})
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(ReferenceMirrorDim)
+								return CurrentType == Type
+									? FSlateColor(ReferenceLeaderboardText)
+									: FSlateColor(FLinearColor(0.78f, 0.74f, 0.66f, 0.92f));
+							}))
+							.Justification(ETextJustify::Center)
+							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+							.Clipping(EWidgetClipping::ClipToBounds)
 						]
 					]
 				];
@@ -771,27 +779,27 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						MakeReferenceStatePlateButton(
-							ReferenceWeeklyBrush,
+							ReferenceWideTabSelectedBrush,
+							ReferenceWideTabNormalBrush,
 							ReferenceWeeklyTabSize,
 							NSLOCTEXT("T66.Leaderboard", "Weekly", "WEEKLY"),
 							[this]() { return CurrentTimeFilter == ET66LeaderboardTime::Current; },
-							true,
 							&ST66LeaderboardPanel::HandleCurrentClicked)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
 					[
 						MakeReferenceStatePlateButton(
-							ReferenceAllTimeBrush,
+							ReferenceWideTabSelectedBrush,
+							ReferenceWideTabNormalBrush,
 							ReferenceAllTimeTabSize,
 							NSLOCTEXT("T66.Leaderboard", "AllTime", "ALL TIME"),
 							[this]() { return CurrentTimeFilter == ET66LeaderboardTime::AllTime; },
-							false,
 							&ST66LeaderboardPanel::HandleAllTimeClicked)
 					]
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(FMargin(0.f, -6.f, 0.f, 0.f))
+				.Padding(FMargin(0.f, 8.f, 0.f, 8.f))
 				[
 					SNew(SHorizontalBox)
 					.Visibility_Lambda(GetStandardModeVisibility)
@@ -858,120 +866,17 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(FMargin(0.f, 3.f, 0.f, 0.f))
+				.Padding(FMargin(0.f, 0.f, 0.f, 0.f))
 				[
 					SNew(SHorizontalBox)
 					.Visibility_Lambda(GetStandardModeVisibility)
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(SBox)
-						.WidthOverride(ReferenceScoreToggleSize.X)
-						.HeightOverride(ReferenceScoreToggleSize.Y)
-						[
-							SNew(SButton)
-							.ButtonStyle(&NoBorderButtonStyle)
-							.ContentPadding(FMargin(0.f))
-							.OnClicked(FOnClicked::CreateLambda([this]()
-							{
-								SetLeaderboardType(ET66LeaderboardType::Score);
-								return FReply::Handled();
-							}))
-							[
-								SNew(SOverlay)
-								+ SOverlay::Slot()
-								[
-									SNew(SImage)
-									.Image(ReferenceScoreToggleBrush ? ReferenceScoreToggleBrush : FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.ColorAndOpacity(ReferenceScoreToggleBrush ? FLinearColor::White : ReferenceLeaderboardMuted)
-								]
-								+ SOverlay::Slot()
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.Padding(FMargin(18.f, 0.f))
-								[
-									SNew(STextBlock)
-									.Text(GetTypeText(ET66LeaderboardType::Score))
-									.Font(ReferenceToggleFont)
-									.ColorAndOpacity(ReferenceLeaderboardText)
-									.Justification(ETextJustify::Center)
-									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-									.Clipping(EWidgetClipping::ClipToBounds)
-								]
-								+ SOverlay::Slot()
-								[
-									SNew(SBorder)
-									.Visibility_Lambda([this]() -> EVisibility
-									{
-										return (CurrentType != ET66LeaderboardType::Score) ? EVisibility::Visible : EVisibility::Collapsed;
-									})
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(ReferenceMirrorDim)
-								]
-							]
-						]
+						MakeReferenceTypeButton(ET66LeaderboardType::Score, ReferenceScoreToggleSize)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
 					[
-						SNew(SBox)
-						.Visibility_Lambda(GetStandardModeVisibility)
-						[
-							SNew(SBox)
-							.WidthOverride(ReferenceSpeedRunToggleSize.X)
-							.HeightOverride(ReferenceSpeedRunToggleSize.Y)
-							[
-								SNew(SButton)
-								.ButtonStyle(&NoBorderButtonStyle)
-								.ContentPadding(FMargin(0.f))
-								.OnClicked(FOnClicked::CreateLambda([this]()
-								{
-									SetLeaderboardType(ET66LeaderboardType::SpeedRun);
-									return FReply::Handled();
-								}))
-								[
-									SNew(SOverlay)
-									+ SOverlay::Slot()
-									[
-										SNew(SImage)
-										.Image(ReferenceSpeedRunToggleBrush ? ReferenceSpeedRunToggleBrush : FCoreStyle::Get().GetBrush("WhiteBrush"))
-										.ColorAndOpacity(ReferenceSpeedRunToggleBrush ? FLinearColor::White : ReferenceLeaderboardMuted)
-									]
-									+ SOverlay::Slot()
-									.HAlign(HAlign_Center)
-									.VAlign(VAlign_Center)
-									.Padding(FMargin(18.f, 0.f))
-									[
-										SNew(STextBlock)
-										.Text(GetTypeText(ET66LeaderboardType::SpeedRun))
-										.Font(ReferenceToggleFont)
-										.ColorAndOpacity(FLinearColor(0.78f, 0.74f, 0.66f, 0.92f))
-										.Justification(ETextJustify::Center)
-										.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-										.Clipping(EWidgetClipping::ClipToBounds)
-									]
-									+ SOverlay::Slot()
-									[
-										SNew(SBorder)
-										.Visibility_Lambda([this]() -> EVisibility
-										{
-											return (CurrentType == ET66LeaderboardType::SpeedRun) ? EVisibility::Visible : EVisibility::Collapsed;
-										})
-										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-										.BorderBackgroundColor(FLinearColor(0.30f, 0.48f, 0.20f, 0.22f))
-									]
-									+ SOverlay::Slot()
-									[
-										SNew(SBox)
-										.Visibility_Lambda([this]() -> EVisibility
-										{
-											return (CurrentType == ET66LeaderboardType::SpeedRun) ? EVisibility::Visible : EVisibility::Collapsed;
-										})
-										[
-											MakeReferenceOutline(ReferenceMirrorSelectGlow)
-										]
-									]
-								]
-							]
-						]
+						MakeReferenceTypeButton(ET66LeaderboardType::SpeedRun, ReferenceSpeedRunToggleSize)
 					]
 				]
 				+ SVerticalBox::Slot()

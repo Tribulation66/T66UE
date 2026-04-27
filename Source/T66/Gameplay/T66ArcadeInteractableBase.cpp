@@ -243,6 +243,13 @@ FText AT66ArcadeInteractableBase::BuildInteractionPromptText() const
 		: ResolveInteractionVerb();
 }
 
+FText AT66ArcadeInteractableBase::BuildInteractionPromptTargetName() const
+{
+	return GetArcadeData().DisplayName.IsEmpty()
+		? AT66WorldInteractableBase::BuildInteractionPromptTargetName()
+		: GetArcadeData().DisplayName;
+}
+
 FVector AT66ArcadeInteractableBase::GetImportedVisualScale() const
 {
 	return T66ResolveArcadeScale(GetArcadeData().DisplayMeshScale);

@@ -4,6 +4,7 @@
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66InteractionPromptSubsystem.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
@@ -53,6 +54,11 @@ namespace
 		}
 		TextComponent->SetHiddenInGame(true, true);
 		TextComponent->SetVisibility(false, true);
+	}
+
+	static AT66PlayerController* T66_GetLocalInteractionPlayerController(const UObject* WorldContext)
+	{
+		return WorldContext ? Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(WorldContext, 0)) : nullptr;
 	}
 }
 
@@ -124,6 +130,8 @@ void AT66WorldInteractableBase::BeginPlay()
 
 void AT66WorldInteractableBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	HideInteractionPrompt();
+
 	if (UWorld* World = GetWorld())
 	{
 		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
@@ -172,13 +180,20 @@ FText AT66WorldInteractableBase::BuildInteractionPromptText() const
 	return PromptSubsystem->BuildPromptText(PromptSubsystem->GetPromptActionForActor(this));
 }
 
-void AT66WorldInteractableBase::RefreshInteractionPrompt()
+FText AT66WorldInteractableBase::BuildInteractionPromptTargetName() const
 {
-	if (!PromptText)
+	UGameInstance* GI = GetGameInstance();
+	const UT66InteractionPromptSubsystem* PromptSubsystem = GI ? GI->GetSubsystem<UT66InteractionPromptSubsystem>() : nullptr;
+	if (PromptSubsystem)
 	{
-		return;
+		return PromptSubsystem->GetPromptTargetNameForActor(this);
 	}
 
+	return FText::FromString(GetName());
+}
+
+void AT66WorldInteractableBase::RefreshInteractionPrompt()
+{
 	if (HasAnyFlags(RF_ClassDefaultObject) || !GetWorld())
 	{
 		HideInteractionPrompt();
@@ -187,29 +202,28 @@ void AT66WorldInteractableBase::RefreshInteractionPrompt()
 
 	const AT66HeroBase* LocalHero = GetLocalHero();
 	const bool bShowPrompt = ShouldShowInteractionPrompt(LocalHero);
-	const FText Prompt = bShowPrompt ? BuildInteractionPromptText() : FText::GetEmpty();
+	const FText PromptTargetName = bShowPrompt ? BuildInteractionPromptTargetName() : FText::GetEmpty();
 
-	if (!bShowPrompt || Prompt.IsEmpty())
+	if (!bShowPrompt || PromptTargetName.IsEmpty())
 	{
 		HideInteractionPrompt();
 		return;
 	}
 
-	PromptText->SetWorldSize(GetInteractionPromptWorldSize());
-	PromptText->SetTextRenderColor(FColor::White);
-	UpdateInteractionPromptPlacement();
-	PromptText->SetText(Prompt);
-	PromptText->SetHiddenInGame(false, true);
-	PromptText->SetVisibility(true, true);
+	if (PromptText)
+	{
+		PromptText->SetHiddenInGame(true, true);
+		PromptText->SetVisibility(false, true);
+	}
 	if (PromptTextBack)
 	{
-		// UTextRender already stays readable from both sides with the engine text material.
-		// Keeping a mirrored duplicate here causes doubled glyphs on imported interactables.
-		PromptTextBack->SetText(Prompt);
 		PromptTextBack->SetHiddenInGame(true, true);
 		PromptTextBack->SetVisibility(false, true);
 	}
-	UpdateInteractionPromptFacing();
+	if (AT66PlayerController* T66PC = T66_GetLocalInteractionPlayerController(this))
+	{
+		T66PC->ShowInteractionPrompt(this, PromptTargetName);
+	}
 }
 
 const AT66HeroBase* AT66WorldInteractableBase::GetLocalHero() const
@@ -382,17 +396,19 @@ void AT66WorldInteractableBase::UpdateInteractionPromptPlacement()
 
 void AT66WorldInteractableBase::HideInteractionPrompt()
 {
-	if (!PromptText)
+	if (PromptText)
 	{
-		return;
+		PromptText->SetHiddenInGame(true, true);
+		PromptText->SetVisibility(false, true);
 	}
-
-	PromptText->SetHiddenInGame(true, true);
-	PromptText->SetVisibility(false, true);
 	if (PromptTextBack)
 	{
 		PromptTextBack->SetHiddenInGame(true, true);
 		PromptTextBack->SetVisibility(false, true);
+	}
+	if (AT66PlayerController* T66PC = T66_GetLocalInteractionPlayerController(this))
+	{
+		T66PC->HideInteractionPrompt(this);
 	}
 }
 

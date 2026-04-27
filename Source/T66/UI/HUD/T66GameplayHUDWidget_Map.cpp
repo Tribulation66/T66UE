@@ -94,7 +94,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		return;
 	}
 
-	// Try multiple paths to find the player pawn — GetOwningPlayerPawn can return null
+	// Try multiple paths to find the player pawn - GetOwningPlayerPawn can return null
 	// if the pawn hasn't been possessed yet when the HUD widget was first created.
 	const APawn* P = GetOwningPlayerPawn();
 	if (!P)
@@ -129,6 +129,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 	static constexpr float TowerMapRevealRadius = 2600.0f;
 	const TArray<FVector2D>* ActiveTowerRevealPoints = nullptr;
 	const FSlateBrush* ActiveTowerBackgroundBrush = nullptr;
+	const FSlateBrush* ActiveTowerWallBrush = nullptr;
 	FLinearColor ActiveTowerMapTint = FLinearColor::White;
 	FLinearColor ActiveTowerWallFillColor = FLinearColor(0.14f, 0.11f, 0.09f, 1.0f);
 	FLinearColor ActiveTowerWallStrokeColor = FLinearColor(0.92f, 0.86f, 0.72f, 1.0f);
@@ -193,6 +194,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			ActiveTowerHoleHalfExtents = Floor.HoleHalfExtent;
 			const FT66TowerMinimapArtStyle TowerArtStyle = GetTowerMinimapArtStyle(Floor.Theme);
 			ActiveTowerBackgroundBrush = GetTowerMinimapBackgroundBrush(Floor.Theme);
+			ActiveTowerWallBrush = GetTowerMinimapWallBrush(Floor.Theme);
 			ActiveTowerMapTint = TowerArtStyle.MapTint;
 			ActiveTowerWallFillColor = TowerArtStyle.WallFill;
 			ActiveTowerWallStrokeColor = TowerArtStyle.WallStroke;
@@ -220,6 +222,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			MinimapWidget->SetTowerHole(bHasActiveTowerHole, ActiveTowerHoleCenter, ActiveTowerHoleHalfExtents);
 			MinimapWidget->SetThemedFloorArt(
 				ActiveTowerBackgroundBrush,
+				ActiveTowerWallBrush,
 				ActiveTowerMazeWallBoxes,
 				ActiveTowerMapTint,
 				ActiveTowerWallFillColor,
@@ -232,7 +235,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			MinimapWidget->SetRevealMask(false, EmptyRevealPoints, 0.0f);
 			MinimapWidget->SetTowerPolygon(EmptyTowerPolygon);
 			MinimapWidget->SetTowerHole(false);
-			MinimapWidget->SetThemedFloorArt(nullptr, EmptyTowerMazeWallBoxes, FLinearColor::White, FLinearColor::White, FLinearColor::White);
+			MinimapWidget->SetThemedFloorArt(nullptr, nullptr, EmptyTowerMazeWallBoxes, FLinearColor::White, FLinearColor::White, FLinearColor::White);
 			MinimapWidget->SetLockFullMapToBounds(false);
 		}
 	}
@@ -251,6 +254,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			FullMapWidget->SetTowerHole(bHasActiveTowerHole, ActiveTowerHoleCenter, ActiveTowerHoleHalfExtents);
 			FullMapWidget->SetThemedFloorArt(
 				ActiveTowerBackgroundBrush,
+				ActiveTowerWallBrush,
 				ActiveTowerMazeWallBoxes,
 				ActiveTowerMapTint,
 				ActiveTowerWallFillColor,
@@ -263,7 +267,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			FullMapWidget->SetRevealMask(false, EmptyRevealPoints, 0.0f);
 			FullMapWidget->SetTowerPolygon(EmptyTowerPolygon);
 			FullMapWidget->SetTowerHole(false);
-			FullMapWidget->SetThemedFloorArt(nullptr, EmptyTowerMazeWallBoxes, FLinearColor::White, FLinearColor::White, FLinearColor::White);
+			FullMapWidget->SetThemedFloorArt(nullptr, nullptr, EmptyTowerMazeWallBoxes, FLinearColor::White, FLinearColor::White, FLinearColor::White);
 		}
 	}
 
@@ -381,24 +385,33 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		switch (E.Type)
 		{
 		case EMapCacheMarkerType::NPC:
+		{
+			const FName MarkerKey = E.MarkerKey.IsNone() ? FName(TEXT("NPC")) : E.MarkerKey;
 			M.Visual = ET66MapMarkerVisual::Icon;
-			M.IconBrush = GetMinimapSymbolBrush(E.MarkerKey.IsNone() ? FName(TEXT("NPC")) : E.MarkerKey);
-			M.DrawSize = FVector2D(12.f, 12.f);
+			M.IconBrush = GetMinimapSymbolBrush(MarkerKey);
+			M.DrawSize = GetMinimapSymbolDrawSize(MarkerKey);
 			break;
+		}
 		case EMapCacheMarkerType::Gate:
+		{
+			const FName MarkerKey = E.MarkerKey.IsNone() ? FName(TEXT("Gate")) : E.MarkerKey;
 			M.Visual = ET66MapMarkerVisual::Icon;
-			M.IconBrush = GetMinimapSymbolBrush(E.MarkerKey.IsNone() ? FName(TEXT("Gate")) : E.MarkerKey);
-			M.DrawSize = FVector2D(12.f, 12.f);
+			M.IconBrush = GetMinimapSymbolBrush(MarkerKey);
+			M.DrawSize = GetMinimapSymbolDrawSize(MarkerKey);
 			break;
+		}
 		case EMapCacheMarkerType::Miasma:
+		{
+			const FName MarkerKey = E.MarkerKey.IsNone() ? FName(TEXT("Miasma")) : E.MarkerKey;
 			M.Visual = ET66MapMarkerVisual::Icon;
-			M.IconBrush = GetMinimapSymbolBrush(E.MarkerKey.IsNone() ? FName(TEXT("Miasma")) : E.MarkerKey);
-			M.DrawSize = FVector2D(12.f, 12.f);
+			M.IconBrush = GetMinimapSymbolBrush(MarkerKey);
+			M.DrawSize = GetMinimapSymbolDrawSize(MarkerKey);
 			break;
+		}
 		case EMapCacheMarkerType::POI:
 			M.Visual = ET66MapMarkerVisual::Icon;
 			M.IconBrush = GetMinimapSymbolBrush(E.MarkerKey);
-			M.DrawSize = FVector2D(12.f, 12.f);
+			M.DrawSize = GetMinimapSymbolDrawSize(E.MarkerKey);
 			break;
 		case EMapCacheMarkerType::Enemy:
 		default:

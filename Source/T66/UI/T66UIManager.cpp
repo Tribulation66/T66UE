@@ -374,6 +374,7 @@ bool UT66UIManager::ShouldShowFrontendBackButton() const
 	switch (CurrentScreenType)
 	{
 	case ET66ScreenType::Settings:
+	case ET66ScreenType::LanguageSelect:
 	case ET66ScreenType::AccountStatus:
 	case ET66ScreenType::PowerUp:
 	case ET66ScreenType::Achievements:

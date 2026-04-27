@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UIManager.h"
@@ -21,8 +22,6 @@
 
 namespace
 {
-	const TCHAR* T66SettingsAssetRoot = TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/");
-
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GMinigamesGeneratedTextureCache;
 	TMap<FString, TSharedPtr<FSlateBrush>> GMinigamesGeneratedBrushCache;
 	TMap<FString, TSharedPtr<FButtonStyle>> GMinigamesGeneratedButtonStyleCache;
@@ -45,7 +44,70 @@ namespace
 
 	FString MakeSettingsAssetPath(const TCHAR* FileName)
 	{
-		return FString(T66SettingsAssetRoot) / FileName;
+		const FString Name(FileName);
+		const auto TopBarPath = [](const TCHAR* State) -> FString
+		{
+			return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_%s.png"), State);
+		};
+
+		if (Name.StartsWith(TEXT("settings_toggle_on_")))
+		{
+			return TopBarPath(TEXT("pressed"));
+		}
+		if (Name.StartsWith(TEXT("settings_compact_neutral_")) || Name.StartsWith(TEXT("settings_toggle_off_")))
+		{
+			if (Name.Contains(TEXT("_hover"))) return TopBarPath(TEXT("hover"));
+			if (Name.Contains(TEXT("_pressed"))) return TopBarPath(TEXT("pressed"));
+			return TopBarPath(TEXT("normal"));
+		}
+		if (Name.StartsWith(TEXT("settings_toggle_inactive_")))
+		{
+			return TopBarPath(TEXT("disabled"));
+		}
+		if (Name == TEXT("settings_content_shell_frame.png"))
+		{
+			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png");
+		}
+		if (Name == TEXT("settings_row_shell_full.png") || Name == TEXT("settings_row_shell_split.png"))
+		{
+			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png");
+		}
+		if (Name == TEXT("settings_dropdown_field.png"))
+		{
+			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Controls/dropdown_field_normal.png");
+		}
+
+		return FString(TEXT("SourceAssets/UI/MasterLibrary/Slices/")) / Name;
+	}
+
+	FMargin GetMinigamesGeneratedBrushMargin(const FString& SourceRelativePath)
+	{
+		if (SourceRelativePath.Contains(TEXT("panel_large_normal.png")))
+		{
+			return FMargin(0.067f, 0.043f, 0.067f, 0.043f);
+		}
+		if (SourceRelativePath.Contains(TEXT("modal_frame_normal.png")))
+		{
+			return FMargin(0.052f, 0.094f, 0.052f, 0.094f);
+		}
+		if (SourceRelativePath.Contains(TEXT("dropdown_field_normal.png")))
+		{
+			return FMargin(0.06f, 0.34f, 0.06f, 0.34f);
+		}
+		if (SourceRelativePath.Contains(TEXT("topbar_nav_")))
+		{
+			return FMargin(0.093f, 0.213f, 0.093f, 0.213f);
+		}
+
+		return FMargin(0.f);
+	}
+
+	bool IsZeroMinigamesMargin(const FMargin& Margin)
+	{
+		return FMath::IsNearlyZero(Margin.Left)
+			&& FMath::IsNearlyZero(Margin.Top)
+			&& FMath::IsNearlyZero(Margin.Right)
+			&& FMath::IsNearlyZero(Margin.Bottom);
 	}
 
 	UTexture2D* LoadMinigamesGeneratedTexture(const FString& SourceRelativePath)
@@ -104,9 +166,11 @@ namespace
 			: FVector2D(static_cast<float>(Texture->GetSizeX()), static_cast<float>(Texture->GetSizeY()));
 
 		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
-		Brush->DrawAs = ESlateBrushDrawType::Image;
+		const FMargin BrushMargin = GetMinigamesGeneratedBrushMargin(SourceRelativePath);
+		Brush->DrawAs = IsZeroMinigamesMargin(BrushMargin) ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
 		Brush->Tiling = ESlateBrushTileType::NoTile;
 		Brush->ImageSize = ResolvedSize;
+		Brush->Margin = BrushMargin;
 		Brush->TintColor = FSlateColor(FLinearColor::White);
 		Brush->SetResourceObject(Texture);
 
@@ -238,20 +302,18 @@ UT66LocalizationSubsystem* UT66MinigamesScreen::GetLocSubsystem() const
 
 TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 {
+	const FText MinigamesText = NSLOCTEXT("T66.MiniGames", "Title", "MINIGAMES");
+	const FText MinigamesDescriptionText = NSLOCTEXT("T66.MiniGames", "Description", "Relax or play minigames with friends to earn ChadCoupons you can redeem in the main game.");
 	const FText ActiveSliceTitle = NSLOCTEXT("T66.MiniGames", "SliceActiveTitle", "CHADPOCALYPSE MINI");
-	const FText ActiveSliceBody = NSLOCTEXT("T66.MiniGames", "SliceActiveBody", "Launch the current 2D survivor mini-game shell with its own saves, heroes, idols, enemies, and progression.");
-	const FText ActiveSliceTag = NSLOCTEXT("T66.MiniGames", "SliceActiveTag", "AVAILABLE NOW");
+	const FText ActiveSliceBody = NSLOCTEXT("T66.MiniGames", "SliceActiveBody", "A 2D survivor minigame with its own saves, heroes, idols, enemies, and progression.");
+	const FText ActiveSliceTag = NSLOCTEXT("T66.MiniGames", "SliceActiveTag", "PLAY");
 	const FText TDTitle = NSLOCTEXT("T66.MiniGames", "SliceTDTitle", "CHADPOCALYPSE TD");
-	const FText TDBody = NSLOCTEXT("T66.MiniGames", "SliceTDBody", "Launch the tower defense mini-game with hero placement, enemy waves, upgrades, and a 20-map regular-mode rotation across all five tower themes.");
-	const FText TDTag = NSLOCTEXT("T66.MiniGames", "SliceTDTag", "AVAILABLE NOW");
+	const FText TDBody = NSLOCTEXT("T66.MiniGames", "SliceTDBody", "A tower defense minigame with hero placement, enemy waves, upgrades, and rotating maps.");
+	const FText TDTag = NSLOCTEXT("T66.MiniGames", "SliceTDTag", "PLAY");
 	const FText ComingSoonTitle = NSLOCTEXT("T66.MiniGames", "SliceComingSoonTitle", "COMING SOON");
 	const FText ComingSoonBody = NSLOCTEXT("T66.MiniGames", "SliceComingSoonBody", "Reserved slot for future mini-game releases.");
 	const FText ComingSoonTag = NSLOCTEXT("T66.MiniGames", "SliceComingSoonTag", "IN DEVELOPMENT");
-	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
-	const float TopBarOverlapPx = 22.f;
-	const float TopInset = UIManager
-		? FMath::Max(0.f, (UIManager->GetFrontendTopBarContentHeight() - TopBarOverlapPx) / ResponsiveScale)
-		: 0.f;
+	const float TopInset = T66ScreenSlateHelpers::GetFrontendChromeTopInset(UIManager);
 
 	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
@@ -262,7 +324,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 	{
 		TSharedRef<SWidget> SliceContent =
 			SNew(SBox)
-			.HeightOverride(112.f)
+			.HeightOverride(98.f)
 			[
 				MakeMinigamesGeneratedPanel(
 					MakeSettingsAssetPath(TEXT("settings_row_shell_split.png")),
@@ -277,16 +339,16 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(Title)
-							.Font(FT66Style::Tokens::FontBold(26))
+							.Font(FT66Style::Tokens::FontBold(24))
 							.ColorAndOpacity(FT66Style::Tokens::Text)
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
-						.Padding(0.f, 6.f, 40.f, 0.f)
+						.Padding(0.f, 4.f, 40.f, 0.f)
 						[
 							SNew(STextBlock)
 							.Text(Body)
-							.Font(FT66Style::Tokens::FontRegular(14))
+							.Font(FT66Style::Tokens::FontRegular(13))
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 							.AutoWrapText(true)
 						]
@@ -298,13 +360,13 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 					[
 						SNew(SBox)
 						.WidthOverride(280.f)
-						.HeightOverride(44.f)
+						.HeightOverride(40.f)
 						[
 							MakeMinigamesGeneratedPanel(
 								MakeSettingsAssetPath(bClickable ? TEXT("settings_toggle_on_normal.png") : TEXT("settings_toggle_inactive_normal.png")),
 								SNew(STextBlock)
 								.Text(Tag)
-								.Font(FT66Style::Tokens::FontBold(13))
+								.Font(FT66Style::Tokens::FontBold(bClickable ? 22 : 13))
 								.ColorAndOpacity(bClickable ? FLinearColor(0.99f, 0.93f, 0.74f, 1.f) : FT66Style::Tokens::TextMuted)
 								.Justification(ETextJustify::Center),
 								FMargin(18.f, 8.f),
@@ -312,7 +374,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 								bClickable ? Accent : FLinearColor(0.18f, 0.20f, 0.24f, 1.f))
 						]
 					],
-					FMargin(28.f, 14.f),
+					FMargin(24.f, 10.f),
 					bClickable ? FLinearColor::White : FLinearColor(0.72f, 0.76f, 0.82f, 1.f),
 					FLinearColor(0.018f, 0.020f, 0.026f, 1.0f))
 			];
@@ -330,8 +392,8 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 			];
 	};
 
-	return SNew(SBox)
-		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
+	const TSharedRef<SWidget> Root = SNew(SBox)
+		.Padding(FMargin(14.f, TopInset, 14.f, 0.f))
 		[
 			MakeMinigamesGeneratedPanel(
 				MakeSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
@@ -342,27 +404,58 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 					.Padding(SafeContentInsets)
 					[
-						SNew(SScrollBox)
-						.ScrollBarVisibility(EVisibility::Visible)
-						+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.HAlign(HAlign_Center)
+						.Padding(0.f, 0.f, 0.f, 8.f)
 						[
-							MakeSlicePanel(ActiveSliceTitle, ActiveSliceBody, ActiveSliceTag, FT66Style::Success(), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked))
+							SNew(STextBlock)
+							.Text(MinigamesText)
+							.Font(T66ScreenSlateHelpers::MakeFrontendChromeTitleFont())
+							.ColorAndOpacity(FLinearColor(0.83f, 0.68f, 0.34f, 1.0f))
+							.Justification(ETextJustify::Center)
+							.ShadowOffset(FVector2D(0.f, 2.f))
+							.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.75f))
 						]
-						+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(0.f, 0.f, 0.f, 14.f)
 						[
-							MakeSlicePanel(TDTitle, TDBody, TDTag, FLinearColor(0.88f, 0.34f, 0.22f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked))
+							MakeMinigamesGeneratedPanel(
+								MakeSettingsAssetPath(TEXT("settings_row_shell_split.png")),
+								SNew(STextBlock)
+								.Text(MinigamesDescriptionText)
+								.Font(FT66Style::Tokens::FontRegular(17))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Justification(ETextJustify::Center)
+								.AutoWrapText(true),
+								FMargin(18.f, 7.f),
+								FLinearColor::White,
+								T66MinigamesInsetFill())
 						]
-						+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
+						+ SVerticalBox::Slot()
+						.FillHeight(1.f)
+						.Padding(0.f, 0.f, 0.f, 16.f)
 						[
-							MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
-						]
-						+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
-						[
-							MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
-						]
-						+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 0.f)
-						[
-							MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
+							SNew(SScrollBox)
+							.ScrollBarVisibility(EVisibility::Visible)
+							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
+							[
+								MakeSlicePanel(ActiveSliceTitle, ActiveSliceBody, ActiveSliceTag, FT66Style::Success(), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked))
+							]
+							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
+							[
+								MakeSlicePanel(TDTitle, TDBody, TDTag, FLinearColor(0.88f, 0.34f, 0.22f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked))
+							]
+							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
+							[
+								MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
+							]
+							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 0.f)
+							[
+								MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
+							]
 						]
 					]
 				],
@@ -370,6 +463,28 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 				FLinearColor::White,
 				T66FrontendShellFill())
 		];
+
+	if (const FSlateBrush* SceneBackgroundBrush = ResolveMinigamesGeneratedBrush(TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png")))
+	{
+		return SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SNew(SImage)
+				.Image(SceneBackgroundBrush)
+			]
+			+ SOverlay::Slot()
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.02f, 0.025f, 0.035f, 0.48f))
+			]
+			+ SOverlay::Slot()
+			[
+				Root
+			];
+	}
+
+	return Root;
 }
 
 void UT66MinigamesScreen::OnScreenActivated_Implementation()

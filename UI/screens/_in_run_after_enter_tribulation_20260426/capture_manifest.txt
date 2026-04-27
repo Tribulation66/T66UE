@@ -1,0 +1,19 @@
+Gameplay HUD|gameplay_hud.png|1920x1080|2280198
+Full Map HUD|gameplay_hud_full_map.png|1920x1080|206946
+Inventory Inspect|gameplay_hud_inventory_inspect.png|1920x1080|1971303
+Idol Altar Overlay|idol_altar_overlay.png|1920x1080|1279636
+Crate Overlay|crate_overlay.png|1920x1080|2277540
+Lab Overlay|lab_overlay.png|1920x1080|1987600
+Collector Overlay|collector_overlay.png|1920x1080|679386
+Casino Vendor Tab|casino_vendor_tab.png|1920x1080|579177
+Casino Gambling Tab|casino_gambling_tab.png|1920x1080|662796
+Casino Alchemy Tab|casino_alchemy_tab.png|1920x1080|77068
+Pause Menu|pause_menu.png|1920x1080|922834
+Pause -> Settings Modal|pause_settings_modal.png|1920x1080|546179
+Pause -> Achievements Modal|pause_achievements_modal.png|1920x1080|664411
+Pause -> Leaderboard/Account Modal|pause_leaderboard_account_modal.png|1920x1080|557438
+Temporary Buff Selection|temporary_buff_selection.png|1920x1080|77943
+Temporary Buff Shop|temporary_buff_shop.png|1920x1080|61568
+PowerUp Screen|powerup.png|1920x1080|933265
+Run Summary|run_summary.png|1920x1080|233344
+Report Bug|report_bug.png|1920x1080|948721

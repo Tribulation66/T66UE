@@ -33,6 +33,7 @@ class T66_API UT66InteractionPromptSubsystem : public UGameInstanceSubsystem
 
 public:
 	ET66InteractionPromptAction GetPromptActionForActor(const AActor* Actor) const;
+	FText GetPromptTargetNameForActor(const AActor* Actor) const;
 
 	FText BuildPromptText(ET66InteractionPromptAction Action) const;
 	FText BuildPromptTextWithSeconds(ET66InteractionPromptAction Action, int32 RemainingSeconds) const;

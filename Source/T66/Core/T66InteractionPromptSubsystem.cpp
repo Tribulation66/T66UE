@@ -145,6 +145,61 @@ ET66InteractionPromptAction UT66InteractionPromptSubsystem::GetPromptActionForAc
 	return ET66InteractionPromptAction::None;
 }
 
+FText UT66InteractionPromptSubsystem::GetPromptTargetNameForActor(const AActor* Actor) const
+{
+	if (!Actor)
+	{
+		return FText::GetEmpty();
+	}
+
+	if (Cast<AT66PilotableTractor>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetTractor", "Tractor");
+	}
+	if (Cast<AT66FountainOfLifeInteractable>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetFountainOfLife", "Fountain of Life");
+	}
+	if (Cast<AT66ChestInteractable>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetChest", "Chest");
+	}
+	if (Cast<AT66WheelSpinInteractable>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetWheelSpin", "Wheel Spin");
+	}
+	if (Cast<AT66CrateInteractable>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetCrate", "Crate");
+	}
+	if (Cast<AT66CasinoInteractable>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetCasino", "Casino");
+	}
+	if (Cast<AT66QuickReviveVendingMachine>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetQuickRevive", "Quick Revive");
+	}
+	if (Cast<AT66TeleportPadInteractable>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetTeleporter", "Teleporter");
+	}
+	if (Cast<AT66DifficultyTotem>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetDifficultyTotem", "Difficulty Totem");
+	}
+	if (Cast<AT66StageCatchUpGoldInteractable>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetGold", "Gold");
+	}
+	if (Cast<AT66StageCatchUpLootInteractable>(Actor))
+	{
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetLoot", "Loot");
+	}
+
+	return FText::FromString(Actor->GetName());
+}
+
 FText UT66InteractionPromptSubsystem::BuildPromptText(ET66InteractionPromptAction Action) const
 {
 	return BuildPromptTextInternal(Action, 0, false);

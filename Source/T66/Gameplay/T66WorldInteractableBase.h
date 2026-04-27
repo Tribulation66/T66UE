@@ -64,6 +64,7 @@ protected:
 	virtual void ApplyRarityVisuals();
 	virtual bool ShouldShowInteractionPrompt(const AT66HeroBase* LocalHero) const;
 	virtual FText BuildInteractionPromptText() const;
+	virtual FText BuildInteractionPromptTargetName() const;
 	virtual float GetInteractionPromptWorldSize() const { return 68.f; }
 	virtual float GetInteractionPromptVerticalPadding() const { return 120.f; }
 	virtual FVector GetMinimumInteractionExtent() const { return FVector(260.f, 260.f, 180.f); }

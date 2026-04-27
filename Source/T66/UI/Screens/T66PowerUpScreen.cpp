@@ -7,14 +7,17 @@
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
 #include "Layout/Clipping.h"
+#include "Misc/CommandLine.h"
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
+#include "Misc/Parse.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
 #include "UObject/SoftObjectPath.h"
@@ -34,18 +37,12 @@
 
 namespace
 {
-	constexpr int32 ShopFontDelta = -6;
-	constexpr float ShopPermanentCardArtFrameWidth = 178.f;
-	constexpr float ShopPermanentCardArtFrameHeight = 154.f;
+	constexpr int32 ShopFontDelta = -2;
 	constexpr float ShopCardGap = 12.f;
-	constexpr int32 ShopStatsPerRow = 3;
-	const FLinearColor ShopLockedTint(0.03f, 0.03f, 0.04f, 0.96f);
-	const FLinearColor ShopFillTint = FLinearColor::White;
+	constexpr int32 ShopDiplomaUpgradeCount = UT66BuffSubsystem::MaxFillStepsPerStat;
+	constexpr int32 ShopDiplomaStatIncrease = 1;
 	const FLinearColor ShopPermanentCardFill(0.14f, 0.11f, 0.07f, 1.0f);
-	const FLinearColor ShopPermanentCardInsetFill(0.09f, 0.07f, 0.04f, 1.0f);
 	const FLinearColor ShopPermanentCardAccent(0.80f, 0.70f, 0.46f, 1.0f);
-	const TCHAR* ShopSettingsAssetRoot = TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/");
-	const TCHAR* ShopMainMenuAssetRoot = TEXT("SourceAssets/UI/MainMenuReference/");
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GShopFileTextureCache;
 	TMap<FString, TSharedPtr<FSlateBrush>> GShopGeneratedBrushCache;
 	TMap<FString, TSharedPtr<FButtonStyle>> GShopGeneratedButtonStyleCache;
@@ -173,12 +170,70 @@ namespace
 
 	FString MakeShopSettingsAssetPath(const TCHAR* FileName)
 	{
-		return FString(ShopSettingsAssetRoot) / FileName;
+		const FString Name(FileName);
+		const auto TopBarPath = [](const TCHAR* State) -> FString
+		{
+			return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_%s.png"), State);
+		};
+
+		if (Name.StartsWith(TEXT("settings_toggle_on_")))
+		{
+			return TopBarPath(TEXT("pressed"));
+		}
+		if (Name.StartsWith(TEXT("settings_compact_neutral_")) || Name.StartsWith(TEXT("settings_toggle_off_")))
+		{
+			if (Name.Contains(TEXT("_hover"))) return TopBarPath(TEXT("hover"));
+			if (Name.Contains(TEXT("_pressed"))) return TopBarPath(TEXT("pressed"));
+			return TopBarPath(TEXT("normal"));
+		}
+		if (Name.StartsWith(TEXT("settings_toggle_inactive_")))
+		{
+			return TopBarPath(TEXT("disabled"));
+		}
+		if (Name == TEXT("settings_content_shell_frame.png"))
+		{
+			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png");
+		}
+		if (Name == TEXT("settings_row_shell_full.png") || Name == TEXT("settings_row_shell_split.png"))
+		{
+			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png");
+		}
+		if (Name == TEXT("settings_dropdown_field.png"))
+		{
+			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Controls/dropdown_field_normal.png");
+		}
+
+		return FString(TEXT("SourceAssets/UI/MasterLibrary/Slices/")) / Name;
 	}
 
-	FString MakeShopMainMenuAssetPath(const TCHAR* FileName)
+	FMargin GetShopGeneratedBrushMargin(const FString& SourceRelativePath)
 	{
-		return FString(ShopMainMenuAssetRoot) / FileName;
+		if (SourceRelativePath.Contains(TEXT("panel_large_normal.png")))
+		{
+			return FMargin(0.067f, 0.043f, 0.067f, 0.043f);
+		}
+		if (SourceRelativePath.Contains(TEXT("modal_frame_normal.png")))
+		{
+			return FMargin(0.052f, 0.094f, 0.052f, 0.094f);
+		}
+		if (SourceRelativePath.Contains(TEXT("dropdown_field_normal.png")))
+		{
+			return FMargin(0.06f, 0.34f, 0.06f, 0.34f);
+		}
+		if (SourceRelativePath.Contains(TEXT("topbar_nav_")))
+		{
+			return FMargin(0.093f, 0.213f, 0.093f, 0.213f);
+		}
+
+		return FMargin(0.f);
+	}
+
+	bool IsZeroShopMargin(const FMargin& Margin)
+	{
+		return FMath::IsNearlyZero(Margin.Left)
+			&& FMath::IsNearlyZero(Margin.Top)
+			&& FMath::IsNearlyZero(Margin.Right)
+			&& FMath::IsNearlyZero(Margin.Bottom);
 	}
 
 	void EnsureShopRuntimeImageBrush(const TSharedPtr<FSlateBrush>& Brush, const FVector2D& ImageSize);
@@ -214,7 +269,11 @@ namespace
 
 		const FVector2D ResolvedSize = ResolveShopImageSize(Texture, ImageSize);
 		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
-		EnsureShopRuntimeImageBrush(Brush, ResolvedSize);
+		const FMargin BrushMargin = GetShopGeneratedBrushMargin(SourceRelativePath);
+		Brush->DrawAs = IsZeroShopMargin(BrushMargin) ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
+		Brush->Tiling = ESlateBrushTileType::NoTile;
+		Brush->ImageSize = ResolvedSize;
+		Brush->Margin = BrushMargin;
 		Brush->TintColor = FSlateColor(FLinearColor::White);
 		Brush->SetResourceObject(Texture);
 
@@ -314,17 +373,22 @@ namespace
 		const FLinearColor& TextColor,
 		const FMargin& ContentPadding)
 	{
+		const TSharedRef<SWidget> ButtonContent = Params.CustomContent.IsValid()
+			? Params.CustomContent.ToSharedRef()
+			: StaticCastSharedRef<SWidget>(
+				SNew(STextBlock)
+				.Text(Params.Label)
+				.Font(Font)
+				.ColorAndOpacity(TextColor)
+				.Justification(ETextJustify::Center));
+
 		TSharedRef<SButton> Button = SNew(SButton)
 			.ButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
 			.ContentPadding(ContentPadding)
 			.IsEnabled(Params.IsEnabled)
 			.OnClicked(FT66Style::DebounceClick(Params.OnClicked))
 			[
-				SNew(STextBlock)
-				.Text(Params.Label)
-				.Font(Font)
-				.ColorAndOpacity(TextColor)
-				.Justification(ETextJustify::Center)
+				ButtonContent
 			];
 
 		TSharedRef<SBox> Box = SNew(SBox)
@@ -667,9 +731,27 @@ UT66PowerUpScreen::UT66PowerUpScreen(const FObjectInitializer& ObjectInitializer
 
 void UT66PowerUpScreen::OnScreenActivated_Implementation()
 {
+	FString RequestedPowerUpTab;
+	bool bHasRequestedPowerUpTab = false;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66PowerUpTab="), RequestedPowerUpTab))
+	{
+		bHasRequestedPowerUpTab = true;
+		bShowingSingleUse =
+			RequestedPowerUpTab.Equals(TEXT("SingleUse"), ESearchCase::IgnoreCase)
+			|| RequestedPowerUpTab.Equals(TEXT("Single"), ESearchCase::IgnoreCase)
+			|| RequestedPowerUpTab.Equals(TEXT("Temporary"), ESearchCase::IgnoreCase);
+	}
+
 	if (HasBuiltSlateUI() && !bNeedsWarmActivationRefresh)
 	{
-		SetShowingSingleUse(bShowingSingleUse);
+		if (bHasRequestedPowerUpTab)
+		{
+			ForceRebuildSlate();
+		}
+		else
+		{
+			SetShowingSingleUse(bShowingSingleUse);
+		}
 		return;
 	}
 
@@ -763,14 +845,17 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	OwnedBrushes.Reset();
 
-	const FText PermanentTabText = NSLOCTEXT("T66.PowerUp", "PermanentTab", "PERMANENT");
-	const FText SingleUseTabText = NSLOCTEXT("T66.PowerUp", "SingleUseTab", "SINGLE USE");
-	const FText ForbiddenChadSetText = NSLOCTEXT("T66.PowerUp", "ForbiddenChadSet", "FORBIDDEN CHAD");
-	const FText SingleUseHintText = NSLOCTEXT("T66.PowerUp", "SingleUseHint", "Buy stackable buffs for any secondary stat. Owned buffs can be selected from Hero Selection, up to 4 total per run.");
-	const FText SingleUseBonusText = NSLOCTEXT("T66.PowerUp", "SingleUseBonus", "+10% when selected");
+	const int32 SingleUsePercent = FMath::RoundToInt((UT66BuffSubsystem::SingleUseSecondaryBuffMultiplier - 1.f) * 100.f);
+	const FText PermanentTabText = NSLOCTEXT("T66.PowerUp", "PermanentTab", "DIPLOMAS");
+	const FText SingleUseTabText = NSLOCTEXT("T66.PowerUp", "SingleUseTab", "DRUGS");
+	const FText PermanentHintText = FText::Format(
+		NSLOCTEXT("T66.PowerUp", "PermanentHint", "Graduate diplomas for permanent +{0} primary-stat upgrades across every run."),
+		FText::AsNumber(ShopDiplomaStatIncrease));
+	const FText SingleUseHintText = FText::Format(
+		NSLOCTEXT("T66.PowerUp", "SingleUseHint", "Buy drug cards for +{0}% secondary-stat boosts. Owned drugs can be equipped from Hero Selection, up to 4 total per run."),
+		FText::AsNumber(SingleUsePercent));
 
 	const int32 Balance = Achievements ? Achievements->GetChadCouponBalance() : (Buffs ? Buffs->GetChadCouponBalance() : 0);
-	const FText BalanceBadgeText = FText::Format(NSLOCTEXT("T66.PowerUp", "BalanceBadge", "{0} CC"), FText::AsNumber(Balance));
 
 	auto GetStatLabel = [Loc](ET66HeroStatType Stat) -> FText
 	{
@@ -793,6 +878,65 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 	auto GetSecondaryLabel = [Loc](ET66SecondaryStatType StatType) -> FText
 	{
 		return Loc ? Loc->GetText_SecondaryStatName(StatType) : FText::FromString(TEXT("?"));
+	};
+
+	auto GetSingleUseDrugName = [](ET66SecondaryStatType StatType) -> FText
+	{
+		switch (StatType)
+		{
+			case ET66SecondaryStatType::AoeDamage:       return NSLOCTEXT("T66.PowerUp", "Drug_AoeDamage", "OXYMETHOLONE");
+			case ET66SecondaryStatType::BounceDamage:    return NSLOCTEXT("T66.PowerUp", "Drug_BounceDamage", "METHANDROSTENOLONE");
+			case ET66SecondaryStatType::PierceDamage:    return NSLOCTEXT("T66.PowerUp", "Drug_PierceDamage", "FLUOXYMESTERONE");
+			case ET66SecondaryStatType::DotDamage:       return NSLOCTEXT("T66.PowerUp", "Drug_DotDamage", "NANDROLONE DECANOATE");
+			case ET66SecondaryStatType::AoeSpeed:        return NSLOCTEXT("T66.PowerUp", "Drug_AoeSpeed", "CAFFEINE CITRATE");
+			case ET66SecondaryStatType::BounceSpeed:     return NSLOCTEXT("T66.PowerUp", "Drug_BounceSpeed", "MODAFINIL");
+			case ET66SecondaryStatType::PierceSpeed:     return NSLOCTEXT("T66.PowerUp", "Drug_PierceSpeed", "EPHEDRINE HCL");
+			case ET66SecondaryStatType::DotSpeed:        return NSLOCTEXT("T66.PowerUp", "Drug_DotSpeed", "SALBUTAMOL SULFATE");
+			case ET66SecondaryStatType::AoeScale:        return NSLOCTEXT("T66.PowerUp", "Drug_AoeScale", "TESTOSTERONE ENANTHATE");
+			case ET66SecondaryStatType::BounceScale:     return NSLOCTEXT("T66.PowerUp", "Drug_BounceScale", "BOLDENONE UNDECYLENATE");
+			case ET66SecondaryStatType::PierceScale:     return NSLOCTEXT("T66.PowerUp", "Drug_PierceScale", "DROSTANOLONE PROPIONATE");
+			case ET66SecondaryStatType::DotScale:        return NSLOCTEXT("T66.PowerUp", "Drug_DotScale", "METHENOLONE ENANTHATE");
+			case ET66SecondaryStatType::CritDamage:      return NSLOCTEXT("T66.PowerUp", "Drug_CritDamage", "TRENBOLONE ACETATE");
+			case ET66SecondaryStatType::CritChance:      return NSLOCTEXT("T66.PowerUp", "Drug_CritChance", "STANOZOLOL");
+			case ET66SecondaryStatType::AttackRange:     return NSLOCTEXT("T66.PowerUp", "Drug_AttackRange", "CLENBUTEROL HCL");
+			case ET66SecondaryStatType::Accuracy:        return NSLOCTEXT("T66.PowerUp", "Drug_Accuracy", "ATOMOXETINE HCL");
+			case ET66SecondaryStatType::Taunt:           return NSLOCTEXT("T66.PowerUp", "Drug_Taunt", "HYDROCORTISONE");
+			case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.PowerUp", "Drug_DamageReduction", "PREDNISONE");
+			case ET66SecondaryStatType::ReflectDamage:   return NSLOCTEXT("T66.PowerUp", "Drug_ReflectDamage", "DEXAMETHASONE");
+			case ET66SecondaryStatType::Crush:           return NSLOCTEXT("T66.PowerUp", "Drug_Crush", "BETAMETHASONE");
+			case ET66SecondaryStatType::EvasionChance:   return NSLOCTEXT("T66.PowerUp", "Drug_EvasionChance", "SCOPOLAMINE HBR");
+			case ET66SecondaryStatType::CounterAttack:   return NSLOCTEXT("T66.PowerUp", "Drug_CounterAttack", "LIDOCAINE HCL");
+			case ET66SecondaryStatType::Invisibility:    return NSLOCTEXT("T66.PowerUp", "Drug_Invisibility", "DIPHENHYDRAMINE HCL");
+			case ET66SecondaryStatType::Assassinate:     return NSLOCTEXT("T66.PowerUp", "Drug_Assassinate", "ATROPINE SULFATE");
+			case ET66SecondaryStatType::TreasureChest:   return NSLOCTEXT("T66.PowerUp", "Drug_TreasureChest", "NICOTINAMIDE RIBOSIDE");
+			case ET66SecondaryStatType::Cheating:        return NSLOCTEXT("T66.PowerUp", "Drug_Cheating", "SILDENAFIL CITRATE");
+			case ET66SecondaryStatType::Stealing:        return NSLOCTEXT("T66.PowerUp", "Drug_Stealing", "LOPERAMIDE HCL");
+			case ET66SecondaryStatType::LootCrate:       return NSLOCTEXT("T66.PowerUp", "Drug_LootCrate", "METFORMIN HCL");
+			default:                                     return NSLOCTEXT("T66.PowerUp", "Drug_Unknown", "COMPOUND");
+		}
+	};
+
+	auto GetSingleUseEffectText = [&](ET66SecondaryStatType StatType) -> FText
+	{
+		return FText::Format(
+			NSLOCTEXT("T66.PowerUp", "SingleUseEffectFormat", "+{0}% {1}"),
+			FText::AsNumber(SingleUsePercent),
+			GetSecondaryLabel(StatType));
+	};
+
+	auto GetPermanentEffectText = [&](ET66HeroStatType StatType) -> FText
+	{
+		return FText::Format(
+			NSLOCTEXT("T66.PowerUp", "PermanentEffectFormat", "+{0} {1}"),
+			FText::AsNumber(ShopDiplomaStatIncrease),
+			GetStatLabel(StatType));
+	};
+
+	auto GetDrugRowTitle = [&](ET66HeroStatType StatType) -> FText
+	{
+		return FText::Format(
+			NSLOCTEXT("T66.PowerUp", "DrugRowTitle", "{0} Drugs"),
+			GetStatLabel(StatType));
 	};
 
 	struct FSingleUseRowDef
@@ -820,127 +964,210 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		ET66HeroStatType::Luck
 	};
 
-	auto GetPermanentPartLabel = [](ET66HeroStatType StatType) -> FText
+	auto MakeUpperText = [](const FText& Text) -> FText
+	{
+		return FText::FromString(Text.ToString().ToUpper());
+	};
+
+	auto GetDiplomaAssetSlug = [](ET66HeroStatType StatType) -> FString
 	{
 		switch (StatType)
 		{
-			case ET66HeroStatType::Damage:      return NSLOCTEXT("T66.PowerUp", "ForbiddenChadLeftArm", "LEFT ARM");
-			case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.PowerUp", "ForbiddenChadRightArm", "RIGHT ARM");
-			case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.PowerUp", "ForbiddenChadHead", "HEAD");
-			case ET66HeroStatType::Accuracy:    return NSLOCTEXT("T66.PowerUp", "ForbiddenChadEyes", "EYES");
-			case ET66HeroStatType::Armor:       return NSLOCTEXT("T66.PowerUp", "ForbiddenChadTorso", "TORSO");
-			case ET66HeroStatType::Evasion:     return NSLOCTEXT("T66.PowerUp", "ForbiddenChadLeftLeg", "LEFT LEG");
-			case ET66HeroStatType::Luck:        return NSLOCTEXT("T66.PowerUp", "ForbiddenChadRightLeg", "RIGHT LEG");
-			default:                            return NSLOCTEXT("T66.PowerUp", "ForbiddenChadUnknown", "PART");
+			case ET66HeroStatType::Damage:      return TEXT("damage");
+			case ET66HeroStatType::AttackSpeed: return TEXT("attack_speed");
+			case ET66HeroStatType::AttackScale: return TEXT("attack_scale");
+			case ET66HeroStatType::Accuracy:    return TEXT("accuracy");
+			case ET66HeroStatType::Armor:       return TEXT("armor");
+			case ET66HeroStatType::Evasion:     return TEXT("evasion");
+			case ET66HeroStatType::Luck:        return TEXT("luck");
+			default: break;
 		}
+
+		return TEXT("damage");
+	};
+
+	auto GetDiplomaRankAssetName = [](int32 VisibleUnlockedSteps) -> FString
+	{
+		switch (VisibleUnlockedSteps)
+		{
+			case 1: return TEXT("bachelors");
+			case 2: return TEXT("masters");
+			case 3: return TEXT("phd");
+			case 4: return TEXT("magistrate");
+			default: break;
+		}
+
+		return TEXT("");
+	};
+
+	auto GetDiplomaImagePath = [&](ET66HeroStatType StatType, int32 VisibleUnlockedSteps) -> FString
+	{
+		if (VisibleUnlockedSteps <= 0)
+		{
+			return TEXT("SourceAssets/UI/PowerUp/Diplomas/Generated/dropout_cardboard_box_imagegen_20260426.png");
+		}
+
+		return FString::Printf(
+			TEXT("SourceAssets/UI/PowerUp/Diplomas/Generated/%s_%s.png"),
+			*GetDiplomaAssetSlug(StatType),
+			*GetDiplomaRankAssetName(VisibleUnlockedSteps));
+	};
+
+	auto GetDiplomaRankTitle = [&](ET66HeroStatType StatType, int32 VisibleUnlockedSteps) -> FText
+	{
+		const FText StatLabel = GetStatLabel(StatType);
+		switch (VisibleUnlockedSteps)
+		{
+			case 1:
+				return FText::Format(NSLOCTEXT("T66.PowerUp", "BachelorInStat", "BACHELOR'S IN {0}"), MakeUpperText(StatLabel));
+			case 2:
+				return FText::Format(NSLOCTEXT("T66.PowerUp", "MasterInStat", "MASTER'S IN {0}"), MakeUpperText(StatLabel));
+			case 3:
+				return FText::Format(NSLOCTEXT("T66.PowerUp", "PHDInStat", "PHD IN {0}"), MakeUpperText(StatLabel));
+			case 4:
+				return FText::Format(NSLOCTEXT("T66.PowerUp", "MagistrateInStat", "MAGISTRATE IN {0}"), MakeUpperText(StatLabel));
+			default:
+				break;
+		}
+
+		const FText DropoutProgram = StatType == ET66HeroStatType::Damage
+			? NSLOCTEXT("T66.PowerUp", "DiplomaDropoutProgramStrength", "STRENGTH")
+			: MakeUpperText(StatLabel);
+		return FText::Format(
+			NSLOCTEXT("T66.PowerUp", "DiplomaRankDropoutUniversity", "{0} UNIVERSITY DROPOUT"),
+			DropoutProgram);
 	};
 
 	auto MakePermanentStatPanel = [&](ET66HeroStatType StatType) -> TSharedRef<SWidget>
 	{
 		const int32 Cost = Buffs ? Buffs->GetCostForNextFillStepUnlock(StatType) : 0;
-		const bool bMaxed = Buffs && Buffs->IsStatMaxed(StatType);
 		const int32 UnlockedSteps = Buffs ? Buffs->GetUnlockedFillStepCount(StatType) : 0;
-		const float FillFraction = static_cast<float>(UnlockedSteps) / static_cast<float>(UT66BuffSubsystem::MaxFillStepsPerStat);
-		const FText ButtonText = bMaxed
+		const int32 VisibleUnlockedSteps = FMath::Clamp(UnlockedSteps, 0, ShopDiplomaUpgradeCount);
+		const bool bDiplomaMaxed = VisibleUnlockedSteps >= ShopDiplomaUpgradeCount;
+		const FText ButtonText = bDiplomaMaxed
 			? NSLOCTEXT("T66.PowerUp", "Max", "MAX")
-			: FText::Format(NSLOCTEXT("T66.PowerUp", "PermanentCost", "{0} CC"), FText::AsNumber(Cost));
-		const FText ProgressText = FText::Format(
-			NSLOCTEXT("T66.PowerUp", "PermanentProgress", "{0}/{1}"),
-			FText::AsNumber(UnlockedSteps),
-			FText::AsNumber(UT66BuffSubsystem::MaxFillStepsPerStat));
+			: NSLOCTEXT("T66.PowerUp", "Graduate", "GRADUATE");
+		const FText CostText = FText::AsNumber(Cost);
+		const FSlateBrush* DiplomaBrush = ResolveShopGeneratedBrush(GetDiplomaImagePath(StatType, VisibleUnlockedSteps), FVector2D(244.f, 244.f));
+		const FSlateBrush* CouponBrush = ResolveShopGeneratedBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260425_v2.png"), FVector2D(30.f, 24.f));
+		const FText DiplomaTitle = GetDiplomaRankTitle(StatType, VisibleUnlockedSteps);
+		const TSharedRef<SWidget> DiplomaImageWidget = DiplomaBrush
+			? StaticCastSharedRef<SWidget>(
+				SNew(SBox)
+				.WidthOverride(244.f)
+				.HeightOverride(238.f)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFit)
+					[
+						SNew(SImage)
+						.Image(DiplomaBrush)
+					]
+				])
+			: StaticCastSharedRef<SWidget>(
+				SNew(SBox)
+				.WidthOverride(244.f)
+				.HeightOverride(238.f)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.PowerUp", "MissingDiplomaArt", "DIPLOMA"))
+					.Font(ShopBoldFont(20))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				]);
+
 		return MakeShopGeneratedPanel(
 			MakeShopSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(ForbiddenChadSetText)
-				.Font(ShopBoldFont(12))
-				.ColorAndOpacity(ShopPermanentCardAccent)
-				.Justification(ETextJustify::Center)
-			]
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 3.f, 0.f, 0.f)
-			[
-				SNew(STextBlock)
-				.Text(GetPermanentPartLabel(StatType))
-				.Font(ShopBoldFont(20))
+				.Text(DiplomaTitle)
+				.Font(ShopBoldFont(28))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 				.Justification(ETextJustify::Center)
+				.AutoWrapText(true)
+				.WrapTextAt(250.f)
 			]
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 2.f, 0.f, 8.f)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 12.f, 0.f, 12.f)
 			[
-				SNew(STextBlock)
-				.Text(GetStatLabel(StatType))
-				.Font(ShopRegularFont(14))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-				.Justification(ETextJustify::Center)
+				DiplomaImageWidget
 			]
 			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
-				SNew(SSpacer)
+				SNew(SBox)
+				.MinDesiredHeight(20.f)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 			[
-				MakeShopGeneratedPanel(
-					MakeShopSettingsAssetPath(TEXT("settings_row_shell_full.png")),
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.045f, 0.040f, 0.052f, 1.0f))
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Left)
-						[
-							SNew(SBox)
-							.WidthOverride(FMath::Clamp(FillFraction, 0.f, 1.f) * 220.f)
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(ShopPermanentCardAccent)
-							]
-						]
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
-					[
-						SNew(STextBlock)
-						.Text(ProgressText)
-						.Font(ShopRegularFont(13))
-						.ColorAndOpacity(ShopPermanentCardAccent)
-						.Justification(ETextJustify::Center)
-					],
-					FMargin(12.f, 5.f),
-					FLinearColor(0.94f, 0.90f, 0.78f, 1.0f),
-					ShopPermanentCardInsetFill)
+				SNew(STextBlock)
+				.Text(GetPermanentEffectText(StatType))
+				.Font(ShopRegularFont(16))
+				.ColorAndOpacity(ShopPermanentCardAccent)
+				.Justification(ETextJustify::Center)
+				.AutoWrapText(true)
+				.WrapTextAt(250.f)
 			]
-			+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom).Padding(0.f, 8.f, 0.f, 0.f)
+			+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom).Padding(0.f, 10.f, 0.f, 0.f)
 			[
 				MakeShopGeneratedButton(
 					FT66ButtonParams(ButtonText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType), ET66ButtonType::Primary)
 					.SetMinWidth(0.f)
-					.SetHeight(36.f)
-					.SetColor(TAttribute<FSlateColor>::CreateLambda([bMaxed, Balance, Cost]() -> FSlateColor
+					.SetHeight(54.f)
+					.SetColor(TAttribute<FSlateColor>::CreateLambda([bDiplomaMaxed, Balance, Cost]() -> FSlateColor
 					{
-						if (bMaxed)
+						if (bDiplomaMaxed)
 						{
 							return FSlateColor(T66PowerUpButtonFill());
 						}
 
 						return FSlateColor(Balance >= Cost ? T66PowerUpButtonFill() : T66PowerUpButtonDisabledFill());
 					}))
-					.SetEnabled(TAttribute<bool>::CreateLambda([bMaxed, Balance, Cost]() { return !bMaxed && Balance >= Cost; }))
+					.SetEnabled(TAttribute<bool>::CreateLambda([bDiplomaMaxed, Balance, Cost]() { return !bDiplomaMaxed && Balance >= Cost; }))
+					.SetContent(
+						SNew(SBox)
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+							[
+								SNew(STextBlock)
+								.Text(ButtonText)
+								.Font(ShopBoldFont(23))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(18.f, 0.f, 0.f, 0.f)
+							[
+								SNew(STextBlock)
+								.Text(CostText)
+								.Font(ShopBoldFont(21))
+								.ColorAndOpacity(ShopPermanentCardAccent)
+								.Visibility(bDiplomaMaxed ? EVisibility::Collapsed : EVisibility::Visible)
+							]
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
+							[
+								SNew(SBox)
+								.WidthOverride(30.f)
+								.HeightOverride(24.f)
+								.Visibility(bDiplomaMaxed || !CouponBrush ? EVisibility::Collapsed : EVisibility::Visible)
+								[
+									SNew(SImage)
+									.Image(CouponBrush)
+								]
+							]
+						])
 					,
 					ResolveShopCompactButtonStyle(),
-					ShopBoldFont(16),
+					ShopBoldFont(23),
 					FT66Style::Tokens::Text,
-					FMargin(14.f, 5.f, 14.f, 4.f)
+					FMargin(18.f, 10.f, 18.f, 8.f)
 				)
 			],
-			FMargin(16.f, 12.f, 16.f, 12.f),
+			FMargin(20.f, 18.f, 20.f, 18.f),
 			FLinearColor::White,
 			ShopPermanentCardFill);
 	};
@@ -948,23 +1175,28 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 	auto MakeSingleUseSecondaryCard = [&](ET66SecondaryStatType StatType) -> TSharedRef<SWidget>
 	{
 		const int32 Cost = Buffs ? Buffs->GetSingleUseBuffCost() : UT66BuffSubsystem::SingleUseBuffCostCC;
-		const int32 OwnedCount = Buffs ? Buffs->GetOwnedSingleUseBuffCount(StatType) : 0;
-		const FText OwnedText = FText::Format(NSLOCTEXT("T66.PowerUp", "SingleUseOwnedCount", "Owned: {0}"), FText::AsNumber(OwnedCount));
-		const FText ButtonText = FText::Format(NSLOCTEXT("T66.PowerUp", "SingleUseCost", "BUY {0} CC"), FText::AsNumber(Cost));
-		const TSharedPtr<FSlateBrush> IconBrush = GetShopSecondaryBuffBrush(OwnedBrushes, TexPool, this, StatType, FVector2D(64.f, 64.f));
+		const FText CostText = FText::AsNumber(Cost);
+		const TSharedPtr<FSlateBrush> IconBrush = GetShopSecondaryBuffBrush(OwnedBrushes, TexPool, this, StatType, FVector2D(124.f, 124.f));
+		const FSlateBrush* CouponBrush = ResolveShopGeneratedBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260425_v2.png"), FVector2D(26.f, 21.f));
 		const TSharedRef<SWidget> IconWidget = IconBrush.IsValid()
 			? StaticCastSharedRef<SWidget>(
 				SNew(SBox)
-				.WidthOverride(64.f)
-				.HeightOverride(64.f)
+				.WidthOverride(124.f)
+				.HeightOverride(110.f)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
 				[
-					SNew(SImage)
-					.Image(IconBrush.Get())
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFit)
+					[
+						SNew(SImage)
+						.Image(IconBrush.Get())
+					]
 				])
 			: StaticCastSharedRef<SWidget>(
 				SNew(SBox)
-				.WidthOverride(64.f)
-				.HeightOverride(64.f)
+				.WidthOverride(124.f)
+				.HeightOverride(110.f)
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Center)
 				[
@@ -979,33 +1211,27 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 			[
-				IconWidget
-			]
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
-			[
 				SNew(STextBlock)
-				.Text(GetSecondaryLabel(StatType))
-				.Font(ShopBoldFont(11))
+				.Text(GetSingleUseDrugName(StatType))
+				.Font(ShopBoldFont(17))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 				.Justification(ETextJustify::Center)
 				.AutoWrapText(true)
-				.WrapTextAt(120.f)
+				.WrapTextAt(210.f)
 			]
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 2.f, 0.f, 8.f)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 8.f)
 			[
-				SNew(STextBlock)
-				.Text(SingleUseBonusText)
-				.Font(ShopRegularFont(10))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-				.Justification(ETextJustify::Center)
+				IconWidget
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
 			[
 				SNew(STextBlock)
-				.Text(OwnedText)
-				.Font(ShopRegularFont(10))
+				.Text(GetSingleUseEffectText(StatType))
+				.Font(ShopRegularFont(14))
 				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				.Justification(ETextJustify::Center)
+				.AutoWrapText(true)
+				.WrapTextAt(210.f)
 			]
 			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
@@ -1014,65 +1240,97 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom)
 			[
 				MakeShopGeneratedButton(
-					FT66ButtonParams(ButtonText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandlePurchaseSingleUseClicked, StatType), ET66ButtonType::Primary)
+					FT66ButtonParams(NSLOCTEXT("T66.PowerUp", "BuySingleUse", "BUY"), FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandlePurchaseSingleUseClicked, StatType), ET66ButtonType::Primary)
 					.SetMinWidth(0.f)
-					.SetHeight(34.f)
+					.SetHeight(44.f)
 					.SetColor(TAttribute<FSlateColor>::CreateLambda([Balance, Cost]() -> FSlateColor
 					{
 						return FSlateColor(Balance >= Cost ? T66PowerUpButtonFill() : T66PowerUpButtonDisabledFill());
 					}))
 					.SetEnabled(TAttribute<bool>::CreateLambda([Balance, Cost]() { return Balance >= Cost; }))
+					.SetContent(
+						SNew(SBox)
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+							[
+								SNew(STextBlock)
+								.Text(NSLOCTEXT("T66.PowerUp", "BuySingleUseText", "BUY"))
+								.Font(ShopBoldFont(15))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(16.f, 0.f, 0.f, 0.f)
+							[
+								SNew(STextBlock)
+								.Text(CostText)
+								.Font(ShopBoldFont(15))
+								.ColorAndOpacity(ShopPermanentCardAccent)
+							]
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(7.f, 0.f, 0.f, 0.f)
+							[
+								SNew(SBox)
+								.WidthOverride(26.f)
+								.HeightOverride(21.f)
+								.Visibility(CouponBrush ? EVisibility::Visible : EVisibility::Collapsed)
+								[
+									SNew(SImage)
+									.Image(CouponBrush)
+								]
+							]
+						])
 					,
 					ResolveShopCompactButtonStyle(),
-					ShopBoldFont(12),
+					ShopBoldFont(15),
 					FT66Style::Tokens::Text,
-					FMargin(10.f, 5.f, 10.f, 4.f)
+					FMargin(10.f, 6.f, 10.f, 5.f)
 				)
 			],
-			FMargin(12.f, 10.f, 12.f, 12.f),
+			FMargin(14.f, 12.f, 14.f, 14.f),
 			FLinearColor::White,
 			T66PowerUpPanelFill());
 	};
 
-	auto MakeStatRow = [&](const TArray<ET66HeroStatType>& DisplayOrder, int32 StartIndex, const TFunction<TSharedRef<SWidget>(ET66HeroStatType)>& CardBuilder) -> TSharedRef<SWidget>
+	TSharedRef<SHorizontalBox> DiplomaColumns = SNew(SHorizontalBox);
+	for (int32 StatIndex = 0; StatIndex < PermanentCardOrder.Num(); ++StatIndex)
 	{
-		TSharedRef<SHorizontalBox> StatRow = SNew(SHorizontalBox);
-		for (int32 LocalIndex = 0; LocalIndex < ShopStatsPerRow; ++LocalIndex)
-		{
-			const int32 StatIndex = StartIndex + LocalIndex;
-			StatRow->AddSlot()
-				.FillWidth(1.f)
-				.Padding(LocalIndex < ShopStatsPerRow - 1 ? FMargin(0.f, 0.f, ShopCardGap, 0.f) : FMargin(0.f))
-				[
-					StatIndex < DisplayOrder.Num()
-						? StaticCastSharedRef<SWidget>(SNew(SBox).HeightOverride(190.f)[CardBuilder(DisplayOrder[StatIndex])])
-						: StaticCastSharedRef<SWidget>(SNew(SSpacer))
-				];
-		}
-
-		return StatRow;
-	};
-
-	TSharedRef<SVerticalBox> PermanentRowsBox = SNew(SVerticalBox);
-	for (int32 StartIndex = 0; StartIndex < PermanentCardOrder.Num(); StartIndex += ShopStatsPerRow)
-	{
-		PermanentRowsBox->AddSlot()
-			.AutoHeight()
-			.Padding(0.f, StartIndex > 0 ? ShopCardGap : 0.f, 0.f, 0.f)
+		DiplomaColumns->AddSlot()
+			.AutoWidth()
+			.Padding(StatIndex > 0 ? FMargin(ShopCardGap, 0.f, 0.f, 0.f) : FMargin(0.f))
 			[
-				MakeStatRow(PermanentCardOrder, StartIndex, TFunction<TSharedRef<SWidget>(ET66HeroStatType)>([&](ET66HeroStatType StatType)
-				{
-					return MakePermanentStatPanel(StatType);
-				}))
+				SNew(SBox)
+				.WidthOverride(300.f)
+				[
+					MakePermanentStatPanel(PermanentCardOrder[StatIndex])
+				]
 			];
 	}
 
 	TSharedRef<SWidget> PermanentPage =
-		SNew(SScrollBox)
-		.ScrollBarVisibility(EVisibility::Visible)
-		+ SScrollBox::Slot()
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 		[
-			PermanentRowsBox
+			MakeShopGeneratedPanel(
+				MakeShopSettingsAssetPath(TEXT("settings_row_shell_full.png")),
+				SNew(STextBlock)
+				.Text(PermanentHintText)
+				.Font(ShopRegularFont(13))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Justification(ETextJustify::Center),
+				FMargin(18.f, 12.f),
+				FLinearColor::White,
+				T66PowerUpInsetFill())
+		]
+		+ SVerticalBox::Slot().FillHeight(1.f)
+		[
+			SNew(SScrollBox)
+			.Orientation(Orient_Horizontal)
+			.ScrollBarVisibility(EVisibility::Visible)
+			+ SScrollBox::Slot()
+			[
+				DiplomaColumns
+			]
 		];
 
 	TSharedRef<SVerticalBox> SingleUseRowsBox = SNew(SVerticalBox);
@@ -1095,6 +1353,37 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		const FSingleUseRowDef& RowDef = SingleUseRows[RowIndex];
 		const int32 CardCount = RowDef.SecondaryStats.Num();
 		TSharedRef<SHorizontalBox> CardsRow = SNew(SHorizontalBox);
+		CardsRow->AddSlot()
+			.FillWidth(1.f)
+			.Padding(0.f, 0.f, ShopCardGap, 0.f)
+			[
+				MakeShopGeneratedPanel(
+					MakeShopSettingsAssetPath(TEXT("settings_row_shell_full.png")),
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(GetDrugRowTitle(RowDef.PrimaryStat))
+						.Font(ShopBoldFont(28))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Justification(ETextJustify::Center)
+						.AutoWrapText(true)
+						.WrapTextAt(320.f)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+					[
+						SNew(STextBlock)
+						.Text(FText::Format(
+							NSLOCTEXT("T66.PowerUp", "SingleUseRowCaption", "{0} drug cards"),
+							FText::AsNumber(CardCount)))
+						.Font(ShopRegularFont(12))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.Justification(ETextJustify::Center)
+					],
+					FMargin(16.f, 12.f),
+					FLinearColor::White,
+					T66PowerUpInsetFill())
+			];
 		for (int32 CardIndex = 0; CardIndex < CardCount; ++CardIndex)
 		{
 			CardsRow->AddSlot()
@@ -1111,38 +1400,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			[
 				MakeShopGeneratedPanel(
 					MakeShopSettingsAssetPath(TEXT("settings_row_shell_split.png")),
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, ShopCardGap, 0.f)
-					[
-						MakeShopGeneratedPanel(
-							MakeShopSettingsAssetPath(TEXT("settings_row_shell_full.png")),
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Center)
-							[
-								SNew(STextBlock)
-								.Text(GetStatLabel(RowDef.PrimaryStat))
-								.Font(ShopBoldFont(18))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
-								.Justification(ETextJustify::Center)
-							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(FText::Format(
-									NSLOCTEXT("T66.PowerUp", "SingleUseRowCaption", "{0} secondary buffs"),
-									FText::AsNumber(CardCount)))
-								.Font(ShopRegularFont(10))
-								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-								.Justification(ETextJustify::Center)
-							],
-							FMargin(16.f, 12.f),
-							FLinearColor::White,
-							T66PowerUpInsetFill())
-					]
-					+ SHorizontalBox::Slot().FillWidth(1.f)
-					[
-						CardsRow
-					],
+					CardsRow,
 					FMargin(14.f, 12.f),
 					FLinearColor::White,
 					T66PowerUpPanelFill())
@@ -1157,14 +1415,10 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			SingleUseRowsBox
 		];
 
-	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
-	const float TopBarOverlapPx = 42.f;
-	const float TopInset = UIManager
-		? FMath::Max(0.f, (UIManager->GetFrontendTopBarContentHeight() - TopBarOverlapPx) / ResponsiveScale)
-		: 0.f;
+	const float TopInset = T66ScreenSlateHelpers::GetFrontendChromeTopInset(UIManager);
 	const TSharedRef<SWidget> Root =
 		SNew(SBox)
-		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
+		.Padding(FMargin(14.f, TopInset, 14.f, 0.f))
 		[
 			MakeShopGeneratedPanel(
 				MakeShopSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
@@ -1172,53 +1426,44 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			[
 				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+				+ SVerticalBox::Slot().AutoHeight().Padding(T66ScreenSlateHelpers::GetFrontendChromeMetrics().HeaderPadding)
 				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f).HAlign(HAlign_Center)
+					SNew(SOverlay)
+					+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.PowerUp", "ScreenTitle", "POWER UP"))
+						.Font(T66ScreenSlateHelpers::MakeFrontendChromeTitleFont())
+						.ColorAndOpacity(FLinearColor(0.83f, 0.68f, 0.34f, 1.0f))
+						.ShadowOffset(FVector2D(0.f, 2.f))
+						.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.75f))
+					]
+					+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
 						[
 							MakeShopGeneratedButton(
 								FT66ButtonParams(PermanentTabText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowPermanentClicked), ET66ButtonType::Primary)
-								.SetMinWidth(180.f)
-								.SetHeight(52.f)
+								.SetMinWidth(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabMinWidth)
+								.SetHeight(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabHeight)
 								.SetColor(!bShowingSingleUse ? T66PowerUpButtonFill() : T66PowerUpNeutralButtonFill()),
 								ResolveShopToggleButtonStyle(!bShowingSingleUse),
-								ShopBoldFont(18),
+								T66ScreenSlateHelpers::MakeFrontendChromeTabFont(),
 								!bShowingSingleUse ? T66PowerUpTabActiveText() : T66PowerUpTabInactiveText(),
-								FMargin(18.f, 10.f, 18.f, 8.f))
+								T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabPadding)
 						]
 						+ SHorizontalBox::Slot().AutoWidth()
 						[
 							MakeShopGeneratedButton(
 								FT66ButtonParams(SingleUseTabText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowSingleUseClicked), ET66ButtonType::Neutral)
-								.SetMinWidth(180.f)
-								.SetHeight(52.f)
+								.SetMinWidth(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabMinWidth)
+								.SetHeight(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabHeight)
 								.SetColor(bShowingSingleUse ? T66PowerUpButtonFill() : T66PowerUpNeutralButtonFill()),
 								ResolveShopToggleButtonStyle(bShowingSingleUse),
-								ShopBoldFont(18),
+								T66ScreenSlateHelpers::MakeFrontendChromeTabFont(),
 								bShowingSingleUse ? T66PowerUpTabActiveText() : T66PowerUpTabInactiveText(),
-								FMargin(18.f, 10.f, 18.f, 8.f))
-						]
-						+ SHorizontalBox::Slot().AutoWidth().Padding(18.f, 0.f, 0.f, 0.f)
-						[
-							SNew(SBox)
-							.WidthOverride(154.f)
-							.HeightOverride(52.f)
-							[
-								MakeShopGeneratedPanel(
-									TEXT("SourceAssets/UI/MainMenuReference/TopBarWorker1/currency_slot_blank.png"),
-									SNew(STextBlock)
-									.Text(BalanceBadgeText)
-									.Font(ShopBoldFont(16))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-									.Justification(ETextJustify::Center),
-									FMargin(18.f, 10.f, 18.f, 8.f),
-									FLinearColor::White,
-									T66PowerUpInsetFill())
-							]
+								T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabPadding)
 						]
 					]
 				]
@@ -1238,6 +1483,26 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		FLinearColor::White,
 		T66PowerUpShellFill())
 		];
+
+	if (const FSlateBrush* SceneBackgroundBrush = ResolveShopGeneratedBrush(TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png")))
+	{
+		return SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SNew(SImage)
+				.Image(SceneBackgroundBrush)
+			]
+			+ SOverlay::Slot()
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.02f, 0.025f, 0.035f, 0.48f))
+			]
+			+ SOverlay::Slot()
+			[
+				Root
+			];
+	}
 
 	return Root;
 }

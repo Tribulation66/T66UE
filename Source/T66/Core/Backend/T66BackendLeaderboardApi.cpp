@@ -79,6 +79,10 @@ void UT66BackendSubsystem::FetchMyRankFiltered(
 	{
 		Endpoint += FString::Printf(TEXT("&friend_ids=%s"), *ResolvedFilterContext);
 	}
+	else if (ResolvedFilter.Equals(TEXT("hero"), ESearchCase::IgnoreCase) && !ResolvedFilterContext.IsEmpty())
+	{
+		Endpoint += FString::Printf(TEXT("&hero_id=%s"), *ResolvedFilterContext);
+	}
 
 	PendingMyRankFetches.Add(RankKey);
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);

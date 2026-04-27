@@ -12,6 +12,7 @@ Workers must perform only the assigned part. Do not perform earlier or later par
 - Do not use any full-screen reference image as a runtime background.
 - Runtime text, scores, names, values, timers, avatars, portraits, inventory, offers, selections, and live state stay runtime-owned widgets/data.
 - Use the locked retro pixel font from the master UI asset library: Jersey 10 at `C:\UE\T66\RuntimeDependencies\T66\Fonts\Jersey10-Regular.ttf`. Do not choose substitute fonts.
+- Button labels must use the Main Menu CTA text-fit approach instead of tiny fixed labels. The caller's explicit `FontSize` is the intended maximum size; do not force short labels larger just because the button is tall. If no font size is provided, use a height-derived fallback around `0.42 * button height`, cap the resolved size around `0.52 * button height`, use `LetterSpacing = 0..1`, center the text inside the plate with minimal content padding, and protect long localized labels with ellipsis plus a down-only `SScaleBox`. Do not solve fit by dropping button labels to 10-12px on 34-58px plates.
 - Stop on missing inputs: no current screenshot, missing approved reference, missing library asset, missing route, ambiguous ownership, or deprecated target.
 - Do not pull from archive folders.
 - Do not manually pixel-repair generated references or runtime captures with clone, paint, erase, fill, mask, or heatmap-driven edits.

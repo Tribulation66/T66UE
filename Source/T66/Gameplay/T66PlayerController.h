@@ -169,6 +169,10 @@ public:
 	void OpenWorldDialogueGambler(AT66GamblerNPC* Gambler);
 	void OpenWorldDialogueCompanion(AT66RecruitableCompanion* Companion);
 
+	/** HUD-rendered world interaction prompt. */
+	void ShowInteractionPrompt(AActor* SourceActor, const FText& TargetName);
+	void HideInteractionPrompt(AActor* SourceActor);
+
 	/** Open the Cowardice prompt (non-pausing). */
 	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
 

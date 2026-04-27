@@ -25,6 +25,7 @@ protected:
 	virtual void ApplyRarityVisuals() override;
 	virtual bool ShouldShowInteractionPrompt(const AT66HeroBase* LocalHero) const override;
 	virtual FText BuildInteractionPromptText() const override;
+	virtual FText BuildInteractionPromptTargetName() const override;
 	virtual FVector GetImportedVisualScale() const override;
 
 	void RefreshResolvedArcadeData();

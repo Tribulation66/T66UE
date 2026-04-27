@@ -22,6 +22,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void ApplyRarityVisuals() override;
 	virtual FText BuildInteractionPromptText() const override;
+	virtual FText BuildInteractionPromptTargetName() const override;
 	virtual FVector GetImportedVisualScale() const override;
 
 	void RefreshResolvedArcadeData();

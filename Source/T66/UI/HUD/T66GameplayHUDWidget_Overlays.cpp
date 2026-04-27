@@ -197,7 +197,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
 	}
 
 	return SNew(SBox)
-		.WidthOverride(BottomRightInventoryPanelWidth)
+		.WidthOverride(BottomRightPauseAchievementPanelWidth)
 		[
 			FT66Style::MakePanel(
 				SNew(SBox)
@@ -407,6 +407,72 @@ static void T66_ApplyWorldDialogueSelectionOverlay(
 			OptionTexts[i]->SetColorAndOpacity(bSelected ? FT66Style::Tokens::Text : FT66Style::Tokens::TextMuted);
 		}
 	}
+}
+
+void UT66GameplayHUDWidget::ShowInteractionPrompt(AActor* SourceActor, const FText& TargetName)
+{
+	if (!SourceActor || TargetName.IsEmpty())
+	{
+		return;
+	}
+
+	InteractionPromptEntries.RemoveAll([SourceActor](const FT66HUDInteractionPromptEntry& Entry)
+	{
+		return !Entry.SourceActor.IsValid() || Entry.SourceActor.Get() == SourceActor;
+	});
+
+	FT66HUDInteractionPromptEntry Entry;
+	Entry.SourceActor = SourceActor;
+	Entry.TargetName = TargetName;
+	InteractionPromptEntries.Add(MoveTemp(Entry));
+	RefreshInteractionPromptWidget();
+}
+
+void UT66GameplayHUDWidget::HideInteractionPrompt(AActor* SourceActor)
+{
+	if (!SourceActor)
+	{
+		return;
+	}
+
+	InteractionPromptEntries.RemoveAll([SourceActor](const FT66HUDInteractionPromptEntry& Entry)
+	{
+		return !Entry.SourceActor.IsValid() || Entry.SourceActor.Get() == SourceActor;
+	});
+	RefreshInteractionPromptWidget();
+}
+
+void UT66GameplayHUDWidget::RefreshInteractionPromptWidget()
+{
+	InteractionPromptEntries.RemoveAll([](const FT66HUDInteractionPromptEntry& Entry)
+	{
+		return !Entry.SourceActor.IsValid() || Entry.TargetName.IsEmpty();
+	});
+
+	if (!InteractionPromptBox.IsValid() || !InteractionPromptTargetText.IsValid())
+	{
+		return;
+	}
+
+	if (InteractionPromptEntries.Num() <= 0)
+	{
+		InteractionPromptTargetText->SetText(FText::GetEmpty());
+		InteractionPromptBox->SetVisibility(EVisibility::Collapsed);
+		return;
+	}
+
+	const FT66HUDInteractionPromptEntry& ActiveEntry = InteractionPromptEntries.Last();
+	FText InteractKeyText = GetActionKeyText(FName(TEXT("Interact")));
+	if (InteractKeyText.IsEmpty())
+	{
+		InteractKeyText = NSLOCTEXT("T66.GameplayHUD", "InteractFallbackKey", "F");
+	}
+
+	InteractionPromptTargetText->SetText(FText::Format(
+		NSLOCTEXT("T66.GameplayHUD", "InteractPromptSentence", "Press {0} to interact with {1}"),
+		InteractKeyText,
+		ActiveEntry.TargetName));
+	InteractionPromptBox->SetVisibility(EVisibility::HitTestInvisible);
 }
 
 

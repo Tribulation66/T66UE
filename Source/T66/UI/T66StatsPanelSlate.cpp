@@ -164,6 +164,7 @@ static FText GetPrimaryStatLabel(UT66LocalizationSubsystem* Loc, int32 Index)
 		case 5: return Loc->GetText_Stat_Armor();
 		case 6: return Loc->GetText_Stat_Evasion();
 		case 7: return Loc->GetText_Stat_Luck();
+		case 8: return Loc->GetText_Stat_Speed();
 		default: return FText::FromString(TEXT("?"));
 	}
 }
@@ -185,6 +186,7 @@ static int32 GetRunStatePrimaryStatValue(const UT66RunStateSubsystem* RunState, 
 	case 5: return RunState->GetArmorStat();
 	case 6: return RunState->GetEvasionStat();
 	case 7: return RunState->GetLuckStat();
+	case 8: return RunState->GetSpeedStat();
 	default: return 0;
 	}
 }
@@ -218,6 +220,7 @@ static int32 GetHeroBasePrimaryStatValue(const UT66RunStateSubsystem* RunState, 
 	case 5: return BaseStats.Armor;
 	case 6: return BaseStats.Evasion;
 	case 7: return BaseStats.Luck;
+	case 8: return BaseStats.Speed;
 	default: return 0;
 	}
 }
@@ -243,30 +246,30 @@ static FText GetPrimaryStatAdjective(const UT66RunStateSubsystem* RunState, int3
 
 	if (Effective01 >= 0.92f)
 	{
-		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjExcellent", "Excellent");
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjMickle", "Mickle");
 	}
 	if (Effective01 >= 0.78f)
 	{
-		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjExceptional", "Exceptional");
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjEpt", "Ept");
 	}
 	if (Effective01 >= 0.62f)
 	{
-		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjGreat", "Great");
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjUtile", "Utile");
 	}
 	if (Effective01 >= 0.45f)
 	{
-		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjGood", "Good");
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjCouth", "Couth");
 	}
 	if (Effective01 >= 0.28f)
 	{
-		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjMid", "Mid");
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjWan", "Wan");
 	}
 	if (Effective01 >= 0.12f)
 	{
-		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjPoor", "Poor");
+		return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjSere", "Sere");
 	}
 
-	return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjTerrible", "Terrible");
+	return NSLOCTEXT("T66.StatsPanel", "PrimaryAdjPoxy", "Poxy");
 }
 
 static bool IsSecondaryPercent(ET66SecondaryStatType SecType)
@@ -460,7 +463,7 @@ static FText FormatCategoryHeaderText(
 void T66StatsPanelSlate::FT66LiveStatsPanel::Reset()
 {
 	PrimaryLines.Empty();
-	PrimaryLines.SetNum(8);
+	PrimaryLines.SetNum(9);
 	CategoryHeaderLines.Empty();
 	CategoryHeaderLines.SetNum(NumSecondaryStatCategories);
 	SecondaryLines.Reset();
@@ -527,7 +530,7 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunSt
 		return;
 	}
 
-	for (int32 Index = 0; Index < 8; ++Index)
+	for (int32 Index = 0; Index < 9; ++Index)
 	{
 		SetPrimaryLine(Index);
 	}
@@ -594,6 +597,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 		const int32 ArmorStat = RunState->GetArmorStat();
 		const int32 EvasionStat = RunState->GetEvasionStat();
 		const int32 LuckStat = RunState->GetLuckStat();
+		const int32 SpeedStat = RunState->GetSpeedStat();
 
 		auto AddStatLine = [&](int32 Index, const FText& Label, int32 Value, const FText& TooltipTitle, const FText& TooltipDesc)
 		{
@@ -643,6 +647,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 		AddStatLine(5, GetPrimaryStatLabel(Loc, 5), ArmorStat,       GetPrimaryStatLabel(Loc, 5), Loc ? Loc->GetText_PrimaryStatDescription(5) : FText::GetEmpty());
 		AddStatLine(6, GetPrimaryStatLabel(Loc, 6), EvasionStat,     GetPrimaryStatLabel(Loc, 6), Loc ? Loc->GetText_PrimaryStatDescription(6) : FText::GetEmpty());
 		AddStatLine(7, GetPrimaryStatLabel(Loc, 7), LuckStat,        GetPrimaryStatLabel(Loc, 7), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty());
+		AddStatLine(8, GetPrimaryStatLabel(Loc, 8), SpeedStat,       GetPrimaryStatLabel(Loc, 8), Loc ? Loc->GetText_PrimaryStatDescription(8) : FText::GetEmpty());
 
 		if (bExtended)
 		{
@@ -782,7 +787,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 		];
 	};
 
-	for (int32 Index = 0; Index < 8; ++Index)
+	for (int32 Index = 0; Index < 9; ++Index)
 	{
 		AddPrimaryLine(Index);
 	}
@@ -974,6 +979,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 		case 5: return Snapshot->ArmorStat;
 		case 6: return Snapshot->EvasionStat;
 		case 7: return Snapshot->LuckStat;
+		case 8: return Snapshot->SpeedStat;
 		default: return 0;
 		}
 	};
@@ -1023,7 +1029,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 			];
 		};
 
-		for (int32 Index = 0; Index < 8; ++Index)
+		for (int32 Index = 0; Index < 9; ++Index)
 		{
 			AddPrimaryLine(Index);
 		}

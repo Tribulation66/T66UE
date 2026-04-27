@@ -51,30 +51,14 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 
 	if (RunState)
 	{
-		T66_RESET_COMMON_OVERLAY_RUNSTATE_DELEGATES(RunState, this, UT66CasinoOverlayWidget);
 		RunState->ScoreChanged.RemoveDynamic(this, &UT66CasinoOverlayWidget::HandleScoreChanged);
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66CasinoOverlayWidget::HandleStageTimerChanged);
 		RunState->ScoreChanged.AddDynamic(this, &UT66CasinoOverlayWidget::HandleScoreChanged);
 		RunState->StageTimerChanged.AddDynamic(this, &UT66CasinoOverlayWidget::HandleStageTimerChanged);
 	}
 
-	SharedOverlay::ResizeArrays(
-		UT66RunStateSubsystem::MaxInventorySlots,
-		AlchemyInventorySlotBorders,
-		AlchemyInventorySlotCountTexts,
-		AlchemyInventorySlotTexts,
-		AlchemyInventorySlotImages);
-	const float AlchemyCardIconSize = FT66Style::Tokens::NPCCompactShopCardWidth - 10.f;
-	SharedOverlay::EnsureBrushArray(
-		AlchemyInventorySlotBrushes,
-		UT66RunStateSubsystem::MaxInventorySlots,
-		FVector2D(48.f, 48.f));
-	SharedOverlay::EnsureBrush(AlchemyTargetIconBrush, FVector2D(AlchemyCardIconSize, AlchemyCardIconSize));
-	SharedOverlay::EnsureBrush(AlchemySacrificeIconBrush, FVector2D(AlchemyCardIconSize, AlchemyCardIconSize));
-
 	const FText GamblingTabText = NSLOCTEXT("T66.Casino", "TabGambling", "GAMBLING");
 	const FText VendorTabText = NSLOCTEXT("T66.Casino", "TabVendor", "VENDOR");
-	const FText AlchemyTabText = NSLOCTEXT("T66.Casino", "TabAlchemy", "ALCHEMY");
 	const FText CloseText = NSLOCTEXT("T66.Casino", "Close", "CLOSE");
 	const float HeaderPanelPaddingX = 8.f;
 	const float HeaderPanelPaddingY = 6.f;
@@ -89,7 +73,6 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 
 	TSharedRef<SWidget> VendorPage = VendorTabWidget ? VendorTabWidget->TakeWidget() : SNullWidget::NullWidget;
 	TSharedRef<SWidget> GamblingPage = GamblerTabWidget ? GamblerTabWidget->TakeWidget() : SNullWidget::NullWidget;
-	TSharedRef<SWidget> AlchemyPage = BuildAlchemyPage(RunState, GetLocalization());
 	TSharedRef<SWidget> HeaderSummaryPanel =
 		T66OverlayChromeStyle::MakePanel(
 			SNew(SVerticalBox)
@@ -193,18 +176,6 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 										.SetSelected(TAttribute<bool>::CreateLambda([this]() { return ActiveTab == ECasinoTab::Gambling; }))
 								)
 								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
-								[
-									T66OverlayChromeStyle::MakeButton(
-										T66OverlayChromeStyle::MakeButtonParams(
-											AlchemyTabText,
-											FOnClicked::CreateLambda([this]() { OpenAlchemyTab(); return FReply::Handled(); }),
-											ET66OverlayChromeButtonFamily::Tab)
-										.SetPadding(ShellButtonPadding)
-										.SetFontSize(ShellButtonFontSize)
-										.SetSelected(TAttribute<bool>::CreateLambda([this]() { return ActiveTab == ECasinoTab::Alchemy; }))
-								)
-								]
 							]
 							+ SHorizontalBox::Slot().FillWidth(1.f)
 							[
@@ -237,10 +208,6 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 						[
 							GamblingPage
 						]
-						+ SWidgetSwitcher::Slot()
-						[
-							AlchemyPage
-						]
 					]
 				]
 			];
@@ -258,7 +225,6 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 			ShellLayout
 		];
 
-	RefreshAlchemy();
 	RefreshHeaderSummary();
 	OpenVendorTab();
 	return FT66Style::MakeResponsiveRoot(Root);
@@ -268,7 +234,6 @@ void UT66CasinoOverlayWidget::NativeDestruct()
 {
 	if (UT66RunStateSubsystem* RunState = GetRunState())
 	{
-		T66_REMOVE_COMMON_OVERLAY_RUNSTATE_DELEGATES(RunState, this, UT66CasinoOverlayWidget);
 		RunState->ScoreChanged.RemoveDynamic(this, &UT66CasinoOverlayWidget::HandleScoreChanged);
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66CasinoOverlayWidget::HandleStageTimerChanged);
 	}
@@ -296,9 +261,7 @@ void UT66CasinoOverlayWidget::OpenVendorTab()
 
 void UT66CasinoOverlayWidget::OpenAlchemyTab()
 {
-	SharedOverlay::OpenAlchemyTab(
-		[this]() { SetActiveTab(ECasinoTab::Alchemy); },
-		[this]() { RefreshAlchemy(); });
+	OpenVendorTab();
 }
 
 void UT66CasinoOverlayWidget::SetGamblingWinGoldAmount(int32 InAmount)

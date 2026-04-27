@@ -2,7 +2,294 @@
 
 #include "UI/Screens/HeroSelection/T66HeroSelectionScreen_Private.h"
 
+#include "Styling/CoreStyle.h"
+
 using namespace T66HeroSelectionPrivate;
+
+namespace
+{
+	struct FHeroSelectionRecordInfoIconEntry
+	{
+		TStrongObjectPtr<UTexture2D> Texture;
+		TSharedPtr<FSlateBrush> Brush;
+	};
+
+	TSharedRef<SWidget> MakeHeroSelectionRecordInfoPanel()
+	{
+		const FSlateFontInfo HeaderFont = FT66Style::Tokens::FontBold(14);
+		const FSlateFontInfo BodyFont = FT66Style::Tokens::FontRegular(11);
+		const FSlateFontInfo BoldFont = FT66Style::Tokens::FontBold(11);
+		const FVector2D TierIconSize(24.f, 24.f);
+
+		auto GetTierBrush = [TierIconSize](const ET66AccountMedalTier Tier) -> const FSlateBrush*
+		{
+			static TMap<int32, FHeroSelectionRecordInfoIconEntry> Icons;
+			const int32 Key = static_cast<int32>(Tier);
+			FHeroSelectionRecordInfoIconEntry& Entry = Icons.FindOrAdd(Key);
+			if (!Entry.Brush.IsValid())
+			{
+				Entry.Brush = MakeShared<FSlateBrush>();
+				Entry.Brush->DrawAs = ESlateBrushDrawType::Image;
+				Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
+				Entry.Brush->TintColor = FSlateColor(FLinearColor::White);
+				Entry.Brush->ImageSize = TierIconSize;
+			}
+			if (!Entry.Texture.IsValid())
+			{
+				const FString Path = GetHeroSelectionMedalImagePath(Tier);
+				if (FPaths::FileExists(Path))
+				{
+					if (UTexture2D* LoadedTexture = T66RuntimeUITextureAccess::ImportFileTexture(
+						Path,
+						TextureFilter::TF_Trilinear,
+						true,
+						TEXT("HeroSelectionRecordInfoMedal")))
+					{
+						Entry.Texture.Reset(LoadedTexture);
+					}
+					else if (UTexture2D* LoadedTextureWithMips = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
+						Path,
+						TextureFilter::TF_Trilinear,
+						TEXT("HeroSelectionRecordInfoMedal")))
+					{
+						Entry.Texture.Reset(LoadedTextureWithMips);
+					}
+				}
+			}
+
+			Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
+			return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+		};
+
+		auto MakeTierRow = [&](const ET66AccountMedalTier Tier, const FText& MedalText, const FText& UnlockText) -> TSharedRef<SWidget>
+		{
+			return SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SBox)
+					.WidthOverride(TierIconSize.X)
+					.HeightOverride(TierIconSize.Y)
+					[
+						SNew(SImage)
+						.Image(GetTierBrush(Tier))
+					]
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				.VAlign(VAlign_Center)
+				.Padding(6.f, 0.f, 0.f, 0.f)
+				[
+					SNew(STextBlock)
+					.Text(FText::Format(NSLOCTEXT("T66.HeroSelection", "RecordInfoMedalTierLine", "{0}: {1}"), MedalText, UnlockText))
+					.Font(BoldFont)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				];
+		};
+
+		return SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Center)
+			.Padding(0.f, 0.f, 0.f, 6.f)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoHeader", "MEDAL / RANK"))
+				.Font(FT66Style::Tokens::FontBold(18))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Justification(ETextJustify::Center)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 7.f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				.Padding(0.f, 0.f, 10.f, 0.f)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 0.f, 0.f, 3.f)
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoMedalTitle", "Medal"))
+						.Font(HeaderFont)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoMedalBody", "Highest difficulty cleared with this hero or companion."))
+						.Font(BodyFont)
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+					]
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 0.f, 0.f, 3.f)
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoRankTitle", "Rank"))
+						.Font(HeaderFont)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoRankBody", "All-time score placement for the selected difficulty, party size, and hero."))
+						.Font(BodyFont)
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+					]
+				]
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				.Padding(0.f, 0.f, 8.f, 0.f)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[MakeTierRow(ET66AccountMedalTier::None, NSLOCTEXT("T66.HeroSelection", "MedalTierNoneShort", "Unproven"), NSLOCTEXT("T66.HeroSelection", "MedalTierNoneUnlock", "No clear"))]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[MakeTierRow(ET66AccountMedalTier::Bronze, NSLOCTEXT("T66.HeroSelection", "MedalTierBronzeShort", "Bronze"), NSLOCTEXT("T66.HeroSelection", "MedalTierEasyUnlock", "Easy"))]
+					+ SVerticalBox::Slot().AutoHeight()[MakeTierRow(ET66AccountMedalTier::Silver, NSLOCTEXT("T66.HeroSelection", "MedalTierSilverShort", "Silver"), NSLOCTEXT("T66.HeroSelection", "MedalTierMediumUnlock", "Medium"))]
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				.Padding(8.f, 0.f, 0.f, 0.f)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[MakeTierRow(ET66AccountMedalTier::Gold, NSLOCTEXT("T66.HeroSelection", "MedalTierGoldShort", "Gold"), NSLOCTEXT("T66.HeroSelection", "MedalTierHardUnlock", "Hard"))]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[MakeTierRow(ET66AccountMedalTier::Platinum, NSLOCTEXT("T66.HeroSelection", "MedalTierPlatinumShort", "Platinum"), NSLOCTEXT("T66.HeroSelection", "MedalTierVeryHardUnlock", "Very Hard"))]
+					+ SVerticalBox::Slot().AutoHeight()[MakeTierRow(ET66AccountMedalTier::Diamond, NSLOCTEXT("T66.HeroSelection", "MedalTierDiamondShort", "Diamond"), NSLOCTEXT("T66.HeroSelection", "MedalTierImpossibleUnlock", "Impossible"))]
+				]
+			];
+	}
+
+	TSharedRef<SWidget> MakeHeroSelectionSummaryStatsList(UT66LeaderboardRunSummarySaveGame* Snapshot, UT66LocalizationSubsystem* Loc)
+	{
+		const FText StatLineFormat = NSLOCTEXT("T66.HeroSelection", "SummaryStatLineFormatCompact", "{0} {1}/99");
+
+		auto GetPrimaryStatLabel = [Loc](const int32 StatIndex) -> FText
+		{
+			if (StatIndex == 1)
+			{
+				return NSLOCTEXT("T66.Stats", "AttackSpeedShort", "ATT Speed");
+			}
+			if (StatIndex == 2)
+			{
+				return NSLOCTEXT("T66.Stats", "AttackScaleShort", "ATT Scale");
+			}
+
+			if (Loc)
+			{
+				switch (StatIndex)
+				{
+				case 0: return Loc->GetText_Stat_Damage();
+				case 3: return Loc->GetText_Stat_Accuracy();
+				case 4: return Loc->GetText_Stat_Armor();
+				case 5: return Loc->GetText_Stat_Evasion();
+				case 6: return Loc->GetText_Stat_Luck();
+				case 7: return Loc->GetText_Stat_Speed();
+				default: break;
+				}
+			}
+
+			switch (StatIndex)
+			{
+			case 0: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
+			case 3: return NSLOCTEXT("T66.Stats", "Accuracy", "Accuracy");
+			case 4: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
+			case 5: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
+			case 6: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
+			case 7: return NSLOCTEXT("T66.Stats", "Speed", "Speed");
+			default: return FText::GetEmpty();
+			}
+		};
+
+		auto GetPrimaryStatValue = [Snapshot](const int32 StatIndex) -> int32
+		{
+			if (!::IsValid(Snapshot))
+			{
+				return 0;
+			}
+
+			switch (StatIndex)
+			{
+			case 0: return Snapshot->DamageStat;
+			case 1: return Snapshot->AttackSpeedStat;
+			case 2: return Snapshot->AttackScaleStat;
+			case 3: return Snapshot->AccuracyStat;
+			case 4: return Snapshot->ArmorStat;
+			case 5: return Snapshot->EvasionStat;
+			case 6: return Snapshot->LuckStat;
+			case 7: return Snapshot->SpeedStat;
+			default: return 0;
+			}
+		};
+
+		auto MakeStatsColumn = [&](const int32 FirstIndex, const int32 LastIndexExclusive) -> TSharedRef<SWidget>
+		{
+			TSharedRef<SVerticalBox> Column = SNew(SVerticalBox);
+			for (int32 StatIndex = FirstIndex; StatIndex < LastIndexExclusive; ++StatIndex)
+			{
+				const int32 StatValue = GetPrimaryStatValue(StatIndex);
+				Column->AddSlot()
+				.AutoHeight()
+				.Padding(0.f, 0.f, 0.f, 5.f)
+				[
+					SNew(STextBlock)
+					.Text(FText::Format(
+						StatLineFormat,
+						GetPrimaryStatLabel(StatIndex),
+						FText::AsNumber(StatValue)))
+					.Font(FT66Style::Tokens::FontBold(17))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				];
+			}
+			return Column;
+		};
+
+		return SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.08f)
+			.Padding(0.f, 0.f, 10.f, 0.f)
+			[
+				MakeStatsColumn(0, 4)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Fill)
+			.Padding(0.f, 1.f, 0.f, 4.f)
+			[
+				SNew(SBox)
+				.WidthOverride(2.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.78f, 0.80f, 0.88f, 0.42f))
+				]
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			.Padding(12.f, 0.f, 0.f, 0.f)
+			[
+				MakeStatsColumn(4, 8)
+			];
+	}
+}
 
 FReply UT66HeroSelectionScreen::HandleStatsClicked()
 {
@@ -12,6 +299,7 @@ FReply UT66HeroSelectionScreen::HandleStatsClicked()
 	}
 
 	bShowingStatsPanel = !bShowingStatsPanel;
+	bShowingHeroRecordInfoPanel = false;
 	RefreshPanelSwitchers();
 	return FReply::Handled();
 }
@@ -24,7 +312,15 @@ FReply UT66HeroSelectionScreen::HandleOpenStatsPanelClicked()
 	}
 
 	bShowingStatsPanel = true;
+	bShowingHeroRecordInfoPanel = false;
 	RefreshPanelSwitchers();
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandleHeroRecordInfoClicked()
+{
+	bShowingHeroRecordInfoPanel = !bShowingHeroRecordInfoPanel;
+	RefreshHeroStatsPanels();
 	return FReply::Handled();
 }
 
@@ -97,16 +393,30 @@ void UT66HeroSelectionScreen::RefreshHeroStatsPanels()
 
 	if (HeroSummaryStatsHost.IsValid())
 	{
-		if (HeroStatsSnapshot)
+		if (bShowingHeroRecordInfoPanel)
 		{
-			T66StatsPanelSlate::FT66SnapshotStatsPanelOptions SummaryOptions;
-			SummaryOptions.WidthOverride = 0.f;
-			SummaryOptions.bExtended = false;
-			SummaryOptions.bShowAdjectiveSummaries = false;
-			SummaryOptions.bIncludeHeader = false;
-			SummaryOptions.bIncludeLevel = false;
-			SummaryOptions.FontSizeAdjustment = -12;
-			HeroSummaryStatsHost->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithOptions(HeroStatsSnapshot, Loc, SummaryOptions));
+			HeroSummaryStatsHost->SetContent(MakeHeroSelectionRecordInfoPanel());
+		}
+		else if (HeroStatsSnapshot)
+		{
+			HeroSummaryStatsHost->SetContent(
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.f, 0.f, 0.f, 8.f)
+				.HAlign(HAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.HeroSelection", "RightPanelStatsHeader", "STATS"))
+					.Font(FT66Style::Tokens::FontBold(21))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.Justification(ETextJustify::Center)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					MakeHeroSelectionSummaryStatsList(HeroStatsSnapshot, Loc)
+				]);
 		}
 		else
 		{

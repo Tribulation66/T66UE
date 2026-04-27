@@ -32,14 +32,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 			[
 				MakeSelectableSettingsButton(
 					FT66ButtonParams(TabDefinition.Label, FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleTabClicked, TabDefinition.Tab), ET66ButtonType::Neutral)
-					.SetFontSize(16)
-					.SetHeight(48.f)
+					.SetFontSize(18)
+					.SetHeight(62.f)
 					.SetMinWidth(0.f)
-					.SetPadding(FMargin(6.f, 4.f))
+					.SetPadding(FMargin(10.f, 16.f, 10.f, 13.f))
 					.SetContent(
 						SNew(STextBlock)
 						.Text(TabDefinition.Label)
-						.Font(SettingsBoldFont(16))
+						.Font(SettingsBoldFont(18))
 						.ColorAndOpacity(FT66Style::Tokens::Text)),
 					[this, Tab = TabDefinition.Tab]() { return CurrentTab == Tab; })
 			]
@@ -49,12 +49,12 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	// Build the widget switcher with all tab content (stored as class member)
 	const bool bModalPresentation = (UIManager && UIManager->GetCurrentModalType() == ScreenType) || (!UIManager && GetOwningPlayer() && GetOwningPlayer()->IsPaused());
 	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
-	const float TopBarOverlapPx = 22.f;
+	const float TopBarOverlapPx = 8.f;
 	const float TopInset = bModalPresentation
 		? 0.f
 		: FMath::Max(0.f, ((UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f) - TopBarOverlapPx) / ResponsiveScale);
 	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
-	const float SurfaceW = FMath::Max(1.f, SafeFrameSize.X);
+	const float SurfaceW = FMath::Max(1.f, SafeFrameSize.X - 28.f);
 	const float SurfaceH = FMath::Max(1.f, SafeFrameSize.Y - TopInset);
 	const FMargin ContentAreaPadding = bModalPresentation
 		? FMargin(8.f)
@@ -67,7 +67,10 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 		.AutoHeight()
 		.Padding(0.0f)
 		[
-			MakeSettingsPanel(
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+			.Padding(FMargin(10.0f, 10.0f))
+			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.f)
 				[
@@ -90,11 +93,8 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 								.ColorAndOpacity(FT66Style::Tokens::Text))
 						)
 					]
-				],
-				ET66PanelType::Panel,
-				T66SettingsRowFill(),
-				FMargin(10.0f, 10.0f)
-			)
+				]
+			]
 		]
 		// Content area
 		+ SVerticalBox::Slot()
@@ -155,6 +155,26 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 
 	TSharedRef<SOverlay> Root = SNew(SOverlay);
 
+	if (const FSlateBrush* SceneBackgroundBrush = GetSettingsSceneBackgroundBrush())
+	{
+		Root->AddSlot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SImage)
+			.Image(SceneBackgroundBrush)
+		];
+
+		Root->AddSlot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.02f, 0.025f, 0.035f, 0.48f))
+		];
+	}
+
 	if (bModalPresentation)
 	{
 		Root->AddSlot()
@@ -170,7 +190,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	Root->AddSlot()
 	.HAlign(HAlign_Fill)
 	.VAlign(VAlign_Fill)
-	.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
+	.Padding(FMargin(14.f, TopInset, 14.f, 0.f))
 	[
 		SNew(SBox)
 		.WidthOverride(SurfaceW)

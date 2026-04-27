@@ -1082,13 +1082,13 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 		FVector2D(88.f, 88.f));
 	LoadLooseBrushFromCandidatePaths(
 		{
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_01_settings_gear_imagegen_20260425_v2.png")
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_01_settings_gear_purple_imagegen_20260427.png")
 		},
 		SettingsIconBrush,
 		FVector2D(34.f, 34.f));
 	LoadLooseBrushFromCandidatePaths(
 		{
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_02_translation_language_imagegen_20260425_v2.png")
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_02_language_a_wen_purple_20260427.png")
 		},
 		SocialIconBrush,
 		FVector2D(34.f, 34.f));
@@ -1100,7 +1100,7 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 		FVector2D(30.f, 30.f));
 	LoadLooseBrushFromCandidatePaths(
 		{
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_08_power_quit_imagegen_20260425_v2.png")
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_08_power_quit_red_imagegen_20260427.png")
 		},
 		QuitIconBrush,
 		FVector2D(34.f, 34.f));

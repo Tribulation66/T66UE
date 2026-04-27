@@ -24,6 +24,109 @@ FReply UT66HeroSelectionScreen::HandlePassivePreviewClicked()
 	return FReply::Handled();
 }
 
+void UT66HeroSelectionScreen::RefreshHeroRecordRank()
+{
+	if (!HeroRecordRankWidget.IsValid())
+	{
+		return;
+	}
+
+	HeroRecordRankRequestKey.Reset();
+	if (bShowingCompanionInfo || PreviewedHeroID.IsNone())
+	{
+		HeroRecordRankWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordRankUnavailable", "--"));
+		return;
+	}
+
+	UGameInstance* GIBase = UGameplayStatics::GetGameInstance(this);
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GIBase);
+	UT66BackendSubsystem* Backend = GIBase ? GIBase->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	if (!Backend)
+	{
+		HeroRecordRankWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordRankUnavailableNoBackend", "--"));
+		return;
+	}
+
+	int32 PartySize = 1;
+	if (T66GI)
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = T66GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			if (SessionSubsystem->IsPartyLobbyContextActive())
+			{
+				PartySize = FMath::Max(1, SessionSubsystem->GetCurrentLobbyPlayerCount());
+			}
+		}
+		if (PartySize <= 1)
+		{
+			if (UT66PartySubsystem* PartySubsystem = T66GI->GetSubsystem<UT66PartySubsystem>())
+			{
+				PartySize = FMath::Max(1, PartySubsystem->GetPartyMemberCount());
+			}
+		}
+	}
+
+	const FString HeroID = PreviewedHeroID.ToString();
+	const FString DifficultyKey = HeroSelectionDifficultyToApiString(SelectedDifficulty);
+	const FString PartyKey = HeroSelectionPartySizeToApiString(PartySize);
+	const FString RankKey = UT66BackendSubsystem::MakeMyRankCacheKey(
+		TEXT("score"),
+		TEXT("alltime"),
+		PartyKey,
+		DifficultyKey,
+		TEXT("hero"),
+		HeroID);
+	HeroRecordRankRequestKey = RankKey;
+
+	bool bRankSuccess = false;
+	int32 Rank = 0;
+	int32 TotalEntries = 0;
+	if (Backend->GetCachedMyRank(RankKey, bRankSuccess, Rank, TotalEntries))
+	{
+		if (bRankSuccess && Rank > 0)
+		{
+			HeroRecordRankWidget->SetText(FText::Format(
+				NSLOCTEXT("T66.HeroSelection", "HeroRecordRankFormat", "#{0} / {1}"),
+				FText::AsNumber(Rank),
+				FText::AsNumber(FMath::Max(0, TotalEntries))));
+		}
+		else
+		{
+			HeroRecordRankWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordRankUnranked", "Unranked"));
+		}
+		return;
+	}
+
+	if (!Backend->IsBackendConfigured() || !Backend->HasSteamTicket())
+	{
+		HeroRecordRankWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordRankOffline", "--"));
+		return;
+	}
+
+	HeroRecordRankWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordRankPending", "..."));
+	Backend->FetchMyRankFiltered(
+		TEXT("score"),
+		TEXT("alltime"),
+		PartyKey,
+		DifficultyKey,
+		TEXT("hero"),
+		HeroID);
+}
+
+void UT66HeroSelectionScreen::HandleBackendMyRankDataReady(const FString& Key, bool bSuccess, int32 Rank, int32 TotalEntries)
+{
+	static_cast<void>(bSuccess);
+	static_cast<void>(Rank);
+	static_cast<void>(TotalEntries);
+
+	if (!HeroRecordRankRequestKey.Equals(Key) || !HasBuiltSlateUI() || !IsVisible())
+	{
+		return;
+	}
+
+	RefreshHeroRecordRank();
+}
+
 void UT66HeroSelectionScreen::UpdateHeroDisplay()
 {
 	RefreshPanelSwitchers();
@@ -34,20 +137,67 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	UT66HeroSelectionPreviewController* HeroPreviewController = GetOrCreatePreviewController();
 
-	auto SetMedalBrushForTier = [this](const ET66AccountMedalTier MedalTier)
+	auto SetImageBrushFromPath = [this](const FString& ImagePath, TStrongObjectPtr<UTexture2D>& Texture, TSharedPtr<FSlateBrush>& Brush, const FVector2D& ImageSize, const TCHAR* DebugName)
 	{
-		const FString MedalPath = GetHeroSelectionMedalImagePath(MedalTier);
-		if (IFileManager::Get().FileExists(*MedalPath))
+		if (IFileManager::Get().FileExists(*ImagePath))
 		{
-			HeroRecordMedalBrush = MakeShared<FSlateImageBrush>(*MedalPath, FVector2D(26.f, 26.f));
+			Texture.Reset();
+			UTexture2D* LoadedTexture = T66RuntimeUITextureAccess::ImportFileTexture(
+				ImagePath,
+				TextureFilter::TF_Trilinear,
+				true,
+				DebugName);
+			if (!LoadedTexture)
+			{
+				LoadedTexture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
+					ImagePath,
+					TextureFilter::TF_Trilinear,
+					DebugName);
+			}
+
+			if (LoadedTexture)
+			{
+				Texture.Reset(LoadedTexture);
+				if (!Brush.IsValid())
+				{
+					Brush = MakeShared<FSlateBrush>();
+					Brush->DrawAs = ESlateBrushDrawType::Image;
+					Brush->Tiling = ESlateBrushTileType::NoTile;
+					Brush->TintColor = FSlateColor(FLinearColor::White);
+				}
+				Brush->ImageSize = ImageSize;
+				Brush->SetResourceObject(Texture.Get());
+			}
+			else
+			{
+				Brush = MakeShared<FSlateImageBrush>(*ImagePath, ImageSize);
+			}
 		}
 		else
 		{
-			HeroRecordMedalBrush.Reset();
+			Texture.Reset();
+			Brush.Reset();
 		}
 	};
 
-	auto SetRecordValues = [this, &SetMedalBrushForTier](const ET66AccountMedalTier MedalTier, const int32 GamesPlayed, const FText& ThirdLabel, const FText& ThirdValue)
+	auto SetMedalBrushForTier = [this, &SetImageBrushFromPath](const ET66AccountMedalTier MedalTier)
+	{
+		SetImageBrushFromPath(
+			GetHeroSelectionMedalImagePath(MedalTier),
+			HeroRecordMedalTexture,
+			HeroRecordMedalBrush,
+			FVector2D(46.f, 46.f),
+			TEXT("HeroSelectionMedalIcon"));
+	};
+
+	SetImageBrushFromPath(
+		GetHeroSelectionRankImagePath(),
+		HeroRecordRankTexture,
+		HeroRecordRankBrush,
+		FVector2D(46.f, 46.f),
+		TEXT("HeroSelectionRankIcon"));
+
+	auto SetRecordValues = [this, &SetMedalBrushForTier](const ET66AccountMedalTier MedalTier)
 	{
 		SetMedalBrushForTier(MedalTier);
 
@@ -56,18 +206,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 			HeroRecordMedalWidget->SetText(HeroRecordMedalText(MedalTier));
 			HeroRecordMedalWidget->SetColorAndOpacity(HeroRecordMedalColor(MedalTier));
 		}
-		if (HeroRecordGamesWidget.IsValid())
-		{
-			HeroRecordGamesWidget->SetText(FText::AsNumber(GamesPlayed));
-		}
-		if (HeroRecordThirdLabelWidget.IsValid())
-		{
-			HeroRecordThirdLabelWidget->SetText(ThirdLabel);
-		}
-		if (HeroRecordThirdValueWidget.IsValid())
-		{
-			HeroRecordThirdValueWidget->SetText(ThirdValue);
-		}
+		RefreshHeroRecordRank();
 	};
 
 	auto UpdateTargetOptions = [this, Loc, T66GI]()
@@ -195,14 +334,8 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 			const ET66AccountMedalTier MedalTier = (Achievements && bHasCompanion)
 				? Achievements->GetCompanionHighestMedal(PreviewedCompanionID)
 				: ET66AccountMedalTier::None;
-			const int32 GamesPlayed = (Achievements && bHasCompanion)
-				? Achievements->GetCompanionGamesPlayed(PreviewedCompanionID)
-				: 0;
 			const int32 UnionStages = (Achievements && bHasCompanion)
 				? Achievements->GetCompanionUnionStagesCleared(PreviewedCompanionID)
-				: 0;
-			const int32 TotalHealing = (Achievements && bHasCompanion)
-				? Achievements->GetCompanionTotalHealing(PreviewedCompanionID)
 				: 0;
 			const float HealingPerSecond = bHasCompanion
 				? AT66CompanionBase::GetHealingPerSecondForUnionStages(UnionStages)
@@ -232,11 +365,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 							FText::AsNumber(UT66AchievementsSubsystem::UnionTier_HyperStages))
 						: NSLOCTEXT("T66.HeroSelection", "CompanionUnityNoSelection", "Select a companion to view unity."));
 			}
-			SetRecordValues(
-				MedalTier,
-				GamesPlayed,
-				HeroRecordThirdMetricLabel(true),
-				FText::AsNumber(TotalHealing));
+			SetRecordValues(MedalTier);
 		}
 		else
 		{
@@ -255,13 +384,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 				CompanionUnityTextWidget->SetText(NSLOCTEXT("T66.HeroSelection", "CompanionUnityDefault", "Unity: 0 / 20"));
 			}
 			const ET66AccountMedalTier MedalTier = Achievements ? Achievements->GetHeroHighestMedal(PreviewedHeroID) : ET66AccountMedalTier::None;
-			const int32 GamesPlayed = Achievements ? Achievements->GetHeroGamesPlayed(PreviewedHeroID) : 0;
-			const int32 CumulativeScore = Achievements ? Achievements->GetHeroCumulativeScore(PreviewedHeroID) : 0;
-			SetRecordValues(
-				MedalTier,
-				GamesPlayed,
-				HeroRecordThirdMetricLabel(false),
-				FText::AsNumber(CumulativeScore));
+			SetRecordValues(MedalTier);
 		}
 	}
 	else
@@ -294,11 +417,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 		{
 			CompanionUnityTextWidget->SetText(NSLOCTEXT("T66.HeroSelection", "CompanionUnityDefault", "Unity: 0 / 20"));
 		}
-		SetRecordValues(
-			ET66AccountMedalTier::None,
-			0,
-			HeroRecordThirdMetricLabel(bShowingCompanionInfo),
-			NSLOCTEXT("T66.HeroSelection", "HeroRecordThirdEmpty", "0"));
+		SetRecordValues(ET66AccountMedalTier::None);
 	}
 
 	if (HeroPreviewController)

@@ -214,6 +214,31 @@ void UT66GameplayHUDWidget::RefreshStageAndTimer()
 
 void UT66GameplayHUDWidget::RefreshBeatTargets()
 {
+	if (T66_IsHudReviewStateCommandLine())
+	{
+		if (ScoreTargetText.IsValid())
+		{
+			ScoreTargetText->SetText(NSLOCTEXT("T66.GameplayHUD", "HudReviewScoreTarget", "Score to Beat 1,590"));
+			ScoreTargetText->SetVisibility(EVisibility::Visible);
+		}
+		if (ScorePacingText.IsValid())
+		{
+			ScorePacingText->SetText(NSLOCTEXT("T66.GameplayHUD", "HudReviewScorePacing", "Score Pace 900"));
+			ScorePacingText->SetVisibility(EVisibility::Visible);
+		}
+		if (SpeedRunTargetText.IsValid())
+		{
+			SpeedRunTargetText->SetText(NSLOCTEXT("T66.GameplayHUD", "HudReviewSpeedTarget", "Time to Beat 0:38.08"));
+			SpeedRunTargetText->SetVisibility(EVisibility::Visible);
+		}
+		if (SpeedRunPacingText.IsValid())
+		{
+			SpeedRunPacingText->SetText(NSLOCTEXT("T66.GameplayHUD", "HudReviewSpeedPacing", "Time Pace 0:21.40"));
+			SpeedRunPacingText->SetVisibility(EVisibility::Visible);
+		}
+		return;
+	}
+
 	UT66RunStateSubsystem* RunState = GetRunState();
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
 	UT66PlayerSettingsSubsystem* PS = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
@@ -429,6 +454,17 @@ void UT66GameplayHUDWidget::RefreshBeatTargets()
 
 void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
 {
+	if (T66_IsHudReviewStateCommandLine())
+	{
+		if (SpeedRunText.IsValid())
+		{
+			SpeedRunText->SetVisibility(EVisibility::Visible);
+			SpeedRunText->SetText(NSLOCTEXT("T66.GameplayHUD", "HudReviewSpeedRunTimer", "Time 0:04.50"));
+		}
+		LastDisplayedSpeedRunTotalCs = 450;
+		return;
+	}
+
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 	UT66PlayerSettingsSubsystem* PS = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;

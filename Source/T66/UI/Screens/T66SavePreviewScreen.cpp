@@ -12,6 +12,7 @@
 #include "UI/Style/T66Style.h"
 #include "UI/T66UIManager.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SBoxPanel.h"
@@ -65,19 +66,9 @@ namespace
 		bool bInitialized = false;
 	};
 
-	const TCHAR* GetSavePreviewButtonPrefix(const ET66ButtonType Type)
+	const TCHAR* GetSavePreviewButtonPrefix(const ET66ButtonType /*Type*/)
 	{
-		switch (Type)
-		{
-		case ET66ButtonType::Primary:
-		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
-			return TEXT("button_success");
-		case ET66ButtonType::Danger:
-			return TEXT("button_danger");
-		default:
-			return TEXT("button_neutral");
-		}
+		return TEXT("topbar_nav");
 	}
 
 	FSavePreviewReferenceButtonBrushSet& GetSavePreviewButtonBrushSet(const ET66ButtonType Type)
@@ -124,10 +115,13 @@ namespace
 		const TCHAR* State,
 		const TCHAR* DebugLabel)
 	{
+		const FString AssetState = FCString::Strcmp(State, TEXT("disabled")) == 0
+			? TEXT("disabled")
+			: State;
 		return ResolveSavePreviewBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/%s_%s.png"), Prefix, State),
-			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
+			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/%s_%s.png"), Prefix, *AssetState),
+			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 			DebugLabel);
 	}
 
@@ -155,7 +149,7 @@ namespace
 			{
 				StyleEntry.Style.SetPressed(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Disabled, TEXT("button_neutral"), TEXT("disabled"), TEXT("SavePreviewButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Disabled, TEXT("topbar_nav"), TEXT("disabled"), TEXT("SavePreviewButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}
@@ -169,9 +163,19 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSavePreviewBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_modal.png"),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
+			FMargin(0.052f, 0.094f, 0.052f, 0.094f),
 			TEXT("SavePreviewShell"));
+	}
+
+	const FSlateBrush* GetSavePreviewSceneBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveSavePreviewBrush(
+			Entry,
+			TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png"),
+			FMargin(0.f),
+			TEXT("SavePreviewScene"));
 	}
 
 	TSharedRef<SWidget> MakeSavePreviewShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
@@ -197,33 +201,20 @@ namespace
 
 	TSharedRef<SWidget> MakeSavePreviewButton(FT66ButtonParams Params)
 	{
-		const int32 FontSize = Params.FontSize > 0 ? Params.FontSize : 14;
-		FSlateFontInfo ButtonFont = FT66Style::MakeFont(*Params.FontWeight, FontSize);
-		ButtonFont.LetterSpacing = 0;
-
-		const TAttribute<FText> ButtonText = Params.DynamicLabel.IsBound()
-			? Params.DynamicLabel
-			: TAttribute<FText>(Params.Label);
-		const TAttribute<FSlateColor> TextColor = Params.bHasTextColorOverride
-			? Params.TextColorOverride
-			: TAttribute<FSlateColor>(FSlateColor(T66SavePreviewBrightText()));
-		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(16.f, 8.f, 16.f, 7.f);
+		const float ButtonHeight = Params.Height > 0.f ? Params.Height : T66SavePreviewButtonHeight;
+		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(6.f, 2.f);
 
 		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
 			? Params.CustomContent.ToSharedRef()
-			: StaticCastSharedRef<SWidget>(
-				SNew(STextBlock)
-				.Text(ButtonText)
-				.Font(ButtonFont)
-				.ColorAndOpacity(TextColor)
-				.Justification(ETextJustify::Center)
-				.ShadowOffset(FVector2D(1.f, 1.f))
-				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.78f))
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis));
+			: T66ScreenSlateHelpers::MakeFilledButtonText(
+				Params,
+				ButtonHeight,
+				TAttribute<FSlateColor>(FSlateColor(T66SavePreviewBrightText())),
+				TAttribute<FLinearColor>(FLinearColor(0.f, 0.f, 0.f, 0.78f)));
 
 		return SNew(SBox)
 			.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
-			.HeightOverride(Params.Height > 0.f ? Params.Height : T66SavePreviewButtonHeight)
+			.HeightOverride(ButtonHeight)
 			.Visibility(Params.Visibility)
 			[
 				SNew(SButton)
@@ -269,15 +260,23 @@ TSharedRef<SWidget> UT66SavePreviewScreen::BuildSlateUI()
 			FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleBackClicked), ET66ButtonType::Neutral)
 			.SetMinWidth(160.f)
 			.SetHeight(T66SavePreviewButtonHeight)
-			.SetFontSize(12));
+			.SetFontSize(28));
 	const TSharedRef<SWidget> LoadButton =
 		MakeSavePreviewButton(
 			FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleLoadClicked), ET66ButtonType::Primary)
 			.SetMinWidth(160.f)
 			.SetHeight(T66SavePreviewButtonHeight)
-			.SetFontSize(12));
+			.SetFontSize(28));
 
 	return SNew(SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SImage)
+			.Image(GetSavePreviewSceneBrush())
+			.ColorAndOpacity(FLinearColor(0.88f, 0.88f, 0.88f, 1.0f))
+		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
@@ -301,7 +300,7 @@ TSharedRef<SWidget> UT66SavePreviewScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(PreviewTitle)
-						.Font(FT66Style::Tokens::FontBold(24))
+						.Font(FT66Style::Tokens::FontBold(30))
 						.ColorAndOpacity(T66SavePreviewGoldText())
 						.Justification(ETextJustify::Center)
 					]
@@ -311,7 +310,7 @@ TSharedRef<SWidget> UT66SavePreviewScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(SubtitleText)
-						.Font(FT66Style::Tokens::FontRegular(13))
+						.Font(FT66Style::Tokens::FontRegular(17))
 						.ColorAndOpacity(T66SavePreviewMutedText())
 						.AutoWrapText(true)
 						.Justification(ETextJustify::Center)

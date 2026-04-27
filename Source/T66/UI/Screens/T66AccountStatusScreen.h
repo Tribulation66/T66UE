@@ -55,15 +55,18 @@ private:
 	TOptional<ET66PartySize> HistoryPartySizeFilter;
 	EHistoryCompletionFilter HistoryCompletionFilter = EHistoryCompletionFilter::All;
 	TMap<FName, TSharedPtr<FSlateBrush>> HeroPortraitBrushes;
+	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
 	FDelegateHandle BackendMyRankReadyHandle;
 	TSharedPtr<SMultiLineEditableTextBox> AppealMessageTextBox;
 	bool bAppealEditorOpen = false;
 	bool bShowStandingInfoPopup = false;
+	bool bAutomationTabOverrideApplied = false;
 	FString AppealDraftMessage;
 	FString AppealSubmitStatusMessage;
 	bool bAppealSubmitStatusIsError = false;
 	bool bAppealSubmitInFlight = false;
 
+	void ApplyAutomationAccountTabOverride();
 	FReply HandleBackClicked();
 	FReply HandleSuspensionTabClicked();
 	FReply HandleOverviewTabClicked();

@@ -40,10 +40,10 @@
 
 namespace T66SettingsScreenPrivate
 {
-	constexpr int32 SettingsFontDelta = -8;
+	constexpr int32 SettingsFontDelta = -2;
 	constexpr int32 SettingsCompactButtonFontSize = 19;
 	constexpr float SettingsCompactButtonHeight = 46.f;
-	inline const TCHAR* const SettingsWorkerAssetRoot = TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/");
+	inline const TCHAR* const SettingsMasterSliceRoot = TEXT("SourceAssets/UI/MasterLibrary/Slices/");
 
 	enum class ET66SettingsSpriteFamily : uint8
 	{
@@ -71,12 +71,17 @@ namespace T66SettingsScreenPrivate
 		FSettingsSpriteBrushEntry& Entry,
 		const TCHAR* RelativePath,
 		const FVector2D& ImageSize,
-		const FMargin& Margin = FMargin(0.16f, 0.28f, 0.16f, 0.28f))
+		const FMargin& Margin = FMargin(0.093f, 0.213f, 0.093f, 0.213f))
 	{
 		if (!Entry.Brush.IsValid())
 		{
+			const bool bImageDraw =
+				FMath::IsNearlyZero(Margin.Left)
+				&& FMath::IsNearlyZero(Margin.Top)
+				&& FMath::IsNearlyZero(Margin.Right)
+				&& FMath::IsNearlyZero(Margin.Bottom);
 			Entry.Brush = MakeShared<FSlateBrush>();
-			Entry.Brush->DrawAs = ESlateBrushDrawType::Box;
+			Entry.Brush->DrawAs = bImageDraw ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
 			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
 			Entry.Brush->TintColor = FSlateColor(FLinearColor::White);
 			Entry.Brush->ImageSize = ImageSize;
@@ -126,17 +131,17 @@ namespace T66SettingsScreenPrivate
 
 	inline const TCHAR* GetSettingsButtonSpritePath(ET66SettingsSpriteFamily Family, ET66ButtonBorderState State)
 	{
-		const TCHAR* Prefix = TEXT("settings_compact_neutral");
+		const TCHAR* Prefix = TEXT("TopBar/topbar_nav");
 		switch (Family)
 		{
 		case ET66SettingsSpriteFamily::ToggleOn:
-			Prefix = TEXT("settings_toggle_on");
+			Prefix = TEXT("TopBar/topbar_nav");
 			break;
 		case ET66SettingsSpriteFamily::ToggleOff:
-			Prefix = TEXT("settings_toggle_off");
+			Prefix = TEXT("TopBar/topbar_nav");
 			break;
 		case ET66SettingsSpriteFamily::ToggleInactive:
-			Prefix = TEXT("settings_toggle_inactive");
+			Prefix = TEXT("TopBar/topbar_nav");
 			break;
 		case ET66SettingsSpriteFamily::CompactNeutral:
 		default:
@@ -156,9 +161,13 @@ namespace T66SettingsScreenPrivate
 		default:
 			break;
 		}
+		if (Family == ET66SettingsSpriteFamily::ToggleOn || Family == ET66SettingsSpriteFamily::ToggleOff)
+		{
+			Suffix = TEXT("pressed");
+		}
 
 		static FString Path;
-		Path = FString::Printf(TEXT("%s%s_%s.png"), SettingsWorkerAssetRoot, Prefix, Suffix);
+		Path = FString::Printf(TEXT("%s%s_%s.png"), SettingsMasterSliceRoot, Prefix, Suffix);
 		return *Path;
 	}
 
@@ -166,17 +175,17 @@ namespace T66SettingsScreenPrivate
 	{
 		if (Family == ET66SettingsSpriteFamily::CompactNeutral)
 		{
-			return State == ET66ButtonBorderState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
+			return FVector2D(270.f, 88.f);
 		}
 		if (Family == ET66SettingsSpriteFamily::ToggleOn)
 		{
-			return State == ET66ButtonBorderState::Pressed ? FVector2D(187.f, 67.f) : FVector2D(180.f, 68.f);
+			return FVector2D(270.f, 88.f);
 		}
 		if (Family == ET66SettingsSpriteFamily::ToggleOff)
 		{
-			return State == ET66ButtonBorderState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
+			return FVector2D(270.f, 88.f);
 		}
-		return State == ET66ButtonBorderState::Hovered ? FVector2D(186.f, 69.f) : FVector2D(180.f, 68.f);
+		return FVector2D(270.f, 88.f);
 	}
 
 	inline const FSlateBrush* ResolveSettingsButtonSpriteBrush(ET66SettingsSpriteFamily Family, ET66ButtonBorderState State)
@@ -203,8 +212,8 @@ namespace T66SettingsScreenPrivate
 		FSettingsSpriteBrushSet& Set = GetSettingsButtonSpriteSet(ET66SettingsSpriteFamily::ToggleInactive);
 		return ResolveSettingsSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_toggle_inactive_normal.png"),
-			FVector2D(180.f, 69.f));
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_disabled.png"),
+			FVector2D(270.f, 88.f));
 	}
 
 	inline ET66SettingsSpriteFamily GetDefaultSettingsButtonFamily(ET66ButtonType Type)
@@ -229,9 +238,9 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_content_shell_frame.png"),
-			FVector2D(1521.f, 463.f),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f));
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			FVector2D(480.f, 800.f),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 	}
 
 	inline const FSlateBrush* GetSettingsRowShellBrush()
@@ -239,9 +248,9 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_row_shell_full.png"),
-			FVector2D(861.f, 74.f),
-			FMargin(0.055f, 0.32f, 0.055f, 0.32f));
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
+			FVector2D(620.f, 340.f),
+			FMargin(0.052f, 0.094f, 0.052f, 0.094f));
 	}
 
 	inline const FSlateBrush* GetSettingsDropdownFieldBrush()
@@ -249,9 +258,19 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_dropdown_field.png"),
-			FVector2D(862.f, 77.f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Controls/dropdown_field_normal.png"),
+			FVector2D(218.f, 50.f),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f));
+	}
+
+	inline const FSlateBrush* GetSettingsSceneBackgroundBrush()
+	{
+		static FSettingsSpriteBrushEntry Entry;
+		return ResolveSettingsSpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png"),
+			FVector2D(1920.f, 1080.f),
+			FMargin(0.f));
 	}
 
 	class ST66SettingsSpriteButton : public SCompoundWidget
@@ -494,7 +513,7 @@ namespace T66SettingsScreenPrivate
 		const FT66ButtonParams& Params,
 		TAttribute<ET66SettingsSpriteFamily> SpriteFamily)
 	{
-		const int32 FontSize = Params.FontSize > 0 ? Params.FontSize : AdjustSettingsFontSize(SettingsCompactButtonFontSize);
+		const int32 FontSize = Params.FontSize > 0 ? static_cast<int32>(Params.FontSize) : SettingsCompactButtonFontSize;
 		const FSlateFontInfo Font = T66RuntimeUIFontAccess::IsBoldWeight(*Params.FontWeight)
 			? SettingsBoldFont(FontSize)
 			: SettingsRegularFont(FontSize);
@@ -540,11 +559,11 @@ namespace T66SettingsScreenPrivate
 
 		if (FlatParams.FontSize <= 0)
 		{
-			FlatParams.SetFontSize(AdjustSettingsFontSize(SettingsCompactButtonFontSize));
+			FlatParams.SetFontSize(SettingsCompactButtonFontSize);
 		}
 		else
 		{
-			FlatParams.SetFontSize(AdjustSettingsFontSize(static_cast<int32>(FlatParams.FontSize)));
+			FlatParams.SetFontSize(static_cast<int32>(FlatParams.FontSize));
 		}
 		if (FlatParams.Height <= 0.f)
 		{

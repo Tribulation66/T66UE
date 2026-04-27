@@ -41,11 +41,11 @@ namespace
 		case ET66ButtonType::Primary:
 		case ET66ButtonType::Success:
 		case ET66ButtonType::ToggleActive:
-			return TEXT("button_success");
+			return TEXT("TopBar/topbar_nav");
 		case ET66ButtonType::Danger:
-			return TEXT("button_danger");
+			return TEXT("TopBar/topbar_nav");
 		default:
-			return TEXT("button_neutral");
+			return TEXT("TopBar/topbar_nav");
 		}
 	}
 
@@ -109,8 +109,8 @@ namespace
 	{
 		return ResolveSettingsReferenceBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/%s_%s.png"), Prefix, State),
-			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
+			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/%s_%s.png"), Prefix, State),
+			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 			DebugLabel);
 	}
 
@@ -138,7 +138,7 @@ namespace
 			{
 				StyleEntry.Style.SetPressed(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveSettingsReferenceButtonBrush(BrushSet.Disabled, TEXT("button_neutral"), TEXT("disabled"), TEXT("QuitModalButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolveSettingsReferenceButtonBrush(BrushSet.Disabled, TEXT("TopBar/topbar_nav"), TEXT("disabled"), TEXT("QuitModalButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}
@@ -152,8 +152,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush ShellBrush;
 		return ResolveSettingsReferenceBrush(
 			ShellBrush,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_modal.png"),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
+			FMargin(0.052f, 0.094f, 0.052f, 0.094f),
 			TEXT("QuitModalShell"));
 	}
 

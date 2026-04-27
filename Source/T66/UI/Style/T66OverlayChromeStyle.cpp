@@ -19,7 +19,7 @@ namespace
 
 	const FString& GetChromeSliceDir()
 	{
-		static const FString Dir = FPaths::ProjectDir() / TEXT("RuntimeDependencies/T66/UI/Chat4OverlayChrome/Slices");
+		static const FString Dir = FPaths::ProjectDir() / TEXT("SourceAssets/UI/MasterLibrary/Slices");
 		return Dir;
 	}
 
@@ -33,38 +33,38 @@ namespace
 		switch (Brush)
 		{
 		case ET66OverlayChromeBrush::OverlayModalPanel:
-			return TEXT("overlay_modal_panel.png");
+			return TEXT("Panels/modal_frame_normal.png");
 		case ET66OverlayChromeBrush::CasinoShellPanel:
-			return TEXT("casino_shell_panel.png");
+			return TEXT("Panels/panel_large_normal.png");
 		case ET66OverlayChromeBrush::ContentPanelTall:
-			return TEXT("content_panel_tall.png");
+			return TEXT("Panels/panel_large_normal.png");
 		case ET66OverlayChromeBrush::InnerPanel:
-			return TEXT("inner_panel.png");
+			return TEXT("Panels/panel_square_normal.png");
 		case ET66OverlayChromeBrush::HeaderSummaryBar:
-			return TEXT("header_summary_bar.png");
+			return TEXT("Panels/panel_square_normal.png");
 		case ET66OverlayChromeBrush::CrateStripFrame:
-			return TEXT("crate_strip_frame.png");
+			return TEXT("Panels/panel_large_normal.png");
 		case ET66OverlayChromeBrush::SlotNormal:
-			return TEXT("slot_normal.png");
+			return TEXT("Slots/avatar_slot_normal.png");
 		case ET66OverlayChromeBrush::SlotHover:
-			return TEXT("slot_hover.png");
+			return TEXT("Slots/avatar_slot_normal.png");
 		case ET66OverlayChromeBrush::SlotSelected:
-			return TEXT("slot_selected.png");
+			return TEXT("Slots/party_slot_normal.png");
 		case ET66OverlayChromeBrush::SlotDisabled:
-			return TEXT("slot_disabled.png");
+			return TEXT("Slots/avatar_slot_normal.png");
 		case ET66OverlayChromeBrush::OfferCardNormal:
-			return TEXT("offer_card_normal.png");
+			return TEXT("Panels/panel_square_normal.png");
 		case ET66OverlayChromeBrush::OfferCardHover:
-			return TEXT("offer_card_hover.png");
+			return TEXT("Panels/panel_square_normal.png");
 		case ET66OverlayChromeBrush::OfferCardSelected:
-			return TEXT("offer_card_selected.png");
+			return TEXT("Panels/modal_frame_normal.png");
 		case ET66OverlayChromeBrush::OfferCardDisabled:
-			return TEXT("offer_card_disabled.png");
+			return TEXT("Panels/panel_square_normal.png");
 		case ET66OverlayChromeBrush::CrateWinnerMarker:
-			return TEXT("crate_winner_marker.png");
+			return TEXT("Panels/modal_frame_normal.png");
 		case ET66OverlayChromeBrush::ContentPanelWide:
 		default:
-			return TEXT("content_panel_wide.png");
+			return TEXT("Panels/panel_large_normal.png");
 		}
 	}
 
@@ -159,46 +159,28 @@ namespace
 		{
 			if (bDisabled)
 			{
-				return TEXT("tab_disabled.png");
+				return TEXT("Tabs/wide_tab_normal.png");
 			}
-			if (bPressed)
+			if (bPressed || bSelected)
 			{
-				return TEXT("tab_pressed.png");
+				return TEXT("Tabs/wide_tab_selected.png");
 			}
-			if (bSelected)
-			{
-				return TEXT("tab_selected.png");
-			}
-			return bHovered ? TEXT("tab_hover.png") : TEXT("tab_normal.png");
+			return bHovered ? TEXT("Tabs/wide_tab_selected.png") : TEXT("Tabs/wide_tab_normal.png");
 		}
 
-		const TCHAR* Prefix = TEXT("button_neutral");
-		if (Family == ET66OverlayChromeButtonFamily::Primary)
-		{
-			Prefix = TEXT("button_primary");
-		}
-		else if (Family == ET66OverlayChromeButtonFamily::Danger)
-		{
-			Prefix = TEXT("button_danger");
-		}
-
-		const TCHAR* State = TEXT("normal");
 		if (bDisabled)
 		{
-			State = TEXT("disabled");
+			return TEXT("TopBar/topbar_nav_disabled.png");
 		}
-		else if (bPressed || bSelected)
+		if (bPressed || bSelected)
 		{
-			State = TEXT("pressed");
+			return TEXT("TopBar/topbar_nav_pressed.png");
 		}
-		else if (bHovered)
+		if (bHovered)
 		{
-			State = TEXT("hover");
+			return TEXT("TopBar/topbar_nav_hover.png");
 		}
-
-		static FString FileName;
-		FileName = FString::Printf(TEXT("%s_%s.png"), Prefix, State);
-		return *FileName;
+		return TEXT("TopBar/topbar_nav_normal.png");
 	}
 
 	FMargin GetButtonMargin(const ET66OverlayChromeButtonFamily Family)
@@ -350,6 +332,7 @@ namespace
 					.Padding(InArgs._Padding)
 					[
 						SAssignNew(Button, SButton)
+						.Cursor(EMouseCursor::Hand)
 						.ButtonStyle(&GetTransparentButtonStyle())
 						.ContentPadding(FMargin(0.f))
 						.IsEnabled(InArgs._IsEnabled)

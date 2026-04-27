@@ -50,15 +50,14 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 	const FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 	const FText RefundText = NSLOCTEXT("T66.Common", "Refund", "REFUND");
 	const FText SelectCompanionForSkinsText = NSLOCTEXT("T66.HeroSelection", "SelectCompanionForSkins", "Select a companion to manage companion skins.");
-	const FButtonStyle& PrimaryButtonStyle = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary");
-	const float ActionMinHeight = 34.f;
-	const float ActionMinWidth = 104.f;
-	const float EquippedMinWidth = 112.f;
-	const float BuyButtonMinWidth = 112.f;
-	const float BuyButtonHeight = 34.f;
-	const int32 SkinActionFontSize = 7;
-	const int32 SkinPriceFontSize = 8;
-	const int32 SkinTitleFontSize = 9;
+	const float ActionMinHeight = 38.f;
+	const float ActionMinWidth = 118.f;
+	const float EquippedMinWidth = 126.f;
+	const float BuyButtonMinWidth = 126.f;
+	const float BuyButtonHeight = 38.f;
+	const int32 SkinActionFontSize = 16;
+	const int32 SkinPriceFontSize = 15;
+	const int32 SkinTitleFontSize = 16;
 
 	if (PlaceholderSkins.Num() == 0)
 	{
@@ -240,23 +239,14 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 						]
 						+ SWidgetSwitcher::Slot()
 						[
-							SNew(SBox).MinDesiredWidth(EquippedMinWidth).HeightOverride(ActionMinHeight)
-							[
-								SNew(SBorder)
-								.BorderImage(&PrimaryButtonStyle.Normal)
-								.BorderBackgroundColor(FT66Style::IsDotaTheme()
-									? FSlateColor(FLinearColor(0.075f, 0.075f, 0.08f, 1.0f))
-									: FT66Style::Tokens::Accent2)
-								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.Padding(FMargin(10.0f, 4.0f))
-								[
-									SNew(STextBlock)
-									.Text(EquippedText)
-									.Font(FT66Style::Tokens::FontBold(SkinActionFontSize))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-									.Justification(ETextJustify::Center)
-								]
-							]
+							MakeHeroSelectionButton(FT66ButtonParams(
+								EquippedText,
+								FOnClicked::CreateLambda([]() { return FReply::Handled(); }),
+								ET66ButtonType::ToggleActive)
+								.SetMinWidth(EquippedMinWidth)
+								.SetHeight(ActionMinHeight)
+								.SetPadding(FMargin(8.f, 4.f))
+								.SetFontSize(SkinActionFontSize))
 						]
 					]
 				];
@@ -291,21 +281,14 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 						]
 						+ SWidgetSwitcher::Slot()
 						[
-							SNew(SBorder)
-							.BorderImage(&PrimaryButtonStyle.Normal)
-							.BorderBackgroundColor(FT66Style::IsDotaTheme()
-								? FSlateColor(FLinearColor(0.075f, 0.075f, 0.08f, 1.0f))
-								: FT66Style::Tokens::Accent2)
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							.Padding(FMargin(8.f, 3.f, 8.f, 2.f))
-							[
-								SNew(STextBlock)
-								.Text(EquippedText)
-								.Font(FT66Style::Tokens::FontBold(SkinActionFontSize))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
-								.Justification(ETextJustify::Center)
-							]
+							MakeHeroSelectionButton(FT66ButtonParams(
+								EquippedText,
+								FOnClicked::CreateLambda([]() { return FReply::Handled(); }),
+								ET66ButtonType::ToggleActive)
+								.SetMinWidth(ActionMinWidth)
+								.SetHeight(ActionMinHeight)
+								.SetPadding(FMargin(8.f, 3.f, 8.f, 2.f))
+								.SetFontSize(SkinActionFontSize))
 						]
 					]
 				];

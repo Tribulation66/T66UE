@@ -30,6 +30,7 @@ void UT66HeroSelectionScreen::OnDifficultyChanged(TSharedPtr<FString> NewValue, 
 			CurrentDifficultyOption = NewValue;
 			CommitLocalSelectionsToLobby(true);
 			RefreshDifficultyDropdownText();
+			RefreshHeroRecordRank();
 			if (UT66HeroSelectionPreviewController* HeroPreviewController = GetOrCreatePreviewController())
 			{
 				HeroPreviewController->ApplySelectionDifficultyToPreviewStages(SelectedDifficulty);
@@ -91,6 +92,7 @@ void UT66HeroSelectionScreen::SyncToSharedPartyScreen()
 	SelectedDifficulty = SessionSubsystem->GetSharedLobbyDifficulty();
 	GI->SelectedDifficulty = SelectedDifficulty;
 	RefreshDifficultyDropdownText();
+	RefreshHeroRecordRank();
 
 	if (!SessionSubsystem->IsPartyLobbyContextActive() || SessionSubsystem->IsLocalPlayerPartyHost() || !UIManager)
 	{
@@ -154,6 +156,12 @@ void UT66HeroSelectionScreen::OnScreenDeactivated_Implementation()
 			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
 			SessionStateChangedHandle.Reset();
 		}
+
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			Backend->OnMyRankDataReady.Remove(BackendMyRankReadyHandle);
+			BackendMyRankReadyHandle.Reset();
+		}
 	}
 
 	Super::OnScreenDeactivated_Implementation();
@@ -213,6 +221,16 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 		{
 			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66HeroSelectionScreen::HandleSessionStateChanged);
 			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::HeroSelection);
+		}
+
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			if (BackendMyRankReadyHandle.IsValid())
+			{
+				Backend->OnMyRankDataReady.Remove(BackendMyRankReadyHandle);
+				BackendMyRankReadyHandle.Reset();
+			}
+			BackendMyRankReadyHandle = Backend->OnMyRankDataReady.AddUObject(this, &UT66HeroSelectionScreen::HandleBackendMyRankDataReady);
 		}
 
 		SelectedDifficulty = SessionSubsystem ? SessionSubsystem->GetSharedLobbyDifficulty() : GI->SelectedDifficulty;

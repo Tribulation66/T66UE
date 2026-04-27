@@ -34,7 +34,6 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
-#include "Widgets/Notifications/SProgressBar.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SNullWidget.h"
 #include "Styling/SlateBrush.h"
@@ -1168,6 +1167,44 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		NSLOCTEXT("T66.MainMenu", "ProfileNextLevelFormat", "Level {0}"),
 		FText::AsNumber(ProfileNextLevel));
 
+	auto MakeProfileProgressBar = [this, ProfileLevelProgress]() -> TSharedRef<SWidget>
+	{
+		const float Pct = FMath::Clamp(ProfileLevelProgress > KINDA_SMALL_NUMBER ? ProfileLevelProgress : 0.58f, 0.f, 1.f);
+		const FSlateBrush* ShellBrush = ProfileProgressShellBrush.IsValid()
+			? ProfileProgressShellBrush.Get()
+			: FCoreStyle::Get().GetBrush("WhiteBrush");
+		const FSlateBrush* FillBrush = ProfileProgressFillBrush.IsValid()
+			? ProfileProgressFillBrush.Get()
+			: FCoreStyle::Get().GetBrush("WhiteBrush");
+
+		return SNew(SBorder)
+			.BorderImage(ShellBrush)
+			.BorderBackgroundColor(ProfileProgressShellBrush.IsValid() ? FLinearColor::White : FLinearColor(0.02f, 0.02f, 0.04f, 1.0f))
+			.Padding(FMargin(4.f, 3.f))
+			.Clipping(EWidgetClipping::ClipToBounds)
+			[
+				SNew(SBox)
+				.HeightOverride(12.f)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.FillWidth(FMath::Max(Pct, 0.001f))
+					[
+						SNew(SBorder)
+						.Visibility(Pct > 0.001f ? EVisibility::Visible : EVisibility::Collapsed)
+						.BorderImage(FillBrush)
+						.BorderBackgroundColor(ProfileProgressFillBrush.IsValid() ? FLinearColor::White : FLinearColor(0.14f, 0.02f, 0.36f, 1.0f))
+					]
+					+ SHorizontalBox::Slot()
+					.FillWidth(FMath::Max(1.f - Pct, 0.001f))
+					[
+						SNew(SSpacer)
+					]
+				]
+			];
+	};
+
 	const TSharedRef<SWidget> ProfileCardContent =
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
@@ -1228,11 +1265,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 				[
 					SNew(SBox)
-					.HeightOverride(13.f)
 					[
-						SNew(SProgressBar)
-						.Percent(ProfileLevelProgress)
-						.FillColorAndOpacity(FLinearColor(0.73f, 0.08f, 0.91f, 1.0f))
+						MakeProfileProgressBar()
 					]
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(9.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
@@ -2070,14 +2104,14 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		PartyPlusIconBrush,
 		PartyPlusIconTexture,
 		nullptr,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_15_party_add_plus_imagegen_20260425_v2.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_15_party_add_plus_purple_20260427.png"),
 		FVector2D(38.f, 38.f));
 
 	SetupT66MainMenuRuntimeImageBrush(
 		CloseButtonBrush,
 		CloseButtonTexture,
 		nullptr,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_08_power_quit_imagegen_20260425_v2.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_08_power_quit_red_imagegen_20260427.png"),
 		FVector2D(T66MainMenuReferenceLayout::Left::CloseButton.Width, T66MainMenuReferenceLayout::Left::CloseButton.Height));
 
 	SetupT66MainMenuRuntimeImageBrush(
@@ -2087,6 +2121,22 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/avatar_slot_normal.png"),
 		FVector2D(101.f, 93.f));
 	ConfigureMainMenuBoxBrush(ProfileAvatarFrameBrush, FMargin(0.205f, 0.205f, 0.205f, 0.205f));
+
+	SetupT66MainMenuRuntimeImageBrush(
+		ProfileProgressShellBrush,
+		ProfileProgressShellTexture,
+		nullptr,
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Controls/dropdown_field_normal.png"),
+		FVector2D(512.f, 22.f));
+	ConfigureMainMenuBoxBrush(ProfileProgressShellBrush, FMargin(0.06f, 0.34f, 0.06f, 0.34f));
+
+	SetupT66MainMenuRuntimeImageBrush(
+		ProfileProgressFillBrush,
+		ProfileProgressFillTexture,
+		nullptr,
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Misc/progress_fill_dark_purple_twinkle_imagegen_20260427.png"),
+		FVector2D(512.f, 64.f));
+	ConfigureMainMenuBoxBrush(ProfileProgressFillBrush, FMargin(0.25f, 0.45f, 0.25f, 0.45f));
 }
 
 void UT66MainMenuScreen::RequestCTAButtonBrushes()

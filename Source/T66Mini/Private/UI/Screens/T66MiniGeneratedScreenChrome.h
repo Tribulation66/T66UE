@@ -239,6 +239,7 @@ namespace T66MiniGeneratedChrome
 				+ SOverlay::Slot()
 				[
 					SNew(SButton)
+					.Cursor(EMouseCursor::Hand)
 					.HAlign(HAlign_Center)
 					.VAlign(VAlign_Center)
 					.OnClicked(Params.OnClicked)

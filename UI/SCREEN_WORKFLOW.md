@@ -91,6 +91,10 @@ powershell -ExecutionPolicy Bypass -File C:\UE\T66\Scripts\CaptureT66UIScreen.ps
 
 This launcher resolves Windows display 1 and passes `-WinX` and `-WinY` so the game opens on display 1 instead of the primary/right-hand monitor. Do not use ad hoc `Start-Process` screenshot commands unless you also include the same display-1 `-WinX` and `-WinY` flags.
 
+## Button Text Fit Rule
+
+Button labels must use the Main Menu CTA text-fit approach instead of tiny fixed labels. The caller's explicit `FontSize` is the intended maximum size; do not force short labels larger just because the button is tall. If no font size is provided, use a height-derived fallback around `0.42 * button height`, cap the resolved size around `0.52 * button height`, use `LetterSpacing = 0..1`, center the text inside the plate with minimal content padding, and protect long localized labels with ellipsis plus a down-only `SScaleBox`. Do not solve fit by dropping button labels to 10-12px on 34-58px plates; that makes the UI look broken even when it technically avoids clipping.
+
 ## Hard Rules
 
 - No screen may be styled from "general main-menu vibes" alone.

@@ -30,8 +30,8 @@ public:
 	static const FString BuffSaveSlotName;
 	static constexpr int32 BuffSaveUserIndex = 0;
 
-	/** Visible fill steps per statue: 10 slices from bottom to top. */
-	static constexpr int32 MaxFillStepsPerStat = 10;
+	/** Visible diploma upgrade steps per permanent stat. */
+	static constexpr int32 MaxFillStepsPerStat = 4;
 	static constexpr int32 PermanentBuffUnlockCostCC = 10;
 	static constexpr int32 SingleUseBuffCostCC = 1;
 	static constexpr int32 MaxSelectedSingleUseBuffs = 4;
@@ -60,7 +60,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool SpendPowerCrystals(int32 Amount);
 
-	/** Get fill-step state (0=Locked, 1=Unlocked) for the given stat and step index (0..9). */
+	/** Get fill-step state (0=Locked, 1=Unlocked) for the given stat and step index. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	int32 GetFillStepState(ET66HeroStatType StatType, int32 StepIndex) const;
 
@@ -84,7 +84,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool UnlockRandomStat();
 
-	/** True if all 10 visible fill steps for this stat are unlocked. */
+	/** True if all visible diploma upgrades for this stat are unlocked. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	bool IsStatMaxed(ET66HeroStatType StatType) const;
 

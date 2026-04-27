@@ -37,6 +37,7 @@ void UT66Button::NativePreConstruct()
 	if (ButtonWidget)
 	{
 		ButtonWidget->SetStyle(FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"));
+		ButtonWidget->SetCursor(EMouseCursor::Hand);
 	}
 }
 
@@ -67,6 +68,7 @@ void UT66Button::NativeConstruct()
 	if (ButtonWidget)
 	{
 		ButtonWidget->SetStyle(FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"));
+		ButtonWidget->SetCursor(EMouseCursor::Hand);
 	}
 }
 

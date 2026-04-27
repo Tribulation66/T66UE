@@ -42,7 +42,6 @@ private:
 	{
 		Vendor = 0,
 		Gambling = 1,
-		Alchemy = 2,
 	};
 
 	TSharedRef<SWidget> BuildAlchemyPage(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc);

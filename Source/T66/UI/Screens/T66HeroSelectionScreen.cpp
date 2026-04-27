@@ -48,17 +48,118 @@ FReply UT66HeroSelectionScreen::HandleTemporaryBuffSlotClicked(int32 SlotIndex)
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
+		if (!HasUnlockedHeroSelectionDrugs(GI->GetSubsystem<UT66AchievementsSubsystem>()))
 		{
-			Buffs->SetSelectedSingleUseBuffEditSlotIndex(SlotIndex);
+			bShowingTemporaryBuffPicker = false;
+			return FReply::Handled();
 		}
 	}
 
-	ShowModal(ET66ScreenType::TemporaryBuffSelection);
+	TemporaryBuffPickerSlotIndex = FMath::Clamp(SlotIndex, 0, UT66BuffSubsystem::MaxSelectedSingleUseBuffs - 1);
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
+		{
+			Buffs->SetSelectedSingleUseBuffEditSlotIndex(TemporaryBuffPickerSlotIndex);
+		}
+	}
+
+	bShowingTemporaryBuffPicker = true;
+	ForceRebuildSlate();
 	return FReply::Handled();
 }
 
-FReply UT66HeroSelectionScreen::HandleSelectBuffsClicked() { ShowModal(ET66ScreenType::TemporaryBuffSelection); return FReply::Handled(); }
+FReply UT66HeroSelectionScreen::HandleTemporaryBuffPickerCloseClicked()
+{
+	bShowingTemporaryBuffPicker = false;
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandleTemporaryBuffBuyClicked(ET66SecondaryStatType StatType)
+{
+	if (!T66IsLiveSecondaryStatType(StatType))
+	{
+		return FReply::Handled();
+	}
+
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (!HasUnlockedHeroSelectionDrugs(GI->GetSubsystem<UT66AchievementsSubsystem>()))
+		{
+			bShowingTemporaryBuffPicker = false;
+			return FReply::Handled();
+		}
+
+		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
+		{
+			if (Buffs->PurchaseSingleUseBuff(StatType))
+			{
+				ForceRebuildSlate();
+			}
+		}
+	}
+
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandleTemporaryBuffEquipClicked(ET66SecondaryStatType StatType)
+{
+	if (!T66IsLiveSecondaryStatType(StatType))
+	{
+		return FReply::Handled();
+	}
+
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (!HasUnlockedHeroSelectionDrugs(GI->GetSubsystem<UT66AchievementsSubsystem>()))
+		{
+			bShowingTemporaryBuffPicker = false;
+			return FReply::Handled();
+		}
+
+		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
+		{
+			const int32 SlotIndex = FMath::Clamp(TemporaryBuffPickerSlotIndex, 0, UT66BuffSubsystem::MaxSelectedSingleUseBuffs - 1);
+			const TArray<ET66SecondaryStatType> Slots = Buffs->GetSelectedSingleUseBuffSlots();
+			const ET66SecondaryStatType FocusedSlotStat = Slots.IsValidIndex(SlotIndex) ? Slots[SlotIndex] : ET66SecondaryStatType::None;
+			const int32 OwnedCount = Buffs->GetOwnedSingleUseBuffCount(StatType);
+			const int32 AssignedCount = Buffs->GetSelectedSingleUseBuffSlotAssignedCountForStat(StatType);
+			const int32 AssignedOutsideFocused = AssignedCount - (FocusedSlotStat == StatType ? 1 : 0);
+			if (OwnedCount > AssignedOutsideFocused && Buffs->SetSelectedSingleUseBuffSlot(SlotIndex, StatType))
+			{
+				bShowingTemporaryBuffPicker = false;
+				ForceRebuildSlate();
+			}
+		}
+	}
+
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandleClearTemporaryBuffsClicked()
+{
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (!HasUnlockedHeroSelectionDrugs(GI->GetSubsystem<UT66AchievementsSubsystem>()))
+		{
+			bShowingTemporaryBuffPicker = false;
+			return FReply::Handled();
+		}
+
+		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
+		{
+			for (int32 SlotIndex = 0; SlotIndex < UT66BuffSubsystem::MaxSelectedSingleUseBuffs; ++SlotIndex)
+			{
+				Buffs->ClearSelectedSingleUseBuffSlot(SlotIndex);
+			}
+		}
+	}
+
+	bShowingTemporaryBuffPicker = false;
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
 
 FReply UT66HeroSelectionScreen::HandleLoreClicked()
 {
@@ -320,7 +421,11 @@ void UT66HeroSelectionScreen::PreviewPreviousCompanion()
 	PreviewCompanion(CompanionWheelIDs[CurrentCompanionIndex]);
 }
 
-void UT66HeroSelectionScreen::SelectDifficulty(ET66Difficulty Difficulty) { SelectedDifficulty = Difficulty; }
+void UT66HeroSelectionScreen::SelectDifficulty(ET66Difficulty Difficulty)
+{
+	SelectedDifficulty = Difficulty;
+	RefreshHeroRecordRank();
+}
 
 void UT66HeroSelectionScreen::ToggleBodyType() { SelectedBodyType = (SelectedBodyType == ET66BodyType::TypeA) ? ET66BodyType::TypeB : ET66BodyType::TypeA; }
 

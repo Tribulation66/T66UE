@@ -9,16 +9,19 @@
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66SteamHelper.h"
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66UIManager.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 
 #include "Data/T66DataTypes.h"
 #include "Engine/DataTable.h"
+#include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
 
 #include "Styling/CoreStyle.h"
@@ -37,7 +40,8 @@
 namespace
 {
 	constexpr int32 AccountFontDelta = -2;
-	const TCHAR* AccountWorkerAssetRoot = TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/");
+	const TCHAR* AccountMasterSliceRoot = TEXT("SourceAssets/UI/MasterLibrary/Slices/");
+	const TCHAR* AccountProgressFillAssetPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Misc/progress_fill_dark_purple_twinkle_imagegen_20260427.png");
 
 	int32 AdjustAccountFontSize(int32 BaseSize)
 	{
@@ -52,6 +56,21 @@ namespace
 	FSlateFontInfo AccountRegularFont(int32 BaseSize)
 	{
 		return FT66Style::Tokens::FontRegular(AdjustAccountFontSize(BaseSize));
+	}
+
+	float AccountPreviewProgress01(const int32 Index)
+	{
+		static constexpr float PreviewValues[] =
+		{
+			0.42f,
+			0.58f,
+			0.70f,
+			0.36f,
+			0.51f,
+			0.64f
+		};
+		static constexpr int32 PreviewValueCount = sizeof(PreviewValues) / sizeof(PreviewValues[0]);
+		return PreviewValues[Index % PreviewValueCount];
 	}
 
 	FLinearColor AccountGold()
@@ -144,13 +163,13 @@ namespace
 		case ET66ButtonType::Primary:
 		case ET66ButtonType::Success:
 		case ET66ButtonType::ToggleActive:
-			return TEXT("settings_toggle_on");
+			return TEXT("TopBar/topbar_nav");
 		case ET66ButtonType::Danger:
-			return TEXT("settings_toggle_off");
+			return TEXT("TopBar/topbar_nav");
 		case ET66ButtonType::Neutral:
 		case ET66ButtonType::Row:
 		default:
-			return TEXT("settings_compact_neutral");
+			return TEXT("TopBar/topbar_nav");
 		}
 	}
 
@@ -159,12 +178,14 @@ namespace
 		static FAccountReferenceButtonBrushSet Neutral;
 		static FAccountReferenceButtonBrushSet Success;
 		static FAccountReferenceButtonBrushSet Danger;
+		static FAccountReferenceButtonBrushSet ToggleActive;
 
 		switch (Type)
 		{
+		case ET66ButtonType::ToggleActive:
+			return ToggleActive;
 		case ET66ButtonType::Primary:
 		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
 			return Success;
 		case ET66ButtonType::Danger:
 			return Danger;
@@ -180,12 +201,14 @@ namespace
 		static FAccountReferenceButtonStyleEntry Neutral;
 		static FAccountReferenceButtonStyleEntry Success;
 		static FAccountReferenceButtonStyleEntry Danger;
+		static FAccountReferenceButtonStyleEntry ToggleActive;
 
 		switch (Type)
 		{
+		case ET66ButtonType::ToggleActive:
+			return ToggleActive;
 		case ET66ButtonType::Primary:
 		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
 			return Success;
 		case ET66ButtonType::Danger:
 			return Danger;
@@ -204,8 +227,8 @@ namespace
 	{
 		return ResolveAccountReferenceBrush(
 			Entry,
-			FString::Printf(TEXT("%s%s_%s.png"), AccountWorkerAssetRoot, Prefix, State),
-			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
+			FString::Printf(TEXT("%s%s_%s.png"), AccountMasterSliceRoot, Prefix, State),
+			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 			DebugLabel);
 	}
 
@@ -221,6 +244,7 @@ namespace
 
 			FAccountReferenceButtonBrushSet& BrushSet = GetAccountReferenceButtonBrushSet(Type);
 			const TCHAR* Prefix = GetAccountReferenceButtonPrefix(Type);
+			const bool bUsePressedAsRestState = Type == ET66ButtonType::ToggleActive;
 			if (const FSlateBrush* Brush = ResolveAccountReferenceButtonBrush(BrushSet.Normal, Prefix, TEXT("normal"), TEXT("AccountButtonNormal")))
 			{
 				StyleEntry.Style.SetNormal(*Brush);
@@ -232,8 +256,13 @@ namespace
 			if (const FSlateBrush* Brush = ResolveAccountReferenceButtonBrush(BrushSet.Pressed, Prefix, TEXT("pressed"), TEXT("AccountButtonPressed")))
 			{
 				StyleEntry.Style.SetPressed(*Brush);
+				if (bUsePressedAsRestState)
+				{
+					StyleEntry.Style.SetNormal(*Brush);
+					StyleEntry.Style.SetHovered(*Brush);
+				}
 			}
-			if (const FSlateBrush* Brush = ResolveAccountReferenceButtonBrush(BrushSet.Disabled, TEXT("settings_toggle_inactive"), TEXT("normal"), TEXT("AccountButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolveAccountReferenceButtonBrush(BrushSet.Disabled, TEXT("TopBar/topbar_nav"), TEXT("disabled"), TEXT("AccountButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}
@@ -247,8 +276,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_content_shell_frame.png"),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("AccountContentShell"));
 	}
 
@@ -257,7 +286,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MainMenuReference/scene_background_purple_imagegen_1920x1080.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png"),
 			FMargin(0.f),
 			TEXT("AccountSceneBackground"));
 	}
@@ -267,8 +296,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_row_shell_full.png"),
-			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
+			FMargin(0.052f, 0.094f, 0.052f, 0.094f),
 			TEXT("AccountRowShell"));
 	}
 
@@ -277,9 +306,52 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/SettingsReference/Worker1/Slices/Center/settings_dropdown_field.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Controls/dropdown_field_normal.png"),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
 			TEXT("AccountFieldShell"));
+	}
+
+	const FSlateBrush* GetAccountProgressFillBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveAccountReferenceBrush(
+			Entry,
+			AccountProgressFillAssetPath,
+			FMargin(0.25f, 0.45f, 0.25f, 0.45f),
+			TEXT("AccountProgressFill"));
+	}
+
+	const FSlateBrush* GetAccountDropdownChevronBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveAccountReferenceBrush(
+			Entry,
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_16_dropdown_chevron_imagegen_20260425_v2.png"),
+			FMargin(0.f),
+			TEXT("AccountDropdownChevron"));
+	}
+
+	const FSlateBrush* GetAccountAvatarSlotBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveAccountReferenceBrush(
+			Entry,
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/avatar_slot_normal.png"),
+			FMargin(0.205f, 0.205f, 0.205f, 0.205f),
+			TEXT("AccountAvatarSlot"));
+	}
+
+	TSharedRef<SWidget> MakeAccountDropdownChevron(float Size = 18.f)
+	{
+		const FSlateBrush* ChevronBrush = GetAccountDropdownChevronBrush();
+		return SNew(SBox)
+			.WidthOverride(Size)
+			.HeightOverride(Size)
+			[
+				SNew(SImage)
+				.Image(ChevronBrush)
+				.ColorAndOpacity(ChevronBrush ? FLinearColor::White : AccountMutedText())
+			];
 	}
 
 	TSharedRef<SWidget> MakeAccountReferenceButton(const FT66ButtonParams& Params)
@@ -349,6 +421,34 @@ namespace
 				.SetPadding(Padding));
 	}
 
+	TSharedRef<SWidget> MakeAccountProgressBar(const float Percent, const float Height, const FLinearColor& FallbackFill)
+	{
+		const float Pct = FMath::Clamp(Percent, 0.f, 1.f);
+		const FSlateBrush* FillBrush = GetAccountProgressFillBrush();
+
+		return MakeAccountFieldShell(
+			SNew(SBox)
+			.HeightOverride(Height)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.FillWidth(FMath::Max(Pct, 0.001f))
+				[
+					SNew(SBorder)
+					.Visibility(Pct > 0.001f ? EVisibility::Visible : EVisibility::Collapsed)
+					.BorderImage(FillBrush ? FillBrush : FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FillBrush ? FLinearColor::White : FallbackFill)
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(FMath::Max(1.f - Pct, 0.001f))
+				[
+					SNew(SSpacer)
+				]
+			],
+			FMargin(4.f, 3.f));
+	}
+
 	TSharedRef<SWidget> MakeAccountReferenceDropdown(const FT66DropdownParams& Params)
 	{
 		static FComboButtonStyle FlatComboStyle = []()
@@ -360,6 +460,7 @@ namespace
 
 		TSharedRef<SComboButton> Combo = SNew(SComboButton)
 			.ComboButtonStyle(&FlatComboStyle)
+			.HasDownArrow(false)
 			.OnGetMenuContent_Lambda([OnGet = Params.OnGetMenuContent]()
 			{
 				return OnGet();
@@ -542,9 +643,40 @@ UT66AccountStatusScreen::UT66AccountStatusScreen(const FObjectInitializer& Objec
 	bIsModal = false;
 }
 
+void UT66AccountStatusScreen::ApplyAutomationAccountTabOverride()
+{
+	if (bAutomationTabOverrideApplied)
+	{
+		return;
+	}
+
+	bAutomationTabOverrideApplied = true;
+
+	FString RequestedAccountTab;
+	if (!FParse::Value(FCommandLine::Get(), TEXT("T66AccountTab="), RequestedAccountTab))
+	{
+		return;
+	}
+
+	if (RequestedAccountTab.Equals(TEXT("History"), ESearchCase::IgnoreCase))
+	{
+		ActiveTab = EAccountTab::History;
+	}
+	else if (RequestedAccountTab.Equals(TEXT("Suspension"), ESearchCase::IgnoreCase))
+	{
+		ActiveTab = EAccountTab::Suspension;
+	}
+	else if (RequestedAccountTab.Equals(TEXT("Overview"), ESearchCase::IgnoreCase))
+	{
+		ActiveTab = EAccountTab::Overview;
+	}
+}
+
 void UT66AccountStatusScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
+	bAutomationTabOverrideApplied = false;
+	ApplyAutomationAccountTabOverride();
 	bAppealEditorOpen = false;
 	bShowStandingInfoPopup = false;
 	AppealDraftMessage.Reset();
@@ -607,6 +739,7 @@ void UT66AccountStatusScreen::HandleBackendMyRankDataReady(const FString& Key, b
 
 TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 {
+	ApplyAutomationAccountTabOverride();
 	UGameInstance* GIBase = UGameplayStatics::GetGameInstance(this);
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GIBase);
 	UT66LocalizationSubsystem* Loc = GIBase ? GIBase->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
@@ -615,19 +748,15 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 	UT66AchievementsSubsystem* Achievements = GIBase ? GIBase->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	UT66BuffSubsystem* Buffs = GIBase ? GIBase->GetSubsystem<UT66BuffSubsystem>() : nullptr;
 	UT66CompanionUnlockSubsystem* CompanionUnlocks = GIBase ? GIBase->GetSubsystem<UT66CompanionUnlockSubsystem>() : nullptr;
+	UT66SteamHelper* SteamHelper = GIBase ? GIBase->GetSubsystem<UT66SteamHelper>() : nullptr;
 	const TWeakObjectPtr<UT66GameInstance> WeakT66GI = T66GI;
 	const TWeakObjectPtr<UT66LocalizationSubsystem> WeakLoc = Loc;
 	const TWeakObjectPtr<UT66LeaderboardSubsystem> WeakLB = LB;
 
 	const bool bModalPresentation = UIManager && UIManager->GetCurrentModalType() == ScreenType;
-	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
-	const float TopBarOverlapPx = 22.f;
-	// Frontend screens are inside the responsive root, but the top bar is not.
-	// Convert the visible top-bar height back into screen-local units, then apply a small overlap
-	// so the screen surface meets the bar with no seam.
 	const float TopInset = bModalPresentation
 		? 0.f
-		: FMath::Max(0.f, ((UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f) - TopBarOverlapPx) / ResponsiveScale);
+		: T66ScreenSlateHelpers::GetFrontendChromeTopInset(UIManager);
 	const FT66AccountRestrictionRecord Restriction = LB ? LB->GetAccountRestrictionRecord() : FT66AccountRestrictionRecord();
 	const bool bAccountEligible = LB ? LB->IsAccountEligibleForLeaderboard() : true;
 	const bool bHasSuspension = Restriction.Restriction != ET66AccountRestrictionKind::None;
@@ -668,6 +797,38 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 	const int32 DisplayStagesCleared = FMath::Clamp(LifetimeStagesCleared, 0, TotalStageCount);
 	const int32 TotalChallengeCount = 6;
 	const int32 DisplayChallengesCompleted = 0;
+
+	ProfileAvatarBrush = MakeShared<FSlateBrush>();
+	ProfileAvatarBrush->DrawAs = ESlateBrushDrawType::Image;
+	ProfileAvatarBrush->Tiling = ESlateBrushTileType::NoTile;
+	ProfileAvatarBrush->ImageSize = FVector2D(70.f, 70.f);
+	if (UTexture2D* LocalAvatarTexture = SteamHelper ? SteamHelper->GetLocalAvatarTexture() : nullptr)
+	{
+		ProfileAvatarBrush->SetResourceObject(LocalAvatarTexture);
+	}
+	else
+	{
+		ProfileAvatarBrush->SetResourceObject(nullptr);
+	}
+
+	const FString LocalSteamName = SteamHelper ? SteamHelper->GetLocalDisplayName() : FString();
+	const FText ProfileNameText = !LocalSteamName.IsEmpty()
+		? FText::FromString(LocalSteamName)
+		: NSLOCTEXT("T66.Account", "ProfileNameFallback", "Local Player");
+	const int32 ProfileLevel = Achievements ? Achievements->GetAccountLevel() : 1;
+	const int32 ProfileMaxLevel = Achievements ? Achievements->GetAccountMaxLevel() : UT66AchievementsSubsystem::AccountMaxLevel;
+	const int32 ProfileNextLevel = Achievements ? Achievements->GetAccountNextLevel() : FMath::Min(ProfileLevel + 1, ProfileMaxLevel);
+	const int32 ProfileExperienceIntoLevel = Achievements ? Achievements->GetAccountExperienceIntoLevel() : 0;
+	const int32 ProfileExperienceToNextLevel = Achievements ? Achievements->GetAccountExperienceToNextLevel() : UT66AchievementsSubsystem::AccountExperiencePerLevel;
+	const FText ProfileLevelText = FText::Format(
+		NSLOCTEXT("T66.Account", "ProfileLevelFormat", "Level {0}/{1}"),
+		FText::AsNumber(ProfileLevel),
+		FText::AsNumber(ProfileMaxLevel));
+	const FText ProfileNextLevelText = FText::Format(
+		NSLOCTEXT("T66.Account", "ProfileNextLevelFormat", "{0}/{1} XP to Level {2}"),
+		FText::AsNumber(ProfileExperienceIntoLevel),
+		FText::AsNumber(ProfileExperienceToNextLevel),
+		FText::AsNumber(ProfileNextLevel));
 
 	auto DifficultyText = [Loc](ET66Difficulty Difficulty) -> FText
 	{
@@ -732,39 +893,21 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 		return MakeAccountReferenceButton(
 			FT66ButtonParams(Label, FOnClicked::CreateUObject(this, Handler), bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
-			.SetFontSize(AdjustAccountFontSize(12))
-			.SetMinWidth(152.f)
-			.SetHeight(0.f)
-			.SetPadding(FMargin(16.f, 10.f, 16.f, 8.f))
+			.SetFontSize(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabFontSize)
+			.SetMinWidth(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabMinWidth)
+			.SetHeight(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabHeight)
+			.SetPadding(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabPadding)
 			.SetTextColor(bActive ? ResolvedActiveTextColor : ResolvedInactiveTextColor));
 	};
 
+	int32 AccountProgressPreviewIndex = 0;
 	auto MakeProgressRow = [&](const FText& Label, int32 Current, int32 Total, const FLinearColor& Fill) -> TSharedRef<SWidget>
 	{
-		const float Pct = FMath::Clamp(Total > 0 ? static_cast<float>(Current) / static_cast<float>(Total) : 0.f, 0.f, 1.f);
+		const float Pct = AccountPreviewProgress01(AccountProgressPreviewIndex++);
 		const TSharedRef<SWidget> ProgressBar =
-			MakeAccountFieldShell(
-				SNew(SBox)
-				.HeightOverride(9.f)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(FMath::Max(Pct, 0.001f))
-					[
-						SNew(SBorder)
-						.Visibility(Pct > 0.001f ? EVisibility::Visible : EVisibility::Collapsed)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(Fill)
-					]
-					+ SHorizontalBox::Slot().FillWidth(FMath::Max(1.f - Pct, 0.001f))
-					[
-						SNew(SSpacer)
-					]
-				],
-				FMargin(4.f, 3.f));
+			MakeAccountProgressBar(Pct, 9.f, Fill);
 
-		return MakeAccountPanel(
-			SNew(SVerticalBox)
+		return SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(SHorizontalBox)
@@ -774,8 +917,93 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 			[
 				ProgressBar
+			];
+	};
+
+	auto MakeProfileLevelPanel = [&]() -> TSharedRef<SWidget>
+	{
+		constexpr float PreviewExperienceProgress = 0.58f;
+		const float Pct = PreviewExperienceProgress;
+		const FSlateBrush* AvatarSlotBrush = GetAccountAvatarSlotBrush();
+
+		const TSharedRef<SWidget> LevelBar =
+			MakeAccountProgressBar(Pct, 12.f, FLinearColor(0.74f, 0.10f, 0.96f, 1.0f));
+
+		return MakeAccountPanel(
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				SNew(SBox)
+				.WidthOverride(86.f)
+				.HeightOverride(86.f)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SImage)
+						.Image(AvatarSlotBrush)
+						.ColorAndOpacity(AvatarSlotBrush ? FLinearColor::White : FLinearColor(0.08f, 0.08f, 0.10f, 1.0f))
+					]
+					+ SOverlay::Slot()
+					.Padding(FMargin(8.f))
+					[
+						SNew(SImage)
+						.Image(ProfileAvatarBrush.Get())
+						.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([this]() -> FSlateColor
+						{
+							const bool bHasProfileAvatar = ProfileAvatarBrush.IsValid()
+								&& ProfileAvatarBrush->GetResourceObject() != nullptr;
+							return bHasProfileAvatar
+								? FSlateColor(FLinearColor::White)
+								: FSlateColor(FLinearColor(1.f, 1.f, 1.f, 0.f));
+						}))
+					]
+				]
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(16.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(STextBlock)
+					.Text(ProfileNameText)
+					.Font(AccountBoldFont(19))
+					.ColorAndOpacity(AccountText())
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+				[
+					SNew(STextBlock)
+					.Text(ProfileLevelText)
+					.Font(AccountBoldFont(13))
+					.ColorAndOpacity(AccountGold())
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f)
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.Account", "ExperienceLabel", "Experience"))
+						.Font(AccountBoldFont(11))
+						.ColorAndOpacity(AccountText())
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(ProfileNextLevelText)
+						.Font(AccountRegularFont(10))
+						.ColorAndOpacity(AccountMutedText())
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+				[
+					LevelBar
+				]
 			],
-			ET66PanelType::Panel2, AccountRowFill(), FMargin(10.f, 8.f));
+			ET66PanelType::Panel2,
+			AccountPanelInnerFill(),
+			FMargin(14.f, 12.f));
 	};
 
 	auto GetMyRankKey = [this](ET66LeaderboardType Type, ET66Difficulty Difficulty) -> FString
@@ -1006,8 +1234,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 	auto MakeHistoryFilterDropdown = [&](const FText& Label, TFunction<FText()> GetValueText, TFunction<TSharedRef<SWidget>()> MakeMenu, float MinWidth) -> TSharedRef<SWidget>
 	{
-		return MakeAccountPanel(
-			SNew(SVerticalBox)
+		return SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
@@ -1029,17 +1256,13 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
 						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66.Account", "HistoryDropdownArrow", "v"))
-							.Font(AccountBoldFont(10))
-							.ColorAndOpacity(AccountMutedText())
+							MakeAccountDropdownChevron(15.f)
 						],
 						MoveTemp(MakeMenu))
 					.SetMinWidth(MinWidth)
 					.SetHeight(0.f)
 					.SetPadding(FMargin(10.f, 7.f, 10.f, 6.f)))
-			],
-			ET66PanelType::Panel2, AccountPanelInnerFill(), FMargin(8.f, 7.f, 8.f, 6.f));
+			];
 	};
 
 	auto MakeHeroHistoryFilterMenu = [this, HistoryHeroFilterEntries, MakeHistoryFilterMenuEntry]() -> TSharedRef<SWidget>
@@ -1180,60 +1403,46 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 	auto MakePBViewModeDropdown = [this, GetPBViewModeText, MakePBViewModeMenu]() -> TSharedRef<SWidget>
 	{
-		return MakeAccountPanel(
-			MakeAccountReferenceDropdown(
-				FT66DropdownParams(
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-					[
-						SNew(STextBlock)
-						.Text_Lambda([GetPBViewModeText]() { return GetPBViewModeText(); })
-						.Font(AccountRegularFont(14))
-						.ColorAndOpacity(AccountText())
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Account", "PBModeDropdownArrow", "v"))
-						.Font(AccountBoldFont(12))
-						.ColorAndOpacity(AccountMutedText())
-					],
-					MakePBViewModeMenu)
-				.SetMinWidth(0.f)
-				.SetHeight(0.f)
-				.SetPadding(FMargin(12.f, 9.f, 12.f, 8.f))),
-			ET66PanelType::Panel2,
-			AccountPanelInnerFill(),
-			FMargin(8.f, 7.f, 8.f, 6.f));
+		return MakeAccountReferenceDropdown(
+			FT66DropdownParams(
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text_Lambda([GetPBViewModeText]() { return GetPBViewModeText(); })
+					.Font(AccountRegularFont(14))
+					.ColorAndOpacity(AccountText())
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
+				[
+					MakeAccountDropdownChevron(18.f)
+				],
+				MakePBViewModeMenu)
+			.SetMinWidth(0.f)
+			.SetHeight(0.f)
+			.SetPadding(FMargin(12.f, 9.f, 12.f, 8.f)));
 	};
 
 	auto MakePBPartySizeDropdown = [this, Loc, MakePBPartySizeMenu]() -> TSharedRef<SWidget>
 	{
-		return MakeAccountPanel(
-			MakeAccountReferenceDropdown(
-				FT66DropdownParams(
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-					[
-						SNew(STextBlock)
-						.Text_Lambda([this, Loc]() { return PartySizeText(Loc, ActivePBPartySize); })
-						.Font(AccountRegularFont(14))
-						.ColorAndOpacity(AccountText())
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Account", "PBPartySizeDropdownArrow", "v"))
-						.Font(AccountBoldFont(12))
-						.ColorAndOpacity(AccountMutedText())
-					],
-					MakePBPartySizeMenu)
-				.SetMinWidth(0.f)
-				.SetHeight(0.f)
-				.SetPadding(FMargin(12.f, 9.f, 12.f, 8.f))),
-			ET66PanelType::Panel2,
-			AccountPanelInnerFill(),
-			FMargin(8.f, 7.f, 8.f, 6.f));
+		return MakeAccountReferenceDropdown(
+			FT66DropdownParams(
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text_Lambda([this, Loc]() { return PartySizeText(Loc, ActivePBPartySize); })
+					.Font(AccountRegularFont(14))
+					.ColorAndOpacity(AccountText())
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
+				[
+					MakeAccountDropdownChevron(18.f)
+				],
+				MakePBPartySizeMenu)
+			.SetMinWidth(0.f)
+			.SetHeight(0.f)
+			.SetPadding(FMargin(12.f, 9.f, 12.f, 8.f)));
 	};
 
 	auto DoesRunMatchHistoryFilters = [&](const FT66RecentRunRecord& Run) -> bool
@@ -1402,7 +1611,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		];
 	}
 
-	const TSharedRef<SWidget> HistoryFilterBar = MakeAccountPanel(
+	const TSharedRef<SWidget> HistoryFilterBar =
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot().FillWidth(0.34f).Padding(0.f, 0.f, 8.f, 0.f)
 		[
@@ -1435,8 +1644,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 				GetCompletionHistoryFilterText,
 				MakeCompletionHistoryFilterMenu,
 				160.f)
-		],
-		ET66PanelType::Panel2, AccountPanelInnerFill(), FMargin(10.f));
+		];
 
 	const TSharedRef<SWidget> HistoryColumnHeader = MakeAccountPanel(
 		SNew(SHorizontalBox)
@@ -1538,6 +1746,10 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 12.f, 0.f)
 		[
 			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+			[
+				MakeProfileLevelPanel()
+			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 			[
 				MakeAccountPanel(
@@ -1793,28 +2005,39 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 	TSharedRef<SWidget> Content =
 		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 12.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(T66ScreenSlateHelpers::GetFrontendChromeMetrics().HeaderPadding)
 		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().FillWidth(1.f)[SNew(SSpacer)]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+			SNew(SOverlay)
+			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center)
 			[
-				SNew(SBox)
-				.Visibility(bHasSuspension ? EVisibility::Visible : EVisibility::Collapsed)
-				[
-					MakeTabButton(
-						NSLOCTEXT("T66.Account", "SuspensionTab", "SUSPENSION"),
-						ActiveTab == EAccountTab::Suspension,
-						&UT66AccountStatusScreen::HandleSuspensionTabClicked,
-						AccountDanger(),
-						FLinearColor(0.22f, 0.08f, 0.07f, 1.0f),
-						FLinearColor(0.12f, 0.07f, 0.06f, 1.0f),
-						FLinearColor(0.96f, 0.80f, 0.78f, 1.0f))
-				]
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.Account", "ScreenTitle", "ACCOUNT"))
+				.Font(T66ScreenSlateHelpers::MakeFrontendChromeTitleFont())
+				.ColorAndOpacity(AccountGold())
+				.ShadowOffset(FVector2D(0.f, 2.f))
+				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.75f))
 			]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(NSLOCTEXT("T66.Account", "OverviewTab", "OVERVIEW"), ActiveTab == EAccountTab::Overview, &UT66AccountStatusScreen::HandleOverviewTabClicked)]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(NSLOCTEXT("T66.Account", "HistoryTab", "HISTORY"), ActiveTab == EAccountTab::History, &UT66AccountStatusScreen::HandleHistoryTabClicked)]
-			+ SHorizontalBox::Slot().FillWidth(1.f)[SNew(SSpacer)]
+			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+				[
+					SNew(SBox)
+					.Visibility(bHasSuspension ? EVisibility::Visible : EVisibility::Collapsed)
+					[
+						MakeTabButton(
+							NSLOCTEXT("T66.Account", "SuspensionTab", "SUSPENSION"),
+							ActiveTab == EAccountTab::Suspension,
+							&UT66AccountStatusScreen::HandleSuspensionTabClicked,
+							AccountDanger(),
+							FLinearColor(0.22f, 0.08f, 0.07f, 1.0f),
+							FLinearColor(0.12f, 0.07f, 0.06f, 1.0f),
+							FLinearColor(0.96f, 0.80f, 0.78f, 1.0f))
+					]
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(NSLOCTEXT("T66.Account", "OverviewTab", "OVERVIEW"), ActiveTab == EAccountTab::Overview, &UT66AccountStatusScreen::HandleOverviewTabClicked)]
+				+ SHorizontalBox::Slot().AutoWidth()[MakeTabButton(NSLOCTEXT("T66.Account", "HistoryTab", "HISTORY"), ActiveTab == EAccountTab::History, &UT66AccountStatusScreen::HandleHistoryTabClicked)]
+			]
 		]
 		+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SScrollBox) + SScrollBox::Slot()[ActiveContent]]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 12.f, 0.f, 0.f)
@@ -1827,7 +2050,8 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		];
 
 	const TSharedRef<SWidget> ModalFrame = SNew(SBox).MaxDesiredWidth(1600.f)[MakeAccountPanel(Content, ET66PanelType::Panel, AccountPanelFill(), FMargin(18.f))];
-	const TSharedRef<SWidget> FullWidthFrame = MakeAccountPanel(Content, ET66PanelType::Panel, AccountPanelFill(), FMargin(10.f, 0.f, 10.f, 10.f));
+	const TSharedRef<SWidget> FullWidthFrame = MakeAccountPanel(Content, ET66PanelType::Panel, AccountPanelFill(), FMargin(18.f));
+	const FMargin FullWidthFramePadding(14.f, TopInset, 14.f, 0.f);
 	if (bModalPresentation)
 	{
 		return SNew(SOverlay)
@@ -1852,7 +2076,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			[
 				SNew(SBox)
-				.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
+				.Padding(FullWidthFramePadding)
 				[
 					FullWidthFrame
 				]
@@ -1864,7 +2088,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		.BorderBackgroundColor(FT66Style::ScreenBackground())
 		[
 			SNew(SBox)
-			.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
+			.Padding(FullWidthFramePadding)
 			[
 				FullWidthFrame
 			]

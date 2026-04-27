@@ -46,6 +46,12 @@ struct FT66BossPartBarRow
 	bool bLastAlive = false;
 };
 
+struct FT66HUDInteractionPromptEntry
+{
+	TWeakObjectPtr<AActor> SourceActor;
+	FText TargetName = FText::GetEmpty();
+};
+
 /**
  * In-run HUD: hearts (5 icons), gold, toggleable inventory bar (1x5) and minimap placeholder.
  * T toggles panels; hearts and gold always visible. Event-driven updates via RunState.
@@ -124,6 +130,10 @@ public:
 	void SetWorldDialogueScreenPosition(const FVector2D& ScreenPos);
 	bool IsWorldDialogueVisible() const;
 
+	/** HUD-rendered interaction prompt for nearby world interactables. */
+	void ShowInteractionPrompt(AActor* SourceActor, const FText& TargetName);
+	void HideInteractionPrompt(AActor* SourceActor);
+
 	/** Toggle hit-test visibility so tooltips work when the mouse is free. */
 	void SetInteractive(bool bInteractive);
 
@@ -142,10 +152,11 @@ public:
 	void StartCrateOpen();
 
 	static constexpr float MinimapPanelWidth = 164.f;
-	static constexpr float BottomRightInventoryPanelWidth = 472.f;
-	static constexpr float BottomRightInventoryPanelHeight = 146.f;
+	static constexpr float BottomRightInventoryPanelWidth = 279.f;
+	static constexpr float BottomRightInventoryPanelHeight = 140.f;
+	static constexpr float BottomRightPauseAchievementPanelWidth = 472.f;
 	static constexpr float BottomRightPresentationGap = 8.f;
-	static constexpr float BottomRightInventorySlotSize = 40.f;
+	static constexpr float BottomRightInventorySlotSize = 48.f;
 	static constexpr float BottomRightInventoryInspectScale = 2.f;
 
 protected:
@@ -338,6 +349,9 @@ protected:
 	FSlateBrush WheelTextureBrush;
 	TSharedPtr<ST66WorldMapWidget> MinimapWidget;
 	TSharedPtr<ST66WorldMapWidget> FullMapWidget;
+	TSharedPtr<SBox> InteractionPromptBox;
+	TSharedPtr<STextBlock> InteractionPromptTargetText;
+	TArray<FT66HUDInteractionPromptEntry> InteractionPromptEntries;
 	TSharedPtr<SBox> WorldDialogueBox;
 	TArray<TSharedPtr<SBorder>> WorldDialogueOptionBorders;
 	TArray<TSharedPtr<STextBlock>> WorldDialogueOptionTexts;
@@ -409,6 +423,7 @@ protected:
 	void HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs);
 	void ShowNextAchievementNotification();
 	void HideAchievementNotificationAndShowNext();
+	void RefreshInteractionPromptWidget();
 	FT66HUDPresentationController& GetPresentationController();
 	const FT66HUDPresentationController& GetPresentationController() const;
 	TUniquePtr<FT66HUDPresentationController> PresentationController;

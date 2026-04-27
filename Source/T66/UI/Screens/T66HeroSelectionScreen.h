@@ -129,9 +129,8 @@ private:
 	TSharedPtr<SImage> HeroRecordMedalImageWidget;
 	TSharedPtr<STextBlock> HeroRecordMedalWidget;
 	TSharedPtr<STextBlock> HeroRecordUnityWidget;
-	TSharedPtr<STextBlock> HeroRecordGamesWidget;
-	TSharedPtr<STextBlock> HeroRecordThirdLabelWidget;
-	TSharedPtr<STextBlock> HeroRecordThirdValueWidget;
+	TSharedPtr<SImage> HeroRecordRankImageWidget;
+	TSharedPtr<STextBlock> HeroRecordRankWidget;
 	TSharedPtr<STextBlock> CompanionHealsPerSecondWidget;
 	TSharedPtr<STextBlock> CompanionUnityTextWidget;
 	TSharedPtr<STextBlock> DifficultyDropdownText; // Current difficulty display
@@ -163,10 +162,16 @@ private:
 	TSharedPtr<STextBlock> ACBalanceTextBlock;
 	TSharedPtr<FSlateBrush> ACBalanceIconBrush;
 	TSharedPtr<FSlateBrush> ChallengesButtonIconBrush;
+	TStrongObjectPtr<UTexture2D> ACBalanceIconTexture;
+	TStrongObjectPtr<UTexture2D> ChallengesButtonIconTexture;
+	TStrongObjectPtr<UTexture2D> HeroRecordMedalTexture;
+	TStrongObjectPtr<UTexture2D> HeroRecordRankTexture;
 	TSharedPtr<FSlateBrush> HeroRecordMedalBrush;
+	TSharedPtr<FSlateBrush> HeroRecordRankBrush;
 	TArray<TSharedPtr<FSlateBrush>> PartyAvatarBrushes;
 	TArray<TSharedPtr<FSlateBrush>> PartyHeroPortraitBrushes;
 	TArray<TSharedPtr<FSlateBrush>> SelectedTemporaryBuffBrushes;
+	TArray<TSharedPtr<FSlateBrush>> TemporaryBuffPickerBrushes;
 	TArray<TSharedPtr<class SImage>> PartyAvatarImageWidgets;
 	TArray<TSharedPtr<class SImage>> PartyHeroPortraitImageWidgets;
 
@@ -197,6 +202,8 @@ private:
 	void EnsureHeroStatsSnapshot();
 	void PopulateHeroStatsSnapshot(const FHeroData& HeroData, const FT66HeroStatBlock& BaseStats, const FT66HeroStatBonuses& PermanentBuffBonuses);
 	void RefreshHeroStatsPanels();
+	void RefreshHeroRecordRank();
+	void HandleBackendMyRankDataReady(const FString& Key, bool bSuccess, int32 Rank, int32 TotalEntries);
 	void GeneratePlaceholderSkins();
 	/** Repopulate skins list from current PlaceholderSkins (call after Equip/Buy so Equipped/Equip toggle in place). */
 	void RefreshSkinsList();
@@ -220,8 +227,11 @@ private:
 	/** True when the Lore panel is visible (right-side panel swaps to lore). */
 	bool bShowingLore = false;
 	bool bShowingStatsPanel = false;
+	bool bShowingTemporaryBuffPicker = false;
+	bool bShowingHeroRecordInfoPanel = false;
 	float CompanionUnityProgress01 = 0.f;
 	int32 CompanionUnityStagesCleared = 0;
+	int32 TemporaryBuffPickerSlotIndex = 0;
 
 	/** True when the left panel should show companion skins instead of hero skins. */
 	bool bShowingCompanionSkins = false;
@@ -242,10 +252,14 @@ private:
 	FReply HandleCompanionGridClicked();
 	FReply HandleCompanionClicked();
 	FReply HandleTemporaryBuffSlotClicked(int32 SlotIndex);
-	FReply HandleSelectBuffsClicked();
+	FReply HandleTemporaryBuffPickerCloseClicked();
+	FReply HandleTemporaryBuffBuyClicked(ET66SecondaryStatType StatType);
+	FReply HandleTemporaryBuffEquipClicked(ET66SecondaryStatType StatType);
+	FReply HandleClearTemporaryBuffsClicked();
 	FReply HandleLoreClicked();
 	FReply HandleStatsClicked();
 	FReply HandleOpenStatsPanelClicked();
+	FReply HandleHeroRecordInfoClicked();
 	FReply HandleUltimatePreviewClicked();
 	FReply HandlePassivePreviewClicked();
 	FReply HandleBodyTypeAClicked();
@@ -262,6 +276,8 @@ private:
 
 	FDelegateHandle PartyStateChangedHandle;
 	FDelegateHandle SessionStateChangedHandle;
+	FDelegateHandle BackendMyRankReadyHandle;
+	FString HeroRecordRankRequestKey;
 	ET66Language LastBuiltLanguage = ET66Language::English;
 
 	UPROPERTY(Transient)

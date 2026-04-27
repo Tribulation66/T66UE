@@ -46,6 +46,8 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -67,7 +69,7 @@
 #include "Rendering/SlateRenderTransform.h"
 #include "Engine/Texture2D.h"
 #include "Engine/DataTable.h"
-// [GOLD] EngineUtils.h removed — TActorIterator replaced by ActorRegistry.
+// [GOLD] EngineUtils.h removed - TActorIterator replaced by ActorRegistry.
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SToolTip.h"
 
@@ -80,6 +82,13 @@ namespace
 		FLinearColor Out = Color;
 		Out.A = Alpha;
 		return Out;
+	}
+
+	static bool T66_IsHudReviewStateCommandLine()
+	{
+		const TCHAR* CommandLine = FCommandLine::Get();
+		return FParse::Param(CommandLine, TEXT("T66HUDReviewState"))
+			|| FParse::Param(CommandLine, TEXT("T66HUDReview"));
 	}
 
 	static FText GetBossPartDisplayName(const FT66BossPartSnapshot& Part)
@@ -451,6 +460,8 @@ namespace
 			{ FName(TEXT("Crate")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/crate.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("LootBag")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/loot_bag.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("CatchUpLoot")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/catch_up_loot.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("Enemy")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/enemy.png"), FVector2D(18.f, 18.f) } },
+			{ FName(TEXT("PlayerArrow")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/player_arrow.png"), FVector2D(22.f, 22.f) } },
 		};
 
 		return Specs.Find(Key);
@@ -512,6 +523,24 @@ namespace
 		return nullptr;
 	}
 
+	static FVector2D GetMinimapSymbolDrawSize(const FName Key, const FVector2D& FallbackSize = FVector2D(20.0f, 20.0f))
+	{
+		if (const FT66LooseMinimapIconSpec* Spec = FindLooseMinimapIconSpec(Key))
+		{
+			return Spec->DrawSize;
+		}
+
+		if (const FSlateBrush* Brush = GetMinimapSymbolBrush(Key))
+		{
+			if (Brush->ImageSize.X > 0.0f && Brush->ImageSize.Y > 0.0f)
+			{
+				return Brush->ImageSize;
+			}
+		}
+
+		return FallbackSize;
+	}
+
 	static FLinearColor GetMinimapMarkerTint(const FSlateBrush* Brush, const FLinearColor& MarkerColor, const bool bMinimap)
 	{
 		if (!Brush || !Brush->GetResourceObject())
@@ -531,6 +560,7 @@ namespace
 	struct FT66TowerMinimapArtStyle
 	{
 		FString RelativePath;
+		FString WallRelativePath;
 		FLinearColor MapTint = FLinearColor::White;
 		FLinearColor WallFill = FLinearColor(0.14f, 0.11f, 0.09f, 1.0f);
 		FLinearColor WallStroke = FLinearColor(0.92f, 0.86f, 0.72f, 1.0f);
@@ -543,6 +573,7 @@ namespace
 		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Forest:
 			return {
 				TEXT("RuntimeDependencies/T66/UI/Minimap/Backgrounds/tower_forest_background.png"),
+				TEXT("RuntimeDependencies/T66/UI/Minimap/Walls/tower_forest_wall.png"),
 				FLinearColor(0.95f, 1.00f, 0.95f, 1.0f),
 				FLinearColor(0.17f, 0.20f, 0.14f, 1.0f),
 				FLinearColor(0.78f, 0.88f, 0.58f, 1.0f)
@@ -550,6 +581,7 @@ namespace
 		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Ocean:
 			return {
 				TEXT("RuntimeDependencies/T66/UI/Minimap/Backgrounds/tower_ocean_background.png"),
+				TEXT("RuntimeDependencies/T66/UI/Minimap/Walls/tower_ocean_wall.png"),
 				FLinearColor(0.95f, 0.98f, 1.00f, 1.0f),
 				FLinearColor(0.11f, 0.15f, 0.18f, 1.0f),
 				FLinearColor(0.64f, 0.82f, 0.96f, 1.0f)
@@ -557,6 +589,7 @@ namespace
 		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Martian:
 			return {
 				TEXT("RuntimeDependencies/T66/UI/Minimap/Backgrounds/tower_martian_background.png"),
+				TEXT("RuntimeDependencies/T66/UI/Minimap/Walls/tower_martian_wall.png"),
 				FLinearColor(1.00f, 0.97f, 0.95f, 1.0f),
 				FLinearColor(0.20f, 0.11f, 0.08f, 1.0f),
 				FLinearColor(0.94f, 0.64f, 0.48f, 1.0f)
@@ -564,6 +597,7 @@ namespace
 		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell:
 			return {
 				TEXT("RuntimeDependencies/T66/UI/Minimap/Backgrounds/tower_hell_background.png"),
+				TEXT("RuntimeDependencies/T66/UI/Minimap/Walls/tower_hell_wall.png"),
 				FLinearColor(1.00f, 0.95f, 0.94f, 1.0f),
 				FLinearColor(0.18f, 0.07f, 0.06f, 1.0f),
 				FLinearColor(0.94f, 0.42f, 0.30f, 1.0f)
@@ -572,6 +606,7 @@ namespace
 		default:
 			return {
 				TEXT("RuntimeDependencies/T66/UI/Minimap/Backgrounds/tower_dungeon_background.png"),
+				TEXT("RuntimeDependencies/T66/UI/Minimap/Walls/tower_dungeon_wall.png"),
 				FLinearColor(1.00f, 0.98f, 0.94f, 1.0f),
 				FLinearColor(0.15f, 0.12f, 0.10f, 1.0f),
 				FLinearColor(0.92f, 0.84f, 0.68f, 1.0f)
@@ -601,6 +636,28 @@ namespace
 		return Brush->GetResourceObject() ? Brush.Get() : nullptr;
 	}
 
+	static const FSlateBrush* GetTowerMinimapWallBrush(const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme)
+	{
+		static TMap<int32, TSharedPtr<FSlateBrush>> Brushes;
+
+		const int32 Key = static_cast<int32>(Theme);
+		if (const TSharedPtr<FSlateBrush>* Existing = Brushes.Find(Key))
+		{
+			return (Existing->IsValid() && (*Existing)->GetResourceObject()) ? Existing->Get() : nullptr;
+		}
+
+		const FT66TowerMinimapArtStyle Style = GetTowerMinimapArtStyle(Theme);
+		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+		Brush->DrawAs = ESlateBrushDrawType::Image;
+		Brush->Tiling = ESlateBrushTileType::NoTile;
+		Brush->ImageSize = FVector2D(1024.0f, 1024.0f);
+		Brush->TintColor = FSlateColor(FLinearColor::White);
+		Brush->SetResourceObject(LoadRuntimeHudFileTexture(Style.WallRelativePath, TextureFilter::TF_Trilinear));
+		Brushes.Add(Key, Brush);
+
+		return Brush->GetResourceObject() ? Brush.Get() : nullptr;
+	}
+
 	static float GetSquaredDistanceToBox2D(const FVector2D& Point, const FBox2D& Box)
 	{
 		const float Dx = (Point.X < Box.Min.X)
@@ -614,8 +671,8 @@ namespace
 
 	static constexpr float GT66BottomLeftHudScale = 0.70f;
 	static constexpr float GT66BottomLeftPortraitPanelSize = 152.f;
-	static constexpr float GT66BottomLeftSidePanelWidth = 132.f;
-	static constexpr float GT66BottomLeftIdolSlotSize = 58.f;
+	static constexpr float GT66BottomLeftSidePanelWidth = GT66BottomLeftPortraitPanelSize;
+	static constexpr float GT66BottomLeftIdolSlotSize = 68.f;
 	static constexpr float GT66BottomLeftIdolSlotPad = 1.f;
 	static constexpr float GT66BottomLeftAbilityGap = 4.f;
 	static constexpr float GT66BottomLeftLevelBadgeSize = 42.f;
@@ -630,9 +687,9 @@ namespace
 	static constexpr float GT66DisplayedHeartHeight = (GT66DisplayedHeartAreaHeight - GT66DisplayedHeartRowGap) * 0.5f;
 	static constexpr int32 GT66DisplayedHeartCount = UT66RunStateSubsystem::DefaultMaxHearts * 2;
 	static constexpr float GT66BottomLeftBlackPanelChrome = 10.f;
-	static constexpr float GT66BottomLeftMainPlateWidth = GT66BottomLeftPortraitPanelSize + GT66BottomLeftAbilityBoxSize + GT66BottomLeftBlackPanelChrome;
-	static constexpr float GT66BottomLeftMainPlateHeight = GT66BottomLeftPortraitPanelSize + GT66BottomLeftAbilityBoxSize + GT66BottomLeftBlackPanelChrome;
-	static constexpr float GT66BottomLeftIdolPlateWidth = GT66BottomLeftSidePanelWidth + GT66BottomLeftBlackPanelChrome;
+	static constexpr float GT66BottomLeftMainPlateWidth = GT66BottomLeftPortraitPanelSize + GT66BottomLeftAbilityBoxSize + GT66BottomLeftSidePanelWidth + GT66BottomLeftBlackPanelChrome;
+	static constexpr float GT66BottomLeftMainPlateHeight = GT66BottomLeftPortraitPanelSize + GT66BottomLeftBlackPanelChrome;
+	static constexpr float GT66BottomLeftIdolPlateWidth = 0.f;
 	static constexpr float GT66BottomLeftCombinedPlateWidth = GT66BottomLeftIdolPlateWidth + GT66BottomLeftMainPlateWidth;
 	static constexpr float GT66VisibleBottomLeftCombinedPlateWidth = GT66BottomLeftCombinedPlateWidth * GT66BottomLeftHudScale;
 	static constexpr float GT66VisibleBottomLeftMainPlateHeight = GT66BottomLeftMainPlateHeight * GT66BottomLeftHudScale;
@@ -1339,12 +1396,14 @@ public:
 
 	void SetThemedFloorArt(
 		const FSlateBrush* InBackgroundBrush,
+		const FSlateBrush* InWallBrush,
 		const TArray<FBox2D>& InTowerMazeWallBoxes,
 		const FLinearColor& InMapArtTint,
 		const FLinearColor& InWallFillColor,
 		const FLinearColor& InWallStrokeColor)
 	{
 		BackgroundBrush = InBackgroundBrush;
+		WallBrush = InWallBrush;
 		TowerMazeWallBoxes = InTowerMazeWallBoxes;
 		MapArtTint = InMapArtTint;
 		MapWallFillColor = InWallFillColor;
@@ -1685,6 +1744,11 @@ public:
 
 			const FLinearColor WallFill = WithAlpha(MapWallFillColor, bUseRevealMask ? 0.96f : 0.88f);
 			const FLinearColor WallStroke = WithAlpha(MapWallStrokeColor, bUseRevealMask ? 0.92f : 0.82f);
+			const bool bUsingWallArt = WallBrush && WallBrush->GetResourceObject();
+			const FVector2D WallArtWorldMin = FullWorldMin;
+			const FVector2D WallArtWorldMax = FullWorldMax;
+			const FVector2D WallArtWorldSpan = WallArtWorldMax - WallArtWorldMin;
+			const bool bCanSampleWallArt = bUsingWallArt && WallArtWorldSpan.X > 1.0f && WallArtWorldSpan.Y > 1.0f;
 			for (const FBox2D& WallBox : TowerMazeWallBoxes)
 			{
 				if (!IsWorldBoxRevealed(WallBox))
@@ -1702,13 +1766,37 @@ public:
 					continue;
 				}
 
-				FSlateDrawElement::MakeBox(
-					OutDrawElements,
-					DrawLayerId,
-					ToPaintGeo(TL, BoxSize),
-					FCoreStyle::Get().GetBrush("WhiteBrush"),
-					ESlateDrawEffect::None,
-					WallFill);
+				if (bCanSampleWallArt)
+				{
+					const float U0 = (WallBox.Min.X - WallArtWorldMin.X) / WallArtWorldSpan.X;
+					const float U1 = (WallBox.Max.X - WallArtWorldMin.X) / WallArtWorldSpan.X;
+					const float V0 = 1.0f - ((WallBox.Max.Y - WallArtWorldMin.Y) / WallArtWorldSpan.Y);
+					const float V1 = 1.0f - ((WallBox.Min.Y - WallArtWorldMin.Y) / WallArtWorldSpan.Y);
+
+					FSlateBrush LocalWallBrush = *WallBrush;
+					LocalWallBrush.TintColor = FSlateColor(FLinearColor(1.0f, 1.0f, 1.0f, bUseRevealMask ? 0.96f : 0.90f));
+					LocalWallBrush.SetUVRegion(FBox2f(
+						FVector2f(U0, V0),
+						FVector2f(U1, V1)));
+
+					FSlateDrawElement::MakeBox(
+						OutDrawElements,
+						DrawLayerId,
+						ToPaintGeo(TL, BoxSize),
+						&LocalWallBrush,
+						ESlateDrawEffect::None,
+						FLinearColor::White);
+				}
+				else
+				{
+					FSlateDrawElement::MakeBox(
+						OutDrawElements,
+						DrawLayerId,
+						ToPaintGeo(TL, BoxSize),
+						FCoreStyle::Get().GetBrush("WhiteBrush"),
+						ESlateDrawEffect::None,
+						WallFill);
+				}
 
 				const TArray<FVector2D> Outline = {
 					TL,
@@ -2163,6 +2251,7 @@ private:
 	TArray<FVector2D> RevealWorldPoints;
 	TArray<FBox2D> TowerMazeWallBoxes;
 	const FSlateBrush* BackgroundBrush = nullptr;
+	const FSlateBrush* WallBrush = nullptr;
 	const FSlateBrush* PlayerBrush = nullptr;
 	FLinearColor MapArtTint = FLinearColor::White;
 	FLinearColor MapWallFillColor = FLinearColor(0.14f, 0.11f, 0.09f, 1.0f);

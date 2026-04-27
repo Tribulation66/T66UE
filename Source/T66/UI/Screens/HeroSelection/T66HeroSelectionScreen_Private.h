@@ -4,10 +4,12 @@
 
 #include "UI/Screens/T66HeroSelectionScreen.h"
 #include "UI/Screens/HeroSelection/T66HeroSelectionPreviewController.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Screens/T66SelectionScreenUtils.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66BackendSubsystem.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
@@ -114,35 +116,138 @@ namespace T66HeroSelectionPrivate
 		}
 	}
 
-	inline TSoftObjectPtr<UTexture2D> GetHeroSelectionBalanceIcon()
+	inline FString GetHeroSelectionBalanceIconPath()
 	{
-		return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Assets/TopBar/frontend_topbar_power_coupons_icon.frontend_topbar_power_coupons_icon")));
+		return TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260425_v2.png");
 	}
 
 	inline FString GetHeroSelectionMedalImagePath(const ET66AccountMedalTier Tier)
 	{
+		const FString MedalDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("RuntimeDependencies/T66/UI/HeroSelection/Medals/"));
 		switch (Tier)
 		{
 		case ET66AccountMedalTier::Bronze:
-			return FPaths::ProjectContentDir() / TEXT("UI/Assets/Medals/medal_bronze.png");
+			return MedalDir / TEXT("medal_easy_bronze_imagegen_20260427_v1.png");
 		case ET66AccountMedalTier::Silver:
-			return FPaths::ProjectContentDir() / TEXT("UI/Assets/Medals/medal_silver.png");
+			return MedalDir / TEXT("medal_medium_silver_imagegen_20260427_v1.png");
 		case ET66AccountMedalTier::Gold:
-			return FPaths::ProjectContentDir() / TEXT("UI/Assets/Medals/medal_gold.png");
+			return MedalDir / TEXT("medal_hard_gold_imagegen_20260427_v1.png");
 		case ET66AccountMedalTier::Platinum:
-			return FPaths::ProjectContentDir() / TEXT("UI/Assets/Medals/medal_platinum.png");
+			return MedalDir / TEXT("medal_veryhard_platinum_imagegen_20260427_v1.png");
 		case ET66AccountMedalTier::Diamond:
-			return FPaths::ProjectContentDir() / TEXT("UI/Assets/Medals/medal_diamond.png");
+			return MedalDir / TEXT("medal_impossible_diamond_imagegen_20260427_v1.png");
 		case ET66AccountMedalTier::None:
 		default:
-			return FPaths::ProjectContentDir() / TEXT("UI/Assets/Medals/medal_unproven.png");
+			return MedalDir / TEXT("medal_unproven_imagegen_20260427_v2.png");
 		}
+	}
+
+	inline FString GetHeroSelectionRankImagePath()
+	{
+		return FPaths::ConvertRelativePathToFull(
+			FPaths::ProjectDir() / TEXT("RuntimeDependencies/T66/UI/HeroSelection/Medals/rank_badge_imagegen_20260427_v1.png"));
+	}
+
+	inline FText GetHeroSelectionDrugName(const ET66SecondaryStatType StatType)
+	{
+		switch (StatType)
+		{
+		case ET66SecondaryStatType::AoeDamage: return NSLOCTEXT("T66.HeroSelection", "DrugAoeDamage", "Blast Caps");
+		case ET66SecondaryStatType::BounceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugBounceDamage", "Rebound Pills");
+		case ET66SecondaryStatType::PierceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugPierceDamage", "Needle Rush");
+		case ET66SecondaryStatType::DotDamage: return NSLOCTEXT("T66.HeroSelection", "DrugDotDamage", "Venom Tonic");
+		case ET66SecondaryStatType::CritDamage: return NSLOCTEXT("T66.HeroSelection", "DrugCritDamage", "Redline Amp");
+		case ET66SecondaryStatType::AoeSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugAoeSpeed", "Blast Caffeine");
+		case ET66SecondaryStatType::BounceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugBounceSpeed", "Ricochet Tabs");
+		case ET66SecondaryStatType::PierceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugPierceSpeed", "Needle Sprint");
+		case ET66SecondaryStatType::DotSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugDotSpeed", "Toxin Drip");
+		case ET66SecondaryStatType::CritChance: return NSLOCTEXT("T66.HeroSelection", "DrugCritChance", "Lucky Dust");
+		case ET66SecondaryStatType::AoeScale: return NSLOCTEXT("T66.HeroSelection", "DrugAoeScale", "Blast Stretch");
+		case ET66SecondaryStatType::BounceScale: return NSLOCTEXT("T66.HeroSelection", "DrugBounceScale", "Rebound Foam");
+		case ET66SecondaryStatType::PierceScale: return NSLOCTEXT("T66.HeroSelection", "DrugPierceScale", "Needle Bloom");
+		case ET66SecondaryStatType::DotScale: return NSLOCTEXT("T66.HeroSelection", "DrugDotScale", "Toxic Bloom");
+		case ET66SecondaryStatType::AttackRange: return NSLOCTEXT("T66.HeroSelection", "DrugAttackRange", "Longshot Serum");
+		case ET66SecondaryStatType::Taunt: return NSLOCTEXT("T66.HeroSelection", "DrugTaunt", "Loudmouth Brew");
+		case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.HeroSelection", "DrugDamageReduction", "Stone Skin");
+		case ET66SecondaryStatType::ReflectDamage: return NSLOCTEXT("T66.HeroSelection", "DrugReflectDamage", "Mirror Dose");
+		case ET66SecondaryStatType::Crush: return NSLOCTEXT("T66.HeroSelection", "DrugCrush", "Crusher Shot");
+		case ET66SecondaryStatType::EvasionChance: return NSLOCTEXT("T66.HeroSelection", "DrugEvasionChance", "Ghost Step");
+		case ET66SecondaryStatType::CounterAttack: return NSLOCTEXT("T66.HeroSelection", "DrugCounterAttack", "Payback Tabs");
+		case ET66SecondaryStatType::Invisibility: return NSLOCTEXT("T66.HeroSelection", "DrugInvisibility", "Fade Powder");
+		case ET66SecondaryStatType::Assassinate: return NSLOCTEXT("T66.HeroSelection", "DrugAssassinate", "Killer Focus");
+		case ET66SecondaryStatType::TreasureChest: return NSLOCTEXT("T66.HeroSelection", "DrugTreasureChest", "Treasure Tonic");
+		case ET66SecondaryStatType::Cheating: return NSLOCTEXT("T66.HeroSelection", "DrugCheating", "Loaded Dice");
+		case ET66SecondaryStatType::Stealing: return NSLOCTEXT("T66.HeroSelection", "DrugStealing", "Sticky Fingers");
+		case ET66SecondaryStatType::LootCrate: return NSLOCTEXT("T66.HeroSelection", "DrugLootCrate", "Crate Cracker");
+		case ET66SecondaryStatType::Accuracy: return NSLOCTEXT("T66.HeroSelection", "DrugAccuracy", "True Aim");
+		default: return NSLOCTEXT("T66.HeroSelection", "DrugFallback", "Combat Dose");
+		}
+	}
+
+	inline FText GetHeroSelectionDrugEffectText(const ET66SecondaryStatType StatType, const UT66LocalizationSubsystem* Loc)
+	{
+		const FText StatName = Loc ? Loc->GetText_SecondaryStatName(StatType) : FText::FromString(TEXT("?"));
+		const int32 Percent = FMath::RoundToInt((UT66BuffSubsystem::SingleUseSecondaryBuffMultiplier - 1.f) * 100.f);
+		return FText::Format(
+			NSLOCTEXT("T66.HeroSelection", "DrugEffectFormat", "+{0}% {1}"),
+			FText::AsNumber(Percent),
+			StatName);
 	}
 
 	inline FString GetHeroSelectionChallengesIconPath()
 	{
-		return FPaths::ConvertRelativePathToFull(
-			FPaths::ProjectDir() / TEXT("RuntimeDependencies/T66/UI/HeroSelection/challenges_crossed_swords.png"));
+		return TEXT("RuntimeDependencies/T66/UI/HeroSelection/challenges_crossed_swords.png");
+	}
+
+	inline bool HasUnlockedHeroSelectionDrugs(const UT66AchievementsSubsystem* Achievements)
+	{
+		if (!Achievements)
+		{
+			return false;
+		}
+
+		const UT66ProfileSaveGame* Profile = Achievements->GetProfile();
+		if (!Profile)
+		{
+			return false;
+		}
+
+		const int32 RequiredTier = static_cast<int32>(UT66AchievementsSubsystem::MedalTierForDifficulty(ET66Difficulty::Easy));
+		for (const TPair<FName, ET66AccountMedalTier>& Pair : Profile->HeroHighestMedalByID)
+		{
+			if (static_cast<int32>(Pair.Value) >= RequiredTier)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	inline FString HeroSelectionDifficultyToApiString(ET66Difficulty Difficulty)
+	{
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Easy: return TEXT("easy");
+		case ET66Difficulty::Medium: return TEXT("medium");
+		case ET66Difficulty::Hard: return TEXT("hard");
+		case ET66Difficulty::VeryHard: return TEXT("veryhard");
+		case ET66Difficulty::Impossible: return TEXT("impossible");
+		default: return TEXT("easy");
+		}
+	}
+
+	inline FString HeroSelectionPartySizeToApiString(const int32 PartySize)
+	{
+		switch (FMath::Clamp(PartySize, 1, 4))
+		{
+		case 2: return TEXT("duo");
+		case 3: return TEXT("trio");
+		case 4: return TEXT("quad");
+		case 1:
+		default:
+			return TEXT("solo");
+		}
 	}
 
 	inline FString ResolveArthurPreviewMoviePath()
@@ -279,47 +384,6 @@ namespace T66HeroSelectionPrivate
 
 	inline FString GetHeroSelectionButtonSpritePath(ET66HeroSpriteFamily Family, ET66ButtonBorderState State)
 	{
-		const TCHAR* Prefix = TEXT("button_neutral");
-		const TCHAR* BasePath = TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow");
-		switch (Family)
-		{
-		case ET66HeroSpriteFamily::ToggleOn:
-			Prefix = TEXT("button_success");
-			break;
-		case ET66HeroSpriteFamily::ToggleOff:
-			Prefix = TEXT("button_danger");
-			break;
-		case ET66HeroSpriteFamily::ToggleInactive:
-			Prefix = TEXT("button_neutral");
-			break;
-		case ET66HeroSpriteFamily::CtaGreen:
-			Prefix = TEXT("button_success");
-			break;
-		case ET66HeroSpriteFamily::CtaBlue:
-			Prefix = TEXT("button_neutral");
-			break;
-		case ET66HeroSpriteFamily::CtaPurple:
-			Prefix = TEXT("button_danger");
-			break;
-		case ET66HeroSpriteFamily::CompactNeutral:
-		default:
-			break;
-		}
-
-		if (Family == ET66HeroSpriteFamily::CtaGreen || Family == ET66HeroSpriteFamily::CtaBlue || Family == ET66HeroSpriteFamily::CtaPurple)
-		{
-			switch (State)
-			{
-			case ET66ButtonBorderState::Hovered:
-				return FString::Printf(TEXT("%s/%s_hover.png"), BasePath, Prefix);
-			case ET66ButtonBorderState::Pressed:
-				return FString::Printf(TEXT("%s/%s_pressed.png"), BasePath, Prefix);
-			case ET66ButtonBorderState::Normal:
-			default:
-				return FString::Printf(TEXT("%s/%s_normal.png"), BasePath, Prefix);
-			}
-		}
-
 		const TCHAR* Suffix = TEXT("normal");
 		switch (State)
 		{
@@ -334,29 +398,17 @@ namespace T66HeroSelectionPrivate
 			break;
 		}
 
-		return FString::Printf(TEXT("%s/%s_%s.png"), BasePath, Prefix, Suffix);
+		if (Family == ET66HeroSpriteFamily::ToggleOn && State == ET66ButtonBorderState::Normal)
+		{
+			Suffix = TEXT("pressed");
+		}
+
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_%s.png"), Suffix);
 	}
 
-	inline FVector2D GetHeroSelectionButtonSpriteSize(ET66HeroSpriteFamily Family, ET66ButtonBorderState State)
+	inline FVector2D GetHeroSelectionButtonSpriteSize(ET66HeroSpriteFamily /*Family*/, ET66ButtonBorderState /*State*/)
 	{
-		switch (Family)
-		{
-		case ET66HeroSpriteFamily::CtaGreen:
-			return FVector2D(388.f, 100.f);
-		case ET66HeroSpriteFamily::CtaBlue:
-			return FVector2D(388.f, 97.f);
-		case ET66HeroSpriteFamily::CtaPurple:
-			return FVector2D(388.f, 92.f);
-		case ET66HeroSpriteFamily::ToggleOn:
-			return State == ET66ButtonBorderState::Pressed ? FVector2D(187.f, 67.f) : FVector2D(180.f, 68.f);
-		case ET66HeroSpriteFamily::ToggleOff:
-			return State == ET66ButtonBorderState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
-		case ET66HeroSpriteFamily::ToggleInactive:
-			return State == ET66ButtonBorderState::Hovered ? FVector2D(186.f, 69.f) : FVector2D(180.f, 68.f);
-		case ET66HeroSpriteFamily::CompactNeutral:
-		default:
-			return State == ET66ButtonBorderState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
-		}
+		return FVector2D(270.f, 88.f);
 	}
 
 	inline const FSlateBrush* ResolveHeroSelectionButtonSpriteBrush(ET66HeroSpriteFamily Family, ET66ButtonBorderState State)
@@ -372,14 +424,11 @@ namespace T66HeroSelectionPrivate
 			Entry = &Set.Pressed;
 		}
 
-		const FMargin ButtonMargin = (Family == ET66HeroSpriteFamily::CtaGreen || Family == ET66HeroSpriteFamily::CtaBlue || Family == ET66HeroSpriteFamily::CtaPurple)
-			? FMargin(0.16f, 0.30f, 0.16f, 0.30f)
-			: FMargin(0.14f, 0.30f, 0.14f, 0.30f);
 		return ResolveHeroSelectionSpriteBrush(
 			*Entry,
 			GetHeroSelectionButtonSpritePath(Family, State),
 			GetHeroSelectionButtonSpriteSize(Family, State),
-			ButtonMargin);
+			FMargin(0.093f, 0.213f, 0.093f, 0.213f));
 	}
 
 	inline const FSlateBrush* ResolveHeroSelectionDisabledButtonSpriteBrush()
@@ -387,8 +436,9 @@ namespace T66HeroSelectionPrivate
 		FHeroSelectionSpriteBrushSet& Set = GetHeroSelectionButtonSpriteSet(ET66HeroSpriteFamily::ToggleInactive);
 		return ResolveHeroSelectionSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/button_neutral_disabled.png"),
-			FVector2D(180.f, 69.f));
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_disabled.png"),
+			FVector2D(270.f, 88.f),
+			FMargin(0.093f, 0.213f, 0.093f, 0.213f));
 	}
 
 	inline ET66HeroSpriteFamily GetDefaultHeroSelectionButtonFamily(ET66ButtonType Type)
@@ -413,9 +463,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_side.png"),
-			FVector2D(487.f, 726.f),
-			FMargin(0.12f, 0.08f, 0.12f, 0.08f));
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			FVector2D(480.f, 800.f),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 	}
 
 	inline const FSlateBrush* GetHeroSelectionRightShellBrush()
@@ -423,9 +473,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_side.png"),
-			FVector2D(458.f, 709.f),
-			FMargin(0.12f, 0.08f, 0.12f, 0.08f));
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			FVector2D(480.f, 800.f),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 	}
 
 	inline const FSlateBrush* GetHeroSelectionContentShellBrush()
@@ -433,9 +483,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_large.png"),
-			FVector2D(1521.f, 463.f),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f));
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			FVector2D(480.f, 800.f),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 	}
 
 	inline const FSlateBrush* GetHeroSelectionRowShellBrush()
@@ -443,9 +493,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/row_shell.png"),
-			FVector2D(861.f, 74.f),
-			FMargin(0.055f, 0.32f, 0.055f, 0.32f));
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
+			FVector2D(620.f, 340.f),
+			FMargin(0.052f, 0.094f, 0.052f, 0.094f));
 	}
 
 	inline const FSlateBrush* GetHeroSelectionDropdownFieldBrush()
@@ -453,8 +503,8 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/dropdown_field.png"),
-			FVector2D(862.f, 77.f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Controls/dropdown_field_normal.png"),
+			FVector2D(218.f, 50.f),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f));
 	}
 
@@ -463,8 +513,8 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/HeroFlow/party_slot_frame.png"),
-			FVector2D(93.f, 103.f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/party_slot_normal.png"),
+			FVector2D(112.f, 112.f),
 			FMargin(0.20f, 0.18f, 0.20f, 0.18f));
 	}
 
@@ -615,33 +665,21 @@ namespace T66HeroSelectionPrivate
 		const FT66ButtonParams& Params,
 		TAttribute<ET66HeroSpriteFamily> SpriteFamily)
 	{
-		const int32 FontSize = Params.FontSize > 0 ? Params.FontSize : 16;
-		const FSlateFontInfo Font = T66RuntimeUIFontAccess::IsBoldWeight(*Params.FontWeight)
-			? FT66Style::Tokens::FontBold(FontSize)
-			: FT66Style::MakeFont(*Params.FontWeight, FontSize);
-		const TAttribute<FText> Text = Params.DynamicLabel.IsBound()
-			? Params.DynamicLabel
-			: TAttribute<FText>(Params.Label);
-		const TAttribute<FSlateColor> TextColor = Params.bHasTextColorOverride
-			? Params.TextColorOverride
-			: TAttribute<FSlateColor>(FSlateColor(FT66Style::Text()));
-		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(12.f, 7.f);
+		const float ButtonHeight = Params.Height > 0.f ? Params.Height : 44.f;
+		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(6.f, 2.f);
 
 		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
 			? Params.CustomContent.ToSharedRef()
-			: StaticCastSharedRef<SWidget>(
-				SNew(STextBlock)
-				.Text(Text)
-				.Font(Font)
-				.ColorAndOpacity(TextColor)
-				.ShadowOffset(FVector2D(1.f, 1.f))
-				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.70f))
-				.Justification(ETextJustify::Center));
+			: T66ScreenSlateHelpers::MakeFilledButtonText(
+				Params,
+				ButtonHeight,
+				TAttribute<FSlateColor>(FSlateColor(FT66Style::Text())),
+				TAttribute<FLinearColor>(FLinearColor(0.f, 0.f, 0.f, 0.70f)));
 
 		return SNew(ST66HeroSelectionSpriteButton)
 			.SpriteFamily(SpriteFamily)
 			.MinWidth(Params.MinWidth)
-			.Height(Params.Height > 0.f ? Params.Height : 44.f)
+			.Height(ButtonHeight)
 			.ContentPadding(ContentPadding)
 			.IsEnabled(Params.IsEnabled)
 			.Visibility(Params.Visibility)
@@ -685,7 +723,12 @@ namespace T66HeroSelectionPrivate
 			.ContentPadding(Params.Padding)
 			.ButtonContent()
 			[
-				Params.Content
+				SNew(SBox)
+				.HeightOverride(Params.Height > 0.f ? FOptionalSize(FMath::Max(1.f, Params.Height - 4.f)) : FOptionalSize())
+				.VAlign(VAlign_Center)
+				[
+					Params.Content
+				]
 			];
 
 		return SNew(SBox)
@@ -696,7 +739,7 @@ namespace T66HeroSelectionPrivate
 				SNew(SBorder)
 				.BorderImage(GetHeroSelectionDropdownFieldBrush())
 				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(FMargin(4.f, 2.f))
+				.Padding(FMargin(4.f, 0.f))
 				[
 					Combo
 				]
@@ -772,13 +815,6 @@ namespace T66HeroSelectionPrivate
 		default:
 			return FLinearColor(0.74f, 0.74f, 0.74f, 1.0f);
 		}
-	}
-
-	inline FText HeroRecordThirdMetricLabel(const bool bShowingCompanionInfo)
-	{
-		return bShowingCompanionInfo
-			? NSLOCTEXT("T66.HeroSelection", "CompanionRecordHealingLabel", "Total Healing")
-			: NSLOCTEXT("T66.HeroSelection", "HeroRecordScoreLabel", "Cumulative Score");
 	}
 
 	inline FText FormatCompanionHealingPerSecondText(const float HealingPerSecond)

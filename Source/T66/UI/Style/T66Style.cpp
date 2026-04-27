@@ -157,6 +157,18 @@ namespace
 		return FPaths::ProjectDir() / TEXT("SourceAssets/UI/MainMenuReference") / RelativePath;
 	}
 
+	const FSlateBrush* ResolveMinimapFrameBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush FrameBrush;
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			FrameBrush,
+			nullptr,
+			FPaths::ProjectDir() / TEXT("RuntimeDependencies/T66/UI/Minimap/minimap_frame.png"),
+			FMargin(0.f),
+			TEXT("MinimapFrame"),
+			TextureFilter::TF_Trilinear);
+	}
+
 	const TCHAR* GetInRunPlateRelativePath(const ET66InRunPlateKind Kind)
 	{
 		switch (Kind)
@@ -1435,6 +1447,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 				+ SOverlay::Slot()
 				[
 					SNew(SButton)
+					.Cursor(EMouseCursor::Hand)
 					.HAlign(BtnHAlign)
 					.VAlign(BtnVAlign)
 					.OnClicked(SafeClick)
@@ -1640,6 +1653,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 					+ SOverlay::Slot()
 					[
 						SNew(SButton)
+						.Cursor(EMouseCursor::Hand)
 						.HAlign(BtnHAlign)
 						.VAlign(BtnVAlign)
 						.OnClicked(SafeClick)
@@ -1721,6 +1735,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 							+ SOverlay::Slot()
 							[
 								SNew(SButton)
+								.Cursor(EMouseCursor::Hand)
 								.HAlign(BtnHAlign)
 								.VAlign(BtnVAlign)
 								.OnClicked(SafeClick)
@@ -1765,6 +1780,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 			+ SOverlay::Slot()
 			[
 				SNew(SButton)
+				.Cursor(EMouseCursor::Hand)
 				.HAlign(BtnHAlign)
 				.VAlign(BtnVAlign)
 				.OnClicked(SafeClick)
@@ -2298,6 +2314,28 @@ TSharedRef<SWidget> FT66Style::MakeDivider(float Height)
 
 TSharedRef<SWidget> FT66Style::MakeMinimapFrame(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 {
+	if (const FSlateBrush* FrameBrush = ResolveMinimapFrameBrush())
+	{
+		return SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SNew(SBorder)
+				.BorderImage(GetWhiteBrush())
+				.BorderBackgroundColor(FLinearColor(0.004f, 0.005f, 0.008f, 0.98f))
+				.Padding(Padding)
+				[
+					Content
+				]
+			]
+			+ SOverlay::Slot()
+			[
+				SNew(SImage)
+				.Image(FrameBrush)
+				.ColorAndOpacity(FLinearColor::White)
+				.Visibility(EVisibility::HitTestInvisible)
+			];
+	}
+
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[

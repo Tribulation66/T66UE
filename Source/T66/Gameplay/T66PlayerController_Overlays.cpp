@@ -187,6 +187,22 @@ void AT66PlayerController::SetupGameplayHUD()
 	// (LabOverlayWidget not created when in Lab.)
 }
 
+void AT66PlayerController::ShowInteractionPrompt(AActor* SourceActor, const FText& TargetName)
+{
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->ShowInteractionPrompt(SourceActor, TargetName);
+	}
+}
+
+void AT66PlayerController::HideInteractionPrompt(AActor* SourceActor)
+{
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->HideInteractionPrompt(SourceActor);
+	}
+}
+
 void AT66PlayerController::QueueGameplayAutomationScreenshotIfRequested()
 {
 	if (!IsGameplayLevel() || !GetWorld())
@@ -254,6 +270,69 @@ void AT66PlayerController::HandleGameplayAutomationPrepare()
 void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 {
 	const FString Mode = GameplayAutomationCaptureMode.TrimStartAndEnd().ToLower();
+
+	if (Mode == TEXT("hudreview") || Mode == TEXT("hudvisualreview") || Mode == TEXT("ingamehudreview"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
+		UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+		UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		if (RunState)
+		{
+			const int32 MissingDifficultySkulls = FMath::Max(0, 4 - RunState->GetDifficultySkulls());
+			if (MissingDifficultySkulls > 0)
+			{
+				RunState->AddDifficultySkulls(MissingDifficultySkulls);
+			}
+
+			while (RunState->GetCowardiceGatesTaken() < 4)
+			{
+				RunState->AddCowardiceGateTaken();
+			}
+
+			RunState->AddGold(888);
+			RunState->AddScore(1250);
+			RunState->SetStageTimerActive(true);
+
+			FRandomStream ReviewItemStream(660427);
+			const ET66Rarity ReviewLootRarities[] =
+			{
+				ET66Rarity::Black,
+				ET66Rarity::Red,
+				ET66Rarity::Yellow,
+				ET66Rarity::White
+			};
+			int32 RarityIndex = 0;
+			int32 ItemAttempts = 0;
+			while (T66GI
+				&& RunState->GetInventorySlots().Num() < UT66RunStateSubsystem::MaxInventorySlots
+				&& ItemAttempts < UT66RunStateSubsystem::MaxInventorySlots * 3)
+			{
+				++ItemAttempts;
+				const ET66Rarity LootRarity = ReviewLootRarities[RarityIndex % UE_ARRAY_COUNT(ReviewLootRarities)];
+				const FName ItemID = T66GI->GetRandomItemIDForLootRarityFromStream(LootRarity, ReviewItemStream);
+				if (ItemID.IsNone())
+				{
+					break;
+				}
+
+				const ET66ItemRarity ItemRarity = static_cast<ET66ItemRarity>(static_cast<uint8>(LootRarity));
+				RunState->AddItemWithRarity(ItemID, ItemRarity);
+				++RarityIndex;
+			}
+		}
+
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetFullMapOpen(false);
+			GameplayHUDWidget->ShowInteractionPrompt(this, NSLOCTEXT("T66.GameplayHUD", "HudReviewInteractionTarget", "Chest"));
+			GameplayHUDWidget->RefreshHUD();
+		}
+		return;
+	}
 
 	if (Mode == TEXT("inventory") || Mode == TEXT("inspect") || Mode == TEXT("inventoryinspect"))
 	{
@@ -331,7 +410,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 	if (Mode == TEXT("casinoalchemy") || Mode == TEXT("alchemy") || Mode == TEXT("casinotabalchemy"))
 	{
 		OpenCasinoOverlay();
-		SwitchCasinoOverlayToAlchemy();
+		SwitchCasinoOverlayToVendor();
 		return;
 	}
 
@@ -496,7 +575,7 @@ void AT66PlayerController::SwitchCasinoOverlayToAlchemy()
 {
 	if (CasinoOverlayWidget)
 	{
-		CasinoOverlayWidget->OpenAlchemyTab();
+		CasinoOverlayWidget->OpenVendorTab();
 	}
 }
 

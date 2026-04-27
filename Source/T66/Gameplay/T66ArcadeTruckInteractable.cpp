@@ -145,6 +145,13 @@ FText AT66ArcadeTruckInteractable::BuildInteractionPromptText() const
 	return PromptVerb;
 }
 
+FText AT66ArcadeTruckInteractable::BuildInteractionPromptTargetName() const
+{
+	return GetArcadeData().DisplayName.IsEmpty()
+		? AT66WorldInteractableBase::BuildInteractionPromptTargetName()
+		: GetArcadeData().DisplayName;
+}
+
 FVector AT66ArcadeTruckInteractable::GetImportedVisualScale() const
 {
 	return T66ResolveArcadeTruckScale(GetArcadeData().DisplayMeshScale);
