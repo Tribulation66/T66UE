@@ -196,7 +196,9 @@ void AT66PlayerController::SetHeroOneScopeViewEnabled(bool bEnabled)
 	{
 		RestoreGameplayInputMode();
 
-		SavedScopeCameraBoomLength = Hero->CameraBoom->TargetArmLength;
+		SavedScopeCameraBoomLength = DesiredGameplayCameraArmLength > KINDA_SMALL_NUMBER
+			? DesiredGameplayCameraArmLength
+			: Hero->CameraBoom->TargetArmLength;
 		SavedScopeCameraBoomLocation = Hero->CameraBoom->GetRelativeLocation();
 		SavedScopeCameraFOV = Hero->FollowCamera->FieldOfView;
 		bSavedScopeCameraCollisionTest = Hero->CameraBoom->bDoCollisionTest;
@@ -227,7 +229,8 @@ void AT66PlayerController::SetHeroOneScopeViewEnabled(bool bEnabled)
 	}
 	else
 	{
-		Hero->CameraBoom->TargetArmLength = SavedScopeCameraBoomLength;
+		DesiredGameplayCameraArmLength = SavedScopeCameraBoomLength;
+		Hero->CameraBoom->TargetArmLength = DesiredGameplayCameraArmLength;
 		Hero->CameraBoom->SetRelativeLocation(SavedScopeCameraBoomLocation);
 		Hero->CameraBoom->bDoCollisionTest = bSavedScopeCameraCollisionTest;
 		Hero->FollowCamera->SetFieldOfView(SavedScopeCameraFOV);

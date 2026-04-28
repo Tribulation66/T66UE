@@ -248,14 +248,14 @@ namespace
 				const int32 StatValue = GetPrimaryStatValue(StatIndex);
 				Column->AddSlot()
 				.AutoHeight()
-				.Padding(0.f, 0.f, 0.f, 5.f)
+				.Padding(0.f, 0.f, 0.f, 2.f)
 				[
 					SNew(STextBlock)
 					.Text(FText::Format(
 						StatLineFormat,
 						GetPrimaryStatLabel(StatIndex),
 						FText::AsNumber(StatValue)))
-					.Font(FT66Style::Tokens::FontBold(17))
+					.Font(FT66Style::Tokens::FontBold(14))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				];
 			}
@@ -265,17 +265,17 @@ namespace
 		return SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.08f)
-			.Padding(0.f, 0.f, 10.f, 0.f)
+			.Padding(0.f, 0.f, 6.f, 0.f)
 			[
 				MakeStatsColumn(0, 4)
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			.VAlign(VAlign_Fill)
-			.Padding(0.f, 1.f, 0.f, 4.f)
+			.Padding(0.f, 1.f, 0.f, 2.f)
 			[
 				SNew(SBox)
-				.WidthOverride(2.f)
+				.WidthOverride(1.f)
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -284,7 +284,7 @@ namespace
 			]
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.0f)
-			.Padding(12.f, 0.f, 0.f, 0.f)
+			.Padding(8.f, 0.f, 0.f, 0.f)
 			[
 				MakeStatsColumn(4, 8)
 			];
@@ -403,12 +403,12 @@ void UT66HeroSelectionScreen::RefreshHeroStatsPanels()
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(0.f, 0.f, 0.f, 8.f)
 				.HAlign(HAlign_Center)
+				.Padding(0.f, 0.f, 0.f, 5.f)
 				[
 					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.HeroSelection", "RightPanelStatsHeader", "STATS"))
-					.Font(FT66Style::Tokens::FontBold(21))
+					.Text(NSLOCTEXT("T66.HeroSelection", "HeroSummaryStatsHeader", "STATS"))
+					.Font(FT66Style::Tokens::FontBold(17))
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					.Justification(ETextJustify::Center)
 				]
@@ -421,11 +421,27 @@ void UT66HeroSelectionScreen::RefreshHeroStatsPanels()
 		else
 		{
 			HeroSummaryStatsHost->SetContent(
-				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroSummaryStatsHint", "Select a hero to view their stats."))
-				.Font(FT66Style::Tokens::FontRegular(14))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-				.AutoWrapText(true));
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(0.f, 0.f, 0.f, 5.f)
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.HeroSelection", "HeroSummaryStatsHeader", "STATS"))
+					.Font(FT66Style::Tokens::FontBold(17))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.Justification(ETextJustify::Center)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroSummaryStatsHint", "Select a hero to view their stats."))
+					.Font(FT66Style::Tokens::FontRegular(14))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.AutoWrapText(true)
+				]);
 		}
 	}
 

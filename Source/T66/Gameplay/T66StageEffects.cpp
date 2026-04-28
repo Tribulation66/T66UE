@@ -14,6 +14,14 @@
 #include "NiagaraSystem.h"
 #include "NiagaraComponent.h"
 
+namespace
+{
+	bool T66AreStageLaunchObjectsEnabled()
+	{
+		return false;
+	}
+}
+
 AT66Shroom::AT66Shroom()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -50,6 +58,12 @@ AT66Shroom::AT66Shroom()
 void AT66Shroom::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (!T66AreStageLaunchObjectsEnabled())
+	{
+		Destroy();
+		return;
+	}
 
 	// Load Shroom mesh (imported from Shroom.glb), fall back to cube.
 	if (!ShroomMeshOverride.IsNull())

@@ -5,13 +5,18 @@
 #include "Math/TransformCalculus2D.h"
 #include "Rendering/SlateRenderTransform.h"
 #include "Widgets/Images/SImage.h"
+#include "Widgets/Layout/SBox.h"
 #include "Widgets/SOverlay.h"
 
 namespace
 {
-	FSlateRenderTransform MakeLayerTransform(float Scale, const FVector2D& Offset)
+	FSlateRenderTransform MakeLayerTransform(float Scale, float RotationDegrees, const FVector2D& Offset)
 	{
-		return TransformCast<FSlateRenderTransform>(Concatenate(FScale2D(Scale, Scale), Offset));
+		return TransformCast<FSlateRenderTransform>(
+			Concatenate(
+				FScale2D(Scale, Scale),
+				FQuat2D(FMath::DegreesToRadians(RotationDegrees)),
+				Offset));
 	}
 }
 
@@ -38,6 +43,7 @@ void ST66AnimatedBackground::Construct(const FArguments& InArgs)
 		RuntimeLayer.SwayXTween = FT66UITween(ET66UITweenMode::Sine, LayerDefinition.SwayAmplitude.X, LayerDefinition.SwayFrequency, LayerDefinition.PhaseOffset);
 		RuntimeLayer.SwayYTween = FT66UITween(ET66UITweenMode::Sine, LayerDefinition.SwayAmplitude.Y, LayerDefinition.SwayFrequency, LayerDefinition.PhaseOffset + 0.17f);
 		RuntimeLayer.ScaleTween = FT66UITween(ET66UITweenMode::Sine, LayerDefinition.ScalePulseAmplitude, LayerDefinition.ScalePulseFrequency, LayerDefinition.PhaseOffset + 0.33f);
+		RuntimeLayer.RotationTween = FT66UITween(ET66UITweenMode::Sine, LayerDefinition.RotationAmplitudeDegrees, LayerDefinition.RotationFrequency, LayerDefinition.PhaseOffset + 0.41f);
 		RuntimeLayer.OpacityTween = FT66UITween(
 			ET66UITweenMode::Sine,
 			(LayerDefinition.OpacityMax - LayerDefinition.OpacityMin) * 0.5f,
@@ -45,17 +51,38 @@ void ST66AnimatedBackground::Construct(const FArguments& InArgs)
 			LayerDefinition.PhaseOffset + 0.49f);
 		RuntimeLayer.OpacityBias = (LayerDefinition.OpacityMin + LayerDefinition.OpacityMax) * 0.5f;
 
-		RootOverlay->AddSlot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
+		TSharedRef<SImage> LayerImage =
 			SAssignNew(RuntimeLayer.ImageWidget, SImage)
-			.Image(LayerDefinition.Brush)
-		];
+			.Image(LayerDefinition.Brush);
+
+		if (LayerDefinition.DrawSize.X > 0.f && LayerDefinition.DrawSize.Y > 0.f)
+		{
+			RootOverlay->AddSlot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Top)
+			.Padding(FMargin(LayerDefinition.DrawPosition.X, LayerDefinition.DrawPosition.Y, 0.f, 0.f))
+			[
+				SNew(SBox)
+				.WidthOverride(LayerDefinition.DrawSize.X)
+				.HeightOverride(LayerDefinition.DrawSize.Y)
+				[
+					LayerImage
+				]
+			];
+		}
+		else
+		{
+			RootOverlay->AddSlot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				LayerImage
+			];
+		}
 
 		if (RuntimeLayer.ImageWidget.IsValid())
 		{
-			RuntimeLayer.ImageWidget->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+			RuntimeLayer.ImageWidget->SetRenderTransformPivot(LayerDefinition.RenderPivot);
 		}
 
 		TickLayer(RuntimeLayer, 0.f);
@@ -84,6 +111,7 @@ void ST66AnimatedBackground::TickLayer(FRuntimeLayer& Layer, float DeltaTime)
 {
 	Layer.CurrentOffset = Layer.Definition.BaseOffset + FVector2D(Layer.SwayXTween.Tick(DeltaTime), Layer.SwayYTween.Tick(DeltaTime));
 	Layer.CurrentScale = 1.f + Layer.ScaleTween.Tick(DeltaTime);
+	Layer.CurrentRotationDegrees = Layer.RotationTween.Tick(DeltaTime);
 	Layer.CurrentOpacity = FMath::Clamp(
 		Layer.OpacityBias + Layer.OpacityTween.Tick(DeltaTime),
 		0.f,
@@ -91,7 +119,7 @@ void ST66AnimatedBackground::TickLayer(FRuntimeLayer& Layer, float DeltaTime)
 
 	if (Layer.ImageWidget.IsValid())
 	{
-		Layer.ImageWidget->SetRenderTransform(MakeLayerTransform(Layer.CurrentScale, Layer.CurrentOffset));
+		Layer.ImageWidget->SetRenderTransform(MakeLayerTransform(Layer.CurrentScale, Layer.CurrentRotationDegrees, Layer.CurrentOffset));
 		Layer.ImageWidget->SetColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, Layer.CurrentOpacity));
 	}
 }

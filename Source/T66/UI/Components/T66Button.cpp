@@ -9,6 +9,18 @@
 #include "Core/T66GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Framework/Application/SlateApplication.h"
+
+namespace
+{
+	void RefreshMouseCursorQuery()
+	{
+		if (FSlateApplication::IsInitialized())
+		{
+			FSlateApplication::Get().QueryCursor();
+		}
+	}
+}
 
 UT66Button::UT66Button(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -51,6 +63,10 @@ void UT66Button::NativeConstruct()
 		// Avoid duplicate bindings if the widget is reconstructed.
 		ButtonWidget->OnClicked.RemoveDynamic(this, &UT66Button::OnButtonClicked);
 		ButtonWidget->OnClicked.AddDynamic(this, &UT66Button::OnButtonClicked);
+		ButtonWidget->OnHovered.RemoveDynamic(this, &UT66Button::OnButtonHovered);
+		ButtonWidget->OnHovered.AddDynamic(this, &UT66Button::OnButtonHovered);
+		ButtonWidget->OnUnhovered.RemoveDynamic(this, &UT66Button::OnButtonUnhovered);
+		ButtonWidget->OnUnhovered.AddDynamic(this, &UT66Button::OnButtonUnhovered);
 	}
 
 	// Set initial text
@@ -77,6 +93,8 @@ void UT66Button::NativeDestruct()
 	if (ButtonWidget)
 	{
 		ButtonWidget->OnClicked.RemoveDynamic(this, &UT66Button::OnButtonClicked);
+		ButtonWidget->OnHovered.RemoveDynamic(this, &UT66Button::OnButtonHovered);
+		ButtonWidget->OnUnhovered.RemoveDynamic(this, &UT66Button::OnButtonUnhovered);
 	}
 	Super::NativeDestruct();
 }
@@ -84,6 +102,16 @@ void UT66Button::NativeDestruct()
 void UT66Button::OnButtonClicked()
 {
 	ExecuteAction();
+}
+
+void UT66Button::OnButtonHovered()
+{
+	RefreshMouseCursorQuery();
+}
+
+void UT66Button::OnButtonUnhovered()
+{
+	RefreshMouseCursorQuery();
 }
 
 void UT66Button::SetButtonText(FText NewText)

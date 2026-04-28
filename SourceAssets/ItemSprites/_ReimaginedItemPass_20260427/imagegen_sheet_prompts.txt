@@ -1,0 +1,89 @@
+Damage_AoeDamage_sheet.png
+Damage/AoeDamage: black: cracked smoke detector named Halo of Ruin, red: dented saucepan lid named Thunder Moon, yellow: broken speaker cone named Cathedral Boomer, white: flattened hubcap named Sainted Shockring
+
+Damage_BounceDamage_sheet.png
+Damage/BounceDamage: black: bent bottle cap named Ricochet Crown, red: cracked ping-pong ball named Moon-Hop Pearl, yellow: loose drawer knob named Imp Orbit, white: rubber stopper named Rebound Relic
+
+Damage_PierceDamage_sheet.png
+Damage/PierceDamage: black: rusty nail named Needle of Judgment, red: snapped umbrella rib named Storm Thorn, yellow: broken pen nib named Scholar's Fang, white: bent sewing pin named Silver Whisper
+
+Damage_DotDamage_sheet.png
+Damage/DotDamage: black: burnt matchbook named Ashen Scripture, red: corroded battery named Leaking Sun, yellow: old tea bag tag named Witch's Flag, white: stained cork named Slow Curse Seal
+
+Accuracy_CritDamage_sheet.png
+Accuracy/CritDamage: black: cracked magnifier named Eye of Catastrophe, red: broken watch gear named Fate Tooth, yellow: chipped chess queen named Execution Idol, white: loose camera lens named Doomglass
+
+AttackSpeed_AoeSpeed_sheet.png
+AttackSpeed/AoeSpeed: black: soda pull tab named Cyclone Halo, red: fan screw named Wind Saint's Nail, yellow: toy propeller named Zephyr Relic, white: bottle opener ring named Storm Handle
+
+AttackSpeed_BounceSpeed_sheet.png
+AttackSpeed/BounceSpeed: black: rubber band named Serpent Loop, red: yo-yo string spool named Orbit Spinner, yellow: spring from a pen named Jester Coil, white: plastic wheel named Runaway Moon
+
+AttackSpeed_PierceSpeed_sheet.png
+AttackSpeed/PierceSpeed: black: bent paperclip named Lightning Hook, red: zipper tooth strip named Serpent Teeth, yellow: snapped drill bit named Haste Needle, white: broken dart tip named Swift Verdict
+
+AttackSpeed_DotSpeed_sheet.png
+AttackSpeed/DotSpeed: black: burnt fuse named Blackwick Psalm, red: frayed shoelace named Creeping Thread, yellow: cracked egg timer dial named Rot Clock, white: incense ash tray named Patient Doom
+
+Accuracy_CritChance_sheet.png
+Accuracy/CritChance: black: lucky penny named Oracle Coin, red: cracked compact mirror named Truth Shard, yellow: broken dice cube named Fate Apostate, white: lottery ticket scrap named Prophet's Receipt
+
+AttackScale_AoeScale_sheet.png
+AttackScale/AoeScale: black: crushed pie tin named Expanding Moon, red: jar lid named Giant's Seal, yellow: old CD named Mirror Disc of Heaven, white: drain strainer named World-Eater Grate
+
+AttackScale_BounceScale_sheet.png
+AttackScale/BounceScale: black: rubber washer named Titan Loop, red: bracelet clasp named Monarch Ringlet, yellow: toy tire named Rolling Shrine, white: curtain grommet named Orbit Gate
+
+AttackScale_PierceScale_sheet.png
+AttackScale/PierceScale: black: wooden skewer named Lance of the Table God, red: broken comb tooth named Ivory Spine, yellow: cocktail umbrella stick named Festival Spear, white: cracked ruler shard named Lawblade
+
+AttackScale_DotScale_sheet.png
+AttackScale/DotScale: black: coffee filter named Brown Eclipse Veil, red: wax paper scrap named Grease Prophet, yellow: dryer lint clump named Dust Familiar, white: burnt toast corner named Charred Covenant
+
+Accuracy_AttackRange_sheet.png
+Accuracy/AttackRange: black: broken antenna named Far-Calling Wand, red: cracked telescope toy named Plastic Stargazer, yellow: old key fob named Distant Omen, white: snapped tape measure named Horizon Tongue
+
+Accuracy_Accuracy_sheet.png
+Accuracy/Accuracy: black: laser pointer shell named Red Dot Oracle, red: eyeglass screw named Tiny Seer, yellow: camera shutter button named Moment Judge, white: crosshair sticker scrap named Perfect Mark
+
+Armor_Taunt_sheet.png
+Armor/Taunt: black: torn party horn named Insult Trumpet, red: novelty badge named King of Nothing, yellow: cracked sunglasses named Defiant Shades, white: bottle label face named Mocking Banner
+
+Armor_ReflectDamage_sheet.png
+Armor/ReflectDamage: black: foil gum wrapper named Mirror Leaf, red: broken compact lid named Vanity Aegis, yellow: scratched CD fragment named Silver Rebuttal, white: chrome faucet handle named Return Star
+
+Armor_HpRegen_sheet.png
+Armor/HpRegen: black: rain gutter seed pod named Green Returner, red: wilted houseplant tag named Root Promise, yellow: cracked watering cap named Gentle Reservoir, white: compostable cup shard named Second Spring
+
+Armor_Crush_sheet.png
+Armor/Crush: black: brick chip named Pebble Tyrant, red: cracked padlock named Prison Heart, yellow: metal nut named Iron Seed, white: broken caster wheel named Weight of Ages
+
+Armor_DamageReduction_sheet.png
+Armor/DamageReduction: black: cardboard corner guard named Soft Fortress, red: packing foam block named Cloud Bastion, yellow: cracked phone case named Palm Shield, white: rubber shoe sole named Roadhide Plate
+
+Evasion_Invisibility_sheet.png
+Evasion/Invisibility: black: transparent tape wad named Ghost Ribbon, red: clear plastic wrapper named Air Cloak, yellow: smudged screen protector named Vanishing Skin, white: glass bottle shard named Invisible Fang
+
+Evasion_CounterAttack_sheet.png
+Evasion/CounterAttack: black: bent mousetrap spring named Biteback Coil, red: snap bracelet strip named Ambush Band, yellow: broken clothespin named Retort Jaw, white: safety pin named Revenge Hook
+
+Evasion_LifeSteal_sheet.png
+Evasion/LifeSteal: black: spent straw named Siphon Reed, red: cracked vacuum nozzle named Hungry Mouth, yellow: leaky hose connector named Thief's Valve, white: old juice box straw wrap named Sweet Theft
+
+Evasion_Assassinate_sheet.png
+Evasion/Assassinate: black: snapped razor cap named Silent Edge, red: black button named Night Eye, yellow: broken craft blade named Whisper Guillotine, white: chipped black tile named Midnight Warrant
+
+Evasion_EvasionChance_sheet.png
+Evasion/EvasionChance: black: lost receipt named Alibi Scroll, red: bus ticket stub named Escape Token, yellow: bent playing card named Trickster's Leave, white: loose hoodie drawstring tip named Slip Charm
+
+Luck_LootCrate_sheet.png
+Luck/LootCrate: black: torn cardboard tab named Box Saint's Relic, red: shipping label scrap named Promise Sticker, yellow: bubble wrap square named Treasure Blister, white: crate staple named Parcel Tooth
+
+Luck_TreasureChest_sheet.png
+Luck/TreasureChest: black: bent key named Almost-Key of Kings, red: zipper pull named False Latch, yellow: candy tin hinge named Pocket Vault, white: suitcase tag named Pilgrim's Hoardmark
+
+Luck_Cheating_sheet.png
+Luck/Cheating: black: loaded-looking die named Fraud Cube, red: calculator button named Forbidden Number, yellow: marked card corner named Dealer's Sin, white: game token named Housebreaker Coin
+
+Luck_Stealing_sheet.png
+Luck/Stealing: black: broken wallet clip named Pilfer Crown, red: coat button named Pocket Moon, yellow: zipper slider named Silent Grabber, white: price tag string named Thief's Halo

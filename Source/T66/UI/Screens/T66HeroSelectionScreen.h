@@ -162,8 +162,12 @@ private:
 	TSharedPtr<STextBlock> ACBalanceTextBlock;
 	TSharedPtr<FSlateBrush> ACBalanceIconBrush;
 	TSharedPtr<FSlateBrush> ChallengesButtonIconBrush;
+	TSharedPtr<FSlateBrush> ChadCompanionIconBrush;
+	TSharedPtr<FSlateBrush> StacyCompanionIconBrush;
 	TStrongObjectPtr<UTexture2D> ACBalanceIconTexture;
 	TStrongObjectPtr<UTexture2D> ChallengesButtonIconTexture;
+	TStrongObjectPtr<UTexture2D> ChadCompanionIconTexture;
+	TStrongObjectPtr<UTexture2D> StacyCompanionIconTexture;
 	TStrongObjectPtr<UTexture2D> HeroRecordMedalTexture;
 	TStrongObjectPtr<UTexture2D> HeroRecordRankTexture;
 	TSharedPtr<FSlateBrush> HeroRecordMedalBrush;

@@ -444,6 +444,8 @@ void AT66PlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 	SyncLockedCombatTargetFromCombat();
+	UpdateGameplayCameraSideWallSpring(DeltaTime);
+	UpdateHeroCameraOccluders();
 }
 
 bool AT66PlayerController::HasAttackLockedEnemy() const

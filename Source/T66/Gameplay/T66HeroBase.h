@@ -34,7 +34,7 @@ class APostProcessVolume;
  *
  * Camera System:
  * - Third-person camera with mouse look
- * - SpringArm for collision handling
+ * - Fixed-distance SpringArm so dense tower walls do not push/pull the view
  * - Pawn control rotation for smooth camera following
  */
 UCLASS(Blueprintable)
@@ -63,7 +63,7 @@ public:
 
 	// ========== Camera Components ==========
 	
-	/** Spring arm for third-person camera (handles collision) */
+	/** Fixed-distance spring arm for the third-person camera. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<USpringArmComponent> CameraBoom;
 

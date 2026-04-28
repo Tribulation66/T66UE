@@ -43,11 +43,11 @@ namespace
 	static constexpr float T66HeroHeightTypeAUU = 200.0f;
 	static constexpr float T66HeroHeightTypeBUU = 180.0f;
 	static constexpr float T66HeroBaselineVisualHeightUU = 176.0f;
-	static constexpr float T66HeroDefaultCameraArmLengthUU = 2300.0f;
+	static constexpr float T66HeroDefaultCameraArmLengthUU = 1440.0f;
 	static TAutoConsoleVariable<int32> CVarT66HeroOcclusionRevealEnabled(
 		TEXT("T66.Camera.EnableHeroOcclusionReveal"),
 		0,
-		TEXT("Temporary fallback switch. 0 keeps classic spring-arm camera behavior, 1 enables hero occlusion reveal."),
+		TEXT("0 disables hero occlusion reveal, 1 outlines/reveals the local hero when fixed-distance camera geometry occludes them."),
 		ECVF_Default);
 	static const TCHAR* T66HeroOcclusionMaterialPath = TEXT("/Game/Materials/PostProcess/M_HeroOcclusionReveal.M_HeroOcclusionReveal");
 	static const FName T66HeroRevealColorParameter(TEXT("RevealColor"));
@@ -75,7 +75,7 @@ AT66HeroBase::AT66HeroBase()
 	CameraBoom->TargetArmLength = T66HeroDefaultCameraArmLengthUU;
 	CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 60.f)); // Offset up from center
 	CameraBoom->bUsePawnControlRotation = true; // Rotate arm based on controller (mouse look)
-	CameraBoom->bDoCollisionTest = true; // Pull camera in when hitting walls
+	CameraBoom->bDoCollisionTest = false; // Keep distance stable in dense procedural dungeons.
 	CameraBoom->ProbeSize = 12.f;
 	CameraBoom->ProbeChannel = ECC_Camera;
 	

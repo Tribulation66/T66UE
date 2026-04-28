@@ -52,7 +52,7 @@ protected:
 	virtual void RefreshScreen_Implementation() override;
 
 private:
-	static constexpr int32 SlotsPerPage = 6;
+	static constexpr int32 SlotsPerPage = 4;
 	static constexpr int32 MaxPartyPreviewSlots = 4;
 
 	ET66PartySize ActivePartySizeFilter = ET66PartySize::Solo;

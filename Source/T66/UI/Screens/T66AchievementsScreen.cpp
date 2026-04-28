@@ -372,6 +372,8 @@ namespace
 				.Justification(ETextJustify::Center))
 			.SetButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
 			.SetPadding(ContentPadding)
+			.SetHAlign(HAlign_Center)
+			.SetVAlign(VAlign_Center)
 			.SetEnabled(Params.IsEnabled)
 			.SetMinWidth(Params.MinWidth)
 			.SetHeight(Params.Height)

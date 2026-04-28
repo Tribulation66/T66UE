@@ -36,6 +36,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Blueprint/UserWidget.h"
 #include "Async/Async.h"
+#include "Framework/Application/SlateApplication.h"
 #include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Style, Log, All);
@@ -71,6 +72,23 @@ namespace
 	static TObjectPtr<UTexture2D> GBtnDarkN = nullptr;
 	static TObjectPtr<UTexture2D> GBtnDarkH = nullptr;
 	static TObjectPtr<UTexture2D> GBtnDarkP = nullptr;
+
+	static void RefreshMouseCursorQuery()
+	{
+		if (FSlateApplication::IsInitialized())
+		{
+			FSlateApplication::Get().QueryCursor();
+		}
+	}
+
+	static FSimpleDelegate WithMouseCursorRefresh(FSimpleDelegate Delegate)
+	{
+		return FSimpleDelegate::CreateLambda([Delegate = MoveTemp(Delegate)]() mutable
+		{
+			Delegate.ExecuteIfBound();
+			RefreshMouseCursorQuery();
+		});
+	}
 
 	static bool HasButtonTextures()
 	{
@@ -1451,8 +1469,8 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 					.HAlign(BtnHAlign)
 					.VAlign(BtnVAlign)
 					.OnClicked(SafeClick)
-					.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
-					.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); }))
+					.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); RefreshMouseCursorQuery(); }))
+					.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); RefreshMouseCursorQuery(); }))
 					.OnPressed(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonPressedGlowIntensity); SetBorderState(ET66ButtonBorderState::Pressed); }))
 					.OnReleased(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
 					.ButtonStyle(&FlatStyle)
@@ -1657,8 +1675,8 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 						.HAlign(BtnHAlign)
 						.VAlign(BtnVAlign)
 						.OnClicked(SafeClick)
-						.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
-						.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); }))
+						.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); RefreshMouseCursorQuery(); }))
+						.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); RefreshMouseCursorQuery(); }))
 						.OnPressed(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonPressedGlowIntensity); SetBorderState(ET66ButtonBorderState::Pressed); }))
 						.OnReleased(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
 						.ButtonStyle(&HitStyle)
@@ -1739,8 +1757,8 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 								.HAlign(BtnHAlign)
 								.VAlign(BtnVAlign)
 								.OnClicked(SafeClick)
-								.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
-								.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); }))
+								.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); RefreshMouseCursorQuery(); }))
+								.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); RefreshMouseCursorQuery(); }))
 								.OnPressed(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonPressedGlowIntensity); SetBorderState(ET66ButtonBorderState::Pressed); }))
 								.OnReleased(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
 								.ButtonStyle(&HitStyle)
@@ -1784,8 +1802,8 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 				.HAlign(BtnHAlign)
 				.VAlign(BtnVAlign)
 				.OnClicked(SafeClick)
-				.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
-				.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); }))
+				.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); RefreshMouseCursorQuery(); }))
+				.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); RefreshMouseCursorQuery(); }))
 				.OnPressed(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonPressedGlowIntensity); SetBorderState(ET66ButtonBorderState::Pressed); }))
 				.OnReleased(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
 				.ButtonStyle(&BtnStyle)
@@ -1822,8 +1840,8 @@ TSharedRef<SWidget> FT66Style::MakeBareButton(const FT66BareButtonParams& Params
 		.Visibility(Params.Visibility)
 		.ToolTipText(Params.ToolTipText)
 		.OnClicked(ClickDelegate)
-		.OnHovered(Params.OnHovered)
-		.OnUnhovered(Params.OnUnhovered)
+		.OnHovered(WithMouseCursorRefresh(Params.OnHovered))
+		.OnUnhovered(WithMouseCursorRefresh(Params.OnUnhovered))
 		.OnPressed(Params.OnPressed)
 		.OnReleased(Params.OnReleased)
 		.ButtonStyle(&ResolvedStyle)

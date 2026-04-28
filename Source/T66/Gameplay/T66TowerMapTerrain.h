@@ -100,7 +100,9 @@ namespace T66TowerMapTerrain
 		TArray<FGridCell> GridCells;
 		TArray<FIntPoint> MainPathCells;
 		TArray<FIntPoint> OptionalCells;
+		TArray<FBox2D> WalkableFloorBoxes;
 		TArray<FBox2D> MazeWallBoxes;
+		TArray<FBox2D> DoorwayHeaderBoxes;
 		TArray<FBox2D> TrapEligibleWallBoxes;
 		TArray<FVector> CachedWalkableSpawnSlots;
 		TArray<FVector> CachedMainPathSpawnSlots;

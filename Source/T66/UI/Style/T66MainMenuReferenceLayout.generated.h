@@ -12,7 +12,7 @@ namespace T66MainMenuReferenceLayout
 
 	namespace TopBar
 	{
-		inline constexpr FT66ReferenceRect TopbarStripFull{17.0f, 11.0f, 1885.0f, 120.0f};
+		inline constexpr FT66ReferenceRect TopbarStripFull{0.0f, 0.0f, 1920.0f, 132.0f};
 		inline constexpr FT66ReferenceRect ButtonSettings{33.0f, 26.0f, 117.0f, 91.0f};
 		inline constexpr FT66ReferenceRect ButtonChat{161.0f, 28.0f, 134.0f, 89.0f};
 		inline constexpr FT66ReferenceRect TabAccount{306.0f, 28.0f, 268.0f, 88.0f};
@@ -45,9 +45,9 @@ namespace T66MainMenuReferenceLayout
 
 	namespace Left
 	{
-		inline constexpr FT66ReferenceRect ShellFullReference{17.0f, 147.0f, 466.0f, 886.0f};
-		inline constexpr FT66ReferenceRect ProfileCardReference{36.0f, 162.0f, 424.0f, 108.0f};
-		inline constexpr FT66ReferenceRect SearchFieldReference{36.0f, 291.0f, 424.0f, 54.0f};
+		inline constexpr FT66ReferenceRect ShellFullReference{0.0f, 132.0f, 496.0f, 948.0f};
+		inline constexpr FT66ReferenceRect ProfileCardReference{36.0f, 162.0f, 452.0f, 108.0f};
+		inline constexpr FT66ReferenceRect SearchFieldReference{36.0f, 291.0f, 452.0f, 54.0f};
 		inline constexpr FT66ReferenceRect SearchIcon{48.0f, 302.0f, 34.0f, 32.0f};
 		inline constexpr FT66ReferenceRect FriendStarButton{291.0f, 598.0f, 62.0f, 57.0f};
 		inline constexpr FT66ReferenceRect FriendInviteButton{355.0f, 598.0f, 96.0f, 57.0f};
@@ -59,7 +59,7 @@ namespace T66MainMenuReferenceLayout
 
 	namespace Right
 	{
-		inline constexpr FT66ReferenceRect ShellFullReference{1425.0f, 232.0f, 477.0f, 801.0f};
+		inline constexpr FT66ReferenceRect ShellFullReference{1420.0f, 132.0f, 500.0f, 948.0f};
 		inline constexpr FT66ReferenceRect FilterWorldButton{1435.0f, 149.0f, 136.0f, 72.0f};
 		inline constexpr FT66ReferenceRect FilterFriendsButton{1585.0f, 149.0f, 136.0f, 72.0f};
 		inline constexpr FT66ReferenceRect FilterCrownButton{1735.0f, 149.0f, 136.0f, 72.0f};
@@ -76,8 +76,8 @@ namespace T66MainMenuReferenceLayout
 	namespace MainMenu
 	{
 		inline constexpr FT66ReferenceRect FullCanvas{0.0f, 0.0f, 1920.0f, 1080.0f};
-		inline constexpr FT66ReferenceRect LeftPanelAssembly{17.0f, 147.0f, 466.0f, 886.0f};
-		inline constexpr FT66ReferenceRect RightPanelAssembly{1425.0f, 147.0f, 477.0f, 886.0f};
+		inline constexpr FT66ReferenceRect LeftPanelAssembly{0.0f, 132.0f, 496.0f, 948.0f};
+		inline constexpr FT66ReferenceRect RightPanelAssembly{1338.0f, 132.0f, 582.0f, 948.0f};
 	}
 
 }

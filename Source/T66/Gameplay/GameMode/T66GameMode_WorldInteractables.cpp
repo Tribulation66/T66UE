@@ -27,7 +27,7 @@ void AT66GameMode::SpawnStageEffectsForStage()
 	static constexpr float SpawnZ = 40.f;
 	static constexpr float SafeBubbleMargin = 350.f;
 
-	const int32 ShroomCount = (Difficulty == ET66Difficulty::Easy) ? 12 : 0;
+	const int32 ShroomCount = 0;
 
 	struct FUsedStageEffectLoc
 	{

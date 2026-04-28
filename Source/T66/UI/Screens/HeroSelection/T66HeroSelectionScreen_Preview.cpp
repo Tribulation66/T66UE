@@ -92,7 +92,7 @@ void UT66HeroSelectionScreen::RefreshHeroRecordRank()
 		}
 		else
 		{
-			HeroRecordRankWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordRankUnranked", "Unranked"));
+			HeroRecordRankWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordRankUnavailableRank", "N/A"));
 		}
 		return;
 	}

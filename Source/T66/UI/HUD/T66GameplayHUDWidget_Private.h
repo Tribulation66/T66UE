@@ -1394,6 +1394,12 @@ public:
 		Invalidate(EInvalidateWidgetReason::Paint);
 	}
 
+	void SetTowerWalkableFloorBoxes(const TArray<FBox2D>& InTowerWalkableFloorBoxes)
+	{
+		TowerWalkableFloorBoxes = InTowerWalkableFloorBoxes;
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
 	void SetThemedFloorArt(
 		const FSlateBrush* InBackgroundBrush,
 		const FSlateBrush* InWallBrush,
@@ -1634,6 +1640,27 @@ public:
 				FLinearColor::White);
 		};
 
+		auto DrawSolidWorldRect = [&](const int32 DrawLayerId, const FVector2D& RectWorldMin, const FVector2D& RectWorldMax, const FLinearColor& FillColor)
+		{
+			const FVector2D A = WorldToLocal(FVector2D(RectWorldMin.X, RectWorldMax.Y));
+			const FVector2D B = WorldToLocal(FVector2D(RectWorldMax.X, RectWorldMin.Y));
+			const FVector2D TL(FMath::Min(A.X, B.X), FMath::Min(A.Y, B.Y));
+			const FVector2D BR(FMath::Max(A.X, B.X), FMath::Max(A.Y, B.Y));
+			const FVector2D BoxSize = BR - TL;
+			if (BoxSize.X <= 1.0f || BoxSize.Y <= 1.0f)
+			{
+				return;
+			}
+
+			FSlateDrawElement::MakeBox(
+				OutDrawElements,
+				DrawLayerId,
+				ToPaintGeo(TL, BoxSize),
+				FCoreStyle::Get().GetBrush("WhiteBrush"),
+				ESlateDrawEffect::None,
+				FillColor);
+		};
+
 		auto DrawTowerPolygonTexture = [&](const int32 DrawLayerId, const float Alpha)
 		{
 			if (!bUsingMapArt || !bHasTowerPolygon || TowerPolygonWorldVertices.Num() < 3)
@@ -1817,9 +1844,36 @@ public:
 			}
 		};
 
+		auto DrawTowerWalkableFloorBoxes = [&](const int32 DrawLayerId, const FLinearColor& FillColor, const float TextureAlpha)
+		{
+			for (const FBox2D& WalkableBox : TowerWalkableFloorBoxes)
+			{
+				if (!IsWorldBoxRevealed(WalkableBox))
+				{
+					continue;
+				}
+
+				if (bUsingMapArt)
+				{
+					DrawBackgroundTextureWorldRect(DrawLayerId, WalkableBox.Min, WalkableBox.Max, TextureAlpha);
+				}
+				else
+				{
+					DrawSolidWorldRect(DrawLayerId, WalkableBox.Min, WalkableBox.Max, FillColor);
+				}
+			}
+		};
+
 		// Terrain texture/fill. Tower floors can use dedicated map art that reveals out of black.
 		{
-			if (bUsingMapArt)
+			if (TowerWalkableFloorBoxes.Num() > 0)
+			{
+				DrawTowerWalkableFloorBoxes(
+					LayerId + 1,
+					bUseRevealMask ? RevealedTerrainColor : MapTerrainColor,
+					bMinimap ? 0.98f : 0.94f);
+			}
+			else if (bUsingMapArt)
 			{
 				if (bUseRevealMask && RevealWorldRadius > KINDA_SMALL_NUMBER)
 				{
@@ -1879,7 +1933,7 @@ public:
 			}
 		}
 
-		if (!bUsingMapArt && bUseRevealMask && RevealWorldRadius > KINDA_SMALL_NUMBER)
+		if (TowerWalkableFloorBoxes.Num() <= 0 && !bUsingMapArt && bUseRevealMask && RevealWorldRadius > KINDA_SMALL_NUMBER)
 		{
 			for (const FVector2D& RevealWorldPoint : RevealWorldPoints)
 			{
@@ -1963,7 +2017,7 @@ public:
 				FVector2D(0.f, 0.f) };
 			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 4, AllottedGeometry.ToPaintGeometry(),
 				Border, ESlateDrawEffect::None, OutlineColor, true, 2.f);
-			if (bHasTowerPolygon && !bUseRevealMask)
+			if (TowerWalkableFloorBoxes.Num() <= 0 && bHasTowerPolygon && !bUseRevealMask)
 			{
 				DrawTowerPolygonOutline(LayerId + 4, WithAlpha(OutlineColor, 0.78f), bMinimap ? 1.4f : 2.0f);
 			}
@@ -2249,6 +2303,7 @@ private:
 	FVector2D PlayerDirectionWorldXY = FVector2D(1.0f, 0.0f);
 	TArray<FT66MapMarker> Markers;
 	TArray<FVector2D> RevealWorldPoints;
+	TArray<FBox2D> TowerWalkableFloorBoxes;
 	TArray<FBox2D> TowerMazeWallBoxes;
 	const FSlateBrush* BackgroundBrush = nullptr;
 	const FSlateBrush* WallBrush = nullptr;

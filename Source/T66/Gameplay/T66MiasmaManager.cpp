@@ -219,20 +219,40 @@ void AT66MiasmaManager::BuildTowerFloorGrid()
 				: FVector(Floor.ArrivalPoint.X, Floor.ArrivalPoint.Y, Floor.SurfaceZ + TileZ);
 		TowerDefaultSourceAnchors.Add(Floor.FloorNumber, DefaultAnchor);
 
-		for (float X = -Floor.WalkableHalfExtent + (TileSize * 0.5f); X < Floor.WalkableHalfExtent; X += TileSize)
+		auto AddTowerMiasmaCandidate = [&](const FVector& Candidate)
 		{
-			for (float Y = -Floor.WalkableHalfExtent + (TileSize * 0.5f); Y < Floor.WalkableHalfExtent; Y += TileSize)
+			if (Floor.bHasDropHole
+				&& FMath::Abs(Candidate.X - Floor.HoleCenter.X) <= (Floor.HoleHalfExtent.X + TileSize * 0.45f)
+				&& FMath::Abs(Candidate.Y - Floor.HoleCenter.Y) <= (Floor.HoleHalfExtent.Y + TileSize * 0.45f))
 			{
-				const FVector Candidate = Floor.Center + FVector(X, Y, TileZ);
-				if (Floor.bHasDropHole
-					&& FMath::Abs(Candidate.X - Floor.HoleCenter.X) <= (Floor.HoleHalfExtent.X + TileSize * 0.45f)
-					&& FMath::Abs(Candidate.Y - Floor.HoleCenter.Y) <= (Floor.HoleHalfExtent.Y + TileSize * 0.45f))
-				{
-					continue;
-				}
+				return;
+			}
 
-				TileCenters.Add(FVector(Candidate.X, Candidate.Y, Floor.SurfaceZ + TileZ));
-				TileFloorNumbers.Add(Floor.FloorNumber);
+			TileCenters.Add(FVector(Candidate.X, Candidate.Y, Floor.SurfaceZ + TileZ));
+			TileFloorNumbers.Add(Floor.FloorNumber);
+		};
+
+		if (Floor.WalkableFloorBoxes.Num() > 0)
+		{
+			for (const FBox2D& WalkableBox : Floor.WalkableFloorBoxes)
+			{
+				for (float X = WalkableBox.Min.X + (TileSize * 0.5f); X < WalkableBox.Max.X; X += TileSize)
+				{
+					for (float Y = WalkableBox.Min.Y + (TileSize * 0.5f); Y < WalkableBox.Max.Y; Y += TileSize)
+					{
+						AddTowerMiasmaCandidate(FVector(X, Y, Floor.SurfaceZ + TileZ));
+					}
+				}
+			}
+		}
+		else
+		{
+			for (float X = -Floor.WalkableHalfExtent + (TileSize * 0.5f); X < Floor.WalkableHalfExtent; X += TileSize)
+			{
+				for (float Y = -Floor.WalkableHalfExtent + (TileSize * 0.5f); Y < Floor.WalkableHalfExtent; Y += TileSize)
+				{
+					AddTowerMiasmaCandidate(Floor.Center + FVector(X, Y, TileZ));
+				}
 			}
 		}
 	}

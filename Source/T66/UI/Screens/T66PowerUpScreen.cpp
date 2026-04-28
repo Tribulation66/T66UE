@@ -386,6 +386,8 @@ namespace
 			FT66BareButtonParams(Params.OnClicked, ButtonContent)
 			.SetButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
 			.SetPadding(ContentPadding)
+			.SetHAlign(HAlign_Center)
+			.SetVAlign(VAlign_Center)
 			.SetEnabled(Params.IsEnabled)
 			.SetMinWidth(Params.MinWidth)
 			.SetHeight(Params.Height)

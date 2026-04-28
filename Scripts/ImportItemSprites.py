@@ -19,7 +19,7 @@ import unreal
 
 RARITIES = ("black", "red", "yellow", "white")
 DEST_DIR = "/Game/Items/Sprites"
-DEPRECATED_SECONDARY_STATS = {"HpRegen", "LifeSteal", "Alchemy"}
+DEPRECATED_SECONDARY_STATS = {"Alchemy"}
 
 
 def ensure_directory(path):

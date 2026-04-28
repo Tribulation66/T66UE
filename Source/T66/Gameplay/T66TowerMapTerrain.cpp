@@ -28,12 +28,18 @@ namespace
 	static constexpr float T66TowerStandardFloorHeadroom = 1200.0f;
 	static constexpr float T66TowerMazeWallHalfThicknessScale = 0.09f;
 	static constexpr float T66TowerStartRoomSquareSize = 7000.0f;
-	static constexpr int32 T66TowerGridDefaultColumns = 6;
-	static constexpr int32 T66TowerGridDefaultRows = 6;
-	static constexpr float T66TowerGridDefaultCellSize = 6500.0f;
-	static constexpr float T66TowerGridDefaultDoorWidth = 2600.0f;
+	static constexpr int32 T66TowerGridDefaultColumns = 25;
+	static constexpr int32 T66TowerGridDefaultRows = 25;
+	static constexpr float T66TowerGridDefaultCellSize = 1500.0f;
+	static constexpr float T66TowerGridDefaultDoorWidth = 860.0f;
+	static constexpr int32 T66TowerDungeonMinRooms = 15;
+	static constexpr int32 T66TowerDungeonMaxRooms = 20;
+	static constexpr int32 T66TowerDungeonMinRoomTiles = 2;
+	static constexpr int32 T66TowerDungeonMaxRoomTiles = 5;
 	static constexpr float T66TowerGridBranchChance = 0.35f;
 	static constexpr int32 T66TowerGridMaxBranchCells = 3;
+	static constexpr float T66TowerGeneratedFloorCapTopOffset = 18.0f;
+	static constexpr float T66TowerGeneratedFloorCapThickness = 48.0f;
 	static constexpr int32 T66TowerStartFloorNumber = 1;
 	static constexpr int32 T66TowerFirstGameplayFloorNumber = 2;
 	static constexpr int32 T66TowerLastGameplayFloorNumber = 4;
@@ -41,8 +47,8 @@ namespace
 	static constexpr int32 T66TowerTotalFloorCount = T66TowerBossFloorNumber - T66TowerStartFloorNumber + 1;
 	static TAutoConsoleVariable<int32> CVarT66TowerIgnoreCameraCollision(
 		TEXT("T66.Camera.IgnoreTowerWallCameraCollision"),
-		0,
-		TEXT("Temporary fallback switch. 0 lets tower walls block the spring-arm camera, 1 ignores the camera channel for tower shell and maze walls."),
+		1,
+		TEXT("0 lets tower walls block camera traces, 1 ignores the camera channel for fixed-distance tower gameplay cameras."),
 		ECVF_Default);
 
 	static TAutoConsoleVariable<int32> CVarT66TowerMazeMode(
@@ -129,9 +135,9 @@ namespace
 			MeshComponent->SetStaticMesh(Mesh);
 			MeshComponent->SetGenerateOverlapEvents(false);
 			MeshComponent->SetRelativeScale3D(T66ComputeMeshScaleForHalfExtents(Mesh, DesiredHalfExtents));
-			MeshComponent->SetCollisionEnabled(bEnableCollision ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 			MeshComponent->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 			T66ConfigureTowerCollisionResponses(MeshComponent, bIgnoreCameraChannel);
+			MeshComponent->SetCollisionEnabled(bEnableCollision ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 			T66OptimizeTowerMeshComponent(MeshComponent);
 			MeshComponent->SetMobility(EComponentMobility::Static);
 			if (Material)
@@ -238,9 +244,9 @@ namespace
 			MeshComponent->SetGenerateOverlapEvents(false);
 			MeshComponent->SetRelativeScale3D(Scale);
 			FT66VisualUtil::GroundMeshToActorOrigin(MeshComponent, Mesh);
-			MeshComponent->SetCollisionEnabled(bEnableCollision ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 			MeshComponent->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 			T66ConfigureTowerCollisionResponses(MeshComponent, bIgnoreCameraChannel);
+			MeshComponent->SetCollisionEnabled(bEnableCollision ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 			T66OptimizeTowerMeshComponent(MeshComponent);
 			if (Material)
 			{
@@ -351,6 +357,22 @@ namespace
 			&& FMath::Abs(Location.Y - Floor.Center.Y) <= BoundsLimit;
 	}
 
+	static bool T66IsLocationInsideWalkableFloorBoxes(const T66TowerMapTerrain::FFloor& Floor, const FVector& Location, const float Margin = 0.0f)
+	{
+		for (const FBox2D& WalkableBox : Floor.WalkableFloorBoxes)
+		{
+			if (Location.X >= (WalkableBox.Min.X - Margin)
+				&& Location.X <= (WalkableBox.Max.X + Margin)
+				&& Location.Y >= (WalkableBox.Min.Y - Margin)
+				&& Location.Y <= (WalkableBox.Max.Y + Margin))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	static bool T66TryGetPolygonXRangeAtY(const TArray<FVector2D>& PolygonVertices, const float WorldY, float& OutMinX, float& OutMaxX)
 	{
 		if (PolygonVertices.Num() < 3)
@@ -413,6 +435,11 @@ namespace
 
 	static bool T66IsLocationInsideFloorBounds(const T66TowerMapTerrain::FFloor& Floor, const FVector& Location, const float Margin = 0.0f)
 	{
+		if (Floor.WalkableFloorBoxes.Num() > 0)
+		{
+			return T66IsLocationInsideWalkableFloorBoxes(Floor, Location, Margin);
+		}
+
 		return T66IsLocationInsideFloorPolygon(Floor, Location, Margin);
 	}
 
@@ -728,6 +755,30 @@ namespace
 			: T66TowerMapTerrain::ET66TowerMazeMode::GridGraph;
 	}
 
+	static uint32 T66RotateLeft32(const uint32 Value, const uint32 Shift)
+	{
+		const uint32 MaskedShift = Shift & 31u;
+		return MaskedShift == 0u ? Value : ((Value << MaskedShift) | (Value >> (32u - MaskedShift)));
+	}
+
+	static int32 T66BuildTowerFloorSeed(
+		const int32 BaseSeed,
+		const int32 FloorNumber,
+		const int32 GameplayLevelNumber,
+		const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme)
+	{
+		uint32 Hash = static_cast<uint32>(BaseSeed);
+		Hash ^= T66RotateLeft32(static_cast<uint32>(FMath::Max(0, GameplayLevelNumber) + 1) * 0x9E3779B1u, 11u);
+		Hash ^= T66RotateLeft32(static_cast<uint32>(FloorNumber + 17) * 0x85EBCA6Bu, 17u);
+		Hash ^= (static_cast<uint32>(Theme) + 3u) * 0xC2B2AE35u;
+		Hash ^= Hash >> 16u;
+		Hash *= 0x7FEB352Du;
+		Hash ^= Hash >> 15u;
+		Hash *= 0x846CA68Bu;
+		Hash ^= Hash >> 16u;
+		return static_cast<int32>(Hash & 0x7fffffffu);
+	}
+
 	static void T66ResetFloorMazeMetadata(T66TowerMapTerrain::FFloor& Floor)
 	{
 		Floor.ArrivalCell = FIntPoint(INDEX_NONE, INDEX_NONE);
@@ -735,7 +786,9 @@ namespace
 		Floor.GridCells.Reset();
 		Floor.MainPathCells.Reset();
 		Floor.OptionalCells.Reset();
+		Floor.WalkableFloorBoxes.Reset();
 		Floor.MazeWallBoxes.Reset();
+		Floor.DoorwayHeaderBoxes.Reset();
 		Floor.TrapEligibleWallBoxes.Reset();
 		Floor.CachedWalkableSpawnSlots.Reset();
 		Floor.CachedMainPathSpawnSlots.Reset();
@@ -1535,6 +1588,1215 @@ namespace
 		T66BuildCachedFloorSpawnSlots(Layout, Floor);
 	}
 
+	static bool T66AreGridIndicesAdjacent(const T66TowerMapTerrain::FLayout& Layout, const int32 A, const int32 B)
+	{
+		const FIntPoint Delta = T66GetGridCoordFromIndex(Layout, A) - T66GetGridCoordFromIndex(Layout, B);
+		return (FMath::Abs(Delta.X) + FMath::Abs(Delta.Y)) == 1;
+	}
+
+	static void T66ShuffleGridDirections(FRandomStream& Rng, TArray<int32, TInlineAllocator<4>>& InOutDirectionOrder)
+	{
+		InOutDirectionOrder.Reset();
+		InOutDirectionOrder.Add(0);
+		InOutDirectionOrder.Add(1);
+		InOutDirectionOrder.Add(2);
+		InOutDirectionOrder.Add(3);
+		for (int32 Index = InOutDirectionOrder.Num() - 1; Index > 0; --Index)
+		{
+			const int32 SwapIndex = Rng.RandRange(0, Index);
+			InOutDirectionOrder.Swap(Index, SwapIndex);
+		}
+	}
+
+	static bool T66TryBuildDungeonLoopRecursive(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const int32 StartIndex,
+		const int32 CurrentIndex,
+		const int32 TargetRoomCount,
+		TArray<bool>& Visited,
+		TArray<int32>& InOutPath,
+		FRandomStream& Rng)
+	{
+		if (InOutPath.Num() >= TargetRoomCount)
+		{
+			return T66AreGridIndicesAdjacent(Layout, CurrentIndex, StartIndex);
+		}
+
+		struct FScoredNeighbor
+		{
+			int32 Index = INDEX_NONE;
+			float Score = 0.0f;
+		};
+
+		TArray<FScoredNeighbor, TInlineAllocator<4>> Candidates;
+		TArray<int32, TInlineAllocator<4>> DirectionOrder;
+		T66ShuffleGridDirections(Rng, DirectionOrder);
+
+		const FIntPoint CurrentCoord = T66GetGridCoordFromIndex(Layout, CurrentIndex);
+		const FIntPoint StartCoord = T66GetGridCoordFromIndex(Layout, StartIndex);
+		const int32 ParentIndex = InOutPath.Num() >= 2 ? InOutPath[InOutPath.Num() - 2] : INDEX_NONE;
+		const FIntPoint PreviousDelta = ParentIndex != INDEX_NONE
+			? CurrentCoord - T66GetGridCoordFromIndex(Layout, ParentIndex)
+			: FIntPoint::ZeroValue;
+
+		for (const int32 DirectionIndex : DirectionOrder)
+		{
+			FIntPoint NeighborCoord;
+			if (!T66TryGetGridNeighbor(Layout, CurrentCoord, DirectionIndex, NeighborCoord))
+			{
+				continue;
+			}
+
+			const int32 NeighborIndex = T66GetGridCellIndex(Layout, NeighborCoord);
+			if (NeighborIndex == StartIndex || !Visited.IsValidIndex(NeighborIndex) || Visited[NeighborIndex])
+			{
+				continue;
+			}
+
+			const FIntPoint NextDelta = NeighborCoord - CurrentCoord;
+			const bool bTurns = ParentIndex == INDEX_NONE || NextDelta != PreviousDelta;
+			const int32 StartDistance = T66GridManhattanDistance(NeighborCoord, StartCoord);
+			const int32 RemainingAfterThis = TargetRoomCount - (InOutPath.Num() + 1);
+			if (RemainingAfterThis <= 0 && StartDistance != 1)
+			{
+				continue;
+			}
+
+			FScoredNeighbor Candidate;
+			Candidate.Index = NeighborIndex;
+			Candidate.Score = Rng.FRandRange(0.0f, 1.0f)
+				+ (bTurns ? 0.45f : 0.0f)
+				+ (StartDistance <= RemainingAfterThis + 1 ? 0.25f : 0.0f);
+			Candidates.Add(Candidate);
+		}
+
+		Candidates.Sort([](const FScoredNeighbor& A, const FScoredNeighbor& B)
+		{
+			return A.Score > B.Score;
+		});
+
+		for (const FScoredNeighbor& Candidate : Candidates)
+		{
+			Visited[Candidate.Index] = true;
+			InOutPath.Add(Candidate.Index);
+			if (T66TryBuildDungeonLoopRecursive(Layout, StartIndex, Candidate.Index, TargetRoomCount, Visited, InOutPath, Rng))
+			{
+				return true;
+			}
+
+			InOutPath.Pop();
+			Visited[Candidate.Index] = false;
+		}
+
+		return false;
+	}
+
+	static bool T66TryBuildDungeonLoopPath(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const int32 StartIndex,
+		FRandomStream& Rng,
+		TArray<int32>& OutPath)
+	{
+		const int32 CellCount = Layout.GridColumns * Layout.GridRows;
+		if (CellCount <= 0 || StartIndex < 0 || StartIndex >= CellCount)
+		{
+			return false;
+		}
+
+		for (int32 Attempt = 0; Attempt < 24; ++Attempt)
+		{
+			const int32 TargetRoomCount = T66TowerDungeonMinRooms + (Rng.RandRange(0, (T66TowerDungeonMaxRooms - T66TowerDungeonMinRooms) / 2) * 2);
+			TArray<bool> Visited;
+			Visited.Init(false, CellCount);
+			Visited[StartIndex] = true;
+
+			OutPath.Reset();
+			OutPath.Add(StartIndex);
+			if (T66TryBuildDungeonLoopRecursive(Layout, StartIndex, StartIndex, TargetRoomCount, Visited, OutPath, Rng))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	static bool T66TryBuildRectangularDungeonLoopPath(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const int32 StartIndex,
+		FRandomStream& Rng,
+		TArray<int32>& OutPath)
+	{
+		struct FLoopProfile
+		{
+			int32 Width = 0;
+			int32 Height = 0;
+		};
+
+		const FLoopProfile Profiles[] =
+		{
+			{ 6, 6 },
+			{ 6, 5 },
+			{ 5, 6 },
+			{ 5, 5 },
+		};
+
+		const FIntPoint StartCoord = T66GetGridCoordFromIndex(Layout, StartIndex);
+		TArray<FLoopProfile, TInlineAllocator<4>> ValidProfiles;
+		for (const FLoopProfile& Profile : Profiles)
+		{
+			if (Profile.Width <= 1 || Profile.Height <= 1 || Profile.Width > Layout.GridColumns || Profile.Height > Layout.GridRows)
+			{
+				continue;
+			}
+
+			bool bHasValidPlacement = false;
+			for (int32 MinY = 0; MinY <= Layout.GridRows - Profile.Height && !bHasValidPlacement; ++MinY)
+			{
+				for (int32 MinX = 0; MinX <= Layout.GridColumns - Profile.Width; ++MinX)
+				{
+					const int32 MaxX = MinX + Profile.Width - 1;
+					const int32 MaxY = MinY + Profile.Height - 1;
+					const bool bInside = StartCoord.X >= MinX && StartCoord.X <= MaxX && StartCoord.Y >= MinY && StartCoord.Y <= MaxY;
+					const bool bOnPerimeter = bInside && (StartCoord.X == MinX || StartCoord.X == MaxX || StartCoord.Y == MinY || StartCoord.Y == MaxY);
+					if (bOnPerimeter)
+					{
+						bHasValidPlacement = true;
+						break;
+					}
+				}
+			}
+
+			if (bHasValidPlacement)
+			{
+				ValidProfiles.Add(Profile);
+			}
+		}
+
+		if (ValidProfiles.Num() <= 0)
+		{
+			return false;
+		}
+
+		const FLoopProfile ChosenProfile = ValidProfiles[Rng.RandRange(0, ValidProfiles.Num() - 1)];
+		TArray<FIntPoint, TInlineAllocator<32>> CandidateMins;
+		for (int32 MinY = 0; MinY <= Layout.GridRows - ChosenProfile.Height; ++MinY)
+		{
+			for (int32 MinX = 0; MinX <= Layout.GridColumns - ChosenProfile.Width; ++MinX)
+			{
+				const int32 MaxX = MinX + ChosenProfile.Width - 1;
+				const int32 MaxY = MinY + ChosenProfile.Height - 1;
+				const bool bInside = StartCoord.X >= MinX && StartCoord.X <= MaxX && StartCoord.Y >= MinY && StartCoord.Y <= MaxY;
+				const bool bOnPerimeter = bInside && (StartCoord.X == MinX || StartCoord.X == MaxX || StartCoord.Y == MinY || StartCoord.Y == MaxY);
+				if (bOnPerimeter)
+				{
+					CandidateMins.Add(FIntPoint(MinX, MinY));
+				}
+			}
+		}
+
+		if (CandidateMins.Num() <= 0)
+		{
+			return false;
+		}
+
+		const FIntPoint MinCoord = CandidateMins[Rng.RandRange(0, CandidateMins.Num() - 1)];
+		const int32 MaxX = MinCoord.X + ChosenProfile.Width - 1;
+		const int32 MaxY = MinCoord.Y + ChosenProfile.Height - 1;
+		TArray<FIntPoint, TInlineAllocator<32>> RingCoords;
+		for (int32 X = MinCoord.X; X <= MaxX; ++X)
+		{
+			RingCoords.Add(FIntPoint(X, MinCoord.Y));
+		}
+		for (int32 Y = MinCoord.Y + 1; Y <= MaxY; ++Y)
+		{
+			RingCoords.Add(FIntPoint(MaxX, Y));
+		}
+		for (int32 X = MaxX - 1; X >= MinCoord.X; --X)
+		{
+			RingCoords.Add(FIntPoint(X, MaxY));
+		}
+		for (int32 Y = MaxY - 1; Y > MinCoord.Y; --Y)
+		{
+			RingCoords.Add(FIntPoint(MinCoord.X, Y));
+		}
+
+		int32 StartPathIndex = INDEX_NONE;
+		for (int32 PathIndex = 0; PathIndex < RingCoords.Num(); ++PathIndex)
+		{
+			if (RingCoords[PathIndex] == StartCoord)
+			{
+				StartPathIndex = PathIndex;
+				break;
+			}
+		}
+
+		if (StartPathIndex == INDEX_NONE)
+		{
+			return false;
+		}
+
+		OutPath.Reset();
+		OutPath.Reserve(RingCoords.Num());
+		const bool bClockwise = Rng.FRand() >= 0.5f;
+		for (int32 Offset = 0; Offset < RingCoords.Num(); ++Offset)
+		{
+			const int32 RingIndex = bClockwise
+				? (StartPathIndex + Offset) % RingCoords.Num()
+				: (StartPathIndex - Offset + RingCoords.Num()) % RingCoords.Num();
+			OutPath.Add(T66GetGridCellIndex(Layout, RingCoords[RingIndex]));
+		}
+
+		return OutPath.Num() >= T66TowerDungeonMinRooms && OutPath.Num() <= T66TowerDungeonMaxRooms;
+	}
+
+	static bool T66BuildFallbackDungeonRing(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const int32 StartIndex,
+		FRandomStream& Rng,
+		TArray<int32>& OutPath)
+	{
+		const FIntPoint StartCoord = T66GetGridCoordFromIndex(Layout, StartIndex);
+		TArray<FIntPoint, TInlineAllocator<8>> OffsetOrder;
+		for (int32 OffsetY = 0; OffsetY < 3; ++OffsetY)
+		{
+			for (int32 OffsetX = 0; OffsetX < 3; ++OffsetX)
+			{
+				if (OffsetX == 1 && OffsetY == 1)
+				{
+					continue;
+				}
+
+				OffsetOrder.Add(FIntPoint(OffsetX, OffsetY));
+			}
+		}
+
+		for (int32 Index = OffsetOrder.Num() - 1; Index > 0; --Index)
+		{
+			const int32 SwapIndex = Rng.RandRange(0, Index);
+			OffsetOrder.Swap(Index, SwapIndex);
+		}
+
+		for (const FIntPoint& StartOffset : OffsetOrder)
+		{
+			const FIntPoint MinCoord(StartCoord.X - StartOffset.X, StartCoord.Y - StartOffset.Y);
+			if (MinCoord.X < 0 || MinCoord.Y < 0 || MinCoord.X + 2 >= Layout.GridColumns || MinCoord.Y + 2 >= Layout.GridRows)
+			{
+				continue;
+			}
+
+			const FIntPoint RingCoords[] =
+			{
+				FIntPoint(MinCoord.X, MinCoord.Y),
+				FIntPoint(MinCoord.X + 1, MinCoord.Y),
+				FIntPoint(MinCoord.X + 2, MinCoord.Y),
+				FIntPoint(MinCoord.X + 2, MinCoord.Y + 1),
+				FIntPoint(MinCoord.X + 2, MinCoord.Y + 2),
+				FIntPoint(MinCoord.X + 1, MinCoord.Y + 2),
+				FIntPoint(MinCoord.X, MinCoord.Y + 2),
+				FIntPoint(MinCoord.X, MinCoord.Y + 1),
+			};
+
+			int32 StartPathIndex = INDEX_NONE;
+			for (int32 PathIndex = 0; PathIndex < UE_ARRAY_COUNT(RingCoords); ++PathIndex)
+			{
+				if (RingCoords[PathIndex] == StartCoord)
+				{
+					StartPathIndex = PathIndex;
+					break;
+				}
+			}
+
+			if (StartPathIndex == INDEX_NONE)
+			{
+				continue;
+			}
+
+			OutPath.Reset();
+			OutPath.Reserve(UE_ARRAY_COUNT(RingCoords));
+			for (int32 Offset = 0; Offset < UE_ARRAY_COUNT(RingCoords); ++Offset)
+			{
+				const FIntPoint Coord = RingCoords[(StartPathIndex + Offset) % UE_ARRAY_COUNT(RingCoords)];
+				OutPath.Add(T66GetGridCellIndex(Layout, Coord));
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+	static void T66UpdateFloorBoundsFromWalkableBoxes(T66TowerMapTerrain::FFloor& Floor)
+	{
+		if (Floor.WalkableFloorBoxes.Num() <= 0)
+		{
+			return;
+		}
+
+		float MinX = TNumericLimits<float>::Max();
+		float MinY = TNumericLimits<float>::Max();
+		float MaxX = TNumericLimits<float>::Lowest();
+		float MaxY = TNumericLimits<float>::Lowest();
+		for (const FBox2D& WalkableBox : Floor.WalkableFloorBoxes)
+		{
+			MinX = FMath::Min(MinX, WalkableBox.Min.X);
+			MinY = FMath::Min(MinY, WalkableBox.Min.Y);
+			MaxX = FMath::Max(MaxX, WalkableBox.Max.X);
+			MaxY = FMath::Max(MaxY, WalkableBox.Max.Y);
+		}
+
+		const float RequiredHalfExtent = FMath::Max(
+			FMath::Max(FMath::Abs(MinX - Floor.Center.X), FMath::Abs(MaxX - Floor.Center.X)),
+			FMath::Max(FMath::Abs(MinY - Floor.Center.Y), FMath::Abs(MaxY - Floor.Center.Y)));
+		Floor.BoundsHalfExtent = FMath::Max(RequiredHalfExtent + 900.0f, 3600.0f);
+		Floor.PolygonApothem = Floor.BoundsHalfExtent;
+		Floor.WalkableHalfExtent = Floor.BoundsHalfExtent;
+	}
+
+	enum class ET66DungeonTileKind : uint8
+	{
+		Solid,
+		Room,
+		Corridor,
+	};
+
+	struct FT66DungeonRoom
+	{
+		int32 MinX = 0;
+		int32 MinY = 0;
+		int32 MaxX = 0;
+		int32 MaxY = 0;
+
+		FIntPoint Center() const
+		{
+			return FIntPoint((MinX + MaxX - 1) / 2, (MinY + MaxY - 1) / 2);
+		}
+	};
+
+	struct FT66DungeonGraphEdge
+	{
+		int32 A = INDEX_NONE;
+		int32 B = INDEX_NONE;
+		float Weight = 0.0f;
+		bool bSelected = false;
+	};
+
+	static bool T66DungeonRoomsOverlap(const FT66DungeonRoom& A, const FT66DungeonRoom& B, const int32 Padding)
+	{
+		return A.MinX < B.MaxX + Padding
+			&& A.MaxX > B.MinX - Padding
+			&& A.MinY < B.MaxY + Padding
+			&& A.MaxY > B.MinY - Padding;
+	}
+
+	static bool T66DungeonRoomIsInsideGrid(const T66TowerMapTerrain::FLayout& Layout, const FT66DungeonRoom& Room)
+	{
+		return Room.MinX >= 1
+			&& Room.MinY >= 1
+			&& Room.MaxX <= Layout.GridColumns - 1
+			&& Room.MaxY <= Layout.GridRows - 1
+			&& Room.MaxX > Room.MinX
+			&& Room.MaxY > Room.MinY;
+	}
+
+	static bool T66TryAddDungeonRoom(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const TArray<FT66DungeonRoom>& ExistingRooms,
+		const FT66DungeonRoom& Candidate,
+		const int32 Padding)
+	{
+		if (!T66DungeonRoomIsInsideGrid(Layout, Candidate))
+		{
+			return false;
+		}
+
+		for (const FT66DungeonRoom& ExistingRoom : ExistingRooms)
+		{
+			if (T66DungeonRoomsOverlap(Candidate, ExistingRoom, Padding))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	static float T66DungeonRoomDistanceScore(const FT66DungeonRoom& Candidate, const TArray<FT66DungeonRoom>& ExistingRooms)
+	{
+		if (ExistingRooms.Num() <= 0)
+		{
+			return 10000.0f;
+		}
+
+		const FIntPoint CandidateCenter = Candidate.Center();
+		float BestDistanceSq = TNumericLimits<float>::Max();
+		for (const FT66DungeonRoom& ExistingRoom : ExistingRooms)
+		{
+			const FIntPoint ExistingCenter = ExistingRoom.Center();
+			const float DeltaX = static_cast<float>(CandidateCenter.X - ExistingCenter.X);
+			const float DeltaY = static_cast<float>(CandidateCenter.Y - ExistingCenter.Y);
+			BestDistanceSq = FMath::Min(BestDistanceSq, (DeltaX * DeltaX) + (DeltaY * DeltaY));
+		}
+
+		return BestDistanceSq;
+	}
+
+	static bool T66TryFindScatteredDungeonRoom(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const TArray<FT66DungeonRoom>& ExistingRooms,
+		FRandomStream& Rng,
+		const int32 Padding,
+		FT66DungeonRoom& OutRoom)
+	{
+		float BestScore = -1.0f;
+		bool bFound = false;
+		for (int32 SampleIndex = 0; SampleIndex < 48; ++SampleIndex)
+		{
+			const int32 Width = Rng.RandRange(T66TowerDungeonMinRoomTiles, T66TowerDungeonMaxRoomTiles);
+			const int32 Height = Rng.RandRange(T66TowerDungeonMinRoomTiles, T66TowerDungeonMaxRoomTiles);
+			const int32 MaxMinX = FMath::Max(1, Layout.GridColumns - Width - 1);
+			const int32 MaxMinY = FMath::Max(1, Layout.GridRows - Height - 1);
+			FT66DungeonRoom Candidate;
+			Candidate.MinX = Rng.RandRange(1, MaxMinX);
+			Candidate.MinY = Rng.RandRange(1, MaxMinY);
+			Candidate.MaxX = Candidate.MinX + Width;
+			Candidate.MaxY = Candidate.MinY + Height;
+			if (!T66TryAddDungeonRoom(Layout, ExistingRooms, Candidate, Padding))
+			{
+				continue;
+			}
+
+			const float Score = T66DungeonRoomDistanceScore(Candidate, ExistingRooms) + Rng.FRandRange(0.0f, 3.0f);
+			if (!bFound || Score > BestScore)
+			{
+				bFound = true;
+				BestScore = Score;
+				OutRoom = Candidate;
+			}
+		}
+
+		return bFound;
+	}
+
+	static bool T66BuildDungeonRoomSet(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const FIntPoint& ArrivalCoord,
+		FRandomStream& Rng,
+		TArray<FT66DungeonRoom>& OutRooms)
+	{
+		OutRooms.Reset();
+
+		const int32 TargetRoomCount = Rng.RandRange(T66TowerDungeonMinRooms, T66TowerDungeonMaxRooms);
+		const int32 StartRoomWidth = Rng.RandRange(3, 4);
+		const int32 StartRoomHeight = Rng.RandRange(3, 4);
+		FT66DungeonRoom StartRoom;
+		StartRoom.MinX = FMath::Clamp(ArrivalCoord.X - (StartRoomWidth / 2), 1, Layout.GridColumns - StartRoomWidth - 1);
+		StartRoom.MinY = FMath::Clamp(ArrivalCoord.Y - (StartRoomHeight / 2), 1, Layout.GridRows - StartRoomHeight - 1);
+		StartRoom.MaxX = StartRoom.MinX + StartRoomWidth;
+		StartRoom.MaxY = StartRoom.MinY + StartRoomHeight;
+		if (!T66DungeonRoomIsInsideGrid(Layout, StartRoom))
+		{
+			return false;
+		}
+
+		OutRooms.Add(StartRoom);
+		for (int32 Attempt = 0; Attempt < 420 && OutRooms.Num() < TargetRoomCount; ++Attempt)
+		{
+			FT66DungeonRoom Candidate;
+			if (T66TryFindScatteredDungeonRoom(Layout, OutRooms, Rng, 1, Candidate))
+			{
+				OutRooms.Add(Candidate);
+			}
+		}
+
+		for (int32 Attempt = 0; Attempt < 220 && OutRooms.Num() < T66TowerDungeonMinRooms; ++Attempt)
+		{
+			FT66DungeonRoom Candidate;
+			if (T66TryFindScatteredDungeonRoom(Layout, OutRooms, Rng, 0, Candidate))
+			{
+				OutRooms.Add(Candidate);
+			}
+		}
+
+		return OutRooms.Num() >= T66TowerDungeonMinRooms;
+	}
+
+	static bool T66BuildDungeonRoomGraph(
+		const TArray<FT66DungeonRoom>& Rooms,
+		FRandomStream& Rng,
+		TArray<FT66DungeonGraphEdge>& OutEdges,
+		TArray<int32>& OutDegree)
+	{
+		const int32 RoomCount = Rooms.Num();
+		if (RoomCount < 2)
+		{
+			return false;
+		}
+
+		OutEdges.Reset();
+		OutDegree.Init(0, RoomCount);
+		for (int32 A = 0; A < RoomCount; ++A)
+		{
+			for (int32 B = A + 1; B < RoomCount; ++B)
+			{
+				const int32 Distance = T66GridManhattanDistance(Rooms[A].Center(), Rooms[B].Center());
+				FT66DungeonGraphEdge& Edge = OutEdges.AddDefaulted_GetRef();
+				Edge.A = A;
+				Edge.B = B;
+				Edge.Weight = static_cast<float>(Distance) + Rng.FRandRange(0.0f, 0.25f);
+			}
+		}
+
+		TArray<bool> bConnected;
+		bConnected.Init(false, RoomCount);
+		bConnected[0] = true;
+		int32 ConnectedCount = 1;
+		while (ConnectedCount < RoomCount)
+		{
+			int32 BestEdgeIndex = INDEX_NONE;
+			float BestWeight = TNumericLimits<float>::Max();
+			for (int32 EdgeIndex = 0; EdgeIndex < OutEdges.Num(); ++EdgeIndex)
+			{
+				const FT66DungeonGraphEdge& Edge = OutEdges[EdgeIndex];
+				const bool bAConnected = bConnected.IsValidIndex(Edge.A) && bConnected[Edge.A];
+				const bool bBConnected = bConnected.IsValidIndex(Edge.B) && bConnected[Edge.B];
+				if (bAConnected == bBConnected || Edge.Weight >= BestWeight)
+				{
+					continue;
+				}
+
+				BestWeight = Edge.Weight;
+				BestEdgeIndex = EdgeIndex;
+			}
+
+			if (!OutEdges.IsValidIndex(BestEdgeIndex))
+			{
+				return false;
+			}
+
+			FT66DungeonGraphEdge& ChosenEdge = OutEdges[BestEdgeIndex];
+			ChosenEdge.bSelected = true;
+			++OutDegree[ChosenEdge.A];
+			++OutDegree[ChosenEdge.B];
+			const int32 NewlyConnectedRoom = bConnected[ChosenEdge.A] ? ChosenEdge.B : ChosenEdge.A;
+			bConnected[NewlyConnectedRoom] = true;
+			++ConnectedCount;
+		}
+
+		TArray<int32> ExtraEdgeIndices;
+		for (int32 EdgeIndex = 0; EdgeIndex < OutEdges.Num(); ++EdgeIndex)
+		{
+			if (!OutEdges[EdgeIndex].bSelected)
+			{
+				ExtraEdgeIndices.Add(EdgeIndex);
+			}
+		}
+		ExtraEdgeIndices.Sort([&OutEdges](const int32 A, const int32 B)
+		{
+			return OutEdges[A].Weight < OutEdges[B].Weight;
+		});
+
+		const int32 ExtraBudget = FMath::Clamp(RoomCount / 4, 2, 6);
+		int32 ExtrasAdded = 0;
+		for (const int32 EdgeIndex : ExtraEdgeIndices)
+		{
+			FT66DungeonGraphEdge& Edge = OutEdges[EdgeIndex];
+			if (ExtrasAdded >= ExtraBudget)
+			{
+				break;
+			}
+			if (OutDegree[Edge.A] >= 4 || OutDegree[Edge.B] >= 4)
+			{
+				continue;
+			}
+			if (Rng.FRand() > 0.38f)
+			{
+				continue;
+			}
+
+			Edge.bSelected = true;
+			++OutDegree[Edge.A];
+			++OutDegree[Edge.B];
+			++ExtrasAdded;
+		}
+
+		return true;
+	}
+
+	static int32 T66ChooseDungeonExitRoom(const TArray<FT66DungeonRoom>& Rooms, const TArray<FT66DungeonGraphEdge>& Edges)
+	{
+		const int32 RoomCount = Rooms.Num();
+		TArray<int32> Distance;
+		Distance.Init(MAX_int32, RoomCount);
+		TArray<int32> Queue;
+		Distance[0] = 0;
+		Queue.Add(0);
+		for (int32 QueueIndex = 0; QueueIndex < Queue.Num(); ++QueueIndex)
+		{
+			const int32 CurrentRoom = Queue[QueueIndex];
+			for (const FT66DungeonGraphEdge& Edge : Edges)
+			{
+				if (!Edge.bSelected)
+				{
+					continue;
+				}
+
+				const int32 NeighborRoom =
+					(Edge.A == CurrentRoom) ? Edge.B :
+					(Edge.B == CurrentRoom) ? Edge.A :
+					INDEX_NONE;
+				if (NeighborRoom == INDEX_NONE || !Distance.IsValidIndex(NeighborRoom) || Distance[NeighborRoom] != MAX_int32)
+				{
+					continue;
+				}
+
+				Distance[NeighborRoom] = Distance[CurrentRoom] + 1;
+				Queue.Add(NeighborRoom);
+			}
+		}
+
+		int32 BestRoom = RoomCount > 1 ? 1 : 0;
+		int32 BestScore = MIN_int32;
+		for (int32 RoomIndex = 1; RoomIndex < RoomCount; ++RoomIndex)
+		{
+			const int32 GraphDistance = Distance.IsValidIndex(RoomIndex) && Distance[RoomIndex] != MAX_int32 ? Distance[RoomIndex] : 0;
+			const int32 SpatialDistance = T66GridManhattanDistance(Rooms[0].Center(), Rooms[RoomIndex].Center());
+			const int32 Score = (GraphDistance * 100) + SpatialDistance;
+			if (Score > BestScore)
+			{
+				BestScore = Score;
+				BestRoom = RoomIndex;
+			}
+		}
+
+		return BestRoom;
+	}
+
+	static bool T66IsDungeonInteriorCoord(const T66TowerMapTerrain::FLayout& Layout, const FIntPoint& Coord)
+	{
+		return Coord.X > 0
+			&& Coord.Y > 0
+			&& Coord.X < Layout.GridColumns - 1
+			&& Coord.Y < Layout.GridRows - 1;
+	}
+
+	static void T66CarveFallbackDungeonCorridor(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const FIntPoint& Start,
+		const FIntPoint& Goal,
+		FRandomStream& Rng,
+		TArray<ET66DungeonTileKind>& InOutTiles)
+	{
+		FIntPoint Cursor = Start;
+		const bool bHorizontalFirst = Rng.FRand() >= 0.5f;
+		auto MarkCursor = [&]()
+		{
+			if (!T66IsDungeonInteriorCoord(Layout, Cursor))
+			{
+				return;
+			}
+
+			const int32 Index = T66GetGridCellIndex(Layout, Cursor);
+			if (InOutTiles.IsValidIndex(Index) && InOutTiles[Index] == ET66DungeonTileKind::Solid)
+			{
+				InOutTiles[Index] = ET66DungeonTileKind::Corridor;
+			}
+		};
+
+		auto StepX = [&]()
+		{
+			while (Cursor.X != Goal.X)
+			{
+				Cursor.X += (Goal.X > Cursor.X) ? 1 : -1;
+				MarkCursor();
+			}
+		};
+		auto StepY = [&]()
+		{
+			while (Cursor.Y != Goal.Y)
+			{
+				Cursor.Y += (Goal.Y > Cursor.Y) ? 1 : -1;
+				MarkCursor();
+			}
+		};
+
+		if (bHorizontalFirst)
+		{
+			StepX();
+			StepY();
+		}
+		else
+		{
+			StepY();
+			StepX();
+		}
+	}
+
+	static bool T66CarveDungeonCorridor(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const TArray<FT66DungeonRoom>& Rooms,
+		const int32 StartRoomIndex,
+		const int32 GoalRoomIndex,
+		FRandomStream& Rng,
+		TArray<ET66DungeonTileKind>& InOutTiles,
+		const TArray<int32>& RoomIdByTile)
+	{
+		if (!Rooms.IsValidIndex(StartRoomIndex) || !Rooms.IsValidIndex(GoalRoomIndex))
+		{
+			return false;
+		}
+
+		const FIntPoint Start = Rooms[StartRoomIndex].Center();
+		const FIntPoint Goal = Rooms[GoalRoomIndex].Center();
+		const int32 CellCount = Layout.GridColumns * Layout.GridRows;
+		const int32 StartIndex = T66GetGridCellIndex(Layout, Start);
+		const int32 GoalIndex = T66GetGridCellIndex(Layout, Goal);
+		if (!InOutTiles.IsValidIndex(StartIndex) || !InOutTiles.IsValidIndex(GoalIndex))
+		{
+			return false;
+		}
+
+		TArray<float> GScore;
+		TArray<float> FScore;
+		TArray<int32> Parent;
+		TArray<int32> ParentDirection;
+		TArray<bool> bClosed;
+		TArray<int32> Open;
+		GScore.Init(TNumericLimits<float>::Max(), CellCount);
+		FScore.Init(TNumericLimits<float>::Max(), CellCount);
+		Parent.Init(INDEX_NONE, CellCount);
+		ParentDirection.Init(INDEX_NONE, CellCount);
+		bClosed.Init(false, CellCount);
+		GScore[StartIndex] = 0.0f;
+		FScore[StartIndex] = static_cast<float>(T66GridManhattanDistance(Start, Goal));
+		Open.Add(StartIndex);
+
+		static const FIntPoint Deltas[] =
+		{
+			FIntPoint(0, -1),
+			FIntPoint(1, 0),
+			FIntPoint(0, 1),
+			FIntPoint(-1, 0),
+		};
+
+		while (Open.Num() > 0)
+		{
+			int32 BestOpenSlot = 0;
+			float BestScore = FScore[Open[0]];
+			for (int32 OpenSlot = 1; OpenSlot < Open.Num(); ++OpenSlot)
+			{
+				const float CandidateScore = FScore[Open[OpenSlot]];
+				if (CandidateScore < BestScore)
+				{
+					BestScore = CandidateScore;
+					BestOpenSlot = OpenSlot;
+				}
+			}
+
+			const int32 CurrentIndex = Open[BestOpenSlot];
+			Open.RemoveAtSwap(BestOpenSlot);
+			if (CurrentIndex == GoalIndex)
+			{
+				int32 PathIndex = GoalIndex;
+				while (PathIndex != INDEX_NONE && PathIndex != StartIndex)
+				{
+					if (InOutTiles.IsValidIndex(PathIndex) && InOutTiles[PathIndex] == ET66DungeonTileKind::Solid)
+					{
+						InOutTiles[PathIndex] = ET66DungeonTileKind::Corridor;
+					}
+					PathIndex = Parent.IsValidIndex(PathIndex) ? Parent[PathIndex] : INDEX_NONE;
+				}
+				return true;
+			}
+
+			if (!bClosed.IsValidIndex(CurrentIndex) || bClosed[CurrentIndex])
+			{
+				continue;
+			}
+			bClosed[CurrentIndex] = true;
+
+			const FIntPoint CurrentCoord = T66GetGridCoordFromIndex(Layout, CurrentIndex);
+			for (int32 DirectionIndex = 0; DirectionIndex < UE_ARRAY_COUNT(Deltas); ++DirectionIndex)
+			{
+				const FIntPoint NeighborCoord = CurrentCoord + Deltas[DirectionIndex];
+				if (!T66IsDungeonInteriorCoord(Layout, NeighborCoord) && NeighborCoord != Goal)
+				{
+					continue;
+				}
+
+				const int32 NeighborIndex = T66GetGridCellIndex(Layout, NeighborCoord);
+				if (!InOutTiles.IsValidIndex(NeighborIndex) || (bClosed.IsValidIndex(NeighborIndex) && bClosed[NeighborIndex]))
+				{
+					continue;
+				}
+
+				float StepCost = 1.0f;
+				if (InOutTiles[NeighborIndex] == ET66DungeonTileKind::Corridor)
+				{
+					StepCost = 0.35f;
+				}
+				else if (InOutTiles[NeighborIndex] == ET66DungeonTileKind::Room)
+				{
+					const int32 RoomId = RoomIdByTile.IsValidIndex(NeighborIndex) ? RoomIdByTile[NeighborIndex] : INDEX_NONE;
+					StepCost = (RoomId == StartRoomIndex || RoomId == GoalRoomIndex) ? 0.60f : 42.0f;
+				}
+
+				if (ParentDirection.IsValidIndex(CurrentIndex)
+					&& ParentDirection[CurrentIndex] != INDEX_NONE
+					&& ParentDirection[CurrentIndex] != DirectionIndex)
+				{
+					StepCost += 0.15f;
+				}
+				StepCost += Rng.FRandRange(0.0f, 0.025f);
+
+				const float TentativeScore = GScore[CurrentIndex] + StepCost;
+				if (!GScore.IsValidIndex(NeighborIndex) || TentativeScore >= GScore[NeighborIndex])
+				{
+					continue;
+				}
+
+				Parent[NeighborIndex] = CurrentIndex;
+				ParentDirection[NeighborIndex] = DirectionIndex;
+				GScore[NeighborIndex] = TentativeScore;
+				FScore[NeighborIndex] = TentativeScore + (static_cast<float>(T66GridManhattanDistance(NeighborCoord, Goal)) * 0.85f);
+				Open.AddUnique(NeighborIndex);
+			}
+		}
+
+		T66CarveFallbackDungeonCorridor(Layout, Start, Goal, Rng, InOutTiles);
+		return true;
+	}
+
+	static void T66EmitDungeonTileEdgeWall(
+		const T66TowerMapTerrain::FLayout& Layout,
+		T66TowerMapTerrain::FFloor& Floor,
+		T66TowerMapTerrain::FGridCell& Cell,
+		const int32 DirectionIndex,
+		const bool bDoorway,
+		const float HalfThickness)
+	{
+		const float DoorHalfWidth = FMath::Min(Layout.GridDoorWidth * 0.5f, (Layout.GridCellSize * 0.5f) - (HalfThickness * 1.5f));
+		auto EmitAndTrack = [&](const float MinX, const float MinY, const float MaxX, const float MaxY)
+		{
+			if (MaxX <= MinX + KINDA_SMALL_NUMBER || MaxY <= MinY + KINDA_SMALL_NUMBER)
+			{
+				return;
+			}
+
+			const FBox2D Box(FVector2D(MinX, MinY), FVector2D(MaxX, MaxY));
+			Floor.MazeWallBoxes.Add(Box);
+			Floor.TrapEligibleWallBoxes.Add(Box);
+			Cell.EmittedWallBoxes.Add(Box);
+		};
+
+		auto EmitHeader = [&](const float MinX, const float MinY, const float MaxX, const float MaxY)
+		{
+			if (MaxX <= MinX + KINDA_SMALL_NUMBER || MaxY <= MinY + KINDA_SMALL_NUMBER)
+			{
+				return;
+			}
+
+			Floor.DoorwayHeaderBoxes.Add(FBox2D(FVector2D(MinX, MinY), FVector2D(MaxX, MaxY)));
+		};
+
+		if (DirectionIndex == 0 || DirectionIndex == 2)
+		{
+			const bool bNorth = DirectionIndex == 0;
+			const float SideY = bNorth ? Cell.Bounds.Min.Y : Cell.Bounds.Max.Y;
+			const float MinY = SideY - HalfThickness;
+			const float MaxY = SideY + HalfThickness;
+			const float MinX = Cell.Bounds.Min.X;
+			const float MaxX = Cell.Bounds.Max.X;
+			if (!bDoorway)
+			{
+				EmitAndTrack(MinX, MinY, MaxX, MaxY);
+				return;
+			}
+
+			const float DoorCenterX = Cell.WorldCenter.X;
+			EmitAndTrack(MinX, MinY, DoorCenterX - DoorHalfWidth, MaxY);
+			EmitAndTrack(DoorCenterX + DoorHalfWidth, MinY, MaxX, MaxY);
+			EmitHeader(DoorCenterX - DoorHalfWidth, MinY, DoorCenterX + DoorHalfWidth, MaxY);
+			return;
+		}
+
+		const bool bWest = DirectionIndex == 3;
+		const float SideX = bWest ? Cell.Bounds.Min.X : Cell.Bounds.Max.X;
+		const float MinX = SideX - HalfThickness;
+		const float MaxX = SideX + HalfThickness;
+		const float MinY = Cell.Bounds.Min.Y;
+		const float MaxY = Cell.Bounds.Max.Y;
+		if (!bDoorway)
+		{
+			EmitAndTrack(MinX, MinY, MaxX, MaxY);
+			return;
+		}
+
+		const float DoorCenterY = Cell.WorldCenter.Y;
+		EmitAndTrack(MinX, MinY, MaxX, DoorCenterY - DoorHalfWidth);
+		EmitAndTrack(MinX, DoorCenterY + DoorHalfWidth, MaxX, MaxY);
+		EmitHeader(MinX, DoorCenterY - DoorHalfWidth, MaxX, DoorCenterY + DoorHalfWidth);
+	}
+
+	static bool T66IsDungeonDoorwayEdge(
+		const int32 CurrentIndex,
+		const int32 NeighborIndex,
+		const TArray<ET66DungeonTileKind>& Tiles,
+		const TArray<int32>& RoomIdByTile)
+	{
+		if (!Tiles.IsValidIndex(CurrentIndex) || !Tiles.IsValidIndex(NeighborIndex))
+		{
+			return false;
+		}
+
+		const ET66DungeonTileKind A = Tiles[CurrentIndex];
+		const ET66DungeonTileKind B = Tiles[NeighborIndex];
+		if ((A == ET66DungeonTileKind::Room && B == ET66DungeonTileKind::Corridor)
+			|| (A == ET66DungeonTileKind::Corridor && B == ET66DungeonTileKind::Room))
+		{
+			return true;
+		}
+
+		return A == ET66DungeonTileKind::Room
+			&& B == ET66DungeonTileKind::Room
+			&& RoomIdByTile.IsValidIndex(CurrentIndex)
+			&& RoomIdByTile.IsValidIndex(NeighborIndex)
+			&& RoomIdByTile[CurrentIndex] != RoomIdByTile[NeighborIndex];
+	}
+
+	static bool T66BuildFloorDungeonLoop(
+		const T66TowerMapTerrain::FLayout& Layout,
+		T66TowerMapTerrain::FFloor& Floor,
+		FRandomStream& Rng)
+	{
+		if (Layout.GridColumns <= 0 || Layout.GridRows <= 0 || Layout.GridCellSize <= KINDA_SMALL_NUMBER)
+		{
+			return false;
+		}
+
+		const int32 CellCount = Layout.GridColumns * Layout.GridRows;
+		const FVector2D GridMin = T66GetGridMinCorner(Layout, Floor);
+		Floor.GridCells.SetNum(CellCount);
+		for (int32 CellY = 0; CellY < Layout.GridRows; ++CellY)
+		{
+			for (int32 CellX = 0; CellX < Layout.GridColumns; ++CellX)
+			{
+				T66TowerMapTerrain::FGridCell& Cell = Floor.GridCells[T66GetGridCellIndex(Layout, FIntPoint(CellX, CellY))];
+				const float MinX = GridMin.X + (static_cast<float>(CellX) * Layout.GridCellSize);
+				const float MinY = GridMin.Y + (static_cast<float>(CellY) * Layout.GridCellSize);
+				const float MaxX = MinX + Layout.GridCellSize;
+				const float MaxY = MinY + Layout.GridCellSize;
+				Cell.Coord = FIntPoint(CellX, CellY);
+				Cell.Bounds = FBox2D(FVector2D(MinX, MinY), FVector2D(MaxX, MaxY));
+				Cell.WorldCenter = FVector((MinX + MaxX) * 0.5f, (MinY + MaxY) * 0.5f, Floor.SurfaceZ);
+				Cell.ConnectionMask = 0;
+				Cell.Semantic = T66TowerMapTerrain::ET66TowerGridCellSemantic::Unused;
+				Cell.Template = T66TowerMapTerrain::ET66TowerGridTemplate::Solid;
+				Cell.bContainsArrival = false;
+				Cell.bContainsExit = false;
+				Cell.MainPathIndex = INDEX_NONE;
+				Cell.LoopId = INDEX_NONE;
+				Cell.EmittedWallBoxes.Reset();
+				Cell.CachedSpawnSlots.Reset();
+			}
+		}
+
+		Floor.ArrivalCell = T66ProjectPointToGridCell(Layout, Floor, Floor.ArrivalPoint);
+		if (!T66IsDungeonInteriorCoord(Layout, Floor.ArrivalCell))
+		{
+			Floor.ArrivalCell.X = FMath::Clamp(Floor.ArrivalCell.X, 1, Layout.GridColumns - 2);
+			Floor.ArrivalCell.Y = FMath::Clamp(Floor.ArrivalCell.Y, 1, Layout.GridRows - 2);
+		}
+
+		TArray<FT66DungeonRoom> Rooms;
+		if (!T66BuildDungeonRoomSet(Layout, Floor.ArrivalCell, Rng, Rooms))
+		{
+			return false;
+		}
+
+		TArray<ET66DungeonTileKind> Tiles;
+		TArray<int32> RoomIdByTile;
+		Tiles.Init(ET66DungeonTileKind::Solid, CellCount);
+		RoomIdByTile.Init(INDEX_NONE, CellCount);
+
+		for (int32 RoomIndex = 0; RoomIndex < Rooms.Num(); ++RoomIndex)
+		{
+			const FT66DungeonRoom& Room = Rooms[RoomIndex];
+			for (int32 Y = Room.MinY; Y < Room.MaxY; ++Y)
+			{
+				for (int32 X = Room.MinX; X < Room.MaxX; ++X)
+				{
+					const int32 TileIndex = T66GetGridCellIndex(Layout, FIntPoint(X, Y));
+					if (Tiles.IsValidIndex(TileIndex))
+					{
+						Tiles[TileIndex] = ET66DungeonTileKind::Room;
+						RoomIdByTile[TileIndex] = RoomIndex;
+					}
+				}
+			}
+		}
+
+		TArray<FT66DungeonGraphEdge> GraphEdges;
+		TArray<int32> RoomDegree;
+		if (!T66BuildDungeonRoomGraph(Rooms, Rng, GraphEdges, RoomDegree))
+		{
+			return false;
+		}
+
+		for (const FT66DungeonGraphEdge& Edge : GraphEdges)
+		{
+			if (!Edge.bSelected)
+			{
+				continue;
+			}
+
+			T66CarveDungeonCorridor(Layout, Rooms, Edge.A, Edge.B, Rng, Tiles, RoomIdByTile);
+		}
+
+		const int32 ArrivalIndex = T66GetGridCellIndex(Layout, Floor.ArrivalCell);
+		const int32 ExitRoomIndex = T66ChooseDungeonExitRoom(Rooms, GraphEdges);
+		Floor.ExitCell = Rooms.IsValidIndex(ExitRoomIndex) ? Rooms[ExitRoomIndex].Center() : Floor.ArrivalCell;
+		const int32 ExitIndex = T66GetGridCellIndex(Layout, Floor.ExitCell);
+		if (!Floor.GridCells.IsValidIndex(ArrivalIndex) || !Floor.GridCells.IsValidIndex(ExitIndex))
+		{
+			return false;
+		}
+
+		Floor.HoleCenter = Floor.GridCells[ExitIndex].WorldCenter;
+		Floor.HoleCenter.Z = Floor.SurfaceZ;
+		Floor.ExitPoint = Floor.HoleCenter;
+		Floor.ExitPoint.Z = Floor.SurfaceZ;
+
+		int32 MainPathIndex = 0;
+		for (int32 CellIndex = 0; CellIndex < Floor.GridCells.Num(); ++CellIndex)
+		{
+			if (!Tiles.IsValidIndex(CellIndex) || Tiles[CellIndex] == ET66DungeonTileKind::Solid)
+			{
+				continue;
+			}
+
+			T66TowerMapTerrain::FGridCell& Cell = Floor.GridCells[CellIndex];
+			Cell.MainPathIndex = MainPathIndex++;
+			Cell.bContainsArrival = CellIndex == ArrivalIndex;
+			Cell.bContainsExit = CellIndex == ExitIndex;
+			if (Cell.bContainsArrival && Cell.bContainsExit)
+			{
+				Cell.Semantic = T66TowerMapTerrain::ET66TowerGridCellSemantic::ArrivalExit;
+			}
+			else if (Cell.bContainsArrival)
+			{
+				Cell.Semantic = T66TowerMapTerrain::ET66TowerGridCellSemantic::Arrival;
+			}
+			else if (Cell.bContainsExit)
+			{
+				Cell.Semantic = T66TowerMapTerrain::ET66TowerGridCellSemantic::Exit;
+			}
+			else
+			{
+				Cell.Semantic = T66TowerMapTerrain::ET66TowerGridCellSemantic::MainPath;
+			}
+
+			Floor.MainPathCells.Add(Cell.Coord);
+		}
+
+		for (int32 Y = 0; Y < Layout.GridRows; ++Y)
+		{
+			int32 RunStartX = INDEX_NONE;
+			for (int32 X = 0; X <= Layout.GridColumns; ++X)
+			{
+				const bool bWalkable = X < Layout.GridColumns
+					&& Tiles.IsValidIndex(T66GetGridCellIndex(Layout, FIntPoint(X, Y)))
+					&& Tiles[T66GetGridCellIndex(Layout, FIntPoint(X, Y))] != ET66DungeonTileKind::Solid;
+				if (bWalkable && RunStartX == INDEX_NONE)
+				{
+					RunStartX = X;
+				}
+				else if (!bWalkable && RunStartX != INDEX_NONE)
+				{
+					const FBox2D& StartBox = Floor.GridCells[T66GetGridCellIndex(Layout, FIntPoint(RunStartX, Y))].Bounds;
+					const FBox2D& EndBox = Floor.GridCells[T66GetGridCellIndex(Layout, FIntPoint(X - 1, Y))].Bounds;
+					Floor.WalkableFloorBoxes.Add(FBox2D(StartBox.Min, EndBox.Max));
+					RunStartX = INDEX_NONE;
+				}
+			}
+		}
+
+		T66UpdateFloorBoundsFromWalkableBoxes(Floor);
+
+		static const FIntPoint Deltas[] =
+		{
+			FIntPoint(0, -1),
+			FIntPoint(1, 0),
+			FIntPoint(0, 1),
+			FIntPoint(-1, 0),
+		};
+
+		for (int32 CellIndex = 0; CellIndex < Floor.GridCells.Num(); ++CellIndex)
+		{
+			if (!Tiles.IsValidIndex(CellIndex) || Tiles[CellIndex] == ET66DungeonTileKind::Solid)
+			{
+				continue;
+			}
+
+			const FIntPoint Coord = T66GetGridCoordFromIndex(Layout, CellIndex);
+			for (int32 DirectionIndex = 0; DirectionIndex < UE_ARRAY_COUNT(Deltas); ++DirectionIndex)
+			{
+				const FIntPoint NeighborCoord = Coord + Deltas[DirectionIndex];
+				if (!T66IsValidGridCoord(Layout, NeighborCoord))
+				{
+					continue;
+				}
+
+				const int32 NeighborIndex = T66GetGridCellIndex(Layout, NeighborCoord);
+				if (!Tiles.IsValidIndex(NeighborIndex) || Tiles[NeighborIndex] == ET66DungeonTileKind::Solid)
+				{
+					continue;
+				}
+
+				T66ConnectGridCells(Floor, Layout, CellIndex, NeighborIndex);
+			}
+		}
+
+		const float HalfThickness = FMath::Max(Layout.WallThickness * 0.40f, Layout.PlacementCellSize * T66TowerMazeWallHalfThicknessScale);
+		for (int32 CellIndex = 0; CellIndex < Floor.GridCells.Num(); ++CellIndex)
+		{
+			if (!Tiles.IsValidIndex(CellIndex) || Tiles[CellIndex] == ET66DungeonTileKind::Solid)
+			{
+				continue;
+			}
+
+			T66TowerMapTerrain::FGridCell& Cell = Floor.GridCells[CellIndex];
+			Cell.Template = T66ResolveGridCellTemplate(Cell);
+			for (int32 DirectionIndex = 0; DirectionIndex < UE_ARRAY_COUNT(Deltas); ++DirectionIndex)
+			{
+				const FIntPoint NeighborCoord = Cell.Coord + Deltas[DirectionIndex];
+				const bool bNeighborValid = T66IsValidGridCoord(Layout, NeighborCoord);
+				const int32 NeighborIndex = bNeighborValid ? T66GetGridCellIndex(Layout, NeighborCoord) : INDEX_NONE;
+				const bool bNeighborWalkable = bNeighborValid
+					&& Tiles.IsValidIndex(NeighborIndex)
+					&& Tiles[NeighborIndex] != ET66DungeonTileKind::Solid;
+
+				if (bNeighborWalkable)
+				{
+					if (DirectionIndex != 1 && DirectionIndex != 2)
+					{
+						continue;
+					}
+
+					if (T66IsDungeonDoorwayEdge(CellIndex, NeighborIndex, Tiles, RoomIdByTile))
+					{
+						T66EmitDungeonTileEdgeWall(Layout, Floor, Cell, DirectionIndex, true, HalfThickness);
+					}
+					continue;
+				}
+
+				T66EmitDungeonTileEdgeWall(Layout, Floor, Cell, DirectionIndex, false, HalfThickness);
+			}
+		}
+
+		return true;
+	}
+
 	static bool T66BuildFloorMazeWalls_GridGraph(
 		const T66TowerMapTerrain::FLayout& Layout,
 		T66TowerMapTerrain::FFloor& Floor,
@@ -1681,13 +2943,21 @@ namespace
 		}
 
 		bool bBuiltGridGraph = false;
-		if (Layout.MazeMode == T66TowerMapTerrain::ET66TowerMazeMode::GridGraph)
+		FRandomStream GridRng = Rng;
+		bBuiltGridGraph = T66BuildFloorDungeonLoop(Layout, Floor, GridRng);
+		if (bBuiltGridGraph)
 		{
-			FRandomStream GridRng = Rng;
-			bBuiltGridGraph = T66BuildFloorMazeWalls_GridGraph(Layout, Floor, GridRng);
+			Rng = GridRng;
+		}
+
+		if (!bBuiltGridGraph && Layout.MazeMode == T66TowerMapTerrain::ET66TowerMazeMode::GridGraph)
+		{
+			T66ResetFloorMazeMetadata(Floor);
+			FRandomStream FallbackGridRng = Rng;
+			bBuiltGridGraph = T66BuildFloorMazeWalls_GridGraph(Layout, Floor, FallbackGridRng);
 			if (bBuiltGridGraph)
 			{
-				Rng = GridRng;
+				Rng = FallbackGridRng;
 			}
 		}
 
@@ -1854,23 +3124,42 @@ namespace
 				Tags);
 		};
 
-		if (!Floor.bHasDropHole || Floor.HoleHalfExtent.X <= 1.0f || Floor.HoleHalfExtent.Y <= 1.0f)
+		auto SpawnRectWithHole = [&](const float MinX, const float MinY, const float MaxX, const float MaxY)
 		{
-			SpawnRect(PolygonMinX, PolygonMinY, PolygonMaxX, PolygonMaxY);
+			if (!Floor.bHasDropHole || Floor.HoleHalfExtent.X <= 1.0f || Floor.HoleHalfExtent.Y <= 1.0f)
+			{
+				SpawnRect(MinX, MinY, MaxX, MaxY);
+				return;
+			}
+
+			const float HoleMinX = FMath::Clamp(Floor.HoleCenter.X - Floor.HoleHalfExtent.X, MinX, MaxX);
+			const float HoleMaxX = FMath::Clamp(Floor.HoleCenter.X + Floor.HoleHalfExtent.X, MinX, MaxX);
+			const float HoleMinY = FMath::Clamp(Floor.HoleCenter.Y - Floor.HoleHalfExtent.Y, MinY, MaxY);
+			const float HoleMaxY = FMath::Clamp(Floor.HoleCenter.Y + Floor.HoleHalfExtent.Y, MinY, MaxY);
+			if (HoleMaxX <= HoleMinX || HoleMaxY <= HoleMinY)
+			{
+				SpawnRect(MinX, MinY, MaxX, MaxY);
+				return;
+			}
+
+			SpawnRect(MinX, MinY, HoleMinX, MaxY);
+			SpawnRect(HoleMaxX, MinY, MaxX, MaxY);
+			SpawnRect(HoleMinX, MinY, HoleMaxX, HoleMinY);
+			SpawnRect(HoleMinX, HoleMaxY, HoleMaxX, MaxY);
+		};
+
+		if (Floor.WalkableFloorBoxes.Num() > 0)
+		{
+			for (const FBox2D& WalkableBox : Floor.WalkableFloorBoxes)
+			{
+				SpawnRectWithHole(WalkableBox.Min.X, WalkableBox.Min.Y, WalkableBox.Max.X, WalkableBox.Max.Y);
+			}
 			return;
 		}
 
-		const float HoleMinX = FMath::Clamp(Floor.HoleCenter.X - Floor.HoleHalfExtent.X, PolygonMinX, PolygonMaxX);
-		const float HoleMaxX = FMath::Clamp(Floor.HoleCenter.X + Floor.HoleHalfExtent.X, PolygonMinX, PolygonMaxX);
-		const float HoleMinY = FMath::Clamp(Floor.HoleCenter.Y - Floor.HoleHalfExtent.Y, PolygonMinY, PolygonMaxY);
-		const float HoleMaxY = FMath::Clamp(Floor.HoleCenter.Y + Floor.HoleHalfExtent.Y, PolygonMinY, PolygonMaxY);
-
 		// Tower floors are axis-aligned squares with an axis-aligned drop hole. Representing the
 		// surface as four coarse slabs keeps the exact shape while removing hundreds of runtime actors.
-		SpawnRect(PolygonMinX, PolygonMinY, HoleMinX, PolygonMaxY);
-		SpawnRect(HoleMaxX, PolygonMinY, PolygonMaxX, PolygonMaxY);
-		SpawnRect(HoleMinX, PolygonMinY, HoleMaxX, HoleMinY);
-		SpawnRect(HoleMinX, HoleMaxY, HoleMaxX, PolygonMaxY);
+		SpawnRectWithHole(PolygonMinX, PolygonMinY, PolygonMaxX, PolygonMaxY);
 	}
 
 	static void T66SpawnPolygonFloor(
@@ -1893,6 +3182,77 @@ namespace
 			SpawnParams,
 			true,
 			Tags);
+	}
+
+	static void T66SpawnGeneratedFloorVisualCap(
+		UWorld* World,
+		UStaticMesh* CubeMesh,
+		UMaterialInterface* GroundMaterial,
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FActorSpawnParameters& SpawnParams,
+		const TArray<FName>& Tags)
+	{
+		if (!World
+			|| !CubeMesh
+			|| !GroundMaterial
+			|| !Floor.bGameplayFloor
+			|| Floor.WalkableFloorBoxes.Num() <= 0
+			|| Floor.BoundsHalfExtent <= 1.0f)
+		{
+			return;
+		}
+
+		TArray<FName> CapTags = Tags;
+		CapTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedVisualCap")));
+		CapTags.AddUnique(FName(*FString::Printf(TEXT("T66_Floor_Tower_GeneratedVisualCap_%02d"), Floor.FloorNumber)));
+
+		const float CapTopZ = Floor.SurfaceZ - T66TowerGeneratedFloorCapTopOffset;
+		const float MinX = Floor.Center.X - Floor.BoundsHalfExtent;
+		const float MaxX = Floor.Center.X + Floor.BoundsHalfExtent;
+		const float MinY = Floor.Center.Y - Floor.BoundsHalfExtent;
+		const float MaxY = Floor.Center.Y + Floor.BoundsHalfExtent;
+
+		auto SpawnRect = [&](const float RectMinX, const float RectMinY, const float RectMaxX, const float RectMaxY)
+		{
+			T66SpawnFloorSlab(
+				World,
+				CubeMesh,
+				GroundMaterial,
+				Floor.Center,
+				CapTopZ,
+				T66TowerGeneratedFloorCapThickness,
+				FVector2D(RectMinX - Floor.Center.X, RectMinY - Floor.Center.Y),
+				FVector2D(RectMaxX - Floor.Center.X, RectMaxY - Floor.Center.Y),
+				SpawnParams,
+				false,
+				CapTags);
+		};
+
+		auto SpawnRectWithHole = [&](const float RectMinX, const float RectMinY, const float RectMaxX, const float RectMaxY)
+		{
+			if (!Floor.bHasDropHole || Floor.HoleHalfExtent.X <= 1.0f || Floor.HoleHalfExtent.Y <= 1.0f)
+			{
+				SpawnRect(RectMinX, RectMinY, RectMaxX, RectMaxY);
+				return;
+			}
+
+			const float HoleMinX = FMath::Clamp(Floor.HoleCenter.X - Floor.HoleHalfExtent.X, RectMinX, RectMaxX);
+			const float HoleMaxX = FMath::Clamp(Floor.HoleCenter.X + Floor.HoleHalfExtent.X, RectMinX, RectMaxX);
+			const float HoleMinY = FMath::Clamp(Floor.HoleCenter.Y - Floor.HoleHalfExtent.Y, RectMinY, RectMaxY);
+			const float HoleMaxY = FMath::Clamp(Floor.HoleCenter.Y + Floor.HoleHalfExtent.Y, RectMinY, RectMaxY);
+			if (HoleMaxX <= HoleMinX || HoleMaxY <= HoleMinY)
+			{
+				SpawnRect(RectMinX, RectMinY, RectMaxX, RectMaxY);
+				return;
+			}
+
+			SpawnRect(RectMinX, RectMinY, HoleMinX, RectMaxY);
+			SpawnRect(HoleMaxX, RectMinY, RectMaxX, RectMaxY);
+			SpawnRect(HoleMinX, RectMinY, HoleMaxX, HoleMinY);
+			SpawnRect(HoleMinX, HoleMaxY, HoleMaxX, RectMaxY);
+		};
+
+		SpawnRectWithHole(MinX, MinY, MaxX, MaxY);
 	}
 
 	static void T66SpawnMeshWallBox(
@@ -2227,7 +3587,7 @@ namespace
 		const float WallHeight,
 		const FActorSpawnParameters& SpawnParams)
 	{
-		if (!World || Floor.MazeWallBoxes.Num() <= 0)
+		if (!World || (Floor.MazeWallBoxes.Num() <= 0 && Floor.DoorwayHeaderBoxes.Num() <= 0))
 		{
 			return;
 		}
@@ -2259,6 +3619,39 @@ namespace
 				Layout.Preset.Seed + (Floor.FloorNumber * 913) + static_cast<int32>(WallCenter.X + WallCenter.Y),
 				T66ShouldIgnoreTowerWallCameraCollision());
 		}
+
+		if (!CubeMesh || Floor.DoorwayHeaderBoxes.Num() <= 0)
+		{
+			return;
+		}
+
+		const TArray<FName> DoorwayTags = {
+			FName(*FString::Printf(TEXT("T66_Floor_Tower_%02d"), Floor.FloorNumber)),
+			FName(*FString::Printf(TEXT("T66_Floor_Tower_Doorway_%02d"), Floor.FloorNumber))
+		};
+		const float HeaderHeight = FMath::Clamp(WallHeight * 0.24f, 260.0f, 520.0f);
+		const float HeaderZ = Floor.SurfaceZ + WallHeight - HeaderHeight - 80.0f;
+		UMaterialInterface* HeaderMaterial = Theme.WallMaterial ? Theme.WallMaterial : Theme.FloorMaterial;
+		for (const FBox2D& HeaderBox : Floor.DoorwayHeaderBoxes)
+		{
+			const FVector2D HeaderCenter = (HeaderBox.Min + HeaderBox.Max) * 0.5f;
+			const FVector2D HeaderHalfExtents = (HeaderBox.Max - HeaderBox.Min) * 0.5f;
+			if (HeaderHalfExtents.X <= 5.0f || HeaderHalfExtents.Y <= 5.0f)
+			{
+				continue;
+			}
+
+			T66SpawnStaticMeshActor(
+				World,
+				CubeMesh,
+				HeaderMaterial,
+				FVector(HeaderCenter.X, HeaderCenter.Y, HeaderZ + (HeaderHeight * 0.5f)),
+				FRotator::ZeroRotator,
+				FVector(HeaderHalfExtents.X, HeaderHalfExtents.Y, HeaderHeight * 0.5f),
+				SpawnParams,
+				false,
+				DoorwayTags);
+		}
 	}
 
 	static void T66SpawnPropActors(
@@ -2270,6 +3663,11 @@ namespace
 		const FActorSpawnParameters& SpawnParams)
 	{
 		if (!World || !CubeMesh || !Floor.bGameplayFloor)
+		{
+			return;
+		}
+
+		if (Floor.WalkableFloorBoxes.Num() > 0)
 		{
 			return;
 		}
@@ -2553,12 +3951,6 @@ namespace T66TowerMapTerrain
 		}
 
 		const FVector StartInwardDirection(0.0f, 1.0f, 0.0f);
-		const FVector BossHoleDirection = (PreBossFloor->HoleCenter - PreBossFloor->Center).GetSafeNormal2D();
-		if (BossHoleDirection.IsNearlyZero())
-		{
-			return false;
-		}
-
 		const float StartAreaOffset = OutLayout.PlacementCellSize * 1.65f;
 		const float StartAnchorOffset = OutLayout.PlacementCellSize * 0.45f;
 		const float StartPathOffset = OutLayout.PlacementCellSize * 1.05f;
@@ -2572,10 +3964,22 @@ namespace T66TowerMapTerrain
 			T66TowerStartSafeSpawnInwardCells,
 			OutLayout.SpawnSurfaceLocation);
 
-		FRandomStream MazeRng(Preset.Seed * 1297 + 733);
-		for (FFloor& Floor : OutLayout.Floors)
+		for (int32 FloorIndex = 0; FloorIndex < OutLayout.Floors.Num(); ++FloorIndex)
 		{
-			T66BuildFloorMazeWalls(OutLayout, Floor, MazeRng);
+			FFloor& Floor = OutLayout.Floors[FloorIndex];
+			Floor.ExitPoint = Floor.bHasDropHole ? Floor.HoleCenter : Floor.Center;
+			Floor.ExitPoint.Z = Floor.SurfaceZ;
+			if (FloorIndex > 0)
+			{
+				Floor.ArrivalPoint = OutLayout.Floors[FloorIndex - 1].HoleCenter;
+			}
+			else
+			{
+				Floor.ArrivalPoint = Floor.Center;
+			}
+			Floor.ArrivalPoint.Z = Floor.SurfaceZ;
+			FRandomStream FloorMazeRng(T66BuildTowerFloorSeed(Preset.Seed, Floor.FloorNumber, Floor.GameplayLevelNumber, Floor.Theme));
+			T66BuildFloorMazeWalls(OutLayout, Floor, FloorMazeRng);
 		}
 		for (FFloor& Floor : OutLayout.Floors)
 		{
@@ -2598,6 +4002,12 @@ namespace T66TowerMapTerrain
 			}
 		}
 
+		const FVector BossHoleDirection = (PreBossFloor->HoleCenter - PreBossFloor->Center).GetSafeNormal2D();
+		if (BossHoleDirection.IsNearlyZero())
+		{
+			return false;
+		}
+
 		OutLayout.BossAreaCenterSurfaceLocation = BossFloor->Center;
 		OutLayout.BossSpawnSurfaceLocation = BossFloor->Center;
 		OutLayout.BossAnchorSurfaceLocation = PreBossFloor->HoleCenter - (BossHoleDirection * 950.0f);
@@ -2611,9 +4021,23 @@ namespace T66TowerMapTerrain
 		OutLayout.RescueAnchorLocations.Add(OutLayout.BossAreaCenterSurfaceLocation);
 		for (const FFloor& Floor : OutLayout.Floors)
 		{
-			OutLayout.RescueAnchorLocations.Add(Floor.Center);
-			OutLayout.RescueAnchorLocations.Add(Floor.Center + FVector(Floor.WalkableHalfExtent * 0.35f, 0.0f, 0.0f));
-			OutLayout.RescueAnchorLocations.Add(Floor.Center + FVector(0.0f, Floor.WalkableHalfExtent * 0.35f, 0.0f));
+			if (T66IsWalkableTowerLocation(Floor, Floor.ArrivalPoint, 250.0f, 900.0f, 250.0f))
+			{
+				OutLayout.RescueAnchorLocations.Add(Floor.ArrivalPoint);
+			}
+
+			if (Floor.CachedWalkableSpawnSlots.Num() > 0)
+			{
+				OutLayout.RescueAnchorLocations.Add(Floor.CachedWalkableSpawnSlots[0]);
+				OutLayout.RescueAnchorLocations.Add(Floor.CachedWalkableSpawnSlots[Floor.CachedWalkableSpawnSlots.Num() / 2]);
+				OutLayout.RescueAnchorLocations.Add(Floor.CachedWalkableSpawnSlots.Last());
+			}
+			else
+			{
+				OutLayout.RescueAnchorLocations.Add(Floor.Center);
+				OutLayout.RescueAnchorLocations.Add(Floor.Center + FVector(Floor.WalkableHalfExtent * 0.35f, 0.0f, 0.0f));
+				OutLayout.RescueAnchorLocations.Add(Floor.Center + FVector(0.0f, Floor.WalkableHalfExtent * 0.35f, 0.0f));
+			}
 		}
 
 		return true;
@@ -3116,6 +4540,7 @@ namespace T66TowerMapTerrain
 			};
 
 			T66SpawnShellWallsForFloor(World, CubeMesh, Layout, Floor, Theme, ModuleWallHeight, SpawnParams);
+			T66SpawnGeneratedFloorVisualCap(World, CubeMesh, Theme.FloorMaterial, Floor, SpawnParams, FloorTags);
 			T66SpawnPolygonFloor(World, CubeMesh, Theme.FloorMaterial, Layout, Floor, SpawnParams, FloorTags);
 			T66SpawnMazeWalls(World, CubeMesh, Theme, Layout, Floor, ModuleWallHeight, SpawnParams);
 			T66SpawnPropActors(World, CubeMesh, Theme, Layout, Floor, SpawnParams);

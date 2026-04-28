@@ -1,0 +1,15 @@
+{
+  "status": 429,
+  "response": {
+    "code": 1102,
+    "message": "Account balance not enough",
+    "request_id": "eb033fd8-d954-4bd4-ad69-e038e4f6ac5f"
+  },
+  "submitted_at": 1777382704,
+  "payload_summary": {
+    "model_name": "kling-v1",
+    "mode": "std",
+    "duration": "5",
+    "has_static_mask": true
+  }
+}

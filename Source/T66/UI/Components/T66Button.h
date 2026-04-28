@@ -97,6 +97,12 @@ protected:
 	virtual void NativeDestruct() override;
 
 private:
+	UFUNCTION()
+	void OnButtonHovered();
+
+	UFUNCTION()
+	void OnButtonUnhovered();
+
 	/** Execute the configured action */
 	void ExecuteAction();
 

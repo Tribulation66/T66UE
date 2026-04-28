@@ -265,6 +265,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 
 	ResolveLooseIconBrush(GetHeroSelectionBalanceIconPath(), FVector2D(52.f, 34.f), ACBalanceIconBrush, ACBalanceIconTexture, TEXT("HeroSelectionBalanceIcon"));
 	ResolveLooseIconBrush(GetHeroSelectionChallengesIconPath(), FVector2D(32.f, 32.f), ChallengesButtonIconBrush, ChallengesButtonIconTexture, TEXT("HeroSelectionChallengesIcon"));
+	ResolveLooseIconBrush(GetHeroSelectionChadIconPath(), FVector2D(22.f, 22.f), ChadCompanionIconBrush, ChadCompanionIconTexture, TEXT("HeroSelectionChadIcon"));
+	ResolveLooseIconBrush(GetHeroSelectionStacyIconPath(), FVector2D(22.f, 22.f), StacyCompanionIconBrush, StacyCompanionIconTexture, TEXT("HeroSelectionStacyIcon"));
 
 	if (HeroPreviewController)
 	{
@@ -277,7 +279,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	{
 		const ET66SecondaryStatType SlotStat = ActiveTempBuffSlots.IsValidIndex(SlotIndex) ? ActiveTempBuffSlots[SlotIndex] : ET66SecondaryStatType::None;
 		SelectedTemporaryBuffBrushes[SlotIndex] = T66IsLiveSecondaryStatType(SlotStat)
-			? T66TemporaryBuffUI::CreateSecondaryBuffBrush(SelectionTexPool, this, SlotStat, FVector2D(50.f, 50.f))
+			? T66TemporaryBuffUI::CreateSecondaryBuffBrush(SelectionTexPool, this, SlotStat, FVector2D(42.f, 42.f))
 			: nullptr;
 	}
 
@@ -293,8 +295,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 						FText::GetEmpty(),
 						FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTemporaryBuffSlotClicked, SlotIndex),
 						ET66ButtonType::Neutral)
-					.SetMinWidth(68.f)
-					.SetHeight(68.f)
+					.SetMinWidth(50.f)
+					.SetHeight(50.f)
 					.SetPadding(FMargin(0.f))
 					.SetColor(bOwnedForSlot ? FT66Style::Tokens::Panel : FLinearColor(0.14f, 0.07f, 0.07f, 1.0f))
 					.SetContent(
@@ -326,7 +328,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							: StaticCastSharedRef<SWidget>(
 								SNew(STextBlock)
 								.Text(NSLOCTEXT("T66.HeroSelection", "TempBuffEmptySlot", "+"))
-								.Font(FT66Style::Tokens::FontBold(24))
+								.Font(FT66Style::Tokens::FontBold(18))
 								.ColorAndOpacity(FT66Style::Tokens::TextMuted))
 						]
 					))
@@ -351,7 +353,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const FLinearColor SelectionShellFill = FLinearColor::Black;
 	const FSlateColor SelectionPanelFill = FLinearColor(0.022f, 0.022f, 0.024f, 1.0f);
 	const FSlateColor SelectionInsetFill = FLinearColor(0.032f, 0.032f, 0.036f, 1.0f);
-	const FSlateColor SelectionToggleFill = FLinearColor(0.055f, 0.055f, 0.06f, 1.0f);
 	RefreshHeroList(); // Ensure hero list is populated
 
 	// Ensure we have stable brushes for the visible slots.
@@ -370,7 +371,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	}
 	RefreshHeroCarouselPortraits();
 	
-	// Show 7 heroes centered on current (prev3..next3).
+	// Show 9 heroes centered on current (prev4..next4).
 	for (int32 Offset = -HeroSelectionCarouselCenterIndex; Offset <= HeroSelectionCarouselCenterIndex; Offset++)
 	{
 		if (AllHeroIDs.Num() == 0) break;
@@ -553,7 +554,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const float TopBarBottomGap = 0.f;
 	const float PanelBottomInset = 0.f;
 	const float PanelGap = 0.f;
-	const float SidePanelMinWidth = 400.f;
+	const float LeftPanelWidth = 400.f;
+	const float RightPanelWidth = 440.f;
 	const float FooterToggleWidth = 116.f;
 	const float FooterToggleHeight = 44.f;
 	const float FooterActionHeight = 46.f;
@@ -591,7 +593,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		{
 			BuffSlotRow->AddSlot()
 			.AutoWidth()
-			.Padding(FMargin(0.f, 0.f, 6.f, 0.f))
+			.Padding(FMargin(0.f, 0.f, 4.f, 0.f))
 			[
 				MakeSelectedTemporaryBuffSlot(SlotIndex)
 			];
@@ -608,42 +610,19 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 						NSLOCTEXT("T66.HeroSelection", "TempBuffClear", "CLEAR"),
 						FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleClearTemporaryBuffsClicked),
 						ET66ButtonType::Neutral)
-					.SetMinWidth(68.f)
-					.SetHeight(68.f)
-					.SetFontSize(SecondaryButtonFontSize))
+					.SetMinWidth(54.f)
+					.SetHeight(50.f)
+					.SetFontSize(SecondaryButtonFontSize - 3))
 			]
 		];
 
 		return MakeHeroSelectionRowShell(
 			SNew(SBox)
-			.MinDesiredHeight(72.f)
+			.MinDesiredHeight(44.f)
 			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					BuffSlotRow
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Fill)
-				[
-					SNew(SBorder)
-					.Visibility(bDrugsUnlocked ? EVisibility::Collapsed : EVisibility::Visible)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.11f, 0.12f, 0.14f, 0.98f))
-					.Padding(FMargin(10.f))
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.HeroSelection", "TempBuffLockedUntilEasy", "Beat Easy mode to unlock Drugs"))
-						.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 1))
-						.ColorAndOpacity(FLinearColor(0.70f, 0.73f, 0.78f, 1.0f))
-						.Justification(ETextJustify::Center)
-					]
-				]
+				BuffSlotRow
 			],
-			FMargin(10.f, 10.f));
+			FMargin(6.f, 5.f));
 	};
 
 	auto MakeTemporaryBuffPickerModal = [this,
@@ -1042,7 +1021,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			.BorderBackgroundColor(SelectionShellFill);
 	};
 
-	auto MakePreviewFocusMask = [bDotaTheme, &MakeFocusMaskFill, SidePanelMinWidth, TopBarBottomGap, PanelGap]() -> TSharedRef<SWidget>
+	auto MakePreviewFocusMask = [bDotaTheme, &MakeFocusMaskFill, LeftPanelWidth, RightPanelWidth, TopBarBottomGap, PanelGap]() -> TSharedRef<SWidget>
 	{
 		if (!bDotaTheme)
 		{
@@ -1070,7 +1049,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				.Padding(0.0f, 0.0f, PanelGap, 0.0f)
 				[
 					SNew(SBox)
-					.WidthOverride(SidePanelMinWidth)
+					.WidthOverride(LeftPanelWidth)
 					[
 						MakeFocusMaskFill()
 					]
@@ -1086,7 +1065,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				.Padding(PanelGap, 0.0f, 0.0f, 0.0f)
 				[
 					SNew(SBox)
-					.WidthOverride(SidePanelMinWidth)
+					.WidthOverride(RightPanelWidth)
 					[
 						MakeFocusMaskFill()
 					]
@@ -1109,13 +1088,18 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		FooterToggleWidth,
 		FooterToggleHeight,
 		BodyToggleFontSize,
-		SelectionToggleFill,
 		SelectionPanelFill]() -> TSharedRef<SWidget>
 	{
 		const FSlateColor TogglePanelColor = bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel2;
-		const FSlateColor ToggleActiveColor = bDotaTheme ? SelectionToggleFill : FT66Style::Tokens::Accent2;
+		const FSlateColor ChadActiveColor = bDotaTheme ? FLinearColor(0.02f, 0.13f, 0.28f, 1.0f) : FLinearColor(0.02f, 0.16f, 0.38f, 1.0f);
+		const FSlateColor StacyActiveColor = bDotaTheme ? FLinearColor(0.28f, 0.02f, 0.18f, 1.0f) : FLinearColor(0.38f, 0.02f, 0.24f, 1.0f);
 
-		auto MakeBodyToggleButton = [this, FooterToggleWidth, FooterToggleHeight, BodyToggleFontSize, ToggleActiveColor, TogglePanelColor](const TCHAR* Label, ET66BodyType BodyType) -> TSharedRef<SWidget>
+		auto MakeBodyToggleButton = [this, FooterToggleWidth, FooterToggleHeight, BodyToggleFontSize, TogglePanelColor](
+			const TCHAR* Label,
+			const TCHAR* FallbackGlyph,
+			ET66BodyType BodyType,
+			const TSharedPtr<FSlateBrush>& IconBrush,
+			const FSlateColor ActiveColor) -> TSharedRef<SWidget>
 		{
 			const FOnClicked OnClicked = (BodyType == ET66BodyType::TypeA)
 				? FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeAClicked)
@@ -1126,35 +1110,74 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				OnClicked,
 				ET66ButtonType::Neutral)
 				.SetMinWidth(FooterToggleWidth)
-				.SetHeight(FooterToggleHeight)
-				.SetFontSize(BodyToggleFontSize)
-				.SetPadding(FMargin(6.f, 3.f, 6.f, 2.f))
-				.SetColor(TAttribute<FSlateColor>::CreateLambda([this, BodyType, ToggleActiveColor, TogglePanelColor]() -> FSlateColor
+				.SetHeight(FooterToggleHeight - 8.f)
+				.SetFontSize(BodyToggleFontSize - 5)
+				.SetPadding(FMargin(8.f, 4.f, 8.f, 3.f))
+				.SetColor(TAttribute<FSlateColor>::CreateLambda([this, BodyType, ActiveColor, TogglePanelColor]() -> FSlateColor
 				{
-					return SelectedBodyType == BodyType ? ToggleActiveColor : TogglePanelColor;
+					return SelectedBodyType == BodyType ? ActiveColor : TogglePanelColor;
 				}))
 				.SetContent(
-					SNew(STextBlock)
-					.Text(FText::AsCultureInvariant(Label))
-					.Font(FT66Style::Tokens::FontBold(BodyToggleFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text)));
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					.Padding(0.f, 0.f, 6.f, 0.f)
+					[
+						SNew(SBox)
+						.WidthOverride(20.f)
+						.HeightOverride(20.f)
+						[
+							SNew(SOverlay)
+							+ SOverlay::Slot()
+							[
+								SNew(SImage)
+								.Image_Lambda([IconBrush]() -> const FSlateBrush*
+								{
+									return IconBrush.IsValid() && ::IsValid(IconBrush->GetResourceObject()) ? IconBrush.Get() : nullptr;
+								})
+							]
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
+							[
+								SNew(STextBlock)
+								.Visibility_Lambda([IconBrush]() -> EVisibility
+								{
+									return IconBrush.IsValid() && ::IsValid(IconBrush->GetResourceObject())
+										? EVisibility::Collapsed
+										: EVisibility::Visible;
+								})
+								.Text(FText::AsCultureInvariant(FallbackGlyph))
+								.Font(FT66Style::Tokens::FontBold(BodyToggleFontSize - 6))
+								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							]
+						]
+					]
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(FText::AsCultureInvariant(Label))
+						.Font(FT66Style::Tokens::FontBold(BodyToggleFontSize - 5))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]));
 		};
 
-		return MakeHeroSelectionRowShell(
-			SNew(SHorizontalBox)
+		return SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			.Padding(0.0f)
 			[
-				MakeBodyToggleButton(TEXT("CHAD"), ET66BodyType::TypeA)
+				MakeBodyToggleButton(TEXT("CHAD"), TEXT("M"), ET66BodyType::TypeA, ChadCompanionIconBrush, ChadActiveColor)
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			.Padding(8.0f, 0.0f, 0.0f, 0.0f)
 			[
-				MakeBodyToggleButton(TEXT("STACY"), ET66BodyType::TypeB)
-			],
-			FMargin(6.f, 5.f));
+				MakeBodyToggleButton(TEXT("STACY"), TEXT("F"), ET66BodyType::TypeB, StacyCompanionIconBrush, StacyActiveColor)
+			];
 	};
 
 	auto MakeWorldScrim = []() -> TSharedRef<SWidget>
@@ -1237,9 +1260,9 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 						FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionClicked),
 						ET66ButtonType::Neutral)
 					.SetMinWidth(246.f)
-					.SetHeight(44.f)
-					.SetFontSize(SecondaryButtonFontSize + 2)
-					.SetPadding(FMargin(12.f, 7.f)))
+					.SetHeight(34.f)
+					.SetFontSize(SecondaryButtonFontSize - 1)
+					.SetPadding(FMargin(12.f, 5.f)))
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()
@@ -1832,6 +1855,12 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					SkinsListBoxWidget.ToSharedRef()
 				]
 			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.0f, 8.0f, 0.0f, 0.0f)
+			[
+				MakeTemporaryBuffLoadoutPanel()
+			]
 		]
 		+ SWidgetSwitcher::Slot()
 		[
@@ -1948,13 +1977,13 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.0f, 8.0f, 0.0f, 0.0f)
+		.Padding(0.0f, 6.0f, 0.0f, 0.0f)
 		[
 			MakeBodyToggleStrip()
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.0f, 8.0f, 0.0f, 0.0f)
+		.Padding(0.0f, 4.0f, 0.0f, 0.0f)
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
@@ -1983,7 +2012,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(Label)
-					.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 3))
+					.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 2))
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				]
 				+ SHorizontalBox::Slot()
@@ -2014,8 +2043,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							FT66BareButtonParams(
 								OnClicked,
 								SNew(SBox)
-								.WidthOverride(58.f)
-								.HeightOverride(58.f)
+								.WidthOverride(56.f)
+								.HeightOverride(56.f)
 								[
 									SNew(SOverlay)
 									+ SOverlay::Slot()
@@ -2038,7 +2067,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 											: EVisibility::Visible;
 									})
 									.Text(NSLOCTEXT("T66.HeroSelection", "AbilityPlaceholder", "?"))
-									.Font(FT66Style::Tokens::FontBold(BodyTextFontSize + 3))
+									.Font(FT66Style::Tokens::FontBold(BodyTextFontSize))
 									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 								]
 							]
@@ -2050,23 +2079,30 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				];
 		};
 
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-			.Padding(FMargin(10.f, 4.f))
-			[
-			SNew(SHorizontalBox)
+		auto MakeAbilityCard = [MakeAbilityItem](const FText& Label, const bool bUltimate) -> TSharedRef<SWidget>
+		{
+			return MakeHeroSelectionRowShell(
+				SNew(SBox)
+				.MinDesiredHeight(72.f)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					MakeAbilityItem(Label, bUltimate)
+				],
+				FMargin(10.f, 8.f));
+		};
+
+		return SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.f)
-			.HAlign(HAlign_Center)
+			.Padding(0.f, 0.f, 8.f, 0.f)
 			[
-				MakeAbilityItem(NSLOCTEXT("T66.HeroSelection", "UltimateShortLabel", "ULT"), true)
+				MakeAbilityCard(NSLOCTEXT("T66.HeroSelection", "UltimateShortLabel", "ULT"), true)
 			]
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.f)
-			.HAlign(HAlign_Center)
 			[
-				MakeAbilityItem(NSLOCTEXT("T66.HeroSelection", "PassiveShortLabel", "PASSIVE"), false)
-			]
+				MakeAbilityCard(NSLOCTEXT("T66.HeroSelection", "PassiveShortLabel", "PASSIVE"), false)
 			];
 	};
 
@@ -2075,39 +2111,103 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	TSharedPtr<SScaleBox> CompanionInfoPortraitScaleBoxWidget;
 	TSharedPtr<STextBlock> CompanionPreviewPlaceholderTextWidget;
 
+	auto MakeRecordInfoButton = [SecondaryButtonFontSize](const FText& Title, const FText& Body) -> TSharedRef<SWidget>
+	{
+		return SNew(SBox)
+			.ToolTip(MakeHeroSelectionAbilityTooltip(Title, Body, -1))
+			[
+				MakeHeroSelectionButton(
+					FT66ButtonParams(
+						NSLOCTEXT("T66.HeroSelection", "HeroRecordInlineInfoButton", "?"),
+						FOnClicked::CreateLambda([]() -> FReply
+						{
+							return FReply::Handled();
+						}),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(22.f)
+					.SetHeight(18.f)
+					.SetFontSize(FMath::Max(SecondaryButtonFontSize - 8, 10))
+					.SetPadding(FMargin(3.f, 0.f)))
+			];
+	};
+
 	TSharedRef<SWidget> RightInfoBody =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+		.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 		[
 			SNew(SBox)
-			.HeightOverride(36.f)
-			.HAlign(HAlign_Center)
+			.HeightOverride(48.f)
+			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Center)
 			[
-				SAssignNew(InfoTargetDropdownText, STextBlock)
-				.Text(CurrentInfoTargetOption.IsValid()
-					? FText::FromString(*CurrentInfoTargetOption)
-					: NSLOCTEXT("T66.HeroSelection", "InfoTargetHeroFallback", "Hero"))
-				.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize + 5))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-				.Justification(ETextJustify::Center)
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.f)
+					.VAlign(VAlign_Center)
+					[
+						SAssignNew(InfoTargetDropdownText, STextBlock)
+						.Text(CurrentInfoTargetOption.IsValid()
+							? FText::FromString(*CurrentInfoTargetOption)
+							: NSLOCTEXT("T66.HeroSelection", "InfoTargetHeroFallback", "Hero"))
+						.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize + 7))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Justification(ETextJustify::Left)
+					]
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					[
+						MakeHeroSelectionButton(
+							FT66ButtonParams(
+								NSLOCTEXT("T66.HeroSelection", "TempSettingsButton", "SETTINGS"),
+								FOnClicked::CreateLambda([this]() -> FReply
+								{
+									if (UIManager)
+									{
+										UIManager->ShowScreen(ET66ScreenType::Settings);
+									}
+									return FReply::Handled();
+								}),
+								ET66ButtonType::Neutral)
+							.SetMinWidth(136.f)
+							.SetHeight(32.f)
+							.SetFontSize(SecondaryButtonFontSize - 1)
+							.SetPadding(FMargin(10.f, 5.f)))
+					]
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.f, 3.f, 0.f, 0.f)
+				[
+					SNew(SBox)
+					.HeightOverride(2.f)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.86f, 0.72f, 0.18f, 1.0f))
+					]
+				]
 			]
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+		.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 		[
 			MakeHeroSelectionRowShell(
 				SNew(SBox)
-				.HeightOverride(218.0f)
+				.HeightOverride(226.0f)
 				[
 					SNew(SOverlay)
 					+ SOverlay::Slot()
 					[
 						SNew(SScaleBox)
-						.Stretch(EStretch::ScaleToFill)
+						.Stretch(EStretch::ScaleToFit)
 						[
 							SAssignNew(HeroPreviewVideoImageWidget, SImage)
 							.Image_Lambda([this]() -> const FSlateBrush*
@@ -2157,37 +2257,14 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+		.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 		[
 			MakeHeroSelectionRowShell(
 				SNew(SBox)
-				.MinDesiredHeight(84.f)
+				.MinDesiredHeight(46.f)
 				.VAlign(VAlign_Center)
 				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.f, 0.f, 0.f, 5.f)
-					[
-						MakeHeroSelectionButton(
-							FT66ButtonParams(
-								NSLOCTEXT("T66.HeroSelection", "HeroRecordInfoButton", "?"),
-								FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleHeroRecordInfoClicked),
-								ET66ButtonType::Neutral)
-							.SetMinWidth(32.f)
-							.SetHeight(24.f)
-							.SetFontSize(SecondaryButtonFontSize - 2)
-							.SetPadding(FMargin(6.f, 2.f))
-							.SetColor(TAttribute<FSlateColor>::CreateLambda([this]() -> FSlateColor
-							{
-								return bShowingHeroRecordInfoPanel ? FT66Style::ButtonPrimary() : FT66Style::ButtonNeutral();
-							})))
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					[
-						SNew(SHorizontalBox)
+					SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot()
 						.FillWidth(1.f)
 						.HAlign(HAlign_Center)
@@ -2197,20 +2274,29 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							+ SHorizontalBox::Slot()
 							.AutoWidth()
 							.VAlign(VAlign_Center)
+							.Padding(0.f, 0.f, 5.f, 0.f)
+							[
+								MakeRecordInfoButton(
+									NSLOCTEXT("T66.HeroSelection", "HeroRecordMedalTooltipTitle", "Medal"),
+									NSLOCTEXT("T66.HeroSelection", "HeroRecordMedalTooltipBody", "Highest difficulty cleared with this hero or companion. Bronze: Easy. Silver: Medium. Gold: Hard. Platinum: Very Hard. Diamond: Impossible."))
+							]
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.VAlign(VAlign_Center)
 							[
 								SNew(STextBlock)
 								.Text(NSLOCTEXT("T66.HeroSelection", "HeroRecordMedalLabel", "Medal"))
-								.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 6))
+								.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 1))
 								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 							]
 							+ SHorizontalBox::Slot()
 							.AutoWidth()
 							.VAlign(VAlign_Center)
-							.Padding(10.f, 0.f, 0.f, 0.f)
+							.Padding(6.f, 0.f, 0.f, 0.f)
 							[
 								SNew(SBox)
-								.WidthOverride(46.f)
-								.HeightOverride(46.f)
+								.WidthOverride(30.f)
+								.HeightOverride(30.f)
 								[
 									SAssignNew(HeroRecordMedalImageWidget, SImage)
 									.Image_Lambda([this]() -> const FSlateBrush*
@@ -2229,26 +2315,34 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							+ SHorizontalBox::Slot()
 							.AutoWidth()
 							.VAlign(VAlign_Center)
+							.Padding(0.f, 0.f, 5.f, 0.f)
+							[
+								MakeRecordInfoButton(
+									NSLOCTEXT("T66.HeroSelection", "HeroRecordRankTooltipTitle", "Rank"),
+									NSLOCTEXT("T66.HeroSelection", "HeroRecordRankTooltipBody", "All-time score placement for the selected difficulty, party size, and hero. N/A means no eligible score has been submitted yet."))
+							]
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.VAlign(VAlign_Center)
 							[
 								SNew(STextBlock)
 								.Text(NSLOCTEXT("T66.HeroSelection", "HeroRecordRankLabel", "Rank"))
-								.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 6))
+								.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 1))
 								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 							]
 							+ SHorizontalBox::Slot()
 							.AutoWidth()
 							.VAlign(VAlign_Center)
-							.Padding(12.f, 0.f, 0.f, 0.f)
+							.Padding(6.f, 0.f, 0.f, 0.f)
 							[
 								SAssignNew(HeroRecordRankWidget, STextBlock)
 								.Text(NSLOCTEXT("T66.HeroSelection", "HeroRecordRankDefault", "..."))
-								.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 6))
+								.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 1))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
 						]
-					]
 				],
-				FMargin(FT66Style::Tokens::Space3, 14.f))
+				FMargin(8.f, 5.f))
 		]
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
@@ -2468,14 +2562,14 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 										]
 									]
 								],
-								FMargin(6.f, 8.f)))
+								FMargin(6.f, 5.f)))
 						.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
 						.SetColor(FLinearColor::Transparent)
 						.SetPadding(FMargin(0.f)))
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(0.f, 8.f, 0.f, 0.f)
+				.Padding(0.f, 4.f, 0.f, 0.f)
 				[
 					MakeHeroAbilityPanel()
 				]
@@ -2524,24 +2618,14 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 
 	TSharedRef<SWidget> LeftFooterPanel =
 		SNew(SBox)
-		.WidthOverride(SidePanelMinWidth)
+		.WidthOverride(LeftPanelWidth)
 		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			[
-				MakeTemporaryBuffLoadoutPanel()
-			]
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			[
-				MakePartyBox()
-			]
+			MakePartyBox()
 		];
 
 	TSharedRef<SWidget> RightFooterPanel =
 		SNew(SBox)
-		.WidthOverride(SidePanelMinWidth)
+		.WidthOverride(RightPanelWidth)
 		[
 			MakeRunControls()
 		];
@@ -2561,7 +2645,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				.FillHeight(1.0f)
 				[
 					SNew(SBox)
-					.WidthOverride(SidePanelMinWidth)
+					.WidthOverride(LeftPanelWidth)
 					[
 						LeftSidePanel
 					]
@@ -2588,7 +2672,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				.FillHeight(1.0f)
 				[
 					SNew(SBox)
-					.WidthOverride(SidePanelMinWidth)
+					.WidthOverride(RightPanelWidth)
 					[
 						RightSidePanel
 					]

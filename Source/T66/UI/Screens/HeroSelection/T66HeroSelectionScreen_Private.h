@@ -64,7 +64,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogT66HeroSelection, Log, All);
 
 namespace T66HeroSelectionPrivate
 {
-	inline constexpr int32 HeroSelectionCarouselVisibleSlots = 7;
+	inline constexpr int32 HeroSelectionCarouselVisibleSlots = 9;
 	inline constexpr int32 HeroSelectionCarouselCenterIndex = HeroSelectionCarouselVisibleSlots / 2;
 
 	inline AT66PlayerController* T66GetLocalFrontendHeroPlayerController(UObject* ContextObject)
@@ -197,6 +197,16 @@ namespace T66HeroSelectionPrivate
 	inline FString GetHeroSelectionChallengesIconPath()
 	{
 		return TEXT("RuntimeDependencies/T66/UI/HeroSelection/challenges_crossed_swords.png");
+	}
+
+	inline FString GetHeroSelectionChadIconPath()
+	{
+		return TEXT("SourceAssets/UI/HeroSelection/Companions/companion_chad_male_blue.png");
+	}
+
+	inline FString GetHeroSelectionStacyIconPath()
+	{
+		return TEXT("SourceAssets/UI/HeroSelection/Companions/companion_stacy_female_pink.png");
 	}
 
 	inline bool HasUnlockedHeroSelectionDrugs(const UT66AchievementsSubsystem* Achievements)

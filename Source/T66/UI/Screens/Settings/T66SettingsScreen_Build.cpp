@@ -155,6 +155,15 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 
 	TSharedRef<SOverlay> Root = SNew(SOverlay);
 
+	Root->AddSlot()
+	.HAlign(HAlign_Fill)
+	.VAlign(VAlign_Fill)
+	[
+		SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(T66SettingsShellFill())
+	];
+
 	if (const FSlateBrush* SceneBackgroundBrush = GetSettingsSceneBackgroundBrush())
 	{
 		Root->AddSlot()

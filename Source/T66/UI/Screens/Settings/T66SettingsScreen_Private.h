@@ -265,12 +265,7 @@ namespace T66SettingsScreenPrivate
 
 	inline const FSlateBrush* GetSettingsSceneBackgroundBrush()
 	{
-		static FSettingsSpriteBrushEntry Entry;
-		return ResolveSettingsSpriteBrush(
-			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png"),
-			FVector2D(1920.f, 1080.f),
-			FMargin(0.f));
+		return nullptr;
 	}
 
 	class ST66SettingsSpriteButton : public SCompoundWidget
@@ -389,17 +384,17 @@ namespace T66SettingsScreenPrivate
 
 	inline FLinearColor T66SettingsShellFill()
 	{
-		return FT66Style::Background();
+		return FLinearColor(0.105f, 0.110f, 0.120f, 1.0f);
 	}
 
 	inline FLinearColor T66SettingsPageFill()
 	{
-		return FT66Style::PanelOuter();
+		return FLinearColor(0.135f, 0.140f, 0.150f, 1.0f);
 	}
 
 	inline FLinearColor T66SettingsRowFill()
 	{
-		return FT66Style::PanelInner();
+		return FLinearColor(0.085f, 0.092f, 0.104f, 0.96f);
 	}
 
 	inline FLinearColor T66SettingsButtonNeutralFill()
@@ -481,10 +476,9 @@ namespace T66SettingsScreenPrivate
 	inline TSharedRef<SWidget> MakeSettingsPanel(const TSharedRef<SWidget>& Content, ET66PanelType Type, const FLinearColor& FillColor, const FMargin& Padding)
 	{
 		(void)Type;
-		(void)FillColor;
 		return SNew(SBorder)
-			.BorderImage(GetSettingsRowShellBrush())
-			.BorderBackgroundColor(FLinearColor::White)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FillColor)
 			.Padding(Padding)
 			[
 				Content
@@ -494,8 +488,8 @@ namespace T66SettingsScreenPrivate
 	inline TSharedRef<SWidget> MakeSettingsContentShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
 		return SNew(SBorder)
-			.BorderImage(GetSettingsContentShellBrush())
-			.BorderBackgroundColor(FLinearColor::White)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(GetSettingsPageBackground())
 			.Padding(Padding)
 			.Clipping(EWidgetClipping::ClipToBounds)
 			[
@@ -605,8 +599,8 @@ namespace T66SettingsScreenPrivate
 	inline TSharedRef<SWidget> MakeSettingsRow(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(12.f, 14.f))
 	{
 		return SNew(SBorder)
-			.BorderImage(GetSettingsRowShellBrush())
-			.BorderBackgroundColor(FLinearColor::White)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(T66SettingsRowFill())
 			.Padding(Padding)
 			[
 				Content

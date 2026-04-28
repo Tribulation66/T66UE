@@ -1,7 +1,6 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/T66MainMenuScreen.h"
-#include "UI/ST66AnimatedBackground.h"
 #include "UI/T66UIManager.h"
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "UI/Style/T66ReferenceLayout.h"
@@ -1430,6 +1429,15 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const FT66ReferenceRect& LeftPanelAssemblyRect = T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly;
 	const FT66ReferenceRect& RightPanelAssemblyRect = T66MainMenuReferenceLayout::MainMenu::RightPanelAssembly;
 	const FT66ReferenceRect& RightShellRect = T66MainMenuReferenceLayout::Right::ShellFullReference;
+	const float RightLeaderboardFrameInset = 14.f;
+	const FVector2D RightShellOffset(
+		RightShellRect.X - RightPanelAssemblyRect.X,
+		RightShellRect.Y - RightPanelAssemblyRect.Y);
+	const FMargin RightLeaderboardContentPadding(
+		RightShellOffset.X + RightLeaderboardFrameInset,
+		RightShellOffset.Y + RightLeaderboardFrameInset,
+		0.f,
+		0.f);
 
 	const TSharedRef<SWidget> RightLeaderboardShell =
 		SNew(SBox)
@@ -1442,19 +1450,24 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Top)
-			.Padding(FMargin(0.f, RightShellRect.Y - RightPanelAssemblyRect.Y, 0.f, 0.f))
+			.Padding(FMargin(RightShellOffset.X, RightShellOffset.Y, 0.f, 0.f))
 			[
-				SNew(SImage)
-				.Image(RightPanelShellBrush.Get())
+				SNew(SBox)
+				.WidthOverride(RightShellRect.Width)
+				.HeightOverride(RightShellRect.Height)
+				[
+					SNew(SImage)
+					.Image(RightPanelShellBrush.Get())
+				]
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Top)
-			.Padding(FMargin(12.f, 85.f, 12.f, 20.f))
+			.Padding(RightLeaderboardContentPadding)
 			[
 				SNew(SBox)
-				.WidthOverride(RightPanelAssemblyRect.Width - 24.f)
-				.HeightOverride(RightPanelAssemblyRect.Height - 102.f)
+				.WidthOverride(RightShellRect.Width - (RightLeaderboardFrameInset * 2.f))
+				.HeightOverride(RightShellRect.Height - (RightLeaderboardFrameInset * 2.f))
 				[
 					LeaderboardShell
 				]
@@ -1467,8 +1480,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const FT66ReferenceRect& NewGamePlateRect = T66MainMenuReferenceLayout::Center::CtaButtonNewGame;
 	const FT66ReferenceRect& LoadGamePlateRect = T66MainMenuReferenceLayout::Center::CtaButtonLoadGame;
 
-	FSlateFontInfo TaglineFont = FT66Style::MakeFont(TEXT("Bold"), 27);
+	FSlateFontInfo TaglineFont = FT66Style::MakeFont(TEXT("Bold"), 33);
 	TaglineFont.LetterSpacing = 1;
+	TaglineFont.OutlineSettings.OutlineSize = 3;
+	TaglineFont.OutlineSettings.OutlineColor = FLinearColor::Black;
 
 	const TSharedRef<SWidget> CenterTagline =
 		SNew(SBox)
@@ -1481,9 +1496,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		.Text(TaglineText)
 		.Font(TaglineFont)
 		.Justification(ETextJustify::Center)
-		.ColorAndOpacity(FLinearColor(0.82f, 0.57f, 0.94f, 1.f))
-		.ShadowOffset(FVector2D(0.f, 2.f))
-		.ShadowColorAndOpacity(FLinearColor(0.16f, 0.05f, 0.22f, 0.95f))
+		.ColorAndOpacity(FLinearColor(0.48f, 0.04f, 0.82f, 1.f))
+		.ShadowOffset(FVector2D(0.f, 3.f))
+		.ShadowColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 1.f))
 		.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 		.Clipping(EWidgetClipping::ClipToBounds)
 	];
@@ -1556,8 +1571,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
 			[
-				SNew(SImage)
-				.Image(SkyBackgroundBrush.Get())
+				BuildMainMenuBackgroundWidget()
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
@@ -1759,6 +1773,8 @@ void UT66MainMenuScreen::ReleaseRetainedSlateState()
 	LeaderboardPanel.Reset();
 	SkyBackgroundBrush.Reset();
 	SkyBackgroundTexture.Reset();
+	ForegroundOccluderBrush.Reset();
+	ForegroundOccluderTexture.Reset();
 	TitleLockupBrush.Reset();
 	TitleLockupTexture.Reset();
 	LeftPanelShellBrush.Reset();
@@ -2023,13 +2039,44 @@ void UT66MainMenuScreen::SyncToSharedPartyScreen()
 	}
 }
 
+TSharedRef<SWidget> UT66MainMenuScreen::BuildMainMenuBackgroundWidget() const
+{
+	if (!SkyBackgroundBrush.IsValid() || !SkyBackgroundBrush->GetResourceObject())
+	{
+		return SNew(SImage).Image(SkyBackgroundBrush.Get());
+	}
+
+	TSharedRef<SOverlay> Background = SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			SNew(SImage).Image(SkyBackgroundBrush.Get())
+		];
+
+	if (ForegroundOccluderBrush.IsValid() && ForegroundOccluderBrush->GetResourceObject())
+	{
+		Background->AddSlot()
+		[
+			SNew(SImage).Image(ForegroundOccluderBrush.Get())
+		];
+	}
+
+	return Background;
+}
+
 void UT66MainMenuScreen::RequestBackgroundTexture()
 {
 	SetupT66MainMenuRuntimeImageBrush(
 		SkyBackgroundBrush,
 		SkyBackgroundTexture,
 		nullptr,
-		TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/NewMM/main_menu_newmm_base_1920.png"),
+		FVector2D(T66MainMenuReferenceLayout::CanvasWidth, T66MainMenuReferenceLayout::CanvasHeight));
+
+	SetupT66MainMenuRuntimeImageBrush(
+		ForegroundOccluderBrush,
+		ForegroundOccluderTexture,
+		nullptr,
+		TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/NewMM/main_menu_newmm_foreground_occluder.png"),
 		FVector2D(T66MainMenuReferenceLayout::CanvasWidth, T66MainMenuReferenceLayout::CanvasHeight));
 
 	SetupT66MainMenuRuntimeImageBrush(

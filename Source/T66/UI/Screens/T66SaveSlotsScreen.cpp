@@ -478,8 +478,14 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 
 	const FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 	const FText LoadText = NSLOCTEXT("T66.SaveSlots", "Load", "LOAD");
+	const FText LoadGameTitleText = NSLOCTEXT("T66.SaveSlots", "LoadGameTitle", "LOAD GAME");
+	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const FText PrevText = NSLOCTEXT("T66.SaveSlots", "PrevPage", "PREV");
 	const FText NextText = NSLOCTEXT("T66.SaveSlots", "NextPage", "NEXT");
+	const FText EmptySlotText = NSLOCTEXT("T66.SaveSlots", "EmptySlot", "Empty Slot");
+	const FText StagePlaceholderText = NSLOCTEXT("T66.SaveSlots", "StagePlaceholder", "Stage --");
+	const FText DatePlaceholderText = NSLOCTEXT("T66.SaveSlots", "DatePlaceholder", "--");
+	const FText TimePlaceholderText = NSLOCTEXT("T66.SaveSlots", "TimePlaceholder", "--:--");
 
 	SlotPartyAvatarBrushes.SetNum(SlotsPerPage);
 	SlotHeroPortraitBrushes.SetNum(SlotsPerPage);
@@ -510,13 +516,12 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 		}
 	}
 
-	const float SafeTopInset = (UIManager && UIManager->IsFrontendTopBarVisible()) ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
-	const float TopGap = (UIManager && UIManager->IsFrontendTopBarVisible()) ? 20.f : 0.f;
 	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
-	const float SurfaceWidth = FMath::Max(960.f, SafeFrameSize.X - 28.f);
-	const FMargin SurfacePadding(24.f, 20.f, 24.f, 22.f);
+	const float SurfaceWidth = FMath::Max(1040.f, SafeFrameSize.X - 40.f);
+	const FMargin SurfacePadding(28.f, 22.f, 28.f, 24.f);
+	constexpr int32 SlotColumns = 2;
 	const float CardGap = 18.f;
-	const float CardWidth = FMath::Max(420.f, (SurfaceWidth - SurfacePadding.Left - SurfacePadding.Right - CardGap) / 2.f);
+	const float CardWidth = FMath::Max(340.f, (SurfaceWidth - SurfacePadding.Left - SurfacePadding.Right - (CardGap * (SlotColumns - 1))) / SlotColumns);
 	const int32 CurrentPartyCount = PartySubsystem ? FMath::Max(1, PartySubsystem->GetPartyMemberCount()) : 1;
 
 	auto MakePartySizeMenu = [this, Loc]() -> TSharedRef<SWidget>
@@ -647,20 +652,70 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			];
 	};
 
-	auto MakeSlotCard = [this, SaveSub, Loc, GI, TexPool, SteamHelper, PreviewText, LoadText, CardWidth, CurrentPartyCount, bHostCanStartPartyLoad, MakePartyMemberSlot, MakeHeroSlot](
+	TArray<int32> PageSlotIndices;
+	TArray<bool> PageSlotHasVisibleSave;
+	PageSlotIndices.Init(INDEX_NONE, SlotsPerPage);
+	PageSlotHasVisibleSave.Init(false, SlotsPerPage);
+	TSet<int32> UsedDisplaySlotIndices;
+	auto CanUsePlaceholderSlot = [SaveSub, &UsedDisplaySlotIndices](const int32 SlotIndex) -> bool
+	{
+		return SlotIndex >= 0
+			&& SlotIndex < UT66SaveSubsystem::MaxSlots
+			&& !UsedDisplaySlotIndices.Contains(SlotIndex)
+			&& (!SaveSub || !SaveSub->DoesSlotExist(SlotIndex));
+	};
+
+	for (int32 LocalIndex = 0; LocalIndex < SlotsPerPage; ++LocalIndex)
+	{
+		const int32 VisibleIndex = (CurrentPage * SlotsPerPage) + LocalIndex;
+		if (VisibleSlotIndices.IsValidIndex(VisibleIndex))
+		{
+			const int32 SlotIndex = VisibleSlotIndices[VisibleIndex];
+			PageSlotIndices[LocalIndex] = SlotIndex;
+			PageSlotHasVisibleSave[LocalIndex] = true;
+			UsedDisplaySlotIndices.Add(SlotIndex);
+		}
+	}
+
+	for (int32 LocalIndex = 0; LocalIndex < SlotsPerPage; ++LocalIndex)
+	{
+		if (PageSlotIndices[LocalIndex] != INDEX_NONE)
+		{
+			continue;
+		}
+
+		const int32 PreferredSlotIndex = (CurrentPage * SlotsPerPage) + LocalIndex;
+		if (CanUsePlaceholderSlot(PreferredSlotIndex))
+		{
+			PageSlotIndices[LocalIndex] = PreferredSlotIndex;
+			UsedDisplaySlotIndices.Add(PreferredSlotIndex);
+			continue;
+		}
+
+		for (int32 CandidateSlotIndex = 0; CandidateSlotIndex < UT66SaveSubsystem::MaxSlots; ++CandidateSlotIndex)
+		{
+			if (CanUsePlaceholderSlot(CandidateSlotIndex))
+			{
+				PageSlotIndices[LocalIndex] = CandidateSlotIndex;
+				UsedDisplaySlotIndices.Add(CandidateSlotIndex);
+				break;
+			}
+		}
+	}
+
+	auto MakeSlotCard = [this, SaveSub, Loc, GI, TexPool, SteamHelper, PreviewText, LoadText, EmptySlotText,
+		StagePlaceholderText, DatePlaceholderText, TimePlaceholderText, CardWidth, CurrentPartyCount,
+		bHostCanStartPartyLoad, PageSlotIndices, PageSlotHasVisibleSave, MakePartyMemberSlot, MakeHeroSlot](
 		const int32 LocalIndex) -> TSharedRef<SWidget>
 	{
-		const int32 SlotIndex = GetVisibleSlotIndexForPageEntry(LocalIndex);
-		if (SlotIndex == INDEX_NONE || !SaveSub)
+		const int32 SlotIndex = PageSlotIndices.IsValidIndex(LocalIndex) ? PageSlotIndices[LocalIndex] : INDEX_NONE;
+		if (SlotIndex == INDEX_NONE)
 		{
 			return SNew(SBox).Visibility(EVisibility::Collapsed);
 		}
 
-		UT66RunSaveGame* Loaded = SaveSub->LoadFromSlot(SlotIndex);
-		if (!Loaded)
-		{
-			return SNew(SBox).Visibility(EVisibility::Collapsed);
-		}
+		const bool bHasVisibleSave = PageSlotHasVisibleSave.IsValidIndex(LocalIndex) && PageSlotHasVisibleSave[LocalIndex];
+		UT66RunSaveGame* Loaded = (bHasVisibleSave && SaveSub) ? SaveSub->LoadFromSlot(SlotIndex) : nullptr;
 
 		TArray<FT66SavedPartyPlayerState> SavedPlayers;
 		T66BuildSavedPartyPlayers(Loaded, SavedPlayers);
@@ -708,18 +763,32 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			}
 		}
 
-		const int32 RequiredPartyCount = FMath::Max(1, SavedPlayers.Num() > 0 ? SavedPlayers.Num() : T66PartySizeToMemberCount(Loaded->PartySize));
+		const bool bHasRunData = Loaded != nullptr;
+		const int32 RequiredPartyCount = bHasRunData
+			? FMath::Max(1, SavedPlayers.Num() > 0 ? SavedPlayers.Num() : T66PartySizeToMemberCount(Loaded->PartySize))
+			: 1;
 		const bool bPartyCountMatches = CurrentPartyCount == RequiredPartyCount;
-		const bool bCanLoad = bHostCanStartPartyLoad && bPartyCountMatches;
-		const FText StatusText = bCanLoad
+		const bool bCanLoad = bHasRunData && bHostCanStartPartyLoad && bPartyCountMatches;
+		const FText StatusText = !bHasRunData
+			? EmptySlotText
+			: (bCanLoad
 			? FText::Format(
 				NSLOCTEXT("T66.SaveSlots", "DifficultyParty", "{0} / {1}"),
 				T66DifficultyText(Loc, Loaded->Difficulty),
 				T66PartySizeText(Loc, Loaded->PartySize))
 			: FText::Format(
 				NSLOCTEXT("T66.SaveSlots", "RequiresParty", "Requires {0} party"),
-				T66PartySizeText(Loc, Loaded->PartySize));
-		const bool bIsSelected = GI && GI->CurrentSaveSlotIndex == SlotIndex;
+				T66PartySizeText(Loc, Loaded->PartySize)));
+		const bool bIsSelected = bHasRunData && GI && GI->CurrentSaveSlotIndex == SlotIndex;
+		const FText StageText = bHasRunData
+			? FText::Format(NSLOCTEXT("T66.SaveSlots", "StageLabel", "Stage {0}"), FText::AsNumber(Loaded->StageReached))
+			: StagePlaceholderText;
+		const FText DateText = bHasRunData
+			? FText::FromString(T66BuildDateString(Loaded->LastPlayedUtc))
+			: DatePlaceholderText;
+		const FText TimeText = bHasRunData
+			? FText::FromString(T66BuildTimeString(Loaded->LastPlayedUtc))
+			: TimePlaceholderText;
 
 		TSharedRef<SHorizontalBox> PartyRow = SNew(SHorizontalBox);
 		TSharedRef<SHorizontalBox> HeroRow = SNew(SHorizontalBox);
@@ -778,16 +847,16 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 						.AutoHeight()
 						[
 							SNew(STextBlock)
-							.Text(FText::Format(NSLOCTEXT("T66.SaveSlots", "StageLabel", "Stage {0}"), FText::AsNumber(Loaded->StageReached)))
+							.Text(StageText)
 							.Font(FT66Style::Tokens::FontBold(16))
-							.ColorAndOpacity(T66SaveFlowBrightText())
+							.ColorAndOpacity(bHasRunData ? T66SaveFlowBrightText() : T66SaveFlowMutedText())
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
 						.Padding(0.f, 3.f, 0.f, 0.f)
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(T66BuildDateString(Loaded->LastPlayedUtc)))
+							.Text(DateText)
 							.Font(FT66Style::Tokens::FontRegular(14))
 							.ColorAndOpacity(T66SaveFlowMutedText())
 						]
@@ -796,7 +865,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 						.Padding(0.f, 2.f, 0.f, 0.f)
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(T66BuildTimeString(Loaded->LastPlayedUtc)))
+							.Text(TimeText)
 							.Font(FT66Style::Tokens::FontRegular(14))
 							.ColorAndOpacity(T66SaveFlowMutedText())
 						]
@@ -808,7 +877,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(StatusText)
 						.Font(FT66Style::Tokens::FontRegular(14))
-						.ColorAndOpacity(bCanLoad ? T66SaveFlowGoldText() : T66SaveFlowWarningText())
+						.ColorAndOpacity(!bHasRunData ? T66SaveFlowMutedText() : (bCanLoad ? T66SaveFlowGoldText() : T66SaveFlowWarningText()))
 						.Justification(ETextJustify::Right)
 					]
 				]
@@ -825,8 +894,9 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 							FT66ButtonParams(PreviewText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandlePreviewClicked, SlotIndex), ET66ButtonType::Neutral)
 							.SetMinWidth(136.f)
 							.SetHeight(T66SaveFlowActionHeight)
-							.SetFontSize(22),
-							true)
+							.SetFontSize(22)
+							.SetEnabled(bHasRunData),
+							bHasRunData)
 					]
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
@@ -843,31 +913,27 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			],
 			FMargin(20.f, 17.f, 20.f, 18.f),
 			bIsSelected,
-			bCanLoad);
+			bHasRunData && bCanLoad);
 	};
 
 	TSharedRef<SGridPanel> CardGrid = SNew(SGridPanel);
 	for (int32 LocalIndex = 0; LocalIndex < SlotsPerPage; ++LocalIndex)
 	{
-		const int32 Row = LocalIndex / 2;
-		const int32 Column = LocalIndex % 2;
+		const int32 Row = LocalIndex / SlotColumns;
+		const int32 Column = LocalIndex % SlotColumns;
 		CardGrid->AddSlot(Column, Row)
-			.Padding(Column == 0 ? FMargin(0.f, 0.f, CardGap, CardGap) : FMargin(0.f, 0.f, 0.f, CardGap))
+			.Padding(Column + 1 < SlotColumns ? FMargin(0.f, 0.f, CardGap, CardGap) : FMargin(0.f, 0.f, 0.f, CardGap))
 			[
 				MakeSlotCard(LocalIndex)
 			];
 	}
 
-	const bool bHasVisibleSaves = VisibleSlotIndices.Num() > 0;
 	const FText PageText = FText::Format(
 		NSLOCTEXT("T66.SaveSlots", "PageFormat", "Page {0} / {1}"),
 		FText::AsNumber(CurrentPage + 1),
 		FText::AsNumber(TotalPages));
 	const FText FilterHintText = FText::Format(
 		NSLOCTEXT("T66.SaveSlots", "FilterHint", "Showing {0} saves stored on this machine."),
-		T66PartySizeText(Loc, ActivePartySizeFilter));
-	const FText EmptyFilterText = FText::Format(
-		NSLOCTEXT("T66.SaveSlots", "NoFilteredSaves", "No {0} saves found on this machine."),
 		T66PartySizeText(Loc, ActivePartySizeFilter));
 	const bool bCanGoPrev = CurrentPage > 0;
 	const bool bCanGoNext = CurrentPage < TotalPages - 1;
@@ -882,13 +948,47 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Fill)
-		.Padding(FMargin(28.f, SafeTopInset + TopGap + 16.f, 28.f, 26.f))
+		.Padding(FMargin(20.f, 26.f, 20.f, 24.f))
 		[
 			SNew(SBox)
 			.WidthOverride(SurfaceWidth)
 			[
 				MakeSaveFlowShell(
 					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 0.f, 0.f, 16.f)
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
+						[
+							MakeSaveFlowPlateButton(
+								FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleBackClicked), ET66ButtonType::Neutral)
+								.SetMinWidth(124.f)
+								.SetHeight(T66SaveFlowActionHeight)
+								.SetFontSize(22),
+								true)
+						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.f)
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(LoadGameTitleText)
+							.Font(FT66Style::Tokens::FontBold(48))
+							.ColorAndOpacity(T66SaveFlowGoldText())
+							.Justification(ETextJustify::Center)
+						]
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							SNew(SBox)
+							.WidthOverride(124.f)
+						]
+					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
@@ -930,27 +1030,9 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 					]
 					+ SVerticalBox::Slot()
 					.FillHeight(1.f)
-					.Padding(0.f, 20.f, 0.f, 20.f)
+					.Padding(0.f, 18.f, 0.f, 18.f)
 					[
-						bHasVisibleSaves
-							? StaticCastSharedRef<SWidget>(CardGrid)
-							: StaticCastSharedRef<SWidget>(
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot()
-								.FillHeight(1.f)
-								.VAlign(VAlign_Center)
-								.HAlign(HAlign_Center)
-								[
-									MakeSaveFlowRowShell(
-										SNew(STextBlock)
-										.Text(EmptyFilterText)
-										.Font(FT66Style::Tokens::FontRegular(18))
-										.ColorAndOpacity(T66SaveFlowMutedText())
-										.Justification(ETextJustify::Center),
-										FMargin(40.f, 26.f),
-										false,
-										true)
-								])
+						CardGrid
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()

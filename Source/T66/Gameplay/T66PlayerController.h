@@ -297,6 +297,10 @@ protected:
 
 private:
 	void UpdateHeroMovementIntent();
+	void ClampGameplayCameraPitch();
+	void UpdateGameplayCameraSideWallSpring(float DeltaTime);
+	void UpdateHeroCameraOccluders();
+	void RestoreHeroCameraOccluders();
 
 	TSubclassOf<UT66ScreenBase> ResolveScreenClass(ET66ScreenType ScreenType) const;
 	TSubclassOf<UT66GameplayHUDWidget> ResolveGameplayHUDClass() const;
@@ -471,6 +475,8 @@ private:
 	ET66HitZoneType LockedCombatHitZoneType = ET66HitZoneType::Body;
 	bool bInventoryInspectOpen = false;
 	bool bInventoryInspectRestoreFreeCursor = false;
+	TArray<TWeakObjectPtr<AActor>> HiddenHeroCameraOccluders;
+	float DesiredGameplayCameraArmLength = 0.0f;
 
 	bool bHeroOneScopedUltActive = false;
 	bool bHeroOneScopeViewEnabled = false;

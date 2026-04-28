@@ -120,6 +120,8 @@ private:
 	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
 	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
 	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
+	TSharedPtr<FSlateBrush> ForegroundOccluderBrush;
+	TStrongObjectPtr<UTexture2D> ForegroundOccluderTexture;
 	TSharedPtr<FSlateBrush> TitleLockupBrush;
 	TStrongObjectPtr<UTexture2D> TitleLockupTexture;
 	TSharedPtr<FSlateBrush> LeftPanelShellBrush;
@@ -187,8 +189,9 @@ private:
 	FReply HandleQuitClicked();
 	FReply HandleLeavePartyClicked();
 
-	/** Load or bind the main menu animated background layers. */
+	/** Load or bind the main menu scene plate brushes. */
 	void RequestBackgroundTexture();
+	TSharedRef<SWidget> BuildMainMenuBackgroundWidget() const;
 	void RequestMainMenuChromeBrushes();
 	void RequestCTAButtonBrushes();
 	void HandlePartyStateChanged();

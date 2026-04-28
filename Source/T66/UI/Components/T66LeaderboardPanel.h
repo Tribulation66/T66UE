@@ -120,6 +120,7 @@ private:
 	FText GetDifficultyText(ET66Difficulty Diff) const;
 	FText GetTimeText(ET66LeaderboardTime Time) const;
 	FText GetTypeText(ET66LeaderboardType Type) const;
+	FText GetLeaderboardScopeTitleText() const;
 
 	// Helper to format time
 	FString FormatTime(float Seconds) const;

@@ -450,6 +450,63 @@ FText UT66LocalizationSubsystem::GetText_UltimateDescription(ET66UltimateType Ty
 	}
 }
 
+namespace
+{
+FText T66GetReimaginedItemVariantName(ET66SecondaryStatType SecondaryStatType, ET66ItemRarity Rarity)
+{
+#define T66_ITEM_VARIANTS(Stat, BlackText, RedText, YellowText, WhiteText) \
+	case ET66SecondaryStatType::Stat: \
+		switch (Rarity) \
+		{ \
+			case ET66ItemRarity::Black:  return NSLOCTEXT("T66.Items", "ItemVariant_" #Stat "_Black", BlackText); \
+			case ET66ItemRarity::Red:    return NSLOCTEXT("T66.Items", "ItemVariant_" #Stat "_Red", RedText); \
+			case ET66ItemRarity::Yellow: return NSLOCTEXT("T66.Items", "ItemVariant_" #Stat "_Yellow", YellowText); \
+			case ET66ItemRarity::White:  return NSLOCTEXT("T66.Items", "ItemVariant_" #Stat "_White", WhiteText); \
+			default:                     break; \
+		} \
+		break
+
+	switch (SecondaryStatType)
+	{
+		T66_ITEM_VARIANTS(AoeDamage, "Halo of Ruin", "Thunder Moon", "Cathedral Boomer", "Sainted Shockring");
+		T66_ITEM_VARIANTS(BounceDamage, "Ricochet Crown", "Moon-Hop Pearl", "Imp Orbit", "Rebound Relic");
+		T66_ITEM_VARIANTS(PierceDamage, "Needle of Judgment", "Storm Thorn", "Scholar's Fang", "Silver Whisper");
+		T66_ITEM_VARIANTS(DotDamage, "Ashen Scripture", "Leaking Sun", "Witch's Flag", "Slow Curse Seal");
+		T66_ITEM_VARIANTS(CritDamage, "Eye of Catastrophe", "Fate Tooth", "Execution Idol", "Doomglass");
+		T66_ITEM_VARIANTS(AoeSpeed, "Cyclone Halo", "Wind Saint's Nail", "Zephyr Relic", "Storm Handle");
+		T66_ITEM_VARIANTS(BounceSpeed, "Serpent Loop", "Orbit Spinner", "Jester Coil", "Runaway Moon");
+		T66_ITEM_VARIANTS(PierceSpeed, "Lightning Hook", "Serpent Teeth", "Haste Needle", "Swift Verdict");
+		T66_ITEM_VARIANTS(DotSpeed, "Blackwick Psalm", "Creeping Thread", "Rot Clock", "Patient Doom");
+		T66_ITEM_VARIANTS(CritChance, "Oracle Coin", "Truth Shard", "Fate Apostate", "Prophet's Receipt");
+		T66_ITEM_VARIANTS(AoeScale, "Expanding Moon", "Giant's Seal", "Mirror Disc of Heaven", "World-Eater Grate");
+		T66_ITEM_VARIANTS(BounceScale, "Titan Loop", "Monarch Ringlet", "Rolling Shrine", "Orbit Gate");
+		T66_ITEM_VARIANTS(PierceScale, "Lance of the Table God", "Ivory Spine", "Festival Spear", "Lawblade");
+		T66_ITEM_VARIANTS(DotScale, "Brown Eclipse Veil", "Grease Prophet", "Dust Familiar", "Charred Covenant");
+		T66_ITEM_VARIANTS(AttackRange, "Far-Calling Wand", "Plastic Stargazer", "Distant Omen", "Horizon Tongue");
+		T66_ITEM_VARIANTS(Accuracy, "Red Dot Oracle", "Tiny Seer", "Moment Judge", "Perfect Mark");
+		T66_ITEM_VARIANTS(Taunt, "Insult Trumpet", "King of Nothing", "Defiant Shades", "Mocking Banner");
+		T66_ITEM_VARIANTS(ReflectDamage, "Mirror Leaf", "Vanity Aegis", "Silver Rebuttal", "Return Star");
+		T66_ITEM_VARIANTS(HpRegen, "Green Returner", "Root Promise", "Gentle Reservoir", "Second Spring");
+		T66_ITEM_VARIANTS(Crush, "Pebble Tyrant", "Prison Heart", "Iron Seed", "Weight of Ages");
+		T66_ITEM_VARIANTS(DamageReduction, "Soft Fortress", "Cloud Bastion", "Palm Shield", "Roadhide Plate");
+		T66_ITEM_VARIANTS(Invisibility, "Ghost Ribbon", "Air Cloak", "Vanishing Skin", "Invisible Fang");
+		T66_ITEM_VARIANTS(CounterAttack, "Biteback Coil", "Ambush Band", "Retort Jaw", "Revenge Hook");
+		T66_ITEM_VARIANTS(LifeSteal, "Siphon Reed", "Hungry Mouth", "Thief's Valve", "Sweet Theft");
+		T66_ITEM_VARIANTS(Assassinate, "Silent Edge", "Night Eye", "Whisper Guillotine", "Midnight Warrant");
+		T66_ITEM_VARIANTS(EvasionChance, "Alibi Scroll", "Escape Token", "Trickster's Leave", "Slip Charm");
+		T66_ITEM_VARIANTS(LootCrate, "Box Saint's Relic", "Promise Sticker", "Treasure Blister", "Parcel Tooth");
+		T66_ITEM_VARIANTS(TreasureChest, "Almost-Key of Kings", "False Latch", "Pocket Vault", "Pilgrim's Hoardmark");
+		T66_ITEM_VARIANTS(Cheating, "Fraud Cube", "Forbidden Number", "Dealer's Sin", "Housebreaker Coin");
+		T66_ITEM_VARIANTS(Stealing, "Pilfer Crown", "Pocket Moon", "Silent Grabber", "Thief's Halo");
+	default:
+		break;
+	}
+
+#undef T66_ITEM_VARIANTS
+	return FText::GetEmpty();
+}
+}
+
 // ========== Items (names derived from ItemID) ==========
 
 FText UT66LocalizationSubsystem::GetText_ItemRarityName(ET66ItemRarity Rarity) const
@@ -545,6 +602,19 @@ FText UT66LocalizationSubsystem::GetText_ItemDisplayName(FName ItemID) const
 
 FText UT66LocalizationSubsystem::GetText_ItemDisplayNameForRarity(FName ItemID, ET66ItemRarity Rarity) const
 {
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		FItemData ItemData;
+		if (T66GI->GetItemData(ItemID, ItemData))
+		{
+			const FText VariantName = T66GetReimaginedItemVariantName(ItemData.SecondaryStatType, Rarity);
+			if (!VariantName.IsEmpty())
+			{
+				return VariantName;
+			}
+		}
+	}
+
 	const FText Adjective = GetText_ItemRarityAdjective(Rarity);
 	const FText BaseName = GetText_ItemBaseName(ItemID);
 	if (Adjective.IsEmpty() || BaseName.IsEmpty())

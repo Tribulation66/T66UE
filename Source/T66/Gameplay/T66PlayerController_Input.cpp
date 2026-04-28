@@ -592,6 +592,7 @@ void AT66PlayerController::HandleLookUp(float Value)
 		}
 	}
 	AddPitchInput(Value);
+	ClampGameplayCameraPitch();
 }
 
 
@@ -641,8 +642,10 @@ void AT66PlayerController::HandleZoom(float Value)
 		const float ZoomSpeed = 25.f;
 		const float MinLength = 1200.f;  // Keep the current default gameplay view as the closest zoom.
 		const float MaxLength = 2400.f;  // Start at the fully zoomed-out view and do not allow any farther zoom.
-		float NewLength = Hero->CameraBoom->TargetArmLength - Value * ZoomSpeed;
-		NewLength = FMath::Clamp(NewLength, MinLength, MaxLength);
-		Hero->CameraBoom->TargetArmLength = NewLength;
+		const float CurrentDesiredLength = DesiredGameplayCameraArmLength > KINDA_SMALL_NUMBER
+			? DesiredGameplayCameraArmLength
+			: Hero->CameraBoom->TargetArmLength;
+		DesiredGameplayCameraArmLength = FMath::Clamp(CurrentDesiredLength - (Value * ZoomSpeed), MinLength, MaxLength);
+		Hero->CameraBoom->TargetArmLength = FMath::Min(Hero->CameraBoom->TargetArmLength, DesiredGameplayCameraArmLength);
 	}
 }
