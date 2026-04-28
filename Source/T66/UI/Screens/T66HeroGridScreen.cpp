@@ -73,7 +73,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png"),
 			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 			TEXT("HeroGridCompactButton"));
 	}

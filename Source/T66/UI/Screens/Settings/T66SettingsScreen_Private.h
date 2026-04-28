@@ -131,17 +131,17 @@ namespace T66SettingsScreenPrivate
 
 	inline const TCHAR* GetSettingsButtonSpritePath(ET66SettingsSpriteFamily Family, ET66ButtonBorderState State)
 	{
-		const TCHAR* Prefix = TEXT("TopBar/topbar_nav");
+		const TCHAR* Prefix = TEXT("Buttons/basic_button");
 		switch (Family)
 		{
 		case ET66SettingsSpriteFamily::ToggleOn:
-			Prefix = TEXT("TopBar/topbar_nav");
+			Prefix = TEXT("Buttons/basic_button");
 			break;
 		case ET66SettingsSpriteFamily::ToggleOff:
-			Prefix = TEXT("TopBar/topbar_nav");
+			Prefix = TEXT("Buttons/basic_button");
 			break;
 		case ET66SettingsSpriteFamily::ToggleInactive:
-			Prefix = TEXT("TopBar/topbar_nav");
+			Prefix = TEXT("Buttons/basic_button");
 			break;
 		case ET66SettingsSpriteFamily::CompactNeutral:
 		default:
@@ -212,7 +212,7 @@ namespace T66SettingsScreenPrivate
 		FSettingsSpriteBrushSet& Set = GetSettingsButtonSpriteSet(ET66SettingsSpriteFamily::ToggleInactive);
 		return ResolveSettingsSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_disabled.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"),
 			FVector2D(270.f, 88.f));
 	}
 

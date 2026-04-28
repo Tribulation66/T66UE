@@ -170,17 +170,17 @@ namespace
 
 		if (bDisabled)
 		{
-			return TEXT("TopBar/topbar_nav_disabled.png");
+			return TEXT("Buttons/basic_button_disabled.png");
 		}
 		if (bPressed || bSelected)
 		{
-			return TEXT("TopBar/topbar_nav_pressed.png");
+			return TEXT("Buttons/basic_button_pressed.png");
 		}
 		if (bHovered)
 		{
-			return TEXT("TopBar/topbar_nav_hover.png");
+			return TEXT("Buttons/basic_button_hover.png");
 		}
-		return TEXT("TopBar/topbar_nav_normal.png");
+		return TEXT("Buttons/basic_button_normal.png");
 	}
 
 	FMargin GetButtonMargin(const ET66OverlayChromeButtonFamily Family)

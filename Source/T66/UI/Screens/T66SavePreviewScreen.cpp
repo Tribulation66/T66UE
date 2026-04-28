@@ -68,7 +68,7 @@ namespace
 
 	const TCHAR* GetSavePreviewButtonPrefix(const ET66ButtonType /*Type*/)
 	{
-		return TEXT("topbar_nav");
+		return TEXT("basic_button");
 	}
 
 	FSavePreviewReferenceButtonBrushSet& GetSavePreviewButtonBrushSet(const ET66ButtonType Type)
@@ -120,7 +120,7 @@ namespace
 			: State;
 		return ResolveSavePreviewBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/%s_%s.png"), Prefix, *AssetState),
+			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, *AssetState),
 			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 			DebugLabel);
 	}
@@ -149,7 +149,7 @@ namespace
 			{
 				StyleEntry.Style.SetPressed(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Disabled, TEXT("topbar_nav"), TEXT("disabled"), TEXT("SavePreviewButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Disabled, TEXT("basic_button"), TEXT("disabled"), TEXT("SavePreviewButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}

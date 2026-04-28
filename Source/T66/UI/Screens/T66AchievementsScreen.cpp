@@ -131,7 +131,7 @@ namespace
 		const FString Name(FileName);
 		const auto TopBarPath = [](const TCHAR* State) -> FString
 		{
-			return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_%s.png"), State);
+			return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_%s.png"), State);
 		};
 
 		if (Name.StartsWith(TEXT("settings_toggle_on_")))
@@ -182,7 +182,7 @@ namespace
 		{
 			return FMargin(0.25f, 0.45f, 0.25f, 0.45f);
 		}
-		if (SourceRelativePath.Contains(TEXT("topbar_nav_")))
+		if (SourceRelativePath.Contains(TEXT("basic_button_")))
 		{
 			return FMargin(0.093f, 0.213f, 0.093f, 0.213f);
 		}

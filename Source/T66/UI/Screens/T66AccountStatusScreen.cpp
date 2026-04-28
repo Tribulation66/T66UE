@@ -163,13 +163,13 @@ namespace
 		case ET66ButtonType::Primary:
 		case ET66ButtonType::Success:
 		case ET66ButtonType::ToggleActive:
-			return TEXT("TopBar/topbar_nav");
+			return TEXT("Buttons/basic_button");
 		case ET66ButtonType::Danger:
-			return TEXT("TopBar/topbar_nav");
+			return TEXT("Buttons/basic_button");
 		case ET66ButtonType::Neutral:
 		case ET66ButtonType::Row:
 		default:
-			return TEXT("TopBar/topbar_nav");
+			return TEXT("Buttons/basic_button");
 		}
 	}
 
@@ -262,7 +262,7 @@ namespace
 					StyleEntry.Style.SetHovered(*Brush);
 				}
 			}
-			if (const FSlateBrush* Brush = ResolveAccountReferenceButtonBrush(BrushSet.Disabled, TEXT("TopBar/topbar_nav"), TEXT("disabled"), TEXT("AccountButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolveAccountReferenceButtonBrush(BrushSet.Disabled, TEXT("Buttons/basic_button"), TEXT("disabled"), TEXT("AccountButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}

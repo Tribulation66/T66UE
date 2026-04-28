@@ -149,7 +149,7 @@ namespace
 			StateSuffix = TEXT("pressed");
 		}
 
-		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_%s.png"), StateSuffix);
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_%s.png"), StateSuffix);
 	}
 
 	FMargin GetCompanionReferenceButtonMargin(const ET66CompanionReferenceButtonFamily /*Family*/)

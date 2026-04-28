@@ -91,7 +91,7 @@ namespace
 		{
 			return (Family == ET66CompanionGridPlateFamily::TileNeutral || Family == ET66CompanionGridPlateFamily::TileSelected)
 				? TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png")
-				: TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_disabled.png");
+				: TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png");
 		}
 
 		if (Family == ET66CompanionGridPlateFamily::TileSelected)
@@ -115,7 +115,7 @@ namespace
 		const TCHAR* Suffix = State == ET66CompanionGridPlateState::Pressed
 			? TEXT("pressed")
 			: (State == ET66CompanionGridPlateState::Hovered ? TEXT("hover") : TEXT("normal"));
-		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_%s.png"), Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_%s.png"), Suffix);
 	}
 
 	FMargin GetCompanionGridPlateMargin(const ET66CompanionGridPlateFamily Family, const ET66CompanionGridPlateState /*State*/)

@@ -969,10 +969,10 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 	constexpr const TCHAR* TopBarSquarePressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_square_pressed.png");
 	constexpr const TCHAR* TopBarSquareDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_square_disabled.png");
 	constexpr const TCHAR* HomeSquareCropPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/home_square_chad_crop.png");
-	constexpr const TCHAR* TopBarNavNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_normal.png");
-	constexpr const TCHAR* TopBarNavHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_hover.png");
-	constexpr const TCHAR* TopBarNavPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_pressed.png");
-	constexpr const TCHAR* TopBarNavDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_disabled.png");
+	constexpr const TCHAR* TopBarNavNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png");
+	constexpr const TCHAR* TopBarNavHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png");
+	constexpr const TCHAR* TopBarNavPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png");
+	constexpr const TCHAR* TopBarNavDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png");
 	constexpr const TCHAR* TopBarCurrencyNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_currency_normal.png");
 	constexpr const TCHAR* TopBarCurrencyHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_currency_hover.png");
 	constexpr const TCHAR* TopBarCurrencyPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_currency_pressed.png");

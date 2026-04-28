@@ -132,7 +132,7 @@ namespace
 		{
 			return ResolveSaveFlowBrush(
 				Disabled,
-				TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_disabled.png"),
+				TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"),
 				FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 				TEXT("SaveSlotsButtonDisabled"));
 		}
@@ -141,7 +141,7 @@ namespace
 		{
 			return ResolveSaveFlowBrush(
 				Primary,
-				TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_pressed.png"),
+				TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png"),
 				FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 				TEXT("SaveSlotsButtonPrimary"));
 		}
@@ -150,14 +150,14 @@ namespace
 		{
 			return ResolveSaveFlowBrush(
 				Danger,
-				TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_pressed.png"),
+				TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png"),
 				FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 				TEXT("SaveSlotsButtonDanger"));
 		}
 
 		return ResolveSaveFlowBrush(
 			Neutral,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png"),
 			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 			TEXT("SaveSlotsButtonNeutral"));
 	}

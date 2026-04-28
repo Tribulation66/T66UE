@@ -413,7 +413,7 @@ namespace T66HeroSelectionPrivate
 			Suffix = TEXT("pressed");
 		}
 
-		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_%s.png"), Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_%s.png"), Suffix);
 	}
 
 	inline FVector2D GetHeroSelectionButtonSpriteSize(ET66HeroSpriteFamily /*Family*/, ET66ButtonBorderState /*State*/)
@@ -446,7 +446,7 @@ namespace T66HeroSelectionPrivate
 		FHeroSelectionSpriteBrushSet& Set = GetHeroSelectionButtonSpriteSet(ET66HeroSpriteFamily::ToggleInactive);
 		return ResolveHeroSelectionSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_nav_disabled.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"),
 			FVector2D(270.f, 88.f),
 			FMargin(0.093f, 0.213f, 0.093f, 0.213f));
 	}
