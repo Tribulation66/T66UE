@@ -292,7 +292,7 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_summary_surface_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(1680.f, 860.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			ESlateBrushDrawType::Box);
@@ -303,7 +303,7 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_summary_row_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
 			FVector2D(1180.f, 86.f),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			ESlateBrushDrawType::Box);
@@ -311,35 +311,16 @@ namespace
 
 	FString GetRunSummaryButtonPath(const ET66RunSummaryButtonFamily Family, const ET66RunSummaryButtonState State)
 	{
-		if (Family == ET66RunSummaryButtonFamily::CtaGreen || Family == ET66RunSummaryButtonFamily::CtaBlue)
-		{
-			const TCHAR* Prefix = Family == ET66RunSummaryButtonFamily::CtaGreen
-				? TEXT("runflow_cta_primary")
-				: TEXT("runflow_cta_blue");
-			const TCHAR* Suffix = TEXT("normal");
-			if (State == ET66RunSummaryButtonState::Hovered)
-			{
-				Suffix = TEXT("hover");
-			}
-			else if (State == ET66RunSummaryButtonState::Pressed)
-			{
-				Suffix = TEXT("pressed");
-			}
-			return FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/%s_%s.png"), Prefix, Suffix);
-		}
-
-		const TCHAR* Prefix = TEXT("runflow_button_neutral");
-		if (Family == ET66RunSummaryButtonFamily::ToggleOn)
-		{
-			Prefix = TEXT("runflow_button_primary");
-		}
-		else if (Family == ET66RunSummaryButtonFamily::ToggleOff)
-		{
-			Prefix = TEXT("runflow_button_danger");
-		}
-
+		const bool bCta = Family == ET66RunSummaryButtonFamily::CtaGreen || Family == ET66RunSummaryButtonFamily::CtaBlue;
+		const TCHAR* Prefix = bCta
+			? TEXT("central_button")
+			: (Family == ET66RunSummaryButtonFamily::ToggleOn ? TEXT("select_button") : TEXT("basic_button"));
 		const TCHAR* Suffix = TEXT("normal");
-		if (State == ET66RunSummaryButtonState::Hovered)
+		if (Family == ET66RunSummaryButtonFamily::ToggleOn && State == ET66RunSummaryButtonState::Normal)
+		{
+			Suffix = TEXT("selected");
+		}
+		else if (State == ET66RunSummaryButtonState::Hovered)
 		{
 			Suffix = TEXT("hover");
 		}
@@ -347,7 +328,7 @@ namespace
 		{
 			Suffix = TEXT("pressed");
 		}
-		return FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/%s_%s.png"), Prefix, Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, Suffix);
 	}
 
 	FVector2D GetRunSummaryButtonSize(const ET66RunSummaryButtonFamily Family, const ET66RunSummaryButtonState State)

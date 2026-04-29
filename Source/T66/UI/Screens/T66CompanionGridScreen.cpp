@@ -90,26 +90,26 @@ namespace
 		if (State == ET66CompanionGridPlateState::Disabled)
 		{
 			return (Family == ET66CompanionGridPlateFamily::TileNeutral || Family == ET66CompanionGridPlateFamily::TileSelected)
-				? TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png")
+				? TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png")
 				: TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png");
 		}
 
 		if (Family == ET66CompanionGridPlateFamily::TileSelected)
 		{
-			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png");
+			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
 		}
 
 		if (Family == ET66CompanionGridPlateFamily::TileNeutral)
 		{
 			if (State == ET66CompanionGridPlateState::Hovered)
 			{
-				return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png");
+				return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
 			}
 			if (State == ET66CompanionGridPlateState::Pressed)
 			{
-				return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png");
+				return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
 			}
-			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png");
+			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
 		}
 
 		const TCHAR* Suffix = State == ET66CompanionGridPlateState::Pressed
@@ -122,7 +122,7 @@ namespace
 	{
 		if (Family == ET66CompanionGridPlateFamily::TileNeutral || Family == ET66CompanionGridPlateFamily::TileSelected)
 		{
-			return FMargin(0.052f, 0.094f, 0.052f, 0.094f);
+			return FMargin(0.067f, 0.043f, 0.067f, 0.043f);
 		}
 		return FMargin(0.093f, 0.213f, 0.093f, 0.213f);
 	}
@@ -158,7 +158,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("CompanionGridModalShell"));
 	}
@@ -168,7 +168,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/avatar_slot_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
 			FMargin(0.20f, 0.20f, 0.20f, 0.20f),
 			TEXT("CompanionGridAvatarFrame"));
 	}

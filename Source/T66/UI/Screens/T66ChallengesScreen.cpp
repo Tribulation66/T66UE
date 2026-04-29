@@ -167,7 +167,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_panel_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			ESlateBrushDrawType::Box);
@@ -178,7 +178,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_row_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
 			FVector2D(861.f, 74.f),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			ESlateBrushDrawType::Box);
@@ -186,22 +186,13 @@ namespace
 
 	FString GetChallengeButtonPath(const ET66ChallengeButtonFamily Family, const ET66ChallengeButtonState State)
 	{
-		const TCHAR* Prefix = TEXT("runflow_button_neutral");
-		if (Family == ET66ChallengeButtonFamily::ToggleOn)
-		{
-			Prefix = TEXT("runflow_button_primary");
-		}
-		else if (Family == ET66ChallengeButtonFamily::ToggleOff)
-		{
-			Prefix = TEXT("runflow_button_danger");
-		}
-		else if (Family == ET66ChallengeButtonFamily::ToggleInactive)
-		{
-			Prefix = TEXT("runflow_button_neutral");
-		}
-
+		const TCHAR* Prefix = Family == ET66ChallengeButtonFamily::ToggleOn ? TEXT("select_button") : TEXT("basic_button");
 		const TCHAR* Suffix = TEXT("normal");
-		if (State == ET66ChallengeButtonState::Hovered)
+		if (Family == ET66ChallengeButtonFamily::ToggleOn && State == ET66ChallengeButtonState::Normal)
+		{
+			Suffix = TEXT("selected");
+		}
+		else if (State == ET66ChallengeButtonState::Hovered)
 		{
 			Suffix = TEXT("hover");
 		}
@@ -210,7 +201,7 @@ namespace
 			Suffix = TEXT("pressed");
 		}
 
-		return FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/%s_%s.png"), Prefix, Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, Suffix);
 	}
 
 	FVector2D GetChallengeButtonSize(const ET66ChallengeButtonFamily Family, const ET66ChallengeButtonState State)

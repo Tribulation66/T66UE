@@ -34,13 +34,12 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildRetroFXTab()
 
 	auto MakeNumericRow = [](const FText& Label, const FText& Description, TFunction<float()> GetPercent, TFunction<void(float)> SetPercent) -> TSharedRef<SWidget>
 	{
-		return MakeSettingsPercentEntryRow(
+		return MakeSettingsPercentSliderRow(
 			Label,
 			Description,
 			MoveTemp(GetPercent),
 			MoveTemp(SetPercent),
-			NSLOCTEXT("T66.Settings", "RetroFXPercentHint", "0-100"),
-			NSLOCTEXT("T66.Settings", "RetroFXNumericHint", "Enter a value from 0 to 100."));
+			NSLOCTEXT("T66.Settings", "RetroFXSliderHint", "Slide from 0 to 100."));
 	};
 
 	FSettingsBoolToggleStyle RetroToggleStyle;
@@ -105,7 +104,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildRetroFXTab()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 14.0f)
 			[
 				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.Settings", "RetroFXBodyExpanded", "This panel drives the currently wired UE5RFX screen-space stack and the safe retro geometry swap path for T66's world and character unlit materials. Scalar settings use direct 0-100 numeric input, while binary settings use ON and OFF toggles. The master toggle disables the entire Retro FX stack without erasing your saved values. PS1 sub-settings require PS1 Master Blend above 0 to show on screen."))
+				.Text(NSLOCTEXT("T66.Settings", "RetroFXBodyExpanded", "This panel drives the currently wired UE5RFX screen-space stack and the safe retro geometry swap path for T66's world and character unlit materials. Scalar settings use stepped 0-100 sliders, while binary settings use ON and OFF toggles. The master toggle disables the entire Retro FX stack without erasing your saved values. PS1 sub-settings require PS1 Master Blend above 0 to show on screen."))
 				.Font(SettingsRegularFont(16))
 				.ColorAndOpacity(GetSettingsPageMuted())
 				.AutoWrapText(true)

@@ -380,8 +380,10 @@ namespace
 			, _HoverBrush(nullptr)
 			, _PressedBrush(nullptr)
 			, _DisabledBrush(nullptr)
+			, _SelectedBrush(nullptr)
 			, _ButtonStyle(nullptr)
 			, _ContentPadding(FMargin(0.f))
+			, _IsSelected(false)
 			, _FallbackOuterColor(FLinearColor::White)
 			, _FallbackMidColor(FLinearColor::White)
 			, _FallbackInnerColor(FLinearColor::White)
@@ -390,8 +392,10 @@ namespace
 			SLATE_ARGUMENT(const FSlateBrush*, HoverBrush)
 			SLATE_ARGUMENT(const FSlateBrush*, PressedBrush)
 			SLATE_ARGUMENT(const FSlateBrush*, DisabledBrush)
+			SLATE_ARGUMENT(const FSlateBrush*, SelectedBrush)
 			SLATE_ARGUMENT(const FButtonStyle*, ButtonStyle)
 			SLATE_ARGUMENT(FMargin, ContentPadding)
+			SLATE_ARGUMENT(bool, IsSelected)
 			SLATE_ARGUMENT(FLinearColor, FallbackOuterColor)
 			SLATE_ARGUMENT(FLinearColor, FallbackMidColor)
 			SLATE_ARGUMENT(FLinearColor, FallbackInnerColor)
@@ -406,7 +410,9 @@ namespace
 			HoverBrush = InArgs._HoverBrush;
 			PressedBrush = InArgs._PressedBrush;
 			DisabledBrush = InArgs._DisabledBrush;
+			SelectedBrush = InArgs._SelectedBrush;
 			ContentPadding = InArgs._ContentPadding;
+			bIsSelected = InArgs._IsSelected;
 			FallbackOuterColor = InArgs._FallbackOuterColor;
 			FallbackMidColor = InArgs._FallbackMidColor;
 			FallbackInnerColor = InArgs._FallbackInnerColor;
@@ -559,6 +565,11 @@ namespace
 				return PressedBrush;
 			}
 
+			if (bIsSelected && SelectedBrush)
+			{
+				return SelectedBrush;
+			}
+
 			if (Button->IsHovered() && HoverBrush)
 			{
 				return HoverBrush;
@@ -569,7 +580,7 @@ namespace
 
 		TSharedRef<SWidget> BuildPlateWidget()
 		{
-			if (NormalBrush || HoverBrush || PressedBrush || DisabledBrush)
+			if (NormalBrush || HoverBrush || PressedBrush || DisabledBrush || SelectedBrush)
 			{
 				return SNew(SImage)
 					.Image(this, &ST66TopBarStatefulButton::GetCurrentBrush);
@@ -596,8 +607,10 @@ namespace
 		const FSlateBrush* HoverBrush = nullptr;
 		const FSlateBrush* PressedBrush = nullptr;
 		const FSlateBrush* DisabledBrush = nullptr;
+		const FSlateBrush* SelectedBrush = nullptr;
 		FButtonStyle ButtonStyle;
 		FMargin ContentPadding = FMargin(0.f);
+		bool bIsSelected = false;
 		FLinearColor FallbackOuterColor = FLinearColor::White;
 		FLinearColor FallbackMidColor = FLinearColor::White;
 		FLinearColor FallbackInnerColor = FLinearColor::White;
@@ -798,6 +811,7 @@ namespace
 		OutSet.HoverBrush = SourceBrush;
 		OutSet.PressedBrush = SourceBrush;
 		OutSet.DisabledBrush = SourceBrush;
+		OutSet.SelectedBrush = SourceBrush;
 	}
 
 	void LoadButtonStateSetFromPaths(
@@ -805,6 +819,7 @@ namespace
 		const TArray<FString>& HoverPaths,
 		const TArray<FString>& PressedPaths,
 		const TArray<FString>& DisabledPaths,
+		const TArray<FString>& SelectedPaths,
 		UT66FrontendTopBarWidget::FPlateBrushSet& OutSet,
 		const FVector2D& DesiredSize = FVector2D::ZeroVector)
 	{
@@ -812,6 +827,7 @@ namespace
 		LoadLooseBrushFromCandidatePaths(HoverPaths, OutSet.HoverBrush, DesiredSize);
 		LoadLooseBrushFromCandidatePaths(PressedPaths, OutSet.PressedBrush, DesiredSize);
 		LoadLooseBrushFromCandidatePaths(DisabledPaths, OutSet.DisabledBrush, DesiredSize);
+		LoadLooseBrushFromCandidatePaths(SelectedPaths, OutSet.SelectedBrush, DesiredSize);
 
 		if (!OutSet.HoverBrush.IsValid())
 		{
@@ -827,6 +843,11 @@ namespace
 		{
 			OutSet.DisabledBrush = OutSet.NormalBrush;
 		}
+
+		if (!OutSet.SelectedBrush.IsValid())
+		{
+			OutSet.SelectedBrush = OutSet.PressedBrush.IsValid() ? OutSet.PressedBrush : OutSet.HoverBrush;
+		}
 	}
 
 	void ConfigureBoxBrush(const TSharedPtr<FSlateBrush>& Brush, const FMargin& Margin)
@@ -836,7 +857,12 @@ namespace
 			return;
 		}
 
-		Brush->DrawAs = ESlateBrushDrawType::Box;
+		const bool bUseImageDraw =
+			FMath::IsNearlyZero(Margin.Left)
+			&& FMath::IsNearlyZero(Margin.Top)
+			&& FMath::IsNearlyZero(Margin.Right)
+			&& FMath::IsNearlyZero(Margin.Bottom);
+		Brush->DrawAs = bUseImageDraw ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
 		Brush->Margin = Margin;
 	}
 
@@ -846,6 +872,7 @@ namespace
 		ConfigureBoxBrush(BrushSet.HoverBrush, Margin);
 		ConfigureBoxBrush(BrushSet.PressedBrush, Margin);
 		ConfigureBoxBrush(BrushSet.DisabledBrush, Margin);
+		ConfigureBoxBrush(BrushSet.SelectedBrush, Margin);
 	}
 
 	TSharedRef<SWidget> MakeWarmFallbackGlyph(const FText& Text, int32 FontSize)
@@ -909,6 +936,10 @@ UT66FrontendTopBarWidget::ETopBarSection UT66FrontendTopBarWidget::GetActiveSect
 	{
 	case ET66ScreenType::AccountStatus:
 		return ETopBarSection::AccountStatus;
+	case ET66ScreenType::Settings:
+		return ETopBarSection::Settings;
+	case ET66ScreenType::LanguageSelect:
+		return ETopBarSection::Language;
 	case ET66ScreenType::PowerUp:
 		return ETopBarSection::PowerUp;
 	case ET66ScreenType::Achievements:
@@ -964,19 +995,21 @@ void UT66FrontendTopBarWidget::NavigateWithTopBar(const ET66ScreenType TargetScr
 void UT66FrontendTopBarWidget::RequestTopBarAssets()
 {
 	constexpr const TCHAR* TopBarStripPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_strip_normal.png");
-	constexpr const TCHAR* TopBarSquareNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_square_normal.png");
-	constexpr const TCHAR* TopBarSquareHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_square_hover.png");
-	constexpr const TCHAR* TopBarSquarePressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_square_pressed.png");
-	constexpr const TCHAR* TopBarSquareDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_square_disabled.png");
+	constexpr const TCHAR* BasicButtonNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png");
+	constexpr const TCHAR* BasicButtonHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png");
+	constexpr const TCHAR* BasicButtonPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png");
+	constexpr const TCHAR* BasicButtonDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png");
+	constexpr const TCHAR* SelectButtonNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_normal.png");
+	constexpr const TCHAR* SelectButtonHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_hover.png");
+	constexpr const TCHAR* SelectButtonPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_pressed.png");
+	constexpr const TCHAR* SelectButtonDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_disabled.png");
+	constexpr const TCHAR* SelectButtonSelectedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_selected.png");
+	constexpr const TCHAR* BorderlessIconNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/borderless_icon_button_normal.png");
+	constexpr const TCHAR* BorderlessIconHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/borderless_icon_button_hover.png");
+	constexpr const TCHAR* BorderlessIconPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/borderless_icon_button_pressed.png");
+	constexpr const TCHAR* BorderlessIconDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/borderless_icon_button_disabled.png");
+	constexpr const TCHAR* BorderlessIconSelectedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/borderless_icon_button_selected.png");
 	constexpr const TCHAR* HomeSquareCropPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/home_square_chad_crop.png");
-	constexpr const TCHAR* TopBarNavNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png");
-	constexpr const TCHAR* TopBarNavHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png");
-	constexpr const TCHAR* TopBarNavPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png");
-	constexpr const TCHAR* TopBarNavDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png");
-	constexpr const TCHAR* TopBarCurrencyNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_currency_normal.png");
-	constexpr const TCHAR* TopBarCurrencyHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_currency_hover.png");
-	constexpr const TCHAR* TopBarCurrencyPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_currency_pressed.png");
-	constexpr const TCHAR* TopBarCurrencyDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_currency_disabled.png");
 
 	LoadLooseBrushFromCandidatePaths(
 		{
@@ -986,87 +1019,98 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 	ConfigureBoxBrush(TopBarBackdropBrush, FMargin(0.030f, 0.306f, 0.030f, 0.306f));
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarSquareNormalPath },
-		{ TopBarSquareHoverPath },
-		{ TopBarSquarePressedPath },
-		{ TopBarSquareDisabledPath },
+		{ BorderlessIconNormalPath },
+		{ BorderlessIconHoverPath },
+		{ BorderlessIconPressedPath },
+		{ BorderlessIconDisabledPath },
+		{ BorderlessIconSelectedPath },
 		SettingsButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarSquareNormalPath },
-		{ TopBarSquareHoverPath },
-		{ TopBarSquarePressedPath },
-		{ TopBarSquareDisabledPath },
+		{ BorderlessIconNormalPath },
+		{ BorderlessIconHoverPath },
+		{ BorderlessIconPressedPath },
+		{ BorderlessIconDisabledPath },
+		{ BorderlessIconSelectedPath },
 		LanguageButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarNavNormalPath },
-		{ TopBarNavHoverPath },
-		{ TopBarNavPressedPath },
-		{ TopBarNavDisabledPath },
+		{ SelectButtonNormalPath },
+		{ SelectButtonHoverPath },
+		{ SelectButtonPressedPath },
+		{ SelectButtonDisabledPath },
+		{ SelectButtonSelectedPath },
 		AccountButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarSquareNormalPath },
-		{ TopBarSquareHoverPath },
-		{ TopBarSquarePressedPath },
-		{ TopBarSquareDisabledPath },
+		{ SelectButtonNormalPath },
+		{ SelectButtonHoverPath },
+		{ SelectButtonPressedPath },
+		{ SelectButtonDisabledPath },
+		{ SelectButtonSelectedPath },
 		HomeButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarNavNormalPath },
-		{ TopBarNavHoverPath },
-		{ TopBarNavPressedPath },
-		{ TopBarNavDisabledPath },
+		{ SelectButtonNormalPath },
+		{ SelectButtonHoverPath },
+		{ SelectButtonPressedPath },
+		{ SelectButtonDisabledPath },
+		{ SelectButtonSelectedPath },
 		NavButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarNavNormalPath },
-		{ TopBarNavHoverPath },
-		{ TopBarNavPressedPath },
-		{ TopBarNavDisabledPath },
+		{ SelectButtonNormalPath },
+		{ SelectButtonHoverPath },
+		{ SelectButtonPressedPath },
+		{ SelectButtonDisabledPath },
+		{ SelectButtonSelectedPath },
 		PowerUpButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarNavNormalPath },
-		{ TopBarNavHoverPath },
-		{ TopBarNavPressedPath },
-		{ TopBarNavDisabledPath },
+		{ SelectButtonNormalPath },
+		{ SelectButtonHoverPath },
+		{ SelectButtonPressedPath },
+		{ SelectButtonDisabledPath },
+		{ SelectButtonSelectedPath },
 		AchievementsButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarNavNormalPath },
-		{ TopBarNavHoverPath },
-		{ TopBarNavPressedPath },
-		{ TopBarNavDisabledPath },
+		{ SelectButtonNormalPath },
+		{ SelectButtonHoverPath },
+		{ SelectButtonPressedPath },
+		{ SelectButtonDisabledPath },
+		{ SelectButtonSelectedPath },
 		MiniGamesButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarSquareNormalPath },
-		{ TopBarSquareHoverPath },
-		{ TopBarSquarePressedPath },
-		{ TopBarSquareDisabledPath },
+		{ SelectButtonNormalPath },
+		{ SelectButtonHoverPath },
+		{ SelectButtonPressedPath },
+		{ SelectButtonDisabledPath },
+		{ SelectButtonSelectedPath },
 		PortraitButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarCurrencyNormalPath },
-		{ TopBarCurrencyHoverPath },
-		{ TopBarCurrencyPressedPath },
-		{ TopBarCurrencyDisabledPath },
+		{ BasicButtonNormalPath },
+		{ BasicButtonHoverPath },
+		{ BasicButtonPressedPath },
+		{ BasicButtonDisabledPath },
+		{ BasicButtonPressedPath },
 		CouponButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ TopBarSquareNormalPath },
-		{ TopBarSquareHoverPath },
-		{ TopBarSquarePressedPath },
-		{ TopBarSquareDisabledPath },
+		{ BorderlessIconNormalPath },
+		{ BorderlessIconHoverPath },
+		{ BorderlessIconPressedPath },
+		{ BorderlessIconDisabledPath },
+		{ BorderlessIconSelectedPath },
 		QuitButtonBrushes);
 
 	const FMargin SquareMargin(0.207f, 0.250f, 0.207f, 0.250f);
 	const FMargin NavMargin(0.104f, 0.250f, 0.104f, 0.250f);
-	const FMargin CurrencyMargin(0.156f, 0.250f, 0.156f, 0.250f);
-	ConfigureBoxBrushSet(SettingsButtonBrushes, SquareMargin);
-	ConfigureBoxBrushSet(LanguageButtonBrushes, SquareMargin);
+	const FMargin IconMargin(0.f);
+	ConfigureBoxBrushSet(SettingsButtonBrushes, IconMargin);
+	ConfigureBoxBrushSet(LanguageButtonBrushes, IconMargin);
 	ConfigureBoxBrushSet(AccountButtonBrushes, NavMargin);
 	ConfigureBoxBrushSet(HomeButtonBrushes, SquareMargin);
 	ConfigureBoxBrushSet(NavButtonBrushes, NavMargin);
@@ -1074,8 +1118,8 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 	ConfigureBoxBrushSet(AchievementsButtonBrushes, NavMargin);
 	ConfigureBoxBrushSet(MiniGamesButtonBrushes, NavMargin);
 	ConfigureBoxBrushSet(PortraitButtonBrushes, SquareMargin);
-	ConfigureBoxBrushSet(CouponButtonBrushes, CurrencyMargin);
-	ConfigureBoxBrushSet(QuitButtonBrushes, SquareMargin);
+	ConfigureBoxBrushSet(CouponButtonBrushes, NavMargin);
+	ConfigureBoxBrushSet(QuitButtonBrushes, IconMargin);
 
 	LoadLooseBrushFromCandidatePaths(
 		{
@@ -1125,6 +1169,7 @@ void UT66FrontendTopBarWidget::ReleaseTopBarBrushes()
 		ReleaseBrush(BrushSet.HoverBrush);
 		ReleaseBrush(BrushSet.PressedBrush);
 		ReleaseBrush(BrushSet.DisabledBrush);
+		ReleaseBrush(BrushSet.SelectedBrush);
 	};
 
 	ReleaseBrush(TopBarBackdropBrush);
@@ -1227,7 +1272,6 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 	const FLinearColor CurrencyOuter(0.73f, 0.54f, 0.24f, 1.0f);
 	const FLinearColor CurrencyMid(0.20f, 0.11f, 0.07f, 1.0f);
 	const FLinearColor CurrencyInner(0.32f, 0.21f, 0.12f, 1.0f);
-	const FPlateBrushSet NoPlateBrushes;
 	const FLinearColor TransparentPlate(0.f, 0.f, 0.f, 0.f);
 
 	auto MakeLabelWidget = [&NavFont, LabelColor, LabelShadowColor, LabelShadowOffset](const FText& Text) -> TSharedRef<SWidget>
@@ -1269,6 +1313,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			FReply (UT66FrontendTopBarWidget::*ClickFunc)(),
 			const TSharedRef<SWidget>& ContentWidget,
 			const FMargin& ContentPadding,
+			const bool bSelected,
 			const FLinearColor& OuterColor,
 			const FLinearColor& MidColor,
 			const FLinearColor& InnerColor) -> TSharedRef<SWidget>
@@ -1284,6 +1329,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				.HoverBrush(BrushSet.HoverBrush.Get())
 				.PressedBrush(BrushSet.PressedBrush.Get())
 				.DisabledBrush(BrushSet.DisabledBrush.Get())
+				.SelectedBrush(BrushSet.SelectedBrush.Get())
+				.IsSelected(bSelected)
 				.ToolTipText(TooltipText)
 				.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
 				.ContentPadding(ContentPadding)
@@ -1349,51 +1396,39 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			];
 	};
 
-	auto MakeSelectedBrushSet = [](const FPlateBrushSet& BrushSet) -> FPlateBrushSet
-	{
-		FPlateBrushSet SelectedBrushSet = BrushSet;
-		if (BrushSet.HoverBrush.IsValid())
-		{
-			SelectedBrushSet.NormalBrush = BrushSet.HoverBrush;
-		}
-		return SelectedBrushSet;
-	};
-
-	const FPlateBrushSet AccountBrushSet = ActiveSection == ETopBarSection::AccountStatus ? MakeSelectedBrushSet(AccountButtonBrushes) : AccountButtonBrushes;
-	const FPlateBrushSet PowerUpBrushSet = ActiveSection == ETopBarSection::PowerUp ? MakeSelectedBrushSet(PowerUpButtonBrushes) : PowerUpButtonBrushes;
-	const FPlateBrushSet AchievementsBrushSet = ActiveSection == ETopBarSection::Achievements ? MakeSelectedBrushSet(AchievementsButtonBrushes) : AchievementsButtonBrushes;
-	const FPlateBrushSet MiniGamesBrushSet = ActiveSection == ETopBarSection::MiniGames ? MakeSelectedBrushSet(MiniGamesButtonBrushes) : MiniGamesButtonBrushes;
-
 	const TSharedRef<SWidget> SettingsButtonWidget = MakePlateButton(
-		NoPlateBrushes,
+		SettingsButtonBrushes,
 		SettingsRect.Width,
 		SettingsRect.Height,
 		SettingsText,
 		&UT66FrontendTopBarWidget::HandleSettingsClicked,
 		SettingsIconWidget,
 		FMargin(0.f),
+		ActiveSection == ETopBarSection::Settings,
 		TransparentPlate,
 		TransparentPlate,
 		TransparentPlate);
 	const TSharedRef<SWidget> LanguageButtonWidget = MakePlateButton(
-		NoPlateBrushes,
+		LanguageButtonBrushes,
 		LanguageRect.Width,
 		LanguageRect.Height,
 		LanguageText,
 		&UT66FrontendTopBarWidget::HandleLanguageClicked,
 		LanguageIconWidget,
 		FMargin(0.f),
+		ActiveSection == ETopBarSection::Language,
 		TransparentPlate,
 		TransparentPlate,
 		TransparentPlate);
 	const TSharedRef<SWidget> AccountButtonWidget = MakePlateButton(
-		AccountBrushSet,
+		AccountButtonBrushes,
 		AccountRect.Width,
 		AccountRect.Height,
 		AccountText,
 		&UT66FrontendTopBarWidget::HandleAccountStatusClicked,
 		MakeLabelWidget(AccountText),
 		FMargin(0.f),
+		ActiveSection == ETopBarSection::AccountStatus,
 		AccountOuter,
 		AccountMid,
 		AccountInner);
@@ -1418,45 +1453,49 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				&UT66FrontendTopBarWidget::HandleHomeClicked,
 				HomeImageWidget,
 				FMargin(0.f),
+				ActiveSection == ETopBarSection::Home,
 				HomeOuter,
 				HomeMid,
 				HomeInner)
 		];
 	const TSharedRef<SWidget> PowerUpButtonWidget = MakePlateButton(
-		PowerUpBrushSet,
+		PowerUpButtonBrushes,
 		PowerUpRect.Width,
 		PowerUpRect.Height,
 		PowerUpText,
 		&UT66FrontendTopBarWidget::HandlePowerUpClicked,
 		MakeLabelWidget(PowerUpText),
 		FMargin(0.f),
+		ActiveSection == ETopBarSection::PowerUp,
 		NavOuter,
 		NavMid,
 		NavInner);
 	const TSharedRef<SWidget> AchievementsButtonWidget = MakePlateButton(
-		AchievementsBrushSet,
+		AchievementsButtonBrushes,
 		AchievementsRect.Width,
 		AchievementsRect.Height,
 		AchievementsText,
 		&UT66FrontendTopBarWidget::HandleAchievementsClicked,
 		MakeLabelWidget(AchievementsText),
 		FMargin(0.f),
+		ActiveSection == ETopBarSection::Achievements,
 		NavOuter,
 		NavMid,
 		NavInner);
 	const TSharedRef<SWidget> MiniGamesButtonWidget = MakePlateButton(
-		MiniGamesBrushSet,
+		MiniGamesButtonBrushes,
 		MiniGamesRect.Width,
 		MiniGamesRect.Height,
 		MiniGamesText,
 		&UT66FrontendTopBarWidget::HandleMiniGamesClicked,
 		MakeLabelWidget(MiniGamesText),
 		FMargin(0.f),
+		ActiveSection == ETopBarSection::MiniGames,
 		NavOuter,
 		NavMid,
 		NavInner);
 	const TSharedRef<SWidget> ChadCouponsWidget = MakePlateButton(
-		NoPlateBrushes,
+		CouponButtonBrushes,
 		CouponRect.Width,
 		CouponRect.Height,
 		NSLOCTEXT("T66.PowerUp", "ChadCouponsBalanceTooltip", "Chad Coupons"),
@@ -1474,17 +1513,19 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			CurrencyNavIcon,
 			CouponRect.Width),
 		FMargin(0.f),
+		ActiveSection == ETopBarSection::PowerUp,
 		TransparentPlate,
 		TransparentPlate,
 		TransparentPlate);
 	const TSharedRef<SWidget> QuitButtonWidget = MakePlateButton(
-		NoPlateBrushes,
+		QuitButtonBrushes,
 		QuitRect.Width,
 		QuitRect.Height,
 		QuitTooltipText,
 		&UT66FrontendTopBarWidget::HandleQuitClicked,
 		QuitIconWidget,
 		FMargin(0.f),
+		false,
 		TransparentPlate,
 		TransparentPlate,
 		TransparentPlate);

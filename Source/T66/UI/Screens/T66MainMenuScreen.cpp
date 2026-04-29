@@ -2090,7 +2090,7 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 		LeftPanelShellBrush,
 		LeftPanelShellTexture,
 		nullptr,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 		FVector2D(T66MainMenuReferenceLayout::Left::ShellFullReference.Width, T66MainMenuReferenceLayout::Left::ShellFullReference.Height));
 	ConfigureMainMenuBoxBrush(LeftPanelShellBrush, FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 
@@ -2098,7 +2098,7 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 		RightPanelShellBrush,
 		RightPanelShellTexture,
 		nullptr,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 		FVector2D(T66MainMenuReferenceLayout::Right::ShellFullReference.Width, T66MainMenuReferenceLayout::Right::ShellFullReference.Height));
 	ConfigureMainMenuBoxBrush(RightPanelShellBrush, FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 }
@@ -2140,7 +2140,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		FriendAvatarFrameBrush,
 		FriendAvatarFrameTexture,
 		nullptr,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/avatar_slot_normal.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
 		FVector2D(T66MainMenuReferenceLayout::Left::FriendAvatarFrameSource.Width, T66MainMenuReferenceLayout::Left::FriendAvatarFrameSource.Height));
 	ConfigureMainMenuBoxBrush(FriendAvatarFrameBrush, FMargin(0.205f, 0.205f, 0.205f, 0.205f));
 
@@ -2148,9 +2148,9 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		PartySlotFrameBrush,
 		PartySlotFrameTexture,
 		nullptr,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/party_slot_normal.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
 		FVector2D(T66MainMenuReferenceLayout::Left::PartySlotSource.Width, T66MainMenuReferenceLayout::Left::PartySlotSource.Height));
-	ConfigureMainMenuBoxBrush(PartySlotFrameBrush, FMargin(0.188f, 0.180f, 0.188f, 0.180f));
+	ConfigureMainMenuBoxBrush(PartySlotFrameBrush, FMargin(0.205f, 0.205f, 0.205f, 0.205f));
 
 	SetupT66MainMenuRuntimeImageBrush(
 		PartyPlusIconBrush,
@@ -2170,7 +2170,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		ProfileAvatarFrameBrush,
 		ProfileAvatarFrameTexture,
 		nullptr,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/avatar_slot_normal.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
 		FVector2D(101.f, 93.f));
 	ConfigureMainMenuBoxBrush(ProfileAvatarFrameBrush, FMargin(0.205f, 0.205f, 0.205f, 0.205f));
 
@@ -2210,74 +2210,74 @@ void UT66MainMenuScreen::RequestCTAButtonBrushes()
 	LoadBrush(
 		CenterStackFrameBrush,
 		CenterStackFrameTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaStackFull.Width, T66MainMenuReferenceLayout::Center::CtaStackFull.Height));
-	ConfigureMainMenuBoxBrush(CenterStackFrameBrush, FMargin(0.052f, 0.094f, 0.052f, 0.094f));
+	ConfigureMainMenuBoxBrush(CenterStackFrameBrush, FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 
 	LoadBrush(
 		NewGameButtonBrushes.NormalBrush,
 		NewGameButtonBrushes.NormalTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_normal.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Height));
 	LoadBrush(
 		NewGameButtonBrushes.HoverBrush,
 		NewGameButtonBrushes.HoverTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_hover.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Height));
 	LoadBrush(
 		NewGameButtonBrushes.PressedBrush,
 		NewGameButtonBrushes.PressedTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_pressed.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Height));
 	LoadBrush(
 		NewGameButtonBrushes.DisabledBrush,
 		NewGameButtonBrushes.DisabledTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_disabled.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Height));
 
 	LoadBrush(
 		LoadGameButtonBrushes.NormalBrush,
 		LoadGameButtonBrushes.NormalTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_normal.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Height));
 	LoadBrush(
 		LoadGameButtonBrushes.HoverBrush,
 		LoadGameButtonBrushes.HoverTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_hover.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Height));
 	LoadBrush(
 		LoadGameButtonBrushes.PressedBrush,
 		LoadGameButtonBrushes.PressedTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_pressed.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Height));
 	LoadBrush(
 		LoadGameButtonBrushes.DisabledBrush,
 		LoadGameButtonBrushes.DisabledTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_disabled.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Height));
 
 	LoadBrush(
 		DailyChallengeButtonBrushes.NormalBrush,
 		DailyChallengeButtonBrushes.NormalTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_normal.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Width, T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Height));
 	LoadBrush(
 		DailyChallengeButtonBrushes.HoverBrush,
 		DailyChallengeButtonBrushes.HoverTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_hover.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Width, T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Height));
 	LoadBrush(
 		DailyChallengeButtonBrushes.PressedBrush,
 		DailyChallengeButtonBrushes.PressedTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_pressed.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Width, T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Height));
 	LoadBrush(
 		DailyChallengeButtonBrushes.DisabledBrush,
 		DailyChallengeButtonBrushes.DisabledTexture,
-		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_disabled.png"),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Width, T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Height));
 
-	const FMargin CtaMargin(0.104f, 0.250f, 0.104f, 0.250f);
+	const FMargin CtaMargin(0.083f, 0.231f, 0.083f, 0.231f);
 	ConfigureMainMenuBoxBrush(NewGameButtonBrushes.NormalBrush, CtaMargin);
 	ConfigureMainMenuBoxBrush(NewGameButtonBrushes.HoverBrush, CtaMargin);
 	ConfigureMainMenuBoxBrush(NewGameButtonBrushes.PressedBrush, CtaMargin);

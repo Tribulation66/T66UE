@@ -116,15 +116,47 @@ namespace T66MiniUI
 		return FLinearColor(0.070f, 0.055f, 0.030f, 1.0f);
 	}
 
+	inline const TCHAR* MasterBasicPanelPath()
+	{
+		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
+	}
+
+	inline const TCHAR* MasterInnerPanelPath()
+	{
+		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png");
+	}
+
+	inline const TCHAR* MasterBasicButtonPath()
+	{
+		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png");
+	}
+
+	inline const TCHAR* MasterSelectedButtonPath()
+	{
+		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_selected.png");
+	}
+
+	inline const FMargin& MasterPanelMargin()
+	{
+		static const FMargin Margin(0.067f, 0.043f, 0.067f, 0.043f);
+		return Margin;
+	}
+
+	inline const FMargin& MasterButtonMargin()
+	{
+		static const FMargin Margin(0.104f, 0.250f, 0.104f, 0.250f);
+		return Margin;
+	}
+
 	inline const FSlateBrush* ContentShellBrush()
 	{
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_content_shell_frame.png")),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
-			TEXT("MiniContentShell"));
+			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterBasicPanelPath()),
+			MasterPanelMargin(),
+			TEXT("MiniMasterContentShell"));
 	}
 
 	inline const FSlateBrush* RowShellBrush()
@@ -133,40 +165,27 @@ namespace T66MiniUI
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_row_shell_full.png")),
-			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
-			TEXT("MiniRowShell"));
+			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterInnerPanelPath()),
+			MasterPanelMargin(),
+			TEXT("MiniMasterRowShell"));
 	}
 
 	inline const FSlateBrush* ButtonPlateBrush(const ET66ButtonType Type)
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush GreenEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush BlueEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush PurpleEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush BasicEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush SelectedEntry;
 
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush* Entry = &BlueEntry;
-		const TCHAR* RelativePath = TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_load_game_plate.png");
-		const TCHAR* DebugLabel = TEXT("MiniButtonBlue");
-
-		if (Type == ET66ButtonType::Success)
-		{
-			Entry = &GreenEntry;
-			RelativePath = TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_plate.png");
-			DebugLabel = TEXT("MiniButtonGreen");
-		}
-		else if (Type == ET66ButtonType::Primary || Type == ET66ButtonType::Danger)
-		{
-			Entry = &PurpleEntry;
-			RelativePath = TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_daily_challenge_plate.png");
-			DebugLabel = TEXT("MiniButtonPurple");
-		}
+		const bool bUseSelectedPlate = Type == ET66ButtonType::Success
+			|| Type == ET66ButtonType::Primary
+			|| Type == ET66ButtonType::ToggleActive;
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry = bUseSelectedPlate ? SelectedEntry : BasicEntry;
 
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			*Entry,
+			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
-			FMargin(0.18f, 0.32f, 0.18f, 0.32f),
-			DebugLabel);
+			T66RuntimeUITextureAccess::MakeProjectDirPath(bUseSelectedPlate ? MasterSelectedButtonPath() : MasterBasicButtonPath()),
+			MasterButtonMargin(),
+			bUseSelectedPlate ? TEXT("MiniMasterSelectedButton") : TEXT("MiniMasterBasicButton"));
 	}
 
 	inline TSharedRef<SWidget> MakeSpritePanel(const TSharedRef<SWidget>& Content, const FMargin& Padding, const bool bRow = false)
@@ -196,7 +215,7 @@ namespace T66MiniUI
 			.SetFontSize(FontSize)
 			.SetPadding(FMargin(14.f, 8.f, 14.f, 6.f))
 			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(true)
+			.SetUseDotaPlateOverlay(false)
 			.SetDotaPlateOverrideBrush(ButtonPlateBrush(Type))
 			.SetStateTextShadowColors(
 				FLinearColor(0.f, 0.f, 0.f, 0.44f),

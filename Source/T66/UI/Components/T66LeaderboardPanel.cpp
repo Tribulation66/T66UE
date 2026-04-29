@@ -54,7 +54,7 @@ namespace
 	const FVector2D ReferenceAvatarFrameSize(42.0f, 42.0f);
 	const FVector2D ReferenceAvatarInsetSize(32.0f, 32.0f);
 	const FLinearColor ReferenceLeaderboardText(0.953f, 0.925f, 0.835f, 1.0f);
-	const FLinearColor ReferenceLeaderboardRowText(FLinearColor::White);
+	const FLinearColor ReferenceLeaderboardRowText(0.953f, 0.925f, 0.835f, 1.0f);
 	const FLinearColor ReferenceLeaderboardMuted(0.738f, 0.708f, 0.648f, 1.0f);
 	const FLinearColor ReferenceMainMenuSubtitleText(0.48f, 0.04f, 0.82f, 1.0f);
 
@@ -544,12 +544,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			TEXT("LBMasterFilterStreamersIcon"));
 		const FSlateBrush* ReferenceWideTabSelectedBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceTabWeeklyActiveBrush,
-			TEXT("Tabs/wide_tab_selected.png"),
+			TEXT("Buttons/basic_button_pressed.png"),
 			WideTabMargin,
 			TEXT("LBMasterWeekly"));
 		const FSlateBrush* ReferenceWideTabNormalBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceTabAllTimeInactiveBrush,
-			TEXT("Tabs/wide_tab_normal.png"),
+			TEXT("Buttons/basic_button_normal.png"),
 			WideTabMargin,
 			TEXT("LBMasterAllTime"));
 		const FSlateBrush* ReferenceLeftDropdownBrush = ResolveMasterLibrarySliceBrush(
@@ -579,7 +579,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			TEXT("LBMasterToggleSpeedRun"));
 		ResolveMasterLibrarySliceBrush(
 			ReferenceAvatarFrameBrush,
-			TEXT("Slots/avatar_slot_normal.png"),
+			TEXT("Slots/basic_slot_normal.png"),
 			AvatarSlotMargin,
 			TEXT("LBMasterAvatarFrame"));
 		const FSlateBrush* ReferenceAvatarFallback01 = ResolveReferenceRightPanelBrush(
@@ -920,12 +920,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 									const TSharedPtr<FString> Captured = Opt;
 									Box->AddSlot().AutoHeight()
 									[
-										FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
+										FT66Style::MakeDropdownOptionButton(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
 										{
 											OnPartySizeChanged(Captured, ESelectInfo::Direct);
 											FSlateApplication::Get().DismissAllMenus();
 											return FReply::Handled();
-										}), ET66ButtonType::Neutral).SetMinWidth(0.f).SetFontWeight(TEXT("Regular")))
+										}), GetPartySizeText(CurrentPartySize).ToString().Equals(*Opt), 0.f, 34.f, 14)
 									];
 								}
 								return Box;
@@ -950,12 +950,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 									const TSharedPtr<FString> Captured = Opt;
 									Box->AddSlot().AutoHeight()
 									[
-										FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
+										FT66Style::MakeDropdownOptionButton(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
 										{
 											OnDifficultyChanged(Captured, ESelectInfo::Direct);
 											FSlateApplication::Get().DismissAllMenus();
 											return FReply::Handled();
-										}), ET66ButtonType::Neutral).SetMinWidth(0.f).SetFontWeight(TEXT("Regular")))
+										}), GetDifficultyText(CurrentDifficulty).ToString().Equals(*Opt), 0.f, 34.f, 14)
 									];
 								}
 								return Box;
@@ -1394,12 +1394,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 										TSharedPtr<FString> Captured = Opt;
 										Box->AddSlot().AutoHeight()
 											[
-												FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
+												FT66Style::MakeDropdownOptionButton(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
 												{
 													OnPartySizeChanged(Captured, ESelectInfo::Direct);
 													FSlateApplication::Get().DismissAllMenus();
 													return FReply::Handled();
-												}), ET66ButtonType::Neutral).SetMinWidth(0.f).SetFontWeight(TEXT("Regular")))
+												}), GetPartySizeText(CurrentPartySize).ToString().Equals(*Opt), 0.f, 34.f, 14)
 											];
 									}
 									return Box;
@@ -1424,12 +1424,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 										TSharedPtr<FString> Captured = Opt;
 										Box->AddSlot().AutoHeight()
 											[
-												FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
+												FT66Style::MakeDropdownOptionButton(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
 												{
 													OnDifficultyChanged(Captured, ESelectInfo::Direct);
 													FSlateApplication::Get().DismissAllMenus();
 													return FReply::Handled();
-												}), ET66ButtonType::Neutral).SetMinWidth(0.f).SetFontWeight(TEXT("Regular")))
+												}), GetDifficultyText(CurrentDifficulty).ToString().Equals(*Opt), 0.f, 34.f, 14)
 											];
 									}
 									return Box;

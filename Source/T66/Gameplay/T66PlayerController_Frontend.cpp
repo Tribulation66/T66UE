@@ -12,14 +12,17 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66ScreenBase.h"
+#include "UI/Screens/T66MainMenuScreen.h"
 #include "UI/Screens/T66HeroSelectionScreen.h"
 #include "UI/Screens/T66HeroGridScreen.h"
+#include "UI/Screens/T66CompanionSelectionScreen.h"
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66SaveSlotsScreen.h"
 #include "UI/Screens/T66AchievementsScreen.h"
 #include "UI/Screens/T66PauseMenuScreen.h"
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/Screens/T66SettingsScreen.h"
+#include "UI/Screens/T66QuitConfirmationModal.h"
 #include "UI/Screens/T66LanguageSelectScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
@@ -580,13 +583,17 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66HeroSelectionScreen::StaticClass();
 	}
 
-	if (const TSubclassOf<UT66ScreenBase>* ScreenClass = ScreenClasses.Find(ScreenType))
+	if (const TSubclassOf<UT66ScreenBase>* ScreenClass = RuntimeScreenClasses.Find(ScreenType))
 	{
 		return *ScreenClass;
 	}
 
 	switch (ScreenType)
 	{
+	case ET66ScreenType::MainMenu:
+		return UT66MainMenuScreen::StaticClass();
+	case ET66ScreenType::CompanionSelection:
+		return UT66CompanionSelectionScreen::StaticClass();
 	case ET66ScreenType::HeroGrid:
 		return UT66HeroGridScreen::StaticClass();
 	case ET66ScreenType::CompanionGrid:
@@ -595,6 +602,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66SaveSlotsScreen::StaticClass();
 	case ET66ScreenType::PauseMenu:
 		return UT66PauseMenuScreen::StaticClass();
+	case ET66ScreenType::QuitConfirmation:
+		return UT66QuitConfirmationModal::StaticClass();
 	case ET66ScreenType::Achievements:
 		return UT66AchievementsScreen::StaticClass();
 	case ET66ScreenType::Minigames:
@@ -804,72 +813,35 @@ void AT66PlayerController::CloseDevConsole()
 
 void AT66PlayerController::AutoLoadScreenClasses()
 {
-	// Screen type to asset path mapping
-	struct FScreenPathMapping
+	struct FNativeScreenMapping
 	{
 		ET66ScreenType Type;
-		const TCHAR* AssetPath;
+		TSubclassOf<UT66ScreenBase> ScreenClass;
 	};
 
-	static const FScreenPathMapping ScreenPaths[] = {
-		{ ET66ScreenType::MainMenu, TEXT("/Game/Blueprints/UI/WBP_MainMenu.WBP_MainMenu_C") },
-		{ ET66ScreenType::CompanionSelection, TEXT("/Game/Blueprints/UI/WBP_CompanionSelection.WBP_CompanionSelection_C") },
-		{ ET66ScreenType::SaveSlots, TEXT("/Game/Blueprints/UI/WBP_SaveSlots.WBP_SaveSlots_C") },
-		{ ET66ScreenType::Settings, TEXT("/Game/Blueprints/UI/WBP_Settings.WBP_Settings_C") },
-		{ ET66ScreenType::QuitConfirmation, TEXT("/Game/Blueprints/UI/WBP_QuitConfirmation.WBP_QuitConfirmation_C") },
+	static const FNativeScreenMapping NativeScreens[] = {
+		{ ET66ScreenType::MainMenu, UT66MainMenuScreen::StaticClass() },
+		{ ET66ScreenType::HeroSelection, UT66HeroSelectionScreen::StaticClass() },
+		{ ET66ScreenType::CompanionSelection, UT66CompanionSelectionScreen::StaticClass() },
+		{ ET66ScreenType::SaveSlots, UT66SaveSlotsScreen::StaticClass() },
+		{ ET66ScreenType::Settings, UT66SettingsScreen::StaticClass() },
+		{ ET66ScreenType::QuitConfirmation, UT66QuitConfirmationModal::StaticClass() },
+		{ ET66ScreenType::HeroGrid, UT66HeroGridScreen::StaticClass() },
+		{ ET66ScreenType::CompanionGrid, UT66CompanionGridScreen::StaticClass() },
 	};
 
-	for (const auto& Mapping : ScreenPaths)
+	for (const FNativeScreenMapping& Mapping : NativeScreens)
 	{
-		// Skip if already registered
-		if (ScreenClasses.Contains(Mapping.Type) && ScreenClasses[Mapping.Type] != nullptr)
+		if (RuntimeScreenClasses.Contains(Mapping.Type) && RuntimeScreenClasses[Mapping.Type] != nullptr)
 		{
 			continue;
 		}
 
-		// Try to load the class
-		UClass* LoadedClass = LoadClass<UT66ScreenBase>(nullptr, Mapping.AssetPath);
-		if (LoadedClass)
+		if (Mapping.ScreenClass)
 		{
-			ScreenClasses.Add(Mapping.Type, LoadedClass);
-			UE_LOG(LogT66Frontend, Log, TEXT("Auto-loaded screen class: %s"), Mapping.AssetPath);
+			RuntimeScreenClasses.Add(Mapping.Type, Mapping.ScreenClass);
+			UE_LOG(LogT66Frontend, Log, TEXT("Registered native screen class for type %d"), static_cast<int32>(Mapping.Type));
 		}
-		else
-		{
-			if (Mapping.Type == ET66ScreenType::HeroGrid)
-			{
-				ScreenClasses.Add(ET66ScreenType::HeroGrid, UT66HeroGridScreen::StaticClass());
-				UE_LOG(LogT66Frontend, Log, TEXT("Using C++ HeroGrid screen (WBP not found)"));
-			}
-			else if (Mapping.Type == ET66ScreenType::CompanionGrid)
-			{
-				ScreenClasses.Add(ET66ScreenType::CompanionGrid, UT66CompanionGridScreen::StaticClass());
-				UE_LOG(LogT66Frontend, Log, TEXT("Using C++ CompanionGrid screen (WBP not found)"));
-			}
-			else if (Mapping.Type == ET66ScreenType::SaveSlots)
-			{
-				ScreenClasses.Add(ET66ScreenType::SaveSlots, UT66SaveSlotsScreen::StaticClass());
-				UE_LOG(LogT66Frontend, Log, TEXT("Using C++ SaveSlots screen (WBP not found)"));
-			}
-			else
-			{
-				UE_LOG(LogT66Frontend, Warning, TEXT("Failed to auto-load screen class: %s"), Mapping.AssetPath);
-			}
-		}
-	}
-
-	// HeroGrid/CompanionGrid are C++ screens by design (no optional WBP overrides).
-	if (!ScreenClasses.Contains(ET66ScreenType::HeroSelection) || ScreenClasses[ET66ScreenType::HeroSelection] == nullptr)
-	{
-		ScreenClasses.Add(ET66ScreenType::HeroSelection, UT66HeroSelectionScreen::StaticClass());
-	}
-	if (!ScreenClasses.Contains(ET66ScreenType::HeroGrid) || ScreenClasses[ET66ScreenType::HeroGrid] == nullptr)
-	{
-		ScreenClasses.Add(ET66ScreenType::HeroGrid, UT66HeroGridScreen::StaticClass());
-	}
-	if (!ScreenClasses.Contains(ET66ScreenType::CompanionGrid) || ScreenClasses[ET66ScreenType::CompanionGrid] == nullptr)
-	{
-		ScreenClasses.Add(ET66ScreenType::CompanionGrid, UT66CompanionGridScreen::StaticClass());
 	}
 }
 
@@ -1168,7 +1140,7 @@ void AT66PlayerController::InitializeUI()
 	UIManager->Initialize(this);
 
 	// Register all screen classes
-	for (const auto& Pair : ScreenClasses)
+	for (const auto& Pair : RuntimeScreenClasses)
 	{
 		if (TSubclassOf<UT66ScreenBase> ResolvedClass = ResolveScreenClass(Pair.Key))
 		{

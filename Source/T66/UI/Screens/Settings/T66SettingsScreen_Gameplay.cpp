@@ -149,8 +149,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 			{
 				Box->AddSlot().AutoHeight()
 				[
-					MakeSettingsButton(
-						FT66ButtonParams(Label, FOnClicked::CreateLambda([this, SetSelection, OptionSelection, GetCurrentValue, CurrentValueText]()
+					FT66Style::MakeDropdownOptionButton(
+						Label,
+						FOnClicked::CreateLambda([this, SetSelection, OptionSelection, GetCurrentValue, CurrentValueText]()
 						{
 							SetSelection(OptionSelection);
 							if (CurrentValueText.IsValid())
@@ -159,9 +160,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 							}
 							FSlateApplication::Get().DismissAllMenus();
 							return FReply::Handled();
-						}), ET66ButtonType::Neutral)
-						.SetMinWidth(0.f)
-						.SetFontWeight(TEXT("Regular")))
+						}),
+						GetCurrentValue().EqualTo(Label),
+						0.f,
+						34.f,
+						14)
 				];
 			};
 
@@ -341,13 +344,12 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
-				MakeSettingsPercentEntryRow(
+				MakeSettingsPercentSliderRow(
 					NSLOCTEXT("T66.Settings", "NativeFogIntensityLabel", "Native Fog Intensity"),
 					NSLOCTEXT("T66.Settings", "NativeFogIntensityBody", "Controls the strength of the gameplay haze from 0 to 100. 0 disables native fog entirely, 100 is intentionally very heavy."),
 					[PS]() { return PS ? PS->GetFogIntensityPercent() : 55.0f; },
 					[PS](float Value) { if (PS) PS->SetFogIntensityPercent(Value); },
-					NSLOCTEXT("T66.Settings", "GameplayNumericHint", "0-100"),
-					NSLOCTEXT("T66.Settings", "GameplayNumericHelp", "Enter a value from 0 to 100.")
+					NSLOCTEXT("T66.Settings", "GameplayPercentSliderHelp", "Slide from 0 to 100.")
 				)
 			]
 		];

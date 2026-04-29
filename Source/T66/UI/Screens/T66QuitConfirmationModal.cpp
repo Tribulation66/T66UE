@@ -20,7 +20,7 @@ namespace
 {
 	constexpr float QuitModalButtonHeight = 58.0f;
 
-	struct FSettingsReferenceButtonBrushSet
+	struct FMasterLibraryButtonBrushSet
 	{
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush Normal;
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush Hovered;
@@ -28,13 +28,13 @@ namespace
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush Disabled;
 	};
 
-	struct FSettingsReferenceButtonStyleEntry
+	struct FMasterLibraryButtonStyleEntry
 	{
 		FButtonStyle Style;
 		bool bInitialized = false;
 	};
 
-	const TCHAR* GetSettingsReferenceButtonPrefix(ET66ButtonType Type)
+	const TCHAR* GetMasterLibraryButtonPrefix(ET66ButtonType Type)
 	{
 		switch (Type)
 		{
@@ -49,30 +49,11 @@ namespace
 		}
 	}
 
-	FSettingsReferenceButtonBrushSet& GetSettingsReferenceButtonBrushSet(ET66ButtonType Type)
+	FMasterLibraryButtonBrushSet& GetMasterLibraryButtonBrushSet(ET66ButtonType Type)
 	{
-		static FSettingsReferenceButtonBrushSet Neutral;
-		static FSettingsReferenceButtonBrushSet Success;
-		static FSettingsReferenceButtonBrushSet Danger;
-
-		switch (Type)
-		{
-		case ET66ButtonType::Primary:
-		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
-			return Success;
-		case ET66ButtonType::Danger:
-			return Danger;
-		default:
-			return Neutral;
-		}
-	}
-
-	FSettingsReferenceButtonStyleEntry& GetSettingsReferenceButtonStyleEntry(ET66ButtonType Type)
-	{
-		static FSettingsReferenceButtonStyleEntry Neutral;
-		static FSettingsReferenceButtonStyleEntry Success;
-		static FSettingsReferenceButtonStyleEntry Danger;
+		static FMasterLibraryButtonBrushSet Neutral;
+		static FMasterLibraryButtonBrushSet Success;
+		static FMasterLibraryButtonBrushSet Danger;
 
 		switch (Type)
 		{
@@ -87,7 +68,26 @@ namespace
 		}
 	}
 
-	const FSlateBrush* ResolveSettingsReferenceBrush(
+	FMasterLibraryButtonStyleEntry& GetMasterLibraryButtonStyleEntry(ET66ButtonType Type)
+	{
+		static FMasterLibraryButtonStyleEntry Neutral;
+		static FMasterLibraryButtonStyleEntry Success;
+		static FMasterLibraryButtonStyleEntry Danger;
+
+		switch (Type)
+		{
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::Success:
+		case ET66ButtonType::ToggleActive:
+			return Success;
+		case ET66ButtonType::Danger:
+			return Danger;
+		default:
+			return Neutral;
+		}
+	}
+
+	const FSlateBrush* ResolveMasterLibraryBrush(
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const FString& RelativePath,
 		const FMargin& Margin,
@@ -101,22 +101,22 @@ namespace
 			DebugLabel);
 	}
 
-	const FSlateBrush* ResolveSettingsReferenceButtonBrush(
+	const FSlateBrush* ResolveMasterLibraryButtonBrush(
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const TCHAR* Prefix,
 		const TCHAR* State,
 		const TCHAR* DebugLabel)
 	{
-		return ResolveSettingsReferenceBrush(
+		return ResolveMasterLibraryBrush(
 			Entry,
 			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/%s_%s.png"), Prefix, State),
 			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 			DebugLabel);
 	}
 
-	const FButtonStyle& GetSettingsReferenceButtonStyle(ET66ButtonType Type)
+	const FButtonStyle& GetMasterLibraryButtonStyle(ET66ButtonType Type)
 	{
-		FSettingsReferenceButtonStyleEntry& StyleEntry = GetSettingsReferenceButtonStyleEntry(Type);
+		FMasterLibraryButtonStyleEntry& StyleEntry = GetMasterLibraryButtonStyleEntry(Type);
 		if (!StyleEntry.bInitialized)
 		{
 			StyleEntry.bInitialized = true;
@@ -124,21 +124,21 @@ namespace
 			StyleEntry.Style.SetNormalPadding(FMargin(0.0f));
 			StyleEntry.Style.SetPressedPadding(FMargin(0.0f));
 
-			FSettingsReferenceButtonBrushSet& BrushSet = GetSettingsReferenceButtonBrushSet(Type);
-			const TCHAR* Prefix = GetSettingsReferenceButtonPrefix(Type);
-			if (const FSlateBrush* Brush = ResolveSettingsReferenceButtonBrush(BrushSet.Normal, Prefix, TEXT("normal"), TEXT("QuitModalButtonNormal")))
+			FMasterLibraryButtonBrushSet& BrushSet = GetMasterLibraryButtonBrushSet(Type);
+			const TCHAR* Prefix = GetMasterLibraryButtonPrefix(Type);
+			if (const FSlateBrush* Brush = ResolveMasterLibraryButtonBrush(BrushSet.Normal, Prefix, TEXT("normal"), TEXT("QuitModalButtonNormal")))
 			{
 				StyleEntry.Style.SetNormal(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveSettingsReferenceButtonBrush(BrushSet.Hovered, Prefix, TEXT("hover"), TEXT("QuitModalButtonHover")))
+			if (const FSlateBrush* Brush = ResolveMasterLibraryButtonBrush(BrushSet.Hovered, Prefix, TEXT("hover"), TEXT("QuitModalButtonHover")))
 			{
 				StyleEntry.Style.SetHovered(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveSettingsReferenceButtonBrush(BrushSet.Pressed, Prefix, TEXT("pressed"), TEXT("QuitModalButtonPressed")))
+			if (const FSlateBrush* Brush = ResolveMasterLibraryButtonBrush(BrushSet.Pressed, Prefix, TEXT("pressed"), TEXT("QuitModalButtonPressed")))
 			{
 				StyleEntry.Style.SetPressed(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveSettingsReferenceButtonBrush(BrushSet.Disabled, TEXT("Buttons/basic_button"), TEXT("disabled"), TEXT("QuitModalButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolveMasterLibraryButtonBrush(BrushSet.Disabled, TEXT("Buttons/basic_button"), TEXT("disabled"), TEXT("QuitModalButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}
@@ -147,19 +147,19 @@ namespace
 		return StyleEntry.Style;
 	}
 
-	const FSlateBrush* GetSettingsReferenceModalShellBrush()
+	const FSlateBrush* GetMasterLibraryModalShellBrush()
 	{
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush ShellBrush;
-		return ResolveSettingsReferenceBrush(
+		return ResolveMasterLibraryBrush(
 			ShellBrush,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
-			FMargin(0.052f, 0.094f, 0.052f, 0.094f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("QuitModalShell"));
 	}
 
-	TSharedRef<SWidget> MakeSettingsReferenceModalShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+	TSharedRef<SWidget> MakeMasterLibraryModalShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		if (const FSlateBrush* ShellBrush = GetSettingsReferenceModalShellBrush())
+		if (const FSlateBrush* ShellBrush = GetMasterLibraryModalShellBrush())
 		{
 			return SNew(SBorder)
 				.BorderImage(ShellBrush)
@@ -176,7 +176,7 @@ namespace
 			FT66PanelParams(ET66PanelType::Panel).SetPadding(Padding));
 	}
 
-	TSharedRef<SWidget> MakeSettingsReferenceButton(const FT66ButtonParams& Params)
+	TSharedRef<SWidget> MakeMasterLibraryButton(const FT66ButtonParams& Params)
 	{
 		const int32 FontSize = Params.FontSize > 0 ? Params.FontSize : 19;
 		FSlateFontInfo ButtonFont = FT66Style::MakeFont(*Params.FontWeight, FontSize);
@@ -212,7 +212,7 @@ namespace
 			[
 				FT66Style::MakeBareButton(
 					FT66BareButtonParams(Params.OnClicked, ButtonContent)
-					.SetButtonStyle(&GetSettingsReferenceButtonStyle(Params.Type))
+					.SetButtonStyle(&GetMasterLibraryButtonStyle(Params.Type))
 					.SetPadding(ContentPadding)
 					.SetHAlign(HAlign_Center)
 					.SetVAlign(VAlign_Center)
@@ -242,13 +242,13 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 	FText StayText = Loc ? Loc->GetText_NoStay() : NSLOCTEXT("T66.QuitConfirm", "Stay", "NO, I WANT TO STAY");
 	FText QuitText = Loc ? Loc->GetText_YesQuit() : NSLOCTEXT("T66.QuitConfirm", "Quit", "YES, I WANT TO QUIT");
 	const TSharedRef<SWidget> StayButton =
-		MakeSettingsReferenceButton(FT66ButtonParams(StayText, FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleStayClicked), ET66ButtonType::Success)
+		MakeMasterLibraryButton(FT66ButtonParams(StayText, FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleStayClicked), ET66ButtonType::Success)
 			.SetMinWidth(306.f)
 			.SetHeight(QuitModalButtonHeight)
 			.SetFontSize(18)
 			.SetPadding(FMargin(18.f, 8.f, 18.f, 7.f)));
 	const TSharedRef<SWidget> QuitButton =
-		MakeSettingsReferenceButton(FT66ButtonParams(QuitText, FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleQuitClicked), ET66ButtonType::Danger)
+		MakeMasterLibraryButton(FT66ButtonParams(QuitText, FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleQuitClicked), ET66ButtonType::Danger)
 			.SetMinWidth(306.f)
 			.SetHeight(QuitModalButtonHeight)
 			.SetFontSize(18)
@@ -261,7 +261,7 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 		SNew(SBox)
 		.WidthOverride(760.0f)
 		[
-		MakeSettingsReferenceModalShell(
+		MakeMasterLibraryModalShell(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot()
 			.AutoHeight()

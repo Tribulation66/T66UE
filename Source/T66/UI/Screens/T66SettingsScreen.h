@@ -54,7 +54,7 @@ public:
 	UT66SettingsScreen(const FObjectInitializer& ObjectInitializer);
 
 	UPROPERTY(BlueprintReadWrite, Category = "Settings")
-	ET66SettingsTab CurrentTab = ET66SettingsTab::Gameplay;
+	ET66SettingsTab CurrentTab = ET66SettingsTab::RetroFX;
 
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void SwitchToTab(ET66SettingsTab Tab);

@@ -94,8 +94,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 				return SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-						MakeSettingsButton(
-							FT66ButtonParams(DefaultLabel, FOnClicked::CreateLambda([PS, CurrentValueText, DefaultLabel]()
+						FT66Style::MakeDropdownOptionButton(
+							DefaultLabel,
+							FOnClicked::CreateLambda([PS, CurrentValueText, DefaultLabel]()
 							{
 								if (PS)
 								{
@@ -105,10 +106,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 								{
 									CurrentValueText->SetText(DefaultLabel);
 								}
+								FSlateApplication::Get().DismissAllMenus();
 								return FReply::Handled();
-							}), ET66ButtonType::Neutral)
-							.SetMinWidth(0.f)
-							.SetColor(T66SettingsButtonNeutralFill()))
+							}),
+							!PS || PS->GetOutputDeviceId().IsEmpty(),
+							0.f,
+							34.f,
+							14)
 					];
 			})
 	];

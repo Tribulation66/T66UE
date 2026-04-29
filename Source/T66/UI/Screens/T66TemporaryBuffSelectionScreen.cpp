@@ -107,7 +107,7 @@ namespace
 		static FT66TempBuffSpriteBrushEntry Entry;
 		return ResolveTempBuffSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_panel_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			ESlateBrushDrawType::Box);
@@ -118,7 +118,7 @@ namespace
 		static FT66TempBuffSpriteBrushEntry Entry;
 		return ResolveTempBuffSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_row_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
 			FVector2D(861.f, 74.f),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			ESlateBrushDrawType::Box);
@@ -130,37 +130,25 @@ namespace
 		static FT66TempBuffSpriteBrushEntry Selected;
 		static FT66TempBuffSpriteBrushEntry Disabled;
 		FT66TempBuffSpriteBrushEntry& Entry = bDisabled ? Disabled : (bSelected ? Selected : Normal);
-		const TCHAR* FileName = bDisabled
-			? TEXT("runflow_buff_card_disabled.png")
-			: (bSelected ? TEXT("runflow_buff_card_selected.png") : TEXT("runflow_buff_card_normal.png"));
 		return ResolveTempBuffSpriteBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Cards/%s"), FileName),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
 			FVector2D(198.f, 236.f),
-			FMargin(0.09f, 0.12f, 0.09f, 0.12f),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			ESlateBrushDrawType::Box);
 	}
 
 	FString GetTempBuffButtonPath(const ET66TempBuffButtonFamily Family, const ET66TempBuffButtonState State)
 	{
-		if (Family == ET66TempBuffButtonFamily::CtaGreen)
-		{
-			const TCHAR* Suffix = State == ET66TempBuffButtonState::Hovered ? TEXT("hover") : (State == ET66TempBuffButtonState::Pressed ? TEXT("pressed") : TEXT("normal"));
-			return FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_cta_primary_%s.png"), Suffix);
-		}
-
-		const TCHAR* Prefix = TEXT("runflow_button_neutral");
-		if (Family == ET66TempBuffButtonFamily::ToggleOn)
-		{
-			Prefix = TEXT("runflow_button_primary");
-		}
-		else if (Family == ET66TempBuffButtonFamily::ToggleInactive)
-		{
-			Prefix = TEXT("runflow_button_neutral");
-		}
-
+		const TCHAR* Prefix = Family == ET66TempBuffButtonFamily::CtaGreen
+			? TEXT("central_button")
+			: (Family == ET66TempBuffButtonFamily::ToggleOn ? TEXT("select_button") : TEXT("basic_button"));
 		const TCHAR* Suffix = TEXT("normal");
-		if (State == ET66TempBuffButtonState::Hovered)
+		if (Family == ET66TempBuffButtonFamily::ToggleOn && State == ET66TempBuffButtonState::Normal)
+		{
+			Suffix = TEXT("selected");
+		}
+		else if (State == ET66TempBuffButtonState::Hovered)
 		{
 			Suffix = TEXT("hover");
 		}
@@ -169,7 +157,7 @@ namespace
 			Suffix = TEXT("pressed");
 		}
 
-		return FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/%s_%s.png"), Prefix, Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, Suffix);
 	}
 
 	FVector2D GetTempBuffButtonSize(const ET66TempBuffButtonFamily Family, const ET66TempBuffButtonState State)
@@ -237,7 +225,7 @@ namespace
 		FT66TempBuffButtonBrushSet& Set = GetTempBuffButtonBrushSet(ET66TempBuffButtonFamily::ToggleInactive);
 		return ResolveTempBuffSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_button_neutral_disabled.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"),
 			FVector2D(180.f, 69.f),
 			FMargin(0.14f, 0.30f, 0.14f, 0.30f),
 			ESlateBrushDrawType::Box);
@@ -647,7 +635,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 
 	auto MakeRunControls = [this, Loc, SelectedDifficulty, EnterText]() -> TSharedRef<SWidget>
 	{
-		auto MakeDifficultyMenu = [this, Loc]() -> TSharedRef<SWidget>
+		auto MakeDifficultyMenu = [this, Loc, SelectedDifficulty]() -> TSharedRef<SWidget>
 		{
 			TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
 			for (const ET66Difficulty Difficulty : { ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible })
@@ -655,7 +643,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 				Box->AddSlot()
 					.AutoHeight()
 					[
-						MakeTempBuffSpriteButton(
+						FT66Style::MakeDropdownOptionButton(
 							T66TempBuffDifficultyText(Loc, Difficulty),
 							FOnClicked::CreateLambda([this, Difficulty]()
 							{
@@ -673,7 +661,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 								FSlateApplication::Get().DismissAllMenus();
 								return FReply::Handled();
 							}),
-							ET66TempBuffButtonFamily::CompactNeutral,
+							SelectedDifficulty == Difficulty,
 							150.f,
 							34.f,
 							11)

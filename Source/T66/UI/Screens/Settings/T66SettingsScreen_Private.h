@@ -16,7 +16,6 @@
 #include "GameFramework/GameUserSettings.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GenericPlatform/GenericApplication.h"
-#include "Misc/DefaultValueHelper.h"
 #include "UI/Style/T66ButtonVisuals.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66RuntimeUIFontAccess.h"
@@ -25,7 +24,6 @@
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
-#include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Input/SSlider.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
@@ -96,7 +94,7 @@ namespace T66SettingsScreenPrivate
 					CandidatePath,
 					TextureFilter::TF_Trilinear,
 					true,
-					TEXT("SettingsReferenceSprite")))
+					TEXT("SettingsMasterLibrarySprite")))
 				{
 					Entry.Texture.Reset(Texture);
 					break;
@@ -135,10 +133,10 @@ namespace T66SettingsScreenPrivate
 		switch (Family)
 		{
 		case ET66SettingsSpriteFamily::ToggleOn:
-			Prefix = TEXT("Buttons/basic_button");
+			Prefix = TEXT("Buttons/select_button");
 			break;
 		case ET66SettingsSpriteFamily::ToggleOff:
-			Prefix = TEXT("Buttons/basic_button");
+			Prefix = TEXT("Buttons/select_button");
 			break;
 		case ET66SettingsSpriteFamily::ToggleInactive:
 			Prefix = TEXT("Buttons/basic_button");
@@ -161,9 +159,13 @@ namespace T66SettingsScreenPrivate
 		default:
 			break;
 		}
-		if (Family == ET66SettingsSpriteFamily::ToggleOn || Family == ET66SettingsSpriteFamily::ToggleOff)
+		if (Family == ET66SettingsSpriteFamily::ToggleOn)
 		{
-			Suffix = TEXT("pressed");
+			Suffix = TEXT("selected");
+		}
+		else if (Family == ET66SettingsSpriteFamily::ToggleOff)
+		{
+			Suffix = State == ET66ButtonBorderState::Hovered ? TEXT("hover") : Suffix;
 		}
 
 		static FString Path;
@@ -238,7 +240,7 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(480.f, 800.f),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 	}
@@ -248,9 +250,9 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(620.f, 340.f),
-			FMargin(0.052f, 0.094f, 0.052f, 0.094f));
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 	}
 
 	inline const FSlateBrush* GetSettingsDropdownFieldBrush()
@@ -751,26 +753,22 @@ namespace T66SettingsScreenPrivate
 			}));
 	}
 
-	inline TSharedRef<SWidget> MakeSettingsPercentEntryRow(
+	inline TSharedRef<SWidget> MakeSettingsPercentSliderRow(
 		const FText& Label,
 		const FText& Description,
 		TFunction<float()> GetPercent,
 		TFunction<void(float)> SetPercent,
-		const FText& HintText,
 		const FText& HelpText)
 	{
-		auto CommitNumericValue = [SetPercent](const FText& NewText)
+		auto GetSnappedPercent = [GetPercent]()
 		{
-			const FString TrimmedText = NewText.ToString().TrimStartAndEnd();
-			float ParsedValue = 0.0f;
-			if (TrimmedText.IsEmpty())
-			{
-				SetPercent(0.0f);
-			}
-			else if (FDefaultValueHelper::ParseFloat(TrimmedText, ParsedValue))
-			{
-				SetPercent(FMath::Clamp(ParsedValue, 0.0f, 100.0f));
-			}
+			return FMath::Clamp(FMath::RoundToInt(GetPercent()), 0, 100);
+		};
+
+		auto CommitSliderValue = [SetPercent](float NormalizedValue)
+		{
+			const int32 SnappedPercent = FMath::Clamp(FMath::RoundToInt(NormalizedValue * 100.0f), 0, 100);
+			SetPercent(static_cast<float>(SnappedPercent));
 		};
 
 		return MakeSettingsRow(
@@ -799,27 +797,27 @@ namespace T66SettingsScreenPrivate
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight()
 				[
-					SNew(SBox)
-					.WidthOverride(140.f)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(GetRetroButtonOutline())
-						.Padding(1.f)
-						[
-							SNew(SEditableTextBox)
-							.Text(FormatRetroPercent(GetPercent()))
-							.Font(SettingsRegularFont(18))
-							.ForegroundColor(GetRetroButtonText())
-							.BackgroundColor(FLinearColor::White)
-							.Justification(ETextJustify::Center)
-							.HintText(HintText)
-							.OnTextCommitted_Lambda([CommitNumericValue](const FText& NewText, ETextCommit::Type)
-							{
-								CommitNumericValue(NewText);
-							})
-						]
-					]
+					SNew(STextBlock)
+					.Text_Lambda([GetSnappedPercent]()
+					{
+						return FText::AsNumber(GetSnappedPercent());
+					})
+					.Font(SettingsBoldFont(24))
+					.ColorAndOpacity(GetSettingsPageText())
+					.Justification(ETextJustify::Center)
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+				[
+					SNew(SSlider)
+					.Value_Lambda([GetSnappedPercent]()
+					{
+						return static_cast<float>(GetSnappedPercent()) / 100.0f;
+					})
+					.StepSize(0.01f)
+					.OnValueChanged_Lambda([CommitSliderValue](float Value)
+					{
+						CommitSliderValue(Value);
+					})
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 				[

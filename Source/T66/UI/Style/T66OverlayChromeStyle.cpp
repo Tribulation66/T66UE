@@ -33,38 +33,38 @@ namespace
 		switch (Brush)
 		{
 		case ET66OverlayChromeBrush::OverlayModalPanel:
-			return TEXT("Panels/modal_frame_normal.png");
+			return TEXT("Panels/basic_panel_normal.png");
 		case ET66OverlayChromeBrush::CasinoShellPanel:
-			return TEXT("Panels/panel_large_normal.png");
+			return TEXT("Panels/basic_panel_normal.png");
 		case ET66OverlayChromeBrush::ContentPanelTall:
-			return TEXT("Panels/panel_large_normal.png");
+			return TEXT("Panels/basic_panel_normal.png");
 		case ET66OverlayChromeBrush::InnerPanel:
-			return TEXT("Panels/panel_square_normal.png");
+			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::HeaderSummaryBar:
-			return TEXT("Panels/panel_square_normal.png");
+			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::CrateStripFrame:
-			return TEXT("Panels/panel_large_normal.png");
+			return TEXT("Panels/basic_panel_normal.png");
 		case ET66OverlayChromeBrush::SlotNormal:
-			return TEXT("Slots/avatar_slot_normal.png");
+			return TEXT("Slots/basic_slot_normal.png");
 		case ET66OverlayChromeBrush::SlotHover:
-			return TEXT("Slots/avatar_slot_normal.png");
+			return TEXT("Slots/basic_slot_normal.png");
 		case ET66OverlayChromeBrush::SlotSelected:
-			return TEXT("Slots/party_slot_normal.png");
+			return TEXT("Slots/basic_slot_normal.png");
 		case ET66OverlayChromeBrush::SlotDisabled:
-			return TEXT("Slots/avatar_slot_normal.png");
+			return TEXT("Slots/basic_slot_normal.png");
 		case ET66OverlayChromeBrush::OfferCardNormal:
-			return TEXT("Panels/panel_square_normal.png");
+			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::OfferCardHover:
-			return TEXT("Panels/panel_square_normal.png");
+			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::OfferCardSelected:
-			return TEXT("Panels/modal_frame_normal.png");
+			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::OfferCardDisabled:
-			return TEXT("Panels/panel_square_normal.png");
+			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::CrateWinnerMarker:
-			return TEXT("Panels/modal_frame_normal.png");
+			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::ContentPanelWide:
 		default:
-			return TEXT("Panels/panel_large_normal.png");
+			return TEXT("Panels/basic_panel_normal.png");
 		}
 	}
 
@@ -72,27 +72,25 @@ namespace
 	{
 		switch (Brush)
 		{
-		case ET66OverlayChromeBrush::HeaderSummaryBar:
-			return FMargin(0.06f, 0.28f, 0.06f, 0.28f);
 		case ET66OverlayChromeBrush::SlotNormal:
 		case ET66OverlayChromeBrush::SlotHover:
 		case ET66OverlayChromeBrush::SlotSelected:
 		case ET66OverlayChromeBrush::SlotDisabled:
-		case ET66OverlayChromeBrush::CrateWinnerMarker:
-			return FMargin(0.18f);
-		case ET66OverlayChromeBrush::OfferCardNormal:
-		case ET66OverlayChromeBrush::OfferCardHover:
-		case ET66OverlayChromeBrush::OfferCardSelected:
-		case ET66OverlayChromeBrush::OfferCardDisabled:
-			return FMargin(0.1f, 0.08f);
+			return FMargin(0.205f);
 		case ET66OverlayChromeBrush::OverlayModalPanel:
 		case ET66OverlayChromeBrush::CasinoShellPanel:
 		case ET66OverlayChromeBrush::ContentPanelWide:
 		case ET66OverlayChromeBrush::ContentPanelTall:
 		case ET66OverlayChromeBrush::InnerPanel:
+		case ET66OverlayChromeBrush::HeaderSummaryBar:
 		case ET66OverlayChromeBrush::CrateStripFrame:
+		case ET66OverlayChromeBrush::OfferCardNormal:
+		case ET66OverlayChromeBrush::OfferCardHover:
+		case ET66OverlayChromeBrush::OfferCardSelected:
+		case ET66OverlayChromeBrush::OfferCardDisabled:
+		case ET66OverlayChromeBrush::CrateWinnerMarker:
 		default:
-			return FMargin(0.055f, 0.07f, 0.055f, 0.07f);
+			return FMargin(0.067f, 0.043f, 0.067f, 0.043f);
 		}
 	}
 
@@ -153,126 +151,88 @@ namespace
 		}
 	}
 
-	const TCHAR* GetButtonFileName(const ET66OverlayChromeButtonFamily Family, const bool bHovered, const bool bPressed, const bool bDisabled, const bool bSelected)
+	FString GetButtonFileName(const ET66OverlayChromeButtonFamily Family, const bool bHovered, const bool bPressed, const bool bDisabled, const bool bSelected)
 	{
-		if (Family == ET66OverlayChromeButtonFamily::Tab)
+		const auto StateSuffix = [bHovered, bPressed, bDisabled, bSelected](const bool bSupportsSelected) -> const TCHAR*
 		{
 			if (bDisabled)
 			{
-				return TEXT("Tabs/wide_tab_normal.png");
+				return TEXT("disabled");
 			}
-			if (bPressed || bSelected)
+			if (bPressed)
 			{
-				return TEXT("Tabs/wide_tab_selected.png");
+				return TEXT("pressed");
 			}
-			return bHovered ? TEXT("Tabs/wide_tab_selected.png") : TEXT("Tabs/wide_tab_normal.png");
-		}
+			if (bSupportsSelected && bSelected)
+			{
+				return TEXT("selected");
+			}
+			return bHovered ? TEXT("hover") : TEXT("normal");
+		};
 
-		if (bDisabled)
+		switch (Family)
 		{
-			return TEXT("Buttons/basic_button_disabled.png");
+		case ET66OverlayChromeButtonFamily::Primary:
+		case ET66OverlayChromeButtonFamily::Central:
+			return FString::Printf(TEXT("Buttons/central_button_%s.png"), StateSuffix(false));
+		case ET66OverlayChromeButtonFamily::Tab:
+		case ET66OverlayChromeButtonFamily::Select:
+			return FString::Printf(TEXT("Buttons/select_button_%s.png"), StateSuffix(true));
+		case ET66OverlayChromeButtonFamily::DuoLeft:
+			return FString::Printf(TEXT("Buttons/duo_button_left_%s.png"), StateSuffix(true));
+		case ET66OverlayChromeButtonFamily::DuoRight:
+			return FString::Printf(TEXT("Buttons/duo_button_right_%s.png"), StateSuffix(true));
+		case ET66OverlayChromeButtonFamily::DropdownOption:
+			return FString::Printf(TEXT("Buttons/dropdown_option_button_%s.png"), StateSuffix(false));
+		case ET66OverlayChromeButtonFamily::BorderlessIcon:
+			return FString::Printf(TEXT("Buttons/borderless_icon_button_%s.png"), StateSuffix(true));
+		case ET66OverlayChromeButtonFamily::Danger:
+		case ET66OverlayChromeButtonFamily::Neutral:
+		default:
+			return FString::Printf(TEXT("Buttons/basic_button_%s.png"), StateSuffix(false));
 		}
-		if (bPressed || bSelected)
-		{
-			return TEXT("Buttons/basic_button_pressed.png");
-		}
-		if (bHovered)
-		{
-			return TEXT("Buttons/basic_button_hover.png");
-		}
-		return TEXT("Buttons/basic_button_normal.png");
 	}
 
 	FMargin GetButtonMargin(const ET66OverlayChromeButtonFamily Family)
 	{
-		return Family == ET66OverlayChromeButtonFamily::Tab
-			? FMargin(0.16f, 0.35f, 0.16f, 0.35f)
-			: FMargin(0.18f, 0.34f, 0.18f, 0.34f);
+		if (Family == ET66OverlayChromeButtonFamily::BorderlessIcon)
+		{
+			return FMargin(0.f);
+		}
+		if (Family == ET66OverlayChromeButtonFamily::Primary || Family == ET66OverlayChromeButtonFamily::Central)
+		{
+			return FMargin(0.083f, 0.231f, 0.083f, 0.231f);
+		}
+		if (Family == ET66OverlayChromeButtonFamily::DropdownOption)
+		{
+			return FMargin(0.067f, 0.250f, 0.067f, 0.250f);
+		}
+		if (Family == ET66OverlayChromeButtonFamily::DuoLeft)
+		{
+			return FMargin(0.104f, 0.250f, 0.027f, 0.250f);
+		}
+		if (Family == ET66OverlayChromeButtonFamily::DuoRight)
+		{
+			return FMargin(0.027f, 0.250f, 0.104f, 0.250f);
+		}
+		return FMargin(0.104f, 0.250f, 0.104f, 0.250f);
 	}
 
-	FOptionalBrush& GetButtonEntry(const ET66OverlayChromeButtonFamily Family, const bool bHovered, const bool bPressed, const bool bDisabled, const bool bSelected)
+	FOptionalBrush& GetButtonEntry(const FString& FileName)
 	{
-		static FOptionalBrush NeutralNormal;
-		static FOptionalBrush NeutralHover;
-		static FOptionalBrush NeutralPressed;
-		static FOptionalBrush NeutralDisabled;
-		static FOptionalBrush PrimaryNormal;
-		static FOptionalBrush PrimaryHover;
-		static FOptionalBrush PrimaryPressed;
-		static FOptionalBrush PrimaryDisabled;
-		static FOptionalBrush DangerNormal;
-		static FOptionalBrush DangerHover;
-		static FOptionalBrush DangerPressed;
-		static FOptionalBrush DangerDisabled;
-		static FOptionalBrush TabNormal;
-		static FOptionalBrush TabHover;
-		static FOptionalBrush TabPressed;
-		static FOptionalBrush TabSelected;
-		static FOptionalBrush TabDisabled;
-
-		if (Family == ET66OverlayChromeButtonFamily::Tab)
-		{
-			if (bDisabled)
-			{
-				return TabDisabled;
-			}
-			if (bPressed)
-			{
-				return TabPressed;
-			}
-			if (bSelected)
-			{
-				return TabSelected;
-			}
-			return bHovered ? TabHover : TabNormal;
-		}
-
-		if (Family == ET66OverlayChromeButtonFamily::Primary)
-		{
-			if (bDisabled)
-			{
-				return PrimaryDisabled;
-			}
-			if (bPressed || bSelected)
-			{
-				return PrimaryPressed;
-			}
-			return bHovered ? PrimaryHover : PrimaryNormal;
-		}
-
-		if (Family == ET66OverlayChromeButtonFamily::Danger)
-		{
-			if (bDisabled)
-			{
-				return DangerDisabled;
-			}
-			if (bPressed || bSelected)
-			{
-				return DangerPressed;
-			}
-			return bHovered ? DangerHover : DangerNormal;
-		}
-
-		if (bDisabled)
-		{
-			return NeutralDisabled;
-		}
-		if (bPressed || bSelected)
-		{
-			return NeutralPressed;
-		}
-		return bHovered ? NeutralHover : NeutralNormal;
+		static TMap<FString, FOptionalBrush> Entries;
+		return Entries.FindOrAdd(FileName);
 	}
 
 	const FSlateBrush* GetButtonBrush(const ET66OverlayChromeButtonFamily Family, const bool bHovered, const bool bPressed, const bool bDisabled, const bool bSelected)
 	{
-		const TCHAR* FileName = GetButtonFileName(Family, bHovered, bPressed, bDisabled, bSelected);
+		const FString FileName = GetButtonFileName(Family, bHovered, bPressed, bDisabled, bSelected);
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			GetButtonEntry(Family, bHovered, bPressed, bDisabled, bSelected),
+			GetButtonEntry(FileName),
 			nullptr,
-			GetChromeSlicePath(FileName),
+			GetChromeSlicePath(*FileName),
 			GetButtonMargin(Family),
-			FileName);
+			*FileName);
 	}
 
 	const FButtonStyle& GetTransparentButtonStyle()

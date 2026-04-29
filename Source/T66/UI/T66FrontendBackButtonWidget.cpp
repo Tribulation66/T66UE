@@ -70,19 +70,19 @@ namespace
 		{
 			return ResolveBackButtonBrush(
 				Pressed,
-				TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_on_pressed.png"),
+				TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png"),
 				FVector2D(187.f, 67.f));
 		}
 		if (bHovered)
 		{
 			return ResolveBackButtonBrush(
 				Hover,
-				TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_on_hover.png"),
+				TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png"),
 				FVector2D(180.f, 67.f));
 		}
 		return ResolveBackButtonBrush(
 			Normal,
-			TEXT("SourceAssets/UI/SettingsReference/SheetSlices/Center/settings_toggle_on_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png"),
 			FVector2D(180.f, 68.f));
 	}
 

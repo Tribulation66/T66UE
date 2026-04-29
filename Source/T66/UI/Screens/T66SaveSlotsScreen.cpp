@@ -86,7 +86,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("SaveSlotsContentShell"));
 	}
@@ -96,8 +96,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
-			FMargin(0.052f, 0.094f, 0.052f, 0.094f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("SaveSlotsRowShell"));
 	}
 
@@ -116,7 +116,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/party_slot_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
 			FMargin(0.20f, 0.18f, 0.20f, 0.18f),
 			TEXT("SaveSlotsPartySlotFrame"));
 	}
@@ -534,22 +534,20 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				.AutoHeight()
 				.Padding(0.f, 0.f, 0.f, 6.f)
 				[
-					MakeSaveFlowPlateButton(
-						FT66ButtonParams(
-							T66PartySizeText(Loc, PartySize),
-							FOnClicked::CreateLambda([this, PartySize]()
-							{
-								ActivePartySizeFilter = PartySize;
-								CurrentPage = 0;
-								RefreshScreen();
-								FSlateApplication::Get().DismissAllMenus();
-								return FReply::Handled();
-							}),
-							bSelectedPartySize ? ET66ButtonType::Primary : ET66ButtonType::Neutral)
-						.SetMinWidth(150.f)
-						.SetHeight(38.f)
-						.SetFontSize(18),
-						true)
+					FT66Style::MakeDropdownOptionButton(
+						T66PartySizeText(Loc, PartySize),
+						FOnClicked::CreateLambda([this, PartySize]()
+						{
+							ActivePartySizeFilter = PartySize;
+							CurrentPage = 0;
+							RefreshScreen();
+							FSlateApplication::Get().DismissAllMenus();
+							return FReply::Handled();
+						}),
+						bSelectedPartySize,
+						150.f,
+						38.f,
+						18)
 				];
 		}
 		return Box;

@@ -94,9 +94,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveBattleBrush(
 			Entry,
-			TEXT("SourceAssets/TD/UI/td_battle/Components/panel_left_roster_shell.png"),
-			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
-			TEXT("TDBattleRosterPanel"));
+			T66TDUI::MasterBasicPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			TEXT("TDBattleMasterRosterPanel"));
 	}
 
 	const FSlateBrush* TDBattleRosterRowBrush()
@@ -104,9 +104,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveBattleBrush(
 			Entry,
-			TEXT("SourceAssets/TD/UI/td_battle/Components/roster_row_normal.png"),
-			FMargin(0.15f, 0.25f, 0.12f, 0.25f),
-			TEXT("TDBattleRosterRow"));
+			T66TDUI::MasterInnerPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			TEXT("TDBattleMasterRosterRow"));
 	}
 
 	const FSlateBrush* TDBattleStatsBarBrush()
@@ -114,9 +114,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveBattleBrush(
 			Entry,
-			TEXT("SourceAssets/TD/UI/td_battle/Components/stats_bar_shell.png"),
-			FMargin(0.14f, 0.34f, 0.14f, 0.34f),
-			TEXT("TDBattleStatsBar"));
+			T66TDUI::MasterInnerPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			TEXT("TDBattleMasterStatsBar"));
 	}
 
 	const FSlateBrush* TDBattleBoardFrameBrush()
@@ -124,9 +124,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveBattleBrush(
 			Entry,
-			TEXT("SourceAssets/TD/UI/td_battle/Components/board_frame_shell.png"),
-			FMargin(0.12f, 0.12f, 0.12f, 0.12f),
-			TEXT("TDBattleBoardFrame"));
+			T66TDUI::MasterBasicPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			TEXT("TDBattleMasterBoardFrame"));
 	}
 
 	const FSlateBrush* TDBattleStatusBarBrush()
@@ -134,9 +134,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveBattleBrush(
 			Entry,
-			TEXT("SourceAssets/TD/UI/td_battle/Components/status_bar_shell.png"),
-			FMargin(0.10f, 0.35f, 0.10f, 0.35f),
-			TEXT("TDBattleStatusBar"));
+			T66TDUI::MasterInnerPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			TEXT("TDBattleMasterStatusBar"));
 	}
 
 	const FSlateBrush* TDBattleMatchPanelBrush()
@@ -144,9 +144,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveBattleBrush(
 			Entry,
-			TEXT("SourceAssets/TD/UI/td_battle/Components/panel_right_match_shell.png"),
-			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
-			TEXT("TDBattleMatchPanel"));
+			T66TDUI::MasterBasicPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			TEXT("TDBattleMasterMatchPanel"));
 	}
 
 	const FSlateBrush* TDBattleUpgradePanelBrush()
@@ -154,39 +154,14 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveBattleBrush(
 			Entry,
-			TEXT("SourceAssets/TD/UI/td_battle/Components/panel_right_upgrade_shell.png"),
-			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
-			TEXT("TDBattleUpgradePanel"));
+			T66TDUI::MasterBasicPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			TEXT("TDBattleMasterUpgradePanel"));
 	}
 
 	const FSlateBrush* TDBattleButtonBrush(const ET66ButtonType Type)
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush GreenEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush BlueEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush PurpleEntry;
-
-		if (Type == ET66ButtonType::Success || Type == ET66ButtonType::Primary)
-		{
-			return ResolveBattleBrush(
-				GreenEntry,
-				TEXT("SourceAssets/TD/UI/td_battle/Components/button_green_normal.png"),
-				FMargin(0.18f, 0.32f, 0.18f, 0.32f),
-				TEXT("TDBattleButtonGreen"));
-		}
-		if (Type == ET66ButtonType::Danger)
-		{
-			return ResolveBattleBrush(
-				PurpleEntry,
-				TEXT("SourceAssets/TD/UI/td_battle/Components/button_purple_normal.png"),
-				FMargin(0.18f, 0.32f, 0.18f, 0.32f),
-				TEXT("TDBattleButtonPurple"));
-		}
-
-		return ResolveBattleBrush(
-			BlueEntry,
-			TEXT("SourceAssets/TD/UI/td_battle/Components/button_blue_normal.png"),
-			FMargin(0.18f, 0.32f, 0.18f, 0.32f),
-			TEXT("TDBattleButtonBlue"));
+		return T66TDUI::ButtonPlateBrush(Type);
 	}
 
 	TSharedRef<SWidget> MakeSpriteWidget(const TSharedPtr<FSlateBrush>& Brush, const FString& FallbackText, const FLinearColor& PlaceholderColor, const FVector2D& Size, const int32 FontSize)

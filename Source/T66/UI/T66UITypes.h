@@ -58,7 +58,10 @@ enum class ET66ScreenType : uint8
 	DailyClimb = 40 UMETA(DisplayName = "Daily Climb"),
 	TDMainMenu = 41 UMETA(DisplayName = "Chadpocalypse TD Main Menu"),
 	TDDifficultySelect = 42 UMETA(DisplayName = "Chadpocalypse TD Difficulty Select"),
-	TDBattle = 43 UMETA(DisplayName = "Chadpocalypse TD Battle")
+	TDBattle = 43 UMETA(DisplayName = "Chadpocalypse TD Battle"),
+	RemovedScreenSlot44 = 44 UMETA(Hidden),
+	// Legacy serialized value retained so old Blueprint defaults can be loaded and repaired.
+	PartySizePicker = 45 UMETA(Hidden)
 };
 
 UENUM(BlueprintType)

@@ -441,8 +441,8 @@ bool UT66UISetupSubsystem::ConfigurePlayerController()
 		return false;
 	}
 
-	// Clear existing and set up screen class mappings
-	PCCDO->ScreenClasses.Empty();
+	// Clear existing and set up runtime screen class mappings
+	PCCDO->RuntimeScreenClasses.Empty();
 
 	// Define screen mappings
 	struct FScreenMapping
@@ -488,7 +488,7 @@ bool UT66UISetupSubsystem::ConfigurePlayerController()
 		UClass* WidgetClass = LoadClass<UT66ScreenBase>(nullptr, Mapping.AssetPath);
 		if (WidgetClass)
 		{
-			PCCDO->ScreenClasses.Add(Mapping.Type, WidgetClass);
+			PCCDO->RuntimeScreenClasses.Add(Mapping.Type, WidgetClass);
 			UE_LOG(LogT66Editor, Log, TEXT("Registered screen %d -> %s"), static_cast<int32>(Mapping.Type), Mapping.AssetPath);
 		}
 		else
@@ -506,7 +506,7 @@ bool UT66UISetupSubsystem::ConfigurePlayerController()
 	}
 
 	// Hero selection is native and changes faster than the legacy Blueprint override.
-	PCCDO->ScreenClasses.Add(ET66ScreenType::HeroSelection, UT66HeroSelectionScreen::StaticClass());
+	PCCDO->RuntimeScreenClasses.Add(ET66ScreenType::HeroSelection, UT66HeroSelectionScreen::StaticClass());
 	UE_LOG(LogT66Editor, Log, TEXT("Registered native HeroSelection screen"));
 
 	// Set initial screen to MainMenu
@@ -906,7 +906,7 @@ void UT66UISetupSubsystem::PrintSetupStatus()
 			AT66PlayerController* PCCDO = Cast<AT66PlayerController>(PCClass->GetDefaultObject());
 			if (PCCDO)
 			{
-				UE_LOG(LogT66Editor, Log, TEXT("PlayerController ScreenClasses: %d registered"), PCCDO->ScreenClasses.Num());
+				UE_LOG(LogT66Editor, Log, TEXT("PlayerController RuntimeScreenClasses: %d registered"), PCCDO->RuntimeScreenClasses.Num());
 				UE_LOG(LogT66Editor, Log, TEXT("PlayerController InitialScreen: %d"), static_cast<int32>(PCCDO->InitialScreen));
 			}
 		}

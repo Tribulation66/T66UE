@@ -42,7 +42,7 @@ namespace
 {
 	constexpr float PauseMenuButtonHeight = 58.0f;
 
-	const FSlateBrush* ResolvePauseMenuSettingsReferenceBrush(
+	const FSlateBrush* ResolvePauseMenuMasterLibraryBrush(
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const FString& RelativePath,
 		const FMargin& Margin,
@@ -63,11 +63,11 @@ namespace
 		case ET66ButtonType::Primary:
 		case ET66ButtonType::Success:
 		case ET66ButtonType::ToggleActive:
-			return TEXT("runflow_pause_button_primary_normal.png");
+			return TEXT("select_button_selected.png");
 		case ET66ButtonType::Danger:
-			return TEXT("runflow_pause_button_danger_normal.png");
+			return TEXT("basic_button_pressed.png");
 		default:
-			return TEXT("runflow_pause_button_neutral_normal.png");
+			return TEXT("basic_button_normal.png");
 		}
 	}
 
@@ -87,9 +87,9 @@ namespace
 			Entry = &Danger;
 		}
 
-		return ResolvePauseMenuSettingsReferenceBrush(
+		return ResolvePauseMenuMasterLibraryBrush(
 			*Entry,
-			FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/%s"), GetPauseMenuButtonPlateFile(Type)),
+			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s"), GetPauseMenuButtonPlateFile(Type)),
 			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
 			TEXT("PauseMenuButtonPlate"));
 	}
@@ -97,9 +97,9 @@ namespace
 	const FSlateBrush* GetPauseMenuShellBrush()
 	{
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Shell;
-		return ResolvePauseMenuSettingsReferenceBrush(
+		return ResolvePauseMenuMasterLibraryBrush(
 			Shell,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_pause_modal_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("PauseMenuShell"));
 	}

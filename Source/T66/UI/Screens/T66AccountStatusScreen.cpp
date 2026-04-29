@@ -276,7 +276,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("AccountContentShell"));
 	}
@@ -296,8 +296,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
-			FMargin(0.052f, 0.094f, 0.052f, 0.094f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("AccountRowShell"));
 	}
 
@@ -336,7 +336,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/avatar_slot_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
 			FMargin(0.205f, 0.205f, 0.205f, 0.205f),
 			TEXT("AccountAvatarSlot"));
 	}
@@ -1220,13 +1220,20 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 	auto MakeHistoryFilterMenuEntry = [this](const FText& Label, bool bActive, TFunction<void()> OnSelected) -> TSharedRef<SWidget>
 	{
-		return MakeAccountReferenceButton(
-			FT66ButtonParams(Label, FOnClicked::CreateLambda([this, OnSelected]() { OnSelected(); ForceRebuildSlate(); return FReply::Handled(); }), bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
-			.SetFontSize(AdjustAccountFontSize(11))
-			.SetMinWidth(0.f)
-			.SetHeight(28.f)
-			.SetPadding(FMargin(10.f, 5.f, 10.f, 4.f))
-			.SetTextColor(AccountText()));
+		return FT66Style::MakeDropdownOptionButton(
+			Label,
+			FOnClicked::CreateLambda([this, OnSelected]()
+			{
+				OnSelected();
+				ForceRebuildSlate();
+				FSlateApplication::Get().DismissAllMenus();
+				return FReply::Handled();
+			}),
+			bActive,
+			0.f,
+			28.f,
+			AdjustAccountFontSize(11),
+			FMargin(10.f, 5.f, 10.f, 4.f));
 	};
 
 	auto MakeHistoryFilterDropdown = [&](const FText& Label, TFunction<FText()> GetValueText, TFunction<TSharedRef<SWidget>()> MakeMenu, float MinWidth) -> TSharedRef<SWidget>

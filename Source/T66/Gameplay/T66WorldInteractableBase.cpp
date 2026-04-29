@@ -58,7 +58,13 @@ namespace
 
 	static AT66PlayerController* T66_GetLocalInteractionPlayerController(const UObject* WorldContext)
 	{
-		return WorldContext ? Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(WorldContext, 0)) : nullptr;
+		if (!WorldContext || WorldContext->HasAnyFlags(RF_ClassDefaultObject))
+		{
+			return nullptr;
+		}
+
+		const UWorld* World = WorldContext->GetWorld();
+		return World ? Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(World, 0)) : nullptr;
 	}
 }
 

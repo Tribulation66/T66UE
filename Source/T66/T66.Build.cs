@@ -77,10 +77,6 @@ public class T66 : ModuleRules
 		AddLooseRuntimeDependency("SourceAssets/UI/HeroSelection/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/MasterLibrary/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/PowerUp/Diplomas/...");
-		AddLooseRuntimeDependency("SourceAssets/UI/RunFlowReference/...");
-		AddLooseRuntimeDependency("SourceAssets/UI/RunFlowReference/Backgrounds/...");
-		AddLooseRuntimeDependency("SourceAssets/UI/SettingsReference/...");
-		AddLooseRuntimeDependency("SourceAssets/UI/Worker2Reference/...");
 
 		// Add all subdirectories as include paths
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory));

@@ -410,10 +410,13 @@ namespace T66HeroSelectionPrivate
 
 		if (Family == ET66HeroSpriteFamily::ToggleOn && State == ET66ButtonBorderState::Normal)
 		{
-			Suffix = TEXT("pressed");
+			Suffix = TEXT("selected");
 		}
 
-		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_%s.png"), Suffix);
+		const TCHAR* Prefix = Family == ET66HeroSpriteFamily::ToggleOn || Family == ET66HeroSpriteFamily::ToggleOff
+			? TEXT("select_button")
+			: TEXT("basic_button");
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, Suffix);
 	}
 
 	inline FVector2D GetHeroSelectionButtonSpriteSize(ET66HeroSpriteFamily /*Family*/, ET66ButtonBorderState /*State*/)
@@ -473,7 +476,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(480.f, 800.f),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 	}
@@ -483,7 +486,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(480.f, 800.f),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 	}
@@ -493,7 +496,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(480.f, 800.f),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 	}
@@ -503,9 +506,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(620.f, 340.f),
-			FMargin(0.052f, 0.094f, 0.052f, 0.094f));
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 	}
 
 	inline const FSlateBrush* GetHeroSelectionDropdownFieldBrush()
@@ -523,7 +526,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/party_slot_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
 			FVector2D(112.f, 112.f),
 			FMargin(0.20f, 0.18f, 0.20f, 0.18f));
 	}

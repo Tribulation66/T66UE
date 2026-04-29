@@ -83,8 +83,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 						const int32 MonitorIdx = i;
 						Box->AddSlot().AutoHeight()
 						[
-							MakeSettingsButton(
-								FT66ButtonParams(Label, FOnClicked::CreateLambda([this, MonitorIdx, CurrentValueText, Loc]()
+							FT66Style::MakeDropdownOptionButton(
+								Label,
+								FOnClicked::CreateLambda([this, MonitorIdx, CurrentValueText, Loc]()
 								{
 									PendingGraphics.MonitorIndex = MonitorIdx;
 									PendingGraphics.bDirty = true;
@@ -94,11 +95,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 											? (Loc ? Loc->GetText_PrimaryMonitor() : NSLOCTEXT("T66.Settings", "PrimaryMonitor", "Primary Monitor"))
 											: FText::Format(NSLOCTEXT("T66.Settings", "MonitorN", "Monitor {0}"), FText::AsNumber(MonitorIdx + 1)));
 									}
+									FSlateApplication::Get().DismissAllMenus();
 									return FReply::Handled();
-								}), ET66ButtonType::Neutral)
-								.SetMinWidth(0.f)
-								.SetColor(T66SettingsButtonNeutralFill())
-							)
+								}),
+								PendingGraphics.MonitorIndex == MonitorIdx,
+								0.f,
+								34.f,
+								14)
 						];
 					}
 					return Box;
@@ -124,8 +127,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							MakeSettingsButton(
-								FT66ButtonParams(ResToText(R), FOnClicked::CreateLambda([this, R, CurrentValueText, ResToText]()
+							FT66Style::MakeDropdownOptionButton(
+								ResToText(R),
+								FOnClicked::CreateLambda([this, R, CurrentValueText, ResToText]()
 								{
 									PendingGraphics.Resolution = R;
 									PendingGraphics.bDirty = true;
@@ -133,11 +137,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 									{
 										CurrentValueText->SetText(ResToText(R));
 									}
+									FSlateApplication::Get().DismissAllMenus();
 									return FReply::Handled();
-								}), ET66ButtonType::Neutral)
-								.SetMinWidth(0.f)
-								.SetColor(T66SettingsButtonNeutralFill())
-							)
+								}),
+								PendingGraphics.Resolution == R,
+								0.f,
+								34.f,
+								14)
 						];
 					}
 					return Box;
@@ -156,8 +162,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							MakeSettingsButton(
-								FT66ButtonParams(WindowModeToText(Mode), FOnClicked::CreateLambda([this, Mode, CurrentValueText, WindowModeToText]()
+							FT66Style::MakeDropdownOptionButton(
+								WindowModeToText(Mode),
+								FOnClicked::CreateLambda([this, Mode, CurrentValueText, WindowModeToText]()
 								{
 									PendingGraphics.WindowMode = Mode;
 									PendingGraphics.bDirty = true;
@@ -165,11 +172,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 									{
 										CurrentValueText->SetText(WindowModeToText(Mode));
 									}
+									FSlateApplication::Get().DismissAllMenus();
 									return FReply::Handled();
-								}), ET66ButtonType::Neutral)
-								.SetMinWidth(0.f)
-								.SetColor(T66SettingsButtonNeutralFill())
-							)
+								}),
+								PendingGraphics.WindowMode == Mode,
+								0.f,
+								34.f,
+								14)
 						];
 					};
 					Add(EWindowMode::Windowed);
@@ -191,8 +200,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							MakeSettingsButton(
-								FT66ButtonParams(DisplayModeToText(Mode), FOnClicked::CreateLambda([this, Mode, CurrentValueText, DisplayModeToText]()
+							FT66Style::MakeDropdownOptionButton(
+								DisplayModeToText(Mode),
+								FOnClicked::CreateLambda([this, Mode, CurrentValueText, DisplayModeToText]()
 								{
 									PendingGraphics.DisplayMode = Mode;
 									PendingGraphics.bDirty = true;
@@ -200,11 +210,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 									{
 										CurrentValueText->SetText(DisplayModeToText(Mode));
 									}
+									FSlateApplication::Get().DismissAllMenus();
 									return FReply::Handled();
-								}), ET66ButtonType::Neutral)
-								.SetMinWidth(0.f)
-								.SetColor(T66SettingsButtonNeutralFill())
-							)
+								}),
+								PendingGraphics.DisplayMode == Mode,
+								0.f,
+								34.f,
+								14)
 						];
 					};
 					Add(ET66DisplayMode::Standard);
@@ -288,8 +300,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							MakeSettingsButton(
-								FT66ButtonParams(FpsCapToText(i), FOnClicked::CreateLambda([this, i, CurrentValueText, FpsCapToText]()
+							FT66Style::MakeDropdownOptionButton(
+								FpsCapToText(i),
+								FOnClicked::CreateLambda([this, i, CurrentValueText, FpsCapToText]()
 								{
 									PendingGraphics.FpsCapIndex = i;
 									PendingGraphics.bDirty = true;
@@ -297,11 +310,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 									{
 										CurrentValueText->SetText(FpsCapToText(i));
 									}
+									FSlateApplication::Get().DismissAllMenus();
 									return FReply::Handled();
-								}), ET66ButtonType::Neutral)
-								.SetMinWidth(0.f)
-								.SetColor(T66SettingsButtonNeutralFill())
-							)
+								}),
+								PendingGraphics.FpsCapIndex == i,
+								0.f,
+								34.f,
+								14)
 						];
 					}
 					return Box;

@@ -46,7 +46,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("HeroGridModalShell"));
 	}
@@ -58,13 +58,13 @@ namespace
 		return bSelected
 			? ResolveHeroGridBrush(
 				Selected,
-				TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
-				FMargin(0.052f, 0.094f, 0.052f, 0.094f),
+				TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+				FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 				TEXT("HeroGridTileSelected"))
 			: ResolveHeroGridBrush(
 				Neutral,
-				TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
-				FMargin(0.052f, 0.094f, 0.052f, 0.094f),
+				TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+				FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 				TEXT("HeroGridTileNeutral"));
 	}
 
@@ -83,7 +83,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/avatar_slot_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
 			FMargin(0.20f, 0.20f, 0.20f, 0.20f),
 			TEXT("HeroGridAvatarFrame"));
 	}

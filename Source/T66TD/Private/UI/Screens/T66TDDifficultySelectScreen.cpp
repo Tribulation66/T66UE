@@ -72,9 +72,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveScreenBrush(
 			Entry,
-			TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/panel_left_difficulty_shell.png"),
-			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
-			TEXT("TDDifficultyLeftPanel"));
+			T66TDUI::MasterBasicPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			TEXT("TDDifficultyMasterLeftPanel"));
 	}
 
 	const FSlateBrush* TDDifficultyCenterPanelBrush()
@@ -82,9 +82,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveScreenBrush(
 			Entry,
-			TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/panel_center_map_grid_shell.png"),
-			FMargin(0.10f, 0.12f, 0.10f, 0.12f),
-			TEXT("TDDifficultyCenterPanel"));
+			T66TDUI::MasterBasicPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			TEXT("TDDifficultyMasterCenterPanel"));
 	}
 
 	const FSlateBrush* TDDifficultyRightPanelBrush()
@@ -92,9 +92,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveScreenBrush(
 			Entry,
-			TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/panel_right_summary_shell.png"),
-			FMargin(0.12f, 0.12f, 0.12f, 0.12f),
-			TEXT("TDDifficultyRightPanel"));
+			T66TDUI::MasterBasicPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			TEXT("TDDifficultyMasterRightPanel"));
 	}
 
 	const FSlateBrush* TDDifficultyItemBrush(const bool bIsSelected)
@@ -103,11 +103,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush SelectedEntry;
 		return ResolveScreenBrush(
 			bIsSelected ? SelectedEntry : NormalEntry,
-			bIsSelected
-				? TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/difficulty_item_selected.png")
-				: TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/difficulty_item_normal.png"),
-			FMargin(0.16f, 0.30f, 0.16f, 0.30f),
-			bIsSelected ? TEXT("TDDifficultyItemSelected") : TEXT("TDDifficultyItem"));
+			T66TDUI::MasterInnerPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			bIsSelected ? TEXT("TDDifficultyMasterItemSelected") : TEXT("TDDifficultyMasterItem"));
 	}
 
 	const FSlateBrush* TDDifficultyMapCardBrush(const bool bIsSelected)
@@ -116,31 +114,14 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush SelectedEntry;
 		return ResolveScreenBrush(
 			bIsSelected ? SelectedEntry : NormalEntry,
-			bIsSelected
-				? TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/map_card_selected.png")
-				: TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/map_card_normal.png"),
-			FMargin(0.17f, 0.18f, 0.17f, 0.22f),
-			bIsSelected ? TEXT("TDMapCardSelected") : TEXT("TDMapCard"));
+			T66TDUI::MasterInnerPanelPath(),
+			T66TDUI::MasterPanelMargin(),
+			bIsSelected ? TEXT("TDMasterMapCardSelected") : TEXT("TDMasterMapCard"));
 	}
 
 	const FSlateBrush* TDDifficultyButtonBrush(const ET66ButtonType Type)
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush GreenEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush BlueEntry;
-		if (Type == ET66ButtonType::Success || Type == ET66ButtonType::Primary)
-		{
-			return ResolveScreenBrush(
-				GreenEntry,
-				TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/button_green_normal.png"),
-				FMargin(0.18f, 0.32f, 0.18f, 0.32f),
-				TEXT("TDDifficultyButtonGreen"));
-		}
-
-		return ResolveScreenBrush(
-			BlueEntry,
-			TEXT("SourceAssets/TD/UI/td_difficulty_select/Components/button_blue_normal.png"),
-			FMargin(0.18f, 0.32f, 0.18f, 0.32f),
-			TEXT("TDDifficultyButtonBlue"));
+		return T66TDUI::ButtonPlateBrush(Type);
 	}
 }
 

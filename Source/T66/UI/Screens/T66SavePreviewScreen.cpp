@@ -163,8 +163,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSavePreviewBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
-			FMargin(0.052f, 0.094f, 0.052f, 0.094f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("SavePreviewShell"));
 	}
 

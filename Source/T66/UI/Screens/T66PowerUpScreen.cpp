@@ -171,32 +171,36 @@ namespace
 	FString MakeShopSettingsAssetPath(const TCHAR* FileName)
 	{
 		const FString Name(FileName);
-		const auto TopBarPath = [](const TCHAR* State) -> FString
+		const auto BasicButtonPath = [](const TCHAR* State) -> FString
 		{
 			return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_%s.png"), State);
+		};
+		const auto SelectButtonPath = [](const TCHAR* State) -> FString
+		{
+			return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_%s.png"), State);
 		};
 
 		if (Name.StartsWith(TEXT("settings_toggle_on_")))
 		{
-			return TopBarPath(TEXT("pressed"));
+			return SelectButtonPath(TEXT("selected"));
 		}
 		if (Name.StartsWith(TEXT("settings_compact_neutral_")) || Name.StartsWith(TEXT("settings_toggle_off_")))
 		{
-			if (Name.Contains(TEXT("_hover"))) return TopBarPath(TEXT("hover"));
-			if (Name.Contains(TEXT("_pressed"))) return TopBarPath(TEXT("pressed"));
-			return TopBarPath(TEXT("normal"));
+			if (Name.Contains(TEXT("_hover"))) return SelectButtonPath(TEXT("hover"));
+			if (Name.Contains(TEXT("_pressed"))) return SelectButtonPath(TEXT("pressed"));
+			return SelectButtonPath(TEXT("normal"));
 		}
 		if (Name.StartsWith(TEXT("settings_toggle_inactive_")))
 		{
-			return TopBarPath(TEXT("disabled"));
+			return BasicButtonPath(TEXT("disabled"));
 		}
 		if (Name == TEXT("settings_content_shell_frame.png"))
 		{
-			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png");
+			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
 		}
 		if (Name == TEXT("settings_row_shell_full.png") || Name == TEXT("settings_row_shell_split.png"))
 		{
-			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png");
+			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
 		}
 		if (Name == TEXT("settings_dropdown_field.png"))
 		{
@@ -208,21 +212,25 @@ namespace
 
 	FMargin GetShopGeneratedBrushMargin(const FString& SourceRelativePath)
 	{
-		if (SourceRelativePath.Contains(TEXT("panel_large_normal.png")))
+		if (SourceRelativePath.Contains(TEXT("basic_panel_normal.png")) || SourceRelativePath.Contains(TEXT("inner_panel_normal.png")))
 		{
 			return FMargin(0.067f, 0.043f, 0.067f, 0.043f);
-		}
-		if (SourceRelativePath.Contains(TEXT("modal_frame_normal.png")))
-		{
-			return FMargin(0.052f, 0.094f, 0.052f, 0.094f);
 		}
 		if (SourceRelativePath.Contains(TEXT("dropdown_field_normal.png")))
 		{
 			return FMargin(0.06f, 0.34f, 0.06f, 0.34f);
 		}
-		if (SourceRelativePath.Contains(TEXT("basic_button_")))
+		if (SourceRelativePath.Contains(TEXT("duo_button_")) || SourceRelativePath.Contains(TEXT("select_button_")) || SourceRelativePath.Contains(TEXT("basic_button_")))
 		{
 			return FMargin(0.093f, 0.213f, 0.093f, 0.213f);
+		}
+		if (SourceRelativePath.Contains(TEXT("central_button_")))
+		{
+			return FMargin(0.083f, 0.231f, 0.083f, 0.231f);
+		}
+		if (SourceRelativePath.Contains(TEXT("dropdown_option_button_")))
+		{
+			return FMargin(0.067f, 0.250f, 0.067f, 0.250f);
 		}
 
 		return FMargin(0.f);
@@ -328,20 +336,28 @@ namespace
 			MakeShopSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")));
 	}
 
-	const FButtonStyle* ResolveShopToggleButtonStyle(const bool bActive)
+	FString MakeShopDuoButtonPath(const bool bLeft, const TCHAR* State)
+	{
+		return FString::Printf(
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/duo_button_%s_%s.png"),
+			bLeft ? TEXT("left") : TEXT("right"),
+			State);
+	}
+
+	const FButtonStyle* ResolveShopToggleButtonStyle(const bool bActive, const bool bLeft)
 	{
 		return bActive
 			? ResolveShopGeneratedButtonStyle(
-				TEXT("PowerUp.ToggleOn"),
-				MakeShopSettingsAssetPath(TEXT("settings_toggle_on_normal.png")),
-				MakeShopSettingsAssetPath(TEXT("settings_toggle_on_hover.png")),
-				MakeShopSettingsAssetPath(TEXT("settings_toggle_on_pressed.png")),
+				bLeft ? TEXT("PowerUp.ToggleLeftOn") : TEXT("PowerUp.ToggleRightOn"),
+				MakeShopDuoButtonPath(bLeft, TEXT("selected")),
+				MakeShopDuoButtonPath(bLeft, TEXT("selected")),
+				MakeShopDuoButtonPath(bLeft, TEXT("pressed")),
 				MakeShopSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")))
 			: ResolveShopGeneratedButtonStyle(
-				TEXT("PowerUp.ToggleOff"),
-				MakeShopSettingsAssetPath(TEXT("settings_toggle_off_normal.png")),
-				MakeShopSettingsAssetPath(TEXT("settings_toggle_off_hover.png")),
-				MakeShopSettingsAssetPath(TEXT("settings_toggle_off_pressed.png")),
+				bLeft ? TEXT("PowerUp.ToggleLeftOff") : TEXT("PowerUp.ToggleRightOff"),
+				MakeShopDuoButtonPath(bLeft, TEXT("normal")),
+				MakeShopDuoButtonPath(bLeft, TEXT("hover")),
+				MakeShopDuoButtonPath(bLeft, TEXT("pressed")),
 				MakeShopSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")));
 	}
 
@@ -1438,7 +1454,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 								.SetMinWidth(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabMinWidth)
 								.SetHeight(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabHeight)
 								.SetColor(!bShowingSingleUse ? T66PowerUpButtonFill() : T66PowerUpNeutralButtonFill()),
-								ResolveShopToggleButtonStyle(!bShowingSingleUse),
+								ResolveShopToggleButtonStyle(!bShowingSingleUse, true),
 								T66ScreenSlateHelpers::MakeFrontendChromeTabFont(),
 								!bShowingSingleUse ? T66PowerUpTabActiveText() : T66PowerUpTabInactiveText(),
 								T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabPadding)
@@ -1450,7 +1466,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 								.SetMinWidth(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabMinWidth)
 								.SetHeight(T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabHeight)
 								.SetColor(bShowingSingleUse ? T66PowerUpButtonFill() : T66PowerUpNeutralButtonFill()),
-								ResolveShopToggleButtonStyle(bShowingSingleUse),
+								ResolveShopToggleButtonStyle(bShowingSingleUse, false),
 								T66ScreenSlateHelpers::MakeFrontendChromeTabFont(),
 								bShowingSingleUse ? T66PowerUpTabActiveText() : T66PowerUpTabInactiveText(),
 								T66ScreenSlateHelpers::GetFrontendChromeMetrics().TabPadding)

@@ -529,6 +529,14 @@ public:
 
 	/** Build a dropdown (SComboButton). All dropdowns should use this or apply GetDropdownComboButtonStyle() to SComboBox. */
 	static TSharedRef<SWidget> MakeDropdown(const FT66DropdownParams& Params);
+	static TSharedRef<SWidget> MakeDropdownOptionButton(
+		const FText& Label,
+		FOnClicked OnClicked,
+		bool bSelected = false,
+		float MinWidth = 0.f,
+		float Height = 34.f,
+		int32 FontSize = 14,
+		const FMargin& Padding = FMargin(10.f, 6.f, 10.f, 5.f));
 	static TSharedRef<SWidget> MakeScreenSurface(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(14.f));
 	static TSharedRef<SWidget> MakeViewportFrame(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(6.f));
 	static TSharedRef<SWidget> MakeViewportCutoutFrame(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(6.f));

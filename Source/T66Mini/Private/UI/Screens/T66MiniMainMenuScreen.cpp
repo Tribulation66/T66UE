@@ -954,7 +954,7 @@ void UT66MiniMainMenuScreen::HandleFriendSearchTextChanged(const FText& InText)
 void UT66MiniMainMenuScreen::RequestMiniMenuTextures()
 {
 	SetupLooseBrush(SkyBackgroundBrush, SkyBackgroundTexture, TEXT("SourceAssets/UI/MainMenuReference/scene_background_1920x1080.png"), MiniBgSize, true, TEXT("MiniMainMenuScene"));
-	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("SourceAssets/UI/MainMenuReference/Center/cta_button_new_game_wide_plate.png"), FVector2D(388.f, 100.f), false, TEXT("MiniMainMenuCTA"));
+	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_normal.png"), FVector2D(360.f, 104.f), false, TEXT("MiniMainMenuCTA"));
 }
 
 void UT66MiniMainMenuScreen::ReleaseRetainedSlateState()

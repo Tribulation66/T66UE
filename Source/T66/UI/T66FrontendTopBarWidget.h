@@ -27,6 +27,7 @@ public:
 		TSharedPtr<FSlateBrush> HoverBrush;
 		TSharedPtr<FSlateBrush> PressedBrush;
 		TSharedPtr<FSlateBrush> DisabledBrush;
+		TSharedPtr<FSlateBrush> SelectedBrush;
 	};
 
 protected:
@@ -41,6 +42,8 @@ private:
 	enum class ETopBarSection : uint8
 	{
 		AccountStatus,
+		Settings,
+		Language,
 		Home,
 		PowerUp,
 		MiniGames,

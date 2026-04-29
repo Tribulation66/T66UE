@@ -100,7 +100,7 @@ namespace
 		static FT66BuffShopSpriteBrushEntry Entry;
 		return ResolveBuffShopSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_panel_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			ESlateBrushDrawType::Box);
@@ -111,26 +111,21 @@ namespace
 		static FT66BuffShopSpriteBrushEntry Entry;
 		return ResolveBuffShopSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Cards/runflow_shop_card_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
 			FVector2D(208.f, 188.f),
-			FMargin(0.09f, 0.14f, 0.09f, 0.14f),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			ESlateBrushDrawType::Box);
 	}
 
 	FString GetBuffShopButtonPath(const ET66BuffShopButtonFamily Family, const ET66BuffShopButtonState State)
 	{
-		const TCHAR* Prefix = TEXT("runflow_button_neutral");
-		if (Family == ET66BuffShopButtonFamily::ToggleOn)
-		{
-			Prefix = TEXT("runflow_button_primary");
-		}
-		else if (Family == ET66BuffShopButtonFamily::ToggleInactive)
-		{
-			Prefix = TEXT("runflow_button_neutral");
-		}
-
+		const TCHAR* Prefix = Family == ET66BuffShopButtonFamily::ToggleOn ? TEXT("select_button") : TEXT("basic_button");
 		const TCHAR* Suffix = TEXT("normal");
-		if (State == ET66BuffShopButtonState::Hovered)
+		if (Family == ET66BuffShopButtonFamily::ToggleOn && State == ET66BuffShopButtonState::Normal)
+		{
+			Suffix = TEXT("selected");
+		}
+		else if (State == ET66BuffShopButtonState::Hovered)
 		{
 			Suffix = TEXT("hover");
 		}
@@ -139,7 +134,7 @@ namespace
 			Suffix = TEXT("pressed");
 		}
 
-		return FString::Printf(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/%s_%s.png"), Prefix, Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, Suffix);
 	}
 
 	FVector2D GetBuffShopButtonSize(const ET66BuffShopButtonFamily Family, const ET66BuffShopButtonState State)
@@ -198,7 +193,7 @@ namespace
 		FT66BuffShopButtonBrushSet& Set = GetBuffShopButtonBrushSet(ET66BuffShopButtonFamily::ToggleInactive);
 		return ResolveBuffShopSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_button_neutral_disabled.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"),
 			FVector2D(180.f, 69.f),
 			FMargin(0.14f, 0.30f, 0.14f, 0.30f),
 			ESlateBrushDrawType::Box);

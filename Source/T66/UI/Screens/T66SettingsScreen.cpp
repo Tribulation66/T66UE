@@ -40,13 +40,7 @@ void UT66SettingsScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 
-	// Remember last tab (Bible 1.17).
-	int32 TabIdx = 0;
-	if (UT66PlayerSettingsSubsystem* PS = GetPlayerSettings())
-	{
-		TabIdx = PS->GetLastSettingsTabIndex();
-	}
-	CurrentTab = static_cast<ET66SettingsTab>(FMath::Clamp(TabIdx, 0, 7));
+	CurrentTab = ET66SettingsTab::RetroFX;
 	OnTabChanged(CurrentTab);
 	if (ContentSwitcher.IsValid())
 	{

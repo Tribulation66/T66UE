@@ -1308,7 +1308,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							Box->AddSlot()
 								.AutoHeight()
 								[
-									MakeHeroSelectionButton(FT66ButtonParams(
+									FT66Style::MakeDropdownOptionButton(
 										FText::FromString(*Opt),
 										FOnClicked::CreateLambda([this, Captured]()
 										{
@@ -1316,23 +1316,11 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 											FSlateApplication::Get().DismissAllMenus();
 											return FReply::Handled();
 										}),
-										ET66ButtonType::Neutral)
-										.SetMinWidth(0.f)
-										.SetHeight(36.f)
-										.SetFontSize(EntityDropdownFontSize)
-										.SetPadding(FMargin(10.f, 8.f, 10.f, 6.f))
-										.SetContent(
-											SNew(SOverlay)
-											+ SOverlay::Slot()
-											.HAlign(HAlign_Center)
-											.VAlign(VAlign_Center)
-											[
-												SNew(STextBlock)
-												.Text(FText::FromString(*Opt))
-												.Font(FT66Style::Tokens::FontBold(EntityDropdownFontSize))
-												.ColorAndOpacity(FT66Style::Tokens::Text)
-												.Justification(ETextJustify::Center)
-											]))
+										CurrentSkinTargetOption.IsValid() && *CurrentSkinTargetOption == *Opt,
+										0.f,
+										36.f,
+										EntityDropdownFontSize,
+										FMargin(10.f, 8.f, 10.f, 6.f))
 								];
 						}
 						return Box;
@@ -1376,7 +1364,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							Box->AddSlot()
 								.AutoHeight()
 								[
-									MakeHeroSelectionButton(FT66ButtonParams(
+									FT66Style::MakeDropdownOptionButton(
 										FText::FromString(*Opt),
 										FOnClicked::CreateLambda([this, Captured]()
 										{
@@ -1384,23 +1372,11 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 											FSlateApplication::Get().DismissAllMenus();
 											return FReply::Handled();
 										}),
-										ET66ButtonType::Neutral)
-										.SetMinWidth(0.f)
-										.SetHeight(36.f)
-										.SetFontSize(EntityDropdownFontSize)
-										.SetPadding(FMargin(10.f, 8.f, 10.f, 6.f))
-										.SetContent(
-											SNew(SOverlay)
-											+ SOverlay::Slot()
-											.HAlign(HAlign_Center)
-											.VAlign(VAlign_Center)
-											[
-												SNew(STextBlock)
-												.Text(FText::FromString(*Opt))
-												.Font(FT66Style::Tokens::FontBold(EntityDropdownFontSize))
-												.ColorAndOpacity(FT66Style::Tokens::Text)
-												.Justification(ETextJustify::Center)
-											]))
+										CurrentInfoTargetOption.IsValid() && *CurrentInfoTargetOption == *Opt,
+										0.f,
+										36.f,
+										EntityDropdownFontSize,
+										FMargin(10.f, 8.f, 10.f, 6.f))
 								];
 						}
 						return Box;
@@ -1779,7 +1755,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								Box->AddSlot()
 									.AutoHeight()
 									[
-										MakeHeroSelectionButton(FT66ButtonParams(
+										FT66Style::MakeDropdownOptionButton(
 											FText::FromString(*Opt),
 											FOnClicked::CreateLambda([this, Captured]()
 											{
@@ -1787,23 +1763,11 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 												FSlateApplication::Get().DismissAllMenus();
 												return FReply::Handled();
 											}),
-											ET66ButtonType::Neutral)
-											.SetMinWidth(0.f)
-											.SetHeight(FooterActionHeight)
-											.SetFontSize(DifficultyMenuFontSize)
-											.SetPadding(FMargin(10.f, 8.f, 10.f, 6.f))
-											.SetContent(
-												SNew(SOverlay)
-												+ SOverlay::Slot()
-												.HAlign(HAlign_Center)
-												.VAlign(VAlign_Center)
-												[
-													SNew(STextBlock)
-													.Text(FText::FromString(*Opt))
-													.Font(FT66Style::Tokens::FontBold(DifficultyMenuFontSize))
-													.ColorAndOpacity(FT66Style::Tokens::Text)
-													.Justification(ETextJustify::Center)
-												]))
+											CurrentDifficultyOption.IsValid() && *CurrentDifficultyOption == *Opt,
+											0.f,
+											FooterActionHeight,
+											DifficultyMenuFontSize,
+											FMargin(10.f, 8.f, 10.f, 6.f))
 									];
 							}
 							return Box;

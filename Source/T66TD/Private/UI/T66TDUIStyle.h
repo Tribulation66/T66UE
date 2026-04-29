@@ -103,35 +103,54 @@ namespace T66TDUI
 		return Color;
 	}
 
+	inline const TCHAR* MasterBasicPanelPath()
+	{
+		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
+	}
+
+	inline const TCHAR* MasterInnerPanelPath()
+	{
+		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png");
+	}
+
+	inline const TCHAR* MasterBasicButtonPath()
+	{
+		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png");
+	}
+
+	inline const TCHAR* MasterSelectedButtonPath()
+	{
+		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_selected.png");
+	}
+
+	inline const FMargin& MasterPanelMargin()
+	{
+		static const FMargin Margin(0.067f, 0.043f, 0.067f, 0.043f);
+		return Margin;
+	}
+
+	inline const FMargin& MasterButtonMargin()
+	{
+		static const FMargin Margin(0.104f, 0.250f, 0.104f, 0.250f);
+		return Margin;
+	}
+
 	inline const FSlateBrush* ButtonPlateBrush(const ET66ButtonType Type)
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush GreenEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush BlueEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush PurpleEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush BasicEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush SelectedEntry;
 
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush* Entry = &BlueEntry;
-		const TCHAR* RelativePath = TEXT("SourceAssets/TD/UI/td_main_menu/Components/button_blue_normal.png");
-		const TCHAR* DebugLabel = TEXT("TDButtonBlue");
-
-		if (Type == ET66ButtonType::Success || Type == ET66ButtonType::Primary)
-		{
-			Entry = &GreenEntry;
-			RelativePath = TEXT("SourceAssets/TD/UI/td_main_menu/Components/button_green_normal.png");
-			DebugLabel = TEXT("TDButtonGreen");
-		}
-		else if (Type == ET66ButtonType::Danger)
-		{
-			Entry = &PurpleEntry;
-			RelativePath = TEXT("SourceAssets/TD/UI/td_battle/Components/button_purple_normal.png");
-			DebugLabel = TEXT("TDButtonPurple");
-		}
+		const bool bUseSelectedPlate = Type == ET66ButtonType::Success
+			|| Type == ET66ButtonType::Primary
+			|| Type == ET66ButtonType::ToggleActive;
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry = bUseSelectedPlate ? SelectedEntry : BasicEntry;
 
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			*Entry,
+			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
-			FMargin(0.18f, 0.32f, 0.18f, 0.32f),
-			DebugLabel);
+			T66RuntimeUITextureAccess::MakeProjectDirPath(bUseSelectedPlate ? MasterSelectedButtonPath() : MasterBasicButtonPath()),
+			MasterButtonMargin(),
+			bUseSelectedPlate ? TEXT("TDMasterSelectedButton") : TEXT("TDMasterBasicButton"));
 	}
 
 	inline const FSlateBrush* LeftPanelShellBrush()
@@ -140,9 +159,9 @@ namespace T66TDUI
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/TD/UI/td_main_menu/Components/panel_left_shell.png")),
-			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
-			TEXT("TDLeftPanelShell"));
+			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterBasicPanelPath()),
+			MasterPanelMargin(),
+			TEXT("TDMasterLeftPanel"));
 	}
 
 	inline const FSlateBrush* RightPanelShellBrush()
@@ -151,9 +170,9 @@ namespace T66TDUI
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/TD/UI/td_main_menu/Components/panel_right_shell.png")),
-			FMargin(0.13f, 0.12f, 0.13f, 0.12f),
-			TEXT("TDRightPanelShell"));
+			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterBasicPanelPath()),
+			MasterPanelMargin(),
+			TEXT("TDMasterRightPanel"));
 	}
 
 	inline const FSlateBrush* ContentPanelBrush()
@@ -162,9 +181,9 @@ namespace T66TDUI
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/TD/UI/td_main_menu/Components/panel_card_shell.png")),
-			FMargin(0.12f, 0.28f, 0.12f, 0.28f),
-			TEXT("TDContentPanel"));
+			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterInnerPanelPath()),
+			MasterPanelMargin(),
+			TEXT("TDMasterContentPanel"));
 	}
 
 	inline const FSlateBrush* CenterFrameBrush()
@@ -173,9 +192,9 @@ namespace T66TDUI
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/TD/UI/td_main_menu/Components/cta_stack_shell.png")),
-			FMargin(0.16f, 0.22f, 0.16f, 0.22f),
-			TEXT("TDCenterFrame"));
+			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterBasicPanelPath()),
+			MasterPanelMargin(),
+			TEXT("TDMasterCenterPanel"));
 	}
 
 	inline TSharedRef<SWidget> MakeGeneratedPanel(
@@ -222,7 +241,7 @@ namespace T66TDUI
 			.SetFontSize(FontSize)
 			.SetPadding(FMargin(14.f, 8.f, 14.f, 6.f))
 			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(true)
+			.SetUseDotaPlateOverlay(false)
 			.SetDotaPlateOverrideBrush(ButtonPlateBrush(ET66ButtonType::Success))
 			.SetTextColor(BrightText())
 			.SetStateTextShadowColors(
@@ -242,7 +261,7 @@ namespace T66TDUI
 			.SetFontSize(FontSize)
 			.SetPadding(FMargin(12.f, 4.f, 12.f, 3.f))
 			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(true)
+			.SetUseDotaPlateOverlay(false)
 			.SetDotaPlateOverrideBrush(ButtonPlateBrush(ET66ButtonType::Neutral))
 			.SetTextColor(BrightText());
 		return Params;

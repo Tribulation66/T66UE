@@ -99,7 +99,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_modal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			ESlateBrushDrawType::Box);
@@ -110,7 +110,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/row_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
 			FVector2D(861.f, 74.f),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			ESlateBrushDrawType::Box);
@@ -121,17 +121,21 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/portrait_socket.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
 			FVector2D(56.f, 56.f),
-			FMargin(0.f),
-			ESlateBrushDrawType::Image);
+			FMargin(0.167f, 0.160f, 0.167f, 0.160f),
+			ESlateBrushDrawType::Box);
 	}
 
 	FString GetPickerButtonPath(const ET66PickerButtonFamily Family, const ET66PickerButtonState State)
 	{
-		const TCHAR* Prefix = Family == ET66PickerButtonFamily::ToggleOn ? TEXT("button_success") : TEXT("button_neutral");
+		const TCHAR* Prefix = Family == ET66PickerButtonFamily::ToggleOn ? TEXT("select_button") : TEXT("basic_button");
 		const TCHAR* Suffix = TEXT("normal");
-		if (State == ET66PickerButtonState::Hovered)
+		if (Family == ET66PickerButtonFamily::ToggleOn && State == ET66PickerButtonState::Normal)
+		{
+			Suffix = TEXT("selected");
+		}
+		else if (State == ET66PickerButtonState::Hovered)
 		{
 			Suffix = TEXT("hover");
 		}
@@ -139,7 +143,7 @@ namespace
 		{
 			Suffix = TEXT("pressed");
 		}
-		return FString::Printf(TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/%s_%s.png"), Prefix, Suffix);
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, Suffix);
 	}
 
 	FVector2D GetPickerButtonSize(const ET66PickerButtonFamily Family, const ET66PickerButtonState State)

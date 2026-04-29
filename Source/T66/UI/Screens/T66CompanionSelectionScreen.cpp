@@ -146,10 +146,13 @@ namespace
 
 		if (Family == ET66CompanionReferenceButtonFamily::ToggleOn && State == ET66CompanionReferenceButtonState::Normal)
 		{
-			StateSuffix = TEXT("pressed");
+			StateSuffix = TEXT("selected");
 		}
 
-		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_%s.png"), StateSuffix);
+		const TCHAR* Prefix = Family == ET66CompanionReferenceButtonFamily::ToggleOn || Family == ET66CompanionReferenceButtonFamily::ToggleOff
+			? TEXT("select_button")
+			: TEXT("basic_button");
+		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, StateSuffix);
 	}
 
 	FMargin GetCompanionReferenceButtonMargin(const ET66CompanionReferenceButtonFamily /*Family*/)
@@ -188,7 +191,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("CompanionLeftShell"));
 	}
@@ -198,7 +201,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/panel_large_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("CompanionRightShell"));
 	}
@@ -208,8 +211,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/modal_frame_normal.png"),
-			FMargin(0.052f, 0.094f, 0.052f, 0.094f),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("CompanionRowShell"));
 	}
 
@@ -228,7 +231,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/avatar_slot_normal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
 			FMargin(0.20f, 0.20f, 0.20f, 0.20f),
 			TEXT("CompanionAvatarFrame"));
 	}

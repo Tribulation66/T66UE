@@ -62,9 +62,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UT66UIManager> UIManager;
 
-	/** Screen classes to register (set in Blueprint) */
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TMap<ET66ScreenType, TSubclassOf<UT66ScreenBase>> ScreenClasses;
+	/** Runtime screen class cache. Kept transient so stale Blueprint defaults cannot retain deleted screens. */
+	UPROPERTY(Transient)
+	TMap<ET66ScreenType, TSubclassOf<UT66ScreenBase>> RuntimeScreenClasses;
 
 	/** Optional theme-specific screen overrides used when the Dota theme is active. */
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")

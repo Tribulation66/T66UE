@@ -64,11 +64,11 @@ namespace
 		case ET66ButtonType::Primary:
 		case ET66ButtonType::Success:
 		case ET66ButtonType::ToggleActive:
-			return TEXT("button_success");
+			return TEXT("select_button");
 		case ET66ButtonType::Danger:
-			return TEXT("button_danger");
+			return TEXT("basic_button");
 		default:
-			return TEXT("button_neutral");
+			return TEXT("basic_button");
 		}
 	}
 
@@ -118,7 +118,7 @@ namespace
 	{
 		return ResolvePartyInviteReferenceBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/%s_%s.png"), Prefix, State),
+			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, State),
 			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
 			DebugLabel);
 	}
@@ -147,7 +147,7 @@ namespace
 			{
 				StyleEntry.Style.SetPressed(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolvePartyInviteButtonBrush(BrushSet.Disabled, TEXT("button_neutral"), TEXT("disabled"), TEXT("PartyInviteButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolvePartyInviteButtonBrush(BrushSet.Disabled, TEXT("basic_button"), TEXT("disabled"), TEXT("PartyInviteButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}
@@ -161,7 +161,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolvePartyInviteReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/panel_modal.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("PartyInviteShell"));
 	}
@@ -171,7 +171,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolvePartyInviteReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Worker2Reference/SheetSlices/Common/row_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			TEXT("PartyInviteRowShell"));
 	}

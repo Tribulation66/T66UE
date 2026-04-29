@@ -129,7 +129,7 @@ namespace
 		static FDailyReferenceBrushEntry Entry;
 		return ResolveDailyReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_panel_tall_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			T66DailyClimbLeftShellSize,
 			FMargin(0.05f, 0.08f, 0.05f, 0.08f),
 			true);
@@ -140,7 +140,7 @@ namespace
 		static FDailyReferenceBrushEntry Entry;
 		return ResolveDailyReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_panel_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			T66DailyClimbCenterStackSize,
 			FMargin(0.05f, 0.18f, 0.05f, 0.18f),
 			true);
@@ -151,7 +151,7 @@ namespace
 		static FDailyReferenceBrushEntry Entry;
 		return ResolveDailyReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Panels/runflow_row_shell.png"),
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
 			FVector2D(861.f, 74.f),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			true);
@@ -181,36 +181,36 @@ namespace
 		{
 			Entry = MakeShared<FDailyReferenceBrushEntry>();
 		}
-		return ResolveDailyReferenceBrush(*Entry, RelativePath, ImageSize);
+		return ResolveDailyReferenceBrush(*Entry, RelativePath, ImageSize, FMargin(0.16f, 0.28f, 0.16f, 0.28f), true);
 	}
 
 	FDailyPlateBrushSet GetDailyStartButtonBrushes()
 	{
 		return {
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_cta_primary_normal.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_cta_primary_hover.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_cta_primary_pressed.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_cta_primary_disabled.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_normal.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_hover.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_pressed.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_disabled.png"), T66DailyClimbPrimaryButtonSize),
 		};
 	}
 
 	FDailyPlateBrushSet GetDailyContinueButtonBrushes()
 	{
 		return {
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_cta_blue_normal.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_cta_blue_hover.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_cta_blue_pressed.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_cta_blue_disabled.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_normal.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_hover.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_pressed.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_disabled.png"), T66DailyClimbPrimaryButtonSize),
 		};
 	}
 
 	FDailyPlateBrushSet GetDailyBackButtonBrushes()
 	{
 		return {
-			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_button_neutral_normal.png")),
-			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_button_neutral_hover.png")),
-			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_button_neutral_pressed.png")),
-			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/RunFlowReference/SheetSlices/Buttons/runflow_button_neutral_disabled.png")),
+			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png")),
+			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png")),
+			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png")),
+			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png")),
 		};
 	}
 
@@ -642,7 +642,7 @@ void UT66DailyClimbScreen::RequestBackgroundTexture()
 		SkyBackgroundBrush,
 		SkyBackgroundTexture,
 		nullptr,
-		TEXT("SourceAssets/UI/RunFlowReference/Backgrounds/daily_climb_plate_1920x1080.png"),
+		TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png"),
 		T66DailyClimbBackgroundImageSize);
 }
 

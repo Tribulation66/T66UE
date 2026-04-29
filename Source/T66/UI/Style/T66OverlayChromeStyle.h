@@ -34,6 +34,12 @@ enum class ET66OverlayChromeButtonFamily : uint8
 	Primary,
 	Danger,
 	Tab,
+	Select,
+	DuoLeft,
+	DuoRight,
+	Central,
+	DropdownOption,
+	BorderlessIcon,
 };
 
 struct T66_API FT66OverlayChromeButtonParams
