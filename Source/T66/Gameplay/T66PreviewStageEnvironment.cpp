@@ -14,7 +14,11 @@
 
 namespace
 {
-	const TCHAR* PreviewFallbackBlockMaterialPath = TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock");
+	const TCHAR* PreviewFallbackBlockMaterialPath = TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround");
+	const TCHAR* DungeonKitPreviewFloorMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonFloor_BonesDrain_A_UnrealReady.DungeonFloor_BonesDrain_A_UnrealReady");
+	const TCHAR* DungeonKitPreviewBackdropWallMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_BonesNiche_UnrealReady.DungeonWall_Straight_BonesNiche_UnrealReady");
+	const TCHAR* DungeonKitPreviewLeftWallMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_Chains_UnrealReady.DungeonWall_Straight_Chains_UnrealReady");
+	const TCHAR* DungeonKitPreviewRightWallMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_A_UnrealReady.DungeonWall_Straight_A_UnrealReady");
 
 	const FName PreviewBackdropWallName(TEXT("PreviewBackdropWall"));
 	const FName PreviewLeftWallName(TEXT("PreviewLeftWall"));
@@ -258,6 +262,85 @@ namespace
 		Component->SetRelativeRotation(FRotator::ZeroRotator);
 	}
 
+	float GetMeshAxisSize(UStaticMesh* Mesh, const int32 AxisIndex)
+	{
+		if (!Mesh)
+		{
+			return 1.0f;
+		}
+
+		const FVector Extents = Mesh->GetBounds().BoxExtent;
+		if (AxisIndex == 0)
+		{
+			return FMath::Max(Extents.X * 2.0f, 1.0f);
+		}
+		if (AxisIndex == 1)
+		{
+			return FMath::Max(Extents.Y * 2.0f, 1.0f);
+		}
+		return FMath::Max(Extents.Z * 2.0f, 1.0f);
+	}
+
+	UStaticMesh* LoadDungeonKitPreviewMesh(const TCHAR* MeshPath)
+	{
+		return MeshPath ? LoadObject<UStaticMesh>(nullptr, MeshPath) : nullptr;
+	}
+
+	void ConfigureDungeonKitPreviewFloor(
+		UStaticMeshComponent* Component,
+		UStaticMesh* Mesh,
+		const FVector& RelativeLocation,
+		const FVector2D& DesiredHalfExtents,
+		const float DesiredThickness)
+	{
+		if (!Component || !Mesh)
+		{
+			return;
+		}
+
+		Component->SetStaticMesh(Mesh);
+		Component->SetRelativeScale3D(FVector(
+			(DesiredHalfExtents.X * 2.0f) / GetMeshAxisSize(Mesh, 0),
+			(DesiredHalfExtents.Y * 2.0f) / GetMeshAxisSize(Mesh, 1),
+			DesiredThickness / GetMeshAxisSize(Mesh, 2)));
+		Component->SetRelativeRotation(FRotator::ZeroRotator);
+		Component->SetRelativeLocation(FVector(RelativeLocation.X, RelativeLocation.Y, 0.0f));
+		FT66VisualUtil::GroundMeshToActorOrigin(Component, Mesh);
+		Component->AddRelativeLocation(FVector(0.0f, 0.0f, RelativeLocation.Z));
+		ResetComponentMaterials(Component);
+		FT66VisualUtil::EnsureUnlitMaterials(Component, Component);
+		SetPreviewComponentVisible(Component, true);
+	}
+
+	void ConfigureDungeonKitPreviewWall(
+		UStaticMeshComponent* Component,
+		UStaticMesh* Mesh,
+		const FVector& RelativeLocation,
+		const FRotator& RelativeRotation,
+		const float DesiredDepth,
+		const float DesiredSpan,
+		const float DesiredHeight,
+		const bool bVisible)
+	{
+		if (!Component || !Mesh)
+		{
+			return;
+		}
+
+		Component->SetStaticMesh(Mesh);
+		Component->SetRelativeScale3D(FVector(
+			DesiredDepth / GetMeshAxisSize(Mesh, 0),
+			DesiredSpan / GetMeshAxisSize(Mesh, 1),
+			DesiredHeight / GetMeshAxisSize(Mesh, 2)));
+		Component->SetRelativeRotation(RelativeRotation);
+		Component->SetRelativeLocation(FVector(RelativeLocation.X, RelativeLocation.Y, 0.0f));
+		FT66VisualUtil::GroundMeshToActorOrigin(Component, Mesh);
+		Component->AddRelativeLocation(FVector(0.0f, 0.0f, RelativeLocation.Z));
+		ResetComponentMaterials(Component);
+		FT66VisualUtil::EnsureUnlitMaterials(Component, Component);
+		SetPreviewComponentVisible(Component, bVisible);
+	}
+
 	UMaterialInterface* ResolvePreviewSurfaceMaterial(
 		UObject* Outer,
 		const FT66PreviewThemeProfile& ThemeProfile,
@@ -399,6 +482,61 @@ void T66PreviewStageEnvironment::ApplyPreviewEnvironment(
 	const bool bShowSelectionDressing = bVisible && PreviewStageMode == ET66PreviewStageMode::Selection;
 	const bool bShowBackdropWalls = bShowSelectionDressing && !ThemeProfile.bHideBackdropWalls;
 	const bool bShowCeiling = bShowSelectionDressing && ThemeProfile.bShowCeiling;
+
+	if (ThemeProfile.Theme == T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon)
+	{
+		UStaticMesh* FloorMesh = LoadDungeonKitPreviewMesh(DungeonKitPreviewFloorMeshPath);
+		UStaticMesh* BackdropWallMesh = LoadDungeonKitPreviewMesh(DungeonKitPreviewBackdropWallMeshPath);
+		UStaticMesh* LeftWallMesh = LoadDungeonKitPreviewMesh(DungeonKitPreviewLeftWallMeshPath);
+		UStaticMesh* RightWallMesh = LoadDungeonKitPreviewMesh(DungeonKitPreviewRightWallMeshPath);
+
+		if (FloorMesh && BackdropWallMesh && LeftWallMesh && RightWallMesh)
+		{
+			ConfigureDungeonKitPreviewFloor(
+				GroundComponent,
+				FloorMesh,
+				FVector(0.0f, 0.0f, -90.0f),
+				FVector2D(540.0f, 540.0f),
+				24.0f);
+
+			ConfigureDungeonKitPreviewWall(
+				FindPreviewComponent(Owner, PreviewBackdropWallName),
+				BackdropWallMesh,
+				FVector(1150.0f, 0.0f, 0.0f),
+				FRotator(0.0f, 180.0f, 0.0f),
+				120.0f,
+				1720.0f,
+				860.0f,
+				bShowBackdropWalls);
+
+			ConfigureDungeonKitPreviewWall(
+				FindPreviewComponent(Owner, PreviewLeftWallName),
+				LeftWallMesh,
+				FVector(620.0f, -980.0f, 0.0f),
+				FRotator(0.0f, 90.0f, 0.0f),
+				120.0f,
+				1300.0f,
+				780.0f,
+				bShowBackdropWalls);
+
+			ConfigureDungeonKitPreviewWall(
+				FindPreviewComponent(Owner, PreviewRightWallName),
+				RightWallMesh,
+				FVector(620.0f, 980.0f, 0.0f),
+				FRotator(0.0f, -90.0f, 0.0f),
+				120.0f,
+				1300.0f,
+				780.0f,
+				bShowBackdropWalls);
+
+			SetPreviewComponentVisible(FindPreviewComponent(Owner, PreviewCeilingName), false);
+			for (const FName& DecorSlotName : PreviewDecorSlotNames)
+			{
+				SetPreviewComponentVisible(FindPreviewComponent(Owner, DecorSlotName), false);
+			}
+			return;
+		}
+	}
 
 	if (UStaticMeshComponent* BackdropWall = FindPreviewComponent(Owner, PreviewBackdropWallName))
 	{

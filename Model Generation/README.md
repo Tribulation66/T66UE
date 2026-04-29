@@ -14,6 +14,8 @@ Read these in order:
 4. [KNOWN_ISSUES.md](C:/UE/T66/Model%20Generation/KNOWN_ISSUES.md)
 5. [NEXT_STEPS.md](C:/UE/T66/Model%20Generation/NEXT_STEPS.md)
 
+For modular dungeon environment pieces, read [MODULAR_DUNGEON_KIT_PROCESS.md](C:/UE/T66/World%20Generation/MODULAR_DUNGEON_KIT_PROCESS.md) and [SHARED_ASSET_PIPELINE.md](C:/UE/T66/World%20Generation/SHARED_ASSET_PIPELINE.md).
+
 Use [CURRENT_HANDOFF_PROMPT.md](C:/UE/T66/Model%20Generation/CURRENT_HANDOFF_PROMPT.md) only when continuing a handoff-heavy Codex session.
 
 ## What Lives Here
@@ -30,6 +32,8 @@ Use [CURRENT_HANDOFF_PROMPT.md](C:/UE/T66/Model%20Generation/CURRENT_HANDOFF_PRO
   - current recommended work order
 - `MESH_APPROVAL_CHECKLIST.md`
   - approval gate before retopo or import
+- `WALLS_FLOORS_CEILINGS.md`
+  - redirect to the world-generation modular dungeon kit process
 - `Tools/`
   - Trellis server and Blender MCP recovery helpers
 - `Scripts/`
@@ -62,6 +66,7 @@ Current local workstation baseline:
 - Blender `5.1.1`
 - Blender MCP add-on installed locally
 - RetopoFlow `4.1.5` installed locally
+- RetopoFlow rule: [RETOPOFLOW_4.md](C:/UE/T66/Model%20Generation/RETOPOFLOW_4.md)
 - Headless Blender QA helper: [blender_glb_qa.py](C:/UE/T66/Model%20Generation/Scripts/blender_glb_qa.py)
 
 If Blender MCP appears unavailable:
@@ -90,11 +95,12 @@ This is the canonical Codex-to-Blender bridge.
 
 Use RetopoFlow as the manual topology-authoring tool inside Blender:
 
-- clean hero topology when decimate is not good enough
+- clean hero topology and any accepted low-poly topology work
 - fix deformation-critical areas like hands, face, shoulders, elbows, and knees
 - prepare meshes that may need rigging, posing, or bake-friendly topology
 
 RetopoFlow is the retopology tool itself. MCP should orchestrate around it, not pretend to replace it.
+Do not promote Blender Decimate modifier output as accepted low-poly work. Decimate is limited to throwaway diagnostics and failed prototypes.
 
 ### Blender Buddy
 

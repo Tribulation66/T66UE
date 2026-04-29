@@ -1,0 +1,23 @@
+ModuleID: DungeonWall_Straight_A
+SurfaceType: Wall
+Target: one straight modular dungeon wall segment
+Seed: 1337
+TextureSize: 2048
+Decimation: 80000
+
+Positive prompt:
+Single modular dungeon wall segment, isolated on solid green background, straight-on orthographic front view, chunky carved stone blocks, rectangular slab silhouette, shallow relief depth, cracked worn stone edges, subtle moss in crevices, game-ready low-poly stylized fantasy asset, no floor, no ceiling, no room, no character, no text.
+
+Negative constraints:
+- no full room
+- no floor slab
+- no ceiling
+- no character
+- no text or symbols
+- no deep perspective
+- no floating debris
+- no detached background platform
+- no door opening for this variant
+
+Approval goal:
+The image should read as a reusable 1800-unit wall span with a clean rectangular boundary and richer stone geometry than the current flat cuboid wall.

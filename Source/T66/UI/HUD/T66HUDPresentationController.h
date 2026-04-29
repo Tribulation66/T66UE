@@ -66,7 +66,6 @@ private:
 
 	bool bPickupCardVisible = false;
 	bool bChestRewardVisible = false;
-	float PickupCardRemainingSeconds = 0.f;
 	float ChestRewardRemainingSeconds = 0.f;
 	float ChestRewardElapsedSeconds = 0.f;
 	FName ActivePickupCardItemID = NAME_None;

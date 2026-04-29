@@ -866,10 +866,9 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	const FName DesiredAbilityHeroID = bHasSelectedHeroData ? SelectedHeroData.HeroID : NAME_None;
 	ET66UltimateType DesiredUltimateType = bHasSelectedHeroData ? SelectedHeroData.UltimateType : ET66UltimateType::None;
 	ET66PassiveType DesiredPassiveType = RunState->GetPassiveType();
-	if (DesiredPassiveType == ET66PassiveType::None)
-	{
-		DesiredPassiveType = bHasSelectedHeroData ? SelectedHeroData.PassiveType : ET66PassiveType::None;
-	}
+	FWeaponData DesiredWeaponData;
+	bool bHasDesiredWeaponData = false;
+	FName DesiredWeaponID = NAME_None;
 	if (GIAsT66)
 	{
 		if (const UT66CommunityContentSubsystem* Community = GIAsT66->GetSubsystem<UT66CommunityContentSubsystem>())
@@ -886,9 +885,16 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				DesiredPassiveType = OverridePassiveType;
 			}
 		}
+
+		if (UT66WeaponManagerSubsystem* WeaponManager = GIAsT66->GetSubsystem<UT66WeaponManagerSubsystem>())
+		{
+			bHasDesiredWeaponData = WeaponManager->GetEquippedWeaponData(DesiredWeaponData);
+			DesiredWeaponID = bHasDesiredWeaponData ? DesiredWeaponData.WeaponID : NAME_None;
+		}
 	}
 	const bool bAbilityStateChanged = !bAbilityStateInitialized
 		|| LastAbilityHeroID != DesiredAbilityHeroID
+		|| LastWeaponID != DesiredWeaponID
 		|| LastUltimateType != DesiredUltimateType
 		|| LastPassiveType != DesiredPassiveType;
 
@@ -896,6 +902,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	{
 		bAbilityStateInitialized = true;
 		LastAbilityHeroID = DesiredAbilityHeroID;
+		LastWeaponID = DesiredWeaponID;
 		LastUltimateType = DesiredUltimateType;
 		LastPassiveType = DesiredPassiveType;
 
@@ -915,14 +922,25 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 		if (PassiveBrush.IsValid())
 		{
-			const TSoftObjectPtr<UTexture2D> PassiveSoft = ResolveGameplayPassiveIcon(DesiredAbilityHeroID, DesiredPassiveType);
-			if (TexPool && !PassiveSoft.IsNull())
+			const TSoftObjectPtr<UTexture2D> WeaponSoft = bHasDesiredWeaponData ? DesiredWeaponData.Icon : TSoftObjectPtr<UTexture2D>();
+			if (TexPool && !WeaponSoft.IsNull())
 			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, PassiveSoft, this, PassiveBrush, FName(TEXT("HUDPassive")), false);
+				T66SlateTexture::BindSharedBrushAsync(TexPool, WeaponSoft, this, PassiveBrush, FName(TEXT("HUDWeapon")), false);
 			}
 			else
 			{
 				PassiveBrush->SetResourceObject(nullptr);
+			}
+		}
+		if (PassiveBorder.IsValid())
+		{
+			if (bHasDesiredWeaponData)
+			{
+				PassiveBorder->SetToolTip(CreateRichTooltip(DesiredWeaponData.DisplayName, DesiredWeaponData.Description));
+			}
+			else
+			{
+				PassiveBorder->SetToolTip(nullptr);
 			}
 		}
 	}
@@ -963,17 +981,15 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
-	// Passive stack badge (Rallying Blow: show circle + stack count)
+	// The lower ability slot is now the equipped weapon; legacy passive stack UI stays hidden.
 	{
-		const bool bRallyingBlow = (RunState->GetPassiveType() == ET66PassiveType::RallyingBlow);
-		const int32 Stacks = RunState->GetRallyStacks();
 		if (PassiveStackBadgeBox.IsValid())
 		{
-			PassiveStackBadgeBox->SetVisibility(bRallyingBlow ? EVisibility::Visible : EVisibility::Collapsed);
+			PassiveStackBadgeBox->SetVisibility(EVisibility::Collapsed);
 		}
 		if (PassiveStackText.IsValid())
 		{
-			PassiveStackText->SetText(FText::AsNumber(FMath::Max(0, Stacks)));
+			PassiveStackText->SetText(FText::AsNumber(0));
 		}
 	}
 

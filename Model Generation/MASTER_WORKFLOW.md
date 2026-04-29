@@ -18,6 +18,7 @@ Supporting operational files:
 - [NEXT_STEPS.md](C:/UE/T66/Model%20Generation/NEXT_STEPS.md)
 - [CURRENT_HANDOFF_PROMPT.md](C:/UE/T66/Model%20Generation/CURRENT_HANDOFF_PROMPT.md)
 - [MESH_APPROVAL_CHECKLIST.md](C:/UE/T66/Model%20Generation/MESH_APPROVAL_CHECKLIST.md)
+- [WALLS_FLOORS_CEILINGS.md](C:/UE/T66/Model%20Generation/WALLS_FLOORS_CEILINGS.md)
 - [SECOND_ATTEMPT_PROMPT.md](C:/UE/T66/Model%20Generation/SECOND_ATTEMPT_PROMPT.md)
 - [bootstrap_trellis2_pod.sh](C:/UE/T66/Model%20Generation/Scripts/bootstrap_trellis2_pod.sh)
 
@@ -28,6 +29,7 @@ Supporting operational files:
 - Inspect results in Blender through Blender MCP.
 - Keep all inputs, outputs, QA renders, and setup notes in one place.
 - Preserve a repeatable baseline before retopo and Unreal import work.
+- Generate modular environment-kit meshes for dungeon walls, floors, ceilings, and trim pieces.
 
 ## Folder Layout
 
@@ -53,6 +55,13 @@ C:\UE\T66\Model Generation\
           Raw\
           Renders\
           Retopo\
+    Environment\
+      DungeonKit01\
+        Inputs\
+        Raw\
+        Renders\
+        Retopo\
+        UnrealImport\
 ```
 
 Current Arthur assets already copied here:
@@ -72,6 +81,8 @@ Current Arthur assets already copied here:
 - Weapons are separate assets and should be attached after the character mesh is acceptable.
 - Retopo starts only after a raw mesh is visually approved.
 - For small enemy-family batches, one clean front-view green reference plus a strong seed is enough to test the family quickly before spending time on rerolls.
+- For environment modules, generate one wall/floor/ceiling module at a time instead of full rooms.
+- Keep generated dungeon-kit visuals separate from gameplay collision until Unreal tests prove the module set is stable.
 - Equipment placement is not approved from a single screenshot. For swords or other handheld props, require front, side, oblique, and user-like Blender checks, plus explicit user approval, before calling the placement done.
 - Saved PNGs and file links are the source of truth for review. Inline chat image previews are helpful when they work, but they are not reliable enough to be the only review surface.
 
@@ -182,25 +193,27 @@ If `transformers` drifts forward again, TRELLIS may fail with DINO-related error
 
 - Server template: [trellis_server.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/trellis_server.py)
 - Blender MCP helper: [start_blender_mcp.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/start_blender_mcp.py)
-- Blender QA / decimate helper: [blender_glb_qa.py](C:/UE/T66/Model%20Generation/Scripts/blender_glb_qa.py)
+- RetopoFlow rule: [RETOPOFLOW_4.md](C:/UE/T66/Model%20Generation/RETOPOFLOW_4.md)
+- Blender QA render helper: [blender_glb_qa.py](C:/UE/T66/Model%20Generation/Scripts/blender_glb_qa.py)
 
 ## Blender Tool Roles
 
 - Blender MCP is the canonical agent automation layer for import, export, scene inspection, scripted edits, screenshots, and repeatable QA.
-- RetopoFlow is the manual retopology tool for assets that need cleaner topology than decimation can provide, especially hero meshes and deformation-critical regions.
+- RetopoFlow is the approved manual retopology tool for accepted low-poly topology work, especially hero meshes and deformation-critical regions.
 - Blender Buddy, if installed locally, should be treated as an interactive in-Blender copilot for human-driven exploration and tool help, not as the authoritative workflow controller.
 
 ## Blender Session Rule
 
 - Use live Blender through Blender MCP when it is reachable.
 - If Blender MCP is disconnected or stale, reopen Blender and rerun [start_blender_mcp.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/start_blender_mcp.py) before falling back to headless tooling.
-- Headless Blender is the recovery path for QA render, decimate, export, and re-import verification when the live MCP session is unavailable.
-- Before Unreal import, re-import any accepted decimated GLB in Blender and render one verification image from the exported file itself.
+- Headless Blender is the recovery path for QA render, export, normalization, and re-import verification when the live MCP session is unavailable.
+- Before Unreal import, re-import any accepted exported GLB or FBX in Blender and render one verification image from the exported file itself.
 
 ## Retopo Rule
 
-- Start with decimate-plus-verify when the asset class has already proven that path is visually acceptable.
-- Escalate to RetopoFlow when decimation damages silhouette, hand readability, deformation zones, or future rigging viability.
+- Use RetopoFlow `4.1.5` for accepted low-poly topology work.
+- Do not use Blender's Decimate modifier as the accepted poly-reduction path. It is only allowed for throwaway diagnostics or rejected prototypes.
+- Static environment walls, floors, and ceilings may skip RetopoFlow when manual redraw would not materially improve the asset; in that case use the raw TRELLIS mesh after Unreal-ready normalization rather than decimating it.
 - For any manual retopo pass, keep the working `.blend`, exported result, and a fresh verification render together with the rest of the model-generation artifacts.
 
 ## Starting The Server
@@ -241,7 +254,7 @@ This transport method is more stable than an SSH tunnel and does not change outp
 ### Example Upload
 
 ```powershell
-scp.exe -P <SSH_PORT> -i C:\Users\DoPra\.ssh\id_ed25519 "C:\UE\T66\Model Generation\Runs\Arthur\Inputs\Arthur_MegabonkDirect_Body_Green.png" root@<POD_IP>:/tmp/Arthur_MegabonkDirect_Body_Green.png
+scp.exe -P <SSH_PORT> -i C:\Users\DoPra\.ssh\id_ed25519 "C:\UE\T66\Model Generation\Runs\Arthur\Inputs\Arthur_LegacyDirect_Body_Green.png" root@<POD_IP>:/tmp/Arthur_LegacyDirect_Body_Green.png
 ```
 
 ### Example Generate
@@ -252,15 +265,15 @@ curl --fail --silent --show-error --max-time 3600 \
   -H 'X-Seed: 1440' \
   -H 'X-Texture-Size: 2048' \
   -H 'X-Decimation: 200000' \
-  --data-binary @/tmp/Arthur_MegabonkDirect_Body_Green.png \
+  --data-binary @/tmp/Arthur_LegacyDirect_Body_Green.png \
   http://127.0.0.1:8000/generate \
-  -o /tmp/Arthur_MegabonkDirect_Body_Green_Trellis2.glb
+  -o /tmp/Arthur_LegacyDirect_Body_Green_Trellis2.glb
 ```
 
 ### Example Download
 
 ```powershell
-scp.exe -P <SSH_PORT> -i C:\Users\DoPra\.ssh\id_ed25519 root@<POD_IP>:/tmp/Arthur_MegabonkDirect_Body_Green_Trellis2.glb "C:\UE\T66\Model Generation\Runs\Arthur\Raw\Arthur_MegabonkDirect_Body_Green_Trellis2.glb"
+scp.exe -P <SSH_PORT> -i C:\Users\DoPra\.ssh\id_ed25519 root@<POD_IP>:/tmp/Arthur_LegacyDirect_Body_Green_Trellis2.glb "C:\UE\T66\Model Generation\Runs\Arthur\Raw\Arthur_LegacyDirect_Body_Green_Trellis2.glb"
 ```
 
 ## Input Rules
@@ -275,8 +288,8 @@ For baseline reproduction:
 
 Current Arthur body/head baseline inputs:
 
-- [Arthur_MegabonkDirect_Body_Green.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Inputs/Arthur_MegabonkDirect_Body_Green.png)
-- [Arthur_MegabonkDirect_Head_Green.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Inputs/Arthur_MegabonkDirect_Head_Green.png)
+- [Arthur_LegacyDirect_Body_Green.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Inputs/Arthur_LegacyDirect_Body_Green.png)
+- [Arthur_LegacyDirect_Head_Green.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Inputs/Arthur_LegacyDirect_Head_Green.png)
 
 Current hero-reference inputs:
 
@@ -312,10 +325,10 @@ Latest QA renders:
 
 Earlier test assets remain useful for comparison:
 
-- [Arthur_MegabonkProxy_Body_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_MegabonkProxy_Body_Raw.png)
-- [Arthur_MegabonkProxy_Head_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_MegabonkProxy_Head_Raw.png)
-- [Arthur_MegabonkDirect_Body_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_MegabonkDirect_Body_Raw.png)
-- [Arthur_MegabonkDirect_Head_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_MegabonkDirect_Head_Raw.png)
+- [Arthur_LegacyProxy_Body_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_LegacyProxy_Body_Raw.png)
+- [Arthur_LegacyProxy_Head_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_LegacyProxy_Head_Raw.png)
+- [Arthur_LegacyDirect_Body_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_LegacyDirect_Body_Raw.png)
+- [Arthur_LegacyDirect_Head_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_LegacyDirect_Head_Raw.png)
 
 ## Equipment Placement Approval Loop
 
@@ -360,7 +373,7 @@ Run these in order:
 2. Fix the sword hold so it reads as truly held from front, side, oblique, and user-like review angles.
 3. If transform-only sword placement still fails, move into a light hand-pose or rig step instead of endless transform nudging.
 4. After the sword hold is solved, explore rigging and baked-mesh workflows for Arthur and the easy enemy batch.
-5. Extend the same `reference -> TRELLIS -> decimate -> verify` workflow to the next difficulty-family batch only after the local character pipeline is stable.
+5. Extend the same `reference -> TRELLIS -> RetopoFlow when needed -> verify` workflow to the next difficulty-family batch only after the local character pipeline is stable.
 6. Only move into Unreal import once the exported low-poly GLB has a verification render from a fresh Blender re-import and the intended rig/bake direction is decided.
 
 ## Retopo Policy

@@ -18,6 +18,7 @@
 #include "NiagaraSystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Engine/AssetManager.h"
@@ -300,6 +301,7 @@ void UT66CombatComponent::BeginPlay()
 		CachedRunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 		CachedFloatingCombatText = GI->GetSubsystem<UT66FloatingCombatTextSubsystem>();
 		CachedIdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>();
+		CachedWeaponManager = GI->GetSubsystem<UT66WeaponManagerSubsystem>();
 		if (CachedRunState)
 		{
 			CachedRunState->InventoryChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
@@ -314,6 +316,10 @@ void UT66CombatComponent::BeginPlay()
 		if (CachedIdolManager)
 		{
 			CachedIdolManager->IdolStateChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+		}
+		if (CachedWeaponManager)
+		{
+			CachedWeaponManager->OnWeaponStateChanged.AddUObject(this, &UT66CombatComponent::HandleInventoryChanged);
 		}
 	}
 
@@ -367,6 +373,10 @@ void UT66CombatComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (CachedIdolManager)
 	{
 		CachedIdolManager->IdolStateChanged.RemoveDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+	}
+	if (CachedWeaponManager)
+	{
+		CachedWeaponManager->OnWeaponStateChanged.RemoveAll(this);
 	}
 	CombatPresentationAssetsLoadHandle.Reset();
 
@@ -696,6 +706,8 @@ void UT66CombatComponent::RecomputeFromRunState()
 	ProjectileScaleMultiplier = 1.f;
 	bHasCachedHeroData = false;
 	CachedHeroData = FHeroData{};
+	bHasCachedWeaponData = false;
+	CachedWeaponData = FWeaponData{};
 	CachedIdolSlots.Reset();
 
 	if (!CachedRunState)
@@ -724,6 +736,9 @@ void UT66CombatComponent::RecomputeFromRunState()
 			Entry.bValid = !Entry.IdolID.IsNone() && GI->GetIdolData(Entry.IdolID, Entry.IdolData);
 			CachedIdolSlots.Add(MoveTemp(Entry));
 		}
+
+		UT66WeaponManagerSubsystem* WeaponManager = GI->GetSubsystem<UT66WeaponManagerSubsystem>();
+		bHasCachedWeaponData = WeaponManager && WeaponManager->GetEquippedWeaponData(CachedWeaponData);
 	}
 
 	int32 ValidIdolCount = 0;
@@ -764,16 +779,21 @@ void UT66CombatComponent::RecomputeFromRunState()
 	const float TotalAttackSpeed = AttackSpeedMult * HeroAttackSpeedMult;
 	const float TotalDamage = DamageMult * HeroDamageMult;
 	const float TotalScale = ScaleMult * HeroScaleMult;
+	const float WeaponDamageMult = bHasCachedWeaponData ? FMath::Max(0.01f, CachedWeaponData.DamageMultiplier) : 1.f;
+	const float WeaponAttackSpeedMult = bHasCachedWeaponData ? FMath::Max(0.01f, CachedWeaponData.AttackSpeedMultiplier) : 1.f;
+	const float WeaponScaleMult = bHasCachedWeaponData ? FMath::Max(0.01f, CachedWeaponData.AttackScaleMultiplier) : 1.f;
+	const float WeaponRangeMult = bHasCachedWeaponData ? FMath::Max(0.01f, CachedWeaponData.RangeMultiplier) : 1.f;
+	const float WeaponBaseDamage = static_cast<float>(BaseDamagePerShot + (bHasCachedWeaponData ? CachedWeaponData.BonusHitDamage : 0));
 
 	// Per HUD/combat spec: Scale stat affects attack range (larger scale = larger range).
 	// Use the DataTable base range (hero-specific) instead of the C++ default.
 	const float DataTableRange = CachedRunState->GetHeroBaseAttackRange();
 	const float EffectiveBaseRange = (DataTableRange > 0.f) ? DataTableRange : BaseAttackRange;
-	AttackRange = FMath::Clamp(EffectiveBaseRange * FMath::Max(0.1f, TotalScale), 200.f, 50000.f);
+	AttackRange = FMath::Clamp(EffectiveBaseRange * FMath::Max(0.1f, TotalScale * WeaponRangeMult), 200.f, 50000.f);
 
-	EffectiveFireIntervalSeconds = FMath::Clamp(BaseFireIntervalSeconds / FMath::Max(0.01f, TotalAttackSpeed), 0.05f, 10.f);
-	EffectiveDamagePerShot = FMath::Clamp(FMath::RoundToInt(static_cast<float>(BaseDamagePerShot) * TotalDamage), 1, 999999);
-	ProjectileScaleMultiplier = FMath::Clamp(TotalScale, 0.1f, 10.f);
+	EffectiveFireIntervalSeconds = FMath::Clamp(BaseFireIntervalSeconds / FMath::Max(0.01f, TotalAttackSpeed * WeaponAttackSpeedMult), 0.05f, 10.f);
+	EffectiveDamagePerShot = FMath::Clamp(FMath::RoundToInt(WeaponBaseDamage * TotalDamage * WeaponDamageMult), 1, 999999);
+	ProjectileScaleMultiplier = FMath::Clamp(TotalScale * WeaponScaleMult, 0.1f, 10.f);
 
 	// Dev Power toggle: auto-attack does absurd damage.
 	if (CachedRunState->GetDevPowerEnabled())
@@ -1051,7 +1071,13 @@ void UT66CombatComponent::TryFire()
 			HeroDataForPrimary = CachedHeroData;
 		}
 	}
+	if (bHasCachedWeaponData)
+	{
+		AttackCategory = CachedWeaponData.Branch;
+	}
 	FT66CombatTargetHandle PrimaryTargetHandle;
+	TArray<AActor*> WeaponHitActors;
+	WeaponHitActors.Reserve(12);
 
 	// --- Pierce (straight line): full range so enemies behind the first are hit; 10% damage reduction per pierced target. ---
 	auto PerformPierce = [&](AActor* PrimaryTarget, float PrimaryDamageMult) -> bool
@@ -1067,19 +1093,32 @@ void UT66CombatComponent::TryFire()
 		FVector Dir = FVector::ForwardVector;
 		TArray<AActor*> InLine;
 		BuildPierceTargets(PrimaryTarget, LineLength, PierceRadius, InLine, Dir, &TargetLoc);
+		const int32 BasePierceTargets = bHaveHeroData ? FMath::Max(0, HeroDataForPrimary.BasePierceCount) + 1 : 1;
+		const int32 WeaponPierceTargets = bHasCachedWeaponData ? FMath::Max(0, CachedWeaponData.BonusPierceCount) : 0;
+		const int32 MaxPierceTargets = FMath::Max(1, BasePierceTargets + WeaponPierceTargets);
+		if (InLine.Num() > MaxPierceTargets)
+		{
+			InLine.SetNum(MaxPierceTargets, EAllowShrinking::No);
+		}
+		const float FalloffPerHit = FMath::Clamp(
+			((bHaveHeroData && HeroDataForPrimary.FalloffPerHit > 0.f) ? HeroDataForPrimary.FalloffPerHit : 0.10f)
+			* (bHasCachedWeaponData ? FMath::Max(0.f, CachedWeaponData.FalloffPerHitMultiplier) : 1.f),
+			0.f,
+			0.95f);
 
 		for (int32 i = 0; i < InLine.Num(); ++i)
 		{
 			const FT66CombatTargetHandle HitHandle = (i == 0)
 				? PrimaryHandle
 				: ResolveAutoAttackTargetHandle(InLine[i], false, RngSub);
-			const float Multiplier = FMath::Max(0.1f, 1.f - 0.1f * static_cast<float>(i));
+			const float Multiplier = FMath::Max(0.1f, 1.f - FalloffPerHit * static_cast<float>(i));
 			const float PrimaryMult = (i == 0) ? PrimaryDamageMult : 1.f;
 			const int32 BaseDmg = FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * Multiplier * PrimaryMult));
 			FName RangeEvent;
 			const int32 RangeDmg = GetRangeMultipliedDamage(BaseDmg, InLine[i], &RangeEvent);
 			const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 			ApplyDamageToTargetHandle(HitHandle, Resolved.Key, Resolved.Value, NAME_None, RangeEvent);
+			WeaponHitActors.AddUnique(InLine[i]);
 		}
 
 		if (CurrentHeroID == FName(TEXT("Hero_1")))
@@ -1116,7 +1155,9 @@ void UT66CombatComponent::TryFire()
 			? PrimaryTargetHandle
 			: ResolveAutoAttackTargetHandle(PrimaryTarget, false, RngSub);
 		const FVector SlashCenter = GetTargetAimPoint(PrimaryHandle);
-		const float EffectiveSlashRadius = SlashRadius * ProjectileScaleMultiplier;
+		const float BaseSlashRadius = (bHaveHeroData && HeroDataForPrimary.AoeRadius > 0.f) ? HeroDataForPrimary.AoeRadius : SlashRadius;
+		const float WeaponAoeRadius = bHasCachedWeaponData ? FMath::Max(0.f, CachedWeaponData.BonusAoeRadius) : 0.f;
+		const float EffectiveSlashRadius = BaseSlashRadius * ProjectileScaleMultiplier + WeaponAoeRadius;
 
 		TArray<AActor*> SlashTargets;
 		BuildSlashTargets(PrimaryTarget, EffectiveSlashRadius, SlashTargets);
@@ -1135,6 +1176,7 @@ void UT66CombatComponent::TryFire()
 			const int32 RangeDmg = GetRangeMultipliedDamage(PrimaryDmg, PrimaryTarget, &RangeEvent);
 			const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 			ApplyDamageToTargetHandle(PrimaryHandle, Resolved.Key, Resolved.Value, NAME_None, RangeEvent);
+			WeaponHitActors.AddUnique(PrimaryTarget);
 		}
 
 		const int32 SplashDmg = FMath::Max(1, FMath::RoundToInt(static_cast<float>(EffectiveDamagePerShot) * ArcaneMult));
@@ -1148,6 +1190,7 @@ void UT66CombatComponent::TryFire()
 				const int32 RangeDmg = GetRangeMultipliedDamage(SplashDmg, Hit, &RangeEvent);
 				const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 				ApplyDamageToTargetHandle(HitHandle, Resolved.Key, Resolved.Value, NAME_None, RangeEvent);
+				WeaponHitActors.AddUnique(Hit);
 			}
 		}
 
@@ -1168,8 +1211,13 @@ void UT66CombatComponent::TryFire()
 		const int32 ChaosBonus = CachedRunState ? CachedRunState->GetChaosTheoryBonusBounceCount() : 0;
 		const float TimeNow = static_cast<float>(World->GetTimeSeconds());
 		const int32 JuicedBonus = (JuicedEndTime > TimeNow) ? JuicedBonusBounce : 0;
-		const int32 BounceCount = BaseBounce + ChaosBonus + JuicedBonus;
-		const float Falloff = FMath::Clamp(bHaveHeroData ? HeroDataForPrimary.FalloffPerHit : 0.f, 0.f, 0.95f);
+		const int32 WeaponBounceBonus = bHasCachedWeaponData ? FMath::Max(0, CachedWeaponData.BonusBounceCount) : 0;
+		const int32 BounceCount = BaseBounce + ChaosBonus + JuicedBonus + WeaponBounceBonus;
+		const float Falloff = FMath::Clamp(
+			(bHaveHeroData ? HeroDataForPrimary.FalloffPerHit : 0.f)
+			* (bHasCachedWeaponData ? FMath::Max(0.f, CachedWeaponData.FalloffPerHitMultiplier) : 1.f),
+			0.f,
+			0.95f);
 		const float BounceRangeSq = AttackRange * AttackRange;
 		const FVector PrimaryLoc = GetTargetAimPoint(PrimaryHandle);
 		TArray<FVector> ChainPositions;
@@ -1181,6 +1229,7 @@ void UT66CombatComponent::TryFire()
 			const int32 RangeDmg = GetRangeMultipliedDamage(PrimaryDmg, PrimaryTarget, &RangeEvent);
 			const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 			ApplyDamageToTargetHandle(PrimaryHandle, Resolved.Key, Resolved.Value, NAME_None, RangeEvent);
+			WeaponHitActors.AddUnique(PrimaryTarget);
 		}
 		FVector CurrentLoc = PrimaryLoc;
 		TSet<FString> HitKeys;
@@ -1199,6 +1248,7 @@ void UT66CombatComponent::TryFire()
 			const int32 RangeDmg = GetRangeMultipliedDamage(BounceDmg, Next, &RangeEvent);
 			const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 			ApplyDamageToTargetHandle(NextHandle, Resolved.Key, Resolved.Value, NAME_None, RangeEvent);
+			WeaponHitActors.AddUnique(Next);
 			// StaticCharge: 20% chance to confuse bounced targets.
 			if (CachedRunState && CachedRunState->GetPassiveType() == ET66PassiveType::StaticCharge)
 			{
@@ -1226,17 +1276,20 @@ void UT66CombatComponent::TryFire()
 			? PrimaryTargetHandle
 			: ResolveAutoAttackTargetHandle(PrimaryTarget, false, RngSub);
 		static const FName HeroPrimaryDotSource(TEXT("HeroPrimaryDot"));
-		const float Duration = (bHaveHeroData && HeroDataForPrimary.DotDuration > 0.f) ? HeroDataForPrimary.DotDuration : 3.f;
+		const float WeaponDotDuration = bHasCachedWeaponData ? FMath::Max(0.f, CachedWeaponData.BonusDotDuration) : 0.f;
+		const float WeaponDotTickDamageMultiplier = bHasCachedWeaponData ? FMath::Max(0.01f, CachedWeaponData.BonusDotTickDamageMultiplier) : 1.f;
+		const float Duration = ((bHaveHeroData && HeroDataForPrimary.DotDuration > 0.f) ? HeroDataForPrimary.DotDuration : 3.f) + WeaponDotDuration;
 		const float TickInterval = (bHaveHeroData && HeroDataForPrimary.DotTickInterval > 0.f) ? HeroDataForPrimary.DotTickInterval : 0.5f;
 		const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
 		const int32 InitialDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(EffectiveDamagePerShot) * 0.5f * PrimaryDamageMult));
-		const float DotTotalDamage = static_cast<float>(FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * PrimaryDamageMult) - InitialDamage));
+		const float DotTotalDamage = static_cast<float>(FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * PrimaryDamageMult) - InitialDamage)) * WeaponDotTickDamageMultiplier;
 		const float DamagePerTick = DotTotalDamage / static_cast<float>(Ticks);
 		{
 			FName RangeEvent;
 			const int32 RangeDmg = GetRangeMultipliedDamage(InitialDamage, PrimaryTarget, &RangeEvent);
 			const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 			ApplyDamageToTargetHandle(PrimaryHandle, Resolved.Key, Resolved.Value, NAME_None, RangeEvent);
+			WeaponHitActors.AddUnique(PrimaryTarget);
 		}
 		CachedRunState->ApplyDOT(PrimaryTarget, Duration, TickInterval, DamagePerTick, HeroPrimaryDotSource);
 		// Frostbite: DOT attacks slow enemy move speed by 30%.
@@ -1784,8 +1837,94 @@ void UT66CombatComponent::TryFire()
 			SpawnDOTVFX(PrimaryTarget->GetActorLocation(), 2.f, 50.f, FLinearColor(0.9f, 0.3f, 0.1f));
 		}
 
-		// Idol attacks: one per equipped idol, each with unique color.
+		// Idol load modifiers: idols now ride on the weapon payload instead of firing independent attacks.
 		if (CachedRunState)
+		{
+			if (WeaponHitActors.Num() == 0 && PrimaryTarget)
+			{
+				WeaponHitActors.AddUnique(PrimaryTarget);
+			}
+
+			UE_LOG(
+				LogT66Combat,
+				Verbose,
+				TEXT("[IDOL MOD] owner=%s weaponHits=%d cachedIdolSlots=%d"),
+				GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
+				WeaponHitActors.Num(),
+				CachedIdolSlots.Num());
+
+			int32 IdolVisualIndex = 0;
+			for (const FCachedIdolSlot& CachedIdolSlot : CachedIdolSlots)
+			{
+				if (!CachedIdolSlot.bValid || CachedIdolSlot.IdolID.IsNone())
+				{
+					continue;
+				}
+
+				const FName IdolID = CachedIdolSlot.IdolID;
+				const ET66ItemRarity IdolRarity = CachedIdolSlot.Rarity;
+				const FIdolData& IdolData = CachedIdolSlot.IdolData;
+				const float IdolVisualDelay = static_cast<float>(IdolVisualIndex) * 0.035f;
+				const float IdolGlobalScale = FMath::Max(0.1f, ProjectileScaleMultiplier);
+				const float IdolCategorySubScale = T66CombatShared::GetCategorySubScaleMultiplier(CachedRunState, IdolData.Category);
+				const float IdolBehaviorScale = IdolGlobalScale * IdolCategorySubScale;
+				const int32 IdolDamage = FMath::Max(1, FMath::RoundToInt(IdolData.GetDamageAtRarity(IdolRarity)));
+				const FVector PrimaryLoc = PrimaryTargetImpactLocation;
+				const FVector PrimaryVFXLoc = T66CombatShared::ResolveGroundAnchor(World, PrimaryLoc, PrimaryTarget);
+
+				TArray<FVector> PayloadVFXPositions;
+				PayloadVFXPositions.Add(MyLoc);
+				for (AActor* Hit : WeaponHitActors)
+				{
+					if (!IsValidAutoTarget(Hit))
+					{
+						continue;
+					}
+
+					FName RangeEvent;
+					const int32 RangeDmg = GetRangeMultipliedDamage(IdolDamage, Hit, &RangeEvent);
+					const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
+					ApplyDamageToActor(Hit, Resolved.Key, Resolved.Value, IdolID, RangeEvent);
+					ApplyIdolSpecialBehavior(Hit, IdolID, IdolRarity, IdolDamage, Hit->GetActorLocation());
+					PayloadVFXPositions.Add(Hit->GetActorLocation());
+
+					if (IdolData.Category == ET66AttackCategory::DOT)
+					{
+						const float Duration = FMath::Max(0.5f, IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale);
+						const float TickInterval = FMath::Max(0.1f, IdolData.DotTickInterval);
+						const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
+						const float DamagePerTick = static_cast<float>(IdolDamage) / static_cast<float>(Ticks);
+						CachedRunState->ApplyDOT(Hit, Duration, TickInterval, DamagePerTick, IdolID);
+					}
+				}
+
+				switch (IdolData.Category)
+				{
+				case ET66AttackCategory::Pierce:
+					SpawnIdolPierceVFX(IdolID, IdolRarity, MyLoc, PrimaryVFXLoc, PrimaryVFXLoc, IdolVisualDelay);
+					break;
+				case ET66AttackCategory::AOE:
+				{
+					const float Radius = FMath::Max(50.f, IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale);
+					SpawnIdolAOEVFX(IdolID, IdolRarity, PrimaryVFXLoc, Radius, IdolVisualDelay);
+					break;
+				}
+				case ET66AttackCategory::Bounce:
+					SpawnIdolBounceVFX(IdolID, IdolRarity, PayloadVFXPositions, IdolVisualDelay);
+					break;
+				case ET66AttackCategory::DOT:
+					SpawnIdolDOTVFX(IdolID, IdolRarity, IsValidAutoTarget(PrimaryTarget) ? PrimaryTarget : nullptr, PrimaryVFXLoc, FMath::Max(0.5f, IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale), 80.f, IdolVisualDelay);
+					break;
+				default:
+					break;
+				}
+
+				++IdolVisualIndex;
+			}
+		}
+
+		// Legacy independent idol attacks are intentionally disabled; idols now modify the weapon load.
+		if (false && CachedRunState)
 		{
 			const float IdolRange = AttackRange;
 			// Bounce search radius = hero attack range, centered on the last hit enemy each step.

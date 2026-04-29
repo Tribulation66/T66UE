@@ -1,0 +1,52 @@
+{
+  "module_id": "DungeonWall_Straight_Chains",
+  "kind": "wall",
+  "source_stage": "raw",
+  "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Raw\\Trellis\\DungeonWall_Straight_Chains_S1337_D80000_Trellis2.glb",
+  "export": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\UnrealImport\\DungeonWall_Straight_Chains_UnrealReady.glb",
+  "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\DungeonKit01\\DungeonWall_Straight_Chains_UnrealReady.fbx",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Renders\\unreal_ready\\DungeonWall_Straight_Chains_UnrealReady.png",
+  "yaw_degrees_applied_before_remap": 90.0,
+  "target_cm": {
+    "cell_size": 1300.0,
+    "wall_depth": 120.0,
+    "wall_height": 1200.0,
+    "floor_thickness": 24.0
+  },
+  "source_bounds_before_remap_blender_units": {
+    "min": [
+      -0.4996502101421356,
+      -0.500838577747345,
+      -0.2927159368991852
+    ],
+    "max": [
+      0.4996415376663208,
+      0.5006479620933533,
+      0.2937801480293274
+    ],
+    "size": [
+      0.9992917776107788,
+      1.0014865398406982,
+      0.586496114730835
+    ]
+  },
+  "final_bounds_blender_units": {
+    "min": [
+      0.0,
+      -6.5,
+      0.0
+    ],
+    "max": [
+      1.1999999284744263,
+      6.5,
+      11.999999046325684
+    ],
+    "size": [
+      1.1999999284744263,
+      13.0,
+      11.999999046325684
+    ]
+  },
+  "triangles": 78109,
+  "pivot_convention": "wall/door back-bottom-center at origin; floor center at origin with visible detail above Z=0"
+}

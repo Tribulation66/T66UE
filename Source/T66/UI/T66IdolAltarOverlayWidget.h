@@ -60,8 +60,10 @@ private:
 	void RefundSelectionBudget(int32 SlotIndex);
 	int32 GetOfferStockIndexForVisibleSlot(int32 VisibleSlotIndex) const;
 	bool IsTutorialSingleOfferMode() const;
+	bool IsWeaponOfferMode() const;
 	FName GetTutorialOfferedIdolID() const;
 
 	UFUNCTION()
 	void HandleIdolsChanged();
+	void HandleWeaponsChanged();
 };

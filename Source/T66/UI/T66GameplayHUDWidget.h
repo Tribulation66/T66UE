@@ -108,7 +108,7 @@ public:
 	UFUNCTION()
 	void RefreshLootPrompt();
 
-	/** Show the item card popup for a just-picked-up item (above inventory, skippable, then fades out). */
+	/** Show the item card popup for a just-picked-up item above inventory. */
 	void ShowPickupItemCard(FName ItemID, ET66ItemRarity ItemRarity);
 
 	/** Show the chest gold reward presentation in the same above-inventory lane. */
@@ -152,11 +152,11 @@ public:
 	void StartCrateOpen();
 
 	static constexpr float MinimapPanelWidth = 164.f;
-	static constexpr float BottomRightInventoryPanelWidth = 279.f;
-	static constexpr float BottomRightInventoryPanelHeight = 140.f;
+	static constexpr float BottomRightInventoryPanelWidth = 378.f;
+	static constexpr float BottomRightInventoryPanelHeight = 167.f;
 	static constexpr float BottomRightPauseAchievementPanelWidth = 472.f;
 	static constexpr float BottomRightPresentationGap = 8.f;
-	static constexpr float BottomRightInventorySlotSize = 48.f;
+	static constexpr float BottomRightInventorySlotSize = 50.f;
 	static constexpr float BottomRightInventoryInspectScale = 2.f;
 
 protected:
@@ -250,8 +250,6 @@ protected:
 	TArray<TSharedPtr<SImage>> ChestRewardCoinImages;
 	static constexpr float PickupCardWidth = MinimapPanelWidth;
 	static constexpr float PickupCardHeight = 216.f;
-	static constexpr float PickupCardDisplaySeconds = 5.f;
-	static constexpr float PickupCardFadeOutSeconds = 0.6f;
 	static constexpr float ChestRewardDisplaySeconds = 2.4f;
 	static constexpr float ChestRewardFadeOutSeconds = 0.35f;
 	static constexpr int32 ChestRewardCoinCount = 7;
@@ -374,6 +372,7 @@ protected:
 	ET66HeroPortraitVariant LastPortraitVariant = ET66HeroPortraitVariant::Half;
 	bool bAbilityStateInitialized = false;
 	FName LastAbilityHeroID = NAME_None;
+	FName LastWeaponID = NAME_None;
 	ET66UltimateType LastUltimateType = ET66UltimateType::None;
 	ET66PassiveType LastPassiveType = ET66PassiveType::None;
 	bool bLastCrosshairLocked = false;

@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Raw\\Trellis\\DungeonCeiling_ChainAnchor_A_S1337_D80000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Renders\\normalized\\DungeonCeiling_ChainAnchor_A_RetopoPreview.png",
+  "export": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Retopo\\DungeonCeiling_ChainAnchor_A_S1337_Retopo8000.glb",
+  "raw_triangles": 73740,
+  "triangles_before_decimate": 73740,
+  "triangles_after_decimate": 8000,
+  "bounds": {
+    "min": [
+      -0.5036564469337463,
+      -0.5048968195915222,
+      -0.512473464012146
+    ],
+    "max": [
+      0.5032185316085815,
+      0.5110055208206177,
+      0.4908793270587921
+    ],
+    "size": [
+      1.0068750381469727,
+      1.0159022808074951,
+      1.0033527612686157
+    ]
+  }
+}

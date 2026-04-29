@@ -122,7 +122,8 @@ These are not environment requirements, but they are the current proven operatin
 - Blender MCP: installed and working
 - RetopoFlow: `4.1.5`
 - Blender MCP recovery helper: [start_blender_mcp.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/start_blender_mcp.py)
-- Blender batch QA / decimate helper: [blender_glb_qa.py](C:/UE/T66/Model%20Generation/Scripts/blender_glb_qa.py)
+- RetopoFlow rule: [RETOPOFLOW_4.md](C:/UE/T66/Model%20Generation/RETOPOFLOW_4.md)
+- Blender batch QA helper: [blender_glb_qa.py](C:/UE/T66/Model%20Generation/Scripts/blender_glb_qa.py)
 - If Blender MCP is disconnected, reopen Blender and rerun the MCP helper before assuming the toolchain is unavailable.
 
 ## If Results Degrade

@@ -25,6 +25,26 @@ Update it whenever:
 
 ## 3. What Was Learned So Far
 
+### 2026-04-29
+
+- Moved the modular dungeon wall/floor/ceiling kit process into this workspace:
+  - [MODULAR_DUNGEON_KIT_PROCESS.md](C:/UE/T66/World%20Generation/MODULAR_DUNGEON_KIT_PROCESS.md)
+  - [SHARED_ASSET_PIPELINE.md](C:/UE/T66/World%20Generation/SHARED_ASSET_PIPELINE.md)
+- Locked the practical near-term world-generation direction to modular environment-kit generation instead of unreleased full-room HY-World generation.
+- Cleaned the runtime map path so the old terrain-variant asset family is no longer a live world-generation dependency.
+- Confirmed the existing [World Generation](C:/UE/T66/World%20Generation) folder is the canonical home for this work.
+- Refreshed official HY-World release status from the public GitHub repo:
+  - `WorldMirror 2.0` code and weights are still the public runnable path
+  - full world-generation inference, `HY-Pano 2.0`, `WorldNav`, and `WorldStereo 2.0` are still listed as coming soon
+  - `hyworld2/worldgen/README.md` still identifies the world-generation module as not open-sourced in the repository
+- Created [SETUP.md](C:/UE/T66/World%20Generation/SETUP.md) for RunPod/HY-World setup.
+- Created [ROOM_GENERATION_PROCESS.md](C:/UE/T66/World%20Generation/ROOM_GENERATION_PROCESS.md) for the first dungeon-room prototype.
+- Repo seam for the runtime test:
+  - keep `T66TowerMapTerrain` as the normal tower generator
+  - after `AT66GameMode::SpawnMainMapTerrain()` caches `MainMapSpawnSurfaceLocation`, use that cached value as the portal destination
+  - spawn the player in a generated-room entry layer only for the dev prototype
+  - use an explicit-destination portal instead of reusing `AT66TeleportPadInteractable` directly, because the current teleport pad chooses a random destination pad
+
 ### 2026-04-19
 
 - Created the top-level folder [World Generation](C:/UE/T66/World%20Generation).
@@ -46,6 +66,11 @@ Update it whenever:
 
 ## 4. Recommended Immediate Next Steps
 
+- Continue `DungeonKit01` as the active production-facing experiment:
+  - generate/import more modular wall and floor variants
+  - keep generated meshes visual-only
+  - keep hidden simple proxies collision-authoritative
+  - move broad runtime kit selection toward a data-authored registry after the prototype stabilizes
 - Run one local `WorldMirror 2.0` reconstruction test on a controlled scene:
   - either Unreal editor screenshots from a blockout
   - or a short multi-view / video capture of a scene we already understand

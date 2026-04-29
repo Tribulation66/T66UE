@@ -39,8 +39,10 @@ Notes:
 
 - project architecture map: [T66_PROJECT_CATALOGUE.md](C:/UE/T66/MASTER%20DOCS/T66_PROJECT_CATALOGUE.md)
 - current world/procedural import rules: [T66_IMPORT_PIPELINE_GUIDELINES.md](C:/UE/T66/MASTER%20DOCS/T66_IMPORT_PIPELINE_GUIDELINES.md)
-- existing terrain-generation reference: [SourceAssets/MegabonkMapGeneration](C:/UE/T66/SourceAssets/MegabonkMapGeneration)
-- old Unity terrain note: [README.txt](C:/UE/T66/SourceAssets/MegabonkMapGeneration/README.txt)
+- shared asset generation rules: [SHARED_ASSET_PIPELINE.md](C:/UE/T66/World%20Generation/SHARED_ASSET_PIPELINE.md)
+- modular dungeon kit process: [MODULAR_DUNGEON_KIT_PROCESS.md](C:/UE/T66/World%20Generation/MODULAR_DUNGEON_KIT_PROCESS.md)
+- TRELLIS model-generation workflow: [MASTER_WORKFLOW.md](C:/UE/T66/Model%20Generation/MASTER_WORKFLOW.md)
+- RetopoFlow rule: [RETOPOFLOW_4.md](C:/UE/T66/Model%20Generation/RETOPOFLOW_4.md)
 
 ## Released WorldMirror Entry Points In The Local Research Clone
 

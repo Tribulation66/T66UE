@@ -35,8 +35,8 @@ Reject the raw mesh immediately if any of these are true:
 
 Current best body candidate:
 
-- [Arthur_MegabonkDirect_Body_Green_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_MegabonkDirect_Body_Green_Raw.png)
+- [Arthur_LegacyDirect_Body_Green_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_LegacyDirect_Body_Green_Raw.png)
 
 Current weak result that should not be treated as approved:
 
-- [Arthur_MegabonkDirect_Head_Green_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_MegabonkDirect_Head_Green_Raw.png)
+- [Arthur_LegacyDirect_Head_Green_Raw.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Renders/Arthur_LegacyDirect_Head_Green_Raw.png)

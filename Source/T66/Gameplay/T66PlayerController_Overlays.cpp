@@ -30,7 +30,10 @@
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66ArcadePopupWidget.h"
+#include "UI/T66ArcadeSelectionWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
+#include "UI/T66GoldMinerArcadeWidget.h"
+#include "UI/T66QuickArcadeWidget.h"
 #include "UI/T66TopwarArcadeWidget.h"
 #include "UI/T66WhackAMoleArcadeWidget.h"
 #include "Gameplay/T66FountainOfLifeInteractable.h"
@@ -38,6 +41,7 @@
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66ArcadeInteractableBase.h"
+#include "Gameplay/T66ArcadeMachineInteractable.h"
 #include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
@@ -279,7 +283,33 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		}
 
 		UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+		if (UT66MediaViewerSubsystem* MediaViewer = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MediaViewerSubsystem>() : nullptr)
+		{
+			MediaViewer->SetMediaViewerOpen(false);
+		}
 		UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		FString PickupCardItemIDString;
+		const bool bShowPickupCardForReview = FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoPickupCard="), PickupCardItemIDString)
+			&& !PickupCardItemIDString.TrimStartAndEnd().IsEmpty();
+		const FName PickupCardItemID(*PickupCardItemIDString.TrimStartAndEnd());
+		ET66ItemRarity PickupCardRarity = ET66ItemRarity::Yellow;
+		FString PickupCardRarityString;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoPickupCardRarity="), PickupCardRarityString))
+		{
+			const FString NormalizedRarity = PickupCardRarityString.TrimStartAndEnd().ToLower();
+			if (NormalizedRarity == TEXT("black"))
+			{
+				PickupCardRarity = ET66ItemRarity::Black;
+			}
+			else if (NormalizedRarity == TEXT("red"))
+			{
+				PickupCardRarity = ET66ItemRarity::Red;
+			}
+			else if (NormalizedRarity == TEXT("white"))
+			{
+				PickupCardRarity = ET66ItemRarity::White;
+			}
+		}
 		if (RunState)
 		{
 			const int32 MissingDifficultySkulls = FMath::Max(0, 4 - RunState->GetDifficultySkulls());
@@ -323,13 +353,25 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				RunState->AddItemWithRarity(ItemID, ItemRarity);
 				++RarityIndex;
 			}
+
+			if (bShowPickupCardForReview && !PickupCardItemID.IsNone())
+			{
+				RunState->AddItemWithRarity(PickupCardItemID, PickupCardRarity);
+			}
 		}
 
 		if (GameplayHUDWidget)
 		{
 			GameplayHUDWidget->SetFullMapOpen(false);
-			GameplayHUDWidget->ShowInteractionPrompt(this, NSLOCTEXT("T66.GameplayHUD", "HudReviewInteractionTarget", "Chest"));
+			if (!bShowPickupCardForReview)
+			{
+				GameplayHUDWidget->ShowInteractionPrompt(this, NSLOCTEXT("T66.GameplayHUD", "HudReviewInteractionTarget", "Chest"));
+			}
 			GameplayHUDWidget->RefreshHUD();
+			if (bShowPickupCardForReview && !PickupCardItemID.IsNone())
+			{
+				GameplayHUDWidget->ShowPickupItemCard(PickupCardItemID, PickupCardRarity);
+			}
 		}
 		return;
 	}
@@ -451,6 +493,20 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		return;
 	}
 
+	if (Mode == TEXT("arcadeselector") || Mode == TEXT("arcade") || Mode == TEXT("arcadecabinet"))
+	{
+		if (AT66ArcadeMachineInteractable* AutomationArcade = GetWorld()->SpawnActor<AT66ArcadeMachineInteractable>(
+			AT66ArcadeMachineInteractable::StaticClass(),
+			GetPawn() ? GetPawn()->GetActorLocation() + FVector(360.f, 0.f, 0.f) : FVector::ZeroVector,
+			FRotator::ZeroRotator))
+		{
+			AutomationArcade->SetActorHiddenInGame(true);
+			AutomationArcade->SetActorEnableCollision(false);
+			OpenArcadePopup(AutomationArcade->GetArcadeData(), AutomationArcade);
+		}
+		return;
+	}
+
 	if (GameplayHUDWidget)
 	{
 		GameplayHUDWidget->SetFullMapOpen(false);
@@ -466,6 +522,35 @@ void AT66PlayerController::HandleGameplayAutomationScreenshot()
 	if (GameplayAutomationScreenshotPath.IsEmpty())
 	{
 		return;
+	}
+
+	if (GameplayHUDWidget)
+	{
+		FString PickupCardItemIDString;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoPickupCard="), PickupCardItemIDString)
+			&& !PickupCardItemIDString.TrimStartAndEnd().IsEmpty())
+		{
+			ET66ItemRarity PickupCardRarity = ET66ItemRarity::Yellow;
+			FString PickupCardRarityString;
+			if (FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoPickupCardRarity="), PickupCardRarityString))
+			{
+				const FString NormalizedRarity = PickupCardRarityString.TrimStartAndEnd().ToLower();
+				if (NormalizedRarity == TEXT("black"))
+				{
+					PickupCardRarity = ET66ItemRarity::Black;
+				}
+				else if (NormalizedRarity == TEXT("red"))
+				{
+					PickupCardRarity = ET66ItemRarity::Red;
+				}
+				else if (NormalizedRarity == TEXT("white"))
+				{
+					PickupCardRarity = ET66ItemRarity::White;
+				}
+			}
+
+			GameplayHUDWidget->ShowPickupItemCard(FName(*PickupCardItemIDString.TrimStartAndEnd()), PickupCardRarity);
+		}
 	}
 
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(GameplayAutomationScreenshotPath), true);
@@ -699,6 +784,24 @@ bool AT66PlayerController::OpenArcadePopup(
 		SetInventoryInspectOpen(false);
 	}
 
+	if (!SpawnArcadePopupWidget(ArcadeData, SourceInteractable))
+	{
+		return false;
+	}
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+	bEnableClickEvents = true;
+	bEnableMouseOverEvents = true;
+	return true;
+}
+
+bool AT66PlayerController::SpawnArcadePopupWidget(
+	const FT66ArcadeInteractableData& ArcadeData,
+	AT66ArcadeInteractableBase* SourceInteractable)
+{
 	UT66ArcadePopupWidget* NewPopup = nullptr;
 	TSubclassOf<UT66ArcadePopupWidget> PopupWidgetClass = ArcadeData.PopupWidgetClass;
 	if (!PopupWidgetClass)
@@ -713,8 +816,28 @@ bool AT66PlayerController::OpenArcadePopup(
 			PopupWidgetClass = UT66TopwarArcadeWidget::StaticClass();
 			break;
 
-		case ET66ArcadeGameType::None:
+		case ET66ArcadeGameType::GoldMiner:
+			PopupWidgetClass = UT66GoldMinerArcadeWidget::StaticClass();
+			break;
+
 		case ET66ArcadeGameType::Random:
+			PopupWidgetClass = UT66ArcadeSelectionWidget::StaticClass();
+			break;
+
+		case ET66ArcadeGameType::RuneSwipe:
+		case ET66ArcadeGameType::CartSwitcher:
+		case ET66ArcadeGameType::CrystalDash:
+		case ET66ArcadeGameType::PotionPour:
+		case ET66ArcadeGameType::RelicStack:
+		case ET66ArcadeGameType::ShieldParry:
+		case ET66ArcadeGameType::MimicMemory:
+		case ET66ArcadeGameType::BombSorter:
+		case ET66ArcadeGameType::LanternLeap:
+		case ET66ArcadeGameType::BladeSweep:
+			PopupWidgetClass = UT66QuickArcadeWidget::StaticClass();
+			break;
+
+		case ET66ArcadeGameType::None:
 		default:
 			break;
 		}
@@ -733,14 +856,33 @@ bool AT66PlayerController::OpenArcadePopup(
 	NewPopup->InitializeArcadePopup(ArcadeData, SourceInteractable);
 	ArcadePopupWidget = NewPopup;
 	ArcadePopupWidget->AddToViewport(110);
-
-	FInputModeGameAndUI InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	SetInputMode(InputMode);
-	bShowMouseCursor = true;
-	bEnableClickEvents = true;
-	bEnableMouseOverEvents = true;
 	return true;
+}
+
+void AT66PlayerController::HandleArcadeGameSelected(
+	UT66ArcadePopupWidget* SelectorWidget,
+	const FT66ArcadeInteractableData& SelectedGameData)
+{
+	if (!SelectorWidget || SelectorWidget != ArcadePopupWidget)
+	{
+		return;
+	}
+
+	AT66ArcadeInteractableBase* SourceInteractable = SelectorWidget->GetSourceInteractable();
+	if (SelectorWidget->IsInViewport())
+	{
+		SelectorWidget->RemoveFromParent();
+	}
+	ArcadePopupWidget = nullptr;
+
+	if (!SpawnArcadePopupWidget(SelectedGameData, SourceInteractable))
+	{
+		if (SourceInteractable)
+		{
+			SourceInteractable->HandleArcadePopupDismissedWithoutResult();
+		}
+		RestoreGameplayInputMode();
+	}
 }
 
 void AT66PlayerController::HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, const bool bSucceeded, const int32 FinalScore)
@@ -771,7 +913,14 @@ void AT66PlayerController::CloseArcadePopup(const bool bSucceeded, const int32 F
 
 	if (SourceInteractable)
 	{
-		SourceInteractable->HandleArcadePopupClosed(bSucceeded, FinalScore);
+		if (PopupWidget->ReportsArcadeResult())
+		{
+			SourceInteractable->HandleArcadePopupClosed(bSucceeded, FinalScore);
+		}
+		else
+		{
+			SourceInteractable->HandleArcadePopupDismissedWithoutResult();
+		}
 	}
 
 	if (!IsPaused() && !(UIManager && UIManager->IsModalActive()))

@@ -4,6 +4,7 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66CommunityContentSubsystem.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -2807,6 +2808,10 @@ FReply UT66RunSummaryScreen::HandleContinueDifficultyClicked()
 	{
 		return FReply::Handled();
 	}
+
+	const ET66Difficulty ClearedDifficulty = T66GI->SelectedDifficulty;
+	T66GI->bPendingWeaponUpgradeOffer = true;
+	T66GI->PendingWeaponUpgradeRarity = UT66WeaponManagerSubsystem::GetUpgradeRarityForClearedDifficulty(ClearedDifficulty);
 
 	RunState->SetPendingDifficultyClearSummary(false);
 	RunState->SetSaintBlessingActive(false);

@@ -8,6 +8,7 @@
 #include "Core/T66CommunityContentSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardPacingUtils.h"

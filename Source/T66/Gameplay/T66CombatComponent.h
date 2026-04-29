@@ -14,6 +14,7 @@ class AT66BossBase;
 class UT66RunStateSubsystem;
 class UT66FloatingCombatTextSubsystem;
 class UT66IdolManagerSubsystem;
+class UT66WeaponManagerSubsystem;
 class UNiagaraSystem;
 struct FStreamableHandle;
 
@@ -133,8 +134,13 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UT66IdolManagerSubsystem> CachedIdolManager = nullptr;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UT66WeaponManagerSubsystem> CachedWeaponManager = nullptr;
+
 	bool bHasCachedHeroData = false;
 	FHeroData CachedHeroData;
+	bool bHasCachedWeaponData = false;
+	FWeaponData CachedWeaponData;
 
 	struct FCachedIdolSlot
 	{

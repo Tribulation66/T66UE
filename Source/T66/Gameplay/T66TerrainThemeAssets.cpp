@@ -10,26 +10,6 @@
 
 namespace
 {
-	struct FT66DifficultyGroundThemeAssetInfo
-	{
-		const TCHAR* FolderName = nullptr;
-		const TCHAR* AssetSuffix = nullptr;
-	};
-
-	static FT66DifficultyGroundThemeAssetInfo T66GetDifficultyGroundThemeAssetInfo(const ET66Difficulty Difficulty)
-	{
-		switch (Difficulty)
-		{
-		case ET66Difficulty::Medium: return { TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard") };
-		case ET66Difficulty::Hard: return { TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole") };
-		case ET66Difficulty::VeryHard: return { TEXT("PerditionMars"), TEXT("PerditionMars") };
-		case ET66Difficulty::Impossible: return { TEXT("FinalHell"), TEXT("FinalHell") };
-		case ET66Difficulty::Easy:
-		default:
-			return {};
-		}
-	}
-
 	template <typename TObjectType>
 	static TObjectType* T66FindOrLoadObject(const TCHAR* ObjectPath)
 	{
@@ -47,24 +27,11 @@ namespace
 	}
 }
 
-UTexture* FT66TerrainThemeAssets::LoadDifficultyGroundTexture(ET66Difficulty Difficulty)
+UTexture* FT66TerrainThemeAssets::LoadDifficultyGroundTexture(ET66Difficulty)
 {
 	static TMap<FString, TWeakObjectPtr<UTexture>> CachedTextures;
 
-	FString TexturePath = TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock");
-	if (Difficulty != ET66Difficulty::Easy)
-	{
-		const FT66DifficultyGroundThemeAssetInfo ThemeInfo = T66GetDifficultyGroundThemeAssetInfo(Difficulty);
-		if (ThemeInfo.FolderName && ThemeInfo.AssetSuffix)
-		{
-			const FString AssetName = FString::Printf(TEXT("T_MegabonkBlock_%s"), ThemeInfo.AssetSuffix);
-			TexturePath = FString::Printf(
-				TEXT("/Game/World/Terrain/MegabonkThemes/%s/%s.%s"),
-				ThemeInfo.FolderName,
-				*AssetName,
-				*AssetName);
-		}
-	}
+	const FString TexturePath = TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonGround.T_TowerDungeonGround");
 
 	if (const TWeakObjectPtr<UTexture>* Existing = CachedTextures.Find(TexturePath))
 	{
@@ -75,10 +42,6 @@ UTexture* FT66TerrainThemeAssets::LoadDifficultyGroundTexture(ET66Difficulty Dif
 	}
 
 	UTexture* LoadedTexture = T66FindOrLoadObject<UTexture>(*TexturePath);
-	if (!LoadedTexture && Difficulty != ET66Difficulty::Easy)
-	{
-		LoadedTexture = T66FindOrLoadObject<UTexture>(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"));
-	}
 
 	CachedTextures.Add(TexturePath, LoadedTexture);
 	return LoadedTexture;
@@ -112,7 +75,7 @@ UMaterialInterface* FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(UObj
 		}
 	}
 
-	UMaterialInterface* FallbackMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
+	UMaterialInterface* FallbackMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"));
 	CachedMaterials.Add(CacheKey, FallbackMaterial);
 	return FallbackMaterial;
 }

@@ -6,6 +6,10 @@ Supporting files:
 
 - [MEMORY.md](C:/UE/T66/World%20Generation/MEMORY.md)
 - [USEFUL_LINKS.md](C:/UE/T66/World%20Generation/USEFUL_LINKS.md)
+- [SETUP.md](C:/UE/T66/World%20Generation/SETUP.md)
+- [ROOM_GENERATION_PROCESS.md](C:/UE/T66/World%20Generation/ROOM_GENERATION_PROCESS.md)
+- [SHARED_ASSET_PIPELINE.md](C:/UE/T66/World%20Generation/SHARED_ASSET_PIPELINE.md)
+- [MODULAR_DUNGEON_KIT_PROCESS.md](C:/UE/T66/World%20Generation/MODULAR_DUNGEON_KIT_PROCESS.md)
 - local report cache: [HY_World_2_0.pdf](C:/UE/T66/tmp/worldgen_research/HY_World_2_0.pdf)
 - local cloned repo: [HY-World-2.0_repo](C:/UE/T66/tmp/worldgen_research/HY-World-2.0_repo)
 
@@ -14,6 +18,27 @@ Supporting files:
 - Understand `HY-World 2.0` deeply enough to decide how it should fit into `T66`.
 - Keep release reality, architecture, T66 fit, and next experiments in one place.
 - Avoid future agents confusing `officially public now` with `described in the report but not released yet`.
+- Support a controlled first dungeon-room prototype where the player starts in a generated room, uses a portal, then lands at the current normal tower start.
+
+## Active Prototype Direction
+
+The active practical experiment is now `DungeonKit01`: generate modular dungeon walls, floors, doorways, trims, and ceiling/floor-cap pieces, then let the runtime assemble rooms from those modules.
+
+Goal:
+
+1. generate one module reference image per wall/floor/doorway/trim asset
+2. run TRELLIS through the existing `Model Generation` infrastructure
+3. normalize scale and pivot in Blender
+4. import accepted modules under `/Game/World/Terrain/TowerDungeon/GeneratedKit/`
+5. use generated meshes as dungeon visuals while hidden simple proxies remain collision-authoritative
+
+Important boundary:
+
+- direct HY-World full-room generation remains research-only until the official full world-generation stack is public and useful for Unreal import
+- the modular dungeon kit path is the current production-facing world-generation approach
+- [SHARED_ASSET_PIPELINE.md](C:/UE/T66/World%20Generation/SHARED_ASSET_PIPELINE.md) owns shared model/world generation rules
+- [MODULAR_DUNGEON_KIT_PROCESS.md](C:/UE/T66/World%20Generation/MODULAR_DUNGEON_KIT_PROCESS.md) owns modular environment kit rules
+- [SETUP.md](C:/UE/T66/World%20Generation/SETUP.md) and [ROOM_GENERATION_PROCESS.md](C:/UE/T66/World%20Generation/ROOM_GENERATION_PROCESS.md) remain the HY-World research baseline
 
 ## Release Reality
 
@@ -257,7 +282,7 @@ WorldMirror-only practicality is stronger than full-pipeline practicality:
 - `T66ProceduralLandscapeGenerator`
 - `T66MainMapTerrain`
 - `T66TowerMapTerrain`
-- older terrain experiments in [SourceAssets/MegabonkMapGeneration](C:/UE/T66/SourceAssets/MegabonkMapGeneration)
+- generated modular terrain assets under `/Game/World/Terrain/TowerDungeon/GeneratedKit/`
 
 That means the current best framing is:
 

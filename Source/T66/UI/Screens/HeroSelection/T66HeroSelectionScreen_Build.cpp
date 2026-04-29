@@ -2059,14 +2059,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		return SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.f)
-			.Padding(0.f, 0.f, 8.f, 0.f)
 			[
 				MakeAbilityCard(NSLOCTEXT("T66.HeroSelection", "UltimateShortLabel", "ULT"), true)
-			]
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.f)
-			[
-				MakeAbilityCard(NSLOCTEXT("T66.HeroSelection", "PassiveShortLabel", "PASSIVE"), false)
 			];
 	};
 
@@ -2447,6 +2441,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.AutoHeight()
 									[
 										SNew(SVerticalBox)
+										.Visibility(EVisibility::Collapsed)
 										+ SVerticalBox::Slot()
 										.AutoHeight()
 										.HAlign(HAlign_Center)

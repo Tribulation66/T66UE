@@ -57,6 +57,7 @@
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"

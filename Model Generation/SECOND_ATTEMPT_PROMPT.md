@@ -20,7 +20,7 @@ Use the pod bootstrap script at [bootstrap_trellis2_pod.sh](C:/UE/T66/Model Gene
 For this attempt, do not start with split head/body generation. Start with full-body generation only.
 
 Use this input as the primary baseline:
-- [Arthur_MegabonkDirect_Body_Green.png](C:/UE/T66/Model Generation/Runs/Arthur/Inputs/Arthur_MegabonkDirect_Body_Green.png)
+- [Arthur_LegacyDirect_Body_Green.png](C:/UE/T66/Model Generation/Runs/Arthur/Inputs/Arthur_LegacyDirect_Body_Green.png)
 
 Generation rules:
 - opaque green PNG input only

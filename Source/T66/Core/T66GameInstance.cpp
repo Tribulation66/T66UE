@@ -200,6 +200,7 @@ namespace
 
 UT66GameInstance::UT66GameInstance()
 {
+	WeaponsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Weapons.DT_Weapons")));
 	ArcadeInteractablesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables")));
 
 	// Default selections
@@ -207,6 +208,8 @@ UT66GameInstance::UT66GameInstance()
 	SelectedHeroID = NAME_None;
 	SelectedCompanionID = NAME_None;
 	SelectedDifficulty = ET66Difficulty::Easy;
+	bPendingWeaponUpgradeOffer = false;
+	PendingWeaponUpgradeRarity = ET66WeaponRarity::Black;
 	SelectedRunModifierKind = ET66RunModifierKind::None;
 	SelectedRunModifierID = NAME_None;
 	MiniSelectedHeroID = NAME_None;
@@ -347,7 +350,7 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	bCoreDataTablesLoadRequested = true;
 
 	TArray<FSoftObjectPath> Paths;
-	Paths.Reserve(10);
+	Paths.Reserve(11);
 
 	auto AddDT = [&](const TSoftObjectPtr<UDataTable>& DT)
 	{
@@ -361,6 +364,7 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	AddDT(CompanionDataTable);
 	AddDT(ItemsDataTable);
 	AddDT(IdolsDataTable);
+	AddDT(WeaponsDataTable);
 	AddDT(BossesDataTable);
 	AddDT(StagesDataTable);
 	AddDT(HouseNPCsDataTable);
@@ -394,6 +398,7 @@ void UT66GameInstance::HandleCoreDataTablesLoaded()
 	if (!CachedCompanionDataTable) CachedCompanionDataTable = CompanionDataTable.Get();
 	if (!CachedItemsDataTable) CachedItemsDataTable = ItemsDataTable.Get();
 	if (!CachedIdolsDataTable) CachedIdolsDataTable = IdolsDataTable.Get();
+	if (!CachedWeaponsDataTable) CachedWeaponsDataTable = WeaponsDataTable.Get();
 	if (!CachedBossesDataTable) CachedBossesDataTable = BossesDataTable.Get();
 	if (!CachedStagesDataTable) CachedStagesDataTable = StagesDataTable.Get();
 	if (!CachedHouseNPCsDataTable) CachedHouseNPCsDataTable = HouseNPCsDataTable.Get();
@@ -714,6 +719,20 @@ UDataTable* UT66GameInstance::GetIdolsDataTable()
 		}
 	}
 	return CachedIdolsDataTable;
+}
+
+UDataTable* UT66GameInstance::GetWeaponsDataTable()
+{
+	if (!CachedWeaponsDataTable && !WeaponsDataTable.IsNull())
+	{
+		CachedWeaponsDataTable = WeaponsDataTable.Get();
+		if (!CachedWeaponsDataTable)
+		{
+			PrimeCoreDataTablesAsync();
+			CachedWeaponsDataTable = WeaponsDataTable.LoadSynchronous();
+		}
+	}
+	return CachedWeaponsDataTable;
 }
 
 bool UT66GameInstance::GetHeroData(FName HeroID, FHeroData& OutHeroData)
@@ -1037,6 +1056,27 @@ bool UT66GameInstance::GetIdolData(FName IdolID, FIdolData& OutIdolData)
 	return false;
 }
 
+bool UT66GameInstance::GetWeaponData(FName WeaponID, FWeaponData& OutWeaponData)
+{
+	if (WeaponID.IsNone())
+	{
+		return false;
+	}
+
+	UDataTable* DataTable = GetWeaponsDataTable();
+	if (!DataTable)
+	{
+		return false;
+	}
+	FWeaponData* FoundRow = DataTable->FindRow<FWeaponData>(WeaponID, TEXT("GetWeaponData"));
+	if (FoundRow)
+	{
+		OutWeaponData = *FoundRow;
+		return true;
+	}
+	return false;
+}
+
 bool UT66GameInstance::GetBossData(FName BossID, FBossData& OutBossData)
 {
 	UDataTable* DataTable = GetBossesDataTable();
@@ -1213,6 +1253,8 @@ void UT66GameInstance::ClearSelections()
 	SelectedHeroID = NAME_None;
 	SelectedCompanionID = NAME_None;
 	SelectedDifficulty = ET66Difficulty::Easy;
+	bPendingWeaponUpgradeOffer = false;
+	PendingWeaponUpgradeRarity = ET66WeaponRarity::Black;
 	MiniSelectedHeroID = NAME_None;
 	MiniSelectedCompanionID = NAME_None;
 	MiniSelectedDifficultyID = NAME_None;
@@ -1244,6 +1286,8 @@ void UT66GameInstance::BeginDailyClimbRun(const FT66DailyClimbChallengeData& Cha
 	SelectedHeroID = Challenge.HeroID;
 	SelectedCompanionID = NAME_None;
 	SelectedDifficulty = Challenge.Difficulty;
+	bPendingWeaponUpgradeOffer = false;
+	PendingWeaponUpgradeRarity = ET66WeaponRarity::Black;
 	SelectedRunModifierKind = ET66RunModifierKind::None;
 	SelectedRunModifierID = NAME_None;
 	SelectedHeroBodyType = ET66BodyType::TypeA;
@@ -1407,22 +1451,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		}
 	};
 
-	auto AddDifficultyThemeTextures = [&AddPath](const TCHAR* FolderName, const TCHAR* Suffix)
-	{
-		const FString BlockAssetName = FString::Printf(TEXT("T_MegabonkBlock_%s"), Suffix);
-		const FString SlopeAssetName = FString::Printf(TEXT("T_MegabonkSlope_%s"), Suffix);
-		AddPath(FSoftObjectPath(FString::Printf(
-			TEXT("/Game/World/Terrain/MegabonkThemes/%s/%s.%s"),
-			FolderName,
-			*BlockAssetName,
-			*BlockAssetName)));
-		AddPath(FSoftObjectPath(FString::Printf(
-			TEXT("/Game/World/Terrain/MegabonkThemes/%s/%s.%s"),
-			FolderName,
-			*SlopeAssetName,
-			*SlopeAssetName)));
-	};
-
 	auto AddAllCombatEffectAssets = [&AddPath]()
 	{
 		static const TCHAR* CombatEffectPaths[] = {
@@ -1451,16 +1479,22 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		}
 	};
 
-	auto AddAllTowerThemeAssets = [&AddPath, &AddDifficultyThemeTextures]()
+	auto AddAllTowerThemeAssets = [&AddPath]()
 	{
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestRoof.MI_TowerForestRoof")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/T_TowerForestGround.T_TowerForestGround")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/T_TowerForestRoof.T_TowerForestRoof")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof")));
-		AddDifficultyThemeTextures(TEXT("MediumOcean"), TEXT("MediumOcean"));
-		AddDifficultyThemeTextures(TEXT("PerditionMars"), TEXT("PerditionMars"));
-		AddDifficultyThemeTextures(TEXT("FinalHell"), TEXT("FinalHell"));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonGround.T_TowerDungeonGround")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonWall.T_TowerDungeonWall")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_A_UnrealReady.DungeonWall_Straight_A_UnrealReady")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_Chains_UnrealReady.DungeonWall_Straight_Chains_UnrealReady")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_BonesNiche_UnrealReady.DungeonWall_Straight_BonesNiche_UnrealReady")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonFloor_BonesDrain_A_UnrealReady.DungeonFloor_BonesDrain_A_UnrealReady")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Branch.Branch")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Rock.Rock")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1")));
@@ -1512,28 +1546,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		}
 	};
 
-	auto AddCurrentDifficultyThemeTextures = [this, &AddDifficultyThemeTextures]()
-	{
-		switch (SelectedDifficulty)
-		{
-		case ET66Difficulty::Medium:
-			AddDifficultyThemeTextures(TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard"));
-			break;
-		case ET66Difficulty::Hard:
-			AddDifficultyThemeTextures(TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole"));
-			break;
-		case ET66Difficulty::VeryHard:
-			AddDifficultyThemeTextures(TEXT("PerditionMars"), TEXT("PerditionMars"));
-			break;
-		case ET66Difficulty::Impossible:
-			AddDifficultyThemeTextures(TEXT("FinalHell"), TEXT("FinalHell"));
-			break;
-		case ET66Difficulty::Easy:
-		default:
-			break;
-		}
-	};
-
 	// Engine cube mesh (used ~6 times in GameMode for walls/floors/arenas).
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cube.Cube")));
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cylinder.Cylinder")));
@@ -1542,17 +1554,12 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	// before opening the gameplay level so the first entry does not depend on cold material state.
 	AddPath(CharacterVisualsDataTable.ToSoftObjectPath());
 	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkBlock.SM_MegabonkBlock")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkSlope.SM_MegabonkSlope")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall")));
-	AddCurrentDifficultyThemeTextures();
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonGround.T_TowerDungeonGround")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonWall.T_TowerDungeonWall")));
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass.Grass")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Log.Log")));

@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Raw\\Trellis\\DungeonWall_Straight_BonesNiche_S1337_D80000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Renders\\normalized\\DungeonWall_Straight_BonesNiche_RetopoPreview.png",
+  "export": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Retopo\\DungeonWall_Straight_BonesNiche_S1337_Retopo14000.glb",
+  "raw_triangles": 76641,
+  "triangles_before_decimate": 76641,
+  "triangles_after_decimate": 14000,
+  "bounds": {
+    "min": [
+      -0.506968080997467,
+      -0.5045899748802185,
+      -0.3232589364051819
+    ],
+    "max": [
+      0.5010417103767395,
+      0.5101489424705505,
+      0.32846933603286743
+    ],
+    "size": [
+      1.0080097913742065,
+      1.014738917350769,
+      0.6517282724380493
+    ]
+  }
+}

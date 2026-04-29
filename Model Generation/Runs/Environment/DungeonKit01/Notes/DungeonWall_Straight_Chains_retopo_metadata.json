@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Raw\\Trellis\\DungeonWall_Straight_Chains_S1337_D80000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Renders\\normalized\\DungeonWall_Straight_Chains_RetopoPreview.png",
+  "export": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\DungeonKit01\\Retopo\\DungeonWall_Straight_Chains_S1337_Retopo14000.glb",
+  "raw_triangles": 78109,
+  "triangles_before_decimate": 78109,
+  "triangles_after_decimate": 14000,
+  "bounds": {
+    "min": [
+      -0.5075076222419739,
+      -0.5049808621406555,
+      -0.3003396987915039
+    ],
+    "max": [
+      0.5051780939102173,
+      0.5079166293144226,
+      0.302217036485672
+    ],
+    "size": [
+      1.012685775756836,
+      1.0128974914550781,
+      0.6025567054748535
+    ]
+  }
+}

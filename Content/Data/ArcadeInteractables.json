@@ -50,7 +50,18 @@
       "ArcadeGameType": "Random",
       "RandomGameTypes": [
         "WhackAMole",
-        "Topwar"
+        "Topwar",
+        "GoldMiner",
+        "RuneSwipe",
+        "CartSwitcher",
+        "CrystalDash",
+        "PotionPour",
+        "RelicStack",
+        "ShieldParry",
+        "MimicMemory",
+        "BombSorter",
+        "LanternLeap",
+        "BladeSweep"
       ],
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
@@ -175,6 +186,230 @@
           "TopwarChoiceScore": 9,
           "TopwarSquadGain": 2
         }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_GoldMiner",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_GoldMiner",
+      "DisplayName": "Gold Miner",
+      "InteractionVerb": "play Gold Miner",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "GoldMiner",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "DisplayMeshScale": {
+        "X": 1.18,
+        "Y": 0.88,
+        "Z": 1.45
+      },
+      "DisplayMeshOffset": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 82.0
+      },
+      "Tint": {
+        "R": 0.94,
+        "G": 0.62,
+        "B": 0.16,
+        "A": 1.0
+      },
+      "Modifiers": {
+        "FloatValues": {
+          "ArcadeRoundSeconds": 12.0,
+          "GoldMinerSwingSpeed": 3.2,
+          "GoldMinerReelBaseSeconds": 0.24
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 140,
+          "ArcadeScorePerHit": 12,
+          "ArcadeMissPenalty": 5,
+          "GoldMinerLargeGoldScore": 28,
+          "GoldMinerGemScore": 45,
+          "GoldMinerRockScore": 3
+        }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_RuneSwipe",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_RuneSwipe",
+      "DisplayName": "Rune Swipe",
+      "InteractionVerb": "play Rune Swipe",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "RuneSwipe",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "Tint": { "R": 0.55, "G": 0.25, "B": 0.92, "A": 1.0 },
+      "Modifiers": {
+        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.82, "ArcadeEndInterval": 0.30 },
+        "IntValues": { "ArcadeTargetScore": 110, "ArcadeScorePerHit": 10, "ArcadeMissPenalty": 3 }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_CartSwitcher",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_CartSwitcher",
+      "DisplayName": "Cart Switcher",
+      "InteractionVerb": "play Cart Switcher",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "CartSwitcher",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "Tint": { "R": 0.75, "G": 0.52, "B": 0.20, "A": 1.0 },
+      "Modifiers": {
+        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.78, "ArcadeEndInterval": 0.26 },
+        "IntValues": { "ArcadeTargetScore": 120, "ArcadeScorePerHit": 12, "ArcadeMissPenalty": 4 }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_CrystalDash",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_CrystalDash",
+      "DisplayName": "Crystal Dash",
+      "InteractionVerb": "play Crystal Dash",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "CrystalDash",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "Tint": { "R": 0.16, "G": 0.70, "B": 0.95, "A": 1.0 },
+      "Modifiers": {
+        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.72, "ArcadeEndInterval": 0.24 },
+        "IntValues": { "ArcadeTargetScore": 120, "ArcadeScorePerHit": 12, "ArcadeMissPenalty": 5 }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_PotionPour",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_PotionPour",
+      "DisplayName": "Potion Pour",
+      "InteractionVerb": "play Potion Pour",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "PotionPour",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "Tint": { "R": 0.20, "G": 0.86, "B": 0.48, "A": 1.0 },
+      "Modifiers": {
+        "FloatValues": { "ArcadeRoundSeconds": 11.0, "ArcadeStartInterval": 0.90, "ArcadeEndInterval": 0.35 },
+        "IntValues": { "ArcadeTargetScore": 100, "ArcadeScorePerHit": 14, "ArcadeMissPenalty": 4 }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_RelicStack",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_RelicStack",
+      "DisplayName": "Relic Stack",
+      "InteractionVerb": "play Relic Stack",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "RelicStack",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "Tint": { "R": 0.86, "G": 0.54, "B": 0.18, "A": 1.0 },
+      "Modifiers": {
+        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.84, "ArcadeEndInterval": 0.30 },
+        "IntValues": { "ArcadeTargetScore": 100, "ArcadeScorePerHit": 15, "ArcadeMissPenalty": 5 }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_ShieldParry",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_ShieldParry",
+      "DisplayName": "Shield Parry",
+      "InteractionVerb": "play Shield Parry",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "ShieldParry",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "Tint": { "R": 0.28, "G": 0.55, "B": 0.95, "A": 1.0 },
+      "Modifiers": {
+        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.68, "ArcadeEndInterval": 0.22 },
+        "IntValues": { "ArcadeTargetScore": 120, "ArcadeScorePerHit": 12, "ArcadeMissPenalty": 5 }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_MimicMemory",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_MimicMemory",
+      "DisplayName": "Mimic Memory",
+      "InteractionVerb": "play Mimic Memory",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "MimicMemory",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "Tint": { "R": 0.76, "G": 0.34, "B": 0.80, "A": 1.0 },
+      "Modifiers": {
+        "FloatValues": { "ArcadeRoundSeconds": 12.0, "ArcadeStartInterval": 1.10, "ArcadeEndInterval": 0.42 },
+        "IntValues": { "ArcadeTargetScore": 100, "ArcadeScorePerHit": 8, "ArcadeMissPenalty": 4 }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_BombSorter",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_BombSorter",
+      "DisplayName": "Bomb Sorter",
+      "InteractionVerb": "play Bomb Sorter",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "BombSorter",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "Tint": { "R": 0.95, "G": 0.34, "B": 0.18, "A": 1.0 },
+      "Modifiers": {
+        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.74, "ArcadeEndInterval": 0.24 },
+        "IntValues": { "ArcadeTargetScore": 120, "ArcadeScorePerHit": 12, "ArcadeMissPenalty": 6 }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_LanternLeap",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_LanternLeap",
+      "DisplayName": "Lantern Leap",
+      "InteractionVerb": "play Lantern Leap",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "LanternLeap",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "Tint": { "R": 0.54, "G": 0.86, "B": 0.32, "A": 1.0 },
+      "Modifiers": {
+        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.80, "ArcadeEndInterval": 0.28 },
+        "IntValues": { "ArcadeTargetScore": 110, "ArcadeScorePerHit": 11, "ArcadeMissPenalty": 4 }
+      }
+    }
+  },
+  {
+    "Name": "Arcade_BladeSweep",
+    "ArcadeData": {
+      "ArcadeID": "Arcade_BladeSweep",
+      "DisplayName": "Blade Sweep",
+      "InteractionVerb": "play Blade Sweep",
+      "ExitInteractionVerb": "",
+      "ArcadeClass": "PopupArcade",
+      "ArcadeGameType": "BladeSweep",
+      "bConsumeOnSuccess": true,
+      "bConsumeOnFailure": true,
+      "Tint": { "R": 0.92, "G": 0.24, "B": 0.14, "A": 1.0 },
+      "Modifiers": {
+        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.70, "ArcadeEndInterval": 0.22 },
+        "IntValues": { "ArcadeTargetScore": 120, "ArcadeScorePerHit": 12, "ArcadeMissPenalty": 6 }
       }
     }
   }

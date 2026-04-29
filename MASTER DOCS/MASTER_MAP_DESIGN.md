@@ -13,7 +13,7 @@
   - no `Flat`
   - no config or console layout override
 - New runs and save-load restore now coerce the main gameplay map to the tower layout.
-- The active gameplay map family is the tower generator and floor-based traversal path, not the old one-board Megabonk preset selection flow.
+- The active gameplay map family is the tower generator and floor-based traversal path, not the old one-board terrain preset selection flow.
 - The old `Hilly` / `Flat` discussion below is retained only as historical design context for how the tower split was originally planned.
 - Current tower pacing still follows the same high-level runtime structure:
   - `1` `Start Level`
@@ -63,7 +63,7 @@
     - `Stage 1`: dungeon floor/wall/roof materials, rock-only decorative props, no stray tree props
     - `Stage 2`: forest ground/roof materials plus giant tree-wall replacements for both inner maze walls and the outer perimeter shell
   - uses denser tower-only tree/rock scatter on gameplay floors while keeping the start floor clean
-  - uses tower-only dungeon material instances for floor, wall, and roof surfaces instead of the inherited green/brown Megabonk terrain look
+  - uses tower-only dungeon material instances for floor, wall, and roof surfaces instead of the inherited green/brown legacy terrain look
   - uses dedicated tower descent-hole trigger actors for floor-to-floor progression while keeping the existing boss-kill `StageGate` portal for actual stage-to-stage travel
   - replaces the legacy boss-threshold gate on tower with final-hole boss entry, so dropping from `Level 5` into `Boss Level` pauses normal wave spawning and starts boss flow
   - keeps the `Boss Level` as the terminal floor with no further descent hole
@@ -331,7 +331,7 @@
   - reuse the existing trees and rocks already used by the current map/prop pipeline
   - use them as sparse floor dressing, not as heavy clutter
 - Practical implication:
-  - the tower preset should be shippable with current Megabonk-aligned terrain textures plus current tree/rock props
+  - the tower preset should be shippable with current tower terrain textures plus current tree/rock props
   - no new environment-art dependency is required for the first playable version
 
 ## 5. Recommended Technical Approach

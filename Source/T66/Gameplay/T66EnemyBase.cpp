@@ -4,6 +4,7 @@
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyAIController.h"
+#include "Gameplay/T66ArcadeMachineInteractable.h"
 #include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66LootBagPickup.h"
@@ -146,6 +147,23 @@ namespace
 			}
 
 			T66ConsiderSafeZoneHit(QueryLocation, Casino->GetActorLocation(), Casino->GetSafeZoneRadius(), Result);
+		}
+
+		for (const TWeakObjectPtr<AT66WorldInteractableBase>& WeakInteractable : Registry->GetWorldInteractables())
+		{
+			const AT66ArcadeMachineInteractable* ArcadeMachine = Cast<AT66ArcadeMachineInteractable>(WeakInteractable.Get());
+			if (!ArcadeMachine)
+			{
+				continue;
+			}
+
+			if (bTowerLayout && QueryFloorNumber != INDEX_NONE
+				&& GameMode->GetTowerFloorIndexForLocation(ArcadeMachine->GetActorLocation()) != QueryFloorNumber)
+			{
+				continue;
+			}
+
+			T66ConsiderSafeZoneHit(QueryLocation, ArcadeMachine->GetActorLocation(), ArcadeMachine->GetProtectionAuraRadius(), Result);
 		}
 
 		return Result;

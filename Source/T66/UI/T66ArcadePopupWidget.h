@@ -19,6 +19,7 @@ public:
 
 	const FT66ArcadeInteractableData& GetArcadeData() const { return ArcadeData; }
 	AT66ArcadeInteractableBase* GetSourceInteractable() const { return SourceInteractable.Get(); }
+	virtual bool ReportsArcadeResult() const { return true; }
 
 protected:
 	void StartCloseSequence(bool bSucceeded, int32 FinalScore = 0);

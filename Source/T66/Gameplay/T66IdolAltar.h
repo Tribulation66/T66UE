@@ -4,12 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Data/T66DataTypes.h"
 #include "T66IdolAltar.generated.h"
 
 class UBoxComponent;
 class UStaticMeshComponent;
 class UStaticMesh;
 class UPrimitiveComponent;
+
+UENUM(BlueprintType)
+enum class ET66AltarOfferMode : uint8
+{
+	Idols UMETA(DisplayName = "Idols"),
+	Weapons UMETA(DisplayName = "Weapons"),
+};
 
 /**
  * Stage-entry Idol Altar.
@@ -56,6 +64,14 @@ public:
 	/** Remaining selections granted by this altar visit. The altar destroys itself when this hits zero. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
 	int32 RemainingSelections = 1;
+
+	/** Whether this altar offers idols or auto-attack weapons. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
+	ET66AltarOfferMode OfferMode = ET66AltarOfferMode::Idols;
+
+	/** Rarity used when OfferMode is Weapons. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
+	ET66WeaponRarity WeaponOfferRarity = ET66WeaponRarity::Black;
 
 	/** Extra selections granted to catch up with skipped starting stages on higher difficulties. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")

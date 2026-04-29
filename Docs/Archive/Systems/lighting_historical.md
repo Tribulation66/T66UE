@@ -8,7 +8,7 @@ This document describes the complete lighting, material, and visual pipeline for
 
 ## 1. Design Goal
 
-The visual target is inspired by **ULTRAKILL** and **Megabonk**: a retro pixelated 3D aesthetic where every object in the game displays its texture at full brightness from every angle, with no directional shading, shadows, or light-dependent color variation. The sky has a posterized red/orange dusk gradient with an eclipse visual (dark mass + ring of fire), while the game world is clean and uniformly lit.
+The visual target is inspired by retro pixelated 3D shooters and survival-action games: every object in the game displays its texture at full brightness from every angle, with no directional shading, shadows, or light-dependent color variation. The sky has a posterized red/orange dusk gradient with an eclipse visual (dark mass + ring of fire), while the game world is clean and uniformly lit.
 
 ### Key visual principles
 
@@ -36,7 +36,7 @@ The initial lighting setup was a "blood-red moon night sky" using traditional Li
 
 **Make every material in the game Unlit.** The base color texture is the final pixel color. No material responds to any light source. The directional light, sky light, and fog exist only to drive the Sky Atmosphere rendering (the red eclipse sky dome). They have zero effect on Unlit materials.
 
-This is exactly what Megabonk does: characters and world geometry are Unlit, the sky has posterized banding, and the world is clean.
+The target is a clean unlit presentation: characters and world geometry are Unlit, the sky has posterized banding, and the world is readable.
 
 ---
 
@@ -78,19 +78,14 @@ All material instances in the project must inherit from one of these Unlit maste
 
 ### Ground materials
 
-Runtime floors now resolve from the difficulty-specific Megabonk terrain set instead of the legacy ground atlas folder:
+Runtime floors now resolve from the project terrain material set instead of the legacy ground atlas folder:
 
 | Difficulty | Texture Asset Path | Material Source |
 |---|---|---|
-| Easy | `/Game/World/Terrain/Megabonk/T_MegabonkBlock` | Dynamic instance of `/Game/Materials/M_Environment_Unlit` |
-| Medium | `/Game/World/Terrain/MegabonkThemes/MediumOcean/T_MegabonkBlock_MediumOcean` | Dynamic instance of `/Game/Materials/M_Environment_Unlit` |
-| Hard | `/Game/World/Terrain/MegabonkThemes/HardMountain/T_MegabonkBlock_HardMountain` | Dynamic instance of `/Game/Materials/M_Environment_Unlit` |
-| VeryHard | `/Game/World/Terrain/MegabonkThemes/VeryHardGraveyard/T_MegabonkBlock_VeryHardGraveyard` | Dynamic instance of `/Game/Materials/M_Environment_Unlit` |
-| Impossible | `/Game/World/Terrain/MegabonkThemes/ImpossibleNorthPole/T_MegabonkBlock_ImpossibleNorthPole` | Dynamic instance of `/Game/Materials/M_Environment_Unlit` |
-| Perdition | `/Game/World/Terrain/MegabonkThemes/PerditionMars/T_MegabonkBlock_PerditionMars` | Dynamic instance of `/Game/Materials/M_Environment_Unlit` |
-| Final | `/Game/World/Terrain/MegabonkThemes/FinalHell/T_MegabonkBlock_FinalHell` | Dynamic instance of `/Game/Materials/M_Environment_Unlit` |
+| Easy | `/Game/World/Terrain/TowerDungeon/T_TowerDungeonGround` | Dynamic instance of `/Game/Materials/M_Environment_Unlit` |
+| Medium+ | `/Game/World/Terrain/TowerDungeon/T_TowerDungeonGround` | Dynamic instance of `/Game/Materials/M_Environment_Unlit` |
 
-If a theme texture is missing, runtime falls back to `/Game/World/Terrain/Megabonk/MI_MegabonkBlock`.
+If a theme texture is missing, runtime falls back to `/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround`.
 
 ### Procedural map geometry material split
 

@@ -480,6 +480,9 @@ struct T66_API FT66SavedRunSnapshot
 	TArray<uint8> EquippedIdolTiers;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FName EquippedWeaponID = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 RemainingCatchUpIdolPicks = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")

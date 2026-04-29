@@ -29,6 +29,33 @@ import MakeGLBImportsUnlit
 # ======================================================================
 
 IMPORTS = [
+    # --- Generated dungeon kit ---
+    (
+        "WorldKit/DungeonKit01/DungeonWall_Straight_A_UnrealReady.fbx",
+        "/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01",
+        "DungeonWall_Straight_A_UnrealReady",
+    ),
+    (
+        "WorldKit/DungeonKit01/DungeonWall_Straight_Chains_UnrealReady.fbx",
+        "/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01",
+        "DungeonWall_Straight_Chains_UnrealReady",
+    ),
+    (
+        "WorldKit/DungeonKit01/DungeonWall_Straight_BonesNiche_UnrealReady.fbx",
+        "/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01",
+        "DungeonWall_Straight_BonesNiche_UnrealReady",
+    ),
+    (
+        "WorldKit/DungeonKit01/DungeonWall_Doorway_Arch_UnrealReady.fbx",
+        "/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01",
+        "DungeonWall_Doorway_Arch_UnrealReady",
+    ),
+    (
+        "WorldKit/DungeonKit01/DungeonFloor_BonesDrain_A_UnrealReady.fbx",
+        "/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01",
+        "DungeonFloor_BonesDrain_A_UnrealReady",
+    ),
+
     # --- Props ---
     ("Props/Barn.glb",     "/Game/World/Props",              "Barn"),
     ("Props/Boulder.glb",  "/Game/World/Props",              "Boulder"),
@@ -210,7 +237,7 @@ def _normalize_import_entry(entry):
 
 
 def import_glb(source_path, dest_dir, dest_name):
-    """GLB import via Interchange pipeline."""
+    """Static mesh import via Interchange/FBX pipelines."""
     _ensure_game_dir(dest_dir)
 
     task = unreal.AssetImportTask()
@@ -221,6 +248,33 @@ def import_glb(source_path, dest_dir, dest_name):
     task.filename = source_path
     task.destination_path = dest_dir
     task.destination_name = dest_name
+
+    if os.path.splitext(source_path)[1].lower() == ".fbx":
+        options = unreal.FbxImportUI()
+        options.set_editor_property("automated_import_should_detect_type", False)
+        options.set_editor_property("mesh_type_to_import", unreal.FBXImportType.FBXIT_STATIC_MESH)
+        options.set_editor_property("import_mesh", True)
+        options.set_editor_property("import_as_skeletal", False)
+        options.set_editor_property("import_materials", False)
+        options.set_editor_property("import_textures", False)
+        options.set_editor_property("import_animations", False)
+
+        static_mesh_data = options.get_editor_property("static_mesh_import_data")
+        if static_mesh_data:
+            try:
+                static_mesh_data.set_editor_property("combine_meshes", True)
+            except Exception:
+                pass
+            try:
+                static_mesh_data.set_editor_property("auto_generate_collision", False)
+            except Exception:
+                pass
+            try:
+                static_mesh_data.set_editor_property("generate_lightmap_u_vs", False)
+            except Exception:
+                pass
+
+        task.options = options
 
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
 
@@ -607,6 +661,7 @@ def main():
             cleanup_overrides,
         ) = _normalize_import_entry(entry)
         source = os.path.join(import_root, relative_path).replace("\\", "/")
+        source_ext = os.path.splitext(source)[1].lower()
 
         if not os.path.isfile(source):
             unreal.log_warning(f"  [SKIP] {relative_path} — file not found at {source}")
@@ -627,19 +682,23 @@ def main():
             else:
                 unreal.log_warning(f"    [WARN] Could not locate StaticMesh for {dest_name}")
 
-            scan_roots = _existing_scan_roots(dest_dir, dest_name)
-            unlit_results = MakeGLBImportsUnlit.convert_glb_imports_unlit(scan_roots)
-            unreal.log(
-                "    [UNLIT] converted={converted} already_ok={already_ok} "
-                "skipped={skipped} no_texture={no_texture} errors={errors}".format(**unlit_results)
-            )
+            if source_ext == ".fbx":
+                unreal.log("    [UNLIT] skipped for FBX import; preserving imported material slots")
+            else:
+                scan_roots = _existing_scan_roots(dest_dir, dest_name)
+                unlit_results = MakeGLBImportsUnlit.convert_glb_imports_unlit(scan_roots)
+                unreal.log(
+                    "    [UNLIT] converted={converted} already_ok={already_ok} "
+                    "skipped={skipped} no_texture={no_texture} errors={errors}".format(**unlit_results)
+                )
 
             if final_path:
-                _bind_materials_to_flattened_mesh(final_path, dest_dir, dest_name)
                 _apply_static_mesh_build_settings(final_path, mesh_build_settings_overrides)
-                _apply_material_overrides(dest_dir, dest_name, material_overrides)
-                _apply_texture_parameter_overrides(
-                    dest_dir, dest_name, texture_parameter_overrides)
+                if source_ext != ".fbx":
+                    _bind_materials_to_flattened_mesh(final_path, dest_dir, dest_name)
+                    _apply_material_overrides(dest_dir, dest_name, material_overrides)
+                    _apply_texture_parameter_overrides(
+                        dest_dir, dest_name, texture_parameter_overrides)
 
             success_count += 1
         except Exception as e:

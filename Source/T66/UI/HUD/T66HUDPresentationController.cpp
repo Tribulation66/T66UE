@@ -11,25 +11,6 @@ FT66HUDPresentationController::FT66HUDPresentationController(UT66GameplayHUDWidg
 
 void FT66HUDPresentationController::Tick(float InDeltaTime)
 {
-	if (bPickupCardVisible && Owner.PickupCardBox.IsValid())
-	{
-		PickupCardRemainingSeconds = FMath::Max(0.f, PickupCardRemainingSeconds - InDeltaTime);
-		if (Owner.PickupCardSkipText.IsValid())
-		{
-			Owner.PickupCardSkipText->SetText(BuildSkipCountdownText(PickupCardRemainingSeconds, FName(TEXT("Interact"))));
-		}
-
-		const float FadeAlpha = (PickupCardRemainingSeconds > UT66GameplayHUDWidget::PickupCardFadeOutSeconds)
-			? 1.f
-			: FMath::Clamp(PickupCardRemainingSeconds / UT66GameplayHUDWidget::PickupCardFadeOutSeconds, 0.f, 1.f);
-		Owner.PickupCardBox->SetRenderOpacity(FadeAlpha);
-
-		if (PickupCardRemainingSeconds <= 0.f)
-		{
-			HidePickupCard();
-		}
-	}
-
 	TickChestRewardPresentation(InDeltaTime);
 	TryShowQueuedPresentation();
 }
@@ -72,6 +53,11 @@ void FT66HUDPresentationController::Reset()
 
 void FT66HUDPresentationController::HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs)
 {
+	if (T66_IsHudReviewStateCommandLine())
+	{
+		return;
+	}
+
 	AchievementNotificationQueue.Append(NewlyUnlockedIDs);
 	ShowNextAchievementNotification();
 }
@@ -802,7 +788,7 @@ void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const
 	{
 		return;
 	}
-	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bWheelPanelOpen)
+	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bPickupCardVisible || bWheelPanelOpen)
 	{
 		FQueuedPickupCard& QueuedPickup = QueuedPickupCards.AddDefaulted_GetRef();
 		QueuedPickup.ItemID = ItemID;
@@ -887,13 +873,16 @@ void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const
 	}
 	if (Owner.PickupCardSkipText.IsValid())
 	{
-		Owner.PickupCardSkipText->SetText(BuildSkipCountdownText(UT66GameplayHUDWidget::PickupCardDisplaySeconds, FName(TEXT("Interact"))));
+		const FText KeyText = GetActionKeyText(FName(TEXT("Interact")));
+		Owner.PickupCardSkipText->SetText(
+			KeyText.IsEmpty()
+				? NSLOCTEXT("T66.Presentation", "PickupCardCloseInteract", "Interact to close")
+				: FText::Format(NSLOCTEXT("T66.Presentation", "PickupCardCloseKey", "Close: {0}"), KeyText));
 	}
 
 	ActivePickupCardItemID = ItemID;
 	ActivePickupCardRarity = ItemRarity;
 	bPickupCardVisible = true;
-	PickupCardRemainingSeconds = UT66GameplayHUDWidget::PickupCardDisplaySeconds;
 	Owner.PickupCardBox->SetVisibility(EVisibility::Visible);
 	Owner.PickupCardBox->SetRenderOpacity(1.f);
 }
@@ -902,7 +891,6 @@ void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const
 void FT66HUDPresentationController::HidePickupCard()
 {
 	bPickupCardVisible = false;
-	PickupCardRemainingSeconds = 0.f;
 	ActivePickupCardItemID = NAME_None;
 	ActivePickupCardRarity = ET66ItemRarity::Black;
 	if (Owner.PickupCardBox.IsValid())

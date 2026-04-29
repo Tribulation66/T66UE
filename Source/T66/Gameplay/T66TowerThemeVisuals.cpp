@@ -33,27 +33,27 @@ namespace
 			};
 		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Ocean:
 			return {
+				TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround"),
 				nullptr,
+				TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestRoof.MI_TowerForestRoof"),
 				nullptr,
-				nullptr,
-				TEXT("/Game/World/Terrain/MegabonkThemes/MediumOcean/T_MegabonkBlock_MediumOcean.T_MegabonkBlock_MediumOcean"),
-				TEXT("/Game/World/Terrain/MegabonkThemes/MediumOcean/T_MegabonkSlope_MediumOcean.T_MegabonkSlope_MediumOcean")
+				nullptr
 			};
 		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Martian:
 			return {
+				TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"),
+				TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall"),
+				TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof"),
 				nullptr,
-				nullptr,
-				nullptr,
-				TEXT("/Game/World/Terrain/MegabonkThemes/PerditionMars/T_MegabonkBlock_PerditionMars.T_MegabonkBlock_PerditionMars"),
-				TEXT("/Game/World/Terrain/MegabonkThemes/PerditionMars/T_MegabonkSlope_PerditionMars.T_MegabonkSlope_PerditionMars")
+				nullptr
 			};
 		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell:
 			return {
+				TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"),
+				TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall"),
+				TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof"),
 				nullptr,
-				nullptr,
-				nullptr,
-				TEXT("/Game/World/Terrain/MegabonkThemes/FinalHell/T_MegabonkBlock_FinalHell.T_MegabonkBlock_FinalHell"),
-				TEXT("/Game/World/Terrain/MegabonkThemes/FinalHell/T_MegabonkSlope_FinalHell.T_MegabonkSlope_FinalHell")
+				nullptr
 			};
 		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon:
 		default:
@@ -164,21 +164,21 @@ bool T66TowerThemeVisuals::ResolveTheme(
 		OutTheme.FloorMaterial = T66BuildThemeMaterialFromTexture(
 			Outer,
 			SurfacePaths.BlockTexturePath,
-			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
+			TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"));
 	}
 	if (!OutTheme.WallMaterial)
 	{
 		OutTheme.WallMaterial = T66BuildThemeMaterialFromTexture(
 			Outer,
 			SurfacePaths.BlockTexturePath,
-			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"));
+			TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall"));
 	}
 	if (!OutTheme.RoofMaterial)
 	{
 		OutTheme.RoofMaterial = T66BuildThemeMaterialFromTexture(
 			Outer,
 			SurfacePaths.RoofTexturePath ? SurfacePaths.RoofTexturePath : SurfacePaths.BlockTexturePath,
-			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"));
+			TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof"));
 	}
 
 	switch (ThemeId)
@@ -232,18 +232,22 @@ bool T66TowerThemeVisuals::ResolveTheme(
 	case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon:
 	default:
 		OutTheme.ThemeName = TEXT("Dungeon");
-		OutTheme.WallFamily = EWallFamily::SolidMaterial;
+		OutTheme.WallFamily = EWallFamily::SplitCollisionVisual;
+		T66AddLoadedMesh(OutTheme.WallMeshes, TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_A_UnrealReady.DungeonWall_Straight_A_UnrealReady"));
+		T66AddLoadedMesh(OutTheme.WallMeshes, TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_Chains_UnrealReady.DungeonWall_Straight_Chains_UnrealReady"));
+		T66AddLoadedMesh(OutTheme.WallMeshes, TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_BonesNiche_UnrealReady.DungeonWall_Straight_BonesNiche_UnrealReady"));
+		T66AddLoadedMesh(OutTheme.FloorMeshes, TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonFloor_BonesDrain_A_UnrealReady.DungeonFloor_BonesDrain_A_UnrealReady"));
 		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Rocks.Rocks"));
 		break;
 	}
 
 	if (!OutTheme.FloorMaterial)
 	{
-		OutTheme.FloorMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
+		OutTheme.FloorMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"));
 	}
 	if (!OutTheme.WallMaterial)
 	{
-		OutTheme.WallMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"));
+		OutTheme.WallMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall"));
 	}
 	if (!OutTheme.RoofMaterial)
 	{

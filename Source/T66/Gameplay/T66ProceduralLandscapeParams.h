@@ -118,7 +118,7 @@ struct FT66MapPreset
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MapHalfExtent = 50000.f;
 
-	/** Unity Megabonk hilliness value [0..1]. Their generator uses hilliness / 5 as slope-raise chance. */
+	/** Legacy main-map hilliness control [0..1]; higher values increase slope-raise chance. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0", ClampMax = "1"))
 	float FarmHilliness = 0.5f;
 

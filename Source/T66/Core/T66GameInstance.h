@@ -76,6 +76,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> IdolsDataTable;
 
+	/** Reference to the Weapons DataTable (auto-attack branch upgrades). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> WeaponsDataTable;
+
 	/** Reference to the Bosses DataTable (v0: placeholder boss) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> BossesDataTable;
@@ -119,6 +123,14 @@ public:
 	/** Selected difficulty */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
+
+	/** Set when the next stage-entry altar should offer weapon upgrades instead of idols. */
+	UPROPERTY(BlueprintReadWrite, Category = "Selection")
+	bool bPendingWeaponUpgradeOffer = false;
+
+	/** Rarity for the next weapon-upgrade altar. */
+	UPROPERTY(BlueprintReadWrite, Category = "Selection")
+	ET66WeaponRarity PendingWeaponUpgradeRarity = ET66WeaponRarity::Black;
 
 	/** Selected run modifier kind. None means no active challenge/mod. */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
@@ -308,6 +320,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetIdolsDataTable();
 
+	/** Get the loaded Weapons DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetWeaponsDataTable();
+
 	/** Get a random item ID from the Items DataTable (cached; never returns NAME_None). */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	FName GetRandomItemID();
@@ -353,6 +369,10 @@ public:
 	/** Get idol data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetIdolData(FName IdolID, FIdolData& OutIdolData);
+
+	/** Get weapon data by ID. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetWeaponData(FName WeaponID, FWeaponData& OutWeaponData);
 
 	/** Get boss data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -561,6 +581,10 @@ private:
 	/** Cached loaded Idols DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedIdolsDataTable;
+
+	/** Cached loaded Weapons DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedWeaponsDataTable;
 
 
 	/** Cached item row names (built once per runtime session). */

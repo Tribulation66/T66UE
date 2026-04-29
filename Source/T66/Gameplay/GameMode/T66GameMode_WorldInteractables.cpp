@@ -1735,16 +1735,19 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 	IdolAltar = nullptr;
 
 	UGameInstance* GI = World->GetGameInstance();
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
+	UT66WeaponManagerSubsystem* WeaponManager = GI ? GI->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!IdolManager)
+	const bool bWeaponUpgradeOffer = T66GI && T66GI->bPendingWeaponUpgradeOffer;
+	if (!bWeaponUpgradeOffer && !IdolManager)
 	{
 		return;
 	}
 
 	int32 SelectionBudget = 1;
 	int32 CatchUpSelections = 0;
-	if (IdolManager->HasCatchUpIdolPicksRemaining())
+	if (!bWeaponUpgradeOffer && IdolManager && IdolManager->HasCatchUpIdolPicksRemaining())
 	{
 		CatchUpSelections = IdolManager->GetRemainingCatchUpIdolPicks();
 		SelectionBudget += CatchUpSelections;
@@ -1754,7 +1757,8 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 	UE_LOG(
 		LogT66GameMode,
 		Log,
-		TEXT("Spawning stage-entry idol altar for stage %d with %d total selections (%d catch-up)."),
+		TEXT("Spawning stage-entry %s altar for stage %d with %d total selections (%d catch-up)."),
+		bWeaponUpgradeOffer ? TEXT("weapon") : TEXT("idol"),
 		CurrentStage,
 		SelectionBudget,
 		CatchUpSelections);
@@ -1825,6 +1829,23 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 
 		IdolAltar->RemainingSelections = FMath::Max(1, SelectionBudget);
 		IdolAltar->CatchUpSelectionsRemaining = FMath::Max(0, CatchUpSelections);
+		if (bWeaponUpgradeOffer)
+		{
+			IdolAltar->OfferMode = ET66AltarOfferMode::Weapons;
+			IdolAltar->WeaponOfferRarity = T66GI ? T66GI->PendingWeaponUpgradeRarity : ET66WeaponRarity::Black;
+			if (WeaponManager && T66GI)
+			{
+				WeaponManager->BuildWeaponOffers(T66GI->SelectedHeroID, IdolAltar->WeaponOfferRarity);
+			}
+			if (T66GI)
+			{
+				T66GI->bPendingWeaponUpgradeOffer = false;
+			}
+		}
+		else
+		{
+			IdolAltar->OfferMode = ET66AltarOfferMode::Idols;
+		}
 		TowerIdolSelectionsAtStageStart = IdolAltar->RemainingSelections;
 		if (IsUsingTowerMainMapLayout())
 		{

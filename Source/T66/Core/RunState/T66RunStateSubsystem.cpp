@@ -14,6 +14,7 @@ void UT66RunStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
 
 	Collection.InitializeDependency<UT66IdolManagerSubsystem>();
+	Collection.InitializeDependency<UT66WeaponManagerSubsystem>();
 	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
 		IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66RunStateSubsystem::HandleIdolStateChanged);
@@ -43,6 +44,12 @@ UT66IdolManagerSubsystem* UT66RunStateSubsystem::GetIdolManager() const
 {
 	UGameInstance* GI = GetGameInstance();
 	return GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
+}
+
+UT66WeaponManagerSubsystem* UT66RunStateSubsystem::GetWeaponManager() const
+{
+	UGameInstance* GI = GetGameInstance();
+	return GI ? GI->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr;
 }
 
 
@@ -477,6 +484,10 @@ void UT66RunStateSubsystem::ResetForNewRun()
 		{
 			IdolManager->ResetForNewRun(T66GI->SelectedDifficulty);
 		}
+		if (UT66WeaponManagerSubsystem* WeaponManager = GetWeaponManager())
+		{
+			WeaponManager->ResetForNewRun(T66GI->SelectedHeroID);
+		}
 		if (UT66PlayerExperienceSubSystem* PlayerExperience = T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>())
 		{
 			const int32 BonusLevels = PlayerExperience->GetDifficultyStartHeroBonusLevels(T66GI->SelectedDifficulty);
@@ -487,6 +498,10 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	else if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
 		IdolManager->ResetForNewRun(ET66Difficulty::Easy);
+		if (UT66WeaponManagerSubsystem* WeaponManager = GetWeaponManager())
+		{
+			WeaponManager->RestoreState(NAME_None);
+		}
 	}
 	InitializeHeroStatsForNewRun();
 

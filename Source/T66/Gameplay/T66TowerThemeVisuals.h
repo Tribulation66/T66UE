@@ -27,6 +27,7 @@ namespace T66TowerThemeVisuals
 		UMaterialInterface* WallMeshMaterialOverride = nullptr;
 		UMaterialInterface* DecorationMaterialOverride = nullptr;
 		TArray<UStaticMesh*> WallMeshes;
+		TArray<UStaticMesh*> FloorMeshes;
 		TArray<UStaticMesh*> DecorationMeshes;
 		EWallFamily WallFamily = EWallFamily::SolidMaterial;
 		float CeilingOffset = 1600.0f;

@@ -17,9 +17,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		false);
 	const FText GoldInit = FText::AsNumber(0);
 	const FText OweInit = FText::AsNumber(0);
+	const FText NetWorthInit = FText::AsNumber(0);
 	const FText ScoreLabelText = Loc ? Loc->GetText_ScoreLabel() : NSLOCTEXT("T66.GameplayHUD", "ScoreLabel", "Score:");
 	const FText PortraitLabel = Loc ? Loc->GetText_PortraitPlaceholder() : NSLOCTEXT("T66.GameplayHUD", "PortraitLabel", "PORTRAIT");
 	NetWorthText.Reset();
+	StatDamageText.Reset();
+	StatAttackSpeedText.Reset();
+	StatAttackScaleText.Reset();
+	StatArmorText.Reset();
+	StatEvasionText.Reset();
+	StatLuckText.Reset();
 	PortraitStatPanelBox.Reset();
 	PortraitPlaceholderText.Reset();
 	DifficultyRowBox.Reset();
@@ -124,15 +131,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		PassiveBrush->Tiling = ESlateBrushTileType::NoTile;
 		PassiveBrush->SetResourceObject(nullptr);
 	}
-	// Load fallback ability textures via the texture pool.
+	// Load the fallback ultimate texture via the texture pool. The lower slot is
+	// the equipped weapon icon and is populated from weapon data during refresh.
 	{
 		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 		if (TexPool)
 		{
 			const TSoftObjectPtr<UTexture2D> UltSoft = ResolveGameplayUltimateIcon(NAME_None, ET66UltimateType::None);
 			T66SlateTexture::BindSharedBrushAsync(TexPool, UltSoft, this, UltimateBrush, FName(TEXT("HUDUltimate")), false);
-			const TSoftObjectPtr<UTexture2D> PassiveSoft = ResolveGameplayPassiveIcon(NAME_None, ET66PassiveType::None);
-			T66SlateTexture::BindSharedBrushAsync(TexPool, PassiveSoft, this, PassiveBrush, FName(TEXT("HUDPassive")), false);
 		}
 	}
 	// Wheel spin texture
@@ -446,6 +452,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const float InventoryPanelVisibleHeight = BottomRightInventoryPanelHeight;
 	const float AbilityColumnWidth = GT66BottomLeftAbilityBoxSize;
 	const float AbilityIconSize = GT66BottomLeftAbilityBoxSize;
+	const float PrimaryStatsPanelWidth = GT66BottomLeftPrimaryStatsWidth;
 	const float AbilityInputBadgeWidth = 28.f;
 	const float AbilityInputBadgeHeight = 18.f;
 	const float AbilityIconInset = 6.f;
@@ -457,6 +464,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const FLinearColor IdolSectionBorderColor(0.48f, 0.58f, 0.76f, 0.95f);
 	const FLinearColor PortraitSectionBorderColor(0.78f, 0.59f, 0.30f, 0.98f);
 	const FLinearColor AbilitySectionBorderColor(0.44f, 0.58f, 0.82f, 0.96f);
+	const FLinearColor PrimaryStatsSectionBorderColor(0.62f, 0.48f, 0.74f, 0.96f);
 	const FLinearColor SharedSectionFillColor(0.028f, 0.026f, 0.031f, 0.98f);
 	const FLinearColor LevelTextColor = bDotaTheme ? FT66Style::Accent2() : FLinearColor(0.90f, 0.75f, 0.20f, 1.f);
 	TSharedRef<SWidget> LevelBadgeRef =
@@ -558,25 +566,30 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			];
 	};
-	auto MakeCurrencyReadout = [&](const TSharedPtr<FSlateBrush>& IconBrush, TSharedPtr<STextBlock>& OutValueText, const FText& InitialValue, const FLinearColor& ValueColor) -> TSharedRef<SWidget>
+	auto MakePrimaryStatLine = [&](TSharedPtr<STextBlock>& OutText) -> TSharedRef<SWidget>
+	{
+		return SAssignNew(OutText, STextBlock)
+			.Text(NSLOCTEXT("T66.GameplayHUD", "PrimaryStatPending", "--"))
+			.Font(FT66Style::Tokens::FontBold(13))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.Justification(ETextJustify::Left)
+			.AutoWrapText(false);
+	};
+	auto MakeCurrencyReadout = [&](const FText& Label, TSharedPtr<STextBlock>& OutValueText, const FText& InitialValue, const FLinearColor& ValueColor) -> TSharedRef<SWidget>
 	{
 		return SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 3.f, 0.f)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 4.f, 0.f)
 			[
-				SNew(SBox)
-				.WidthOverride(14.f)
-				.HeightOverride(14.f)
-				[
-					SNew(SImage)
-					.Image(IconBrush.Get())
-					.ColorAndOpacity(FLinearColor::White)
-				]
+				SNew(STextBlock)
+				.Text(Label)
+				.Font(FT66Style::Tokens::FontBold(13))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
 				SAssignNew(OutValueText, STextBlock)
 				.Text(InitialValue)
-				.Font(FT66Style::Tokens::FontBold(11))
+				.Font(FT66Style::Tokens::FontBold(13))
 				.ColorAndOpacity(ValueColor)
 			];
 	};
@@ -777,24 +790,17 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 			[
 				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center).Padding(0.f, 0.f, 8.f, 0.f)
 				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.GameplayHUD", "InventoryHeader", "Inventory"))
-					.Font(FT66Style::Tokens::FontBold(12))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					MakeCurrencyReadout(NSLOCTEXT("T66.GameplayHUD", "GoldLabel", "Gold"), GoldText, GoldInit, GoldValueColor)
 				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 8.f, 0.f)
 				[
-					MakeCurrencyReadout(GoldCurrencyBrush, GoldText, GoldInit, GoldValueColor)
+					MakeCurrencyReadout(NSLOCTEXT("T66.GameplayHUD", "DebtLabel", "Debt"), DebtText, OweInit, DebtValueColor)
 				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
-					MakeCurrencyReadout(DebtCurrencyBrush, DebtText, OweInit, DebtValueColor)
-				]
-				+ SHorizontalBox::Slot().FillWidth(1.f)
-				[
-					SNew(SSpacer)
+					MakeCurrencyReadout(NSLOCTEXT("T66.GameplayHUD", "NetWorthLabel", "Net Worth"), NetWorthText, NetWorthInit, FT66Style::Tokens::Text)
 				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
@@ -807,7 +813,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.BorderBackgroundColor(DividerColor)
 				]
 			]
-			+ SVerticalBox::Slot().AutoHeight()
+			+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Bottom)
 			[
 				InvGridRef
 			];
@@ -1120,6 +1126,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.Padding(BottomLeftMediaPadding)
 		[
 			SAssignNew(TikTokPlaceholderBox, SBox)
+			.Visibility(EVisibility::Collapsed)
 			.WidthOverride(GT66MediaPanelW)
 			.HeightOverride(GT66MediaPanelH)
 			[
@@ -1383,21 +1390,31 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, 2.f)
 				[
-					SNew(SBox)
-					.WidthOverride(PortraitPanelSize)
-					.HeightOverride(TopStripPanelHeight)
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
+						SNew(SBox)
+						.WidthOverride(IdolPanelMinWidth)
+						.HeightOverride(TopStripPanelHeight)
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						SNew(SBox)
+						.WidthOverride(PortraitPanelSize)
+						.HeightOverride(TopStripPanelHeight)
 						[
-							HeartsRowRef
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Top)
-						.Padding(0.f, 2.f, 0.f, 0.f)
-						[
-							StatusDotsRowRef
+							SNew(SOverlay)
+							+ SOverlay::Slot()
+							[
+								HeartsRowRef
+							]
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Top)
+							.Padding(0.f, 2.f, 0.f, 0.f)
+							[
+								StatusDotsRowRef
+							]
 						]
 					]
 				]
@@ -1407,6 +1424,28 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					[
 						MakeBottomLeftBlackPanelNoTitle(
 							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth()
+							[
+								SNew(SBox)
+								.WidthOverride(IdolPanelMinWidth)
+								.HeightOverride(PortraitPanelSize)
+								[
+									SAssignNew(IdolSlotsPanelBox, SBox)
+									.WidthOverride(IdolPanelMinWidth)
+									.HeightOverride(PortraitPanelSize)
+									[
+										MakeBottomLeftSectionPanel(
+											SNew(SBox)
+											.HAlign(HAlign_Center)
+											.VAlign(VAlign_Center)
+											[
+												IdolSlotsRef
+											],
+											FMargin(3.f),
+											IdolSectionBorderColor)
+									]
+								]
+							]
 							+ SHorizontalBox::Slot().AutoWidth()
 							[
 								SNew(SBox)
@@ -1656,28 +1695,43 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									]
 								]
 							]
-							+ SHorizontalBox::Slot().AutoWidth()
+							+ SHorizontalBox::Slot().AutoWidth().Padding(BottomLeftColumnGap, 0.f, 0.f, 0.f)
 							[
 								SNew(SBox)
-								.WidthOverride(IdolPanelMinWidth)
+								.WidthOverride(PrimaryStatsPanelWidth)
 								.HeightOverride(PortraitPanelSize)
 								[
-									SAssignNew(IdolSlotsPanelBox, SBox)
-									.WidthOverride(IdolPanelMinWidth)
-									.HeightOverride(PortraitPanelSize)
-									[
-										MakeBottomLeftSectionPanel(
-											SNew(SBox)
-											.HAlign(HAlign_Center)
-											.VAlign(VAlign_Center)
-											[
-												IdolSlotsRef
-											],
-											FMargin(3.f),
-											IdolSectionBorderColor)
-									]
+									MakeBottomLeftSectionPanel(
+										SNew(SVerticalBox)
+										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+										[
+											MakePrimaryStatLine(StatDamageText)
+										]
+										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+										[
+											MakePrimaryStatLine(StatAttackSpeedText)
+										]
+										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+										[
+											MakePrimaryStatLine(StatAttackScaleText)
+										]
+										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+										[
+											MakePrimaryStatLine(StatArmorText)
+										]
+										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+										[
+											MakePrimaryStatLine(StatEvasionText)
+										]
+										+ SVerticalBox::Slot().AutoHeight()
+										[
+											MakePrimaryStatLine(StatLuckText)
+										],
+										FMargin(8.f, 6.f),
+										PrimaryStatsSectionBorderColor)
 								]
-							],
+							]
+							,
 							FMargin(2.f, 2.f))
 					]
 				]

@@ -6,6 +6,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/PlayerExperience/T66PlayerExperienceTypes.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66Rarity.h"
@@ -1469,6 +1470,7 @@ private:
 	void HandleIdolStateChanged();
 
 	UT66IdolManagerSubsystem* GetIdolManager() const;
+	UT66WeaponManagerSubsystem* GetWeaponManager() const;
 
 	void TrimLogsIfNeeded();
 	bool HasStagePacingPoint(int32 Stage) const;

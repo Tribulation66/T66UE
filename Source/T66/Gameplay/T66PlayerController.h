@@ -161,6 +161,7 @@ public:
 
 	/** Open a run-time arcade popup without pausing gameplay. */
 	bool OpenArcadePopup(const FT66ArcadeInteractableData& ArcadeData, AT66ArcadeInteractableBase* SourceInteractable);
+	void HandleArcadeGameSelected(UT66ArcadePopupWidget* SelectorWidget, const FT66ArcadeInteractableData& SelectedGameData);
 	void HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, bool bSucceeded, int32 FinalScore);
 	void CloseArcadePopup(bool bSucceeded, int32 FinalScore = 0);
 	bool IsArcadePopupOpen() const;
@@ -308,6 +309,7 @@ private:
 	TSubclassOf<UT66CollectorOverlayWidget> ResolveCollectorOverlayClass() const;
 	TSubclassOf<UT66CowardicePromptWidget> ResolveCowardicePromptClass() const;
 	TSubclassOf<UT66IdolAltarOverlayWidget> ResolveIdolAltarOverlayClass() const;
+	bool SpawnArcadePopupWidget(const FT66ArcadeInteractableData& ArcadeData, AT66ArcadeInteractableBase* SourceInteractable);
 
 	/** Gameplay HUD (hearts, gold, inventory, minimap); created in gameplay BeginPlay */
 	UPROPERTY()

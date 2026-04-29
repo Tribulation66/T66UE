@@ -13,7 +13,7 @@ class UAnimationAsset;
 class UTexture2D;
 
 /**
- * Attack category (defines the fundamental behavior of a hero's primary attack and idol sources).
+ * Attack category (defines the fundamental behavior of a hero's primary attack and weapon branch).
  */
 UENUM(BlueprintType)
 enum class ET66AttackCategory : uint8
@@ -22,6 +22,17 @@ enum class ET66AttackCategory : uint8
 	Bounce UMETA(DisplayName = "Bounce"),
 	AOE UMETA(DisplayName = "AOE"),
 	DOT UMETA(DisplayName = "DOT"),
+};
+
+/** Auto-attack weapon rarity. Grey is the starter tier; the other tiers are difficulty-clear upgrades. */
+UENUM(BlueprintType)
+enum class ET66WeaponRarity : uint8
+{
+	Grey UMETA(DisplayName = "Grey"),
+	Black UMETA(DisplayName = "Black"),
+	Red UMETA(DisplayName = "Red"),
+	Yellow UMETA(DisplayName = "Yellow"),
+	White UMETA(DisplayName = "White"),
 };
 
 /** Ultimate ability type per hero. */
@@ -378,6 +389,76 @@ struct T66_API FHeroData : public FTableRowBase
 		, PlaceholderColor(FLinearColor::White)
 		, bUnlockedByDefault(true)
 	{}
+};
+
+/**
+ * Auto-attack weapon row.
+ * Weapons are the authored branch upgrades for the hero's primary attack.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FWeaponData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FName WeaponID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FName HeroID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FText Description;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	TSoftObjectPtr<UTexture2D> Icon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	ET66WeaponRarity Rarity = ET66WeaponRarity::Grey;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	ET66AttackCategory Branch = ET66AttackCategory::Pierce;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
+	float DamageMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
+	float AttackSpeedMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
+	float AttackScaleMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
+	float RangeMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
+	int32 BonusHitDamage = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
+	int32 BonusPierceCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
+	int32 BonusBounceCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
+	int32 BonusAoeCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
+	int32 BonusDotSources = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
+	float BonusAoeRadius = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
+	float BonusDotDuration = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
+	float BonusDotTickDamageMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
+	float FalloffPerHitMultiplier = 1.0f;
 };
 
 /**

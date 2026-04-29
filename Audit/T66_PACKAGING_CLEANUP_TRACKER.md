@@ -200,7 +200,7 @@ Pass 2 confirms that `T66GameMode.cpp` should be sanitized by extraction, not by
 
 | Cluster | Approx. Lines | Examples | Future Owner |
 | --- | --- | --- | --- |
-| Difficulty terrain textures/materials | 370-431 | `/Game/World/Terrain/Megabonk/*`, `/Game/World/Terrain/MegabonkThemes/*`, `/Game/Materials/M_Environment_Unlit` | `T66TerrainThemeAssets` or `T66MainMapTerrain` asset layer |
+| Difficulty terrain textures/materials | 370-431 | `/Game/World/Terrain/TowerDungeon/*`, `/Game/World/Terrain/TowerForest/*`, `/Game/Materials/M_Environment_Unlit` | `T66TerrainThemeAssets` or `T66MainMapTerrain` asset layer |
 | Cliff side material set | 507-510 | `/Game/World/Cliffs/MI_HillTile1-4` | Shared world asset catalog |
 | Start-area decor specs | 3722-3724 | `/Game/World/Props/StartAreaDecor/*` | Shared world asset catalog or stage props catalog |
 | Beacon/fallback materials | 4685-4686 | `/Game/Materials/M_Environment_Unlit`, engine white texture | Shared world asset catalog |

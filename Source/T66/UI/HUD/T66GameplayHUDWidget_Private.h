@@ -20,6 +20,7 @@
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Data/T66DataTypes.h"
@@ -678,6 +679,7 @@ namespace
 	static constexpr float GT66BottomLeftLevelBadgeSize = 42.f;
 	static constexpr float GT66BottomLeftAbilityColumnHeight = GT66BottomLeftPortraitPanelSize;
 	static constexpr float GT66BottomLeftAbilityBoxSize = (GT66BottomLeftAbilityColumnHeight - GT66BottomLeftAbilityGap) * 0.5f;
+	static constexpr float GT66BottomLeftPrimaryStatsWidth = GT66BottomLeftPortraitPanelSize;
 	static constexpr float GT66BottomLeftSectionOuterPadding = 2.f;
 	static constexpr float GT66DisplayedHeartColumnGap = 0.f;
 	static constexpr float GT66DisplayedHeartRowGap = 0.f;
@@ -687,7 +689,7 @@ namespace
 	static constexpr float GT66DisplayedHeartHeight = (GT66DisplayedHeartAreaHeight - GT66DisplayedHeartRowGap) * 0.5f;
 	static constexpr int32 GT66DisplayedHeartCount = UT66RunStateSubsystem::DefaultMaxHearts * 2;
 	static constexpr float GT66BottomLeftBlackPanelChrome = 10.f;
-	static constexpr float GT66BottomLeftMainPlateWidth = GT66BottomLeftPortraitPanelSize + GT66BottomLeftAbilityBoxSize + GT66BottomLeftSidePanelWidth + GT66BottomLeftBlackPanelChrome;
+	static constexpr float GT66BottomLeftMainPlateWidth = GT66BottomLeftPortraitPanelSize + GT66BottomLeftAbilityBoxSize + GT66BottomLeftSidePanelWidth + GT66BottomLeftPrimaryStatsWidth + GT66BottomLeftBlackPanelChrome;
 	static constexpr float GT66BottomLeftMainPlateHeight = GT66BottomLeftPortraitPanelSize + GT66BottomLeftBlackPanelChrome;
 	static constexpr float GT66BottomLeftIdolPlateWidth = 0.f;
 	static constexpr float GT66BottomLeftCombinedPlateWidth = GT66BottomLeftIdolPlateWidth + GT66BottomLeftMainPlateWidth;
@@ -739,9 +741,31 @@ namespace
 		return TEXT("S+++");
 	}
 
+	static const TCHAR* GetStatAdjectiveLabel(int32 Value)
+	{
+		const int32 ClampedValue = FMath::Max(0, Value);
+		if (ClampedValue <= 3)  return TEXT("Weak");
+		if (ClampedValue <= 7)  return TEXT("Poor");
+		if (ClampedValue <= 11) return TEXT("Basic");
+		if (ClampedValue <= 15) return TEXT("Decent");
+		if (ClampedValue <= 19) return TEXT("Solid");
+		if (ClampedValue <= 23) return TEXT("Strong");
+		if (ClampedValue <= 27) return TEXT("Sharp");
+		if (ClampedValue <= 31) return TEXT("Potent");
+		if (ClampedValue <= 35) return TEXT("Powerful");
+		if (ClampedValue <= 39) return TEXT("Elite");
+		if (ClampedValue <= 43) return TEXT("Heroic");
+		if (ClampedValue <= 47) return TEXT("Mythic");
+		if (ClampedValue <= 51) return TEXT("Legendary");
+		if (ClampedValue <= 55) return TEXT("Ascendant");
+		if (ClampedValue <= 59) return TEXT("Divine");
+		if (ClampedValue <= 63) return TEXT("Godlike");
+		return TEXT("Impossible");
+	}
+
 	static FText MakeGradeStatText(const TCHAR* Label, int32 Value)
 	{
-		return FText::FromString(FString::Printf(TEXT("%s: %s"), Label, GetStatGradeLabel(Value)));
+		return FText::FromString(FString::Printf(TEXT("%s %d %s"), Label, FMath::Max(0, Value), GetStatAdjectiveLabel(Value)));
 	}
 
 	static bool IsKeyboardMouseKey(const FKey& Key)

@@ -325,8 +325,8 @@ This folder contains world actors, the main run flow, player/avatar logic, enemi
   - Grounded placement helper for NPC/interactable islands
 - `T66DifficultyTotem`
   - Difficulty escalation interactable
-- `T66MegabonkFarm`
-  - Special map/mode support
+- `T66LegacyFarmTerrain`
+  - Legacy map/mode support
 - `T66LavaPatch`
   - Hazard/world-effect actor
 
@@ -695,7 +695,7 @@ Keep `AT66GameMode` as the entry orchestrator, but move logic into dedicated hel
 - `T66BossFlowCoordinator`
   - boss spawn, awaken/beacon, defeat handling, coliseum debt/owed-boss flow
 - `T66SpecialModesCoordinator`
-  - Lab, tutorial arena, Coliseum, Megabonk farm
+  - Lab, tutorial arena, Coliseum, legacy farm terrain
 
 The goal is not more abstraction for its own sake. The goal is to stop one file from owning every stage concern.
 

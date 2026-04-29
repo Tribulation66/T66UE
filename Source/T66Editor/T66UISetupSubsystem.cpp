@@ -540,6 +540,7 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	const FString HeroesTablePath = TEXT("/Game/Data/DT_Heroes.DT_Heroes");
 	const FString CompanionsTablePath = TEXT("/Game/Data/DT_Companions.DT_Companions");
 	const FString ItemsTablePath = TEXT("/Game/Data/DT_Items.DT_Items");
+	const FString WeaponsTablePath = TEXT("/Game/Data/DT_Weapons.DT_Weapons");
 	const FString BossesTablePath = TEXT("/Game/Data/DT_Bosses.DT_Bosses");
 	const FString StagesTablePath = TEXT("/Game/Data/DT_Stages.DT_Stages");
 	const FString HouseNPCsTablePath = TEXT("/Game/Data/DT_HouseNPCs.DT_HouseNPCs");
@@ -549,6 +550,7 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	UDataTable* HeroesTable = LoadObject<UDataTable>(nullptr, *HeroesTablePath);
 	UDataTable* CompanionsTable = LoadObject<UDataTable>(nullptr, *CompanionsTablePath);
 	UDataTable* ItemsTable = LoadObject<UDataTable>(nullptr, *ItemsTablePath);
+	UDataTable* WeaponsTable = LoadObject<UDataTable>(nullptr, *WeaponsTablePath);
 	UDataTable* BossesTable = LoadObject<UDataTable>(nullptr, *BossesTablePath);
 	UDataTable* StagesTable = LoadObject<UDataTable>(nullptr, *StagesTablePath);
 	UDataTable* HouseNPCsTable = LoadObject<UDataTable>(nullptr, *HouseNPCsTablePath);
@@ -583,6 +585,16 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	else
 	{
 		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_Items (create via CreateAssets.py then ImportData.py)"));
+	}
+
+	if (WeaponsTable)
+	{
+		GameInstanceCDO->WeaponsDataTable = WeaponsTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set WeaponsDataTable to DT_Weapons"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_Weapons (create via SetupWeaponsDataTable.py)"));
 	}
 
 	if (BossesTable)

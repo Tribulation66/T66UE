@@ -101,6 +101,10 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 		OutSnapshot.EquippedIdols = GetEquippedIdols();
 		OutSnapshot.EquippedIdolTiers = GetEquippedIdolTierValues();
 	}
+	if (const UT66WeaponManagerSubsystem* WeaponManager = GetWeaponManager())
+	{
+		OutSnapshot.EquippedWeaponID = WeaponManager->GetEquippedWeaponID();
+	}
 
 	for (const TPair<FName, FT66LuckAccumulator>& Pair : LuckQuantityByCategory)
 	{
@@ -282,6 +286,17 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 			Difficulty = T66GI->SelectedDifficulty;
 		}
 		IdolManager->RestoreState(Snapshot.EquippedIdols, Snapshot.EquippedIdolTiers, Difficulty, Snapshot.RemainingCatchUpIdolPicks);
+	}
+	if (UT66WeaponManagerSubsystem* WeaponManager = GetWeaponManager())
+	{
+		if (!Snapshot.EquippedWeaponID.IsNone())
+		{
+			WeaponManager->RestoreState(Snapshot.EquippedWeaponID);
+		}
+		else if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+		{
+			WeaponManager->ResetForNewRun(T66GI->SelectedHeroID);
+		}
 	}
 
 	RecomputeItemDerivedStats();

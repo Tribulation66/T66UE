@@ -333,7 +333,7 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 			float Range = HD.BaseAttackRange;
 			HeroBaseAttackRange = FMath::Max(100.f, Range);
 			HeroBaseAccuracy = FMath::Clamp(HD.BaseAccuracy, 0.f, 1.f);
-			PassiveType = HD.PassiveType;
+			PassiveType = ET66PassiveType::None;
 			HeroPrimaryAttackCategory = HD.PrimaryCategory;
 		}
 	}

@@ -221,6 +221,10 @@ void UT66GameplayHUDWidget::NativeConstruct()
 		{
 			IdolManager->IdolStateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		}
+		if (UT66WeaponManagerSubsystem* WeaponManager = GI->GetSubsystem<UT66WeaponManagerSubsystem>())
+		{
+			WeaponManager->OnWeaponStateChanged.AddUObject(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		}
 	}
 	RunState->HeroProgressChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
@@ -279,7 +283,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	ApplyInventoryInspectMode();
 	TowerRevealPointsByFloor.Reset();
 
-	// Passive and Ultimate ability tooltips (hero-specific)
+	// Ultimate tooltip is hero-specific. The lower ability slot now displays the equipped weapon.
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
 	FHeroData HD;
@@ -287,7 +291,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	{
 		if (PassiveBorder.IsValid())
 		{
-			PassiveBorder->SetToolTip(CreateRichTooltip(Loc->GetText_PassiveName(HD.PassiveType), Loc->GetText_PassiveDescription(HD.PassiveType)));
+			PassiveBorder->SetToolTip(nullptr);
 		}
 		if (UltimateBorder.IsValid())
 		{
@@ -341,6 +345,10 @@ void UT66GameplayHUDWidget::NativeDestruct()
 			if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
 			{
 				IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+			}
+			if (UT66WeaponManagerSubsystem* WeaponManager = GI->GetSubsystem<UT66WeaponManagerSubsystem>())
+			{
+				WeaponManager->OnWeaponStateChanged.RemoveAll(this);
 			}
 		}
 		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);

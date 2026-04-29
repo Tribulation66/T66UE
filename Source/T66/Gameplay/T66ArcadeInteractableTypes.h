@@ -23,6 +23,17 @@ enum class ET66ArcadeGameType : uint8
 	Random,
 	WhackAMole,
 	Topwar,
+	GoldMiner,
+	RuneSwipe,
+	CartSwitcher,
+	CrystalDash,
+	PotionPour,
+	RelicStack,
+	ShieldParry,
+	MimicMemory,
+	BombSorter,
+	LanternLeap,
+	BladeSweep,
 };
 
 USTRUCT(BlueprintType)
@@ -183,6 +194,11 @@ namespace T66ArcadeModifierKeys
 	inline const FName TopwarStartingSquad(TEXT("TopwarStartingSquad"));
 	inline const FName TopwarChoiceScore(TEXT("TopwarChoiceScore"));
 	inline const FName TopwarSquadGain(TEXT("TopwarSquadGain"));
+	inline const FName GoldMinerSwingSpeed(TEXT("GoldMinerSwingSpeed"));
+	inline const FName GoldMinerReelBaseSeconds(TEXT("GoldMinerReelBaseSeconds"));
+	inline const FName GoldMinerLargeGoldScore(TEXT("GoldMinerLargeGoldScore"));
+	inline const FName GoldMinerGemScore(TEXT("GoldMinerGemScore"));
+	inline const FName GoldMinerRockScore(TEXT("GoldMinerRockScore"));
 	inline const FName VehicleDuration(TEXT("VehicleDuration"));
 	inline const FName VehicleDriveSpeed(TEXT("VehicleDriveSpeed"));
 	inline const FName VehicleTurnSpeed(TEXT("VehicleTurnSpeed"));
