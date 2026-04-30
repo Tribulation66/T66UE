@@ -205,6 +205,24 @@ namespace
 		return FText::Format(Fmt, FText::AsNumber(ResolveDisplayedStageNumber(PlayerExperience, Difficulty, CurrentStage)));
 	}
 
+	static FText BuildDifficultyAreaNameText(const ET66Difficulty Difficulty)
+	{
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Medium:
+			return NSLOCTEXT("T66.GameplayHUD", "DifficultyAreaForestOfSolitude", "Forest of Solitude");
+		case ET66Difficulty::Hard:
+			return NSLOCTEXT("T66.GameplayHUD", "DifficultyAreaOceanOfRuin", "Ocean of Ruin");
+		case ET66Difficulty::VeryHard:
+			return NSLOCTEXT("T66.GameplayHUD", "DifficultyAreaMartianWastes", "Martian Wastes");
+		case ET66Difficulty::Impossible:
+			return NSLOCTEXT("T66.GameplayHUD", "DifficultyAreaHellOfTorment", "Hell of Torment");
+		case ET66Difficulty::Easy:
+		default:
+			return NSLOCTEXT("T66.GameplayHUD", "DifficultyAreaDungeonOfMisery", "Dungeon of Misery");
+		}
+	}
+
 	static const FSlateBrush* ResolveHeartBrushForDisplay(
 		const TArray<TSharedPtr<FSlateBrush>>& HeartBrushes,
 		const TSharedPtr<FSlateBrush>& BlessingBrush,

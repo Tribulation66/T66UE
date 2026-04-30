@@ -175,6 +175,8 @@ Do not mix wall, floor, and ceiling source files into the Arthur or enemy folder
 
 The image that feeds TRELLIS should describe one module, not a full room.
 
+A coherent source sheet is allowed as an upstream imagegen artifact when the goal is a larger matched kit. In that case, the sheet itself is not a TRELLIS input. Split the sheet into individual wall or floor module crops first, then feed those crops to TRELLIS. Keep the original source sheet, crop script, manifest, and final crop PNGs in the run folder so every module can be traced back to the same art plate.
+
 Good source image traits:
 
 - isolated object on opaque green or white background
@@ -188,11 +190,32 @@ Good source image traits:
 Bad source image traits:
 
 - full room compositions
-- wall plus floor plus ceiling in one image
+- wall plus floor plus ceiling in one TRELLIS crop
 - deep shadows hiding edges
 - tiny repeated details with no primary shape
 - floating chains or bones disconnected from the tile
 - background rubble that can become a generated platform
+
+### Coherent Source Sheet Variant
+
+Use this variant when multiple modules need to read as the same world.
+
+Rules:
+
+- one source sheet per theme and surface type
+- split walls and floors separately; do not mix them in one sheet
+- use a 2x2 atlas when the target set is four modules
+- wall sheet target: `3072 x 2048`, four `1536 x 1024` crops
+- floor sheet target: `2048 x 2048`, four `1024 x 1024` crops
+- keep all cells on the same flat chroma background
+- keep camera, palette, material language, and lighting consistent across all cells
+- design details as chunky low-poly geometry, not fine painted texture noise
+- save source sheets under `Inputs/source_sheets`
+- save split TRELLIS crops under `Inputs/approved_seed_images`
+
+The active sheet-based batch plan is:
+
+- [CoherentThemeKit01](C:/UE/T66/Model%20Generation/Runs/Environment/CoherentThemeKit01/Notes/batch_plan.md)
 
 ## Prompt Templates
 

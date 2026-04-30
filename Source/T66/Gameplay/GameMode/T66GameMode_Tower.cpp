@@ -4,6 +4,64 @@
 
 using namespace T66GameModePrivate;
 
+namespace
+{
+	static const FName T66TowerMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
+	static const TCHAR* T66TowerTerrainFloorTagPrefix = TEXT("T66_Floor_Tower_");
+
+	static int32 T66ReadTerrainFloorTag(const AActor* Actor)
+	{
+		if (!Actor)
+		{
+			return INDEX_NONE;
+		}
+
+		for (const FName& Tag : Actor->Tags)
+		{
+			const FString TagString = Tag.ToString();
+			if (!TagString.StartsWith(T66TowerTerrainFloorTagPrefix))
+			{
+				continue;
+			}
+
+			const FString NumberString = TagString.RightChop(FCString::Strlen(T66TowerTerrainFloorTagPrefix));
+			if (NumberString.Len() != 2 || !NumberString.IsNumeric())
+			{
+				continue;
+			}
+
+			return FCString::Atoi(*NumberString);
+		}
+
+		return INDEX_NONE;
+	}
+
+	static void T66SetTowerTerrainVisualFloor(UWorld* World, const int32 VisibleFloorNumber)
+	{
+		if (!World || VisibleFloorNumber == INDEX_NONE)
+		{
+			return;
+		}
+
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* Actor = *It;
+			if (!Actor || !Actor->ActorHasTag(T66TowerMapTerrainVisualTag))
+			{
+				continue;
+			}
+
+			const int32 ActorFloorNumber = T66ReadTerrainFloorTag(Actor);
+			if (ActorFloorNumber == INDEX_NONE)
+			{
+				continue;
+			}
+
+			Actor->SetActorHiddenInGame(ActorFloorNumber != VisibleFloorNumber);
+		}
+	}
+}
+
 void AT66GameMode::ResetTowerMiasmaState()
 {
 	bTowerMiasmaActive = false;
@@ -291,6 +349,8 @@ void AT66GameMode::HandleTowerDescentHoleTriggered(APawn* Pawn, const int32 From
 		SyncTowerMiasmaSourceAnchor(ToFloorNumber, Pawn->GetActorLocation());
 	}
 
+	T66SetTowerTerrainVisualFloor(GetWorld(), ToFloorNumber);
+
 	if (!bTowerMiasmaActive && ToFloorNumber >= CachedTowerMainMapLayout.FirstGameplayFloorNumber)
 	{
 		const FVector FloorAnchor = Pawn->GetActorLocation();
@@ -387,4 +447,5 @@ void AT66GameMode::SyncTowerTrapActivation(const bool bForce)
 	TowerTrapActivationAccumulator = 0.f;
 	ActiveTowerTrapFloorNumber = CurrentFloorNumber;
 	TrapSubsystem->SetActiveTowerFloor(CurrentFloorNumber);
+	T66SetTowerTerrainVisualFloor(World, CurrentFloorNumber);
 }

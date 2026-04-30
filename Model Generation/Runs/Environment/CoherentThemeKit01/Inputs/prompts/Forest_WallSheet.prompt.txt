@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: TRELLIS source sheet for four modular wall meshes
+Primary request: Create one coherent 2x2 atlas containing four modular forest wall segment references, where the wall is built from trees and roots rather than stone.
+Scene/backdrop: perfectly flat solid #00ff00 background across the whole image, no shadows, no floor plane, no gradient.
+Subject: four isolated rectangular forest wall segments, each centered in its own equal cell with green padding.
+Style/medium: chunky low-poly game asset reference, large tree trunks, bark slabs, thick roots, broad vines, simple mushrooms, readable silhouette.
+Composition/framing: 2x2 atlas, straight-on orthographic front view in every cell, consistent camera and lighting, no perspective warp.
+Panel plan: top-left woven tree-trunk wall; top-right braided root wall; bottom-left bark wall with thick vines and a simple wooden totem shape; bottom-right bark wall with a few broad mushrooms attached.
+Materials/textures: bark chunks, root masses, moss patches, broad leaf clusters.
+Constraints: all roots, vines, mushrooms, and totems must be attached to the wall surface; keep each wall rectangular and snappable.
+Avoid: hair-thin roots, dense leaves, tiny grass, loose floating branches, floor slab, ceiling, room scene, characters, text, watermark, labels, decorative borders.

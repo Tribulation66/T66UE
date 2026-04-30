@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: TRELLIS source sheet for four modular wall meshes
+Primary request: Create one coherent 2x2 atlas containing four modular hell wall segment references for the final difficulty theme.
+Scene/backdrop: perfectly flat solid #00ff00 background across the whole image, no shadows, no floor plane, no gradient.
+Subject: four isolated rectangular hell wall segments, each centered in its own equal cell with green padding.
+Style/medium: chunky low-poly game asset reference, brimstone, black obsidian, basalt spikes, skull relief, heavy chains, simple lava cracks.
+Composition/framing: 2x2 atlas, straight-on orthographic front view in every cell, consistent camera and lighting, no perspective warp.
+Panel plan: top-left brimstone block wall; top-right obsidian wall with attached thick chains and broad skull relief; bottom-left basalt wall with simple glowing lava cracks; bottom-right spiked basalt wall with blunt chunky spikes.
+Materials/textures: dark basalt, red-orange lava glow, ash, bone, heavy metal.
+Constraints: all chains, skulls, and spikes must be attached to the wall surface; keep each wall rectangular and snappable.
+Avoid: tiny skull piles, hair-thin chains, dense embers, loose floating spikes, floor slab, ceiling, room scene, characters, text, watermark, labels, decorative borders.

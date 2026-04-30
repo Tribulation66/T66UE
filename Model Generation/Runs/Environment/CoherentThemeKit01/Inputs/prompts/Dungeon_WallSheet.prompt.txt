@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: TRELLIS source sheet for four modular wall meshes
+Primary request: Create one coherent 2x2 atlas containing four modular dungeon wall segment references that look like they belong to the same world.
+Scene/backdrop: perfectly flat solid #00ff00 background across the whole image, no shadows, no floor plane, no gradient.
+Subject: four isolated rectangular dungeon wall segments, each centered in its own equal cell with green padding.
+Style/medium: chunky low-poly game asset reference, broad carved stone blocks, large bevels, shallow relief, hand-authored fantasy dungeon language.
+Composition/framing: 2x2 atlas, straight-on orthographic front view in every cell, consistent camera and lighting, no perspective warp.
+Panel plan: top-left plain carved stone block wall; top-right stone wall with one chunky attached torch sconce; bottom-left stone wall with thick attached rusted chains; bottom-right stone wall with a broad bones niche.
+Materials/textures: large stone slabs, simple cracks, worn edges, low-poly forms, broad readable shapes.
+Constraints: details must survive low-poly 3D reconstruction; all chains, bones, and torch parts must be attached to the wall; keep each wall rectangular and snappable.
+Avoid: fine filigree, tiny noisy stones, hair-thin chains, small flames, loose floating props, floor slab, ceiling, room scene, characters, text, watermark, labels, decorative borders.

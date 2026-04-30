@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: TRELLIS source sheet for four modular floor meshes
+Primary request: Create one coherent 2x2 atlas containing four modular forest floor tile references for the medium difficulty theme.
+Scene/backdrop: perfectly flat solid #00ff00 background across the whole image, no shadows, no wall, no room, no gradient.
+Subject: four isolated square forest floor tiles, each centered in its own equal cell with green padding.
+Style/medium: chunky low-poly game asset reference, low-profile roots, mossy stones, leaf mats, compacted forest ground.
+Composition/framing: 2x2 atlas, top-down orthographic view in every cell, consistent camera and lighting.
+Panel plan: top-left broad root mat tile; top-right moss and stone tile; bottom-left leaf-litter crack tile; bottom-right bramble edge tile with thorns kept low and attached.
+Materials/textures: earthy soil, bark, moss, broad roots, large leaves.
+Constraints: floor detail must stay low and walkable; tile edges must stay clean enough to repeat.
+Avoid: tall roots, dense grass, tiny leaves, loose branches, walls, room scene, characters, text, watermark, labels, decorative borders.

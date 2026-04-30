@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: TRELLIS source sheet for four modular wall meshes
+Primary request: Create one coherent 2x2 atlas containing four modular Martian wall segment references for the VeryHard Mars-inspired difficulty theme.
+Scene/backdrop: perfectly flat solid #00ff00 background across the whole image, no shadows, no floor plane, no gradient.
+Subject: four isolated rectangular Martian wall segments, each centered in its own equal cell with green padding.
+Style/medium: chunky low-poly game asset reference, red rock, basalt plates, compact ruins, simple crystal veins, broad sci-fi excavation shapes.
+Composition/framing: 2x2 atlas, straight-on orthographic front view in every cell, consistent camera and lighting, no perspective warp.
+Panel plan: top-left red rock slab wall; top-right red rock wall with broad crystal veins; bottom-left ancient ruin panel embedded in Mars rock; bottom-right meteor-scarred basalt wall.
+Materials/textures: red regolith dust, dark basalt, oxidized stone, simple glowing mineral seams.
+Constraints: keep details large and attached; keep each wall rectangular and snappable.
+Avoid: fine wires, tiny panels, dense greebles, loose floating crystals, floor slab, ceiling, room scene, characters, text, watermark, labels, decorative borders.

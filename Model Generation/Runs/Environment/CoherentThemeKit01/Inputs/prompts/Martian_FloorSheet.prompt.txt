@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: TRELLIS source sheet for four modular floor meshes
+Primary request: Create one coherent 2x2 atlas containing four modular Martian floor tile references for the VeryHard Mars-inspired difficulty theme.
+Scene/backdrop: perfectly flat solid #00ff00 background across the whole image, no shadows, no wall, no room, no gradient.
+Subject: four isolated square Martian floor tiles, each centered in its own equal cell with green padding.
+Style/medium: chunky low-poly game asset reference, cracked red regolith plates, basalt slabs, shallow crater dents, simple ruin pieces.
+Composition/framing: 2x2 atlas, top-down orthographic view in every cell, consistent camera and lighting.
+Panel plan: top-left red regolith plate tile; top-right crater-cracked basalt tile; bottom-left tile with broad crystal dust seams; bottom-right ancient ruin floor tile embedded in Mars soil.
+Materials/textures: red dust, dark rock, simple mineral glow, broad cracks.
+Constraints: floor detail must stay low and walkable; tile edges must stay clean enough to repeat.
+Avoid: tall crystals, dense pebble noise, loose props, walls, room scene, characters, text, watermark, labels, decorative borders.

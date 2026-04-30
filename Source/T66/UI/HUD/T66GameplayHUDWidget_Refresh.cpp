@@ -180,30 +180,38 @@ void UT66GameplayHUDWidget::RefreshStageAndTimer()
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
 	const UT66PlayerExperienceSubSystem* PlayerExperience = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+
+	bool bTowerBloodActive = false;
+	if (const UWorld* World = GetWorld())
+	{
+		if (const AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode()))
+		{
+			static constexpr float TowerBloodDelaySeconds = 120.0f;
+			const float Elapsed = UT66RunStateSubsystem::StageTimerDurationSeconds - RunState->GetStageTimerSecondsRemaining();
+			bTowerBloodActive = GameMode->IsUsingTowerMainMapLayout()
+				&& RunState->GetStageTimerActive()
+				&& Elapsed >= TowerBloodDelaySeconds;
+		}
+	}
+
+	if (DifficultyAreaNameText.IsValid())
+	{
+		DifficultyAreaNameText->SetText(BuildDifficultyAreaNameText(Difficulty));
+		DifficultyAreaNameText->SetColorAndOpacity(bTowerBloodActive
+			? FSlateColor(FLinearColor(0.95f, 0.18f, 0.20f, 1.0f))
+			: FSlateColor(FT66Style::Tokens::Accent2));
+	}
 
 	// Stage number
 	if (StageText.IsValid())
 	{
-		const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
 		StageText->SetText(BuildDisplayedStageText(
 			Loc,
 			PlayerExperience,
 			Difficulty,
 			RunState->GetCurrentStage(),
 			RunState->IsInStageCatchUp()));
-
-		bool bTowerBloodActive = false;
-		if (const UWorld* World = GetWorld())
-		{
-			if (const AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode()))
-			{
-				static constexpr float TowerBloodDelaySeconds = 120.0f;
-				const float Elapsed = UT66RunStateSubsystem::StageTimerDurationSeconds - RunState->GetStageTimerSecondsRemaining();
-				bTowerBloodActive = GameMode->IsUsingTowerMainMapLayout()
-					&& RunState->GetStageTimerActive()
-					&& Elapsed >= TowerBloodDelaySeconds;
-			}
-		}
 
 		StageText->SetColorAndOpacity(bTowerBloodActive ? FSlateColor(FLinearColor(0.95f, 0.18f, 0.20f, 1.0f)) : FSlateColor(FT66Style::Tokens::Text));
 	}

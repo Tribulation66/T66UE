@@ -212,6 +212,7 @@ protected:
 	TSharedPtr<STextBlock> ScoreTargetText;
 	TSharedPtr<STextBlock> ScoreMultiplierText;
 	TSharedPtr<STextBlock> DPSText;
+	TSharedPtr<STextBlock> DifficultyAreaNameText;
 	TSharedPtr<STextBlock> StageText;
 	TSharedPtr<STextBlock> SpeedRunText;
 	TSharedPtr<STextBlock> SpeedRunPacingText;

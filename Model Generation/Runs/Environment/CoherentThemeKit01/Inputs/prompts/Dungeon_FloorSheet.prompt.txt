@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: TRELLIS source sheet for four modular floor meshes
+Primary request: Create one coherent 2x2 atlas containing four modular dungeon floor tile references that look like one shared floor kit.
+Scene/backdrop: perfectly flat solid #00ff00 background across the whole image, no shadows, no wall, no room, no gradient.
+Subject: four isolated square dungeon floor tiles, each centered in its own equal cell with green padding.
+Style/medium: chunky low-poly game asset reference, broad stone slabs, low-profile details, readable walkable top surface.
+Composition/framing: 2x2 atlas, top-down orthographic view in every cell, consistent camera and lighting.
+Panel plan: top-left plain stone slab tile; top-right cracked stone tile; bottom-left stone tile with broad embedded bones; bottom-right stone tile with a simple chunky drain shape.
+Materials/textures: large stones, broad cracks, worn edges, shallow relief.
+Constraints: floor detail must stay low and walkable; tile edges must stay clean enough to repeat.
+Avoid: tall props in the center, walls, room scene, characters, text, watermark, labels, tiny rubble, fine texture noise, decorative borders.

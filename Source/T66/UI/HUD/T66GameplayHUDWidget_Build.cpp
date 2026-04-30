@@ -9,6 +9,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const UT66PlayerExperienceSubSystem* PlayerExperience = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 	const ET66Difficulty SelectedDifficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
 	const int32 InitialStage = GetRunState() ? GetRunState()->GetCurrentStage() : 1;
+	const FText DifficultyAreaNameInit = BuildDifficultyAreaNameText(SelectedDifficulty);
 	const FText StageInit = BuildDisplayedStageText(
 		Loc,
 		PlayerExperience,
@@ -1781,6 +1782,15 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 							[
+								SAssignNew(DifficultyAreaNameText, STextBlock)
+								.Text(DifficultyAreaNameInit)
+								.Font(FT66Style::Tokens::FontBold(10))
+								.ColorAndOpacity(FT66Style::Tokens::Accent2)
+								.Justification(ETextJustify::Center)
+								.AutoWrapText(true)
+							]
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 2.f, 0.f, 0.f)
+							[
 								SAssignNew(StageText, STextBlock)
 								.Text(StageInit)
 								.Font(FT66Style::Tokens::FontBold(11))
@@ -1837,6 +1847,15 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							: FT66Style::MakePanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+							[
+								SAssignNew(DifficultyAreaNameText, STextBlock)
+								.Text(DifficultyAreaNameInit)
+								.Font(FT66Style::Tokens::FontBold(10))
+								.ColorAndOpacity(FT66Style::Tokens::Accent2)
+								.Justification(ETextJustify::Center)
+								.AutoWrapText(true)
+							]
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 2.f, 0.f, 0.f)
 							[
 								SAssignNew(StageText, STextBlock)
 								.Text(StageInit)

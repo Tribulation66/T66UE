@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: TRELLIS source sheet for four modular floor meshes
+Primary request: Create one coherent 2x2 atlas containing four modular hell floor tile references for the final difficulty theme.
+Scene/backdrop: perfectly flat solid #00ff00 background across the whole image, no shadows, no wall, no room, no gradient.
+Subject: four isolated square hell floor tiles, each centered in its own equal cell with green padding.
+Style/medium: chunky low-poly game asset reference, low-profile obsidian plates, brimstone cracks, ash, bone fragments, simple rune plates.
+Composition/framing: 2x2 atlas, top-down orthographic view in every cell, consistent camera and lighting.
+Panel plan: top-left obsidian plate tile; top-right ember fissure tile; bottom-left bone and ash tile with broad embedded fragments; bottom-right simple rune plate tile.
+Materials/textures: dark obsidian, red-orange fissures, ash gray, bone, brimstone.
+Constraints: floor detail must stay low and walkable; glowing cracks should be broad and simple; tile edges must stay clean enough to repeat.
+Avoid: tall flames, dense embers, tiny bone piles, walls, room scene, characters, text, watermark, labels, decorative borders.

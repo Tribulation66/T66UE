@@ -12,6 +12,7 @@
 #include "HAL/IConsoleManager.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInterface.h"
@@ -30,22 +31,21 @@ namespace
 	static constexpr float T66TowerRoofSkinThickness = 12.0f;
 	static constexpr float T66TowerStartFloorHeadroom = 2000.0f;
 	static constexpr float T66TowerStandardFloorHeadroom = 1200.0f;
-	static constexpr float T66TowerMazeWallHalfThicknessScale = 0.09f;
-	static constexpr float T66TowerStartRoomSquareSize = 7000.0f;
+	static constexpr float T66TowerDungeonKitUnitSize = 1300.0f;
+	static constexpr float T66TowerDungeonKitWallDepth = 120.0f;
+	static constexpr float T66TowerGeneratedDungeonKitFloorThickness = 24.0f;
+	static constexpr float T66TowerMazeWallHalfThicknessScale = (T66TowerDungeonKitWallDepth * 0.5f) / T66TowerDungeonKitUnitSize;
+	static constexpr float T66TowerStartRoomSquareSize = T66TowerDungeonKitUnitSize * 5.0f;
 	static constexpr int32 T66TowerGridDefaultColumns = 25;
 	static constexpr int32 T66TowerGridDefaultRows = 25;
-	static constexpr float T66TowerGridDefaultCellSize = 1500.0f;
-	static constexpr float T66TowerGridDefaultDoorWidth = 860.0f;
+	static constexpr float T66TowerGridDefaultCellSize = T66TowerDungeonKitUnitSize;
+	static constexpr float T66TowerGridDefaultDoorWidth = T66TowerDungeonKitUnitSize;
 	static constexpr int32 T66TowerDungeonMinRooms = 15;
 	static constexpr int32 T66TowerDungeonMaxRooms = 20;
 	static constexpr int32 T66TowerDungeonMinRoomTiles = 2;
 	static constexpr int32 T66TowerDungeonMaxRoomTiles = 5;
 	static constexpr float T66TowerGridBranchChance = 0.35f;
 	static constexpr int32 T66TowerGridMaxBranchCells = 3;
-	static constexpr float T66TowerGeneratedFloorCapTopOffset = 18.0f;
-	static constexpr float T66TowerGeneratedFloorCapThickness = 48.0f;
-	static constexpr float T66TowerGeneratedDungeonKitModuleLength = 1300.0f;
-	static constexpr float T66TowerGeneratedDungeonKitFloorThickness = 24.0f;
 	static constexpr int32 T66TowerStartFloorNumber = 1;
 	static constexpr int32 T66TowerFirstGameplayFloorNumber = 2;
 	static constexpr int32 T66TowerLastGameplayFloorNumber = 4;
@@ -227,7 +227,7 @@ namespace
 		Actor->SetActorLocationAndRotation(Location, Rotation, false, nullptr, ETeleportType::TeleportPhysics);
 		CollisionComponent->SetMobility(EComponentMobility::Static);
 
-		Actor->SetActorHiddenInGame(false);
+		Actor->SetActorHiddenInGame(true);
 		Actor->Tags.AddUnique(T66TowerMapTerrainCollisionProxyTag);
 		for (const FName& Tag : ExtraTags)
 		{
@@ -239,41 +239,7 @@ namespace
 		return Actor;
 	}
 
-	static void T66GroundMeshComponentAtActorOrigin(
-		UStaticMeshComponent* MeshComponent,
-		UStaticMesh* Mesh,
-		const bool bCenterBoundsAtActorXY)
-	{
-		if (!MeshComponent)
-		{
-			return;
-		}
-
-		UStaticMesh* ResolvedMesh = Mesh;
-		if (!ResolvedMesh)
-		{
-			ResolvedMesh = MeshComponent->GetStaticMesh();
-		}
-		if (!ResolvedMesh)
-		{
-			return;
-		}
-
-		const FBoxSphereBounds Bounds = ResolvedMesh->GetBounds();
-		const FVector Scale = MeshComponent->GetRelativeScale3D();
-		const float ScaleZ = FMath::Abs(Scale.Z);
-		const float BottomZ = (Bounds.Origin.Z - Bounds.BoxExtent.Z) * ScaleZ;
-		FVector RelativeLocation = MeshComponent->GetRelativeLocation();
-		if (bCenterBoundsAtActorXY)
-		{
-			RelativeLocation.X = -Bounds.Origin.X * Scale.X;
-			RelativeLocation.Y = -Bounds.Origin.Y * Scale.Y;
-		}
-		RelativeLocation.Z = -BottomZ;
-		MeshComponent->SetRelativeLocation(RelativeLocation);
-	}
-
-	static AStaticMeshActor* T66SpawnGroundedMeshActor(
+	static AActor* T66SpawnGroundedMeshActor(
 		UWorld* World,
 		UStaticMesh* Mesh,
 		UMaterialInterface* Material,
@@ -291,34 +257,64 @@ namespace
 			return nullptr;
 		}
 
-		AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Location, Rotation, SpawnParams);
+		AActor* Actor = World->SpawnActor<AActor>(AActor::StaticClass(), Location, Rotation, SpawnParams);
 		if (!Actor)
 		{
 			return nullptr;
 		}
 
-		if (UStaticMeshComponent* MeshComponent = Actor->GetStaticMeshComponent())
+		USceneComponent* RootComponent = NewObject<USceneComponent>(Actor, TEXT("VisualRoot"));
+		if (!RootComponent)
 		{
-			MeshComponent->SetMobility(EComponentMobility::Movable);
-			MeshComponent->SetStaticMesh(Mesh);
-			MeshComponent->SetGenerateOverlapEvents(false);
-			MeshComponent->SetRelativeScale3D(Scale);
-			T66GroundMeshComponentAtActorOrigin(MeshComponent, Mesh, bCenterBoundsAtActorXY);
-			MeshComponent->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
-			T66ConfigureTowerCollisionResponses(MeshComponent, bIgnoreCameraChannel);
-			MeshComponent->SetCollisionEnabled(bEnableCollision ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
-			T66OptimizeTowerMeshComponent(MeshComponent);
-			if (Material)
-			{
-				const int32 MaterialCount = MeshComponent->GetNumMaterials();
-				for (int32 MaterialIndex = 0; MaterialIndex < MaterialCount; ++MaterialIndex)
-				{
-					MeshComponent->SetMaterial(MaterialIndex, Material);
-				}
-			}
-			FT66VisualUtil::EnsureUnlitMaterials(MeshComponent, World);
-			MeshComponent->SetMobility(EComponentMobility::Static);
+			Actor->Destroy();
+			return nullptr;
 		}
+
+		RootComponent->SetMobility(EComponentMobility::Movable);
+		Actor->SetRootComponent(RootComponent);
+		Actor->AddInstanceComponent(RootComponent);
+		RootComponent->RegisterComponent();
+		Actor->SetActorLocationAndRotation(Location, Rotation, false, nullptr, ETeleportType::TeleportPhysics);
+
+		UStaticMeshComponent* MeshComponent = NewObject<UStaticMeshComponent>(Actor, TEXT("VisualMesh"));
+		if (!MeshComponent)
+		{
+			Actor->Destroy();
+			return nullptr;
+		}
+
+		MeshComponent->SetMobility(EComponentMobility::Movable);
+		MeshComponent->SetupAttachment(RootComponent);
+		MeshComponent->SetStaticMesh(Mesh);
+		MeshComponent->SetGenerateOverlapEvents(false);
+		MeshComponent->SetRelativeScale3D(Scale);
+		FT66VisualUtil::GroundMeshToActorOrigin(MeshComponent, Mesh);
+		if (bCenterBoundsAtActorXY)
+		{
+			const FBoxSphereBounds Bounds = Mesh->GetBounds();
+			const FVector RelativeLocation = MeshComponent->GetRelativeLocation();
+			MeshComponent->SetRelativeLocation(FVector(
+				-Bounds.Origin.X * Scale.X,
+				-Bounds.Origin.Y * Scale.Y,
+				RelativeLocation.Z));
+		}
+		MeshComponent->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+		T66ConfigureTowerCollisionResponses(MeshComponent, bIgnoreCameraChannel);
+		MeshComponent->SetCollisionEnabled(bEnableCollision ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+		T66OptimizeTowerMeshComponent(MeshComponent);
+		if (Material)
+		{
+			const int32 MaterialCount = MeshComponent->GetNumMaterials();
+			for (int32 MaterialIndex = 0; MaterialIndex < MaterialCount; ++MaterialIndex)
+			{
+				MeshComponent->SetMaterial(MaterialIndex, Material);
+			}
+		}
+		FT66VisualUtil::EnsureUnlitMaterials(MeshComponent, World);
+		Actor->AddInstanceComponent(MeshComponent);
+		MeshComponent->RegisterComponent();
+		MeshComponent->SetMobility(EComponentMobility::Static);
+		RootComponent->SetMobility(EComponentMobility::Static);
 
 		Actor->Tags.AddUnique(T66TowerMapTerrainVisualTag);
 		Actor->Tags.AddUnique(T66TowerMapTerrainMaterialsReadyTag);
@@ -349,6 +345,22 @@ namespace
 			return FMath::Max(Extents.Y * 2.0f, 1.0f);
 		}
 		return FMath::Max(Extents.Z * 2.0f, 1.0f);
+	}
+
+	static int32 T66GetNativeDungeonKitModuleCount(const float SpanLength, const float NativeModuleSize)
+	{
+		if (SpanLength <= 10.0f || NativeModuleSize <= 1.0f)
+		{
+			return 0;
+		}
+
+		return FMath::Max(1, FMath::RoundToInt(SpanLength / NativeModuleSize));
+	}
+
+	static float T66GetNativeDungeonKitModuleStart(const float SpanMin, const float SpanMax, const int32 ModuleCount, const float NativeModuleSize)
+	{
+		const float SpanCenter = (SpanMin + SpanMax) * 0.5f;
+		return SpanCenter - (static_cast<float>(ModuleCount) * NativeModuleSize * 0.5f);
 	}
 
 	static float T66YawForGeneratedWallNormal(const FVector2D& Normal)
@@ -403,8 +415,14 @@ namespace
 			return 0;
 		}
 
-		const int32 SegmentCount = FMath::Max(1, FMath::CeilToInt(SpanLength / T66TowerGeneratedDungeonKitModuleLength));
-		const float SegmentLength = SpanLength / static_cast<float>(SegmentCount);
+		const float WallUnitLength = T66GetMeshAxisSize(Theme.WallMeshes[0], 1);
+		const int32 SegmentCount = T66GetNativeDungeonKitModuleCount(SpanLength, WallUnitLength);
+		if (SegmentCount <= 0)
+		{
+			return 0;
+		}
+
+		const float SegmentStart = T66GetNativeDungeonKitModuleStart(SpanMin, SpanMax, SegmentCount, WallUnitLength);
 		TArray<FName> VisualTags = Tags;
 		VisualTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedDungeonKit")));
 		VisualTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedDungeonKit_Wall")));
@@ -414,6 +432,7 @@ namespace
 		CollisionTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedDungeonKit_WallCollision")));
 
 		int32 SpawnedCount = 0;
+		bool bSpawnedCollisionProxy = false;
 		for (int32 SegmentIndex = 0; SegmentIndex < SegmentCount; ++SegmentIndex)
 		{
 			UStaticMesh* WallMesh = T66ChooseGeneratedDungeonWallMesh(Theme, Seed, SideIndex, SegmentIndex);
@@ -422,14 +441,14 @@ namespace
 				continue;
 			}
 
-			const float SegmentCenter = SpanMin + (SegmentLength * (static_cast<float>(SegmentIndex) + 0.5f));
+			const float SegmentCenter = SegmentStart + (WallUnitLength * (static_cast<float>(SegmentIndex) + 0.5f));
 			const FVector2D SegmentCenter2D = bWallRunsAlongX
 				? FVector2D(SegmentCenter, FixedCoord)
 				: FVector2D(FixedCoord, SegmentCenter);
 			const FVector Location(SegmentCenter2D.X, SegmentCenter2D.Y, BaseZ);
 			const FVector Scale(
 				WallDepth / T66GetMeshAxisSize(WallMesh, 0),
-				SegmentLength / T66GetMeshAxisSize(WallMesh, 1),
+				WallUnitLength / T66GetMeshAxisSize(WallMesh, 1),
 				DesiredHeight / T66GetMeshAxisSize(WallMesh, 2));
 			const FRotator Rotation(0.0f, T66YawForGeneratedWallNormal(Normal), 0.0f);
 
@@ -447,12 +466,12 @@ namespace
 				true))
 			{
 				++SpawnedCount;
-				if (bSpawnCollision)
+				if (bSpawnCollision && !bSpawnedCollisionProxy)
 				{
-					const FVector CollisionCenter(SegmentCenter2D.X, SegmentCenter2D.Y, BaseZ + (DesiredHeight * 0.5f));
+					const FVector CollisionCenter(WallCenter.X, WallCenter.Y, BaseZ + (DesiredHeight * 0.5f));
 					const FVector CollisionHalfExtents = bWallRunsAlongX
-						? FVector(SegmentLength * 0.5f, WallDepth * 0.5f, DesiredHeight * 0.5f)
-						: FVector(WallDepth * 0.5f, SegmentLength * 0.5f, DesiredHeight * 0.5f);
+						? FVector(SpanLength * 0.5f, WallDepth * 0.5f, DesiredHeight * 0.5f)
+						: FVector(WallDepth * 0.5f, SpanLength * 0.5f, DesiredHeight * 0.5f);
 					T66SpawnHiddenCollisionProxyActor(
 						World,
 						CollisionCenter,
@@ -461,6 +480,7 @@ namespace
 						SpawnParams,
 						CollisionTags,
 						bIgnoreCameraChannel);
+					bSpawnedCollisionProxy = true;
 				}
 			}
 		}
@@ -3443,146 +3463,6 @@ namespace
 			Tags);
 	}
 
-	static void T66SpawnGeneratedFloorVisualCap(
-		UWorld* World,
-		UStaticMesh* CubeMesh,
-		UMaterialInterface* GroundMaterial,
-		const T66TowerMapTerrain::FFloor& Floor,
-		const FActorSpawnParameters& SpawnParams,
-		const TArray<FName>& Tags)
-	{
-		if (!World
-			|| !CubeMesh
-			|| !GroundMaterial
-			|| !Floor.bGameplayFloor
-			|| Floor.WalkableFloorBoxes.Num() <= 0
-			|| Floor.BoundsHalfExtent <= 1.0f)
-		{
-			return;
-		}
-
-		TArray<FName> CapTags = Tags;
-		CapTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedVisualCap")));
-		CapTags.AddUnique(FName(*FString::Printf(TEXT("T66_Floor_Tower_GeneratedVisualCap_%02d"), Floor.FloorNumber)));
-
-		const float CapTopZ = Floor.SurfaceZ - T66TowerGeneratedFloorCapTopOffset;
-		const float MinX = Floor.Center.X - Floor.BoundsHalfExtent;
-		const float MaxX = Floor.Center.X + Floor.BoundsHalfExtent;
-		const float MinY = Floor.Center.Y - Floor.BoundsHalfExtent;
-		const float MaxY = Floor.Center.Y + Floor.BoundsHalfExtent;
-
-		auto SpawnRect = [&](const float RectMinX, const float RectMinY, const float RectMaxX, const float RectMaxY)
-		{
-			T66SpawnFloorSlab(
-				World,
-				CubeMesh,
-				GroundMaterial,
-				Floor.Center,
-				CapTopZ,
-				T66TowerGeneratedFloorCapThickness,
-				FVector2D(RectMinX - Floor.Center.X, RectMinY - Floor.Center.Y),
-				FVector2D(RectMaxX - Floor.Center.X, RectMaxY - Floor.Center.Y),
-				SpawnParams,
-				false,
-				CapTags);
-		};
-
-		auto SpawnRectWithHole = [&](const float RectMinX, const float RectMinY, const float RectMaxX, const float RectMaxY)
-		{
-			if (!Floor.bHasDropHole || Floor.HoleHalfExtent.X <= 1.0f || Floor.HoleHalfExtent.Y <= 1.0f)
-			{
-				SpawnRect(RectMinX, RectMinY, RectMaxX, RectMaxY);
-				return;
-			}
-
-			const float HoleMinX = FMath::Clamp(Floor.HoleCenter.X - Floor.HoleHalfExtent.X, RectMinX, RectMaxX);
-			const float HoleMaxX = FMath::Clamp(Floor.HoleCenter.X + Floor.HoleHalfExtent.X, RectMinX, RectMaxX);
-			const float HoleMinY = FMath::Clamp(Floor.HoleCenter.Y - Floor.HoleHalfExtent.Y, RectMinY, RectMaxY);
-			const float HoleMaxY = FMath::Clamp(Floor.HoleCenter.Y + Floor.HoleHalfExtent.Y, RectMinY, RectMaxY);
-			if (HoleMaxX <= HoleMinX || HoleMaxY <= HoleMinY)
-			{
-				SpawnRect(RectMinX, RectMinY, RectMaxX, RectMaxY);
-				return;
-			}
-
-			SpawnRect(RectMinX, RectMinY, HoleMinX, RectMaxY);
-			SpawnRect(HoleMaxX, RectMinY, RectMaxX, RectMaxY);
-			SpawnRect(HoleMinX, RectMinY, HoleMaxX, HoleMinY);
-			SpawnRect(HoleMinX, HoleMaxY, HoleMaxX, RectMaxY);
-		};
-
-		SpawnRectWithHole(MinX, MinY, MaxX, MaxY);
-	}
-
-	static void T66SpawnGeneratedDungeonFloorSafetyCollision(
-		UWorld* World,
-		const T66TowerMapTerrain::FLayout& Layout,
-		const T66TowerMapTerrain::FFloor& Floor,
-		const FActorSpawnParameters& SpawnParams,
-		const TArray<FName>& Tags)
-	{
-		if (!World || Floor.BoundsHalfExtent <= 1.0f)
-		{
-			return;
-		}
-
-		TArray<FName> CollisionTags = Tags;
-		CollisionTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedDungeonKit")));
-		CollisionTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedDungeonKit_CollisionProxy")));
-		CollisionTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedDungeonKit_FloorSafetyCollision")));
-		CollisionTags.AddUnique(FName(*FString::Printf(TEXT("T66_Floor_Tower_GeneratedDungeonKit_FloorSafetyCollision_%02d"), Floor.FloorNumber)));
-
-		const float CollisionThickness = FMath::Max(Layout.FloorThickness + T66TowerRoofSkinThickness, T66TowerGeneratedDungeonKitFloorThickness);
-		const float MinX = Floor.Center.X - Floor.BoundsHalfExtent;
-		const float MaxX = Floor.Center.X + Floor.BoundsHalfExtent;
-		const float MinY = Floor.Center.Y - Floor.BoundsHalfExtent;
-		const float MaxY = Floor.Center.Y + Floor.BoundsHalfExtent;
-
-		auto SpawnRect = [&](const float RectMinX, const float RectMinY, const float RectMaxX, const float RectMaxY)
-		{
-			if (RectMaxX - RectMinX <= 10.0f || RectMaxY - RectMinY <= 10.0f)
-			{
-				return;
-			}
-
-			const FVector2D Center((RectMinX + RectMaxX) * 0.5f, (RectMinY + RectMaxY) * 0.5f);
-			T66SpawnHiddenCollisionProxyActor(
-				World,
-				FVector(Center.X, Center.Y, Floor.SurfaceZ - (CollisionThickness * 0.5f)),
-				FRotator::ZeroRotator,
-				FVector((RectMaxX - RectMinX) * 0.5f, (RectMaxY - RectMinY) * 0.5f, CollisionThickness * 0.5f),
-				SpawnParams,
-				CollisionTags,
-				true);
-		};
-
-		auto SpawnRectWithHole = [&](const float RectMinX, const float RectMinY, const float RectMaxX, const float RectMaxY)
-		{
-			if (!Floor.bHasDropHole || Floor.HoleHalfExtent.X <= 1.0f || Floor.HoleHalfExtent.Y <= 1.0f)
-			{
-				SpawnRect(RectMinX, RectMinY, RectMaxX, RectMaxY);
-				return;
-			}
-
-			const float HoleMinX = FMath::Clamp(Floor.HoleCenter.X - Floor.HoleHalfExtent.X, RectMinX, RectMaxX);
-			const float HoleMaxX = FMath::Clamp(Floor.HoleCenter.X + Floor.HoleHalfExtent.X, RectMinX, RectMaxX);
-			const float HoleMinY = FMath::Clamp(Floor.HoleCenter.Y - Floor.HoleHalfExtent.Y, RectMinY, RectMaxY);
-			const float HoleMaxY = FMath::Clamp(Floor.HoleCenter.Y + Floor.HoleHalfExtent.Y, RectMinY, RectMaxY);
-			if (HoleMaxX <= HoleMinX || HoleMaxY <= HoleMinY)
-			{
-				SpawnRect(RectMinX, RectMinY, RectMaxX, RectMaxY);
-				return;
-			}
-
-			SpawnRect(RectMinX, RectMinY, HoleMinX, RectMaxY);
-			SpawnRect(HoleMaxX, RectMinY, RectMaxX, RectMaxY);
-			SpawnRect(HoleMinX, RectMinY, HoleMaxX, HoleMinY);
-			SpawnRect(HoleMinX, HoleMaxY, HoleMaxX, RectMaxY);
-		};
-
-		SpawnRectWithHole(MinX, MinY, MaxX, MaxY);
-	}
-
 	static bool T66SpawnGeneratedDungeonFloorTiles(
 		UWorld* World,
 		const T66TowerThemeVisuals::FResolvedTheme& Theme,
@@ -3610,7 +3490,6 @@ namespace
 		FloorTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedDungeonKit_Floor")));
 		FloorTags.AddUnique(FName(*FString::Printf(TEXT("T66_Floor_Tower_GeneratedDungeonKit_Floor_%02d"), Floor.FloorNumber)));
 
-		const float TileTargetSize = FMath::Max(600.0f, Layout.PlacementCellSize);
 		const float MeshSizeX = T66GetMeshAxisSize(FloorMesh, 0);
 		const float MeshSizeY = T66GetMeshAxisSize(FloorMesh, 1);
 		const float MeshSizeZ = T66GetMeshAxisSize(FloorMesh, 2);
@@ -3625,21 +3504,26 @@ namespace
 				return;
 			}
 
-			const int32 CountX = FMath::Max(1, FMath::CeilToInt(BoxSize.X / TileTargetSize));
-			const int32 CountY = FMath::Max(1, FMath::CeilToInt(BoxSize.Y / TileTargetSize));
-			const float TileSizeX = BoxSize.X / static_cast<float>(CountX);
-			const float TileSizeY = BoxSize.Y / static_cast<float>(CountY);
+			const int32 CountX = T66GetNativeDungeonKitModuleCount(BoxSize.X, MeshSizeX);
+			const int32 CountY = T66GetNativeDungeonKitModuleCount(BoxSize.Y, MeshSizeY);
+			if (CountX <= 0 || CountY <= 0)
+			{
+				return;
+			}
+
+			const float TileStartX = T66GetNativeDungeonKitModuleStart(SourceBox.Min.X, SourceBox.Max.X, CountX, MeshSizeX);
+			const float TileStartY = T66GetNativeDungeonKitModuleStart(SourceBox.Min.Y, SourceBox.Max.Y, CountY, MeshSizeY);
 
 			for (int32 TileY = 0; TileY < CountY; ++TileY)
 			{
 				for (int32 TileX = 0; TileX < CountX; ++TileX)
 				{
-					const float CenterX = SourceBox.Min.X + (TileSizeX * (static_cast<float>(TileX) + 0.5f));
-					const float CenterY = SourceBox.Min.Y + (TileSizeY * (static_cast<float>(TileY) + 0.5f));
+					const float CenterX = TileStartX + (MeshSizeX * (static_cast<float>(TileX) + 0.5f));
+					const float CenterY = TileStartY + (MeshSizeY * (static_cast<float>(TileY) + 0.5f));
 					const FVector Location(CenterX, CenterY, Floor.SurfaceZ - T66TowerGeneratedDungeonKitFloorThickness);
 					const FVector Scale(
-						TileSizeX / MeshSizeX,
-						TileSizeY / MeshSizeY,
+						1.0f,
+						1.0f,
 						T66TowerGeneratedDungeonKitFloorThickness / MeshSizeZ);
 
 					if (T66SpawnGroundedMeshActor(
@@ -3765,7 +3649,6 @@ namespace
 		CeilingTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedDungeonKit_Ceiling")));
 		CeilingTags.AddUnique(FName(*FString::Printf(TEXT("T66_Floor_Tower_GeneratedDungeonKit_Ceiling_%02d"), CarrierFloor.FloorNumber)));
 
-		const float TileTargetSize = FMath::Max(600.0f, Layout.PlacementCellSize);
 		const float MeshSizeX = T66GetMeshAxisSize(FloorMesh, 0);
 		const float MeshSizeY = T66GetMeshAxisSize(FloorMesh, 1);
 		const float MeshSizeZ = T66GetMeshAxisSize(FloorMesh, 2);
@@ -3780,20 +3663,25 @@ namespace
 				return;
 			}
 
-			const int32 CountX = FMath::Max(1, FMath::CeilToInt(BoxSize.X / TileTargetSize));
-			const int32 CountY = FMath::Max(1, FMath::CeilToInt(BoxSize.Y / TileTargetSize));
-			const float TileSizeX = BoxSize.X / static_cast<float>(CountX);
-			const float TileSizeY = BoxSize.Y / static_cast<float>(CountY);
+			const int32 CountX = T66GetNativeDungeonKitModuleCount(BoxSize.X, MeshSizeX);
+			const int32 CountY = T66GetNativeDungeonKitModuleCount(BoxSize.Y, MeshSizeY);
+			if (CountX <= 0 || CountY <= 0)
+			{
+				return;
+			}
+
+			const float TileStartX = T66GetNativeDungeonKitModuleStart(SourceBox.Min.X, SourceBox.Max.X, CountX, MeshSizeX);
+			const float TileStartY = T66GetNativeDungeonKitModuleStart(SourceBox.Min.Y, SourceBox.Max.Y, CountY, MeshSizeY);
 
 			for (int32 TileY = 0; TileY < CountY; ++TileY)
 			{
 				for (int32 TileX = 0; TileX < CountX; ++TileX)
 				{
-					const float CenterX = SourceBox.Min.X + (TileSizeX * (static_cast<float>(TileX) + 0.5f));
-					const float CenterY = SourceBox.Min.Y + (TileSizeY * (static_cast<float>(TileY) + 0.5f));
+					const float CenterX = TileStartX + (MeshSizeX * (static_cast<float>(TileX) + 0.5f));
+					const float CenterY = TileStartY + (MeshSizeY * (static_cast<float>(TileY) + 0.5f));
 					const FVector Scale(
-						TileSizeX / MeshSizeX,
-						TileSizeY / MeshSizeY,
+						1.0f,
+						1.0f,
 						T66TowerGeneratedDungeonKitFloorThickness / MeshSizeZ);
 
 					if (T66SpawnGroundedMeshActor(
@@ -3806,6 +3694,7 @@ namespace
 						SpawnParams,
 						false,
 						CeilingTags,
+						true,
 						true))
 					{
 						++SpawnedCount;
@@ -4531,7 +4420,7 @@ namespace T66TowerMapTerrain
 		OutLayout.PlacementCellSize = 1300.0f;
 		OutLayout.FloorThickness = 280.0f;
 		OutLayout.FloorSpacing = T66TowerStandardFloorHeadroom + OutLayout.FloorThickness + T66TowerRoofSkinThickness;
-		OutLayout.WallThickness = 280.0f;
+		OutLayout.WallThickness = T66TowerDungeonKitWallDepth;
 		OutLayout.ShellRadius = 20000.0f;
 		OutLayout.MazeMode = T66GetConfiguredTowerMazeMode();
 		OutLayout.GridColumns = T66TowerGridDefaultColumns;
@@ -4546,7 +4435,7 @@ namespace T66TowerMapTerrain
 		const float TopFloorZ = Preset.BaselineZ + 1600.0f;
 		const float FloorSpacing = OutLayout.FloorSpacing;
 		const FVector2D HoleHalfExtent(OutLayout.PlacementCellSize * 0.5f, OutLayout.PlacementCellSize * 0.5f);
-		const FVector AlignedHoleOffset(0.0f, -(OutLayout.PlacementCellSize * 0.9f), 0.0f);
+		const FVector AlignedHoleOffset(0.0f, -OutLayout.PlacementCellSize, 0.0f);
 		const float StartRoomHalfExtent = T66TowerStartRoomSquareSize * 0.5f;
 		const int32 TotalFloorCount = bBossRushFinaleStage ? 2 : T66TowerTotalFloorCount;
 		const float FloorBottomZ = TopFloorZ - (static_cast<float>(TotalFloorCount - 1) * FloorSpacing) - OutLayout.FloorThickness;
@@ -5220,13 +5109,8 @@ namespace T66TowerMapTerrain
 
 			T66SpawnShellWallsForFloor(World, CubeMesh, Layout, Floor, Theme, ModuleWallHeight, SpawnParams);
 			const bool bSpawnedGeneratedFloor = T66SpawnGeneratedDungeonFloorTiles(World, Theme, Layout, Floor, SpawnParams, FloorTags);
-			if (bSpawnedGeneratedFloor && Floor.WalkableFloorBoxes.Num() > 0)
+			if (!bSpawnedGeneratedFloor)
 			{
-				T66SpawnGeneratedDungeonFloorSafetyCollision(World, Layout, Floor, SpawnParams, FloorTags);
-			}
-			else if (!bSpawnedGeneratedFloor)
-			{
-				T66SpawnGeneratedFloorVisualCap(World, CubeMesh, Theme.FloorMaterial, Floor, SpawnParams, FloorTags);
 				T66SpawnPolygonFloor(World, CubeMesh, Theme.FloorMaterial, Layout, Floor, SpawnParams, FloorTags);
 			}
 			T66SpawnMazeWalls(World, CubeMesh, Theme, Layout, Floor, ModuleWallHeight, SpawnParams);
@@ -5237,32 +5121,16 @@ namespace T66TowerMapTerrain
 				&& Theme.WallFamily == T66TowerThemeVisuals::EWallFamily::SplitCollisionVisual;
 			if (bUsingGeneratedDungeonKitForTheme)
 			{
-				if (FloorIndex == 0)
-				{
-					T66SpawnGeneratedDungeonFloorUndersideTiles(
-						World,
-						Theme,
-						Layout,
-						Floor,
-						CeilingBottomZ,
-						SpawnParams,
-						FloorTags,
-						false,
-						true);
-				}
-				else if (Layout.Floors.IsValidIndex(FloorIndex - 1) && FloorThemes.IsValidIndex(FloorIndex - 1))
-				{
-					T66SpawnGeneratedDungeonFloorUndersideTiles(
-						World,
-						FloorThemes[FloorIndex - 1],
-						Layout,
-						Layout.Floors[FloorIndex - 1],
-						CeilingBottomZ,
-						SpawnParams,
-						FloorTags,
-						true,
-						false);
-				}
+				T66SpawnGeneratedDungeonFloorUndersideTiles(
+					World,
+					Theme,
+					Layout,
+					Floor,
+					CeilingBottomZ,
+					SpawnParams,
+					FloorTags,
+					false,
+					FloorIndex == 0);
 			}
 			else
 			{
