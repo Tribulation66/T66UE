@@ -77,13 +77,23 @@ Allowed outputs:
 
 Required asset construction:
 
+- New or replacement UI chrome for the master asset library must originate from Codex-native image generation using the approved reference image as the visual source.
+- Hard ban: do not use Pillow/PIL for master UI asset-library chrome. This includes scripts, Python helpers, alpha cleanup, matte removal, resizing, cropping, slicing, proofing, or any "minor" repair.
+- Do not use procedural generators, Slate primitives, fill rectangles, crop-patch repainting, or scripted wood/metal/paper synthesis to invent or repaint buttons, panels, tabs, slots, bars, paper, dropdowns, select controls, top bars, or any other library UI element.
+- Local scripts may only run after an approved imagegen board exists, and only for rectangular slicing, deterministic resizing that preserves pixels, copying, naming, manifest writing, alpha validation, and replacing already-background pixels outside the component silhouette with transparent black.
+- Local scripts must not create the visual design, despill, edge-clean, crop into the silhouette, recolor, sharpen, blur, repaint, repair corners, synthesize texture, or locally pixel-repair master-library UI chrome. If generated component pixels look bad, regenerate with imagegen from the approved reference.
+- Chroma/matte safety is mandatory: any removed background pixels must be alpha 0 with RGB 0,0,0. Do not leave green, magenta, checkerboard gray, white, paper-colored, or any other visible RGB in transparent pixels because Unreal texture filtering and mips can bleed that color around organic button edges.
 - Chrome assets must be reference-derived from the approved main-menu reference wherever possible.
-- Buttons, panels, top-bar pieces, tabs, fields, slots, rows, and dividers must be runtime-safe 9-slice PNGs with transparent outside pixels and catalogued margins.
+- Buttons, panels, top-bar pieces, tabs, fields, slots, rows, and dividers must be runtime-safe 9-slice PNGs with transparent outside pixels and catalogued margins. Rounded, oval, chamfered, or otherwise non-rectangular controls must validate as alpha-bearing PNGs with transparent corners; opaque rectangular crops are a hard rejection.
 - The outer rim, bevel, glow, corner language, and palette must come from the approved main-menu reference. Do not ship procedural-placeholder chrome.
 - Visual chrome and decorative art must be bitmap assets generated or approved in Part 0. Do not approximate art with C++/Slate primitive drawing, manual fill rectangles, ad hoc borders, or coded glow/shape effects.
 - If direct crops produce uneven borders or baked content contamination, reconstruct the chrome from the sampled reference palette and shape language, then prove it with 9-slice resize sheets.
 - Repaint or reconstruct live-content interiors so labels, values, portraits, icons, names, scores, and inventory content are not baked into chrome.
 - Button hover, pressed, selected, and disabled fills must follow the exact rounded/chamfered component shape. Do not place rectangular bars inside rounded buttons.
+- Button text renders directly on the generated button surface. Do not add a separate rectangular text plate, label backing, or brown square under text.
+- Non-square controls must be their actual organic silhouette, not a rounded control inside a visible square backing. Verify transparent corners and outside pixels in-game against both dark and bright backgrounds before accepting the slice.
+- Reference style is locked for this main-menu wood family: basic buttons are rectangular dark-mahogany planks with thin antique-gold bevels and black pixel outlines, not gold capsules, pointy chevrons, or arrow-ended controls. Invite and offline use the small rounded pill style from the reference with centered text. Hero-selection buttons must reuse the same library family unless a new approved imagegen family exists.
+- Panel semantics are locked: basic panels include a dark mahogany fill plus border, not a border-only frame. Paper background is an inner content material only; it starts where the reference paper starts and must not replace the whole left/right shell. Profile/avatar slots sit on the left of friend rows; party slots are dark centered square slots with centered plus/avatar content.
 - Panel borders must be uniform in thickness and brightness around all edges unless the approved reference clearly requires an intentional asymmetry.
 - Icons may use image generation, but they must live in their own `IconGeneration\` atlas and `Slices\IconsGenerated\` transparent slices.
 - Image-generated icon sheets must match the actual assigned screen icon inventory. Do not generate generic extras that do not appear in the target screen or assigned shared chrome.
@@ -106,6 +116,10 @@ Forbidden in Part 0:
 - Screen references for non-main-menu screens.
 - Diff overlays, heatmaps, review boards, or packaged comparisons.
 - Purely procedural approximations of the reference style.
+- Any Pillow/PIL use in the master asset-library chrome pipeline, including cleanup, slicing, resizing, alpha work, proofing, or small repairs.
+- Script-authored UI chrome for the master asset library. Scripts may only perform the limited mechanical operations listed above after imagegen produces an approved board.
+- Despill, edge cleanup, color mutation, repainting, or local pixel repair on master-library UI chrome. Alpha work is allowed only outside the component silhouette, must preserve generated component pixels unchanged, and must write transparent pixels as alpha 0 with RGB 0,0,0.
+- Rounded or organic buttons exported as visible square/rectangular sprites, including hidden backing layers that appear at the corners during runtime scaling.
 
 Part 0 is done only when the repo has a reusable UI asset library that future references and runtime screens must use.
 

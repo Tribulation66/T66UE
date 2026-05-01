@@ -77,20 +77,21 @@ namespace
 		case ET66OverlayChromeBrush::SlotSelected:
 		case ET66OverlayChromeBrush::SlotDisabled:
 			return FMargin(0.205f);
-		case ET66OverlayChromeBrush::OverlayModalPanel:
-		case ET66OverlayChromeBrush::CasinoShellPanel:
-		case ET66OverlayChromeBrush::ContentPanelWide:
-		case ET66OverlayChromeBrush::ContentPanelTall:
 		case ET66OverlayChromeBrush::InnerPanel:
 		case ET66OverlayChromeBrush::HeaderSummaryBar:
-		case ET66OverlayChromeBrush::CrateStripFrame:
 		case ET66OverlayChromeBrush::OfferCardNormal:
 		case ET66OverlayChromeBrush::OfferCardHover:
 		case ET66OverlayChromeBrush::OfferCardSelected:
 		case ET66OverlayChromeBrush::OfferCardDisabled:
 		case ET66OverlayChromeBrush::CrateWinnerMarker:
+			return FMargin(0.030f, 0.070f, 0.030f, 0.070f);
+		case ET66OverlayChromeBrush::OverlayModalPanel:
+		case ET66OverlayChromeBrush::CasinoShellPanel:
+		case ET66OverlayChromeBrush::ContentPanelWide:
+		case ET66OverlayChromeBrush::ContentPanelTall:
+		case ET66OverlayChromeBrush::CrateStripFrame:
 		default:
-			return FMargin(0.067f, 0.043f, 0.067f, 0.043f);
+			return FMargin(0.055f, 0.100f, 0.055f, 0.100f);
 		}
 	}
 

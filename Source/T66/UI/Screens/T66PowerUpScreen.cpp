@@ -1055,7 +1055,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			: NSLOCTEXT("T66.PowerUp", "Graduate", "GRADUATE");
 		const FText CostText = FText::AsNumber(Cost);
 		const FSlateBrush* DiplomaBrush = ResolveShopGeneratedBrush(GetDiplomaImagePath(StatType, VisibleUnlockedSteps), FVector2D(244.f, 244.f));
-		const FSlateBrush* CouponBrush = ResolveShopGeneratedBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260425_v2.png"), FVector2D(30.f, 24.f));
+		const FSlateBrush* CouponBrush = ResolveShopGeneratedBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260501_white_v1.png"), FVector2D(30.f, 24.f));
 		const FText DiplomaTitle = GetDiplomaRankTitle(StatType, VisibleUnlockedSteps);
 		const TSharedRef<SWidget> DiplomaImageWidget = DiplomaBrush
 			? StaticCastSharedRef<SWidget>(
@@ -1183,7 +1183,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		const int32 Cost = Buffs ? Buffs->GetSingleUseBuffCost() : UT66BuffSubsystem::SingleUseBuffCostCC;
 		const FText CostText = FText::AsNumber(Cost);
 		const TSharedPtr<FSlateBrush> IconBrush = GetShopSecondaryBuffBrush(OwnedBrushes, TexPool, this, StatType, FVector2D(124.f, 124.f));
-		const FSlateBrush* CouponBrush = ResolveShopGeneratedBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260425_v2.png"), FVector2D(26.f, 21.f));
+		const FSlateBrush* CouponBrush = ResolveShopGeneratedBrush(TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260501_white_v1.png"), FVector2D(26.f, 21.f));
 		const TSharedRef<SWidget> IconWidget = IconBrush.IsValid()
 			? StaticCastSharedRef<SWidget>(
 				SNew(SBox)

@@ -39,7 +39,7 @@ namespace
 	constexpr int32 LeaderboardBodyFontSize = 12;
 	constexpr int32 LeaderboardTitleFontSize = 12;
 	constexpr int32 LeaderboardVisibleEntryCount = 10;
-	const FLinearColor LeaderboardShellFill(0.004f, 0.005f, 0.010f, 0.985f);
+	const FLinearColor LeaderboardShellFill(0.78f, 0.55f, 0.28f, 0.0f);
 	constexpr bool GMirrorWeeklyToAllTime = false;
 	const FString ReferenceRightPanelSourceDir = TEXT("SourceAssets/UI/MainMenuReference/RightPanel");
 	const FString MasterLibrarySliceSourceDir = TEXT("SourceAssets/UI/MasterLibrary/Slices");
@@ -49,14 +49,16 @@ namespace
 	const FVector2D ReferenceAllTimeTabSize(219.0f, 65.0f);
 	const FVector2D ReferenceLeftDropdownSize(219.0f, 57.0f);
 	const FVector2D ReferenceRightDropdownSize(219.0f, 57.0f);
-	const FVector2D ReferenceScoreToggleSize(164.0f, 48.0f);
-	const FVector2D ReferenceSpeedRunToggleSize(206.0f, 48.0f);
+	const FVector2D ReferenceScoreToggleSize(178.0f, 36.0f);
+	const FVector2D ReferenceSpeedRunToggleSize(206.0f, 36.0f);
 	const FVector2D ReferenceAvatarFrameSize(42.0f, 42.0f);
 	const FVector2D ReferenceAvatarInsetSize(32.0f, 32.0f);
-	const FLinearColor ReferenceLeaderboardText(0.953f, 0.925f, 0.835f, 1.0f);
-	const FLinearColor ReferenceLeaderboardRowText(0.953f, 0.925f, 0.835f, 1.0f);
-	const FLinearColor ReferenceLeaderboardMuted(0.738f, 0.708f, 0.648f, 1.0f);
-	const FLinearColor ReferenceMainMenuSubtitleText(0.48f, 0.04f, 0.82f, 1.0f);
+	const FLinearColor ReferenceLeaderboardText(0.17f, 0.09f, 0.035f, 1.0f);
+	const FLinearColor ReferenceLeaderboardRowText(0.13f, 0.075f, 0.035f, 1.0f);
+	const FLinearColor ReferenceLeaderboardMuted(0.36f, 0.22f, 0.12f, 1.0f);
+	const FLinearColor ReferenceWoodControlText(0.98f, 0.96f, 0.90f, 1.0f);
+	const FLinearColor ReferenceWoodControlMuted(0.86f, 0.84f, 0.78f, 0.88f);
+	const FLinearColor ReferenceMainMenuSubtitleText(0.98f, 0.96f, 0.90f, 1.0f);
 
 	const FSlateBrush* ResolveReferenceRightPanelBrush(
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
@@ -526,7 +528,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	{
 		const FMargin WideTabMargin(0.128f, 0.306f, 0.128f, 0.306f);
 		const FMargin DropdownFieldMargin(0.157f, 0.292f, 0.157f, 0.292f);
-		const FMargin AvatarSlotMargin(0.205f, 0.205f, 0.205f, 0.205f);
+		const FMargin AvatarSlotMargin(0.215f, 0.215f, 0.215f, 0.215f);
 		const FSlateBrush* ReferenceFilterGlobalIcon = ResolveMasterLibrarySliceBrush(
 			ReferenceFilterGlobalIconBrush,
 			TEXT("IconsGenerated/icon_09_leaderboard_globe_color_imagegen_20260428.png"),
@@ -567,11 +569,6 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			TEXT("IconsGenerated/icon_16_dropdown_chevron_imagegen_20260425_v2.png"),
 			FMargin(0.f),
 			TEXT("LBMasterDropdownChevron"));
-		const FSlateBrush* ReferenceToggleSelectedBrush = ResolveMasterLibrarySliceBrush(
-			ReferenceToggleScoreSelectedBrush,
-			TEXT("Controls/radio_circle_selected.png"),
-			FMargin(0.f),
-			TEXT("LBMasterToggleScore"));
 		const FSlateBrush* ReferenceToggleNormalBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceToggleSpeedRunUnselectedBrush,
 			TEXT("Controls/radio_circle_normal.png"),
@@ -579,7 +576,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			TEXT("LBMasterToggleSpeedRun"));
 		ResolveMasterLibrarySliceBrush(
 			ReferenceAvatarFrameBrush,
-			TEXT("Slots/basic_slot_normal.png"),
+			TEXT("Slots/pfp_slot_normal.png"),
 			AvatarSlotMargin,
 			TEXT("LBMasterAvatarFrame"));
 		const FSlateBrush* ReferenceAvatarFallback01 = ResolveReferenceRightPanelBrush(
@@ -609,9 +606,9 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 
 		const FSlateFontInfo ReferenceHeaderFont = MakeLockedBoldFont(18, 0);
 		const FSlateFontInfo ReferenceScopeTitleFont = MakeLockedBoldFont(30, 0);
-		const FSlateFontInfo ReferenceDropdownFont = MakeLockedRegularFont(22);
+		const FSlateFontInfo ReferenceDropdownFont = MakeLockedRegularFont(18);
 		const FSlateFontInfo ReferenceDailyFont = MakeLockedBoldFont(21, 0);
-		const FSlateFontInfo ReferenceToggleFont = MakeLockedBoldFont(23);
+		const FSlateFontInfo ReferenceToggleFont = MakeLockedBoldFont(20);
 
 		auto MakeReferenceFilterButton = [this, &NoBorderButtonStyle](
 			ET66LeaderboardFilter Filter,
@@ -697,8 +694,8 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 									.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsSelected]() -> FSlateColor
 									{
 										return IsSelected()
-											? FSlateColor(ReferenceLeaderboardText)
-											: FSlateColor(FLinearColor(0.78f, 0.74f, 0.66f, 0.92f));
+											? FSlateColor(ReferenceWoodControlText)
+											: FSlateColor(ReferenceWoodControlMuted);
 									}))
 									.Justification(ETextJustify::Center)
 									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
@@ -709,11 +706,11 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				];
 		};
 
-		auto MakeReferenceTypeButton = [this, &NoBorderButtonStyle, ReferenceToggleFont, ReferenceToggleSelectedBrush, ReferenceToggleNormalBrush](
+		auto MakeReferenceTypeButton = [this, &NoBorderButtonStyle, ReferenceToggleFont, ReferenceToggleNormalBrush](
 			const ET66LeaderboardType Type,
 			const FVector2D& Size) -> TSharedRef<SWidget>
 		{
-			const FVector2D RadioSize(34.f, 34.f);
+			const FSlateBrush* RadioBrush = ReferenceToggleNormalBrush ? ReferenceToggleNormalBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
 			return SNew(SBox)
 				.WidthOverride(Size.X)
 				.HeightOverride(Size.Y)
@@ -731,22 +728,36 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 							.VAlign(VAlign_Center)
 							[
 								SNew(SBox)
-								.WidthOverride(RadioSize.X)
-								.HeightOverride(RadioSize.Y)
+								.WidthOverride(28.f)
+								.HeightOverride(28.f)
 								[
-									SNew(SImage)
-									.Image(TAttribute<const FSlateBrush*>::CreateLambda([this, Type, ReferenceToggleSelectedBrush, ReferenceToggleNormalBrush]() -> const FSlateBrush*
-									{
-										const FSlateBrush* ChosenBrush = CurrentType == Type ? ReferenceToggleSelectedBrush : ReferenceToggleNormalBrush;
-										return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
-									}))
-									.ColorAndOpacity((ReferenceToggleSelectedBrush || ReferenceToggleNormalBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
+									SNew(SOverlay)
+									+ SOverlay::Slot()
+									[
+										SNew(SImage)
+										.Image(RadioBrush)
+										.ColorAndOpacity(ReferenceToggleNormalBrush ? FLinearColor::White : ReferenceWoodControlMuted)
+									]
+									+ SOverlay::Slot()
+									.HAlign(HAlign_Center)
+									.VAlign(VAlign_Center)
+									[
+										SNew(STextBlock)
+										.Text(FText::FromString(TEXT("\u25CF")))
+										.Font(FT66Style::MakeFont(TEXT("Bold"), 15))
+										.ColorAndOpacity(ReferenceWoodControlText)
+										.Visibility_Lambda([this, Type]()
+										{
+											return CurrentType == Type ? EVisibility::HitTestInvisible : EVisibility::Collapsed;
+										})
+										.Justification(ETextJustify::Center)
+									]
 								]
 							]
 							+ SHorizontalBox::Slot()
 							.AutoWidth()
 							.VAlign(VAlign_Center)
-							.Padding(FMargin(10.f, 0.f, 0.f, 0.f))
+							.Padding(FMargin(8.f, 0.f, 0.f, 0.f))
 							[
 								SNew(STextBlock)
 								.Text(GetTypeText(Type))
@@ -754,10 +765,10 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 								.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([this, Type]() -> FSlateColor
 								{
 									return CurrentType == Type
-										? FSlateColor(ReferenceLeaderboardText)
-										: FSlateColor(FLinearColor(0.78f, 0.74f, 0.66f, 0.92f));
+										? FSlateColor(ReferenceWoodControlText)
+										: FSlateColor(ReferenceWoodControlMuted);
 								}))
-								.Justification(ETextJustify::Left)
+								.Justification(ETextJustify::Center)
 								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 								.Clipping(EWidgetClipping::ClipToBounds)
 							])
@@ -794,13 +805,13 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 							.ColorAndOpacity(ShellBrush ? FLinearColor::White : FLinearColor(0.10f, 0.10f, 0.12f, 1.0f))
 						]
 						+ SOverlay::Slot()
-						.Padding(FMargin(18.f, 10.f, 54.f, 8.f))
+						.Padding(FMargin(18.f, 9.f, 52.f, 9.f))
 						.VAlign(VAlign_Center)
 						[
 							SNew(STextBlock)
 							.Text(Label)
 							.Font(ReferenceDropdownFont)
-							.ColorAndOpacity(ReferenceLeaderboardText)
+							.ColorAndOpacity(ReferenceWoodControlText)
 							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 						]
 						+ SOverlay::Slot()
@@ -814,7 +825,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 							[
 								SNew(SImage)
 								.Image(ReferenceChevronBrush)
-								.ColorAndOpacity(ReferenceChevronBrush ? FLinearColor::White : ReferenceLeaderboardText)
+								.ColorAndOpacity(ReferenceChevronBrush ? ReferenceWoodControlText : ReferenceLeaderboardText)
 							]
 						]
 					]
@@ -1041,7 +1052,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.24f, 0.22f, 0.20f, 0.55f))
+					.BorderBackgroundColor(FLinearColor(0.44f, 0.27f, 0.12f, 0.36f))
 					.Padding(FMargin(0.f, 1.f))
 				]
 				+ SVerticalBox::Slot()
@@ -1555,11 +1566,11 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			const FLeaderboardEntry& Entry = LeaderboardEntries[EntryIndex];
 			const TSharedRef<bool> bIsRowHovered = MakeShared<bool>(false);
 			const FLinearColor BaseRowColor = Entry.bIsLocalPlayer
-				? FLinearColor(0.24f, 0.36f, 0.18f, 0.18f)
+				? FLinearColor(0.52f, 0.31f, 0.12f, 0.20f)
 				: FLinearColor::Transparent;
 			const FLinearColor HoverRowColor = Entry.bIsLocalPlayer
-				? FLinearColor(0.28f, 0.42f, 0.19f, 0.24f)
-				: FLinearColor(0.18f, 0.16f, 0.15f, 0.34f);
+				? FLinearColor(0.58f, 0.35f, 0.14f, 0.26f)
+				: FLinearColor(0.44f, 0.26f, 0.10f, 0.18f);
 
 			const FString RankString = FString::Printf(TEXT("#%d"), FMath::Max(1, Entry.Rank));
 			const FString MetricString = (CurrentTimeFilter == ET66LeaderboardTime::Daily || CurrentType == ET66LeaderboardType::Score)
@@ -1588,7 +1599,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.035f, 0.037f, 0.045f, 1.0f))
+							.BorderBackgroundColor(FLinearColor(0.19f, 0.11f, 0.06f, 1.0f))
 							.Padding(FMargin(0.f))
 							[
 								SNew(SImage)
@@ -1693,7 +1704,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.25f, 0.23f, 0.21f, 0.55f))
+					.BorderBackgroundColor(FLinearColor(0.44f, 0.27f, 0.12f, 0.36f))
 					.Padding(FMargin(0.f, 1.f))
 				]
 			;

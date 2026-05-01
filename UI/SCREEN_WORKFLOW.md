@@ -8,6 +8,18 @@ Use Codex-native `image_gen` only. Do not use legacy browser-automation generati
 
 If native generation cannot produce the required reference, scene plate, component board, icon, or state family, mark the screen blocked and name that artifact. Do not fall back to removed external generation tooling.
 
+For master UI asset-library elements, Codex-native image generation is the only allowed source for new or replacement visual chrome. The source image must come from imagegen using the approved reference; bad source art is regenerated with imagegen, not locally repaired.
+
+Hard ban: do not use Pillow/PIL anywhere in the master UI asset-library chrome pipeline. This includes scripts, Python helpers, alpha cleanup, matte removal, resizing, cropping, slicing, proofing, or any "minor" repair.
+
+Do not use procedural scripts, Slate drawing, fill rectangles, crop-patch repainting, or scripted wood/metal/paper synthesis to create or repaint buttons, panels, top bars, slots, paper, bars, tabs, dropdowns, select controls, or other reusable chrome. Local scripts may only run after an approved imagegen board exists, and only for rectangular slicing, deterministic resizing that preserves pixels, copying, naming, manifests, alpha validation, and replacing already-background pixels outside the component silhouette with transparent black.
+
+Do not apply despill, edge cleanup, color mutation, repainting, sharpening, blurring, corner repair, or local pixel repair to master-library UI chrome. Alpha work is allowed only outside the intended component silhouette. Any removed background pixel must be alpha 0 with RGB 0,0,0; do not leave green, magenta, checkerboard gray, white, paper-colored, or any other visible RGB in transparent pixels because Unreal filtering and mips can bleed that color around the edges.
+
+Rounded, oval, chamfered, or otherwise non-rectangular controls must ship as alpha-bearing PNG slices with transparent corners; opaque rectangular matte/corner pixels are not acceptable runtime assets. A rounded or organic button inside a visible square backing is a failed asset, not a layout issue.
+
+Button text must render directly on the generated button surface. Do not add a separate rectangular text plate, label backing, or brown square under text. For the main-menu wood family, basic buttons are rectangular dark-mahogany planks with thin antique-gold bevels and black pixel outlines, not gold capsules, pointy chevrons, or arrow-ended controls. Invite and offline use the small rounded pill style from the reference with centered text. Basic panels include a dark mahogany fill plus border; paper background is only an inner content material and starts where the reference paper starts.
+
 Imagegen does not have to emit `1920x1080` directly. For landscape-safe outputs, keep the raw generation and normalize a copy with:
 
 ```powershell
@@ -108,6 +120,11 @@ Button labels must use the Main Menu CTA text-fit approach instead of tiny fixed
 - No full-screen reference image may ship as the runtime background.
 - No generated asset may be manually pixel-edited, masked, cover-patched, clone-painted, or repaired.
 - No UI pass may use legacy browser-automation image generation or request manifests.
+- No Pillow/PIL may be used anywhere in the master asset-library chrome pipeline, including cleanup, slicing, resizing, alpha work, proofing, or small repairs.
+- No master asset-library UI chrome may be invented or repainted with procedural generation; bad chrome routes back to Codex-native image generation.
+- No master asset-library UI chrome may be despilled, edge-cleaned, color-mutated, repainted, sharpened, blurred, corner-repaired, or locally pixel-repaired after generation. Alpha work is allowed only outside the intended component silhouette and must write transparent pixels as alpha 0 with RGB 0,0,0.
+- No rounded, chamfered, oval, or organic control may ship with a visible square/rectangular backing layer or tinted transparent RGB that can bleed through runtime filtering.
+- No button label may sit on a separate rectangular text plate; labels render directly on the button surface.
 - No agent may report completion immediately after reference generation.
 - Bad generated pixels route back to image generation.
 - Layout must come from the target screen, not from a different screen.

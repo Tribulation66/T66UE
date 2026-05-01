@@ -118,7 +118,7 @@ namespace T66HeroSelectionPrivate
 
 	inline FString GetHeroSelectionBalanceIconPath()
 	{
-		return TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260425_v2.png");
+		return TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260501_white_v1.png");
 	}
 
 	inline FString GetHeroSelectionMedalImagePath(const ET66AccountMedalTier Tier)
@@ -441,7 +441,7 @@ namespace T66HeroSelectionPrivate
 			*Entry,
 			GetHeroSelectionButtonSpritePath(Family, State),
 			GetHeroSelectionButtonSpriteSize(Family, State),
-			FMargin(0.093f, 0.213f, 0.093f, 0.213f));
+			FMargin(0.180f, 0.240f, 0.180f, 0.240f));
 	}
 
 	inline const FSlateBrush* ResolveHeroSelectionDisabledButtonSpriteBrush()
@@ -451,7 +451,7 @@ namespace T66HeroSelectionPrivate
 			Set.Disabled,
 			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"),
 			FVector2D(270.f, 88.f),
-			FMargin(0.093f, 0.213f, 0.093f, 0.213f));
+			FMargin(0.180f, 0.240f, 0.180f, 0.240f));
 	}
 
 	inline ET66HeroSpriteFamily GetDefaultHeroSelectionButtonFamily(ET66ButtonType Type)
@@ -478,7 +478,7 @@ namespace T66HeroSelectionPrivate
 			Entry,
 			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(480.f, 800.f),
-			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
+			FMargin(0.055f, 0.100f, 0.055f, 0.100f));
 	}
 
 	inline const FSlateBrush* GetHeroSelectionRightShellBrush()
@@ -488,7 +488,7 @@ namespace T66HeroSelectionPrivate
 			Entry,
 			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
 			FVector2D(480.f, 800.f),
-			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
+			FMargin(0.055f, 0.100f, 0.055f, 0.100f));
 	}
 
 	inline const FSlateBrush* GetHeroSelectionContentShellBrush()
@@ -496,9 +496,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
-			FVector2D(480.f, 800.f),
-			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
+			FVector2D(620.f, 220.f),
+			FMargin(0.030f, 0.070f, 0.030f, 0.070f));
 	}
 
 	inline const FSlateBrush* GetHeroSelectionRowShellBrush()
@@ -506,9 +506,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
-			FVector2D(620.f, 340.f),
-			FMargin(0.067f, 0.043f, 0.067f, 0.043f));
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
+			FVector2D(620.f, 220.f),
+			FMargin(0.030f, 0.070f, 0.030f, 0.070f));
 	}
 
 	inline const FSlateBrush* GetHeroSelectionDropdownFieldBrush()

@@ -146,7 +146,7 @@ namespace
 		Brush.SetResourceObject(Tex);
 		Brush.TintColor = FSlateColor(FLinearColor::White);
 		Brush.ImageSize = FVector2D(270.f, 88.f);
-		Brush.Margin = FMargin(0.104f, 0.250f, 0.104f, 0.250f);
+		Brush.Margin = FMargin(0.180f, 0.240f, 0.180f, 0.240f);
 		return Brush;
 	}
 
@@ -472,7 +472,16 @@ namespace
 		return FLinearColor::LerpUsingHSV(A, B, FMath::Clamp(T, 0.f, 1.f));
 	}
 
-	static FSlateBrush MakePanelTextureBrush(UTexture2D* Tex, const FVector2D& ImageSize)
+	static FMargin GetMasterPanelTextureMargin(const bool bCompactPanel)
+	{
+		// The generated wood panel is built for 9-slicing: compact corners,
+		// straight rails, and a broad mahogany center.
+		return bCompactPanel
+			? FMargin(0.030f, 0.070f, 0.030f, 0.070f)
+			: FMargin(0.055f, 0.100f, 0.055f, 0.100f);
+	}
+
+	static FSlateBrush MakePanelTextureBrush(UTexture2D* Tex, const FVector2D& ImageSize, const bool bCompactPanel)
 	{
 		FSlateBrush Brush;
 		Brush.DrawAs = ESlateBrushDrawType::Box;   // 9-slice: corners preserved, center stretches
@@ -480,7 +489,7 @@ namespace
 		Brush.SetResourceObject(Tex);
 		Brush.TintColor = FSlateColor(FLinearColor::White);
 		Brush.ImageSize = ImageSize;
-		Brush.Margin = FMargin(0.067f, 0.043f, 0.067f, 0.043f);
+		Brush.Margin = GetMasterPanelTextureMargin(bCompactPanel);
 		return Brush;
 	}
 
@@ -751,8 +760,8 @@ void FT66Style::Initialize()
 
 	if (bUsePanelTextures && PanelTex && Panel2Tex)
 	{
-		FSlateBrush PanelBrush = MakePanelTextureBrush(PanelTex, FVector2D(480.f, 800.f));
-		FSlateBrush Panel2Brush = MakePanelTextureBrush(Panel2Tex, FVector2D(620.f, 340.f));
+		FSlateBrush PanelBrush = MakePanelTextureBrush(PanelTex, FVector2D(480.f, 800.f), false);
+		FSlateBrush Panel2Brush = MakePanelTextureBrush(Panel2Tex, FVector2D(620.f, 340.f), true);
 		StyleInstance->Set("T66.Brush.Bg",     new FSlateBrush(PanelBrush));
 		StyleInstance->Set("T66.Brush.Panel",   new FSlateBrush(PanelBrush));
 		StyleInstance->Set("T66.Brush.Panel2",  new FSlateBrush(Panel2Brush));
@@ -1730,7 +1739,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 			}
 		});
 
-		const bool bUseMinimalPlateButton = false;
+		const bool bUseMinimalPlateButton = bUseButtonPlateOverlay && PlateBrush;
 
 		if (bUseMinimalPlateButton)
 		{

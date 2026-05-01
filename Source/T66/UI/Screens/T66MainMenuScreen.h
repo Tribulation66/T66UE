@@ -128,6 +128,8 @@ private:
 	TStrongObjectPtr<UTexture2D> LeftPanelShellTexture;
 	TSharedPtr<FSlateBrush> RightPanelShellBrush;
 	TStrongObjectPtr<UTexture2D> RightPanelShellTexture;
+	TSharedPtr<FSlateBrush> PaperBackgroundBrush;
+	TStrongObjectPtr<UTexture2D> PaperBackgroundTexture;
 	TSharedPtr<FSlateBrush> SearchFieldShellBrush;
 	TStrongObjectPtr<UTexture2D> SearchFieldShellTexture;
 	TSharedPtr<FSlateBrush> SearchIconBrush;
@@ -140,8 +142,6 @@ private:
 	TStrongObjectPtr<UTexture2D> FriendAvatarFrameTexture;
 	TSharedPtr<FSlateBrush> PartySlotFrameBrush;
 	TStrongObjectPtr<UTexture2D> PartySlotFrameTexture;
-	TSharedPtr<FSlateBrush> PartyPlusIconBrush;
-	TStrongObjectPtr<UTexture2D> PartyPlusIconTexture;
 	TSharedPtr<FSlateBrush> CloseButtonBrush;
 	TStrongObjectPtr<UTexture2D> CloseButtonTexture;
 	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
@@ -156,6 +156,7 @@ private:
 	FButtonStateBrushSet NewGameButtonBrushes;
 	FButtonStateBrushSet LoadGameButtonBrushes;
 	FButtonStateBrushSet DailyChallengeButtonBrushes;
+	FButtonStateBrushSet FriendActionButtonBrushes;
 	TArray<TSharedPtr<FSlateBrush>> FriendPortraitBrushes;
 	TArray<TSharedPtr<FSlateBrush>> PartyPortraitBrushes;
 	TSharedPtr<SVerticalBox> FriendsListContainer;

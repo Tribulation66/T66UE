@@ -1141,7 +1141,7 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 		FVector2D(64.f, 64.f));
 	LoadLooseBrushFromCandidatePaths(
 		{
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260425_v2.png")
+			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260501_white_v1.png")
 		},
 		CurrencyIconBrush,
 		FVector2D(58.f, 58.f));
