@@ -4,6 +4,7 @@
 
 #include "Components/AudioComponent.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66BackendSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
@@ -11,10 +12,10 @@
 #include "Core/T66MiniRunStateSubsystem.h"
 #include "Core/T66MiniVFXSubsystem.h"
 #include "Core/T66MiniVisualSubsystem.h"
-#include "Core/T66PartySubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66SteamHelper.h"
 #include "EngineUtils.h"
-#include "Gameplay/T66SessionPlayerState.h"
+#include "GameFramework/PlayerState.h"
 #include "Gameplay/T66MiniArena.h"
 #include "Gameplay/T66MiniCompanionBase.h"
 #include "Gameplay/T66MiniEnemyBase.h"
@@ -28,8 +29,8 @@
 #include "Save/T66MiniRunSaveGame.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "Sound/SoundBase.h"
-#include "TimerManager.h"
 #include "UI/T66MiniBattleHUD.h"
+#include "UI/T66UITypes.h"
 #include "VFX/T66MiniGroundTelegraphActor.h"
 
 namespace
@@ -122,41 +123,6 @@ namespace
 		return AllPawns.Num() > 0 ? AllPawns[0] : nullptr;
 	}
 
-	FT66MiniPartyPlayerSnapshot* T66MiniFindPartySnapshotByPlayerId(UT66MiniRunSaveGame* RunSave, const FString& PlayerId)
-	{
-		if (!RunSave || PlayerId.IsEmpty())
-		{
-			return nullptr;
-		}
-
-		for (FT66MiniPartyPlayerSnapshot& Snapshot : RunSave->PartyPlayerSnapshots)
-		{
-			if (Snapshot.SteamId == PlayerId)
-			{
-				return &Snapshot;
-			}
-		}
-
-		return nullptr;
-	}
-
-	const FT66MiniPartyPlayerSnapshot* T66MiniFindPartySnapshotByPlayerId(const UT66MiniRunSaveGame* RunSave, const FString& PlayerId)
-	{
-		if (!RunSave || PlayerId.IsEmpty())
-		{
-			return nullptr;
-		}
-
-		for (const FT66MiniPartyPlayerSnapshot& Snapshot : RunSave->PartyPlayerSnapshots)
-		{
-			if (Snapshot.SteamId == PlayerId)
-			{
-				return &Snapshot;
-			}
-		}
-
-		return nullptr;
-	}
 }
 
 AT66MiniGameMode::AT66MiniGameMode()
@@ -164,7 +130,7 @@ AT66MiniGameMode::AT66MiniGameMode()
 	PrimaryActorTick.bCanEverTick = true;
 	DefaultPawnClass = AT66MiniPlayerPawn::StaticClass();
 	PlayerControllerClass = AT66MiniPlayerController::StaticClass();
-	PlayerStateClass = AT66SessionPlayerState::StaticClass();
+	PlayerStateClass = APlayerState::StaticClass();
 	GameStateClass = AT66MiniGameState::StaticClass();
 	HUDClass = AT66MiniBattleHUD::StaticClass();
 	bUseSeamlessTravel = true;
@@ -225,6 +191,18 @@ AT66MiniPlayerPawn* AT66MiniGameMode::FindClosestPlayerPawn(const FVector& World
 	}
 
 	return BestPawn;
+}
+
+float AT66MiniGameMode::GetRuntimeTuningValue(const TCHAR* Key, const float DefaultValue) const
+{
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
+	return DataSubsystem ? DataSubsystem->FindRuntimeTuningValue(FName(Key), DefaultValue) : DefaultValue;
+}
+
+int32 AT66MiniGameMode::GetRuntimeTuningInt(const TCHAR* Key, const int32 DefaultValue) const
+{
+	return FMath::RoundToInt(GetRuntimeTuningValue(Key, static_cast<float>(DefaultValue)));
 }
 
 void AT66MiniGameMode::RegisterLiveTrap(AT66MiniHazardTrap* Trap)
@@ -299,7 +277,6 @@ void AT66MiniGameMode::BeginPlay()
 			if (AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>())
 			{
 				MiniGameState->ApplyRunSave(ActiveRun);
-				MiniGameState->bOnlinePartyMode = IsOnlinePartyMiniRun();
 			}
 		}
 
@@ -358,7 +335,7 @@ void AT66MiniGameMode::BeginPlay()
 
 	SpawnArenaAndPositionPlayer();
 	UpdateLivePlayerPawnCache();
-	PositionPartyPawns();
+	PositionPlayerPawns();
 	TryApplySavedPawnState();
 	SpawnCompanionActor();
 
@@ -395,7 +372,7 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 	if (PlayerRuntimeRefreshAccumulator >= (bNeedsFastPlayerRefresh ? 0.05f : 0.50f))
 	{
 		UpdateLivePlayerPawnCache();
-		PositionPartyPawns();
+		PositionPlayerPawns();
 		PlayerRuntimeRefreshAccumulator = 0.f;
 	}
 	UpdateCombatTexts(DeltaSeconds);
@@ -423,7 +400,7 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 			if (PostBossDelayRemaining <= 0.f)
 			{
 				RecordClearedMiniStageProgression();
-				if (MiniGameState->WaveIndex >= 5)
+				if (MiniGameState->WaveIndex >= GetMaxStageIndexForCurrentDifficulty())
 				{
 					bRunCompleted = true;
 					FinalizeRun(true, TEXT("Difficulty cleared"));
@@ -452,12 +429,12 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 			InteractableSpawnAccumulator += DeltaSeconds;
 			TrapSpawnAccumulator += DeltaSeconds;
 
-			float SpawnInterval = WaveDefinition ? WaveDefinition->SpawnInterval : 1.2f;
+			float SpawnInterval = WaveDefinition ? WaveDefinition->SpawnInterval : GetRuntimeTuningValue(TEXT("SpawnIntervalFallback"), 1.2f);
 			if (DifficultyDefinition)
 			{
-				SpawnInterval = SpawnInterval / FMath::Max(0.65f, DifficultyDefinition->SpawnRateScalar);
+				SpawnInterval = SpawnInterval / FMath::Max(GetRuntimeTuningValue(TEXT("SpawnRateScalarMin"), 0.65f), DifficultyDefinition->SpawnRateScalar);
 			}
-			SpawnInterval = FMath::Max(0.28f, SpawnInterval);
+			SpawnInterval = FMath::Max(GetRuntimeTuningValue(TEXT("SpawnIntervalMin"), 0.28f), SpawnInterval);
 
 			while (EnemySpawnAccumulator >= SpawnInterval && MiniGameState->WaveSecondsRemaining > 0.f)
 			{
@@ -467,14 +444,17 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 
 			const float InteractableInterval = WaveDefinition
 				? WaveDefinition->InteractableInterval
-				: (DifficultyDefinition ? DifficultyDefinition->InteractableInterval : 18.f);
+				: (DifficultyDefinition ? DifficultyDefinition->InteractableInterval : GetRuntimeTuningValue(TEXT("InteractableIntervalFallback"), 18.f));
 			if (InteractableSpawnAccumulator >= InteractableInterval)
 			{
 				InteractableSpawnAccumulator = 0.f;
 				SpawnRandomInteractable();
 			}
 
-			const float TrapInterval = FMath::Max(5.5f, (13.5f - (MiniGameState->WaveIndex * 1.25f)) / FMath::Max(0.75f, DifficultyDefinition ? DifficultyDefinition->SpawnRateScalar : 1.0f));
+			const float TrapInterval = FMath::Max(
+				GetRuntimeTuningValue(TEXT("TrapIntervalMin"), 5.5f),
+				(GetRuntimeTuningValue(TEXT("TrapIntervalBase"), 13.5f) - (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapIntervalPerWave"), 1.25f)))
+					/ FMath::Max(GetRuntimeTuningValue(TEXT("TrapSpawnRateScalarMin"), 0.75f), DifficultyDefinition ? DifficultyDefinition->SpawnRateScalar : 1.0f));
 			if (TrapSpawnAccumulator >= TrapInterval)
 			{
 				TrapSpawnAccumulator = 0.f;
@@ -488,11 +468,21 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 		}
 		else if (LiveEnemies.Num() == 0 && PostBossDelayRemaining <= 0.f)
 		{
-			PostBossDelayRemaining = 2.0f;
+			PostBossDelayRemaining = GetRuntimeTuningValue(TEXT("PostBossDelaySeconds"), 2.0f);
 		}
 	}
 
 	ActiveRun->WaveIndex = MiniGameState->WaveIndex;
+	if (const FT66MiniStageDefinition* StageDefinition = GetCurrentStageDefinition())
+	{
+		ActiveRun->CurrentStageID = StageDefinition->StageID;
+		ActiveRun->StageIndex = StageDefinition->StageIndex;
+	}
+	else
+	{
+		ActiveRun->CurrentStageID = NAME_None;
+		ActiveRun->StageIndex = MiniGameState->WaveIndex;
+	}
 	ActiveRun->WaveSecondsRemaining = MiniGameState->WaveSecondsRemaining;
 	ActiveRun->HeroID = MiniGameState->HeroID;
 	ActiveRun->CompanionID = MiniGameState->CompanionID;
@@ -523,10 +513,8 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 		ActiveRun->bQuickReviveReady = PlayerPawn->HasQuickReviveReady();
 	}
 
-	CapturePartyPlayerSnapshots(ActiveRun);
-
 	AutosaveAccumulator += DeltaSeconds;
-	if (AutosaveAccumulator >= 1.0f)
+	if (AutosaveAccumulator >= GetRuntimeTuningValue(TEXT("AutosaveInterval"), 1.0f))
 	{
 		PersistActiveRunSnapshot(true);
 		AutosaveAccumulator = 0.f;
@@ -535,34 +523,8 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 
 void AT66MiniGameMode::Logout(AController* Exiting)
 {
-	const bool bWasOnlinePartyRun = IsOnlinePartyMiniRun();
-	FString ExitingDisplayName = TEXT("A party member");
-	if (const APlayerState* ExitingPlayerState = Exiting ? Exiting->PlayerState : nullptr)
-	{
-		if (const AT66SessionPlayerState* SessionPlayerState = Cast<AT66SessionPlayerState>(ExitingPlayerState))
-		{
-			if (!SessionPlayerState->GetDisplayName().IsEmpty())
-			{
-				ExitingDisplayName = SessionPlayerState->GetDisplayName();
-			}
-		}
-		else if (!ExitingPlayerState->GetPlayerName().IsEmpty())
-		{
-			ExitingDisplayName = ExitingPlayerState->GetPlayerName();
-		}
-	}
-
 	Super::Logout(Exiting);
 	UpdateLivePlayerPawnCache();
-
-	if (!bWasOnlinePartyRun || bRunFinalized || bFrontendTravelInProgress)
-	{
-		return;
-	}
-
-	AbortOnlinePartyRunToFrontend(
-		FString::Printf(TEXT("Party run interrupted after %s disconnected."), *ExitingDisplayName),
-		ET66ScreenType::MiniMainMenu);
 }
 
 void AT66MiniGameMode::RefreshAudioMix()
@@ -602,17 +564,6 @@ void AT66MiniGameMode::HandlePlayerDefeated()
 		return;
 	}
 
-	if (IsOnlinePartyMiniRun())
-	{
-		for (AT66MiniPlayerPawn* PlayerPawn : T66MiniGatherPlayerPawns(GetWorld(), false))
-		{
-			if (PlayerPawn && PlayerPawn->IsHeroAlive())
-			{
-				return;
-			}
-		}
-	}
-
 	if (!bRunFinalized)
 	{
 		FinalizeRun(false, TEXT("Run failed"));
@@ -632,7 +583,7 @@ void AT66MiniGameMode::SaveRunProgressNow(const bool bMarkMidWaveSnapshot)
 	PersistActiveRunSnapshot(bMarkMidWaveSnapshot);
 }
 
-void AT66MiniGameMode::PositionPartyPawns()
+void AT66MiniGameMode::PositionPlayerPawns()
 {
 	const TArray<AT66MiniPlayerPawn*> PlayerPawns = T66MiniGatherPlayerPawns(GetWorld(), false);
 	if (PlayerPawns.Num() == 0)
@@ -693,7 +644,7 @@ void AT66MiniGameMode::StartWave(const int32 WaveIndex, const bool bResetTimer)
 		return;
 	}
 
-	MiniGameState->WaveIndex = FMath::Clamp(WaveIndex, 1, 5);
+	MiniGameState->WaveIndex = FMath::Clamp(WaveIndex, 1, GetMaxStageIndexForCurrentDifficulty());
 	if (bResetTimer)
 	{
 		if (const FT66MiniWaveDefinition* WaveDefinition = GetWaveDefinition())
@@ -734,6 +685,24 @@ const FT66MiniWaveDefinition* AT66MiniGameMode::GetWaveDefinition() const
 	return DataSubsystem->FindWave(MiniGameState->DifficultyID, MiniGameState->WaveIndex);
 }
 
+const FT66MiniStageDefinition* AT66MiniGameMode::GetCurrentStageDefinition() const
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
+	const AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
+	if (!DataSubsystem || !MiniGameState)
+	{
+		return nullptr;
+	}
+
+	if (const FT66MiniStageDefinition* StageDefinition = DataSubsystem->FindStage(MiniGameState->DifficultyID, MiniGameState->WaveIndex))
+	{
+		return StageDefinition;
+	}
+
+	return DataSubsystem->FindStageForWave(MiniGameState->DifficultyID, MiniGameState->WaveIndex);
+}
+
 const FT66MiniDifficultyDefinition* AT66MiniGameMode::GetDifficultyDefinition() const
 {
 	const UGameInstance* GameInstance = GetGameInstance();
@@ -745,6 +714,15 @@ const FT66MiniDifficultyDefinition* AT66MiniGameMode::GetDifficultyDefinition() 
 	}
 
 	return DataSubsystem->FindDifficulty(MiniGameState->DifficultyID);
+}
+
+int32 AT66MiniGameMode::GetMaxStageIndexForCurrentDifficulty() const
+{
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
+	const AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
+	const int32 DataMaxStage = (DataSubsystem && MiniGameState) ? DataSubsystem->GetMaxStageIndexForDifficulty(MiniGameState->DifficultyID) : 0;
+	return DataMaxStage > 0 ? DataMaxStage : GetRuntimeTuningInt(TEXT("MaxWavesPerDifficulty"), 5);
 }
 
 const FT66MiniEnemyDefinition* AT66MiniGameMode::ChooseEnemyDefinition() const
@@ -824,7 +802,8 @@ void AT66MiniGameMode::SpawnWaveEnemy()
 	const float WaveHealthScalar = WaveDefinition ? WaveDefinition->EnemyHealthScalar : 1.0f;
 	const float WaveDamageScalar = WaveDefinition ? WaveDefinition->EnemyDamageScalar : 1.0f;
 	const float WaveSpeedScalar = WaveDefinition ? WaveDefinition->EnemySpeedScalar : 1.0f;
-	const float ProgressScalar = 1.0f + ((MiniGameState->WaveIndex - 1) * 0.16f);
+	const float ProgressScalar = GetRuntimeTuningValue(TEXT("EnemyProgressScalarBase"), 1.0f)
+		+ ((MiniGameState->WaveIndex - 1) * GetRuntimeTuningValue(TEXT("EnemyProgressScalarPerWave"), 0.16f));
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -842,7 +821,7 @@ void AT66MiniGameMode::SpawnWaveEnemy()
 			-1.f,
 			EnemyDefinition->BehaviorProfile,
 			EnemyDefinition->Family,
-			EnemyDefinition->FireIntervalSeconds / FMath::Max(0.80f, DifficultyDefinition ? DifficultyDefinition->SpawnRateScalar : 1.0f),
+			EnemyDefinition->FireIntervalSeconds / FMath::Max(GetRuntimeTuningValue(TEXT("EnemyRangedFireSpawnRateMin"), 0.80f), DifficultyDefinition ? DifficultyDefinition->SpawnRateScalar : 1.0f),
 			EnemyDefinition->ProjectileSpeed,
 			EnemyDefinition->ProjectileDamage * DifficultyDamageScalar * WaveDamageScalar,
 			EnemyDefinition->PreferredRange);
@@ -873,11 +852,18 @@ void AT66MiniGameMode::BeginBossSpawnTelegraph()
 		return;
 	}
 
-	PendingBossID = WaveDefinition->BossID;
-	PendingBossSpawnLocation = ClampPointToArena(PlayerPawn->GetActorLocation() + FVector(ArenaHalfExtent * 0.72f, 0.f, 0.f));
+	if (const FT66MiniStageDefinition* StageDefinition = GetCurrentStageDefinition(); StageDefinition && !StageDefinition->BossID.IsNone())
+	{
+		PendingBossID = StageDefinition->BossID;
+	}
+	else
+	{
+		PendingBossID = WaveDefinition->BossID;
+	}
+	PendingBossSpawnLocation = ClampPointToArena(PlayerPawn->GetActorLocation() + FVector(ArenaHalfExtent * GetRuntimeTuningValue(TEXT("BossSpawnOffsetScalar"), 0.72f), 0.f, 0.f));
 
 	const FT66MiniBossDefinition* BossDefinition = DataSubsystem->FindBoss(PendingBossID);
-	BossTelegraphRemaining = BossDefinition ? BossDefinition->TelegraphSeconds : 1.2f;
+	BossTelegraphRemaining = BossDefinition ? BossDefinition->TelegraphSeconds : GetRuntimeTuningValue(TEXT("BossTelegraphFallbackSeconds"), 1.2f);
 	if (ActiveBossTelegraphActor)
 	{
 		ActiveBossTelegraphActor->DeactivateTelegraph();
@@ -885,7 +871,7 @@ void AT66MiniGameMode::BeginBossSpawnTelegraph()
 	}
 	if (UT66MiniVFXSubsystem* VfxSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
 	{
-		ActiveBossTelegraphActor = VfxSubsystem->SpawnGroundTelegraph(World, PendingBossSpawnLocation, 260.f, BossTelegraphRemaining, FLinearColor(0.98f, 0.26f, 0.20f, 0.38f));
+		ActiveBossTelegraphActor = VfxSubsystem->SpawnGroundTelegraph(World, PendingBossSpawnLocation, GetRuntimeTuningValue(TEXT("BossTelegraphRadius"), 260.f), BossTelegraphRemaining, FLinearColor(0.98f, 0.26f, 0.20f, 0.38f));
 		VfxSubsystem->PlayBossAlertSfx(this);
 	}
 }
@@ -903,7 +889,11 @@ void AT66MiniGameMode::SpawnBossEnemy()
 		return;
 	}
 
-	const FName BossID = PendingBossID.IsNone() ? (GetWaveDefinition() ? GetWaveDefinition()->BossID : NAME_None) : PendingBossID;
+	const FName BossID = PendingBossID.IsNone()
+		? (GetCurrentStageDefinition() && !GetCurrentStageDefinition()->BossID.IsNone()
+			? GetCurrentStageDefinition()->BossID
+			: (GetWaveDefinition() ? GetWaveDefinition()->BossID : NAME_None))
+		: PendingBossID;
 	const FT66MiniBossDefinition* BossDefinition = DataSubsystem->FindBoss(BossID);
 	if (!BossDefinition)
 	{
@@ -911,10 +901,11 @@ void AT66MiniGameMode::SpawnBossEnemy()
 	}
 
 	const FVector SpawnLocation = PendingBossSpawnLocation.IsNearlyZero()
-		? ClampPointToArena(ArenaOrigin + FVector(ArenaHalfExtent * 0.7f, 0.f, 0.f))
+		? ClampPointToArena(ArenaOrigin + FVector(ArenaHalfExtent * GetRuntimeTuningValue(TEXT("BossFallbackOffsetScalar"), 0.70f), 0.f, 0.f))
 		: PendingBossSpawnLocation;
 	const float DifficultyScalar = DifficultyDefinition ? DifficultyDefinition->BossScalar : 1.0f;
-	const float WaveScalar = 1.0f + (MiniGameState->WaveIndex * 0.14f);
+	const float WaveScalar = GetRuntimeTuningValue(TEXT("BossWaveScalarBase"), 1.0f)
+		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("BossWaveScalarPerWave"), 0.14f));
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -932,10 +923,10 @@ void AT66MiniGameMode::SpawnBossEnemy()
 			-1.f,
 			BossDefinition->BehaviorProfile,
 			BossDefinition->Family,
-			BossDefinition->FireIntervalSeconds / FMath::Max(0.85f, DifficultyScalar),
+			BossDefinition->FireIntervalSeconds / FMath::Max(GetRuntimeTuningValue(TEXT("BossFireIntervalScalarMin"), 0.85f), DifficultyScalar),
 			BossDefinition->ProjectileSpeed,
 			BossDefinition->ProjectileDamage * DifficultyScalar,
-			960.f);
+			GetRuntimeTuningValue(TEXT("BossPreferredRange"), 960.f));
 		LiveEnemies.Add(Boss);
 	}
 
@@ -1018,15 +1009,24 @@ void AT66MiniGameMode::SpawnRandomTrap()
 
 	const float SpawnAngle = FMath::FRandRange(0.f, UE_TWO_PI);
 	const FVector SpawnDirection = FVector(FMath::Cos(SpawnAngle), FMath::Sin(SpawnAngle), 0.f);
-	FVector SpawnLocation = PlayerPawn->GetActorLocation() + (SpawnDirection * FMath::FRandRange(360.f, 980.f));
+	FVector SpawnLocation = PlayerPawn->GetActorLocation() + (SpawnDirection * FMath::FRandRange(
+		GetRuntimeTuningValue(TEXT("TrapSpawnMinDistance"), 360.f),
+		GetRuntimeTuningValue(TEXT("TrapSpawnMaxDistance"), 980.f)));
 	SpawnLocation = ClampPointToArena(SpawnLocation);
 
-	const float Radius = 180.f + (MiniGameState->WaveIndex * 24.f) + FMath::FRandRange(0.f, 80.f);
-	const float Damage = 7.f + (MiniGameState->WaveIndex * 1.3f);
-	const float Warmup = 0.95f + FMath::FRandRange(0.0f, 0.35f);
-	const float ActiveSeconds = 3.8f + (MiniGameState->WaveIndex * 0.28f);
-	const float PulseInterval = FMath::Max(0.28f, 0.72f - (MiniGameState->WaveIndex * 0.04f));
-	const int32 TrapVariant = FMath::RandRange(0, 2);
+	const float Radius = GetRuntimeTuningValue(TEXT("TrapRadiusBase"), 180.f)
+		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapRadiusPerWave"), 24.f))
+		+ FMath::FRandRange(0.f, GetRuntimeTuningValue(TEXT("TrapRadiusRandomMax"), 80.f));
+	const float Damage = GetRuntimeTuningValue(TEXT("TrapDamageBase"), 7.f)
+		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapDamagePerWave"), 1.3f));
+	const float Warmup = GetRuntimeTuningValue(TEXT("TrapWarmupBase"), 0.95f)
+		+ FMath::FRandRange(0.0f, GetRuntimeTuningValue(TEXT("TrapWarmupRandomMax"), 0.35f));
+	const float ActiveSeconds = GetRuntimeTuningValue(TEXT("TrapActiveBase"), 3.8f)
+		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapActivePerWave"), 0.28f));
+	const float PulseInterval = FMath::Max(
+		GetRuntimeTuningValue(TEXT("TrapPulseIntervalMin"), 0.28f),
+		GetRuntimeTuningValue(TEXT("TrapPulseIntervalBase"), 0.72f) - (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapPulseIntervalPerWave"), 0.04f)));
+	const int32 TrapVariant = FMath::RandRange(0, GetRuntimeTuningInt(TEXT("TrapVariantMax"), 2));
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -1077,30 +1077,6 @@ void AT66MiniGameMode::ReturnToShopIntermission()
 	FrontendState->WriteIntermissionStateToRunSave(ActiveRun);
 	SaveSubsystem->SaveRunToSlot(RunState->GetActiveSaveSlot(), ActiveRun);
 
-	if (IsOnlinePartyMiniRun())
-	{
-		bFrontendTravelInProgress = true;
-		T66GameInstance->MiniIntermissionStateRevision = 0;
-		T66GameInstance->MiniIntermissionStateJson.Reset();
-		T66GameInstance->MiniIntermissionRequestRevision = 0;
-		T66GameInstance->MiniIntermissionRequestJson.Reset();
-
-		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-		{
-			if (AT66MiniPlayerController* MiniController = Cast<AT66MiniPlayerController>(It->Get()))
-			{
-				MiniController->ClientPrepareMiniFrontendTravel(ET66ScreenType::MiniShop, true);
-			}
-		}
-
-		T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniShop;
-		const FString TravelUrl = FString::Printf(
-			TEXT("%s?listen?game=/Script/T66.T66FrontendGameMode"),
-			*UT66GameInstance::GetFrontendLevelName().ToString());
-		GetWorld()->ServerTravel(TravelUrl);
-		return;
-	}
-
 	T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniShop;
 	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
 }
@@ -1111,28 +1087,31 @@ void AT66MiniGameMode::RecordClearedMiniStageProgression()
 	const UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
-	const UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
+	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
+	const FT66MiniStageDefinition* StageDefinition = GetCurrentStageDefinition();
 	const FT66MiniDifficultyDefinition* DifficultyDefinition = (ActiveRun && DataSubsystem)
 		? DataSubsystem->FindDifficulty(ActiveRun->DifficultyID)
 		: nullptr;
-	const int32 ChadCouponsAwarded = DifficultyDefinition
+	const int32 ChadCouponsAwarded = StageDefinition && StageDefinition->ClearChadCoupons > 0
+		? StageDefinition->ClearChadCoupons
+		: (DifficultyDefinition
 		? FMath::Max(0, DifficultyDefinition->StageClearChadCoupons)
-		: 0;
+		: 0);
 	if (!SaveSubsystem || !DataSubsystem || !ActiveRun)
 	{
 		return;
 	}
 
-	if (IsOnlinePartyMiniRun())
+	if (StageDefinition)
 	{
-		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-		{
-			if (AT66MiniPlayerController* MiniController = Cast<AT66MiniPlayerController>(It->Get()))
-			{
-				MiniController->ClientHandleMiniStageClear(ChadCouponsAwarded, ActiveRun->CompanionID);
-			}
-		}
-		return;
+		ActiveRun->CurrentStageID = StageDefinition->StageID;
+		ActiveRun->StageIndex = StageDefinition->StageIndex;
+		ActiveRun->Gold += FMath::Max(0, StageDefinition->ClearGoldReward);
+		ActiveRun->Materials += FMath::Max(0, StageDefinition->ClearMaterialReward);
+	}
+	else
+	{
+		ActiveRun->StageIndex = FMath::Max(1, ActiveRun->WaveIndex);
 	}
 
 	SaveSubsystem->RecordClearedMiniStage(ActiveRun->CompanionID, DataSubsystem);
@@ -1175,24 +1154,6 @@ void AT66MiniGameMode::FinalizeRun(const bool bWasVictory, const FString& Result
 		ActiveBossTelegraphActor = nullptr;
 	}
 
-	if (IsOnlinePartyMiniRun())
-	{
-		bFrontendTravelInProgress = true;
-		const int32 FinalWaveIndex = FMath::Max(1, MiniGameState->WaveIndex);
-		const float FinalRunSeconds = ActiveRun->TotalRunSeconds;
-		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-		{
-			if (AT66MiniPlayerController* MiniController = Cast<AT66MiniPlayerController>(It->Get()))
-			{
-				MiniController->ClientPrepareMiniOnlineRunSummary(bWasVictory, ResultLabel, FinalWaveIndex, FinalRunSeconds);
-			}
-		}
-
-		T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniRunSummary;
-		GetWorldTimerManager().SetTimer(OnlineFrontendTravelTimer, this, &AT66MiniGameMode::CompleteOnlineFrontendTravel, 0.25f, false);
-		return;
-	}
-
 	FT66MiniRunSummary Summary;
 	Summary.bHasSummary = true;
 	Summary.bWasVictory = bWasVictory;
@@ -1200,6 +1161,7 @@ void AT66MiniGameMode::FinalizeRun(const bool bWasVictory, const FString& Result
 	Summary.CompanionID = ActiveRun->CompanionID;
 	Summary.DifficultyID = ActiveRun->DifficultyID;
 	Summary.WaveReached = FMath::Max(1, MiniGameState->WaveIndex);
+	Summary.GoldCollected = PlayerPawn ? PlayerPawn->GetGold() : ActiveRun->Gold;
 	Summary.MaterialsCollected = PlayerPawn ? PlayerPawn->GetMaterials() : ActiveRun->Materials;
 	Summary.OwnedItemCount = ActiveRun->OwnedItemIDs.Num();
 	Summary.EquippedIdolCount = ActiveRun->EquippedIdolIDs.Num();
@@ -1239,11 +1201,23 @@ void AT66MiniGameMode::FinalizeRun(const bool bWasVictory, const FString& Result
 	SaveSubsystem->RecordRunSummary(Summary, DataSubsystem);
 	if (UT66MiniLeaderboardSubsystem* MiniLeaderboardSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniLeaderboardSubsystem>() : nullptr)
 	{
-		const UT66PartySubsystem* PartySubsystem = GameInstance ? GameInstance->GetSubsystem<UT66PartySubsystem>() : nullptr;
 		MiniLeaderboardSubsystem->SubmitScore(
 			Summary.DifficultyID,
-			PartySubsystem ? PartySubsystem->GetCurrentPartySizeEnum() : ET66PartySize::Solo,
 			Summary.MaterialsCollected);
+	}
+	if (UT66BackendSubsystem* Backend = GameInstance ? GameInstance->GetSubsystem<UT66BackendSubsystem>() : nullptr)
+	{
+		const UT66MiniFrontendStateSubsystem* SubmitFrontendState = GameInstance ? GameInstance->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
+		const UT66SteamHelper* SteamHelper = GameInstance ? GameInstance->GetSubsystem<UT66SteamHelper>() : nullptr;
+		const bool bDailyRun = SubmitFrontendState && SubmitFrontendState->IsDailyRun();
+		Backend->SubmitMinigameScore(
+			SteamHelper ? SteamHelper->GetLocalDisplayName() : FString(TEXT("Player")),
+			TEXT("mini"),
+			bDailyRun ? TEXT("daily") : TEXT("alltime"),
+			Summary.DifficultyID.ToString().ToLower(),
+			FMath::Max(0, Summary.MaterialsCollected),
+			bDailyRun ? SubmitFrontendState->GetDailyChallengeId() : FString(),
+			bDailyRun ? SubmitFrontendState->GetDailySeed() : 0);
 	}
 	if (RunState->GetActiveSaveSlot() != INDEX_NONE)
 	{
@@ -1252,19 +1226,6 @@ void AT66MiniGameMode::FinalizeRun(const bool bWasVictory, const FString& Result
 	RunState->ResetActiveRun();
 	T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniRunSummary;
 	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
-}
-
-void AT66MiniGameMode::RequestPartySaveAndReturnToFrontend(const FString& ResultLabel, const ET66ScreenType PendingScreen)
-{
-	if (!IsOnlinePartyMiniRun() || bRunFinalized || bFrontendTravelInProgress)
-	{
-		return;
-	}
-
-	AbortOnlinePartyRunToFrontend(ResultLabel.IsEmpty()
-		? TEXT("Mini party run saved. Returning the whole party to the mini menu.")
-		: ResultLabel,
-		PendingScreen);
 }
 
 void AT66MiniGameMode::TryApplySavedPawnState()
@@ -1280,38 +1241,6 @@ void AT66MiniGameMode::TryApplySavedPawnState()
 	if (!ActiveRun || !ActiveRun->bHasMidWaveSnapshot)
 	{
 		bAppliedSavedPawnState = true;
-		return;
-	}
-
-	if (ActiveRun->bOnlinePartyRun && ActiveRun->PartyPlayerSnapshots.Num() > 0)
-	{
-		bool bAllSnapshotsResolved = true;
-		for (AT66MiniPlayerPawn* PlayerPawn : T66MiniGatherPlayerPawns(GetWorld(), false))
-		{
-			if (!PlayerPawn)
-			{
-				continue;
-			}
-
-			const AT66SessionPlayerState* SessionPlayerState = PlayerPawn->GetPlayerState<AT66SessionPlayerState>();
-			const FString SnapshotPlayerId = SessionPlayerState ? SessionPlayerState->GetSteamId() : FString();
-			const FT66MiniPartyPlayerSnapshot* Snapshot = T66MiniFindPartySnapshotByPlayerId(ActiveRun, SnapshotPlayerId);
-			if (!Snapshot)
-			{
-				bAllSnapshotsResolved = false;
-				continue;
-			}
-
-			if (Snapshot->bHasPlayerLocation)
-			{
-				PlayerPawn->SetActorLocation(ClampPointToArena(Snapshot->PlayerLocation));
-			}
-		}
-
-		if (bAllSnapshotsResolved)
-		{
-			bAppliedSavedPawnState = true;
-		}
 		return;
 	}
 
@@ -1423,7 +1352,7 @@ void AT66MiniGameMode::RestoreTransientWaveState(const UT66MiniRunSaveGame* RunS
 	{
 		if (UT66MiniVFXSubsystem* VfxSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
 		{
-			ActiveBossTelegraphActor = VfxSubsystem->SpawnGroundTelegraph(GetWorld(), PendingBossSpawnLocation, 260.f, BossTelegraphRemaining, FLinearColor(0.98f, 0.26f, 0.20f, 0.38f));
+			ActiveBossTelegraphActor = VfxSubsystem->SpawnGroundTelegraph(GetWorld(), PendingBossSpawnLocation, GetRuntimeTuningValue(TEXT("BossTelegraphRadius"), 260.f), BossTelegraphRemaining, FLinearColor(0.98f, 0.26f, 0.20f, 0.38f));
 		}
 	}
 }
@@ -1471,7 +1400,7 @@ void AT66MiniGameMode::RestoreWorldState(const UT66MiniRunSaveGame* RunSave)
 				FireIntervalSeconds = BossDefinition->FireIntervalSeconds;
 				ProjectileSpeed = BossDefinition->ProjectileSpeed;
 				ProjectileDamage = BossDefinition->ProjectileDamage;
-				PreferredRange = 960.f;
+				PreferredRange = GetRuntimeTuningValue(TEXT("BossPreferredRange"), 960.f);
 			}
 		}
 		else if (const FT66MiniEnemyDefinition* EnemyDefinition = DataSubsystem->FindEnemy(Snapshot.EnemyID))
@@ -1640,55 +1569,6 @@ void AT66MiniGameMode::CaptureWorldState(UT66MiniRunSaveGame* RunSave) const
 	}
 }
 
-void AT66MiniGameMode::CapturePartyPlayerSnapshots(UT66MiniRunSaveGame* RunSave) const
-{
-	if (!RunSave || !RunSave->bOnlinePartyRun)
-	{
-		return;
-	}
-
-	for (AT66MiniPlayerPawn* PlayerPawn : T66MiniGatherPlayerPawns(GetWorld(), false))
-	{
-		if (!PlayerPawn)
-		{
-			continue;
-		}
-
-		const AT66SessionPlayerState* SessionPlayerState = PlayerPawn->GetPlayerState<AT66SessionPlayerState>();
-		if (!SessionPlayerState || SessionPlayerState->GetSteamId().IsEmpty())
-		{
-			continue;
-		}
-
-		FT66MiniPartyPlayerSnapshot* Snapshot = T66MiniFindPartySnapshotByPlayerId(RunSave, SessionPlayerState->GetSteamId());
-		if (!Snapshot)
-		{
-			FT66MiniPartyPlayerSnapshot& NewSnapshot = RunSave->PartyPlayerSnapshots.AddDefaulted_GetRef();
-			NewSnapshot.SteamId = SessionPlayerState->GetSteamId();
-			NewSnapshot.DisplayName = SessionPlayerState->GetDisplayName();
-			Snapshot = &NewSnapshot;
-		}
-
-		Snapshot->SteamId = SessionPlayerState->GetSteamId();
-		Snapshot->DisplayName = SessionPlayerState->GetDisplayName();
-		Snapshot->HeroID = PlayerPawn->GetHeroID();
-		Snapshot->CompanionID = PlayerPawn->GetSelectedCompanionID();
-		Snapshot->EquippedIdolIDs = PlayerPawn->GetEquippedIdolIDs();
-		Snapshot->OwnedItemIDs = PlayerPawn->GetOwnedItemIDs();
-		Snapshot->HeroLevel = PlayerPawn->GetHeroLevel();
-		Snapshot->CurrentHealth = PlayerPawn->GetCurrentHealth();
-		Snapshot->MaxHealth = PlayerPawn->GetMaxHealth();
-		Snapshot->Materials = PlayerPawn->GetMaterials();
-		Snapshot->Gold = PlayerPawn->GetGold();
-		Snapshot->Experience = PlayerPawn->GetExperience();
-		Snapshot->UltimateCooldownRemaining = PlayerPawn->GetUltimateCooldownRemaining();
-		Snapshot->bEnduranceCheatUsedThisWave = PlayerPawn->HasEnduranceCheatUsedThisWave();
-		Snapshot->bQuickReviveReady = PlayerPawn->HasQuickReviveReady();
-		Snapshot->bHasPlayerLocation = true;
-		Snapshot->PlayerLocation = PlayerPawn->GetActorLocation();
-	}
-}
-
 void AT66MiniGameMode::PersistActiveRunSnapshot(const bool bMarkMidWaveSnapshot)
 {
 	UGameInstance* GameInstance = GetGameInstance();
@@ -1721,7 +1601,6 @@ void AT66MiniGameMode::PersistActiveRunSnapshot(const bool bMarkMidWaveSnapshot)
 	ActiveRun->PendingBossSpawnLocation = PendingBossSpawnLocation;
 	ActiveRun->TrapSpawnAccumulator = TrapSpawnAccumulator;
 	CaptureWorldState(ActiveRun);
-	CapturePartyPlayerSnapshots(ActiveRun);
 	SaveSubsystem->SaveRunToSlot(RunState->GetActiveSaveSlot(), ActiveRun);
 }
 
@@ -1849,77 +1728,4 @@ bool AT66MiniGameMode::TryInteractNearest(AT66MiniPlayerPawn* PlayerPawn, const 
 	}
 
 	return false;
-}
-
-bool AT66MiniGameMode::IsOnlinePartyMiniRun() const
-{
-	const AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
-	return MiniGameState && MiniGameState->bOnlinePartyMode;
-}
-
-void AT66MiniGameMode::CompleteOnlineFrontendTravel()
-{
-	UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GetGameInstance());
-	UWorld* World = GetWorld();
-	if (!T66GameInstance || !World)
-	{
-		return;
-	}
-
-	T66GameInstance->PendingFrontendScreen = ET66ScreenType::MiniRunSummary;
-	bFrontendTravelInProgress = true;
-	const FString TravelUrl = FString::Printf(
-		TEXT("%s?listen?game=/Script/T66.T66FrontendGameMode"),
-		*UT66GameInstance::GetFrontendLevelName().ToString());
-	World->ServerTravel(TravelUrl);
-}
-
-void AT66MiniGameMode::AbortOnlinePartyRunToFrontend(const FString& ResultLabel, const ET66ScreenType PendingScreen)
-{
-	if (!IsOnlinePartyMiniRun() || bRunFinalized || bFrontendTravelInProgress)
-	{
-		return;
-	}
-
-	UGameInstance* GameInstance = GetGameInstance();
-	UT66MiniRunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
-	UT66MiniFrontendStateSubsystem* FrontendState = GameInstance ? GameInstance->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
-	UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GameInstance);
-	if (!RunState || !FrontendState || !T66GameInstance)
-	{
-		return;
-	}
-
-	if (BattleMusicComponent)
-	{
-		BattleMusicComponent->Stop();
-	}
-	if (ActiveBossTelegraphActor)
-	{
-		ActiveBossTelegraphActor->DeactivateTelegraph();
-		ActiveBossTelegraphActor = nullptr;
-	}
-
-	SaveRunProgressNow(true);
-	FrontendState->ExitIntermissionFlow();
-	bFrontendTravelInProgress = true;
-	T66GameInstance->MiniIntermissionStateRevision = 0;
-	T66GameInstance->MiniIntermissionStateJson.Reset();
-	T66GameInstance->MiniIntermissionRequestRevision = 0;
-	T66GameInstance->MiniIntermissionRequestJson.Reset();
-
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		if (AT66MiniPlayerController* MiniController = Cast<AT66MiniPlayerController>(It->Get()))
-		{
-			MiniController->ClientMessage(ResultLabel);
-			MiniController->ClientPrepareMiniFrontendTravel(PendingScreen, false);
-		}
-	}
-
-	T66GameInstance->PendingFrontendScreen = PendingScreen;
-	const FString TravelUrl = FString::Printf(
-		TEXT("%s?listen?game=/Script/T66.T66FrontendGameMode"),
-		*UT66GameInstance::GetFrontendLevelName().ToString());
-	GetWorld()->ServerTravel(TravelUrl);
 }

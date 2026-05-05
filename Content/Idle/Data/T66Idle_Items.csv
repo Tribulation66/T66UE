@@ -1,0 +1,5 @@
+ItemID,DisplayName,Description,Category,AccentColor,BaseCostGold,TapDamageBonus,PassiveDamageBonus,GoldRewardMultiplier,MaxLevel
+Item_PierceDamage,Pierce Damage Charm,Main-game pierce damage repurposed as tap pressure.,Damage,"(R=0.80,G=0.68,B=0.30,A=1.0)",28,5,0,1,10
+Item_AoeDamage,AOE Damage Charm,Converts area damage into idle splash pressure.,Damage,"(R=0.74,G=0.48,B=0.22,A=1.0)",85,13,1,1,10
+Item_CritChance,Crit Chance Dice,Turns lucky hits into better gold pacing.,Economy,"(R=0.92,G=0.76,B=0.32,A=1.0)",160,8,2,1.08,10
+Item_BounceSpeed,Bounce Speed Gear,Keeps helper attacks rolling while idle.,Passive,"(R=0.36,G=0.64,B=0.82,A=1.0)",300,4,9,1,10

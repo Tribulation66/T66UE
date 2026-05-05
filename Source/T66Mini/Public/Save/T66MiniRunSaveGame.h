@@ -114,63 +114,6 @@ struct FT66MiniTrapSnapshot
 	int32 TrapVariant = 0;
 };
 
-USTRUCT(BlueprintType)
-struct FT66MiniPartyPlayerSnapshot
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	FString SteamId;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	FString DisplayName;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	FName HeroID = NAME_None;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	FName CompanionID = NAME_None;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	TArray<FName> EquippedIdolIDs;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	TArray<FName> OwnedItemIDs;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	int32 HeroLevel = 1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	float CurrentHealth = 100.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	float MaxHealth = 100.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	int32 Materials = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	int32 Gold = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	float Experience = 0.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	float UltimateCooldownRemaining = 0.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	bool bEnduranceCheatUsedThisWave = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	bool bQuickReviveReady = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	bool bHasPlayerLocation = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	FVector PlayerLocation = FVector::ZeroVector;
-};
-
 UCLASS()
 class T66MINI_API UT66MiniRunSaveGame : public USaveGame
 {
@@ -179,24 +122,6 @@ class T66MINI_API UT66MiniRunSaveGame : public USaveGame
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	int32 SaveSlotIndex = INDEX_NONE;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	bool bOnlinePartyRun = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	FString OnlineHostSteamId;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	FString OnlineHostDisplayName;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	TArray<FString> OnlinePartyMemberIds;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	TArray<FString> OnlinePartyMemberDisplayNames;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	TArray<FT66MiniPartyPlayerSnapshot> PartyPlayerSnapshots;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	FName HeroID = NAME_None;
@@ -221,6 +146,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	int32 WaveIndex = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	FName CurrentStageID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	int32 StageIndex = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	int32 HeroLevel = 1;

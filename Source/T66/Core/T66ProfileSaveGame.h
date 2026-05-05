@@ -57,7 +57,7 @@ class T66_API UT66ProfileSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 15;
+	int32 SaveVersion = 16;
 
 	/** Item IDs ever obtained (any run type) — used to show only unlocked items in The Lab. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lab")

@@ -1,0 +1,36 @@
+{
+  "stem": "Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C09_VisibleNeck_CrownHairShell",
+  "variant": "C09",
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Assembly\\HeadBody\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C09_VisibleNeck_CrownHairShell.glb",
+  "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\Chad_Pass02_Mike\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C09_VisibleNeck_CrownHairShell.blend",
+  "renders": {
+    "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C09_VisibleNeck_CrownHairShell\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C09_VisibleNeck_CrownHairShell_front.png",
+    "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C09_VisibleNeck_CrownHairShell\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C09_VisibleNeck_CrownHairShell_right.png",
+    "back": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C09_VisibleNeck_CrownHairShell\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C09_VisibleNeck_CrownHairShell_back.png",
+    "left": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C09_VisibleNeck_CrownHairShell\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C09_VisibleNeck_CrownHairShell_left.png",
+    "neck_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C09_VisibleNeck_CrownHairShell\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C09_VisibleNeck_CrownHairShell_neck_closeup.png",
+    "hair_back_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C09_VisibleNeck_CrownHairShell\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C09_VisibleNeck_CrownHairShell_hair_back_closeup.png"
+  },
+  "repair_objects": {
+    "neck": null,
+    "hair_patch": "MikeRepair_HairPatch_C09",
+    "painted_scalp_faces": 0
+  },
+  "triangles": {
+    "neck": 0,
+    "hair_patch": 504,
+    "scene_total": 188201
+  },
+  "bounds": {
+    "combined_size": [
+      0.6779093742370605,
+      0.2873062491416931,
+      1.1517150402069092
+    ]
+  },
+  "notes": [
+    "Adds a separate skin neck bridge that intersects head and body.",
+    "Adds a separate dark rear hair patch to cover the scalp artifact.",
+    "Repair geometry is intentionally separate for visual approval before rigging."
+  ]
+}

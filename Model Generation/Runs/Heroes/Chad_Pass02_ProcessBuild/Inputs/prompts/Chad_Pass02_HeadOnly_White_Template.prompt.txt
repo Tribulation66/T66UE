@@ -1,0 +1,18 @@
+Create a production source image for TRELLIS image-to-3D.
+
+Subject: {HERO_ID} {HERO_NAME}, original stylized game character, Chad/default skin head only.
+
+The image must show one centered straight-on head plus full neck only. No shoulders, no torso, no clothing, no armor collar, no necklace, no duplicate view, no side view, no three-quarter view, no character sheet, no poster panel.
+
+Skull target: trademark giga-chad head geometry shared across the whole hero roster: enormous square jaw, wide flat chin plane, high cheekbones, heavy brow ridge, large square cranium, thick muscular neck. The jaw and neck are the dominant read. Same skull scale and head size as the accepted Chad reference. Keep the skull block consistent; do not make a small normal head.
+
+Identity target: preserve only the hero's distinguishing ethnicity cues, skin tone, eye shape, hair color, hairline, hair silhouette, beard pattern, scars, makeup, and expression. The character should read as a giga-chad version of {HERO_NAME}, not a normal portrait.
+
+Pose: orthographic production reference, face axis centered and symmetrical, eyes looking directly at camera, full head and full neck visible with clean margins.
+
+Identity notes: {HEAD_IDENTITY_NOTES}
+
+Background: pure flat opaque white #ffffff across the entire canvas. No alpha, no cast shadow, no contact shadow, no reflection, no gradient, no gray patch, no border card, no poster sheet.
+
+Render style: clean bright stylized cartoon/cel-shaded game asset reference, sharp silhouette, readable facial features, bold clean colors, no realistic portrait lighting, no skin pores, no text, no watermark, no logo.
+

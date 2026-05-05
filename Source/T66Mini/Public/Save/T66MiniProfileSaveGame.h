@@ -35,10 +35,16 @@ public:
 	int32 BestWaveReached = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	int32 BestStageIndexReached = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	float BestClearSeconds = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	int32 LifetimeMaterialsCollected = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
+	int32 LifetimeGoldCollected = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	int32 TotalStagesCleared = 0;

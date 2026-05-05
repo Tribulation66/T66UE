@@ -17,6 +17,7 @@ class UT66PlayerSettingsSubsystem;
 class UT66UIManager;
 class UT66SteamHelper;
 struct FComboButtonStyle;
+class SEditableTextBox;
 
 /**
  * Leaderboard Panel - Slate widget for displaying leaderboard
@@ -62,6 +63,9 @@ private:
 	ET66LeaderboardType CurrentType = ET66LeaderboardType::Score;
 	bool bDailyChallengeMode = false;
 	bool bReferenceMirrorMode = false;
+	bool bStreamerRequestOpen = false;
+	bool bStreamerRequestSubmitting = false;
+	FText StreamerRequestStatus;
 
 	TArray<FLeaderboardEntry> LeaderboardEntries;
 	UT66LocalizationSubsystem* LocSubsystem = nullptr;
@@ -69,6 +73,8 @@ private:
 	UT66UIManager* UIManager = nullptr;
 
 	TSharedPtr<SVerticalBox> EntryListBox;
+	TSharedPtr<SEditableTextBox> StreamerLinkTextBox;
+	TSharedPtr<SEditableTextBox> StreamerSteamIdTextBox;
 
 	// Dropdown options
 	TArray<TSharedPtr<FString>> PartySizeOptions;
@@ -102,6 +108,10 @@ private:
 	FReply HandleGlobalClicked();
 	FReply HandleFriendsClicked();
 	FReply HandleStreamersClicked();
+	FReply HandleStreamerRequestClicked();
+	FReply HandleStreamerRequestCloseClicked();
+	FReply HandleStreamerRequestSubmitClicked();
+	void OnStreamerRequestComplete(bool bSuccess, const FString& Message);
 	FReply HandleCurrentClicked();
 	FReply HandleAllTimeClicked();
 	FReply HandleDailyClicked();
@@ -154,6 +164,8 @@ private:
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceFilterStreamersIconBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceTabWeeklyActiveBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceTabAllTimeInactiveBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceTabHoverBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceTabPressedBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceDropdownLeftBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceDropdownRightBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceDropdownChevronBrush;

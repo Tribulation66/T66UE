@@ -22,9 +22,6 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Mini")
-	bool bOnlinePartyMode = false;
-
-	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Mini")
 	FName HeroID = NAME_None;
 
 	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Mini")

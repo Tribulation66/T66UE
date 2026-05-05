@@ -59,7 +59,7 @@ namespace T66MiniGeneratedChrome
 		case ESlice::CardDisabled:
 		case ESlice::PortraitFrame:
 		case ESlice::BadgeFrame:
-			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Shared/Slots/reference_square_slot_frame_normal.png");
 		case ESlice::ButtonGreenNormal:
 			return T66MiniUI::MasterSelectedButtonPath();
 		case ESlice::ButtonBlueNormal:

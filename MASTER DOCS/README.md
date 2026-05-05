@@ -18,4 +18,4 @@ This folder is the canonical home for active master handoff and policy documents
 - `T66_PROJECT_CATALOGUE.md`: current codebase and runtime architecture map.
 - `T66_IMPORT_PIPELINE_GUIDELINES.md`: import pipeline rules and asset workflow details.
 - `T66_DECISION_LOG.md`: historical decisions, exceptions, and documentation-structure changes.
-- `../Audit/T66_MASTER_OPTIMIZATION_AUDIT_V5.md`: current optimization master, including the post-audit implementation addendum and packaged-runtime validation checkpoint.
+- `../Audit/Pending/T66_MASTER_OPTIMIZATION_AUDIT_V5.md`: pending optimization master, including the post-audit implementation addendum and packaged-runtime validation checkpoint.

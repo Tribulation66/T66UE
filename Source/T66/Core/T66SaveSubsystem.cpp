@@ -125,7 +125,11 @@ UT66RunSaveGame* UT66SaveSubsystem::LoadFromSlot(int32 SlotIndex)
 	UT66RunSaveGame* RunSave = Cast<UT66RunSaveGame>(Loaded);
 	if (RunSave)
 	{
-		RunSave->HeroID = T66MigrateHeroIDFromSave(RunSave->HeroID);
+		if (RunSave->SaveVersion < T66SparseActiveHeroIdRunSaveVersion)
+		{
+			RunSave->HeroID = T66MigrateSparseActiveHeroID(RunSave->HeroID);
+			RunSave->SaveVersion = T66SparseActiveHeroIdRunSaveVersion;
+		}
 
 		FString LocalPlayerId = TEXT("local_player");
 		FString LocalDisplayName = TEXT("You");

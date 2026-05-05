@@ -1,0 +1,5 @@
+CompanionID,DisplayName,Description,RoleLabel,AccentColor,HireCostGold,PassiveDamagePerSecond,PassiveDamagePerLevel,MaxLevel
+Companion_01,Aria,Keeps the lane moving while the hero swings.,Starter Support,"(R=0.95,G=0.43,B=0.43,A=1.0)",18,1.2,0.3,30
+Companion_02,Blaze,Adds steady burn damage between taps.,Burn Support,"(R=0.95,G=0.49,B=0.43,A=1.0)",70,3.6,0.8,30
+Companion_05,Coral,Improves passive flow during long idle sessions.,Flow Support,"(R=0.95,G=0.69,B=0.43,A=1.0)",180,8.0,1.6,30
+Companion_10,Frost,Slows the climb but hits reliably forever.,Cold Support,"(R=0.43,G=0.95,B=0.61,A=1.0)",420,18.0,3.4,30

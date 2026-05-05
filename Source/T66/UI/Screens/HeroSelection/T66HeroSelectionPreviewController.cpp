@@ -61,36 +61,13 @@ void UT66HeroSelectionPreviewController::BindPreviewPanelWidgets(
 	HeroPreviewPlaceholderText = InHeroPreviewPlaceholderText;
 	CompanionInfoPortraitScaleBox = InCompanionPreviewScaleBox;
 	CompanionPreviewPlaceholderText = InCompanionPreviewPlaceholderText;
-}
-
-void UT66HeroSelectionPreviewController::EnsureHeroPreviewVideoResources()
-{
-	if (HeroPreviewMediaPlayer && HeroPreviewMediaTexture && HeroPreviewVideoBrush.IsValid())
+	if (TSharedPtr<SImage> PreviewVideoImage = HeroPreviewVideoImage.Pin())
 	{
-		return;
+		PreviewVideoImage->SetVisibility(EVisibility::Collapsed);
 	}
-
-	HeroPreviewMediaPlayer = NewObject<UMediaPlayer>(this, UMediaPlayer::StaticClass(), NAME_None, RF_Transient);
-	if (HeroPreviewMediaPlayer)
+	if (TSharedPtr<STextBlock> PreviewPlaceholder = HeroPreviewPlaceholderText.Pin())
 	{
-		HeroPreviewMediaPlayer->SetLooping(true);
-		HeroPreviewMediaPlayer->PlayOnOpen = true;
-	}
-
-	HeroPreviewMediaTexture = NewObject<UMediaTexture>(this, UMediaTexture::StaticClass(), NAME_None, RF_Transient);
-	if (HeroPreviewMediaTexture && HeroPreviewMediaPlayer)
-	{
-		HeroPreviewMediaTexture->SetMediaPlayer(HeroPreviewMediaPlayer);
-		HeroPreviewMediaTexture->UpdateResource();
-	}
-
-	HeroPreviewVideoBrush = MakeShared<FSlateBrush>();
-	HeroPreviewVideoBrush->DrawAs = ESlateBrushDrawType::Image;
-	HeroPreviewVideoBrush->Tiling = ESlateBrushTileType::NoTile;
-	HeroPreviewVideoBrush->ImageSize = FVector2D(640.0f, 360.0f);
-	if (HeroPreviewMediaTexture)
-	{
-		HeroPreviewVideoBrush->SetResourceObject(HeroPreviewMediaTexture);
+		PreviewPlaceholder->SetVisibility(EVisibility::Collapsed);
 	}
 }
 
@@ -105,99 +82,6 @@ void UT66HeroSelectionPreviewController::EnsureCompanionPreviewBrush()
 	CompanionInfoPortraitBrush->DrawAs = ESlateBrushDrawType::Image;
 	CompanionInfoPortraitBrush->Tiling = ESlateBrushTileType::NoTile;
 	CompanionInfoPortraitBrush->ImageSize = FVector2D(320.f, 204.f);
-}
-
-void UT66HeroSelectionPreviewController::WarmKnightPreviewMediaSource(FName PreviewedHeroID, bool bShowingCompanionInfo)
-{
-	if (KnightPreviewMediaSource)
-	{
-		return;
-	}
-
-	const FString MoviePath = ResolveArthurPreviewMoviePath();
-	if (MoviePath.IsEmpty())
-	{
-		return;
-	}
-
-	KnightPreviewMediaSource = NewObject<UFileMediaSource>(this, NAME_None, RF_Transient);
-	if (KnightPreviewMediaSource)
-	{
-		KnightPreviewMediaSource->SetFilePath(MoviePath);
-		HandleKnightPreviewMediaSourceLoaded(PreviewedHeroID, bShowingCompanionInfo);
-	}
-}
-
-void UT66HeroSelectionPreviewController::CloseHeroPreviewMedia()
-{
-	if (HeroPreviewMediaPlayer)
-	{
-		HeroPreviewMediaPlayer->Close();
-	}
-
-	ActivePreviewVideoHeroID = NAME_None;
-	ActiveHeroPreviewClip = ET66HeroSelectionPreviewClip::Overview;
-}
-
-void UT66HeroSelectionPreviewController::UpdateHeroPreviewVideo(FName PreviewedHeroID, bool bShowingCompanionInfo)
-{
-	FString PreviewMoviePath;
-	if (!bShowingCompanionInfo && PreviewedHeroID == FName(TEXT("Hero_1")))
-	{
-		switch (SelectedHeroPreviewClip)
-		{
-		case ET66HeroSelectionPreviewClip::Ultimate:
-		case ET66HeroSelectionPreviewClip::Passive:
-		case ET66HeroSelectionPreviewClip::Overview:
-		default:
-			PreviewMoviePath = ResolveArthurPreviewMoviePath();
-			break;
-		}
-	}
-
-	const bool bShowHeroVideo = !PreviewMoviePath.IsEmpty();
-
-	if (TSharedPtr<SImage> PreviewVideoImage = HeroPreviewVideoImage.Pin())
-	{
-		PreviewVideoImage->SetVisibility(bShowHeroVideo ? EVisibility::Visible : EVisibility::Collapsed);
-	}
-	if (TSharedPtr<STextBlock> PreviewPlaceholder = HeroPreviewPlaceholderText.Pin())
-	{
-		PreviewPlaceholder->SetVisibility(
-			!bShowingCompanionInfo && !bShowHeroVideo
-				? EVisibility::Visible
-				: EVisibility::Collapsed);
-	}
-
-	if (!HeroPreviewMediaPlayer)
-	{
-		return;
-	}
-
-	if (bShowHeroVideo)
-	{
-		const FString CurrentUrl = HeroPreviewMediaPlayer->GetUrl();
-		const bool bNeedsReopen = !HeroPreviewMediaPlayer->IsPlaying()
-			|| ActivePreviewVideoHeroID != PreviewedHeroID
-			|| ActiveHeroPreviewClip != SelectedHeroPreviewClip
-			|| !CurrentUrl.Equals(PreviewMoviePath, ESearchCase::IgnoreCase);
-		if (bNeedsReopen)
-		{
-			HeroPreviewMediaPlayer->Close();
-			if (!HeroPreviewMediaPlayer->OpenFile(PreviewMoviePath))
-			{
-				UE_LOG(LogT66HeroSelection, Warning, TEXT("Failed to open hero preview video from '%s'"), *PreviewMoviePath);
-			}
-			ActivePreviewVideoHeroID = PreviewedHeroID;
-			ActiveHeroPreviewClip = SelectedHeroPreviewClip;
-		}
-	}
-	else
-	{
-		HeroPreviewMediaPlayer->Close();
-		ActivePreviewVideoHeroID = NAME_None;
-		ActiveHeroPreviewClip = ET66HeroSelectionPreviewClip::Overview;
-	}
 }
 
 void UT66HeroSelectionPreviewController::RefreshCompanionPreviewPanel(
@@ -426,9 +310,7 @@ FName UT66HeroSelectionPreviewController::ResolveEffectiveCompanionSkinID(
 
 const FSlateBrush* UT66HeroSelectionPreviewController::GetHeroPreviewVideoBrush() const
 {
-	return HeroPreviewVideoBrush.IsValid() && ::IsValid(HeroPreviewMediaTexture)
-		? HeroPreviewVideoBrush.Get()
-		: nullptr;
+	return nullptr;
 }
 
 const FSlateBrush* UT66HeroSelectionPreviewController::GetCompanionInfoPortraitBrush() const
@@ -457,11 +339,6 @@ AT66HeroPreviewStage* UT66HeroSelectionPreviewController::GetHeroPreviewStage() 
 		return *It;
 	}
 	return nullptr;
-}
-
-void UT66HeroSelectionPreviewController::HandleKnightPreviewMediaSourceLoaded(FName PreviewedHeroID, bool bShowingCompanionInfo)
-{
-	UpdateHeroPreviewVideo(PreviewedHeroID, bShowingCompanionInfo);
 }
 
 void UT66HeroSelectionPreviewController::PositionPreviewCamera() const

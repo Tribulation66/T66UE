@@ -162,6 +162,45 @@ struct T66MINI_API FT66MiniDifficultyDefinition
 	int32 StageClearChadCoupons = 0;
 };
 
+USTRUCT(BlueprintType)
+struct T66MINI_API FT66MiniStageDefinition
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FName StageID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FName DifficultyID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 StageIndex = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FString DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FString Description;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 WaveIndex = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FName BossID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 ClearGoldReward = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 ClearMaterialReward = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 ClearChadCoupons = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FName NextStageID = NAME_None;
+};
+
 UENUM(BlueprintType)
 enum class ET66MiniEnemyBehaviorProfile : uint8
 {
@@ -393,6 +432,63 @@ struct T66MINI_API FT66MiniItemDefinition
 };
 
 USTRUCT(BlueprintType)
+struct T66MINI_API FT66MiniRuntimeTuningEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FName TuningKey = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float Value = 0.f;
+};
+
+USTRUCT(BlueprintType)
+struct T66MINI_API FT66MiniCircusGameDefinition
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FName GameID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FString DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FString Description;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	FString IconPath;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 Bet = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float SuccessChance = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float PushChance = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float PayoutMultiplier = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 FlatPayout = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 MinGoldPayout = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 MaxGoldPayout = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float AngerAdd = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	float ItemRewardChance = 0.f;
+};
+
+USTRUCT(BlueprintType)
 struct T66MINI_API FT66MiniSaveSlotSummary
 {
 	GENERATED_BODY()
@@ -459,6 +555,9 @@ struct T66MINI_API FT66MiniRunSummary
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	int32 MaterialsCollected = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
+	int32 GoldCollected = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mini")
 	int32 OwnedItemCount = 0;

@@ -1,0 +1,13 @@
+---,HeroID,Cost,Damage,Range,FireInterval,ChainBounces,ChainRadius,SplashRadius,DotDamagePerSecond,DotDuration,SlowMultiplier,SlowDuration,BossDamageMultiplier,FlatArmorPierce,ShieldDamageMultiplier,bCanTargetHidden,bPrioritizeBoss,VolleyShots,BonusMaterialsOnKill,CombatLabel
+Hero_1,Hero_1,130,18,0.125,0.60,0,0.10,0,0,0,1,0,1,6,1,false,false,1,0,Stable anti-lane bruiser
+Hero_2,Hero_2,180,34,0.135,1.00,0,0.10,0.055,0,0,1,0,1,11,1,false,false,1,0,Heavy burst splash
+Hero_3,Hero_3,150,22,0.105,0.55,0,0.10,0.045,0,0,1,0,1,0,1,false,false,1,0,Short-range panic clear
+Hero_4,Hero_4,170,40,0.205,1.00,0,0.10,0,0,0,1,0,1,7,1.15,true,false,1,0,Long-range priority fire
+Hero_5,Hero_5,150,12,0.150,0.34,1,0.075,0,0,0,1,0,1,0,1.65,false,false,1,0,Reliable overclock DPS
+Hero_6,Hero_6,110,8,0.145,0.18,0,0.10,0,0,0,1,0,1,0,1,false,false,1,0,Rapid leak cleanup
+Hero_7,Hero_7,145,13,0.150,0.42,2,0.090,0,0,0,1,0,1,0,1,false,false,1,0,Ricochet side-lane coverage
+Hero_8,Hero_8,165,30,0.215,0.74,0,0.10,0,0,0,1,0,1,9,1,true,false,1,0,Elite and leak sniper
+Hero_9,Hero_9,160,10,0.165,0.24,2,0.080,0,0,0,1,0,1,0,1,false,false,1,0,Chaotic bounce spam
+Hero_10,Hero_10,140,9,0.145,0.46,0,0.10,0,8,3.0,1,0,1,0,1,false,false,1,0,Boss chip and toxin
+Hero_11,Hero_11,150,12,0.155,0.58,0,0.10,0,0,0,0.62,1.8,1,0,1,false,false,1,0,Slow-and-control utility
+Hero_12,Hero_12,155,16,0.160,0.70,0,0.10,0,0,0,1,0,1,0,1.20,false,false,1,2,Siege farmer

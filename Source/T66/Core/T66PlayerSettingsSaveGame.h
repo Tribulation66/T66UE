@@ -81,7 +81,7 @@ class T66_API UT66PlayerSettingsSaveGame : public USaveGame
 public:
 	// Bump when adding/changing fields in a breaking way.
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 19;
+	int32 SchemaVersion = 20;
 
 	// ===== Settings UI =====
 	// Saved as an int so SettingsScreen doesn't need to include UI enums here.
@@ -124,6 +124,10 @@ public:
 	/** Controls whether the Chad Coupons run-finish popup is shown before the run summary buttons. */
 	UPROPERTY(SaveGame)
 	bool bShowRunSummaryChadCouponsPopup = true;
+
+	/** Locked chase camera A/D turn sensitivity, stored as 0..100 for the settings slider. */
+	UPROPERTY(SaveGame)
+	float LockedChaseTurnSensitivityPercent = 65.0f;
 
 	/** Selected source for the Time to Beat target. */
 	UPROPERTY(SaveGame)

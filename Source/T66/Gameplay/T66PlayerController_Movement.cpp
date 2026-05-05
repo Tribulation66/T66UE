@@ -6,6 +6,7 @@
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/Movement/T66HeroMovementComponent.h"
 #include "Core/T66PixelVFXSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "NiagaraSystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -14,6 +15,12 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerMovement, Log, All);
 
 namespace
 {
+	static TAutoConsoleVariable<float> CVarT66LockedChaseTurnRate(
+		TEXT("T66.Camera.LockedChaseTurnRate"),
+		125.0f,
+		TEXT("Fallback degrees per second applied by A/D in the locked chase gameplay camera preset when player settings are unavailable."),
+		ECVF_Default);
+
 	static UT66HeroMovementComponent* T66ResolveHeroMovementComponent(const APawn* Pawn)
 	{
 		const AT66HeroBase* Hero = Cast<AT66HeroBase>(Pawn);
@@ -34,6 +41,10 @@ void AT66PlayerController::UpdateHeroMovementIntent()
 	if (bWorldDialogueOpen)
 	{
 		AppliedForward = 0.f;
+		AppliedRight = 0.f;
+	}
+	else if (IsLockedChaseGameplayCameraMode())
+	{
 		AppliedRight = 0.f;
 	}
 
@@ -134,6 +145,20 @@ void AT66PlayerController::HandleMoveForward(const float Value)
 
 	if (APawn* MyPawn = GetPawn())
 	{
+		if (IsLockedChaseGameplayCameraMode())
+		{
+			if (AT66HeroBase* Hero = Cast<AT66HeroBase>(MyPawn))
+			{
+				FVector ForwardDir = Hero->GetActorForwardVector();
+				ForwardDir.Z = 0.f;
+				if (!ForwardDir.IsNearlyZero())
+				{
+					MyPawn->AddMovementInput(ForwardDir.GetSafeNormal(), Value);
+					return;
+				}
+			}
+		}
+
 		FRotator ControlRot = GetControlRotation();
 		ControlRot.Pitch = 0.f;
 		ControlRot.Roll = 0.f;
@@ -181,6 +206,28 @@ void AT66PlayerController::HandleMoveRight(const float Value)
 		{
 			RunState->NotifyTutorialMoveInput();
 		}
+	}
+
+	if (IsLockedChaseGameplayCameraMode())
+	{
+		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
+		{
+			float TurnRate = FMath::Max(0.0f, CVarT66LockedChaseTurnRate.GetValueOnGameThread());
+			if (UGameInstance* GI = GetGameInstance())
+			{
+				if (UT66PlayerSettingsSubsystem* PlayerSettings = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+				{
+					TurnRate = PlayerSettings->GetLockedChaseTurnRateDegreesPerSecond();
+				}
+			}
+			const float DeltaSeconds = GetWorld() ? GetWorld()->GetDeltaSeconds() : (1.0f / 60.0f);
+			FRotator NewRotation = Hero->GetActorRotation();
+			NewRotation.Pitch = 0.f;
+			NewRotation.Roll = 0.f;
+			NewRotation.Yaw += Value * TurnRate * DeltaSeconds;
+			Hero->SetActorRotation(NewRotation);
+		}
+		return;
 	}
 
 	if (APawn* MyPawn = GetPawn())

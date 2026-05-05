@@ -1,0 +1,6 @@
+---,ThemeLabel,BossVisualID,BossModifierMask,HiddenMinWave,ShieldMinWave,bEnableRegen,bShieldGoat,ArmorChanceBonus,HiddenChanceBonus,RegenChanceBonus,ShieldChanceBonus
+Dungeon,Dungeon,Roost,2,0,0,false,false,0,0,0,0
+Forest,Forest,Goat,5,6,0,true,false,0,0,0,0
+Ocean,Ocean,Cow,10,0,5,false,false,0.12,0,0,0
+Martian,Martian,Pig,9,5,4,true,true,0,0.06,0,0.11
+Hell,Hell,Pig,14,4,5,true,false,0.16,0.10,0.08,0.08

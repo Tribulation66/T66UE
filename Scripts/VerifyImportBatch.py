@@ -36,8 +36,6 @@ PROP_ROW_NAMES = (
     "Barn",
     "Tree",
     "Tree2",
-    "Hay",
-    "Hay2",
     "Rock",
     "Grass",
     "Bush",
@@ -91,14 +89,14 @@ STATIC_MESH_CHECKS = [
 
 SKELETAL_MESH_CHECKS = [
     (
-        "Hero 1 Type A",
-        "/Game/Characters/Heroes/Hero_1/TypeA/Idle/ArthurAIdle.ArthurAIdle",
-        "/Game/Characters/Heroes/Hero_1/TypeA/Walk/ArthurAWalk_Anim.ArthurAWalk_Anim",
+        "Hero 1 Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Idle/ArthurAIdle.ArthurAIdle",
+        "/Game/Characters/Heroes/Hero_1/Chad/Walk/ArthurAWalk_Anim.ArthurAWalk_Anim",
     ),
     (
-        "Hero 1 Type B",
-        "/Game/Characters/Heroes/Hero_1/TypeB/Idle/ArthurBIdle.ArthurBIdle",
-        "/Game/Characters/Heroes/Hero_1/TypeB/Walk/ArthurBWalk_Anim.ArthurBWalk_Anim",
+        "Hero 1 Stacy",
+        "/Game/Characters/Heroes/Hero_1/Stacy/Idle/ArthurBIdle.ArthurBIdle",
+        "/Game/Characters/Heroes/Hero_1/Stacy/Walk/ArthurBWalk_Anim.ArthurBWalk_Anim",
     ),
     (
         "Companion 01 Default",
@@ -303,8 +301,8 @@ def _check_data_tables(v):
     if dt_visuals:
         rows = _get_row_names(dt_visuals)
         for expected in (
-            "Hero_1_TypeA",
-            "Hero_1_TypeB",
+            "Hero_1_Chad",
+            "Hero_1_Stacy",
             "Companion_01",
             "Companion_09",
             "Companion_17",

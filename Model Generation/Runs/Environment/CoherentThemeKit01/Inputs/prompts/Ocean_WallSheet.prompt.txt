@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: TRELLIS source sheet for four modular wall meshes
+Primary request: Create one coherent 2x2 atlas containing four modular Ocean / Hard difficulty wall segment references, where the walls are coral reef inspired.
+Scene/backdrop: perfectly flat solid #00ff00 background across the whole image, no shadows, no floor plane, no gradient.
+Subject: four isolated rectangular ocean wall segments, each centered in its own equal cell with green padding.
+Style/medium: chunky low-poly game asset reference, coral reef wall forms, shell limestone slabs, tide-worn rock, broad kelp shapes, simple reef ruins.
+Composition/framing: 2x2 atlas, landscape 3:2 canvas, straight-on orthographic front view in every cell, consistent camera and lighting, no perspective warp, no visible grid lines.
+Panel plan: top-left chunky coral reef wall; top-right shell limestone wall with large embedded shells; bottom-left reef wall with broad attached kelp and coral fans; bottom-right tide-worn reef ruin wall with simple broken stone shapes.
+Materials/textures: coral branches kept thick and blocky, rounded reef stone, shell shapes, sea-worn limestone, muted teal and coral accents.
+Constraints: all coral, kelp, shells, and ruin pieces must be attached to the wall surface; keep each wall rectangular and snappable; make details broad enough for low-poly 3D reconstruction.
+Avoid: fine coral lace, hair-thin kelp strands, dense tiny shells, loose floating props, fish, bubbles, water plane, floor slab, ceiling, room scene, characters, text, watermark, labels, decorative borders.

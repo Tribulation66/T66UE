@@ -70,8 +70,6 @@
 #include "Components/PrimitiveComponent.h"
 #include "GameFramework/InputSettings.h"
 #include "GameFramework/PlayerInput.h"
-#include "Camera/CameraComponent.h"
-
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66ItemPickup.h"
 #include "EnhancedInputComponent.h"

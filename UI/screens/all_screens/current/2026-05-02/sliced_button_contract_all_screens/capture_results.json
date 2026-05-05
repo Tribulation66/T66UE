@@ -1,0 +1,186 @@
+[
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=MainMenu -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\MainMenu.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\MainMenu.png",
+  {
+    "Screen": "MainMenu",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\MainMenu.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=HeroSelection -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\HeroSelection.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\HeroSelection.png",
+  {
+    "Screen": "HeroSelection",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\HeroSelection.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=Settings -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Settings.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Settings.png",
+  {
+    "Screen": "Settings",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Settings.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=Achievements -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Achievements.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Achievements.png",
+  {
+    "Screen": "Achievements",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Achievements.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=Minigames -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Minigames.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Minigames.png",
+  {
+    "Screen": "Minigames",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Minigames.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=PowerUp -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PowerUp.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PowerUp.png",
+  {
+    "Screen": "PowerUp",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PowerUp.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=DailyClimb -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\DailyClimb.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\DailyClimb.png",
+  {
+    "Screen": "DailyClimb",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\DailyClimb.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=Challenges -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Challenges.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Challenges.png",
+  {
+    "Screen": "Challenges",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\Challenges.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=CompanionSelection -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\CompanionSelection.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\CompanionSelection.png",
+  {
+    "Screen": "CompanionSelection",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\CompanionSelection.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=HeroGrid -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\HeroGrid.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\HeroGrid.png",
+  {
+    "Screen": "HeroGrid",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\HeroGrid.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=CompanionGrid -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\CompanionGrid.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\CompanionGrid.png",
+  {
+    "Screen": "CompanionGrid",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\CompanionGrid.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=SaveSlots -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\SaveSlots.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\SaveSlots.png",
+  {
+    "Screen": "SaveSlots",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\SaveSlots.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=LanguageSelect -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\LanguageSelect.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\LanguageSelect.png",
+  {
+    "Screen": "LanguageSelect",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\LanguageSelect.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=PauseMenu -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PauseMenu.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PauseMenu.png",
+  {
+    "Screen": "PauseMenu",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PauseMenu.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=ReportBug -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\ReportBug.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\ReportBug.png",
+  {
+    "Screen": "ReportBug",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\ReportBug.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=PartyInvite -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PartyInvite.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PartyInvite.png",
+  {
+    "Screen": "PartyInvite",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PartyInvite.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=QuitConfirmation -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\QuitConfirmation.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\QuitConfirmation.png",
+  {
+    "Screen": "QuitConfirmation",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\QuitConfirmation.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=AccountStatus -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\AccountStatus.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\AccountStatus.png",
+  {
+    "Screen": "AccountStatus",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\AccountStatus.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=TemporaryBuffSelection -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\TemporaryBuffSelection.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\TemporaryBuffSelection.png",
+  {
+    "Screen": "TemporaryBuffSelection",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\TemporaryBuffSelection.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=TemporaryBuffShop -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\TemporaryBuffShop.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\TemporaryBuffShop.png",
+  {
+    "Screen": "TemporaryBuffShop",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\TemporaryBuffShop.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=SavePreview -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\SavePreview.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\SavePreview.png",
+  {
+    "Screen": "SavePreview",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\SavePreview.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=RunSummary -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\RunSummary.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\RunSummary.png",
+  {
+    "Screen": "RunSummary",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\RunSummary.png"
+  },
+  "Launching on display 1 at WinX=-2560 WinY=0",
+  "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe -windowed -ResX=1920 -ResY=1080 -WinX=-2560 -WinY=0 -T66AutomationResX=1920 -T66AutomationResY=1080 -T66AutomationWindowed -T66FrontendScreen=PlayerSummaryPicker -T66AutoScreenshot=C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PlayerSummaryPicker.png -T66AutoScreenshotDelay=4",
+  "Captured C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PlayerSummaryPicker.png",
+  {
+    "Screen": "PlayerSummaryPicker",
+    "Status": "OK",
+    "Path": "C:\\UE\\T66\\UI\\screens\\all_screens\\current\\2026-05-02\\sliced_button_contract_all_screens\\PlayerSummaryPicker.png"
+  }
+]

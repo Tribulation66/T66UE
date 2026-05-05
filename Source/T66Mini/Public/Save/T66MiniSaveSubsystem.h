@@ -31,15 +31,6 @@ public:
 	bool SaveRunToSlot(int32 SlotIndex, UT66MiniRunSaveGame* RunSave) const;
 	bool DeleteRunFromSlot(int32 SlotIndex) const;
 	UT66MiniRunSaveGame* CreateSeededRunSave(const UT66MiniFrontendStateSubsystem* FrontendState) const;
-	void ConfigureRunSaveForCurrentParty(UT66MiniRunSaveGame* RunSave) const;
-	bool SyncPartyPlayerSnapshotsFromLobby(UT66MiniRunSaveGame* RunSave, const UT66MiniFrontendStateSubsystem* FrontendState) const;
-	bool IsRunCompatibleWithCurrentParty(const UT66MiniRunSaveGame* RunSave, FString* OutFailureReason = nullptr) const;
-	bool ResolvePartyPlayerSnapshotIndex(const UT66MiniRunSaveGame* RunSave, const FString& PlayerId, int32& OutIndex) const;
-	bool ResolveLocalPartyPlayerSnapshotIndex(const UT66MiniRunSaveGame* RunSave, int32& OutIndex) const;
-	bool MirrorPartyPlayerSnapshotToLegacyFields(UT66MiniRunSaveGame* RunSave, const FString& PlayerId) const;
-	bool MirrorLocalPartyPlayerSnapshotToLegacyFields(UT66MiniRunSaveGame* RunSave) const;
-	bool CapturePartyPlayerSnapshotFromLegacyFields(UT66MiniRunSaveGame* RunSave, const FString& PlayerId) const;
-	bool CaptureLocalPartyPlayerSnapshotFromLegacyFields(UT66MiniRunSaveGame* RunSave) const;
 	UT66MiniProfileSaveGame* LoadOrCreateProfileSave(const UT66MiniDataSubsystem* DataSubsystem) const;
 	bool SaveProfile(UT66MiniProfileSaveGame* ProfileSave) const;
 	bool RecordRunSummary(const FT66MiniRunSummary& Summary, const UT66MiniDataSubsystem* DataSubsystem) const;
@@ -56,7 +47,6 @@ private:
 	static FString MakeRunSlotName(int32 SlotIndex);
 	static FString MakeProfileSlotName();
 	static FString BuildUtcNowString();
-	bool ResolveLocalPartyIdentity(FString& OutPlayerId, FString& OutDisplayName) const;
 
 	mutable TStrongObjectPtr<UT66MiniProfileSaveGame> CachedProfileSave;
 	mutable bool bHasResolvedProfileSave = false;

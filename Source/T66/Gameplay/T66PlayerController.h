@@ -281,7 +281,7 @@ protected:
 	void HandleAttackLockPressed();
 	void HandleAttackUnlockPressed();
 
-	/** Toggle mouse lock (free cursor vs camera control). Default: Right Mouse Button. */
+	/** Toggle mouse lock for the orbit camera preset. Default: Right Mouse Button. */
 	void HandleToggleMouseLockPressed();
 
 	UFUNCTION()
@@ -298,10 +298,10 @@ protected:
 
 private:
 	void UpdateHeroMovementIntent();
+	bool IsLockedChaseGameplayCameraMode() const;
 	void ClampGameplayCameraPitch();
+	void UpdateLockedChaseGameplayCamera(float DeltaTime);
 	void UpdateGameplayCameraSideWallSpring(float DeltaTime);
-	void UpdateHeroCameraOccluders();
-	void RestoreHeroCameraOccluders();
 
 	TSubclassOf<UT66ScreenBase> ResolveScreenClass(ET66ScreenType ScreenType) const;
 	TSubclassOf<UT66GameplayHUDWidget> ResolveGameplayHUDClass() const;
@@ -477,8 +477,10 @@ private:
 	ET66HitZoneType LockedCombatHitZoneType = ET66HitZoneType::Body;
 	bool bInventoryInspectOpen = false;
 	bool bInventoryInspectRestoreFreeCursor = false;
-	TArray<TWeakObjectPtr<AActor>> HiddenHeroCameraOccluders;
 	float DesiredGameplayCameraArmLength = 0.0f;
+	float SavedPreLockedChaseCameraArmLength = 0.0f;
+	FVector SavedPreLockedChaseCameraBoomRelativeLocation = FVector::ZeroVector;
+	TWeakObjectPtr<AT66HeroBase> LockedChaseCameraInitializedHero;
 
 	bool bHeroOneScopedUltActive = false;
 	bool bHeroOneScopeViewEnabled = false;

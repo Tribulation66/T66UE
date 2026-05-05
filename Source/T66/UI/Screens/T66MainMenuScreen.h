@@ -147,10 +147,6 @@ private:
 	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
 	TSharedPtr<FSlateBrush> ProfileAvatarFrameBrush;
 	TStrongObjectPtr<UTexture2D> ProfileAvatarFrameTexture;
-	TSharedPtr<FSlateBrush> ProfileProgressShellBrush;
-	TStrongObjectPtr<UTexture2D> ProfileProgressShellTexture;
-	TSharedPtr<FSlateBrush> ProfileProgressFillBrush;
-	TStrongObjectPtr<UTexture2D> ProfileProgressFillTexture;
 	TSharedPtr<FSlateBrush> CenterStackFrameBrush;
 	TStrongObjectPtr<UTexture2D> CenterStackFrameTexture;
 	FButtonStateBrushSet NewGameButtonBrushes;

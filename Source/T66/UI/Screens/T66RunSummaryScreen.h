@@ -11,8 +11,11 @@ class UTextureRenderTarget2D;
 class AT66HeroPreviewStage;
 class AT66CompanionPreviewStage;
 class UT66LeaderboardRunSummarySaveGame;
+class ITableRow;
 class SEditableTextBox;
 class SMultiLineEditableTextBox;
+class STableViewBase;
+template<typename ItemType> class SListView;
 
 /**
  * Run Summary screen shown on death: 3D preview placeholder, event log, Restart / Main Menu.

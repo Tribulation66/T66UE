@@ -28,7 +28,6 @@ void AT66MiniGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AT66MiniGameState, bOnlinePartyMode);
 	DOREPLIFETIME(AT66MiniGameState, HeroID);
 	DOREPLIFETIME(AT66MiniGameState, CompanionID);
 	DOREPLIFETIME(AT66MiniGameState, DifficultyID);

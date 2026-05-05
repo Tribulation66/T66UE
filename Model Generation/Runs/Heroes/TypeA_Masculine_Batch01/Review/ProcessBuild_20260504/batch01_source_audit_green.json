@@ -1,0 +1,1219 @@
+{
+  "input_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images",
+  "expected_bg": "green",
+  "total": 57,
+  "failed": 28,
+  "results": [
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_11_Shroud_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 4.004,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval",
+        "internal green contamination: 4.004% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_11_Shroud_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.047,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_11_Shroud_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.554,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval",
+        "internal green contamination: 0.554% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_11_Shroud_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.095,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_11_Shroud_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.038,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_12_xQc_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.848,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval",
+        "internal green contamination: 0.848% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_12_xQc_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.027,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_12_xQc_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.073,
+      "border_nonuniform_pct_gt25": 0.073,
+      "internal_green_pct": 0.258,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval",
+        "internal green contamination: 0.258% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_12_xQc_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 5.347,
+      "border_nonuniform_pct_gt25": 5.347,
+      "internal_green_pct": 2.303,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "border is not flat enough: 5.347% pixels differ by >25",
+        "internal green contamination: 2.303% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_12_xQc_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 1.244,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "internal green contamination: 1.244% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_13_Moist_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.603,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval",
+        "internal green contamination: 0.603% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_13_Moist_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.002,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_13_Moist_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.081,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_13_Moist_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        231,
+        235,
+        236
+      ],
+      "border_nonuniform_pct_gt10": 29.395,
+      "border_nonuniform_pct_gt25": 29.126,
+      "internal_green_pct": 0.026,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "border median is not expected green: (231, 235, 236)",
+        "border is not flat enough: 29.126% pixels differ by >25"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_13_Moist_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.137,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_14_North_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.301,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval",
+        "internal green contamination: 0.301% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_14_North_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.034,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_14_North_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.0,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_14_North_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        218,
+        223,
+        226
+      ],
+      "border_nonuniform_pct_gt10": 32.935,
+      "border_nonuniform_pct_gt25": 32.715,
+      "internal_green_pct": 2.882,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "border median is not expected green: (218, 223, 226)",
+        "border is not flat enough: 32.715% pixels differ by >25",
+        "internal green contamination: 2.882% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_14_North_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.755,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "internal green contamination: 0.755% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_15_Asmon_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.072,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_15_Asmon_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.0,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_15_Asmon_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 1.485,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval",
+        "internal green contamination: 1.485% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_15_Asmon_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 1.465,
+      "border_nonuniform_pct_gt25": 1.465,
+      "internal_green_pct": 3.137,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "border is not flat enough: 1.465% pixels differ by >25",
+        "internal green contamination: 3.137% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_15_Asmon_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.0,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_1_Arthur_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        12,
+        232,
+        14
+      ],
+      "border_nonuniform_pct_gt10": 0.215,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.119,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_1_Arthur_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        5,
+        241,
+        7
+      ],
+      "border_nonuniform_pct_gt10": 0.176,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.099,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_3_LuBu_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        6,
+        230,
+        12
+      ],
+      "border_nonuniform_pct_gt10": 0.176,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.121,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_3_LuBu_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        6,
+        243,
+        8
+      ],
+      "border_nonuniform_pct_gt10": 0.176,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.536,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "internal green contamination: 0.536% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_3_LuBu_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        6,
+        243,
+        7
+      ],
+      "border_nonuniform_pct_gt10": 0.176,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.169,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_3_LuBu_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1254,
+        1254
+      ],
+      "border_median_rgb": [
+        5,
+        248,
+        6
+      ],
+      "border_nonuniform_pct_gt10": 5.163,
+      "border_nonuniform_pct_gt25": 4.864,
+      "internal_green_pct": 0.14,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "border is not flat enough: 4.864% pixels differ by >25"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_3_LuBu_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        4,
+        248,
+        10
+      ],
+      "border_nonuniform_pct_gt10": 0.195,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.192,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_4_Mike_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        6,
+        235,
+        12
+      ],
+      "border_nonuniform_pct_gt10": 0.176,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.159,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_4_Mike_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        7,
+        235,
+        9
+      ],
+      "border_nonuniform_pct_gt10": 0.176,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.162,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_4_Mike_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        11,
+        230,
+        14
+      ],
+      "border_nonuniform_pct_gt10": 0.195,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.078,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_4_Mike_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1254,
+        1254
+      ],
+      "border_median_rgb": [
+        4,
+        240,
+        4
+      ],
+      "border_nonuniform_pct_gt10": 0.179,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.096,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_4_Mike_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        4,
+        242,
+        3
+      ],
+      "border_nonuniform_pct_gt10": 0.176,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.13,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_5_George_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        7,
+        234,
+        18
+      ],
+      "border_nonuniform_pct_gt10": 0.176,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.121,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_5_George_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        5,
+        246,
+        8
+      ],
+      "border_nonuniform_pct_gt10": 0.176,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 1.152,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "internal green contamination: 1.152% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_5_George_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        7,
+        233,
+        15
+      ],
+      "border_nonuniform_pct_gt10": 0.176,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.166,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_5_George_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1254,
+        1254
+      ],
+      "border_median_rgb": [
+        4,
+        246,
+        15
+      ],
+      "border_nonuniform_pct_gt10": 0.239,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.121,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_5_George_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        9,
+        236,
+        12
+      ],
+      "border_nonuniform_pct_gt10": 0.215,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 1.564,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "internal green contamination: 1.564% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_7_Robo_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.285,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval",
+        "internal green contamination: 0.285% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_7_Robo_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.986,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "internal green contamination: 0.986% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_7_Robo_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        10,
+        232,
+        15
+      ],
+      "border_nonuniform_pct_gt10": 0.195,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.151,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_7_Robo_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1254,
+        1254
+      ],
+      "border_median_rgb": [
+        6,
+        240,
+        6
+      ],
+      "border_nonuniform_pct_gt10": 0.199,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.131,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_7_Robo_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1536
+      ],
+      "border_median_rgb": [
+        18,
+        236,
+        18
+      ],
+      "border_nonuniform_pct_gt10": 0.195,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.076,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_8_Billy_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.667,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval",
+        "internal green contamination: 0.667% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_8_Billy_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.168,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_8_Billy_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.034,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_8_Billy_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.423,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "internal green contamination: 0.423% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_8_Billy_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.015,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_9_Rabbit_TypeA_BeachGoer_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.681,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval",
+        "internal green contamination: 0.681% of pixels"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_9_Rabbit_TypeA_BeachGoer_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.011,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_9_Rabbit_TypeA_Standard_BodyOnly_Green.png",
+      "part": "body",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.073,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "body source is not portrait enough; square body fallbacks need manual approval"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_9_Rabbit_TypeA_Standard_HeadOnly_Green.png",
+      "part": "head",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 16.162,
+      "border_nonuniform_pct_gt25": 16.162,
+      "internal_green_pct": 0.15,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "fail",
+      "failures": [
+        "border is not flat enough: 16.162% pixels differ by >25"
+      ],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_9_Rabbit_TypeA_Standard_WeaponOnly_Green.png",
+      "part": "weapon",
+      "size": [
+        1024,
+        1024
+      ],
+      "border_median_rgb": [
+        0,
+        255,
+        0
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.055,
+      "internal_disconnected_white_pct": 0.0,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    }
+  ]
+}

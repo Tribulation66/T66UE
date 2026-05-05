@@ -1,0 +1,48 @@
+{
+  "screen": "chadpocalypse_deckbuilder",
+  "status": "simple_two_screen_mockups",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "active_mockup_scope": [
+    "main_menu",
+    "gameplay"
+  ],
+  "notes": [
+    "The earlier reward-draft, encounter-map, shop, and component-sheet candidates are superseded for now.",
+    "Use the v2 main-menu and gameplay references as the active mockup direction.",
+    "Do not generate or extract runtime component sheets until these two screen references are approved.",
+    "All card names, rules text, costs, enemy state, values, labels, and localization remain runtime-owned."
+  ],
+  "generated_assets": [
+    {
+      "type": "main_menu_mockup",
+      "project_relative_path": "UI/screens/minigames/chadpocalypse_deckbuilder/reference/chadpocalypse_deckbuilder_main_menu_mockup_1920x1080_imagegen_20260503_v2.png",
+      "source_generator_path": "C:/Users/DoPra/.codex/generated_images/019defaf-1b73-7e11-8007-fba9e8439bdc/ig_0922eb381b4ee0c70169f7c67f90d88198a32026abee43151e.png",
+      "status": "active_reference",
+      "notes": "Simple entry screen reference with title, dungeon descent scene anchor, cards/relic motif, and three large buttons."
+    },
+    {
+      "type": "gameplay_mockup",
+      "project_relative_path": "UI/screens/minigames/chadpocalypse_deckbuilder/reference/chadpocalypse_deckbuilder_gameplay_mockup_1920x1080_imagegen_20260503_v2.png",
+      "source_generator_path": "C:/Users/DoPra/.codex/generated_images/019defaf-1b73-7e11-8007-fba9e8439bdc/ig_0922eb381b4ee0c70169f7c6b20c7c8198ae4e6276b4305718.png",
+      "status": "active_reference",
+      "notes": "Simple first combat reference with one enemy, one player status block, five-card hand, and one end-turn button."
+    },
+    {
+      "type": "superseded_full_screen_reference",
+      "project_relative_path": "UI/screens/minigames/chadpocalypse_deckbuilder/reference/chadpocalypse_deckbuilder_reference_1920x1080_imagegen_20260503.png",
+      "source_generator_path": "C:/Users/DoPra/.codex/generated_images/019defaf-1b73-7e11-8007-fba9e8439bdc/ig_05ce7fea8e8697900169f7bb59c4d4819ab7ee9422bb654e39.png",
+      "status": "superseded",
+      "notes": "Earlier reference was too feature-heavy for the current mockup pass."
+    },
+    {
+      "type": "superseded_component_sheet",
+      "project_relative_path": "UI/screens/minigames/chadpocalypse_deckbuilder/assets/generated/2026-05-03/chadpocalypse_deckbuilder_component_sheet_chromakey_1920x1080.png",
+      "source_generator_path": "C:/Users/DoPra/.codex/generated_images/019defaf-1b73-7e11-8007-fba9e8439bdc/ig_05ce7fea8e8697900169f7bc432ecc819a9d9f3d90020e9998.png",
+      "status": "superseded",
+      "notes": "Component sheets are deferred until the simplified screen direction is approved."
+    }
+  ]
+}

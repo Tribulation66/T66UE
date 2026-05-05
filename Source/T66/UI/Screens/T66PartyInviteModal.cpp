@@ -4,6 +4,7 @@
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
@@ -47,14 +48,16 @@ namespace
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const FString& RelativePath,
 		const FMargin& Margin,
-		const TCHAR* DebugLabel)
+		const TCHAR* DebugLabel,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
 			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
 			Margin,
-			DebugLabel);
+			DebugLabel,
+			Filter);
 	}
 
 	const TCHAR* GetPartyInviteButtonPrefix(ET66ButtonType Type)
@@ -66,7 +69,7 @@ namespace
 		case ET66ButtonType::ToggleActive:
 			return TEXT("select_button");
 		case ET66ButtonType::Danger:
-			return TEXT("basic_button");
+			return TEXT("Buttons/DangerCTA");
 		default:
 			return TEXT("basic_button");
 		}
@@ -116,11 +119,18 @@ namespace
 		const TCHAR* State,
 		const TCHAR* DebugLabel)
 	{
+		if (FCString::Strcmp(Prefix, TEXT("Buttons/DangerCTA")) == 0)
+		{
+			const FString RelativePath = FString::Printf(TEXT("Buttons/DangerCTA/%s.png"), State);
+			return T66ScreenSlateHelpers::GetReferenceSharedBrush(*RelativePath, FMargin(0.f), DebugLabel);
+		}
+
 		return ResolvePartyInviteReferenceBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, State),
-			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
-			DebugLabel);
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), State),
+			FMargin(0.f),
+			DebugLabel,
+			TextureFilter::TF_Nearest);
 	}
 
 	const FButtonStyle& GetPartyInviteButtonStyle(ET66ButtonType Type)
@@ -147,7 +157,7 @@ namespace
 			{
 				StyleEntry.Style.SetPressed(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolvePartyInviteButtonBrush(BrushSet.Disabled, TEXT("basic_button"), TEXT("disabled"), TEXT("PartyInviteButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolvePartyInviteButtonBrush(BrushSet.Disabled, Prefix, TEXT("disabled"), TEXT("PartyInviteButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}
@@ -161,7 +171,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolvePartyInviteReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/PartyInvite/Panels/partyinvite_panels_inner_panel_normal.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("PartyInviteShell"));
 	}
@@ -171,42 +181,31 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolvePartyInviteReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/PartyInvite/Panels/partyinvite_panels_inner_panel_normal.png"),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			TEXT("PartyInviteRowShell"));
 	}
 
 	TSharedRef<SWidget> MakePartyInviteShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		if (const FSlateBrush* ShellBrush = GetPartyInviteShellBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(ShellBrush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(Content, FT66PanelParams(ET66PanelType::Panel).SetPadding(Padding));
+		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
+			TEXT("Panels/Modal/modal_shell_medium.png"),
+			Content,
+			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
+			Padding,
+			TEXT("PartyInviteShellV14"),
+			FT66Style::Panel());
 	}
 
 	TSharedRef<SWidget> MakePartyInviteRow(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		if (const FSlateBrush* RowBrush = GetPartyInviteRowBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(RowBrush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(Content, FT66PanelParams(ET66PanelType::Panel2).SetPadding(Padding));
+		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
+			TEXT("Controls/Input/message_trough_empty.png"),
+			Content,
+			FMargin(0.09f, 0.30f, 0.09f, 0.30f),
+			Padding,
+			TEXT("PartyInviteRowV14"),
+			FT66Style::Panel());
 	}
 
 	TSharedRef<SWidget> MakePartyInviteButton(const FT66ButtonParams& Params)
@@ -235,19 +234,19 @@ namespace
 				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis));
 
-		return SNew(SBox)
-			.WidthOverride(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
-			.HeightOverride(Params.Height > 0.f ? Params.Height : PartyInviteButtonHeight)
-			.Visibility(Params.Visibility)
-			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(Params.OnClicked, Content)
-					.SetButtonStyle(&GetPartyInviteButtonStyle(Params.Type))
-					.SetPadding(ContentPadding)
-					.SetHAlign(HAlign_Center)
-					.SetVAlign(VAlign_Center)
-					.SetEnabled(Params.IsEnabled))
-			];
+		const FButtonStyle& ButtonStyle = GetPartyInviteButtonStyle(Params.Type);
+		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+			Params.OnClicked,
+			Content,
+			&ButtonStyle.Normal,
+			&ButtonStyle.Hovered,
+			&ButtonStyle.Pressed,
+			&ButtonStyle.Disabled,
+			Params.MinWidth,
+			Params.Height > 0.f ? Params.Height : PartyInviteButtonHeight,
+			ContentPadding,
+			Params.IsEnabled,
+			Params.Visibility);
 	}
 
 	void T66RefreshInviteJoinContext(

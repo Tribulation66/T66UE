@@ -1,10 +1,10 @@
 import unreal
 
 MATERIALS = [
-    '/Game/Characters/Heroes/Hero_1/TypeA/Idle/Material_0',
-    '/Game/Characters/Heroes/Hero_1/TypeA/Idle/Material_0_003',
-    '/Game/Characters/Heroes/Hero_1/TypeA/Idle/Material_0_004',
-    '/Game/Characters/Heroes/Hero_1/TypeA/Walk/Material_0',
+    '/Game/Characters/Heroes/Hero_1/Chad/Idle/Material_0',
+    '/Game/Characters/Heroes/Hero_1/Chad/Idle/Material_0_003',
+    '/Game/Characters/Heroes/Hero_1/Chad/Idle/Material_0_004',
+    '/Game/Characters/Heroes/Hero_1/Chad/Walk/Material_0',
 ]
 PARAMS = ['DiffuseColorMap', 'BaseColorTexture']
 

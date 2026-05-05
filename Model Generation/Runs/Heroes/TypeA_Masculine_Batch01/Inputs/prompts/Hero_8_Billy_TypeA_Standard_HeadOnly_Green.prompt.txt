@@ -1,0 +1,6 @@
+Hero_8 Billy, original stylized game hero.
+quick-draw outlaw head, sharp grin, stubble, tilted short-brim hat, alert eyes
+Keep head scale, neck stump, and straight-ahead orientation compatible with the same Type A masculine A-pose body reference.
+Head-only production reference for the same forward-facing A-pose character: show only the head and short neck stump, large in frame, completely straight-on front view, no three-quarter turn, no side tilt, no looking left or right, centered vertical face axis, symmetrical eyes, ears, jaw, and hairline, high-definition facial planes, distinct hair or head shape, no torso, no shoulders, no weapon, opaque pure green background.
+This is an original stylized game character inspired only by the codename; do not make a portrait or likeness of any real person.
+Clean production concept art for single-image-to-3D generation, readable shapes, saturated but controlled colors, no background objects.

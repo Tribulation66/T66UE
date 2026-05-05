@@ -838,7 +838,7 @@ namespace T66GameModePrivate
 			return SessionPlayerState->GetSelectedHeroBodyType();
 		}
 
-		return GI ? GI->SelectedHeroBodyType : ET66BodyType::TypeA;
+		return GI ? GI->SelectedHeroBodyType : ET66BodyType::Chad;
 	}
 
 	FName T66GetSelectedHeroSkinID(const UT66GameInstance* GI, const AController* Controller)

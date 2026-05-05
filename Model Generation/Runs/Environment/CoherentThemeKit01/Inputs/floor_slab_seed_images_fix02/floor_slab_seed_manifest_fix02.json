@@ -1,0 +1,32 @@
+[
+  {
+    "module_id": "DungeonFloor_StoneSlabs_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\DungeonFloor_StoneSlabs_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images_fix02\\DungeonFloor_StoneSlabs_A_FloorFix02.png",
+    "fix": "solid continuous slab underlay with original floor details on the top face"
+  },
+  {
+    "module_id": "DungeonFloor_Drain_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\DungeonFloor_Drain_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images_fix02\\DungeonFloor_Drain_A_FloorFix02.png",
+    "fix": "solid continuous slab underlay with original floor details on the top face"
+  },
+  {
+    "module_id": "OceanFloor_ShellSand_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\OceanFloor_ShellSand_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images_fix02\\OceanFloor_ShellSand_A_FloorFix02.png",
+    "fix": "solid continuous slab underlay with original floor details on the top face"
+  },
+  {
+    "module_id": "MartianFloor_CraterCracks_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\MartianFloor_CraterCracks_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images_fix02\\MartianFloor_CraterCracks_A_FloorFix02.png",
+    "fix": "solid continuous slab underlay with original floor details on the top face"
+  },
+  {
+    "module_id": "HellFloor_RunePlate_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\HellFloor_RunePlate_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images_fix02\\HellFloor_RunePlate_A_FloorFix02.png",
+    "fix": "solid continuous slab underlay with original floor details on the top face"
+  }
+]

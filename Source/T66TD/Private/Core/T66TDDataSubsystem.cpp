@@ -1,177 +1,23 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66TDDataSubsystem.h"
+#include "Core/T66CsvUtil.h"
 
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Misc/FileHelper.h"
-#include "Misc/Paths.h"
 
 namespace
 {
-	FString T66TDTrimCell(const FString& InValue)
-	{
-		FString Result = InValue;
-		Result.TrimStartAndEndInline();
-		return Result;
-	}
-
-	TArray<TArray<FString>> T66TDParseCsv(const FString& RawText)
-	{
-		FString Text = RawText;
-		Text.ReplaceInline(TEXT("\r\n"), TEXT("\n"));
-		Text.ReplaceInline(TEXT("\r"), TEXT("\n"));
-
-		TArray<TArray<FString>> Rows;
-		TArray<FString> CurrentRow;
-		FString CurrentCell;
-		bool bInQuotes = false;
-
-		for (int32 Index = 0; Index < Text.Len(); ++Index)
-		{
-			const TCHAR Character = Text[Index];
-			if (Character == TEXT('"'))
-			{
-				const bool bEscapedQuote = bInQuotes && Index + 1 < Text.Len() && Text[Index + 1] == TEXT('"');
-				if (bEscapedQuote)
-				{
-					CurrentCell.AppendChar(TEXT('"'));
-					++Index;
-				}
-				else
-				{
-					bInQuotes = !bInQuotes;
-				}
-				continue;
-			}
-
-			if (!bInQuotes && Character == TEXT(','))
-			{
-				CurrentRow.Add(T66TDTrimCell(CurrentCell));
-				CurrentCell.Reset();
-				continue;
-			}
-
-			if (!bInQuotes && Character == TEXT('\n'))
-			{
-				CurrentRow.Add(T66TDTrimCell(CurrentCell));
-				CurrentCell.Reset();
-
-				bool bHasValue = false;
-				for (const FString& Cell : CurrentRow)
-				{
-					if (!Cell.IsEmpty())
-					{
-						bHasValue = true;
-						break;
-					}
-				}
-
-				if (bHasValue)
-				{
-					Rows.Add(CurrentRow);
-				}
-
-				CurrentRow.Reset();
-				continue;
-			}
-
-			CurrentCell.AppendChar(Character);
-		}
-
-		if (!CurrentCell.IsEmpty() || CurrentRow.Num() > 0)
-		{
-			CurrentRow.Add(T66TDTrimCell(CurrentCell));
-			Rows.Add(CurrentRow);
-		}
-
-		return Rows;
-	}
-
-	TArray<TMap<FString, FString>> T66TDLoadCsvRows(const FString& AbsolutePath)
-	{
-		FString RawText;
-		if (!FFileHelper::LoadFileToString(RawText, *AbsolutePath))
-		{
-			return {};
-		}
-
-		const TArray<TArray<FString>> ParsedRows = T66TDParseCsv(RawText);
-		if (ParsedRows.Num() < 2)
-		{
-			return {};
-		}
-
-		const TArray<FString>& Headers = ParsedRows[0];
-		TArray<TMap<FString, FString>> OutputRows;
-		for (int32 RowIndex = 1; RowIndex < ParsedRows.Num(); ++RowIndex)
-		{
-			const TArray<FString>& Row = ParsedRows[RowIndex];
-			TMap<FString, FString> RowMap;
-			for (int32 ColumnIndex = 0; ColumnIndex < Headers.Num(); ++ColumnIndex)
-			{
-				RowMap.Add(Headers[ColumnIndex], Row.IsValidIndex(ColumnIndex) ? Row[ColumnIndex] : FString());
-			}
-			OutputRows.Add(MoveTemp(RowMap));
-		}
-
-		return OutputRows;
-	}
-
-	FString T66TDGetValue(const TMap<FString, FString>& Row, const TCHAR* Key)
-	{
-		if (const FString* Found = Row.Find(Key))
-		{
-			return *Found;
-		}
-		return FString();
-	}
-
-	float T66TDToFloat(const FString& Value, const float DefaultValue = 0.f)
-	{
-		float Parsed = DefaultValue;
-		return LexTryParseString(Parsed, *Value) ? Parsed : DefaultValue;
-	}
-
-	int32 T66TDToInt(const FString& Value, const int32 DefaultValue = 0)
-	{
-		int32 Parsed = DefaultValue;
-		return LexTryParseString(Parsed, *Value) ? Parsed : DefaultValue;
-	}
-
-	FLinearColor T66TDToColor(const FString& Value, const FLinearColor& DefaultColor)
-	{
-		FString Sanitized = Value;
-		Sanitized.ReplaceInline(TEXT("("), TEXT(""));
-		Sanitized.ReplaceInline(TEXT(")"), TEXT(""));
-		FLinearColor ParsedColor;
-		return ParsedColor.InitFromString(Sanitized) ? ParsedColor : DefaultColor;
-	}
-
-	TArray<FName> T66TDSplitNameList(const FString& Value)
-	{
-		TArray<FString> Parts;
-		Value.ParseIntoArray(Parts, TEXT("|"), true);
-
-		TArray<FName> Names;
-		Names.Reserve(Parts.Num());
-		for (const FString& Part : Parts)
-		{
-			const FString Trimmed = T66TDTrimCell(Part);
-			if (!Trimmed.IsEmpty())
-			{
-				Names.Add(FName(*Trimmed));
-			}
-		}
-
-		return Names;
-	}
-
-	FString T66TDDataPath(const TCHAR* FileName)
-	{
-		return FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("TD/Data") / FileName);
-	}
+	FORCEINLINE TArray<TMap<FString, FString>> T66TDLoadCsvRows(const FString& AbsolutePath) { return T66CsvUtil::LoadCsvRows(AbsolutePath); }
+	FORCEINLINE FString T66TDGetValue(const TMap<FString, FString>& Row, const TCHAR* Key) { return T66CsvUtil::GetValue(Row, Key); }
+	FORCEINLINE float T66TDToFloat(const FString& Value, const float DefaultValue = 0.f) { return T66CsvUtil::ToFloat(Value, DefaultValue); }
+	FORCEINLINE int32 T66TDToInt(const FString& Value, const int32 DefaultValue = 0) { return T66CsvUtil::ToInt(Value, DefaultValue); }
+	FORCEINLINE bool T66TDToBool(const FString& Value, const bool bDefaultValue = false) { return T66CsvUtil::ToBool(Value, bDefaultValue); }
+	FORCEINLINE FLinearColor T66TDToColor(const FString& Value, const FLinearColor& DefaultColor) { return T66CsvUtil::ToColor(Value, DefaultColor); }
+	FORCEINLINE TArray<FName> T66TDSplitNameList(const FString& Value) { return T66CsvUtil::SplitNameList(Value); }
+	FORCEINLINE FString T66TDDataPath(const TCHAR* FileName) { return T66CsvUtil::ProjectContentPath(TEXT("TD/Data"), FileName); }
 }
 
 void UT66TDDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -183,39 +29,25 @@ void UT66TDDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void UT66TDDataSubsystem::ReloadData()
 {
 	LoadHeroes();
+	LoadHeroCombatDefinitions();
+	LoadEnemyArchetypes();
+	LoadBattleTuning();
+	LoadThemeModifierRules();
 	LoadDifficulties();
 	LoadMaps();
+	LoadStages();
 	LoadLayouts();
 }
 
-const FT66TDHeroDefinition* UT66TDDataSubsystem::FindHero(const FName HeroID) const
-{
-	return Heroes.FindByPredicate([HeroID](const FT66TDHeroDefinition& Definition)
-	{
-		return Definition.HeroID == HeroID;
-	});
-}
-
-const FT66TDDifficultyDefinition* UT66TDDataSubsystem::FindDifficulty(const FName DifficultyID) const
-{
-	return Difficulties.FindByPredicate([DifficultyID](const FT66TDDifficultyDefinition& Definition)
-	{
-		return Definition.DifficultyID == DifficultyID;
-	});
-}
-
-const FT66TDMapDefinition* UT66TDDataSubsystem::FindMap(const FName MapID) const
-{
-	return Maps.FindByPredicate([MapID](const FT66TDMapDefinition& Definition)
-	{
-		return Definition.MapID == MapID;
-	});
-}
-
-const FT66TDMapLayoutDefinition* UT66TDDataSubsystem::FindLayout(const FName MapID) const
-{
-	return Layouts.Find(MapID);
-}
+const FT66TDHeroDefinition* UT66TDDataSubsystem::FindHero(const FName HeroID) const { return Heroes.FindByPredicate([HeroID](const FT66TDHeroDefinition& D) { return D.HeroID == HeroID; }); }
+const FT66TDHeroCombatDefinition* UT66TDDataSubsystem::FindHeroCombatDefinition(const FName HeroID) const { return HeroCombatDefinitions.FindByPredicate([HeroID](const FT66TDHeroCombatDefinition& D) { return D.HeroID == HeroID; }); }
+const FT66TDEnemyArchetypeDefinition* UT66TDDataSubsystem::FindEnemyArchetype(const FName EnemyID) const { return EnemyArchetypes.FindByPredicate([EnemyID](const FT66TDEnemyArchetypeDefinition& D) { return D.EnemyID == EnemyID; }); }
+const FT66TDDifficultyDefinition* UT66TDDataSubsystem::FindDifficulty(const FName DifficultyID) const { return Difficulties.FindByPredicate([DifficultyID](const FT66TDDifficultyDefinition& D) { return D.DifficultyID == DifficultyID; }); }
+const FT66TDMapDefinition* UT66TDDataSubsystem::FindMap(const FName MapID) const { return Maps.FindByPredicate([MapID](const FT66TDMapDefinition& D) { return D.MapID == MapID; }); }
+const FT66TDStageDefinition* UT66TDDataSubsystem::FindStage(const FName StageID) const { return Stages.FindByPredicate([StageID](const FT66TDStageDefinition& D) { return D.StageID == StageID; }); }
+const FT66TDStageDefinition* UT66TDDataSubsystem::FindStageForMap(const FName MapID) const { return Stages.FindByPredicate([MapID](const FT66TDStageDefinition& D) { return D.MapID == MapID; }); }
+const FT66TDStageDefinition* UT66TDDataSubsystem::FindStage(const FName DifficultyID, const int32 StageIndex) const { return Stages.FindByPredicate([DifficultyID, StageIndex](const FT66TDStageDefinition& D) { return D.DifficultyID == DifficultyID && D.StageIndex == StageIndex; }); }
+const FT66TDMapLayoutDefinition* UT66TDDataSubsystem::FindLayout(const FName MapID) const { return Layouts.Find(MapID); }
 
 TArray<const FT66TDMapDefinition*> UT66TDDataSubsystem::GetMapsForDifficulty(const FName DifficultyID) const
 {
@@ -228,6 +60,19 @@ TArray<const FT66TDMapDefinition*> UT66TDDataSubsystem::GetMapsForDifficulty(con
 		}
 	}
 	return MatchingMaps;
+}
+
+TArray<const FT66TDStageDefinition*> UT66TDDataSubsystem::GetStagesForDifficulty(const FName DifficultyID) const
+{
+	TArray<const FT66TDStageDefinition*> MatchingStages;
+	for (const FT66TDStageDefinition& Stage : Stages)
+	{
+		if (Stage.DifficultyID == DifficultyID)
+		{
+			MatchingStages.Add(&Stage);
+		}
+	}
+	return MatchingStages;
 }
 
 void UT66TDDataSubsystem::LoadHeroes()
@@ -249,6 +94,105 @@ void UT66TDDataSubsystem::LoadHeroes()
 		if (Definition.HeroID != NAME_None)
 		{
 			Heroes.Add(MoveTemp(Definition));
+		}
+	}
+}
+
+void UT66TDDataSubsystem::LoadHeroCombatDefinitions()
+{
+	HeroCombatDefinitions.Reset();
+
+	for (const TMap<FString, FString>& Row : T66TDLoadCsvRows(T66TDDataPath(TEXT("T66TD_HeroCombat.csv"))))
+	{
+		FT66TDHeroCombatDefinition Definition;
+		Definition.HeroID = FName(*T66TDGetValue(Row, TEXT("HeroID")));
+		Definition.Cost = T66TDToInt(T66TDGetValue(Row, TEXT("Cost")));
+		Definition.Damage = T66TDToFloat(T66TDGetValue(Row, TEXT("Damage")));
+		Definition.Range = T66TDToFloat(T66TDGetValue(Row, TEXT("Range")));
+		Definition.FireInterval = T66TDToFloat(T66TDGetValue(Row, TEXT("FireInterval")));
+		Definition.ChainBounces = T66TDToInt(T66TDGetValue(Row, TEXT("ChainBounces")));
+		Definition.ChainRadius = T66TDToFloat(T66TDGetValue(Row, TEXT("ChainRadius")));
+		Definition.SplashRadius = T66TDToFloat(T66TDGetValue(Row, TEXT("SplashRadius")));
+		Definition.DotDamagePerSecond = T66TDToFloat(T66TDGetValue(Row, TEXT("DotDamagePerSecond")));
+		Definition.DotDuration = T66TDToFloat(T66TDGetValue(Row, TEXT("DotDuration")));
+		Definition.SlowMultiplier = T66TDToFloat(T66TDGetValue(Row, TEXT("SlowMultiplier")), 1.0f);
+		Definition.SlowDuration = T66TDToFloat(T66TDGetValue(Row, TEXT("SlowDuration")));
+		Definition.BossDamageMultiplier = T66TDToFloat(T66TDGetValue(Row, TEXT("BossDamageMultiplier")), 1.0f);
+		Definition.FlatArmorPierce = T66TDToFloat(T66TDGetValue(Row, TEXT("FlatArmorPierce")));
+		Definition.ShieldDamageMultiplier = T66TDToFloat(T66TDGetValue(Row, TEXT("ShieldDamageMultiplier")), 1.0f);
+		Definition.bCanTargetHidden = T66TDToBool(T66TDGetValue(Row, TEXT("bCanTargetHidden")));
+		Definition.bPrioritizeBoss = T66TDToBool(T66TDGetValue(Row, TEXT("bPrioritizeBoss")));
+		Definition.VolleyShots = T66TDToInt(T66TDGetValue(Row, TEXT("VolleyShots")), 1);
+		Definition.BonusMaterialsOnKill = T66TDToInt(T66TDGetValue(Row, TEXT("BonusMaterialsOnKill")));
+		Definition.CombatLabel = T66TDGetValue(Row, TEXT("CombatLabel"));
+
+		if (Definition.HeroID != NAME_None)
+		{
+			HeroCombatDefinitions.Add(MoveTemp(Definition));
+		}
+	}
+}
+
+void UT66TDDataSubsystem::LoadEnemyArchetypes()
+{
+	EnemyArchetypes.Reset();
+
+	for (const TMap<FString, FString>& Row : T66TDLoadCsvRows(T66TDDataPath(TEXT("T66TD_EnemyArchetypes.csv"))))
+	{
+		FT66TDEnemyArchetypeDefinition Definition;
+		Definition.EnemyID = FName(*T66TDGetValue(Row, TEXT("EnemyID")));
+		Definition.DisplayName = T66TDGetValue(Row, TEXT("DisplayName"));
+		Definition.VisualID = T66TDGetValue(Row, TEXT("VisualID"));
+		Definition.BaseHealth = T66TDToFloat(T66TDGetValue(Row, TEXT("BaseHealth")));
+		Definition.BaseSpeed = T66TDToFloat(T66TDGetValue(Row, TEXT("BaseSpeed")));
+		Definition.LeakDamage = T66TDToInt(T66TDGetValue(Row, TEXT("LeakDamage")));
+		Definition.Bounty = T66TDToInt(T66TDGetValue(Row, TEXT("Bounty")));
+		Definition.Radius = T66TDToFloat(T66TDGetValue(Row, TEXT("Radius")));
+		Definition.Tint = T66TDToColor(T66TDGetValue(Row, TEXT("Tint")), FLinearColor::White);
+
+		if (Definition.EnemyID != NAME_None)
+		{
+			EnemyArchetypes.Add(MoveTemp(Definition));
+		}
+	}
+}
+
+void UT66TDDataSubsystem::LoadBattleTuning()
+{
+	BattleTuningValues.Reset();
+
+	for (const TMap<FString, FString>& Row : T66TDLoadCsvRows(T66TDDataPath(TEXT("T66TD_BattleTuning.csv"))))
+	{
+		const FName TuningKey(*T66TDGetValue(Row, TEXT("TuningKey")));
+		if (TuningKey != NAME_None)
+		{
+			BattleTuningValues.Add(TuningKey, T66TDToFloat(T66TDGetValue(Row, TEXT("Value"))));
+		}
+	}
+}
+
+void UT66TDDataSubsystem::LoadThemeModifierRules()
+{
+	ThemeModifierRules.Reset();
+
+	for (const TMap<FString, FString>& Row : T66TDLoadCsvRows(T66TDDataPath(TEXT("T66TD_ThemeModifierRules.csv"))))
+	{
+		FT66TDThemeModifierRule Rule;
+		Rule.ThemeLabel = T66TDGetValue(Row, TEXT("ThemeLabel"));
+		Rule.BossVisualID = T66TDGetValue(Row, TEXT("BossVisualID"));
+		Rule.BossModifierMask = T66TDToInt(T66TDGetValue(Row, TEXT("BossModifierMask")));
+		Rule.HiddenMinWave = T66TDToInt(T66TDGetValue(Row, TEXT("HiddenMinWave")));
+		Rule.ShieldMinWave = T66TDToInt(T66TDGetValue(Row, TEXT("ShieldMinWave")));
+		Rule.bEnableRegen = T66TDToBool(T66TDGetValue(Row, TEXT("bEnableRegen")));
+		Rule.bShieldGoat = T66TDToBool(T66TDGetValue(Row, TEXT("bShieldGoat")));
+		Rule.ArmorChanceBonus = T66TDToFloat(T66TDGetValue(Row, TEXT("ArmorChanceBonus")));
+		Rule.HiddenChanceBonus = T66TDToFloat(T66TDGetValue(Row, TEXT("HiddenChanceBonus")));
+		Rule.RegenChanceBonus = T66TDToFloat(T66TDGetValue(Row, TEXT("RegenChanceBonus")));
+		Rule.ShieldChanceBonus = T66TDToFloat(T66TDGetValue(Row, TEXT("ShieldChanceBonus")));
+
+		if (!Rule.ThemeLabel.IsEmpty())
+		{
+			ThemeModifierRules.Add(MoveTemp(Rule));
 		}
 	}
 }
@@ -300,6 +244,34 @@ void UT66TDDataSubsystem::LoadMaps()
 		if (Definition.MapID != NAME_None && Definition.DifficultyID != NAME_None)
 		{
 			Maps.Add(MoveTemp(Definition));
+		}
+	}
+}
+
+void UT66TDDataSubsystem::LoadStages()
+{
+	Stages.Reset();
+
+	for (const TMap<FString, FString>& Row : T66TDLoadCsvRows(T66TDDataPath(TEXT("T66TD_Stages.csv"))))
+	{
+		FT66TDStageDefinition Definition;
+		Definition.StageID = FName(*T66TDGetValue(Row, TEXT("StageID")));
+		Definition.DifficultyID = FName(*T66TDGetValue(Row, TEXT("DifficultyID")));
+		Definition.StageIndex = T66TDToInt(T66TDGetValue(Row, TEXT("StageIndex")), 1);
+		Definition.MapID = FName(*T66TDGetValue(Row, TEXT("MapID")));
+		Definition.DisplayName = T66TDGetValue(Row, TEXT("DisplayName"));
+		Definition.Description = T66TDGetValue(Row, TEXT("Description"));
+		Definition.BossWave = FMath::Max(1, T66TDToInt(T66TDGetValue(Row, TEXT("BossWave")), 15));
+		Definition.StartingGold = FMath::Max(0, T66TDToInt(T66TDGetValue(Row, TEXT("StartingGold")), 0));
+		Definition.StartingMaterials = FMath::Max(0, T66TDToInt(T66TDGetValue(Row, TEXT("StartingMaterials")), 0));
+		Definition.ClearGoldReward = FMath::Max(0, T66TDToInt(T66TDGetValue(Row, TEXT("ClearGoldReward")), 0));
+		Definition.ClearMaterialReward = FMath::Max(0, T66TDToInt(T66TDGetValue(Row, TEXT("ClearMaterialReward")), 0));
+		Definition.ClearChadCoupons = FMath::Max(0, T66TDToInt(T66TDGetValue(Row, TEXT("ClearChadCoupons")), 0));
+		Definition.NextStageID = FName(*T66TDGetValue(Row, TEXT("NextStageID")));
+
+		if (Definition.StageID != NAME_None && Definition.DifficultyID != NAME_None && Definition.MapID != NAME_None && Definition.StageIndex > 0)
+		{
+			Stages.Add(MoveTemp(Definition));
 		}
 	}
 }

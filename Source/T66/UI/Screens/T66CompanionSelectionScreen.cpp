@@ -1,6 +1,13 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
+class SBorder;
+class SBox;
+class STextBlock;
+
 #include "UI/Screens/T66CompanionSelectionScreen.h"
+#include "Engine/GameInstance.h"
+#include "Engine/TextureDefines.h"
+#include "Engine/Texture2D.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Screens/T66SelectionScreenUtils.h"
 #include "UI/T66UIManager.h"
@@ -92,14 +99,40 @@ namespace
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const FString& RelativePath,
 		const FMargin& Margin,
-		const TCHAR* DebugLabel)
+		const TCHAR* DebugLabel,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
 			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
 			Margin,
-			DebugLabel);
+			DebugLabel,
+			Filter);
+	}
+
+	const FSlateBrush* ResolveCompanionReferenceRegionBrush(
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
+		const FString& RelativePath,
+		const FVector2D& ImageSize,
+		const FMargin& Margin,
+		const FBox2f& UVRegion,
+		const FLinearColor& Tint,
+		const TCHAR* DebugLabel,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
+	{
+		const FSlateBrush* Brush = ResolveCompanionReferenceBrush(Entry, RelativePath, Margin, DebugLabel, Filter);
+		if (Brush && Entry.Brush.IsValid())
+		{
+			Entry.Brush->DrawAs = ESlateBrushDrawType::Box;
+			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
+			Entry.Brush->TintColor = FSlateColor(Tint);
+			Entry.Brush->ImageSize = ImageSize;
+			Entry.Brush->Margin = Margin;
+			Entry.Brush->SetUVRegion(UVRegion);
+			return Entry.Brush.Get();
+		}
+		return nullptr;
 	}
 
 	FCompanionReferenceButtonBrushSet& GetCompanionReferenceButtonBrushSet(const ET66CompanionReferenceButtonFamily Family)
@@ -149,15 +182,18 @@ namespace
 			StateSuffix = TEXT("selected");
 		}
 
-		const TCHAR* Prefix = Family == ET66CompanionReferenceButtonFamily::ToggleOn || Family == ET66CompanionReferenceButtonFamily::ToggleOff
-			? TEXT("select_button")
-			: TEXT("basic_button");
-		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, StateSuffix);
+		const TCHAR* FamilyStem = Family == ET66CompanionReferenceButtonFamily::CtaPrimary
+			? TEXT("cta")
+			: TEXT("pill");
+		return FString::Printf(
+			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Buttons/companionselection_buttons_%s_%s.png"),
+			FamilyStem,
+			StateSuffix);
 	}
 
 	FMargin GetCompanionReferenceButtonMargin(const ET66CompanionReferenceButtonFamily /*Family*/)
 	{
-		return FMargin(0.093f, 0.213f, 0.093f, 0.213f);
+		return FMargin(0.f);
 	}
 
 	const FSlateBrush* ResolveCompanionReferenceButtonBrush(
@@ -183,7 +219,8 @@ namespace
 			*Entry,
 			GetCompanionReferenceButtonPath(Family, State),
 			GetCompanionReferenceButtonMargin(Family),
-			TEXT("CompanionReferenceButton"));
+			TEXT("CompanionReferenceButton"),
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetCompanionLeftPanelShellBrush()
@@ -191,9 +228,10 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
-			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
-			TEXT("CompanionLeftShell"));
+			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Panels/companionselection_panels_inner_panel_normal.png"),
+			FMargin(0.035f, 0.105f, 0.035f, 0.105f),
+			TEXT("CompanionLeftShellReference12"),
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetCompanionRightPanelShellBrush()
@@ -201,9 +239,21 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
-			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
-			TEXT("CompanionRightShell"));
+			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Panels/companionselection_panels_inner_panel_normal.png"),
+			FMargin(0.035f, 0.105f, 0.035f, 0.105f),
+			TEXT("CompanionRightShellReference12"),
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetCompanionPaperFrameBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveCompanionReferenceBrush(
+			Entry,
+			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Panels/companionselection_panels_reference_scroll_paper_frame.png"),
+			FMargin(0.095f, 0.13f, 0.095f, 0.13f),
+			TEXT("CompanionPaperFrameReference12"),
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetCompanionRowShellBrush()
@@ -211,9 +261,10 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
-			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
-			TEXT("CompanionRowShell"));
+			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Panels/companionselection_panels_fullscreen_row_shell_quiet.png"),
+			FMargin(0.070f, 0.155f, 0.070f, 0.155f),
+			TEXT("CompanionRowShellV16"),
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetCompanionFieldShellBrush()
@@ -221,7 +272,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Controls/dropdown_field_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Controls/companionselection_controls_reference_dropdown_field_normal.png"),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
 			TEXT("CompanionFieldShell"));
 	}
@@ -231,7 +282,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Slots/companionselection_slots_reference_square_slot_frame_normal.png"),
 			FMargin(0.20f, 0.20f, 0.20f, 0.20f),
 			TEXT("CompanionAvatarFrame"));
 	}
@@ -241,9 +292,64 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/ScreenArt/companionselection_screen_art_center_scene_v1.png"),
 			FMargin(0.f),
 			TEXT("CompanionSceneBackground"));
+	}
+
+	const FScrollBarStyle* GetCompanionReferenceScrollBarStyle()
+	{
+		static FScrollBarStyle Style = FCoreStyle::Get().GetWidgetStyle<FScrollBarStyle>("ScrollBar");
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush TrackEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush ThumbEntry;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush HoverEntry;
+
+		const FString ControlsPath = TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Controls/companionselection_controls_controls_sheet.png");
+		const FBox2f VerticalBarUV(
+			FVector2f(4.f / 1350.f, 4.f / 926.f),
+			FVector2f(90.f / 1350.f, 644.f / 926.f));
+
+		const FSlateBrush* TrackBrush = ResolveCompanionReferenceRegionBrush(
+			TrackEntry,
+			ControlsPath,
+			FVector2D(14.f, 120.f),
+			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
+			VerticalBarUV,
+			FLinearColor(0.35f, 0.34f, 0.30f, 0.70f),
+			TEXT("CompanionScrollbarTrackV16"),
+			TextureFilter::TF_Nearest);
+		const FSlateBrush* ThumbBrush = ResolveCompanionReferenceRegionBrush(
+			ThumbEntry,
+			ControlsPath,
+			FVector2D(16.f, 96.f),
+			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
+			VerticalBarUV,
+			FLinearColor(0.93f, 0.82f, 0.52f, 1.0f),
+			TEXT("CompanionScrollbarThumbV16"),
+			TextureFilter::TF_Nearest);
+		const FSlateBrush* HoverBrush = ResolveCompanionReferenceRegionBrush(
+			HoverEntry,
+			ControlsPath,
+			FVector2D(16.f, 96.f),
+			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
+			VerticalBarUV,
+			FLinearColor(1.0f, 0.90f, 0.62f, 1.0f),
+			TEXT("CompanionScrollbarHoverV16"),
+			TextureFilter::TF_Nearest);
+
+		if (TrackBrush && ThumbBrush && HoverBrush)
+		{
+			Style
+				.SetVerticalBackgroundImage(*TrackBrush)
+				.SetVerticalTopSlotImage(*TrackBrush)
+				.SetVerticalBottomSlotImage(*TrackBrush)
+				.SetNormalThumbImage(*ThumbBrush)
+				.SetHoveredThumbImage(*HoverBrush)
+				.SetDraggedThumbImage(*HoverBrush)
+				.SetThickness(14.f);
+		}
+
+		return &Style;
 	}
 
 	TSharedRef<SWidget> MakeCompanionReferencePanel(
@@ -253,6 +359,30 @@ namespace
 		const FSlateColor& FallbackFill)
 	{
 		if (Brush)
+		{
+			return SNew(SBorder)
+				.BorderImage(Brush)
+				.BorderBackgroundColor(FLinearColor::White)
+				.Padding(Padding)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				[
+					Content
+				];
+		}
+
+		return FT66Style::MakePanel(
+			Content,
+			FT66PanelParams(ET66PanelType::Panel)
+				.SetColor(FallbackFill)
+				.SetPadding(Padding));
+	}
+
+	TSharedRef<SWidget> MakeCompanionReferencePaperPanel(
+		const TSharedRef<SWidget>& Content,
+		const FMargin& Padding,
+		const FSlateColor& FallbackFill)
+	{
+		if (const FSlateBrush* Brush = GetCompanionPaperFrameBrush())
 		{
 			return SNew(SBorder)
 				.BorderImage(Brush)
@@ -389,8 +519,10 @@ namespace
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							SNew(SImage)
-							.Image(this, &ST66CompanionReferenceButton::GetCurrentBrush)
+							T66ScreenSlateHelpers::MakeReferenceHorizontalSlicedImage(
+								TAttribute<const FSlateBrush*>::Create(TAttribute<const FSlateBrush*>::FGetter::CreateSP(this, &ST66CompanionReferenceButton::GetCurrentBrush)),
+								FVector2D(1.0f, 1.0f),
+								0.105f)
 						]
 						+ SOverlay::Slot()
 						.HAlign(HAlign_Fill)
@@ -408,7 +540,7 @@ namespace
 					.SetButtonStyle(&OwnedButtonStyle)
 					.SetPadding(FMargin(0.f))
 					.SetEnabled(InArgs._IsEnabled)
-					.SetMinWidth(InArgs._MinWidth)
+					.SetMinWidth(T66ScreenSlateHelpers::NormalizeReferenceSlicedButtonMinWidth(InArgs._MinWidth, InArgs._Height))
 					.SetHeight(InArgs._Height)
 					.SetVisibility(InArgs._Visibility),
 					&Button)
@@ -591,13 +723,38 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 		bool bIsEquipped = Skin.bIsEquipped;
 		FName CID = PreviewedCompanionID.IsNone() && AllCompanionIDs.Num() > 0 ? AllCompanionIDs[0] : PreviewedCompanionID;
 
+		const FLinearColor SkinSwatchFill = bIsDefault
+			? FLinearColor(0.11f, 0.065f, 0.035f, 1.0f)
+			: FLinearColor(0.025f, 0.21f, 0.28f, 1.0f);
+
 		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(0.0f, 0.0f, 14.0f, 0.0f)
+			[
+				SNew(SBox)
+				.WidthOverride(42.f)
+				.HeightOverride(42.f)
+				[
+					MakeCompanionAvatarSocket(
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(SkinSwatchFill)
+						[
+							SNew(SBox)
+						],
+						SkinSwatchFill,
+						1.0f,
+						bIsEquipped)
+				]
+			]
 			+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
 				.Text(Loc ? Loc->GetText_SkinName(SkinIDCopy) : FText::FromName(SkinIDCopy))
 				.Font(FT66Style::Tokens::FontRegular(16))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FLinearColor(0.075f, 0.055f, 0.025f, 1.0f))
 			];
 
 		if (bIsDefault)
@@ -723,12 +880,16 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 		}
 		Box->AddSlot()
 			.AutoHeight()
-			.Padding(0.0f, 6.0f)
+			.Padding(0.0f, 5.0f)
 			[
-				MakeCompanionReferenceRow(
-					Row,
-					FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3),
-					SkinRowFill)
+				SNew(SBox)
+				.HeightOverride(86.f)
+				[
+					MakeCompanionReferencePaperPanel(
+						Row,
+						FMargin(18.f, 10.f),
+						SkinRowFill)
+				]
 			];
 	}
 }
@@ -794,8 +955,8 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			SpriteColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
 		}
 
-		const float BoxSize = (Offset == 0) ? 60.0f : 45.0f;
-		const float Opacity = (Offset == 0) ? 1.0f : 0.6f;
+		const float BoxSize = (Offset == 0) ? 70.0f : 66.0f;
+		const float Opacity = (Offset == 0) ? 1.0f : 0.72f;
 		const TSharedRef<SWidget> CarouselSlotWidget = MakeCompanionAvatarSocket(
 			SNew(SImage)
 			.Image_Lambda([this, SlotIdx]() -> const FSlateBrush*
@@ -817,7 +978,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 
 		CompanionCarousel->AddSlot()
 			.AutoWidth()
-			.Padding(4.0f, 0.0f)
+			.Padding(6.0f, 0.0f)
 			.VAlign(VAlign_Center)
 			[
 				SNew(SBox)
@@ -855,22 +1016,23 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		PreviewColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
 	}
 
-	const FTextBlockStyle& TxtButton = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
-	const float SidePanelFill = 0.30f;
-	const float CenterPanelFill = 0.40f;
+	const float SidePanelFill = 0.295f;
+	const float CenterPanelFill = 0.410f;
 	const float TopBarBottomGap = 0.f;
-	const float ContentTopGap = 0.f;
-	const float PanelBottomInset = 0.f;
+	const float ContentTopGap = 10.f;
+	const float PanelBottomInset = 84.f;
+	const float CenterPanelBottomInset = 8.f;
 	const float PanelGap = 8.f;
 	const int32 ScreenHeaderFontSize = 21;
 	const int32 CompactButtonFontSize = 18;
 	const int32 PrimaryCtaFontSize = 28;
-	const float CompanionGridButtonWidth = bDotaTheme ? 172.f : 150.f;
-	const float NoCompanionButtonWidth = bDotaTheme ? 172.f : 150.f;
-	const FMargin TopBarButtonPadding = FMargin(6.f, 2.f);
-	const float ArrowButtonWidth = bDotaTheme ? 44.f : 40.f;
-	const float ArrowButtonHeight = bDotaTheme ? 36.f : 34.f;
-	const int32 ArrowFontSize = 20;
+	const float CompanionGridButtonWidth = 318.f;
+	const float NoCompanionButtonWidth = 322.f;
+	const float TopBarButtonHeight = 68.f;
+	const FMargin TopBarButtonPadding = FMargin(16.f, 5.f);
+	const float ArrowButtonWidth = 74.f;
+	const float ArrowButtonHeight = 68.f;
+	const int32 ArrowFontSize = 28;
 	const TAttribute<FMargin> ScreenSafePadding = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
 	{
 		const float TopInset = (UIManager && UIManager->IsFrontendTopBarVisible())
@@ -888,7 +1050,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		return SNew(SBox).Visibility(EVisibility::Collapsed);
 	};
 
-	const TSharedRef<SWidget> TopBarContent =
+	const TSharedRef<SHorizontalBox> TopBarContent =
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.0f)
@@ -907,7 +1069,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleCompanionGridClicked),
 						ET66ButtonType::Neutral)
 					.SetMinWidth(CompanionGridButtonWidth)
-					.SetHeight(34.f)
+					.SetHeight(TopBarButtonHeight)
 					.SetPadding(TopBarButtonPadding)
 					.SetFontSize(CompactButtonFontSize),
 					ET66CompanionReferenceButtonFamily::CompactNeutral)
@@ -957,7 +1119,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNoCompanionClicked),
 						ET66ButtonType::Neutral)
 					.SetMinWidth(NoCompanionButtonWidth)
-					.SetHeight(34.f)
+					.SetHeight(TopBarButtonHeight)
 					.SetPadding(TopBarButtonPadding)
 					.SetFontSize(CompactButtonFontSize)
 					.SetColor(PreviewedCompanionID.IsNone() ? SelectionToggleFill : SelectionPanelFill),
@@ -970,10 +1132,15 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			]
 		];
 
-	const TSharedRef<SWidget> TopBarWidget = MakeCompanionReferenceRow(
-		TopBarContent,
-		FMargin(8.f, 6.f),
-		SelectionPanelFill);
+	const TSharedRef<SBox> TopBarWidget =
+		SNew(SBox)
+		.HeightOverride(90.f)
+		[
+			MakeCompanionReferencePaperPanel(
+				TopBarContent,
+				FMargin(30.f, 10.f),
+				FSlateColor(FLinearColor(0.62f, 0.43f, 0.20f, 1.0f)))
+		];
 
 	const TSharedRef<SWidget> LeftPanelWidget = MakeCompanionReferencePanel(
 		SNew(SVerticalBox)
@@ -1008,6 +1175,9 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		.FillHeight(1.0f)
 		[
 			SNew(SScrollBox)
+			.ScrollBarStyle(GetCompanionReferenceScrollBarStyle())
+			.ScrollBarThickness(FVector2D(14.f, 14.f))
+			.ScrollBarPadding(FMargin(8.f, 0.f, 0.f, 0.f))
 			+ SScrollBox::Slot()
 			[
 				SkinsListBoxWidget.ToSharedRef()
@@ -1017,15 +1187,37 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		FMargin(22.f, 24.f, 22.f, 22.f),
 		bDotaTheme ? SelectionPanelFill : FSlateColor(FT66Style::Tokens::Panel));
 
-	TSharedRef<SWidget> PreviewWidget =
-		SNew(SBox)
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
+	const TSharedRef<SWidget> CompanionPassiveRowWidget =
+		SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FLinearColor(0.78f, 0.61f, 0.32f, 0.74f))
+		.Padding(FMargin(12.0f, 10.0f))
 		[
-			CreateCompanionPreviewWidget(PreviewColor)
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionPassivePlaceholder", "Passive: Heals the player during combat"))
+			.Font(FT66Style::Tokens::FontRegular(15))
+			.ColorAndOpacity(FLinearColor(0.075f, 0.055f, 0.025f, 1.0f))
+			.AutoWrapText(false)
 		];
 
-	const TSharedRef<SWidget> CompanionInfoView =
+	const TSharedRef<SVerticalBox> CompanionInfoPaperContent = SNew(SVerticalBox);
+	CompanionInfoPaperContent->AddSlot()
+		.AutoHeight()
+		[
+			SAssignNew(CompanionLoreWidget, STextBlock)
+			.Text(CurrentCompanionLore)
+			.Font(FT66Style::Tokens::FontRegular(15))
+			.ColorAndOpacity(FLinearColor(0.075f, 0.055f, 0.025f, 1.0f))
+			.AutoWrapText(true)
+		];
+	CompanionInfoPaperContent->AddSlot()
+		.AutoHeight()
+		.Padding(0.0f, 18.0f, 0.0f, 0.0f)
+		[
+			CompanionPassiveRowWidget
+		];
+
+	const TSharedRef<SVerticalBox> CompanionInfoView =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
@@ -1076,28 +1268,14 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		.AutoHeight()
 		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 		[
-			SAssignNew(CompanionLoreWidget, STextBlock)
-			.Text(CurrentCompanionLore)
-			.Font(FT66Style::Tokens::FontRegular(15))
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-			.AutoWrapText(true)
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-		[
-			MakeCompanionReferenceRow(
-				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionPassivePlaceholder", "Passive: Heals the player during combat"))
-				.Font(FT66Style::Tokens::FontRegular(15))
-				.ColorAndOpacity(bDotaTheme
-					? FLinearColor(0.75f, 0.75f, 0.78f, 1.0f)
-					: FLinearColor(0.6f, 0.9f, 0.6f, 1.0f))
-				.AutoWrapText(true),
-				FMargin(10.0f, 8.0f),
-				bDotaTheme
-					? FSlateColor(FLinearColor(0.032f, 0.032f, 0.036f, 1.0f))
-					: FSlateColor(FLinearColor(0.1f, 0.15f, 0.1f, 1.0f)))
+			SNew(SBox)
+			.HeightOverride(244.f)
+			[
+				MakeCompanionReferencePaperPanel(
+					CompanionInfoPaperContent,
+					FMargin(28.0f, 20.0f, 8.0f, 20.0f),
+					FSlateColor(FLinearColor(0.62f, 0.43f, 0.20f, 1.0f)))
+			]
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
@@ -1128,12 +1306,14 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							SAssignNew(CompanionUnionProgressBar, SProgressBar)
-							.Percent_Lambda([this]() -> TOptional<float>
-							{
-								return FMath::Clamp(CompanionUnionProgress01, 0.f, 1.f);
-							})
-							.FillColorAndOpacity(FLinearColor(0.20f, 0.65f, 0.35f, 1.0f))
+							T66ScreenSlateHelpers::MakeReferenceProgressBar(
+								TAttribute<TOptional<float>>::Create(TAttribute<TOptional<float>>::FGetter::CreateLambda([this]() -> TOptional<float>
+								{
+									return FMath::Clamp(CompanionUnionProgress01, 0.f, 1.f);
+								})),
+								FVector2D(180.f, 9.f),
+								FLinearColor(0.78f, 0.43f, 0.13f, 1.0f),
+								FMargin(4.f, 2.f))
 						]
 						+ SOverlay::Slot()
 						.HAlign(HAlign_Left)
@@ -1192,7 +1372,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			SNew(SBox)
 		];
 
-	const TSharedRef<SWidget> CompanionLoreView =
+	const TSharedRef<SVerticalBox> CompanionLoreView =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
@@ -1256,6 +1436,9 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		.FillHeight(1.0f)
 		[
 			SNew(SScrollBox)
+			.ScrollBarStyle(GetCompanionReferenceScrollBarStyle())
+			.ScrollBarThickness(FVector2D(14.f, 14.f))
+			.ScrollBarPadding(FMargin(8.f, 0.f, 0.f, 0.f))
 			+ SScrollBox::Slot()
 			[
 				SAssignNew(CompanionLoreDetailWidget, STextBlock)
@@ -1296,8 +1479,8 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 					ConfirmText,
 					FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked),
 					ET66ButtonType::Primary)
-				.SetMinWidth(260.f)
-				.SetHeight(58.f)
+				.SetMinWidth(560.f)
+				.SetHeight(68.f)
 				.SetFontSize(PrimaryCtaFontSize)
 				.SetEnabled(TAttribute<bool>::CreateLambda([this]() -> bool
 				{
@@ -1310,8 +1493,8 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 					ConfirmText,
 					FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked),
 					ET66ButtonType::Primary)
-				.SetMinWidth(220.f)
-				.SetHeight(50.f)
+				.SetMinWidth(560.f)
+				.SetHeight(68.f)
 				.SetFontSize(PrimaryCtaFontSize)
 				.SetEnabled(TAttribute<bool>::CreateLambda([this]() -> bool
 				{
@@ -1319,7 +1502,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 				})),
 				ET66CompanionReferenceButtonFamily::CtaPrimary));
 
-	PreviewWidget =
+	const TSharedRef<SVerticalBox> PreviewWidget =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
@@ -1334,20 +1517,17 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 			.HAlign(HAlign_Fill)
-			.Padding(0.0f, -4.0f, 0.0f, 0.0f)
+			.Padding(0.0f, 8.0f, 0.0f, 0.0f)
 			[
-			MakeCompanionReferenceRow(
 				SNew(SBox)
 				.HAlign(HAlign_Center)
 				[
 					SNew(SBox)
-					.WidthOverride(bDotaTheme ? 280.f : 240.f)
+					.WidthOverride(580.f)
 					[
 						ConfirmButtonWidget
 					]
-				],
-				FMargin(12.f, 10.f),
-				bDotaTheme ? SelectionPanelFill : FSlateColor(FT66Style::Tokens::Panel))
+				]
 		];
 
 	const TSharedRef<SWidget> Root = SNew(SBorder)
@@ -1392,9 +1572,10 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						[
 							LeftPanelWidget
 						]
-						+ SHorizontalBox::Slot()
-						.FillWidth(CenterPanelFill)
-						.Padding(PanelGap, 0.0f, PanelGap, PanelBottomInset)
+					+ SHorizontalBox::Slot()
+					.FillWidth(CenterPanelFill)
+					.VAlign(VAlign_Fill)
+					.Padding(PanelGap, 0.0f, PanelGap, CenterPanelBottomInset)
 						[
 							PreviewWidget
 						]
@@ -1417,7 +1598,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			[
 				SNew(SImage)
 				.Image(SceneBackgroundBrush)
-				.ColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 0.42f))
+				.ColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)
@@ -1425,7 +1606,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.02f, 0.025f, 0.035f, 0.32f))
+				.BorderBackgroundColor(FLinearColor(0.02f, 0.025f, 0.035f, 0.08f))
 			]
 			+ SOverlay::Slot()
 			[

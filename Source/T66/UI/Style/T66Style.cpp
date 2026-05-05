@@ -186,15 +186,15 @@ namespace
 	{
 		if (GMasterBasicButtonNormal.IsValid()) return;
 
-		LoadMasterLibraryTexture(GMasterBasicButtonNormal, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png"), TEXT("MasterBasicButtonNormal"));
-		LoadMasterLibraryTexture(GMasterBasicButtonHover, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png"), TEXT("MasterBasicButtonHover"));
-		LoadMasterLibraryTexture(GMasterBasicButtonPressed, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png"), TEXT("MasterBasicButtonPressed"));
-		LoadMasterLibraryTexture(GMasterBasicButtonDisabled, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"), TEXT("MasterBasicButtonDisabled"));
-		LoadMasterLibraryTexture(GMasterSelectButtonNormal, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_normal.png"), TEXT("MasterSelectButtonNormal"));
-		LoadMasterLibraryTexture(GMasterSelectButtonHover, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_hover.png"), TEXT("MasterSelectButtonHover"));
-		LoadMasterLibraryTexture(GMasterSelectButtonPressed, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_pressed.png"), TEXT("MasterSelectButtonPressed"));
-		LoadMasterLibraryTexture(GMasterSelectButtonSelected, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_selected.png"), TEXT("MasterSelectButtonSelected"));
-		LoadMasterLibraryTexture(GMasterSelectButtonDisabled, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_disabled.png"), TEXT("MasterSelectButtonDisabled"));
+		LoadMasterLibraryTexture(GMasterBasicButtonNormal, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/normal.png"), TEXT("MasterBasicButtonNormal"));
+		LoadMasterLibraryTexture(GMasterBasicButtonHover, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/hover.png"), TEXT("MasterBasicButtonHover"));
+		LoadMasterLibraryTexture(GMasterBasicButtonPressed, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/pressed.png"), TEXT("MasterBasicButtonPressed"));
+		LoadMasterLibraryTexture(GMasterBasicButtonDisabled, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/disabled.png"), TEXT("MasterBasicButtonDisabled"));
+		LoadMasterLibraryTexture(GMasterSelectButtonNormal, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/normal.png"), TEXT("MasterSelectButtonNormal"));
+		LoadMasterLibraryTexture(GMasterSelectButtonHover, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/hover.png"), TEXT("MasterSelectButtonHover"));
+		LoadMasterLibraryTexture(GMasterSelectButtonPressed, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/pressed.png"), TEXT("MasterSelectButtonPressed"));
+		LoadMasterLibraryTexture(GMasterSelectButtonSelected, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/selected.png"), TEXT("MasterSelectButtonSelected"));
+		LoadMasterLibraryTexture(GMasterSelectButtonDisabled, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/disabled.png"), TEXT("MasterSelectButtonDisabled"));
 	}
 
 	// MasterLibrary global panel textures.
@@ -497,8 +497,8 @@ namespace
 	{
 		if (GMasterPanel.IsValid()) return;
 
-		LoadMasterLibraryTexture(GMasterPanel, TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"), TEXT("MasterBasicPanel"));
-		LoadMasterLibraryTexture(GMasterInnerPanel, TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"), TEXT("MasterInnerPanel"));
+		LoadMasterLibraryTexture(GMasterPanel, TEXT("SourceAssets/UI/Reference/Shared/Panels/inner_panel_normal.png"), TEXT("MasterBasicPanel"));
+		LoadMasterLibraryTexture(GMasterInnerPanel, TEXT("SourceAssets/UI/Reference/Shared/Panels/inner_panel_normal.png"), TEXT("MasterInnerPanel"));
 	}
 
 	void ApplyThemePalette()

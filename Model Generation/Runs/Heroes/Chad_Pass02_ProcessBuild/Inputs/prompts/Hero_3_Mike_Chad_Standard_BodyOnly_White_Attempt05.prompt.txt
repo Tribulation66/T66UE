@@ -1,0 +1,25 @@
+Use case: stylized-concept
+Asset type: production source image for TRELLIS image-to-3D
+
+Subject: Hero_3 Mike, original stylized game character, Chad/default skin body only.
+
+Create one centered front-facing neck-down male body only. No head, no face, no hair, no ears, no beard, no chin, no hat, no weapon, no shield, no prop, no duplicate view, no back view, no side view, no character sheet, no poster panel.
+
+Anatomy target: giant giga-chad/nephilim proportions, human-readable but impossible. The upper body is absurdly overbuilt: enormous traps, extremely wide shoulders, oversized deltoids, massive barrel chest, huge pecs, thick arms, thick forearms, huge quads and calves. If the body could plausibly be a real bodybuilder, it fails.
+
+Silhouette: exaggerated inverted-triangle torso. Shoulder width is at least 3.5x the waist width. Chest and ribcage width are at least 2.5x the waist width. Enormous traps and chest, huge lats flaring outward, tiny pinched wasp waist, narrow belt line, narrow hips. Add mass only to traps, chest, shoulders, lats, arms, and legs; do not thicken the waist or abdomen.
+
+Neck target: the body ends at a clean open circular neck socket above the trapezius, like a headless mannequin prepared for inserting a separate head and neck. The socket is visible and clean. No neck stump, no face remnant, no chin, no beard, no hair.
+
+Pose: orthographic production reference, symmetrical A-pose, arms slightly away from torso, legs separated, full body visible from feet to neck socket.
+
+Feet/boots: strict front-view boots. Both toe caps face directly toward the camera like two matching rounded rectangles. Shins are vertical, knees face forward, ankles sit directly below knees. Feet are parallel, same size, same angle, and same height on the canvas. No duck-foot stance, no outward turnout, no side-profile boots, no visible side soles, no diagonal toes.
+
+Clothing style: bright stylized cartoon/cel-shaded game texture, simple readable outfit shapes, bold clean colors, no realistic cloth simulation. No bra-like chest straps, no sports-bra shape, no corset, no bondage harness, no random chest band, no underwear-like cropped top.
+
+Character outfit: open cropped sleeveless vest that stays behind the torso silhouette and does not cross the chest or waist. Bare cel-shaded muscular chest and abdomen visible. Simple gritty street brawler pants and front-view boots, wrist wraps, optional slim belt and bracers. Warm tan skin. No straps across pecs, no hanging cloth over the waist, no belt bulk that widens the waist, no head.
+
+Lighting and background: pure flat opaque white #ffffff across the entire canvas. Bright high-key cel shading. No alpha, no floor, no cast shadow, no contact shadow, no reflection, no gradient, no gray patch, no border card, no poster sheet. No dark moody lighting, no soft realistic studio shadow, no heavy ambient occlusion.
+
+Render style: clean bright stylized cartoon/cel-shaded game asset reference, sharp silhouette, readable materials, no text, no watermark, no logo.
+

@@ -1,0 +1,6 @@
+HeroID,DisplayName,Description,RoleLabel,AccentColor,HireCostGold,TapDamage,PassiveDamagePerSecond,TapDamagePerLevel,PassiveDamagePerLevel,MaxLevel
+Hero_1,Arthur,A battle-worn knight who meets every trial head-on.,Starter Tap,"(R=0.82,G=0.56,B=0.24,A=1.0)",0,3,0.3,1,0.1,50
+Hero_3,Lu Bu,A warlord who breaks enemy lines through sheer force.,Heavy Tap,"(R=0.70,G=0.28,B=0.18,A=1.0)",35,8,0.8,2,0.2,50
+Hero_4,Mike,A streetwise bruiser who thrives when the fight turns messy.,Brawler,"(R=0.62,G=0.40,B=0.20,A=1.0)",95,14,1.4,3,0.3,50
+Hero_7,Robo,A relentless machine built to keep marching through the swarm.,Auto Core,"(R=0.50,G=0.52,B=0.56,A=1.0)",220,10,5.0,2,1.0,50
+Hero_12,xQc,A chaos-fueled duelist who overwhelms the room.,Speed Tap,"(R=0.78,G=0.20,B=0.42,A=1.0)",520,42,4.0,7,0.8,50

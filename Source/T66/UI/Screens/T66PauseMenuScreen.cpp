@@ -46,52 +46,64 @@ namespace
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const FString& RelativePath,
 		const FMargin& Margin,
-		const TCHAR* DebugLabel)
+		const TCHAR* DebugLabel,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
 			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
 			Margin,
-			DebugLabel);
+			DebugLabel,
+			Filter);
 	}
 
-	const TCHAR* GetPauseMenuButtonPlateFile(ET66ButtonType Type)
+	enum class ET66PauseMenuButtonState : uint8
 	{
-		switch (Type)
-		{
-		case ET66ButtonType::Primary:
-		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
-			return TEXT("select_button_selected.png");
-		case ET66ButtonType::Danger:
-			return TEXT("basic_button_pressed.png");
-		default:
-			return TEXT("basic_button_normal.png");
-		}
-	}
+		Normal,
+		Hovered,
+		Pressed,
+		Disabled
+	};
 
-	const FSlateBrush* GetPauseMenuButtonPlateBrush(ET66ButtonType Type)
+	const FSlateBrush* GetPauseMenuButtonPlateBrush(const ET66PauseMenuButtonState State)
 	{
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Neutral;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Success;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Danger;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Hovered;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Pressed;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Disabled;
 
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush* Entry = &Neutral;
-		if (Type == ET66ButtonType::Primary || Type == ET66ButtonType::Success || Type == ET66ButtonType::ToggleActive)
+		const TCHAR* StateName = TEXT("normal");
+		const TCHAR* DebugLabel = TEXT("PauseMenuButtonPlateNormal");
+		switch (State)
 		{
-			Entry = &Success;
-		}
-		else if (Type == ET66ButtonType::Danger)
-		{
-			Entry = &Danger;
+		case ET66PauseMenuButtonState::Hovered:
+			Entry = &Hovered;
+			StateName = TEXT("hover");
+			DebugLabel = TEXT("PauseMenuButtonPlateHover");
+			break;
+		case ET66PauseMenuButtonState::Pressed:
+			Entry = &Pressed;
+			StateName = TEXT("pressed");
+			DebugLabel = TEXT("PauseMenuButtonPlatePressed");
+			break;
+		case ET66PauseMenuButtonState::Disabled:
+			Entry = &Disabled;
+			StateName = TEXT("disabled");
+			DebugLabel = TEXT("PauseMenuButtonPlateDisabled");
+			break;
+		case ET66PauseMenuButtonState::Normal:
+		default:
+			break;
 		}
 
 		return ResolvePauseMenuMasterLibraryBrush(
 			*Entry,
-			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s"), GetPauseMenuButtonPlateFile(Type)),
-			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
-			TEXT("PauseMenuButtonPlate"));
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), StateName),
+			FMargin(0.f),
+			DebugLabel,
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetPauseMenuShellBrush()
@@ -99,28 +111,20 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Shell;
 		return ResolvePauseMenuMasterLibraryBrush(
 			Shell,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/PauseMenu/Panels/pausemenu_panels_inner_panel_normal.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("PauseMenuShell"));
 	}
 
 	TSharedRef<SWidget> MakePauseMenuShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		if (const FSlateBrush* ShellBrush = GetPauseMenuShellBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(ShellBrush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(
+		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
+			TEXT("Panels/Modal/modal_shell_tall.png"),
 			Content,
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(Padding));
+			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
+			Padding,
+			TEXT("PauseMenuShellV14"),
+			FT66Style::Panel());
 	}
 }
 
@@ -152,22 +156,31 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
 	const FText LeaderboardText = NSLOCTEXT("T66.PauseMenu", "Leaderboard", "LEADERBOARD");
 
-	auto MakePauseButton = [this, bDotaTheme, ButtonMinWidth](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)(), ET66ButtonType Type) -> TSharedRef<SWidget>
+	auto MakePauseButton = [this, bDotaTheme, ButtonMinWidth](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)()) -> TSharedRef<SWidget>
 	{
+		const float ButtonHeight = bDotaTheme ? PauseMenuButtonHeight : 66.f;
+		const FOnClicked OnClicked = FOnClicked::CreateUObject(this, ClickFunc);
 		return SNew(SBox)
 			.HAlign(HAlign_Fill)
 			.Padding(FMargin(0.f, bDotaTheme ? 4.f : 6.f))
 			[
-				FT66Style::MakeButton(
-					FT66ButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc), Type)
-					.SetFontSize(bDotaTheme ? 20 : 28)
-					.SetFontWeight(bDotaTheme ? TEXT("Regular") : TEXT("Bold"))
-					.SetPadding(bDotaTheme ? FMargin(20.f, 9.f, 20.f, 8.f) : FMargin(18.f, 12.f))
-					.SetMinWidth(ButtonMinWidth)
-					.SetHeight(bDotaTheme ? PauseMenuButtonHeight : 66.f)
-					.SetUseGlow(false)
-					.SetUseDotaPlateOverlay(true)
-					.SetDotaPlateOverrideBrush(GetPauseMenuButtonPlateBrush(Type)))
+				T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+					OnClicked,
+					SNew(STextBlock)
+					.Text(Text)
+					.Font(FT66Style::MakeFont(bDotaTheme ? TEXT("Regular") : TEXT("Bold"), bDotaTheme ? 20 : 28))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Center)
+					.ShadowOffset(FVector2D(1.f, 1.f))
+					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.70f))
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
+					GetPauseMenuButtonPlateBrush(ET66PauseMenuButtonState::Normal),
+					GetPauseMenuButtonPlateBrush(ET66PauseMenuButtonState::Hovered),
+					GetPauseMenuButtonPlateBrush(ET66PauseMenuButtonState::Pressed),
+					GetPauseMenuButtonPlateBrush(ET66PauseMenuButtonState::Disabled),
+					ButtonMinWidth,
+					ButtonHeight,
+					bDotaTheme ? FMargin(20.f, 9.f, 20.f, 8.f) : FMargin(18.f, 12.f))
 			];
 	};
 
@@ -187,17 +200,17 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			.ColorAndOpacity(FT66Style::Tokens::Text)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
-		[ MakePauseButton(ResumeText, &UT66PauseMenuScreen::HandleResumeClicked, ET66ButtonType::Success) ]
+		[ MakePauseButton(ResumeText, &UT66PauseMenuScreen::HandleResumeClicked) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
-		[ MakePauseButton(SaveAndQuitText, &UT66PauseMenuScreen::HandleSaveAndQuitClicked, ET66ButtonType::Neutral) ]
+		[ MakePauseButton(SaveAndQuitText, &UT66PauseMenuScreen::HandleSaveAndQuitClicked) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
-		[ MakePauseButton(RestartText, &UT66PauseMenuScreen::HandleRestartClicked, ET66ButtonType::Danger) ]
+		[ MakePauseButton(RestartText, &UT66PauseMenuScreen::HandleRestartClicked) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
-		[ MakePauseButton(SettingsText, &UT66PauseMenuScreen::HandleSettingsClicked, ET66ButtonType::Neutral) ]
+		[ MakePauseButton(SettingsText, &UT66PauseMenuScreen::HandleSettingsClicked) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
-		[ MakePauseButton(AchievementsText, &UT66PauseMenuScreen::HandleAchievementsClicked, ET66ButtonType::Neutral) ]
+		[ MakePauseButton(AchievementsText, &UT66PauseMenuScreen::HandleAchievementsClicked) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
-		[ MakePauseButton(LeaderboardText, &UT66PauseMenuScreen::HandleLeaderboardClicked, ET66ButtonType::Neutral) ],
+		[ MakePauseButton(LeaderboardText, &UT66PauseMenuScreen::HandleLeaderboardClicked) ],
 		FMargin(38.f, 34.f, 38.f, 38.f));
 
 	return T66ScreenSlateHelpers::MakeCenteredScrimModal(

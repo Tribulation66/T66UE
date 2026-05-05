@@ -207,6 +207,10 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 	};
 
 	return SNew(SScrollBox)
+		.ScrollBarStyle(GetSettingsReferenceScrollBarStyle())
+		.ScrollBarVisibility(EVisibility::Visible)
+		.ScrollBarThickness(FVector2D(14.f, 14.f))
+		.ScrollBarPadding(FMargin(10.f, 0.f, 2.f, 0.f))
 		+ SScrollBox::Slot()
 		[
 			SNew(SVerticalBox)

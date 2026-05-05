@@ -218,12 +218,8 @@ UT66GameInstance::UT66GameInstance()
 	MiniSelectedIdolIDs.Reset();
 	bMiniLoadFlow = false;
 	bMiniIntermissionFlow = false;
-	MiniIntermissionStateRevision = 0;
-	MiniIntermissionStateJson.Reset();
-	MiniIntermissionRequestRevision = 0;
-	MiniIntermissionRequestJson.Reset();
-	SelectedHeroBodyType = ET66BodyType::TypeA;
-	SelectedCompanionBodyType = ET66BodyType::TypeA;
+	SelectedHeroBodyType = ET66BodyType::Chad;
+	SelectedCompanionBodyType = ET66BodyType::Chad;
 }
 
 void UT66GameInstance::Init()
@@ -529,17 +525,17 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		}
 
 		AddPath(HeroRow->Portrait.ToSoftObjectPath());
-		AddPath(HeroRow->PortraitTypeB.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitStacy.ToSoftObjectPath());
 		AddPath(HeroRow->PortraitLow.ToSoftObjectPath());
 		AddPath(HeroRow->PortraitFull.ToSoftObjectPath());
-		AddPath(HeroRow->PortraitTypeBLow.ToSoftObjectPath());
-		AddPath(HeroRow->PortraitTypeBFull.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitStacyLow.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitStacyFull.ToSoftObjectPath());
 		AddPath(HeroRow->PortraitInvincible.ToSoftObjectPath());
-		AddPath(HeroRow->PortraitTypeBInvincible.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitStacyInvincible.ToSoftObjectPath());
 		if (HeroRow->HeroID == FName(TEXT("Hero_1")))
 		{
-			AddPath(FSoftObjectPath(TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_TypeA_Invincible.T_Hero_1_TypeA_Invincible")));
-			AddPath(FSoftObjectPath(TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_TypeB_Invincible.T_Hero_1_TypeB_Invincible")));
+			AddPath(FSoftObjectPath(TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible.T_Hero_1_Chad_Invincible")));
+			AddPath(FSoftObjectPath(TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible.T_Hero_1_Stacy_Invincible")));
 		}
 	}
 
@@ -678,100 +674,34 @@ void UT66GameInstance::HandleHeroSelectionPreviewVisualsLoaded()
 	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] Deferred hero-selection preview visual warmup completed."));
 }
 
-UDataTable* UT66GameInstance::GetHeroDataTable()
+UDataTable* UT66GameInstance::ResolveCachedDataTable(TObjectPtr<UDataTable>& Cached, const TSoftObjectPtr<UDataTable>& Soft)
 {
-	if (!CachedHeroDataTable && !HeroDataTable.IsNull())
+	if (!Cached && !Soft.IsNull())
 	{
-		CachedHeroDataTable = HeroDataTable.Get();
-		if (!CachedHeroDataTable)
+		Cached = Soft.Get();
+		if (!Cached)
 		{
 			// Kick off async preload if we haven't already, but keep a safe sync fallback.
 			PrimeCoreDataTablesAsync();
-			CachedHeroDataTable = HeroDataTable.LoadSynchronous();
+			Cached = Soft.LoadSynchronous();
 		}
 	}
-	return CachedHeroDataTable;
+	return Cached;
 }
 
-UDataTable* UT66GameInstance::GetCompanionDataTable()
-{
-	if (!CachedCompanionDataTable && !CompanionDataTable.IsNull())
-	{
-		CachedCompanionDataTable = CompanionDataTable.Get();
-		if (!CachedCompanionDataTable)
-		{
-			PrimeCoreDataTablesAsync();
-			CachedCompanionDataTable = CompanionDataTable.LoadSynchronous();
-		}
-	}
-	return CachedCompanionDataTable;
-}
-
-UDataTable* UT66GameInstance::GetIdolsDataTable()
-{
-	if (!CachedIdolsDataTable && !IdolsDataTable.IsNull())
-	{
-		CachedIdolsDataTable = IdolsDataTable.Get();
-		if (!CachedIdolsDataTable)
-		{
-			PrimeCoreDataTablesAsync();
-			CachedIdolsDataTable = IdolsDataTable.LoadSynchronous();
-		}
-	}
-	return CachedIdolsDataTable;
-}
-
-UDataTable* UT66GameInstance::GetWeaponsDataTable()
-{
-	if (!CachedWeaponsDataTable && !WeaponsDataTable.IsNull())
-	{
-		CachedWeaponsDataTable = WeaponsDataTable.Get();
-		if (!CachedWeaponsDataTable)
-		{
-			PrimeCoreDataTablesAsync();
-			CachedWeaponsDataTable = WeaponsDataTable.LoadSynchronous();
-		}
-	}
-	return CachedWeaponsDataTable;
-}
+UDataTable* UT66GameInstance::GetHeroDataTable() { return ResolveCachedDataTable(CachedHeroDataTable, HeroDataTable); }
+UDataTable* UT66GameInstance::GetCompanionDataTable() { return ResolveCachedDataTable(CachedCompanionDataTable, CompanionDataTable); }
+UDataTable* UT66GameInstance::GetIdolsDataTable() { return ResolveCachedDataTable(CachedIdolsDataTable, IdolsDataTable); }
+UDataTable* UT66GameInstance::GetWeaponsDataTable() { return ResolveCachedDataTable(CachedWeaponsDataTable, WeaponsDataTable); }
 
 bool UT66GameInstance::GetHeroData(FName HeroID, FHeroData& OutHeroData)
 {
-	if (HeroID.IsNone())
-	{
-		return false;
-	}
-	UDataTable* DataTable = GetHeroDataTable();
-	if (!DataTable)
-	{
-		return false;
-	}
-
-	// Find the row by name
-	FHeroData* FoundRow = DataTable->FindRow<FHeroData>(HeroID, TEXT("GetHeroData"));
-	if (FoundRow)
-	{
-		OutHeroData = *FoundRow;
-		return true;
-	}
-	return false;
+	return FindDataRow(GetHeroDataTable(), HeroID, OutHeroData, TEXT("GetHeroData"));
 }
 
 bool UT66GameInstance::GetCompanionData(FName CompanionID, FCompanionData& OutCompanionData)
 {
-	UDataTable* DataTable = GetCompanionDataTable();
-	if (!DataTable)
-	{
-		return false;
-	}
-
-	FCompanionData* FoundRow = DataTable->FindRow<FCompanionData>(CompanionID, TEXT("GetCompanionData"));
-	if (FoundRow)
-	{
-		OutCompanionData = *FoundRow;
-		return true;
-	}
-	return false;
+	return FindDataRow(GetCompanionDataTable(), CompanionID, OutCompanionData, TEXT("GetCompanionData"), /*bRequireValidID=*/false);
 }
 
 bool UT66GameInstance::GetArcadeInteractableData(FName ArcadeRowID, FT66ArcadeInteractableData& OutArcadeData)
@@ -800,19 +730,7 @@ bool UT66GameInstance::GetArcadeInteractableData(FName ArcadeRowID, FT66ArcadeIn
 	return false;
 }
 
-UDataTable* UT66GameInstance::GetItemsDataTable()
-{
-	if (!CachedItemsDataTable && !ItemsDataTable.IsNull())
-	{
-		CachedItemsDataTable = ItemsDataTable.Get();
-		if (!CachedItemsDataTable)
-		{
-			PrimeCoreDataTablesAsync();
-			CachedItemsDataTable = ItemsDataTable.LoadSynchronous();
-		}
-	}
-	return CachedItemsDataTable;
-}
+UDataTable* UT66GameInstance::GetItemsDataTable() { return ResolveCachedDataTable(CachedItemsDataTable, ItemsDataTable); }
 
 void UT66GameInstance::EnsureCachedItemIDs()
 {
@@ -929,89 +847,12 @@ FName UT66GameInstance::GetRandomItemIDForLootRarityFromStream(ET66Rarity LootRa
 	return GetRandomItemIDFromStream(Stream);
 }
 
-UDataTable* UT66GameInstance::GetBossesDataTable()
-{
-	if (!CachedBossesDataTable && !BossesDataTable.IsNull())
-	{
-		CachedBossesDataTable = BossesDataTable.Get();
-		if (!CachedBossesDataTable)
-		{
-			PrimeCoreDataTablesAsync();
-			CachedBossesDataTable = BossesDataTable.LoadSynchronous();
-		}
-	}
-	return CachedBossesDataTable;
-}
-
-UDataTable* UT66GameInstance::GetStagesDataTable()
-{
-	if (!CachedStagesDataTable && !StagesDataTable.IsNull())
-	{
-		CachedStagesDataTable = StagesDataTable.Get();
-		if (!CachedStagesDataTable)
-		{
-			PrimeCoreDataTablesAsync();
-			CachedStagesDataTable = StagesDataTable.LoadSynchronous();
-		}
-	}
-	return CachedStagesDataTable;
-}
-
-UDataTable* UT66GameInstance::GetHouseNPCsDataTable()
-{
-	if (!CachedHouseNPCsDataTable && !HouseNPCsDataTable.IsNull())
-	{
-		CachedHouseNPCsDataTable = HouseNPCsDataTable.Get();
-		if (!CachedHouseNPCsDataTable)
-		{
-			PrimeCoreDataTablesAsync();
-			CachedHouseNPCsDataTable = HouseNPCsDataTable.LoadSynchronous();
-		}
-	}
-	return CachedHouseNPCsDataTable;
-}
-
-UDataTable* UT66GameInstance::GetLoanSharkDataTable()
-{
-	if (!CachedLoanSharkDataTable && !LoanSharkDataTable.IsNull())
-	{
-		CachedLoanSharkDataTable = LoanSharkDataTable.Get();
-		if (!CachedLoanSharkDataTable)
-		{
-			PrimeCoreDataTablesAsync();
-			CachedLoanSharkDataTable = LoanSharkDataTable.LoadSynchronous();
-		}
-	}
-	return CachedLoanSharkDataTable;
-}
-
-UDataTable* UT66GameInstance::GetCharacterVisualsDataTable()
-{
-	if (!CachedCharacterVisualsDataTable && !CharacterVisualsDataTable.IsNull())
-	{
-		CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
-		if (!CachedCharacterVisualsDataTable)
-		{
-			PrimeCoreDataTablesAsync();
-			CachedCharacterVisualsDataTable = CharacterVisualsDataTable.LoadSynchronous();
-		}
-	}
-	return CachedCharacterVisualsDataTable;
-}
-
-UDataTable* UT66GameInstance::GetArcadeInteractablesDataTable()
-{
-	if (!CachedArcadeInteractablesDataTable && !ArcadeInteractablesDataTable.IsNull())
-	{
-		CachedArcadeInteractablesDataTable = ArcadeInteractablesDataTable.Get();
-		if (!CachedArcadeInteractablesDataTable)
-		{
-			PrimeCoreDataTablesAsync();
-			CachedArcadeInteractablesDataTable = ArcadeInteractablesDataTable.LoadSynchronous();
-		}
-	}
-	return CachedArcadeInteractablesDataTable;
-}
+UDataTable* UT66GameInstance::GetBossesDataTable() { return ResolveCachedDataTable(CachedBossesDataTable, BossesDataTable); }
+UDataTable* UT66GameInstance::GetStagesDataTable() { return ResolveCachedDataTable(CachedStagesDataTable, StagesDataTable); }
+UDataTable* UT66GameInstance::GetHouseNPCsDataTable() { return ResolveCachedDataTable(CachedHouseNPCsDataTable, HouseNPCsDataTable); }
+UDataTable* UT66GameInstance::GetLoanSharkDataTable() { return ResolveCachedDataTable(CachedLoanSharkDataTable, LoanSharkDataTable); }
+UDataTable* UT66GameInstance::GetCharacterVisualsDataTable() { return ResolveCachedDataTable(CachedCharacterVisualsDataTable, CharacterVisualsDataTable); }
+UDataTable* UT66GameInstance::GetArcadeInteractablesDataTable() { return ResolveCachedDataTable(CachedArcadeInteractablesDataTable, ArcadeInteractablesDataTable); }
 
 bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 {
@@ -1037,133 +878,45 @@ bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 
 bool UT66GameInstance::GetIdolData(FName IdolID, FIdolData& OutIdolData)
 {
-	if (IdolID.IsNone())
-	{
-		return false;
-	}
-
-	UDataTable* DataTable = GetIdolsDataTable();
-	if (!DataTable)
-	{
-		return false;
-	}
-	FIdolData* FoundRow = DataTable->FindRow<FIdolData>(IdolID, TEXT("GetIdolData"));
-	if (FoundRow)
-	{
-		OutIdolData = *FoundRow;
-		return true;
-	}
-	return false;
+	return FindDataRow(GetIdolsDataTable(), IdolID, OutIdolData, TEXT("GetIdolData"));
 }
 
 bool UT66GameInstance::GetWeaponData(FName WeaponID, FWeaponData& OutWeaponData)
 {
-	if (WeaponID.IsNone())
-	{
-		return false;
-	}
-
-	UDataTable* DataTable = GetWeaponsDataTable();
-	if (!DataTable)
-	{
-		return false;
-	}
-	FWeaponData* FoundRow = DataTable->FindRow<FWeaponData>(WeaponID, TEXT("GetWeaponData"));
-	if (FoundRow)
-	{
-		OutWeaponData = *FoundRow;
-		return true;
-	}
-	return false;
+	return FindDataRow(GetWeaponsDataTable(), WeaponID, OutWeaponData, TEXT("GetWeaponData"));
 }
 
 bool UT66GameInstance::GetBossData(FName BossID, FBossData& OutBossData)
 {
-	UDataTable* DataTable = GetBossesDataTable();
-	if (!DataTable)
-	{
-		return false;
-	}
-	FBossData* FoundRow = DataTable->FindRow<FBossData>(BossID, TEXT("GetBossData"));
-	if (FoundRow)
-	{
-		OutBossData = *FoundRow;
-		return true;
-	}
-	return false;
+	return FindDataRow(GetBossesDataTable(), BossID, OutBossData, TEXT("GetBossData"), /*bRequireValidID=*/false);
 }
 
 bool UT66GameInstance::GetStageData(int32 StageNumber, FStageData& OutStageData)
 {
-	UDataTable* DataTable = GetStagesDataTable();
-	if (!DataTable)
-	{
-		return false;
-	}
 	const FName RowName(*FString::Printf(TEXT("Stage_%02d"), StageNumber));
-	FStageData* FoundRow = DataTable->FindRow<FStageData>(RowName, TEXT("GetStageData"));
-	if (FoundRow)
-	{
-		OutStageData = *FoundRow;
-		return true;
-	}
-	return false;
+	return FindDataRow(GetStagesDataTable(), RowName, OutStageData, TEXT("GetStageData"), /*bRequireValidID=*/false);
 }
 
 bool UT66GameInstance::GetHouseNPCData(FName NPCID, FHouseNPCData& OutNPCData)
 {
-	if (NPCID.IsNone()) return false;
-	UDataTable* DataTable = GetHouseNPCsDataTable();
-	if (!DataTable)
-	{
-		return false;
-	}
-	FHouseNPCData* FoundRow = DataTable->FindRow<FHouseNPCData>(NPCID, TEXT("GetHouseNPCData"));
-	if (FoundRow)
-	{
-		OutNPCData = *FoundRow;
-		return true;
-	}
-	return false;
+	return FindDataRow(GetHouseNPCsDataTable(), NPCID, OutNPCData, TEXT("GetHouseNPCData"));
 }
 
 bool UT66GameInstance::GetLoanSharkData(FName LoanSharkID, FLoanSharkData& OutData)
 {
-	if (LoanSharkID.IsNone()) return false;
-	UDataTable* DataTable = GetLoanSharkDataTable();
-	if (!DataTable)
-	{
-		return false;
-	}
-	FLoanSharkData* FoundRow = DataTable->FindRow<FLoanSharkData>(LoanSharkID, TEXT("GetLoanSharkData"));
-	if (FoundRow)
-	{
-		OutData = *FoundRow;
-		return true;
-	}
-	return false;
+	return FindDataRow(GetLoanSharkDataTable(), LoanSharkID, OutData, TEXT("GetLoanSharkData"));
 }
 
 TArray<FName> UT66GameInstance::GetAllHeroIDs()
 {
-	TArray<FName> HeroIDs;
 	UDataTable* DataTable = GetHeroDataTable();
-	if (DataTable)
-	{
-		HeroIDs = DataTable->GetRowNames();
-	}
-	return HeroIDs;
+	return DataTable ? DataTable->GetRowNames() : TArray<FName>();
 }
 
 TArray<FName> UT66GameInstance::GetAllCompanionIDs()
 {
-	TArray<FName> CompanionIDs;
 	UDataTable* DataTable = GetCompanionDataTable();
-	if (DataTable)
-	{
-		CompanionIDs = DataTable->GetRowNames();
-	}
-	return CompanionIDs;
+	return DataTable ? DataTable->GetRowNames() : TArray<FName>();
 }
 
 bool UT66GameInstance::GetSelectedHeroData(FHeroData& OutHeroData)
@@ -1196,22 +949,22 @@ TSoftObjectPtr<UTexture2D> UT66GameInstance::ResolveHeroPortrait(FName HeroID, E
 
 TSoftObjectPtr<UTexture2D> UT66GameInstance::ResolveHeroPortrait(const FHeroData& HeroData, ET66BodyType BodyType, ET66HeroPortraitVariant Variant) const
 {
-	const bool bUseTypeB = (BodyType == ET66BodyType::TypeB);
+	const bool bUseStacyPortrait = T66BodyTypeAliases::IsStacy(BodyType);
 
-	const TSoftObjectPtr<UTexture2D>& Half = bUseTypeB && !HeroData.PortraitTypeB.IsNull()
-		? HeroData.PortraitTypeB
+	const TSoftObjectPtr<UTexture2D>& Half = bUseStacyPortrait && !HeroData.PortraitStacy.IsNull()
+		? HeroData.PortraitStacy
 		: HeroData.Portrait;
 
-	const TSoftObjectPtr<UTexture2D>& Low = bUseTypeB
-		? HeroData.PortraitTypeBLow
+	const TSoftObjectPtr<UTexture2D>& Low = bUseStacyPortrait
+		? HeroData.PortraitStacyLow
 		: HeroData.PortraitLow;
 
-	const TSoftObjectPtr<UTexture2D>& Full = bUseTypeB
-		? HeroData.PortraitTypeBFull
+	const TSoftObjectPtr<UTexture2D>& Full = bUseStacyPortrait
+		? HeroData.PortraitStacyFull
 		: HeroData.PortraitFull;
 
-	const TSoftObjectPtr<UTexture2D>& Invincible = bUseTypeB
-		? HeroData.PortraitTypeBInvincible
+	const TSoftObjectPtr<UTexture2D>& Invincible = bUseStacyPortrait
+		? HeroData.PortraitStacyInvincible
 		: HeroData.PortraitInvincible;
 
 	switch (Variant)
@@ -1231,9 +984,9 @@ TSoftObjectPtr<UTexture2D> UT66GameInstance::ResolveHeroPortrait(const FHeroData
 		if (HeroData.HeroID == FName(TEXT("Hero_1")))
 		{
 			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(
-				bUseTypeB
-					? TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_TypeB_Invincible.T_Hero_1_TypeB_Invincible")
-					: TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_TypeA_Invincible.T_Hero_1_TypeA_Invincible")));
+				bUseStacyPortrait
+					? TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible.T_Hero_1_Stacy_Invincible")
+					: TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible.T_Hero_1_Chad_Invincible")));
 		}
 		if (!Full.IsNull()) return Full;
 		if (!Half.IsNull()) return Half;
@@ -1261,12 +1014,8 @@ void UT66GameInstance::ClearSelections()
 	MiniSelectedIdolIDs.Reset();
 	bMiniLoadFlow = false;
 	bMiniIntermissionFlow = false;
-	MiniIntermissionStateRevision = 0;
-	MiniIntermissionStateJson.Reset();
-	MiniIntermissionRequestRevision = 0;
-	MiniIntermissionRequestJson.Reset();
-	SelectedHeroBodyType = ET66BodyType::TypeA;
-	SelectedCompanionBodyType = ET66BodyType::TypeA;
+	SelectedHeroBodyType = ET66BodyType::Chad;
+	SelectedCompanionBodyType = ET66BodyType::Chad;
 	ClearActiveDailyClimbRun();
 	ApplyConfiguredMainMapLayoutVariant();
 	RestoreRememberedSelectionDefaults();
@@ -1290,8 +1039,8 @@ void UT66GameInstance::BeginDailyClimbRun(const FT66DailyClimbChallengeData& Cha
 	PendingWeaponUpgradeRarity = ET66WeaponRarity::Black;
 	SelectedRunModifierKind = ET66RunModifierKind::None;
 	SelectedRunModifierID = NAME_None;
-	SelectedHeroBodyType = ET66BodyType::TypeA;
-	SelectedCompanionBodyType = ET66BodyType::TypeA;
+	SelectedHeroBodyType = ET66BodyType::Chad;
+	SelectedCompanionBodyType = ET66BodyType::Chad;
 	bIsNewGameFlow = true;
 	bIsStageTransition = false;
 	bRunIneligibleForLeaderboard = false;
@@ -1479,22 +1228,70 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		}
 	};
 
-	auto AddAllTowerThemeAssets = [&AddPath]()
+	auto AddCoherentThemeKitAssets = [&AddPath]()
+	{
+		static const TCHAR* ModuleIds[] = {
+			TEXT("DungeonWall_TorchSconce_A"),
+			TEXT("DungeonWall_StoneBlocks_A"),
+			TEXT("DungeonWall_Chains_A"),
+			TEXT("DungeonWall_BonesNiche_A"),
+			TEXT("DungeonFloor_StoneSlabs_A"),
+			TEXT("DungeonFloor_Drain_A"),
+			TEXT("DungeonFloor_Cracked_A"),
+			TEXT("DungeonFloor_Bones_A"),
+			TEXT("ForestWall_VineTotem_A"),
+			TEXT("ForestWall_TrunkWeave_A"),
+			TEXT("ForestWall_RootBraid_A"),
+			TEXT("ForestWall_MushroomBark_A"),
+			TEXT("ForestFloor_RootMat_A"),
+			TEXT("ForestFloor_MossStone_A"),
+			TEXT("ForestFloor_LeafCrack_A"),
+			TEXT("ForestFloor_BrambleEdge_A"),
+			TEXT("OceanWall_CoralReef_A"),
+			TEXT("OceanWall_ShellLimestone_A"),
+			TEXT("OceanWall_KelpCoral_A"),
+			TEXT("OceanWall_ReefRuin_A"),
+			TEXT("OceanFloor_ReefStone_A"),
+			TEXT("OceanFloor_ShellSand_A"),
+			TEXT("OceanFloor_CoralCrack_A"),
+			TEXT("OceanFloor_TidePool_A"),
+			TEXT("MartianWall_RuinPanel_A"),
+			TEXT("MartianWall_RedRock_A"),
+			TEXT("MartianWall_MeteorScar_A"),
+			TEXT("MartianWall_CrystalVein_A"),
+			TEXT("MartianFloor_RuinTile_A"),
+			TEXT("MartianFloor_RegolithPlates_A"),
+			TEXT("MartianFloor_CrystalDust_A"),
+			TEXT("MartianFloor_CraterCracks_A"),
+			TEXT("HellWall_SpikeBasalt_A"),
+			TEXT("HellWall_LavaCrack_A"),
+			TEXT("HellWall_ChainsSkulls_A"),
+			TEXT("HellWall_Brimstone_A"),
+			TEXT("HellFloor_RunePlate_A"),
+			TEXT("HellFloor_Obsidian_A"),
+			TEXT("HellFloor_EmberFissure_A"),
+			TEXT("HellFloor_BoneAsh_A"),
+		};
+
+		for (const TCHAR* ModuleId : ModuleIds)
+		{
+			const FString MeshPath = FString::Printf(
+				TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/%s_UnrealReady.%s_UnrealReady"),
+				ModuleId,
+				ModuleId);
+			AddPath(FSoftObjectPath(MeshPath));
+		}
+	};
+
+	auto AddAllTowerThemeAssets = [&AddPath, &AddCoherentThemeKitAssets]()
 	{
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestRoof.MI_TowerForestRoof")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/T_TowerForestGround.T_TowerForestGround")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/T_TowerForestRoof.T_TowerForestRoof")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonGround.T_TowerDungeonGround")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonWall.T_TowerDungeonWall")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_A_UnrealReady.DungeonWall_Straight_A_UnrealReady")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_Chains_UnrealReady.DungeonWall_Straight_Chains_UnrealReady")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_BonesNiche_UnrealReady.DungeonWall_Straight_BonesNiche_UnrealReady")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonFloor_BonesDrain_A_UnrealReady.DungeonFloor_BonesDrain_A_UnrealReady")));
+		AddCoherentThemeKitAssets();
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Branch.Branch")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Rock.Rock")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1")));
@@ -1554,12 +1351,9 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	// before opening the gameplay level so the first entry does not depend on cold material state.
 	AddPath(CharacterVisualsDataTable.ToSoftObjectPath());
 	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonGround.T_TowerDungeonGround")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonWall.T_TowerDungeonWall")));
+	AddCoherentThemeKitAssets();
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass.Grass")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Log.Log")));

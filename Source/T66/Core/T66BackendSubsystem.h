@@ -68,6 +68,10 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
 	FOnT66DailyClimbChallengeReady,
 	const FString& /*RequestTag*/);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(
+	FOnT66MinigameDailyChallengeReady,
+	const FString& /*RequestKey*/);
+
 DECLARE_MULTICAST_DELEGATE_FiveParams(
 	FOnT66DailyClimbSubmitDataReady,
 	const FString& /*RequestKey*/,
@@ -75,6 +79,13 @@ DECLARE_MULTICAST_DELEGATE_FiveParams(
 	const FString& /*Status*/,
 	int32 /*DailyRank*/,
 	int32 /*CouponsAwarded*/);
+
+DECLARE_MULTICAST_DELEGATE_FourParams(
+	FOnT66MinigameSubmitDataReady,
+	const FString& /*RequestKey*/,
+	bool /*bSuccess*/,
+	const FString& /*Status*/,
+	int32 /*Rank*/);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnAccountStatusResponse,
@@ -85,6 +96,11 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnBackendActionResponse,
 	bool, bSuccess,
 	const FString&, Message);
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(
+	FOnT66BackendActionDataReady,
+	bool /*bSuccess*/,
+	const FString& /*Message*/);
 
 DECLARE_MULTICAST_DELEGATE_FiveParams(
 	FOnT66ClientLaunchPolicyResponse,
@@ -125,6 +141,41 @@ struct T66_API FT66PartyInviteEntry
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
 	FString ExpiresAtIso;
+};
+
+USTRUCT(BlueprintType)
+struct T66_API FT66MinigameDailyChallengeData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minigames")
+	FString ChallengeId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minigames")
+	FString GameId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minigames")
+	FString Difficulty;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minigames")
+	FString ChallengeDateUtc;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minigames")
+	FString StartsAtIso;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minigames")
+	FString EndsAtIso;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minigames")
+	FString Title;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minigames")
+	int32 RunSeed = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minigames")
+	FString LeaderboardKey;
+
+	bool IsValid() const { return !ChallengeId.IsEmpty() && !GameId.IsEmpty(); }
 };
 
 DECLARE_MULTICAST_DELEGATE(FOnT66PendingPartyInvitesChanged);
@@ -274,6 +325,39 @@ public:
 	FOnT66DailyClimbChallengeReady OnDailyClimbChallengeReady;
 	FOnT66DailyClimbSubmitDataReady OnDailyClimbSubmitDataReady;
 
+	// ── API: Minigame Leaderboards ───────────────────────────
+
+	void FetchCurrentMinigameDailyChallenge(
+		const FString& GameId,
+		const FString& Difficulty);
+
+	void FetchMinigameLeaderboard(
+		const FString& GameId,
+		const FString& Scope,
+		const FString& Difficulty,
+		const FString& Filter = TEXT("global"));
+
+	void SubmitMinigameScore(
+		const FString& DisplayName,
+		const FString& GameId,
+		const FString& Scope,
+		const FString& Difficulty,
+		int32 Score,
+		const FString& ChallengeId = FString(),
+		int32 RunSeed = 0,
+		const FString& RequestKey = FString());
+
+	static FString MakeMinigameDailyChallengeCacheKey(
+		const FString& GameId,
+		const FString& Difficulty);
+
+	bool GetCachedMinigameDailyChallenge(
+		const FString& Key,
+		FT66MinigameDailyChallengeData& OutChallenge) const;
+
+	FOnT66MinigameDailyChallengeReady OnMinigameDailyChallengeReady;
+	FOnT66MinigameSubmitDataReady OnMinigameSubmitDataReady;
+
 	// ── API: Account Status ──────────────────────────────────
 
 	UFUNCTION(BlueprintCallable, Category = "Backend")
@@ -321,6 +405,14 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Backend")
 	FOnBackendActionResponse OnBugReportComplete;
+
+	UPROPERTY(BlueprintAssignable, Category = "Backend")
+	FOnBackendActionResponse OnStreamerRequestComplete;
+
+	FOnT66BackendActionDataReady OnStreamerRequestDataReady;
+
+	UFUNCTION(BlueprintCallable, Category = "Backend")
+	void SubmitStreamerRequest(const FString& CreatorLink, const FString& SteamId);
 
 	// ── API: Health Check ────────────────────────────────────
 
@@ -432,6 +524,11 @@ private:
 	FT66DailyClimbChallengeData CachedDailyClimbChallenge;
 	FString LastDailyClimbStatus;
 	FString LastDailyClimbMessage;
+	TMap<FString, FT66MinigameDailyChallengeData> MinigameDailyChallengeCache;
+	FString LastMinigameDailyChallengeStatus;
+	FString LastMinigameDailyChallengeMessage;
+	FString LastMinigameSubmitStatus;
+	FString LastMinigameSubmitMessage;
 	TSet<FString> PendingRunSummaryFetches;
 	FTSTicker::FDelegateHandle PartyInvitePollTickerHandle;
 	FTSTicker::FDelegateHandle PendingCoopSubmitTickerHandle;
@@ -484,6 +581,7 @@ private:
 	void OnAppealResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnProofOfRunResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnBugReportResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnStreamerRequestResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnHealthResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnClientLaunchPolicyResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, int32 LocalSteamBuildId);
 	void OnSendPartyInviteResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
@@ -494,6 +592,8 @@ private:
 	void OnRunSummaryResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString EntryId);
 	void OnDailyClimbStatusResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString RequestTag);
 	void OnDailyClimbSubmitResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString RequestKey);
+	void OnMinigameDailyChallengeResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString RequestKey);
+	void OnMinigameSubmitResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString RequestKey, FString GameId, FString Scope, FString Difficulty);
 
 	static ET66Difficulty ApiStringToDifficulty(const FString& S);
 	static ET66PartySize ApiStringToPartySize(const FString& S);

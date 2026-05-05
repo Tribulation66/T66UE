@@ -1,0 +1,1011 @@
+{
+  "output_root": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01",
+  "texture_root": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures",
+  "wall_height_cm": 600.0,
+  "wall_depth_cm": 120.0,
+  "wall_face_width_cm": 600.0,
+  "floor_tile_cm": 600.0,
+  "floor_thickness_cm": 24.0,
+  "assets": [
+    {
+      "module_id": "DungeonWall_TorchSconce_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\DungeonWall_TorchSconce_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonWall_TorchSconce_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonWall_TorchSconce_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\DungeonWall_TorchSconce_A_UnrealReady_BaseColor_00.png",
+      "triangles": 78686,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        5.999999523162842
+      ],
+      "source_size_m": [
+        1.0007538795471191,
+        1.0009212493896484,
+        0.6429562568664551
+      ],
+      "length_axis": "Y",
+      "depth_axis": "X",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.5567485020880658,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Dungeon"
+    },
+    {
+      "module_id": "DungeonWall_StoneBlocks_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\DungeonWall_StoneBlocks_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonWall_StoneBlocks_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonWall_StoneBlocks_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\DungeonWall_StoneBlocks_A_UnrealReady_BaseColor_00.png",
+      "triangles": 75573,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.0000578165054321,
+        1.0011422634124756,
+        0.6428467035293579
+      ],
+      "length_axis": "Y",
+      "depth_axis": "X",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.5573576996133027,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Dungeon"
+    },
+    {
+      "module_id": "DungeonWall_Chains_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\DungeonWall_Chains_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonWall_Chains_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonWall_Chains_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\DungeonWall_Chains_A_UnrealReady_BaseColor_00.png",
+      "triangles": 79937,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.0007039308547974,
+        1.0005950927734375,
+        0.6352241635322571
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.575355580446179,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Dungeon"
+    },
+    {
+      "module_id": "DungeonWall_BonesNiche_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\DungeonWall_BonesNiche_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonWall_BonesNiche_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonWall_BonesNiche_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\DungeonWall_BonesNiche_A_UnrealReady_BaseColor_00.png",
+      "triangles": 79494,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        5.999999523162842
+      ],
+      "source_size_m": [
+        1.0012829303741455,
+        1.0012742280960083,
+        0.6512432098388672
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.5374947098896143,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Dungeon"
+    },
+    {
+      "module_id": "DungeonFloor_StoneSlabs_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix02\\DungeonFloor_StoneSlabs_A_FloorFix02_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonFloor_StoneSlabs_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonFloor_StoneSlabs_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\DungeonFloor_StoneSlabs_A_UnrealReady_BaseColor_00.png",
+      "triangles": 75710,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.0019588470458984,
+        1.0019539594650269,
+        0.20879971981048584
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Dungeon"
+    },
+    {
+      "module_id": "DungeonFloor_Drain_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix02\\DungeonFloor_Drain_A_FloorFix02_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonFloor_Drain_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonFloor_Drain_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\DungeonFloor_Drain_A_UnrealReady_BaseColor_00.png",
+      "triangles": 77926,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.001943588256836,
+        1.001950979232788,
+        0.3683050572872162
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Dungeon"
+    },
+    {
+      "module_id": "DungeonFloor_Cracked_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\DungeonFloor_Cracked_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonFloor_Cracked_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonFloor_Cracked_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\DungeonFloor_Cracked_A_UnrealReady_BaseColor_00.png",
+      "triangles": 79599,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.0019423961639404,
+        1.0019476413726807,
+        0.36404097080230713
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Dungeon"
+    },
+    {
+      "module_id": "DungeonFloor_Bones_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\DungeonFloor_Bones_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonFloor_Bones_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\DungeonFloor_Bones_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\DungeonFloor_Bones_A_UnrealReady_BaseColor_00.png",
+      "triangles": 75742,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        0.9774062037467957,
+        1.0009315013885498,
+        0.3728385269641876
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Dungeon"
+    },
+    {
+      "module_id": "ForestWall_VineTotem_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\ForestWall_VineTotem_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestWall_VineTotem_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestWall_VineTotem_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\ForestWall_VineTotem_A_UnrealReady_BaseColor_00.png",
+      "triangles": 78916,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.000000476837158
+      ],
+      "source_size_m": [
+        0.9974614381790161,
+        0.19390690326690674,
+        0.6012309789657593
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.659031958221002,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Forest"
+    },
+    {
+      "module_id": "ForestWall_TrunkWeave_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\ForestWall_TrunkWeave_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestWall_TrunkWeave_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestWall_TrunkWeave_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\ForestWall_TrunkWeave_A_UnrealReady_BaseColor_00.png",
+      "triangles": 79458,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        0.9978905916213989,
+        0.3403334617614746,
+        0.598336935043335
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.6677736294965706,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Forest"
+    },
+    {
+      "module_id": "ForestWall_RootBraid_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\ForestWall_RootBraid_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestWall_RootBraid_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestWall_RootBraid_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\ForestWall_RootBraid_A_UnrealReady_BaseColor_00.png",
+      "triangles": 75739,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.000000476837158
+      ],
+      "source_size_m": [
+        0.602127730846405,
+        0.9983224272727966,
+        0.5814197063446045
+      ],
+      "length_axis": "Y",
+      "depth_axis": "X",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.7170426395576899,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Forest"
+    },
+    {
+      "module_id": "ForestWall_MushroomBark_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\ForestWall_MushroomBark_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestWall_MushroomBark_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestWall_MushroomBark_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\ForestWall_MushroomBark_A_UnrealReady_BaseColor_00.png",
+      "triangles": 77738,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        0.9862319231033325,
+        0.3608940839767456,
+        0.5865048766136169
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.681540823659219,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Forest"
+    },
+    {
+      "module_id": "ForestFloor_RootMat_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\ForestFloor_RootMat_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestFloor_RootMat_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestFloor_RootMat_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\ForestFloor_RootMat_A_UnrealReady_BaseColor_00.png",
+      "triangles": 77355,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.24000000953674316
+      ],
+      "source_size_m": [
+        1.0019433498382568,
+        1.0019497871398926,
+        0.27400970458984375
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Forest"
+    },
+    {
+      "module_id": "ForestFloor_MossStone_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\ForestFloor_MossStone_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestFloor_MossStone_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestFloor_MossStone_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\ForestFloor_MossStone_A_UnrealReady_BaseColor_00.png",
+      "triangles": 79401,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.24000000953674316
+      ],
+      "source_size_m": [
+        1.0019598007202148,
+        1.0019618272781372,
+        0.36944544315338135
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Forest"
+    },
+    {
+      "module_id": "ForestFloor_LeafCrack_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\ForestFloor_LeafCrack_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestFloor_LeafCrack_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestFloor_LeafCrack_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\ForestFloor_LeafCrack_A_UnrealReady_BaseColor_00.png",
+      "triangles": 73943,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        0.9420789480209351,
+        1.0014934539794922,
+        0.25113731622695923
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Forest"
+    },
+    {
+      "module_id": "ForestFloor_BrambleEdge_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\ForestFloor_BrambleEdge_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestFloor_BrambleEdge_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\ForestFloor_BrambleEdge_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\ForestFloor_BrambleEdge_A_UnrealReady_BaseColor_00.png",
+      "triangles": 74482,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        0.9774361848831177,
+        1.0015785694122314,
+        0.3576093912124634
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Forest"
+    },
+    {
+      "module_id": "OceanWall_CoralReef_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\OceanWall_CoralReef_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanWall_CoralReef_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanWall_CoralReef_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\OceanWall_CoralReef_A_UnrealReady_BaseColor_00.png",
+      "triangles": 79724,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.0004329681396484,
+        0.21466872096061707,
+        0.6267226338386536
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.5962930236172141,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Ocean"
+    },
+    {
+      "module_id": "OceanWall_ShellLimestone_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\OceanWall_ShellLimestone_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanWall_ShellLimestone_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanWall_ShellLimestone_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\OceanWall_ShellLimestone_A_UnrealReady_BaseColor_00.png",
+      "triangles": 78412,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.0011091232299805,
+        0.17514494061470032,
+        0.6280527114868164
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.5939891103481683,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Ocean"
+    },
+    {
+      "module_id": "OceanWall_KelpCoral_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\OceanWall_KelpCoral_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanWall_KelpCoral_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanWall_KelpCoral_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\OceanWall_KelpCoral_A_UnrealReady_BaseColor_00.png",
+      "triangles": 78226,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        5.999999523162842
+      ],
+      "source_size_m": [
+        0.9992767572402954,
+        0.1731991171836853,
+        0.610697865486145
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.636286686948128,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Ocean"
+    },
+    {
+      "module_id": "OceanWall_ReefRuin_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\OceanWall_ReefRuin_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanWall_ReefRuin_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanWall_ReefRuin_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\OceanWall_ReefRuin_A_UnrealReady_BaseColor_00.png",
+      "triangles": 77273,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.001265048980713,
+        0.29658257961273193,
+        0.6101033687591553
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.6411401081455388,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Ocean"
+    },
+    {
+      "module_id": "OceanFloor_ReefStone_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\OceanFloor_ReefStone_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanFloor_ReefStone_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanFloor_ReefStone_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\OceanFloor_ReefStone_A_UnrealReady_BaseColor_00.png",
+      "triangles": 75379,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.0019469261169434,
+        1.0019601583480835,
+        0.3735572099685669
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Ocean"
+    },
+    {
+      "module_id": "OceanFloor_ShellSand_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix02\\OceanFloor_ShellSand_A_FloorFix02_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanFloor_ShellSand_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanFloor_ShellSand_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\OceanFloor_ShellSand_A_UnrealReady_BaseColor_00.png",
+      "triangles": 78664,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.24000000953674316
+      ],
+      "source_size_m": [
+        1.001944899559021,
+        1.0019440650939941,
+        0.2500268518924713
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Ocean"
+    },
+    {
+      "module_id": "OceanFloor_CoralCrack_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\OceanFloor_CoralCrack_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanFloor_CoralCrack_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanFloor_CoralCrack_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\OceanFloor_CoralCrack_A_UnrealReady_BaseColor_00.png",
+      "triangles": 76695,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        0.8766213059425354,
+        0.9997618794441223,
+        0.22580158710479736
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Ocean"
+    },
+    {
+      "module_id": "OceanFloor_TidePool_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\OceanFloor_TidePool_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanFloor_TidePool_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\OceanFloor_TidePool_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\OceanFloor_TidePool_A_UnrealReady_BaseColor_00.png",
+      "triangles": 77791,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.0019454956054688,
+        1.001947283744812,
+        0.30712997913360596
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Ocean"
+    },
+    {
+      "module_id": "MartianWall_RuinPanel_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\MartianWall_RuinPanel_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianWall_RuinPanel_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianWall_RuinPanel_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\MartianWall_RuinPanel_A_UnrealReady_BaseColor_00.png",
+      "triangles": 75776,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.0019431114196777,
+        0.13673266768455505,
+        0.6000688672065735
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.669713637517215,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Martian"
+    },
+    {
+      "module_id": "MartianWall_RedRock_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\MartianWall_RedRock_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianWall_RedRock_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianWall_RedRock_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\MartianWall_RedRock_A_UnrealReady_BaseColor_00.png",
+      "triangles": 78991,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.000809669494629,
+        0.14457087218761444,
+        0.6192022562026978
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.6162887002827167,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Martian"
+    },
+    {
+      "module_id": "MartianWall_MeteorScar_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\MartianWall_MeteorScar_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianWall_MeteorScar_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianWall_MeteorScar_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\MartianWall_MeteorScar_A_UnrealReady_BaseColor_00.png",
+      "triangles": 79769,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.0010836124420166,
+        1.0010696649551392,
+        0.6352518200874329
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.575884775755349,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Martian"
+    },
+    {
+      "module_id": "MartianWall_CrystalVein_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\MartianWall_CrystalVein_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianWall_CrystalVein_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianWall_CrystalVein_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\MartianWall_CrystalVein_A_UnrealReady_BaseColor_00.png",
+      "triangles": 75074,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.0019629001617432,
+        0.1386917233467102,
+        0.6331208348274231
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.582577583045762,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Martian"
+    },
+    {
+      "module_id": "MartianFloor_RuinTile_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\MartianFloor_RuinTile_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianFloor_RuinTile_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianFloor_RuinTile_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\MartianFloor_RuinTile_A_UnrealReady_BaseColor_00.png",
+      "triangles": 75655,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        0.8770380020141602,
+        1.0019537210464478,
+        0.22965559363365173
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Martian"
+    },
+    {
+      "module_id": "MartianFloor_RegolithPlates_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\MartianFloor_RegolithPlates_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianFloor_RegolithPlates_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianFloor_RegolithPlates_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\MartianFloor_RegolithPlates_A_UnrealReady_BaseColor_00.png",
+      "triangles": 79168,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.0019505023956299,
+        1.001948356628418,
+        0.2095283418893814
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Martian"
+    },
+    {
+      "module_id": "MartianFloor_CrystalDust_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\MartianFloor_CrystalDust_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianFloor_CrystalDust_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianFloor_CrystalDust_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\MartianFloor_CrystalDust_A_UnrealReady_BaseColor_00.png",
+      "triangles": 75866,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.0019577741622925,
+        1.0019564628601074,
+        0.2812976837158203
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Martian"
+    },
+    {
+      "module_id": "MartianFloor_CraterCracks_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix02\\MartianFloor_CraterCracks_A_FloorFix02_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianFloor_CraterCracks_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\MartianFloor_CraterCracks_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\MartianFloor_CraterCracks_A_UnrealReady_BaseColor_00.png",
+      "triangles": 78635,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.0019395351409912,
+        1.0019385814666748,
+        0.21060845255851746
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Martian"
+    },
+    {
+      "module_id": "HellWall_SpikeBasalt_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\HellWall_SpikeBasalt_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellWall_SpikeBasalt_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellWall_SpikeBasalt_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\HellWall_SpikeBasalt_A_UnrealReady_BaseColor_00.png",
+      "triangles": 77564,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        5.999999523162842
+      ],
+      "source_size_m": [
+        1.001943588256836,
+        0.23906907439231873,
+        0.6281399726867676
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.595095953480781,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Hell"
+    },
+    {
+      "module_id": "HellWall_LavaCrack_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\HellWall_LavaCrack_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellWall_LavaCrack_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellWall_LavaCrack_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\HellWall_LavaCrack_A_UnrealReady_BaseColor_00.png",
+      "triangles": 79572,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.0019457340240479,
+        1.001946210861206,
+        0.6201677918434143
+      ],
+      "length_axis": "Y",
+      "depth_axis": "X",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.6156050411501968,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Hell"
+    },
+    {
+      "module_id": "HellWall_ChainsSkulls_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\HellWall_ChainsSkulls_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellWall_ChainsSkulls_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellWall_ChainsSkulls_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\HellWall_ChainsSkulls_A_UnrealReady_BaseColor_00.png",
+      "triangles": 76058,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.0014772415161133,
+        0.28493624925613403,
+        0.6443495154380798
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.554245262729165,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Hell"
+    },
+    {
+      "module_id": "HellWall_Brimstone_A",
+      "kind": "wall",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\Trellis\\HellWall_Brimstone_A_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellWall_Brimstone_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellWall_Brimstone_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\HellWall_Brimstone_A_UnrealReady_BaseColor_00.png",
+      "triangles": 78441,
+      "final_size_m": [
+        1.2000000476837158,
+        6.0,
+        6.0
+      ],
+      "source_size_m": [
+        1.001904845237732,
+        1.0018787384033203,
+        0.6312226057052612
+      ],
+      "length_axis": "X",
+      "depth_axis": "Y",
+      "target_face_width_m": 6.0,
+      "target_depth_m": 1.2,
+      "target_height_m": 6.0,
+      "source_face_aspect": 1.5872448739669418,
+      "runtime_axes": "X=wall thickness, Y=wall length, Z=wall height",
+      "theme": "Hell"
+    },
+    {
+      "module_id": "HellFloor_RunePlate_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix02\\HellFloor_RunePlate_A_FloorFix02_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellFloor_RunePlate_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellFloor_RunePlate_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\HellFloor_RunePlate_A_UnrealReady_BaseColor_00.png",
+      "triangles": 75933,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.0019598007202148,
+        1.0019481182098389,
+        0.17825283110141754
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Hell"
+    },
+    {
+      "module_id": "HellFloor_Obsidian_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix03\\HellFloor_Obsidian_A_FloorFix03_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellFloor_Obsidian_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellFloor_Obsidian_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\HellFloor_Obsidian_A_UnrealReady_BaseColor_00.png",
+      "triangles": 77179,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.0019562244415283,
+        1.0019611120224,
+        0.21737094223499298
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Hell"
+    },
+    {
+      "module_id": "HellFloor_EmberFissure_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix03\\HellFloor_EmberFissure_A_FloorFix03_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellFloor_EmberFissure_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellFloor_EmberFissure_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\HellFloor_EmberFissure_A_UnrealReady_BaseColor_00.png",
+      "triangles": 74218,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.23999999463558197
+      ],
+      "source_size_m": [
+        1.0019481182098389,
+        1.0019536018371582,
+        0.23828917741775513
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Hell"
+    },
+    {
+      "module_id": "HellFloor_BoneAsh_A",
+      "kind": "floor",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Raw\\TrellisFloorFix01\\HellFloor_BoneAsh_A_FloorFix01_S1337_D80000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellFloor_BoneAsh_A_UnrealReady.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\HellFloor_BoneAsh_A_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\WorldKit\\CoherentThemeKit01\\Textures\\HellFloor_BoneAsh_A_UnrealReady_BaseColor_00.png",
+      "triangles": 79321,
+      "final_size_m": [
+        6.0,
+        6.0,
+        0.24000000953674316
+      ],
+      "source_size_m": [
+        1.0019458532333374,
+        1.0019493103027344,
+        0.2235468327999115
+      ],
+      "target_footprint_m": 6.0,
+      "target_thickness_m": 0.24,
+      "runtime_axes": "X/Y=tile footprint, Z=visual thickness",
+      "theme": "Hell"
+    }
+  ]
+}

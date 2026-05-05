@@ -1,0 +1,4 @@
+CompanionID,DisplayName,Description,AccentColor,StartingBlock,PassiveDamageBonus
+Companion_01,Aria,Adds a small defensive buffer before each descent.,"(R=0.95,G=0.43,B=0.43,A=1.0)",4,0
+Companion_02,Blaze,Turns every attack card slightly hotter.,"(R=0.95,G=0.49,B=0.43,A=1.0)",0,2
+Companion_10,Frost,Keeps the first hit softer while you set up.,"(R=0.43,G=0.95,B=0.61,A=1.0)",8,0

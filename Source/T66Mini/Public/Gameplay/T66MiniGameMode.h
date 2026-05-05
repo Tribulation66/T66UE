@@ -3,12 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "TimerManager.h"
 #include "GameFramework/GameModeBase.h"
-#include "UI/T66UITypes.h"
 #include "T66MiniGameMode.generated.h"
-
-enum class ET66ScreenType : uint8;
 
 class AT66MiniArena;
 class AT66MiniCompanionBase;
@@ -64,7 +60,6 @@ public:
 	void AddCombatText(const FVector& WorldLocation, float Value, const FLinearColor& Color, float Duration = 0.9f, const FString& Prefix = FString());
 	const TArray<FT66MiniCombatTextEntry>& GetCombatTexts() const { return CombatTexts; }
 	bool TryInteractNearest(class AT66MiniPlayerPawn* PlayerPawn, float MaxRange = 190.f);
-	void RequestPartySaveAndReturnToFrontend(const FString& ResultLabel, ET66ScreenType PendingScreen = ET66ScreenType::MiniMainMenu);
 
 protected:
 	virtual void BeginPlay() override;
@@ -72,12 +67,14 @@ protected:
 	virtual void Logout(AController* Exiting) override;
 
 private:
-	void PositionPartyPawns();
+	void PositionPlayerPawns();
 	void SpawnArenaAndPositionPlayer();
 	void StartWave(int32 WaveIndex, bool bResetTimer);
 	const struct FT66MiniWaveDefinition* GetWaveDefinition() const;
+	const struct FT66MiniStageDefinition* GetCurrentStageDefinition() const;
 	const struct FT66MiniDifficultyDefinition* GetDifficultyDefinition() const;
 	const struct FT66MiniEnemyDefinition* ChooseEnemyDefinition() const;
+	int32 GetMaxStageIndexForCurrentDifficulty() const;
 	void SpawnWaveEnemy();
 	void BeginBossSpawnTelegraph();
 	void SpawnBossEnemy();
@@ -90,7 +87,6 @@ private:
 	void SpawnCompanionActor();
 	void RestoreTransientWaveState(const UT66MiniRunSaveGame* RunSave);
 	void RestoreWorldState(const UT66MiniRunSaveGame* RunSave);
-	void CapturePartyPlayerSnapshots(UT66MiniRunSaveGame* RunSave) const;
 	void CaptureWorldState(UT66MiniRunSaveGame* RunSave) const;
 	void PersistActiveRunSnapshot(bool bMarkMidWaveSnapshot);
 	void UpdateLivePlayerPawnCache();
@@ -99,9 +95,8 @@ private:
 	void UpdateLiveInteractableCache();
 	void UpdateLivePickupCache();
 	void UpdateCombatTexts(float DeltaSeconds);
-	bool IsOnlinePartyMiniRun() const;
-	void CompleteOnlineFrontendTravel();
-	void AbortOnlinePartyRunToFrontend(const FString& ResultLabel, ET66ScreenType PendingScreen);
+	float GetRuntimeTuningValue(const TCHAR* Key, float DefaultValue = 0.f) const;
+	int32 GetRuntimeTuningInt(const TCHAR* Key, int32 DefaultValue = 0) const;
 
 	float AutosaveAccumulator = 0.f;
 	float AudioMixRefreshAccumulator = 0.f;
@@ -116,7 +111,6 @@ private:
 	float BossTelegraphRemaining = 0.f;
 	bool bRunCompleted = false;
 	bool bRunFinalized = false;
-	bool bFrontendTravelInProgress = false;
 	FName PendingBossID = NAME_None;
 	FVector PendingBossSpawnLocation = FVector::ZeroVector;
 	FVector ArenaOrigin = FVector(450000.f, 450000.f, 1200.f);
@@ -151,5 +145,4 @@ private:
 
 	TArray<FT66MiniCombatTextEntry> CombatTexts;
 	TSet<TWeakObjectPtr<class AT66MiniPlayerPawn>> PositionedPlayerPawns;
-	FTimerHandle OnlineFrontendTravelTimer;
 };

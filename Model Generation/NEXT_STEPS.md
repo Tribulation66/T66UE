@@ -1,31 +1,34 @@
 # Next Steps
 
-This is the current recommended work order as of `2026-04-29`.
+This is the current recommended work order as of `2026-05-04`.
 
 ## Priority Order
 
-1. Build the first modular dungeon environment-kit workflow from [WALLS_FLOORS_CEILINGS.md](C:/UE/T66/Model%20Generation/WALLS_FLOORS_CEILINGS.md).
-2. Generate and QA the first wall, floor, and ceiling modules.
-3. Import the accepted modules as static meshes through the existing GLB import path.
-4. Assemble a small test room with existing cuboid collision and generated visual modules.
-5. Return to Arthur sword/rigging work after the dungeon-kit runtime path is proven.
+1. Test the Mike rig prototype in Unreal through the staged executable. Focus on
+   idle, legs-only walk, neck/head/body stability, grounding, material read, and
+   right-hand sword attachment.
+2. If Mike fails in motion, fix the Mike-only rig/material/source problem before
+   touching the rest of the roster.
+3. If Mike passes in motion, document the accepted rig/import/material handoff
+   as the next repeatable character process.
+4. Only after the Mike process is accepted, decide whether to batch-apply the
+   rigging/import procedure or return to source-model art-quality rerolls.
+5. Resume the CoherentThemeKit01 environment review after the current character
+   rigging handoff is accepted or explicitly paused.
 
 ## Active Environment-Kit Experiment
 
-First target folder:
+Active source folder:
 
-- [DungeonKit01](C:/UE/T66/Model%20Generation/Runs/Environment/DungeonKit01)
+- [CoherentThemeKit01](C:/UE/T66/Model%20Generation/Runs/Environment/CoherentThemeKit01)
 
-First recommended batch:
+Current raw TRELLIS set:
 
-1. `DungeonWall_Straight_A`
-2. `DungeonFloor_Stone_A`
-3. `DungeonWall_Straight_Chains`
-4. `DungeonFloor_Bones_A`
-5. `DungeonCeiling_Stone_A`
-6. `DungeonWall_Corner_A`
-7. `DungeonWall_Doorway_Arch`
-8. `DungeonCeiling_ChainAnchor_A`
+- Dungeon / Easy: four wall modules and four floor modules
+- Forest / Medium: four wall modules and four floor modules
+- Ocean / Hard: four wall modules and four floor modules
+- Martian / VeryHard: four wall modules and four floor modules
+- Hell / Impossible: four wall modules and four floor modules
 
 Runtime principle:
 
@@ -37,50 +40,59 @@ Runtime principle:
 
 For the next model-generation pass:
 
-- generate one isolated module reference image at a time
-- use opaque green or white backgrounds
-- avoid full-room images
-- run TRELLIS with the locked baseline
-- normalize scale/pivot in Blender
+- do not regenerate the CoherentThemeKit01 wall/floor set until the current raw GLBs have been reviewed
+- use the Blender comparison scene as the first visual gate
+- normalize scale/pivot in Blender only for accepted raw modules
 - save raw and normalized QA renders
 - reject any module with unwanted background platform geometry
 
-## Deferred Character Plan
+## Character Batch Status
 
-For the next local Blender-focused character pass:
+Type A masculine standard plus beach goer rigging and Unreal wiring are now complete for the 12-hero active roster in [TypeA_Masculine_Batch01](C:/UE/T66/Model%20Generation/Runs/Heroes/TypeA_Masculine_Batch01/batch_plan.md). Merlin, Zeus, Dog, and Forsen are out of the active gameplay/model-generation set.
 
-- start from:
-  - [Arthur_EasyEnemy_Lineup.blend](C:/UE/T66/Model%20Generation/Scenes/Arthur_EasyEnemy_Lineup.blend)
-  - [Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k.glb](C:/UE/T66/Model%20Generation/Runs/Arthur/Raw/Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k.glb)
-  - [Arthur_ExcaliburProxy_FlatGreen_Tight_S1337_Trellis2.glb](C:/UE/T66/Model%20Generation/Runs/Arthur/Raw/Arthur_ExcaliburProxy_FlatGreen_Tight_S1337_Trellis2.glb)
-- treat [Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k_WithSword_ValidatedHold.glb](C:/UE/T66/Model%20Generation/Runs/Arthur/Raw/Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k_WithSword_ValidatedHold.glb) as a failed-but-useful reference, not a solved result
-- try transform-only sword placement first
-- save at least these review PNGs for each serious sword attempt:
-  - front
-  - side
-  - oblique
-  - one user-like gameplay or showcase angle
-- explicitly note which angle failed and why before trying the next adjustment
-- reject the pose immediately if any view shows:
-  - grip outside the hand volume
-  - sword reading as placed beside the hand
-  - blade direction in the wrong family
-- only call the sword solved after explicit user approval
-- if two or three serious transform-only attempts still fail for the same reason, escalate to hand-pose or rig work instead of repeating the same transform loop
+Current completed outputs:
 
-## After Sword Hold Is Solved
+- `24/24` standard plus beach goer assembled GLBs were rigged with `Model Generation/Scripts/rig_typea_batch01.py`.
+- Each output has an `18`-bone armature, procedural skin weights, and a placeholder idle arm-sway animation.
+- Unreal imports were created under `/Game/Characters/Heroes/Hero_X/TypeA` and `/Game/Characters/Heroes/Hero_X/TypeA/Beachgoer`.
+- `Content/Data/CharacterVisuals.csv` and `DT_CharacterVisuals` now wire every `Hero_X_TypeA` and `Hero_X_TypeA_Beachgoer` row to the imported skeletal mesh and `RigIdleV2` animation.
+- Verification passed in [TypeABatch01HeroVisualVerification.json](C:/UE/T66/Saved/TypeABatch01HeroVisualVerification.json): `24/24` rows checked, `0` errors, matching mesh/animation skeletons, all `48` material slots bound to imported textures, `M_Character_Unlit` using texture-alpha opacity masking, imported mesh heights from `199.99997` to `200.00003` cm, and bottom Z within `-0.000002` to `0.000024` cm.
+- In-game visual captures were taken from the real gameplay renderer: [standard lineup](C:/UE/T66/Saved/TypeABatch01VisualCheck/TypeABatch01_Gameplay_QA_standard_Yaw180.png) and [beach goer lineup](C:/UE/T66/Saved/TypeABatch01VisualCheck/TypeABatch01_Gameplay_QA_beachgoer_Yaw180.png).
 
-Run these in order:
+Immediate character follow-up:
 
-1. Test whether a minimal hand edit or simple rig is needed for the hero.
-2. Explore whether Arthur should remain a baked static mesh, become a rigged character, or support both outputs.
-3. Run the same rigging / bake exploration on one easy enemy first, then generalize if it works.
-4. Record the chosen direction in [MASTER_WORKFLOW.md](C:/UE/T66/Model%20Generation/MASTER_WORKFLOW.md) and [RUN_HISTORY.md](C:/UE/T66/Model%20Generation/RUN_HISTORY.md).
+- Read [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md) before changing character assembly, rigging, import, material repair, DataTable wiring, or staged visual verification.
+- Mike Pass02 model generation is paused on the Mike rig prototype:
+  [Hero_3_Mike_Chad_RigPrototype_A03_LiftedNeckBridge.glb](C:/UE/T66/Model%20Generation/Runs/Heroes/Chad_Pass02_ProcessBuild/Assembly/HeadBody/Hero_3_Mike_Chad_RigPrototype_A03_LiftedNeckBridge.glb).
+- The Mike-only rigging process proof now exists in
+  [Rigging/Mike_Chad_RigPrototype_A03_LiftedNeckBridge](C:/UE/T66/Model%20Generation/Runs/Heroes/Chad_Pass02_ProcessBuild/Rigging/Mike_Chad_RigPrototype_A03_LiftedNeckBridge).
+  It has idle, legs-only walk, and a right-hand sword proxy attachment.
+- Mike is now imported and wired for staged in-game testing through `Hero_3_Chad`
+  at `/Game/Characters/Heroes/Hero_3/Chad/RigPrototype`.
+- The staged executable was rebuilt after material repair, and the visual proof
+  is [MikeRigPrototype_StagedHeroSelection_Textured_QA.png](C:/UE/T66/Saved/MikeRigPrototypeUnrealCheck/MikeRigPrototype_StagedHeroSelection_Textured_QA.png).
+- The next character step is hands-on Unreal testing of Mike's idle/walk rig and
+  sword attachment behavior in the actual game viewport. Do not start roster
+  batch work until this Mike-only process is accepted.
+- If the Mike rig prototype tears, deforms the separate neck bridge badly, fails head rigidity, or the weapon attachment is unacceptable during the idle/walk test, stop and return to model/retopo/attachment cleanup before import.
+- Review the imported Batch01 Type A heroes in-editor for art-quality issues that scripts cannot judge only after the Mike prototype rigging path is understood.
+- Reroll any fallback-derived source that still produced poster panels, background cards, or bad body/head joins after the Mike rigging/process test has informed the source rules.
+- Keep using separate body-only, head-only, and weapon-only TRELLIS inputs; do not return to combined body-plus-head or weapon-on-body prompts.
+- Add a weapon socket or attachment rule after the character mesh review is accepted.
+- Replace the placeholder arm-sway idle with production locomotion after the mesh scale and skeleton compatibility remain stable.
+
+## Weapon Attachment Status
+
+The current Mike sword proxy solves the process-level scale, forward/up blade
+angle, and hilt roll issues well enough for in-game rig testing. It is not final
+production weapon art. Future weapon work should still generate separate weapon
+meshes, attach them through Blender or sockets, and check front, side, oblique,
+close grip, and user-like staged views before approval.
 
 ## Current Proven Settings
 
 - Hero raw generation:
-  - input: [Arthur_HeroReference_Full_White.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Inputs/Arthur_HeroReference_Full_White.png)
+  - input: [Arthur_HeroReference_Full_White.png](C:/UE/T66/Model%20Generation/Archive/PreviousCharacterScreenshots_2026-05-02/Runs/Arthur/Inputs/Arthur_HeroReference_Full_White.png)
   - seed: `1337`
   - `X-Texture-Size: 2048`
   - `X-Decimation: 80000`
@@ -107,7 +119,8 @@ Stop and reassess if:
 
 ## Defer Until Later
 
-- new split head/body hero generation
+- production rerolls for any fallback-derived Type A hero assets that fail Blender lineup QA
+- production locomotion polish beyond the current placeholder idle arm-sway animation
 - new full hero TRELLIS seed sweeps
-- Unreal import
-- next difficulty-family batch beyond the existing easy enemies
+- new wall/floor TRELLIS batches for CoherentThemeKit01 until the current 40 raw GLBs have been reviewed
+

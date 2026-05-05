@@ -1,0 +1,4451 @@
+{
+  "source_count": 24,
+  "rigged_count": 24,
+  "failure_count": 0,
+  "failures": [],
+  "reports": [
+    {
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_11_Shroud_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_11_Shroud_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Exports\\Hero_11_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Exports\\Hero_11_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Renders\\Hero_11_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Renders\\Hero_11_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Renders\\Hero_11_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Renders\\Hero_11_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Renders\\Hero_11_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Renders\\Hero_11_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Renders\\Hero_11_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Renders\\Hero_11_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Renders\\Hero_11_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_11/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_11/TypeA/Beachgoer/SK_Hero_11_TypeA_Beachgoer.SK_Hero_11_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_11/TypeA/Beachgoer/AM_Hero_11_TypeA_Beachgoer_Idle.AM_Hero_11_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.1761866956949234,
+          -0.13002322614192963,
+          -0.5002301335334778
+        ],
+        "source_max_m": [
+          0.17763829231262207,
+          0.10291247814893723,
+          0.7009599804878235
+        ],
+        "source_size_m": [
+          0.3538249731063843,
+          0.23293569684028625,
+          1.2011901140213013
+        ],
+        "source_foot_center_m": [
+          0.0007257983088493347,
+          -0.0135553739964962,
+          -0.5002301335334778
+        ],
+        "baked_scale": 1.665015368220499,
+        "normalized_min_m": [
+          -0.2945620119571686,
+          -0.19392076134681702,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.29456204175949097,
+          0.19392076134681702,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.5891240835189819,
+          0.38784152269363403,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_11_Shroud_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_11_Shroud_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H11_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_11_Shroud_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_11_Shroud_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 3745,
+      "animation": {
+        "idle_action": "AM_Hero_11_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_11_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_11_Shroud_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_11_Shroud_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Exports\\Hero_11_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Exports\\Hero_11_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Renders\\Hero_11_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Renders\\Hero_11_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Renders\\Hero_11_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Renders\\Hero_11_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Renders\\Hero_11_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Renders\\Hero_11_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Renders\\Hero_11_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Renders\\Hero_11_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Renders\\Hero_11_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_11/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_11/TypeA/SK_Hero_11_TypeA.SK_Hero_11_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_11/TypeA/AM_Hero_11_TypeA_Idle.AM_Hero_11_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.5007262229919434,
+          -0.5006959438323975,
+          -0.33987587690353394
+        ],
+        "source_max_m": [
+          0.5006163120269775,
+          0.5006382465362549,
+          0.6624230742454529
+        ],
+        "source_size_m": [
+          1.001342535018921,
+          1.0013341903686523,
+          1.0022989511489868
+        ],
+        "source_foot_center_m": [
+          -5.4955482482910156e-05,
+          -2.8848648071289062e-05,
+          -0.33987587690353394
+        ],
+        "baked_scale": 1.9954126438098105,
+        "normalized_min_m": [
+          -0.999045729637146,
+          -0.9990373849868774,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.9990457892417908,
+          0.9990374445915222,
+          2.0
+        ],
+        "normalized_size_m": [
+          1.998091459274292,
+          1.9980747699737549,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_11_Shroud_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_11_Shroud_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H11_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_11_Shroud_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_11_Shroud_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 5025,
+      "animation": {
+        "idle_action": "AM_Hero_11_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_11_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_12_xQc_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_12_xQc_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Exports\\Hero_12_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Exports\\Hero_12_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Renders\\Hero_12_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Renders\\Hero_12_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Renders\\Hero_12_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Renders\\Hero_12_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Renders\\Hero_12_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Renders\\Hero_12_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Renders\\Hero_12_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Renders\\Hero_12_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Renders\\Hero_12_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_12/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_12/TypeA/Beachgoer/SK_Hero_12_TypeA_Beachgoer.SK_Hero_12_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_12/TypeA/Beachgoer/AM_Hero_12_TypeA_Beachgoer_Idle.AM_Hero_12_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.1811104714870453,
+          -0.08700451999902725,
+          -0.5009644627571106
+        ],
+        "source_max_m": [
+          0.18038055300712585,
+          0.07997526973485947,
+          0.7007563710212708
+        ],
+        "source_size_m": [
+          0.36149102449417114,
+          0.16697978973388672,
+          1.2017208337783813
+        ],
+        "source_foot_center_m": [
+          -0.0003649592399597168,
+          -0.003514625132083893,
+          -0.5009644627571106
+        ],
+        "baked_scale": 1.664280042238858,
+        "normalized_min_m": [
+          -0.30081114172935486,
+          -0.13895057141780853,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.30081117153167725,
+          0.13895055651664734,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.6016223430633545,
+          0.2779011130332947,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_12_xQc_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_12_xQc_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H12_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_12_xQc_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_12_xQc_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 896,
+      "animation": {
+        "idle_action": "AM_Hero_12_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_12_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_12_xQc_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_12_xQc_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Exports\\Hero_12_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Exports\\Hero_12_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_12/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_12/TypeA/SK_Hero_12_TypeA.SK_Hero_12_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_12/TypeA/AM_Hero_12_TypeA_Idle.AM_Hero_12_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.21590206027030945,
+          -0.11417755484580994,
+          -0.5005155801773071
+        ],
+        "source_max_m": [
+          0.21398073434829712,
+          0.08328204602003098,
+          0.7001672983169556
+        ],
+        "source_size_m": [
+          0.42988279461860657,
+          0.1974596083164215,
+          1.2006828784942627
+        ],
+        "source_foot_center_m": [
+          -0.0009606629610061646,
+          -0.01544775441288948,
+          -0.5005155801773071
+        ],
+        "baked_scale": 1.6657187637322979,
+        "normalized_min_m": [
+          -0.35803189873695374,
+          -0.1644560694694519,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.3580319285392761,
+          0.1644560992717743,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.7160638570785522,
+          0.3289121687412262,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_12_xQc_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_12_xQc_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H12_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_12_xQc_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_12_xQc_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 5109,
+      "animation": {
+        "idle_action": "AM_Hero_12_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_12_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_13_Moist_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_13_Moist_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Exports\\Hero_13_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Exports\\Hero_13_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Renders\\Hero_13_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Renders\\Hero_13_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Renders\\Hero_13_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Renders\\Hero_13_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Renders\\Hero_13_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Renders\\Hero_13_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Renders\\Hero_13_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Renders\\Hero_13_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Renders\\Hero_13_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_13/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_13/TypeA/Beachgoer/SK_Hero_13_TypeA_Beachgoer.SK_Hero_13_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_13/TypeA/Beachgoer/AM_Hero_13_TypeA_Beachgoer_Idle.AM_Hero_13_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.4970090687274933,
+          -0.496917724609375,
+          -0.47953522205352783
+        ],
+        "source_max_m": [
+          0.4969906210899353,
+          0.4969126582145691,
+          0.6967431902885437
+        ],
+        "source_size_m": [
+          0.993999719619751,
+          0.9938303828239441,
+          1.1762783527374268
+        ],
+        "source_foot_center_m": [
+          -9.2238187789917e-06,
+          -2.5331974029541016e-06,
+          -0.47953522205352783
+        ],
+        "baked_scale": 1.7002778256911844,
+        "normalized_min_m": [
+          -0.8450378179550171,
+          -0.8448938727378845,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.8450378179550171,
+          0.8448938727378845,
+          2.0
+        ],
+        "normalized_size_m": [
+          1.6900756359100342,
+          1.689787745475769,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_13_Moist_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_13_Moist_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H13_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_13_Moist_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_13_Moist_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 6085,
+      "animation": {
+        "idle_action": "AM_Hero_13_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_13_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_13_Moist_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_13_Moist_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Exports\\Hero_13_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Exports\\Hero_13_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Renders\\Hero_13_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Renders\\Hero_13_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Renders\\Hero_13_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Renders\\Hero_13_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Renders\\Hero_13_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Renders\\Hero_13_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Renders\\Hero_13_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Renders\\Hero_13_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Renders\\Hero_13_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_13/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_13/TypeA/SK_Hero_13_TypeA.SK_Hero_13_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_13/TypeA/AM_Hero_13_TypeA_Idle.AM_Hero_13_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.5007340908050537,
+          -0.49540233612060547,
+          -0.3444752097129822
+        ],
+        "source_max_m": [
+          0.5007267594337463,
+          0.49558547139167786,
+          0.48196616768836975
+        ],
+        "source_size_m": [
+          1.0014607906341553,
+          0.9909877777099609,
+          0.8264414072036743
+        ],
+        "source_foot_center_m": [
+          -3.6656856536865234e-06,
+          9.156763553619385e-05,
+          -0.3444752097129822
+        ],
+        "baked_scale": 2.420014271510364,
+        "normalized_min_m": [
+          -1.2117748260498047,
+          -1.1991024017333984,
+          0.0
+        ],
+        "normalized_max_m": [
+          1.2117748260498047,
+          1.1991024017333984,
+          2.0
+        ],
+        "normalized_size_m": [
+          2.4235496520996094,
+          2.398204803466797,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_13_Moist_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_13_Moist_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H13_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_13_Moist_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_13_Moist_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 3836,
+      "animation": {
+        "idle_action": "AM_Hero_13_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_13_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_14_North_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_14_North_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Exports\\Hero_14_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Exports\\Hero_14_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Renders\\Hero_14_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Renders\\Hero_14_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Renders\\Hero_14_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Renders\\Hero_14_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Renders\\Hero_14_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Renders\\Hero_14_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Renders\\Hero_14_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Renders\\Hero_14_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Renders\\Hero_14_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_14/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_14/TypeA/Beachgoer/SK_Hero_14_TypeA_Beachgoer.SK_Hero_14_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_14/TypeA/Beachgoer/AM_Hero_14_TypeA_Beachgoer_Idle.AM_Hero_14_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.16939543187618256,
+          -0.10164757072925568,
+          -0.4994293451309204
+        ],
+        "source_max_m": [
+          0.16957075893878937,
+          0.09413723647594452,
+          0.6998729109764099
+        ],
+        "source_size_m": [
+          0.3389661908149719,
+          0.1957848072052002,
+          1.1993021965026855
+        ],
+        "source_foot_center_m": [
+          8.766353130340576e-05,
+          -0.0037551671266555786,
+          -0.4994293451309204
+        ],
+        "baked_scale": 1.667636402094692,
+        "normalized_min_m": [
+          -0.2826361656188965,
+          -0.1632489264011383,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.28263619542121887,
+          0.1632489413022995,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.565272331237793,
+          0.3264978528022766,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_14_North_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_14_North_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H14_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_14_North_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_14_North_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 4531,
+      "animation": {
+        "idle_action": "AM_Hero_14_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_14_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_14_North_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_14_North_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Exports\\Hero_14_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Exports\\Hero_14_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Renders\\Hero_14_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Renders\\Hero_14_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Renders\\Hero_14_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Renders\\Hero_14_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Renders\\Hero_14_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Renders\\Hero_14_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Renders\\Hero_14_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Renders\\Hero_14_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Renders\\Hero_14_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_14/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_14/TypeA/SK_Hero_14_TypeA.SK_Hero_14_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_14/TypeA/AM_Hero_14_TypeA_Idle.AM_Hero_14_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.49954989552497864,
+          -0.0920485332608223,
+          -0.5007244348526001
+        ],
+        "source_max_m": [
+          0.49818289279937744,
+          0.0994265004992485,
+          0.7010565996170044
+        ],
+        "source_size_m": [
+          0.9977327585220337,
+          0.1914750337600708,
+          1.2017810344696045
+        ],
+        "source_foot_center_m": [
+          -0.0006835013628005981,
+          0.0036889836192131042,
+          -0.5007244348526001
+        ],
+        "baked_scale": 1.6641966736333815,
+        "normalized_min_m": [
+          -0.8302118182182312,
+          -0.15932606160640717,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.8302118182182312,
+          0.15932606160640717,
+          2.0
+        ],
+        "normalized_size_m": [
+          1.6604236364364624,
+          0.31865212321281433,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_14_North_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_14_North_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H14_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_14_North_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_14_North_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 18866,
+      "animation": {
+        "idle_action": "AM_Hero_14_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_14_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_15_Asmon_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_15_Asmon_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Exports\\Hero_15_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Exports\\Hero_15_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Renders\\Hero_15_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Renders\\Hero_15_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Renders\\Hero_15_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Renders\\Hero_15_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Renders\\Hero_15_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Renders\\Hero_15_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Renders\\Hero_15_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Renders\\Hero_15_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Renders\\Hero_15_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_15/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_15/TypeA/Beachgoer/SK_Hero_15_TypeA_Beachgoer.SK_Hero_15_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_15/TypeA/Beachgoer/AM_Hero_15_TypeA_Beachgoer_Idle.AM_Hero_15_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.2646239995956421,
+          -0.18681810796260834,
+          -0.5007189512252808
+        ],
+        "source_max_m": [
+          0.26580604910850525,
+          0.1751297563314438,
+          0.7010296583175659
+        ],
+        "source_size_m": [
+          0.5304300785064697,
+          0.3619478642940521,
+          1.2017486095428467
+        ],
+        "source_foot_center_m": [
+          0.0005910247564315796,
+          -0.005844175815582275,
+          -0.5007189512252808
+        ],
+        "baked_scale": 1.6642415760820506,
+        "normalized_min_m": [
+          -0.4413818418979645,
+          -0.30118435621261597,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.44138187170028687,
+          0.3011843264102936,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.8827637434005737,
+          0.6023687124252319,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_15_Asmon_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_15_Asmon_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H15_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_15_Asmon_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_15_Asmon_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 8793,
+      "animation": {
+        "idle_action": "AM_Hero_15_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_15_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_15_Asmon_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_15_Asmon_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Exports\\Hero_15_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Exports\\Hero_15_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Renders\\Hero_15_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Renders\\Hero_15_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Renders\\Hero_15_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Renders\\Hero_15_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Renders\\Hero_15_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Renders\\Hero_15_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Renders\\Hero_15_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Renders\\Hero_15_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Renders\\Hero_15_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_15/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_15/TypeA/SK_Hero_15_TypeA.SK_Hero_15_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_15/TypeA/AM_Hero_15_TypeA_Idle.AM_Hero_15_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.5007271766662598,
+          -0.4306504726409912,
+          -0.3422163724899292
+        ],
+        "source_max_m": [
+          0.5007185935974121,
+          0.430705726146698,
+          0.3300095796585083
+        ],
+        "source_size_m": [
+          1.0014457702636719,
+          0.8613561987876892,
+          0.6722259521484375
+        ],
+        "source_foot_center_m": [
+          -4.291534423828125e-06,
+          2.7626752853393555e-05,
+          -0.3422163724899292
+        ],
+        "baked_scale": 2.975190103279991,
+        "normalized_min_m": [
+          -1.489745855331421,
+          -1.2813493013381958,
+          0.0
+        ],
+        "normalized_max_m": [
+          1.4897457361221313,
+          1.2813491821289062,
+          2.0
+        ],
+        "normalized_size_m": [
+          2.979491710662842,
+          2.5626983642578125,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_15_Asmon_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_15_Asmon_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H15_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_15_Asmon_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_15_Asmon_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 5266,
+      "animation": {
+        "idle_action": "AM_Hero_15_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_15_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_1_Arthur_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_1_Arthur_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Exports\\Hero_1_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Exports\\Hero_1_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Renders\\Hero_1_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Renders\\Hero_1_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Renders\\Hero_1_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Renders\\Hero_1_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Renders\\Hero_1_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Renders\\Hero_1_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Renders\\Hero_1_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Renders\\Hero_1_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Renders\\Hero_1_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_1/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_1/TypeA/Beachgoer/SK_Hero_1_TypeA_Beachgoer.SK_Hero_1_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_1/TypeA/Beachgoer/AM_Hero_1_TypeA_Beachgoer_Idle.AM_Hero_1_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.28683656454086304,
+          -0.12290961295366287,
+          -0.5009182691574097
+        ],
+        "source_max_m": [
+          0.2866475284099579,
+          0.12247513234615326,
+          0.7009136080741882
+        ],
+        "source_size_m": [
+          0.5734840631484985,
+          0.24538475275039673,
+          1.2018318176269531
+        ],
+        "source_foot_center_m": [
+          -9.451806545257568e-05,
+          -0.00021724030375480652,
+          -0.5009182691574097
+        ],
+        "baked_scale": 1.6641263533437232,
+        "normalized_min_m": [
+          -0.4771749973297119,
+          -0.20417562127113342,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.4771750271320343,
+          0.20417562127113342,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.9543499946594238,
+          0.40835124254226685,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_1_Arthur_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_1_Arthur_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H1_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_1_Arthur_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_1_Arthur_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 1389,
+      "animation": {
+        "idle_action": "AM_Hero_1_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_1_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_1_Arthur_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_1_Arthur_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Exports\\Hero_1_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Exports\\Hero_1_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Renders\\Hero_1_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Renders\\Hero_1_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Renders\\Hero_1_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Renders\\Hero_1_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Renders\\Hero_1_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Renders\\Hero_1_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Renders\\Hero_1_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Renders\\Hero_1_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Renders\\Hero_1_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_1/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_1/TypeA/SK_Hero_1_TypeA.SK_Hero_1_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_1/TypeA/AM_Hero_1_TypeA_Idle.AM_Hero_1_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.3208097815513611,
+          -0.1393171101808548,
+          -0.5009688138961792
+        ],
+        "source_max_m": [
+          0.32136785984039307,
+          0.13029596209526062,
+          0.7008776664733887
+        ],
+        "source_size_m": [
+          0.6421776413917542,
+          0.2696130871772766,
+          1.2018464803695679
+        ],
+        "source_foot_center_m": [
+          0.0002790391445159912,
+          -0.004510574042797089,
+          -0.5009688138961792
+        ],
+        "baked_scale": 1.664106050703747,
+        "normalized_min_m": [
+          -0.5343258380889893,
+          -0.22433236241340637,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.5343257784843445,
+          0.22433236241340637,
+          2.0
+        ],
+        "normalized_size_m": [
+          1.0686516761779785,
+          0.44866472482681274,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_1_Arthur_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_1_Arthur_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H1_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_1_Arthur_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_1_Arthur_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 3627,
+      "animation": {
+        "idle_action": "AM_Hero_1_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_1_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_3_LuBu_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_3_LuBu_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Exports\\Hero_3_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Exports\\Hero_3_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Renders\\Hero_3_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Renders\\Hero_3_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Renders\\Hero_3_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Renders\\Hero_3_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Renders\\Hero_3_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Renders\\Hero_3_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Renders\\Hero_3_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Renders\\Hero_3_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Renders\\Hero_3_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_3/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_3/TypeA/Beachgoer/SK_Hero_3_TypeA_Beachgoer.SK_Hero_3_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_3/TypeA/Beachgoer/AM_Hero_3_TypeA_Beachgoer_Idle.AM_Hero_3_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.2913477420806885,
+          -0.13420432806015015,
+          -0.5005987286567688
+        ],
+        "source_max_m": [
+          0.29158976674079895,
+          0.12722837924957275,
+          0.7005355954170227
+        ],
+        "source_size_m": [
+          0.582937479019165,
+          0.2614327073097229,
+          1.2011343240737915
+        ],
+        "source_foot_center_m": [
+          0.00012101233005523682,
+          -0.0034879744052886963,
+          -0.5005987286567688
+        ],
+        "baked_scale": 1.6650927043836026,
+        "normalized_min_m": [
+          -0.485322505235672,
+          -0.21765483915805817,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.485322505235672,
+          0.21765485405921936,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.970645010471344,
+          0.4353097081184387,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_3_LuBu_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_3_LuBu_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H3_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_3_LuBu_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_3_LuBu_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 5117,
+      "animation": {
+        "idle_action": "AM_Hero_3_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_3_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_3_LuBu_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_3_LuBu_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Exports\\Hero_3_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Exports\\Hero_3_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Renders\\Hero_3_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Renders\\Hero_3_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Renders\\Hero_3_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Renders\\Hero_3_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Renders\\Hero_3_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Renders\\Hero_3_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Renders\\Hero_3_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Renders\\Hero_3_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Renders\\Hero_3_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_3/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_3/TypeA/SK_Hero_3_TypeA.SK_Hero_3_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_3/TypeA/AM_Hero_3_TypeA_Idle.AM_Hero_3_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.31609928607940674,
+          -0.15428048372268677,
+          -0.5005934238433838
+        ],
+        "source_max_m": [
+          0.31621766090393066,
+          0.1538279950618744,
+          0.700697660446167
+        ],
+        "source_size_m": [
+          0.6323169469833374,
+          0.30810847878456116,
+          1.2012910842895508
+        ],
+        "source_foot_center_m": [
+          5.918741226196289e-05,
+          -0.00022624433040618896,
+          -0.5005934238433838
+        ],
+        "baked_scale": 1.6648754212496377,
+        "normalized_min_m": [
+          -0.5263644456863403,
+          -0.2564811110496521,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.5263644456863403,
+          0.2564811110496521,
+          1.9999998807907104
+        ],
+        "normalized_size_m": [
+          1.0527288913726807,
+          0.5129622220993042,
+          1.9999998807907104
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_3_LuBu_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_3_LuBu_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H3_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_3_LuBu_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_3_LuBu_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 2358,
+      "animation": {
+        "idle_action": "AM_Hero_3_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_3_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_4_Mike_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_4_Mike_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Exports\\Hero_4_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Exports\\Hero_4_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Renders\\Hero_4_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Renders\\Hero_4_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Renders\\Hero_4_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Renders\\Hero_4_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Renders\\Hero_4_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Renders\\Hero_4_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Renders\\Hero_4_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Renders\\Hero_4_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Renders\\Hero_4_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_4/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_4/TypeA/Beachgoer/SK_Hero_4_TypeA_Beachgoer.SK_Hero_4_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_4/TypeA/Beachgoer/AM_Hero_4_TypeA_Beachgoer_Idle.AM_Hero_4_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.2929737865924835,
+          -0.1440374106168747,
+          -0.5005079507827759
+        ],
+        "source_max_m": [
+          0.2930898666381836,
+          0.14451923966407776,
+          0.7006786465644836
+        ],
+        "source_size_m": [
+          0.5860636234283447,
+          0.28855663537979126,
+          1.2011866569519043
+        ],
+        "source_foot_center_m": [
+          5.804002285003662e-05,
+          0.00024091452360153198,
+          -0.5005079507827759
+        ],
+        "baked_scale": 1.665020160209855,
+        "normalized_min_m": [
+          -0.487903892993927,
+          -0.24022631347179413,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.4879038631916046,
+          0.24022631347179413,
+          1.999999761581421
+        ],
+        "normalized_size_m": [
+          0.975807785987854,
+          0.48045262694358826,
+          1.999999761581421
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_4_Mike_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_4_Mike_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H4_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_4_Mike_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_4_Mike_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 2661,
+      "animation": {
+        "idle_action": "AM_Hero_4_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_4_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_4_Mike_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_4_Mike_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Exports\\Hero_4_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Exports\\Hero_4_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Renders\\Hero_4_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Renders\\Hero_4_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Renders\\Hero_4_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Renders\\Hero_4_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Renders\\Hero_4_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Renders\\Hero_4_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Renders\\Hero_4_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Renders\\Hero_4_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Renders\\Hero_4_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_4/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_4/TypeA/SK_Hero_4_TypeA.SK_Hero_4_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_4/TypeA/AM_Hero_4_TypeA_Idle.AM_Hero_4_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.29996588826179504,
+          -0.13895569741725922,
+          -0.5009305477142334
+        ],
+        "source_max_m": [
+          0.3000207543373108,
+          0.12740924954414368,
+          0.7010204792022705
+        ],
+        "source_size_m": [
+          0.5999866724014282,
+          0.2663649320602417,
+          1.201951026916504
+        ],
+        "source_foot_center_m": [
+          2.7433037757873535e-05,
+          -0.00577322393655777,
+          -0.5009305477142334
+        ],
+        "baked_scale": 1.663961305587315,
+        "normalized_min_m": [
+          -0.4991772770881653,
+          -0.22161048650741577,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.4991772770881653,
+          0.22161048650741577,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.9983545541763306,
+          0.44322097301483154,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_4_Mike_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_4_Mike_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H4_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_4_Mike_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_4_Mike_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 5128,
+      "animation": {
+        "idle_action": "AM_Hero_4_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_4_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_5_George_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_5_George_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Exports\\Hero_5_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Exports\\Hero_5_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Renders\\Hero_5_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Renders\\Hero_5_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Renders\\Hero_5_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Renders\\Hero_5_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Renders\\Hero_5_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Renders\\Hero_5_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Renders\\Hero_5_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Renders\\Hero_5_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Renders\\Hero_5_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_5/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_5/TypeA/Beachgoer/SK_Hero_5_TypeA_Beachgoer.SK_Hero_5_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_5/TypeA/Beachgoer/AM_Hero_5_TypeA_Beachgoer_Idle.AM_Hero_5_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.28070908784866333,
+          -0.12005165964365005,
+          -0.5009111166000366
+        ],
+        "source_max_m": [
+          0.28090113401412964,
+          0.12019842118024826,
+          0.7012622952461243
+        ],
+        "source_size_m": [
+          0.561610221862793,
+          0.24025008082389832,
+          1.2021734714508057
+        ],
+        "source_foot_center_m": [
+          9.60230827331543e-05,
+          7.338076829910278e-05,
+          -0.5009111166000366
+        ],
+        "baked_scale": 1.6636534140005288,
+        "normalized_min_m": [
+          -0.4671623706817627,
+          -0.19984643161296844,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.4671623706817627,
+          0.19984641671180725,
+          1.999999761581421
+        ],
+        "normalized_size_m": [
+          0.9343247413635254,
+          0.3996928334236145,
+          1.999999761581421
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_5_George_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_5_George_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H5_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_5_George_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_5_George_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 1916,
+      "animation": {
+        "idle_action": "AM_Hero_5_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_5_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_5_George_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_5_George_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Exports\\Hero_5_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Exports\\Hero_5_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Renders\\Hero_5_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Renders\\Hero_5_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Renders\\Hero_5_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Renders\\Hero_5_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Renders\\Hero_5_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Renders\\Hero_5_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Renders\\Hero_5_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Renders\\Hero_5_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Renders\\Hero_5_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_5/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_5/TypeA/SK_Hero_5_TypeA.SK_Hero_5_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_5/TypeA/AM_Hero_5_TypeA_Idle.AM_Hero_5_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.28175950050354004,
+          -0.12562966346740723,
+          -0.5009679794311523
+        ],
+        "source_max_m": [
+          0.28189000487327576,
+          0.12531158328056335,
+          0.7013018727302551
+        ],
+        "source_size_m": [
+          0.5636495351791382,
+          0.2509412467479706,
+          1.2022697925567627
+        ],
+        "source_foot_center_m": [
+          6.525218486785889e-05,
+          -0.00015904009342193604,
+          -0.5009679794311523
+        ],
+        "baked_scale": 1.6635201286616157,
+        "normalized_min_m": [
+          -0.46882113814353943,
+          -0.20872290432453156,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.46882113814353943,
+          0.20872290432453156,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.9376422762870789,
+          0.4174458086490631,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_5_George_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_5_George_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H5_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_5_George_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_5_George_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 866,
+      "animation": {
+        "idle_action": "AM_Hero_5_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_5_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_7_Robo_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_7_Robo_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Exports\\Hero_7_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Exports\\Hero_7_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Renders\\Hero_7_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Renders\\Hero_7_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Renders\\Hero_7_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Renders\\Hero_7_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Renders\\Hero_7_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Renders\\Hero_7_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Renders\\Hero_7_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Renders\\Hero_7_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Renders\\Hero_7_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_7/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_7/TypeA/Beachgoer/SK_Hero_7_TypeA_Beachgoer.SK_Hero_7_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_7/TypeA/Beachgoer/AM_Hero_7_TypeA_Beachgoer_Idle.AM_Hero_7_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.23522566258907318,
+          -0.08334952592849731,
+          -0.4995794892311096
+        ],
+        "source_max_m": [
+          0.23606695234775543,
+          0.07220031321048737,
+          0.5874607563018799
+        ],
+        "source_size_m": [
+          0.4712926149368286,
+          0.15554983913898468,
+          1.0870401859283447
+        ],
+        "source_foot_center_m": [
+          0.0004206448793411255,
+          -0.005574606359004974,
+          -0.4995794892311096
+        ],
+        "baked_scale": 1.8398583841608185,
+        "normalized_min_m": [
+          -0.43355584144592285,
+          -0.14309483766555786,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.43355584144592285,
+          0.14309483766555786,
+          2.000000238418579
+        ],
+        "normalized_size_m": [
+          0.8671116828918457,
+          0.2861896753311157,
+          2.000000238418579
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_7_Robo_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_7_Robo_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H7_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_7_Robo_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_7_Robo_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 746,
+      "animation": {
+        "idle_action": "AM_Hero_7_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_7_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_7_Robo_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_7_Robo_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Exports\\Hero_7_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Exports\\Hero_7_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Renders\\Hero_7_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Renders\\Hero_7_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Renders\\Hero_7_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Renders\\Hero_7_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Renders\\Hero_7_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Renders\\Hero_7_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Renders\\Hero_7_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Renders\\Hero_7_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Renders\\Hero_7_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_7/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_7/TypeA/SK_Hero_7_TypeA.SK_Hero_7_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_7/TypeA/AM_Hero_7_TypeA_Idle.AM_Hero_7_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.3061874210834503,
+          -0.1285247504711151,
+          -0.5009728670120239
+        ],
+        "source_max_m": [
+          0.30641061067581177,
+          0.1272743046283722,
+          0.7011131644248962
+        ],
+        "source_size_m": [
+          0.6125980615615845,
+          0.2557990550994873,
+          1.2020859718322754
+        ],
+        "source_foot_center_m": [
+          0.0001115947961807251,
+          -0.00062522292137146,
+          -0.5009728670120239
+        ],
+        "baked_scale": 1.6637745110289466,
+        "normalized_min_m": [
+          -0.509612500667572,
+          -0.21279597282409668,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.509612500667572,
+          0.21279597282409668,
+          2.0
+        ],
+        "normalized_size_m": [
+          1.019225001335144,
+          0.42559194564819336,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_7_Robo_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_7_Robo_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H7_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_7_Robo_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_7_Robo_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 4108,
+      "animation": {
+        "idle_action": "AM_Hero_7_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_7_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_8_Billy_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_8_Billy_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Exports\\Hero_8_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Exports\\Hero_8_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Renders\\Hero_8_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Renders\\Hero_8_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Renders\\Hero_8_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Renders\\Hero_8_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Renders\\Hero_8_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Renders\\Hero_8_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Renders\\Hero_8_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Renders\\Hero_8_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Renders\\Hero_8_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_8/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_8/TypeA/Beachgoer/SK_Hero_8_TypeA_Beachgoer.SK_Hero_8_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_8/TypeA/Beachgoer/AM_Hero_8_TypeA_Beachgoer_Idle.AM_Hero_8_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.5007301568984985,
+          -0.12105382233858109,
+          -0.5007295608520508
+        ],
+        "source_max_m": [
+          0.500733494758606,
+          0.10905107110738754,
+          0.6987740397453308
+        ],
+        "source_size_m": [
+          1.0014636516571045,
+          0.23010489344596863,
+          1.1995036602020264
+        ],
+        "source_foot_center_m": [
+          1.6689300537109375e-06,
+          -0.006001375615596771,
+          -0.5007295608520508
+        ],
+        "baked_scale": 1.6673563127461821,
+        "normalized_min_m": [
+          -0.8348984122276306,
+          -0.19183343648910522,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.8348983526229858,
+          0.19183342158794403,
+          2.0
+        ],
+        "normalized_size_m": [
+          1.6697967052459717,
+          0.38366687297821045,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_8_Billy_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_8_Billy_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H8_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_8_Billy_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_8_Billy_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 821,
+      "animation": {
+        "idle_action": "AM_Hero_8_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_8_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_8_Billy_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_8_Billy_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Exports\\Hero_8_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Exports\\Hero_8_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Renders\\Hero_8_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Renders\\Hero_8_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Renders\\Hero_8_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Renders\\Hero_8_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Renders\\Hero_8_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Renders\\Hero_8_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Renders\\Hero_8_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Renders\\Hero_8_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Renders\\Hero_8_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_8/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_8/TypeA/SK_Hero_8_TypeA.SK_Hero_8_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_8/TypeA/AM_Hero_8_TypeA_Idle.AM_Hero_8_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.5007288455963135,
+          -0.12127751111984253,
+          -0.5007309913635254
+        ],
+        "source_max_m": [
+          0.5007349252700806,
+          0.1092585027217865,
+          0.7010199427604675
+        ],
+        "source_size_m": [
+          1.001463770866394,
+          0.23053601384162903,
+          1.2017509937286377
+        ],
+        "source_foot_center_m": [
+          3.039836883544922e-06,
+          -0.006009504199028015,
+          -0.5007309913635254
+        ],
+        "baked_scale": 1.6642382743488802,
+        "normalized_min_m": [
+          -0.8333371877670288,
+          -0.19183343648910522,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.8333371877670288,
+          0.19183343648910522,
+          2.0
+        ],
+        "normalized_size_m": [
+          1.6666743755340576,
+          0.38366687297821045,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_8_Billy_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_8_Billy_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H8_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_8_Billy_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_8_Billy_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 1800,
+      "animation": {
+        "idle_action": "AM_Hero_8_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_8_TypeA_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Beachgoer",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_9_Rabbit_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_9_Rabbit_TypeA_Beachgoer_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Exports\\Hero_9_TypeA_Beachgoer_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Exports\\Hero_9_TypeA_Beachgoer_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Renders\\Hero_9_TypeA_Beachgoer_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Renders\\Hero_9_TypeA_Beachgoer_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Renders\\Hero_9_TypeA_Beachgoer_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Renders\\Hero_9_TypeA_Beachgoer_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Renders\\Hero_9_TypeA_Beachgoer_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Renders\\Hero_9_TypeA_Beachgoer_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Renders\\Hero_9_TypeA_Beachgoer_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Renders\\Hero_9_TypeA_Beachgoer_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Renders\\Hero_9_TypeA_Beachgoer_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_9/TypeA/Beachgoer",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_9/TypeA/Beachgoer/SK_Hero_9_TypeA_Beachgoer.SK_Hero_9_TypeA_Beachgoer",
+        "idle_animation": "/Game/Characters/Heroes/Hero_9/TypeA/Beachgoer/AM_Hero_9_TypeA_Beachgoer_Idle.AM_Hero_9_TypeA_Beachgoer_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.1181313619017601,
+          -0.5005634427070618,
+          -0.2805536985397339
+        ],
+        "source_max_m": [
+          0.11674531549215317,
+          0.5008991956710815,
+          0.3920499384403229
+        ],
+        "source_size_m": [
+          0.23487667739391327,
+          1.001462697982788,
+          0.6726036071777344
+        ],
+        "source_foot_center_m": [
+          -0.0006930232048034668,
+          0.0001678764820098877,
+          -0.2805536985397339
+        ],
+        "baked_scale": 2.9735195866582727,
+        "normalized_min_m": [
+          -0.3492051959037781,
+          -1.4889342784881592,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.3492051959037781,
+          1.4889343976974487,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.6984103918075562,
+          2.9778685569763184,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_9_Rabbit_Beachgoer_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_9_Rabbit_Beachgoer_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H9_TA_Beach",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_9_Rabbit_Beachgoer_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_9_Rabbit_Beachgoer_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 2148,
+      "animation": {
+        "idle_action": "AM_Hero_9_TypeA_Beachgoer_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_9_TypeA_Beachgoer_Idle"
+        ]
+      }
+    },
+    {
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Standard",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_9_Rabbit_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_9_Rabbit_TypeA_Standard_Rigged.blend",
+      "exports": {
+        "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Exports\\Hero_9_TypeA_Rigged.glb",
+        "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Exports\\Hero_9_TypeA_Rigged.fbx"
+      },
+      "renders": {
+        "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Renders\\Hero_9_TypeA_rest_front.png",
+        "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Renders\\Hero_9_TypeA_rest_right.png",
+        "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Renders\\Hero_9_TypeA_rest_left_oblique.png",
+        "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Renders\\Hero_9_TypeA_idle_left_front.png",
+        "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Renders\\Hero_9_TypeA_idle_left_right.png",
+        "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Renders\\Hero_9_TypeA_idle_left_left_oblique.png",
+        "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Renders\\Hero_9_TypeA_idle_right_front.png",
+        "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Renders\\Hero_9_TypeA_idle_right_right.png",
+        "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Renders\\Hero_9_TypeA_idle_right_left_oblique.png"
+      },
+      "unreal": {
+        "destination": "/Game/Characters/Heroes/Hero_9/TypeA",
+        "skeletal_mesh": "/Game/Characters/Heroes/Hero_9/TypeA/SK_Hero_9_TypeA.SK_Hero_9_TypeA",
+        "idle_animation": "/Game/Characters/Heroes/Hero_9/TypeA/AM_Hero_9_TypeA_Idle.AM_Hero_9_TypeA_Idle",
+        "import_uniform_scale": 1.0
+      },
+      "normalization": {
+        "target_height_m": 2.0,
+        "source_min_m": [
+          -0.19260433316230774,
+          -0.11579519510269165,
+          -0.5006951093673706
+        ],
+        "source_max_m": [
+          0.1910984069108963,
+          0.12106654047966003,
+          0.6949282288551331
+        ],
+        "source_size_m": [
+          0.38370275497436523,
+          0.23686173558235168,
+          1.1956233978271484
+        ],
+        "source_foot_center_m": [
+          -0.000752963125705719,
+          0.002635672688484192,
+          -0.5006951093673706
+        ],
+        "baked_scale": 1.6727675316781818,
+        "normalized_min_m": [
+          -0.32092273235321045,
+          -0.1981073021888733,
+          0.0
+        ],
+        "normalized_max_m": [
+          0.32092273235321045,
+          0.19810731709003448,
+          2.0
+        ],
+        "normalized_size_m": [
+          0.6418454647064209,
+          0.3962146043777466,
+          2.0
+        ]
+      },
+      "textures": [
+        {
+          "source_object": "Hero_9_Rabbit_Standard_Body",
+          "slot_index": 0,
+          "slot_name": "Material_0",
+          "material_name": "Material_0",
+          "texture_asset_name": "Image_0",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Textures\\Image_0.png"
+        },
+        {
+          "source_object": "Hero_9_Rabbit_Standard_Head",
+          "slot_index": 0,
+          "slot_name": "Material_0.001",
+          "material_name": "Material_0_001",
+          "texture_asset_name": "Image_0_001",
+          "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Textures\\Image_0_001.png"
+        }
+      ],
+      "armature": "Rig_H9_TA_Std",
+      "bones": [
+        "root",
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "head",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r"
+      ],
+      "deform_bones": [
+        "pelvis",
+        "spine_01",
+        "spine_02",
+        "neck_01",
+        "upperarm_l",
+        "lowerarm_l",
+        "hand_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "hand_r",
+        "thigh_l",
+        "calf_l",
+        "foot_l",
+        "thigh_r",
+        "calf_r",
+        "foot_r",
+        "head"
+      ],
+      "mesh_vertex_groups": {
+        "Hero_9_Rabbit_Standard_Body": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ],
+        "Hero_9_Rabbit_Standard_Head": [
+          "pelvis",
+          "spine_01",
+          "spine_02",
+          "neck_01",
+          "upperarm_l",
+          "lowerarm_l",
+          "hand_l",
+          "upperarm_r",
+          "lowerarm_r",
+          "hand_r",
+          "thigh_l",
+          "calf_l",
+          "foot_l",
+          "thigh_r",
+          "calf_r",
+          "foot_r",
+          "head"
+        ]
+      },
+      "body_small_components_stabilized": 4482,
+      "animation": {
+        "idle_action": "AM_Hero_9_TypeA_Idle",
+        "frame_start": 1,
+        "frame_end": 48,
+        "actions": [
+          "AM_Hero_9_TypeA_Idle"
+        ]
+      }
+    }
+  ],
+  "verifications": [
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Exports\\Hero_11_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H11_TA_Beach|Rig_H11_TA_Beach|AM_Hero_11_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Exports\\Hero_11_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H11_TA_Std|Rig_H11_TA_Std|AM_Hero_11_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Exports\\Hero_12_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H12_TA_Beach|Rig_H12_TA_Beach|AM_Hero_12_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Exports\\Hero_12_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H12_TA_Std|Rig_H12_TA_Std|AM_Hero_12_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Exports\\Hero_13_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H13_TA_Beach|Rig_H13_TA_Beach|AM_Hero_13_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Exports\\Hero_13_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H13_TA_Std|Rig_H13_TA_Std|AM_Hero_13_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Exports\\Hero_14_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H14_TA_Beach|Rig_H14_TA_Beach|AM_Hero_14_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Exports\\Hero_14_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H14_TA_Std|Rig_H14_TA_Std|AM_Hero_14_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Exports\\Hero_15_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H15_TA_Beach|Rig_H15_TA_Beach|AM_Hero_15_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Exports\\Hero_15_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H15_TA_Std|Rig_H15_TA_Std|AM_Hero_15_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Exports\\Hero_1_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H1_TA_Beach|Rig_H1_TA_Beach|AM_Hero_1_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Exports\\Hero_1_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H1_TA_Std|Rig_H1_TA_Std|AM_Hero_1_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Exports\\Hero_3_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H3_TA_Beach|Rig_H3_TA_Beach|AM_Hero_3_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Exports\\Hero_3_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H3_TA_Std|Rig_H3_TA_Std|AM_Hero_3_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Exports\\Hero_4_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H4_TA_Beach|Rig_H4_TA_Beach|AM_Hero_4_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Exports\\Hero_4_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H4_TA_Std|Rig_H4_TA_Std|AM_Hero_4_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Exports\\Hero_5_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H5_TA_Beach|Rig_H5_TA_Beach|AM_Hero_5_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Exports\\Hero_5_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H5_TA_Std|Rig_H5_TA_Std|AM_Hero_5_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Exports\\Hero_7_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H7_TA_Beach|Rig_H7_TA_Beach|AM_Hero_7_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Exports\\Hero_7_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H7_TA_Std|Rig_H7_TA_Std|AM_Hero_7_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Exports\\Hero_8_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H8_TA_Beach|Rig_H8_TA_Beach|AM_Hero_8_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Exports\\Hero_8_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H8_TA_Std|Rig_H8_TA_Std|AM_Hero_8_TypeA_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Exports\\Hero_9_TypeA_Beachgoer_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H9_TA_Beach|Rig_H9_TA_Beach|AM_Hero_9_TypeA_Beachgoer_Idle"
+      ],
+      "ok": true
+    },
+    {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Exports\\Hero_9_TypeA_Rigged.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 2,
+      "skinned_mesh_count": 2,
+      "actions": [
+        "Rig_H9_TA_Std|Rig_H9_TA_Std|AM_Hero_9_TypeA_Idle"
+      ],
+      "ok": true
+    }
+  ],
+  "all_verified": true
+}

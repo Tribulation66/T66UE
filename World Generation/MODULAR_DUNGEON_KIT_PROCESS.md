@@ -1,6 +1,6 @@
 # Modular Dungeon Kit Process
 
-This file is the authoritative `World Generation` process for generating modular dungeon environment pieces for `T66`.
+This file is the authoritative `World Generation` process for generating modular dungeon and difficulty-themed environment pieces for `T66`.
 
 Use `Model Generation` for the TRELLIS server, Blender QA scripts, RetopoFlow rule, and raw generation artifact storage. Use this file for world/room kit design, module contracts, and runtime integration.
 
@@ -217,6 +217,12 @@ The active sheet-based batch plan is:
 
 - [CoherentThemeKit01](C:/UE/T66/Model%20Generation/Runs/Environment/CoherentThemeKit01/Notes/batch_plan.md)
 
+Current raw TRELLIS review target:
+
+- [CoherentThemeKit01 Raw/Trellis](C:/UE/T66/Model%20Generation/Runs/Environment/CoherentThemeKit01/Raw/Trellis)
+- 40 raw GLBs total: Dungeon/Easy, Forest/Medium, Ocean/Hard, Martian/VeryHard, and Hell/Impossible, each with four walls and four floors
+- first gate is visual scale comparison in Blender beside the accepted Arthur model before normalization or Unreal import
+
 ## Prompt Templates
 
 ### Wall Segment
@@ -412,7 +418,7 @@ The kit is accepted only if:
 
 ## First Recommended Batch
 
-Generate in this order:
+The older first DungeonKit01 batch remains useful as the prototype reference:
 
 1. `DungeonWall_Straight_A`
 2. `DungeonFloor_Stone_A`
@@ -423,4 +429,4 @@ Generate in this order:
 7. `DungeonWall_Doorway_Arch`
 8. `DungeonCeiling_ChainAnchor_A`
 
-This gives enough coverage for a small modular room test without overcommitting to a huge kit before the import/runtime path is proven.
+For the current CoherentThemeKit01 pass, do not generate more source sheets or TRELLIS outputs until the 40 raw wall/floor modules have been reviewed beside Arthur and obvious rejects have been recorded.

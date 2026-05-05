@@ -16,15 +16,22 @@ public:
 
 	void ResetRunSetup();
 	void BeginNewRun();
+	void BeginDailyRun(FName DifficultyID, const FString& ChallengeId, int32 Seed);
 	void SelectDifficulty(FName DifficultyID);
 	void SelectMap(FName MapID);
+	void SelectStage(FName StageID);
 	void ResetBattleRewardGrant();
 	bool TryMarkBattleRewardGranted();
 
 	FName GetSelectedDifficultyID() const { return SelectedDifficultyID; }
 	FName GetSelectedMapID() const { return SelectedMapID; }
+	FName GetSelectedStageID() const { return SelectedStageID; }
+	bool IsDailyRun() const { return bDailyRun; }
+	const FString& GetDailyChallengeId() const { return DailyChallengeId; }
+	int32 GetDailySeed() const { return DailySeed; }
 	bool HasSelectedDifficulty() const { return SelectedDifficultyID != NAME_None; }
 	bool HasSelectedMap() const { return SelectedMapID != NAME_None; }
+	bool HasSelectedStage() const { return SelectedStageID != NAME_None; }
 
 private:
 	UPROPERTY()
@@ -34,5 +41,17 @@ private:
 	FName SelectedMapID = NAME_None;
 
 	UPROPERTY()
+	FName SelectedStageID = NAME_None;
+
+	UPROPERTY()
 	bool bBattleRewardGranted = false;
+
+	UPROPERTY()
+	bool bDailyRun = false;
+
+	UPROPERTY()
+	FString DailyChallengeId;
+
+	UPROPERTY()
+	int32 DailySeed = 0;
 };

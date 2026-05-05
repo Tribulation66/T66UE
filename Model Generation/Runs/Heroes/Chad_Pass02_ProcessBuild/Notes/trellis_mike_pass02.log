@@ -1,0 +1,12 @@
+[2026-05-04T15:45:12+00:00] HEALTH {"gpu":"NVIDIA A40","status":"ok","vram_total_gb":47.7,"vram_used_gb":0.0}
+[2026-05-04T15:45:12+00:00] START Hero_3_Mike_Chad_Standard_BodyOnly_White seed=1337 texture=2048 decimation=80000
+[2026-05-04T15:48:15+00:00] DONE Hero_3_Mike_Chad_Standard_BodyOnly_White 3913964 bytes duration=183s -> /workspace/T66/ModelGeneration/Runs/Heroes/Chad_Pass02_ProcessBuild/Raw/Trellis/Hero_3_Mike_Chad_Standard_BodyOnly_White_S1337_D80000_Trellis2.glb
+[2026-05-04T15:48:15+00:00] START Hero_3_Mike_Chad_Standard_HeadOnly_White seed=1337 texture=2048 decimation=120000
+[2026-05-04T15:51:36+00:00] DONE Hero_3_Mike_Chad_Standard_HeadOnly_White 7051640 bytes duration=201s -> /workspace/T66/ModelGeneration/Runs/Heroes/Chad_Pass02_ProcessBuild/Raw/Trellis/Hero_3_Mike_Chad_Standard_HeadOnly_White_S1337_D120000_Trellis2.glb
+total 11M
+-rw-rw-rw- 1 root root 3.8M May  4 15:48 Hero_3_Mike_Chad_Standard_BodyOnly_White_S1337_D80000_Trellis2.glb
+-rw-rw-rw- 1 root root 6.8M May  4 15:51 Hero_3_Mike_Chad_Standard_HeadOnly_White_S1337_D120000_Trellis2.glb
+[2026-05-04T16:05:23+00:00] START Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A02 seed=1337 texture=2048 decimation=120000
+[2026-05-04T16:07:13+00:00] DONE Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A02 4961392 bytes duration=110s -> /workspace/T66/ModelGeneration/Runs/Heroes/Chad_Pass02_ProcessBuild/Raw/Trellis/Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A02_S1337_D120000_Trellis2.glb
+[2026-05-04T16:38:34+00:00] START Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A03 seed=1337 texture=2048 decimation=120000
+[2026-05-04T16:40:28+00:00] DONE Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A03 4975040 bytes duration=114s -> /workspace/T66/ModelGeneration/Runs/Heroes/Chad_Pass02_ProcessBuild/Raw/Trellis/Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A03_S1337_D120000_Trellis2.glb

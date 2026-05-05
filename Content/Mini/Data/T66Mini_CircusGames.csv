@@ -1,0 +1,7 @@
+---,GameID,DisplayName,Description,Icon,Bet,SuccessChance,PushChance,PayoutMultiplier,FlatPayout,MinGoldPayout,MaxGoldPayout,AngerAdd,ItemRewardChance
+CoinFlip,CoinFlip,Coin Flip,Heads or tails with quick gold swings.,/Game/UI/Sprites/Games/T_Game_Coin.T_Game_Coin,18,0.50,0,2.0,0,0,0,0.07,0
+RockPaperScissors,Rock Paper Scissors,Rock Paper Scissors,The demon hand mind-game stays in the lineup.,/Game/UI/Sprites/Games/T_Game_RPS.T_Game_RPS,20,0.333,0.333,0,44,0,0,0.08,0
+BlackJack,Black Jack,Black Jack,Card table variance with larger payouts.,/Game/UI/Sprites/Games/T_Game_BJ.T_Game_BJ,24,0,0,2.0,0,0,0,0.11,0
+Lottery,Lottery,Lottery,Cheap ticket high spike payout.,/Game/UI/Sprites/Games/LOTTERY.LOTTERY,12,0.18,0,0,84,0,0,0.12,0
+Plinko,Plinko,Plinko,Drop and pray for the multiplier lane.,/Game/UI/Sprites/Games/PLINKO.PLINKO,16,0,0,0,0,0,0,0.10,0
+BoxOpening,Box Opening,Box Opening,Fast roll for gold or a random item.,/Game/UI/Sprites/Games/CRATE.CRATE,18,0,0,0,0,10,32,0.09,0.34

@@ -1,0 +1,48 @@
+Use case: stylized-concept
+Asset type: TRELLIS image-to-3D seed image for a game character head, front view
+
+Generate a single centered head-only source image for Hero_3 Mike Chad Standard.
+This is a stylized giga-chad cartoon head with a narrow neck plug, intended for
+image-to-3D model generation.
+
+Scene/backdrop:
+- Perfectly flat pure white background.
+- No floor, horizon, contact shadow, cast shadow, gradients, texture, ambient
+  vignette, or background variation.
+
+Subject:
+- Front-facing male giga-chad head plus neck only.
+- Extreme square block jaw, jaw almost as wide as cheekbones.
+- Wide flat horizontal chin plane and low square mandible corners.
+- Stern expression, thick dark eyebrows, short dark beard/stubble pattern.
+- Short dark hair.
+
+Hair constraints:
+- Full dense dark hair mass wrapping continuously around the skull.
+- Hair must be visible along both side edges of the head.
+- No scalp showing at the crown.
+- No bald spot, shaved crown, undercut patch, or skin-colored opening on top or
+  back.
+- Hair silhouette should be rounded and full at the back/sides, not too angular,
+  while still having stylized front spikes.
+
+Neck constraints:
+- Include a real visible neck that starts under the jaw and narrows into a
+  centered plug below the mandible.
+- The neck must be readable, but must not include shoulders, traps,
+  collarbones, upper chest, clothing, collar, or a full-width rectangular
+  column.
+
+Style:
+- Bright cel-shaded 3D cartoon game art.
+- Clean readable forms and saturated warm skin.
+- Flat front-facing studio light.
+- No one-sided face shadow and no dramatic shadow.
+
+Composition:
+- Square image.
+- Head centered, full head and full neck plug visible, generous white padding.
+- Symmetric camera, straight-on front orthographic-like view.
+
+Avoid:
+- Shoulders, clothing, text, watermark, shadow, cropped head, extra body parts.

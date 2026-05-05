@@ -802,7 +802,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				: FLinearColor(0.12f, 0.12f, 0.14f, 1.f)));
 	}
 	const FName DesiredPortraitHeroID = GIAsT66 ? GIAsT66->SelectedHeroID : NAME_None;
-	const ET66BodyType DesiredPortraitBodyType = GIAsT66 ? GIAsT66->SelectedHeroBodyType : ET66BodyType::TypeA;
+	const ET66BodyType DesiredPortraitBodyType = GIAsT66 ? GIAsT66->SelectedHeroBodyType : ET66BodyType::Chad;
 	ET66HeroPortraitVariant DesiredPortraitVariant = RunState->IsSaintBlessingActive()
 		? ET66HeroPortraitVariant::Invincible
 		: ET66HeroPortraitVariant::Half;

@@ -16,6 +16,10 @@ const FString UT66PlayerSettingsSubsystem::SlotName(TEXT("T66_PlayerSettings"));
 
 namespace
 {
+	constexpr float T66LockedChaseTurnSensitivityDefaultPercent = 65.0f;
+	constexpr float T66LockedChaseTurnRateMinDegreesPerSecond = 55.0f;
+	constexpr float T66LockedChaseTurnRateMaxDegreesPerSecond = 165.0f;
+
 	ET66MediaViewerSource SanitizeMediaViewerSourceIndex(int32 RawValue)
 	{
 		switch (static_cast<ET66MediaViewerSource>(RawValue))
@@ -199,6 +203,20 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 	{
 		SettingsObj->SchemaVersion = 19;
 		SettingsObj->bShowRunSummaryChadCouponsPopup = true;
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < 20)
+	{
+		SettingsObj->SchemaVersion = 20;
+		SettingsObj->LockedChaseTurnSensitivityPercent = T66LockedChaseTurnSensitivityDefaultPercent;
+		bNeedsSave = true;
+	}
+
+	const float SanitizedLockedChaseTurnSensitivityPercent = FMath::Clamp(SettingsObj->LockedChaseTurnSensitivityPercent, 0.0f, 100.0f);
+	if (!FMath::IsNearlyEqual(SettingsObj->LockedChaseTurnSensitivityPercent, SanitizedLockedChaseTurnSensitivityPercent, 0.01f))
+	{
+		SettingsObj->LockedChaseTurnSensitivityPercent = SanitizedLockedChaseTurnSensitivityPercent;
 		bNeedsSave = true;
 	}
 
@@ -498,6 +516,39 @@ void UT66PlayerSettingsSubsystem::SetShowRunSummaryChadCouponsPopup(bool bEnable
 
 	SettingsObj->bShowRunSummaryChadCouponsPopup = bEnabled;
 	Save();
+}
+
+void UT66PlayerSettingsSubsystem::SetLockedChaseTurnSensitivityPercent(float NewValue)
+{
+	if (!SettingsObj)
+	{
+		return;
+	}
+
+	const float ClampedValue = FMath::Clamp(NewValue, 0.0f, 100.0f);
+	if (FMath::IsNearlyEqual(SettingsObj->LockedChaseTurnSensitivityPercent, ClampedValue, 0.01f))
+	{
+		return;
+	}
+
+	SettingsObj->LockedChaseTurnSensitivityPercent = ClampedValue;
+	Save();
+}
+
+float UT66PlayerSettingsSubsystem::GetLockedChaseTurnSensitivityPercent() const
+{
+	return SettingsObj
+		? FMath::Clamp(SettingsObj->LockedChaseTurnSensitivityPercent, 0.0f, 100.0f)
+		: T66LockedChaseTurnSensitivityDefaultPercent;
+}
+
+float UT66PlayerSettingsSubsystem::GetLockedChaseTurnRateDegreesPerSecond() const
+{
+	const float Alpha = GetLockedChaseTurnSensitivityPercent() / 100.0f;
+	return FMath::Lerp(
+		T66LockedChaseTurnRateMinDegreesPerSecond,
+		T66LockedChaseTurnRateMaxDegreesPerSecond,
+		Alpha);
 }
 
 FT66BeatTargetSelection UT66PlayerSettingsSubsystem::GetTimeToBeatSelection() const

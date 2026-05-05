@@ -1,0 +1,5 @@
+EnemyID,DisplayName,ArchetypeLabel,AccentColor,BaseHealth,HealthPerStage,BaseGoldReward,GoldPerStage
+Training_Dummy,Training Dummy,Starter,"(R=0.70,G=0.24,B=0.16,A=1.0)",12,4,2,0.65
+Dungeon_Bruiser,Dungeon Bruiser,Frontline,"(R=0.86,G=0.30,B=0.22,A=1.0)",28,7,5,1.15
+Gold_Goblin,Gold Goblin,Treasure,"(R=0.92,G=0.70,B=0.22,A=1.0)",22,5,12,1.8
+Tower_Ogre,Tower Ogre,Wall,"(R=0.54,G=0.26,B=0.18,A=1.0)",80,15,24,3.2

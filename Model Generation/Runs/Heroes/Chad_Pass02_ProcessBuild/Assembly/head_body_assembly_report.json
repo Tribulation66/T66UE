@@ -1,0 +1,43 @@
+{
+  "stem": "Hero_3_Mike_Chad_Standard_White_Assembled",
+  "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Raw\\Trellis\\Hero_3_Mike_Chad_Standard_BodyOnly_White_S1337_D80000_Trellis2.glb",
+  "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Raw\\Trellis\\Hero_3_Mike_Chad_Standard_HeadOnly_White_S1337_D120000_Trellis2.glb",
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Assembly\\HeadBody\\Hero_3_Mike_Chad_Standard_White_Assembled.glb",
+  "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\Chad_Pass02_Mike\\Hero_3_Mike_Chad_Standard_White_Assembled.blend",
+  "renders": {
+    "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly\\Hero_3_Mike_Chad_Standard_White_Assembled_front.png",
+    "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly\\Hero_3_Mike_Chad_Standard_White_Assembled_right.png",
+    "back": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly\\Hero_3_Mike_Chad_Standard_White_Assembled_back.png",
+    "left": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly\\Hero_3_Mike_Chad_Standard_White_Assembled_left.png",
+    "neck_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly\\Hero_3_Mike_Chad_Standard_White_Assembled_neck_closeup.png"
+  },
+  "placement": {
+    "head_height_ratio": 0.245,
+    "neck_overlap_ratio": 0.045,
+    "head_y_offset_ratio": -0.006,
+    "head_x_offset_ratio": 0.0,
+    "head_scale": 0.2456786553737972
+  },
+  "triangles": {
+    "body": 74627,
+    "head": 115250,
+    "combined": 189877
+  },
+  "bounds": {
+    "body_size": [
+      0.6779093742370605,
+      0.2873062491416931,
+      1.0014914274215698
+    ],
+    "head_size_before": [
+      0.6347384452819824,
+      0.7230255603790283,
+      0.9987249374389648
+    ],
+    "combined_size": [
+      0.6779093742370605,
+      0.2873062491416931,
+      1.2017897367477417
+    ]
+  }
+}

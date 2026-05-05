@@ -109,7 +109,7 @@ protected:
 	FName ActivePreviewHeroID = NAME_None;
 
 	UPROPERTY(Transient)
-	ET66BodyType ActivePreviewBodyType = ET66BodyType::TypeA;
+	ET66BodyType ActivePreviewBodyType = ET66BodyType::Chad;
 
 	UPROPERTY(Transient)
 	FName ActivePreviewHeroSkinID = NAME_None;
@@ -167,13 +167,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
 	float PlatformForwardOffset = 0.f;
 
-	/** Minimum visual scale so the floor fills the entire preview view and hides the void. */
-	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
-	float MinGroundScale = 90.f;
-
 	/** Multiplier on the auto-framed camera distance (smaller = character appears bigger, more zoomed in). */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
-	float CameraDistanceMultiplier = 2.2f;
+	float CameraDistanceMultiplier = 2.0f;
 
 	/** User zoom factor applied on top of CameraDistanceMultiplier (<= 1.0 means zoom-in). */
 	UPROPERTY(Transient)

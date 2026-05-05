@@ -1,0 +1,4 @@
+StageID,ActIndex,StageIndex,DisplayName,FirstFloor,BossFloor,BossEncounterID,ClearGoldReward,NextStageID
+Deck_Stage_01,1,1,Upper Dungeon,1,9,WardenGate,50,Deck_Stage_02
+Deck_Stage_02,1,2,Sunken Dungeon,10,18,DepthWarden,80,Deck_Stage_03
+Deck_Stage_03,1,3,Core Dungeon,19,27,ChadlichGate,120,

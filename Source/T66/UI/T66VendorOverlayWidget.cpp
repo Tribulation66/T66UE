@@ -35,7 +35,7 @@ static UT66RunStateSubsystem* GetRunStateFromWorld(UWorld* World)
 	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 }
 
-static FString MakeInventoryStackKey(const FT66InventorySlot& Slot)
+static FString MakeVendorInventoryStackKey(const FT66InventorySlot& Slot)
 {
 	return FString::Printf(TEXT("%s|%d"), *Slot.ItemTemplateID.ToString(), static_cast<int32>(Slot.Rarity));
 }
@@ -1579,7 +1579,7 @@ void UT66VendorOverlayWidget::RefreshInventory()
 	{
 		if (InventorySlotData.IsValid())
 		{
-			StackCounts.FindOrAdd(MakeInventoryStackKey(InventorySlotData))++;
+			StackCounts.FindOrAdd(MakeVendorInventoryStackKey(InventorySlotData))++;
 		}
 	}
 
@@ -1613,7 +1613,7 @@ void UT66VendorOverlayWidget::RefreshInventory()
 			InventorySlotButtons[i]->SetEnabled(bHasItem && !IsBossActive());
 		}
 		const int32 StackCount = (bHasItem && InvSlots.IsValidIndex(i) && InvSlots[i].IsValid())
-			? StackCounts.FindRef(MakeInventoryStackKey(InvSlots[i]))
+			? StackCounts.FindRef(MakeVendorInventoryStackKey(InvSlots[i]))
 			: 0;
 		if (InventorySlotCountTexts.IsValidIndex(i) && InventorySlotCountTexts[i].IsValid())
 		{

@@ -14,11 +14,12 @@
 
 namespace
 {
-	const TCHAR* PreviewFallbackBlockMaterialPath = TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround");
-	const TCHAR* DungeonKitPreviewFloorMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonFloor_BonesDrain_A_UnrealReady.DungeonFloor_BonesDrain_A_UnrealReady");
-	const TCHAR* DungeonKitPreviewBackdropWallMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_BonesNiche_UnrealReady.DungeonWall_Straight_BonesNiche_UnrealReady");
-	const TCHAR* DungeonKitPreviewLeftWallMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_Chains_UnrealReady.DungeonWall_Straight_Chains_UnrealReady");
-	const TCHAR* DungeonKitPreviewRightWallMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01/DungeonWall_Straight_A_UnrealReady.DungeonWall_Straight_A_UnrealReady");
+	const TCHAR* PreviewFallbackBlockMaterialPath = TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit");
+	const TCHAR* DungeonKitPreviewFloorMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_StoneSlabs_A_UnrealReady.DungeonFloor_StoneSlabs_A_UnrealReady");
+	const TCHAR* DungeonKitPreviewBackdropWallMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_BonesNiche_A_UnrealReady.DungeonWall_BonesNiche_A_UnrealReady");
+	const TCHAR* DungeonKitPreviewLeftWallMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_Chains_A_UnrealReady.DungeonWall_Chains_A_UnrealReady");
+	const TCHAR* DungeonKitPreviewRightWallMeshPath = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_TorchSconce_A_UnrealReady.DungeonWall_TorchSconce_A_UnrealReady");
+	constexpr float DungeonKitPreviewFloorThickness = 24.0f;
 
 	const FName PreviewBackdropWallName(TEXT("PreviewBackdropWall"));
 	const FName PreviewLeftWallName(TEXT("PreviewLeftWall"));
@@ -262,36 +263,22 @@ namespace
 		Component->SetRelativeRotation(FRotator::ZeroRotator);
 	}
 
-	float GetMeshAxisSize(UStaticMesh* Mesh, const int32 AxisIndex)
-	{
-		if (!Mesh)
-		{
-			return 1.0f;
-		}
-
-		const FVector Extents = Mesh->GetBounds().BoxExtent;
-		if (AxisIndex == 0)
-		{
-			return FMath::Max(Extents.X * 2.0f, 1.0f);
-		}
-		if (AxisIndex == 1)
-		{
-			return FMath::Max(Extents.Y * 2.0f, 1.0f);
-		}
-		return FMath::Max(Extents.Z * 2.0f, 1.0f);
-	}
-
 	UStaticMesh* LoadDungeonKitPreviewMesh(const TCHAR* MeshPath)
 	{
 		return MeshPath ? LoadObject<UStaticMesh>(nullptr, MeshPath) : nullptr;
 	}
 
+	FVector GetPreviewMeshSize(UStaticMesh* Mesh)
+	{
+		return Mesh
+			? FVector(Mesh->GetBounds().BoxExtent.X * 2.0f, Mesh->GetBounds().BoxExtent.Y * 2.0f, Mesh->GetBounds().BoxExtent.Z * 2.0f)
+			: FVector::ZeroVector;
+	}
+
 	void ConfigureDungeonKitPreviewFloor(
 		UStaticMeshComponent* Component,
 		UStaticMesh* Mesh,
-		const FVector& RelativeLocation,
-		const FVector2D& DesiredHalfExtents,
-		const float DesiredThickness)
+		const FVector& RelativeLocation)
 	{
 		if (!Component || !Mesh)
 		{
@@ -299,10 +286,7 @@ namespace
 		}
 
 		Component->SetStaticMesh(Mesh);
-		Component->SetRelativeScale3D(FVector(
-			(DesiredHalfExtents.X * 2.0f) / GetMeshAxisSize(Mesh, 0),
-			(DesiredHalfExtents.Y * 2.0f) / GetMeshAxisSize(Mesh, 1),
-			DesiredThickness / GetMeshAxisSize(Mesh, 2)));
+		Component->SetRelativeScale3D(FVector::OneVector);
 		Component->SetRelativeRotation(FRotator::ZeroRotator);
 		Component->SetRelativeLocation(FVector(RelativeLocation.X, RelativeLocation.Y, 0.0f));
 		FT66VisualUtil::GroundMeshToActorOrigin(Component, Mesh);
@@ -317,9 +301,6 @@ namespace
 		UStaticMesh* Mesh,
 		const FVector& RelativeLocation,
 		const FRotator& RelativeRotation,
-		const float DesiredDepth,
-		const float DesiredSpan,
-		const float DesiredHeight,
 		const bool bVisible)
 	{
 		if (!Component || !Mesh)
@@ -328,10 +309,7 @@ namespace
 		}
 
 		Component->SetStaticMesh(Mesh);
-		Component->SetRelativeScale3D(FVector(
-			DesiredDepth / GetMeshAxisSize(Mesh, 0),
-			DesiredSpan / GetMeshAxisSize(Mesh, 1),
-			DesiredHeight / GetMeshAxisSize(Mesh, 2)));
+		Component->SetRelativeScale3D(FVector::OneVector);
 		Component->SetRelativeRotation(RelativeRotation);
 		Component->SetRelativeLocation(FVector(RelativeLocation.X, RelativeLocation.Y, 0.0f));
 		FT66VisualUtil::GroundMeshToActorOrigin(Component, Mesh);
@@ -492,41 +470,38 @@ void T66PreviewStageEnvironment::ApplyPreviewEnvironment(
 
 		if (FloorMesh && BackdropWallMesh && LeftWallMesh && RightWallMesh)
 		{
+			const FVector FloorSize = GetPreviewMeshSize(FloorMesh);
+			const FVector BackdropWallSize = GetPreviewMeshSize(BackdropWallMesh);
+			const FVector LeftWallSize = GetPreviewMeshSize(LeftWallMesh);
+			const FVector RightWallSize = GetPreviewMeshSize(RightWallMesh);
+			const float FloorHalfX = FMath::Max(FloorSize.X * 0.5f, 1.0f);
+			const float FloorHalfY = FMath::Max(FloorSize.Y * 0.5f, 1.0f);
+			constexpr float WallFloorOverlap = 2.0f;
+
 			ConfigureDungeonKitPreviewFloor(
 				GroundComponent,
 				FloorMesh,
-				FVector(0.0f, 0.0f, -90.0f),
-				FVector2D(540.0f, 540.0f),
-				24.0f);
+				FVector(0.0f, 0.0f, -DungeonKitPreviewFloorThickness));
 
 			ConfigureDungeonKitPreviewWall(
 				FindPreviewComponent(Owner, PreviewBackdropWallName),
 				BackdropWallMesh,
-				FVector(1150.0f, 0.0f, 0.0f),
+				FVector(FloorHalfX + (BackdropWallSize.X * 0.5f) - WallFloorOverlap, 0.0f, 0.0f),
 				FRotator(0.0f, 180.0f, 0.0f),
-				120.0f,
-				1720.0f,
-				860.0f,
 				bShowBackdropWalls);
 
 			ConfigureDungeonKitPreviewWall(
 				FindPreviewComponent(Owner, PreviewLeftWallName),
 				LeftWallMesh,
-				FVector(620.0f, -980.0f, 0.0f),
+				FVector(0.0f, -FloorHalfY - (LeftWallSize.X * 0.5f) + WallFloorOverlap, 0.0f),
 				FRotator(0.0f, 90.0f, 0.0f),
-				120.0f,
-				1300.0f,
-				780.0f,
 				bShowBackdropWalls);
 
 			ConfigureDungeonKitPreviewWall(
 				FindPreviewComponent(Owner, PreviewRightWallName),
 				RightWallMesh,
-				FVector(620.0f, 980.0f, 0.0f),
+				FVector(0.0f, FloorHalfY + (RightWallSize.X * 0.5f) - WallFloorOverlap, 0.0f),
 				FRotator(0.0f, -90.0f, 0.0f),
-				120.0f,
-				1300.0f,
-				780.0f,
 				bShowBackdropWalls);
 
 			SetPreviewComponentVisible(FindPreviewComponent(Owner, PreviewCeilingName), false);

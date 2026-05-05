@@ -1,0 +1,681 @@
+{
+  "source_report": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\batch_typea_rig_report.json",
+  "output_root": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders",
+  "render_count": 96,
+  "failure_count": 0,
+  "renders": [
+    {
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_1_Arthur\\Standard\\Hero_1_Arthur_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_1_Arthur\\Standard\\Hero_1_Arthur_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_1_Arthur\\Standard\\Hero_1_Arthur_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_1_Arthur\\Standard\\Hero_1_Arthur_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_1_Arthur\\Beachgoer\\Hero_1_Arthur_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_1_Arthur\\Beachgoer\\Hero_1_Arthur_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_1_Arthur\\Beachgoer\\Hero_1_Arthur_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_1_Arthur\\Beachgoer\\Hero_1_Arthur_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_3_LuBu\\Standard\\Hero_3_LuBu_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_3_LuBu\\Standard\\Hero_3_LuBu_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_3_LuBu\\Standard\\Hero_3_LuBu_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_3_LuBu\\Standard\\Hero_3_LuBu_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_3_LuBu\\Beachgoer\\Hero_3_LuBu_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_3_LuBu\\Beachgoer\\Hero_3_LuBu_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_3_LuBu\\Beachgoer\\Hero_3_LuBu_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_3_LuBu\\Beachgoer\\Hero_3_LuBu_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_4_Mike\\Standard\\Hero_4_Mike_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_4_Mike\\Standard\\Hero_4_Mike_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_4_Mike\\Standard\\Hero_4_Mike_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_4_Mike\\Standard\\Hero_4_Mike_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_4_Mike\\Beachgoer\\Hero_4_Mike_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_4_Mike\\Beachgoer\\Hero_4_Mike_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_4_Mike\\Beachgoer\\Hero_4_Mike_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_4_Mike\\Beachgoer\\Hero_4_Mike_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_5_George\\Standard\\Hero_5_George_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_5_George\\Standard\\Hero_5_George_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_5_George\\Standard\\Hero_5_George_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_5_George\\Standard\\Hero_5_George_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_5_George\\Beachgoer\\Hero_5_George_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_5_George\\Beachgoer\\Hero_5_George_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_5_George\\Beachgoer\\Hero_5_George_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_5_George\\Beachgoer\\Hero_5_George_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_7_Robo\\Standard\\Hero_7_Robo_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_7_Robo\\Standard\\Hero_7_Robo_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_7_Robo\\Standard\\Hero_7_Robo_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_7_Robo\\Standard\\Hero_7_Robo_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_7_Robo\\Beachgoer\\Hero_7_Robo_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_7_Robo\\Beachgoer\\Hero_7_Robo_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_7_Robo\\Beachgoer\\Hero_7_Robo_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_7_Robo\\Beachgoer\\Hero_7_Robo_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_8_Billy\\Standard\\Hero_8_Billy_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_8_Billy\\Standard\\Hero_8_Billy_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_8_Billy\\Standard\\Hero_8_Billy_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_8_Billy\\Standard\\Hero_8_Billy_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_8_Billy\\Beachgoer\\Hero_8_Billy_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_8_Billy\\Beachgoer\\Hero_8_Billy_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_8_Billy\\Beachgoer\\Hero_8_Billy_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_8_Billy\\Beachgoer\\Hero_8_Billy_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_9_Rabbit\\Standard\\Hero_9_Rabbit_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_9_Rabbit\\Standard\\Hero_9_Rabbit_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_9_Rabbit\\Standard\\Hero_9_Rabbit_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_9_Rabbit\\Standard\\Hero_9_Rabbit_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_9_Rabbit\\Beachgoer\\Hero_9_Rabbit_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_9_Rabbit\\Beachgoer\\Hero_9_Rabbit_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_9_Rabbit\\Beachgoer\\Hero_9_Rabbit_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_9_Rabbit\\Beachgoer\\Hero_9_Rabbit_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_11_Shroud\\Standard\\Hero_11_Shroud_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_11_Shroud\\Standard\\Hero_11_Shroud_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_11_Shroud\\Standard\\Hero_11_Shroud_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_11_Shroud\\Standard\\Hero_11_Shroud_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_11_Shroud\\Beachgoer\\Hero_11_Shroud_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_11_Shroud\\Beachgoer\\Hero_11_Shroud_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_11_Shroud\\Beachgoer\\Hero_11_Shroud_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_11_Shroud\\Beachgoer\\Hero_11_Shroud_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_12_xQc\\Standard\\Hero_12_xQc_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_12_xQc\\Standard\\Hero_12_xQc_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_12_xQc\\Standard\\Hero_12_xQc_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_12_xQc\\Standard\\Hero_12_xQc_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_12_xQc\\Beachgoer\\Hero_12_xQc_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_12_xQc\\Beachgoer\\Hero_12_xQc_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_12_xQc\\Beachgoer\\Hero_12_xQc_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_12_xQc\\Beachgoer\\Hero_12_xQc_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_13_Moist\\Standard\\Hero_13_Moist_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_13_Moist\\Standard\\Hero_13_Moist_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_13_Moist\\Standard\\Hero_13_Moist_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_13_Moist\\Standard\\Hero_13_Moist_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_13_Moist\\Beachgoer\\Hero_13_Moist_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_13_Moist\\Beachgoer\\Hero_13_Moist_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_13_Moist\\Beachgoer\\Hero_13_Moist_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_13_Moist\\Beachgoer\\Hero_13_Moist_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_14_North\\Standard\\Hero_14_North_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_14_North\\Standard\\Hero_14_North_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_14_North\\Standard\\Hero_14_North_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_14_North\\Standard\\Hero_14_North_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_14_North\\Beachgoer\\Hero_14_North_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_14_North\\Beachgoer\\Hero_14_North_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_14_North\\Beachgoer\\Hero_14_North_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_14_North\\Beachgoer\\Hero_14_North_Chad_Beachgoer_back.png"
+    },
+    {
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Standard",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_15_Asmon\\Standard\\Hero_15_Asmon_Chad_Standard_front.png"
+    },
+    {
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Standard",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_15_Asmon\\Standard\\Hero_15_Asmon_Chad_Standard_left.png"
+    },
+    {
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Standard",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_15_Asmon\\Standard\\Hero_15_Asmon_Chad_Standard_right.png"
+    },
+    {
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Standard",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_15_Asmon\\Standard\\Hero_15_Asmon_Chad_Standard_back.png"
+    },
+    {
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Beachgoer",
+      "view": "front",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_15_Asmon\\Beachgoer\\Hero_15_Asmon_Chad_Beachgoer_front.png"
+    },
+    {
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Beachgoer",
+      "view": "left",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_15_Asmon\\Beachgoer\\Hero_15_Asmon_Chad_Beachgoer_left.png"
+    },
+    {
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Beachgoer",
+      "view": "right",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_15_Asmon\\Beachgoer\\Hero_15_Asmon_Chad_Beachgoer_right.png"
+    },
+    {
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Beachgoer",
+      "view": "back",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Review\\ChadFourAngleRenders\\Hero_15_Asmon\\Beachgoer\\Hero_15_Asmon_Chad_Beachgoer_back.png"
+    }
+  ],
+  "failures": []
+}

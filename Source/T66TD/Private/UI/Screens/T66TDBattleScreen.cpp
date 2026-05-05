@@ -3,9 +3,11 @@
 #include "UI/Screens/T66TDBattleScreen.h"
 
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66BackendSubsystem.h"
 #include "Core/T66TDDataSubsystem.h"
 #include "Core/T66TDFrontendStateSubsystem.h"
 #include "Core/T66TDVisualSubsystem.h"
+#include "Core/T66SteamHelper.h"
 #include "Engine/GameInstance.h"
 #include "Data/T66TDDataTypes.h"
 #include "Engine/Texture2D.h"
@@ -13,6 +15,8 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
 #include "Rendering/DrawElements.h"
+#include "Save/T66TDRunSaveGame.h"
+#include "Save/T66TDSaveSubsystem.h"
 #include "Styling/CoreStyle.h"
 #include "UI/T66TDUIStyle.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
@@ -217,31 +221,14 @@ namespace
 		return FVector2D::DistSquared(A, B);
 	}
 
-	FString ResolveBossVisualID(const FString& ThemeLabel)
-	{
-		if (ThemeLabel.Equals(TEXT("Dungeon"), ESearchCase::IgnoreCase))
-		{
-			return TEXT("Roost");
-		}
-		if (ThemeLabel.Equals(TEXT("Forest"), ESearchCase::IgnoreCase))
-		{
-			return TEXT("Goat");
-		}
-		if (ThemeLabel.Equals(TEXT("Ocean"), ESearchCase::IgnoreCase))
-		{
-			return TEXT("Cow");
-		}
-		return TEXT("Pig");
-	}
-
 	struct FT66TDHeroCombatProfile
 	{
-		int32 Cost = 120;
-		float Damage = 10.f;
-		float Range = 0.12f;
-		float FireInterval = 0.65f;
+		int32 Cost = 0;
+		float Damage = 0.f;
+		float Range = 0.f;
+		float FireInterval = 0.f;
 		int32 ChainBounces = 0;
-		float ChainRadius = 0.10f;
+		float ChainRadius = 0.f;
 		float SplashRadius = 0.0f;
 		float DotDamagePerSecond = 0.0f;
 		float DotDuration = 0.0f;
@@ -276,14 +263,37 @@ namespace
 	};
 	ENUM_CLASS_FLAGS(ET66TDEnemyModifier);
 
+	ET66TDEnemyModifier BuildEnemyModifierMask(const int32 ModifierMask)
+	{
+		ET66TDEnemyModifier Modifiers = ET66TDEnemyModifier::None;
+		if ((ModifierMask & static_cast<int32>(ET66TDEnemyModifier::Hidden)) != 0)
+		{
+			Modifiers |= ET66TDEnemyModifier::Hidden;
+		}
+		if ((ModifierMask & static_cast<int32>(ET66TDEnemyModifier::Armored)) != 0)
+		{
+			Modifiers |= ET66TDEnemyModifier::Armored;
+		}
+		if ((ModifierMask & static_cast<int32>(ET66TDEnemyModifier::Regenerating)) != 0)
+		{
+			Modifiers |= ET66TDEnemyModifier::Regenerating;
+		}
+		if ((ModifierMask & static_cast<int32>(ET66TDEnemyModifier::Shielded)) != 0)
+		{
+			Modifiers |= ET66TDEnemyModifier::Shielded;
+		}
+		return Modifiers;
+	}
+
 	struct FT66TDEnemyArchetype
 	{
 		FString DisplayName;
-		float BaseHealth = 40.f;
-		float BaseSpeed = 0.16f;
-		int32 LeakDamage = 1;
-		int32 Bounty = 6;
-		float Radius = 0.012f;
+		FString VisualID;
+		float BaseHealth = 0.f;
+		float BaseSpeed = 0.f;
+		int32 LeakDamage = 0;
+		int32 Bounty = 0;
+		float Radius = 0.f;
 		FLinearColor Tint = FLinearColor::White;
 	};
 
@@ -359,190 +369,68 @@ namespace
 		bool bPendingRemoval = false;
 	};
 
-	FT66TDHeroCombatProfile BuildHeroProfile(const FT66TDHeroDefinition& HeroDefinition)
+	FT66TDHeroCombatProfile BuildHeroProfile(const FT66TDHeroDefinition& HeroDefinition, const FT66TDHeroCombatDefinition* CombatDefinition)
 	{
 		FT66TDHeroCombatProfile Profile;
 		Profile.CombatLabel = HeroDefinition.RoleLabel;
-
-		if (HeroDefinition.HeroID == FName(TEXT("Hero_1")))
+		if (CombatDefinition)
 		{
-			Profile.Cost = 130;
-			Profile.Damage = 18.f;
-			Profile.Range = 0.125f;
-			Profile.FireInterval = 0.60f;
-			Profile.FlatArmorPierce = 6.f;
-			Profile.CombatLabel = TEXT("Stable anti-lane bruiser");
+			Profile.Cost = CombatDefinition->Cost;
+			Profile.Damage = CombatDefinition->Damage;
+			Profile.Range = CombatDefinition->Range;
+			Profile.FireInterval = CombatDefinition->FireInterval;
+			Profile.ChainBounces = CombatDefinition->ChainBounces;
+			Profile.ChainRadius = CombatDefinition->ChainRadius;
+			Profile.SplashRadius = CombatDefinition->SplashRadius;
+			Profile.DotDamagePerSecond = CombatDefinition->DotDamagePerSecond;
+			Profile.DotDuration = CombatDefinition->DotDuration;
+			Profile.SlowMultiplier = CombatDefinition->SlowMultiplier;
+			Profile.SlowDuration = CombatDefinition->SlowDuration;
+			Profile.BossDamageMultiplier = CombatDefinition->BossDamageMultiplier;
+			Profile.FlatArmorPierce = CombatDefinition->FlatArmorPierce;
+			Profile.ShieldDamageMultiplier = CombatDefinition->ShieldDamageMultiplier;
+			Profile.bCanTargetHidden = CombatDefinition->bCanTargetHidden;
+			Profile.bPrioritizeBoss = CombatDefinition->bPrioritizeBoss;
+			Profile.VolleyShots = FMath::Max(1, CombatDefinition->VolleyShots);
+			Profile.BonusMaterialsOnKill = CombatDefinition->BonusMaterialsOnKill;
+			if (!CombatDefinition->CombatLabel.IsEmpty())
+			{
+				Profile.CombatLabel = CombatDefinition->CombatLabel;
+			}
 		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_2")))
-		{
-			Profile.Cost = 145;
-			Profile.Damage = 8.f;
-			Profile.Range = 0.145f;
-			Profile.FireInterval = 0.70f;
-			Profile.DotDamagePerSecond = 7.f;
-			Profile.DotDuration = 2.8f;
-			Profile.CombatLabel = TEXT("Curse DOT spread");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_3")))
-		{
-			Profile.Cost = 180;
-			Profile.Damage = 34.f;
-			Profile.Range = 0.135f;
-			Profile.FireInterval = 1.00f;
-			Profile.SplashRadius = 0.055f;
-			Profile.FlatArmorPierce = 11.f;
-			Profile.CombatLabel = TEXT("Heavy burst splash");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_4")))
-		{
-			Profile.Cost = 150;
-			Profile.Damage = 22.f;
-			Profile.Range = 0.105f;
-			Profile.FireInterval = 0.55f;
-			Profile.SplashRadius = 0.045f;
-			Profile.CombatLabel = TEXT("Short-range panic clear");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_5")))
-		{
-			Profile.Cost = 170;
-			Profile.Damage = 40.f;
-			Profile.Range = 0.205f;
-			Profile.FireInterval = 1.00f;
-			Profile.FlatArmorPierce = 7.f;
-			Profile.ShieldDamageMultiplier = 1.15f;
-			Profile.bCanTargetHidden = true;
-			Profile.CombatLabel = TEXT("Long-range priority fire");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_6")))
-		{
-			Profile.Cost = 165;
-			Profile.Damage = 16.f;
-			Profile.Range = 0.155f;
-			Profile.FireInterval = 0.58f;
-			Profile.ChainBounces = 3;
-			Profile.ChainRadius = 0.085f;
-			Profile.ShieldDamageMultiplier = 1.50f;
-			Profile.CombatLabel = TEXT("Chain lightning control");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_7")))
-		{
-			Profile.Cost = 150;
-			Profile.Damage = 12.f;
-			Profile.Range = 0.150f;
-			Profile.FireInterval = 0.34f;
-			Profile.ChainBounces = 1;
-			Profile.ChainRadius = 0.075f;
-			Profile.ShieldDamageMultiplier = 1.65f;
-			Profile.CombatLabel = TEXT("Reliable overclock DPS");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_8")))
-		{
-			Profile.Cost = 110;
-			Profile.Damage = 8.f;
-			Profile.Range = 0.145f;
-			Profile.FireInterval = 0.18f;
-			Profile.CombatLabel = TEXT("Rapid leak cleanup");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_9")))
-		{
-			Profile.Cost = 145;
-			Profile.Damage = 13.f;
-			Profile.Range = 0.150f;
-			Profile.FireInterval = 0.42f;
-			Profile.ChainBounces = 2;
-			Profile.ChainRadius = 0.090f;
-			Profile.CombatLabel = TEXT("Ricochet side-lane coverage");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_10")))
-		{
-			Profile.Cost = 135;
-			Profile.Damage = 20.f;
-			Profile.Range = 0.100f;
-			Profile.FireInterval = 0.52f;
-			Profile.SplashRadius = 0.040f;
-			Profile.FlatArmorPierce = 4.f;
-			Profile.CombatLabel = TEXT("Front-pad bruiser");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_11")))
-		{
-			Profile.Cost = 165;
-			Profile.Damage = 30.f;
-			Profile.Range = 0.215f;
-			Profile.FireInterval = 0.74f;
-			Profile.FlatArmorPierce = 9.f;
-			Profile.bCanTargetHidden = true;
-			Profile.CombatLabel = TEXT("Elite and leak sniper");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_12")))
-		{
-			Profile.Cost = 160;
-			Profile.Damage = 10.f;
-			Profile.Range = 0.165f;
-			Profile.FireInterval = 0.24f;
-			Profile.ChainBounces = 2;
-			Profile.ChainRadius = 0.080f;
-			Profile.CombatLabel = TEXT("Chaotic bounce spam");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_13")))
-		{
-			Profile.Cost = 140;
-			Profile.Damage = 9.f;
-			Profile.Range = 0.145f;
-			Profile.FireInterval = 0.46f;
-			Profile.DotDamagePerSecond = 8.f;
-			Profile.DotDuration = 3.0f;
-			Profile.CombatLabel = TEXT("Boss chip and toxin");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_14")))
-		{
-			Profile.Cost = 150;
-			Profile.Damage = 12.f;
-			Profile.Range = 0.155f;
-			Profile.FireInterval = 0.58f;
-			Profile.SlowMultiplier = 0.62f;
-			Profile.SlowDuration = 1.8f;
-			Profile.CombatLabel = TEXT("Slow-and-control utility");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_15")))
-		{
-			Profile.Cost = 155;
-			Profile.Damage = 16.f;
-			Profile.Range = 0.160f;
-			Profile.FireInterval = 0.70f;
-			Profile.BonusMaterialsOnKill = 2;
-			Profile.ShieldDamageMultiplier = 1.20f;
-			Profile.CombatLabel = TEXT("Siege farmer");
-		}
-		else if (HeroDefinition.HeroID == FName(TEXT("Hero_16")))
-		{
-			Profile.Cost = 145;
-			Profile.Damage = 11.f;
-			Profile.Range = 0.150f;
-			Profile.FireInterval = 0.48f;
-			Profile.DotDamagePerSecond = 5.f;
-			Profile.DotDuration = 2.5f;
-			Profile.CombatLabel = TEXT("Slow-burn stabilizer");
-		}
-
 		return Profile;
 	}
 
-	FT66TDEnemyArchetype GetEnemyArchetype(const ET66TDEnemyFamily Family)
+	FName GetEnemyFamilyID(const ET66TDEnemyFamily Family)
 	{
 		switch (Family)
 		{
 		case ET66TDEnemyFamily::Goat:
-			return { TEXT("Goat"), 58.f, 0.17f, 1, 8, 0.014f, FLinearColor(0.90f, 0.72f, 0.34f, 1.0f) };
+			return FName(TEXT("Goat"));
 		case ET66TDEnemyFamily::Cow:
-			return { TEXT("Cow"), 145.f, 0.11f, 2, 14, 0.016f, FLinearColor(0.68f, 0.90f, 0.88f, 1.0f) };
+			return FName(TEXT("Cow"));
 		case ET66TDEnemyFamily::Pig:
-			return { TEXT("Pig"), 220.f, 0.095f, 2, 19, 0.018f, FLinearColor(0.92f, 0.54f, 0.54f, 1.0f) };
+			return FName(TEXT("Pig"));
 		case ET66TDEnemyFamily::Boss:
-			return { TEXT("Boss"), 1150.f, 0.055f, 5, 120, 0.025f, FLinearColor(0.98f, 0.84f, 0.28f, 1.0f) };
+			return FName(TEXT("Boss"));
 		case ET66TDEnemyFamily::Roost:
 		default:
-			return { TEXT("Roost"), 42.f, 0.20f, 1, 6, 0.012f, FLinearColor(0.78f, 0.88f, 1.0f, 1.0f) };
+			return FName(TEXT("Roost"));
 		}
+	}
+
+	FT66TDEnemyArchetype BuildEnemyArchetype(const FT66TDEnemyArchetypeDefinition& Definition)
+	{
+		FT66TDEnemyArchetype Archetype;
+		Archetype.DisplayName = Definition.DisplayName;
+		Archetype.VisualID = Definition.VisualID;
+		Archetype.BaseHealth = Definition.BaseHealth;
+		Archetype.BaseSpeed = Definition.BaseSpeed;
+		Archetype.LeakDamage = Definition.LeakDamage;
+		Archetype.Bounty = Definition.Bounty;
+		Archetype.Radius = Definition.Radius;
+		Archetype.Tint = Definition.Tint;
+		return Archetype;
 	}
 
 	bool HasEnemyModifier(const ET66TDEnemyModifier Source, const ET66TDEnemyModifier Modifier)
@@ -819,6 +707,7 @@ namespace
 
 	using FT66TDHeroBrushMap = TMap<FName, TSharedPtr<FSlateBrush>>;
 	using FT66TDEnemyBrushMap = TMap<FString, TSharedPtr<FSlateBrush>>;
+	using FT66TDBattleTuningMap = TMap<FName, float>;
 
 	class ST66TDBattleBoardWidget : public SLeafWidget
 	{
@@ -827,7 +716,12 @@ namespace
 			: _MapDefinition()
 			, _DifficultyDefinition()
 			, _LayoutDefinition()
+			, _StageDefinition()
 			, _Heroes()
+			, _HeroCombatDefinitions()
+			, _EnemyArchetypes()
+			, _BattleTuningValues()
+			, _ThemeModifierRules()
 			, _HeroBrushes()
 			, _EnemyBrushes()
 			, _BossBrushes()
@@ -836,7 +730,12 @@ namespace
 			SLATE_ARGUMENT(FT66TDMapDefinition, MapDefinition)
 			SLATE_ARGUMENT(FT66TDDifficultyDefinition, DifficultyDefinition)
 			SLATE_ARGUMENT(FT66TDMapLayoutDefinition, LayoutDefinition)
+			SLATE_ARGUMENT(FT66TDStageDefinition, StageDefinition)
 			SLATE_ARGUMENT(TArray<FT66TDHeroDefinition>, Heroes)
+			SLATE_ARGUMENT(TArray<FT66TDHeroCombatDefinition>, HeroCombatDefinitions)
+			SLATE_ARGUMENT(TArray<FT66TDEnemyArchetypeDefinition>, EnemyArchetypes)
+			SLATE_ARGUMENT(FT66TDBattleTuningMap, BattleTuningValues)
+			SLATE_ARGUMENT(TArray<FT66TDThemeModifierRule>, ThemeModifierRules)
 			SLATE_ARGUMENT(FT66TDHeroBrushMap, HeroBrushes)
 			SLATE_ARGUMENT(FT66TDEnemyBrushMap, EnemyBrushes)
 			SLATE_ARGUMENT(FT66TDEnemyBrushMap, BossBrushes)
@@ -857,16 +756,33 @@ namespace
 			MapDefinition = InArgs._MapDefinition;
 			DifficultyDefinition = InArgs._DifficultyDefinition;
 			LayoutDefinition = InArgs._LayoutDefinition;
+			StageDefinition = InArgs._StageDefinition;
 			HeroDefinitions = InArgs._Heroes;
+			HeroCombatDefinitions = InArgs._HeroCombatDefinitions;
+			EnemyArchetypeDefinitions = InArgs._EnemyArchetypes;
+			BattleTuningValues = InArgs._BattleTuningValues;
+			ThemeModifierRules = InArgs._ThemeModifierRules;
 			HeroBrushes = InArgs._HeroBrushes;
 			EnemyBrushes = InArgs._EnemyBrushes;
 			BossBrushes = InArgs._BossBrushes;
 			OwningGameInstance = InArgs._OwningGameInstance;
 
+			for (const FT66TDHeroCombatDefinition& CombatDefinition : HeroCombatDefinitions)
+			{
+				HeroCombatLookup.Add(CombatDefinition.HeroID, CombatDefinition);
+			}
+			for (const FT66TDEnemyArchetypeDefinition& ArchetypeDefinition : EnemyArchetypeDefinitions)
+			{
+				EnemyArchetypeLookup.Add(ArchetypeDefinition.EnemyID, BuildEnemyArchetype(ArchetypeDefinition));
+			}
+			for (const FT66TDThemeModifierRule& Rule : ThemeModifierRules)
+			{
+				ThemeModifierLookup.Add(FName(*Rule.ThemeLabel), Rule);
+			}
 			for (const FT66TDHeroDefinition& HeroDefinition : HeroDefinitions)
 			{
 				HeroLookup.Add(HeroDefinition.HeroID, HeroDefinition);
-				HeroProfiles.Add(HeroDefinition.HeroID, BuildHeroProfile(HeroDefinition));
+				HeroProfiles.Add(HeroDefinition.HeroID, BuildHeroProfile(HeroDefinition, HeroCombatLookup.Find(HeroDefinition.HeroID)));
 			}
 
 			for (const TArray<FVector2D>& PathPoints : LayoutDefinition.Paths)
@@ -960,10 +876,12 @@ namespace
 			else
 			{
 				FRandomStream ThreatStream(static_cast<int32>(GetTypeHash(MapDefinition.MapID) ^ (PreviewWave * 977)));
-				for (int32 SampleIndex = 0; SampleIndex < 16; ++SampleIndex)
+				const int32 ThreatSampleCount = FMath::Max(1, GetTuningInt(TEXT("ThreatPreviewSampleCount"), 16));
+				const int32 ThreatBossSampleIndex = FMath::Clamp(GetTuningInt(TEXT("ThreatPreviewBossSampleIndex"), ThreatSampleCount - 1), 0, ThreatSampleCount - 1);
+				for (int32 SampleIndex = 0; SampleIndex < ThreatSampleCount; ++SampleIndex)
 				{
 					const ET66TDEnemyFamily Family =
-						(PreviewWave >= MapDefinition.BossWave && SampleIndex == 15)
+						(PreviewWave >= MapDefinition.BossWave && SampleIndex == ThreatBossSampleIndex)
 						? ET66TDEnemyFamily::Boss
 						: (SampleIndex % 4 == 0 ? ET66TDEnemyFamily::Roost : (SampleIndex % 4 == 1 ? ET66TDEnemyFamily::Goat : (SampleIndex % 4 == 2 ? ET66TDEnemyFamily::Cow : ET66TDEnemyFamily::Pig)));
 					const ET66TDEnemyModifier Modifiers = BuildSpawnModifiers(Family, PreviewWave, SampleIndex, Family == ET66TDEnemyFamily::Boss, ThreatStream);
@@ -1135,7 +1053,9 @@ namespace
 
 		FReply HandleSpeedClicked()
 		{
-			SimulationSpeed = (SimulationSpeed >= 1.9f) ? 1.f : 2.f;
+			const float NormalSpeed = GetTuningValue(TEXT("SimulationSpeedNormal"), 1.f);
+			const float FastSpeed = GetTuningValue(TEXT("SimulationSpeedFast"), 2.f);
+			SimulationSpeed = (SimulationSpeed >= (FastSpeed - 0.1f)) ? NormalSpeed : FastSpeed;
 			return FReply::Handled();
 		}
 
@@ -1472,13 +1392,61 @@ namespace
 			return EActiveTimerReturnType::Continue;
 		}
 
+		float GetTuningValue(const TCHAR* Key, const float DefaultValue = 0.f) const
+		{
+			if (const float* FoundValue = BattleTuningValues.Find(FName(Key)))
+			{
+				return *FoundValue;
+			}
+			return DefaultValue;
+		}
+
+		int32 GetTuningInt(const TCHAR* Key, const int32 DefaultValue = 0) const
+		{
+			return FMath::RoundToInt(GetTuningValue(Key, static_cast<float>(DefaultValue)));
+		}
+
+		FT66TDEnemyArchetype GetEnemyArchetype(const ET66TDEnemyFamily Family) const
+		{
+			if (const FT66TDEnemyArchetype* FoundArchetype = EnemyArchetypeLookup.Find(GetEnemyFamilyID(Family)))
+			{
+				return *FoundArchetype;
+			}
+			return FT66TDEnemyArchetype();
+		}
+
+		const FT66TDThemeModifierRule* FindThemeModifierRule() const
+		{
+			if (const FT66TDThemeModifierRule* Rule = ThemeModifierLookup.Find(FName(*MapDefinition.ThemeLabel)))
+			{
+				return Rule;
+			}
+			return ThemeModifierLookup.Find(FName(TEXT("Hell")));
+		}
+
+		FString ResolveBossVisualID() const
+		{
+			if (const FT66TDThemeModifierRule* Rule = FindThemeModifierRule())
+			{
+				if (!Rule->BossVisualID.IsEmpty())
+				{
+					return Rule->BossVisualID;
+				}
+			}
+
+			return GetEnemyArchetype(ET66TDEnemyFamily::Boss).VisualID;
+		}
+
 		void ResetMatch()
 		{
-			Materials = 340;
-			Hearts = 20;
+			Materials = StageDefinition.StartingMaterials > 0
+				? StageDefinition.StartingMaterials
+				: GetTuningInt(TEXT("StartingMaterials"), 340);
+			Gold = FMath::Max(0, StageDefinition.StartingGold);
+			Hearts = GetTuningInt(TEXT("StartingHearts"), 20);
 			CurrentWave = 0;
 			MatchState = ET66TDMatchState::AwaitingWave;
-			SimulationSpeed = 1.f;
+			SimulationSpeed = GetTuningValue(TEXT("SimulationSpeedNormal"), 1.f);
 			SelectedPadIndex = INDEX_NONE;
 			PreviewPadIndex = INDEX_NONE;
 			bPreviewPlacementValid = false;
@@ -1488,6 +1456,9 @@ namespace
 			PendingSpawns.Reset();
 			NextSpawnIndex = 0;
 			TimeUntilNextSpawn = 0.f;
+			bLeaderboardResultSubmitted = false;
+			bStageResultRecorded = false;
+			PersistRunState(false);
 			if (UGameInstance* GameInstance = OwningGameInstance.Get())
 			{
 				if (UT66TDFrontendStateSubsystem* FrontendState = GameInstance->GetSubsystem<UT66TDFrontendStateSubsystem>())
@@ -1513,8 +1484,103 @@ namespace
 
 			if (UT66AchievementsSubsystem* Achievements = GameInstance->GetSubsystem<UT66AchievementsSubsystem>())
 			{
-				Achievements->AddChadCoupons(FMath::Max(0, DifficultyDefinition.StageClearChadCoupons));
+				const int32 CouponsAwarded = StageDefinition.ClearChadCoupons > 0
+					? StageDefinition.ClearChadCoupons
+					: DifficultyDefinition.StageClearChadCoupons;
+				Achievements->AddChadCoupons(FMath::Max(0, CouponsAwarded));
 			}
+
+			Gold += FMath::Max(0, StageDefinition.ClearGoldReward);
+			Materials += FMath::Max(0, StageDefinition.ClearMaterialReward);
+			RecordStageResultIfNeeded(true);
+		}
+
+		int32 BuildStageScore() const
+		{
+			const int32 StageScore = StageDefinition.StageIndex > 0 ? StageDefinition.StageIndex * 10000 : 0;
+			return FMath::Max(0, StageScore + (CurrentWave * 1000) + (Hearts * 100) + Materials + Gold + (MatchState == ET66TDMatchState::Victory ? 5000 : 0));
+		}
+
+		void PersistRunState(const bool bStageCleared) const
+		{
+			UGameInstance* GameInstance = OwningGameInstance.Get();
+			UT66TDSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66TDSaveSubsystem>() : nullptr;
+			const UT66TDFrontendStateSubsystem* FrontendState = GameInstance ? GameInstance->GetSubsystem<UT66TDFrontendStateSubsystem>() : nullptr;
+			const UT66TDDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66TDDataSubsystem>() : nullptr;
+			UT66TDRunSaveGame* RunSave = SaveSubsystem ? SaveSubsystem->CreateSeededRunSave(FrontendState, DataSubsystem) : nullptr;
+			if (!SaveSubsystem || !RunSave)
+			{
+				return;
+			}
+
+			RunSave->StageID = StageDefinition.StageID;
+			RunSave->StageIndex = StageDefinition.StageIndex > 0 ? StageDefinition.StageIndex : 1;
+			RunSave->MapID = MapDefinition.MapID;
+			RunSave->CurrentWave = CurrentWave;
+			RunSave->Hearts = Hearts;
+			RunSave->Gold = Gold;
+			RunSave->Materials = Materials;
+			RunSave->LastScore = BuildStageScore();
+			RunSave->bStageCleared = bStageCleared;
+			SaveSubsystem->SaveRun(RunSave);
+		}
+
+		void RecordStageResultIfNeeded(const bool bVictory)
+		{
+			if (bStageResultRecorded)
+			{
+				return;
+			}
+
+			bStageResultRecorded = true;
+			const int32 Score = BuildStageScore();
+			if (UGameInstance* GameInstance = OwningGameInstance.Get())
+			{
+				if (UT66TDSaveSubsystem* SaveSubsystem = GameInstance->GetSubsystem<UT66TDSaveSubsystem>())
+				{
+					const FT66TDStageDefinition* Stage = StageDefinition.StageID != NAME_None ? &StageDefinition : nullptr;
+					SaveSubsystem->RecordStageResult(
+						Stage,
+						bVictory,
+						Score,
+						bVictory ? FMath::Max(0, StageDefinition.ClearGoldReward) : 0,
+						bVictory ? FMath::Max(0, StageDefinition.ClearMaterialReward) : 0);
+				}
+			}
+			PersistRunState(bVictory);
+		}
+
+		void SubmitLeaderboardResultIfNeeded()
+		{
+			if (bLeaderboardResultSubmitted)
+			{
+				return;
+			}
+
+			UGameInstance* GameInstance = OwningGameInstance.Get();
+			UT66BackendSubsystem* Backend = GameInstance ? GameInstance->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+			if (!Backend)
+			{
+				return;
+			}
+
+			const UT66TDFrontendStateSubsystem* FrontendState = GameInstance ? GameInstance->GetSubsystem<UT66TDFrontendStateSubsystem>() : nullptr;
+			const UT66SteamHelper* SteamHelper = GameInstance ? GameInstance->GetSubsystem<UT66SteamHelper>() : nullptr;
+			const bool bDailyRun = FrontendState && FrontendState->IsDailyRun();
+			const FName DifficultyID = FrontendState && FrontendState->GetSelectedDifficultyID() != NAME_None
+				? FrontendState->GetSelectedDifficultyID()
+				: DifficultyDefinition.DifficultyID;
+			const int32 Score = BuildStageScore();
+
+			Backend->SubmitMinigameScore(
+				SteamHelper ? SteamHelper->GetLocalDisplayName() : FString(TEXT("Player")),
+				TEXT("td"),
+				bDailyRun ? TEXT("daily") : TEXT("alltime"),
+				DifficultyID.ToString().ToLower(),
+				Score,
+				bDailyRun ? FrontendState->GetDailyChallengeId() : FString(),
+				bDailyRun ? FrontendState->GetDailySeed() : 0);
+			bLeaderboardResultSubmitted = true;
 		}
 
 		void StartNextWave()
@@ -1533,23 +1599,11 @@ namespace
 
 		ET66TDEnemyModifier GetBossModifiers() const
 		{
-			if (MapDefinition.ThemeLabel.Equals(TEXT("Dungeon"), ESearchCase::IgnoreCase))
+			if (const FT66TDThemeModifierRule* Rule = FindThemeModifierRule())
 			{
-				return ET66TDEnemyModifier::Armored;
+				return BuildEnemyModifierMask(Rule->BossModifierMask);
 			}
-			if (MapDefinition.ThemeLabel.Equals(TEXT("Forest"), ESearchCase::IgnoreCase))
-			{
-				return ET66TDEnemyModifier::Hidden | ET66TDEnemyModifier::Regenerating;
-			}
-			if (MapDefinition.ThemeLabel.Equals(TEXT("Ocean"), ESearchCase::IgnoreCase))
-			{
-				return ET66TDEnemyModifier::Armored | ET66TDEnemyModifier::Shielded;
-			}
-			if (MapDefinition.ThemeLabel.Equals(TEXT("Martian"), ESearchCase::IgnoreCase))
-			{
-				return ET66TDEnemyModifier::Hidden | ET66TDEnemyModifier::Shielded;
-			}
-			return ET66TDEnemyModifier::Armored | ET66TDEnemyModifier::Regenerating | ET66TDEnemyModifier::Shielded;
+			return ET66TDEnemyModifier::None;
 		}
 
 		ET66TDEnemyModifier BuildSpawnModifiers(const ET66TDEnemyFamily Family, const int32 WaveNumber, const int32 SpawnIndex, const bool bBoss, FRandomStream& Stream) const
@@ -1559,10 +1613,7 @@ namespace
 				return GetBossModifiers();
 			}
 
-			const bool bForest = MapDefinition.ThemeLabel.Equals(TEXT("Forest"), ESearchCase::IgnoreCase);
-			const bool bOcean = MapDefinition.ThemeLabel.Equals(TEXT("Ocean"), ESearchCase::IgnoreCase);
-			const bool bMartian = MapDefinition.ThemeLabel.Equals(TEXT("Martian"), ESearchCase::IgnoreCase);
-			const bool bHell = MapDefinition.ThemeLabel.Equals(TEXT("Hell"), ESearchCase::IgnoreCase);
+			const FT66TDThemeModifierRule* ThemeRule = FindThemeModifierRule();
 			const bool bImpossible = DifficultyDefinition.DifficultyID == FName(TEXT("Difficulty_Impossible"));
 
 			auto Roll = [&Stream](const float Chance)
@@ -1572,85 +1623,83 @@ namespace
 
 			ET66TDEnemyModifier Modifiers = ET66TDEnemyModifier::None;
 
-			if (WaveNumber >= 4 && (Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig || (WaveNumber >= 10 && Family == ET66TDEnemyFamily::Goat)))
+			if (WaveNumber >= GetTuningInt(TEXT("ArmorStartWave"), 4)
+				&& (Family == ET66TDEnemyFamily::Cow
+					|| Family == ET66TDEnemyFamily::Pig
+					|| (WaveNumber >= GetTuningInt(TEXT("ArmorGoatStartWave"), 10) && Family == ET66TDEnemyFamily::Goat)))
 			{
-				float ArmorChance = 0.18f + (WaveNumber * 0.012f);
-				if (bOcean)
+				float ArmorChance = GetTuningValue(TEXT("ArmorChanceBase"), 0.18f)
+					+ (WaveNumber * GetTuningValue(TEXT("ArmorChancePerWave"), 0.012f));
+				if (ThemeRule)
 				{
-					ArmorChance += 0.12f;
-				}
-				if (bHell)
-				{
-					ArmorChance += 0.16f;
+					ArmorChance += ThemeRule->ArmorChanceBonus;
 				}
 				if (bImpossible)
 				{
-					ArmorChance += 0.08f;
+					ArmorChance += GetTuningValue(TEXT("ImpossibleArmorChanceBonus"), 0.08f);
 				}
-				if (((SpawnIndex + WaveNumber) % 5 == 0) || Roll(ArmorChance))
+				if (((SpawnIndex + WaveNumber) % FMath::Max(1, GetTuningInt(TEXT("ArmorGuaranteedModulo"), 5)) == 0) || Roll(ArmorChance))
 				{
 					Modifiers |= ET66TDEnemyModifier::Armored;
 				}
 			}
 
-			if ((Family == ET66TDEnemyFamily::Roost || Family == ET66TDEnemyFamily::Goat) && ((bForest && WaveNumber >= 6) || (bMartian && WaveNumber >= 5) || (bHell && WaveNumber >= 4)))
+			if (ThemeRule
+				&& ThemeRule->HiddenMinWave > 0
+				&& (Family == ET66TDEnemyFamily::Roost || Family == ET66TDEnemyFamily::Goat)
+				&& WaveNumber >= ThemeRule->HiddenMinWave)
 			{
-				float HiddenChance = 0.20f + (WaveNumber * 0.010f);
-				if (bMartian)
-				{
-					HiddenChance += 0.06f;
-				}
-				if (bHell)
-				{
-					HiddenChance += 0.10f;
-				}
-				if (((SpawnIndex + WaveNumber) % 4 == 0) || Roll(HiddenChance))
+				const float HiddenChance = GetTuningValue(TEXT("HiddenChanceBase"), 0.20f)
+					+ (WaveNumber * GetTuningValue(TEXT("HiddenChancePerWave"), 0.010f))
+					+ ThemeRule->HiddenChanceBonus;
+				if (((SpawnIndex + WaveNumber) % FMath::Max(1, GetTuningInt(TEXT("HiddenGuaranteedModulo"), 4)) == 0) || Roll(HiddenChance))
 				{
 					Modifiers |= ET66TDEnemyModifier::Hidden;
 				}
 			}
 
-			if (WaveNumber >= 6 && (bForest || bMartian || bHell))
+			if (ThemeRule && ThemeRule->bEnableRegen && WaveNumber >= GetTuningInt(TEXT("RegenStartWave"), 6))
 			{
-				float RegenChance = 0.12f + (WaveNumber * 0.008f);
+				float RegenChance = GetTuningValue(TEXT("RegenChanceBase"), 0.12f)
+					+ (WaveNumber * GetTuningValue(TEXT("RegenChancePerWave"), 0.008f));
 				if (Family == ET66TDEnemyFamily::Pig || Family == ET66TDEnemyFamily::Cow)
 				{
-					RegenChance += 0.06f;
+					RegenChance += GetTuningValue(TEXT("RegenHeavyChanceBonus"), 0.06f);
 				}
-				if (bHell)
-				{
-					RegenChance += 0.08f;
-				}
-				if (((SpawnIndex + (WaveNumber * 2)) % 6 == 0) || Roll(RegenChance))
+				RegenChance += ThemeRule->RegenChanceBonus;
+				if (((SpawnIndex + (WaveNumber * GetTuningInt(TEXT("RegenWaveModuloMultiplier"), 2))) % FMath::Max(1, GetTuningInt(TEXT("RegenGuaranteedModulo"), 6)) == 0) || Roll(RegenChance))
 				{
 					Modifiers |= ET66TDEnemyModifier::Regenerating;
 				}
 			}
 
-			if ((Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig || (bMartian && Family == ET66TDEnemyFamily::Goat)) && ((bOcean && WaveNumber >= 5) || (bMartian && WaveNumber >= 4) || (bHell && WaveNumber >= 5)))
+			if (ThemeRule
+				&& ThemeRule->ShieldMinWave > 0
+				&& WaveNumber >= ThemeRule->ShieldMinWave
+				&& (Family == ET66TDEnemyFamily::Cow
+					|| Family == ET66TDEnemyFamily::Pig
+					|| (ThemeRule->bShieldGoat && Family == ET66TDEnemyFamily::Goat)))
 			{
-				float ShieldChance = 0.18f + (WaveNumber * 0.011f);
-				if (bMartian)
-				{
-					ShieldChance += 0.11f;
-				}
-				if (bHell)
-				{
-					ShieldChance += 0.08f;
-				}
-				if (((SpawnIndex + WaveNumber) % 3 == 0) || Roll(ShieldChance))
+				const float ShieldChance = GetTuningValue(TEXT("ShieldChanceBase"), 0.18f)
+					+ (WaveNumber * GetTuningValue(TEXT("ShieldChancePerWave"), 0.011f))
+					+ ThemeRule->ShieldChanceBonus;
+				if (((SpawnIndex + WaveNumber) % FMath::Max(1, GetTuningInt(TEXT("ShieldGuaranteedModulo"), 3)) == 0) || Roll(ShieldChance))
 				{
 					Modifiers |= ET66TDEnemyModifier::Shielded;
 				}
 			}
 
-			if (bImpossible && WaveNumber >= 10)
+			if (bImpossible && WaveNumber >= GetTuningInt(TEXT("ImpossibleForcedModifierStartWave"), 10))
 			{
-				if ((Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig) && !HasEnemyModifier(Modifiers, ET66TDEnemyModifier::Shielded) && (SpawnIndex % 4 == 1))
+				if ((Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig)
+					&& !HasEnemyModifier(Modifiers, ET66TDEnemyModifier::Shielded)
+					&& (SpawnIndex % FMath::Max(1, GetTuningInt(TEXT("ImpossibleForcedShieldModulo"), 4)) == GetTuningInt(TEXT("ImpossibleForcedShieldRemainder"), 1)))
 				{
 					Modifiers |= ET66TDEnemyModifier::Shielded;
 				}
-				if ((Family == ET66TDEnemyFamily::Roost || Family == ET66TDEnemyFamily::Goat) && !HasEnemyModifier(Modifiers, ET66TDEnemyModifier::Hidden) && (SpawnIndex % 5 == 2))
+				if ((Family == ET66TDEnemyFamily::Roost || Family == ET66TDEnemyFamily::Goat)
+					&& !HasEnemyModifier(Modifiers, ET66TDEnemyModifier::Hidden)
+					&& (SpawnIndex % FMath::Max(1, GetTuningInt(TEXT("ImpossibleForcedHiddenModulo"), 5)) == GetTuningInt(TEXT("ImpossibleForcedHiddenRemainder"), 2)))
 				{
 					Modifiers |= ET66TDEnemyModifier::Hidden;
 				}
@@ -1663,34 +1712,48 @@ namespace
 		{
 			PendingSpawns.Reset();
 			const int32 LaneCount = FMath::Max(1, PathRuntimes.Num());
-			const float SpawnDelay = FMath::Clamp(0.54f - (WaveNumber * 0.02f), 0.18f, 0.54f);
+			const float SpawnDelayBase = GetTuningValue(TEXT("SpawnDelayBase"), 0.54f);
+			const float SpawnDelay = FMath::Clamp(
+				SpawnDelayBase - (WaveNumber * GetTuningValue(TEXT("SpawnDelayPerWave"), 0.02f)),
+				GetTuningValue(TEXT("SpawnDelayMin"), 0.18f),
+				SpawnDelayBase);
 			FRandomStream Stream(static_cast<int32>(GetTypeHash(MapDefinition.MapID) ^ (WaveNumber * 977)));
 
 			if (WaveNumber >= MapDefinition.BossWave)
 			{
-				float DelayCursor = 0.35f;
-				for (int32 Index = 0; Index < 12; ++Index)
+				float DelayCursor = GetTuningValue(TEXT("BossPreludeInitialDelay"), 0.35f);
+				const int32 PreludeCount = FMath::Max(0, GetTuningInt(TEXT("BossPreludeCount"), 12));
+				const int32 PreludeHeavyCount = FMath::Clamp(GetTuningInt(TEXT("BossPreludeHeavyCount"), 6), 0, PreludeCount);
+				for (int32 Index = 0; Index < PreludeCount; ++Index)
 				{
-					const ET66TDEnemyFamily Family = Index < 6
+					const bool bHeavyPrelude = Index < PreludeHeavyCount;
+					const ET66TDEnemyFamily Family = bHeavyPrelude
 						? (Index % 2 == 0 ? ET66TDEnemyFamily::Pig : ET66TDEnemyFamily::Cow)
 						: (Index % 2 == 0 ? ET66TDEnemyFamily::Goat : ET66TDEnemyFamily::Roost);
 					const ET66TDEnemyModifier Modifiers = BuildSpawnModifiers(Family, WaveNumber, Index, false, Stream);
-					PendingSpawns.Add({ Family, Index % LaneCount, DelayCursor, Index < 6 ? 1.65f : 1.28f, Index < 6 ? 1.04f : 1.14f, Modifiers, false });
-					DelayCursor += SpawnDelay * 0.70f;
+					PendingSpawns.Add({
+						Family,
+						Index % LaneCount,
+						DelayCursor,
+						bHeavyPrelude ? GetTuningValue(TEXT("BossPreludeHeavyHealthScalar"), 1.65f) : GetTuningValue(TEXT("BossPreludeLightHealthScalar"), 1.28f),
+						bHeavyPrelude ? GetTuningValue(TEXT("BossPreludeHeavySpeedScalar"), 1.04f) : GetTuningValue(TEXT("BossPreludeLightSpeedScalar"), 1.14f),
+						Modifiers,
+						false });
+					DelayCursor += SpawnDelay * GetTuningValue(TEXT("BossPreludeDelayScalar"), 0.70f);
 				}
-				PendingSpawns.Add({ ET66TDEnemyFamily::Boss, (LaneCount - 1) % LaneCount, DelayCursor + 0.8f, 1.0f, 1.0f, BuildSpawnModifiers(ET66TDEnemyFamily::Boss, WaveNumber, 99, true, Stream), true });
+				PendingSpawns.Add({ ET66TDEnemyFamily::Boss, (LaneCount - 1) % LaneCount, DelayCursor + GetTuningValue(TEXT("BossSpawnDelayBonus"), 0.8f), 1.0f, 1.0f, BuildSpawnModifiers(ET66TDEnemyFamily::Boss, WaveNumber, 99, true, Stream), true });
 				return;
 			}
 
-			int32 RoostCount = 6 + (WaveNumber * 2);
-			int32 GoatCount = 2 + WaveNumber + (LaneCount - 1);
-			int32 CowCount = WaveNumber >= 4 ? (WaveNumber / 2) + LaneCount : 0;
-			int32 PigCount = WaveNumber >= 7 ? (WaveNumber / 3) + LaneCount - 1 : 0;
+			int32 RoostCount = GetTuningInt(TEXT("RoostBaseCount"), 6) + (WaveNumber * GetTuningInt(TEXT("RoostPerWave"), 2));
+			int32 GoatCount = GetTuningInt(TEXT("GoatBaseCount"), 2) + (WaveNumber * GetTuningInt(TEXT("GoatPerWave"), 1)) + (LaneCount - 1);
+			int32 CowCount = WaveNumber >= GetTuningInt(TEXT("CowStartWave"), 4) ? (WaveNumber / FMath::Max(1, GetTuningInt(TEXT("CowWaveDivisor"), 2))) + LaneCount : 0;
+			int32 PigCount = WaveNumber >= GetTuningInt(TEXT("PigStartWave"), 7) ? (WaveNumber / FMath::Max(1, GetTuningInt(TEXT("PigWaveDivisor"), 3))) + LaneCount - 1 : 0;
 
-			if (WaveNumber == 5 || WaveNumber == 10)
+			if (WaveNumber == GetTuningInt(TEXT("MilestoneWaveA"), 5) || WaveNumber == GetTuningInt(TEXT("MilestoneWaveB"), 10))
 			{
-				CowCount += 3;
-				PigCount += 2;
+				CowCount += GetTuningInt(TEXT("MilestoneCowBonus"), 3);
+				PigCount += GetTuningInt(TEXT("MilestonePigBonus"), 2);
 			}
 
 			TArray<ET66TDEnemyFamily> Families;
@@ -1705,13 +1768,19 @@ namespace
 				Families.Swap(Index, Stream.RandRange(0, Index));
 			}
 
-			float DelayCursor = 0.25f;
+			float DelayCursor = GetTuningValue(TEXT("NormalInitialDelay"), 0.25f);
 			for (int32 SpawnIndex = 0; SpawnIndex < Families.Num(); ++SpawnIndex)
 			{
 				const ET66TDEnemyFamily Family = Families[SpawnIndex];
-				const float FamilyDelayMultiplier = (Family == ET66TDEnemyFamily::Roost) ? 0.82f : (Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig ? 1.18f : 1.0f);
-				const float HealthScalar = 1.0f + (WaveNumber * 0.09f) + ((Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig) ? 0.18f : 0.f);
-				const float SpeedScalar = 1.0f + (WaveNumber * 0.02f) + (Family == ET66TDEnemyFamily::Roost ? 0.05f : 0.f);
+				const float FamilyDelayMultiplier = (Family == ET66TDEnemyFamily::Roost)
+					? GetTuningValue(TEXT("RoostDelayMultiplier"), 0.82f)
+					: (Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig ? GetTuningValue(TEXT("HeavyDelayMultiplier"), 1.18f) : 1.0f);
+				const float HealthScalar = 1.0f
+					+ (WaveNumber * GetTuningValue(TEXT("WaveHealthPerWave"), 0.09f))
+					+ ((Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig) ? GetTuningValue(TEXT("WaveHeavyHealthBonus"), 0.18f) : 0.f);
+				const float SpeedScalar = 1.0f
+					+ (WaveNumber * GetTuningValue(TEXT("WaveSpeedPerWave"), 0.02f))
+					+ (Family == ET66TDEnemyFamily::Roost ? GetTuningValue(TEXT("RoostSpeedBonus"), 0.05f) : 0.f);
 				const ET66TDEnemyModifier Modifiers = BuildSpawnModifiers(Family, WaveNumber, SpawnIndex, false, Stream);
 				PendingSpawns.Add({ Family, SpawnIndex % LaneCount, DelayCursor, HealthScalar, SpeedScalar, Modifiers, false });
 				DelayCursor += SpawnDelay * FamilyDelayMultiplier;
@@ -1789,6 +1858,8 @@ namespace
 					{
 						Hearts = 0;
 						MatchState = ET66TDMatchState::Defeat;
+						RecordStageResultIfNeeded(false);
+						SubmitLeaderboardResultIfNeeded();
 					}
 				}
 			}
@@ -1824,11 +1895,13 @@ namespace
 				if (CurrentWave >= MapDefinition.BossWave)
 				{
 					MatchState = ET66TDMatchState::Victory;
+					ResolveVictoryRewardIfNeeded();
+					SubmitLeaderboardResultIfNeeded();
 				}
 				else
 				{
 					MatchState = ET66TDMatchState::AwaitingWave;
-					Materials += 18 + (CurrentWave * 3);
+					Materials += GetTuningInt(TEXT("WaveClearRewardBase"), 18) + (CurrentWave * GetTuningInt(TEXT("WaveClearRewardPerWave"), 3));
 				}
 			}
 		}
@@ -1849,7 +1922,7 @@ namespace
 			{
 				Enemy.DisplayName = FString::Printf(TEXT("%s [%s]"), *Archetype.DisplayName, *ModifierLabel);
 			}
-			Enemy.VisualID = QueuedSpawn.bBoss ? ResolveBossVisualID(MapDefinition.ThemeLabel) : Archetype.DisplayName;
+			Enemy.VisualID = QueuedSpawn.bBoss ? ResolveBossVisualID() : Archetype.VisualID;
 			Enemy.LaneIndex = QueuedSpawn.LaneIndex;
 			Enemy.ProgressRatio = 0.f;
 			Enemy.MaxHealth =
@@ -1860,22 +1933,24 @@ namespace
 			Enemy.Health = Enemy.MaxHealth;
 			Enemy.Speed = Archetype.BaseSpeed * QueuedSpawn.SpeedScalar * DifficultyDefinition.EnemySpeedScalar;
 			Enemy.Radius = Archetype.Radius;
-			Enemy.LeakDamage = QueuedSpawn.bBoss ? 5 : Archetype.LeakDamage;
-			Enemy.Bounty = FMath::RoundToInt(Archetype.Bounty * DifficultyDefinition.RewardScalar * (QueuedSpawn.bBoss ? 1.8f : 1.0f));
+			Enemy.LeakDamage = QueuedSpawn.bBoss ? GetTuningInt(TEXT("BossLeakDamage"), Archetype.LeakDamage) : Archetype.LeakDamage;
+			Enemy.Bounty = FMath::RoundToInt(Archetype.Bounty * DifficultyDefinition.RewardScalar * (QueuedSpawn.bBoss ? GetTuningValue(TEXT("BossRewardMultiplier"), 1.8f) : 1.0f));
 			Enemy.Modifiers = QueuedSpawn.Modifiers;
 			Enemy.Tint = GetEnemyTint(Archetype, QueuedSpawn.Modifiers, QueuedSpawn.bBoss);
 			if (HasEnemyModifier(QueuedSpawn.Modifiers, ET66TDEnemyModifier::Armored))
 			{
-				Enemy.Armor = FMath::Max(4.f, Enemy.MaxHealth * 0.050f);
+				Enemy.Armor = FMath::Max(GetTuningValue(TEXT("ArmorMin"), 4.f), Enemy.MaxHealth * GetTuningValue(TEXT("ArmorHealthScalar"), 0.050f));
 			}
 			if (HasEnemyModifier(QueuedSpawn.Modifiers, ET66TDEnemyModifier::Shielded))
 			{
-				Enemy.MaxShield = FMath::Max(18.f, Enemy.MaxHealth * (QueuedSpawn.bBoss ? 0.30f : 0.22f));
+				Enemy.MaxShield = FMath::Max(
+					GetTuningValue(TEXT("ShieldMin"), 18.f),
+					Enemy.MaxHealth * (QueuedSpawn.bBoss ? GetTuningValue(TEXT("BossShieldScalar"), 0.30f) : GetTuningValue(TEXT("ShieldScalar"), 0.22f)));
 				Enemy.Shield = Enemy.MaxShield;
 			}
 			if (HasEnemyModifier(QueuedSpawn.Modifiers, ET66TDEnemyModifier::Regenerating))
 			{
-				Enemy.RegenPerSecond = FMath::Max(3.5f, Enemy.MaxHealth * 0.028f);
+				Enemy.RegenPerSecond = FMath::Max(GetTuningValue(TEXT("RegenMin"), 3.5f), Enemy.MaxHealth * GetTuningValue(TEXT("RegenScalar"), 0.028f));
 			}
 			Enemy.bBoss = QueuedSpawn.bBoss;
 		}
@@ -2172,18 +2247,18 @@ namespace
 			switch (UpgradeType)
 			{
 			case ET66TDTowerUpgradeType::Damage:
-				return 75 + (CurrentLevel * 55);
+				return GetTuningInt(TEXT("DamageUpgradeCostBase"), 75) + (CurrentLevel * GetTuningInt(TEXT("DamageUpgradeCostPerLevel"), 55));
 			case ET66TDTowerUpgradeType::Range:
-				return 65 + (CurrentLevel * 45);
+				return GetTuningInt(TEXT("RangeUpgradeCostBase"), 65) + (CurrentLevel * GetTuningInt(TEXT("RangeUpgradeCostPerLevel"), 45));
 			case ET66TDTowerUpgradeType::Tempo:
 			default:
-				return 80 + (CurrentLevel * 60);
+				return GetTuningInt(TEXT("TempoUpgradeCostBase"), 80) + (CurrentLevel * GetTuningInt(TEXT("TempoUpgradeCostPerLevel"), 60));
 			}
 		}
 
 		int32 GetTowerSellValue(const FT66TDPlacedTower& Tower) const
 		{
-			return FMath::RoundToInt(Tower.MaterialsInvested * 0.70f);
+			return FMath::RoundToInt(Tower.MaterialsInvested * GetTuningValue(TEXT("TowerSellScalar"), 0.70f));
 		}
 
 		FString GetUpgradeTrackLabelString(const FT66TDPlacedTower* Tower, const ET66TDTowerUpgradeType UpgradeType) const
@@ -2382,16 +2457,17 @@ namespace
 		{
 			const int32 CurrentLevel = GetUpgradeLevel(Tower, UpgradeType);
 			return FString::Printf(
-				TEXT("%s %d/3: %s. %s."),
+				TEXT("%s %d/%d: %s. %s."),
 				*GetUpgradeTrackLabelString(&Tower, UpgradeType),
 				CurrentLevel,
+				GetTuningInt(TEXT("UpgradeMaxLevel"), 3),
 				*GetUpgradeTrackEffectHint(Tower, UpgradeType),
 				*GetUpgradeCapstoneHint(Tower, UpgradeType));
 		}
 
 		bool CanUpgradeTower(const FT66TDPlacedTower& Tower, const ET66TDTowerUpgradeType UpgradeType) const
 		{
-			return GetUpgradeLevel(Tower, UpgradeType) < 3 && Materials >= GetUpgradeCost(Tower, UpgradeType);
+			return GetUpgradeLevel(Tower, UpgradeType) < GetTuningInt(TEXT("UpgradeMaxLevel"), 3) && Materials >= GetUpgradeCost(Tower, UpgradeType);
 		}
 
 		bool CanUpgradeSelectedTower(const ET66TDTowerUpgradeType UpgradeType) const
@@ -2410,7 +2486,7 @@ namespace
 
 			const int32 CurrentLevel = GetUpgradeLevel(*SelectedTower, UpgradeType);
 			const FString UpgradeLabel = GetUpgradeTrackLabelString(SelectedTower, UpgradeType).ToUpper();
-			if (CurrentLevel >= 3)
+			if (CurrentLevel >= GetTuningInt(TEXT("UpgradeMaxLevel"), 3))
 			{
 				return FText::FromString(FString::Printf(TEXT("%s  |  MAX"), *UpgradeLabel));
 			}
@@ -2451,7 +2527,7 @@ namespace
 				}
 				else if (FlavorProfile.Range >= 0.20f)
 				{
-					Tower.Profile.BossDamageMultiplier += 0.35f;
+					Tower.Profile.BossDamageMultiplier += GetTuningValue(TEXT("CapstoneDamageBossMultiplierAdd"), 0.35f);
 					Tower.Profile.bPrioritizeBoss = true;
 				}
 				else
@@ -2480,7 +2556,7 @@ namespace
 				else if (FlavorProfile.Range >= 0.18f)
 				{
 					Tower.Profile.bPrioritizeBoss = true;
-					Tower.Profile.BossDamageMultiplier += 0.15f;
+					Tower.Profile.BossDamageMultiplier += GetTuningValue(TEXT("CapstoneRangeBossMultiplierAdd"), 0.15f);
 				}
 				else
 				{
@@ -2513,7 +2589,9 @@ namespace
 				}
 				else
 				{
-					Tower.Profile.FireInterval = FMath::Max(0.10f, Tower.Profile.FireInterval * 0.88f);
+					Tower.Profile.FireInterval = FMath::Max(
+						GetTuningValue(TEXT("CapstoneFireIntervalMin"), 0.10f),
+						Tower.Profile.FireInterval * GetTuningValue(TEXT("CapstoneTempoFireIntervalMultiplier"), 0.88f));
 				}
 				break;
 			}
@@ -2535,44 +2613,48 @@ namespace
 			{
 			case ET66TDTowerUpgradeType::Damage:
 				++SelectedTower->DamageUpgradeLevel;
-				SelectedTower->Profile.Damage *= 1.35f;
-				SelectedTower->Profile.DotDamagePerSecond *= 1.25f;
+				SelectedTower->Profile.Damage *= GetTuningValue(TEXT("DamageUpgradeMultiplier"), 1.35f);
+				SelectedTower->Profile.DotDamagePerSecond *= GetTuningValue(TEXT("DotDamageUpgradeMultiplier"), 1.25f);
 				if (SelectedTower->Profile.SplashRadius > 0.f)
 				{
-					SelectedTower->Profile.SplashRadius *= 1.05f;
+					SelectedTower->Profile.SplashRadius *= GetTuningValue(TEXT("SplashDamageUpgradeMultiplier"), 1.05f);
 				}
 				break;
 
 			case ET66TDTowerUpgradeType::Range:
 				++SelectedTower->RangeUpgradeLevel;
-				SelectedTower->Profile.Range *= 1.16f;
-				SelectedTower->Profile.ChainRadius *= 1.18f;
+				SelectedTower->Profile.Range *= GetTuningValue(TEXT("RangeUpgradeMultiplier"), 1.16f);
+				SelectedTower->Profile.ChainRadius *= GetTuningValue(TEXT("ChainRadiusUpgradeMultiplier"), 1.18f);
 				if (SelectedTower->Profile.SplashRadius > 0.f)
 				{
-					SelectedTower->Profile.SplashRadius *= 1.14f;
+					SelectedTower->Profile.SplashRadius *= GetTuningValue(TEXT("SplashRadiusUpgradeMultiplier"), 1.14f);
 				}
 				if (SelectedTower->Profile.SlowDuration > 0.f)
 				{
-					SelectedTower->Profile.SlowDuration += 0.20f;
+					SelectedTower->Profile.SlowDuration += GetTuningValue(TEXT("SlowDurationUpgradeAdd"), 0.20f);
 				}
 				break;
 
 			case ET66TDTowerUpgradeType::Tempo:
 			default:
 				++SelectedTower->TempoUpgradeLevel;
-				SelectedTower->Profile.FireInterval = FMath::Max(0.12f, SelectedTower->Profile.FireInterval * 0.84f);
+				SelectedTower->Profile.FireInterval = FMath::Max(
+					GetTuningValue(TEXT("TempoFireIntervalMin"), 0.12f),
+					SelectedTower->Profile.FireInterval * GetTuningValue(TEXT("TempoFireIntervalMultiplier"), 0.84f));
 				if (SelectedTower->Profile.DotDuration > 0.f)
 				{
-					SelectedTower->Profile.DotDuration += 0.35f;
+					SelectedTower->Profile.DotDuration += GetTuningValue(TEXT("TempoDotDurationAdd"), 0.35f);
 				}
 				if (SelectedTower->Profile.SlowMultiplier < 0.999f)
 				{
-					SelectedTower->Profile.SlowMultiplier = FMath::Max(0.45f, SelectedTower->Profile.SlowMultiplier * 0.94f);
+					SelectedTower->Profile.SlowMultiplier = FMath::Max(
+						GetTuningValue(TEXT("SlowMultiplierUpgradeMin"), 0.45f),
+						SelectedTower->Profile.SlowMultiplier * GetTuningValue(TEXT("SlowMultiplierUpgradeMultiplier"), 0.94f));
 				}
 				break;
 			}
 
-			if (GetUpgradeLevel(*SelectedTower, UpgradeType) >= 3)
+			if (GetUpgradeLevel(*SelectedTower, UpgradeType) >= GetTuningInt(TEXT("UpgradeMaxLevel"), 3))
 			{
 				ApplyUpgradeCapstone(*SelectedTower, UpgradeType);
 			}
@@ -2583,9 +2665,17 @@ namespace
 		FT66TDMapDefinition MapDefinition;
 		FT66TDDifficultyDefinition DifficultyDefinition;
 		FT66TDMapLayoutDefinition LayoutDefinition;
+		FT66TDStageDefinition StageDefinition;
 		TArray<FT66TDHeroDefinition> HeroDefinitions;
+		TArray<FT66TDHeroCombatDefinition> HeroCombatDefinitions;
+		TArray<FT66TDEnemyArchetypeDefinition> EnemyArchetypeDefinitions;
+		TArray<FT66TDThemeModifierRule> ThemeModifierRules;
 		TMap<FName, FT66TDHeroDefinition> HeroLookup;
+		TMap<FName, FT66TDHeroCombatDefinition> HeroCombatLookup;
 		TMap<FName, FT66TDHeroCombatProfile> HeroProfiles;
+		TMap<FName, FT66TDEnemyArchetype> EnemyArchetypeLookup;
+		TMap<FName, FT66TDThemeModifierRule> ThemeModifierLookup;
+		FT66TDBattleTuningMap BattleTuningValues;
 		FT66TDHeroBrushMap HeroBrushes;
 		FT66TDEnemyBrushMap EnemyBrushes;
 		FT66TDEnemyBrushMap BossBrushes;
@@ -2597,15 +2687,18 @@ namespace
 		TSharedPtr<FActiveTimerHandle> ActiveTimerHandle;
 		TWeakObjectPtr<UGameInstance> OwningGameInstance;
 		ET66TDMatchState MatchState = ET66TDMatchState::AwaitingWave;
-		int32 Materials = 340;
-		int32 Hearts = 20;
+		int32 Materials = 0;
+		int32 Gold = 0;
+		int32 Hearts = 0;
 		int32 CurrentWave = 0;
 		int32 SelectedPadIndex = INDEX_NONE;
 		int32 PreviewPadIndex = INDEX_NONE;
 		int32 NextSpawnIndex = 0;
 		float TimeUntilNextSpawn = 0.f;
-		float SimulationSpeed = 1.0f;
+		float SimulationSpeed = 0.f;
 		bool bPreviewPlacementValid = false;
+		bool bLeaderboardResultSubmitted = false;
+		bool bStageResultRecorded = false;
 	};
 }
 
@@ -2644,6 +2737,11 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 	UT66TDVisualSubsystem* VisualSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66TDVisualSubsystem>() : nullptr;
 	const FT66TDDifficultyDefinition* SelectedDifficulty = (TDDataSubsystem && FrontendState) ? TDDataSubsystem->FindDifficulty(FrontendState->GetSelectedDifficultyID()) : nullptr;
 	const FT66TDMapDefinition* SelectedMap = (TDDataSubsystem && FrontendState) ? TDDataSubsystem->FindMap(FrontendState->GetSelectedMapID()) : nullptr;
+	const FT66TDStageDefinition* SelectedStage = (TDDataSubsystem && FrontendState && FrontendState->HasSelectedStage()) ? TDDataSubsystem->FindStage(FrontendState->GetSelectedStageID()) : nullptr;
+	if (!SelectedStage && TDDataSubsystem && SelectedMap)
+	{
+		SelectedStage = TDDataSubsystem->FindStageForMap(SelectedMap->MapID);
+	}
 	const FT66TDMapLayoutDefinition* SelectedLayout = (TDDataSubsystem && SelectedMap) ? TDDataSubsystem->FindLayout(SelectedMap->MapID) : nullptr;
 
 	if (!TDDataSubsystem || !SelectedDifficulty || !SelectedMap || !SelectedLayout)
@@ -2673,6 +2771,11 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 	}
 
 	const TSharedPtr<FSlateBrush>& BackgroundBrush = FindOrLoadMapBrush(SelectedMap->BackgroundRelativePath);
+	FT66TDMapDefinition RuntimeMap = *SelectedMap;
+	if (SelectedStage && SelectedStage->BossWave > 0)
+	{
+		RuntimeMap.BossWave = SelectedStage->BossWave;
+	}
 
 	TArray<FT66TDHeroDefinition> OrderedHeroes = TDDataSubsystem->GetHeroes();
 	OrderedHeroes.Sort([SelectedMap](const FT66TDHeroDefinition& Left, const FT66TDHeroDefinition& Right)
@@ -2700,7 +2803,14 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 			}
 		}
 
-		static const TArray<FString> EnemyVisualIDs = { TEXT("Roost"), TEXT("Goat"), TEXT("Cow"), TEXT("Pig") };
+		TArray<FString> EnemyVisualIDs;
+		for (const FT66TDEnemyArchetypeDefinition& ArchetypeDefinition : TDDataSubsystem->GetEnemyArchetypes())
+		{
+			if (!ArchetypeDefinition.VisualID.IsEmpty())
+			{
+				EnemyVisualIDs.AddUnique(ArchetypeDefinition.VisualID);
+			}
+		}
 		for (const FString& EnemyVisualID : EnemyVisualIDs)
 		{
 			if (UTexture2D* EnemyTexture = VisualSubsystem->LoadEnemyTexture(EnemyVisualID))
@@ -2716,10 +2826,15 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 
 	TSharedPtr<ST66TDBattleBoardWidget> BattleBoard;
 	SAssignNew(BattleBoard, ST66TDBattleBoardWidget)
-		.MapDefinition(*SelectedMap)
+		.MapDefinition(RuntimeMap)
 		.DifficultyDefinition(*SelectedDifficulty)
 		.LayoutDefinition(*SelectedLayout)
+		.StageDefinition(SelectedStage ? *SelectedStage : FT66TDStageDefinition())
 		.Heroes(OrderedHeroes)
+		.HeroCombatDefinitions(TDDataSubsystem->GetHeroCombatDefinitions())
+		.EnemyArchetypes(TDDataSubsystem->GetEnemyArchetypes())
+		.BattleTuningValues(TDDataSubsystem->GetBattleTuningValues())
+		.ThemeModifierRules(TDDataSubsystem->GetThemeModifierRules())
 		.HeroBrushes(HeroSpriteBrushes)
 		.EnemyBrushes(EnemySpriteBrushes)
 		.BossBrushes(BossSpriteBrushes)
@@ -2729,7 +2844,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 	TSharedRef<SVerticalBox> HeroRoster = SNew(SVerticalBox);
 	for (const FT66TDHeroDefinition& HeroDefinition : OrderedHeroes)
 	{
-		const FT66TDHeroCombatProfile Profile = BuildHeroProfile(HeroDefinition);
+		const FT66TDHeroCombatProfile Profile = BuildHeroProfile(HeroDefinition, TDDataSubsystem->FindHeroCombatDefinition(HeroDefinition.HeroID));
 		HeroRoster->AddSlot()
 		.AutoHeight()
 		.Padding(0.f, 0.f, 0.f, 8.f)
@@ -3137,6 +3252,11 @@ void UT66TDBattleScreen::EnsureRunSelectionState()
 		{
 			FrontendState->SelectMap(MapsForDifficulty[0]->MapID);
 		}
+	}
+
+	if (const FT66TDStageDefinition* StageDefinition = TDDataSubsystem->FindStageForMap(FrontendState->GetSelectedMapID()))
+	{
+		FrontendState->SelectStage(StageDefinition->StageID);
 	}
 }
 

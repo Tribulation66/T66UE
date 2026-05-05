@@ -1,0 +1,26 @@
+StageID,DifficultyID,StageIndex,DisplayName,Description,WaveIndex,BossID,ClearGoldReward,ClearMaterialReward,ClearChadCoupons,NextStageID
+Mini_Easy_01,Easy,1,Easy Stage 1,First easy boss gate.,1,Boss_01,12,8,1,Mini_Easy_02
+Mini_Easy_02,Easy,2,Easy Stage 2,Second easy boss gate.,2,Boss_02,16,10,1,Mini_Easy_03
+Mini_Easy_03,Easy,3,Easy Stage 3,Third easy boss gate.,3,Boss_03,20,12,1,Mini_Easy_04
+Mini_Easy_04,Easy,4,Easy Stage 4,Fourth easy boss gate.,4,Boss_04,24,14,1,Mini_Easy_05
+Mini_Easy_05,Easy,5,Easy Stage 5,Final easy boss gate.,5,Boss_05,32,18,2,
+Mini_Medium_01,Medium,1,Medium Stage 1,First medium boss gate.,1,Boss_06,18,12,1,Mini_Medium_02
+Mini_Medium_02,Medium,2,Medium Stage 2,Second medium boss gate.,2,Boss_07,24,14,1,Mini_Medium_03
+Mini_Medium_03,Medium,3,Medium Stage 3,Third medium boss gate.,3,Boss_08,30,16,1,Mini_Medium_04
+Mini_Medium_04,Medium,4,Medium Stage 4,Fourth medium boss gate.,4,Boss_09,36,18,1,Mini_Medium_05
+Mini_Medium_05,Medium,5,Medium Stage 5,Final medium boss gate.,5,Boss_10,48,24,2,
+Mini_Hard_01,Hard,1,Hard Stage 1,First hard boss gate.,1,Boss_11,28,16,1,Mini_Hard_02
+Mini_Hard_02,Hard,2,Hard Stage 2,Second hard boss gate.,2,Boss_12,36,20,1,Mini_Hard_03
+Mini_Hard_03,Hard,3,Hard Stage 3,Third hard boss gate.,3,Boss_13,44,24,1,Mini_Hard_04
+Mini_Hard_04,Hard,4,Hard Stage 4,Fourth hard boss gate.,4,Boss_14,52,28,1,Mini_Hard_05
+Mini_Hard_05,Hard,5,Hard Stage 5,Final hard boss gate.,5,Boss_15,68,36,2,
+Mini_VeryHard_01,VeryHard,1,Very Hard Stage 1,First very hard boss gate.,1,Boss_16,40,22,1,Mini_VeryHard_02
+Mini_VeryHard_02,VeryHard,2,Very Hard Stage 2,Second very hard boss gate.,2,Boss_17,50,26,1,Mini_VeryHard_03
+Mini_VeryHard_03,VeryHard,3,Very Hard Stage 3,Third very hard boss gate.,3,Boss_18,60,30,1,Mini_VeryHard_04
+Mini_VeryHard_04,VeryHard,4,Very Hard Stage 4,Fourth very hard boss gate.,4,Boss_19,70,34,1,Mini_VeryHard_05
+Mini_VeryHard_05,VeryHard,5,Very Hard Stage 5,Final very hard boss gate.,5,Boss_20,90,44,2,
+Mini_Impossible_01,Impossible,1,Impossible Stage 1,First impossible boss gate.,1,Boss_21,56,30,1,Mini_Impossible_02
+Mini_Impossible_02,Impossible,2,Impossible Stage 2,Second impossible boss gate.,2,Boss_22,68,36,1,Mini_Impossible_03
+Mini_Impossible_03,Impossible,3,Impossible Stage 3,Third impossible boss gate.,3,Boss_23,80,42,1,Mini_Impossible_04
+Mini_Impossible_04,Impossible,4,Impossible Stage 4,Fourth impossible boss gate.,4,Boss_24,92,48,1,Mini_Impossible_05
+Mini_Impossible_05,Impossible,5,Impossible Stage 5,Final impossible boss gate.,5,Boss_25,120,60,2,

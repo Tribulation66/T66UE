@@ -23,6 +23,157 @@ void UT66BackendSubsystem::FetchDailyLeaderboard(const FString& Filter)
 	Request->ProcessRequest();
 }
 
+FString UT66BackendSubsystem::MakeMinigameDailyChallengeCacheKey(
+	const FString& GameId,
+	const FString& Difficulty)
+{
+	return FString::Printf(TEXT("%s_%s"), *GameId.ToLower(), *Difficulty.ToLower());
+}
+
+void UT66BackendSubsystem::FetchCurrentMinigameDailyChallenge(
+	const FString& GameId,
+	const FString& Difficulty)
+{
+	const FString NormalizedGameId = GameId.ToLower();
+	const FString NormalizedDifficulty = Difficulty.ToLower();
+	const FString RequestKey = MakeMinigameDailyChallengeCacheKey(NormalizedGameId, NormalizedDifficulty);
+
+	if (!IsBackendConfigured())
+	{
+		LastMinigameDailyChallengeStatus = TEXT("backend_unconfigured");
+		LastMinigameDailyChallengeMessage = TEXT("Backend URL is not configured.");
+		OnMinigameDailyChallengeReady.Broadcast(RequestKey);
+		return;
+	}
+
+	const FString Endpoint = FString::Printf(
+		TEXT("/api/minigames/challenge?game_id=%s&difficulty=%s"),
+		*NormalizedGameId,
+		*NormalizedDifficulty);
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnMinigameDailyChallengeResponseReceived, RequestKey);
+	Request->ProcessRequest();
+}
+
+void UT66BackendSubsystem::FetchMinigameLeaderboard(
+	const FString& GameId,
+	const FString& Scope,
+	const FString& Difficulty,
+	const FString& Filter)
+{
+	const FString NormalizedGameId = GameId.ToLower();
+	const FString NormalizedScope = Scope.IsEmpty() ? TEXT("daily") : Scope.ToLower();
+	const FString NormalizedDifficulty = Difficulty.ToLower();
+	const FString NormalizedFilter = Filter.IsEmpty() ? TEXT("global") : Filter.ToLower();
+	const FString Key = FString::Printf(
+		TEXT("minigame_%s_%s_%s_%s"),
+		*NormalizedGameId,
+		*NormalizedScope,
+		*NormalizedDifficulty,
+		*NormalizedFilter);
+
+	if (!IsBackendConfigured())
+	{
+		return;
+	}
+
+	if (PendingLeaderboardFetches.Contains(Key))
+	{
+		return;
+	}
+	PendingLeaderboardFetches.Add(Key);
+
+	const FString Endpoint = FString::Printf(
+		TEXT("/api/minigames/leaderboard?game_id=%s&scope=%s&difficulty=%s&filter=%s"),
+		*NormalizedGameId,
+		*NormalizedScope,
+		*NormalizedDifficulty,
+		*NormalizedFilter);
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnLeaderboardResponseReceived, Key);
+	Request->ProcessRequest();
+}
+
+void UT66BackendSubsystem::SubmitMinigameScore(
+	const FString& DisplayName,
+	const FString& GameId,
+	const FString& Scope,
+	const FString& Difficulty,
+	const int32 Score,
+	const FString& ChallengeId,
+	const int32 RunSeed,
+	const FString& RequestKey)
+{
+	const FString NormalizedGameId = GameId.ToLower();
+	const FString NormalizedScope = Scope.IsEmpty() ? TEXT("alltime") : Scope.ToLower();
+	const FString NormalizedDifficulty = Difficulty.ToLower();
+	const FString SubmitKey = RequestKey.IsEmpty()
+		? FString::Printf(TEXT("minigame_submit_%s_%s_%s"), *NormalizedGameId, *NormalizedScope, *NormalizedDifficulty)
+		: RequestKey;
+
+	if (!IsBackendConfigured() || !HasSteamTicket() || DisplayName.TrimStartAndEnd().IsEmpty() || NormalizedGameId.IsEmpty() || NormalizedDifficulty.IsEmpty() || Score < 0)
+	{
+		LastMinigameSubmitStatus = TEXT("invalid_minigame_submit");
+		LastMinigameSubmitMessage = TEXT("Minigame score submission is not ready.");
+		OnMinigameSubmitDataReady.Broadcast(SubmitKey, false, LastMinigameSubmitStatus, 0);
+		return;
+	}
+
+	if (NormalizedScope == TEXT("daily") && ChallengeId.IsEmpty())
+	{
+		LastMinigameSubmitStatus = TEXT("missing_daily_challenge");
+		LastMinigameSubmitMessage = TEXT("Daily minigame score is missing its challenge id.");
+		OnMinigameSubmitDataReady.Broadcast(SubmitKey, false, LastMinigameSubmitStatus, 0);
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetStringField(TEXT("display_name"), DisplayName.TrimStartAndEnd());
+	Root->SetStringField(TEXT("game_id"), NormalizedGameId);
+	Root->SetStringField(TEXT("scope"), NormalizedScope);
+	Root->SetStringField(TEXT("difficulty"), NormalizedDifficulty);
+	Root->SetNumberField(TEXT("score"), Score);
+	if (!SubmitKey.IsEmpty())
+	{
+		Root->SetStringField(TEXT("submission_id"), SubmitKey);
+	}
+	if (NormalizedScope == TEXT("daily"))
+	{
+		Root->SetStringField(TEXT("challenge_id"), ChallengeId);
+		Root->SetNumberField(TEXT("run_seed"), RunSeed);
+	}
+
+	FString Payload;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Payload);
+	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("POST"), TEXT("/api/minigames/submit"));
+	SetAuthHeaders(Request);
+	Request->SetContentAsString(Payload);
+	Request->OnProcessRequestComplete().BindUObject(
+		this,
+		&UT66BackendSubsystem::OnMinigameSubmitResponseReceived,
+		SubmitKey,
+		NormalizedGameId,
+		NormalizedScope,
+		NormalizedDifficulty);
+	Request->ProcessRequest();
+}
+
+bool UT66BackendSubsystem::GetCachedMinigameDailyChallenge(
+	const FString& Key,
+	FT66MinigameDailyChallengeData& OutChallenge) const
+{
+	if (const FT66MinigameDailyChallengeData* Found = MinigameDailyChallengeCache.Find(Key))
+	{
+		OutChallenge = *Found;
+		return Found->IsValid();
+	}
+
+	OutChallenge = FT66MinigameDailyChallengeData();
+	return false;
+}
+
 void UT66BackendSubsystem::FetchMyRank(
 	const FString& Type,
 	const FString& Time,
@@ -425,6 +576,109 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 
 	// Notify listeners
 	OnLeaderboardDataReady.Broadcast(LeaderboardKey);
+}
+
+void UT66BackendSubsystem::OnMinigameDailyChallengeResponseReceived(
+	FHttpRequestPtr Request,
+	FHttpResponsePtr Response,
+	bool bConnectedSuccessfully,
+	FString RequestKey)
+{
+	if (!bConnectedSuccessfully || !Response.IsValid())
+	{
+		LastMinigameDailyChallengeStatus = TEXT("connection_error");
+		LastMinigameDailyChallengeMessage = TEXT("Minigame daily challenge request failed.");
+		OnMinigameDailyChallengeReady.Broadcast(RequestKey);
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
+	{
+		LastMinigameDailyChallengeStatus = TEXT("parse_error");
+		LastMinigameDailyChallengeMessage = TEXT("Minigame daily challenge response was invalid JSON.");
+		OnMinigameDailyChallengeReady.Broadcast(RequestKey);
+		return;
+	}
+
+	if (!Json->TryGetStringField(TEXT("status"), LastMinigameDailyChallengeStatus))
+	{
+		LastMinigameDailyChallengeStatus = TEXT("ok");
+	}
+	LastMinigameDailyChallengeMessage = ExtractResponseMessage(Json, LastMinigameDailyChallengeStatus);
+
+	const TSharedPtr<FJsonObject>* ChallengeObj = nullptr;
+	if (Json->TryGetObjectField(TEXT("challenge"), ChallengeObj) && ChallengeObj && (*ChallengeObj).IsValid())
+	{
+		FT66MinigameDailyChallengeData Parsed;
+		(*ChallengeObj)->TryGetStringField(TEXT("challenge_id"), Parsed.ChallengeId);
+		(*ChallengeObj)->TryGetStringField(TEXT("game_id"), Parsed.GameId);
+		(*ChallengeObj)->TryGetStringField(TEXT("difficulty"), Parsed.Difficulty);
+		(*ChallengeObj)->TryGetStringField(TEXT("challenge_date_utc"), Parsed.ChallengeDateUtc);
+		(*ChallengeObj)->TryGetStringField(TEXT("starts_at"), Parsed.StartsAtIso);
+		(*ChallengeObj)->TryGetStringField(TEXT("ends_at"), Parsed.EndsAtIso);
+		(*ChallengeObj)->TryGetStringField(TEXT("title"), Parsed.Title);
+		(*ChallengeObj)->TryGetStringField(TEXT("leaderboard_key"), Parsed.LeaderboardKey);
+
+		double RunSeedValue = 0.0;
+		if ((*ChallengeObj)->TryGetNumberField(TEXT("run_seed"), RunSeedValue))
+		{
+			Parsed.RunSeed = static_cast<int32>(RunSeedValue);
+		}
+
+		if (Parsed.IsValid())
+		{
+			MinigameDailyChallengeCache.Add(RequestKey, MoveTemp(Parsed));
+		}
+	}
+
+	OnMinigameDailyChallengeReady.Broadcast(RequestKey);
+}
+
+void UT66BackendSubsystem::OnMinigameSubmitResponseReceived(
+	FHttpRequestPtr Request,
+	FHttpResponsePtr Response,
+	bool bConnectedSuccessfully,
+	FString RequestKey,
+	FString GameId,
+	FString Scope,
+	FString Difficulty)
+{
+	if (!bConnectedSuccessfully || !Response.IsValid())
+	{
+		LastMinigameSubmitStatus = TEXT("connection_error");
+		LastMinigameSubmitMessage = TEXT("Minigame score submit failed.");
+		OnMinigameSubmitDataReady.Broadcast(RequestKey, false, LastMinigameSubmitStatus, 0);
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
+	{
+		LastMinigameSubmitStatus = TEXT("parse_error");
+		LastMinigameSubmitMessage = TEXT("Minigame score submit returned invalid JSON.");
+		OnMinigameSubmitDataReady.Broadcast(RequestKey, false, LastMinigameSubmitStatus, 0);
+		return;
+	}
+
+	if (!Json->TryGetStringField(TEXT("status"), LastMinigameSubmitStatus))
+	{
+		LastMinigameSubmitStatus = TEXT("unknown");
+	}
+	LastMinigameSubmitMessage = ExtractResponseMessage(Json, LastMinigameSubmitStatus);
+
+	double RankValue = 0.0;
+	(void)Json->TryGetNumberField(TEXT("rank"), RankValue);
+	const int32 Rank = static_cast<int32>(RankValue);
+	const bool bAccepted = LastMinigameSubmitStatus == TEXT("accepted");
+	if (bAccepted)
+	{
+		FetchMinigameLeaderboard(GameId, Scope, Difficulty, TEXT("global"));
+	}
+
+	OnMinigameSubmitDataReady.Broadcast(RequestKey, bAccepted, LastMinigameSubmitStatus, Rank);
 }
 
 // ── Fetch Run Summary ────────────────────────────────────────

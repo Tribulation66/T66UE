@@ -256,7 +256,7 @@ namespace
 						GetPrimaryStatLabel(StatIndex),
 						FText::AsNumber(StatValue)))
 					.Font(FT66Style::Tokens::FontBold(14))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.ColorAndOpacity(GetHeroSelectionParchmentText())
 				];
 			}
 			return Column;
@@ -299,6 +299,10 @@ FReply UT66HeroSelectionScreen::HandleStatsClicked()
 	}
 
 	bShowingStatsPanel = !bShowingStatsPanel;
+	if (bShowingStatsPanel)
+	{
+		bShowingInlineRetroFXPanel = false;
+	}
 	bShowingHeroRecordInfoPanel = false;
 	RefreshPanelSwitchers();
 	return FReply::Handled();
@@ -312,6 +316,7 @@ FReply UT66HeroSelectionScreen::HandleOpenStatsPanelClicked()
 	}
 
 	bShowingStatsPanel = true;
+	bShowingInlineRetroFXPanel = false;
 	bShowingHeroRecordInfoPanel = false;
 	RefreshPanelSwitchers();
 	return FReply::Handled();
@@ -409,7 +414,7 @@ void UT66HeroSelectionScreen::RefreshHeroStatsPanels()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.HeroSelection", "HeroSummaryStatsHeader", "STATS"))
 					.Font(FT66Style::Tokens::FontBold(17))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.ColorAndOpacity(GetHeroSelectionParchmentMutedText())
 					.Justification(ETextJustify::Center)
 				]
 				+ SVerticalBox::Slot()
@@ -430,7 +435,7 @@ void UT66HeroSelectionScreen::RefreshHeroStatsPanels()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.HeroSelection", "HeroSummaryStatsHeader", "STATS"))
 					.Font(FT66Style::Tokens::FontBold(17))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.ColorAndOpacity(GetHeroSelectionParchmentMutedText())
 					.Justification(ETextJustify::Center)
 				]
 				+ SVerticalBox::Slot()
@@ -439,7 +444,7 @@ void UT66HeroSelectionScreen::RefreshHeroStatsPanels()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroSummaryStatsHint", "Select a hero to view their stats."))
 					.Font(FT66Style::Tokens::FontRegular(14))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.ColorAndOpacity(GetHeroSelectionParchmentMutedText())
 					.AutoWrapText(true)
 				]);
 		}

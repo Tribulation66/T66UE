@@ -172,6 +172,21 @@ FReply UT66HeroSelectionScreen::HandleEnterClicked() { OnEnterTribulationClicked
 
 FReply UT66HeroSelectionScreen::HandleChallengesClicked() { OnChallengesClicked(); return FReply::Handled(); }
 
+FReply UT66HeroSelectionScreen::HandleRetroFXSettingsClicked()
+{
+	bShowingInlineRetroFXPanel = !bShowingInlineRetroFXPanel;
+	if (bShowingInlineRetroFXPanel)
+	{
+		bShowingStatsPanel = false;
+		bShowingTemporaryBuffPicker = false;
+		bInlineRetroFXInitialized = false;
+		InitializeInlineRetroFXFromUserSettingsIfNeeded();
+	}
+
+	RefreshPanelSwitchers();
+	return FReply::Handled();
+}
+
 FReply UT66HeroSelectionScreen::HandleBackClicked() { OnBackClicked(); return FReply::Handled(); }
 
 FReply UT66HeroSelectionScreen::HandleBackToPartyClicked()
@@ -180,9 +195,9 @@ FReply UT66HeroSelectionScreen::HandleBackToPartyClicked()
 	return FReply::Handled();
 }
 
-FReply UT66HeroSelectionScreen::HandleBodyTypeAClicked()
+FReply UT66HeroSelectionScreen::HandleChadBodyClicked()
 {
-	SelectedBodyType = ET66BodyType::TypeA;
+	SelectedBodyType = T66BodyTypeAliases::Chad;
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->SelectedHeroBodyType = SelectedBodyType;
@@ -192,9 +207,9 @@ FReply UT66HeroSelectionScreen::HandleBodyTypeAClicked()
 	return FReply::Handled();
 }
 
-FReply UT66HeroSelectionScreen::HandleBodyTypeBClicked()
+FReply UT66HeroSelectionScreen::HandleStacyBodyClicked()
 {
-	SelectedBodyType = ET66BodyType::TypeB;
+	SelectedBodyType = T66BodyTypeAliases::Stacy;
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->SelectedHeroBodyType = SelectedBodyType;
@@ -208,7 +223,7 @@ void UT66HeroSelectionScreen::RefreshPanelSwitchers()
 {
 	if (LeftPanelWidgetSwitcher.IsValid())
 	{
-		LeftPanelWidgetSwitcher->SetActiveWidgetIndex(bShowingStatsPanel ? 1 : 0);
+		LeftPanelWidgetSwitcher->SetActiveWidgetIndex(GetLeftPanelWidgetIndex());
 	}
 
 	const int32 CompanionInfoIndex = bShowingCompanionInfo ? 1 : 0;
@@ -221,6 +236,16 @@ void UT66HeroSelectionScreen::RefreshPanelSwitchers()
 	{
 		RightFooterWidgetSwitcher->SetActiveWidgetIndex(CompanionInfoIndex);
 	}
+}
+
+int32 UT66HeroSelectionScreen::GetLeftPanelWidgetIndex() const
+{
+	if (bShowingInlineRetroFXPanel)
+	{
+		return 2;
+	}
+
+	return bShowingStatsPanel ? 1 : 0;
 }
 
 void UT66HeroSelectionScreen::RefreshTargetDropdownTexts()
@@ -351,7 +376,6 @@ void UT66HeroSelectionScreen::PreviewHero(FName HeroID)
 	if (GetPreviewedHeroData(HeroData)) OnPreviewedHeroChanged(HeroData);
 	CommitLocalSelectionsToLobby(true);
 	UpdateHeroDisplay();
-	GetOrCreatePreviewController()->UpdateHeroPreviewVideo(PreviewedHeroID, bShowingCompanionInfo);
 	UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] PreviewHero END"));
 }
 
@@ -427,7 +451,7 @@ void UT66HeroSelectionScreen::SelectDifficulty(ET66Difficulty Difficulty)
 	RefreshHeroRecordRank();
 }
 
-void UT66HeroSelectionScreen::ToggleBodyType() { SelectedBodyType = (SelectedBodyType == ET66BodyType::TypeA) ? ET66BodyType::TypeB : ET66BodyType::TypeA; }
+void UT66HeroSelectionScreen::ToggleBodyType() { SelectedBodyType = T66BodyTypeAliases::IsChad(SelectedBodyType) ? T66BodyTypeAliases::Stacy : T66BodyTypeAliases::Chad; }
 
 void UT66HeroSelectionScreen::OnHeroGridClicked() { ShowModal(ET66ScreenType::HeroGrid); }
 
@@ -555,10 +579,10 @@ const UT66HeroSelectionPreviewController* UT66HeroSelectionScreen::GetPreviewCon
 
 FReply UT66HeroSelectionScreen::NativeOnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
-	// Key B switches to Type B (return to Type A via the Type A button only)
+	// Key B switches to Stacy (return to Chad via the Chad button only).
 	if (InKeyEvent.GetKey() == EKeys::B)
 	{
-		SelectedBodyType = ET66BodyType::TypeB;
+		SelectedBodyType = T66BodyTypeAliases::Stacy;
 		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 		{
 			GI->SelectedHeroBodyType = SelectedBodyType;

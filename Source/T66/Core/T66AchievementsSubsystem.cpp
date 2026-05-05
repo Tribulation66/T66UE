@@ -69,6 +69,56 @@ namespace
 		return FMath::Clamp(FMath::RoundToInt(static_cast<float>(LegacyRewardCoins) / 15.f), 5, 50);
 	}
 
+	void MigrateHeroOwnedSkinsMap(TMap<FName, FT66OwnedSkinsList>& HeroSkinMap, FName (*MigrateHeroID)(FName))
+	{
+		TMap<FName, FT66OwnedSkinsList> Migrated;
+		for (const auto& Pair : HeroSkinMap)
+		{
+			const FName NewKey = MigrateHeroID(Pair.Key);
+			FT66OwnedSkinsList& TargetList = Migrated.FindOrAdd(NewKey);
+			for (const FName& SkinID : Pair.Value.SkinIDs)
+			{
+				TargetList.SkinIDs.AddUnique(SkinID);
+			}
+		}
+		HeroSkinMap = MoveTemp(Migrated);
+	}
+
+	template <typename TValue>
+	void MigrateHeroKeyMapReplace(TMap<FName, TValue>& HeroMap, FName (*MigrateHeroID)(FName))
+	{
+		TMap<FName, TValue> Migrated;
+		for (const auto& Pair : HeroMap)
+		{
+			Migrated.Add(MigrateHeroID(Pair.Key), Pair.Value);
+		}
+		HeroMap = MoveTemp(Migrated);
+	}
+
+	void MigrateHeroIntMapAdditive(TMap<FName, int32>& HeroMap, FName (*MigrateHeroID)(FName))
+	{
+		TMap<FName, int32> Migrated;
+		for (const auto& Pair : HeroMap)
+		{
+			Migrated.FindOrAdd(MigrateHeroID(Pair.Key)) += Pair.Value;
+		}
+		HeroMap = MoveTemp(Migrated);
+	}
+
+	void MigrateHeroMedalMap(TMap<FName, ET66AccountMedalTier>& HeroMap, FName (*MigrateHeroID)(FName))
+	{
+		TMap<FName, ET66AccountMedalTier> Migrated;
+		for (const auto& Pair : HeroMap)
+		{
+			ET66AccountMedalTier& Target = Migrated.FindOrAdd(MigrateHeroID(Pair.Key));
+			if (static_cast<uint8>(Pair.Value) > static_cast<uint8>(Target))
+			{
+				Target = Pair.Value;
+			}
+		}
+		HeroMap = MoveTemp(Migrated);
+	}
+
 	const TArray<int32>& GetExtraEnemyKillThresholds()
 	{
 		static const TArray<int32> Thresholds = { 5, 10, 50, 250, 500, 2500, 5000, 10000, 25000, 50000, 100000, 250000 };
@@ -262,36 +312,11 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	Profile->LifetimeGamblerWins = FMath::Max(0, Profile->LifetimeGamblerWins);
 	Profile->GamblersTokenUnlockedLevel = FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 5);
 
-	// Migration: Hero renumbering (Hero_1 removed, Hero_2..5 -> Hero_1..4). SaveVersion 9.
+	// Historical migration: early hero renumbering (Hero_1 removed, Hero_2..5 -> Hero_1..4). SaveVersion 9.
 	if (LoadedSaveVersion < 9)
 	{
-		TMap<FName, FT66OwnedSkinsList> NewOwned;
-		for (const auto& Pair : Profile->OwnedHeroSkinsByHero)
-		{
-			FName NewKey = T66MigrateHeroIDFromSave(Pair.Key);
-			if (NewOwned.Contains(NewKey))
-			{
-				for (const FName& SkinID : Pair.Value.SkinIDs)
-				{
-					if (!NewOwned.Find(NewKey)->SkinIDs.Contains(SkinID))
-					{
-						NewOwned.Find(NewKey)->SkinIDs.Add(SkinID);
-					}
-				}
-			}
-			else
-			{
-				NewOwned.Add(NewKey, Pair.Value);
-			}
-		}
-		Profile->OwnedHeroSkinsByHero = MoveTemp(NewOwned);
-		TMap<FName, FName> NewEquipped;
-		for (const auto& Pair : Profile->EquippedHeroSkinIDByHero)
-		{
-			FName NewKey = T66MigrateHeroIDFromSave(Pair.Key);
-			NewEquipped.Add(NewKey, Pair.Value);
-		}
-		Profile->EquippedHeroSkinIDByHero = MoveTemp(NewEquipped);
+		MigrateHeroOwnedSkinsMap(Profile->OwnedHeroSkinsByHero, T66MigratePreSaveVersion9HeroID);
+		MigrateHeroKeyMapReplace(Profile->EquippedHeroSkinIDByHero, T66MigratePreSaveVersion9HeroID);
 		Profile->SaveVersion = 9;
 		bProfileDirty = true;
 		UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: Applied HeroID renumber migration (SaveVersion 9)"));
@@ -325,6 +350,20 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		Profile->SaveVersion = 15;
 		bProfileDirty = true;
 		UE_LOG(LogT66Achievements, Log, TEXT("[Account] LoadOrCreateProfile: Added remembered hero/companion defaults (SaveVersion 15)."));
+	}
+
+	if (LoadedSaveVersion >= 9 && LoadedSaveVersion < T66SparseActiveHeroIdProfileSaveVersion)
+	{
+		MigrateHeroOwnedSkinsMap(Profile->OwnedHeroSkinsByHero, T66MigrateSparseActiveHeroID);
+		MigrateHeroKeyMapReplace(Profile->EquippedHeroSkinIDByHero, T66MigrateSparseActiveHeroID);
+		MigrateHeroIntMapAdditive(Profile->HeroUnityStagesClearedByID, T66MigrateSparseActiveHeroID);
+		MigrateHeroIntMapAdditive(Profile->HeroGamesPlayedByID, T66MigrateSparseActiveHeroID);
+		MigrateHeroMedalMap(Profile->HeroHighestMedalByID, T66MigrateSparseActiveHeroID);
+		MigrateHeroIntMapAdditive(Profile->HeroCumulativeScoreByID, T66MigrateSparseActiveHeroID);
+		Profile->LastSelectedHeroID = T66MigrateSparseActiveHeroID(Profile->LastSelectedHeroID);
+		Profile->SaveVersion = T66SparseActiveHeroIdProfileSaveVersion;
+		bProfileDirty = true;
+		UE_LOG(LogT66Achievements, Log, TEXT("[Account] LoadOrCreateProfile: Applied sparse active HeroID migration (SaveVersion %d)."), T66SparseActiveHeroIdProfileSaveVersion);
 	}
 
 	// Hero skins: log current state (no more auto-reset; purchases persist).
@@ -391,7 +430,7 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
 	}
 
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 15);
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, T66SparseActiveHeroIdProfileSaveVersion);
 }
 
 int32 UT66AchievementsSubsystem::GetChadCouponBalance() const

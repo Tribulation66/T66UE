@@ -6,7 +6,7 @@ ASSETS = [
     '/Game/Materials/M_Environment_Unlit',
     '/Game/Materials/M_FBX_Unlit',
     '/Game/Materials/M_GLB_Unlit',
-    '/Game/Characters/Heroes/Hero_1/TypeA/Idle/Material_0',
+    '/Game/Characters/Heroes/Hero_1/Chad/Idle/Material_0',
     '/Game/Characters/Enemies/Enemy1/Material_001',
 ]
 

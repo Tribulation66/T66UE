@@ -40,6 +40,7 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66StatsPanelSlate.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"

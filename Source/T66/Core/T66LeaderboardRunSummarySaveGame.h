@@ -24,7 +24,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 20;
+	int32 SchemaVersion = 21;
 
 	/** Backend leaderboard entry UUID when this snapshot came from the online service. */
 	UPROPERTY(SaveGame)
@@ -94,13 +94,13 @@ public:
 	FName HeroID = NAME_None;
 
 	UPROPERTY(SaveGame)
-	ET66BodyType HeroBodyType = ET66BodyType::TypeA;
+	ET66BodyType HeroBodyType = ET66BodyType::Chad;
 
 	UPROPERTY(SaveGame)
 	FName CompanionID = NAME_None;
 
 	UPROPERTY(SaveGame)
-	ET66BodyType CompanionBodyType = ET66BodyType::TypeA;
+	ET66BodyType CompanionBodyType = ET66BodyType::Chad;
 
 	// ===== Level / stats =====
 

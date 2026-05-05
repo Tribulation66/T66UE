@@ -1,0 +1,211 @@
+[
+  {
+    "size": [
+      1024,
+      1536
+    ],
+    "border_mean_rgb": [
+      6,
+      243,
+      7
+    ],
+    "border_median_rgb": [
+      6,
+      243,
+      7
+    ],
+    "border_nonuniform_pct_gt10": 0.176,
+    "border_nonuniform_pct_gt25": 0.0,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_3_LuBu_TypeA_Standard_BodyOnly_Green.png"
+  },
+  {
+    "size": [
+      1024,
+      1536
+    ],
+    "border_mean_rgb": [
+      11,
+      229,
+      14
+    ],
+    "border_median_rgb": [
+      11,
+      230,
+      14
+    ],
+    "border_nonuniform_pct_gt10": 0.195,
+    "border_nonuniform_pct_gt25": 0.0,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_4_Mike_TypeA_Standard_BodyOnly_Green.png"
+  },
+  {
+    "size": [
+      1024,
+      1536
+    ],
+    "border_mean_rgb": [
+      7,
+      233,
+      15
+    ],
+    "border_median_rgb": [
+      7,
+      233,
+      15
+    ],
+    "border_nonuniform_pct_gt10": 0.176,
+    "border_nonuniform_pct_gt25": 0.0,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_5_George_TypeA_Standard_BodyOnly_Green.png"
+  },
+  {
+    "size": [
+      1024,
+      1024
+    ],
+    "border_mean_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_median_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_nonuniform_pct_gt10": 0.0,
+    "border_nonuniform_pct_gt25": 0.0,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_8_Billy_TypeA_Standard_BodyOnly_Green.png"
+  },
+  {
+    "size": [
+      1024,
+      1024
+    ],
+    "border_mean_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_median_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_nonuniform_pct_gt10": 0.0,
+    "border_nonuniform_pct_gt25": 0.0,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_9_Rabbit_TypeA_Standard_BodyOnly_Green.png"
+  },
+  {
+    "size": [
+      1024,
+      1024
+    ],
+    "border_mean_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_median_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_nonuniform_pct_gt10": 0.0,
+    "border_nonuniform_pct_gt25": 0.0,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_11_Shroud_TypeA_Standard_BodyOnly_Green.png"
+  },
+  {
+    "size": [
+      1024,
+      1024
+    ],
+    "border_mean_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_median_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_nonuniform_pct_gt10": 0.0,
+    "border_nonuniform_pct_gt25": 0.0,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_14_North_TypeA_Standard_BodyOnly_Green.png"
+  },
+  {
+    "size": [
+      1024,
+      1024
+    ],
+    "border_mean_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_median_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_nonuniform_pct_gt10": 0.0,
+    "border_nonuniform_pct_gt25": 0.0,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_15_Asmon_TypeA_Standard_BodyOnly_Green.png"
+  },
+  {
+    "size": [
+      1024,
+      1024
+    ],
+    "border_mean_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_median_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_nonuniform_pct_gt10": 0.0,
+    "border_nonuniform_pct_gt25": 0.0,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_8_Billy_TypeA_Standard_HeadOnly_Green.png"
+  },
+  {
+    "size": [
+      1024,
+      1024
+    ],
+    "border_mean_rgb": [
+      161,
+      174,
+      167
+    ],
+    "border_median_rgb": [
+      218,
+      223,
+      226
+    ],
+    "border_nonuniform_pct_gt10": 32.935,
+    "border_nonuniform_pct_gt25": 32.715,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_14_North_TypeA_Standard_HeadOnly_Green.png"
+  },
+  {
+    "size": [
+      1024,
+      1024
+    ],
+    "border_mean_rgb": [
+      1,
+      252,
+      1
+    ],
+    "border_median_rgb": [
+      0,
+      255,
+      0
+    ],
+    "border_nonuniform_pct_gt10": 1.465,
+    "border_nonuniform_pct_gt25": 1.465,
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Inputs\\approved_seed_images\\Hero_15_Asmon_TypeA_Standard_HeadOnly_Green.png"
+  }
+]

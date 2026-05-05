@@ -42,14 +42,16 @@ namespace
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const FString& RelativePath,
 		const FMargin& Margin,
-		const TCHAR* DebugLabel)
+		const TCHAR* DebugLabel,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
 			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
 			Margin,
-			DebugLabel);
+			DebugLabel,
+			Filter);
 	}
 
 	struct FSavePreviewReferenceButtonBrushSet
@@ -120,9 +122,10 @@ namespace
 			: State;
 		return ResolveSavePreviewBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, *AssetState),
-			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
-			DebugLabel);
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), *AssetState),
+			FMargin(0.f),
+			DebugLabel,
+			TextureFilter::TF_Nearest);
 	}
 
 	const FButtonStyle& GetSavePreviewButtonStyle(const ET66ButtonType Type)
@@ -163,7 +166,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSavePreviewBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/SavePreview/Panels/savepreview_panels_inner_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("SavePreviewShell"));
 	}
@@ -173,30 +176,20 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSavePreviewBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/SavePreview/ScreenArt/savepreview_screen_art_mainmenu_main_menu_scene_plate_v1.png"),
 			FMargin(0.f),
 			TEXT("SavePreviewScene"));
 	}
 
 	TSharedRef<SWidget> MakeSavePreviewShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		if (const FSlateBrush* ShellBrush = GetSavePreviewShellBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(ShellBrush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(
+		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
+			TEXT("Panels/Modal/modal_shell_wide.png"),
 			Content,
-			FT66PanelParams(ET66PanelType::Panel)
-				.SetColor(FLinearColor(0.f, 0.f, 0.f, 0.92f))
-				.SetPadding(Padding));
+			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
+			Padding,
+			TEXT("SavePreviewShellV14"),
+			FLinearColor(0.f, 0.f, 0.f, 0.92f));
 	}
 
 	TSharedRef<SWidget> MakeSavePreviewButton(FT66ButtonParams Params)
@@ -212,19 +205,19 @@ namespace
 				TAttribute<FSlateColor>(FSlateColor(T66SavePreviewBrightText())),
 				TAttribute<FLinearColor>(FLinearColor(0.f, 0.f, 0.f, 0.78f)));
 
-		return SNew(SBox)
-			.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
-			.HeightOverride(ButtonHeight)
-			.Visibility(Params.Visibility)
-			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(Params.OnClicked, Content)
-					.SetButtonStyle(&GetSavePreviewButtonStyle(Params.Type))
-					.SetPadding(ContentPadding)
-					.SetHAlign(HAlign_Center)
-					.SetVAlign(VAlign_Center)
-					.SetEnabled(Params.IsEnabled))
-			];
+		const FButtonStyle& ButtonStyle = GetSavePreviewButtonStyle(Params.Type);
+		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+			Params.OnClicked,
+			Content,
+			&ButtonStyle.Normal,
+			&ButtonStyle.Hovered,
+			&ButtonStyle.Pressed,
+			&ButtonStyle.Disabled,
+			Params.MinWidth,
+			ButtonHeight,
+			ContentPadding,
+			Params.IsEnabled,
+			Params.Visibility);
 	}
 }
 

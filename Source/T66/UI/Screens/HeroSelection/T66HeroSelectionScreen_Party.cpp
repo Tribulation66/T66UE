@@ -1,6 +1,8 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/HeroSelection/T66HeroSelectionScreen_Private.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 
 using namespace T66HeroSelectionPrivate;
 
@@ -165,10 +167,6 @@ void UT66HeroSelectionScreen::OnScreenDeactivated_Implementation()
 	}
 
 	Super::OnScreenDeactivated_Implementation();
-	if (PreviewController)
-	{
-		PreviewController->CloseHeroPreviewMedia();
-	}
 }
 
 void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
@@ -203,10 +201,6 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 		GIPreload->PrimeHeroSelectionAssetsAsync();
 		GIPreload->PrimeHeroSelectionPreviewVisualsAsync();
 	}
-	if (UT66HeroSelectionPreviewController* HeroPreviewController = GetOrCreatePreviewController())
-	{
-		HeroPreviewController->WarmKnightPreviewMediaSource(PreviewedHeroID, bShowingCompanionInfo);
-	}
 
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
@@ -235,6 +229,38 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 
 		SelectedDifficulty = SessionSubsystem ? SessionSubsystem->GetSharedLobbyDifficulty() : GI->SelectedDifficulty;
 		SelectedBodyType = GI->SelectedHeroBodyType;
+
+		FString RequestedBodyStyle;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66HeroSelectionBody="), RequestedBodyStyle))
+		{
+			const FString NormalizedBodyStyle = RequestedBodyStyle.TrimStartAndEnd().ToLower();
+			if (NormalizedBodyStyle == TEXT("stacy") || NormalizedBodyStyle == TEXT("typeb") || NormalizedBodyStyle == TEXT("b"))
+			{
+				SelectedBodyType = T66BodyTypeAliases::Stacy;
+				GI->SelectedHeroBodyType = SelectedBodyType;
+			}
+			else if (NormalizedBodyStyle == TEXT("chad") || NormalizedBodyStyle == TEXT("typea") || NormalizedBodyStyle == TEXT("a"))
+			{
+				SelectedBodyType = T66BodyTypeAliases::Chad;
+				GI->SelectedHeroBodyType = SelectedBodyType;
+			}
+		}
+
+		FString RequestedPreviewHero;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66HeroSelectionPreviewHero="), RequestedPreviewHero))
+		{
+			const FName RequestedHeroID(*RequestedPreviewHero.TrimStartAndEnd());
+			if (AllHeroIDs.Contains(RequestedHeroID))
+			{
+				PreviewedHeroID = RequestedHeroID;
+				GI->SelectedHeroID = RequestedHeroID;
+			}
+			else
+			{
+				UE_LOG(LogT66HeroSelection, Warning, TEXT("Hero selection automation: unknown preview hero '%s'"), *RequestedPreviewHero);
+			}
+		}
+
 		PreviewedCompanionID = GI->SelectedCompanionID;
 		TArray<FName> CompanionWheelIDs;
 		CompanionWheelIDs.Add(NAME_None);

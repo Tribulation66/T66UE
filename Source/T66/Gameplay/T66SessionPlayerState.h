@@ -27,10 +27,10 @@ struct T66_API FT66LobbyPlayerInfo
 	FName SelectedCompanionID = NAME_None;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	ET66BodyType SelectedHeroBodyType = ET66BodyType::TypeA;
+	ET66BodyType SelectedHeroBodyType = ET66BodyType::Chad;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	ET66BodyType SelectedCompanionBodyType = ET66BodyType::TypeA;
+	ET66BodyType SelectedCompanionBodyType = ET66BodyType::Chad;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
 	FName SelectedHeroSkinID = FName(TEXT("Default"));
@@ -64,18 +64,6 @@ struct T66_API FT66LobbyPlayerInfo
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
 	bool bMiniIntermissionFlow = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	int32 MiniIntermissionStateRevision = 0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	FString MiniIntermissionStateJson;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	int32 MiniIntermissionRequestRevision = 0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	FString MiniIntermissionRequestJson;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
 	ET66ScreenType FrontendScreen = ET66ScreenType::MainMenu;

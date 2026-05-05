@@ -3,11 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UI/Components/T66MinigameMenuLayout.h"
 #include "UI/T66ScreenBase.h"
 #include "UObject/StrongObjectPtr.h"
 #include "T66TDMainMenuScreen.generated.h"
 
 class UTexture2D;
+class ST66MinigameMenuLayout;
 
 UCLASS(Blueprintable)
 class T66TD_API UT66TDMainMenuScreen : public UT66ScreenBase
@@ -24,12 +26,20 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
+	TArray<FT66MinigameDifficultyOption> BuildDifficultyOptions() const;
+	TArray<FT66MinigameLeaderboardEntry> BuildDailyLeaderboardEntries(FName DifficultyID) const;
+	TArray<FT66MinigameLeaderboardEntry> BuildAllTimeLeaderboardEntries(FName DifficultyID) const;
+	FText GetDailyLeaderboardStatus(FName DifficultyID) const;
+	FText GetAllTimeLeaderboardStatus(FName DifficultyID) const;
 	FReply HandleBackToMainMenuClicked();
 	FReply HandleNewGameClicked();
+	FReply HandleLoadGameClicked();
+	FReply HandleDailyClicked();
 	FReply HandleMapBrowserClicked();
 	void RequestMenuTextures();
 	void ReleaseRetainedSlateState();
 
+	TSharedPtr<ST66MinigameMenuLayout> SharedMenuLayout;
 	TSharedPtr<FSlateBrush> BackdropBrush;
 	TStrongObjectPtr<UTexture2D> BackdropTexture;
 	TSharedPtr<FSlateBrush> ForegroundBrush;

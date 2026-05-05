@@ -2,6 +2,8 @@
 
 #include "UI/Screens/Settings/T66SettingsScreen_Private.h"
 
+#include "Engine/GameInstance.h"
+
 DEFINE_LOG_CATEGORY_STATIC(LogT66RetroFXUI, Log, All);
 
 using namespace T66SettingsScreenPrivate;
@@ -91,6 +93,10 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildRetroFXTab()
 	};
 
 	return SNew(SScrollBox)
+		.ScrollBarStyle(GetSettingsReferenceScrollBarStyle())
+		.ScrollBarVisibility(EVisibility::Visible)
+		.ScrollBarThickness(FVector2D(14.f, 14.f))
+		.ScrollBarPadding(FMargin(10.f, 0.f, 2.f, 0.f))
 		+ SScrollBox::Slot()
 		[
 			SNew(SVerticalBox)

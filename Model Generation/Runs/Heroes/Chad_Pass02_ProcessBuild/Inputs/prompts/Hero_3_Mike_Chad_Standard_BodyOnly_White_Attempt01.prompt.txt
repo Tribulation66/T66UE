@@ -1,0 +1,18 @@
+Create a production source image for TRELLIS image-to-3D.
+
+Subject: Hero_3 Mike, original stylized game character, Chad/default skin body only.
+
+The image must show one centered front-facing neck-down male body only. No head, no face, no hair, no ears, no beard, no weapon, no shield, no prop, no duplicate view, no back view, no side view, no character sheet, no poster panel.
+
+Anatomy target: giant giga-chad/nephilim proportions, human but beyond realistic human anatomy, impossible heroic muscle mass, huge traps, boulder shoulders, massive chest, thick arms, thick forearms, huge quads and calves, very thin waist, extreme V taper. This is not a normal athletic body and not a slim fashion figure.
+
+Neck target: the body ends at a clean open circular neck socket above the trapezius, like a headless mannequin prepared for inserting a separate head. The socket is visible and clean. Do not generate a neck stump with a face remnant.
+
+Pose: orthographic production reference, symmetrical A-pose, arms slightly away from torso, feet separated, straight-on camera, full body visible from feet to neck socket.
+
+Identity/outfit notes: gritty street brawler outfit, sleeveless torn denim vest over dark compression wraps, heavy boots, wrist tape, warm tan skin, rugged bruiser details. No head.
+
+Background: pure flat opaque white #ffffff across the entire canvas. No alpha, no floor, no cast shadow, no contact shadow, no reflection, no gradient, no gray patch, no border card, no poster sheet.
+
+Render style: clean stylized game asset reference, sharp silhouette, readable materials, no text, no watermark, no logo.
+

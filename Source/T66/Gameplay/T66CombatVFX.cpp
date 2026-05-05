@@ -509,7 +509,7 @@ namespace
 		const FVector Dir = (End - Start).GetSafeNormal();
 		const float Length = FVector::Dist(Start, End);
 
-		if (HeroID == FName(TEXT("Hero_5")))
+		if (HeroID == FName(TEXT("Hero_4")))
 		{
 			constexpr int32 N = 48;
 			for (int32 i = 0; i < N; ++i)
@@ -520,7 +520,7 @@ namespace
 			return true;
 		}
 
-		if (HeroID == FName(TEXT("Hero_8")))
+		if (HeroID == FName(TEXT("Hero_6")))
 		{
 			constexpr int32 N = 16;
 			constexpr float ConeDeg = 45.f;
@@ -535,7 +535,7 @@ namespace
 			return true;
 		}
 
-		if (HeroID == FName(TEXT("Hero_11")))
+		if (HeroID == FName(TEXT("Hero_8")))
 		{
 			const FVector Right = FVector::CrossProduct(FVector::UpVector, Dir).GetSafeNormal() * 30.f;
 			constexpr int32 N = 8;
@@ -562,7 +562,7 @@ namespace
 		const FVector4& ColorVec,
 		const FName HeroID)
 	{
-		if (HeroID == FName(TEXT("Hero_3")))
+		if (HeroID == FName(TEXT("Hero_2")))
 		{
 			constexpr int32 N = 28;
 			constexpr float ArcDeg = 180.f;
@@ -576,7 +576,7 @@ namespace
 			return true;
 		}
 
-		if (HeroID == FName(TEXT("Hero_4")))
+		if (HeroID == FName(TEXT("Hero_3")))
 		{
 			constexpr int32 N = 16;
 			constexpr float ArcDeg = 90.f;
@@ -591,19 +591,7 @@ namespace
 			return true;
 		}
 
-		if (HeroID == FName(TEXT("Hero_10")))
-		{
-			constexpr int32 N = 32;
-			for (int32 i = 0; i < N; ++i)
-			{
-				const float Angle = (2.f * PI * static_cast<float>(i)) / static_cast<float>(N);
-				const FVector Offset(FMath::Cos(Angle) * Radius * 0.35f, FMath::Sin(Angle) * Radius * 0.35f, 0.f);
-				T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
-			}
-			return true;
-		}
-
-		if (HeroID == FName(TEXT("Hero_15")))
+		if (HeroID == FName(TEXT("Hero_12")))
 		{
 			constexpr int32 N = 12;
 			for (int32 i = 0; i < N; ++i)
@@ -630,24 +618,7 @@ namespace
 		const FVector4& ColorVec,
 		const FName HeroID)
 	{
-		if (HeroID == FName(TEXT("Hero_6")))
-		{
-			for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
-			{
-				const FVector A = ChainPositions[i];
-				const FVector B = ChainPositions[i + 1];
-				const float Dist = FVector::Dist(A, B);
-				const int32 N = FMath::Max(4, FMath::RoundToInt(Dist / 15.f));
-				for (int32 j = 0; j < N; ++j)
-				{
-					const float T = static_cast<float>(j) / static_cast<float>(N - 1);
-					T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T), ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
-				}
-			}
-			return true;
-		}
-
-		if (HeroID == FName(TEXT("Hero_7")))
+		if (HeroID == FName(TEXT("Hero_5")))
 		{
 			for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
 			{
@@ -664,7 +635,7 @@ namespace
 			return true;
 		}
 
-		if (HeroID == FName(TEXT("Hero_12")))
+		if (HeroID == FName(TEXT("Hero_9")))
 		{
 			for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
 			{
@@ -682,7 +653,7 @@ namespace
 			return true;
 		}
 
-		if (HeroID == FName(TEXT("Hero_9")))
+		if (HeroID == FName(TEXT("Hero_7")))
 		{
 			for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
 			{
@@ -710,21 +681,7 @@ namespace
 		const FVector4& ColorVec,
 		const FName HeroID)
 	{
-		if (HeroID == FName(TEXT("Hero_2")))
-		{
-			constexpr int32 N = 12;
-			for (int32 i = 0; i < N; ++i)
-			{
-				const float T = static_cast<float>(i) / static_cast<float>(N);
-				const float Angle = T * 4.f * PI;
-				const float R = Radius * 0.3f * T;
-				const FVector Offset(FMath::Cos(Angle) * R, FMath::Sin(Angle) * R, T * 30.f);
-				T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
-			}
-			return true;
-		}
-
-		if (HeroID == FName(TEXT("Hero_13")))
+		if (HeroID == FName(TEXT("Hero_10")))
 		{
 			constexpr int32 N = 8;
 			for (int32 i = 0; i < N; ++i)
@@ -735,7 +692,7 @@ namespace
 			return true;
 		}
 
-		if (HeroID == FName(TEXT("Hero_14")))
+		if (HeroID == FName(TEXT("Hero_11")))
 		{
 			constexpr int32 N = 16;
 			for (int32 i = 0; i < N; ++i)
@@ -747,35 +704,15 @@ namespace
 			return true;
 		}
 
-		if (HeroID == FName(TEXT("Hero_16")))
-		{
-			constexpr int32 N = 6;
-			for (int32 i = 0; i < N; ++i)
-			{
-				const FVector Offset(FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-10.f, 10.f));
-				T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
-			}
-			return true;
-		}
-
 		return false;
 	}
 }
 
 void UT66CombatComponent::WarmupVFXSystems()
 {
-	if (!CachedSlashVFXNiagara)
-	{
-		CachedSlashVFXNiagara = SlashVFXNiagara.Get();
-	}
-	if (!CachedPixelVFXNiagara)
-	{
-		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
-	}
-	if (!CachedSlashVFXNiagara || !CachedPixelVFXNiagara)
-	{
-		PrimeCombatPresentationAssetsAsync();
-	}
+	if (!CachedSlashVFXNiagara) { CachedSlashVFXNiagara = SlashVFXNiagara.Get(); }
+	if (!CachedPixelVFXNiagara) { CachedPixelVFXNiagara = PixelVFXNiagara.Get(); }
+	if (!CachedSlashVFXNiagara || !CachedPixelVFXNiagara) { PrimeCombatPresentationAssetsAsync(); }
 	if (CachedPixelVFXNiagara)
 	{
 		UE_LOG(LogT66Combat, Log, TEXT("[VFX] Pixel particle system loaded: NS_PixelParticle"));

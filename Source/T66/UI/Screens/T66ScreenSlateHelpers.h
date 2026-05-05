@@ -45,6 +45,57 @@ namespace T66ScreenSlateHelpers
 		float ButtonHeight,
 		const TAttribute<FSlateColor>& DefaultTextColor,
 		const TAttribute<FLinearColor>& DefaultShadowColor);
+	TSharedRef<SWidget> MakeReferenceHorizontalSlicedImage(
+		TAttribute<const FSlateBrush*> Brush,
+		const FVector2D& DesiredSize = FVector2D(1.0f, 1.0f),
+		float SourceCapFraction = 0.105f);
+	float NormalizeReferenceSlicedButtonMinWidth(float RequestedMinWidth, float Height);
+	FString MakeReferenceChromeButtonAssetPath(
+		const TCHAR* Family,
+		const TCHAR* State);
+	FString MakeReferenceButtonAssetPath(
+		const TCHAR* FamilyStem,
+		const TCHAR* State);
+	FString MakeReferenceSharedAssetPath(const TCHAR* RelativeAssetPath);
+	const FSlateBrush* GetReferenceSharedBrush(
+		const TCHAR* RelativeAssetPath,
+		const FMargin& Margin,
+		const TCHAR* DebugLabel);
+	bool IsReferenceChromeButtonAssetPath(const FString& SourceRelativePath);
+	bool IsReferenceChromePillButtonAssetPath(const FString& SourceRelativePath);
+	bool IsReferenceChromeCTAButtonAssetPath(const FString& SourceRelativePath);
+	TSharedRef<SWidget> MakeReferenceSharedBorder(
+		const TCHAR* RelativeAssetPath,
+		const TSharedRef<SWidget>& Content,
+		const FMargin& BrushMargin,
+		const FMargin& Padding,
+		const TCHAR* DebugLabel,
+		const FLinearColor& FallbackColor);
+	TSharedRef<SWidget> MakeReferenceSlicedPlateButton(
+		FOnClicked OnClicked,
+		const TSharedRef<SWidget>& Content,
+		const FSlateBrush* NormalBrush,
+		const FSlateBrush* HoveredBrush,
+		const FSlateBrush* PressedBrush,
+		const FSlateBrush* DisabledBrush,
+		float MinWidth,
+		float Height,
+		const FMargin& ContentPadding,
+		const TAttribute<bool>& IsEnabled = TAttribute<bool>(true),
+		const TAttribute<EVisibility>& Visibility = TAttribute<EVisibility>(EVisibility::Visible),
+		float SourceCapFraction = 0.105f,
+		const FSlateBrush* SelectedBrush = nullptr,
+		const TAttribute<bool>& IsSelected = TAttribute<bool>(false));
+	TSharedRef<SWidget> MakeReferenceProgressBar(
+		TAttribute<TOptional<float>> Percent,
+		const FVector2D& DesiredSize,
+		const FLinearColor& FallbackFill = FLinearColor(0.10f, 0.64f, 0.96f, 1.0f),
+		const FMargin& Padding = FMargin(4.0f, 3.0f));
+	TSharedRef<SWidget> MakeReferenceProgressBar(
+		float Percent,
+		const FVector2D& DesiredSize,
+		const FLinearColor& FallbackFill = FLinearColor(0.10f, 0.64f, 0.96f, 1.0f),
+		const FMargin& Padding = FMargin(4.0f, 3.0f));
 	TSharedRef<SWidget> MakeResponsiveGridTile(const FT66ButtonParams& ButtonParams, const FLinearColor& BackgroundColor, const TSharedRef<SWidget>& Content, const FResponsiveGridModalMetrics& Metrics);
 	TSharedRef<SWidget> MakeResponsiveGridModal(const FText& TitleText, const TSharedRef<SWidget>& GridContent, const TSharedRef<SWidget>& FooterContent, const FResponsiveGridModalMetrics& Metrics);
 	TSharedRef<SWidget> MakeCenteredScrimModal(const TSharedRef<SWidget>& Content, const FMargin& OuterPadding = FMargin(0.0f), float WidthOverride = 0.0f, float HeightOverride = 0.0f, bool bUseWhiteBrush = false);

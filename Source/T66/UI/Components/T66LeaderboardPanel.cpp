@@ -28,7 +28,12 @@
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
+#include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/SLeafWidget.h"
+#include "Widgets/SOverlay.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Rendering/DrawElements.h"
+#include "Rendering/SlateRenderTransform.h"
 
 namespace
 {
@@ -42,11 +47,12 @@ namespace
 	const FLinearColor LeaderboardShellFill(0.78f, 0.55f, 0.28f, 0.0f);
 	constexpr bool GMirrorWeeklyToAllTime = false;
 	const FString ReferenceRightPanelSourceDir = TEXT("SourceAssets/UI/MainMenuReference/RightPanel");
-	const FString MasterLibrarySliceSourceDir = TEXT("SourceAssets/UI/MasterLibrary/Slices");
+	const FString ReferenceSharedSourceDir = TEXT("SourceAssets/UI/Reference/Shared");
+
 	const FVector2D ReferenceFilterButtonSize(64.0f, 64.0f);
 	const FVector2D ReferenceFilterIconSize(58.0f, 58.0f);
-	const FVector2D ReferenceWeeklyTabSize(219.0f, 65.0f);
-	const FVector2D ReferenceAllTimeTabSize(219.0f, 65.0f);
+	const FVector2D ReferenceWeeklyTabSize(219.0f, 57.0f);
+	const FVector2D ReferenceAllTimeTabSize(219.0f, 57.0f);
 	const FVector2D ReferenceLeftDropdownSize(219.0f, 57.0f);
 	const FVector2D ReferenceRightDropdownSize(219.0f, 57.0f);
 	const FVector2D ReferenceScoreToggleSize(178.0f, 36.0f);
@@ -58,7 +64,8 @@ namespace
 	const FLinearColor ReferenceLeaderboardMuted(0.36f, 0.22f, 0.12f, 1.0f);
 	const FLinearColor ReferenceWoodControlText(0.98f, 0.96f, 0.90f, 1.0f);
 	const FLinearColor ReferenceWoodControlMuted(0.86f, 0.84f, 0.78f, 0.88f);
-	const FLinearColor ReferenceMainMenuSubtitleText(0.98f, 0.96f, 0.90f, 1.0f);
+	const FLinearColor ReferenceLeaderboardTitleText(0.84f, 0.64f, 0.38f, 1.0f);
+	const FLinearColor ReferenceLeaderboardTitleShadow(0.13f, 0.07f, 0.03f, 0.96f);
 
 	const FSlateBrush* ResolveReferenceRightPanelBrush(
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
@@ -79,16 +86,265 @@ namespace
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const TCHAR* FileName,
 		const FMargin Margin,
-		const TCHAR* DebugLabel)
+		const TCHAR* DebugLabel,
+		TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterLibrarySliceSourceDir / FileName),
+			T66RuntimeUITextureAccess::MakeProjectDirPath(ReferenceSharedSourceDir / FileName),
 			Margin,
 			DebugLabel,
-			TextureFilter::TF_Trilinear);
+			Filter);
 	}
+
+	const FSlateBrush* ResolveReferenceGeneratedBrush(
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
+		const FString& SourceDir,
+		const TCHAR* FileName,
+		const FMargin Margin,
+		const TCHAR* DebugLabel,
+		TextureFilter Filter = TextureFilter::TF_Trilinear)
+	{
+		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			Entry,
+			nullptr,
+			T66RuntimeUITextureAccess::MakeProjectDirPath(SourceDir / FileName),
+			Margin,
+			DebugLabel,
+			Filter);
+	}
+
+	FVector2D GetLeaderboardBrushSourceSize(const FSlateBrush* SourceBrush)
+	{
+		if (!SourceBrush)
+		{
+			return FVector2D(1.f, 1.f);
+		}
+
+		FVector2D SourceSize(
+			FMath::Max(1.f, SourceBrush->ImageSize.X),
+			FMath::Max(1.f, SourceBrush->ImageSize.Y));
+		if ((SourceSize.X <= 1.f || SourceSize.Y <= 1.f) && SourceBrush->GetResourceObject())
+		{
+			if (const UTexture2D* Texture = Cast<UTexture2D>(SourceBrush->GetResourceObject()))
+			{
+				SourceSize = FVector2D(
+					FMath::Max(1, Texture->GetSizeX()),
+					FMath::Max(1, Texture->GetSizeY()));
+			}
+		}
+
+		return SourceSize;
+	}
+
+	class ST66LeaderboardSlicedBrushImage : public SLeafWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66LeaderboardSlicedBrushImage)
+			: _Brush(nullptr)
+			, _DesiredSize(FVector2D(1.f, 1.f))
+			, _SourceCapFraction(0.245f)
+		{}
+			SLATE_ATTRIBUTE(const FSlateBrush*, Brush)
+			SLATE_ARGUMENT(FVector2D, DesiredSize)
+			SLATE_ARGUMENT(float, SourceCapFraction)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			Brush = InArgs._Brush;
+			DesiredSize = InArgs._DesiredSize;
+			SourceCapFraction = InArgs._SourceCapFraction;
+		}
+
+		virtual FVector2D ComputeDesiredSize(float) const override
+		{
+			return DesiredSize;
+		}
+
+		virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+			FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
+		{
+			const FSlateBrush* SourceBrush = Brush.Get();
+			if (!SourceBrush || SourceBrush == FCoreStyle::Get().GetBrush("NoBrush"))
+			{
+				return LayerId;
+			}
+
+			const FVector2D Size = AllottedGeometry.GetLocalSize();
+			const FVector2D SourceSize = GetLeaderboardBrushSourceSize(SourceBrush);
+			if (Size.X <= 1.f || Size.Y <= 1.f || SourceSize.X <= 1.f || SourceSize.Y <= 1.f)
+			{
+				return LayerId;
+			}
+
+			const float CapU = FMath::Clamp(SourceCapFraction, 0.02f, 0.45f);
+			const float HeightScale = Size.Y / SourceSize.Y;
+			const float SourceCapWidth = SourceSize.X * CapU;
+			const float DestCapWidth = FMath::Clamp(SourceCapWidth * HeightScale, 1.f, Size.X * 0.42f);
+			const float DestCenterWidth = FMath::Max(0.f, Size.X - (DestCapWidth * 2.f));
+
+			auto DrawSlice = [&](const FVector2D& Pos, const FVector2D& SliceSize, float U0, float U1)
+			{
+				if (SliceSize.X <= 0.5f || SliceSize.Y <= 0.5f || U1 <= U0)
+				{
+					return;
+				}
+
+				FSlateBrush LocalBrush = *SourceBrush;
+				LocalBrush.DrawAs = ESlateBrushDrawType::Image;
+				LocalBrush.Tiling = ESlateBrushTileType::NoTile;
+				LocalBrush.Margin = FMargin(0.f);
+				LocalBrush.SetUVRegion(FBox2f(FVector2f(U0, 0.f), FVector2f(U1, 1.f)));
+
+				FSlateDrawElement::MakeBox(
+					OutDrawElements,
+					LayerId,
+					AllottedGeometry.ToPaintGeometry(
+						FVector2f(SliceSize),
+						FSlateLayoutTransform(FVector2f(Pos))),
+					&LocalBrush,
+					ESlateDrawEffect::None,
+					InWidgetStyle.GetColorAndOpacityTint());
+			};
+
+			DrawSlice(FVector2D(0.f, 0.f), FVector2D(DestCapWidth, Size.Y), 0.f, CapU);
+			DrawSlice(FVector2D(DestCapWidth, 0.f), FVector2D(DestCenterWidth, Size.Y), CapU, 1.f - CapU);
+			DrawSlice(FVector2D(Size.X - DestCapWidth, 0.f), FVector2D(DestCapWidth, Size.Y), 1.f - CapU, 1.f);
+
+			return LayerId + 1;
+		}
+
+	private:
+		TAttribute<const FSlateBrush*> Brush;
+		FVector2D DesiredSize = FVector2D(1.f, 1.f);
+		float SourceCapFraction = 0.245f;
+	};
+
+	class ST66LeaderboardStatePlateButton : public SCompoundWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66LeaderboardStatePlateButton)
+			: _NormalBrush(nullptr)
+			, _HoverBrush(nullptr)
+			, _PressedBrush(nullptr)
+			, _SelectedBrush(nullptr)
+			, _ButtonStyle(nullptr)
+			, _ContentPadding(FMargin(0.f))
+			, _SourceCapFraction(0.245f)
+			, _IsSelected(false)
+		{}
+			SLATE_ARGUMENT(const FSlateBrush*, NormalBrush)
+			SLATE_ARGUMENT(const FSlateBrush*, HoverBrush)
+			SLATE_ARGUMENT(const FSlateBrush*, PressedBrush)
+			SLATE_ARGUMENT(const FSlateBrush*, SelectedBrush)
+			SLATE_ARGUMENT(const FButtonStyle*, ButtonStyle)
+			SLATE_ARGUMENT(FMargin, ContentPadding)
+			SLATE_ARGUMENT(float, SourceCapFraction)
+			SLATE_ATTRIBUTE(bool, IsSelected)
+			SLATE_EVENT(FOnClicked, OnClicked)
+			SLATE_DEFAULT_SLOT(FArguments, Content)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			NormalBrush = InArgs._NormalBrush;
+			HoverBrush = InArgs._HoverBrush;
+			PressedBrush = InArgs._PressedBrush;
+			SelectedBrush = InArgs._SelectedBrush;
+			ContentPadding = InArgs._ContentPadding;
+			SourceCapFraction = InArgs._SourceCapFraction;
+			IsSelected = InArgs._IsSelected;
+			ButtonStyle = InArgs._ButtonStyle
+				? *InArgs._ButtonStyle
+				: FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
+			ButtonStyle
+				.SetNormalPadding(FMargin(0.f))
+				.SetPressedPadding(FMargin(0.f));
+
+			ChildSlot
+			[
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						InArgs._OnClicked,
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Fill)
+						[
+							SNew(ST66LeaderboardSlicedBrushImage)
+							.Brush(this, &ST66LeaderboardStatePlateButton::GetCurrentBrush)
+							.DesiredSize(FVector2D(1.f, 1.f))
+							.SourceCapFraction(SourceCapFraction)
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Fill)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+							.Padding(ContentPadding)
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
+							.RenderTransform(this, &ST66LeaderboardStatePlateButton::GetContentTransform)
+							.RenderTransformPivot(FVector2D(0.5f, 0.5f))
+							[
+								InArgs._Content.Widget
+							]
+						])
+					.SetButtonStyle(&ButtonStyle)
+					.SetPadding(FMargin(0.f)),
+					&Button)
+			];
+		}
+
+	private:
+		const FSlateBrush* GetCurrentBrush() const
+		{
+			if (Button.IsValid() && Button->IsPressed() && PressedBrush)
+			{
+				return PressedBrush;
+			}
+
+			if (IsSelected.Get() && SelectedBrush)
+			{
+				return SelectedBrush;
+			}
+
+			if (Button.IsValid() && Button->IsHovered() && HoverBrush)
+			{
+				return HoverBrush;
+			}
+
+			return NormalBrush ? NormalBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
+		}
+
+		TOptional<FSlateRenderTransform> GetContentTransform() const
+		{
+			if (Button.IsValid() && Button->IsPressed())
+			{
+				return FSlateRenderTransform(FVector2D(0.f, 1.f));
+			}
+
+			if (Button.IsValid() && Button->IsHovered())
+			{
+				return FSlateRenderTransform(FVector2D(0.f, -1.f));
+			}
+
+			return TOptional<FSlateRenderTransform>();
+		}
+
+		const FSlateBrush* NormalBrush = nullptr;
+		const FSlateBrush* HoverBrush = nullptr;
+		const FSlateBrush* PressedBrush = nullptr;
+		const FSlateBrush* SelectedBrush = nullptr;
+		FButtonStyle ButtonStyle;
+		FMargin ContentPadding = FMargin(0.f);
+		float SourceCapFraction = 0.245f;
+		TAttribute<bool> IsSelected = false;
+		TSharedPtr<SButton> Button;
+	};
 
 	int32 GetPartyMemberCount(ET66PartySize PartySize)
 	{
@@ -174,8 +430,7 @@ namespace
 		static const TArray<FName> DefaultHeroIDs = {
 			FName(TEXT("Hero_1")), FName(TEXT("Hero_2")), FName(TEXT("Hero_3")), FName(TEXT("Hero_4")),
 			FName(TEXT("Hero_5")), FName(TEXT("Hero_6")), FName(TEXT("Hero_7")), FName(TEXT("Hero_8")),
-			FName(TEXT("Hero_9")), FName(TEXT("Hero_10")), FName(TEXT("Hero_11")), FName(TEXT("Hero_12")),
-			FName(TEXT("Hero_13")), FName(TEXT("Hero_14")), FName(TEXT("Hero_15")), FName(TEXT("Hero_16"))
+			FName(TEXT("Hero_9")), FName(TEXT("Hero_10")), FName(TEXT("Hero_11")), FName(TEXT("Hero_12"))
 		};
 		return DefaultHeroIDs[EntryIndex % DefaultHeroIDs.Num()];
 	}
@@ -293,7 +548,7 @@ namespace
 			Entry.PartySize = ET66PartySize::Solo;
 			Entry.Difficulty = ET66Difficulty::Easy;
 			Entry.StageReached = 4;
-			Entry.HeroID = FName(*FString::Printf(TEXT("Hero_%d"), (Index % 8) + 1));
+			Entry.HeroID = FName(*FString::Printf(TEXT("Hero_%d"), (Index % 12) + 1));
 			Entry.EntryId = FString::Printf(TEXT("dummy-weekly-solo-easy-%02d"), Index + 1);
 			Entries.Add(MoveTemp(Entry));
 		}
@@ -351,21 +606,19 @@ namespace
 ST66LeaderboardPanel::~ST66LeaderboardPanel()
 {
 	// Unbind raw delegates to prevent callbacks into destroyed widget
-	if (bBoundToBackendDelegate || bBoundToRunSummaryDelegate)
+	UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
+	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	if (Backend)
 	{
-		UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
-		UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
-		if (Backend)
+		if (bBoundToBackendDelegate)
 		{
-			if (bBoundToBackendDelegate)
-			{
-				Backend->OnLeaderboardDataReady.RemoveAll(this);
-			}
-			if (bBoundToRunSummaryDelegate)
-			{
-				Backend->OnRunSummaryReady.RemoveAll(this);
-			}
+			Backend->OnLeaderboardDataReady.RemoveAll(this);
 		}
+		if (bBoundToRunSummaryDelegate)
+		{
+			Backend->OnRunSummaryReady.RemoveAll(this);
+		}
+		Backend->OnStreamerRequestDataReady.RemoveAll(this);
 	}
 }
 
@@ -523,62 +776,222 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	const FSlateFontInfo LeaderboardDropdownFont = MakeLockedRegularFont(12);
 	const FSlateFontInfo LeaderboardTimeToggleFont = MakeLockedBoldFont(LeaderboardTitleFontSize, 88);
 	const FSlateFontInfo LeaderboardTypeGlyphFont = MakeLockedBoldFont(14);
+	const FSlateFontInfo StreamerRequestBodyFont = MakeLockedRegularFont(12);
+	const FSlateFontInfo StreamerRequestButtonFont = MakeLockedBoldFont(12);
+
+	auto GetLeaderboardControlsVisibility = [this]() -> EVisibility
+	{
+		const bool bStandardVisible = !(bDailyChallengeMode || CurrentTimeFilter == ET66LeaderboardTime::Daily);
+		return bStandardVisible && !bStreamerRequestOpen
+			? EVisibility::Visible
+			: EVisibility::Collapsed;
+	};
+	auto MakeStreamerHelpButton = [this, &NoBorderButtonStyle, StreamerRequestButtonFont]() -> TSharedRef<SWidget>
+	{
+		return SNew(SBox)
+			.WidthOverride(22.f)
+			.HeightOverride(22.f)
+			.Visibility_Lambda([this]()
+			{
+				const bool bStandardVisible = !(bDailyChallengeMode || CurrentTimeFilter == ET66LeaderboardTime::Daily);
+				return bStandardVisible && CurrentFilter == ET66LeaderboardFilter::Streamers
+					? EVisibility::Visible
+					: EVisibility::Collapsed;
+			})
+			[
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						FOnClicked::CreateSP(this, &ST66LeaderboardPanel::HandleStreamerRequestClicked),
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.10f, 0.13f, 0.17f, 0.96f))
+						.Padding(FMargin(0.f))
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(TEXT("?")))
+							.Font(StreamerRequestButtonFont)
+							.ColorAndOpacity(FLinearColor::White)
+							.Justification(ETextJustify::Center)
+						])
+					.SetButtonStyle(&NoBorderButtonStyle)
+					.SetPadding(FMargin(0.f)))
+			];
+	};
+	auto MakeStreamerRequestPanel = [this, &NoBorderButtonStyle, StreamerRequestBodyFont, StreamerRequestButtonFont]() -> TSharedRef<SWidget>
+	{
+		return SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.08f, 0.075f, 0.065f, 0.96f))
+			.Padding(FMargin(12.f, 10.f))
+			.Visibility_Lambda([this]()
+			{
+				return CurrentFilter == ET66LeaderboardFilter::Streamers && bStreamerRequestOpen
+					? EVisibility::Visible
+					: EVisibility::Collapsed;
+			})
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.f, 0.f, 0.f, 10.f)
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.Leaderboard", "StreamerRequestCopy", "If you are a streamer and want to be included put your twitch/kick/tiktok link and your steam ID"))
+					.Font(StreamerRequestBodyFont)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.AutoWrapText(true)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.f, 0.f, 0.f, 8.f)
+				[
+					SAssignNew(StreamerLinkTextBox, SEditableTextBox)
+					.HintText(NSLOCTEXT("T66.Leaderboard", "StreamerLinkHint", "Twitch / Kick / TikTok link"))
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.f, 0.f, 0.f, 10.f)
+				[
+					SAssignNew(StreamerSteamIdTextBox, SEditableTextBox)
+					.HintText(NSLOCTEXT("T66.Leaderboard", "StreamerSteamIdHint", "Steam ID"))
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.f, 0.f, 0.f, 10.f)
+				[
+					SNew(STextBlock)
+					.Text_Lambda([this]() { return StreamerRequestStatus; })
+					.Font(StreamerRequestBodyFont)
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.AutoWrapText(true)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.f)
+					[
+						FT66Style::MakeBareButton(
+							FT66BareButtonParams(
+								FOnClicked::CreateSP(this, &ST66LeaderboardPanel::HandleStreamerRequestSubmitClicked),
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.18f, 0.31f, 0.18f, 0.97f))
+								.Padding(FMargin(10.f, 7.f))
+								.HAlign(HAlign_Center)
+								[
+									SNew(STextBlock)
+									.Text_Lambda([this]()
+									{
+										return bStreamerRequestSubmitting
+											? NSLOCTEXT("T66.Leaderboard", "StreamerRequestSubmitting", "Submitting")
+											: NSLOCTEXT("T66.Leaderboard", "StreamerRequestSubmit", "Submit");
+									})
+									.Font(StreamerRequestButtonFont)
+									.ColorAndOpacity(FLinearColor::White)
+								])
+							.SetButtonStyle(&NoBorderButtonStyle)
+							.SetPadding(FMargin(0.f)))
+					]
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.Padding(8.f, 0.f, 0.f, 0.f)
+					[
+						FT66Style::MakeBareButton(
+							FT66BareButtonParams(
+								FOnClicked::CreateSP(this, &ST66LeaderboardPanel::HandleStreamerRequestCloseClicked),
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.26f, 0.29f, 0.34f, 0.96f))
+								.Padding(FMargin(10.f, 7.f))
+								[
+									SNew(STextBlock)
+									.Text(NSLOCTEXT("T66.Common", "Close", "Close"))
+									.Font(StreamerRequestButtonFont)
+									.ColorAndOpacity(FLinearColor::White)
+								])
+							.SetButtonStyle(&NoBorderButtonStyle)
+							.SetPadding(FMargin(0.f)))
+					]
+				]
+			];
+	};
 
 	if (bReferenceMirrorMode)
 	{
-		const FMargin WideTabMargin(0.128f, 0.306f, 0.128f, 0.306f);
+		const FMargin WideTabMargin(0.f);
 		const FMargin DropdownFieldMargin(0.157f, 0.292f, 0.157f, 0.292f);
-		const FMargin AvatarSlotMargin(0.215f, 0.215f, 0.215f, 0.215f);
-		const FSlateBrush* ReferenceFilterGlobalIcon = ResolveMasterLibrarySliceBrush(
-			ReferenceFilterGlobalIconBrush,
-			TEXT("IconsGenerated/icon_09_leaderboard_globe_color_imagegen_20260428.png"),
-			FMargin(0.f),
-			TEXT("LBMasterFilterGlobalIcon"));
-		const FSlateBrush* ReferenceFilterFriendsIcon = ResolveMasterLibrarySliceBrush(
-			ReferenceFilterFriendsIconBrush,
-			TEXT("IconsGenerated/icon_10_leaderboard_friends_msn_imagegen_20260428.png"),
-			FMargin(0.f),
-			TEXT("LBMasterFilterFriendsIcon"));
-		const FSlateBrush* ReferenceFilterStreamersIcon = ResolveMasterLibrarySliceBrush(
-			ReferenceFilterStreamersIconBrush,
-			TEXT("IconsGenerated/icon_11_leaderboard_kekw_imagegen_20260428.png"),
-			FMargin(0.f),
-			TEXT("LBMasterFilterStreamersIcon"));
-		const FSlateBrush* ReferenceWideTabSelectedBrush = ResolveMasterLibrarySliceBrush(
+		const FMargin AvatarSlotMargin(0.f);
+		constexpr TextureFilter ButtonTextureFilter = TextureFilter::TF_Nearest;
+		const FSlateBrush* ReferenceWideTabSelectedBrush = ResolveReferenceGeneratedBrush(
 			ReferenceTabWeeklyActiveBrush,
-			TEXT("Buttons/basic_button_pressed.png"),
+			ReferenceSharedSourceDir,
+			TEXT("Buttons/Pill/selected.png"),
 			WideTabMargin,
-			TEXT("LBMasterWeekly"));
-		const FSlateBrush* ReferenceWideTabNormalBrush = ResolveMasterLibrarySliceBrush(
+			TEXT("LBMasterWeekly"),
+			ButtonTextureFilter);
+		const FSlateBrush* ReferenceWideTabNormalBrush = ResolveReferenceGeneratedBrush(
 			ReferenceTabAllTimeInactiveBrush,
-			TEXT("Buttons/basic_button_normal.png"),
+			ReferenceSharedSourceDir,
+			TEXT("Buttons/Pill/normal.png"),
 			WideTabMargin,
-			TEXT("LBMasterAllTime"));
-		const FSlateBrush* ReferenceLeftDropdownBrush = ResolveMasterLibrarySliceBrush(
+			TEXT("LBMasterAllTime"),
+			ButtonTextureFilter);
+		const FSlateBrush* ReferenceWideTabHoverBrush = ResolveReferenceGeneratedBrush(
+			ReferenceTabHoverBrush,
+			ReferenceSharedSourceDir,
+			TEXT("Buttons/Pill/hover.png"),
+			WideTabMargin,
+			TEXT("LBMasterTabHover"),
+			ButtonTextureFilter);
+		const FSlateBrush* ReferenceWideTabPressedBrush = ResolveReferenceGeneratedBrush(
+			ReferenceTabPressedBrush,
+			ReferenceSharedSourceDir,
+			TEXT("Buttons/Pill/pressed.png"),
+			WideTabMargin,
+			TEXT("LBMasterTabPressed"),
+			ButtonTextureFilter);
+		const FSlateBrush* ReferenceLeftDropdownBrush = ResolveReferenceGeneratedBrush(
 			ReferenceDropdownLeftBrush,
-			TEXT("Controls/dropdown_field_normal.png"),
+			ReferenceSharedSourceDir,
+			TEXT("Controls/reference_dropdown_field_normal.png"),
 			DropdownFieldMargin,
-			TEXT("LBMasterDropdownLeft"));
-		const FSlateBrush* ReferenceRightDropdownBrush = ResolveMasterLibrarySliceBrush(
+			TEXT("LBMasterDropdownLeft"),
+			TextureFilter::TF_Nearest);
+		const FSlateBrush* ReferenceRightDropdownBrush = ResolveReferenceGeneratedBrush(
 			ReferenceDropdownRightBrush,
-			TEXT("Controls/dropdown_field_normal.png"),
+			ReferenceSharedSourceDir,
+			TEXT("Controls/reference_dropdown_field_normal.png"),
 			DropdownFieldMargin,
-			TEXT("LBMasterDropdownRight"));
+			TEXT("LBMasterDropdownRight"),
+			TextureFilter::TF_Nearest);
 		const FSlateBrush* ReferenceChevronBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceDropdownChevronBrush,
-			TEXT("IconsGenerated/icon_16_dropdown_chevron_imagegen_20260425_v2.png"),
+			TEXT("Icons/dropdown_chevron.png"),
 			FMargin(0.f),
-			TEXT("LBMasterDropdownChevron"));
+			TEXT("LBMasterDropdownChevron"),
+			TextureFilter::TF_Nearest);
 		const FSlateBrush* ReferenceToggleNormalBrush = ResolveMasterLibrarySliceBrush(
 			ReferenceToggleSpeedRunUnselectedBrush,
 			TEXT("Controls/radio_circle_normal.png"),
 			FMargin(0.f),
 			TEXT("LBMasterToggleSpeedRun"));
-		ResolveMasterLibrarySliceBrush(
+		ResolveReferenceGeneratedBrush(
 			ReferenceAvatarFrameBrush,
-			TEXT("Slots/pfp_slot_normal.png"),
+			ReferenceSharedSourceDir,
+			TEXT("Slots/reference_square_slot_frame_normal.png"),
 			AvatarSlotMargin,
-			TEXT("LBMasterAvatarFrame"));
+			TEXT("LBMasterAvatarFrame"),
+			TextureFilter::TF_Nearest);
+		if (ReferenceAvatarFrameBrush.Brush.IsValid())
+		{
+			ReferenceAvatarFrameBrush.Brush->DrawAs = ESlateBrushDrawType::Image;
+			ReferenceAvatarFrameBrush.Brush->Tiling = ESlateBrushTileType::NoTile;
+			ReferenceAvatarFrameBrush.Brush->Margin = FMargin(0.f);
+		}
 		const FSlateBrush* ReferenceAvatarFallback01 = ResolveReferenceRightPanelBrush(
 			ReferenceAvatarFallbackBrush01,
 			TEXT("leaderboard_avatar_fallback_01.png"),
@@ -610,56 +1023,11 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		const FSlateFontInfo ReferenceDailyFont = MakeLockedBoldFont(21, 0);
 		const FSlateFontInfo ReferenceToggleFont = MakeLockedBoldFont(20);
 
-		auto MakeReferenceFilterButton = [this, &NoBorderButtonStyle](
-			ET66LeaderboardFilter Filter,
-			FReply (ST66LeaderboardPanel::*ClickHandler)(),
-			const FSlateBrush* IconBrush,
-			const FString& FallbackLetter) -> TSharedRef<SWidget>
-		{
-			return SNew(SBox)
-				.WidthOverride(ReferenceFilterButtonSize.X)
-				.HeightOverride(ReferenceFilterButtonSize.Y)
-				[
-					FT66Style::MakeBareButton(
-						FT66BareButtonParams(
-							FOnClicked::CreateSP(this, ClickHandler),
-							SNew(SOverlay)
-							+ SOverlay::Slot()
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							[
-								SNew(SBox)
-								.WidthOverride(ReferenceFilterIconSize.X)
-								.HeightOverride(ReferenceFilterIconSize.Y)
-								[
-									IconBrush
-									? StaticCastSharedRef<SWidget>(
-										SNew(SImage)
-										.Image(IconBrush)
-										.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([this, Filter]() -> FSlateColor
-										{
-											return CurrentFilter == Filter
-												? FSlateColor(FLinearColor::White)
-												: FSlateColor(FLinearColor(0.66f, 0.66f, 0.68f, 0.78f));
-										})))
-									: StaticCastSharedRef<SWidget>(
-										SNew(STextBlock)
-										.Text(FText::FromString(FallbackLetter))
-										.Font(FT66Style::MakeFont(TEXT("Bold"), 18))
-										.ColorAndOpacity(ReferenceLeaderboardMuted)
-										.Justification(ETextJustify::Center))
-								]
-							])
-						.SetButtonStyle(&NoBorderButtonStyle)
-						.SetPadding(FMargin(0.f))
-						.SetHAlign(HAlign_Center)
-						.SetVAlign(VAlign_Center))
-				];
-		};
-
 		auto MakeReferenceStatePlateButton = [this, &NoBorderButtonStyle, ReferenceHeaderFont](
 			const FSlateBrush* SelectedBrush,
 			const FSlateBrush* NormalBrush,
+			const FSlateBrush* HoverBrush,
+			const FSlateBrush* PressedBrush,
 			const FVector2D& Size,
 			const FText& Label,
 			TFunction<bool()> IsSelected,
@@ -669,40 +1037,30 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.WidthOverride(Size.X)
 				.HeightOverride(Size.Y)
 				[
-					FT66Style::MakeBareButton(
-						FT66BareButtonParams(
-							FOnClicked::CreateSP(this, ClickHandler),
-							SNew(SOverlay)
-							+ SOverlay::Slot()
-							[
-									SNew(SImage)
-									.Image(TAttribute<const FSlateBrush*>::CreateLambda([SelectedBrush, NormalBrush, IsSelected]() -> const FSlateBrush*
-									{
-										const FSlateBrush* ChosenBrush = IsSelected() ? SelectedBrush : NormalBrush;
-										return ChosenBrush ? ChosenBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
-									}))
-									.ColorAndOpacity((SelectedBrush || NormalBrush) ? FLinearColor::White : ReferenceLeaderboardMuted)
-								]
-								+ SOverlay::Slot()
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.Padding(FMargin(12.f, 0.f))
-								[
-									SNew(STextBlock)
-									.Text(Label)
-									.Font(ReferenceHeaderFont)
-									.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsSelected]() -> FSlateColor
-									{
-										return IsSelected()
-											? FSlateColor(ReferenceWoodControlText)
-											: FSlateColor(ReferenceWoodControlMuted);
-									}))
-									.Justification(ETextJustify::Center)
-									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-									.Clipping(EWidgetClipping::ClipToBounds)
-								])
-						.SetButtonStyle(&NoBorderButtonStyle)
-						.SetPadding(FMargin(0.f)))
+					SNew(ST66LeaderboardStatePlateButton)
+					.ButtonStyle(&NoBorderButtonStyle)
+					.NormalBrush(NormalBrush)
+					.HoverBrush(HoverBrush)
+					.PressedBrush(PressedBrush)
+					.SelectedBrush(SelectedBrush)
+					.SourceCapFraction(0.105f)
+					.IsSelected(TAttribute<bool>::CreateLambda([IsSelected]() { return IsSelected(); }))
+					.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
+					.ContentPadding(FMargin(12.f, 0.f))
+					[
+						SNew(STextBlock)
+						.Text(Label)
+						.Font(ReferenceHeaderFont)
+						.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([IsSelected]() -> FSlateColor
+						{
+							return IsSelected()
+								? FSlateColor(ReferenceWoodControlText)
+								: FSlateColor(ReferenceWoodControlMuted);
+						}))
+						.Justification(ETextJustify::Center)
+						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+						.Clipping(EWidgetClipping::ClipToBounds)
+					]
 				];
 		};
 
@@ -800,9 +1158,13 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							SNew(SImage)
-							.Image(ShellBrush ? ShellBrush : FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.ColorAndOpacity(ShellBrush ? FLinearColor::White : FLinearColor(0.10f, 0.10f, 0.12f, 1.0f))
+							SNew(ST66LeaderboardSlicedBrushImage)
+							.Brush(TAttribute<const FSlateBrush*>::CreateLambda([ShellBrush]() -> const FSlateBrush*
+							{
+								return ShellBrush ? ShellBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
+							}))
+							.DesiredSize(Size)
+							.SourceCapFraction(0.085f)
 						]
 						+ SOverlay::Slot()
 						.Padding(FMargin(18.f, 9.f, 52.f, 9.f))
@@ -865,6 +1227,11 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.HAlign(HAlign_Center)
 					.VAlign(VAlign_Center)
 					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
+						[
 							SNew(STextBlock)
 							.Text_Lambda([this]()
 							{
@@ -873,10 +1240,20 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 								return FText::FromString(Title);
 							})
 							.Font(ReferenceScopeTitleFont)
-							.ColorAndOpacity(ReferenceMainMenuSubtitleText)
+							.ColorAndOpacity(ReferenceLeaderboardTitleText)
+							.ShadowOffset(FVector2D(1.f, 1.f))
+							.ShadowColorAndOpacity(ReferenceLeaderboardTitleShadow)
 							.Justification(ETextJustify::Center)
 							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 							.Clipping(EWidgetClipping::ClipToBounds)
+						]
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
+						.Padding(8.f, 0.f, 0.f, 0.f)
+						[
+							MakeStreamerHelpButton()
+						]
 					]
 				]
 				+ SVerticalBox::Slot()
@@ -884,12 +1261,14 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.Padding(FMargin(0.f, 0.f, 0.f, 0.f))
 				[
 					SNew(SHorizontalBox)
-					.Visibility_Lambda(GetStandardModeVisibility)
+					.Visibility_Lambda(GetLeaderboardControlsVisibility)
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						MakeReferenceStatePlateButton(
 							ReferenceWideTabSelectedBrush,
 							ReferenceWideTabNormalBrush,
+							ReferenceWideTabHoverBrush,
+							ReferenceWideTabPressedBrush,
 							ReferenceWeeklyTabSize,
 							NSLOCTEXT("T66.Leaderboard", "Weekly", "WEEKLY"),
 							[this]() { return CurrentTimeFilter == ET66LeaderboardTime::Current; },
@@ -900,6 +1279,8 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						MakeReferenceStatePlateButton(
 							ReferenceWideTabSelectedBrush,
 							ReferenceWideTabNormalBrush,
+							ReferenceWideTabHoverBrush,
+							ReferenceWideTabPressedBrush,
 							ReferenceAllTimeTabSize,
 							NSLOCTEXT("T66.Leaderboard", "AllTime", "ALL TIME"),
 							[this]() { return CurrentTimeFilter == ET66LeaderboardTime::AllTime; },
@@ -911,7 +1292,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.Padding(FMargin(0.f, 8.f, 0.f, 8.f))
 				[
 					SNew(SHorizontalBox)
-					.Visibility_Lambda(GetStandardModeVisibility)
+					.Visibility_Lambda(GetLeaderboardControlsVisibility)
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						MakeReferenceDropdown(
@@ -978,7 +1359,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.Padding(FMargin(0.f, 0.f, 0.f, 0.f))
 				[
 					SNew(SHorizontalBox)
-					.Visibility_Lambda(GetStandardModeVisibility)
+					.Visibility_Lambda(GetLeaderboardControlsVisibility)
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
 					.HAlign(HAlign_Left)
@@ -1008,6 +1389,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.Padding(FMargin(6.f, 10.f, 0.f, 0.f))
 				[
 					SNew(SHorizontalBox)
+					.Visibility_Lambda(GetLeaderboardControlsVisibility)
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						SNew(SBox)
@@ -1051,6 +1433,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.Padding(FMargin(4.f, 8.f, 0.f, 0.f))
 				[
 					SNew(SBorder)
+					.Visibility_Lambda(GetLeaderboardControlsVisibility)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 					.BorderBackgroundColor(FLinearColor(0.44f, 0.27f, 0.12f, 0.36f))
 					.Padding(FMargin(0.f, 1.f))
@@ -1059,39 +1442,16 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.FillHeight(1.f)
 				.Padding(FMargin(0.f, 10.f, 0.f, 0.f))
 				[
-					SAssignNew(EntryListBox, SVerticalBox)
-				]
-			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Left)
-			.VAlign(VAlign_Top)
-			.Padding(FMargin(-84.f, 38.f, 0.f, 0.f))
-			[
-				SNew(SVerticalBox)
-				.Visibility_Lambda(GetStandardModeVisibility)
-				+ SVerticalBox::Slot().AutoHeight()
-				[
-					MakeReferenceFilterButton(
-						ET66LeaderboardFilter::Global,
-						&ST66LeaderboardPanel::HandleGlobalClicked,
-						ReferenceFilterGlobalIcon,
-						TEXT("G"))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-				[
-					MakeReferenceFilterButton(
-						ET66LeaderboardFilter::Friends,
-						&ST66LeaderboardPanel::HandleFriendsClicked,
-						ReferenceFilterFriendsIcon,
-						TEXT("F"))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-				[
-					MakeReferenceFilterButton(
-						ET66LeaderboardFilter::Streamers,
-						&ST66LeaderboardPanel::HandleStreamersClicked,
-						ReferenceFilterStreamersIcon,
-						TEXT("S"))
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SAssignNew(EntryListBox, SVerticalBox)
+						.Visibility_Lambda(GetLeaderboardControlsVisibility)
+					]
+					+ SOverlay::Slot()
+					[
+						MakeStreamerRequestPanel()
+					]
 				]
 			]
 		];
@@ -1335,7 +1695,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						SNew(SBox)
 						.Visibility_Lambda(GetStandardModeVisibility)
 						[
-							SNew(STextBlock)
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.VAlign(VAlign_Center)
+							[
+								SNew(STextBlock)
 							.Text_Lambda([this]()
 							{
 								FString Title = GetLeaderboardScopeTitleText().ToString();
@@ -1347,6 +1712,14 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 							.Justification(ETextJustify::Center)
 							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 							.Clipping(EWidgetClipping::ClipToBounds)
+							]
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.VAlign(VAlign_Center)
+							.Padding(8.f, 0.f, 0.f, 0.f)
+							[
+								MakeStreamerHelpButton()
+							]
 						]
 					]
 					+ SVerticalBox::Slot()
@@ -1370,7 +1743,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 					[
 						SNew(SBox)
-						.Visibility_Lambda(GetStandardModeVisibility)
+						.Visibility_Lambda(GetLeaderboardControlsVisibility)
 						[
 							SNew(SHorizontalBox)
 							+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(3.0f, 0.0f)
@@ -1386,7 +1759,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 					[
 						SNew(SHorizontalBox)
-						.Visibility_Lambda(GetStandardModeVisibility)
+						.Visibility_Lambda(GetLeaderboardControlsVisibility)
 						// Party Size dropdown
 						+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(0.0f, 0.0f, 3.0f, 0.0f)
 						[
@@ -1455,7 +1828,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.Padding(0.0f, 0.0f, 0.0f, 18.0f)
 					[
 						SNew(SHorizontalBox)
-						.Visibility_Lambda(GetStandardModeVisibility)
+						.Visibility_Lambda(GetLeaderboardControlsVisibility)
 						+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(0.0f, 0.0f, 3.0f, 0.0f)
 						[
 							MakeTypeButton(ET66LeaderboardType::Score)
@@ -1471,6 +1844,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.Padding(0.0f, 0.0f, 0.0f, 4.0f)
 					[
 						SNew(SBorder)
+						.Visibility_Lambda(GetLeaderboardControlsVisibility)
 						.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
 						.Padding(FMargin(8.0f, 5.0f))
 						[
@@ -1517,7 +1891,16 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.AutoHeight()
 					.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 					[
-						SAssignNew(EntryListBox, SVerticalBox)
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SAssignNew(EntryListBox, SVerticalBox)
+							.Visibility_Lambda(GetLeaderboardControlsVisibility)
+						]
+						+ SOverlay::Slot()
+						[
+							MakeStreamerRequestPanel()
+						]
 					]
 				]
 			]
@@ -1590,6 +1973,14 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				[
 					SNew(SOverlay)
 					+ SOverlay::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
+					[
+						SNew(SImage)
+						.Image(AvatarFrameBrush)
+						.ColorAndOpacity(AvatarFrameBrush ? FLinearColor::White : FLinearColor::Transparent)
+					]
+					+ SOverlay::Slot()
 					.HAlign(HAlign_Center)
 					.VAlign(VAlign_Center)
 					[
@@ -1618,14 +2009,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 								})
 							]
 						]
-					]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Fill)
-					.VAlign(VAlign_Fill)
-					[
-						SNew(SImage)
-						.Image(AvatarFrameBrush)
-						.ColorAndOpacity(AvatarFrameBrush ? FLinearColor::White : FLinearColor::Transparent)
 					]
 				];
 
@@ -2010,6 +2393,12 @@ void ST66LeaderboardPanel::SetFilter(ET66LeaderboardFilter NewFilter)
 	{
 		CurrentFilter = NewFilter;
 	}
+	if (CurrentFilter != ET66LeaderboardFilter::Streamers)
+	{
+		bStreamerRequestOpen = false;
+		bStreamerRequestSubmitting = false;
+		StreamerRequestStatus = FText::GetEmpty();
+	}
 	RefreshLeaderboard();
 }
 
@@ -2228,6 +2617,81 @@ FReply ST66LeaderboardPanel::HandleStreamersClicked()
 {
 	SetFilter(ET66LeaderboardFilter::Streamers);
 	return FReply::Handled();
+}
+
+FReply ST66LeaderboardPanel::HandleStreamerRequestClicked()
+{
+	if (CurrentFilter != ET66LeaderboardFilter::Streamers)
+	{
+		return FReply::Handled();
+	}
+
+	bStreamerRequestOpen = true;
+	StreamerRequestStatus = FText::GetEmpty();
+	Invalidate(EInvalidateWidgetReason::Layout);
+	return FReply::Handled();
+}
+
+FReply ST66LeaderboardPanel::HandleStreamerRequestCloseClicked()
+{
+	bStreamerRequestOpen = false;
+	bStreamerRequestSubmitting = false;
+	StreamerRequestStatus = FText::GetEmpty();
+	Invalidate(EInvalidateWidgetReason::Layout);
+	return FReply::Handled();
+}
+
+FReply ST66LeaderboardPanel::HandleStreamerRequestSubmitClicked()
+{
+	if (bStreamerRequestSubmitting)
+	{
+		return FReply::Handled();
+	}
+
+	const FString CreatorLink = StreamerLinkTextBox.IsValid()
+		? StreamerLinkTextBox->GetText().ToString().TrimStartAndEnd()
+		: FString();
+	const FString SteamId = StreamerSteamIdTextBox.IsValid()
+		? StreamerSteamIdTextBox->GetText().ToString().TrimStartAndEnd()
+		: FString();
+
+	if (CreatorLink.IsEmpty() || SteamId.IsEmpty())
+	{
+		StreamerRequestStatus = NSLOCTEXT("T66.Leaderboard", "StreamerRequestMissingFields", "Creator link and Steam ID are required.");
+		return FReply::Handled();
+	}
+
+	UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
+	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	if (!Backend || !Backend->IsBackendConfigured())
+	{
+		StreamerRequestStatus = NSLOCTEXT("T66.Leaderboard", "StreamerRequestUnavailable", "Streamer requests unavailable.");
+		return FReply::Handled();
+	}
+
+	Backend->OnStreamerRequestDataReady.RemoveAll(this);
+	Backend->OnStreamerRequestDataReady.AddSP(SharedThis(this), &ST66LeaderboardPanel::OnStreamerRequestComplete);
+	bStreamerRequestSubmitting = true;
+	StreamerRequestStatus = NSLOCTEXT("T66.Leaderboard", "StreamerRequestSending", "Submitting...");
+	Backend->SubmitStreamerRequest(CreatorLink, SteamId);
+	return FReply::Handled();
+}
+
+void ST66LeaderboardPanel::OnStreamerRequestComplete(bool bSuccess, const FString& Message)
+{
+	bStreamerRequestSubmitting = false;
+	StreamerRequestStatus = FText::FromString(Message);
+	if (bSuccess)
+	{
+		if (StreamerLinkTextBox.IsValid())
+		{
+			StreamerLinkTextBox->SetText(FText::GetEmpty());
+		}
+		if (StreamerSteamIdTextBox.IsValid())
+		{
+			StreamerSteamIdTextBox->SetText(FText::GetEmpty());
+		}
+	}
 }
 
 FReply ST66LeaderboardPanel::HandleCurrentClicked()
@@ -2786,13 +3250,13 @@ const FSlateBrush* ST66LeaderboardPanel::GetOrCreateHeroPortraitBrush(FName Hero
 		return DefaultAvatarBrush.Get();
 	}
 
-	const TSoftObjectPtr<UTexture2D> PortraitSoft = T66GI->ResolveHeroPortrait(HeroID, ET66BodyType::TypeA, ET66HeroPortraitVariant::Low);
+	const TSoftObjectPtr<UTexture2D> PortraitSoft = T66GI->ResolveHeroPortrait(HeroID, ET66BodyType::Chad, ET66HeroPortraitVariant::Low);
 	TSoftObjectPtr<UTexture2D> ReferencePortraitSoft;
 	if (bReferenceMirrorMode)
 	{
 		const FString HeroIdString = HeroID.ToString();
 		ReferencePortraitSoft = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(FString::Printf(
-			TEXT("/Game/UI/Sprites/Heroes/%s/T_%s_TypeA_Low.T_%s_TypeA_Low"),
+			TEXT("/Game/UI/Sprites/Heroes/%s/T_%s_Chad_Low.T_%s_Chad_Low"),
 			*HeroIdString,
 			*HeroIdString,
 			*HeroIdString)));

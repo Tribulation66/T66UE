@@ -21,7 +21,7 @@ import unreal
 LOG = "[CharUnlit]"
 
 MASTER_PATH = "/Game/Materials/M_Character_Unlit"
-TEXTURE_PARAM = "DiffuseColorMap"
+TEXTURE_PARAMS = ["DiffuseColorMap", "BaseColorTexture"]
 ALT_MASTER_PATHS = [
     "/Game/Materials/M_FBX_Unlit",
 ]
@@ -54,7 +54,8 @@ def _get_parent_name(mic):
 
 
 def _ensure_master_usage_flags():
-    for material_path in [MASTER_PATH] + ALT_MASTER_PATHS:
+    material_paths = [MASTER_PATH] + ALT_MASTER_PATHS
+    for material_path in material_paths:
         material = unreal.EditorAssetLibrary.load_asset(material_path)
         if not material or not isinstance(material, unreal.Material):
             continue
@@ -73,6 +74,30 @@ def _ensure_master_usage_flags():
             except Exception:
                 continue
 
+        if material_path == MASTER_PATH:
+            for prop, value in [
+                ("blend_mode", unreal.BlendMode.BLEND_MASKED),
+                ("opacity_mask_clip_value", 0.3333),
+            ]:
+                try:
+                    current = material.get_editor_property(prop)
+                    if current != value:
+                        material.set_editor_property(prop, value)
+                        changed = True
+                except Exception:
+                    continue
+
+            try:
+                opacity_node = unreal.MaterialEditingLibrary.get_material_property_input_node(
+                    material,
+                    unreal.MaterialProperty.MP_OPACITY_MASK,
+                )
+                if not opacity_node:
+                    _rebuild_character_unlit_master(material)
+                    changed = True
+            except Exception as exc:
+                unreal.log_warning(f"{LOG} Could not ensure alpha mask on {material_path}: {exc}")
+
         if changed:
             try:
                 unreal.MaterialEditingLibrary.recompile_material(material)
@@ -84,20 +109,89 @@ def _ensure_master_usage_flags():
                 pass
 
 
-def _get_texture_from_mic(mic):
-    """Try to read DiffuseColorMap already set on the MIC."""
+def _get_material_expressions(material):
     try:
-        result = unreal.MaterialEditingLibrary.get_material_instance_texture_parameter_value(
-            mic, TEXTURE_PARAM)
-        if isinstance(result, (tuple, list)):
-            tex = result[-1] if len(result) > 1 else result[0]
-        else:
-            tex = result
-        if tex and isinstance(tex, unreal.Texture):
-            return tex
+        return list(unreal.MaterialEditingLibrary.get_material_expressions(material))
     except Exception:
         pass
+    try:
+        return list(material.get_editor_property("expressions"))
+    except Exception:
+        return []
+
+
+def _rebuild_character_unlit_master(material):
+    mel = unreal.MaterialEditingLibrary
+    mel.delete_all_material_expressions(material)
+    texture = mel.create_material_expression(
+        material,
+        unreal.MaterialExpressionTextureSampleParameter2D,
+        -700,
+        -160,
+    )
+    texture.set_editor_property("parameter_name", "DiffuseColorMap")
+    brightness = mel.create_material_expression(
+        material,
+        unreal.MaterialExpressionScalarParameter,
+        -700,
+        20,
+    )
+    brightness.set_editor_property("parameter_name", "Brightness")
+    brightness.set_editor_property("default_value", 1.0)
+    multiply = mel.create_material_expression(
+        material,
+        unreal.MaterialExpressionMultiply,
+        -320,
+        -120,
+    )
+    mel.connect_material_expressions(texture, "RGB", multiply, "A")
+    mel.connect_material_expressions(brightness, "", multiply, "B")
+    mel.connect_material_property(multiply, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.connect_material_property(texture, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
+    try:
+        mel.layout_material_expressions(material)
+    except Exception:
+        pass
+
+
+def _get_texture_from_mic(mic):
+    """Try to read an already-bound diffuse/base-color texture from the MIC."""
+    for param in TEXTURE_PARAMS:
+        try:
+            result = unreal.MaterialEditingLibrary.get_material_instance_texture_parameter_value(
+                mic, param)
+            if isinstance(result, (tuple, list)):
+                tex = result[-1] if len(result) > 1 else result[0]
+            else:
+                tex = result
+            if _is_imported_texture(tex):
+                return tex
+        except Exception:
+            pass
     return None
+
+
+def _is_imported_texture(texture):
+    if not texture or not isinstance(texture, unreal.Texture):
+        return False
+    try:
+        path = texture.get_path_name()
+    except Exception:
+        return False
+    return bool(path) and not path.startswith("/Engine/")
+
+
+def _set_texture_params(mic, texture):
+    set_count = 0
+    for param in TEXTURE_PARAMS:
+        try:
+            result = unreal.MaterialEditingLibrary.set_material_instance_texture_parameter_value(
+                mic, param, texture)
+            if result is not False:
+                set_count += 1
+        except Exception:
+            pass
+    return set_count
 
 
 def _find_textures_in_dir(game_dir):
@@ -176,6 +270,7 @@ def convert_character_materials_unlit(scan_roots=None):
         return {
             "converted": 0,
             "already_ok": 0,
+            "repaired": 0,
             "skipped": 0,
             "no_texture": 0,
             "errors": 1,
@@ -186,6 +281,7 @@ def convert_character_materials_unlit(scan_roots=None):
 
     converted = 0
     already_ok = 0
+    repaired = 0
     skipped = 0
     no_texture = 0
     errors = 0
@@ -203,17 +299,13 @@ def convert_character_materials_unlit(scan_roots=None):
         parent_name = _get_parent_name(asset)
 
         is_already_unlit = any(u in parent_name for u in ALREADY_UNLIT_PARENTS)
-        if is_already_unlit:
-            already_ok += 1
-            continue
+        tex = _get_texture_from_mic(asset)
 
         should_convert = any(t in parent_name for t in PARENTS_TO_CONVERT)
-        if not should_convert:
+        if not is_already_unlit and not should_convert:
             skipped += 1
             unreal.log(f"  [{mic_name}] Skipped — parent '{parent_name}' not in convert list")
             continue
-
-        tex = _get_texture_from_mic(asset)
 
         if not tex:
             asset_dir = _get_asset_directory(mic_path)
@@ -236,6 +328,19 @@ def convert_character_materials_unlit(scan_roots=None):
             unreal.log_warning(f"  [{mic_name}] No texture found — skipping")
             continue
 
+        if is_already_unlit:
+            try:
+                _set_texture_params(asset, tex)
+                unreal.EditorAssetLibrary.save_asset(
+                    mic_path.split(".")[0] if "." in mic_path else mic_path)
+                repaired += 1
+            except Exception as e:
+                unreal.log_error(f"  [{mic_name}] Texture repair failed: {e}")
+                errors += 1
+                continue
+            already_ok += 1
+            continue
+
         tex_name = tex.get_name()
 
         try:
@@ -246,10 +351,9 @@ def convert_character_materials_unlit(scan_roots=None):
             continue
 
         try:
-            unreal.MaterialEditingLibrary.set_material_instance_texture_parameter_value(
-                asset, TEXTURE_PARAM, tex)
+            _set_texture_params(asset, tex)
         except Exception as e:
-            unreal.log_error(f"  [{mic_name}] Failed to set {TEXTURE_PARAM}: {e}")
+            unreal.log_error(f"  [{mic_name}] Failed to set texture parameter: {e}")
             errors += 1
             continue
 
@@ -267,6 +371,7 @@ def convert_character_materials_unlit(scan_roots=None):
     return {
         "converted": converted,
         "already_ok": already_ok,
+        "repaired": repaired,
         "skipped": skipped,
         "no_texture": no_texture,
         "errors": errors,
@@ -290,6 +395,7 @@ def main():
     unreal.log(f"{LOG} RESULTS:")
     unreal.log(f"  Converted:       {results['converted']}")
     unreal.log(f"  Already Unlit:   {results['already_ok']}")
+    unreal.log(f"  Texture Repairs: {results.get('repaired', 0)}")
     unreal.log(f"  Skipped:         {results['skipped']} (different parent)")
     unreal.log(f"  No texture:      {results['no_texture']}")
     unreal.log(f"  Errors:          {results['errors']}")

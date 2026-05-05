@@ -118,22 +118,22 @@ namespace T66MiniUI
 
 	inline const TCHAR* MasterBasicPanelPath()
 	{
-		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
+		return TEXT("SourceAssets/UI/Reference/Shared/Panels/inner_panel_normal.png");
 	}
 
 	inline const TCHAR* MasterInnerPanelPath()
 	{
-		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png");
+		return TEXT("SourceAssets/UI/Reference/Shared/Panels/inner_panel_normal.png");
 	}
 
 	inline const TCHAR* MasterBasicButtonPath()
 	{
-		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png");
+		return TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/normal.png");
 	}
 
 	inline const TCHAR* MasterSelectedButtonPath()
 	{
-		return TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_selected.png");
+		return TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/selected.png");
 	}
 
 	inline const FMargin& MasterPanelMargin()

@@ -1,0 +1,122 @@
+[
+  {
+    "module_id": "DungeonFloor_StoneSlabs_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\DungeonFloor_StoneSlabs_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\DungeonFloor_StoneSlabs_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "DungeonFloor_Drain_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\DungeonFloor_Drain_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\DungeonFloor_Drain_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "DungeonFloor_Cracked_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\DungeonFloor_Cracked_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\DungeonFloor_Cracked_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "DungeonFloor_Bones_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\DungeonFloor_Bones_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\DungeonFloor_Bones_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "ForestFloor_RootMat_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\ForestFloor_RootMat_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\ForestFloor_RootMat_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "ForestFloor_MossStone_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\ForestFloor_MossStone_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\ForestFloor_MossStone_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "ForestFloor_LeafCrack_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\ForestFloor_LeafCrack_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\ForestFloor_LeafCrack_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "ForestFloor_BrambleEdge_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\ForestFloor_BrambleEdge_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\ForestFloor_BrambleEdge_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "OceanFloor_ReefStone_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\OceanFloor_ReefStone_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\OceanFloor_ReefStone_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "OceanFloor_ShellSand_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\OceanFloor_ShellSand_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\OceanFloor_ShellSand_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "OceanFloor_CoralCrack_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\OceanFloor_CoralCrack_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\OceanFloor_CoralCrack_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "OceanFloor_TidePool_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\OceanFloor_TidePool_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\OceanFloor_TidePool_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "MartianFloor_RuinTile_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\MartianFloor_RuinTile_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\MartianFloor_RuinTile_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "MartianFloor_RegolithPlates_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\MartianFloor_RegolithPlates_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\MartianFloor_RegolithPlates_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "MartianFloor_CrystalDust_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\MartianFloor_CrystalDust_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\MartianFloor_CrystalDust_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "MartianFloor_CraterCracks_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\MartianFloor_CraterCracks_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\MartianFloor_CraterCracks_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "HellFloor_RunePlate_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\HellFloor_RunePlate_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\HellFloor_RunePlate_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "HellFloor_Obsidian_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\HellFloor_Obsidian_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\HellFloor_Obsidian_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "HellFloor_EmberFissure_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\HellFloor_EmberFissure_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\HellFloor_EmberFissure_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  },
+  {
+    "module_id": "HellFloor_BoneAsh_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\HellFloor_BoneAsh_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images\\HellFloor_BoneAsh_A_FloorFix01.png",
+    "fix": "perspective low-angle thick floor slab with visible side faces"
+  }
+]

@@ -1,0 +1,21 @@
+StageID,DifficultyID,StageIndex,MapID,DisplayName,Description,BossWave,StartingGold,StartingMaterials,ClearGoldReward,ClearMaterialReward,ClearChadCoupons,NextStageID
+TD_Easy_01,Easy,1,Map_Easy_01,Catacomb Spiral,A single-lane intro stage with a boss gate.,15,0,340,45,80,1,TD_Easy_02
+TD_Easy_02,Easy,2,Map_Easy_02,Iron Reliquary,A reliquary stage focused on armor walls.,15,0,355,52,90,1,TD_Easy_03
+TD_Easy_03,Easy,3,Map_Easy_03,Bone Furnace,A compact stage with short-range denial checks.,15,0,365,60,100,1,TD_Easy_04
+TD_Easy_04,Easy,4,Map_Easy_04,Crypt Switchback,A crossfire stage that closes the easy set.,15,0,380,72,120,2,
+TD_Medium_01,Medium,1,Map_Medium_01,Thorn Crossing,A split-lane forest stage.,15,0,360,68,110,1,TD_Medium_02
+TD_Medium_02,Medium,2,Map_Medium_02,Hunters Hollow,A blind-bend forest stage.,15,0,370,76,125,1,TD_Medium_03
+TD_Medium_03,Medium,3,Map_Medium_03,Rootbound Ring,A loop stage built for center-pad control.,15,0,380,84,140,1,TD_Medium_04
+TD_Medium_04,Medium,4,Map_Medium_04,Briar Gauntlet,A pressure stage that closes the medium set.,15,0,395,100,165,2,
+TD_Hard_01,Hard,1,Map_Hard_01,Tidal Pass,A hard stage with mixed lane pressure.,15,0,380,92,145,1,TD_Hard_02
+TD_Hard_02,Hard,2,Map_Hard_02,Sunken Causeway,A hard stage with layered boss escorts.,15,0,390,104,160,1,TD_Hard_03
+TD_Hard_03,Hard,3,Map_Hard_03,Coral Lock,A hard stage with demanding pad timing.,15,0,405,116,180,1,TD_Hard_04
+TD_Hard_04,Hard,4,Map_Hard_04,Leviathan Gate,A hard stage that closes the ocean set.,15,0,420,136,210,2,
+TD_VeryHard_01,VeryHard,1,Map_VeryHard_01,Red Dust Basin,A very hard stage with fast opener pressure.,15,0,400,124,190,1,TD_VeryHard_02
+TD_VeryHard_02,VeryHard,2,Map_VeryHard_02,Crater Switch,A very hard stage with split targeting checks.,15,0,415,140,210,1,TD_VeryHard_03
+TD_VeryHard_03,VeryHard,3,Map_VeryHard_03,Glass Ravine,A very hard stage with long leak paths.,15,0,430,156,235,1,TD_VeryHard_04
+TD_VeryHard_04,VeryHard,4,Map_VeryHard_04,Martian Crucible,A very hard stage that closes the martian set.,15,0,450,180,270,2,
+TD_Impossible_01,Impossible,1,Map_Impossible_01,Ashen Trial,An impossible stage with early modifier pressure.,15,0,420,170,250,1,TD_Impossible_02
+TD_Impossible_02,Impossible,2,Map_Impossible_02,Cinder Labyrinth,An impossible stage with boss-route denial checks.,15,0,440,190,280,1,TD_Impossible_03
+TD_Impossible_03,Impossible,3,Map_Impossible_03,Hellglass Crossing,An impossible stage with low recovery room.,15,0,460,210,310,1,TD_Impossible_04
+TD_Impossible_04,Impossible,4,Map_Impossible_04,Obsidian Verdict,The final impossible boss gate.,15,0,480,250,360,3,

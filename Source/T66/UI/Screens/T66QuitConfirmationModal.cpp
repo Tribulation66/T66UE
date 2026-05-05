@@ -43,7 +43,7 @@ namespace
 		case ET66ButtonType::ToggleActive:
 			return TEXT("Buttons/basic_button");
 		case ET66ButtonType::Danger:
-			return TEXT("Buttons/basic_button");
+			return TEXT("Buttons/DangerCTA");
 		default:
 			return TEXT("Buttons/basic_button");
 		}
@@ -91,14 +91,16 @@ namespace
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const FString& RelativePath,
 		const FMargin& Margin,
-		const TCHAR* DebugLabel)
+		const TCHAR* DebugLabel,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
 			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
 			Margin,
-			DebugLabel);
+			DebugLabel,
+			Filter);
 	}
 
 	const FSlateBrush* ResolveMasterLibraryButtonBrush(
@@ -107,11 +109,18 @@ namespace
 		const TCHAR* State,
 		const TCHAR* DebugLabel)
 	{
+		if (FCString::Strcmp(Prefix, TEXT("Buttons/DangerCTA")) == 0)
+		{
+			const FString RelativePath = FString::Printf(TEXT("Buttons/DangerCTA/%s.png"), State);
+			return T66ScreenSlateHelpers::GetReferenceSharedBrush(*RelativePath, FMargin(0.f), DebugLabel);
+		}
+
 		return ResolveMasterLibraryBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/%s_%s.png"), Prefix, State),
-			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
-			DebugLabel);
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), State),
+			FMargin(0.f),
+			DebugLabel,
+			TextureFilter::TF_Nearest);
 	}
 
 	const FButtonStyle& GetMasterLibraryButtonStyle(ET66ButtonType Type)
@@ -138,7 +147,7 @@ namespace
 			{
 				StyleEntry.Style.SetPressed(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveMasterLibraryButtonBrush(BrushSet.Disabled, TEXT("Buttons/basic_button"), TEXT("disabled"), TEXT("QuitModalButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolveMasterLibraryButtonBrush(BrushSet.Disabled, Prefix, TEXT("disabled"), TEXT("QuitModalButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}
@@ -152,28 +161,20 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush ShellBrush;
 		return ResolveMasterLibraryBrush(
 			ShellBrush,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/QuitConfirmation/Panels/quitconfirmation_panels_inner_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("QuitModalShell"));
 	}
 
 	TSharedRef<SWidget> MakeMasterLibraryModalShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		if (const FSlateBrush* ShellBrush = GetMasterLibraryModalShellBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(ShellBrush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(
+		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
+			TEXT("Panels/Modal/modal_shell_wide.png"),
 			Content,
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(Padding));
+			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
+			Padding,
+			TEXT("QuitModalShellV14"),
+			FT66Style::Panel());
 	}
 
 	TSharedRef<SWidget> MakeMasterLibraryButton(const FT66ButtonParams& Params)
@@ -205,19 +206,19 @@ namespace
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				.Clipping(EWidgetClipping::ClipToBounds));
 
-		return SNew(SBox)
-			.WidthOverride(Params.MinWidth > 0.0f ? Params.MinWidth : FOptionalSize())
-			.HeightOverride(Params.Height > 0.0f ? Params.Height : QuitModalButtonHeight)
-			.Visibility(Params.Visibility)
-			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(Params.OnClicked, ButtonContent)
-					.SetButtonStyle(&GetMasterLibraryButtonStyle(Params.Type))
-					.SetPadding(ContentPadding)
-					.SetHAlign(HAlign_Center)
-					.SetVAlign(VAlign_Center)
-					.SetEnabled(Params.IsEnabled))
-			];
+		const FButtonStyle& ButtonStyle = GetMasterLibraryButtonStyle(Params.Type);
+		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+			Params.OnClicked,
+			ButtonContent,
+			&ButtonStyle.Normal,
+			&ButtonStyle.Hovered,
+			&ButtonStyle.Pressed,
+			&ButtonStyle.Disabled,
+			Params.MinWidth,
+			Params.Height > 0.0f ? Params.Height : QuitModalButtonHeight,
+			ContentPadding,
+			Params.IsEnabled,
+			Params.Visibility);
 	}
 }
 

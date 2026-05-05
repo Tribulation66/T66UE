@@ -232,27 +232,6 @@
   },
   {
     "Name": "Hero.Attack.Hero_2",
-    "Description": "Merlin unique primary attack.",
-    "VolumeBus": "SFX",
-    "bEnabled": true,
-    "bPlay2D": false,
-    "bIsUISound": false,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.88,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.04,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.03,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_PROJECTILE_Water_Bolt_HY_PC_001.HYPC_DSGNMisc_PROJECTILE_Water_Bolt_HY_PC_001",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_PROJECTILE_Water_Bolt_HY_PC_002.HYPC_DSGNMisc_PROJECTILE_Water_Bolt_HY_PC_002",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_PROJECTILE_Water_Bolt_HY_PC_003.HYPC_DSGNMisc_PROJECTILE_Water_Bolt_HY_PC_003"
-    ]
-  },
-  {
-    "Name": "Hero.Attack.Hero_3",
     "Description": "Lu Bu unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -273,7 +252,7 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Hero_4",
+    "Name": "Hero.Attack.Hero_3",
     "Description": "Mike unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -294,7 +273,7 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Hero_5",
+    "Name": "Hero.Attack.Hero_4",
     "Description": "George unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -315,28 +294,7 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Hero_6",
-    "Description": "Zeus unique primary attack.",
-    "VolumeBus": "SFX",
-    "bEnabled": true,
-    "bPlay2D": false,
-    "bIsUISound": false,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.88,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.04,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.03,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_SKILL_RELEASE_Ricochet_1_HY_PC_001.HYPC_DSGNTonl_SKILL_RELEASE_Ricochet_1_HY_PC_001",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_SKILL_RELEASE_Ricochet_1_HY_PC_002.HYPC_DSGNTonl_SKILL_RELEASE_Ricochet_1_HY_PC_002",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_SKILL_RELEASE_Ricochet_1_HY_PC_003.HYPC_DSGNTonl_SKILL_RELEASE_Ricochet_1_HY_PC_003"
-    ]
-  },
-  {
-    "Name": "Hero.Attack.Hero_7",
+    "Name": "Hero.Attack.Hero_5",
     "Description": "Robo unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -357,7 +315,7 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Hero_8",
+    "Name": "Hero.Attack.Hero_6",
     "Description": "Billy unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -378,7 +336,7 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Hero_9",
+    "Name": "Hero.Attack.Hero_7",
     "Description": "Rabbit unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -399,28 +357,7 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Hero_10",
-    "Description": "Dog unique primary attack.",
-    "VolumeBus": "SFX",
-    "bEnabled": true,
-    "bPlay2D": false,
-    "bIsUISound": false,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.94,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.04,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.03,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNImpt_EXPLOSION_Pyro_Burst_HY_PC_001.HYPC_DSGNImpt_EXPLOSION_Pyro_Burst_HY_PC_001",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNImpt_EXPLOSION_Pyro_Burst_HY_PC_002.HYPC_DSGNImpt_EXPLOSION_Pyro_Burst_HY_PC_002",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNImpt_EXPLOSION_Pyro_Burst_HY_PC_003.HYPC_DSGNImpt_EXPLOSION_Pyro_Burst_HY_PC_003"
-    ]
-  },
-  {
-    "Name": "Hero.Attack.Hero_11",
+    "Name": "Hero.Attack.Hero_8",
     "Description": "Shroud unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -441,7 +378,7 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Hero_12",
+    "Name": "Hero.Attack.Hero_9",
     "Description": "xQc unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -462,7 +399,7 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Hero_13",
+    "Name": "Hero.Attack.Hero_10",
     "Description": "Moist unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -483,7 +420,7 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Hero_14",
+    "Name": "Hero.Attack.Hero_11",
     "Description": "North unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -504,7 +441,7 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Hero_15",
+    "Name": "Hero.Attack.Hero_12",
     "Description": "Asmon unique primary attack.",
     "VolumeBus": "SFX",
     "bEnabled": true,
@@ -522,27 +459,6 @@
       "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_SKILL_IMPACT_Critical_Strike_HY_PC_001.HYPC_DSGNMisc_SKILL_IMPACT_Critical_Strike_HY_PC_001",
       "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_SKILL_IMPACT_Critical_Strike_HY_PC_002.HYPC_DSGNMisc_SKILL_IMPACT_Critical_Strike_HY_PC_002",
       "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_SKILL_IMPACT_Critical_Strike_HY_PC_003.HYPC_DSGNMisc_SKILL_IMPACT_Critical_Strike_HY_PC_003"
-    ]
-  },
-  {
-    "Name": "Hero.Attack.Hero_16",
-    "Description": "Forsen unique primary attack.",
-    "VolumeBus": "SFX",
-    "bEnabled": true,
-    "bPlay2D": false,
-    "bIsUISound": false,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.86,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.04,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.03,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_PROJECTILE_Hollow_Tornado_HY_PC_001.HYPC_DSGNMisc_PROJECTILE_Hollow_Tornado_HY_PC_001",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_PROJECTILE_Hollow_Tornado_HY_PC_002.HYPC_DSGNMisc_PROJECTILE_Hollow_Tornado_HY_PC_002",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_PROJECTILE_Hollow_Tornado_HY_PC_003.HYPC_DSGNMisc_PROJECTILE_Hollow_Tornado_HY_PC_003"
     ]
   },
   {

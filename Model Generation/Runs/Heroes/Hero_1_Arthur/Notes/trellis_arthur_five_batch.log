@@ -1,0 +1,10 @@
+[2026-05-02T14:34:01+00:00] START ModelReference_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T14:36:58+00:00] DONE ModelReference_Green 3774180 bytes duration=177s -> /workspace/T66/ModelGeneration/Runs/Heroes/Hero_1_Arthur/Raw/Trellis/ModelReference_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T14:36:58+00:00] START Hero_1_Arthur_01_Apose_NoWeapon_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T14:38:48+00:00] DONE Hero_1_Arthur_01_Apose_NoWeapon_Green 5193812 bytes duration=110s -> /workspace/T66/ModelGeneration/Runs/Heroes/Hero_1_Arthur/Raw/Trellis/Hero_1_Arthur_01_Apose_NoWeapon_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T14:38:48+00:00] START Hero_1_Arthur_02_Apose_RightHandWeapon_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T14:40:04+00:00] DONE Hero_1_Arthur_02_Apose_RightHandWeapon_Green 4620636 bytes duration=76s -> /workspace/T66/ModelGeneration/Runs/Heroes/Hero_1_Arthur/Raw/Trellis/Hero_1_Arthur_02_Apose_RightHandWeapon_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T14:40:04+00:00] START Hero_1_Arthur_03_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T14:43:07+00:00] DONE Hero_1_Arthur_03_WeaponOnly_Green 7732852 bytes duration=183s -> /workspace/T66/ModelGeneration/Runs/Heroes/Hero_1_Arthur/Raw/Trellis/Hero_1_Arthur_03_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T14:43:07+00:00] START Hero_1_Arthur_04_HeadOnly_Green seed=1337 texture=2048 decimation=120000
+[2026-05-02T14:47:05+00:00] DONE Hero_1_Arthur_04_HeadOnly_Green 9395460 bytes duration=238s -> /workspace/T66/ModelGeneration/Runs/Heroes/Hero_1_Arthur/Raw/Trellis/Hero_1_Arthur_04_HeadOnly_Green_S1337_D120000_Trellis2.glb

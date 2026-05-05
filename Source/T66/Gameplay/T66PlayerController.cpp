@@ -111,6 +111,31 @@ namespace
 	constexpr float T66PlayerControllerGameplayViewTargetRetryDelaySeconds = 0.05f;
 	constexpr int32 T66PlayerControllerClientGameplayWorldSetupRetryBudget = 60;
 	constexpr float T66PlayerControllerClientGameplayWorldSetupRetryDelaySeconds = 0.10f;
+	static TAutoConsoleVariable<int32> CVarT66GameplayCameraPreset(
+		TEXT("T66.Camera.GameplayPreset"),
+		0,
+		TEXT("Gameplay camera preset: 0 = orbit mouse-look, 1 = experimental locked chase crosshair."),
+		ECVF_Default);
+	static TAutoConsoleVariable<float> CVarT66LockedChaseCameraPitch(
+		TEXT("T66.Camera.LockedChasePitch"),
+		-30.0f,
+		TEXT("Camera pitch used by the locked chase gameplay camera preset."),
+		ECVF_Default);
+	static TAutoConsoleVariable<float> CVarT66LockedChaseCameraArmLength(
+		TEXT("T66.Camera.LockedChaseArmLength"),
+		1150.0f,
+		TEXT("Default camera boom length used by the locked chase gameplay camera preset."),
+		ECVF_Default);
+	static TAutoConsoleVariable<float> CVarT66LockedChaseCameraPivotHeight(
+		TEXT("T66.Camera.LockedChasePivotHeight"),
+		145.0f,
+		TEXT("Camera boom pivot height used by the locked chase gameplay camera preset."),
+		ECVF_Default);
+	static TAutoConsoleVariable<float> CVarT66LockedChaseCameraPivotForwardOffset(
+		TEXT("T66.Camera.LockedChasePivotForwardOffset"),
+		35.0f,
+		TEXT("Forward offset for the locked chase camera boom pivot so full spring compression lands near first-person head view."),
+		ECVF_Default);
 	static TAutoConsoleVariable<float> CVarT66GameplayCameraPitchMin(
 		TEXT("T66.Camera.GameplayPitchMin"),
 		-34.0f,
@@ -121,20 +146,10 @@ namespace
 		-8.0f,
 		TEXT("Maximum gameplay camera pitch for the fixed-distance third-person camera. Keep this below zero to prevent the camera from rotating under the floor."),
 		ECVF_Default);
-	static TAutoConsoleVariable<int32> CVarT66CameraHideHeroOccluders(
-		TEXT("T66.Camera.HideHeroOccluders"),
-		1,
-		TEXT("0 disables runtime wall cutaways, 1 hides tower wall visual actors between the camera and hero."),
-		ECVF_Default);
-	static TAutoConsoleVariable<float> CVarT66CameraHeroOccluderTraceRadius(
-		TEXT("T66.Camera.HeroOccluderTraceRadius"),
-		44.0f,
-		TEXT("Radius used when finding tower wall visual actors between the fixed camera and hero."),
-		ECVF_Default);
 	static TAutoConsoleVariable<int32> CVarT66CameraConstrainAgainstTowerWalls(
 		TEXT("T66.Camera.ConstrainAgainstTowerWalls"),
-		1,
-		TEXT("0 disables runtime side-wall camera retraction, 1 shortens the fixed camera boom before it crosses tower wall geometry."),
+		0,
+		TEXT("0 disables runtime side-wall camera retraction, 1 enables the experimental fixed-camera wall spring."),
 		ECVF_Default);
 	static TAutoConsoleVariable<float> CVarT66CameraWallProbeRadius(
 		TEXT("T66.Camera.WallProbeRadius"),
@@ -160,24 +175,6 @@ namespace
 	const FName T66PlayerControllerTraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
 	const FName T66PlayerControllerTowerCeilingTag(TEXT("T66_Tower_Ceiling"));
 
-	static bool T66WeakActorListContains(const TArray<TWeakObjectPtr<AActor>>& Actors, const AActor* Actor)
-	{
-		if (!Actor)
-		{
-			return false;
-		}
-
-		for (const TWeakObjectPtr<AActor>& WeakActor : Actors)
-		{
-			if (WeakActor.Get() == Actor)
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 	static bool T66IsGameplayCameraWallActor(const AActor* Actor)
 	{
 		return Actor
@@ -197,30 +194,23 @@ AT66PlayerController::AT66PlayerController()
 	PixelVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
 }
 
+bool AT66PlayerController::IsLockedChaseGameplayCameraMode() const
+{
+	return CVarT66GameplayCameraPreset.GetValueOnGameThread() == 1;
+}
+
 void AT66PlayerController::PrimeGameplayPresentationAssetsAsync()
 {
-	if (!CachedJumpVFXNiagara)
-	{
-		CachedJumpVFXNiagara = JumpVFXNiagara.Get();
-	}
-	if (!CachedPixelVFXNiagara)
-	{
-		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
-	}
+	if (!CachedJumpVFXNiagara) { CachedJumpVFXNiagara = JumpVFXNiagara.Get(); }
+	if (!CachedPixelVFXNiagara) { CachedPixelVFXNiagara = PixelVFXNiagara.Get(); }
 	if ((CachedJumpVFXNiagara && CachedPixelVFXNiagara) || GameplayPresentationAssetsLoadHandle.IsValid())
 	{
 		return;
 	}
 
 	TArray<FSoftObjectPath> AssetPaths;
-	if (!CachedJumpVFXNiagara && !JumpVFXNiagara.IsNull())
-	{
-		AssetPaths.AddUnique(JumpVFXNiagara.ToSoftObjectPath());
-	}
-	if (!CachedPixelVFXNiagara && !PixelVFXNiagara.IsNull())
-	{
-		AssetPaths.AddUnique(PixelVFXNiagara.ToSoftObjectPath());
-	}
+	if (!CachedJumpVFXNiagara && !JumpVFXNiagara.IsNull()) { AssetPaths.AddUnique(JumpVFXNiagara.ToSoftObjectPath()); }
+	if (!CachedPixelVFXNiagara && !PixelVFXNiagara.IsNull()) { AssetPaths.AddUnique(PixelVFXNiagara.ToSoftObjectPath()); }
 	if (AssetPaths.Num() <= 0)
 	{
 		return;
@@ -238,14 +228,8 @@ void AT66PlayerController::PrimeGameplayPresentationAssetsAsync()
 void AT66PlayerController::HandleGameplayPresentationAssetsLoaded()
 {
 	GameplayPresentationAssetsLoadHandle.Reset();
-	if (!CachedJumpVFXNiagara)
-	{
-		CachedJumpVFXNiagara = JumpVFXNiagara.Get();
-	}
-	if (!CachedPixelVFXNiagara)
-	{
-		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
-	}
+	if (!CachedJumpVFXNiagara) { CachedJumpVFXNiagara = JumpVFXNiagara.Get(); }
+	if (!CachedPixelVFXNiagara) { CachedPixelVFXNiagara = PixelVFXNiagara.Get(); }
 }
 
 void AT66PlayerController::ClampGameplayCameraPitch()
@@ -272,6 +256,114 @@ void AT66PlayerController::ClampGameplayCameraPitch()
 	Rotation.Pitch = FMath::Clamp(FRotator::NormalizeAxis(Rotation.Pitch), PitchMin, PitchMax);
 	Rotation.Roll = 0.0f;
 	SetControlRotation(Rotation);
+}
+
+void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime)
+{
+	static_cast<void>(DeltaTime);
+
+	if (!IsLocalController() || !IsGameplayLevel())
+	{
+		return;
+	}
+
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
+	if (!Hero || !Hero->CameraBoom)
+	{
+		return;
+	}
+
+	if (bHeroOneScopeViewEnabled)
+	{
+		return;
+	}
+
+	if (!IsLockedChaseGameplayCameraMode())
+	{
+		if (LockedChaseCameraInitializedHero.Get() != Hero)
+		{
+			return;
+		}
+
+		if (SavedPreLockedChaseCameraArmLength > KINDA_SMALL_NUMBER && !bHeroOneScopedUltActive)
+		{
+			DesiredGameplayCameraArmLength = SavedPreLockedChaseCameraArmLength;
+			Hero->CameraBoom->TargetArmLength = SavedPreLockedChaseCameraArmLength;
+			Hero->CameraBoom->SetRelativeLocation(SavedPreLockedChaseCameraBoomRelativeLocation);
+		}
+		LockedChaseCameraInitializedHero.Reset();
+		SavedPreLockedChaseCameraArmLength = 0.0f;
+		SavedPreLockedChaseCameraBoomRelativeLocation = FVector::ZeroVector;
+		if (!bHeroOneScopedUltActive)
+		{
+			if (UCharacterMovementComponent* Movement = Hero->GetCharacterMovement())
+			{
+				Movement->bOrientRotationToMovement = true;
+			}
+		}
+		return;
+	}
+
+	if (UCharacterMovementComponent* Movement = Hero->GetCharacterMovement())
+	{
+		Movement->bOrientRotationToMovement = false;
+	}
+
+	const float PitchMin = FMath::Min(
+		CVarT66GameplayCameraPitchMin.GetValueOnGameThread(),
+		CVarT66GameplayCameraPitchMax.GetValueOnGameThread());
+	const float PitchMax = FMath::Max(
+		CVarT66GameplayCameraPitchMin.GetValueOnGameThread(),
+		CVarT66GameplayCameraPitchMax.GetValueOnGameThread());
+	const float ChasePitch = FMath::Clamp(CVarT66LockedChaseCameraPitch.GetValueOnGameThread(), PitchMin, PitchMax);
+
+	FRotator DesiredRotation(ChasePitch, Hero->GetActorRotation().Yaw, 0.0f);
+	SetControlRotation(DesiredRotation);
+
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->ViewPitchMin = PitchMin;
+		PlayerCameraManager->ViewPitchMax = PitchMax;
+	}
+
+	const bool bNewLockedChaseHero = LockedChaseCameraInitializedHero.Get() != Hero;
+	if (bNewLockedChaseHero)
+	{
+		if (AT66HeroBase* PreviousHero = LockedChaseCameraInitializedHero.Get())
+		{
+			if (PreviousHero->CameraBoom)
+			{
+				PreviousHero->CameraBoom->SetRelativeLocation(SavedPreLockedChaseCameraBoomRelativeLocation);
+			}
+		}
+
+		SavedPreLockedChaseCameraArmLength = DesiredGameplayCameraArmLength > KINDA_SMALL_NUMBER
+			? DesiredGameplayCameraArmLength
+			: Hero->CameraBoom->TargetArmLength;
+		SavedPreLockedChaseCameraBoomRelativeLocation = Hero->CameraBoom->GetRelativeLocation();
+		LockedChaseCameraInitializedHero = Hero;
+	}
+
+	const float LockedChasePivotHeight = FMath::Max(0.0f, CVarT66LockedChaseCameraPivotHeight.GetValueOnGameThread());
+	const float LockedChasePivotForwardOffset = CVarT66LockedChaseCameraPivotForwardOffset.GetValueOnGameThread();
+	FVector LockedChaseBoomLocation = SavedPreLockedChaseCameraBoomRelativeLocation;
+	LockedChaseBoomLocation.X += LockedChasePivotForwardOffset;
+	LockedChaseBoomLocation.Z = LockedChasePivotHeight;
+	Hero->CameraBoom->SetRelativeLocation(LockedChaseBoomLocation);
+
+	const float LockedChaseArmLength = FMath::Max(100.0f, CVarT66LockedChaseCameraArmLength.GetValueOnGameThread());
+	if (bNewLockedChaseHero || !FMath::IsNearlyEqual(DesiredGameplayCameraArmLength, LockedChaseArmLength, 1.0f))
+	{
+		DesiredGameplayCameraArmLength = LockedChaseArmLength;
+		if (bNewLockedChaseHero || Hero->CameraBoom->TargetArmLength > DesiredGameplayCameraArmLength)
+		{
+			Hero->CameraBoom->TargetArmLength = DesiredGameplayCameraArmLength;
+		}
+	}
+	if (Hero->CameraBoom->TargetArmLength <= KINDA_SMALL_NUMBER)
+	{
+		Hero->CameraBoom->TargetArmLength = DesiredGameplayCameraArmLength;
+	}
 }
 
 
@@ -448,8 +540,6 @@ void AT66PlayerController::OnRep_Pawn()
 
 void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	RestoreHeroCameraOccluders();
-
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(DeathVFXTimerHandle);
@@ -487,19 +577,6 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	GameplayPresentationAssetsLoadHandle.Reset();
 
 	Super::EndPlay(EndPlayReason);
-}
-
-void AT66PlayerController::RestoreHeroCameraOccluders()
-{
-	for (const TWeakObjectPtr<AActor>& WeakActor : HiddenHeroCameraOccluders)
-	{
-		if (AActor* Actor = WeakActor.Get())
-		{
-			Actor->SetActorHiddenInGame(false);
-		}
-	}
-
-	HiddenHeroCameraOccluders.Reset();
 }
 
 void AT66PlayerController::UpdateGameplayCameraSideWallSpring(const float DeltaTime)
@@ -624,102 +701,6 @@ void AT66PlayerController::UpdateGameplayCameraSideWallSpring(const float DeltaT
 	{
 		Hero->CameraBoom->TargetArmLength = DesiredArmLength;
 	}
-}
-
-void AT66PlayerController::UpdateHeroCameraOccluders()
-{
-	if (!IsLocalController()
-		|| !IsGameplayLevel()
-		|| bHeroOneScopeViewEnabled
-		|| CVarT66CameraHideHeroOccluders.GetValueOnGameThread() == 0)
-	{
-		RestoreHeroCameraOccluders();
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
-	if (!World || !Hero || !PlayerCameraManager)
-	{
-		RestoreHeroCameraOccluders();
-		return;
-	}
-
-	const FVector CameraLocation = PlayerCameraManager->GetCameraLocation();
-	const FVector HeroLocation = Hero->GetActorLocation();
-	const FVector TargetPoints[] =
-	{
-		HeroLocation + FVector(0.0f, 0.0f, 45.0f),
-		HeroLocation + FVector(0.0f, 0.0f, 105.0f),
-		HeroLocation + FVector(0.0f, 0.0f, 165.0f)
-	};
-
-	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(T66HeroCameraOccluderTrace), false);
-	QueryParams.AddIgnoredActor(this);
-	QueryParams.AddIgnoredActor(Hero);
-	QueryParams.bFindInitialOverlaps = true;
-
-	TArray<AActor*> NewOccluders;
-	auto AddOccluderHit = [this, &NewOccluders](const FHitResult& Hit)
-	{
-		AActor* HitActor = Hit.GetActor();
-		if (!T66IsGameplayCameraWallActor(HitActor))
-		{
-			return;
-		}
-
-		if (HitActor->IsHidden() && !T66WeakActorListContains(HiddenHeroCameraOccluders, HitActor))
-		{
-			return;
-		}
-
-		NewOccluders.AddUnique(HitActor);
-	};
-
-	const float TraceRadius = FMath::Max(1.0f, CVarT66CameraHeroOccluderTraceRadius.GetValueOnGameThread());
-	for (const FVector& TargetPoint : TargetPoints)
-	{
-		TArray<FHitResult> Hits;
-		World->SweepMultiByChannel(
-			Hits,
-			CameraLocation,
-			TargetPoint,
-			FQuat::Identity,
-			ECC_Visibility,
-			FCollisionShape::MakeSphere(TraceRadius),
-			QueryParams);
-
-		for (const FHitResult& Hit : Hits)
-		{
-			AddOccluderHit(Hit);
-		}
-	}
-
-	for (const TWeakObjectPtr<AActor>& WeakActor : HiddenHeroCameraOccluders)
-	{
-		AActor* Actor = WeakActor.Get();
-		if (Actor && !NewOccluders.Contains(Actor))
-		{
-			Actor->SetActorHiddenInGame(false);
-		}
-	}
-
-	TArray<TWeakObjectPtr<AActor>> UpdatedHiddenOccluders;
-	for (AActor* Actor : NewOccluders)
-	{
-		if (!Actor)
-		{
-			continue;
-		}
-
-		if (!T66WeakActorListContains(HiddenHeroCameraOccluders, Actor))
-		{
-			Actor->SetActorHiddenInGame(true);
-		}
-		UpdatedHiddenOccluders.Add(Actor);
-	}
-
-	HiddenHeroCameraOccluders = MoveTemp(UpdatedHiddenOccluders);
 }
 
 void AT66PlayerController::RefreshGameplayViewTarget(bool bAllowRetry)
@@ -1186,5 +1167,10 @@ void AT66PlayerController::SetupGameplayMode()
 	const bool bHadScopedState = bHeroOneScopedUltActive || bHeroOneScopeViewEnabled;
 	EndHeroOneScopedUlt();
 	RestoreGameplayInputMode();
-	UE_LOG(LogT66PlayerController, Log, TEXT("PlayerController: Gameplay input mode set, cursor hidden (scoped state reset=%d)"), bHadScopedState ? 1 : 0);
+	UE_LOG(
+		LogT66PlayerController,
+		Log,
+		TEXT("PlayerController: Gameplay input mode set for camera preset %d (scoped state reset=%d)"),
+		CVarT66GameplayCameraPreset.GetValueOnGameThread(),
+		bHadScopedState ? 1 : 0);
 }

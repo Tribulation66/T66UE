@@ -1,0 +1,37 @@
+{
+  "screen": "idle_chadpocalypse",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "active_scope": [
+    "main_menu",
+    "gameplay"
+  ],
+  "regions": [
+    {
+      "name": "main_menu",
+      "content_type": "runtime-text-and-navigation-state",
+      "render_contract": "full-screen-reference-only",
+      "notes": "Title, button labels, focus state, hover state, save-slot state, platform prompts, and localization remain runtime-owned."
+    },
+    {
+      "name": "gameplay_top_resources",
+      "content_type": "runtime-values",
+      "render_contract": "full-screen-reference-only",
+      "notes": "Resource icons, values, timers, and availability remain live."
+    },
+    {
+      "name": "gameplay_combat_scene",
+      "content_type": "runtime-progress-and-character-state",
+      "render_contract": "full-screen-reference-only",
+      "notes": "Hero/enemy names, health values, progress fills, animation state, and spawned actors remain runtime-owned."
+    },
+    {
+      "name": "gameplay_action_band",
+      "content_type": "runtime-text-and-action-state",
+      "render_contract": "full-screen-reference-only",
+      "notes": "Button labels, upgrade names, costs, enablement, progress meter values, and localization remain runtime-owned."
+    }
+  ]
+}

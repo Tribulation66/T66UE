@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: TRELLIS source sheet for four modular floor meshes
+Primary request: Create one coherent 2x2 atlas containing four modular Ocean / Hard difficulty floor tile references for a coral reef inspired water level.
+Scene/backdrop: perfectly flat solid #00ff00 background across the whole image, no shadows, no wall, no room, no gradient.
+Subject: four isolated square ocean floor tiles, each centered in its own equal cell with green padding.
+Style/medium: chunky low-poly game asset reference, low-profile reef stone, shell sand, coral cracks, shallow tide pool shapes, readable walkable surface.
+Composition/framing: 2x2 atlas, square canvas, top-down orthographic view in every cell, consistent camera and lighting, no visible grid lines.
+Panel plan: top-left reef stone tile; top-right shell sand tile with broad embedded shells; bottom-left cracked coral stone tile; bottom-right shallow tide-pool tile with a simple low rim.
+Materials/textures: sea-worn stone, pale shell fragments, coral pink accents, teal mineral stains, wet-looking but solid game mesh surfaces.
+Constraints: floor detail must stay low and walkable; tile edges must stay clean enough to repeat; details must be large enough for low-poly 3D reconstruction.
+Avoid: tall coral in the center, dense gravel noise, tiny shell scatter, loose seaweed strands, fish, bubbles, water plane, walls, room scene, characters, text, watermark, labels, decorative borders.

@@ -14,7 +14,6 @@ class UCameraComponent;
 class UInstancedStaticMeshComponent;
 class UMaterial;
 class UMaterialInstanceDynamic;
-class UPrimitiveComponent;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
 class UWidgetComponent;
@@ -22,13 +21,12 @@ class UAnimationAsset;
 class AT66PilotableTractor;
 class UT66HeroMovementComponent;
 class AT66SessionPlayerState;
-class APostProcessVolume;
 
 /**
  * Base class for all playable heroes in Tribulation 66
  *
  * Visuals System (designed for easy FBX swap):
- * - PlaceholderMesh: Static mesh for prototyping (Cylinder=TypeA, Cube=TypeB)
+ * - PlaceholderMesh: Static mesh for prototyping (Cylinder=Chad, Cube=Stacy)
  * - When ready for production: hide PlaceholderMesh, show SkeletalMesh from DataTable
  * - Color applied via dynamic material instance
  *
@@ -51,7 +49,7 @@ public:
 
 	/** The selected body type for this hero */
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_HeroAppearance, Category = "Hero")
-	ET66BodyType BodyType = ET66BodyType::TypeA;
+	ET66BodyType BodyType = ET66BodyType::Chad;
 
 	/** Replicated skin selection so simulated proxies can rebuild visuals after travel. */
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_HeroAppearance, Category = "Hero")
@@ -105,7 +103,7 @@ public:
 
 	// ========== Placeholder Visuals (for prototyping) ==========
 	
-	/** The placeholder static mesh (Cylinder for TypeA, Cube for TypeB) */
+	/** The placeholder static mesh (Cylinder for Chad, Cube for Stacy). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals|Placeholder")
 	TObjectPtr<UStaticMeshComponent> PlaceholderMesh;
 
@@ -135,12 +133,12 @@ public:
 	 * Initialize this hero with data from the DataTable
 	 * Called after spawning to set up visuals and stats
 	 * @param InHeroData The hero's data from the DataTable
-	 * @param InBodyType The selected body type (A or B)
+	 * @param InBodyType The selected body style (Chad or Stacy)
 	 * @param InSkinID Skin ID (e.g. Default, Beachgoer)
 	 * @param bPreviewMode If true, use the idle animation for hero selection preview
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Hero")
-	void InitializeHero(const FHeroData& InHeroData, ET66BodyType InBodyType = ET66BodyType::TypeA, FName InSkinID = NAME_None, bool bPreviewMode = false);
+	void InitializeHero(const FHeroData& InHeroData, ET66BodyType InBodyType = ET66BodyType::Chad, FName InSkinID = NAME_None, bool bPreviewMode = false);
 
 	/**
 	 * Set the placeholder color (for prototyping)
@@ -150,7 +148,7 @@ public:
 
 	/**
 	 * Set the body type and update placeholder mesh accordingly
-	 * TypeA = Cylinder, TypeB = Cube
+	 * Chad = Cylinder, Stacy = Cube
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Visuals")
 	void SetBodyType(ET66BodyType NewBodyType);
@@ -200,23 +198,12 @@ private:
 	float GetDesiredHeroHeightUU() const;
 	void UpdateGroundAttachmentOffsets();
 	void ApplyBodyTypeDimensions(bool bKeepFeetWorldPosition);
-	void ApplyCurrentHeroVisualScale();
 	void TryApplyLobbyDrivenVisuals();
 	bool TryGetLobbyDrivenVisualParams(FHeroData& OutHeroData, ET66BodyType& OutBodyType, FName& OutSkinID) const;
-	bool ShouldEnableHeroOcclusionReveal() const;
-	void UpdateHeroOcclusionRevealSetup();
-	void ConfigureHeroOcclusionComponent(UPrimitiveComponent* Component, bool bEnable) const;
-	void DestroyHeroOcclusionRevealVolume();
 
 	/** Dynamic material instance for color changes */
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> PlaceholderMaterial;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInstanceDynamic> HeroOcclusionRevealMaterial;
-
-	UPROPERTY(Transient)
-	TObjectPtr<APostProcessVolume> HeroOcclusionRevealVolume;
 
 	/** The base material to use for colored placeholders */
 	UPROPERTY()
@@ -249,9 +236,6 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CachedJumpAnim = nullptr;
-
-	FVector CharacterVisualBaseScale = FVector::OneVector;
-	bool bHasCharacterVisualBaseScale = false;
 
 	/** Last animation state so we only call PlayAnimation on change. */
 	enum class EMovementAnimState : uint8 { Idle, Walk, Jump };

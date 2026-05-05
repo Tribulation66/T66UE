@@ -3,6 +3,7 @@
 #include "UI/T66FrontendBackButtonWidget.h"
 
 #include "Core/T66LocalizationSubsystem.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
@@ -33,11 +34,11 @@ namespace
 		if (!Entry.Brush.IsValid())
 		{
 			Entry.Brush = MakeShared<FSlateBrush>();
-			Entry.Brush->DrawAs = ESlateBrushDrawType::Box;
+			Entry.Brush->DrawAs = ESlateBrushDrawType::Image;
 			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
 			Entry.Brush->TintColor = FSlateColor(FLinearColor::White);
 			Entry.Brush->ImageSize = ImageSize;
-			Entry.Brush->Margin = FMargin(0.16f, 0.28f, 0.16f, 0.28f);
+			Entry.Brush->Margin = FMargin(0.f);
 		}
 
 		if (!Entry.Texture.IsValid())
@@ -46,8 +47,8 @@ namespace
 			{
 				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 					CandidatePath,
-					TextureFilter::TF_Trilinear,
-					true,
+					TextureFilter::TF_Nearest,
+					false,
 					TEXT("FrontendBackButtonSprite")))
 				{
 					Entry.Texture.Reset(Texture);
@@ -70,19 +71,19 @@ namespace
 		{
 			return ResolveBackButtonBrush(
 				Pressed,
-				TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png"),
+				*T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), TEXT("pressed")),
 				FVector2D(187.f, 67.f));
 		}
 		if (bHovered)
 		{
 			return ResolveBackButtonBrush(
 				Hover,
-				TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png"),
+				*T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), TEXT("hover")),
 				FVector2D(180.f, 67.f));
 		}
 		return ResolveBackButtonBrush(
 			Normal,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png"),
+			*T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), TEXT("normal")),
 			FVector2D(180.f, 68.f));
 	}
 
@@ -115,11 +116,13 @@ namespace
 					FT66Style::MakeBareButton(
 						FT66BareButtonParams(
 							InArgs._OnClicked,
-							SNew(SOverlay)
-							+ SOverlay::Slot()
-							[
-								SNew(SImage)
-							.Image(this, &ST66FrontendBackPlateButton::GetCurrentBrush)
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							T66ScreenSlateHelpers::MakeReferenceHorizontalSlicedImage(
+								TAttribute<const FSlateBrush*>::Create(TAttribute<const FSlateBrush*>::FGetter::CreateSP(this, &ST66FrontendBackPlateButton::GetCurrentBrush)),
+								FVector2D(1.f, 1.f),
+								0.105f)
 						]
 						+ SOverlay::Slot()
 						.HAlign(HAlign_Fill)

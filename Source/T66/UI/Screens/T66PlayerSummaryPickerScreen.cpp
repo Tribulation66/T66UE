@@ -37,7 +37,8 @@ namespace
 	{
 		Normal,
 		Hovered,
-		Pressed
+		Pressed,
+		Disabled
 	};
 
 	struct FT66PickerSpriteBrushEntry
@@ -62,7 +63,8 @@ namespace
 		const FString& RelativePath,
 		const FVector2D& ImageSize,
 		const FMargin& Margin,
-		const ESlateBrushDrawType::Type DrawAs)
+		const ESlateBrushDrawType::Type DrawAs,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		if (!Entry.Brush.IsValid())
 		{
@@ -80,7 +82,7 @@ namespace
 			{
 				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 					CandidatePath,
-					TextureFilter::TF_Trilinear,
+					Filter,
 					true,
 					TEXT("PlayerPickerReferenceSprite")))
 				{
@@ -99,7 +101,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/PlayerSummaryPicker/Panels/playersummarypicker_panels_inner_panel_normal.png"),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			ESlateBrushDrawType::Box);
@@ -110,7 +112,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/PlayerSummaryPicker/Panels/playersummarypicker_panels_inner_panel_normal.png"),
 			FVector2D(861.f, 74.f),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			ESlateBrushDrawType::Box);
@@ -121,7 +123,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/PlayerSummaryPicker/Slots/playersummarypicker_slots_reference_square_slot_frame_normal.png"),
 			FVector2D(56.f, 56.f),
 			FMargin(0.167f, 0.160f, 0.167f, 0.160f),
 			ESlateBrushDrawType::Box);
@@ -129,7 +131,6 @@ namespace
 
 	FString GetPickerButtonPath(const ET66PickerButtonFamily Family, const ET66PickerButtonState State)
 	{
-		const TCHAR* Prefix = Family == ET66PickerButtonFamily::ToggleOn ? TEXT("select_button") : TEXT("basic_button");
 		const TCHAR* Suffix = TEXT("normal");
 		if (Family == ET66PickerButtonFamily::ToggleOn && State == ET66PickerButtonState::Normal)
 		{
@@ -143,7 +144,11 @@ namespace
 		{
 			Suffix = TEXT("pressed");
 		}
-		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, Suffix);
+		else if (State == ET66PickerButtonState::Disabled)
+		{
+			Suffix = TEXT("disabled");
+		}
+		return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), Suffix);
 	}
 
 	FVector2D GetPickerButtonSize(const ET66PickerButtonFamily Family, const ET66PickerButtonState State)
@@ -174,13 +179,18 @@ namespace
 		{
 			Entry = &Set.Pressed;
 		}
+		else if (State == ET66PickerButtonState::Disabled)
+		{
+			Entry = &Set.Disabled;
+		}
 
 		return ResolvePickerSpriteBrush(
 			*Entry,
 			GetPickerButtonPath(Family, State),
 			GetPickerButtonSize(Family, State),
-			FMargin(0.14f, 0.30f, 0.14f, 0.30f),
-			ESlateBrushDrawType::Box);
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			TextureFilter::TF_Nearest);
 	}
 
 	TSharedRef<SWidget> MakePickerSpritePanel(
@@ -209,6 +219,7 @@ namespace
 		const FSlateBrush* NormalBrush = GetPickerButtonBrush(Family, ET66PickerButtonState::Normal);
 		const FSlateBrush* HoverBrush = GetPickerButtonBrush(Family, ET66PickerButtonState::Hovered);
 		const FSlateBrush* PressedBrush = GetPickerButtonBrush(Family, ET66PickerButtonState::Pressed);
+		const FSlateBrush* DisabledBrush = GetPickerButtonBrush(Family, ET66PickerButtonState::Disabled);
 		if (!NormalBrush)
 		{
 			return FT66Style::MakeButton(
@@ -218,62 +229,20 @@ namespace
 				.SetFontSize(FontSize));
 		}
 
-		const TSharedPtr<ET66PickerButtonState> ButtonState = MakeShared<ET66PickerButtonState>(ET66PickerButtonState::Normal);
-		const TAttribute<const FSlateBrush*> BrushAttr = TAttribute<const FSlateBrush*>::CreateLambda(
-			[ButtonState, NormalBrush, HoverBrush, PressedBrush]() -> const FSlateBrush*
-			{
-				if (ButtonState.IsValid() && *ButtonState == ET66PickerButtonState::Pressed)
-				{
-					return PressedBrush ? PressedBrush : NormalBrush;
-				}
-				if (ButtonState.IsValid() && *ButtonState == ET66PickerButtonState::Hovered)
-				{
-					return HoverBrush ? HoverBrush : NormalBrush;
-				}
-				return NormalBrush;
-			});
-
-		return SNew(SBox)
-			.MinDesiredWidth(MinWidth > 0.f ? MinWidth : FOptionalSize())
-			.HeightOverride(Height > 0.f ? Height : FOptionalSize())
-			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(
-						OnClicked,
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SImage)
-							.Visibility(EVisibility::HitTestInvisible)
-							.Image(BrushAttr)
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Fill)
-						.VAlign(VAlign_Fill)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-							.Padding(FMargin(12.f, 7.f, 12.f, 6.f))
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							[
-								SNew(STextBlock)
-								.Text(Label)
-								.Font(FT66Style::Tokens::FontBold(FontSize))
-								.ColorAndOpacity(T66PickerFantasyText)
-								.Justification(ETextJustify::Center)
-							]
-						])
-					.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-					.SetColor(FLinearColor::Transparent)
-					.SetPadding(FMargin(0.f))
-					.SetHAlign(HAlign_Fill)
-					.SetVAlign(VAlign_Fill)
-					.SetOnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Hovered; }))
-					.SetOnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Normal; }))
-					.SetOnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Pressed; }))
-					.SetOnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66PickerButtonState::Hovered; })))
-			];
+		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+			OnClicked,
+			SNew(STextBlock)
+			.Text(Label)
+			.Font(FT66Style::Tokens::FontBold(FontSize))
+			.ColorAndOpacity(T66PickerFantasyText)
+			.Justification(ETextJustify::Center),
+			NormalBrush,
+			HoverBrush,
+			PressedBrush,
+			DisabledBrush,
+			MinWidth,
+			Height,
+			FMargin(12.f, 7.f, 12.f, 6.f));
 	}
 }
 
@@ -337,7 +306,10 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						]
 					],
-					GetPickerContentShellBrush(),
+					T66ScreenSlateHelpers::GetReferenceSharedBrush(
+						TEXT("Panels/Modal/modal_shell_compact.png"),
+						FMargin(0.075f, 0.105f, 0.075f, 0.105f),
+						TEXT("PlayerPickerShellCompactV14")),
 					FMargin(30.f, 24.f))
 			];
 	}
@@ -472,7 +444,10 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 						OptionsBox
 					]
 				],
-				GetPickerContentShellBrush(),
+				T66ScreenSlateHelpers::GetReferenceSharedBrush(
+					TEXT("Panels/Modal/modal_shell_wide.png"),
+					FMargin(0.075f, 0.105f, 0.075f, 0.105f),
+					TEXT("PlayerPickerShellWideV14")),
 				FMargin(30.0f, 24.0f))
 		];
 }

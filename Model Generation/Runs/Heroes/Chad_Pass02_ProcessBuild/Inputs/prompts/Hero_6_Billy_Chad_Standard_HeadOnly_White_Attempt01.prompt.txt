@@ -1,0 +1,16 @@
+Create a production source image for TRELLIS image-to-3D.
+
+Subject: Hero_6 Billy, original stylized game character, Chad/default skin head only.
+
+One centered straight-on head plus full neck only. No shoulders, no torso, no clothing, no scarf, no duplicate view, no side view, no three-quarter view, no poster panel.
+
+Skull target: standardized giga-chad skull geometry: large square cranium, broad brow ridge, high cheekbones, enormous square jaw, thick muscular neck, same skull scale and head size as the accepted Chad reference.
+
+Identity target: outlaw giga-chad face with sun-weathered skin, blond or sandy hair, thick blond mustache, short beard stubble, intense eyes. If a cowboy hat is used, it must be isolated to the head silhouette with no green/white holes and no shadow under the brim.
+
+Pose: orthographic production reference, face axis centered and symmetrical, eyes looking directly at camera, full head and full neck visible with clean margins.
+
+Background: pure flat opaque white #ffffff. No alpha, no cast shadow, no contact shadow, no reflection, no gradient, no gray patch, no border card.
+
+Clean stylized game asset reference, sharp silhouette, readable facial features, no text, no watermark, no logo.
+

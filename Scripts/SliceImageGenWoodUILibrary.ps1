@@ -293,8 +293,7 @@ $Aliases = @(
     @{ target = "Buttons/duo_button_right_selected.png"; source = "Buttons/select_button_normal.png" },
     @{ target = "Controls/dropdown_field_hover.png"; source = "Controls/dropdown_field_normal.png" },
     @{ target = "Controls/radio_circle_selected.png"; source = "Controls/radio_circle_normal.png" },
-    @{ target = "Fields/search_field_normal.png"; source = "Panels/paper_background.png" },
-    @{ target = "Misc/progress_fill_dark_purple_twinkle_imagegen_20260427.png"; source = "Misc/progress_fill_wood.png" }
+    @{ target = "Fields/search_field_normal.png"; source = "Panels/paper_background.png" }
 )
 
 foreach ($Alias in $Aliases) {

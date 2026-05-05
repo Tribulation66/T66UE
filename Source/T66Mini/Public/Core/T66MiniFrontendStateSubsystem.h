@@ -20,6 +20,7 @@ public:
 
 	void ResetRunSetup();
 	void BeginNewRun();
+	void BeginDailyRun(FName DifficultyID, const FString& ChallengeId, int32 Seed);
 	void SeedFromRunSave(const UT66MiniRunSaveGame* RunSave);
 
 	void SelectHero(FName HeroID);
@@ -54,6 +55,9 @@ public:
 	int32 GetIdolRerollCount() const { return IdolRerollCount; }
 	int32 GetShopRerollCount() const { return ShopRerollCount; }
 	bool IsLoadFlow() const { return bLoadFlow; }
+	bool IsDailyRun() const { return bDailyRun; }
+	const FString& GetDailyChallengeId() const { return DailyChallengeId; }
+	int32 GetDailySeed() const { return DailySeed; }
 	bool IsIntermissionFlow() const { return bIntermissionFlow; }
 	bool IsShopOfferLocked(const FName ItemID) const { return LockedShopOfferIDs.Contains(ItemID); }
 	const FT66MiniRunSummary& GetLastRunSummary() const { return LastRunSummary; }
@@ -94,6 +98,15 @@ private:
 
 	UPROPERTY()
 	bool bLoadFlow = false;
+
+	UPROPERTY()
+	bool bDailyRun = false;
+
+	UPROPERTY()
+	FString DailyChallengeId;
+
+	UPROPERTY()
+	int32 DailySeed = 0;
 
 	UPROPERTY()
 	TArray<FName> CurrentShopOfferIDs;

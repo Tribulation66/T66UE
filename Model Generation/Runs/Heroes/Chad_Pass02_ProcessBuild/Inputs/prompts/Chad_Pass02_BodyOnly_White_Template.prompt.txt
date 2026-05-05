@@ -1,0 +1,19 @@
+Create a production source image for TRELLIS image-to-3D.
+
+Subject: {HERO_ID} {HERO_NAME}, original stylized game character, Chad/default skin body only.
+
+The image must show one centered front-facing neck-down male body only. No head, no face, no hair, no ears, no beard, no weapon, no shield, no prop, no duplicate view, no back view, no side view, no character sheet, no poster panel.
+
+Anatomy target: giant giga-chad/nephilim proportions, human but far beyond realistic human anatomy, impossible heroic upper-body muscle mass, enormous traps, absurdly broad shoulders, oversized deltoids, massive barrel chest, thick arms, thick forearms, huge quads and calves, very thin wasp waist, extreme V taper. If the body could plausibly be a realistic bodybuilder, make it more muscular and make the waist thinner. This is not a normal athletic body, not a fashion figure, and not realistic superhero anatomy.
+
+Neck target: the body ends at a clean open circular neck socket above the trapezius, like a headless mannequin prepared for inserting a separate head. The socket is visible and clean. Do not generate a neck stump with a face remnant.
+
+Pose: orthographic production reference, symmetrical A-pose or relaxed T-pose, arms slightly away from torso, feet separated, straight-on camera, full body visible from feet to neck socket. Both feet point straight forward, perfectly symmetrical, same angle, same size, same stance width, same grounding height.
+
+Clothing style: stylized cartoon/cel-shaded game texture, simple readable outfit shapes, no photoreal cloth simulation. Do not generate bra-like chest straps, sports-bra shapes, corsets, bondage harnesses, random chest bands, underwear-like tops, or ambiguous cropped chest garments. The muscular chest and V-taper must dominate the silhouette.
+
+Identity/outfit notes: {BODY_IDENTITY_NOTES}
+
+Background: pure flat opaque white #ffffff across the entire canvas. No alpha, no floor, no cast shadow, no contact shadow, no reflection, no gradient, no gray patch, no border card, no poster sheet.
+
+Render style: clean stylized game asset reference, sharp silhouette, readable materials, no text, no watermark, no logo.

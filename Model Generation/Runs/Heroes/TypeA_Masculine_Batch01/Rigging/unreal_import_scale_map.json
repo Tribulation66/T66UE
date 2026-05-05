@@ -1,0 +1,365 @@
+{
+  "target_height_cm": 200.0,
+  "entries": [
+    {
+      "key": "11|Beachgoer",
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Beachgoer\\Exports\\Hero_11_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.4185710847377777,
+        0.23304051160812378,
+        1.2023621201515198
+      ],
+      "height_m": 1.2023621201515198,
+      "import_uniform_scale": 1.6633923894308673
+    },
+    {
+      "key": "11|Standard",
+      "hero_id": 11,
+      "hero_name": "Shroud",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_11_Shroud\\Standard\\Exports\\Hero_11_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        1.0110494494438171,
+        1.0110974311828613,
+        1.0043618977069855
+      ],
+      "height_m": 1.0043618977069855,
+      "import_uniform_scale": 1.991314091629832
+    },
+    {
+      "key": "12|Beachgoer",
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Beachgoer\\Exports\\Hero_12_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.4353490322828293,
+        0.1675988808274269,
+        1.2028927206993103
+      ],
+      "height_m": 1.2028927206993103,
+      "import_uniform_scale": 1.6626586607301819
+    },
+    {
+      "key": "12|Standard",
+      "hero_id": 12,
+      "hero_name": "xQc",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Exports\\Hero_12_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.49533964693546295,
+        0.19751238822937012,
+        1.200266718864441
+      ],
+      "height_m": 1.200266718864441,
+      "import_uniform_scale": 1.6662963061178417
+    },
+    {
+      "key": "13|Beachgoer",
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Beachgoer\\Exports\\Hero_13_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        1.0036233067512512,
+        1.003706157207489,
+        1.1770024299621582
+      ],
+      "height_m": 1.1770024299621582,
+      "import_uniform_scale": 1.6992318359651153
+    },
+    {
+      "key": "13|Standard",
+      "hero_id": 13,
+      "hero_name": "Moist",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_13_Moist\\Standard\\Exports\\Hero_13_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        1.0115144848823547,
+        1.0009989738464355,
+        0.8284885883331299
+      ],
+      "height_m": 0.8284885883331299,
+      "import_uniform_scale": 2.4140344576427806
+    },
+    {
+      "key": "14|Beachgoer",
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Beachgoer\\Exports\\Hero_14_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.3897726982831955,
+        0.19591929763555527,
+        1.200094997882843
+      ],
+      "height_m": 1.200094997882843,
+      "import_uniform_scale": 1.6665347356070275
+    },
+    {
+      "key": "14|Standard",
+      "hero_id": 14,
+      "hero_name": "North",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_14_North\\Standard\\Exports\\Hero_14_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        1.168354332447052,
+        0.19126814603805542,
+        1.2050262689590454
+      ],
+      "height_m": 1.2050262689590454,
+      "import_uniform_scale": 1.659714855616955
+    },
+    {
+      "key": "15|Beachgoer",
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Beachgoer\\Exports\\Hero_15_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.5368385016918182,
+        0.3622165620326996,
+        1.1998164355754852
+      ],
+      "height_m": 1.1998164355754852,
+      "import_uniform_scale": 1.6669216562621192
+    },
+    {
+      "key": "15|Standard",
+      "hero_id": 15,
+      "hero_name": "Asmon",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_15_Asmon\\Standard\\Exports\\Hero_15_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        1.0100566744804382,
+        0.8714126348495483,
+        0.6754470467567444
+      ],
+      "height_m": 0.6754470467567444,
+      "import_uniform_scale": 2.9610019165873713
+    },
+    {
+      "key": "1|Beachgoer",
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Beachgoer\\Exports\\Hero_1_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.6357325911521912,
+        0.2477288693189621,
+        1.2033153772354126
+      ],
+      "height_m": 1.2033153772354126,
+      "import_uniform_scale": 1.662074662915844
+    },
+    {
+      "key": "1|Standard",
+      "hero_id": 1,
+      "hero_name": "Arthur",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_1_Arthur\\Standard\\Exports\\Hero_1_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.711169421672821,
+        0.26947852969169617,
+        1.203031599521637
+      ],
+      "height_m": 1.203031599521637,
+      "import_uniform_scale": 1.6624667222334497
+    },
+    {
+      "key": "3|Beachgoer",
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Beachgoer\\Exports\\Hero_3_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.6414620280265808,
+        0.2613877207040787,
+        1.2025629878044128
+      ],
+      "height_m": 1.2025629878044128,
+      "import_uniform_scale": 1.6631145480799412
+    },
+    {
+      "key": "3|Standard",
+      "hero_id": 3,
+      "hero_name": "LuBu",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_3_LuBu\\Standard\\Exports\\Hero_3_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.698461651802063,
+        0.3102831691503525,
+        1.202267825603485
+      ],
+      "height_m": 1.202267825603485,
+      "import_uniform_scale": 1.6635228502402022
+    },
+    {
+      "key": "4|Beachgoer",
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Beachgoer\\Exports\\Hero_4_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.6527404189109802,
+        0.2905077785253525,
+        1.2021647095680237
+      ],
+      "height_m": 1.2021647095680237,
+      "import_uniform_scale": 1.663665539407378
+    },
+    {
+      "key": "4|Standard",
+      "hero_id": 4,
+      "hero_name": "Mike",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_4_Mike\\Standard\\Exports\\Hero_4_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.6698690056800842,
+        0.2667439430952072,
+        1.2033182978630066
+      ],
+      "height_m": 1.2033182978630066,
+      "import_uniform_scale": 1.6620706288201832
+    },
+    {
+      "key": "5|Beachgoer",
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Beachgoer\\Exports\\Hero_5_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.6249337792396545,
+        0.2429889813065529,
+        1.20368891954422
+      ],
+      "height_m": 1.20368891954422,
+      "import_uniform_scale": 1.6615588691780143
+    },
+    {
+      "key": "5|Standard",
+      "hero_id": 5,
+      "hero_name": "George",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_5_George\\Standard\\Exports\\Hero_5_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.6237543523311615,
+        0.2537219077348709,
+        1.2036304473876953
+      ],
+      "height_m": 1.2036304473876953,
+      "import_uniform_scale": 1.661639587417142
+    },
+    {
+      "key": "7|Beachgoer",
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Beachgoer\\Exports\\Hero_7_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.6353456676006317,
+        0.15559294819831848,
+        1.0872506499290466
+      ],
+      "height_m": 1.0872506499290466,
+      "import_uniform_scale": 1.8395022344944276
+    },
+    {
+      "key": "7|Standard",
+      "hero_id": 7,
+      "hero_name": "Robo",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_7_Robo\\Standard\\Exports\\Hero_7_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.6828253269195557,
+        0.25816354155540466,
+        1.2044485807418823
+      ],
+      "height_m": 1.2044485807418823,
+      "import_uniform_scale": 1.6605109026473313
+    },
+    {
+      "key": "8|Beachgoer",
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Beachgoer\\Exports\\Hero_8_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        1.184173583984375,
+        0.2298395335674286,
+        1.203129231929779
+      ],
+      "height_m": 1.203129231929779,
+      "import_uniform_scale": 1.6623318151717308
+    },
+    {
+      "key": "8|Standard",
+      "hero_id": 8,
+      "hero_name": "Billy",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_8_Billy\\Standard\\Exports\\Hero_8_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        1.1733759641647339,
+        0.23027009516954422,
+        1.205366313457489
+      ],
+      "height_m": 1.205366313457489,
+      "import_uniform_scale": 1.6592466353760733
+    },
+    {
+      "key": "9|Beachgoer",
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Beachgoer",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Beachgoer\\Exports\\Hero_9_TypeA_Beachgoer_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.30331848561763763,
+        1.0013392567634583,
+        0.6726034879684448
+      ],
+      "height_m": 0.6726034879684448,
+      "import_uniform_scale": 2.9735201136718308
+    },
+    {
+      "key": "9|Standard",
+      "hero_id": 9,
+      "hero_name": "Rabbit",
+      "skin": "Standard",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_9_Rabbit\\Standard\\Exports\\Hero_9_TypeA_Rigged.fbx",
+      "mesh_count": 2,
+      "size_m": [
+        0.44074486196041107,
+        0.23531420528888702,
+        1.1956667304039001
+      ],
+      "height_m": 1.1956667304039001,
+      "import_uniform_scale": 1.6727069083241894
+    }
+  ]
+}

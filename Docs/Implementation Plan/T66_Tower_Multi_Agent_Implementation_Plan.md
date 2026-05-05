@@ -16,7 +16,7 @@ Before implementing any part, every agent must treat these files as the source o
 - `MASTER DOCS/T66_MASTER_GUIDELINES.md`
 - `MASTER DOCS/MASTER_MAP_DESIGN.md`
 - `MASTER DOCS/MASTER_TRAPS.md`
-- `Docs/Plans/T66_UI_IMPLEMENTATION_PLAN.md`
+- `Docs/UI/UI_GENERATION.md`
 - `Scripts/StageStandaloneBuild.ps1`
 
 Relevant project rules pulled forward from the master docs:

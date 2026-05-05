@@ -112,37 +112,37 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
 	TSoftClassPtr<APawn> HeroClass;
 
-	/** Hero half portrait texture for UI (Type A; used in selection/default hero UI) */
+	/** Hero half portrait texture for UI (Chad; used in selection/default hero UI). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> Portrait;
 
-	/** Hero half portrait texture for Type B (used in selection/default hero UI) */
+	/** Hero half portrait texture for Stacy (used in selection/default hero UI). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSoftObjectPtr<UTexture2D> PortraitTypeB;
+	TSoftObjectPtr<UTexture2D> PortraitStacy;
 
-	/** Hero low-health portrait texture for Type A (used at 1 or fewer hearts). */
+	/** Hero low-health portrait texture for Chad (used at 1 or fewer hearts). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> PortraitLow;
 
-	/** Hero full-health portrait texture for Type A (used at 5 or more hearts). */
+	/** Hero full-health portrait texture for Chad (used at 5 or more hearts). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> PortraitFull;
 
-	/** Hero low-health portrait texture for Type B (used at 1 or fewer hearts). */
+	/** Hero low-health portrait texture for Stacy (used at 1 or fewer hearts). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSoftObjectPtr<UTexture2D> PortraitTypeBLow;
+	TSoftObjectPtr<UTexture2D> PortraitStacyLow;
 
-	/** Hero full-health portrait texture for Type B (used at 5 or more hearts). */
+	/** Hero full-health portrait texture for Stacy (used at 5 or more hearts). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSoftObjectPtr<UTexture2D> PortraitTypeBFull;
+	TSoftObjectPtr<UTexture2D> PortraitStacyFull;
 
-	/** Hero invincible/blessed portrait texture for Type A (used during the Saint blessing). */
+	/** Hero invincible/blessed portrait texture for Chad (used during the Saint blessing). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> PortraitInvincible;
 
-	/** Hero invincible/blessed portrait texture for Type B (used during the Saint blessing). */
+	/** Hero invincible/blessed portrait texture for Stacy (used during the Saint blessing). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSoftObjectPtr<UTexture2D> PortraitTypeBInvincible;
+	TSoftObjectPtr<UTexture2D> PortraitStacyInvincible;
 
 	/** Map theme associated with this hero (for Solo runs) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
@@ -1595,14 +1595,30 @@ enum class ET66Difficulty : uint8
 };
 
 /**
- * Body type for heroes and companions
+ * Body style for heroes and companions.
  */
 UENUM(BlueprintType)
 enum class ET66BodyType : uint8
 {
-	TypeA UMETA(DisplayName = "Type A"),
-	TypeB UMETA(DisplayName = "Type B")
+	Chad UMETA(DisplayName = "Chad"),
+	Stacy UMETA(DisplayName = "Stacy")
 };
+
+namespace T66BodyTypeAliases
+{
+	inline constexpr ET66BodyType Chad = ET66BodyType::Chad;
+	inline constexpr ET66BodyType Stacy = ET66BodyType::Stacy;
+
+	inline constexpr bool IsChad(ET66BodyType BodyType)
+	{
+		return BodyType == Chad;
+	}
+
+	inline constexpr bool IsStacy(ET66BodyType BodyType)
+	{
+		return BodyType == Stacy;
+	}
+}
 
 /**
  * Leaderboard filter type (Global, Friends, Streamers)

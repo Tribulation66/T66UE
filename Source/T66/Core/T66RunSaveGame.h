@@ -576,7 +576,7 @@ struct T66_API FT66SavedPartyPlayerState
 	FName HeroID = NAME_None;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	ET66BodyType HeroBodyType = ET66BodyType::TypeA;
+	ET66BodyType HeroBodyType = ET66BodyType::Chad;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FName HeroSkinID = FName(TEXT("Default"));
@@ -585,7 +585,7 @@ struct T66_API FT66SavedPartyPlayerState
 	FName CompanionID = NAME_None;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	ET66BodyType CompanionBodyType = ET66BodyType::TypeA;
+	ET66BodyType CompanionBodyType = ET66BodyType::Chad;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FTransform PlayerTransform;
@@ -601,13 +601,13 @@ class T66_API UT66RunSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 10;
+	int32 SaveVersion = 11;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FName HeroID;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	ET66BodyType HeroBodyType = ET66BodyType::TypeA;
+	ET66BodyType HeroBodyType = ET66BodyType::Chad;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FName CompanionID;

@@ -13,6 +13,7 @@
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunIntegritySubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66SaveMigration.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66SteamHelper.h"
 
@@ -839,7 +840,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 		return nullptr;
 	}
 
-	Snapshot->SchemaVersion = 19;
+	Snapshot->SchemaVersion = T66SparseActiveHeroIdRunSummarySchemaVersion;
 	Snapshot->LeaderboardType = LeaderboardType;
 	Snapshot->Difficulty = Difficulty;
 	Snapshot->PartySize = PartySize;

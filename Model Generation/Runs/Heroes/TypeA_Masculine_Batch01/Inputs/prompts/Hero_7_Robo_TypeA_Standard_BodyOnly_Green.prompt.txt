@@ -1,0 +1,6 @@
+Hero_7 Robo, original stylized game hero.
+humanoid robot chassis, compact waterproof armor plates, broad shoulder frame, visible joints, sturdy feet
+Use the same Type A masculine mannequin proportions as the batch: broad shoulders, athletic torso mass, strong arms and legs, upright centered front view, arms slightly away from the sides, feet apart, rigging-friendly silhouette. Avoid robes, capes, skirts, long coats, dangling cloth, or clothing below the knees. Use an opaque pure green background, no floor, no cast shadow, no text, no extra props.
+Body-only production reference: show the complete body from the neck down, no head, no face, no weapon, clean hands, clear boots or feet, centered full-body front view, opaque pure green background.
+This is an original stylized game character inspired only by the codename; do not make a portrait or likeness of any real person.
+Clean production concept art for single-image-to-3D generation, readable shapes, saturated but controlled colors, no background objects.

@@ -198,6 +198,41 @@ void UT66BackendSubsystem::SubmitBugReport(
 	Request->ProcessRequest();
 }
 
+void UT66BackendSubsystem::SubmitStreamerRequest(const FString& CreatorLink, const FString& SteamId)
+{
+	if (!IsBackendConfigured())
+	{
+		OnStreamerRequestComplete.Broadcast(false, TEXT("Streamer requests unavailable."));
+		OnStreamerRequestDataReady.Broadcast(false, TEXT("Streamer requests unavailable."));
+		return;
+	}
+
+	FString TrimmedLink = CreatorLink;
+	TrimmedLink.TrimStartAndEndInline();
+	FString TrimmedSteamId = SteamId;
+	TrimmedSteamId.TrimStartAndEndInline();
+
+	if (TrimmedLink.IsEmpty() || TrimmedSteamId.IsEmpty())
+	{
+		OnStreamerRequestComplete.Broadcast(false, TEXT("Creator link and Steam ID are required."));
+		OnStreamerRequestDataReady.Broadcast(false, TEXT("Creator link and Steam ID are required."));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetStringField(TEXT("creator_link"), TrimmedLink);
+	Root->SetStringField(TEXT("steam_id"), TrimmedSteamId);
+
+	FString Payload;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Payload);
+	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("POST"), TEXT("/api/streamer-request"));
+	Request->SetContentAsString(Payload);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnStreamerRequestResponseReceived);
+	Request->ProcessRequest();
+}
+
 void UT66BackendSubsystem::FetchClientLaunchPolicy(int32 LocalSteamBuildId, const FString& SteamAppId, const FString& SteamBetaName)
 {
 	if (!IsBackendConfigured())
@@ -305,6 +340,31 @@ void UT66BackendSubsystem::OnBugReportResponseReceived(FHttpRequestPtr Request, 
 	}
 
 	OnBugReportComplete.Broadcast(false, ExtractResponseMessage(Json, TEXT("Bug report failed.")));
+}
+
+void UT66BackendSubsystem::OnStreamerRequestResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+{
+	if (!bConnectedSuccessfully || !Response.IsValid())
+	{
+		OnStreamerRequestComplete.Broadcast(false, TEXT("Streamer request failed."));
+		OnStreamerRequestDataReady.Broadcast(false, TEXT("Streamer request failed."));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	const bool bParsed = FJsonSerializer::Deserialize(Reader, Json) && Json.IsValid();
+	const int32 Code = Response->GetResponseCode();
+	if ((Code == 200 || Code == 201) && bParsed && Json->GetStringField(TEXT("status")) == TEXT("submitted"))
+	{
+		OnStreamerRequestComplete.Broadcast(true, TEXT("Streamer request submitted."));
+		OnStreamerRequestDataReady.Broadcast(true, TEXT("Streamer request submitted."));
+		return;
+	}
+
+	const FString Message = ExtractResponseMessage(Json, TEXT("Streamer request failed."));
+	OnStreamerRequestComplete.Broadcast(false, Message);
+	OnStreamerRequestDataReady.Broadcast(false, Message);
 }
 
 void UT66BackendSubsystem::OnClientLaunchPolicyResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, int32 LocalSteamBuildId)

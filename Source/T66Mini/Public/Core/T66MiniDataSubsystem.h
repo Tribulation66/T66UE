@@ -22,40 +22,58 @@ public:
 	const TArray<FT66MiniIdolDefinition>& GetIdols() const { return Idols; }
 	const TArray<FT66MiniCompanionDefinition>& GetCompanions() const { return Companions; }
 	const TArray<FT66MiniDifficultyDefinition>& GetDifficulties() const { return Difficulties; }
+	const TArray<FT66MiniStageDefinition>& GetStages() const { return Stages; }
 	const TArray<FT66MiniEnemyDefinition>& GetEnemies() const { return Enemies; }
 	const TArray<FT66MiniBossDefinition>& GetBosses() const { return Bosses; }
 	const TArray<FT66MiniWaveDefinition>& GetWaves() const { return Waves; }
 	const TArray<FT66MiniInteractableDefinition>& GetInteractables() const { return Interactables; }
 	const TArray<FT66MiniItemDefinition>& GetItems() const { return Items; }
+	const TArray<FT66MiniRuntimeTuningEntry>& GetRuntimeTuningEntries() const { return RuntimeTuningEntries; }
+	const TMap<FName, float>& GetRuntimeTuningValues() const { return RuntimeTuningValues; }
+	const TArray<FT66MiniCircusGameDefinition>& GetCircusGames() const { return CircusGames; }
 
 	const FT66MiniHeroDefinition* FindHero(FName HeroID) const;
 	const FT66MiniIdolDefinition* FindIdol(FName IdolID) const;
 	const FT66MiniCompanionDefinition* FindCompanion(FName CompanionID) const;
 	const FT66MiniDifficultyDefinition* FindDifficulty(FName DifficultyID) const;
+	const FT66MiniStageDefinition* FindStage(FName StageID) const;
+	const FT66MiniStageDefinition* FindStage(FName DifficultyID, int32 StageIndex) const;
+	const FT66MiniStageDefinition* FindStageForWave(FName DifficultyID, int32 WaveIndex) const;
+	int32 GetMaxStageIndexForDifficulty(FName DifficultyID) const;
 	const FT66MiniEnemyDefinition* FindEnemy(FName EnemyID) const;
 	const FT66MiniBossDefinition* FindBoss(FName BossID) const;
 	const FT66MiniWaveDefinition* FindWave(FName DifficultyID, int32 WaveIndex) const;
 	const FT66MiniInteractableDefinition* FindInteractable(FName InteractableID) const;
 	const FT66MiniItemDefinition* FindItem(FName ItemID) const;
+	const FT66MiniCircusGameDefinition* FindCircusGame(FName GameID) const;
+	float FindRuntimeTuningValue(FName TuningKey, float DefaultValue = 0.f) const;
+	int32 FindRuntimeTuningInt(FName TuningKey, int32 DefaultValue = 0) const;
 
 private:
 	void LoadHeroes();
 	void LoadIdols();
 	void LoadCompanions();
 	void LoadDifficulties();
+	void LoadStages();
 	void LoadEnemies();
 	void LoadBosses();
 	void LoadWaves();
 	void LoadInteractables();
 	void LoadItems();
+	void LoadRuntimeTuning();
+	void LoadCircusGames();
 
 	TArray<FT66MiniHeroDefinition> Heroes;
 	TArray<FT66MiniIdolDefinition> Idols;
 	TArray<FT66MiniCompanionDefinition> Companions;
 	TArray<FT66MiniDifficultyDefinition> Difficulties;
+	TArray<FT66MiniStageDefinition> Stages;
 	TArray<FT66MiniEnemyDefinition> Enemies;
 	TArray<FT66MiniBossDefinition> Bosses;
 	TArray<FT66MiniWaveDefinition> Waves;
 	TArray<FT66MiniInteractableDefinition> Interactables;
 	TArray<FT66MiniItemDefinition> Items;
+	TArray<FT66MiniRuntimeTuningEntry> RuntimeTuningEntries;
+	TMap<FName, float> RuntimeTuningValues;
+	TArray<FT66MiniCircusGameDefinition> CircusGames;
 };

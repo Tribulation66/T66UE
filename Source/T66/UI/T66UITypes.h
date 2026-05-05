@@ -61,7 +61,9 @@ enum class ET66ScreenType : uint8
 	TDBattle = 43 UMETA(DisplayName = "Chadpocalypse TD Battle"),
 	RemovedScreenSlot44 = 44 UMETA(Hidden),
 	// Legacy serialized value retained so old Blueprint defaults can be loaded and repaired.
-	PartySizePicker = 45 UMETA(Hidden)
+	PartySizePicker = 45 UMETA(Hidden),
+	IdleMainMenu = 46 UMETA(DisplayName = "Idle Chadpocalypse Main Menu"),
+	DeckMainMenu = 47 UMETA(DisplayName = "Chadpocalypse Deckbuilder Main Menu")
 };
 
 UENUM(BlueprintType)

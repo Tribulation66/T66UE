@@ -2,32 +2,16 @@
 
 #include "UI/Screens/T66MiniMainMenuScreen.h"
 
+#include "Core/T66BackendSubsystem.h"
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
-#include "Core/T66MiniLeaderboardSubsystem.h"
-#include "Core/T66PartySubsystem.h"
-#include "Core/T66SessionSubsystem.h"
-#include "Core/T66SteamHelper.h"
-#include "Gameplay/T66SessionPlayerState.h"
 #include "Save/T66MiniSaveSubsystem.h"
+#include "Save/T66MiniProfileSaveGame.h"
 #include "Styling/CoreStyle.h"
-#include "UI/Components/T66MiniLeaderboardPanel.h"
-#include "UI/ST66AnimatedBackground.h"
-#include "UI/ST66AnimatedBorderGlow.h"
+#include "UI/Components/T66MinigameMenuLayout.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
-#include "UI/Style/T66Style.h"
-#include "UI/T66MiniUIStyle.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
-#include "Widgets/Images/SImage.h"
-#include "Widgets/Input/SEditableTextBox.h"
-#include "Widgets/Layout/SBorder.h"
-#include "Widgets/Layout/SBox.h"
-#include "Widgets/Layout/SScrollBox.h"
-#include "Widgets/SBoxPanel.h"
-#include "Widgets/SInvalidationPanel.h"
-#include "Widgets/SOverlay.h"
-#include "Widgets/Text/STextBlock.h"
 
 namespace
 {
@@ -120,27 +104,6 @@ namespace
 				FMath::Max(1, TextureHandle->GetSizeY()));
 		}
 	}
-
-	TSharedPtr<FSlateBrush> MakeAvatarBrush(UTexture2D* Texture, const FVector2D& ImageSize)
-	{
-		if (!Texture)
-		{
-			return nullptr;
-		}
-
-		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
-		Brush->DrawAs = ESlateBrushDrawType::Image;
-		Brush->Tiling = ESlateBrushTileType::NoTile;
-		Brush->ImageSize = ImageSize;
-		Brush->SetResourceObject(Texture);
-		return Brush;
-	}
-
-	bool DoesFriendMatchQuery(const FString& Query, const FT66PartyFriendEntry& Friend)
-	{
-		const FString Normalized = Query.TrimStartAndEnd();
-		return Normalized.IsEmpty() || Friend.DisplayName.Contains(Normalized, ESearchCase::IgnoreCase);
-	}
 }
 
 UT66MiniMainMenuScreen::UT66MiniMainMenuScreen(const FObjectInitializer& ObjectInitializer)
@@ -153,565 +116,32 @@ UT66MiniMainMenuScreen::UT66MiniMainMenuScreen(const FObjectInitializer& ObjectI
 void UT66MiniMainMenuScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
-
-	if (UGameInstance* GameInstance = GetGameInstance())
-	{
-		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
-		{
-			PartyStateChangedHandle = PartySubsystem->OnPartyStateChanged().AddUObject(this, &UT66MiniMainMenuScreen::HandlePartyStateChanged);
-		}
-
-		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
-		{
-			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniMainMenuScreen::HandleSessionStateChanged);
-			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniMainMenu, true);
-		}
-	}
-
-	LastPartyUiStateKey = BuildPartyUiStateKey();
 }
 
 void UT66MiniMainMenuScreen::OnScreenDeactivated_Implementation()
 {
-	if (UGameInstance* GameInstance = GetGameInstance())
-	{
-		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
-		{
-			PartySubsystem->OnPartyStateChanged().Remove(PartyStateChangedHandle);
-		}
-
-		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
-		{
-			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
-		}
-	}
-
-	PartyStateChangedHandle.Reset();
-	SessionStateChangedHandle.Reset();
 	ReleaseRetainedSlateState();
 	Super::OnScreenDeactivated_Implementation();
 }
 
 void UT66MiniMainMenuScreen::NativeDestruct()
 {
-	if (UGameInstance* GameInstance = GetGameInstance())
-	{
-		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
-		{
-			PartySubsystem->OnPartyStateChanged().Remove(PartyStateChangedHandle);
-		}
-
-		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
-		{
-			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
-		}
-	}
-
-	PartyStateChangedHandle.Reset();
-	SessionStateChangedHandle.Reset();
 	ReleaseRetainedSlateState();
 	Super::NativeDestruct();
 }
 
-void UT66MiniMainMenuScreen::HandlePartyStateChanged()
+TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSharedMainMenuUI()
 {
-	SyncToSharedPartyScreen();
-	if (UIManager && UIManager->GetCurrentScreenType() != ScreenType)
-	{
-		return;
-	}
-
-	const FString NewStateKey = BuildPartyUiStateKey();
-	if (NewStateKey == LastPartyUiStateKey)
-	{
-		return;
-	}
-
-	LastPartyUiStateKey = NewStateKey;
-	FT66Style::DeferRebuild(this);
-}
-
-void UT66MiniMainMenuScreen::HandleSessionStateChanged()
-{
-	HandlePartyStateChanged();
-}
-
-void UT66MiniMainMenuScreen::SyncToSharedPartyScreen()
-{
-	if (!UIManager)
-	{
-		return;
-	}
-
-	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	if (!SessionSubsystem || !SessionSubsystem->IsPartyLobbyContextActive() || SessionSubsystem->IsLocalPlayerPartyHost())
-	{
-		return;
-	}
-
-	const ET66ScreenType DesiredScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
-	switch (DesiredScreen)
-	{
-	case ET66ScreenType::MiniMainMenu:
-	case ET66ScreenType::MiniSaveSlots:
-	case ET66ScreenType::MiniCharacterSelect:
-	case ET66ScreenType::MiniCompanionSelect:
-	case ET66ScreenType::MiniDifficultySelect:
-	case ET66ScreenType::MiniIdolSelect:
-	case ET66ScreenType::MiniShop:
-	case ET66ScreenType::MiniRunSummary:
-		if (UIManager->GetCurrentScreenType() != DesiredScreen)
-		{
-			UIManager->ShowScreen(DesiredScreen);
-		}
-		break;
-	default:
-		break;
-	}
-}
-
-TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
-{
-	LastPartyUiStateKey = BuildPartyUiStateKey();
 	RequestMiniMenuTextures();
 
-	UGameInstance* GameInstance = GetGameInstance();
-	UT66MiniDataSubsystem* MiniDataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
-	UT66MiniLeaderboardSubsystem* MiniLeaderboardSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniLeaderboardSubsystem>() : nullptr;
-	UT66PartySubsystem* PartySubsystem = GameInstance ? GameInstance->GetSubsystem<UT66PartySubsystem>() : nullptr;
-	UT66SessionSubsystem* SessionSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	UT66SteamHelper* SteamHelper = GameInstance ? GameInstance->GetSubsystem<UT66SteamHelper>() : nullptr;
-	UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
-
-	const FLinearColor BrightText(0.86f, 0.87f, 0.89f, 1.0f);
-	const FLinearColor HeaderText(0.66f, 0.68f, 0.71f, 1.0f);
-	const FLinearColor MutedText(0.50f, 0.52f, 0.56f, 1.0f);
-	const FLinearColor DividerColor(0.20f, 0.22f, 0.25f, 0.48f);
-	const FLinearColor OnlineAccent(0.13f, 0.22f, 0.30f, 1.0f);
-	const FLinearColor OfflineAccent(0.08f, 0.09f, 0.11f, 1.0f);
-	const FLinearColor PartyAccent(0.15f, 0.17f, 0.19f, 1.0f);
-	const float SideWidth = 382.f;
-	const float SideHeight = 562.f;
-	const float CenterWidth = 392.f;
-	const float CenterButtonWidth = 352.f;
-	const float CenterButtonHeight = 72.f;
-	const float CenterButtonGap = 16.f;
-	const float CenterHeight = (CenterButtonHeight * 2.f) + CenterButtonGap + 30.f;
-	const float TitleTopPadding = 50.f;
-
-	TArray<FT66PartyFriendEntry> OnlineFriends;
-	TArray<FT66PartyFriendEntry> OfflineFriends;
-	if (PartySubsystem)
-	{
-		for (const FT66PartyFriendEntry& Friend : PartySubsystem->GetFriends())
-		{
-			if (!DoesFriendMatchQuery(FriendSearchQuery, Friend))
-			{
-				continue;
-			}
-
-			(Friend.bOnline ? OnlineFriends : OfflineFriends).Add(Friend);
-		}
-	}
-
-	TArray<FT66PartyMemberEntry> PartyMembers = PartySubsystem ? PartySubsystem->GetPartyMembers() : TArray<FT66PartyMemberEntry>();
-	if (PartyMembers.Num() == 0)
-	{
-		FT66PartyMemberEntry LocalMember;
-		LocalMember.DisplayName = SteamHelper && !SteamHelper->GetLocalDisplayName().IsEmpty() ? SteamHelper->GetLocalDisplayName() : TEXT("Local Player");
-		LocalMember.bIsLocal = true;
-		LocalMember.bOnline = SteamHelper && SteamHelper->IsSteamReady();
-		PartyMembers.Add(LocalMember);
-	}
-
-	TMap<FString, FT66LobbyPlayerInfo> LobbyInfoByPlayerId;
-	if (SessionSubsystem)
-	{
-		TArray<FT66LobbyPlayerInfo> LobbyProfiles;
-		SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
-		for (const FT66LobbyPlayerInfo& LobbyInfo : LobbyProfiles)
-		{
-			if (!LobbyInfo.SteamId.IsEmpty())
-			{
-				LobbyInfoByPlayerId.Add(LobbyInfo.SteamId, LobbyInfo);
-			}
-		}
-	}
-
-	ProfileAvatarBrush = MakeAvatarBrush(SteamHelper ? SteamHelper->GetLocalAvatarTexture() : nullptr, FVector2D(76.f, 76.f));
-	FriendAvatarBrushes.Reset();
-	PartyAvatarBrushes.Reset();
-
-	auto MakeAvatarSlot = [&](const TSharedPtr<FSlateBrush>& Brush, const FVector2D& Size, const FString& Fallback, const FLinearColor& Accent) -> TSharedRef<SWidget>
-	{
-		const TSharedRef<SWidget> Content = Brush.IsValid()
-			? StaticCastSharedRef<SWidget>(SNew(SImage).Image(Brush.Get()))
-			: StaticCastSharedRef<SWidget>(
-				SNew(STextBlock)
-				.Text(FText::FromString(Fallback))
-				.Font(FT66Style::MakeFont(TEXT("Bold"), 16))
-				.ColorAndOpacity(MutedText)
-				.Justification(ETextJustify::Center));
-
-		return SNew(SBox)
-			.WidthOverride(Size.X)
-			.HeightOverride(Size.Y)
-			[
-				FT66Style::MakeSlotFrame(Content, Accent, FMargin(1.f))
-			];
-	};
-
-	auto MakeSectionTitle = [&](const FText& Text) -> TSharedRef<SWidget>
-	{
-		FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Bold"), 13);
-		Font.LetterSpacing = 112;
-		return SNew(STextBlock).Text(Text).Font(Font).ColorAndOpacity(HeaderText);
-	};
-
-	auto MakeDivider = [&]() -> TSharedRef<SWidget>
-	{
-		return SNew(SBox).HeightOverride(1.f)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(DividerColor)
-			];
-	};
-
-	auto MakeFriendGroupHeader = [&](const FText& Label, const int32 Count, const FLinearColor& Color) -> TSharedRef<SWidget>
-	{
-		return SNew(STextBlock)
-			.Text(FText::Format(NSLOCTEXT("T66Mini.MainMenu", "FriendHeaderFmt", "{0}  ({1})"), Label, FText::AsNumber(Count)))
-			.Font(FT66Style::MakeFont(TEXT("Bold"), 11))
-			.ColorAndOpacity(Color);
-	};
-
-	auto ResolveMiniScreenLabel = [](const ET66ScreenType InScreenType) -> FString
-	{
-		switch (InScreenType)
-		{
-		case ET66ScreenType::MiniMainMenu:
-			return TEXT("Mini Menu");
-		case ET66ScreenType::MiniSaveSlots:
-			return TEXT("Save Slots");
-		case ET66ScreenType::MiniCharacterSelect:
-			return TEXT("Hero Select");
-		case ET66ScreenType::MiniCompanionSelect:
-			return TEXT("Companion");
-		case ET66ScreenType::MiniDifficultySelect:
-			return TEXT("Difficulty");
-		case ET66ScreenType::MiniIdolSelect:
-			return TEXT("Idols");
-		case ET66ScreenType::MiniShop:
-			return TEXT("Shop");
-		case ET66ScreenType::MiniRunSummary:
-			return TEXT("Summary");
-		default:
-			return TEXT("Party");
-		}
-	};
-
-	auto BuildPartyMemberStatusText = [&](const FT66PartyMemberEntry* Member) -> FString
-	{
-		if (!Member)
-		{
-			return TEXT("Invite or join");
-		}
-
-		const FT66LobbyPlayerInfo* LobbyInfo = nullptr;
-		if (!Member->PlayerId.IsEmpty())
-		{
-			LobbyInfo = LobbyInfoByPlayerId.Find(Member->PlayerId);
-		}
-
-		if (!LobbyInfo)
-		{
-			return Member->bIsPartyHost ? TEXT("Party Host") : TEXT("In Party");
-		}
-
-		if (!LobbyInfo->bMiniFlowActive)
-		{
-			return Member->bIsPartyHost ? TEXT("Party Host") : ResolveMiniScreenLabel(LobbyInfo->FrontendScreen);
-		}
-
-		FString HeroLabel = TEXT("No Hero");
-		if (!LobbyInfo->MiniSelectedHeroID.IsNone())
-		{
-			if (const FT66MiniHeroDefinition* Hero = MiniDataSubsystem ? MiniDataSubsystem->FindHero(LobbyInfo->MiniSelectedHeroID) : nullptr)
-			{
-				HeroLabel = Hero->DisplayName;
-			}
-			else
-			{
-				HeroLabel = LobbyInfo->MiniSelectedHeroID.ToString();
-			}
-		}
-
-		FString Status = HeroLabel + TEXT(" | ") + ResolveMiniScreenLabel(LobbyInfo->FrontendScreen);
-		if (!LobbyInfo->bPartyHost && LobbyInfo->bLobbyReady)
-		{
-			Status += TEXT(" | Ready");
-		}
-
-		return Status;
-	};
-
-	auto MakeFriendRow = [&](const FT66PartyFriendEntry& Friend) -> TSharedRef<SWidget>
-	{
-		TSharedPtr<FSlateBrush> AvatarBrush = MakeAvatarBrush(
-			SteamHelper ? SteamHelper->GetAvatarTextureForSteamId(Friend.PlayerId) : nullptr,
-			FVector2D(40.f, 40.f));
-		FriendAvatarBrushes.Add(AvatarBrush);
-		const bool bInParty = PartySubsystem && PartySubsystem->IsFriendInParty(Friend.PlayerId);
-		const bool bInvitePending = SessionSubsystem && SessionSubsystem->IsFriendInvitePending(Friend.PlayerId);
-		const bool bCanInvite = Friend.bOnline && !bInParty && !bInvitePending;
-		const bool bCanJoin = Friend.bOnline && !bInParty && SessionSubsystem;
-
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.03f, 0.04f, 0.06f, 0.92f))
-			.Padding(FMargin(8.f))
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-				[
-					MakeAvatarSlot(
-						AvatarBrush,
-						FVector2D(42.f, 42.f),
-						Friend.DisplayName.IsEmpty() ? TEXT("?") : Friend.DisplayName.Left(1).ToUpper(),
-						Friend.bOnline ? OnlineAccent : OfflineAccent)
-				]
-				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(10.f, 0.f, 0.f, 0.f)
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(STextBlock)
-						.Text(FText::FromString(Friend.DisplayName))
-						.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
-						.ColorAndOpacity(BrightText)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
-					[
-						SNew(STextBlock)
-						.Text(FText::FromString(Friend.PresenceText.IsEmpty() ? (Friend.bOnline ? TEXT("Online") : TEXT("Offline")) : Friend.PresenceText))
-						.Font(FT66Style::MakeFont(TEXT("Regular"), 10))
-						.ColorAndOpacity(MutedText)
-					]
-				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 6.f, 0.f)
-					[
-						FT66Style::MakeButton(
-							FT66ButtonParams(
-								FText::FromString(
-									bInParty
-										? TEXT("IN PARTY")
-										: (bInvitePending ? TEXT("INVITED") : TEXT("INVITE"))),
-								FOnClicked::CreateLambda([this, PartySubsystem, Friend]()
-								{
-									if (PartySubsystem)
-									{
-										PartySubsystem->InviteFriend(Friend.PlayerId, Friend.DisplayName);
-									}
-									FT66Style::DeferRebuild(this);
-									return FReply::Handled();
-								}),
-								ET66ButtonType::Primary)
-							.SetMinWidth(84.f)
-							.SetHeight(30.f)
-							.SetFontSize(10)
-							.SetPadding(FMargin(10.f, 6.f))
-							.SetEnabled(bCanInvite))
-					]
-					+ SHorizontalBox::Slot().AutoWidth()
-					[
-						FT66Style::MakeButton(
-							FT66ButtonParams(
-								FText::FromString(TEXT("JOIN")),
-								FOnClicked::CreateLambda([this, SessionSubsystem, Friend]()
-								{
-									if (SessionSubsystem)
-									{
-										SessionSubsystem->JoinFriendPartySessionBySteamId(Friend.PlayerId);
-									}
-									FT66Style::DeferRebuild(this);
-									return FReply::Handled();
-								}),
-								ET66ButtonType::Neutral)
-							.SetMinWidth(72.f)
-							.SetHeight(30.f)
-							.SetFontSize(10)
-							.SetPadding(FMargin(10.f, 6.f))
-							.SetEnabled(bCanJoin))
-					]
-				]
-			];
-	};
-
-	const FString ProfileName = SteamHelper && !SteamHelper->GetLocalDisplayName().IsEmpty()
-		? SteamHelper->GetLocalDisplayName()
-		: TEXT("Local Player");
-	const FText ProfileStatus = SteamHelper && SteamHelper->IsSteamReady()
-		? NSLOCTEXT("T66Mini.MainMenu", "ProfileSteamReady", "Steam Online")
-		: NSLOCTEXT("T66Mini.MainMenu", "ProfileSteamMissing", "Steam Unavailable");
-
-	TSharedRef<SVerticalBox> FriendsList = SNew(SVerticalBox);
-	FriendsList->AddSlot().AutoHeight()[MakeFriendGroupHeader(NSLOCTEXT("T66Mini.MainMenu", "Online", "ONLINE"), OnlineFriends.Num(), FLinearColor(0.42f, 0.67f, 0.96f, 1.0f))];
-	for (int32 Index = 0; Index < OnlineFriends.Num(); ++Index)
-	{
-		FriendsList->AddSlot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[MakeFriendRow(OnlineFriends[Index])];
-	}
-	FriendsList->AddSlot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)[MakeDivider()];
-	FriendsList->AddSlot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)[MakeFriendGroupHeader(NSLOCTEXT("T66Mini.MainMenu", "Offline", "OFFLINE"), OfflineFriends.Num(), HeaderText)];
-	for (int32 Index = 0; Index < OfflineFriends.Num(); ++Index)
-	{
-		FriendsList->AddSlot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[MakeFriendRow(OfflineFriends[Index])];
-	}
-
-	TSharedRef<SHorizontalBox> PartySlots = SNew(SHorizontalBox);
-	for (int32 SlotIndex = 0; SlotIndex < 4; ++SlotIndex)
-	{
-		const FT66PartyMemberEntry* Member = PartyMembers.IsValidIndex(SlotIndex) ? &PartyMembers[SlotIndex] : nullptr;
-		TSharedPtr<FSlateBrush> AvatarBrush = MakeAvatarBrush(
-			(SteamHelper && Member && !Member->PlayerId.IsEmpty()) ? SteamHelper->GetAvatarTextureForSteamId(Member->PlayerId) : (Member && Member->bIsLocal && SteamHelper ? SteamHelper->GetLocalAvatarTexture() : nullptr),
-			FVector2D(56.f, 56.f));
-		PartyAvatarBrushes.Add(AvatarBrush);
-
-		PartySlots->AddSlot().FillWidth(1.f).Padding(SlotIndex > 0 ? FMargin(8.f, 0.f, 0.f, 0.f) : FMargin(0.f))
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-			[
-				MakeAvatarSlot(
-					AvatarBrush,
-					FVector2D(58.f, 58.f),
-					(Member && !Member->DisplayName.IsEmpty()) ? Member->DisplayName.Left(1).ToUpper() : TEXT("+"),
-					PartyAccent)
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f).HAlign(HAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(Member ? Member->DisplayName : FString(TEXT("Empty"))))
-				.Font(FT66Style::MakeFont(TEXT("Regular"), 10))
-				.ColorAndOpacity(Member ? BrightText : MutedText)
-				.Justification(ETextJustify::Center)
-				.AutoWrapText(true)
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f).HAlign(HAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(BuildPartyMemberStatusText(Member)))
-				.Font(FT66Style::MakeFont(TEXT("Regular"), 9))
-				.ColorAndOpacity(Member ? MutedText : HeaderText)
-				.Justification(ETextJustify::Center)
-				.AutoWrapText(true)
-			]
-		];
-	}
-
-	const TSharedRef<SWidget> LeftShell =
-		T66MiniUI::MakeSpritePanel(
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().FillHeight(1.f)
-			[
-				SNew(SScrollBox)
-				+ SScrollBox::Slot()
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(0.03f, 0.04f, 0.06f, 0.92f))
-						.Padding(FMargin(12.f))
-						[
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().AutoWidth()
-							[
-								MakeAvatarSlot(ProfileAvatarBrush, FVector2D(76.f, 76.f), ProfileName.Left(1).ToUpper(), OnlineAccent)
-							]
-							+ SHorizontalBox::Slot().FillWidth(1.f).Padding(12.f, 0.f, 0.f, 0.f)
-							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(ProfileName)).Font(FT66Style::MakeFont(TEXT("Regular"), 12)).ColorAndOpacity(BrightText)]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)[SNew(STextBlock).Text(ProfileStatus).Font(FT66Style::MakeFont(TEXT("Regular"), 11)).ColorAndOpacity(MutedText)]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.MainMenu", "ProfileMeta", "Account, records, and rewards")).Font(FT66Style::MakeFont(TEXT("Regular"), 11)).ColorAndOpacity(MutedText)]
-							]
-						]
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)[MakeDivider()]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(0.16f, 0.18f, 0.21f, 0.94f))
-						.Padding(1.f)
-						[
-							SNew(SBox)
-							.HeightOverride(36.f)
-							[
-								SNew(SEditableTextBox)
-								.Text(FText::FromString(FriendSearchQuery))
-								.OnTextChanged_UObject(this, &UT66MiniMainMenuScreen::HandleFriendSearchTextChanged)
-								.HintText(NSLOCTEXT("T66Mini.MainMenu", "SearchFriends", "Search friends..."))
-								.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
-								.ForegroundColor(BrightText)
-								.BackgroundColor(FLinearColor(0.03f, 0.04f, 0.06f, 1.0f))
-							]
-						]
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)[FriendsList]
-				]
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()[MakeSectionTitle(NSLOCTEXT("T66Mini.MainMenu", "PartySection", "PARTY"))]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[PartySlots]
-			]
-		,
-		FMargin(18.f, 16.f, 18.f, 14.f));
-
-	auto MakeMenuButton = [&](const FText& Text, FReply (UT66MiniMainMenuScreen::*ClickFunc)(), const bool bGlow, const bool bEnabled) -> TSharedRef<SWidget>
-	{
-		FT66ButtonParams Params = T66MiniUI::MakeButtonParams(
-			Text,
-			FOnClicked::CreateUObject(this, ClickFunc),
-			bEnabled ? ET66ButtonType::Success : ET66ButtonType::Neutral,
-			CenterButtonWidth,
-			CenterButtonHeight,
-			24);
-		Params.SetEnabled(bEnabled);
-		TSharedRef<SWidget> Button = FT66Style::MakeButton(Params);
-		if (!bGlow)
-		{
-			return SNew(SBox).WidthOverride(CenterButtonWidth)[Button];
-		}
-
-		return SNew(SBox).WidthOverride(CenterButtonWidth)
-			[
-				SNew(ST66AnimatedBorderGlow)
-				.GlowColor(FLinearColor(0.32f, 0.83f, 0.56f, 1.0f))
-				.SweepColor(FLinearColor(0.78f, 1.00f, 0.87f, 1.0f))
-				.BorderInset(2.0f)
-				.InnerThickness(2.0f)
-				.MidThickness(5.0f)
-				.OuterThickness(9.0f)
-				.SweepLengthFraction(0.26f)
-				.SweepSpeed(0.12f)
-				[
-					Button
-				]
-			];
-	};
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UT66MiniDataSubsystem* MiniDataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
+	const UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
 
 	bool bHasAnyMiniSave = false;
 	if (SaveSubsystem)
 	{
-		for (const FT66MiniSaveSlotSummary& Summary : SaveSubsystem->BuildRunSlotSummaries(nullptr))
+		for (const FT66MiniSaveSlotSummary& Summary : SaveSubsystem->BuildRunSlotSummaries(MiniDataSubsystem))
 		{
 			if (Summary.bOccupied)
 			{
@@ -720,188 +150,82 @@ TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
 			}
 		}
 	}
-	const bool bHasRemotePartyMembers = PartySubsystem && PartySubsystem->HasRemotePartyMembers();
-	const bool bCanLoadMiniSave = bHasAnyMiniSave && !bHasRemotePartyMembers;
 
-	const TSharedRef<SWidget> CenterButtons =
-		SNew(SBox)
-		.WidthOverride(CenterWidth)
-		.HeightOverride(CenterHeight)
-		[
-			T66MiniUI::MakeSpritePanel(
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[MakeMenuButton(NSLOCTEXT("T66Mini.MainMenu", "Start", "START"), &UT66MiniMainMenuScreen::HandleNewGameClicked, true, true)]
-				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, CenterButtonGap, 0.f, 0.f)
-				[
-					MakeMenuButton(NSLOCTEXT("T66Mini.MainMenu", "Continue", "CONTINUE"), &UT66MiniMainMenuScreen::HandleLoadGameClicked, false, bCanLoadMiniSave)
-				]
-			,
-			FMargin(18.f, 16.f))
-		];
-
-	FT66ButtonParams BackButtonParams = T66MiniUI::MakeButtonParams(
-		NSLOCTEXT("T66Mini.MainMenu", "BackToMainMenuShort", "BACK"),
-		FOnClicked::CreateUObject(this, &UT66MiniMainMenuScreen::HandleBackToMainMenuClicked),
-		ET66ButtonType::Neutral,
-		150.f,
-		42.f,
-		14);
-	const TSharedRef<SWidget> BackToMainMenuButton =
-		SNew(SBox)
-		.WidthOverride(150.f)
-		.HeightOverride(42.f)
-		[
-			FT66Style::MakeButton(BackButtonParams)
-		];
-
-	const TSharedRef<SWidget> LeaderboardShell =
-		SAssignNew(LeaderboardPanel, ST66MiniLeaderboardPanel)
-		.DataSubsystem(MiniDataSubsystem)
-		.LeaderboardSubsystem(MiniLeaderboardSubsystem)
-		.PartySubsystem(PartySubsystem);
-
-	TArray<FT66AnimatedBackgroundLayer> BackgroundLayers;
-	BackgroundLayers.Reserve(1);
-	auto& SkyLayer = BackgroundLayers.AddDefaulted_GetRef();
-	SkyLayer.Brush = SkyBackgroundBrush.Get();
-	SkyLayer.SwayAmplitude = FVector2D(3.f, 1.5f);
-	SkyLayer.SwayFrequency = 0.06f;
-	SkyLayer.OpacityMin = 1.f;
-	SkyLayer.OpacityMax = 1.f;
-
-	auto MakeTitle = [](const FLinearColor& Color, const FVector2D& Offset) -> TSharedRef<SWidget>
-	{
-		FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Black"), 40);
-		Font.LetterSpacing = 46;
-		return SNew(STextBlock)
-			.Text(NSLOCTEXT("T66Mini.MainMenu", "MiniTitle", "MINI CHADPOCALYPSE"))
-			.Font(Font)
-			.ColorAndOpacity(Color)
-			.RenderTransform(FSlateRenderTransform(Offset))
-			.ShadowOffset(FVector2D(2.f, 2.f))
-			.ShadowColorAndOpacity(FLinearColor(1.0f, 0.72f, 0.18f, 0.42f));
-	};
-
-	return SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor::Black)
-		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()[SNew(ST66AnimatedBackground).Layers(BackgroundLayers)]
-			+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.20f))]
-			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, TitleTopPadding, 0.f, 0.f)
-			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()[MakeTitle(FLinearColor(0.02f, 0.01f, 0.01f, 0.98f), FVector2D(3.f, 3.f))]
-				+ SOverlay::Slot()[MakeTitle(FLinearColor(0.98f, 0.84f, 0.43f, 0.98f), FVector2D::ZeroVector)]
-			]
-			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(FMargin(20.f, 20.f, 0.f, 0.f))
-			[
-				BackToMainMenuButton
-			]
-			+ SOverlay::Slot()
-			[
-				SNew(SOverlay)
-				+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom).Padding(FMargin(20.f, 0.f, 0.f, 16.f))
-				[
-					SNew(SBox).WidthOverride(SideWidth).HeightOverride(SideHeight).Clipping(EWidgetClipping::ClipToBounds)
-					[
-						SNew(SInvalidationPanel)[LeftShell]
-					]
-				]
-				+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0.f, 0.f, 0.f, 124.f)
-				[
-					SNew(SBox).WidthOverride(CenterWidth).HeightOverride(CenterHeight)
-					[
-						SNew(SInvalidationPanel)[CenterButtons]
-					]
-				]
-				+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Bottom).Padding(FMargin(0.f, 0.f, 20.f, 16.f))
-				[
-					SNew(SBox).WidthOverride(SideWidth).HeightOverride(SideHeight + 58.f).Clipping(EWidgetClipping::ClipToBounds)
-					[
-						SNew(SInvalidationPanel)
-						[
-							T66MiniUI::MakeSpritePanel(LeaderboardShell, FMargin(18.f, 16.f, 18.f, 14.f))
-						]
-					]
-				]
-			]
-		];
+	return SAssignNew(SharedMenuLayout, ST66MinigameMenuLayout)
+		.GameID(FName(TEXT("mini")))
+		.Title(NSLOCTEXT("T66Mini.MainMenu", "MiniSharedTitle", "MINI CHADPOCALYPSE"))
+		.Subtitle(NSLOCTEXT("T66Mini.MainMenu", "MiniSharedSubtitle", "Single-player arcade survival"))
+		.DailyTitle(NSLOCTEXT("T66Mini.MainMenu", "MiniDailyTitle", "TODAY'S MINI CHALLENGE"))
+		.DailyBody(NSLOCTEXT("T66Mini.MainMenu", "MiniDailyBody", "One seeded survival run per day. Pick the difficulty, lock the route, then push materials and wave progress as high as you can."))
+		.DailyRules(NSLOCTEXT("T66Mini.MainMenu", "MiniDailyRules", "Single player only.\nDaily scores use today's seed.\nLeaderboard ranks by materials collected.\nDifficulty is the only rules toggle."))
+		.AccentColor(FLinearColor(0.98f, 0.84f, 0.43f, 1.0f))
+		.BackgroundColor(FLinearColor(0.018f, 0.026f, 0.034f, 1.0f))
+		.DifficultyOptions(BuildDifficultyOptions())
+		.LoadGameEnabled(bHasAnyMiniSave)
+		.BackendSubsystem(GameInstance ? GameInstance->GetSubsystem<UT66BackendSubsystem>() : nullptr)
+		.OnNewGameClicked(FOnClicked::CreateUObject(this, &UT66MiniMainMenuScreen::HandleNewGameClicked))
+		.OnLoadGameClicked(FOnClicked::CreateUObject(this, &UT66MiniMainMenuScreen::HandleLoadGameClicked))
+		.OnDailyClicked(FOnClicked::CreateUObject(this, &UT66MiniMainMenuScreen::HandleDailyClicked))
+		.OnBackClicked(FOnClicked::CreateUObject(this, &UT66MiniMainMenuScreen::HandleBackToMainMenuClicked))
+		.OnBuildDailyEntries(FT66OnBuildMinigameLeaderboardEntries::CreateUObject(this, &UT66MiniMainMenuScreen::BuildDailyLeaderboardEntries))
+		.OnBuildAllTimeEntries(FT66OnBuildMinigameLeaderboardEntries::CreateUObject(this, &UT66MiniMainMenuScreen::BuildAllTimeLeaderboardEntries))
+		.OnGetDailyStatus(FT66OnGetMinigameLeaderboardStatus::CreateUObject(this, &UT66MiniMainMenuScreen::GetDailyLeaderboardStatus))
+		.OnGetAllTimeStatus(FT66OnGetMinigameLeaderboardStatus::CreateUObject(this, &UT66MiniMainMenuScreen::GetAllTimeLeaderboardStatus));
 }
 
-FString UT66MiniMainMenuScreen::BuildPartyUiStateKey() const
+TArray<FT66MinigameDifficultyOption> UT66MiniMainMenuScreen::BuildDifficultyOptions() const
 {
+	TArray<FT66MinigameDifficultyOption> Options;
 	const UGameInstance* GameInstance = GetGameInstance();
-	const UT66PartySubsystem* PartySubsystem = GameInstance ? GameInstance->GetSubsystem<UT66PartySubsystem>() : nullptr;
-	UT66SessionSubsystem* SessionSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	const UT66SteamHelper* SteamHelper = GameInstance ? GameInstance->GetSubsystem<UT66SteamHelper>() : nullptr;
-
-	FString StateKey = FriendSearchQuery.TrimStartAndEnd();
-	StateKey += TEXT("|");
-	StateKey += SteamHelper && SteamHelper->IsSteamReady() ? TEXT("1") : TEXT("0");
-	StateKey += TEXT("|");
-	StateKey += SteamHelper ? SteamHelper->GetLocalDisplayName() : FString();
-
-	if (PartySubsystem)
+	const UT66MiniDataSubsystem* MiniDataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
+	if (MiniDataSubsystem)
 	{
-		for (const FT66PartyFriendEntry& Friend : PartySubsystem->GetFriends())
+		for (const FT66MiniDifficultyDefinition& Difficulty : MiniDataSubsystem->GetDifficulties())
 		{
-			if (!DoesFriendMatchQuery(FriendSearchQuery, Friend))
-			{
-				continue;
-			}
-
-			StateKey += FString::Printf(
-				TEXT("|F:%s:%d:%d:%s"),
-				*Friend.PlayerId,
-				Friend.bOnline ? 1 : 0,
-				PartySubsystem->IsFriendInParty(Friend.PlayerId) ? 1 : 0,
-				*Friend.PresenceText);
-			if (SessionSubsystem)
-			{
-				StateKey += SessionSubsystem->IsFriendInvitePending(Friend.PlayerId) ? TEXT(":1") : TEXT(":0");
-			}
-		}
-
-		for (const FT66PartyMemberEntry& Member : PartySubsystem->GetPartyMembers())
-		{
-			StateKey += FString::Printf(
-				TEXT("|P:%s:%s:%d:%d:%d"),
-				*Member.PlayerId,
-				*Member.DisplayName,
-				Member.bIsPartyHost ? 1 : 0,
-				Member.bIsLocal ? 1 : 0,
-				Member.bOnline ? 1 : 0);
+			FT66MinigameDifficultyOption& Option = Options.AddDefaulted_GetRef();
+			Option.DifficultyID = Difficulty.DifficultyID;
+			Option.DisplayName = FText::FromString(Difficulty.DisplayName.IsEmpty() ? Difficulty.DifficultyID.ToString() : Difficulty.DisplayName);
 		}
 	}
+	return Options;
+}
 
-	if (SessionSubsystem)
+TArray<FT66MinigameLeaderboardEntry> UT66MiniMainMenuScreen::BuildDailyLeaderboardEntries(FName DifficultyID) const
+{
+	return {};
+}
+
+TArray<FT66MinigameLeaderboardEntry> UT66MiniMainMenuScreen::BuildAllTimeLeaderboardEntries(FName DifficultyID) const
+{
+	TArray<FT66MinigameLeaderboardEntry> Entries;
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UT66MiniDataSubsystem* MiniDataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
+	const UT66MiniSaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
+	const UT66MiniProfileSaveGame* ProfileSave = SaveSubsystem ? SaveSubsystem->LoadOrCreateProfileSave(MiniDataSubsystem) : nullptr;
+	if (ProfileSave && ProfileSave->LifetimeMaterialsCollected > 0)
 	{
-		StateKey += FString::Printf(
-			TEXT("|S:%d:%d:%d:%d"),
-			SessionSubsystem->IsPartyLobbyContextActive() ? 1 : 0,
-			SessionSubsystem->IsPartySessionActive() ? 1 : 0,
-			SessionSubsystem->IsLocalPlayerPartyHost() ? 1 : 0,
-			static_cast<int32>(SessionSubsystem->GetDesiredPartyFrontendScreen()));
-
-		TArray<FT66LobbyPlayerInfo> LobbyProfiles;
-		SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
-		for (const FT66LobbyPlayerInfo& LobbyInfo : LobbyProfiles)
-		{
-			StateKey += FString::Printf(
-				TEXT("|L:%s:%s:%d:%d:%d:%d:%s"),
-				*LobbyInfo.SteamId,
-				*LobbyInfo.DisplayName,
-				LobbyInfo.bPartyHost ? 1 : 0,
-				LobbyInfo.bLobbyReady ? 1 : 0,
-				LobbyInfo.bMiniFlowActive ? 1 : 0,
-				static_cast<int32>(LobbyInfo.FrontendScreen),
-				*LobbyInfo.MiniSelectedHeroID.ToString());
-		}
+		FT66MinigameLeaderboardEntry& Entry = Entries.AddDefaulted_GetRef();
+		Entry.Rank = 1;
+		Entry.DisplayName = TEXT("Local Player");
+		Entry.Score = ProfileSave->LifetimeMaterialsCollected;
+		Entry.bIsLocalPlayer = true;
 	}
+	return Entries;
+}
 
-	return StateKey;
+FText UT66MiniMainMenuScreen::GetDailyLeaderboardStatus(FName DifficultyID) const
+{
+	return NSLOCTEXT("T66Mini.MainMenu", "MiniDailyStatus", "Daily challenge leaderboard is ready for backend entries.");
+}
+
+FText UT66MiniMainMenuScreen::GetAllTimeLeaderboardStatus(FName DifficultyID) const
+{
+	return NSLOCTEXT("T66Mini.MainMenu", "MiniAllTimeStatus", "Finish a Mini Chadpocalypse run to seed your all-time row.");
+}
+
+TSharedRef<SWidget> UT66MiniMainMenuScreen::BuildSlateUI()
+{
+	return BuildSharedMainMenuUI();
 }
 
 FReply UT66MiniMainMenuScreen::HandleBackToMainMenuClicked()
@@ -923,43 +247,51 @@ FReply UT66MiniMainMenuScreen::HandleNewGameClicked()
 
 FReply UT66MiniMainMenuScreen::HandleLoadGameClicked()
 {
-	if (UGameInstance* GameInstance = GetGameInstance())
-	{
-		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
-		{
-			if (PartySubsystem->HasRemotePartyMembers())
-			{
-				return FReply::Handled();
-			}
-		}
-	}
-
 	NavigateTo(ET66ScreenType::MiniSaveSlots);
 	return FReply::Handled();
 }
 
-void UT66MiniMainMenuScreen::HandleFriendSearchTextChanged(const FText& InText)
+FReply UT66MiniMainMenuScreen::HandleDailyClicked()
 {
-	const FString NewQuery = InText.ToString();
-	if (FriendSearchQuery.Equals(NewQuery, ESearchCase::CaseSensitive))
+	const FName DifficultyID = SharedMenuLayout.IsValid() ? SharedMenuLayout->GetSelectedDifficultyID() : FName(TEXT("Easy"));
+	const FString DifficultyToken = DifficultyID.ToString().ToLower();
+	const FString DateKey = FDateTime::UtcNow().ToString(TEXT("%Y%m%d"));
+	FString ChallengeId = FString::Printf(TEXT("mini-%s-%s"), *DateKey, *DifficultyToken);
+	int32 DailySeed = static_cast<int32>(GetTypeHash(ChallengeId));
+
+	if (UT66BackendSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66BackendSubsystem>() : nullptr)
 	{
-		return;
+		FT66MinigameDailyChallengeData Challenge;
+		const FString ChallengeKey = UT66BackendSubsystem::MakeMinigameDailyChallengeCacheKey(TEXT("mini"), DifficultyToken);
+		if (Backend->GetCachedMinigameDailyChallenge(ChallengeKey, Challenge))
+		{
+			ChallengeId = Challenge.ChallengeId;
+			DailySeed = Challenge.RunSeed;
+		}
+		else if (Backend->IsBackendConfigured())
+		{
+			Backend->FetchCurrentMinigameDailyChallenge(TEXT("mini"), DifficultyToken);
+		}
 	}
 
-	FriendSearchQuery = NewQuery;
-	LastPartyUiStateKey = BuildPartyUiStateKey();
-	FT66Style::DeferRebuild(this);
+	if (UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr)
+	{
+		FrontendState->BeginDailyRun(DifficultyID, ChallengeId, DailySeed);
+	}
+
+	NavigateTo(ET66ScreenType::MiniCharacterSelect);
+	return FReply::Handled();
 }
 
 void UT66MiniMainMenuScreen::RequestMiniMenuTextures()
 {
 	SetupLooseBrush(SkyBackgroundBrush, SkyBackgroundTexture, TEXT("SourceAssets/UI/MainMenuReference/scene_background_1920x1080.png"), MiniBgSize, true, TEXT("MiniMainMenuScene"));
-	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/central_button_normal.png"), FVector2D(360.f, 104.f), false, TEXT("MiniMainMenuCTA"));
+	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("SourceAssets/UI/Reference/Shared/Buttons/CTA/normal.png"), FVector2D(360.f, 104.f), false, TEXT("MiniMainMenuCTA"));
 }
 
 void UT66MiniMainMenuScreen::ReleaseRetainedSlateState()
 {
-	LeaderboardPanel.Reset();
+	SharedMenuLayout.Reset();
 	SkyBackgroundBrush.Reset();
 	SkyBackgroundTexture.Reset();
 	FireMoonBrush.Reset();
@@ -968,7 +300,4 @@ void UT66MiniMainMenuScreen::ReleaseRetainedSlateState()
 	PyramidChadTexture.Reset();
 	PrimaryCTAFillBrush.Reset();
 	PrimaryCTAFillTexture.Reset();
-	ProfileAvatarBrush.Reset();
-	FriendAvatarBrushes.Reset();
-	PartyAvatarBrushes.Reset();
 }

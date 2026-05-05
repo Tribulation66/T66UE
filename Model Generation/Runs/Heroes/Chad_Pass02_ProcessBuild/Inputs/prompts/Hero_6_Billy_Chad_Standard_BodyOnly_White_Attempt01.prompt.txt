@@ -1,0 +1,18 @@
+Create a production source image for TRELLIS image-to-3D.
+
+Subject: Hero_6 Billy, original stylized game character, Chad/default skin body only.
+
+One centered front-facing neck-down male body only. No head, no face, no hair, no hat, no ears, no beard, no weapon, no holstered pistol, no duplicate view, no poster panel.
+
+Anatomy target: giant giga-chad/nephilim proportions, impossible muscle mass, huge traps, boulder shoulders, barrel chest, thick arms, thick forearms, huge thighs and calves, very thin waist, extreme V taper.
+
+Neck target: clean open circular neck socket above the trapezius, prepared for a separate head and neck insert. Do not generate a neck stump, chin, mustache, or hat shadow.
+
+Pose: orthographic production reference, symmetrical A-pose, arms slightly away from torso, feet separated, straight-on camera, full body visible from feet to neck socket.
+
+Identity/outfit notes: outlaw gunslinger clothing without weapons, cropped leather vest, rugged belt, fitted western trousers, boots, warm leather and brass details. No head and no hat.
+
+Background: pure flat opaque white #ffffff. No alpha, no floor, no cast shadow, no contact shadow, no reflection, no gradient, no gray patch, no border card.
+
+Clean stylized game asset reference, sharp silhouette, readable materials, no text, no watermark, no logo.
+

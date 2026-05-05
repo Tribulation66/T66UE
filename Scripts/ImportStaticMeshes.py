@@ -28,33 +28,63 @@ import MakeGLBImportsUnlit
 # name:        Desired asset name in the content browser
 # ======================================================================
 
+COHERENT_THEME_KIT_MODULES = (
+    "DungeonWall_TorchSconce_A",
+    "DungeonWall_StoneBlocks_A",
+    "DungeonWall_Chains_A",
+    "DungeonWall_BonesNiche_A",
+    "DungeonFloor_StoneSlabs_A",
+    "DungeonFloor_Drain_A",
+    "DungeonFloor_Cracked_A",
+    "DungeonFloor_Bones_A",
+    "ForestWall_VineTotem_A",
+    "ForestWall_TrunkWeave_A",
+    "ForestWall_RootBraid_A",
+    "ForestWall_MushroomBark_A",
+    "ForestFloor_RootMat_A",
+    "ForestFloor_MossStone_A",
+    "ForestFloor_LeafCrack_A",
+    "ForestFloor_BrambleEdge_A",
+    "OceanWall_CoralReef_A",
+    "OceanWall_ShellLimestone_A",
+    "OceanWall_KelpCoral_A",
+    "OceanWall_ReefRuin_A",
+    "OceanFloor_ReefStone_A",
+    "OceanFloor_ShellSand_A",
+    "OceanFloor_CoralCrack_A",
+    "OceanFloor_TidePool_A",
+    "MartianWall_RuinPanel_A",
+    "MartianWall_RedRock_A",
+    "MartianWall_MeteorScar_A",
+    "MartianWall_CrystalVein_A",
+    "MartianFloor_RuinTile_A",
+    "MartianFloor_RegolithPlates_A",
+    "MartianFloor_CrystalDust_A",
+    "MartianFloor_CraterCracks_A",
+    "HellWall_SpikeBasalt_A",
+    "HellWall_LavaCrack_A",
+    "HellWall_ChainsSkulls_A",
+    "HellWall_Brimstone_A",
+    "HellFloor_RunePlate_A",
+    "HellFloor_Obsidian_A",
+    "HellFloor_EmberFissure_A",
+    "HellFloor_BoneAsh_A",
+)
+
+COHERENT_THEME_KIT_DEST = "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01"
+
+COHERENT_THEME_KIT_IMPORTS = [
+    (
+        f"WorldKit/CoherentThemeKit01/{module_id}_UnrealReady.fbx",
+        COHERENT_THEME_KIT_DEST,
+        f"{module_id}_UnrealReady",
+    )
+    for module_id in COHERENT_THEME_KIT_MODULES
+]
+
 IMPORTS = [
-    # --- Generated dungeon kit ---
-    (
-        "WorldKit/DungeonKit01/DungeonWall_Straight_A_UnrealReady.fbx",
-        "/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01",
-        "DungeonWall_Straight_A_UnrealReady",
-    ),
-    (
-        "WorldKit/DungeonKit01/DungeonWall_Straight_Chains_UnrealReady.fbx",
-        "/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01",
-        "DungeonWall_Straight_Chains_UnrealReady",
-    ),
-    (
-        "WorldKit/DungeonKit01/DungeonWall_Straight_BonesNiche_UnrealReady.fbx",
-        "/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01",
-        "DungeonWall_Straight_BonesNiche_UnrealReady",
-    ),
-    (
-        "WorldKit/DungeonKit01/DungeonWall_Doorway_Arch_UnrealReady.fbx",
-        "/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01",
-        "DungeonWall_Doorway_Arch_UnrealReady",
-    ),
-    (
-        "WorldKit/DungeonKit01/DungeonFloor_BonesDrain_A_UnrealReady.fbx",
-        "/Game/World/Terrain/TowerDungeon/GeneratedKit/DungeonKit01",
-        "DungeonFloor_BonesDrain_A_UnrealReady",
-    ),
+    # --- Generated tower theme kit ---
+    *COHERENT_THEME_KIT_IMPORTS,
 
     # --- Props ---
     ("Props/Barn.glb",     "/Game/World/Props",              "Barn"),

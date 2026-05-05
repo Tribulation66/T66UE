@@ -75,7 +75,7 @@ public class T66 : ModuleRules
 		AddLooseRuntimeDependency("SourceAssets/OuterWallTexture.png");
 		AddLooseRuntimeDependency("SourceAssets/Arcade/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/HeroSelection/...");
-		AddLooseRuntimeDependency("SourceAssets/UI/MasterLibrary/...");
+		AddLooseRuntimeDependency("SourceAssets/UI/Reference/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/PowerUp/Diplomas/...");
 
 		// Add all subdirectories as include paths

@@ -47,11 +47,11 @@ namespace
 		const FString Name(FileName);
 		const auto BasicButtonPath = [](const TCHAR* State) -> FString
 		{
-			return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_%s.png"), State);
+			return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), State);
 		};
 		const auto SelectButtonPath = [](const TCHAR* State) -> FString
 		{
-			return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_%s.png"), State);
+			return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), State);
 		};
 
 		if (Name.StartsWith(TEXT("settings_toggle_on_")))
@@ -70,23 +70,23 @@ namespace
 		}
 		if (Name == TEXT("settings_content_shell_frame.png"))
 		{
-			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/Minigames/Panels/minigames_panels_inner_panel_normal.png");
 		}
 		if (Name == TEXT("settings_row_shell_full.png") || Name == TEXT("settings_row_shell_split.png"))
 		{
-			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/Minigames/Panels/minigames_panels_inner_panel_normal.png");
 		}
 		if (Name == TEXT("settings_dropdown_field.png"))
 		{
-			return TEXT("SourceAssets/UI/MasterLibrary/Slices/Controls/dropdown_field_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/Minigames/Controls/minigames_controls_reference_dropdown_field_normal.png");
 		}
 
-		return FString(TEXT("SourceAssets/UI/MasterLibrary/Slices/")) / Name;
+		return FString(TEXT("SourceAssets/UI/Reference/Shared")) / Name;
 	}
 
 	FMargin GetMinigamesGeneratedBrushMargin(const FString& SourceRelativePath)
 	{
-		if (SourceRelativePath.Contains(TEXT("basic_panel_normal.png")) || SourceRelativePath.Contains(TEXT("inner_panel_normal.png")))
+		if (SourceRelativePath.Contains(TEXT("inner_panel_normal.png")))
 		{
 			return FMargin(0.067f, 0.043f, 0.067f, 0.043f);
 		}
@@ -94,19 +94,14 @@ namespace
 		{
 			return FMargin(0.06f, 0.34f, 0.06f, 0.34f);
 		}
-		if (SourceRelativePath.Contains(TEXT("duo_button_")) || SourceRelativePath.Contains(TEXT("select_button_")) || SourceRelativePath.Contains(TEXT("basic_button_")))
+		if (T66ScreenSlateHelpers::IsReferenceChromePillButtonAssetPath(SourceRelativePath))
 		{
 			return FMargin(0.093f, 0.213f, 0.093f, 0.213f);
 		}
-		if (SourceRelativePath.Contains(TEXT("central_button_")))
+		if (T66ScreenSlateHelpers::IsReferenceChromeCTAButtonAssetPath(SourceRelativePath))
 		{
 			return FMargin(0.083f, 0.231f, 0.083f, 0.231f);
 		}
-		if (SourceRelativePath.Contains(TEXT("dropdown_option_button_")))
-		{
-			return FMargin(0.067f, 0.250f, 0.067f, 0.250f);
-		}
-
 		return FMargin(0.f);
 	}
 
@@ -116,6 +111,11 @@ namespace
 			&& FMath::IsNearlyZero(Margin.Top)
 			&& FMath::IsNearlyZero(Margin.Right)
 			&& FMath::IsNearlyZero(Margin.Bottom);
+	}
+
+	bool IsMinigamesSlicedButtonPath(const FString& SourceRelativePath)
+	{
+		return T66ScreenSlateHelpers::IsReferenceChromeButtonAssetPath(SourceRelativePath);
 	}
 
 	UTexture2D* LoadMinigamesGeneratedTexture(const FString& SourceRelativePath)
@@ -132,16 +132,20 @@ namespace
 				continue;
 			}
 
+			const TextureFilter Filter = IsMinigamesSlicedButtonPath(SourceRelativePath)
+				? TextureFilter::TF_Nearest
+				: TextureFilter::TF_Trilinear;
+
 			UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 				CandidatePath,
-				TextureFilter::TF_Trilinear,
+				Filter,
 				true,
 				TEXT("MinigamesGeneratedUI"));
 			if (!Texture)
 			{
 				Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
 					CandidatePath,
-					TextureFilter::TF_Trilinear,
+					Filter,
 					TEXT("MinigamesGeneratedUI"));
 			}
 
@@ -175,10 +179,11 @@ namespace
 
 		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
 		const FMargin BrushMargin = GetMinigamesGeneratedBrushMargin(SourceRelativePath);
-		Brush->DrawAs = IsZeroMinigamesMargin(BrushMargin) ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
+		const bool bSlicedButton = IsMinigamesSlicedButtonPath(SourceRelativePath);
+		Brush->DrawAs = bSlicedButton || IsZeroMinigamesMargin(BrushMargin) ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
 		Brush->Tiling = ESlateBrushTileType::NoTile;
 		Brush->ImageSize = ResolvedSize;
-		Brush->Margin = BrushMargin;
+		Brush->Margin = bSlicedButton ? FMargin(0.f) : BrushMargin;
 		Brush->TintColor = FSlateColor(FLinearColor::White);
 		Brush->SetResourceObject(Texture);
 
@@ -265,20 +270,40 @@ namespace
 		const FLinearColor& TextColor,
 		const FMargin& ContentPadding)
 	{
-		return FT66Style::MakeBareButton(
-			FT66BareButtonParams(
-				Params.OnClicked,
-				SNew(STextBlock)
-				.Text(Params.Label)
-				.Font(Font)
-				.ColorAndOpacity(TextColor)
-				.Justification(ETextJustify::Center))
-			.SetButtonStyle(ButtonStyle ? ButtonStyle : &FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-			.SetPadding(ContentPadding)
-			.SetEnabled(Params.IsEnabled)
-			.SetMinWidth(Params.MinWidth)
-			.SetHeight(Params.Height)
-			.SetVisibility(Params.Visibility));
+		if (!ButtonStyle)
+		{
+			return FT66Style::MakeBareButton(
+				FT66BareButtonParams(
+					Params.OnClicked,
+					SNew(STextBlock)
+					.Text(Params.Label)
+					.Font(Font)
+					.ColorAndOpacity(TextColor)
+					.Justification(ETextJustify::Center))
+				.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+				.SetPadding(ContentPadding)
+				.SetEnabled(Params.IsEnabled)
+				.SetMinWidth(Params.MinWidth)
+				.SetHeight(Params.Height)
+				.SetVisibility(Params.Visibility));
+		}
+
+		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+			Params.OnClicked,
+			SNew(STextBlock)
+			.Text(Params.Label)
+			.Font(Font)
+			.ColorAndOpacity(TextColor)
+			.Justification(ETextJustify::Center),
+			&ButtonStyle->Normal,
+			&ButtonStyle->Hovered,
+			&ButtonStyle->Pressed,
+			&ButtonStyle->Disabled,
+			Params.MinWidth,
+			Params.Height,
+			ContentPadding,
+			Params.IsEnabled,
+			Params.Visibility);
 	}
 }
 
@@ -308,9 +333,12 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 	const FText TDTitle = NSLOCTEXT("T66.MiniGames", "SliceTDTitle", "CHADPOCALYPSE TD");
 	const FText TDBody = NSLOCTEXT("T66.MiniGames", "SliceTDBody", "A tower defense minigame with hero placement, enemy waves, upgrades, and rotating maps.");
 	const FText TDTag = NSLOCTEXT("T66.MiniGames", "SliceTDTag", "PLAY");
-	const FText ComingSoonTitle = NSLOCTEXT("T66.MiniGames", "SliceComingSoonTitle", "COMING SOON");
-	const FText ComingSoonBody = NSLOCTEXT("T66.MiniGames", "SliceComingSoonBody", "Reserved slot for future mini-game releases.");
-	const FText ComingSoonTag = NSLOCTEXT("T66.MiniGames", "SliceComingSoonTag", "IN DEVELOPMENT");
+	const FText IdleTitle = NSLOCTEXT("T66.MiniGames", "SliceIdleTitle", "IDLE CHADPOCALYPSE");
+	const FText IdleBody = NSLOCTEXT("T66.MiniGames", "SliceIdleBody", "An offline-progress idle minigame with heroes, upgrades, stage pushing, and comeback rewards.");
+	const FText IdleTag = NSLOCTEXT("T66.MiniGames", "SliceIdleTag", "PROTOTYPE");
+	const FText DeckTitle = NSLOCTEXT("T66.MiniGames", "SliceDeckTitle", "CHADPOCALYPSE DECKBUILDER");
+	const FText DeckBody = NSLOCTEXT("T66.MiniGames", "SliceDeckBody", "A dungeon-descent deckbuilder with card combat, route choices, relics, and reward drafts.");
+	const FText DeckTag = NSLOCTEXT("T66.MiniGames", "SliceDeckTag", "PROTOTYPE");
 	const float TopInset = T66ScreenSlateHelpers::GetFrontendChromeTopInset(UIManager);
 
 	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
@@ -445,11 +473,11 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 							]
 							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 10.f)
 							[
-								MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
+								MakeSlicePanel(IdleTitle, IdleBody, IdleTag, FLinearColor(0.58f, 0.42f, 0.92f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked))
 							]
 							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 0.f)
 							[
-								MakeSlicePanel(ComingSoonTitle, ComingSoonBody, ComingSoonTag, FT66Style::Accent2(), false)
+								MakeSlicePanel(DeckTitle, DeckBody, DeckTag, FLinearColor(0.26f, 0.64f, 0.78f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked))
 							]
 						]
 					]
@@ -459,7 +487,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 				T66FrontendShellFill())
 		];
 
-	if (const FSlateBrush* SceneBackgroundBrush = ResolveMinigamesGeneratedBrush(TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png")))
+	if (const FSlateBrush* SceneBackgroundBrush = ResolveMinigamesGeneratedBrush(TEXT("SourceAssets/UI/Reference/Screens/Minigames/ScreenArt/minigames_screen_art_mainmenu_main_menu_scene_plate_v1.png")))
 	{
 		return SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -528,6 +556,18 @@ FReply UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked()
 FReply UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked()
 {
 	NavigateTo(ET66ScreenType::TDMainMenu);
+	return FReply::Handled();
+}
+
+FReply UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked()
+{
+	NavigateTo(ET66ScreenType::IdleMainMenu);
+	return FReply::Handled();
+}
+
+FReply UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked()
+{
+	NavigateTo(ET66ScreenType::DeckMainMenu);
 	return FReply::Handled();
 }
 

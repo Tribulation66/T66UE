@@ -3,11 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UI/Components/T66MinigameMenuLayout.h"
 #include "UI/T66ScreenBase.h"
 #include "UObject/StrongObjectPtr.h"
 #include "T66MiniMainMenuScreen.generated.h"
 
-class ST66MiniLeaderboardPanel;
+class ST66MinigameMenuLayout;
 class UTexture2D;
 
 UCLASS(Blueprintable)
@@ -25,18 +26,20 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
+	TSharedRef<SWidget> BuildSharedMainMenuUI();
+	TArray<FT66MinigameDifficultyOption> BuildDifficultyOptions() const;
+	TArray<FT66MinigameLeaderboardEntry> BuildDailyLeaderboardEntries(FName DifficultyID) const;
+	TArray<FT66MinigameLeaderboardEntry> BuildAllTimeLeaderboardEntries(FName DifficultyID) const;
+	FText GetDailyLeaderboardStatus(FName DifficultyID) const;
+	FText GetAllTimeLeaderboardStatus(FName DifficultyID) const;
 	FReply HandleBackToMainMenuClicked();
 	FReply HandleNewGameClicked();
 	FReply HandleLoadGameClicked();
-	void HandlePartyStateChanged();
-	void HandleSessionStateChanged();
-	void SyncToSharedPartyScreen();
-	FString BuildPartyUiStateKey() const;
-	void HandleFriendSearchTextChanged(const FText& InText);
+	FReply HandleDailyClicked();
 	void RequestMiniMenuTextures();
 	void ReleaseRetainedSlateState();
 
-	TSharedPtr<ST66MiniLeaderboardPanel> LeaderboardPanel;
+	TSharedPtr<ST66MinigameMenuLayout> SharedMenuLayout;
 	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
 	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
 	TSharedPtr<FSlateBrush> FireMoonBrush;
@@ -45,11 +48,4 @@ private:
 	TStrongObjectPtr<UTexture2D> PyramidChadTexture;
 	TSharedPtr<FSlateBrush> PrimaryCTAFillBrush;
 	TStrongObjectPtr<UTexture2D> PrimaryCTAFillTexture;
-	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
-	TArray<TSharedPtr<FSlateBrush>> FriendAvatarBrushes;
-	TArray<TSharedPtr<FSlateBrush>> PartyAvatarBrushes;
-	FString FriendSearchQuery;
-	FString LastPartyUiStateKey;
-	FDelegateHandle PartyStateChangedHandle;
-	FDelegateHandle SessionStateChangedHandle;
 };

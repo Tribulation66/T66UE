@@ -1,0 +1,9 @@
+CardID,DisplayName,RulesText,CardType,EnergyCost,ArchetypeID,Damage,Block,RarityID,AccentColor
+Strike,Strike,Deal 8 damage.,Attack,1,Starter,8,0,Common,"(R=0.64,G=0.20,B=0.20,A=1.0)"
+Guard,Guard,Gain 7 block.,Skill,1,Starter,0,7,Common,"(R=0.20,G=0.36,B=0.62,A=1.0)"
+Bash,Bash,Deal 12 damage.,Attack,2,Starter,12,0,Common,"(R=0.62,G=0.32,B=0.16,A=1.0)"
+Brace,Brace,Gain 5 block.,Skill,0,Starter,0,5,Common,"(R=0.26,G=0.42,B=0.56,A=1.0)"
+Cleave,Cleave,Deal 6 damage.,Attack,1,Starter,6,0,Common,"(R=0.48,G=0.22,B=0.72,A=1.0)"
+Pierce,Pierce,Deal 10 damage.,Attack,1,Pierce,10,0,Uncommon,"(R=0.78,G=0.64,B=0.30,A=1.0)"
+Fortify,Fortify,Gain 12 block.,Skill,2,Armor,0,12,Uncommon,"(R=0.24,G=0.48,B=0.72,A=1.0)"
+GoldRush,Gold Rush,Deal 14 damage.,Attack,2,Gold,14,0,Rare,"(R=0.88,G=0.68,B=0.20,A=1.0)"

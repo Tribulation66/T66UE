@@ -41,3 +41,29 @@ Tools/ChatGPTBridge/output/
 
 # Source art / raw imports (optional: remove line below to track SourceAssets for hero/character pipeline)
 # SourceAssets/
+
+# Generated/review artifacts kept local to avoid multi-GB Git/LFS pushes.
+# Keep docs, scripts, manifests, DataTables, and runtime Content assets in Git;
+# keep raw model runs, Blender scenes, proof screenshots, and source-import dumps local.
+Model Generation/Scenes/
+Model Generation/Archive/
+Model Generation/Runs/**/*.blend
+Model Generation/Runs/**/*.blend1
+Model Generation/Runs/**/*.fbx
+Model Generation/Runs/**/*.glb
+Model Generation/Runs/**/*.png
+Model Generation/Runs/**/*.jpg
+Model Generation/Runs/**/*.jpeg
+Model Generation/Runs/**/*.mp4
+Model Generation/Runs/**/Raw/
+Model Generation/Runs/**/Renders/
+Model Generation/Runs/**/Exports/
+SourceAssets/Import/
+SourceAssets/UI/
+UI/archive/
+UI/generation/
+UI/screens/**/*.png
+UI/screens/**/*.jpg
+UI/screens/**/*.jpeg
+UI/screens/**/_capture_results.json
+UI/Reference/**/*.png

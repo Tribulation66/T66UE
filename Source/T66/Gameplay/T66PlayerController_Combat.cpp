@@ -444,8 +444,7 @@ void AT66PlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 	SyncLockedCombatTargetFromCombat();
-	UpdateGameplayCameraSideWallSpring(DeltaTime);
-	UpdateHeroCameraOccluders();
+	UpdateLockedChaseGameplayCamera(DeltaTime);
 }
 
 bool AT66PlayerController::HasAttackLockedEnemy() const
@@ -474,6 +473,19 @@ bool AT66PlayerController::GetAttackLockScreenPosition(FVector2D& OutScreenPosit
 	{
 		OutScreenPosition = FVector2D::ZeroVector;
 		return false;
+	}
+
+	if (IsLockedChaseGameplayCameraMode() && !bHeroOneScopedUltActive && !bHeroOneScopeViewEnabled)
+	{
+		float MouseX = 0.0f;
+		float MouseY = 0.0f;
+		if (GetMousePosition(MouseX, MouseY))
+		{
+			OutScreenPosition = FVector2D(
+				FMath::Clamp(MouseX, 0.0f, static_cast<float>(SizeX)),
+				FMath::Clamp(MouseY, 0.0f, static_cast<float>(SizeY)));
+			return true;
+		}
 	}
 
 	OutScreenPosition = FVector2D(
@@ -1022,6 +1034,10 @@ void AT66PlayerController::HandleToggleMouseLockPressed()
 	if (bHeroOneScopedUltActive) return;
 	if (TryHandleMouseTriggeredUltimate()) return;
 	if (!CanUseCombatMouseInput()) return;
+	if (IsLockedChaseGameplayCameraMode())
+	{
+		return;
+	}
 
 	if (bShowMouseCursor)
 	{

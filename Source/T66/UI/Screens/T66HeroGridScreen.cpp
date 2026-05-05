@@ -31,14 +31,16 @@ namespace
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const TCHAR* RelativePath,
 		const FMargin& Margin,
-		const TCHAR* DebugLabel)
+		const TCHAR* DebugLabel,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
 			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
 			Margin,
-			DebugLabel);
+			DebugLabel,
+			Filter);
 	}
 
 	const FSlateBrush* GetHeroGridModalShellBrush()
@@ -46,7 +48,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/HeroGrid/Panels/herogrid_panels_inner_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("HeroGridModalShell"));
 	}
@@ -58,34 +60,70 @@ namespace
 		return bSelected
 			? ResolveHeroGridBrush(
 				Selected,
-				TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+				TEXT("SourceAssets/UI/Reference/Modals/HeroGrid/Panels/herogrid_panels_inner_panel_normal.png"),
 				FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 				TEXT("HeroGridTileSelected"))
 			: ResolveHeroGridBrush(
 				Neutral,
-				TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
+				TEXT("SourceAssets/UI/Reference/Modals/HeroGrid/Panels/herogrid_panels_inner_panel_normal.png"),
 				FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 				TEXT("HeroGridTileNeutral"));
 	}
 
-	const FSlateBrush* GetHeroGridCompactButtonBrush()
+	enum class ET66HeroGridButtonState : uint8
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		Normal,
+		Hovered,
+		Pressed,
+		Disabled
+	};
+
+	const FSlateBrush* GetHeroGridCompactButtonBrush(const ET66HeroGridButtonState State)
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Normal;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Hovered;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Pressed;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Disabled;
+
+		T66RuntimeUIBrushAccess::FOptionalTextureBrush* Entry = &Normal;
+		const TCHAR* StateName = TEXT("normal");
+		const TCHAR* DebugLabel = TEXT("HeroGridCompactButtonNormal");
+		switch (State)
+		{
+		case ET66HeroGridButtonState::Hovered:
+			Entry = &Hovered;
+			StateName = TEXT("hover");
+			DebugLabel = TEXT("HeroGridCompactButtonHover");
+			break;
+		case ET66HeroGridButtonState::Pressed:
+			Entry = &Pressed;
+			StateName = TEXT("pressed");
+			DebugLabel = TEXT("HeroGridCompactButtonPressed");
+			break;
+		case ET66HeroGridButtonState::Disabled:
+			Entry = &Disabled;
+			StateName = TEXT("disabled");
+			DebugLabel = TEXT("HeroGridCompactButtonDisabled");
+			break;
+		case ET66HeroGridButtonState::Normal:
+		default:
+			break;
+		}
+
 		return ResolveHeroGridBrush(
-			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png"),
-			FMargin(0.093f, 0.213f, 0.093f, 0.213f),
-			TEXT("HeroGridCompactButton"));
+			*Entry,
+			*T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), StateName),
+			FMargin(0.f),
+			DebugLabel,
+			TextureFilter::TF_Nearest);
 	}
 
-	const FSlateBrush* GetHeroGridAvatarFrameBrush()
+	const FSlateBrush* GetHeroGridAvatarPlateBrush(const bool bSelected)
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveHeroGridBrush(
-			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Slots/basic_slot_normal.png"),
-			FMargin(0.20f, 0.20f, 0.20f, 0.20f),
-			TEXT("HeroGridAvatarFrame"));
+		return T66ScreenSlateHelpers::GetReferenceSharedBrush(
+			bSelected ? TEXT("Slots/Grid/portrait_slot_selected.png") : TEXT("Slots/Grid/portrait_slot_normal.png"),
+			FMargin(0.f),
+			bSelected ? TEXT("HeroGridAvatarPlateSelectedV15") : TEXT("HeroGridAvatarPlateNormalV15"));
 	}
 
 	const FSlateBrush* GetHeroGridSceneBackgroundBrush()
@@ -93,30 +131,20 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/ScreenArt/MainMenu/main_menu_scene_plate_imagegen_20260425_v1.png"),
+			TEXT("SourceAssets/UI/Reference/Modals/HeroGrid/ScreenArt/herogrid_screen_art_mainmenu_main_menu_scene_plate_v1.png"),
 			FMargin(0.f),
 			TEXT("HeroGridSceneBackground"));
 	}
 
 	TSharedRef<SWidget> MakeHeroGridModalShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		if (const FSlateBrush* ShellBrush = GetHeroGridModalShellBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(ShellBrush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(
+		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
+			TEXT("Panels/Modal/modal_shell_medium.png"),
 			Content,
-			FT66PanelParams(ET66PanelType::Panel)
-				.SetColor(FT66Style::Tokens::Panel)
-				.SetPadding(Padding));
+			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
+			Padding,
+			TEXT("HeroGridModalShellV14"),
+			FT66Style::Tokens::Panel);
 	}
 
 	TSharedRef<SWidget> MakeHeroGridTextButton(const FT66ButtonParams& Params)
@@ -134,17 +162,18 @@ namespace
 					TAttribute<FLinearColor>(FLinearColor(0.f, 0.f, 0.f, 0.68f))));
 		}
 
-		ButtonParams
-			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(true)
-			.SetDotaPlateOverrideBrush(GetHeroGridCompactButtonBrush())
-			.SetTextColor(FLinearColor(0.97f, 0.94f, 0.84f, 1.f))
-			.SetTextShadowOffset(FVector2D(1.f, 1.f))
-			.SetStateTextShadowColors(
-				FLinearColor(0.f, 0.f, 0.f, 0.68f),
-				FLinearColor(0.f, 0.f, 0.f, 0.78f),
-				FLinearColor(0.f, 0.f, 0.f, 0.85f));
-		return FT66Style::MakeButton(ButtonParams);
+		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+			ButtonParams.OnClicked,
+			ButtonParams.CustomContent.ToSharedRef(),
+			GetHeroGridCompactButtonBrush(ET66HeroGridButtonState::Normal),
+			GetHeroGridCompactButtonBrush(ET66HeroGridButtonState::Hovered),
+			GetHeroGridCompactButtonBrush(ET66HeroGridButtonState::Pressed),
+			GetHeroGridCompactButtonBrush(ET66HeroGridButtonState::Disabled),
+			ButtonParams.MinWidth,
+			ButtonParams.Height > 0.f ? ButtonParams.Height : 44.f,
+			ButtonParams.Padding.Left >= 0.f ? ButtonParams.Padding : FMargin(6.f, 2.f),
+			ButtonParams.IsEnabled,
+			ButtonParams.Visibility);
 	}
 
 	TSharedRef<SWidget> MakeHeroGridTile(
@@ -155,21 +184,17 @@ namespace
 		const bool bSelected)
 	{
 		const float TileSize = Metrics.TileSize;
-		const float InnerInset = FMath::Clamp(TileSize * 0.08f, 6.f, 16.f);
-		const bool bEnabled = ButtonParams.IsEnabled.Get(true);
-		const FLinearColor InteriorColor = bSelected
-			? FLinearColor(0.050f, 0.055f, 0.070f, bEnabled ? 0.94f : 0.38f)
-			: FLinearColor(0.012f, 0.018f, 0.026f, bEnabled ? 0.92f : 0.34f);
+		const float InnerInset = FMath::Clamp(TileSize * 0.23f, 18.f, 38.f);
 
 		TSharedRef<SOverlay> TileContent = SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(InteriorColor)
+				SNew(SImage)
+				.Image(GetHeroGridAvatarPlateBrush(bSelected))
+				.ColorAndOpacity(FLinearColor::White)
 			]
 			+ SOverlay::Slot()
-			.Padding(InnerInset + 5.f)
+			.Padding(InnerInset)
 			[
 				SNew(SScaleBox)
 				.Stretch(EStretch::ScaleToFit)
@@ -177,18 +202,6 @@ namespace
 					Content
 				]
 			];
-
-		if (const FSlateBrush* AvatarFrame = GetHeroGridAvatarFrameBrush())
-		{
-			TileContent->AddSlot()
-			[
-				SNew(SImage)
-				.Image(AvatarFrame)
-				.ColorAndOpacity(bSelected
-					? FLinearColor(1.15f, 1.06f, 0.78f, 1.0f)
-					: FLinearColor(0.82f, 0.86f, 0.78f, 0.92f))
-			];
-		}
 
 		return SNew(SBox)
 			.WidthOverride(TileSize)
@@ -255,23 +268,26 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 	const float SharedTopInset = (UIManager && UIManager->IsFrontendTopBarVisible())
 		? UIManager->GetFrontendTopBarContentHeight()
 		: 0.f;
-	const T66ScreenSlateHelpers::FResponsiveGridModalMetrics GridMetrics =
-		T66ScreenSlateHelpers::MakeResponsiveGridModalMetrics(AllHeroIDs.Num(), SafeFrameSize);
+	constexpr int32 HeroGridVisibleSlotCount = 16;
+	T66ScreenSlateHelpers::FResponsiveGridModalMetrics GridMetrics =
+		T66ScreenSlateHelpers::MakeResponsiveGridModalMetrics(HeroGridVisibleSlotCount, SafeFrameSize);
+	GridMetrics.ModalWidth = FMath::Min(GridMetrics.ModalWidth, GridMetrics.GridWidth + 250.0f);
 
 	HeroPortraitBrushes.Reset();
-	HeroPortraitBrushes.Reserve(AllHeroIDs.Num());
+	HeroPortraitBrushes.Reserve(FMath::Min(AllHeroIDs.Num(), HeroGridVisibleSlotCount));
 
 	TSharedRef<SGridPanel> GridPanel = SNew(SGridPanel);
-	for (int32 Index = 0; Index < AllHeroIDs.Num(); Index++)
+	for (int32 Index = 0; Index < HeroGridVisibleSlotCount; Index++)
 	{
 		const int32 Row = Index / GridMetrics.Columns;
 		const int32 Col = Index % GridMetrics.Columns;
-		FName HeroID = AllHeroIDs[Index];
+		const bool bHasHero = AllHeroIDs.IsValidIndex(Index);
+		FName HeroID = bHasHero ? AllHeroIDs[Index] : NAME_None;
 		FHeroData HeroData;
 		FLinearColor SpriteColor = FLinearColor(0.25f, 0.25f, 0.3f, 1.0f);
-		const bool bSelected = GI && GI->SelectedHeroID == HeroID;
+		const bool bSelected = bHasHero && GI && GI->SelectedHeroID == HeroID;
 		TSharedPtr<FSlateBrush> PortraitBrush;
-		if (GI && GI->GetHeroData(HeroID, HeroData))
+		if (bHasHero && GI && GI->GetHeroData(HeroID, HeroData))
 		{
 			SpriteColor = HeroData.PlaceholderColor;
 			const TSoftObjectPtr<UTexture2D> PortraitSoft = GI->ResolveHeroPortrait(HeroData, GI->SelectedHeroBodyType, ET66HeroPortraitVariant::Half);
@@ -289,19 +305,21 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 		const TSharedRef<SWidget> PortraitContent = PortraitBrush.IsValid()
 			? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrush.Get()))
 			: StaticCastSharedRef<SWidget>(SNew(SSpacer));
+		const FOnClicked TileClicked = bHasHero
+			? FOnClicked::CreateLambda([this, HeroIDCopy]() { return HandleHeroClicked(HeroIDCopy); })
+			: FOnClicked::CreateLambda([]() { return FReply::Handled(); });
 		GridPanel->AddSlot(Col, Row)
 			.Padding(GridMetrics.TileGap * 0.5f)
 			[
 				MakeHeroGridTile(
-					FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, HeroIDCopy]() { return HandleHeroClicked(HeroIDCopy); })),
+					FT66ButtonParams(FText::GetEmpty(), TileClicked)
+						.SetEnabled(bHasHero),
 					SpriteColor,
 					PortraitContent,
 					GridMetrics,
 					bSelected)
 			];
 	}
-
-	T66ScreenSlateHelpers::AddUniformGridPaddingSlots(*GridPanel, AllHeroIDs.Num(), GridMetrics);
 
 	const TSharedRef<SWidget> ModalContent = MakeHeroGridModalShell(
 		SNew(SVerticalBox)

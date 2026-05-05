@@ -1,0 +1,247 @@
+{
+  "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Assembly\\HeadBody\\Hero_3_Mike_Chad_RigPrototype_A03_LiftedNeckBridge.glb",
+  "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\Chad_Pass02_Mike_Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge_Rigged.blend",
+  "exports": {
+    "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Exports\\Hero_3_Mike_Chad_RigPrototype_A03_LiftedNeckBridge_RiggedWithSword.glb",
+    "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Exports\\Hero_3_Mike_Chad_RigPrototype_A03_LiftedNeckBridge_RiggedWithSword.fbx",
+    "idle_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Exports\\Hero_3_Mike_Chad_RigPrototype_A03_LiftedNeckBridge_Idle.fbx",
+    "walk_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Exports\\Hero_3_Mike_Chad_RigPrototype_A03_LiftedNeckBridge_WalkLegsOnly.fbx"
+  },
+  "renders": {
+    "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_rest_front.png",
+    "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_rest_right.png",
+    "rest_back": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_rest_back.png",
+    "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_rest_left_oblique.png",
+    "idle_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_idle_front.png",
+    "idle_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_idle_right.png",
+    "idle_back": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_idle_back.png",
+    "walk_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_walk_left_front.png",
+    "walk_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_walk_left_right.png",
+    "walk_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_walk_left_left_oblique.png",
+    "walk_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_walk_right_front.png",
+    "walk_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_walk_right_right.png",
+    "walk_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_walk_right_left_oblique.png",
+    "weapon_grip_front_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_weapon_grip_front_closeup.png",
+    "weapon_grip_right_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_weapon_grip_right_closeup.png",
+    "neck_right_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Renders\\Mike_Chad_RigPrototype_neck_right_closeup.png"
+  },
+  "weapon_attachment": {
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Arthur\\Raw\\Arthur_ExcaliburProxy_FlatGreen_Tight_S1337_Trellis2.glb",
+    "mesh": "Mike_Chad_SwordProxy",
+    "attachment_bone": "hand_r",
+    "target_length_m": 1.44,
+    "blade_direction": [
+      0.035002201795578,
+      -0.7200453281402588,
+      0.6930436491966248
+    ],
+    "hilt_roll_degrees": -90.0,
+    "hand_bone_tail_m": [
+      0.4161694347858429,
+      -0.03541867807507515,
+      0.4427334666252136
+    ],
+    "hand_target_m": [
+      0.4735041856765747,
+      -0.09144768118858337,
+      0.8323389291763306
+    ],
+    "grip_source_policy": "Source sword handle is near max Z and blade points toward local -Z; attach the upper handle region to the hand, rotate the blade upward plus forward toward character-front, then roll the hilt sideways with the wrist.",
+    "hand_target_policy": "Estimated from the visible right-hand volume because the generated hand bone tail sits too low for this stylized mesh."
+  },
+  "normalization": {
+    "target_height_m": 2.0,
+    "source_min_m": [
+      -0.3390374183654785,
+      -0.14235948026180267,
+      -0.5009698867797852
+    ],
+    "source_max_m": [
+      0.33887195587158203,
+      0.14494678378105164,
+      0.6300620436668396
+    ],
+    "source_size_m": [
+      0.6779093742370605,
+      0.2873062491416931,
+      1.1310319900512695
+    ],
+    "source_foot_center_m": [
+      -8.273124694824219e-05,
+      0.0012936517596244812,
+      -0.5009698867797852
+    ],
+    "baked_scale": 1.7682965801076416,
+    "normalized_min_m": [
+      -0.5993724465370178,
+      -0.2540213465690613,
+      0.0
+    ],
+    "normalized_max_m": [
+      0.599372386932373,
+      0.2540213465690613,
+      2.0
+    ],
+    "normalized_size_m": [
+      1.198744773864746,
+      0.5080426931381226,
+      2.0
+    ]
+  },
+  "armature": "Rig_Mike_Chad_Process",
+  "bones": [
+    "root",
+    "pelvis",
+    "spine_01",
+    "spine_02",
+    "neck_01",
+    "head",
+    "upperarm_l",
+    "lowerarm_l",
+    "hand_l",
+    "upperarm_r",
+    "lowerarm_r",
+    "hand_r",
+    "thigh_l",
+    "calf_l",
+    "foot_l",
+    "thigh_r",
+    "calf_r",
+    "foot_r"
+  ],
+  "deform_bones": [
+    "pelvis",
+    "spine_01",
+    "spine_02",
+    "neck_01",
+    "upperarm_l",
+    "lowerarm_l",
+    "hand_l",
+    "upperarm_r",
+    "lowerarm_r",
+    "hand_r",
+    "thigh_l",
+    "calf_l",
+    "foot_l",
+    "thigh_r",
+    "calf_r",
+    "foot_r",
+    "head"
+  ],
+  "mesh_vertex_groups": {
+    "Mike_Chad_Body": [
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "neck_01",
+      "upperarm_l",
+      "lowerarm_l",
+      "hand_l",
+      "upperarm_r",
+      "lowerarm_r",
+      "hand_r",
+      "thigh_l",
+      "calf_l",
+      "foot_l",
+      "thigh_r",
+      "calf_r",
+      "foot_r",
+      "head"
+    ],
+    "Mike_Chad_Head": [
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "neck_01",
+      "upperarm_l",
+      "lowerarm_l",
+      "hand_l",
+      "upperarm_r",
+      "lowerarm_r",
+      "hand_r",
+      "thigh_l",
+      "calf_l",
+      "foot_l",
+      "thigh_r",
+      "calf_r",
+      "foot_r",
+      "head"
+    ],
+    "Mike_Chad_NeckBridge": [
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "neck_01",
+      "upperarm_l",
+      "lowerarm_l",
+      "hand_l",
+      "upperarm_r",
+      "lowerarm_r",
+      "hand_r",
+      "thigh_l",
+      "calf_l",
+      "foot_l",
+      "thigh_r",
+      "calf_r",
+      "foot_r",
+      "head"
+    ],
+    "Mike_Chad_SwordProxy": [
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "neck_01",
+      "upperarm_l",
+      "lowerarm_l",
+      "hand_l",
+      "upperarm_r",
+      "lowerarm_r",
+      "hand_r",
+      "thigh_l",
+      "calf_l",
+      "foot_l",
+      "thigh_r",
+      "calf_r",
+      "foot_r",
+      "head"
+    ]
+  },
+  "body_small_components_stabilized": 3454,
+  "animation": {
+    "idle_action": "Mike_Chad_Idle",
+    "walk_action": "Mike_Chad_WalkLegsOnly",
+    "frame_start": 1,
+    "frame_end": 33,
+    "actions": [
+      "Mike_Chad_Idle",
+      "Mike_Chad_WalkLegsOnly"
+    ],
+    "walk_policy": "lower body only; arms remain stable for weapon attachment review"
+  },
+  "verification": {
+    "fbx_reimport": {
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Exports\\Hero_3_Mike_Chad_RigPrototype_A03_LiftedNeckBridge_RiggedWithSword.fbx",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 4,
+      "skinned_mesh_count": 4,
+      "actions": [
+        "Rig_Mike_Chad_Process|Rig_Mike_Chad_Process|Mike_Chad_Idle",
+        "Rig_Mike_Chad_Process|Rig_Mike_Chad_Process|Mike_Chad_WalkLegsOnly"
+      ],
+      "ok": true
+    },
+    "glb_reimport": {
+      "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\Exports\\Hero_3_Mike_Chad_RigPrototype_A03_LiftedNeckBridge_RiggedWithSword.glb",
+      "armature_count": 1,
+      "bone_count": 18,
+      "mesh_count": 5,
+      "actions": [
+        "Mike_Chad_Idle",
+        "Mike_Chad_WalkLegsOnly"
+      ],
+      "ok": true
+    },
+    "ok": true
+  }
+}

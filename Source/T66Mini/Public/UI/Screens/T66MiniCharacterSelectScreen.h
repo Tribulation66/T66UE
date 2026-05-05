@@ -19,21 +19,14 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
-	virtual void OnScreenDeactivated_Implementation() override;
-	virtual void NativeDestruct() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
 	FReply HandleBackClicked();
 	FReply HandleContinueClicked();
 	FReply HandleHeroClicked(FName HeroID);
-	void HandleSessionStateChanged();
-	void SyncToSharedPartyScreen();
-	FString BuildSessionUiStateKey() const;
 	void RebuildHeroSpriteBrushes(const TArray<FT66MiniHeroDefinition>& Heroes);
 	const FSlateBrush* FindHeroSpriteBrush(FName HeroID) const;
 
 	TMap<FName, TSharedPtr<FSlateBrush>> HeroSpriteBrushes;
-	FDelegateHandle SessionStateChangedHandle;
-	FString LastSessionUiStateKey;
 };

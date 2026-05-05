@@ -1,0 +1,174 @@
+{
+  "hero_id": 12,
+  "hero_name": "xQc",
+  "skin": "Standard",
+  "source": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_12_xQc_TypeA_Standard_HeadBody_Assembled.glb",
+  "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_Rigging\\Hero_12_xQc_TypeA_Standard_Rigged.blend",
+  "exports": {
+    "glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Exports\\Hero_12_TypeA_Rigged.glb",
+    "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Exports\\Hero_12_TypeA_Rigged.fbx"
+  },
+  "renders": {
+    "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_rest_front.png",
+    "rest_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_rest_right.png",
+    "rest_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_rest_left_oblique.png",
+    "idle_left_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_left_front.png",
+    "idle_left_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_left_right.png",
+    "idle_left_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_left_left_oblique.png",
+    "idle_right_front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_right_front.png",
+    "idle_right_right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_right_right.png",
+    "idle_right_left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Renders\\Hero_12_TypeA_idle_right_left_oblique.png"
+  },
+  "unreal": {
+    "destination": "/Game/Characters/Heroes/Hero_12/TypeA",
+    "skeletal_mesh": "/Game/Characters/Heroes/Hero_12/TypeA/SK_Hero_12_TypeA.SK_Hero_12_TypeA",
+    "idle_animation": "/Game/Characters/Heroes/Hero_12/TypeA/AM_Hero_12_TypeA_Idle.AM_Hero_12_TypeA_Idle",
+    "import_uniform_scale": 1.0
+  },
+  "normalization": {
+    "target_height_m": 2.0,
+    "source_min_m": [
+      -0.21590206027030945,
+      -0.11417755484580994,
+      -0.5005155801773071
+    ],
+    "source_max_m": [
+      0.21398073434829712,
+      0.08328204602003098,
+      0.7001672983169556
+    ],
+    "source_size_m": [
+      0.42988279461860657,
+      0.1974596083164215,
+      1.2006828784942627
+    ],
+    "source_foot_center_m": [
+      -0.0009606629610061646,
+      -0.01544775441288948,
+      -0.5005155801773071
+    ],
+    "baked_scale": 1.6657187637322979,
+    "normalized_min_m": [
+      -0.35803189873695374,
+      -0.1644560694694519,
+      0.0
+    ],
+    "normalized_max_m": [
+      0.3580319285392761,
+      0.1644560992717743,
+      2.0
+    ],
+    "normalized_size_m": [
+      0.7160638570785522,
+      0.3289121687412262,
+      2.0
+    ]
+  },
+  "textures": [
+    {
+      "source_object": "Hero_12_xQc_Standard_Body",
+      "slot_index": 0,
+      "slot_name": "Material_0",
+      "material_name": "Material_0",
+      "texture_asset_name": "Image_0",
+      "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Textures\\Image_0.png"
+    },
+    {
+      "source_object": "Hero_12_xQc_Standard_Head",
+      "slot_index": 0,
+      "slot_name": "Material_0.001",
+      "material_name": "Material_0_001",
+      "texture_asset_name": "Image_0_001",
+      "base_color_png": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Rigging\\Hero_12_xQc\\Standard\\Textures\\Image_0_001.png"
+    }
+  ],
+  "armature": "Rig_H12_TA_Std",
+  "bones": [
+    "root",
+    "pelvis",
+    "spine_01",
+    "spine_02",
+    "neck_01",
+    "head",
+    "upperarm_l",
+    "lowerarm_l",
+    "hand_l",
+    "upperarm_r",
+    "lowerarm_r",
+    "hand_r",
+    "thigh_l",
+    "calf_l",
+    "foot_l",
+    "thigh_r",
+    "calf_r",
+    "foot_r"
+  ],
+  "deform_bones": [
+    "pelvis",
+    "spine_01",
+    "spine_02",
+    "neck_01",
+    "upperarm_l",
+    "lowerarm_l",
+    "hand_l",
+    "upperarm_r",
+    "lowerarm_r",
+    "hand_r",
+    "thigh_l",
+    "calf_l",
+    "foot_l",
+    "thigh_r",
+    "calf_r",
+    "foot_r",
+    "head"
+  ],
+  "mesh_vertex_groups": {
+    "Hero_12_xQc_Standard_Body": [
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "neck_01",
+      "upperarm_l",
+      "lowerarm_l",
+      "hand_l",
+      "upperarm_r",
+      "lowerarm_r",
+      "hand_r",
+      "thigh_l",
+      "calf_l",
+      "foot_l",
+      "thigh_r",
+      "calf_r",
+      "foot_r",
+      "head"
+    ],
+    "Hero_12_xQc_Standard_Head": [
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "neck_01",
+      "upperarm_l",
+      "lowerarm_l",
+      "hand_l",
+      "upperarm_r",
+      "lowerarm_r",
+      "hand_r",
+      "thigh_l",
+      "calf_l",
+      "foot_l",
+      "thigh_r",
+      "calf_r",
+      "foot_r",
+      "head"
+    ]
+  },
+  "body_small_components_stabilized": 5109,
+  "animation": {
+    "idle_action": "AM_Hero_12_TypeA_Idle",
+    "frame_start": 1,
+    "frame_end": 48,
+    "actions": [
+      "AM_Hero_12_TypeA_Idle"
+    ]
+  }
+}

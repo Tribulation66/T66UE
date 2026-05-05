@@ -230,9 +230,34 @@ UNiagaraSystem* AT66PlayerController::GetActiveJumpVFXSystem() const
 
 void AT66PlayerController::RestoreGameplayInputMode()
 {
-	// Classic gameplay: mouse rotates camera, cursor hidden.
 	bInventoryInspectOpen = false;
 	bInventoryInspectRestoreFreeCursor = false;
+
+	if (IsLockedChaseGameplayCameraMode() && !bHeroOneScopedUltActive && !bHeroOneScopeViewEnabled)
+	{
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(true);
+		SetInputMode(InputMode);
+		bShowMouseCursor = false;
+		bEnableClickEvents = true;
+		bEnableMouseOverEvents = false;
+		int32 ViewportSizeX = 0;
+		int32 ViewportSizeY = 0;
+		GetViewportSize(ViewportSizeX, ViewportSizeY);
+		if (ViewportSizeX > 0 && ViewportSizeY > 0)
+		{
+			SetMouseLocation(ViewportSizeX / 2, ViewportSizeY / 2);
+		}
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetInventoryInspectMode(false);
+			GameplayHUDWidget->SetInteractive(false);
+		}
+		return;
+	}
+
+	// Orbit mouse-look gameplay: mouse rotates camera, cursor hidden.
 	FInputModeGameOnly InputMode;
 	SetInputMode(InputMode);
 	bShowMouseCursor = false;
@@ -582,6 +607,7 @@ void AT66PlayerController::ClearNearbyLootBag(AT66LootBagPickup* LootBag)
 void AT66PlayerController::HandleLookUp(float Value)
 {
 	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
+	if (IsLockedChaseGameplayCameraMode() && !bHeroOneScopeViewEnabled) return;
 	// When the gameplay cursor is visible, mouse movement should not rotate the camera.
 	if (bShowMouseCursor) return;
 	if (UGameInstance* GI = GetGameInstance())
@@ -599,6 +625,7 @@ void AT66PlayerController::HandleLookUp(float Value)
 void AT66PlayerController::HandleTurn(float Value)
 {
 	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
+	if (IsLockedChaseGameplayCameraMode() && !bHeroOneScopeViewEnabled) return;
 	// When the gameplay cursor is visible, mouse movement should not rotate the camera.
 	if (bShowMouseCursor) return;
 	if (UGameInstance* GI = GetGameInstance())

@@ -26,6 +26,8 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66TemporaryBuffUIUtils.h"
 #include "UI/T66StatsPanelSlate.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
+#include "Engine/TextureDefines.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Data/T66DataTypes.h"
@@ -37,6 +39,7 @@
 #include "Engine/SceneCapture2D.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "EngineUtils.h"
+#include "GameFramework/Pawn.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Styling/SlateBrush.h"
@@ -218,7 +221,7 @@ void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 
 namespace
 {
-	constexpr int32 T66RunSummaryFontDelta = -8;
+	constexpr int32 T66RunSummaryFontDelta = -4;
 
 	enum class ET66RunSummaryButtonFamily : uint8
 	{
@@ -233,7 +236,8 @@ namespace
 	{
 		Normal,
 		Hovered,
-		Pressed
+		Pressed,
+		Disabled
 	};
 
 	struct FT66RunSummarySpriteBrushEntry
@@ -247,16 +251,21 @@ namespace
 		FT66RunSummarySpriteBrushEntry Normal;
 		FT66RunSummarySpriteBrushEntry Hover;
 		FT66RunSummarySpriteBrushEntry Pressed;
+		FT66RunSummarySpriteBrushEntry Disabled;
 	};
 
 	const FLinearColor RunSummaryFantasyText(0.953f, 0.925f, 0.835f, 1.0f);
+	constexpr float RunSummaryContentRowWidth = 1560.f;
+	constexpr float RunSummaryRankPanelWidth = 410.f;
+	constexpr float RunSummaryActionPanelWidth = 255.f;
 
 	const FSlateBrush* ResolveRunSummarySpriteBrush(
 		FT66RunSummarySpriteBrushEntry& Entry,
 		const FString& RelativePath,
 		const FVector2D& ImageSize,
 		const FMargin& Margin,
-		const ESlateBrushDrawType::Type DrawAs)
+		const ESlateBrushDrawType::Type DrawAs,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		if (!Entry.Brush.IsValid())
 		{
@@ -274,9 +283,51 @@ namespace
 			{
 				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 					CandidatePath,
-					TextureFilter::TF_Trilinear,
+					Filter,
 					true,
 					TEXT("RunSummaryReferenceSprite")))
+				{
+					Entry.Texture.Reset(Texture);
+					break;
+				}
+			}
+		}
+
+		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
+		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+	}
+
+	const FSlateBrush* ResolveRunSummarySpriteRegionBrush(
+		FT66RunSummarySpriteBrushEntry& Entry,
+		const FString& RelativePath,
+		const FVector2D& ImageSize,
+		const FMargin& Margin,
+		const FBox2f& UVRegion,
+		const FLinearColor& Tint,
+		const ESlateBrushDrawType::Type DrawAs,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
+	{
+		if (!Entry.Brush.IsValid())
+		{
+			Entry.Brush = MakeShared<FSlateBrush>();
+		}
+
+		Entry.Brush->DrawAs = DrawAs;
+		Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
+		Entry.Brush->TintColor = FSlateColor(Tint);
+		Entry.Brush->ImageSize = ImageSize;
+		Entry.Brush->Margin = Margin;
+		Entry.Brush->SetUVRegion(UVRegion);
+
+		if (!Entry.Texture.IsValid())
+		{
+			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+			{
+				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
+					CandidatePath,
+					Filter,
+					true,
+					TEXT("RunSummaryReferenceRegionSprite")))
 				{
 					Entry.Texture.Reset(Texture);
 					break;
@@ -293,10 +344,11 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
-			FVector2D(1680.f, 860.f),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
-			ESlateBrushDrawType::Box);
+			TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_fullscreen_panel_wide.png"),
+			FVector2D(1588.f, 653.f),
+			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetRunSummaryRowShellBrush()
@@ -304,18 +356,134 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
-			FVector2D(1180.f, 86.f),
-			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
-			ESlateBrushDrawType::Box);
+			TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_row_shell_quiet.png"),
+			FVector2D(1632.f, 209.f),
+			FMargin(0.045f, 0.085f, 0.045f, 0.085f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetRunSummaryPreviewFrameBrush()
+	{
+		static FT66RunSummarySpriteBrushEntry Entry;
+		return ResolveRunSummarySpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_fullscreen_panel_tall.png"),
+			FVector2D(260.f, 260.f),
+			FMargin(0.115f, 0.055f, 0.115f, 0.055f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetRunSummarySlotFrameBrush()
+	{
+		static FT66RunSummarySpriteBrushEntry Entry;
+		return ResolveRunSummarySpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Slots/runsummary_slots_reference_square_slot_frame_normal.png"),
+			FVector2D(56.f, 56.f),
+			FMargin(0.20f, 0.18f, 0.20f, 0.18f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FScrollBarStyle* GetRunSummaryReferenceScrollBarStyle()
+	{
+		static FScrollBarStyle Style = FCoreStyle::Get().GetWidgetStyle<FScrollBarStyle>("ScrollBar");
+		static FT66RunSummarySpriteBrushEntry TrackEntry;
+		static FT66RunSummarySpriteBrushEntry ThumbEntry;
+		static FT66RunSummarySpriteBrushEntry HoverEntry;
+
+		const FString ControlsPath = TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Controls/runsummary_controls_controls_sheet.png");
+		const FBox2f VerticalBarUV(
+			FVector2f(4.f / 1350.f, 4.f / 926.f),
+			FVector2f(90.f / 1350.f, 644.f / 926.f));
+
+		const FSlateBrush* TrackBrush = ResolveRunSummarySpriteRegionBrush(
+			TrackEntry,
+			ControlsPath,
+			FVector2D(14.f, 120.f),
+			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
+			VerticalBarUV,
+			FLinearColor(0.35f, 0.34f, 0.30f, 0.70f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+		const FSlateBrush* ThumbBrush = ResolveRunSummarySpriteRegionBrush(
+			ThumbEntry,
+			ControlsPath,
+			FVector2D(16.f, 96.f),
+			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
+			VerticalBarUV,
+			FLinearColor(0.93f, 0.82f, 0.52f, 1.0f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+		const FSlateBrush* HoverBrush = ResolveRunSummarySpriteRegionBrush(
+			HoverEntry,
+			ControlsPath,
+			FVector2D(16.f, 96.f),
+			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
+			VerticalBarUV,
+			FLinearColor(1.0f, 0.90f, 0.62f, 1.0f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+
+		if (TrackBrush && ThumbBrush && HoverBrush)
+		{
+			Style
+				.SetVerticalBackgroundImage(*TrackBrush)
+				.SetVerticalTopSlotImage(*TrackBrush)
+				.SetVerticalBottomSlotImage(*TrackBrush)
+				.SetNormalThumbImage(*ThumbBrush)
+				.SetHoveredThumbImage(*HoverBrush)
+				.SetDraggedThumbImage(*HoverBrush)
+				.SetThickness(14.f);
+		}
+
+		return &Style;
+	}
+
+	TSharedRef<SWidget> MakeRunSummaryReferenceSlot(
+		const TSharedRef<SWidget>& Content,
+		const float Size,
+		const FLinearColor& AccentColor,
+		const FMargin& ContentPadding = FMargin(4.f))
+	{
+		const FSlateBrush* SlotFrameBrush = GetRunSummarySlotFrameBrush();
+		const FLinearColor AccentFill(AccentColor.R, AccentColor.G, AccentColor.B, 0.48f);
+		return SNew(SBox)
+			.WidthOverride(Size)
+			.HeightOverride(Size)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(AccentFill)
+				]
+				+ SOverlay::Slot()
+				.Padding(ContentPadding)
+				[
+					Content
+				]
+				+ SOverlay::Slot()
+				[
+					SlotFrameBrush
+						? StaticCastSharedRef<SWidget>(SNew(SImage).Image(SlotFrameBrush))
+						: StaticCastSharedRef<SWidget>(SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(AccentColor)
+							.Padding(1.f)
+							[
+								SNew(SSpacer)
+							])
+				]
+			];
 	}
 
 	FString GetRunSummaryButtonPath(const ET66RunSummaryButtonFamily Family, const ET66RunSummaryButtonState State)
 	{
 		const bool bCta = Family == ET66RunSummaryButtonFamily::CtaGreen || Family == ET66RunSummaryButtonFamily::CtaBlue;
-		const TCHAR* Prefix = bCta
-			? TEXT("central_button")
-			: (Family == ET66RunSummaryButtonFamily::ToggleOn ? TEXT("select_button") : TEXT("basic_button"));
 		const TCHAR* Suffix = TEXT("normal");
 		if (Family == ET66RunSummaryButtonFamily::ToggleOn && State == ET66RunSummaryButtonState::Normal)
 		{
@@ -329,7 +497,17 @@ namespace
 		{
 			Suffix = TEXT("pressed");
 		}
-		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, Suffix);
+		else if (State == ET66RunSummaryButtonState::Disabled)
+		{
+			Suffix = TEXT("disabled");
+		}
+		const TCHAR* FamilyName = bCta ? TEXT("cta") : TEXT("pill");
+		const TCHAR* FolderName = bCta ? TEXT("CTA") : TEXT("Pill");
+		return FString::Printf(
+			TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Buttons/%s/runsummary_buttons_%s_%s.png"),
+			FolderName,
+			FamilyName,
+			Suffix);
 	}
 
 	FVector2D GetRunSummaryButtonSize(const ET66RunSummaryButtonFamily Family, const ET66RunSummaryButtonState State)
@@ -383,14 +561,17 @@ namespace
 		{
 			Entry = &Set.Pressed;
 		}
+		else if (State == ET66RunSummaryButtonState::Disabled)
+		{
+			Entry = &Set.Disabled;
+		}
 		return ResolveRunSummarySpriteBrush(
 			*Entry,
 			GetRunSummaryButtonPath(Family, State),
 			GetRunSummaryButtonSize(Family, State),
-			(Family == ET66RunSummaryButtonFamily::CtaGreen || Family == ET66RunSummaryButtonFamily::CtaBlue)
-				? FMargin(0.16f, 0.30f, 0.16f, 0.30f)
-				: FMargin(0.14f, 0.30f, 0.14f, 0.30f),
-			ESlateBrushDrawType::Box);
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			TextureFilter::TF_Nearest);
 	}
 
 	TSharedRef<SWidget> MakeRunSummarySpritePanel(
@@ -420,6 +601,7 @@ namespace
 		const FSlateBrush* NormalBrush = GetRunSummaryButtonBrush(Family, ET66RunSummaryButtonState::Normal);
 		const FSlateBrush* HoverBrush = GetRunSummaryButtonBrush(Family, ET66RunSummaryButtonState::Hovered);
 		const FSlateBrush* PressedBrush = GetRunSummaryButtonBrush(Family, ET66RunSummaryButtonState::Pressed);
+		const FSlateBrush* DisabledBrush = GetRunSummaryButtonBrush(Family, ET66RunSummaryButtonState::Disabled);
 		if (!NormalBrush)
 		{
 			return FT66Style::MakeButton(
@@ -430,54 +612,21 @@ namespace
 				.SetPadding(ContentPadding));
 		}
 
-		const TSharedPtr<ET66RunSummaryButtonState> ButtonState = MakeShared<ET66RunSummaryButtonState>(ET66RunSummaryButtonState::Normal);
-		const TAttribute<const FSlateBrush*> BrushAttr = TAttribute<const FSlateBrush*>::CreateLambda(
-			[ButtonState, NormalBrush, HoverBrush, PressedBrush]() -> const FSlateBrush*
-			{
-				if (ButtonState.IsValid() && *ButtonState == ET66RunSummaryButtonState::Pressed)
-				{
-					return PressedBrush ? PressedBrush : NormalBrush;
-				}
-				if (ButtonState.IsValid() && *ButtonState == ET66RunSummaryButtonState::Hovered)
-				{
-					return HoverBrush ? HoverBrush : NormalBrush;
-				}
-				return NormalBrush;
-			});
-
-		return SNew(SBox)
-			.MinDesiredWidth(MinWidth > 0.f ? MinWidth : FOptionalSize())
-			.HeightOverride(Height > 0.f ? Height : FOptionalSize())
-			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					SNew(SImage)
-					.Visibility(EVisibility::HitTestInvisible)
-					.Image(BrushAttr)
-				]
-				+ SOverlay::Slot()
-				[
-					FT66Style::MakeBareButton(
-						FT66BareButtonParams(
-							OnClicked,
-							SNew(STextBlock)
-							.Text(Label)
-							.Font(FT66Style::Tokens::FontBold(FontSize))
-							.ColorAndOpacity(RunSummaryFantasyText)
-							.Justification(ETextJustify::Center)
-							.AutoWrapText(true))
-						.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-						.SetColor(FLinearColor::Transparent)
-						.SetPadding(ContentPadding)
-						.SetHAlign(HAlign_Center)
-						.SetVAlign(VAlign_Center)
-						.SetOnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Hovered; }))
-						.SetOnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Normal; }))
-						.SetOnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Pressed; }))
-						.SetOnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66RunSummaryButtonState::Hovered; })))
-				]
-			];
+		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+			OnClicked,
+			SNew(STextBlock)
+			.Text(Label)
+			.Font(FT66Style::Tokens::FontBold(FontSize))
+			.ColorAndOpacity(RunSummaryFantasyText)
+			.Justification(ETextJustify::Center)
+			.AutoWrapText(true),
+			NormalBrush,
+			HoverBrush,
+			PressedBrush,
+			DisabledBrush,
+			MinWidth,
+			Height,
+			ContentPadding);
 	}
 
 	static FText FormatRunSummaryDurationText(float TotalSeconds)
@@ -1086,12 +1235,17 @@ bool UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
 		LoadedSavedSummary = Cast<UT66LeaderboardRunSummarySaveGame>(Loaded);
 		if (LoadedSavedSummary)
 		{
-			LoadedSavedSummary->HeroID = T66MigrateHeroIDFromSave(LoadedSavedSummary->HeroID);
+			const int32 LoadedSummarySchemaVersion = LoadedSavedSummary->SchemaVersion;
+			if (LoadedSummarySchemaVersion < T66SparseActiveHeroIdRunSummarySchemaVersion)
+			{
+				LoadedSavedSummary->HeroID = T66MigrateSparseActiveHeroID(LoadedSavedSummary->HeroID);
+				LoadedSavedSummary->SchemaVersion = T66SparseActiveHeroIdRunSummarySchemaVersion;
+			}
 			bViewingSavedLeaderboardRunSummary = true;
 			LoadedSavedSummarySlotName = SlotName;
 
 			// Proof-of-run fields are schema-versioned. If not present, default to empty/unlocked.
-			if (LoadedSavedSummary->SchemaVersion >= 3)
+			if (LoadedSummarySchemaVersion >= 3)
 			{
 				ProofOfRunUrl = LoadedSavedSummary->ProofOfRunUrl;
 				bProofOfRunLocked = LoadedSavedSummary->bProofOfRunLocked;
@@ -1543,19 +1697,20 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			GetRunSummaryRowShellBrush(),
 			FT66Style::Tokens::Space4);
 
-	auto MakeHeroPreview = [bDotaTheme](const TSharedPtr<FSlateBrush>& Brush) -> TSharedRef<SWidget>
+	auto MakeHeroPreview = [](const TSharedPtr<FSlateBrush>& Brush) -> TSharedRef<SWidget>
 	{
-		constexpr float PreviewSize = 220.f;
+		constexpr float PreviewWidth = 340.f;
+		constexpr float PreviewHeight = 315.f;
 		TSharedRef<SWidget> PreviewContent = Brush.IsValid()
 			? StaticCastSharedRef<SWidget>(SNew(SBox)
-				.WidthOverride(PreviewSize)
-				.HeightOverride(PreviewSize)
+				.WidthOverride(PreviewWidth)
+				.HeightOverride(PreviewHeight)
 				[
 					SNew(SImage).Image(Brush.Get())
 				])
 			: StaticCastSharedRef<SWidget>(SNew(SBox)
-				.WidthOverride(PreviewSize)
-				.HeightOverride(PreviewSize)
+				.WidthOverride(PreviewWidth)
+				.HeightOverride(PreviewHeight)
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.RunSummary", "NoPreview", "No Preview"))
@@ -1563,9 +1718,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					.Font(RunSummaryBodyFont())
 					.Justification(ETextJustify::Center)
 				]);
-		return bDotaTheme
-			? StaticCastSharedRef<SWidget>(FT66Style::MakeViewportFrame(PreviewContent, FMargin(8.f)))
-			: StaticCastSharedRef<SWidget>(MakeRunSummarySpritePanel(PreviewContent, GetRunSummaryRowShellBrush(), FMargin(0.f)));
+		return MakeRunSummarySpritePanel(PreviewContent, GetRunSummaryPreviewFrameBrush(), FMargin(12.f));
 	};
 
 	// Event log (hidden by default; opened via "EVENT LOG" button).
@@ -1712,7 +1865,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	};
 
 	// Stats panel: same width and content as Vendor/Gambler (primary + secondary, scroll). Header "STATS".
-	const float StatsPanelWidth = FT66Style::Tokens::NPCVendorStatsPanelWidth;
+	constexpr float StatsPanelWidth = 320.f;
+	constexpr float DamagePanelWidth = 340.f;
 	TSharedRef<SWidget> BaseStatsPanel = [&]() -> TSharedRef<SWidget>
 	{
 		if (RunState && !bViewingSavedLeaderboardRunSummary)
@@ -1752,14 +1906,18 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			.HeightOverride(FT66Style::Tokens::NPCStatsPanelContentHeight)
 			[
 				SNew(SScrollBox)
+				.ScrollBarStyle(GetRunSummaryReferenceScrollBarStyle())
+				.ScrollBarThickness(FVector2D(14.f, 14.f))
+				.ScrollBarPadding(FMargin(8.f, 0.f, 0.f, 0.f))
 				.ScrollBarVisibility(EVisibility::Visible)
 				+ SScrollBox::Slot()[PrimaryStatsBox]
 			];
 		// Header must be "STATS" (same as Vendor/Gambler), not "Base Stats", for leaderboard/saved run summaries.
 		return SNew(SBox)
 			.WidthOverride(StatsPanelWidth)
+			.HeightOverride(365.f)
 			[
-				FT66Style::MakePanel(
+				MakeRunSummarySpritePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 					[
@@ -1769,7 +1927,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						.Font(RunSummaryHeadingFont())
 					]
 					+ SVerticalBox::Slot().AutoHeight()[PrimaryContent],
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4)
+					GetRunSummaryRowShellBrush(),
+					FT66Style::Tokens::Space4
 				)
 			];
 	}();
@@ -1812,7 +1971,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	const TArray<uint8>& IdolTiers = IdolTiersPtr ? *IdolTiersPtr : EmptyIdolTiers;
 
 	static constexpr float IdolSlotPad = 3.f;
-	static constexpr float IdolSlotSize = 46.f;
+	static constexpr float IdolSlotSize = 76.f;
 	TSharedRef<SHorizontalBox> IdolSlotsRow = SNew(SHorizontalBox);
 	for (int32 i = 0; i < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++i)
 	{
@@ -1841,41 +2000,24 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			.AutoWidth()
 			.Padding(IdolSlotPad)
 			[
-				SNew(SBox).WidthOverride(IdolSlotSize).HeightOverride(IdolSlotSize)
-				[
-					bDotaTheme
-						? StaticCastSharedRef<SWidget>(FT66Style::MakeSlotFrame(
-							IdolBrush.IsValid()
-								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IdolBrush.Get()))
-								: StaticCastSharedRef<SWidget>(SNew(SSpacer)),
-							IdolColor,
-							FMargin(1.f)))
-						: StaticCastSharedRef<SWidget>(SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(IdolColor)
-							.Padding(1.f)
-							[
-								IdolBrush.IsValid()
-								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IdolBrush.Get()))
-								: StaticCastSharedRef<SWidget>(SNew(SSpacer))
-							])
-				]
+				MakeRunSummaryReferenceSlot(
+					IdolBrush.IsValid()
+						? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IdolBrush.Get()))
+						: StaticCastSharedRef<SWidget>(SNew(SSpacer)),
+					IdolSlotSize,
+					IdolColor,
+					FMargin(4.f))
 			];
 	}
-	TSharedRef<SWidget> IdolsBorderedGrid = bDotaTheme
-		? StaticCastSharedRef<SWidget>(FT66Style::MakeScreenSurface(IdolSlotsRow, FMargin(4.f)))
-		: StaticCastSharedRef<SWidget>(SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FT66Style::Tokens::Stroke)
-			.Padding(4.f)
-			[
-				IdolSlotsRow
-			]);
+	TSharedRef<SWidget> IdolsBorderedGrid = MakeRunSummarySpritePanel(
+		IdolSlotsRow,
+		GetRunSummaryRowShellBrush(),
+		FMargin(7.f, 5.f));
 
 	// Inventory: slot grid (2x10), sprites only — larger slots than in-game.
 	static constexpr int32 InvCols = 10;
 	static constexpr int32 InvRows = 2;
-	static constexpr float InvSlotSize = 44.f;
+	static constexpr float InvSlotSize = 58.f;
 	static constexpr float InvSlotPad = 2.f;
 	const FLinearColor InvSlotBorderColor(0.45f, 0.55f, 0.50f, 0.5f);
 	InventoryItemIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
@@ -1915,44 +2057,21 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				.AutoWidth()
 				.Padding(InvSlotPad)
 				[
-					SNew(SBox).WidthOverride(InvSlotSize).HeightOverride(InvSlotSize)
-					[
-						bDotaTheme
-							? StaticCastSharedRef<SWidget>(FT66Style::MakeSlotFrame(
-								(SlotBrush.IsValid() && bHasItem)
-									? StaticCastSharedRef<SWidget>(SNew(SImage).Image(SlotBrush.Get()))
-									: StaticCastSharedRef<SWidget>(SNew(SSpacer)),
-								SlotColor,
-								FMargin(0.f)))
-							: StaticCastSharedRef<SWidget>(SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(SlotColor)
-								.Padding(1.f)
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.25f))
-									.Padding(0.f)
-									[
-										(SlotBrush.IsValid() && bHasItem)
-										? StaticCastSharedRef<SWidget>(SNew(SImage).Image(SlotBrush.Get()))
-										: StaticCastSharedRef<SWidget>(SNew(SSpacer))
-									]
-								])
-					]
+					MakeRunSummaryReferenceSlot(
+						(SlotBrush.IsValid() && bHasItem)
+							? StaticCastSharedRef<SWidget>(SNew(SImage).Image(SlotBrush.Get()))
+							: StaticCastSharedRef<SWidget>(SNew(SSpacer)),
+						InvSlotSize,
+						SlotColor,
+						FMargin(4.f))
 				];
 		}
 		InvGridRef->AddSlot().AutoHeight()[RowBox];
 	}
-	TSharedRef<SWidget> InventorySlotGrid = bDotaTheme
-		? StaticCastSharedRef<SWidget>(FT66Style::MakeScreenSurface(InvGridRef, FMargin(4.f)))
-		: StaticCastSharedRef<SWidget>(SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FT66Style::Tokens::Stroke)
-			.Padding(4.f)
-			[
-				InvGridRef
-			]);
+	TSharedRef<SWidget> InventorySlotGrid = MakeRunSummarySpritePanel(
+		InvGridRef,
+		GetRunSummaryRowShellBrush(),
+		FMargin(8.f, 6.f));
 
 	static constexpr float TempBuffSlotSize = 40.f;
 	static constexpr float TempBuffSlotPad = 3.f;
@@ -1960,12 +2079,14 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	TemporaryBuffIconBrushes.SetNum(UT66BuffSubsystem::MaxSelectedSingleUseBuffs);
 
 	TSharedRef<SHorizontalBox> TemporaryBuffSlotsRow = SNew(SHorizontalBox);
+	bool bHasAnyTemporaryBuff = false;
 	for (int32 SlotIndex = 0; SlotIndex < UT66BuffSubsystem::MaxSelectedSingleUseBuffs; ++SlotIndex)
 	{
 		const ET66SecondaryStatType SlotStat = TemporaryBuffSlots.IsValidIndex(SlotIndex)
 			? TemporaryBuffSlots[SlotIndex]
 			: ET66SecondaryStatType::None;
 		const bool bHasTemporaryBuff = T66IsLiveSecondaryStatType(SlotStat);
+		bHasAnyTemporaryBuff |= bHasTemporaryBuff;
 		TSharedPtr<FSlateBrush> TempBuffBrush = bHasTemporaryBuff
 			? T66TemporaryBuffUI::CreateSecondaryBuffBrush(TexPool, this, SlotStat, FVector2D(TempBuffSlotSize - 6.f, TempBuffSlotSize - 6.f))
 			: nullptr;
@@ -1979,32 +2100,15 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			.Padding(TempBuffSlotPad)
 			[
 				SNew(SBox)
-				.WidthOverride(TempBuffSlotSize)
-				.HeightOverride(TempBuffSlotSize)
 				.ToolTipText(SlotTooltip)
 				[
-					bDotaTheme
-						? StaticCastSharedRef<SWidget>(FT66Style::MakeSlotFrame(
-							(bHasTemporaryBuff && TempBuffBrush.IsValid())
-								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(TempBuffBrush.Get()))
-								: StaticCastSharedRef<SWidget>(SNew(SSpacer)),
-							bHasTemporaryBuff ? FLinearColor(0.36f, 0.72f, 0.46f, 1.f) : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f),
-							FMargin(1.f)))
-						: StaticCastSharedRef<SWidget>(SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(bHasTemporaryBuff ? FLinearColor(0.36f, 0.72f, 0.46f, 1.f) : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f))
-							.Padding(1.f)
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.25f))
-								.Padding(1.f)
-								[
-									(bHasTemporaryBuff && TempBuffBrush.IsValid())
-										? StaticCastSharedRef<SWidget>(SNew(SImage).Image(TempBuffBrush.Get()))
-										: StaticCastSharedRef<SWidget>(SNew(SSpacer))
-								]
-							])
+					MakeRunSummaryReferenceSlot(
+						(bHasTemporaryBuff && TempBuffBrush.IsValid())
+							? StaticCastSharedRef<SWidget>(SNew(SImage).Image(TempBuffBrush.Get()))
+							: StaticCastSharedRef<SWidget>(SNew(SSpacer)),
+						TempBuffSlotSize,
+						bHasTemporaryBuff ? FLinearColor(0.36f, 0.72f, 0.46f, 1.f) : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f),
+						FMargin(5.f))
 				]
 			];
 	}
@@ -2021,15 +2125,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
-			bDotaTheme
-				? StaticCastSharedRef<SWidget>(FT66Style::MakeScreenSurface(TemporaryBuffSlotsRow, FMargin(4.f)))
-				: StaticCastSharedRef<SWidget>(SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FT66Style::Tokens::Stroke)
-					.Padding(4.f)
-					[
-						TemporaryBuffSlotsRow
-					])
+			MakeRunSummarySpritePanel(
+				TemporaryBuffSlotsRow,
+				GetRunSummaryRowShellBrush(),
+				FMargin(7.f, 5.f))
 		];
 
 	// Back button (when viewing saved run) — shown in overlay bottom-left; Restart + Main Menu stay in panel.
@@ -2089,13 +2188,13 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 		return StaticCastSharedRef<SWidget>(
 			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
 			[
-				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "GoAgain", "GO AGAIN!"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66RunSummaryButtonFamily::CtaGreen, 180.f, 44.f, 12, FMargin(18.f, 10.f))
+				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "GoAgain", "GO AGAIN!"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66RunSummaryButtonFamily::CtaGreen, 255.f, 62.f, 18, FMargin(22.f, 14.f))
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				MakeRunSummarySpriteButton(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), ET66RunSummaryButtonFamily::CtaBlue, 200.f, 44.f, 12, FMargin(18.f, 10.f))
+				MakeRunSummarySpriteButton(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), ET66RunSummaryButtonFamily::CtaBlue, 255.f, 62.f, 18, FMargin(22.f, 14.f))
 			]);
 	}();
 
@@ -2316,6 +2415,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						MakeRunSummarySpritePanel(
 							SNew(SScrollBox)
 							.Orientation(Orient_Vertical)
+							.ScrollBarStyle(GetRunSummaryReferenceScrollBarStyle())
+							.ScrollBarThickness(FVector2D(14.f, 14.f))
+							.ScrollBarPadding(FMargin(10.f, 0.f, 2.f, 0.f))
 							.ScrollBarVisibility(EVisibility::Visible)
 							.ConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible)
 							+ SScrollBox::Slot()
@@ -2346,25 +2448,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							.Font(RunSummaryBoldFont(18))
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						]
-						// Rank panels for the freshly finished run only (Daily Climb uses a dedicated single panel).
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-						[
-							SNew(SBox)
-							.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
-							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, bDailyClimbSummaryMode ? 0.f : 10.f)
-								[
-									bDailyClimbSummaryMode ? DailyRankPanel : WeeklyRankPanel
-								]
-								+ SVerticalBox::Slot().AutoHeight()
-								[
-									bDailyClimbSummaryMode ? StaticCastSharedRef<SWidget>(SNew(SSpacer).Size(FVector2D(1.f, 1.f))) : AllTimeRankPanel
-								]
-							]
-						]
 						// Personal best banners (only for newly-finished runs)
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, -10.f, 0.f, 6.f)
+						+ SVerticalBox::Slot().AutoHeight().Padding(TAttribute<FMargin>::CreateLambda([this]() -> FMargin
+						{
+							return (bNewPersonalBestScore && !bViewingSavedLeaderboardRunSummary) ? FMargin(0.f, -10.f, 0.f, 6.f) : FMargin(0.f);
+						}))
 						[
 							SNew(STextBlock)
 							.Visibility_Lambda([this]() { return (bNewPersonalBestScore && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
@@ -2375,7 +2463,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							.Font(RunSummaryBoldFont(16))
 							.ColorAndOpacity(FT66Style::Tokens::Success)
 						]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
+						+ SVerticalBox::Slot().AutoHeight().Padding(TAttribute<FMargin>::CreateLambda([this]() -> FMargin
+						{
+							return (bNewPersonalBestTime && !bViewingSavedLeaderboardRunSummary) ? FMargin(0.f, 0.f, 0.f, 18.f) : FMargin(0.f);
+						}))
 						[
 							SNew(STextBlock)
 							.Visibility_Lambda([this]() { return (bNewPersonalBestTime && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
@@ -2387,19 +2478,58 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							.ColorAndOpacity(FT66Style::Tokens::Success)
 						]
 						// Main content: Left = Seed Luck, Integrity, buttons/proof. Center = Hero (middle), idols (1x6), inventory. Right = Stats, Damage.
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 26.f)
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, -14.f, 0.f, 26.f)
 						[
-							SNew(SHorizontalBox)
+							SNew(SBox)
+							.WidthOverride(RunSummaryContentRowWidth)
+							[
+								SNew(SHorizontalBox)
 							// Left side: Seed Luck, Integrity, buttons/proof.
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
 							[
 								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[SeedLuckPanel]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[IntegrityPanel]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, bDailyClimbSummaryMode ? 12.f : 10.f)
 								[
-									SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
-									[ButtonsStack]
+									SNew(SBox)
+									.WidthOverride(RunSummaryRankPanelWidth)
+									.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+									[
+										bDailyClimbSummaryMode ? DailyRankPanel : WeeklyRankPanel
+									]
+								]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, -4.f)
+								[
+									SNew(SBox)
+									.WidthOverride(RunSummaryRankPanelWidth)
+									.Visibility_Lambda([this]() { return (!bViewingSavedLeaderboardRunSummary && !bDailyClimbSummaryMode) ? EVisibility::Visible : EVisibility::Collapsed; })
+									[
+										AllTimeRankPanel
+									]
+								]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, 12.f)
+								[
+									SNew(SBox)
+									.WidthOverride(RunSummaryActionPanelWidth)
+									[
+										SeedLuckPanel
+									]
+								]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, 12.f)
+								[
+									SNew(SBox)
+									.WidthOverride(RunSummaryActionPanelWidth)
+									[
+										IntegrityPanel
+									]
+								]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, 18.f)
+								[
+									SNew(SBox)
+									.WidthOverride(RunSummaryActionPanelWidth)
+									.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+									[
+										ButtonsStack
+									]
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 								[
@@ -2421,21 +2551,62 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 							[
 								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
-								[MakeHeroPreview(HeroPreviewBrush)]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
-								[IdolsBorderedGrid]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
-								[InventorySlotGrid]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 6.f)
+								[
+									SNew(SBox)
+									.RenderTransform(FSlateRenderTransform(FVector2D(-22.f, 3.f)))
+									[
+										MakeHeroPreview(HeroPreviewBrush)
+									]
+								]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
+								[
+									SNew(SBox)
+									.RenderTransform(FSlateRenderTransform(FVector2D(-31.f, -19.f)))
+									[
+										IdolsBorderedGrid
+									]
+								]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
+								[
+									SNew(SBox)
+									.RenderTransform(FSlateRenderTransform(FVector2D(-151.f, -36.f)))
+									[
+										InventorySlotGrid
+									]
+								]
 								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-								[TemporaryBuffsPanel]
+								[
+									SNew(SBox)
+									.Visibility(bHasAnyTemporaryBuff ? EVisibility::Visible : EVisibility::Collapsed)
+									[
+										TemporaryBuffsPanel
+									]
+								]
 							]
 							// Right: Stats, Damage by source
 							+ SHorizontalBox::Slot().AutoWidth().Padding(24.f, 0.f, 0.f, 0.f)
 							[
 								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[BaseStatsPanel]
-								+ SVerticalBox::Slot().FillHeight(1.f)[DamageBySourcePanel]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 0.f, 0.f, 6.f)
+								[
+									SNew(SBox)
+									.WidthOverride(StatsPanelWidth)
+									.HeightOverride(287.f)
+									[
+										BaseStatsPanel
+									]
+								]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
+								[
+									SNew(SBox)
+									.WidthOverride(DamagePanelWidth)
+									.HeightOverride(306.f)
+									[
+										DamageBySourcePanel
+									]
+								]
+							]
 							]
 						]
 						],

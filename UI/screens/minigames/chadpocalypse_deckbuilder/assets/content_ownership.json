@@ -1,0 +1,43 @@
+{
+  "screen": "chadpocalypse_deckbuilder",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "active_scope": [
+    "main_menu",
+    "gameplay"
+  ],
+  "regions": [
+    {
+      "name": "main_menu",
+      "content_type": "runtime-text-and-navigation-state",
+      "render_contract": "full-screen-reference-only",
+      "notes": "Title, button labels, focus state, hover state, save-slot state, platform prompts, and localization remain runtime-owned."
+    },
+    {
+      "name": "gameplay_enemy",
+      "content_type": "runtime-combat-state",
+      "render_contract": "full-screen-reference-only",
+      "notes": "Enemy name, portrait, health, intent, buffs, debuffs, and targeting state remain runtime-owned."
+    },
+    {
+      "name": "gameplay_player_status",
+      "content_type": "runtime-combat-state",
+      "render_contract": "full-screen-reference-only",
+      "notes": "Hero portrait, health, armor, energy, buffs, debuffs, and values remain live."
+    },
+    {
+      "name": "gameplay_card_hand",
+      "content_type": "runtime-card-data",
+      "render_contract": "full-screen-reference-only",
+      "notes": "Card art, names, rules text, costs, rarity, targeting, and playability remain runtime-owned."
+    },
+    {
+      "name": "gameplay_end_turn",
+      "content_type": "runtime-text-and-action-state",
+      "render_contract": "full-screen-reference-only",
+      "notes": "Button label, enablement, hotkey text, and localization remain runtime-owned."
+    }
+  ]
+}

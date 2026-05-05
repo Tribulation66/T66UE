@@ -906,14 +906,14 @@ namespace T66MainMapTerrain
 			}
 
 			OutAssets.EnvironmentUnlitMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
-			OutAssets.BlockMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"));
+			OutAssets.BlockMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround"));
 			OutAssets.SlopeMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof"));
 			OutAssets.DirtMaterial = OutAssets.BlockMaterial;
-			OutAssets.WallMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall"));
-			OutAssets.BlockTexture = T66FindOrLoadObject<UTexture>(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonGround.T_TowerDungeonGround"));
+			OutAssets.WallMaterial = OutAssets.BlockMaterial;
+			OutAssets.BlockTexture = T66FindOrLoadObject<UTexture>(TEXT("/Game/World/Terrain/TowerForest/T_TowerForestGround.T_TowerForestGround"));
 			OutAssets.SlopeTexture = T66FindOrLoadObject<UTexture>(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof"));
 			OutAssets.DirtTexture = OutAssets.BlockTexture;
-			OutAssets.WallTexture = T66FindOrLoadObject<UTexture>(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonWall.T_TowerDungeonWall"));
+			OutAssets.WallTexture = OutAssets.BlockTexture;
 			if (!OutAssets.BlockMaterial)
 			{
 				OutAssets.BlockMaterial = OutAssets.SlopeMaterial;
@@ -1776,7 +1776,7 @@ namespace T66MainMapTerrain
 			Assets.BlockTexture,
 			Assets.EnvironmentUnlitMaterial,
 			Assets.BlockMaterial,
-			TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"),
+			TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround"),
 			TEXT("FarmBlockMID"));
 		const FResolvedFarmMaterial InitialSlopeMaterial = ResolveForcedTextureMaterial(
 			Assets.SlopeTexture,
@@ -1789,14 +1789,14 @@ namespace T66MainMapTerrain
 			Assets.EnvironmentUnlitMaterial,
 			Assets.DirtMaterial ? Assets.DirtMaterial : Assets.BlockMaterial,
 			Assets.DirtMaterial
-				? TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround")
-				: TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"),
+				? TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround")
+				: TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround"),
 			TEXT("FarmDirtMID"));
 		const FResolvedFarmMaterial InitialWallMaterial = ResolveForcedTextureMaterial(
 			Assets.WallTexture,
 			Assets.EnvironmentUnlitMaterial,
 			Assets.WallMaterial,
-			TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall"),
+			TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround"),
 			TEXT("FarmWallMID"));
 		UMaterialInterface* EffectiveBlockMaterial = InitialBlockMaterial.Material;
 		UMaterialInterface* EffectiveSlopeMaterial = InitialSlopeMaterial.Material;
@@ -1822,7 +1822,7 @@ namespace T66MainMapTerrain
 				Assets.BlockTexture,
 				Assets.EnvironmentUnlitMaterial,
 				Assets.BlockMaterial,
-				TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"),
+				TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround"),
 				TEXT("FarmBlockMID"));
 			const FResolvedFarmMaterial SlopeMaterial = ResolveForcedTextureMaterial(
 				Assets.SlopeTexture,
@@ -1835,14 +1835,14 @@ namespace T66MainMapTerrain
 				Assets.EnvironmentUnlitMaterial,
 				Assets.DirtMaterial ? Assets.DirtMaterial : Assets.BlockMaterial,
 				Assets.DirtMaterial
-					? TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround")
-					: TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"),
+					? TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround")
+					: TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround"),
 				TEXT("FarmDirtMID"));
 			const FResolvedFarmMaterial WallMaterial = ResolveForcedTextureMaterial(
 				Assets.WallTexture,
 				Assets.EnvironmentUnlitMaterial,
 				Assets.WallMaterial,
-				TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonWall.MI_TowerDungeonWall"),
+				TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround"),
 				TEXT("FarmWallMID"));
 			UMaterialInterface* SurfaceFeatureMaterial =
 				Assets.SlopeMaterial ? Assets.SlopeMaterial :

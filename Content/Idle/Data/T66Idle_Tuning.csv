@@ -1,0 +1,2 @@
+TuningID,StartingHeroID,StartingStage,StartingGold,StartingTapDamage,StartingPassiveDamagePerSecond,OfflineProgressCapHours,AutosaveIntervalSeconds,EngineProgressPerPassiveDamageSecond,EngineGoldPayoutMultiplier,TapUpgradeBaseCost,TapUpgradeCostPerDamage,TapUpgradeDamageStep,EngineUpgradeBaseCost,EngineUpgradeCostPerDps,EngineUpgradeDpsStep
+Default,Hero_1,1,0,1,0.5,12,10,0.035,1,12,12,1,18,18,0.5

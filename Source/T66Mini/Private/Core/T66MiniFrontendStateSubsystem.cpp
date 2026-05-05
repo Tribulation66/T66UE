@@ -4,7 +4,6 @@
 
 #include "Core/T66GameInstance.h"
 #include "Core/T66MiniDataSubsystem.h"
-#include "Core/T66SessionSubsystem.h"
 #include "Save/T66MiniRunSaveGame.h"
 
 void UT66MiniFrontendStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -26,6 +25,9 @@ void UT66MiniFrontendStateSubsystem::ResetRunSetup()
 	IdolRerollCount = 0;
 	ShopRerollCount = 0;
 	bLoadFlow = false;
+	bDailyRun = false;
+	DailyChallengeId.Reset();
+	DailySeed = 0;
 	bIntermissionFlow = false;
 	bSkipNextShopPrime = false;
 	SyncSharedLobbyState(true);
@@ -35,6 +37,17 @@ void UT66MiniFrontendStateSubsystem::BeginNewRun()
 {
 	ResetRunSetup();
 	ClearLastRunSummary();
+}
+
+void UT66MiniFrontendStateSubsystem::BeginDailyRun(const FName DifficultyID, const FString& ChallengeId, const int32 Seed)
+{
+	ResetRunSetup();
+	ClearLastRunSummary();
+	SelectedDifficultyID = DifficultyID;
+	bDailyRun = true;
+	DailyChallengeId = ChallengeId;
+	DailySeed = Seed;
+	SyncSharedLobbyState(true);
 }
 
 void UT66MiniFrontendStateSubsystem::SeedFromRunSave(const UT66MiniRunSaveGame* RunSave)
@@ -205,6 +218,8 @@ void UT66MiniFrontendStateSubsystem::WriteIntermissionStateToRunSave(UT66MiniRun
 
 void UT66MiniFrontendStateSubsystem::SyncSharedLobbyState(const bool bResetLobbyReady)
 {
+	(void)bResetLobbyReady;
+
 	if (UT66GameInstance* GameInstance = Cast<UT66GameInstance>(GetGameInstance()))
 	{
 		GameInstance->MiniSelectedHeroID = SelectedHeroID;
@@ -213,25 +228,6 @@ void UT66MiniFrontendStateSubsystem::SyncSharedLobbyState(const bool bResetLobby
 		GameInstance->MiniSelectedIdolIDs = SelectedIdolIDs;
 		GameInstance->bMiniLoadFlow = bLoadFlow;
 		GameInstance->bMiniIntermissionFlow = bIntermissionFlow;
-		if (!bIntermissionFlow)
-		{
-			GameInstance->MiniIntermissionStateRevision = 0;
-			GameInstance->MiniIntermissionStateJson.Reset();
-			GameInstance->MiniIntermissionRequestRevision = 0;
-			GameInstance->MiniIntermissionRequestJson.Reset();
-		}
-
-		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
-		{
-			if (bResetLobbyReady)
-			{
-				SessionSubsystem->SetLocalLobbyReady(false);
-			}
-			else
-			{
-				SessionSubsystem->SyncLocalLobbyProfile();
-			}
-		}
 	}
 }
 

@@ -1,0 +1,47 @@
+{
+  "stem": "Mike_Chad_Comparison_A03_WiderLiftedNeckBridge",
+  "variant": "comparison_a03_wider_lifted_neck_bridge",
+  "source_iteration_code": "C24",
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Assembly\\HeadBody\\Hero_3_Mike_Chad_Comparison_A03_WiderLiftedNeckBridge.glb",
+  "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\Chad_Pass02_Mike\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge.blend",
+  "renders": {
+    "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge_front.png",
+    "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge_right.png",
+    "back": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge_back.png",
+    "left": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge_left.png",
+    "neck_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge_neck_closeup.png",
+    "hair_back_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge\\Mike_Chad_Comparison_A03_WiderLiftedNeckBridge_hair_back_closeup.png"
+  },
+  "repair_objects": {
+    "neck": "MikeRepair_NeckBridge_C24",
+    "hair_patch": null,
+    "painted_scalp_faces": 0,
+    "painted_texture_pixels": 0,
+    "painted_texture_image": null,
+    "head_adjustment": {
+      "object": "Head_geometry_0",
+      "translation": [
+        0.0,
+        0.0,
+        0.038
+      ]
+    }
+  },
+  "triangles": {
+    "neck": 400,
+    "hair_patch": 0,
+    "scene_total": 188097
+  },
+  "bounds": {
+    "combined_size": [
+      0.6779093742370605,
+      0.2873062491416931,
+      1.1321332454681396
+    ]
+  },
+  "notes": [
+    "Adds a separate skin neck bridge that intersects head and body.",
+    "Raises the A03 head by 0.038m to compare a wider visible-neck read.",
+    "Repair geometry is intentionally separate for visual approval before rigging."
+  ]
+}

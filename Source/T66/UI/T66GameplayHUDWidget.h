@@ -369,7 +369,7 @@ protected:
 	bool bPortraitStateInitialized = false;
 	bool bLastPortraitHasRef = false;
 	FName LastPortraitHeroID = NAME_None;
-	ET66BodyType LastPortraitBodyType = ET66BodyType::TypeA;
+	ET66BodyType LastPortraitBodyType = ET66BodyType::Chad;
 	ET66HeroPortraitVariant LastPortraitVariant = ET66HeroPortraitVariant::Half;
 	bool bAbilityStateInitialized = false;
 	FName LastAbilityHeroID = NAME_None;

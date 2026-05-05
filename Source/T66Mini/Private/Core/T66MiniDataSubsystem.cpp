@@ -1,187 +1,20 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66MiniDataSubsystem.h"
+#include "Core/T66CsvUtil.h"
 
 #include "Engine/Texture2D.h"
-#include "Misc/FileHelper.h"
-#include "Misc/Paths.h"
 
 namespace
 {
-	FString T66MiniTrimCell(const FString& InValue)
-	{
-		FString Result = InValue;
-		Result.TrimStartAndEndInline();
-		return Result;
-	}
-
-	TArray<TArray<FString>> T66MiniParseCsv(const FString& RawText)
-	{
-		FString Text = RawText;
-		Text.ReplaceInline(TEXT("\r\n"), TEXT("\n"));
-		Text.ReplaceInline(TEXT("\r"), TEXT("\n"));
-
-		TArray<TArray<FString>> Rows;
-		TArray<FString> CurrentRow;
-		FString CurrentCell;
-		bool bInQuotes = false;
-
-		for (int32 Index = 0; Index < Text.Len(); ++Index)
-		{
-			const TCHAR Character = Text[Index];
-			if (Character == TEXT('"'))
-			{
-				const bool bEscapedQuote = bInQuotes && Index + 1 < Text.Len() && Text[Index + 1] == TEXT('"');
-				if (bEscapedQuote)
-				{
-					CurrentCell.AppendChar(TEXT('"'));
-					++Index;
-				}
-				else
-				{
-					bInQuotes = !bInQuotes;
-				}
-				continue;
-			}
-
-			if (!bInQuotes && Character == TEXT(','))
-			{
-				CurrentRow.Add(T66MiniTrimCell(CurrentCell));
-				CurrentCell.Reset();
-				continue;
-			}
-
-			if (!bInQuotes && Character == TEXT('\n'))
-			{
-				CurrentRow.Add(T66MiniTrimCell(CurrentCell));
-				CurrentCell.Reset();
-
-				bool bHasValue = false;
-				for (const FString& Cell : CurrentRow)
-				{
-					if (!Cell.IsEmpty())
-					{
-						bHasValue = true;
-						break;
-					}
-				}
-
-				if (bHasValue)
-				{
-					Rows.Add(CurrentRow);
-				}
-
-				CurrentRow.Reset();
-				continue;
-			}
-
-			CurrentCell.AppendChar(Character);
-		}
-
-		if (!CurrentCell.IsEmpty() || CurrentRow.Num() > 0)
-		{
-			CurrentRow.Add(T66MiniTrimCell(CurrentCell));
-			Rows.Add(CurrentRow);
-		}
-
-		return Rows;
-	}
-
-	TArray<TMap<FString, FString>> T66MiniLoadCsvRows(const FString& AbsolutePath)
-	{
-		FString RawText;
-		if (!FFileHelper::LoadFileToString(RawText, *AbsolutePath))
-		{
-			return {};
-		}
-
-		const TArray<TArray<FString>> ParsedRows = T66MiniParseCsv(RawText);
-		if (ParsedRows.Num() < 2)
-		{
-			return {};
-		}
-
-		const TArray<FString>& Headers = ParsedRows[0];
-		TArray<TMap<FString, FString>> OutputRows;
-		for (int32 RowIndex = 1; RowIndex < ParsedRows.Num(); ++RowIndex)
-		{
-			const TArray<FString>& Row = ParsedRows[RowIndex];
-			TMap<FString, FString> RowMap;
-			for (int32 ColumnIndex = 0; ColumnIndex < Headers.Num(); ++ColumnIndex)
-			{
-				RowMap.Add(Headers[ColumnIndex], Row.IsValidIndex(ColumnIndex) ? Row[ColumnIndex] : FString());
-			}
-			OutputRows.Add(MoveTemp(RowMap));
-		}
-
-		return OutputRows;
-	}
-
-	FString T66MiniGetValue(const TMap<FString, FString>& Row, const TCHAR* Key)
-	{
-		if (const FString* Found = Row.Find(Key))
-		{
-			return *Found;
-		}
-		return FString();
-	}
-
-	float T66MiniToFloat(const FString& Value, const float DefaultValue = 0.f)
-	{
-		float Parsed = DefaultValue;
-		return LexTryParseString(Parsed, *Value) ? Parsed : DefaultValue;
-	}
-
-	int32 T66MiniToInt(const FString& Value, const int32 DefaultValue = 0)
-	{
-		int32 Parsed = DefaultValue;
-		return LexTryParseString(Parsed, *Value) ? Parsed : DefaultValue;
-	}
-
-	bool T66MiniToBool(const FString& Value, const bool bDefaultValue = false)
-	{
-		if (Value.IsEmpty())
-		{
-			return bDefaultValue;
-		}
-
-		return Value.Equals(TEXT("true"), ESearchCase::IgnoreCase)
-			|| Value.Equals(TEXT("1"), ESearchCase::IgnoreCase)
-			|| Value.Equals(TEXT("yes"), ESearchCase::IgnoreCase);
-	}
-
-	FLinearColor T66MiniToColor(const FString& Value, const FLinearColor& DefaultColor)
-	{
-		FString Sanitized = Value;
-		Sanitized.ReplaceInline(TEXT("("), TEXT(""));
-		Sanitized.ReplaceInline(TEXT(")"), TEXT(""));
-		FLinearColor ParsedColor;
-		return ParsedColor.InitFromString(Sanitized) ? ParsedColor : DefaultColor;
-	}
-
-	FName T66MiniToName(const TMap<FString, FString>& Row, const TCHAR* Key)
-	{
-		return FName(*T66MiniGetValue(Row, Key));
-	}
-
-	TArray<FName> T66MiniSplitNameList(const FString& Value)
-	{
-		TArray<FString> Parts;
-		Value.ParseIntoArray(Parts, TEXT("|"), true);
-
-		TArray<FName> Names;
-		Names.Reserve(Parts.Num());
-		for (const FString& Part : Parts)
-		{
-			const FString Trimmed = T66MiniTrimCell(Part);
-			if (!Trimmed.IsEmpty())
-			{
-				Names.Add(FName(*Trimmed));
-			}
-		}
-
-		return Names;
-	}
+	FORCEINLINE TArray<TMap<FString, FString>> T66MiniLoadCsvRows(const FString& AbsolutePath) { return T66CsvUtil::LoadCsvRows(AbsolutePath); }
+	FORCEINLINE FString T66MiniGetValue(const TMap<FString, FString>& Row, const TCHAR* Key) { return T66CsvUtil::GetValue(Row, Key); }
+	FORCEINLINE float T66MiniToFloat(const FString& Value, const float DefaultValue = 0.f) { return T66CsvUtil::ToFloat(Value, DefaultValue); }
+	FORCEINLINE int32 T66MiniToInt(const FString& Value, const int32 DefaultValue = 0) { return T66CsvUtil::ToInt(Value, DefaultValue); }
+	FORCEINLINE bool T66MiniToBool(const FString& Value, const bool bDefaultValue = false) { return T66CsvUtil::ToBool(Value, bDefaultValue); }
+	FORCEINLINE FLinearColor T66MiniToColor(const FString& Value, const FLinearColor& DefaultColor) { return T66CsvUtil::ToColor(Value, DefaultColor); }
+	FORCEINLINE FName T66MiniToName(const TMap<FString, FString>& Row, const TCHAR* Key) { return T66CsvUtil::ToName(Row, Key); }
+	FORCEINLINE TArray<FName> T66MiniSplitNameList(const FString& Value) { return T66CsvUtil::SplitNameList(Value); }
 
 	ET66MiniEnemyBehaviorProfile T66MiniToBehaviorProfile(const FString& Value)
 	{
@@ -332,54 +165,7 @@ namespace
 		return TEXT("Pig");
 	}
 
-	FString T66MiniMiniDataPath(const TCHAR* FileName)
-	{
-		return FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("Mini/Data") / FileName);
-	}
-
-	void T66MiniBuildFallbackIdols(TArray<FT66MiniIdolDefinition>& OutIdols)
-	{
-		struct FFallbackIdol
-		{
-			const TCHAR* IdolID;
-			const TCHAR* Category;
-			const TCHAR* IconPath;
-			float BaseProperty;
-			float PropertyPerLevel;
-		};
-
-		static const FFallbackIdol FallbackIdols[] = {
-			{ TEXT("Idol_Curse"), TEXT("DOT"), TEXT("/Game/Idols/Sprites/Black/Idol_Curse_black.Idol_Curse_black"), 1.f, 1.f },
-			{ TEXT("Idol_Lava"), TEXT("DOT"), TEXT("/Game/Idols/Sprites/Black/Idol_Lava_black.Idol_Lava_black"), 1.f, 1.f },
-			{ TEXT("Idol_Poison"), TEXT("DOT"), TEXT("/Game/Idols/Sprites/Black/Idol_Poison_black.Idol_Poison_black"), 1.f, 1.f },
-			{ TEXT("Idol_Bleed"), TEXT("DOT"), TEXT("/Game/Idols/Sprites/Black/Idol_Bleed_black.Idol_Bleed_black"), 1.f, 1.f },
-			{ TEXT("Idol_Electric"), TEXT("Bounce"), TEXT("/Game/Idols/Sprites/Black/Idol_Electric_black.Idol_Electric_black"), 1.f, 1.f },
-			{ TEXT("Idol_Ice"), TEXT("Bounce"), TEXT("/Game/Idols/Sprites/Black/Idol_Ice_black.Idol_Ice_black"), 1.f, 1.f },
-			{ TEXT("Idol_Shadow"), TEXT("Bounce"), TEXT("/Game/Idols/Sprites/Black/Idol_Shadow_black.Idol_Shadow_black"), 1.f, 1.f },
-			{ TEXT("Idol_Star"), TEXT("Bounce"), TEXT("/Game/Idols/Sprites/Black/Idol_Star_black.Idol_Star_black"), 1.f, 1.f },
-			{ TEXT("Idol_Earth"), TEXT("AOE"), TEXT("/Game/Idols/Sprites/Black/Idol_Earth_black.Idol_Earth_black"), 200.f, 20.f },
-			{ TEXT("Idol_Water"), TEXT("AOE"), TEXT("/Game/Idols/Sprites/Black/Idol_Water_black.Idol_Water_black"), 200.f, 20.f },
-			{ TEXT("Idol_BlackHole"), TEXT("AOE"), TEXT("/Game/Idols/Sprites/Black/Idol_BlackHole_black.Idol_BlackHole_black"), 200.f, 20.f },
-			{ TEXT("Idol_Storm"), TEXT("AOE"), TEXT("/Game/Idols/Sprites/Black/Idol_Storm_black.Idol_Storm_black"), 200.f, 20.f },
-			{ TEXT("Idol_Light"), TEXT("Pierce"), TEXT("/Game/Idols/Sprites/Black/Idol_Light_black.Idol_Light_black"), 1.f, 1.f },
-			{ TEXT("Idol_Steel"), TEXT("Pierce"), TEXT("/Game/Idols/Sprites/Black/Idol_Steel_black.Idol_Steel_black"), 1.f, 1.f },
-			{ TEXT("Idol_Wood"), TEXT("Pierce"), TEXT("/Game/Idols/Sprites/Black/Idol_Wood_black.Idol_Wood_black"), 1.f, 1.f },
-			{ TEXT("Idol_Bone"), TEXT("Pierce"), TEXT("/Game/Idols/Sprites/Black/Idol_Bone_black.Idol_Bone_black"), 1.f, 1.f }
-		};
-
-		for (const FFallbackIdol& FallbackIdol : FallbackIdols)
-		{
-			FT66MiniIdolDefinition& Definition = OutIdols.AddDefaulted_GetRef();
-			Definition.IdolID = FName(FallbackIdol.IdolID);
-			Definition.Category = FallbackIdol.Category;
-			Definition.IconPath = FallbackIdol.IconPath;
-			Definition.MaxLevel = 10;
-			Definition.BaseDamage = 8.f;
-			Definition.DamagePerLevel = 4.f;
-			Definition.BaseProperty = FallbackIdol.BaseProperty;
-			Definition.PropertyPerLevel = FallbackIdol.PropertyPerLevel;
-		}
-	}
+	FORCEINLINE FString T66MiniMiniDataPath(const TCHAR* FileName) { return T66CsvUtil::ProjectContentPath(TEXT("Mini/Data"), FileName); }
 }
 
 void UT66MiniDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -394,11 +180,14 @@ void UT66MiniDataSubsystem::ReloadData()
 	LoadIdols();
 	LoadCompanions();
 	LoadDifficulties();
+	LoadStages();
 	LoadEnemies();
 	LoadBosses();
 	LoadWaves();
 	LoadInteractables();
 	LoadItems();
+	LoadRuntimeTuning();
+	LoadCircusGames();
 }
 
 const FT66MiniHeroDefinition* UT66MiniDataSubsystem::FindHero(const FName HeroID) const
@@ -431,6 +220,43 @@ const FT66MiniDifficultyDefinition* UT66MiniDataSubsystem::FindDifficulty(const 
 	{
 		return Definition.DifficultyID == DifficultyID;
 	});
+}
+
+const FT66MiniStageDefinition* UT66MiniDataSubsystem::FindStage(const FName StageID) const
+{
+	return Stages.FindByPredicate([StageID](const FT66MiniStageDefinition& Definition)
+	{
+		return Definition.StageID == StageID;
+	});
+}
+
+const FT66MiniStageDefinition* UT66MiniDataSubsystem::FindStage(const FName DifficultyID, const int32 StageIndex) const
+{
+	return Stages.FindByPredicate([DifficultyID, StageIndex](const FT66MiniStageDefinition& Definition)
+	{
+		return Definition.DifficultyID == DifficultyID && Definition.StageIndex == StageIndex;
+	});
+}
+
+const FT66MiniStageDefinition* UT66MiniDataSubsystem::FindStageForWave(const FName DifficultyID, const int32 WaveIndex) const
+{
+	return Stages.FindByPredicate([DifficultyID, WaveIndex](const FT66MiniStageDefinition& Definition)
+	{
+		return Definition.DifficultyID == DifficultyID && Definition.WaveIndex == WaveIndex;
+	});
+}
+
+int32 UT66MiniDataSubsystem::GetMaxStageIndexForDifficulty(const FName DifficultyID) const
+{
+	int32 MaxStageIndex = 0;
+	for (const FT66MiniStageDefinition& Definition : Stages)
+	{
+		if (Definition.DifficultyID == DifficultyID)
+		{
+			MaxStageIndex = FMath::Max(MaxStageIndex, Definition.StageIndex);
+		}
+	}
+	return MaxStageIndex;
 }
 
 const FT66MiniEnemyDefinition* UT66MiniDataSubsystem::FindEnemy(const FName EnemyID) const
@@ -471,6 +297,28 @@ const FT66MiniItemDefinition* UT66MiniDataSubsystem::FindItem(const FName ItemID
 	{
 		return Definition.ItemID == ItemID;
 	});
+}
+
+const FT66MiniCircusGameDefinition* UT66MiniDataSubsystem::FindCircusGame(const FName GameID) const
+{
+	return CircusGames.FindByPredicate([GameID](const FT66MiniCircusGameDefinition& Definition)
+	{
+		return Definition.GameID == GameID;
+	});
+}
+
+float UT66MiniDataSubsystem::FindRuntimeTuningValue(const FName TuningKey, const float DefaultValue) const
+{
+	if (const float* FoundValue = RuntimeTuningValues.Find(TuningKey))
+	{
+		return *FoundValue;
+	}
+	return DefaultValue;
+}
+
+int32 UT66MiniDataSubsystem::FindRuntimeTuningInt(const FName TuningKey, const int32 DefaultValue) const
+{
+	return FMath::RoundToInt(FindRuntimeTuningValue(TuningKey, static_cast<float>(DefaultValue)));
 }
 
 void UT66MiniDataSubsystem::LoadHeroes()
@@ -528,8 +376,7 @@ void UT66MiniDataSubsystem::LoadIdols()
 
 	if (Idols.Num() == 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("T66MiniDataSubsystem: failed to load mini idol rows from '%s'. Falling back to built-in idol definitions."), *CsvPath);
-		T66MiniBuildFallbackIdols(Idols);
+		UE_LOG(LogTemp, Warning, TEXT("T66MiniDataSubsystem: failed to load mini idol rows from '%s'. Mini idols must be authored in data."), *CsvPath);
 	}
 	else
 	{
@@ -589,6 +436,32 @@ void UT66MiniDataSubsystem::LoadDifficulties()
 		if (Definition.DifficultyID != NAME_None)
 		{
 			Difficulties.Add(MoveTemp(Definition));
+		}
+	}
+}
+
+void UT66MiniDataSubsystem::LoadStages()
+{
+	Stages.Reset();
+
+	for (const TMap<FString, FString>& Row : T66MiniLoadCsvRows(T66MiniMiniDataPath(TEXT("T66Mini_Stages.csv"))))
+	{
+		FT66MiniStageDefinition Definition;
+		Definition.StageID = T66MiniToName(Row, TEXT("StageID"));
+		Definition.DifficultyID = T66MiniToName(Row, TEXT("DifficultyID"));
+		Definition.StageIndex = T66MiniToInt(T66MiniGetValue(Row, TEXT("StageIndex")), 1);
+		Definition.DisplayName = T66MiniGetValue(Row, TEXT("DisplayName"));
+		Definition.Description = T66MiniGetValue(Row, TEXT("Description"));
+		Definition.WaveIndex = T66MiniToInt(T66MiniGetValue(Row, TEXT("WaveIndex")), Definition.StageIndex);
+		Definition.BossID = T66MiniToName(Row, TEXT("BossID"));
+		Definition.ClearGoldReward = FMath::Max(0, T66MiniToInt(T66MiniGetValue(Row, TEXT("ClearGoldReward")), 0));
+		Definition.ClearMaterialReward = FMath::Max(0, T66MiniToInt(T66MiniGetValue(Row, TEXT("ClearMaterialReward")), 0));
+		Definition.ClearChadCoupons = FMath::Max(0, T66MiniToInt(T66MiniGetValue(Row, TEXT("ClearChadCoupons")), 0));
+		Definition.NextStageID = T66MiniToName(Row, TEXT("NextStageID"));
+
+		if (Definition.StageID != NAME_None && Definition.DifficultyID != NAME_None && Definition.StageIndex > 0)
+		{
+			Stages.Add(MoveTemp(Definition));
 		}
 	}
 }
@@ -721,6 +594,53 @@ void UT66MiniDataSubsystem::LoadItems()
 		if (Definition.ItemID != NAME_None)
 		{
 			Items.Add(MoveTemp(Definition));
+		}
+	}
+}
+
+void UT66MiniDataSubsystem::LoadRuntimeTuning()
+{
+	RuntimeTuningEntries.Reset();
+	RuntimeTuningValues.Reset();
+
+	for (const TMap<FString, FString>& Row : T66MiniLoadCsvRows(T66MiniMiniDataPath(TEXT("T66Mini_RuntimeTuning.csv"))))
+	{
+		FT66MiniRuntimeTuningEntry Entry;
+		Entry.TuningKey = FName(*T66MiniGetValue(Row, TEXT("TuningKey")));
+		Entry.Value = T66MiniToFloat(T66MiniGetValue(Row, TEXT("Value")));
+
+		if (Entry.TuningKey != NAME_None)
+		{
+			RuntimeTuningValues.Add(Entry.TuningKey, Entry.Value);
+			RuntimeTuningEntries.Add(MoveTemp(Entry));
+		}
+	}
+}
+
+void UT66MiniDataSubsystem::LoadCircusGames()
+{
+	CircusGames.Reset();
+
+	for (const TMap<FString, FString>& Row : T66MiniLoadCsvRows(T66MiniMiniDataPath(TEXT("T66Mini_CircusGames.csv"))))
+	{
+		FT66MiniCircusGameDefinition Definition;
+		Definition.GameID = FName(*T66MiniGetValue(Row, TEXT("GameID")));
+		Definition.DisplayName = T66MiniGetValue(Row, TEXT("DisplayName"));
+		Definition.Description = T66MiniGetValue(Row, TEXT("Description"));
+		Definition.IconPath = T66MiniGetValue(Row, TEXT("Icon"));
+		Definition.Bet = T66MiniToInt(T66MiniGetValue(Row, TEXT("Bet")));
+		Definition.SuccessChance = T66MiniToFloat(T66MiniGetValue(Row, TEXT("SuccessChance")));
+		Definition.PushChance = T66MiniToFloat(T66MiniGetValue(Row, TEXT("PushChance")));
+		Definition.PayoutMultiplier = T66MiniToFloat(T66MiniGetValue(Row, TEXT("PayoutMultiplier")));
+		Definition.FlatPayout = T66MiniToInt(T66MiniGetValue(Row, TEXT("FlatPayout")));
+		Definition.MinGoldPayout = T66MiniToInt(T66MiniGetValue(Row, TEXT("MinGoldPayout")));
+		Definition.MaxGoldPayout = T66MiniToInt(T66MiniGetValue(Row, TEXT("MaxGoldPayout")));
+		Definition.AngerAdd = T66MiniToFloat(T66MiniGetValue(Row, TEXT("AngerAdd")));
+		Definition.ItemRewardChance = T66MiniToFloat(T66MiniGetValue(Row, TEXT("ItemRewardChance")));
+
+		if (Definition.GameID != NAME_None)
+		{
+			CircusGames.Add(MoveTemp(Definition));
 		}
 	}
 }

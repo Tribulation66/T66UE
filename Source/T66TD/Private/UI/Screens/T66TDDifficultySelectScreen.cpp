@@ -472,6 +472,13 @@ FReply UT66TDDifficultySelectScreen::HandleMapClicked(const FName MapID)
 	if (UT66TDFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66TDFrontendStateSubsystem>() : nullptr)
 	{
 		FrontendState->SelectMap(MapID);
+		if (const UT66TDDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66TDDataSubsystem>() : nullptr)
+		{
+			if (const FT66TDStageDefinition* StageDefinition = DataSubsystem->FindStageForMap(MapID))
+			{
+				FrontendState->SelectStage(StageDefinition->StageID);
+			}
+		}
 	}
 
 	FT66Style::DeferRebuild(this);
@@ -505,6 +512,14 @@ void UT66TDDifficultySelectScreen::EnsureSelectionState()
 	if (!bSelectedMapMatchesDifficulty && MapsForDifficulty.Num() > 0)
 	{
 		FrontendState->SelectMap(MapsForDifficulty[0]->MapID);
+	}
+
+	if (const FT66TDMapDefinition* ActiveMap = TDDataSubsystem->FindMap(FrontendState->GetSelectedMapID()))
+	{
+		if (const FT66TDStageDefinition* StageDefinition = TDDataSubsystem->FindStageForMap(ActiveMap->MapID))
+		{
+			FrontendState->SelectStage(StageDefinition->StageID);
+		}
 	}
 }
 

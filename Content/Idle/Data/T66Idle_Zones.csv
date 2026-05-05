@@ -1,0 +1,4 @@
+ZoneID,DisplayName,ThemeLabel,FirstStage,StageCount,BaseEnemyHealth,BaseGoldReward,EnemyIDs,EnemyHealthScalar,GoldRewardScalar
+TrainingGrounds,Training Grounds,Starter,1,10,12,2,Training_Dummy|Dungeon_Bruiser,1,1
+FallenMarket,Fallen Market,Gold,11,15,30,6,Dungeon_Bruiser|Gold_Goblin,1.18,1.25
+DungeonGate,Dungeon Gate,Deep,26,999,80,18,Dungeon_Bruiser|Tower_Ogre|Gold_Goblin,1.45,1.55

@@ -8,6 +8,7 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "Kismet/GameplayStatics.h"
@@ -20,6 +21,7 @@
 #include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
 #include "Styling/CoreStyle.h"
+#include "Styling/SlateTypes.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/SBoxPanel.h"
@@ -32,7 +34,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66ReportBug, Log, All);
 
 namespace
 {
-	constexpr float ReportBugButtonHeight = 52.f;
+	constexpr float ReportBugButtonHeight = 76.f;
 
 	struct FReportBugReferenceButtonBrushSet
 	{
@@ -52,14 +54,16 @@ namespace
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const FString& RelativePath,
 		const FMargin& Margin,
-		const TCHAR* DebugLabel)
+		const TCHAR* DebugLabel,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
 			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
 			Margin,
-			DebugLabel);
+			DebugLabel,
+			Filter);
 	}
 
 	const TCHAR* GetReportBugButtonPrefix(ET66ButtonType Type)
@@ -123,9 +127,10 @@ namespace
 	{
 		return ResolveReportBugReferenceBrush(
 			Entry,
-			FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, State),
-			FMargin(0.16f, 0.28f, 0.16f, 0.28f),
-			DebugLabel);
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), State),
+			FMargin(0.f),
+			DebugLabel,
+			TextureFilter::TF_Nearest);
 	}
 
 	const FButtonStyle& GetReportBugButtonStyle(ET66ButtonType Type)
@@ -161,68 +166,44 @@ namespace
 		return StyleEntry.Style;
 	}
 
-	const FSlateBrush* GetReportBugShellBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveReportBugReferenceBrush(
-			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
-			TEXT("ReportBugShell"));
-	}
-
-	const FSlateBrush* GetReportBugFieldBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveReportBugReferenceBrush(
-			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Controls/dropdown_field_normal.png"),
-			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
-			TEXT("ReportBugField"));
-	}
-
 	TSharedRef<SWidget> MakeReportBugShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		if (const FSlateBrush* ShellBrush = GetReportBugShellBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(ShellBrush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					Content
-				];
-		}
-
-		return SNew(SBorder)
-			.BorderBackgroundColor(FT66Style::Panel())
-			.Padding(Padding)
-			[
-				Content
-			];
+		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
+			TEXT("Panels/Modal/modal_shell_medium.png"),
+			Content,
+			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
+			Padding,
+			TEXT("ReportBugShellV14"),
+			FT66Style::Panel());
 	}
 
 	TSharedRef<SWidget> MakeReportBugField(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		if (const FSlateBrush* FieldBrush = GetReportBugFieldBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(FieldBrush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					Content
-				];
-		}
+		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
+			TEXT("Controls/Input/multiline_input_normal.png"),
+			Content,
+			FMargin(0.04f, 0.065f, 0.04f, 0.065f),
+			Padding,
+			TEXT("ReportBugFieldV14"),
+			FT66Style::PanelInner());
+	}
 
-		return SNew(SBorder)
-			.BorderBackgroundColor(FT66Style::PanelInner())
-			.Padding(Padding)
-			[
-				Content
-			];
+	const FEditableTextBoxStyle& GetReportBugTextBoxStyle()
+	{
+		static FEditableTextBoxStyle Style;
+		static bool bInitialized = false;
+		if (!bInitialized)
+		{
+			bInitialized = true;
+			Style = FCoreStyle::Get().GetWidgetStyle<FEditableTextBoxStyle>("NormalEditableTextBox");
+			const FSlateBrush* NoBrush = FCoreStyle::Get().GetBrush("NoBrush");
+			Style.SetBackgroundImageNormal(*NoBrush);
+			Style.SetBackgroundImageHovered(*NoBrush);
+			Style.SetBackgroundImageFocused(*NoBrush);
+			Style.SetBackgroundImageReadOnly(*NoBrush);
+			Style.SetPadding(FMargin(0.0f));
+		}
+		return Style;
 	}
 
 	TSharedRef<SWidget> MakeReportBugButton(const FT66ButtonParams& Params)
@@ -231,9 +212,13 @@ namespace
 		const TAttribute<FText> ButtonText = Params.DynamicLabel.IsBound()
 			? Params.DynamicLabel
 			: TAttribute<FText>(Params.Label);
+		const TAttribute<bool> IsEnabled = Params.IsEnabled;
 		const TAttribute<FSlateColor> TextColor = Params.bHasTextColorOverride
 			? Params.TextColorOverride
-			: TAttribute<FSlateColor>(FSlateColor(FT66Style::Tokens::Text));
+			: TAttribute<FSlateColor>::CreateLambda([IsEnabled]()
+			{
+				return FSlateColor(IsEnabled.Get(true) ? FT66Style::Tokens::Text : FT66Style::Tokens::TextMuted);
+			});
 		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(20.f, 9.f);
 
 		FSlateFontInfo ButtonFont = FT66Style::MakeFont(*Params.FontWeight, FontSize);
@@ -251,19 +236,19 @@ namespace
 				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis));
 
-		return SNew(SBox)
-			.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
-			.HeightOverride(Params.Height > 0.f ? Params.Height : ReportBugButtonHeight)
-			.Visibility(Params.Visibility)
-			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(Params.OnClicked, Content)
-					.SetButtonStyle(&GetReportBugButtonStyle(Params.Type))
-					.SetPadding(ContentPadding)
-					.SetHAlign(HAlign_Center)
-					.SetVAlign(VAlign_Center)
-					.SetEnabled(Params.IsEnabled))
-			];
+		const FButtonStyle& ButtonStyle = GetReportBugButtonStyle(Params.Type);
+		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+			Params.OnClicked,
+			Content,
+			&ButtonStyle.Normal,
+			&ButtonStyle.Hovered,
+			&ButtonStyle.Pressed,
+			&ButtonStyle.Disabled,
+			Params.MinWidth,
+			Params.Height > 0.f ? Params.Height : ReportBugButtonHeight,
+			ContentPadding,
+			Params.IsEnabled,
+			Params.Visibility);
 	}
 }
 
@@ -306,34 +291,40 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
+				SNew(SBox)
+				.WidthOverride(705.0f)
+				.Padding(0.0f, 0.0f, 0.0f, 28.0f)
+				[
 				MakeReportBugShell(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					.HAlign(HAlign_Center)
-					.Padding(0.0f, 0.0f, 0.0f, 16.0f)
+					.Padding(0.0f)
 					[
 						SNew(STextBlock)
 						.Text(TitleText)
-						.Font(FT66Style::Tokens::FontBold(28))
+						.Font(FT66Style::Tokens::FontBold(42))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Justification(ETextJustify::Center)
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
-					.Padding(0.0f, 0.0f, 0.0f, 16.0f)
+					.Padding(0.0f)
 					[
 							SNew(SBox)
-							.WidthOverride(400.0f)
-							.HeightOverride(120.0f)
+							.WidthOverride(570.0f)
+							.HeightOverride(278.0f)
 							[
 								MakeReportBugField(
 									SNew(SMultiLineEditableTextBox)
-									.Font(FT66Style::Tokens::FontRegular(12))
+									.Style(&GetReportBugTextBoxStyle())
+									.Font(FT66Style::Tokens::FontRegular(22))
 									.Text(FText::FromString(BugReportText))
 									.OnTextChanged_Lambda([this](const FText& T) { BugReportText = T.ToString(); })
 									.ForegroundColor(FT66Style::Tokens::Text)
 									.HintText(HintText),
-									FMargin(12.f, 10.f))
+									FMargin(30.f, 24.f))
 						]
 					]
 					+ SVerticalBox::Slot()
@@ -347,8 +338,10 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 						[
 							MakeReportBugButton(
 								FT66ButtonParams(SubmitText, FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleSubmitClicked), ET66ButtonType::Success)
-								.SetMinWidth(140.f)
+								.SetMinWidth(280.f)
 								.SetHeight(ReportBugButtonHeight)
+								.SetFontSize(26)
+								.SetPadding(FMargin(28.f, 12.f, 28.f, 11.f))
 								.SetEnabled(CanSubmitReport))
 						]
 						+ SHorizontalBox::Slot()
@@ -357,12 +350,15 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 						[
 							MakeReportBugButton(
 								FT66ButtonParams(CancelText, FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleCancelClicked), ET66ButtonType::Neutral)
-								.SetMinWidth(140.f)
-								.SetHeight(ReportBugButtonHeight))
+								.SetMinWidth(280.f)
+								.SetHeight(ReportBugButtonHeight)
+								.SetFontSize(26)
+								.SetPadding(FMargin(28.f, 12.f, 28.f, 11.f)))
 						]
 					]
 				,
-				FMargin(40.0f, 30.0f))
+				FMargin(55.0f, 50.0f, 55.0f, 56.0f))
+				]
 			]
 		];
 }

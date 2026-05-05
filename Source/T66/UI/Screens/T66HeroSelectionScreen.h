@@ -3,9 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/ObjectMacros.h"
+#include "UObject/ScriptMacros.h"
 #include "UI/T66ScreenBase.h"
 #include "Data/T66DataTypes.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66RetroFXSettings.h"
 #include "T66HeroSelectionScreen.generated.h"
 
 class UT66LocalizationSubsystem;
@@ -43,7 +46,7 @@ public:
 	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Hero Selection")
-	ET66BodyType SelectedBodyType = ET66BodyType::TypeA;
+	ET66BodyType SelectedBodyType = ET66BodyType::Chad;
 
 	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
 	TArray<FHeroData> GetAllHeroes();
@@ -113,6 +116,7 @@ protected:
 	virtual void OnScreenDeactivated_Implementation() override;
 	virtual void RefreshScreen_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
+	TSharedRef<SWidget> BuildInlineRetroFXPanel();
 
 private:
 	TArray<FName> AllHeroIDs;
@@ -200,6 +204,7 @@ private:
 	void RefreshHeroCarouselPortraits();
 	void RefreshCompanionCarouselPortraits();
 	void RefreshPanelSwitchers();
+	int32 GetLeftPanelWidgetIndex() const;
 	void RefreshTargetDropdownTexts();
 	void RefreshDifficultyDropdownText();
 	void UpdateHeroDisplay();
@@ -240,6 +245,14 @@ private:
 	/** True when the left panel should show companion skins instead of hero skins. */
 	bool bShowingCompanionSkins = false;
 	bool bShowingCompanionInfo = false;
+	bool bShowingInlineRetroFXPanel = false;
+	bool bInlineRetroFXInitialized = false;
+	bool bInlineRetroFXDirty = false;
+	FT66RetroFXSettings PendingInlineRetroFXSettings;
+
+	void InitializeInlineRetroFXFromUserSettingsIfNeeded();
+	void ApplyPendingInlineRetroFX();
+	void ResetPendingInlineRetroFXToDefaults();
 
 	// Handle language change to rebuild UI
 	UFUNCTION()
@@ -266,10 +279,13 @@ private:
 	FReply HandleHeroRecordInfoClicked();
 	FReply HandleUltimatePreviewClicked();
 	FReply HandlePassivePreviewClicked();
-	FReply HandleBodyTypeAClicked();
-	FReply HandleBodyTypeBClicked();
+	FReply HandleChadBodyClicked();
+	FReply HandleStacyBodyClicked();
 	FReply HandleEnterClicked();
 	FReply HandleChallengesClicked();
+	FReply HandleRetroFXSettingsClicked();
+	FReply HandleApplyInlineRetroFXClicked();
+	FReply HandleResetInlineRetroFXClicked();
 	FReply HandleBackClicked();
 	FReply HandleBackToPartyClicked();
 

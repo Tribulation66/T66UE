@@ -23,22 +23,22 @@ FILTER_SOURCE = os.environ.get("T66_IMPORT_SKELETAL_SOURCE", "").strip().replace
 IMPORTS = [
     {
         "source": "Heros/ArthurAIdle.fbx",
-        "dest": "/Game/Characters/Heroes/Hero_1/TypeA/Idle",
+        "dest": "/Game/Characters/Heroes/Hero_1/Chad/Idle",
         "name": "ArthurAIdle",
     },
     {
         "source": "Heros/ArthurAWalk.fbx",
-        "dest": "/Game/Characters/Heroes/Hero_1/TypeA/Walk",
+        "dest": "/Game/Characters/Heroes/Hero_1/Chad/Walk",
         "name": "ArthurAWalk",
     },
     {
         "source": "Heros/ArthurBIdle.fbx",
-        "dest": "/Game/Characters/Heroes/Hero_1/TypeB/Idle",
+        "dest": "/Game/Characters/Heroes/Hero_1/Stacy/Idle",
         "name": "ArthurBIdle",
     },
     {
         "source": "Heros/ArthurBWalk.fbx",
-        "dest": "/Game/Characters/Heroes/Hero_1/TypeB/Walk",
+        "dest": "/Game/Characters/Heroes/Hero_1/Stacy/Walk",
         "name": "ArthurBWalk",
     },
     {

@@ -31,7 +31,7 @@ UTexture* FT66TerrainThemeAssets::LoadDifficultyGroundTexture(ET66Difficulty)
 {
 	static TMap<FString, TWeakObjectPtr<UTexture>> CachedTextures;
 
-	const FString TexturePath = TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonGround.T_TowerDungeonGround");
+	const FString TexturePath = TEXT("/Game/World/Terrain/TowerForest/T_TowerForestGround.T_TowerForestGround");
 
 	if (const TWeakObjectPtr<UTexture>* Existing = CachedTextures.Find(TexturePath))
 	{
@@ -75,7 +75,7 @@ UMaterialInterface* FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(UObj
 		}
 	}
 
-	UMaterialInterface* FallbackMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonGround.MI_TowerDungeonGround"));
+	UMaterialInterface* FallbackMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround"));
 	CachedMaterials.Add(CacheKey, FallbackMaterial);
 	return FallbackMaterial;
 }

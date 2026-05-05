@@ -184,5 +184,5 @@ This file is the canonical project policy for engineering, content, and UI work 
 - `MASTER DOCS/T66_IMPORT_PIPELINE_GUIDELINES.md`
 - `MASTER DOCS/T66_PROJECT_CATALOGUE.md`
 - `ANTI_CHEAT/MASTER_ANTI_CHEAT.md`
-- `Audit/T66_UI_AUDIT.md`
-- `Docs/Plans/T66_UI_IMPLEMENTATION_PLAN.md`
+- `Audit/Reference/T66_UI_AUDIT.md`
+- `Docs/UI/UI_GENERATION.md`

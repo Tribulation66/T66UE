@@ -1,0 +1,8 @@
+EnemyID,DisplayName,IntentLabel,AccentColor,BaseHealth,HealthPerFloor,BaseIntentDamage,IntentDamagePerFloor,GoldReward
+Dungeon_Fiend,Dungeon Fiend,Attack,"(R=0.76,G=0.20,B=0.18,A=1.0)",42,7,7,2,10
+Shield_Cultist,Shield Cultist,Attack and guard,"(R=0.48,G=0.22,B=0.62,A=1.0)",52,9,6,2,14
+Gold_Mimic,Gold Mimic,Bite,"(R=0.88,G=0.64,B=0.18,A=1.0)",38,8,8,2,24
+Gate_Brute,Gate Brute,Crush,"(R=0.58,G=0.20,B=0.12,A=1.0)",78,14,12,3,34
+Dungeon_Warden,Dungeon Warden,Heavy attack,"(R=0.72,G=0.28,B=0.16,A=1.0)",135,18,16,3,55
+Depth_Warden,Depth Warden,Crushing guard,"(R=0.34,G=0.44,B=0.72,A=1.0)",185,24,20,4,75
+Chadlich,Chadlich,Final curse,"(R=0.68,G=0.22,B=0.82,A=1.0)",260,30,24,5,110

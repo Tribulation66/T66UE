@@ -573,6 +573,31 @@ FName UT66CharacterVisualSubsystem::GetFallbackVisualID(FName VisualID)
 	}
 
 	const FString VisualName = VisualID.ToString();
+
+	if (VisualName.StartsWith(TEXT("Hero_")))
+	{
+		const int32 FirstUnderscoreIndex = VisualName.Find(TEXT("_"), ESearchCase::CaseSensitive);
+		const int32 SecondUnderscoreIndex = FirstUnderscoreIndex == INDEX_NONE
+			? INDEX_NONE
+			: VisualName.Find(TEXT("_"), ESearchCase::CaseSensitive, ESearchDir::FromStart, FirstUnderscoreIndex + 1);
+		if (SecondUnderscoreIndex != INDEX_NONE)
+		{
+			const int32 BodyStartIndex = SecondUnderscoreIndex + 1;
+			const int32 BodyEndIndex = VisualName.Find(TEXT("_"), ESearchCase::CaseSensitive, ESearchDir::FromStart, BodyStartIndex);
+			const int32 BodyLength = BodyEndIndex == INDEX_NONE
+				? VisualName.Len() - BodyStartIndex
+				: BodyEndIndex - BodyStartIndex;
+			const FString BodyToken = VisualName.Mid(BodyStartIndex, BodyLength);
+			if (BodyToken == TEXT("Stacy"))
+			{
+				FString FallbackName = VisualName;
+				FallbackName.RemoveAt(BodyStartIndex, BodyLength, EAllowShrinking::No);
+				FallbackName.InsertAt(BodyStartIndex, TEXT("Chad"));
+				return FName(*FallbackName);
+			}
+		}
+	}
+
 	const int32 LastUnderscoreIndex = VisualName.Find(TEXT("_"), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
 	if (LastUnderscoreIndex == INDEX_NONE)
 	{
@@ -586,6 +611,20 @@ FName UT66CharacterVisualSubsystem::GetFallbackVisualID(FName VisualID)
 	}
 
 	return FName(*FallbackName);
+}
+
+static FName T66CanonicalizeLegacyHeroBodyVisualID(FName VisualID)
+{
+	if (VisualID.IsNone())
+	{
+		return NAME_None;
+	}
+
+	FString VisualName = VisualID.ToString();
+	const int32 ChadReplacements = VisualName.ReplaceInline(TEXT("_TypeA"), TEXT("_Chad"), ESearchCase::CaseSensitive);
+	const int32 StacyReplacements = VisualName.ReplaceInline(TEXT("_TypeB"), TEXT("_Stacy"), ESearchCase::CaseSensitive);
+
+	return (ChadReplacements > 0 || StacyReplacements > 0) ? FName(*VisualName) : VisualID;
 }
 
 void UT66CharacterVisualSubsystem::AppendCharacterVisualPreloadPaths(const FT66CharacterVisualRow& Row, TArray<FSoftObjectPath>& OutPaths)
@@ -708,14 +747,23 @@ const FT66CharacterVisualRow* UT66CharacterVisualSubsystem::FindVisualRow(FName 
 	}
 
 	FName ResolvedVisualID = VisualID;
-	const FT66CharacterVisualRow* Row = DT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("FindVisualRow"));
+	const FT66CharacterVisualRow* Row = DT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("FindVisualRow"), false);
 	if (!Row)
 	{
-		const FName FallbackVisualID = GetFallbackVisualID(VisualID);
+		const FName CanonicalVisualID = T66CanonicalizeLegacyHeroBodyVisualID(VisualID);
+		if (CanonicalVisualID != VisualID)
+		{
+			ResolvedVisualID = CanonicalVisualID;
+			Row = DT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("FindVisualRowCanonical"), false);
+		}
+	}
+	if (!Row)
+	{
+		const FName FallbackVisualID = GetFallbackVisualID(ResolvedVisualID);
 		if (!FallbackVisualID.IsNone())
 		{
 			ResolvedVisualID = FallbackVisualID;
-			Row = DT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("FindVisualRowFallback"));
+			Row = DT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("FindVisualRowFallback"), false);
 		}
 	}
 
@@ -753,13 +801,31 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 	}
 
 	FName ResolvedVisualID = VisualID;
-	FT66CharacterVisualRow* Row = DT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("ResolveVisual"));
+	FT66CharacterVisualRow* Row = DT->FindRow<FT66CharacterVisualRow>(ResolvedVisualID, TEXT("ResolveVisual"), false);
 	if (!Row)
 	{
-		const FName FallbackVisualID = GetFallbackVisualID(VisualID);
+		const FName CanonicalVisualID = T66CanonicalizeLegacyHeroBodyVisualID(VisualID);
+		if (CanonicalVisualID != VisualID)
+		{
+			if (FT66CharacterVisualRow* CanonicalRow = DT->FindRow<FT66CharacterVisualRow>(CanonicalVisualID, TEXT("ResolveVisualCanonical"), false))
+			{
+				UE_LOG(
+					LogT66CharacterVisuals,
+					Verbose,
+					TEXT("[MESH] ResolveVisual: legacy body row '%s' redirected to '%s'"),
+					*VisualID.ToString(),
+					*CanonicalVisualID.ToString());
+				ResolvedVisualID = CanonicalVisualID;
+				Row = CanonicalRow;
+			}
+		}
+	}
+	if (!Row)
+	{
+		const FName FallbackVisualID = GetFallbackVisualID(ResolvedVisualID);
 		if (!FallbackVisualID.IsNone())
 		{
-			if (FT66CharacterVisualRow* FallbackRow = DT->FindRow<FT66CharacterVisualRow>(FallbackVisualID, TEXT("ResolveVisualFallback")))
+			if (FT66CharacterVisualRow* FallbackRow = DT->FindRow<FT66CharacterVisualRow>(FallbackVisualID, TEXT("ResolveVisualFallback"), false))
 			{
 				UE_LOG(
 					LogT66CharacterVisuals,
@@ -952,8 +1018,8 @@ void UT66CharacterVisualSubsystem::HandleCharacterVisualPreloadCompleted(FName V
 FName UT66CharacterVisualSubsystem::GetHeroVisualID(FName HeroID, ET66BodyType BodyType, FName SkinID)
 {
 	if (HeroID.IsNone()) return NAME_None;
-	const TCHAR TypeChar = (BodyType == ET66BodyType::TypeA) ? TEXT('A') : TEXT('B');
-	FString Key = FString::Printf(TEXT("%s_Type%c"), *HeroID.ToString(), TypeChar);
+	const TCHAR* BodySuffix = T66BodyTypeAliases::IsChad(BodyType) ? TEXT("Chad") : TEXT("Stacy");
+	FString Key = FString::Printf(TEXT("%s_%s"), *HeroID.ToString(), BodySuffix);
 	if (SkinID != NAME_None && SkinID != FName(TEXT("Default")))
 	{
 		Key += TEXT("_");
@@ -1013,7 +1079,10 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 	TargetMesh->SetSkeletalMesh(Res.Mesh);
 	TargetMesh->SetRelativeRotation(Res.Row.MeshRelativeRotation);
 
-	const FVector Scale = Res.Row.MeshRelativeScale.IsNearlyZero() ? FVector(1.f, 1.f, 1.f) : Res.Row.MeshRelativeScale;
+	const bool bHeroVisual = VisualID.ToString().StartsWith(TEXT("Hero_"));
+	const FVector Scale = bHeroVisual
+		? FVector::OneVector
+		: (Res.Row.MeshRelativeScale.IsNearlyZero() ? FVector::OneVector : Res.Row.MeshRelativeScale);
 	TargetMesh->SetRelativeScale3D(Scale);
 
 	FVector RelLoc = Res.Row.MeshRelativeLocation;

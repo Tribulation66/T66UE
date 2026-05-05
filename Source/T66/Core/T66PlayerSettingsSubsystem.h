@@ -127,6 +127,15 @@ public:
 	bool GetShowRunSummaryChadCouponsPopup() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetLockedChaseTurnSensitivityPercent(float NewValue);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	float GetLockedChaseTurnSensitivityPercent() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	float GetLockedChaseTurnRateDegreesPerSecond() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
 	void SetTimeToBeatSelection(const FT66BeatTargetSelection& Selection);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")

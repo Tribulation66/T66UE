@@ -164,22 +164,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Mini")
 	bool bMiniIntermissionFlow = false;
 
-	/** Host-authored mini intermission state revision mirrored through lobby profiles. */
-	UPROPERTY(BlueprintReadWrite, Category = "Mini")
-	int32 MiniIntermissionStateRevision = 0;
-
-	/** Serialized mini intermission state mirrored through lobby profiles. */
-	UPROPERTY(BlueprintReadWrite, Category = "Mini")
-	FString MiniIntermissionStateJson;
-
-	/** Client-authored mini intermission request revision mirrored through lobby profiles. */
-	UPROPERTY(BlueprintReadWrite, Category = "Mini")
-	int32 MiniIntermissionRequestRevision = 0;
-
-	/** Serialized mini intermission request mirrored through lobby profiles. */
-	UPROPERTY(BlueprintReadWrite, Category = "Mini")
-	FString MiniIntermissionRequestJson;
-
 	/** If true, the next GameplayLevel load should spawn into the Stage Catch Up platform first. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bStageCatchUpPending = false;
@@ -210,11 +194,11 @@ public:
 
 	/** Selected body type for hero */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
-	ET66BodyType SelectedHeroBodyType = ET66BodyType::TypeA;
+	ET66BodyType SelectedHeroBodyType = ET66BodyType::Chad;
 
 	/** Selected body type for companion */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
-	ET66BodyType SelectedCompanionBodyType = ET66BodyType::TypeA;
+	ET66BodyType SelectedCompanionBodyType = ET66BodyType::Chad;
 
 	/** Selected hero skin ID (e.g. Default, Beachgoer). Synced from profile when entering hero selection. */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
@@ -535,6 +519,23 @@ public:
 	static FName GetTutorialLevelName();
 
 private:
+	UDataTable* ResolveCachedDataTable(TObjectPtr<UDataTable>& Cached, const TSoftObjectPtr<UDataTable>& Soft);
+
+	template <typename TRow>
+	static bool FindDataRow(UDataTable* DataTable, FName RowID, TRow& OutRow, const TCHAR* Context, bool bRequireValidID = true)
+	{
+		if (!DataTable || (bRequireValidID && RowID.IsNone()))
+		{
+			return false;
+		}
+		if (TRow* FoundRow = DataTable->FindRow<TRow>(RowID, Context))
+		{
+			OutRow = *FoundRow;
+			return true;
+		}
+		return false;
+	}
+
 	void PrimeCoreDataTablesAsync();
 	void PrimeCorePresentationAssetsAsync();
 	void HandleCoreDataTablesLoaded();

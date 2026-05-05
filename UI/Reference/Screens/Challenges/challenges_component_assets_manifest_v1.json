@@ -1,0 +1,105 @@
+[
+  {
+    "file": "Panels/challenges_panels_challenge_detail_paper_v1.png",
+    "size": [
+      972,
+      419
+    ],
+    "contract": "9-slice parchment detail/description panel",
+    "source_board": "C:\\UE\\T66\\UI\\Reference\\Screens\\Challenges\\Candidates\\challenges_component_board_v1_alpha.png"
+  },
+  {
+    "file": "Panels/challenges_panels_challenge_rules_paper_v1.png",
+    "size": [
+      377,
+      672
+    ],
+    "contract": "9-slice parchment rules-list panel",
+    "source_board": "C:\\UE\\T66\\UI\\Reference\\Screens\\Challenges\\Candidates\\challenges_component_board_v1_alpha.png"
+  },
+  {
+    "file": "Panels/challenges_panels_challenge_row_plate_v1.png",
+    "size": [
+      954,
+      211
+    ],
+    "contract": "9-slice challenge browser row plate",
+    "source_board": "C:\\UE\\T66\\UI\\Reference\\Screens\\Challenges\\Candidates\\challenges_component_board_v1_alpha.png"
+  },
+  {
+    "file": "Panels/challenges_panels_challenge_status_bar_v1.png",
+    "size": [
+      845,
+      115
+    ],
+    "contract": "horizontal 3-slice status bar",
+    "source_board": "C:\\UE\\T66\\UI\\Reference\\Screens\\Challenges\\Candidates\\challenges_component_board_v1_alpha.png"
+  },
+  {
+    "file": "Controls/challenges_controls_tag_pill_v1.png",
+    "size": [
+      303,
+      99
+    ],
+    "contract": "horizontal 3-slice tag pill",
+    "source_board": "C:\\UE\\T66\\UI\\Reference\\Screens\\Challenges\\Candidates\\challenges_component_board_v1_alpha.png"
+  },
+  {
+    "file": "Controls/challenges_controls_header_divider_v1.png",
+    "size": [
+      858,
+      60
+    ],
+    "contract": "horizontal 3-slice divider ornament",
+    "source_board": "C:\\UE\\T66\\UI\\Reference\\Screens\\Challenges\\Candidates\\challenges_component_board_v1_alpha.png"
+  },
+  {
+    "file": "Controls/challenges_controls_state_socket_v1.png",
+    "size": [
+      123,
+      116
+    ],
+    "contract": "fixed square state/icon socket",
+    "source_board": "C:\\UE\\T66\\UI\\Reference\\Screens\\Challenges\\Candidates\\challenges_component_board_v1_alpha.png"
+  },
+  {
+    "file": "Buttons/challenges_buttons_pill_normal.png",
+    "size": [
+      1942,
+      809
+    ],
+    "contract": "horizontal 3-slice button plate copied from Shared for Challenges ownership"
+  },
+  {
+    "file": "Buttons/challenges_buttons_pill_hover.png",
+    "size": [
+      1942,
+      809
+    ],
+    "contract": "horizontal 3-slice button plate copied from Shared for Challenges ownership"
+  },
+  {
+    "file": "Buttons/challenges_buttons_pill_pressed.png",
+    "size": [
+      1942,
+      809
+    ],
+    "contract": "horizontal 3-slice button plate copied from Shared for Challenges ownership"
+  },
+  {
+    "file": "Buttons/challenges_buttons_pill_disabled.png",
+    "size": [
+      1942,
+      809
+    ],
+    "contract": "horizontal 3-slice button plate copied from Shared for Challenges ownership"
+  },
+  {
+    "file": "Buttons/challenges_buttons_pill_selected.png",
+    "size": [
+      1983,
+      793
+    ],
+    "contract": "horizontal 3-slice button plate copied from Shared for Challenges ownership"
+  }
+]

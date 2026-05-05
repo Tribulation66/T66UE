@@ -370,6 +370,92 @@ namespace
 		FVector2D DesiredSize = FVector2D(56.f, 56.f);
 	};
 
+	class ST66TopBarSlicedBrushImage : public SLeafWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66TopBarSlicedBrushImage)
+			: _Brush(nullptr)
+			, _DesiredSize(FVector2D(1.f, 1.f))
+			, _SourceCapFraction(0.245f)
+		{}
+			SLATE_ATTRIBUTE(const FSlateBrush*, Brush)
+			SLATE_ARGUMENT(FVector2D, DesiredSize)
+			SLATE_ARGUMENT(float, SourceCapFraction)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			Brush = InArgs._Brush;
+			DesiredSize = InArgs._DesiredSize;
+			SourceCapFraction = InArgs._SourceCapFraction;
+		}
+
+		virtual FVector2D ComputeDesiredSize(float) const override
+		{
+			return DesiredSize;
+		}
+
+		virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+			FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
+		{
+			const FSlateBrush* SourceBrush = Brush.Get();
+			if (!SourceBrush || SourceBrush == FCoreStyle::Get().GetBrush("NoBrush"))
+			{
+				return LayerId;
+			}
+
+			const FVector2D Size = AllottedGeometry.GetLocalSize();
+			const FVector2D SourceSize(
+				FMath::Max(1.f, SourceBrush->ImageSize.X),
+				FMath::Max(1.f, SourceBrush->ImageSize.Y));
+			if (Size.X <= 1.f || Size.Y <= 1.f || SourceSize.X <= 1.f || SourceSize.Y <= 1.f)
+			{
+				return LayerId;
+			}
+
+			const float CapU = FMath::Clamp(SourceCapFraction, 0.02f, 0.45f);
+			const float HeightScale = Size.Y / SourceSize.Y;
+			const float SourceCapWidth = SourceSize.X * CapU;
+			const float DestCapWidth = FMath::Clamp(SourceCapWidth * HeightScale, 1.f, Size.X * 0.42f);
+			const float DestCenterWidth = FMath::Max(0.f, Size.X - (DestCapWidth * 2.f));
+
+			auto DrawSlice = [&](const FVector2D& Pos, const FVector2D& SliceSize, float U0, float U1)
+			{
+				if (SliceSize.X <= 0.5f || SliceSize.Y <= 0.5f || U1 <= U0)
+				{
+					return;
+				}
+
+				FSlateBrush LocalBrush = *SourceBrush;
+				LocalBrush.DrawAs = ESlateBrushDrawType::Image;
+				LocalBrush.Tiling = ESlateBrushTileType::NoTile;
+				LocalBrush.Margin = FMargin(0.f);
+				LocalBrush.SetUVRegion(FBox2f(FVector2f(U0, 0.f), FVector2f(U1, 1.f)));
+
+				FSlateDrawElement::MakeBox(
+					OutDrawElements,
+					LayerId,
+					AllottedGeometry.ToPaintGeometry(
+						FVector2f(SliceSize),
+						FSlateLayoutTransform(FVector2f(Pos))),
+					&LocalBrush,
+					ESlateDrawEffect::None,
+					InWidgetStyle.GetColorAndOpacityTint());
+			};
+
+			DrawSlice(FVector2D(0.f, 0.f), FVector2D(DestCapWidth, Size.Y), 0.f, CapU);
+			DrawSlice(FVector2D(DestCapWidth, 0.f), FVector2D(DestCenterWidth, Size.Y), CapU, 1.f - CapU);
+			DrawSlice(FVector2D(Size.X - DestCapWidth, 0.f), FVector2D(DestCapWidth, Size.Y), 1.f - CapU, 1.f);
+
+			return LayerId + 1;
+		}
+
+	private:
+		TAttribute<const FSlateBrush*> Brush;
+		FVector2D DesiredSize = FVector2D(1.f, 1.f);
+		float SourceCapFraction = 0.245f;
+	};
+
 	// The shared transparent button styles do not surface hover or pressed states.
 	// This wrapper keeps the rendered plate visible and drives subtle state changes itself.
 	class ST66TopBarStatefulButton : public SCompoundWidget
@@ -582,8 +668,10 @@ namespace
 		{
 			if (NormalBrush || HoverBrush || PressedBrush || DisabledBrush || SelectedBrush)
 			{
-				return SNew(SImage)
-					.Image(this, &ST66TopBarStatefulButton::GetCurrentBrush);
+				return SNew(ST66TopBarSlicedBrushImage)
+					.Brush(this, &ST66TopBarStatefulButton::GetCurrentBrush)
+					.DesiredSize(FVector2D(1.f, 1.f))
+					.SourceCapFraction(0.245f);
 			}
 
 			return SNew(SBorder)
@@ -821,13 +909,14 @@ namespace
 		const TArray<FString>& DisabledPaths,
 		const TArray<FString>& SelectedPaths,
 		UT66FrontendTopBarWidget::FPlateBrushSet& OutSet,
-		const FVector2D& DesiredSize = FVector2D::ZeroVector)
+		const FVector2D& DesiredSize = FVector2D::ZeroVector,
+		const TextureFilter Filter = TextureFilter::TF_Nearest)
 	{
-		LoadLooseBrushFromCandidatePaths(NormalPaths, OutSet.NormalBrush, DesiredSize);
-		LoadLooseBrushFromCandidatePaths(HoverPaths, OutSet.HoverBrush, DesiredSize);
-		LoadLooseBrushFromCandidatePaths(PressedPaths, OutSet.PressedBrush, DesiredSize);
-		LoadLooseBrushFromCandidatePaths(DisabledPaths, OutSet.DisabledBrush, DesiredSize);
-		LoadLooseBrushFromCandidatePaths(SelectedPaths, OutSet.SelectedBrush, DesiredSize);
+		LoadLooseBrushFromCandidatePaths(NormalPaths, OutSet.NormalBrush, DesiredSize, Filter);
+		LoadLooseBrushFromCandidatePaths(HoverPaths, OutSet.HoverBrush, DesiredSize, Filter);
+		LoadLooseBrushFromCandidatePaths(PressedPaths, OutSet.PressedBrush, DesiredSize, Filter);
+		LoadLooseBrushFromCandidatePaths(DisabledPaths, OutSet.DisabledBrush, DesiredSize, Filter);
+		LoadLooseBrushFromCandidatePaths(SelectedPaths, OutSet.SelectedBrush, DesiredSize, Filter);
 
 		if (!OutSet.HoverBrush.IsValid())
 		{
@@ -994,22 +1083,18 @@ void UT66FrontendTopBarWidget::NavigateWithTopBar(const ET66ScreenType TargetScr
 
 void UT66FrontendTopBarWidget::RequestTopBarAssets()
 {
-	constexpr const TCHAR* TopBarStripPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/topbar_strip_normal.png");
-	constexpr const TCHAR* BasicButtonNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_normal.png");
-	constexpr const TCHAR* BasicButtonHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_hover.png");
-	constexpr const TCHAR* BasicButtonPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_pressed.png");
-	constexpr const TCHAR* BasicButtonDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png");
-	constexpr const TCHAR* SelectButtonNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_normal.png");
-	constexpr const TCHAR* SelectButtonHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_hover.png");
-	constexpr const TCHAR* SelectButtonPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_pressed.png");
-	constexpr const TCHAR* SelectButtonDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_disabled.png");
-	constexpr const TCHAR* SelectButtonSelectedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/select_button_selected.png");
-	constexpr const TCHAR* BorderlessIconNormalPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/borderless_icon_button_normal.png");
-	constexpr const TCHAR* BorderlessIconHoverPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/borderless_icon_button_hover.png");
-	constexpr const TCHAR* BorderlessIconPressedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/borderless_icon_button_pressed.png");
-	constexpr const TCHAR* BorderlessIconDisabledPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/borderless_icon_button_disabled.png");
-	constexpr const TCHAR* BorderlessIconSelectedPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/borderless_icon_button_selected.png");
-	constexpr const TCHAR* HomeSquareCropPath = TEXT("SourceAssets/UI/MasterLibrary/Slices/TopBar/home_square_chad_crop.png");
+	constexpr const TCHAR* TopBarStripPath = TEXT("SourceAssets/UI/Reference/Shared/TopBar/topbar_strip_normal.png");
+	constexpr const TCHAR* LongButtonNormalPath = TEXT("SourceAssets/UI/Reference/Shared/Buttons/CTA/normal.png");
+	constexpr const TCHAR* LongButtonHoverPath = TEXT("SourceAssets/UI/Reference/Shared/Buttons/CTA/hover.png");
+	constexpr const TCHAR* LongButtonPressedPath = TEXT("SourceAssets/UI/Reference/Shared/Buttons/CTA/pressed.png");
+	constexpr const TCHAR* LongButtonDisabledPath = TEXT("SourceAssets/UI/Reference/Shared/Buttons/CTA/disabled.png");
+	constexpr const TCHAR* LongButtonSelectedPath = TEXT("SourceAssets/UI/Reference/Shared/Buttons/CTA/selected.png");
+	constexpr const TCHAR* SquareButtonNormalPath = TEXT("SourceAssets/UI/Reference/Shared/Buttons/SquareIcon/normal.png");
+	constexpr const TCHAR* SquareButtonHoverPath = TEXT("SourceAssets/UI/Reference/Shared/Buttons/SquareIcon/hover.png");
+	constexpr const TCHAR* SquareButtonPressedPath = TEXT("SourceAssets/UI/Reference/Shared/Buttons/SquareIcon/pressed.png");
+	constexpr const TCHAR* SquareButtonDisabledPath = TEXT("SourceAssets/UI/Reference/Shared/Buttons/SquareIcon/disabled.png");
+	constexpr const TCHAR* SquareButtonSelectedPath = TEXT("SourceAssets/UI/Reference/Shared/Buttons/SquareIcon/selected.png");
+	constexpr const TCHAR* HomeSquareCropPath = TEXT("SourceAssets/UI/Reference/Shared/TopBar/home_square_chad_crop.png");
 
 	LoadLooseBrushFromCandidatePaths(
 		{
@@ -1019,96 +1104,96 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 	ConfigureBoxBrush(TopBarBackdropBrush, FMargin(0.030f, 0.306f, 0.030f, 0.306f));
 
 	LoadButtonStateSetFromPaths(
-		{ BorderlessIconNormalPath },
-		{ BorderlessIconHoverPath },
-		{ BorderlessIconPressedPath },
-		{ BorderlessIconDisabledPath },
-		{ BorderlessIconSelectedPath },
+		{ SquareButtonNormalPath },
+		{ SquareButtonHoverPath },
+		{ SquareButtonPressedPath },
+		{ SquareButtonDisabledPath },
+		{ SquareButtonSelectedPath },
 		SettingsButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ BorderlessIconNormalPath },
-		{ BorderlessIconHoverPath },
-		{ BorderlessIconPressedPath },
-		{ BorderlessIconDisabledPath },
-		{ BorderlessIconSelectedPath },
+		{ SquareButtonNormalPath },
+		{ SquareButtonHoverPath },
+		{ SquareButtonPressedPath },
+		{ SquareButtonDisabledPath },
+		{ SquareButtonSelectedPath },
 		LanguageButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ SelectButtonNormalPath },
-		{ SelectButtonHoverPath },
-		{ SelectButtonPressedPath },
-		{ SelectButtonDisabledPath },
-		{ SelectButtonSelectedPath },
+		{ LongButtonNormalPath },
+		{ LongButtonHoverPath },
+		{ LongButtonPressedPath },
+		{ LongButtonDisabledPath },
+		{ LongButtonSelectedPath },
 		AccountButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ SelectButtonNormalPath },
-		{ SelectButtonHoverPath },
-		{ SelectButtonPressedPath },
-		{ SelectButtonDisabledPath },
-		{ SelectButtonSelectedPath },
+		{ SquareButtonNormalPath },
+		{ SquareButtonHoverPath },
+		{ SquareButtonPressedPath },
+		{ SquareButtonDisabledPath },
+		{ SquareButtonSelectedPath },
 		HomeButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ SelectButtonNormalPath },
-		{ SelectButtonHoverPath },
-		{ SelectButtonPressedPath },
-		{ SelectButtonDisabledPath },
-		{ SelectButtonSelectedPath },
+		{ LongButtonNormalPath },
+		{ LongButtonHoverPath },
+		{ LongButtonPressedPath },
+		{ LongButtonDisabledPath },
+		{ LongButtonSelectedPath },
 		NavButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ SelectButtonNormalPath },
-		{ SelectButtonHoverPath },
-		{ SelectButtonPressedPath },
-		{ SelectButtonDisabledPath },
-		{ SelectButtonSelectedPath },
+		{ LongButtonNormalPath },
+		{ LongButtonHoverPath },
+		{ LongButtonPressedPath },
+		{ LongButtonDisabledPath },
+		{ LongButtonSelectedPath },
 		PowerUpButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ SelectButtonNormalPath },
-		{ SelectButtonHoverPath },
-		{ SelectButtonPressedPath },
-		{ SelectButtonDisabledPath },
-		{ SelectButtonSelectedPath },
+		{ LongButtonNormalPath },
+		{ LongButtonHoverPath },
+		{ LongButtonPressedPath },
+		{ LongButtonDisabledPath },
+		{ LongButtonSelectedPath },
 		AchievementsButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ SelectButtonNormalPath },
-		{ SelectButtonHoverPath },
-		{ SelectButtonPressedPath },
-		{ SelectButtonDisabledPath },
-		{ SelectButtonSelectedPath },
+		{ LongButtonNormalPath },
+		{ LongButtonHoverPath },
+		{ LongButtonPressedPath },
+		{ LongButtonDisabledPath },
+		{ LongButtonSelectedPath },
 		MiniGamesButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ SelectButtonNormalPath },
-		{ SelectButtonHoverPath },
-		{ SelectButtonPressedPath },
-		{ SelectButtonDisabledPath },
-		{ SelectButtonSelectedPath },
+		{ SquareButtonNormalPath },
+		{ SquareButtonHoverPath },
+		{ SquareButtonPressedPath },
+		{ SquareButtonDisabledPath },
+		{ SquareButtonSelectedPath },
 		PortraitButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ BasicButtonNormalPath },
-		{ BasicButtonHoverPath },
-		{ BasicButtonPressedPath },
-		{ BasicButtonDisabledPath },
-		{ BasicButtonPressedPath },
+		{ LongButtonNormalPath },
+		{ LongButtonHoverPath },
+		{ LongButtonPressedPath },
+		{ LongButtonDisabledPath },
+		{ LongButtonSelectedPath },
 		CouponButtonBrushes);
 
 	LoadButtonStateSetFromPaths(
-		{ BorderlessIconNormalPath },
-		{ BorderlessIconHoverPath },
-		{ BorderlessIconPressedPath },
-		{ BorderlessIconDisabledPath },
-		{ BorderlessIconSelectedPath },
+		{ SquareButtonNormalPath },
+		{ SquareButtonHoverPath },
+		{ SquareButtonPressedPath },
+		{ SquareButtonDisabledPath },
+		{ SquareButtonSelectedPath },
 		QuitButtonBrushes);
 
-	const FMargin SquareMargin(0.207f, 0.250f, 0.207f, 0.250f);
-	const FMargin NavMargin(0.104f, 0.250f, 0.104f, 0.250f);
-	const FMargin IconMargin(0.f);
+	const FMargin SquareMargin(0.100f, 0.110f, 0.100f, 0.110f);
+	const FMargin NavMargin(0.065f, 0.155f, 0.065f, 0.155f);
+	const FMargin IconMargin(0.100f, 0.110f, 0.100f, 0.110f);
 	ConfigureBoxBrushSet(SettingsButtonBrushes, IconMargin);
 	ConfigureBoxBrushSet(LanguageButtonBrushes, IconMargin);
 	ConfigureBoxBrushSet(AccountButtonBrushes, NavMargin);
@@ -1129,25 +1214,25 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 		FVector2D(88.f, 88.f));
 	LoadLooseBrushFromCandidatePaths(
 		{
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_01_settings_gear_grey_imagegen_20260428.png")
+			TEXT("SourceAssets/UI/Reference/Shared/Icons/settings_gear.png")
 		},
 		SettingsIconBrush,
 		FVector2D(64.f, 64.f));
 	LoadLooseBrushFromCandidatePaths(
 		{
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_02_language_a_wen_grey_imagegen_20260428.png")
+			TEXT("SourceAssets/UI/Reference/Shared/Icons/language.png")
 		},
 		SocialIconBrush,
 		FVector2D(64.f, 64.f));
 	LoadLooseBrushFromCandidatePaths(
 		{
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_07_coupon_ticket_imagegen_20260501_white_v1.png")
+			TEXT("SourceAssets/UI/Reference/Shared/Icons/coupon_ticket.png")
 		},
 		CurrencyIconBrush,
 		FVector2D(58.f, 58.f));
 	LoadLooseBrushFromCandidatePaths(
 		{
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/IconsGenerated/icon_08_power_quit_red_imagegen_20260427.png")
+			TEXT("SourceAssets/UI/Reference/Shared/Icons/power_quit.png")
 		},
 		QuitIconBrush,
 		FVector2D(64.f, 64.f));
@@ -1237,8 +1322,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 	const FButtonStyle& FlatButtonStyle = FT66Style::Get().GetWidgetStyle<FButtonStyle>(TEXT("T66.Button.FlatTransparent"));
 	const float SurfaceWidth = T66MainMenuReferenceLayout::CanvasWidth;
 	const float SurfaceHeight = T66MainMenuReferenceLayout::TopBarSurfaceHeight;
-	const FVector2D UtilityIconSize = FVector2D(84.f, 84.f);
-	const FVector2D CurrencyIconSize = FVector2D(76.f, 76.f);
+	const FVector2D UtilityIconSize = FVector2D(68.f, 68.f);
+	const FVector2D CurrencyIconSize = FVector2D(64.f, 64.f);
 	const float LabelShadowOffset = 1.f;
 	const FT66ReferenceRect& SettingsRect = T66MainMenuReferenceLayout::TopBar::ButtonSettings;
 	const FT66ReferenceRect& LanguageRect = T66MainMenuReferenceLayout::TopBar::ButtonChat;
@@ -1644,10 +1729,9 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 					return 1.f / FMath::Max(0.01f, FT66Style::GetEngineDPIScale());
 				}))
 				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Left)
-					.VAlign(VAlign_Top)
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFitX)
+					.StretchDirection(EStretchDirection::DownOnly)
 					[
 						ReservedReferenceCanvas
 					]

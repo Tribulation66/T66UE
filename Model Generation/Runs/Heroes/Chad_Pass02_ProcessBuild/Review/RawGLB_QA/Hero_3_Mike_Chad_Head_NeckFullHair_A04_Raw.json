@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Raw\\Trellis\\Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckFullHair_A04_S1337_D120000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Review\\RawGLB_QA\\Hero_3_Mike_Chad_Head_NeckFullHair_A04_Raw_Front.png",
+  "export": null,
+  "raw_triangles": 114649,
+  "triangles_before_decimate": 114649,
+  "triangles_after_decimate": 114649,
+  "bounds": {
+    "min": [
+      -0.3130870759487152,
+      -0.34215328097343445,
+      -0.4993097484111786
+    ],
+    "max": [
+      0.3132748007774353,
+      0.3410710096359253,
+      0.4960619807243347
+    ],
+    "size": [
+      0.6263618469238281,
+      0.6832243204116821,
+      0.9953716993331909
+    ]
+  }
+}

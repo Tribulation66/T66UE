@@ -1,0 +1,2 @@
+[2026-05-02T16:39:39+00:00] START Hero_1_Arthur_05_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T16:40:59+00:00] DONE Hero_1_Arthur_05_BodyOnly_Green 4568900 bytes duration=80s -> /workspace/T66/ModelGeneration/Runs/Heroes/Hero_1_Arthur/Raw/Trellis/Hero_1_Arthur_05_BodyOnly_Green_S1337_D80000_Trellis2.glb

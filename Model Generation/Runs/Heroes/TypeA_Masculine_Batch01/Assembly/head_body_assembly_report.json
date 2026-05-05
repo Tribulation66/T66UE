@@ -1,0 +1,1036 @@
+{
+  "pairs": [
+    {
+      "hero_id": "Hero_1",
+      "name": "Arthur",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Hero_1_Arthur\\Raw\\Trellis\\Hero_1_Arthur_05_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Hero_1_Arthur\\Raw\\Trellis\\Hero_1_Arthur_04_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_1_Arthur_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_1_Arthur_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_1_Arthur_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_1_Arthur_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_1_Arthur_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_1_Arthur_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 74752,
+        "head": 119335,
+        "combined": 194087
+      },
+      "bounds": {
+        "body_size": [
+          0.6421776413917542,
+          0.2696130871772766,
+          1.0015387535095215
+        ],
+        "head_size_before": [
+          0.7101644277572632,
+          0.7687250971794128,
+          0.9958279132843018
+        ],
+        "combined_size": [
+          0.6421776413917542,
+          0.2696130871772766,
+          1.2018464803695679
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_1",
+      "name": "Arthur",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_1_Arthur_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Hero_1_Arthur\\Raw\\Trellis\\Hero_1_Arthur_04_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_1_Arthur_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_1_Arthur_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_1_Arthur_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_1_Arthur_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_1_Arthur_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_1_Arthur_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 76190,
+        "head": 119335,
+        "combined": 195525
+      },
+      "bounds": {
+        "body_size": [
+          0.5734840631484985,
+          0.24538475275039673,
+          1.0015265941619873
+        ],
+        "head_size_before": [
+          0.7101644277572632,
+          0.7687250971794128,
+          0.9958279132843018
+        ],
+        "combined_size": [
+          0.5734840631484985,
+          0.24538475275039673,
+          1.2018318176269531
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_3",
+      "name": "Lu Bu",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_3_LuBu_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_3_LuBu_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_3_LuBu_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_3_LuBu_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_3_LuBu_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_3_LuBu_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_3_LuBu_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_3_LuBu_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 76271,
+        "head": 115784,
+        "combined": 192055
+      },
+      "bounds": {
+        "body_size": [
+          0.6323169469833374,
+          0.30810847878456116,
+          1.0010759830474854
+        ],
+        "head_size_before": [
+          0.8851292729377747,
+          0.8192204236984253,
+          1.000834345817566
+        ],
+        "combined_size": [
+          0.6323169469833374,
+          0.30810847878456116,
+          1.2012910842895508
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_3",
+      "name": "Lu Bu",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_3_LuBu_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_3_LuBu_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_3_LuBu_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_3_LuBu_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_3_LuBu_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_3_LuBu_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_3_LuBu_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_3_LuBu_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 77350,
+        "head": 115784,
+        "combined": 193134
+      },
+      "bounds": {
+        "body_size": [
+          0.582937479019165,
+          0.2614327073097229,
+          1.0009453296661377
+        ],
+        "head_size_before": [
+          0.8851292729377747,
+          0.8192204236984253,
+          1.000834345817566
+        ],
+        "combined_size": [
+          0.582937479019165,
+          0.2614327073097229,
+          1.2011343240737915
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_4",
+      "name": "Mike",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_4_Mike_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_4_Mike_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_4_Mike_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_4_Mike_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_4_Mike_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_4_Mike_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_4_Mike_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_4_Mike_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 78737,
+        "head": 117745,
+        "combined": 196482
+      },
+      "bounds": {
+        "body_size": [
+          0.5999866724014282,
+          0.2663649320602417,
+          1.0016257762908936
+        ],
+        "head_size_before": [
+          0.6989487409591675,
+          0.8393877744674683,
+          1.001376986503601
+        ],
+        "combined_size": [
+          0.5999866724014282,
+          0.2663649320602417,
+          1.201951026916504
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_4",
+      "name": "Mike",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_4_Mike_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_4_Mike_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_4_Mike_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_4_Mike_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_4_Mike_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_4_Mike_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_4_Mike_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_4_Mike_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 78622,
+        "head": 117745,
+        "combined": 196367
+      },
+      "bounds": {
+        "body_size": [
+          0.5860636234283447,
+          0.28855663537979126,
+          1.0009888410568237
+        ],
+        "head_size_before": [
+          0.6989487409591675,
+          0.8393877744674683,
+          1.001376986503601
+        ],
+        "combined_size": [
+          0.5860636234283447,
+          0.28855663537979126,
+          1.2011866569519043
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_5",
+      "name": "George",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_5_George_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_5_George_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_5_George_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_5_George_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_5_George_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_5_George_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_5_George_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_5_George_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 77038,
+        "head": 119680,
+        "combined": 196718
+      },
+      "bounds": {
+        "body_size": [
+          0.5636495351791382,
+          0.2509412467479706,
+          1.0018916130065918
+        ],
+        "head_size_before": [
+          0.625396728515625,
+          0.8020042181015015,
+          1.000775933265686
+        ],
+        "combined_size": [
+          0.5636495351791382,
+          0.2509412467479706,
+          1.2022697925567627
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_5",
+      "name": "George",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_5_George_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_5_George_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_5_George_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_5_George_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_5_George_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_5_George_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_5_George_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_5_George_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 73753,
+        "head": 119680,
+        "combined": 193433
+      },
+      "bounds": {
+        "body_size": [
+          0.561610221862793,
+          0.24025008082389832,
+          1.001811146736145
+        ],
+        "head_size_before": [
+          0.625396728515625,
+          0.8020042181015015,
+          1.000775933265686
+        ],
+        "combined_size": [
+          0.561610221862793,
+          0.24025008082389832,
+          1.2021734714508057
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_7",
+      "name": "Robo",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_7_Robo_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_7_Robo_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_7_Robo_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_7_Robo_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_7_Robo_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_7_Robo_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_7_Robo_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_7_Robo_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 78253,
+        "head": 112071,
+        "combined": 190324
+      },
+      "bounds": {
+        "body_size": [
+          0.6125980615615845,
+          0.2557990550994873,
+          1.0017383098602295
+        ],
+        "head_size_before": [
+          0.7249227166175842,
+          0.7016371488571167,
+          1.0010907649993896
+        ],
+        "combined_size": [
+          0.6125980615615845,
+          0.2557990550994873,
+          1.2020859718322754
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_7",
+      "name": "Robo",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_7_Robo_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_7_Robo_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_7_Robo_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_7_Robo_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_7_Robo_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_7_Robo_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_7_Robo_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_7_Robo_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 75981,
+        "head": 112071,
+        "combined": 188052
+      },
+      "bounds": {
+        "body_size": [
+          0.4712926149368286,
+          0.059025492519140244,
+          0.9058668613433838
+        ],
+        "head_size_before": [
+          0.7249227166175842,
+          0.7016371488571167,
+          1.0010907649993896
+        ],
+        "combined_size": [
+          0.4712926149368286,
+          0.15554983913898468,
+          1.0870401859283447
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_8",
+      "name": "Billy",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_8_Billy_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_8_Billy_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_8_Billy_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_8_Billy_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_8_Billy_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_8_Billy_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_8_Billy_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_8_Billy_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 77708,
+        "head": 113729,
+        "combined": 191437
+      },
+      "bounds": {
+        "body_size": [
+          1.001463770866394,
+          0.001972110942006111,
+          1.0014591217041016
+        ],
+        "head_size_before": [
+          1.001441478729248,
+          0.8843867778778076,
+          0.9412451982498169
+        ],
+        "combined_size": [
+          1.001463770866394,
+          0.23053601384162903,
+          1.2017509937286377
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_8",
+      "name": "Billy",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_8_Billy_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_8_Billy_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_8_Billy_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_8_Billy_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_8_Billy_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_8_Billy_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_8_Billy_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_8_Billy_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 77051,
+        "head": 113729,
+        "combined": 190780
+      },
+      "bounds": {
+        "body_size": [
+          1.0014636516571045,
+          0.0019678068347275257,
+          0.9995863437652588
+        ],
+        "head_size_before": [
+          1.001441478729248,
+          0.8843867778778076,
+          0.9412451982498169
+        ],
+        "combined_size": [
+          1.0014636516571045,
+          0.23010489344596863,
+          1.1995036602020264
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_9",
+      "name": "Rabbit",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_9_Rabbit_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_9_Rabbit_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_9_Rabbit_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_9_Rabbit_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_9_Rabbit_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_9_Rabbit_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_9_Rabbit_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_9_Rabbit_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 76758,
+        "head": 112407,
+        "combined": 189165
+      },
+      "bounds": {
+        "body_size": [
+          0.38370275497436523,
+          0.23686173558235168,
+          0.9963527917861938
+        ],
+        "head_size_before": [
+          0.6844626665115356,
+          0.51823490858078,
+          1.0009617805480957
+        ],
+        "combined_size": [
+          0.38370275497436523,
+          0.23686173558235168,
+          1.1956233978271484
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_9",
+      "name": "Rabbit",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_9_Rabbit_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_9_Rabbit_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_9_Rabbit_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_9_Rabbit_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_9_Rabbit_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_9_Rabbit_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_9_Rabbit_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_9_Rabbit_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 78626,
+        "head": 112407,
+        "combined": 191033
+      },
+      "bounds": {
+        "body_size": [
+          0.23487667739391327,
+          1.001462697982788,
+          0.5605030059814453
+        ],
+        "head_size_before": [
+          0.6844626665115356,
+          0.51823490858078,
+          1.0009617805480957
+        ],
+        "combined_size": [
+          0.23487667739391327,
+          1.001462697982788,
+          0.6726036071777344
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_11",
+      "name": "Shroud",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_11_Shroud_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_11_Shroud_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_11_Shroud_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_11_Shroud_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_11_Shroud_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_11_Shroud_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_11_Shroud_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_11_Shroud_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 79317,
+        "head": 115086,
+        "combined": 194403
+      },
+      "bounds": {
+        "body_size": [
+          1.001342535018921,
+          1.0013341903686523,
+          0.835249125957489
+        ],
+        "head_size_before": [
+          1.0014841556549072,
+          0.00199766643345356,
+          1.0010852813720703
+        ],
+        "combined_size": [
+          1.001342535018921,
+          1.0013341903686523,
+          1.0022989511489868
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_11",
+      "name": "Shroud",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_11_Shroud_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_11_Shroud_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_11_Shroud_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_11_Shroud_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_11_Shroud_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_11_Shroud_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_11_Shroud_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_11_Shroud_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 76324,
+        "head": 115086,
+        "combined": 191410
+      },
+      "bounds": {
+        "body_size": [
+          0.3538249731063843,
+          0.23293569684028625,
+          1.0009918212890625
+        ],
+        "head_size_before": [
+          1.0014841556549072,
+          0.00199766643345356,
+          1.0010852813720703
+        ],
+        "combined_size": [
+          0.3538249731063843,
+          0.23293569684028625,
+          1.2011901140213013
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_12",
+      "name": "xQc",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_12_xQc_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_12_xQc_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_12_xQc_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_12_xQc_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_12_xQc_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_12_xQc_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_12_xQc_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_12_xQc_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 75724,
+        "head": 110959,
+        "combined": 186683
+      },
+      "bounds": {
+        "body_size": [
+          0.42988279461860657,
+          0.1974596083164215,
+          1.0005691051483154
+        ],
+        "head_size_before": [
+          0.966145396232605,
+          0.6489750146865845,
+          1.001381754875183
+        ],
+        "combined_size": [
+          0.42988279461860657,
+          0.1974596083164215,
+          1.2006828784942627
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_12",
+      "name": "xQc",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_12_xQc_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_12_xQc_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_12_xQc_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_12_xQc_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_12_xQc_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_12_xQc_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_12_xQc_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_12_xQc_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 75450,
+        "head": 110959,
+        "combined": 186409
+      },
+      "bounds": {
+        "body_size": [
+          0.36149102449417114,
+          0.16293516755104065,
+          1.001434087753296
+        ],
+        "head_size_before": [
+          0.966145396232605,
+          0.6489750146865845,
+          1.001381754875183
+        ],
+        "combined_size": [
+          0.36149102449417114,
+          0.16697978973388672,
+          1.2017208337783813
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_13",
+      "name": "Moist",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_13_Moist_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_13_Moist_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_13_Moist_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_13_Moist_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_13_Moist_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_13_Moist_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_13_Moist_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_13_Moist_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 79547,
+        "head": 115488,
+        "combined": 195035
+      },
+      "bounds": {
+        "body_size": [
+          1.0014607906341553,
+          0.9909877777099609,
+          0.6887011528015137
+        ],
+        "head_size_before": [
+          1.0014286041259766,
+          0.7012133002281189,
+          0.928956151008606
+        ],
+        "combined_size": [
+          1.0014607906341553,
+          0.9909877777099609,
+          0.8264414072036743
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_13",
+      "name": "Moist",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_13_Moist_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_13_Moist_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_13_Moist_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_13_Moist_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_13_Moist_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_13_Moist_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_13_Moist_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_13_Moist_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 75832,
+        "head": 115488,
+        "combined": 191320
+      },
+      "bounds": {
+        "body_size": [
+          0.993999719619751,
+          0.9938303828239441,
+          0.9802320003509521
+        ],
+        "head_size_before": [
+          1.0014286041259766,
+          0.7012133002281189,
+          0.928956151008606
+        ],
+        "combined_size": [
+          0.993999719619751,
+          0.9938303828239441,
+          1.1762783527374268
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_14",
+      "name": "North",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_14_North_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_14_North_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_14_North_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_14_North_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_14_North_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_14_North_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_14_North_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_14_North_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 77798,
+        "head": 118538,
+        "combined": 196336
+      },
+      "bounds": {
+        "body_size": [
+          0.9977327585220337,
+          0.04343864321708679,
+          1.0014841556549072
+        ],
+        "head_size_before": [
+          0.98507159948349,
+          0.6982839703559875,
+          0.8948084115982056
+        ],
+        "combined_size": [
+          0.9977327585220337,
+          0.1914750337600708,
+          1.2017810344696045
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_14",
+      "name": "North",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_14_North_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_14_North_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_14_North_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_14_North_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_14_North_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_14_North_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_14_North_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_14_North_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 75878,
+        "head": 118538,
+        "combined": 194416
+      },
+      "bounds": {
+        "body_size": [
+          0.3389661908149719,
+          0.18849647045135498,
+          0.9994185566902161
+        ],
+        "head_size_before": [
+          0.98507159948349,
+          0.6982839703559875,
+          0.8948084115982056
+        ],
+        "combined_size": [
+          0.3389661908149719,
+          0.1957848072052002,
+          1.1993021965026855
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_15",
+      "name": "Asmon",
+      "variant": "standard",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_15_Asmon_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_15_Asmon_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_15_Asmon_TypeA_Standard_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_15_Asmon_TypeA_Standard_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_15_Asmon_TypeA_Standard_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_15_Asmon_TypeA_Standard_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_15_Asmon_TypeA_Standard_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_15_Asmon_TypeA_Standard_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 78354,
+        "head": 119869,
+        "combined": 198223
+      },
+      "bounds": {
+        "body_size": [
+          1.0014457702636719,
+          0.8613561987876892,
+          0.5601882934570312
+        ],
+        "head_size_before": [
+          0.5273473858833313,
+          1.0006942749023438,
+          0.6783500909805298
+        ],
+        "combined_size": [
+          1.0014457702636719,
+          0.8613561987876892,
+          0.6722259521484375
+        ]
+      }
+    },
+    {
+      "hero_id": "Hero_15",
+      "name": "Asmon",
+      "variant": "beach_goer",
+      "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_15_Asmon_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb",
+      "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Raw\\Trellis\\Hero_15_Asmon_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb",
+      "export": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Assembly\\HeadBody\\Hero_15_Asmon_TypeA_BeachGoer_HeadBody_Assembled.glb",
+      "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\TypeA_Batch01_HeadBodyAssembly\\Hero_15_Asmon_TypeA_BeachGoer_HeadBody_Assembled.blend",
+      "renders": {
+        "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_15_Asmon_TypeA_BeachGoer_HeadBody_Assembled_front.png",
+        "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_15_Asmon_TypeA_BeachGoer_HeadBody_Assembled_right.png",
+        "left_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_15_Asmon_TypeA_BeachGoer_HeadBody_Assembled_left_oblique.png",
+        "right_oblique": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\TypeA_Masculine_Batch01\\Renders\\HeadBodyAssembly\\Hero_15_Asmon_TypeA_BeachGoer_HeadBody_Assembled_right_oblique.png"
+      },
+      "placement": {
+        "head_height_ratio": 0.245,
+        "neck_overlap_ratio": 0.045,
+        "head_y_offset_ratio": -0.006,
+        "head_x_offset_ratio": 0.0
+      },
+      "triangles": {
+        "body": 79117,
+        "head": 119869,
+        "combined": 198986
+      },
+      "bounds": {
+        "body_size": [
+          0.5304300785064697,
+          0.004393305629491806,
+          1.0014572143554688
+        ],
+        "head_size_before": [
+          0.5273473858833313,
+          1.0006942749023438,
+          0.6783500909805298
+        ],
+        "combined_size": [
+          0.5304300785064697,
+          0.3619478642940521,
+          1.2017486095428467
+        ]
+      }
+    }
+  ]
+}

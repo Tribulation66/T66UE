@@ -19,21 +19,14 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
-	virtual void OnScreenDeactivated_Implementation() override;
-	virtual void NativeDestruct() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
 	FReply HandleBackClicked();
 	FReply HandleContinueClicked();
 	FReply HandleCompanionClicked(FName CompanionID);
-	void HandleSessionStateChanged();
-	void SyncToSharedPartyScreen();
-	FString BuildSessionUiStateKey() const;
 	void RebuildCompanionBrushes(const TArray<FT66MiniCompanionDefinition>& Companions);
 	const FSlateBrush* FindCompanionBrush(FName CompanionID) const;
 
 	TMap<FName, TSharedPtr<FSlateBrush>> CompanionBrushes;
-	FDelegateHandle SessionStateChangedHandle;
-	FString LastSessionUiStateKey;
 };

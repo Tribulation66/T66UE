@@ -1,0 +1,5 @@
+IdolID,DisplayName,Description,Category,AccentColor,BaseCostGold,TapDamageMultiplier,PassiveDamageMultiplier,GoldRewardMultiplier,MaxLevel
+Idol_Curse,Curse Idol,Main-game curse idol tuned for idle tap scaling.,DOT,"(R=0.48,G=0.22,B=0.74,A=1.0)",120,1.12,1,1,10
+Idol_Electric,Electric Idol,Adds passive bounce pressure to long sessions.,Bounce,"(R=0.40,G=0.52,B=0.96,A=1.0)",260,1,1.18,1,10
+Idol_Earth,Earth Idol,Turns stage clears into better gold income.,AOE,"(R=0.48,G=0.40,B=0.24,A=1.0)",480,1.05,1.05,1.12,10
+Idol_Light,Light Idol,Boosts every idle lane at once.,Pierce,"(R=0.86,G=0.78,B=0.52,A=1.0)",900,1.18,1.18,1.08,10

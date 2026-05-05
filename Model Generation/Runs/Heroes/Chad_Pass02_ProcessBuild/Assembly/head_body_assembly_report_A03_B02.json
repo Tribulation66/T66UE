@@ -1,0 +1,43 @@
+{
+  "stem": "Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_B02",
+  "body_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Raw\\Trellis\\Hero_3_Mike_Chad_Standard_BodyOnly_White_S1337_D80000_Trellis2.glb",
+  "head_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Raw\\Trellis\\Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A03_S1337_D120000_Trellis2.glb",
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Assembly\\HeadBody\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_B02.glb",
+  "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\Chad_Pass02_Mike\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_B02.blend",
+  "renders": {
+    "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_B02\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_B02_front.png",
+    "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_B02\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_B02_right.png",
+    "back": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_B02\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_B02_back.png",
+    "left": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_B02\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_B02_left.png",
+    "neck_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_B02\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_B02_neck_closeup.png"
+  },
+  "placement": {
+    "head_height_ratio": 0.275,
+    "neck_overlap_ratio": 0.155,
+    "head_y_offset_ratio": -0.006,
+    "head_x_offset_ratio": 0.0,
+    "head_scale": 0.2753389495394765
+  },
+  "triangles": {
+    "body": 74627,
+    "head": 113070,
+    "combined": 187697
+  },
+  "bounds": {
+    "body_size": [
+      0.6779093742370605,
+      0.2873062491416931,
+      1.0014914274215698
+    ],
+    "head_size_before": [
+      0.6232144832611084,
+      0.7452466487884521,
+      1.0002585649490356
+    ],
+    "combined_size": [
+      0.6779093742370605,
+      0.2873062491416931,
+      1.1216703653335571
+    ]
+  }
+}

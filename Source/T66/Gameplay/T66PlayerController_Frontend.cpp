@@ -550,6 +550,19 @@ namespace
 			OutScreenType = ET66ScreenType::TDBattle;
 			return true;
 		}
+		if (Normalized.Equals(TEXT("IdleMainMenu"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("IdleChadpocalypse"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::IdleMainMenu;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("DeckMainMenu"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Deckbuilder"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("ChadpocalypseDeckbuilder"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::DeckMainMenu;
+			return true;
+		}
 		if (Normalized.Equals(TEXT("Challenges"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::Challenges;
@@ -630,6 +643,10 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66TD.T66TDDifficultySelectScreen"));
 	case ET66ScreenType::TDBattle:
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66TD.T66TDBattleScreen"));
+	case ET66ScreenType::IdleMainMenu:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Idle.T66IdleMainMenuScreen"));
+	case ET66ScreenType::DeckMainMenu:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Deck.T66DeckMainMenuScreen"));
 	case ET66ScreenType::ReportBug:
 		return UT66ReportBugScreen::StaticClass();
 	case ET66ScreenType::Settings:
@@ -1237,6 +1254,14 @@ void AT66PlayerController::InitializeUI()
 	if (TSubclassOf<UT66ScreenBase> TDBattleClass = ResolveScreenClass(ET66ScreenType::TDBattle))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::TDBattle, TDBattleClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> IdleMainMenuClass = ResolveScreenClass(ET66ScreenType::IdleMainMenu))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::IdleMainMenu, IdleMainMenuClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> DeckMainMenuClass = ResolveScreenClass(ET66ScreenType::DeckMainMenu))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::DeckMainMenu, DeckMainMenuClass);
 	}
 	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
 	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))

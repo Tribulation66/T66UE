@@ -21,6 +21,7 @@ This batch targets four wall modules and four floor modules for each theme:
 |---|---|---|
 | Easy / Dungeon | `DungeonKit02` | stone dungeon, chunky bones, attached chains, simple torches |
 | Medium / Forest | `ForestKit01` | walls made from trunks, roots, bark slabs, vines, mushrooms |
+| Hard / Ocean | `OceanKit01` | coral reef walls, shell limestone, kelp, reef stone, tide-worn floors |
 | VeryHard / Martian | `MartianKit01` | red rock, Mars regolith, basalt, ruins, crystal veins |
 | Impossible / Hell | `HellKit01` | brimstone, obsidian, skull relief, chains, lava cracks |
 
@@ -60,10 +61,10 @@ All sheets:
 
 Target output count:
 
-- `16` source sheets total? No. This batch uses `8` source sheets total:
-  - four themes
+- This batch uses `10` source sheets total:
+  - five themes
   - two sheet types per theme: wall and floor
-- `32` Trellis module inputs after splitting:
+- `40` Trellis module inputs after splitting:
   - four wall crops per theme
   - four floor crops per theme
 

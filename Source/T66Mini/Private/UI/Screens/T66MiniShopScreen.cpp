@@ -6,17 +6,12 @@
 #include "Core/T66MiniCircusSubsystem.h"
 #include "Core/T66MiniDataSubsystem.h"
 #include "Core/T66MiniFrontendStateSubsystem.h"
-#include "Core/T66PartySubsystem.h"
 #include "Core/T66MiniRunStateSubsystem.h"
-#include "Core/T66SessionSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66MiniDataTypes.h"
-#include "Gameplay/T66SessionPlayerState.h"
-#include "JsonObjectConverter.h"
 #include "Save/T66MiniRunSaveGame.h"
 #include "Save/T66MiniSaveSubsystem.h"
 #include "UI/T66MiniUIStyle.h"
-#include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/Texture2D.h"
@@ -44,19 +39,6 @@ namespace
 	const FName MiniShopActionCircusGame(TEXT("CircusGame"));
 	const FName MiniShopActionAlchemyTransmute(TEXT("AlchemyTransmute"));
 	const FName MiniShopActionAlchemyDissolve(TEXT("AlchemyDissolve"));
-
-	template <typename PayloadType>
-	bool T66MiniSerializePayload(const PayloadType& Payload, FString& OutJson)
-	{
-		return FJsonObjectConverter::UStructToJsonObjectString(Payload, OutJson);
-	}
-
-	template <typename PayloadType>
-	bool T66MiniDeserializePayload(const FString& Json, PayloadType& OutPayload)
-	{
-		return !Json.IsEmpty()
-			&& FJsonObjectConverter::JsonObjectStringToUStruct(Json, &OutPayload, 0, 0);
-	}
 
 	FString T66MiniDescribeItemEffect(const FT66MiniItemDefinition& Item)
 	{
@@ -107,6 +89,23 @@ namespace
 		Result.RemoveFromStart(TEXT("Item_"));
 		Result.ReplaceInline(TEXT("_"), TEXT(" "));
 		return Result;
+	}
+
+	float T66MiniShopTuning(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key, const float DefaultValue)
+	{
+		return DataSubsystem ? DataSubsystem->FindRuntimeTuningValue(FName(Key), DefaultValue) : DefaultValue;
+	}
+
+	int32 T66MiniShopTuningInt(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key, const int32 DefaultValue)
+	{
+		return FMath::RoundToInt(T66MiniShopTuning(DataSubsystem, Key, static_cast<float>(DefaultValue)));
+	}
+
+	int32 T66MiniGetVendorRerollCost(const UT66MiniCircusSubsystem* CircusSubsystem, const UT66MiniDataSubsystem* DataSubsystem)
+	{
+		const int32 RerollCount = CircusSubsystem ? CircusSubsystem->GetVendorRerollCount() : 0;
+		return T66MiniShopTuningInt(DataSubsystem, TEXT("VendorRerollBaseCost"), 12)
+			+ (RerollCount * T66MiniShopTuningInt(DataSubsystem, TEXT("VendorRerollCostPerReroll"), 6));
 	}
 
 	TSharedPtr<FSlateBrush> T66MiniMakeBrush(const FVector2D& Size)
@@ -300,29 +299,12 @@ void UT66MiniShopScreen::OnScreenActivated_Implementation()
 	CurrentStatusText = FText::GetEmpty();
 	LastAppliedStateRevision = 0;
 	LastShopUiStateKey.Reset();
-	ProcessedRequestRevisionByPlayerId.Reset();
-
-	if (UGameInstance* GameInstance = GetGameInstance())
-	{
-		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
-		{
-			PartyStateChangedHandle = PartySubsystem->OnPartyStateChanged().AddUObject(this, &UT66MiniShopScreen::HandlePartyStateChanged);
-		}
-
-		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
-		{
-			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MiniShopScreen::HandleSessionStateChanged);
-			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MiniShop, true);
-		}
-	}
 
 	UT66MiniDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
 	UT66MiniCircusSubsystem* CircusSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniCircusSubsystem>() : nullptr;
 	UT66MiniRunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
 	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-	bool bIsHost = false;
-	const bool bOnlineMiniParty = IsOnlineMiniParty(&bIsHost);
 	if (DataSubsystem && CircusSubsystem)
 	{
 		CircusSubsystem->SeedFromRunSave(ActiveRun);
@@ -334,77 +316,16 @@ void UT66MiniShopScreen::OnScreenActivated_Implementation()
 		FrontendState->ResumeIntermissionFlow();
 	}
 
-	ResetMiniIntermissionTransport();
-	if (bOnlineMiniParty)
-	{
-		if (bIsHost)
-		{
-			PublishAuthoritativeState(
-				NSLOCTEXT("T66Mini.Shop", "HostIntermissionReady", "Mini intermission is live. Circus changes now sync to the whole party."),
-				true);
-		}
-		else
-		{
-			ApplyAuthoritativeStateFromLobby(false);
-		}
-
-		ShopSyncTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
-			FTickerDelegate::CreateUObject(this, &UT66MiniShopScreen::HandleShopSyncTicker),
-			0.25f);
-	}
-
 	LastShopUiStateKey = BuildShopUiStateKey();
 }
 
 void UT66MiniShopScreen::OnScreenDeactivated_Implementation()
 {
-	if (UGameInstance* GameInstance = GetGameInstance())
-	{
-		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
-		{
-			PartySubsystem->OnPartyStateChanged().Remove(PartyStateChangedHandle);
-		}
-
-		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
-		{
-			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
-		}
-	}
-
-	if (ShopSyncTickerHandle.IsValid())
-	{
-		FTSTicker::GetCoreTicker().RemoveTicker(ShopSyncTickerHandle);
-		ShopSyncTickerHandle.Reset();
-	}
-
-	PartyStateChangedHandle.Reset();
-	SessionStateChangedHandle.Reset();
 	Super::OnScreenDeactivated_Implementation();
 }
 
 void UT66MiniShopScreen::NativeDestruct()
 {
-	if (UGameInstance* GameInstance = GetGameInstance())
-	{
-		if (UT66PartySubsystem* PartySubsystem = GameInstance->GetSubsystem<UT66PartySubsystem>())
-		{
-			PartySubsystem->OnPartyStateChanged().Remove(PartyStateChangedHandle);
-		}
-
-		if (UT66SessionSubsystem* SessionSubsystem = GameInstance->GetSubsystem<UT66SessionSubsystem>())
-		{
-			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
-		}
-	}
-
-	if (ShopSyncTickerHandle.IsValid())
-	{
-		FTSTicker::GetCoreTicker().RemoveTicker(ShopSyncTickerHandle);
-		ShopSyncTickerHandle.Reset();
-	}
-
-	PartyStateChangedHandle.Reset();
-	SessionStateChangedHandle.Reset();
 	Super::NativeDestruct();
 }
 
@@ -428,7 +349,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 		const int32 Materials = ActiveRun->Materials;
 		const int32 Debt = CircusSubsystem->GetDebt();
 		const int32 AngerPct = FMath::RoundToInt(CircusSubsystem->GetAnger01() * 100.f);
-		const int32 RerollCost = 12 + (CircusSubsystem->GetVendorRerollCount() * 6);
+		const int32 RerollCost = T66MiniGetVendorRerollCost(CircusSubsystem, DataSubsystem);
 		const float CardWidth = FT66Style::Tokens::NPCCompactShopCardWidth;
 		const float CardHeight = FT66Style::Tokens::NPCCompactShopCardHeight;
 		const float CardIconSize = CardWidth - 10.f;
@@ -571,34 +492,22 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 		{
 			DefaultStatus = NSLOCTEXT("T66Mini.Shop", "GamblingShellStatus", "Casino games now sit inside the shared circus shell, so the house economy stays visible while you gamble.");
 			TSharedRef<SUniformGridPanel> GameGrid = SNew(SUniformGridPanel).SlotPadding(FMargin(10.f));
-			struct FMiniCircusGameDef
+			const TArray<FT66MiniCircusGameDefinition> EmptyGameDefinitions;
+			const TArray<FT66MiniCircusGameDefinition>& GameDefs = DataSubsystem ? DataSubsystem->GetCircusGames() : EmptyGameDefinitions;
+			for (int32 Index = 0; Index < GameDefs.Num(); ++Index)
 			{
-				const TCHAR* Title;
-				const TCHAR* Description;
-				const TCHAR* GameID;
-				const TCHAR* IconPath;
-			};
-			static const FMiniCircusGameDef GameDefs[] = {
-				{ TEXT("ROCK PAPER SCISSORS"), TEXT("The demon hand mind-game stays in the lineup."), TEXT("RockPaperScissors"), TEXT("/Game/UI/Sprites/Games/T_Game_RPS.T_Game_RPS") },
-				{ TEXT("BLACK JACK"), TEXT("Card table variance with larger payouts."), TEXT("BlackJack"), TEXT("/Game/UI/Sprites/Games/T_Game_BJ.T_Game_BJ") },
-				{ TEXT("COIN FLIP"), TEXT("Heads or tails with quick gold swings."), TEXT("CoinFlip"), TEXT("/Game/UI/Sprites/Games/T_Game_Coin.T_Game_Coin") },
-				{ TEXT("LOTTERY"), TEXT("Cheap ticket, high spike payout."), TEXT("Lottery"), TEXT("/Game/UI/Sprites/Games/LOTTERY.LOTTERY") },
-				{ TEXT("PLINKO"), TEXT("Drop and pray for the multiplier lane."), TEXT("Plinko"), TEXT("/Game/UI/Sprites/Games/PLINKO.PLINKO") },
-				{ TEXT("BOX OPENING"), TEXT("Fast roll for gold or a random item."), TEXT("BoxOpening"), TEXT("/Game/UI/Sprites/Games/CRATE.CRATE") }
-			};
-			for (int32 Index = 0; Index < UE_ARRAY_COUNT(GameDefs); ++Index)
-			{
-				const FMiniCircusGameDef& GameDef = GameDefs[Index];
+				const FT66MiniCircusGameDefinition& GameDef = GameDefs[Index];
+				const FString Title = GameDef.DisplayName.ToUpper();
 				GameGrid->AddSlot(Index % 3, Index / 3)
 				[
 					SNew(SBox).WidthOverride(CardWidth).HeightOverride(CardHeight)
 					[
 						T66MiniMakeShopPanel(
 							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(GameDef.Title)).Font(FT66Style::MakeFont(TEXT("Bold"), 9)).ColorAndOpacity(FT66Style::Text()).AutoWrapText(true).WrapTextAt(CardWidth - 10.f)]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)[T66MiniMakeIconPanel(this, TexPool, GameDef.IconPath, FString::Printf(TEXT("MiniGame_%s"), GameDef.GameID), FText::FromString(FString(GameDef.Title).Left(2)), FVector2D(CardIconSize, CardIconSize))]]
+							+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(Title)).Font(FT66Style::MakeFont(TEXT("Bold"), 9)).ColorAndOpacity(FT66Style::Text()).AutoWrapText(true).WrapTextAt(CardWidth - 10.f)]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)[T66MiniMakeIconPanel(this, TexPool, GameDef.IconPath, FString::Printf(TEXT("MiniGame_%s"), *GameDef.GameID.ToString()), FText::FromString(Title.Left(2)), FVector2D(CardIconSize, CardIconSize))]]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(GameDef.Description)).Font(FT66Style::MakeFont(TEXT("Regular"), 7)).ColorAndOpacity(FT66Style::TextMuted()).AutoWrapText(true).WrapTextAt(CardWidth - 10.f)]
-							+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Bottom).Padding(0.f, 8.f, 0.f, 0.f)[T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "OpenGame", "OPEN"), FOnClicked::CreateLambda([this, GameName = FName(GameDef.GameID), Title = FString(GameDef.Title)]() { return HandleCircusGameClicked(GameName, Title); }), ET66ButtonType::Primary, 9, FMargin(8.f, 5.f))],
+							+ SVerticalBox::Slot().FillHeight(1.f).VAlign(VAlign_Bottom).Padding(0.f, 8.f, 0.f, 0.f)[T66MiniMakeShopButton(NSLOCTEXT("T66Mini.Shop", "OpenGame", "OPEN"), FOnClicked::CreateLambda([this, GameName = GameDef.GameID, Title]() { return HandleCircusGameClicked(GameName, Title); }), ET66ButtonType::Primary, 9, FMargin(8.f, 5.f))],
 							FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(5.f)))
 					]
 				];
@@ -1039,7 +948,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 		}
 	}
 
-	const int32 RerollCost = CircusSubsystem ? (12 + (CircusSubsystem->GetVendorRerollCount() * 6)) : 12;
+	const int32 RerollCost = T66MiniGetVendorRerollCost(CircusSubsystem, DataSubsystem);
 
 	TSharedRef<SWidget> ActiveTabContent = SNullWidget::NullWidget;
 	FText DefaultStatus = NSLOCTEXT("T66Mini.Shop", "DefaultStatusVendor", "The mini circus vendor now supports buy, steal, reroll, lock, and buyback. Debt and anger persist through the intermission flow.");
@@ -1094,25 +1003,12 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 	{
 		DefaultStatus = NSLOCTEXT("T66Mini.Shop", "DefaultStatusGambling", "Every mini circus game now resolves real gold swings, debt pressure, and anger buildup.");
 		TSharedRef<SUniformGridPanel> GamblingGrid = SNew(SUniformGridPanel).SlotPadding(FMargin(12.f));
-		struct FMiniCircusGameCard
+		const TArray<FT66MiniCircusGameDefinition> EmptyGameDefinitions;
+		const TArray<FT66MiniCircusGameDefinition>& GameCards = DataSubsystem ? DataSubsystem->GetCircusGames() : EmptyGameDefinitions;
+		for (int32 Index = 0; Index < GameCards.Num(); ++Index)
 		{
-			const TCHAR* Title;
-			const TCHAR* Description;
-			const TCHAR* GameID;
-		};
-
-		static const FMiniCircusGameCard GameCards[] = {
-			{ TEXT("COIN FLIP"), TEXT("Heads or tails with quick gold swings."), TEXT("CoinFlip") },
-			{ TEXT("ROCK PAPER SCISSORS"), TEXT("The demon hand mind-game stays in the lineup."), TEXT("RockPaperScissors") },
-			{ TEXT("BLACK JACK"), TEXT("Card table variance with larger payouts."), TEXT("BlackJack") },
-			{ TEXT("LOTTERY"), TEXT("Cheap ticket, high spike payout."), TEXT("Lottery") },
-			{ TEXT("PLINKO"), TEXT("Drop and pray for the multiplier lane."), TEXT("Plinko") },
-			{ TEXT("BOX OPENING"), TEXT("Fast roll for gold or a random item."), TEXT("BoxOpening") }
-		};
-
-		for (int32 Index = 0; Index < UE_ARRAY_COUNT(GameCards); ++Index)
-		{
-			const FMiniCircusGameCard& Card = GameCards[Index];
+			const FT66MiniCircusGameDefinition& Card = GameCards[Index];
+			const FString Title = Card.DisplayName.ToUpper();
 			GamblingGrid->AddSlot(Index % 3, Index / 3)
 			[
 				SNew(SBox)
@@ -1125,7 +1021,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 						.AutoHeight()
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(Card.Title))
+							.Text(FText::FromString(Title))
 							.Font(T66MiniUI::BoldFont(22))
 							.ColorAndOpacity(FLinearColor::White)
 						]
@@ -1145,7 +1041,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 						[
 							T66MiniMakeShopButton(
 								NSLOCTEXT("T66Mini.Shop", "OpenGame", "OPEN"),
-								FOnClicked::CreateLambda([this, GameID = FName(Card.GameID), Title = FString(Card.Title)]() { return HandleCircusGameClicked(GameID, Title); }),
+								FOnClicked::CreateLambda([this, GameID = Card.GameID, Title]() { return HandleCircusGameClicked(GameID, Title); }),
 								ET66ButtonType::Primary,
 								18,
 								FMargin(12.f, 8.f))
@@ -1384,128 +1280,6 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 		];
 }
 
-bool UT66MiniShopScreen::HandleShopSyncTicker(const float DeltaTime)
-{
-	UT66MiniRunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
-	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
-	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
-	if (UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-		ActiveRun && ActiveRun->bOnlinePartyRun && SaveSubsystem)
-	{
-		FString CompatibilityFailure;
-		if (!SaveSubsystem->IsRunCompatibleWithCurrentParty(ActiveRun, &CompatibilityFailure))
-		{
-			SetStatus(FText::FromString(CompatibilityFailure));
-			if (FrontendState)
-			{
-				FrontendState->ExitIntermissionFlow();
-			}
-			ResetMiniIntermissionTransport();
-			NavigateTo(ET66ScreenType::MiniMainMenu);
-			return true;
-		}
-	}
-
-	SyncToSharedPartyScreen();
-
-	bool bIsHost = false;
-	if (!IsOnlineMiniParty(&bIsHost))
-	{
-		return true;
-	}
-
-	if (bIsHost)
-	{
-		TryProcessRemoteRequests(false);
-	}
-	else
-	{
-		ApplyAuthoritativeStateFromLobby(false);
-	}
-
-	return true;
-}
-
-void UT66MiniShopScreen::HandlePartyStateChanged()
-{
-	UT66MiniRunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
-	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
-	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
-	if (UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-		ActiveRun && ActiveRun->bOnlinePartyRun && SaveSubsystem)
-	{
-		FString CompatibilityFailure;
-		if (!SaveSubsystem->IsRunCompatibleWithCurrentParty(ActiveRun, &CompatibilityFailure))
-		{
-			SetStatus(FText::FromString(CompatibilityFailure));
-			if (FrontendState)
-			{
-				FrontendState->ExitIntermissionFlow();
-			}
-			ResetMiniIntermissionTransport();
-			NavigateTo(ET66ScreenType::MiniMainMenu);
-			return;
-		}
-	}
-
-	SyncToSharedPartyScreen();
-
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost))
-	{
-	if (bIsHost)
-	{
-		TryProcessRemoteRequests(true);
-	}
-	else
-	{
-		ApplyAuthoritativeStateFromLobby(true);
-	}
-	return;
-	}
-
-	RequestShopRebuildIfStateChanged();
-}
-
-void UT66MiniShopScreen::HandleSessionStateChanged()
-{
-	HandlePartyStateChanged();
-}
-
-void UT66MiniShopScreen::SyncToSharedPartyScreen()
-{
-	if (!UIManager)
-	{
-		return;
-	}
-
-	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	if (!SessionSubsystem || !SessionSubsystem->IsPartySessionActive() || SessionSubsystem->IsLocalPlayerPartyHost())
-	{
-		return;
-	}
-
-	const ET66ScreenType DesiredScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
-	switch (DesiredScreen)
-	{
-	case ET66ScreenType::MiniSaveSlots:
-	case ET66ScreenType::MiniCharacterSelect:
-	case ET66ScreenType::MiniCompanionSelect:
-	case ET66ScreenType::MiniDifficultySelect:
-	case ET66ScreenType::MiniShop:
-	case ET66ScreenType::MiniIdolSelect:
-	case ET66ScreenType::MiniRunSummary:
-	case ET66ScreenType::MiniMainMenu:
-		if (ScreenType != DesiredScreen)
-		{
-			NavigateTo(DesiredScreen);
-		}
-		break;
-	default:
-		break;
-	}
-}
-
 FString UT66MiniShopScreen::BuildShopUiStateKey() const
 {
 	FString StateKey = FString::Printf(
@@ -1520,15 +1294,13 @@ FString UT66MiniShopScreen::BuildShopUiStateKey() const
 	if (ActiveRun)
 	{
 		StateKey += FString::Printf(
-			TEXT("|R:%d:%d:%d:%d:%d:%f:%s:%s"),
-			ActiveRun->bOnlinePartyRun ? 1 : 0,
+			TEXT("|R:%d:%d:%d:%d:%f:%s"),
 			ActiveRun->bPendingShopIntermission ? 1 : 0,
 			ActiveRun->WaveIndex,
 			ActiveRun->ShopRerollCount,
 			ActiveRun->CircusDebt,
 			ActiveRun->CircusAnger01,
-			*ActiveRun->DifficultyID.ToString(),
-			*ActiveRun->OnlineHostSteamId);
+			*ActiveRun->DifficultyID.ToString());
 
 		for (const FName& ItemId : ActiveRun->OwnedItemIDs)
 		{
@@ -1555,26 +1327,6 @@ FString UT66MiniShopScreen::BuildShopUiStateKey() const
 		}
 	}
 
-	const UT66SessionSubsystem* SessionSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	if (SessionSubsystem)
-	{
-		StateKey += FString::Printf(
-			TEXT("|S:%d:%d:%d"),
-			SessionSubsystem->IsPartySessionActive() ? 1 : 0,
-			SessionSubsystem->IsLocalPlayerPartyHost() ? 1 : 0,
-			SessionSubsystem->IsLocalLobbyReady() ? 1 : 0);
-
-		FT66LobbyPlayerInfo HostLobbyInfo;
-		if (SessionSubsystem->GetHostLobbyProfile(HostLobbyInfo))
-		{
-			StateKey += FString::Printf(
-				TEXT("|H:%d:%d:%d"),
-				HostLobbyInfo.MiniIntermissionStateRevision,
-				HostLobbyInfo.MiniIntermissionRequestRevision,
-				HostLobbyInfo.bLobbyReady ? 1 : 0);
-		}
-	}
-
 	return StateKey;
 }
 
@@ -1590,312 +1342,8 @@ void UT66MiniShopScreen::RequestShopRebuildIfStateChanged()
 	FT66Style::DeferRebuild(this);
 }
 
-bool UT66MiniShopScreen::IsOnlineMiniParty(bool* bOutIsHost) const
+bool UT66MiniShopScreen::ExecuteLocalRequest(const FT66MiniShopRequestPayload& Request)
 {
-	const UGameInstance* GameInstance = GetGameInstance();
-	const UT66PartySubsystem* PartySubsystem = GameInstance ? GameInstance->GetSubsystem<UT66PartySubsystem>() : nullptr;
-	const UT66SessionSubsystem* SessionSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	const bool bIsHost = !SessionSubsystem || SessionSubsystem->IsLocalPlayerPartyHost();
-	if (bOutIsHost)
-	{
-		*bOutIsHost = bIsHost;
-	}
-
-	return PartySubsystem && PartySubsystem->HasRemotePartyMembers() && SessionSubsystem && SessionSubsystem->IsPartySessionActive();
-}
-
-bool UT66MiniShopScreen::ResolveLocalPartyIdentity(FString& OutPlayerId, FString& OutDisplayName) const
-{
-	OutPlayerId.Reset();
-	OutDisplayName.Reset();
-
-	const UGameInstance* GameInstance = GetGameInstance();
-	const UT66PartySubsystem* PartySubsystem = GameInstance ? GameInstance->GetSubsystem<UT66PartySubsystem>() : nullptr;
-	if (PartySubsystem)
-	{
-		OutPlayerId = PartySubsystem->GetLocalPlayerId();
-		OutDisplayName = PartySubsystem->GetLocalDisplayName();
-	}
-
-	return !OutPlayerId.IsEmpty();
-}
-
-void UT66MiniShopScreen::ResetMiniIntermissionTransport() const
-{
-	UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GetGameInstance());
-	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	if (!T66GameInstance)
-	{
-		return;
-	}
-
-	T66GameInstance->MiniIntermissionStateRevision = 0;
-	T66GameInstance->MiniIntermissionStateJson.Reset();
-	T66GameInstance->MiniIntermissionRequestRevision = 0;
-	T66GameInstance->MiniIntermissionRequestJson.Reset();
-	if (SessionSubsystem && SessionSubsystem->IsPartySessionActive())
-	{
-		SessionSubsystem->SyncLocalLobbyProfile();
-	}
-}
-
-bool UT66MiniShopScreen::BuildAuthoritativeSyncPayload(FT66MiniShopSyncPayload& OutPayload) const
-{
-	UT66MiniRunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
-	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
-	UT66PartySubsystem* PartySubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PartySubsystem>() : nullptr;
-	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-	if (!ActiveRun)
-	{
-		return false;
-	}
-
-	if (ActiveRun->bOnlinePartyRun && SaveSubsystem)
-	{
-		SaveSubsystem->CaptureLocalPartyPlayerSnapshotFromLegacyFields(ActiveRun);
-	}
-
-	OutPayload.StatusText = CurrentStatusText.ToString();
-	OutPayload.HostSteamId = PartySubsystem ? PartySubsystem->GetLocalPlayerId() : FString();
-	OutPayload.HostDisplayName = PartySubsystem ? PartySubsystem->GetLocalDisplayName() : FString();
-	OutPayload.DifficultyID = ActiveRun->DifficultyID;
-	OutPayload.WaveIndex = ActiveRun->WaveIndex;
-	OutPayload.TotalRunSeconds = ActiveRun->TotalRunSeconds;
-	OutPayload.CurrentShopOfferIDs = ActiveRun->CurrentShopOfferIDs;
-	OutPayload.LockedShopOfferIDs = ActiveRun->LockedShopOfferIDs;
-	OutPayload.ShopRerollCount = ActiveRun->ShopRerollCount;
-	OutPayload.CircusDebt = ActiveRun->CircusDebt;
-	OutPayload.CircusAnger01 = ActiveRun->CircusAnger01;
-	OutPayload.CircusBuybackItemIDs = ActiveRun->CircusBuybackItemIDs;
-	OutPayload.CircusVendorRerollCount = ActiveRun->CircusVendorRerollCount;
-	OutPayload.OnlinePartyMemberIds = ActiveRun->OnlinePartyMemberIds;
-	OutPayload.OnlinePartyMemberDisplayNames = ActiveRun->OnlinePartyMemberDisplayNames;
-	OutPayload.PartyPlayerSnapshots = ActiveRun->PartyPlayerSnapshots;
-	return true;
-}
-
-bool UT66MiniShopScreen::PublishAuthoritativeState(const FText& StatusText, const bool bIncrementRevision)
-{
-	UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GetGameInstance());
-	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	if (!T66GameInstance || !SessionSubsystem)
-	{
-		return false;
-	}
-
-	if (!StatusText.IsEmpty())
-	{
-		CurrentStatusText = StatusText;
-	}
-
-	FT66MiniShopSyncPayload Payload;
-	if (!BuildAuthoritativeSyncPayload(Payload))
-	{
-		return false;
-	}
-
-	Payload.Revision = bIncrementRevision
-		? (T66GameInstance->MiniIntermissionStateRevision + 1)
-		: FMath::Max(1, T66GameInstance->MiniIntermissionStateRevision);
-	if (Payload.StatusText.IsEmpty() && !CurrentStatusText.IsEmpty())
-	{
-		Payload.StatusText = CurrentStatusText.ToString();
-	}
-
-	FString Json;
-	if (!T66MiniSerializePayload(Payload, Json))
-	{
-		return false;
-	}
-
-	T66GameInstance->MiniIntermissionStateRevision = Payload.Revision;
-	T66GameInstance->MiniIntermissionStateJson = MoveTemp(Json);
-	LastAppliedStateRevision = Payload.Revision;
-	SessionSubsystem->SyncLocalLobbyProfile();
-	return true;
-}
-
-bool UT66MiniShopScreen::ApplyAuthoritativeStateFromLobby(const bool bForceRebuild)
-{
-	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	UT66MiniRunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
-	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
-	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
-	UT66MiniCircusSubsystem* CircusSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniCircusSubsystem>() : nullptr;
-	UT66MiniDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
-	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-	if (!SessionSubsystem || !SaveSubsystem || !FrontendState || !CircusSubsystem || !ActiveRun)
-	{
-		return false;
-	}
-
-	FT66LobbyPlayerInfo HostLobbyInfo;
-	if (!SessionSubsystem->GetHostLobbyProfile(HostLobbyInfo)
-		|| HostLobbyInfo.MiniIntermissionStateRevision <= 0
-		|| HostLobbyInfo.MiniIntermissionStateJson.IsEmpty())
-	{
-		return false;
-	}
-
-	if (!bForceRebuild && HostLobbyInfo.MiniIntermissionStateRevision == LastAppliedStateRevision)
-	{
-		return false;
-	}
-
-	FT66MiniShopSyncPayload Payload;
-	if (!T66MiniDeserializePayload(HostLobbyInfo.MiniIntermissionStateJson, Payload))
-	{
-		return false;
-	}
-
-	ActiveRun->bOnlinePartyRun = true;
-	ActiveRun->bPendingShopIntermission = true;
-	ActiveRun->OnlineHostSteamId = Payload.HostSteamId;
-	ActiveRun->OnlineHostDisplayName = Payload.HostDisplayName;
-	ActiveRun->DifficultyID = Payload.DifficultyID;
-	ActiveRun->WaveIndex = FMath::Max(1, Payload.WaveIndex);
-	ActiveRun->TotalRunSeconds = FMath::Max(0.f, Payload.TotalRunSeconds);
-	ActiveRun->CurrentShopOfferIDs = Payload.CurrentShopOfferIDs;
-	ActiveRun->LockedShopOfferIDs = Payload.LockedShopOfferIDs;
-	ActiveRun->ShopRerollCount = Payload.ShopRerollCount;
-	ActiveRun->CircusDebt = Payload.CircusDebt;
-	ActiveRun->CircusAnger01 = Payload.CircusAnger01;
-	ActiveRun->CircusBuybackItemIDs = Payload.CircusBuybackItemIDs;
-	ActiveRun->CircusVendorRerollCount = Payload.CircusVendorRerollCount;
-	ActiveRun->OnlinePartyMemberIds = Payload.OnlinePartyMemberIds;
-	ActiveRun->OnlinePartyMemberDisplayNames = Payload.OnlinePartyMemberDisplayNames;
-	ActiveRun->PartyPlayerSnapshots = Payload.PartyPlayerSnapshots;
-	SaveSubsystem->MirrorLocalPartyPlayerSnapshotToLegacyFields(ActiveRun);
-	FrontendState->SeedFromRunSave(ActiveRun);
-	FrontendState->ResumeIntermissionFlow();
-	CircusSubsystem->SeedFromRunSave(ActiveRun);
-	CircusSubsystem->PrimeVendorOffers(DataSubsystem);
-	LastAppliedStateRevision = Payload.Revision;
-
-	if (!Payload.StatusText.IsEmpty())
-	{
-		CurrentStatusText = FText::FromString(Payload.StatusText);
-	}
-
-	if (bForceRebuild || Payload.Revision > 0)
-	{
-		RequestShopRebuildIfStateChanged();
-	}
-
-	return true;
-}
-
-bool UT66MiniShopScreen::TryQueueRemoteRequest(const FT66MiniShopRequestPayload& Request, const FText& PendingStatus)
-{
-	UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GetGameInstance());
-	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	if (!T66GameInstance || !SessionSubsystem)
-	{
-		return false;
-	}
-
-	FT66MiniShopRequestPayload PendingRequest = Request;
-	PendingRequest.Revision = T66GameInstance->MiniIntermissionRequestRevision + 1;
-
-	FString Json;
-	if (!T66MiniSerializePayload(PendingRequest, Json))
-	{
-		return false;
-	}
-
-	T66GameInstance->MiniIntermissionRequestRevision = PendingRequest.Revision;
-	T66GameInstance->MiniIntermissionRequestJson = MoveTemp(Json);
-	SessionSubsystem->SyncLocalLobbyProfile();
-	SetStatus(PendingStatus);
-	return true;
-}
-
-bool UT66MiniShopScreen::TryProcessRemoteRequests(const bool bForceRebuild)
-{
-	UT66SessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	UT66MiniRunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniRunStateSubsystem>() : nullptr;
-	UT66MiniSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniSaveSubsystem>() : nullptr;
-	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
-	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-	if (!SessionSubsystem || !SaveSubsystem || !FrontendState || !ActiveRun)
-	{
-		return false;
-	}
-
-	if (ActiveRun->bOnlinePartyRun)
-	{
-		FString CompatibilityFailure;
-		if (!SaveSubsystem->IsRunCompatibleWithCurrentParty(ActiveRun, &CompatibilityFailure))
-		{
-			SetStatus(FText::FromString(CompatibilityFailure));
-			FrontendState->ExitIntermissionFlow();
-			ResetMiniIntermissionTransport();
-			NavigateTo(ET66ScreenType::MiniMainMenu);
-			return false;
-		}
-	}
-
-	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
-	SessionSubsystem->GetCurrentLobbyProfiles(LobbyProfiles);
-
-	bool bProcessedAny = false;
-	bool bNavigateToIdolSelect = false;
-	FText LatestStatus = CurrentStatusText;
-	for (const FT66LobbyPlayerInfo& LobbyInfo : LobbyProfiles)
-	{
-		if (LobbyInfo.bPartyHost
-			|| LobbyInfo.MiniIntermissionRequestRevision <= 0
-			|| LobbyInfo.MiniIntermissionRequestJson.IsEmpty())
-		{
-			continue;
-		}
-
-		int32& ProcessedRevision = ProcessedRequestRevisionByPlayerId.FindOrAdd(LobbyInfo.SteamId);
-		if (LobbyInfo.MiniIntermissionRequestRevision <= ProcessedRevision)
-		{
-			continue;
-		}
-
-		FT66MiniShopRequestPayload Request;
-		ProcessedRevision = LobbyInfo.MiniIntermissionRequestRevision;
-		if (!T66MiniDeserializePayload(LobbyInfo.MiniIntermissionRequestJson, Request))
-		{
-			continue;
-		}
-
-		if (ExecuteAuthoritativeRequest(LobbyInfo.SteamId, LobbyInfo.DisplayName, Request, bNavigateToIdolSelect))
-		{
-			LatestStatus = CurrentStatusText;
-			bProcessedAny = true;
-		}
-	}
-
-	if (bProcessedAny)
-	{
-		PublishAuthoritativeState(LatestStatus, true);
-		RequestShopRebuildIfStateChanged();
-	}
-	else if (bForceRebuild)
-	{
-		RequestShopRebuildIfStateChanged();
-	}
-
-	if (bNavigateToIdolSelect)
-	{
-		NavigateTo(ET66ScreenType::MiniIdolSelect);
-	}
-
-	return bProcessedAny;
-}
-
-bool UT66MiniShopScreen::ExecuteAuthoritativeRequest(
-	const FString& SourcePlayerId,
-	const FString& SourceDisplayName,
-	const FT66MiniShopRequestPayload& Request,
-	bool& bOutNavigateToIdolSelect)
-{
-	bOutNavigateToIdolSelect = false;
-
 	UT66MiniDataSubsystem* DataSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
 	UT66MiniCircusSubsystem* CircusSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniCircusSubsystem>() : nullptr;
@@ -1905,11 +1353,6 @@ bool UT66MiniShopScreen::ExecuteAuthoritativeRequest(
 	if (!CircusSubsystem || !RunState || !SaveSubsystem || !ActiveRun)
 	{
 		return false;
-	}
-
-	if (ActiveRun->bOnlinePartyRun && !SourcePlayerId.IsEmpty())
-	{
-		SaveSubsystem->MirrorPartyPlayerSnapshotToLegacyFields(ActiveRun, SourcePlayerId);
 	}
 
 	CircusSubsystem->SeedFromRunSave(ActiveRun);
@@ -1936,7 +1379,7 @@ bool UT66MiniShopScreen::ExecuteAuthoritativeRequest(
 	{
 		CircusSubsystem->ToggleVendorOfferLock(Request.ItemID);
 		Result = FString::Printf(TEXT("%s %s a circus lock on %s."),
-			SourceDisplayName.IsEmpty() ? TEXT("A party member") : *SourceDisplayName,
+			TEXT("Player"),
 			CircusSubsystem->IsVendorOfferLocked(Request.ItemID) ? TEXT("placed") : TEXT("removed"),
 			*Request.ItemID.ToString());
 		bRequestApplied = true;
@@ -1967,11 +1410,6 @@ bool UT66MiniShopScreen::ExecuteAuthoritativeRequest(
 	}
 
 	CircusSubsystem->WriteToRunSave(ActiveRun);
-	if (ActiveRun->bOnlinePartyRun && !SourcePlayerId.IsEmpty())
-	{
-		SaveSubsystem->CapturePartyPlayerSnapshotFromLegacyFields(ActiveRun, SourcePlayerId);
-		SaveSubsystem->MirrorLocalPartyPlayerSnapshotToLegacyFields(ActiveRun);
-	}
 
 	if (FrontendState)
 	{
@@ -2026,269 +1464,107 @@ FReply UT66MiniShopScreen::HandleAlchemyTabClicked()
 
 FReply UT66MiniShopScreen::HandleBuyItemClicked(const FName ItemID)
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionBuy;
-		Request.ItemID = ItemID;
-		TryQueueRemoteRequest(Request, NSLOCTEXT("T66Mini.Shop", "PendingBuy", "Purchase request sent to the host circus ledger."));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionBuy;
 	Request.ItemID = ItemID;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleStealItemClicked(const FName ItemID)
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionSteal;
-		Request.ItemID = ItemID;
-		TryQueueRemoteRequest(Request, NSLOCTEXT("T66Mini.Shop", "PendingSteal", "Steal attempt sent to the host."));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionSteal;
 	Request.ItemID = ItemID;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleSellItemClicked(const FName ItemID)
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionSell;
-		Request.ItemID = ItemID;
-		TryQueueRemoteRequest(Request, NSLOCTEXT("T66Mini.Shop", "PendingSell", "Sell request sent to the host circus ledger."));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionSell;
 	Request.ItemID = ItemID;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleBuybackClicked(const FName ItemID)
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionBuyback;
-		Request.ItemID = ItemID;
-		TryQueueRemoteRequest(Request, NSLOCTEXT("T66Mini.Shop", "PendingBuyback", "Buyback request sent to the host."));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionBuyback;
 	Request.ItemID = ItemID;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleLockClicked(const FName ItemID)
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionToggleLock;
-		Request.ItemID = ItemID;
-		TryQueueRemoteRequest(Request, NSLOCTEXT("T66Mini.Shop", "PendingLock", "Lock change sent to the host."));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionToggleLock;
 	Request.ItemID = ItemID;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleRerollClicked()
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionReroll;
-		TryQueueRemoteRequest(Request, NSLOCTEXT("T66Mini.Shop", "PendingReroll", "Vendor reroll request sent to the host."));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionReroll;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleBorrowGoldClicked(const int32 Amount)
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionBorrow;
-		Request.Amount = Amount;
-		TryQueueRemoteRequest(Request, NSLOCTEXT("T66Mini.Shop", "PendingBorrow", "Borrow request sent to the host."));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionBorrow;
 	Request.Amount = Amount;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandlePayDebtClicked(const int32 Amount)
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionPayDebt;
-		Request.Amount = Amount;
-		TryQueueRemoteRequest(Request, NSLOCTEXT("T66Mini.Shop", "PendingPayDebt", "Debt payment request sent to the host."));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionPayDebt;
 	Request.Amount = Amount;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleCircusGameClicked(const FName GameID, const FString GameTitle)
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionCircusGame;
-		Request.GameID = GameID;
-		TryQueueRemoteRequest(Request, FText::FromString(FString::Printf(TEXT("%s request sent to the host."), *GameTitle)));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionCircusGame;
 	Request.GameID = GameID;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleAlchemyTransmuteClicked()
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionAlchemyTransmute;
-		TryQueueRemoteRequest(Request, NSLOCTEXT("T66Mini.Shop", "PendingTransmute", "Alchemy transmute request sent to the host."));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionAlchemyTransmute;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
 
 FReply UT66MiniShopScreen::HandleAlchemyDissolveClicked()
 {
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		FT66MiniShopRequestPayload Request;
-		Request.Action = MiniShopActionAlchemyDissolve;
-		TryQueueRemoteRequest(Request, NSLOCTEXT("T66Mini.Shop", "PendingDissolve", "Alchemy dissolve request sent to the host."));
-		return FReply::Handled();
-	}
-
-	FString LocalPlayerId;
-	FString LocalDisplayName;
-	ResolveLocalPartyIdentity(LocalPlayerId, LocalDisplayName);
 	FT66MiniShopRequestPayload Request;
 	Request.Action = MiniShopActionAlchemyDissolve;
-	bool bNavigateToIdolSelect = false;
-	ExecuteAuthoritativeRequest(LocalPlayerId, LocalDisplayName, Request, bNavigateToIdolSelect);
-	PublishAuthoritativeState(CurrentStatusText, IsOnlineMiniParty());
+	ExecuteLocalRequest(Request);
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }
@@ -2306,19 +1582,11 @@ FReply UT66MiniShopScreen::HandleContinueClicked()
 		return FReply::Handled();
 	}
 
-	bool bIsHost = false;
-	if (IsOnlineMiniParty(&bIsHost) && !bIsHost)
-	{
-		SetStatus(NSLOCTEXT("T66Mini.Shop", "GuestContinueBlocked", "Only the mini party host can advance out of the circus."));
-		return FReply::Handled();
-	}
-
 	FrontendState->RefreshIdolOffers(DataSubsystem);
 	ActiveRun->bPendingShopIntermission = true;
 	FrontendState->ResumeIntermissionFlow();
 	CircusSubsystem->WriteToRunSave(ActiveRun);
 	SaveSubsystem->SaveRunToSlot(RunState->GetActiveSaveSlot(), ActiveRun);
-	ResetMiniIntermissionTransport();
 	NavigateTo(ET66ScreenType::MiniIdolSelect);
 	return FReply::Handled();
 }

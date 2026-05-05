@@ -2,6 +2,7 @@
 
 #include "Core/T66BackendSubsystem.h"
 #include "Core/Backend/T66BackendPrivate.h"
+#include "Core/T66SaveMigration.h"
 
 DEFINE_LOG_CATEGORY(LogT66Backend);
 
@@ -138,7 +139,7 @@ namespace
 		const FString& DisplayName)
 	{
 		UT66LeaderboardRunSummarySaveGame* Summary = NewObject<UT66LeaderboardRunSummarySaveGame>(Outer);
-		Summary->SchemaVersion = 8;
+		Summary->SchemaVersion = T66SparseActiveHeroIdRunSummarySchemaVersion;
 		Summary->EntryId = Entry.EntryId;
 		Summary->OwnerSteamId = FString::Printf(TEXT("dummy_%s_%02d"), *Identity.Filter, Entry.Rank);
 		Summary->LeaderboardType = (Identity.Type == TEXT("speedrun")) ? ET66LeaderboardType::SpeedRun : ET66LeaderboardType::Score;

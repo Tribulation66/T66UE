@@ -1985,17 +1985,6 @@ FT66LobbyPlayerInfo UT66SessionSubsystem::BuildLocalLobbyProfile() const
 			LobbyInfo.bMiniLoadFlow = GI->bMiniLoadFlow;
 			LobbyInfo.bMiniIntermissionFlow = GI->bMiniIntermissionFlow;
 		}
-
-		if (LobbyInfo.bMiniFlowActive
-			|| GI->bMiniIntermissionFlow
-			|| GI->MiniIntermissionStateRevision > 0
-			|| GI->MiniIntermissionRequestRevision > 0)
-		{
-			LobbyInfo.MiniIntermissionStateRevision = GI->MiniIntermissionStateRevision;
-			LobbyInfo.MiniIntermissionStateJson = GI->MiniIntermissionStateJson;
-			LobbyInfo.MiniIntermissionRequestRevision = GI->MiniIntermissionRequestRevision;
-			LobbyInfo.MiniIntermissionRequestJson = GI->MiniIntermissionRequestJson;
-		}
 	}
 
 	if (LobbyInfo.DisplayName.IsEmpty())

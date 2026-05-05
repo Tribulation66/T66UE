@@ -737,7 +737,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		T66FaceActorTowardLocation2D(IdolAltar, SpawnedPawn->GetActorLocation());
 	}
 
-	// If it's our hero class, initialize it with hero data and body type
+	// If it's our hero class, initialize it with hero data and body style.
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(SpawnedPawn))
 	{
 
@@ -757,10 +757,10 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 				FName SelectedSkinID = T66GetSelectedHeroSkinID(GI, NewPlayer);
 				Hero->InitializeHero(HeroData, SelectedBodyType, SelectedSkinID, false);
 
-				UE_LOG(LogT66GameMode, Log, TEXT("Spawned hero: %s (%s), BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
+				UE_LOG(LogT66GameMode, Log, TEXT("Spawned hero: %s (%s), BodyStyle: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
 					*HeroData.DisplayName.ToString(),
 					*EffectiveHeroID.ToString(),
-					SelectedBodyType == ET66BodyType::TypeA ? TEXT("TypeA") : TEXT("TypeB"),
+					T66BodyTypeAliases::IsChad(SelectedBodyType) ? TEXT("Chad") : TEXT("Stacy"),
 					*SelectedSkinID.ToString(),
 					HeroData.PlaceholderColor.R,
 					HeroData.PlaceholderColor.G,

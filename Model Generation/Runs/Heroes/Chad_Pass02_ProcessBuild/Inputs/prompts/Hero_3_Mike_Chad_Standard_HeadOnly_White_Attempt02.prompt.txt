@@ -1,0 +1,19 @@
+Use case: stylized-concept
+Asset type: production source image for TRELLIS image-to-3D
+
+Subject: Hero_3 Mike, original stylized game character, Chad/default skin head only.
+
+Create one centered straight-on head plus full neck only. No shoulders, no traps, no trapezius slope, no shoulder caps, no collarbone shelf, no upper chest, no torso, no shirt, no vest, no armor collar, no necklace, no scarf, no duplicate view, no side view, no three-quarter view, no character sheet, no poster panel.
+
+Bottom crop rule: the bottom of the image shows only a straight vertical neck cylinder/stump for insertion into the body socket. Do not show the top of the torso. Do not show trap muscles or shoulder slopes.
+
+Skull silhouette: trademark giga-chad head geometry. Enormous square jaw, wide flat chin plane, high cheekbones, heavy brow ridge, large square cranium, thick muscular neck. The jaw and neck are the dominant read. Keep this skull block consistent across every Chad hero; identity changes only through skin tone, ethnicity cues, eye shape, hair color, hairline, hair silhouette, beard pattern, scars, and expression.
+
+Identity target: Mike should read as a streetwise brawler giga-chad: warm tan skin, short dark messy hair, heavy eyebrows, broken-nose toughness, light stubble, stern expression. Original stylized game character, no real-person likeness.
+
+Pose and crop: orthographic production reference, face axis centered and symmetrical, eyes looking directly at camera, full head and full neck visible with clean margins. The neck continues downward enough to insert into the body socket. No shoulders and no traps.
+
+Lighting and background: pure flat opaque white #ffffff across the entire canvas. Bright high-key cartoon cel shading, flatter and brighter than a realistic portrait. Minimal hard-edged character-surface shadows only. No alpha, no cast shadow, no contact shadow, no reflection, no gradient, no gray patch, no border card, no poster sheet. No dark moody lighting, no soft realistic studio shadow, no heavy ambient occlusion, no dark shadow patches under the jaw or neck.
+
+Render style: clean bright stylized cartoon/cel-shaded game asset reference, bold clean colors, sharp silhouette, readable facial features, no realistic portrait lighting, no skin pores, no text, no watermark, no logo.
+

@@ -7,9 +7,6 @@
 #include "T66HeroSelectionPreviewController.generated.h"
 
 class AT66HeroPreviewStage;
-class UFileMediaSource;
-class UMediaPlayer;
-class UMediaTexture;
 class UT66GameInstance;
 class UT66HeroSelectionScreen;
 class SBorder;
@@ -43,11 +40,7 @@ public:
 		const TSharedPtr<SScaleBox>& InCompanionPreviewScaleBox,
 		const TSharedPtr<STextBlock>& InCompanionPreviewPlaceholderText);
 
-	void EnsureHeroPreviewVideoResources();
 	void EnsureCompanionPreviewBrush();
-	void WarmKnightPreviewMediaSource(FName PreviewedHeroID, bool bShowingCompanionInfo);
-	void CloseHeroPreviewMedia();
-	void UpdateHeroPreviewVideo(FName PreviewedHeroID, bool bShowingCompanionInfo);
 	void RefreshCompanionPreviewPanel(UT66GameInstance* GameInstance, FName PreviewedCompanionID, bool bShowingCompanionInfo);
 	void ApplySelectionDifficultyToPreviewStages(ET66Difficulty SelectedDifficulty) const;
 	void ApplyHeroPreviewStage(
@@ -78,7 +71,6 @@ public:
 	AT66HeroPreviewStage* GetHeroPreviewStage() const;
 
 private:
-	void HandleKnightPreviewMediaSourceLoaded(FName PreviewedHeroID, bool bShowingCompanionInfo);
 	void PositionPreviewCamera() const;
 	UT66HeroSelectionScreen* GetOwnerScreen() const;
 
@@ -89,20 +81,8 @@ private:
 	TWeakPtr<SScaleBox> CompanionInfoPortraitScaleBox;
 	TWeakPtr<STextBlock> CompanionPreviewPlaceholderText;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UMediaPlayer> HeroPreviewMediaPlayer;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UMediaTexture> HeroPreviewMediaTexture;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UFileMediaSource> KnightPreviewMediaSource;
-
-	TSharedPtr<FSlateBrush> HeroPreviewVideoBrush;
 	TSharedPtr<FSlateBrush> CompanionInfoPortraitBrush;
 	ET66HeroSelectionPreviewClip SelectedHeroPreviewClip = ET66HeroSelectionPreviewClip::Overview;
-	ET66HeroSelectionPreviewClip ActiveHeroPreviewClip = ET66HeroSelectionPreviewClip::Overview;
-	FName ActivePreviewVideoHeroID = NAME_None;
 	FName PreviewSkinIDOverride = NAME_None;
 	FName PreviewedCompanionSkinIDOverride = NAME_None;
 };

@@ -1,0 +1,4 @@
+ItemID,DisplayName,RulesText,RarityID,AccentColor,BonusMaxHealth,BonusStartingBlock
+Item_PierceDamage,Pierce Damage Charm,Gain 4 max HP after this room.,Uncommon,"(R=0.80,G=0.68,B=0.30,A=1.0)",4,0
+Item_AoeDamage,AOE Damage Charm,Gain 8 block now.,Uncommon,"(R=0.74,G=0.48,B=0.22,A=1.0)",0,8
+Item_CritChance,Crit Chance Dice,Gain 2 max HP and 4 block now.,Rare,"(R=0.92,G=0.76,B=0.32,A=1.0)",2,4

@@ -1,0 +1,246 @@
+{
+  "meshes": [
+    {
+      "object": "Mike_Chad_Body",
+      "vertices": 60926,
+      "materials": [
+        {
+          "name": "Material_0",
+          "diffuse_color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "images": [
+            {
+              "node": "Image Texture",
+              "image": "Image_0",
+              "source": "",
+              "size": [
+                2048,
+                2048
+              ],
+              "packed": true,
+              "exported": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\UnrealMaterialRepair\\ExtractedTextures\\Image_0.png"
+            },
+            {
+              "node": "Image Texture.001",
+              "image": "Image_1",
+              "source": "",
+              "size": [
+                2048,
+                2048
+              ],
+              "packed": true,
+              "exported": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\UnrealMaterialRepair\\ExtractedTextures\\Image_1.png"
+            }
+          ],
+          "principled": [
+            {
+              "node": "Principled BSDF",
+              "base_default": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929,
+                1.0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "object": "Mike_Chad_Head",
+      "vertices": 93115,
+      "materials": [
+        {
+          "name": "Material_0.001",
+          "diffuse_color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "images": [
+            {
+              "node": "Image Texture",
+              "image": "Image_0.001",
+              "source": "",
+              "size": [
+                2048,
+                2048
+              ],
+              "packed": true,
+              "exported": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\UnrealMaterialRepair\\ExtractedTextures\\Image_0.001.png"
+            },
+            {
+              "node": "Image Texture.001",
+              "image": "Image_1.001",
+              "source": "",
+              "size": [
+                2048,
+                2048
+              ],
+              "packed": true,
+              "exported": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\UnrealMaterialRepair\\ExtractedTextures\\Image_1.001.png"
+            }
+          ],
+          "principled": [
+            {
+              "node": "Principled BSDF",
+              "base_default": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929,
+                1.0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "object": "Mike_Chad_NeckBridge",
+      "vertices": 202,
+      "materials": [
+        {
+          "name": "MikeRepair_SkinMaterial",
+          "diffuse_color": [
+            0.5799999833106995,
+            0.30000001192092896,
+            0.14000000059604645,
+            1.0
+          ],
+          "images": [],
+          "principled": [
+            {
+              "node": "Principled BSDF",
+              "base_default": [
+                0.5799999833106995,
+                0.30000001192092896,
+                0.14000000059604645,
+                1.0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "object": "Mike_Chad_SwordProxy",
+      "vertices": 50290,
+      "materials": [
+        {
+          "name": "Material_0.002",
+          "diffuse_color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "images": [
+            {
+              "node": "Image Texture",
+              "image": "Image_0.002",
+              "source": "",
+              "size": [
+                2048,
+                2048
+              ],
+              "packed": true,
+              "exported": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\UnrealMaterialRepair\\ExtractedTextures\\Image_0.002.png"
+            },
+            {
+              "node": "Image Texture.001",
+              "image": "Image_1.002",
+              "source": "",
+              "size": [
+                2048,
+                2048
+              ],
+              "packed": true,
+              "exported": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Rigging\\Mike_Chad_RigPrototype_A03_LiftedNeckBridge\\UnrealMaterialRepair\\ExtractedTextures\\Image_1.002.png"
+            }
+          ],
+          "principled": [
+            {
+              "node": "Principled BSDF",
+              "base_default": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929,
+                1.0
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "Image_0",
+      "source": "",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    },
+    {
+      "name": "Image_0.001",
+      "source": "",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    },
+    {
+      "name": "Image_0.002",
+      "source": "",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    },
+    {
+      "name": "Image_1",
+      "source": "",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    },
+    {
+      "name": "Image_1.001",
+      "source": "",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    },
+    {
+      "name": "Image_1.002",
+      "source": "",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    },
+    {
+      "name": "Render Result",
+      "source": "",
+      "size": [
+        0,
+        0
+      ],
+      "packed": false
+    }
+  ]
+}

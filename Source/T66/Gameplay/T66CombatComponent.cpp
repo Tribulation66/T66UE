@@ -169,28 +169,16 @@ UT66CombatComponent::UT66CombatComponent()
 
 void UT66CombatComponent::PrimeCombatPresentationAssetsAsync()
 {
-	if (!CachedSlashVFXNiagara)
-	{
-		CachedSlashVFXNiagara = SlashVFXNiagara.Get();
-	}
-	if (!CachedPixelVFXNiagara)
-	{
-		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
-	}
+	if (!CachedSlashVFXNiagara) { CachedSlashVFXNiagara = SlashVFXNiagara.Get(); }
+	if (!CachedPixelVFXNiagara) { CachedPixelVFXNiagara = PixelVFXNiagara.Get(); }
 	if ((CachedSlashVFXNiagara && CachedPixelVFXNiagara) || CombatPresentationAssetsLoadHandle.IsValid())
 	{
 		return;
 	}
 
 	TArray<FSoftObjectPath> AssetPaths;
-	if (!CachedSlashVFXNiagara && !SlashVFXNiagara.IsNull())
-	{
-		AssetPaths.AddUnique(SlashVFXNiagara.ToSoftObjectPath());
-	}
-	if (!CachedPixelVFXNiagara && !PixelVFXNiagara.IsNull())
-	{
-		AssetPaths.AddUnique(PixelVFXNiagara.ToSoftObjectPath());
-	}
+	if (!CachedSlashVFXNiagara && !SlashVFXNiagara.IsNull()) { AssetPaths.AddUnique(SlashVFXNiagara.ToSoftObjectPath()); }
+	if (!CachedPixelVFXNiagara && !PixelVFXNiagara.IsNull()) { AssetPaths.AddUnique(PixelVFXNiagara.ToSoftObjectPath()); }
 	if (AssetPaths.Num() <= 0)
 	{
 		return;
@@ -208,14 +196,8 @@ void UT66CombatComponent::PrimeCombatPresentationAssetsAsync()
 void UT66CombatComponent::HandleCombatPresentationAssetsLoaded()
 {
 	CombatPresentationAssetsLoadHandle.Reset();
-	if (!CachedSlashVFXNiagara)
-	{
-		CachedSlashVFXNiagara = SlashVFXNiagara.Get();
-	}
-	if (!CachedPixelVFXNiagara)
-	{
-		CachedPixelVFXNiagara = PixelVFXNiagara.Get();
-	}
+	if (!CachedSlashVFXNiagara) { CachedSlashVFXNiagara = SlashVFXNiagara.Get(); }
+	if (!CachedPixelVFXNiagara) { CachedPixelVFXNiagara = PixelVFXNiagara.Get(); }
 }
 
 void UT66CombatComponent::SetLockedTarget(const FT66CombatTargetHandle& InTarget)

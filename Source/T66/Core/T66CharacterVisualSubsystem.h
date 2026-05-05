@@ -64,7 +64,7 @@ public:
 		bool bUseAlertAnimation = false,
 		bool bIsPreviewContext = false);
 
-	/** Compute hero VisualID from HeroID + BodyType + SkinID (e.g. Hero_1 + TypeA + Default -> Hero_1_TypeA). */
+	/** Compute the legacy hero visual row ID from HeroID + body style + SkinID (for example Chad -> Hero_1_Chad). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
 	static FName GetHeroVisualID(FName HeroID, ET66BodyType BodyType, FName SkinID);
 
@@ -72,7 +72,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
 	static FName GetCompanionVisualID(FName CompanionID, FName SkinID);
 
-	/** Resolve the canonical fallback visual row ID (e.g. Hero_1_TypeA_Skin -> Hero_1_TypeA). */
+	/** Resolve the canonical fallback visual row ID (for example Hero_1_Chad_Skin -> Hero_1_Chad). */
 	static FName GetFallbackVisualID(FName VisualID);
 
 	/** Append all known preload candidates for a visual row, including animation fallback variants. */

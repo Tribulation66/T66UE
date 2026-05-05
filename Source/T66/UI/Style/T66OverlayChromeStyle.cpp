@@ -3,14 +3,17 @@
 #include "UI/Style/T66OverlayChromeStyle.h"
 
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Style/T66Style.h"
 
 #include "Brushes/SlateColorBrush.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace
@@ -19,7 +22,7 @@ namespace
 
 	const FString& GetChromeSliceDir()
 	{
-		static const FString Dir = FPaths::ProjectDir() / TEXT("SourceAssets/UI/MasterLibrary/Slices");
+		static const FString Dir = FPaths::ProjectDir() / TEXT("SourceAssets/UI/Reference/Shared");
 		return Dir;
 	}
 
@@ -33,38 +36,25 @@ namespace
 		switch (Brush)
 		{
 		case ET66OverlayChromeBrush::OverlayModalPanel:
-			return TEXT("Panels/basic_panel_normal.png");
 		case ET66OverlayChromeBrush::CasinoShellPanel:
-			return TEXT("Panels/basic_panel_normal.png");
 		case ET66OverlayChromeBrush::ContentPanelTall:
-			return TEXT("Panels/basic_panel_normal.png");
 		case ET66OverlayChromeBrush::InnerPanel:
-			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::HeaderSummaryBar:
-			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::CrateStripFrame:
-			return TEXT("Panels/basic_panel_normal.png");
+			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::SlotNormal:
-			return TEXT("Slots/basic_slot_normal.png");
 		case ET66OverlayChromeBrush::SlotHover:
-			return TEXT("Slots/basic_slot_normal.png");
 		case ET66OverlayChromeBrush::SlotSelected:
-			return TEXT("Slots/basic_slot_normal.png");
 		case ET66OverlayChromeBrush::SlotDisabled:
-			return TEXT("Slots/basic_slot_normal.png");
+			return TEXT("Slots/reference_square_slot_frame_normal.png");
 		case ET66OverlayChromeBrush::OfferCardNormal:
-			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::OfferCardHover:
-			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::OfferCardSelected:
-			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::OfferCardDisabled:
-			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::CrateWinnerMarker:
-			return TEXT("Panels/inner_panel_normal.png");
 		case ET66OverlayChromeBrush::ContentPanelWide:
 		default:
-			return TEXT("Panels/basic_panel_normal.png");
+			return TEXT("Panels/inner_panel_normal.png");
 		}
 	}
 
@@ -170,27 +160,29 @@ namespace
 			}
 			return bHovered ? TEXT("hover") : TEXT("normal");
 		};
+		const auto ButtonFileName = [](const TCHAR* FamilyStem, const TCHAR* State) -> FString
+		{
+			return FString::Printf(TEXT("Buttons/%s/%s.png"), FamilyStem, State);
+		};
 
 		switch (Family)
 		{
 		case ET66OverlayChromeButtonFamily::Primary:
 		case ET66OverlayChromeButtonFamily::Central:
-			return FString::Printf(TEXT("Buttons/central_button_%s.png"), StateSuffix(false));
+			return ButtonFileName(TEXT("CTA"), StateSuffix(true));
 		case ET66OverlayChromeButtonFamily::Tab:
 		case ET66OverlayChromeButtonFamily::Select:
-			return FString::Printf(TEXT("Buttons/select_button_%s.png"), StateSuffix(true));
+			return ButtonFileName(TEXT("Pill"), StateSuffix(true));
 		case ET66OverlayChromeButtonFamily::DuoLeft:
-			return FString::Printf(TEXT("Buttons/duo_button_left_%s.png"), StateSuffix(true));
 		case ET66OverlayChromeButtonFamily::DuoRight:
-			return FString::Printf(TEXT("Buttons/duo_button_right_%s.png"), StateSuffix(true));
 		case ET66OverlayChromeButtonFamily::DropdownOption:
-			return FString::Printf(TEXT("Buttons/dropdown_option_button_%s.png"), StateSuffix(false));
+			return ButtonFileName(TEXT("Pill"), StateSuffix(true));
 		case ET66OverlayChromeButtonFamily::BorderlessIcon:
-			return FString::Printf(TEXT("Buttons/borderless_icon_button_%s.png"), StateSuffix(true));
+			return ButtonFileName(TEXT("SquareIcon"), StateSuffix(true));
 		case ET66OverlayChromeButtonFamily::Danger:
 		case ET66OverlayChromeButtonFamily::Neutral:
 		default:
-			return FString::Printf(TEXT("Buttons/basic_button_%s.png"), StateSuffix(false));
+			return ButtonFileName(TEXT("Pill"), StateSuffix(true));
 		}
 	}
 
@@ -233,7 +225,15 @@ namespace
 			nullptr,
 			GetChromeSlicePath(*FileName),
 			GetButtonMargin(Family),
-			*FileName);
+			*FileName,
+			TextureFilter::TF_Nearest);
+	}
+
+	float GetButtonSourceCapFraction(const ET66OverlayChromeButtonFamily Family)
+	{
+		return Family == ET66OverlayChromeButtonFamily::Primary || Family == ET66OverlayChromeButtonFamily::Central
+			? 0.105f
+			: 0.105f;
 	}
 
 	const FButtonStyle& GetTransparentButtonStyle()
@@ -285,21 +285,40 @@ namespace
 			ChildSlot
 			[
 				SNew(SBox)
-				.MinDesiredWidth(InArgs._MinWidth)
-				.MinDesiredHeight(InArgs._MinHeight)
+				.WidthOverride(InArgs._MinWidth)
+				.HeightOverride(InArgs._MinHeight)
 				[
-					SNew(SBorder)
-					.BorderImage(this, &ST66OverlayChromeButton::GetCurrentBrush)
-					.Padding(InArgs._Padding)
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
 					[
-						SAssignNew(Button, SButton)
-						.Cursor(EMouseCursor::Hand)
-						.ButtonStyle(&GetTransparentButtonStyle())
-						.ContentPadding(FMargin(0.f))
-						.IsEnabled(InArgs._IsEnabled)
-						.OnClicked(FT66Style::DebounceClick(InArgs._OnClicked))
+						InArgs._Family == ET66OverlayChromeButtonFamily::BorderlessIcon
+							? StaticCastSharedRef<SWidget>(
+								SNew(SImage)
+								.Image(this, &ST66OverlayChromeButton::GetCurrentBrush))
+							: T66ScreenSlateHelpers::MakeReferenceHorizontalSlicedImage(
+								TAttribute<const FSlateBrush*>::Create(TAttribute<const FSlateBrush*>::FGetter::CreateSP(this, &ST66OverlayChromeButton::GetCurrentBrush)),
+								FVector2D(1.f, 1.f),
+								GetButtonSourceCapFraction(InArgs._Family))
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+						.Padding(InArgs._Padding)
 						[
-							InArgs._Content.Widget
+							SAssignNew(Button, SButton)
+							.Cursor(EMouseCursor::Hand)
+							.ButtonStyle(&GetTransparentButtonStyle())
+							.ContentPadding(FMargin(0.f))
+							.IsEnabled(InArgs._IsEnabled)
+							.OnClicked(FT66Style::DebounceClick(InArgs._OnClicked))
+							[
+								InArgs._Content.Widget
+							]
 						]
 					]
 				]

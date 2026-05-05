@@ -71,6 +71,38 @@
       ]
     },
     {
+      "theme": "Ocean",
+      "kit": "OceanKit01",
+      "difficulty_target": "Hard",
+      "surface": "wall",
+      "source_sheet": "Inputs/source_sheets/Ocean_WallSheet.png",
+      "prompt": "Inputs/prompts/Ocean_WallSheet.prompt.txt",
+      "layout": { "rows": 2, "cols": 2 },
+      "target_size": { "width": 1536, "height": 1024 },
+      "modules": [
+        { "cell": [0, 0], "module_id": "OceanWall_CoralReef_A" },
+        { "cell": [0, 1], "module_id": "OceanWall_ShellLimestone_A" },
+        { "cell": [1, 0], "module_id": "OceanWall_KelpCoral_A" },
+        { "cell": [1, 1], "module_id": "OceanWall_ReefRuin_A" }
+      ]
+    },
+    {
+      "theme": "Ocean",
+      "kit": "OceanKit01",
+      "difficulty_target": "Hard",
+      "surface": "floor",
+      "source_sheet": "Inputs/source_sheets/Ocean_FloorSheet.png",
+      "prompt": "Inputs/prompts/Ocean_FloorSheet.prompt.txt",
+      "layout": { "rows": 2, "cols": 2 },
+      "target_size": { "width": 1024, "height": 1024 },
+      "modules": [
+        { "cell": [0, 0], "module_id": "OceanFloor_ReefStone_A" },
+        { "cell": [0, 1], "module_id": "OceanFloor_ShellSand_A" },
+        { "cell": [1, 0], "module_id": "OceanFloor_CoralCrack_A" },
+        { "cell": [1, 1], "module_id": "OceanFloor_TidePool_A" }
+      ]
+    },
+    {
       "theme": "Martian",
       "kit": "MartianKit01",
       "difficulty_target": "VeryHard",

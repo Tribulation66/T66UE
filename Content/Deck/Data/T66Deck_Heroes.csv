@@ -1,0 +1,4 @@
+HeroID,DisplayName,Description,AccentColor,StartingHealth,StartingGold
+Hero_1,Arthur,A battle-worn knight who meets every trial head-on.,"(R=0.82,G=0.56,B=0.24,A=1.0)",82,0
+Hero_3,Lu Bu,A warlord who breaks enemy lines through sheer force.,"(R=0.70,G=0.28,B=0.18,A=1.0)",76,10
+Hero_12,xQc,A chaos-fueled duelist who overwhelms the room.,"(R=0.78,G=0.20,B=0.42,A=1.0)",68,20

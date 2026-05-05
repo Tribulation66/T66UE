@@ -2,6 +2,9 @@
 
 #include "UI/Screens/Settings/T66SettingsScreen_Private.h"
 
+#include "Engine/Engine.h"
+#include "TimerManager.h"
+
 using namespace T66SettingsScreenPrivate;
 TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 {
@@ -277,14 +280,20 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 8.0f, 0.0f, 0.0f)
 				[
-					SNew(SSlider)
-					.Value_Lambda([this]() { return static_cast<float>(PendingGraphics.QualityNotch) / 3.0f; })
-					.StepSize(1.0f / 3.0f)
-					.OnValueChanged_Lambda([this](float V)
-					{
-						PendingGraphics.QualityNotch = FMath::Clamp(FMath::RoundToInt(V * 3.0f), 0, 3);
-						PendingGraphics.bDirty = true;
-					})
+					MakeSettingsReferenceSlider(
+						TAttribute<float>::CreateLambda([this]() -> float
+						{
+							return static_cast<float>(PendingGraphics.QualityNotch) / 3.0f;
+						}),
+						1.0f / 3.0f,
+						FOnFloatValueChanged::CreateLambda([this](float V)
+						{
+							PendingGraphics.QualityNotch = FMath::Clamp(FMath::RoundToInt(V * 3.0f), 0, 3);
+							PendingGraphics.bDirty = true;
+						}),
+						FSimpleDelegate(),
+						FSimpleDelegate(),
+						true)
 				]
 			]
 		]

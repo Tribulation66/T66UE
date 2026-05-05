@@ -9,7 +9,6 @@ FReply UT66HeroSelectionScreen::HandleUltimatePreviewClicked()
 	if (UT66HeroSelectionPreviewController* HeroPreviewController = GetOrCreatePreviewController())
 	{
 		HeroPreviewController->ToggleSelectedPreviewClip(ET66HeroSelectionPreviewClip::Ultimate, bShowingCompanionInfo);
-		HeroPreviewController->UpdateHeroPreviewVideo(PreviewedHeroID, bShowingCompanionInfo);
 	}
 	return FReply::Handled();
 }
@@ -19,7 +18,6 @@ FReply UT66HeroSelectionScreen::HandlePassivePreviewClicked()
 	if (UT66HeroSelectionPreviewController* HeroPreviewController = GetOrCreatePreviewController())
 	{
 		HeroPreviewController->ToggleSelectedPreviewClip(ET66HeroSelectionPreviewClip::Passive, bShowingCompanionInfo);
-		HeroPreviewController->UpdateHeroPreviewVideo(PreviewedHeroID, bShowingCompanionInfo);
 	}
 	return FReply::Handled();
 }

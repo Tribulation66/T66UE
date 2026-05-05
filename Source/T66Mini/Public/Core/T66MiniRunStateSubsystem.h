@@ -25,9 +25,6 @@ public:
 	bool BootstrapRunFromFrontend(UT66MiniFrontendStateSubsystem* FrontendState, UT66MiniSaveSubsystem* SaveSubsystem);
 
 	UFUNCTION(BlueprintCallable, Category = "Mini")
-	bool BootstrapOnlineRunFromFrontend(UT66MiniFrontendStateSubsystem* FrontendState, UT66MiniSaveSubsystem* SaveSubsystem);
-
-	UFUNCTION(BlueprintCallable, Category = "Mini")
 	bool BootstrapTransientRunFromFrontend(UT66MiniFrontendStateSubsystem* FrontendState, UT66MiniSaveSubsystem* SaveSubsystem);
 
 	UFUNCTION(BlueprintCallable, Category = "Mini")

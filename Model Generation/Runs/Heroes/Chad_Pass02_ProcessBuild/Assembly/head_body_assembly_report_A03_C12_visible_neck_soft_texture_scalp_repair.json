@@ -1,0 +1,38 @@
+{
+  "stem": "Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C12_VisibleNeck_SoftTextureScalpRepair",
+  "variant": "C12",
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Assembly\\HeadBody\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C12_VisibleNeck_SoftTextureScalpRepair.glb",
+  "blend": "C:\\UE\\T66\\Model Generation\\Scenes\\Chad_Pass02_Mike\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C12_VisibleNeck_SoftTextureScalpRepair.blend",
+  "renders": {
+    "front": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C12_VisibleNeck_SoftTextureScalpRepair\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C12_VisibleNeck_SoftTextureScalpRepair_front.png",
+    "right": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C12_VisibleNeck_SoftTextureScalpRepair\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C12_VisibleNeck_SoftTextureScalpRepair_right.png",
+    "back": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C12_VisibleNeck_SoftTextureScalpRepair\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C12_VisibleNeck_SoftTextureScalpRepair_back.png",
+    "left": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C12_VisibleNeck_SoftTextureScalpRepair\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C12_VisibleNeck_SoftTextureScalpRepair_left.png",
+    "neck_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C12_VisibleNeck_SoftTextureScalpRepair\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C12_VisibleNeck_SoftTextureScalpRepair_neck_closeup.png",
+    "hair_back_closeup": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Renders\\HeadBodyAssembly_A03_C12_VisibleNeck_SoftTextureScalpRepair\\Hero_3_Mike_Chad_Standard_White_NeckNarrow_A03_Assembled_C12_VisibleNeck_SoftTextureScalpRepair_hair_back_closeup.png"
+  },
+  "repair_objects": {
+    "neck": null,
+    "hair_patch": null,
+    "painted_scalp_faces": 1713,
+    "painted_texture_pixels": 97667,
+    "painted_texture_image": "Image_0.001_MikeRepair_ScalpTexture_C12"
+  },
+  "triangles": {
+    "neck": 0,
+    "hair_patch": 0,
+    "scene_total": 187697
+  },
+  "bounds": {
+    "combined_size": [
+      0.6779093742370605,
+      0.2873062491416931,
+      1.1517150402069092
+    ]
+  },
+  "notes": [
+    "Adds a separate skin neck bridge that intersects head and body.",
+    "Adds a separate dark rear hair patch to cover the scalp artifact.",
+    "Repair geometry is intentionally separate for visual approval before rigging."
+  ]
+}

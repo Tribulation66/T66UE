@@ -1,0 +1,3 @@
+RelicID,DisplayName,RulesText,RarityID
+Relic_FirstTorch,First Torch,Start each combat with extra confidence.,Common
+Relic_DungeonMap,Dungeon Map,Future map rules hook for path manipulation.,Uncommon

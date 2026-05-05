@@ -1,0 +1,18 @@
+Create a production source image for TRELLIS image-to-3D.
+
+Subject: Hero_11 North, original stylized game character, Chad/default skin body only.
+
+One centered front-facing neck-down male body only. No head, no face, no hair, no hood, no ears, no beard, no weapon, no shield, no duplicate view, no back view, no side view, no character sheet, no poster panel.
+
+Anatomy target: giant giga-chad/nephilim proportions, impossible heroic muscle mass, huge traps, boulder shoulders, massive chest, thick arms, thick forearms, huge quads and calves, very thin waist, extreme V taper.
+
+Neck target: clean open circular neck socket above the trapezius. The top opening must not become a hooded head or face.
+
+Pose: orthographic production reference, symmetrical A-pose, arms slightly away from torso, feet separated, straight-on camera, full body visible from feet to neck socket.
+
+Identity/outfit notes: cold-road wanderer outfit, short fitted fur-lined vest and weathered leather armor pieces, icy blue cloth accents, heavy boots, no cape below knees, no long coat, no hooded head.
+
+Background: pure flat opaque white #ffffff. No alpha, no floor, no cast shadow, no contact shadow, no reflection, no gradient, no gray patch, no border card.
+
+Clean stylized game asset reference, sharp silhouette, readable materials, no text, no watermark, no logo.
+

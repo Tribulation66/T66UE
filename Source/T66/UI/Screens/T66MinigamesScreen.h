@@ -31,6 +31,8 @@ private:
 	FReply HandleBackClicked();
 	FReply HandleOpenMiniChadpocalypseClicked();
 	FReply HandleOpenChadpocalypseTDClicked();
+	FReply HandleOpenIdleChadpocalypseClicked();
+	FReply HandleOpenChadpocalypseDeckbuilderClicked();
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);

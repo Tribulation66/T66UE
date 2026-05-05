@@ -1,0 +1,14 @@
+[
+  {
+    "module_id": "HellFloor_Obsidian_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\HellFloor_Obsidian_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images_fix03\\HellFloor_Obsidian_A_FloorFix03.png",
+    "fix": "solid continuous slab underlay with original floor details on the top face"
+  },
+  {
+    "module_id": "HellFloor_EmberFissure_A",
+    "source": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\approved_seed_images\\HellFloor_EmberFissure_A.png",
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Environment\\CoherentThemeKit01\\Inputs\\floor_slab_seed_images_fix03\\HellFloor_EmberFissure_A_FloorFix03.png",
+    "fix": "solid continuous slab underlay with original floor details on the top face"
+  }
+]

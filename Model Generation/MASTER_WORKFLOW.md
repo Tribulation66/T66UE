@@ -6,6 +6,8 @@ Use this document as the source of truth.
 
 If you need the workspace map first, start with [README.md](C:/UE/T66/Model%20Generation/README.md).
 
+For character work after raw TRELLIS output exists, read [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md) before Blender assembly, rigging, Unreal import, DataTable wiring, or staged visual verification.
+
 The JSX setup file in this folder is historical reference only:
 
 - [TRELLIS2_RunPod_Setup_Guide.jsx](C:/UE/T66/Model%20Generation/Reference/TRELLIS2_RunPod_Setup_Guide.jsx)
@@ -13,6 +15,7 @@ The JSX setup file in this folder is historical reference only:
 Supporting operational files:
 
 - [RUN_HISTORY.md](C:/UE/T66/Model%20Generation/RUN_HISTORY.md)
+- [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md)
 - [ENVIRONMENT_LOCK.md](C:/UE/T66/Model%20Generation/ENVIRONMENT_LOCK.md)
 - [KNOWN_ISSUES.md](C:/UE/T66/Model%20Generation/KNOWN_ISSUES.md)
 - [NEXT_STEPS.md](C:/UE/T66/Model%20Generation/NEXT_STEPS.md)
@@ -37,9 +40,13 @@ Supporting operational files:
 C:\UE\T66\Model Generation\
   README.md
   MASTER_WORKFLOW.md
+  Model Processing.md
   Tools\
+    BlenderLabMCP\
+      launch_blender_lab_mcp.ps1
+      setup_blender_lab_mcp.ps1
+      start_blender_lab_mcp.py
     Trellis2\
-      start_blender_mcp.py
       trellis_server.py
   Reference\
     TRELLIS2_RunPod_Setup_Guide.jsx
@@ -163,6 +170,16 @@ class BiRefNet:
         return remove(image)
 ```
 
+First-use cache note: `rembg` downloads `/root/.u2net/u2net.onnx` the first time background removal runs. On a fresh pod, expect the first `/generate` request to pause while this roughly 176 MB file is fetched, or prewarm the cache before starting a batch:
+
+```bash
+python - <<'PY'
+from PIL import Image
+from rembg import remove
+remove(Image.new("RGB", (8, 8), (0, 255, 0)))
+PY
+```
+
 ### 2. cfg_strength Fix
 
 Patch:
@@ -192,20 +209,23 @@ If `transformers` drifts forward again, TRELLIS may fail with DINO-related error
 ## Canonical Local Files
 
 - Server template: [trellis_server.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/trellis_server.py)
-- Blender MCP helper: [start_blender_mcp.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/start_blender_mcp.py)
+- Blender Lab MCP launcher: [launch_blender_lab_mcp.ps1](C:/UE/T66/Model%20Generation/Tools/BlenderLabMCP/launch_blender_lab_mcp.ps1)
+- Blender Lab MCP setup helper: [setup_blender_lab_mcp.ps1](C:/UE/T66/Model%20Generation/Tools/BlenderLabMCP/setup_blender_lab_mcp.ps1)
+- Blender Lab MCP in-Blender start script: [start_blender_lab_mcp.py](C:/UE/T66/Model%20Generation/Tools/BlenderLabMCP/start_blender_lab_mcp.py)
 - RetopoFlow rule: [RETOPOFLOW_4.md](C:/UE/T66/Model%20Generation/RETOPOFLOW_4.md)
 - Blender QA render helper: [blender_glb_qa.py](C:/UE/T66/Model%20Generation/Scripts/blender_glb_qa.py)
 
 ## Blender Tool Roles
 
 - Blender MCP is the canonical agent automation layer for import, export, scene inspection, scripted edits, screenshots, and repeatable QA.
+- Use Blender Lab MCP from `https://www.blender.org/lab/mcp-server/` and `https://projects.blender.org/lab/blender_mcp`; do not use the third-party `ahujasid/blender-mcp` package for this project.
 - RetopoFlow is the approved manual retopology tool for accepted low-poly topology work, especially hero meshes and deformation-critical regions.
 - Blender Buddy, if installed locally, should be treated as an interactive in-Blender copilot for human-driven exploration and tool help, not as the authoritative workflow controller.
 
 ## Blender Session Rule
 
 - Use live Blender through Blender MCP when it is reachable.
-- If Blender MCP is disconnected or stale, reopen Blender and rerun [start_blender_mcp.py](C:/UE/T66/Model%20Generation/Tools/Trellis2/start_blender_mcp.py) before falling back to headless tooling.
+- If Blender MCP is disconnected or stale, run [launch_blender_lab_mcp.ps1](C:/UE/T66/Model%20Generation/Tools/BlenderLabMCP/launch_blender_lab_mcp.ps1) before falling back to headless tooling.
 - Headless Blender is the recovery path for QA render, export, normalization, and re-import verification when the live MCP session is unavailable.
 - Before Unreal import, re-import any accepted exported GLB or FBX in Blender and render one verification image from the exported file itself.
 
@@ -228,6 +248,14 @@ export PYTHONPATH=/workspace/TRELLIS.2
 cd /workspace/TRELLIS.2
 nohup python -u /workspace/TRELLIS.2/trellis_server.py > /workspace/TRELLIS.2/trellis_server.log 2>&1 < /dev/null &
 ```
+
+From a Windows PowerShell-driven SSH session, prefer absolute paths so shell quoting cannot break `$PATH` and hide basic tools like `nohup`:
+
+```powershell
+ssh.exe -p <SSH_PORT> -i C:\Users\DoPra\.ssh\id_ed25519 root@<POD_IP> "cd /workspace/TRELLIS.2 && export NVCC_PREPEND_FLAGS= && export CUDA_HOME=/usr/local/cuda && export PATH=/usr/local/cuda/bin:/usr/bin:/bin:/opt/conda/envs/trellis2/bin && export PYTHONPATH=/workspace/TRELLIS.2 && /usr/bin/nohup /opt/conda/envs/trellis2/bin/python -u /workspace/TRELLIS.2/trellis_server.py > /workspace/TRELLIS.2/trellis_server.log 2>&1 < /dev/null &"
+```
+
+If the local SSH command times out after submitting the background server, check the pod process list, `/workspace/TRELLIS.2/trellis_server.log`, and `/health` before relaunching.
 
 Health check:
 
@@ -286,6 +314,40 @@ For baseline reproduction:
 - Keep the figure centered and readable.
 - Avoid alpha inputs for baseline comparison.
 
+### Hero Type A Character Input Rule
+
+For the current masculine Type A hero pass, do not use one all-in character prompt as the production path.
+
+The post-TRELLIS character setup, scale, material, import, and staged-game verification rules are maintained in [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md). Dedicated Unreal import commands and script runbooks live in [Model Importing.md](C:/UE/T66/Model%20Generation/Model%20Importing.md). Read both before changing assembly, rigging, import, or DataTable wiring.
+
+- Generate the body image and head image separately.
+- Keep the Type A body silhouette consistent across heroes so armor scale, shoulder width, torso mass, and leg proportions stay compatible.
+- Keep head-only inputs completely straight-on like the body-only A-pose input. Reject any head image with a three-quarter turn, side tilt, sideways gaze, or off-center face axis.
+- Vary each hero's head and face clearly; do not let every hero inherit Arthur's square head, brow, hairline, or facial proportions.
+- Do not generate handheld weapons already attached to the body. TRELLIS can produce a usable weapon mesh from a clean isolated input, but weapon-on-character inputs do not reliably preserve grip placement or blade direction.
+- Do not rely on a combined body-plus-head image when face identity matters. Full-body or body-plus-head generations lose too much head definition for the current hero-quality target.
+- Treat head/body assembly and weapon placement as a Blender review/attachment step after separate TRELLIS outputs exist.
+- Treat fallback seed-image generation as a count-unblocker only. It can produce source-image panels or poster-like GLBs even when TRELLIS completes successfully, so production approvals still require visually reviewed seed images plus Blender lineup QA after TRELLIS.
+- For Type A head/body assembly, use the Blender script path first: `Model Generation/Scripts/assemble_typea_head_body.py`. The current validated baseline scales the head to `0.245` of body height, overlaps the neck by `0.045` of body height, and checks front/side/oblique renders before calling the join visually acceptable.
+- For Type A rigging, first bake assembled GLB placement empties into mesh data before any weights are generated. The first working prototype was `Model Generation/Scripts/rig_typea_mike_prototype.py`; the batch path is now `Model Generation/Scripts/rig_typea_batch01.py`. It creates an `18`-bone deform armature, rigid/semi-rigid head weighting, procedural body weights, compact disconnected-fragment stabilization for TRELLIS meshes, saved idle arm-sway actions, FBX/GLB exports, and rest/action QA renders. Mark generated actions with `use_fake_user = True` so non-active actions survive in the saved `.blend`.
+- For Type A Unreal import, follow [Model Importing.md](C:/UE/T66/Model%20Generation/Model%20Importing.md), use the full editor wrapper `Scripts/RunImportTypeABatch01RiggedHeroesAndExit.py`, and inspect `Saved/TypeABatch01RiggedHeroImportReport.json`. Do not use `UnrealEditor-Cmd.exe -run=pythonscript` for this skeletal mesh plus animation batch; UE 5.7 hit a Slate assertion in that path. Also do not use `-ExecCmds="py path"` because Unreal treats the script path as Python source text.
+- Current Type A rigged FBXs should be authored in Blender at `2.0` meters tall with the mesh origin centered at the feet, then imported to Unreal with uniform scale `1.0`. The older `unreal_import_scale_map.json` was a historical workaround for pre-normalized exports; do not use Unreal import scaling as the production fix for Type A size or grounding.
+- Current Type A material import depends on the packed base-color PNGs exported by `rig_typea_batch01.py`. After import, run the targeted material repair so `M_Character_Unlit` stays masked and `DiffuseColorMap.A` drives `Opacity Mask`; otherwise alpha-card source geometry can render as opaque poster panels even though the diffuse texture is present.
+- If a mesh skeleton is replaced after earlier animation imports, use a fresh animation asset suffix such as `RigIdleV2`. Stale animation assets can retain an invalid skeleton and fail load/delete paths with `Invalid USkeleton` or `FKControlRig` errors.
+- After Type A import, reload `DT_CharacterVisuals` from `Content/Data/CharacterVisuals.csv` and run `Scripts/VerifyTypeABatch01HeroVisuals.py`. The verification must confirm all `Hero_X_TypeA` and `Hero_X_TypeA_Beachgoer` rows load skeletal meshes, compatible idle animations, matching skeletons, near-200 cm bounds, near-zero bottom Z, texture-backed material slots, and the masked character-material alpha path.
+
+Active Type A generation roster is documented in [TypeA_Masculine_Batch01](C:/UE/T66/Model%20Generation/Runs/Heroes/TypeA_Masculine_Batch01/batch_plan.md). That roster keeps 12 heroes and removes Merlin, Zeus, Dog, and Forsen from the active gameplay/model-generation set.
+
+Current Type A batch status: standard and beach goer skins for all 12 active heroes were rigged, imported, and wired to `DT_CharacterVisuals` on 2026-05-03. The accepted verification report is [TypeABatch01HeroVisualVerification.json](C:/UE/T66/Saved/TypeABatch01HeroVisualVerification.json), with `24/24` expected rows checked, `0` errors, all `48` material slots texture-backed, mesh heights in the `199.99997` to `200.00003` cm range, and bottom Z within `-0.000002` to `0.000024` cm. Gameplay-rendered visual proof images are [standard](C:/UE/T66/Saved/TypeABatch01VisualCheck/TypeABatch01_Gameplay_QA_standard_Yaw180.png) and [beach goer](C:/UE/T66/Saved/TypeABatch01VisualCheck/TypeABatch01_Gameplay_QA_beachgoer_Yaw180.png).
+
+For the beach goer outfit set:
+
+- Reuse each hero's accepted standard head.
+- Generate a new beach body per hero.
+- Generate a separate beach-inspired weapon per hero.
+- Keep beach outfits varied across heroes; do not make every hero wear the same trunks, vest, colors, or prop family.
+- Continue avoiding below-knee cloth and weapon-on-body prompts.
+
 Current Arthur body/head baseline inputs:
 
 - [Arthur_LegacyDirect_Body_Green.png](C:/UE/T66/Model%20Generation/Runs/Arthur/Inputs/Arthur_LegacyDirect_Body_Green.png)
@@ -317,11 +379,12 @@ Latest QA renders:
 
 ### Known Problems
 
-- A separate head pass is not the current priority.
+- Separate head passes are now required for the new Type A hero batch when face identity needs to read clearly.
 - The body is strong enough to carry equipment and lineup work.
-- The sword hold is still not user-approved. `A22` improved the overlap and direction, but the result still does not read convincingly enough as a true held weapon.
+- Weapon-on-body TRELLIS inputs are not accepted for production. The sword hold failures showed that generated placement is unreliable; use separate weapon generation plus Blender placement instead.
 - Arthur's current idle hand mesh is still too open for a truly tight grip, so transform-only placement may not be enough.
-- Split body/head generation can still produce bad seams or unusable geometry, so it remains a fallback path rather than the default.
+- Combined body-plus-head inputs are not accepted for production hero identity checks because the head/face loses too much definition.
+- Off-axis head-only inputs are not accepted for production because the head and body need to read as parts derived from the same forward-facing A-pose character.
 
 Earlier test assets remain useful for comparison:
 
@@ -369,12 +432,11 @@ Accepted easy-family source candidates:
 
 Run these in order:
 
-1. Keep the full-body hero path as primary unless a specific face issue forces a head-only experiment.
-2. Fix the sword hold so it reads as truly held from front, side, oblique, and user-like review angles.
-3. If transform-only sword placement still fails, move into a light hand-pose or rig step instead of endless transform nudging.
-4. After the sword hold is solved, explore rigging and baked-mesh workflows for Arthur and the easy enemy batch.
-5. Extend the same `reference -> TRELLIS -> RetopoFlow when needed -> verify` workflow to the next difficulty-family batch only after the local character pipeline is stable.
-6. Only move into Unreal import once the exported low-poly GLB has a verification render from a fresh Blender re-import and the intended rig/bake direction is decided.
+1. Review the imported Type A standard and beach goer heroes in-editor for art issues that automated checks cannot catch, especially fallback-derived panels or card-like fragments.
+2. Reroll any failed Type A source images from better reviewed ImageGen references, then re-run assembly, rigging, import, and `Scripts/VerifyTypeABatch01HeroVisuals.py`.
+3. Add a socket or attachment rule for separate hero weapons; do not return to weapon-on-body TRELLIS inputs.
+4. Replace the placeholder arm-sway idle with production locomotion only after the imported Type A mesh scale and skeleton compatibility stay stable.
+5. Extend the same `reference -> TRELLIS -> assemble -> rig -> import -> verify` workflow to the next character or enemy batch only after the local Type A review is accepted.
 
 ## Retopo Policy
 

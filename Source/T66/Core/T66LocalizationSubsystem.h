@@ -475,10 +475,10 @@ public:
 	FText GetText_TheLab() const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")
-	FText GetText_BodyTypeA() const;
+	FText GetText_ChadBody() const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")
-	FText GetText_BodyTypeB() const;
+	FText GetText_StacyBody() const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")
 	FText GetText_Skins() const;

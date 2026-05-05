@@ -20,6 +20,16 @@
 			"LoadingPhase": "Default"
 		},
 		{
+			"Name": "T66Idle",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "T66Deck",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
 			"Name": "T66Editor",
 			"Type": "Editor",
 			"LoadingPhase": "Default"

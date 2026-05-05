@@ -4,6 +4,7 @@
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66TemporaryBuffUIUtils.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
@@ -63,7 +64,8 @@ namespace
 		const FString& RelativePath,
 		const FVector2D& ImageSize,
 		const FMargin& Margin,
-		const ESlateBrushDrawType::Type DrawAs)
+		const ESlateBrushDrawType::Type DrawAs,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		if (!Entry.Brush.IsValid())
 		{
@@ -81,9 +83,51 @@ namespace
 			{
 				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 					CandidatePath,
-					TextureFilter::TF_Trilinear,
+					Filter,
 					true,
 					TEXT("TempBuffShopReferenceSprite")))
+				{
+					Entry.Texture.Reset(Texture);
+					break;
+				}
+			}
+		}
+
+		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
+		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+	}
+
+	const FSlateBrush* ResolveBuffShopSpriteRegionBrush(
+		FT66BuffShopSpriteBrushEntry& Entry,
+		const FString& RelativePath,
+		const FVector2D& ImageSize,
+		const FMargin& Margin,
+		const FBox2f& UVRegion,
+		const FLinearColor& Tint,
+		const ESlateBrushDrawType::Type DrawAs,
+		const TextureFilter Filter = TextureFilter::TF_Trilinear)
+	{
+		if (!Entry.Brush.IsValid())
+		{
+			Entry.Brush = MakeShared<FSlateBrush>();
+		}
+
+		Entry.Brush->DrawAs = DrawAs;
+		Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
+		Entry.Brush->TintColor = FSlateColor(Tint);
+		Entry.Brush->ImageSize = ImageSize;
+		Entry.Brush->Margin = Margin;
+		Entry.Brush->SetUVRegion(UVRegion);
+
+		if (!Entry.Texture.IsValid())
+		{
+			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+			{
+				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
+					CandidatePath,
+					Filter,
+					true,
+					TEXT("TempBuffShopReferenceRegionSprite")))
 				{
 					Entry.Texture.Reset(Texture);
 					break;
@@ -100,10 +144,11 @@ namespace
 		static FT66BuffShopSpriteBrushEntry Entry;
 		return ResolveBuffShopSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/basic_panel_normal.png"),
-			FVector2D(1521.f, 463.f),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
-			ESlateBrushDrawType::Box);
+			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffShop/Panels/temporarybuffshop_panels_fullscreen_fullscreen_panel_wide.png"),
+			FVector2D(1588.f, 653.f),
+			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetBuffShopCardShellBrush()
@@ -111,15 +156,70 @@ namespace
 		static FT66BuffShopSpriteBrushEntry Entry;
 		return ResolveBuffShopSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Panels/inner_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffShop/Panels/temporarybuffshop_panels_fullscreen_fullscreen_panel_tall.png"),
 			FVector2D(208.f, 188.f),
-			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
-			ESlateBrushDrawType::Box);
+			FMargin(0.115f, 0.055f, 0.115f, 0.055f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FScrollBarStyle* GetBuffShopReferenceScrollBarStyle()
+	{
+		static FScrollBarStyle Style = FCoreStyle::Get().GetWidgetStyle<FScrollBarStyle>("ScrollBar");
+		static FT66BuffShopSpriteBrushEntry TrackEntry;
+		static FT66BuffShopSpriteBrushEntry ThumbEntry;
+		static FT66BuffShopSpriteBrushEntry HoverEntry;
+
+		const FString ControlsPath = TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffShop/Controls/temporarybuffshop_controls_controls_sheet.png");
+		const FBox2f VerticalBarUV(
+			FVector2f(4.f / 1350.f, 4.f / 926.f),
+			FVector2f(90.f / 1350.f, 644.f / 926.f));
+
+		const FSlateBrush* TrackBrush = ResolveBuffShopSpriteRegionBrush(
+			TrackEntry,
+			ControlsPath,
+			FVector2D(14.f, 120.f),
+			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
+			VerticalBarUV,
+			FLinearColor(0.35f, 0.34f, 0.30f, 0.70f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+		const FSlateBrush* ThumbBrush = ResolveBuffShopSpriteRegionBrush(
+			ThumbEntry,
+			ControlsPath,
+			FVector2D(16.f, 96.f),
+			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
+			VerticalBarUV,
+			FLinearColor(0.93f, 0.82f, 0.52f, 1.0f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+		const FSlateBrush* HoverBrush = ResolveBuffShopSpriteRegionBrush(
+			HoverEntry,
+			ControlsPath,
+			FVector2D(16.f, 96.f),
+			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
+			VerticalBarUV,
+			FLinearColor(1.0f, 0.90f, 0.62f, 1.0f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+
+		if (TrackBrush && ThumbBrush && HoverBrush)
+		{
+			Style
+				.SetVerticalBackgroundImage(*TrackBrush)
+				.SetVerticalTopSlotImage(*TrackBrush)
+				.SetVerticalBottomSlotImage(*TrackBrush)
+				.SetNormalThumbImage(*ThumbBrush)
+				.SetHoveredThumbImage(*HoverBrush)
+				.SetDraggedThumbImage(*HoverBrush)
+				.SetThickness(14.f);
+		}
+
+		return &Style;
 	}
 
 	FString GetBuffShopButtonPath(const ET66BuffShopButtonFamily Family, const ET66BuffShopButtonState State)
 	{
-		const TCHAR* Prefix = Family == ET66BuffShopButtonFamily::ToggleOn ? TEXT("select_button") : TEXT("basic_button");
 		const TCHAR* Suffix = TEXT("normal");
 		if (Family == ET66BuffShopButtonFamily::ToggleOn && State == ET66BuffShopButtonState::Normal)
 		{
@@ -134,7 +234,7 @@ namespace
 			Suffix = TEXT("pressed");
 		}
 
-		return FString::Printf(TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/%s_%s.png"), Prefix, Suffix);
+		return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), Suffix);
 	}
 
 	FVector2D GetBuffShopButtonSize(const ET66BuffShopButtonFamily Family, const ET66BuffShopButtonState State)
@@ -184,8 +284,9 @@ namespace
 			*Entry,
 			GetBuffShopButtonPath(Family, State),
 			GetBuffShopButtonSize(Family, State),
-			FMargin(0.14f, 0.30f, 0.14f, 0.30f),
-			ESlateBrushDrawType::Box);
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetBuffShopDisabledButtonBrush()
@@ -193,10 +294,11 @@ namespace
 		FT66BuffShopButtonBrushSet& Set = GetBuffShopButtonBrushSet(ET66BuffShopButtonFamily::ToggleInactive);
 		return ResolveBuffShopSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/MasterLibrary/Slices/Buttons/basic_button_disabled.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffShop/Buttons/temporarybuffshop_buttons_pill_disabled.png"),
 			FVector2D(180.f, 69.f),
-			FMargin(0.14f, 0.30f, 0.14f, 0.30f),
-			ESlateBrushDrawType::Box);
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			TextureFilter::TF_Nearest);
 	}
 
 	TSharedRef<SWidget> MakeBuffShopSpritePanel(
@@ -237,63 +339,27 @@ namespace
 				.SetEnabled(IsEnabled));
 		}
 
-		const TSharedPtr<ET66BuffShopButtonState> ButtonState = MakeShared<ET66BuffShopButtonState>(ET66BuffShopButtonState::Normal);
-		const TAttribute<const FSlateBrush*> BrushAttr = TAttribute<const FSlateBrush*>::CreateLambda(
-			[ButtonState, NormalBrush, HoverBrush, PressedBrush, DisabledBrush, IsEnabled]() -> const FSlateBrush*
-			{
-				if (!IsEnabled.Get())
-				{
-					return DisabledBrush ? DisabledBrush : NormalBrush;
-				}
-				if (ButtonState.IsValid() && *ButtonState == ET66BuffShopButtonState::Pressed)
-				{
-					return PressedBrush ? PressedBrush : NormalBrush;
-				}
-				if (ButtonState.IsValid() && *ButtonState == ET66BuffShopButtonState::Hovered)
-				{
-					return HoverBrush ? HoverBrush : NormalBrush;
-				}
-				return NormalBrush;
-			});
 		const TAttribute<FSlateColor> TextColorAttr = TAttribute<FSlateColor>::CreateLambda([IsEnabled]() -> FSlateColor
 			{
 				return IsEnabled.Get() ? FSlateColor(T66BuffShopTextColor) : FSlateColor(T66BuffShopMutedTextColor);
 			});
 
-		return SNew(SBox)
-			.MinDesiredWidth(MinWidth > 0.f ? MinWidth : FOptionalSize())
-			.HeightOverride(Height > 0.f ? Height : FOptionalSize())
-			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					SNew(SImage)
-					.Visibility(EVisibility::HitTestInvisible)
-					.Image(BrushAttr)
-				]
-				+ SOverlay::Slot()
-				[
-					FT66Style::MakeBareButton(
-						FT66BareButtonParams(
-							OnClicked,
-							SNew(STextBlock)
-							.Text(Label)
-							.Font(FT66Style::Tokens::FontBold(FontSize))
-							.ColorAndOpacity(TextColorAttr)
-							.Justification(ETextJustify::Center)
-							.AutoWrapText(true))
-						.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-						.SetColor(FLinearColor::Transparent)
-						.SetPadding(FMargin(12.f, 7.f, 12.f, 6.f))
-						.SetHAlign(HAlign_Center)
-						.SetVAlign(VAlign_Center)
-						.SetEnabled(IsEnabled)
-						.SetOnHovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Hovered; }))
-						.SetOnUnhovered(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Normal; }))
-						.SetOnPressed(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Pressed; }))
-						.SetOnReleased(FSimpleDelegate::CreateLambda([ButtonState]() { *ButtonState = ET66BuffShopButtonState::Hovered; })))
-				]
-			];
+		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+			OnClicked,
+			SNew(STextBlock)
+			.Text(Label)
+			.Font(FT66Style::Tokens::FontBold(FontSize))
+			.ColorAndOpacity(TextColorAttr)
+			.Justification(ETextJustify::Center)
+			.AutoWrapText(true),
+			NormalBrush,
+			HoverBrush,
+			PressedBrush,
+			DisabledBrush,
+			MinWidth,
+			Height,
+			FMargin(12.f, 7.f, 12.f, 6.f),
+			IsEnabled);
 	}
 }
 
@@ -518,6 +584,10 @@ TSharedRef<SWidget> UT66TemporaryBuffShopScreen::BuildSlateUI()
 					.FillHeight(1.f)
 					[
 						SNew(SScrollBox)
+						.ScrollBarStyle(GetBuffShopReferenceScrollBarStyle())
+						.ScrollBarVisibility(EVisibility::Visible)
+						.ScrollBarThickness(FVector2D(14.f, 14.f))
+						.ScrollBarPadding(FMargin(10.f, 0.f, 0.f, 0.f))
 						+ SScrollBox::Slot()
 						[
 							Grid

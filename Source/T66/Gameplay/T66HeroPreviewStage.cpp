@@ -24,8 +24,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66HeroPreview, Log, All);
 namespace
 {
 	constexpr float HeroPreviewLookUpFraction = 0.45f;
-	constexpr float MinHeroPreviewRadius = 235.f;
-	constexpr float SoloPreviewRadiusScale = 1.16f;
+	constexpr float MinHeroPreviewRadius = 185.f;
+	constexpr float SoloPreviewRadiusScale = 1.0f;
 	constexpr float CompanionFrameShiftAlpha = 0.32f;
 	constexpr float CompanionFrameRadiusScale = 0.45f;
 }
@@ -44,8 +44,8 @@ AT66HeroPreviewStage::AT66HeroPreviewStage()
 	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		PreviewPlatform->SetStaticMesh(Cylinder);
-		PreviewPlatform->SetRelativeScale3D(FVector(4.0f, 4.0f, 0.04f));
-		PreviewPlatform->SetRelativeLocation(FVector(0.f, 0.f, -90.f));
+		PreviewPlatform->SetRelativeScale3D(FVector::OneVector);
+		PreviewPlatform->SetRelativeLocation(FVector::ZeroVector);
 	}
 
 	// Default to our hero class
@@ -81,7 +81,7 @@ void AT66HeroPreviewStage::BeginPlay()
 void AT66HeroPreviewStage::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	ActivePreviewHeroID = NAME_None;
-	ActivePreviewBodyType = ET66BodyType::TypeA;
+	ActivePreviewBodyType = ET66BodyType::Chad;
 	ActivePreviewHeroSkinID = NAME_None;
 	ActivePreviewCompanionID = NAME_None;
 	ActivePreviewCompanionSkinID = NAME_None;
@@ -271,7 +271,18 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 	const float BaseMult = FMath::Clamp(CameraDistanceMultiplier, 0.60f, 8.0f);
 	const float ZoomMult = FMath::Clamp(PreviewZoomMultiplier, FMath::Clamp(MinPreviewZoomMultiplier, 0.25f, 1.0f), 1.0f);
 	const float EffectiveMult = FMath::Clamp(BaseMult * ZoomMult, 0.25f, BaseMult);
-	const float Dist = (Radius / FMath::Max(0.15f, FMath::Tan(HalfFovRad))) * EffectiveMult;
+	float ViewportFrameMult = 1.0f;
+	if (APlayerController* LocalPlayerController = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		int32 ViewportWidth = 0;
+		int32 ViewportHeight = 0;
+		LocalPlayerController->GetViewportSize(ViewportWidth, ViewportHeight);
+		if (ViewportWidth > 0 && ViewportWidth < 1280)
+		{
+			ViewportFrameMult = FMath::Clamp(1280.f / static_cast<float>(ViewportWidth), 1.0f, 1.35f);
+		}
+	}
+	const float Dist = (Radius / FMath::Max(0.15f, FMath::Tan(HalfFovRad))) * EffectiveMult * ViewportFrameMult;
 
 	const float PitchRad = FMath::DegreesToRadians(OrbitPitchDegrees);
 	const float Z = (FMath::Sin(PitchRad) * Dist) + (Radius * 0.12f);
@@ -288,9 +299,7 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 
 	if (PreviewPlatform)
 	{
-		const float GroundZ = GetActorLocation().Z;
-		const float PlatformCenterZ = GroundZ - 2.f; // ~4 unit thick disc with scale 0.04
-		const float S = FMath::Max(MinGroundScale, FMath::Clamp((Radius / 50.f) * 2.5f, 2.0f, 10.0f));
+		const FVector CurrentPlatformLocation = PreviewPlatform->GetComponentLocation();
 		float HeroFeetX = Center.X;
 		float HeroFeetY = Center.Y;
 		if (PreviewPawn)
@@ -299,8 +308,7 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 			HeroFeetX = HeroLoc.X;
 			HeroFeetY = HeroLoc.Y;
 		}
-		PreviewPlatform->SetWorldLocation(FVector(HeroFeetX + PlatformForwardOffset, HeroFeetY, PlatformCenterZ));
-		PreviewPlatform->SetWorldScale3D(FVector(S, S, 0.04f));
+		PreviewPlatform->SetWorldLocation(FVector(HeroFeetX + PlatformForwardOffset, HeroFeetY, CurrentPlatformLocation.Z));
 	}
 }
 

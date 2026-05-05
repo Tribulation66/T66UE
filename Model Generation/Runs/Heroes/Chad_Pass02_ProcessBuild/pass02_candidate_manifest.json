@@ -1,0 +1,79 @@
+{
+  "run": "Chad_Pass02_ProcessBuild",
+  "status": "mike_head_body_connection_process_candidate_rig_prototype_a03_lifted_neck_bridge",
+  "active_hero_id_policy": "Use Hero_1 through Hero_12 for new authoring. Do not move Batch01 imported assets during this process pass.",
+  "background_policy": "Opaque flat white only for Pass02 attempts; no alpha, shadow, floor, reflection, gradient, card, or poster panel.",
+  "trellis_policy": {
+    "seed": 1337,
+    "texture_size": 2048,
+    "body_decimation": 80000,
+    "head_decimation": 120000,
+    "change_settings_after_source_gate": false
+  },
+  "mike_process_test_20260504": {
+    "summary": "Body source and raw TRELLIS output passed. Original head source produced rear head/neck slab. NeckNarrow_A02 proved the narrow plug approach. NeckNarrow_A03 produced the sharper face, but retained a rear scalp/bald artifact. Attempt04 with full-hair source constraints removed the obvious rear bald patch, but the full-hair buried-neck assembly regressed the face and was rejected after visual review. Current best process direction preserves A03_B02, lifts the head slightly, and adds a small rear-biased body-owned neck bridge as shown by the rig prototype and wider-neck comparison. This is process evidence, not production approval.",
+    "report": "MIKE_TRELLIS_TEST_20260504.md",
+    "best_body_glb": "Raw/Trellis/Hero_3_Mike_Chad_Standard_BodyOnly_White_S1337_D80000_Trellis2.glb",
+    "best_head_glb": "Raw/Trellis/Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A03_S1337_D120000_Trellis2.glb",
+    "best_assembly_glb": "Assembly/HeadBody/Hero_3_Mike_Chad_RigPrototype_A03_LiftedNeckBridge.glb",
+    "best_assembly_report": "Assembly/head_body_assembly_report_Mike_Chad_RigPrototype_A03_LiftedNeckBridge.json",
+    "production_ready": false,
+    "remaining_art_issue": "The Mike rig prototype keeps the A03 face/front read and improves the side no-neck read with a slight head lift plus rear-biased neck bridge. The bridge material is flat and procedural, A03 still has rear-hair/scalp risk, and no rigging, Unreal import, or staged executable verification has been done. The rejected full-hair buried-neck attempt should not be used as an assembly handoff, but its full-hair source lesson should be kept for future image generation."
+  },
+  "prompt_attempts": [
+    {
+      "hero_id": "Hero_3",
+      "name": "Mike",
+      "part": "body",
+      "prompt": "Inputs/prompts/Hero_3_Mike_Chad_Standard_BodyOnly_White_Attempt01.prompt.txt"
+    },
+    {
+      "hero_id": "Hero_3",
+      "name": "Mike",
+      "part": "head",
+      "prompt": "Inputs/prompts/Hero_3_Mike_Chad_Standard_HeadOnly_White_Attempt01.prompt.txt"
+    },
+    {
+      "hero_id": "Hero_3",
+      "name": "Mike",
+      "part": "head",
+      "prompt": "Inputs/prompts/Hero_3_Mike_Chad_Standard_HeadOnly_White_Attempt04.prompt.txt"
+    },
+    {
+      "hero_id": "Hero_6",
+      "name": "Billy",
+      "part": "body",
+      "prompt": "Inputs/prompts/Hero_6_Billy_Chad_Standard_BodyOnly_White_Attempt01.prompt.txt"
+    },
+    {
+      "hero_id": "Hero_6",
+      "name": "Billy",
+      "part": "head",
+      "prompt": "Inputs/prompts/Hero_6_Billy_Chad_Standard_HeadOnly_White_Attempt01.prompt.txt"
+    },
+    {
+      "hero_id": "Hero_11",
+      "name": "North",
+      "part": "body",
+      "prompt": "Inputs/prompts/Hero_11_North_Chad_Standard_BodyOnly_White_Attempt01.prompt.txt"
+    },
+    {
+      "hero_id": "Hero_11",
+      "name": "North",
+      "part": "head",
+      "prompt": "Inputs/prompts/Hero_11_North_Chad_Standard_HeadOnly_White_Attempt01.prompt.txt"
+    },
+    {
+      "hero_id": "Hero_12",
+      "name": "Asmon",
+      "part": "body",
+      "prompt": "Inputs/prompts/Hero_12_Asmon_Chad_Standard_BodyOnly_White_Attempt01.prompt.txt"
+    },
+    {
+      "hero_id": "Hero_12",
+      "name": "Asmon",
+      "part": "head",
+      "prompt": "Inputs/prompts/Hero_12_Asmon_Chad_Standard_HeadOnly_White_Attempt01.prompt.txt"
+    }
+  ]
+}

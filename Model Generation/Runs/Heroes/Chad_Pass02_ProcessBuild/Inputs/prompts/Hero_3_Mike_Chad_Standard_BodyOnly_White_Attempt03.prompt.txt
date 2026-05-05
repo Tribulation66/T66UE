@@ -1,0 +1,21 @@
+Use case: stylized-concept
+Asset type: production source image for TRELLIS image-to-3D
+
+Subject: Hero_3 Mike, original stylized game character, Chad/default skin body only.
+
+Create one centered front-facing neck-down male body only. No head, no face, no hair, no ears, no beard, no chin, no hat, no weapon, no shield, no prop, no duplicate view, no back view, no side view, no character sheet, no poster panel.
+
+Anatomy target: push the proportions far past the previous version. Giant giga-chad/nephilim body, human-readable but impossible. The upper body is absurdly overbuilt: enormous traps, extremely wide shoulders, oversized deltoids, massive barrel chest, huge pecs, thick arms, thick forearms, huge quads and calves. The waist is an exaggerated thin wasp waist, much thinner than realistic anatomy and thinner than a normal superhero waist. Extreme V taper. If the body could plausibly be a real bodybuilder, it fails; make it more muscular and make the waist thinner.
+
+Neck target: the body ends at a clean open circular neck socket above the trapezius, like a headless mannequin prepared for inserting a separate head and neck. The socket is visible and clean. No neck stump, no face remnant, no chin, no beard, no hair.
+
+Pose and feet: orthographic production reference, symmetrical A-pose, arms slightly away from torso, legs separated, full body visible from feet to neck socket. Both feet point straight forward, parallel or near-parallel, perfectly symmetrical, same size, same angle, same stance width, same grounding height. Do not turn the feet outward. Do not make a ballet turnout stance.
+
+Clothing style: bright stylized cartoon/cel-shaded game texture, simple readable outfit shapes, bold clean colors, no realistic cloth simulation. No bra-like chest straps, no sports-bra shape, no corset, no bondage harness, no random chest band, no underwear-like cropped top. The chest must be dominated by muscles, not garment straps.
+
+Character outfit: gritty street brawler pants and boots, wrist wraps, simple open sleeveless torn denim vest hanging away from the huge chest, optional belt and bracers. Warm tan skin. No shirt across the pecs, no chest strap, no head.
+
+Lighting and background: pure flat opaque white #ffffff across the entire canvas. Bright high-key cel shading. No alpha, no floor, no cast shadow, no contact shadow, no reflection, no gradient, no gray patch, no border card, no poster sheet. No dark moody lighting, no soft realistic studio shadow, no heavy ambient occlusion.
+
+Render style: clean bright stylized cartoon/cel-shaded game asset reference, sharp silhouette, readable materials, no text, no watermark, no logo.
+

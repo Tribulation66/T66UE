@@ -1,0 +1,8 @@
+EncounterID,DisplayName,NodeType,ActIndex,EnemyIDs,RewardCardIDs,RewardItemIDs,MinFloor,MaxFloor,GoldRewardBonus
+GuardRoom,Guard Room,Combat,1,Dungeon_Fiend,Strike|Guard|Pierce,,1,4,0
+CultistFork,Cultist Fork,Combat,1,Shield_Cultist,Brace|Fortify|Cleave,Item_CritChance,1,6,2
+MimicCache,Mimic Cache,Treasure,1,Gold_Mimic,GoldRush|Pierce|Guard,Item_AoeDamage,2,8,8
+BruteGate,Brute Gate,Elite,1,Gate_Brute,Bash|Fortify|GoldRush,Item_PierceDamage,4,999,12
+WardenGate,Warden Gate,Boss,1,Dungeon_Warden,Bash|Fortify|GoldRush,Item_AoeDamage,9,9,20
+DepthWarden,Depth Warden,Boss,1,Depth_Warden,Cleave|Brace|Pierce,Item_CritChance,18,18,30
+ChadlichGate,Chadlich Gate,Boss,1,Chadlich,Bash|GoldRush|Fortify,Item_PierceDamage,27,27,45

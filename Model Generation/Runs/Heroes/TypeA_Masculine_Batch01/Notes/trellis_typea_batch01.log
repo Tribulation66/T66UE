@@ -1,0 +1,99 @@
+[2026-05-02T22:47:04+00:00] START Hero_1_Arthur_TypeA_BeachGoer_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T22:48:24+00:00] DONE Hero_1_Arthur_TypeA_BeachGoer_BodyOnly_Green 3715388 bytes duration=80s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_1_Arthur_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T22:48:24+00:00] START Hero_1_Arthur_TypeA_BeachGoer_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T22:49:32+00:00] DONE Hero_1_Arthur_TypeA_BeachGoer_WeaponOnly_Green 7865368 bytes duration=68s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_1_Arthur_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T22:49:32+00:00] SKIP existing output Hero_3_LuBu_TypeA_Standard_BodyOnly_Green 3657724 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_3_LuBu_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T22:49:32+00:00] SKIP existing output Hero_3_LuBu_TypeA_Standard_HeadOnly_Green 5075768 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_3_LuBu_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T22:49:32+00:00] SKIP existing output Hero_3_LuBu_TypeA_Standard_WeaponOnly_Green 7956052 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_3_LuBu_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T22:49:32+00:00] SKIP existing output Hero_3_LuBu_TypeA_BeachGoer_BodyOnly_Green 4305536 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_3_LuBu_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T22:49:32+00:00] SKIP existing output Hero_3_LuBu_TypeA_BeachGoer_WeaponOnly_Green 8128788 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_3_LuBu_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T22:49:32+00:00] SKIP existing output Hero_4_Mike_TypeA_Standard_BodyOnly_Green 4620304 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_4_Mike_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T22:49:32+00:00] SKIP existing output Hero_4_Mike_TypeA_Standard_HeadOnly_Green 4749776 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_4_Mike_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T22:49:33+00:00] SKIP existing output Hero_4_Mike_TypeA_Standard_WeaponOnly_Green 7944320 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_4_Mike_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T22:49:33+00:00] SKIP existing output Hero_4_Mike_TypeA_BeachGoer_BodyOnly_Green 3971288 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_4_Mike_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T22:49:33+00:00] SKIP existing output Hero_4_Mike_TypeA_BeachGoer_WeaponOnly_Green 8012236 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_4_Mike_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T22:49:33+00:00] SKIP existing output Hero_5_George_TypeA_Standard_BodyOnly_Green 3580552 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_5_George_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T22:49:33+00:00] SKIP existing output Hero_5_George_TypeA_Standard_HeadOnly_Green 5607968 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_5_George_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T22:49:33+00:00] SKIP existing output Hero_5_George_TypeA_Standard_WeaponOnly_Green 8919824 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_5_George_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T22:49:33+00:00] SKIP existing output Hero_5_George_TypeA_BeachGoer_BodyOnly_Green 3689352 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_5_George_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T22:49:33+00:00] SKIP existing output Hero_5_George_TypeA_BeachGoer_WeaponOnly_Green 8049864 bytes -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_5_George_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T22:49:33+00:00] START Hero_7_Robo_TypeA_Standard_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T22:51:21+00:00] DONE Hero_7_Robo_TypeA_Standard_BodyOnly_Green 4389332 bytes duration=108s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_7_Robo_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T22:51:21+00:00] START Hero_7_Robo_TypeA_Standard_HeadOnly_Green seed=1337 texture=2048 decimation=120000
+[2026-05-02T22:55:27+00:00] DONE Hero_7_Robo_TypeA_Standard_HeadOnly_Green 5550020 bytes duration=246s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_7_Robo_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T22:55:27+00:00] START Hero_7_Robo_TypeA_Standard_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T22:56:55+00:00] DONE Hero_7_Robo_TypeA_Standard_WeaponOnly_Green 8307036 bytes duration=88s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_7_Robo_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T22:56:55+00:00] START Hero_7_Robo_TypeA_BeachGoer_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T22:58:14+00:00] DONE Hero_7_Robo_TypeA_BeachGoer_BodyOnly_Green 3377036 bytes duration=79s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_7_Robo_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T22:58:14+00:00] START Hero_7_Robo_TypeA_BeachGoer_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:00:18+00:00] DONE Hero_7_Robo_TypeA_BeachGoer_WeaponOnly_Green 8584128 bytes duration=124s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_7_Robo_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:00:18+00:00] START Hero_8_Billy_TypeA_Standard_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:01:20+00:00] DONE Hero_8_Billy_TypeA_Standard_BodyOnly_Green 3303756 bytes duration=62s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_8_Billy_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:01:20+00:00] START Hero_8_Billy_TypeA_Standard_HeadOnly_Green seed=1337 texture=2048 decimation=120000
+[2026-05-02T23:04:51+00:00] DONE Hero_8_Billy_TypeA_Standard_HeadOnly_Green 5613336 bytes duration=211s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_8_Billy_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T23:04:51+00:00] START Hero_8_Billy_TypeA_Standard_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:06:15+00:00] DONE Hero_8_Billy_TypeA_Standard_WeaponOnly_Green 7270460 bytes duration=84s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_8_Billy_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:06:15+00:00] START Hero_8_Billy_TypeA_BeachGoer_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:07:23+00:00] DONE Hero_8_Billy_TypeA_BeachGoer_BodyOnly_Green 3106320 bytes duration=68s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_8_Billy_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:07:23+00:00] START Hero_8_Billy_TypeA_BeachGoer_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:08:37+00:00] DONE Hero_8_Billy_TypeA_BeachGoer_WeaponOnly_Green 7761152 bytes duration=74s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_8_Billy_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:08:37+00:00] START Hero_9_Rabbit_TypeA_Standard_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:09:40+00:00] DONE Hero_9_Rabbit_TypeA_Standard_BodyOnly_Green 4492160 bytes duration=63s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_9_Rabbit_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:09:40+00:00] START Hero_9_Rabbit_TypeA_Standard_HeadOnly_Green seed=1337 texture=2048 decimation=120000
+[2026-05-02T23:11:12+00:00] DONE Hero_9_Rabbit_TypeA_Standard_HeadOnly_Green 4567200 bytes duration=92s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_9_Rabbit_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T23:11:12+00:00] START Hero_9_Rabbit_TypeA_Standard_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:12:53+00:00] DONE Hero_9_Rabbit_TypeA_Standard_WeaponOnly_Green 8376300 bytes duration=101s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_9_Rabbit_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:12:53+00:00] START Hero_9_Rabbit_TypeA_BeachGoer_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:13:43+00:00] DONE Hero_9_Rabbit_TypeA_BeachGoer_BodyOnly_Green 4134052 bytes duration=50s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_9_Rabbit_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:13:43+00:00] START Hero_9_Rabbit_TypeA_BeachGoer_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:16:33+00:00] DONE Hero_9_Rabbit_TypeA_BeachGoer_WeaponOnly_Green 8771768 bytes duration=170s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_9_Rabbit_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:16:33+00:00] START Hero_11_Shroud_TypeA_Standard_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:18:06+00:00] DONE Hero_11_Shroud_TypeA_Standard_BodyOnly_Green 4078076 bytes duration=92s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_11_Shroud_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:18:06+00:00] START Hero_11_Shroud_TypeA_Standard_HeadOnly_Green seed=1337 texture=2048 decimation=120000
+[2026-05-02T23:19:24+00:00] DONE Hero_11_Shroud_TypeA_Standard_HeadOnly_Green 3774520 bytes duration=78s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_11_Shroud_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T23:19:24+00:00] START Hero_11_Shroud_TypeA_Standard_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:20:56+00:00] DONE Hero_11_Shroud_TypeA_Standard_WeaponOnly_Green 10193280 bytes duration=92s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_11_Shroud_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:20:56+00:00] START Hero_11_Shroud_TypeA_BeachGoer_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:22:14+00:00] DONE Hero_11_Shroud_TypeA_BeachGoer_BodyOnly_Green 4259604 bytes duration=78s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_11_Shroud_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:22:14+00:00] START Hero_11_Shroud_TypeA_BeachGoer_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:23:16+00:00] DONE Hero_11_Shroud_TypeA_BeachGoer_WeaponOnly_Green 9327072 bytes duration=62s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_11_Shroud_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:23:16+00:00] START Hero_12_xQc_TypeA_Standard_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:24:38+00:00] DONE Hero_12_xQc_TypeA_Standard_BodyOnly_Green 5027528 bytes duration=82s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_12_xQc_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:24:38+00:00] START Hero_12_xQc_TypeA_Standard_HeadOnly_Green seed=1337 texture=2048 decimation=120000
+[2026-05-02T23:27:20+00:00] DONE Hero_12_xQc_TypeA_Standard_HeadOnly_Green 4870876 bytes duration=162s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_12_xQc_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T23:27:20+00:00] START Hero_12_xQc_TypeA_Standard_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:28:36+00:00] DONE Hero_12_xQc_TypeA_Standard_WeaponOnly_Green 9350284 bytes duration=76s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_12_xQc_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:28:36+00:00] START Hero_12_xQc_TypeA_BeachGoer_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:29:34+00:00] DONE Hero_12_xQc_TypeA_BeachGoer_BodyOnly_Green 3674580 bytes duration=58s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_12_xQc_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:29:34+00:00] START Hero_12_xQc_TypeA_BeachGoer_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:31:25+00:00] DONE Hero_12_xQc_TypeA_BeachGoer_WeaponOnly_Green 9383756 bytes duration=111s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_12_xQc_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:31:25+00:00] START Hero_13_Moist_TypeA_Standard_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:32:58+00:00] DONE Hero_13_Moist_TypeA_Standard_BodyOnly_Green 3488168 bytes duration=93s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_13_Moist_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:32:58+00:00] START Hero_13_Moist_TypeA_Standard_HeadOnly_Green seed=1337 texture=2048 decimation=120000
+[2026-05-02T23:35:29+00:00] DONE Hero_13_Moist_TypeA_Standard_HeadOnly_Green 5125568 bytes duration=151s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_13_Moist_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T23:35:29+00:00] START Hero_13_Moist_TypeA_Standard_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:38:23+00:00] DONE Hero_13_Moist_TypeA_Standard_WeaponOnly_Green 7194512 bytes duration=174s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_13_Moist_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:38:23+00:00] START Hero_13_Moist_TypeA_BeachGoer_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:39:46+00:00] DONE Hero_13_Moist_TypeA_BeachGoer_BodyOnly_Green 4137880 bytes duration=83s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_13_Moist_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:39:46+00:00] START Hero_13_Moist_TypeA_BeachGoer_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:40:53+00:00] DONE Hero_13_Moist_TypeA_BeachGoer_WeaponOnly_Green 7676068 bytes duration=67s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_13_Moist_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:40:53+00:00] START Hero_14_North_TypeA_Standard_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:41:52+00:00] DONE Hero_14_North_TypeA_Standard_BodyOnly_Green 3565644 bytes duration=59s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_14_North_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:41:52+00:00] START Hero_14_North_TypeA_Standard_HeadOnly_Green seed=1337 texture=2048 decimation=120000
+[2026-05-02T23:44:27+00:00] DONE Hero_14_North_TypeA_Standard_HeadOnly_Green 7114312 bytes duration=155s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_14_North_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T23:44:27+00:00] START Hero_14_North_TypeA_Standard_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:45:54+00:00] DONE Hero_14_North_TypeA_Standard_WeaponOnly_Green 6471420 bytes duration=87s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_14_North_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:45:54+00:00] START Hero_14_North_TypeA_BeachGoer_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:46:51+00:00] DONE Hero_14_North_TypeA_BeachGoer_BodyOnly_Green 5113532 bytes duration=57s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_14_North_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:46:51+00:00] START Hero_14_North_TypeA_BeachGoer_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:48:44+00:00] DONE Hero_14_North_TypeA_BeachGoer_WeaponOnly_Green 6446892 bytes duration=113s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_14_North_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:48:44+00:00] START Hero_15_Asmon_TypeA_Standard_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:49:52+00:00] DONE Hero_15_Asmon_TypeA_Standard_BodyOnly_Green 3903328 bytes duration=68s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_15_Asmon_TypeA_Standard_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:49:52+00:00] START Hero_15_Asmon_TypeA_Standard_HeadOnly_Green seed=1337 texture=2048 decimation=120000
+[2026-05-02T23:51:28+00:00] DONE Hero_15_Asmon_TypeA_Standard_HeadOnly_Green 5146528 bytes duration=96s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_15_Asmon_TypeA_Standard_HeadOnly_Green_S1337_D120000_Trellis2.glb
+[2026-05-02T23:51:28+00:00] START Hero_15_Asmon_TypeA_Standard_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:53:23+00:00] DONE Hero_15_Asmon_TypeA_Standard_WeaponOnly_Green 7809016 bytes duration=115s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_15_Asmon_TypeA_Standard_WeaponOnly_Green_S1337_D200000_Trellis2.glb
+[2026-05-02T23:53:23+00:00] START Hero_15_Asmon_TypeA_BeachGoer_BodyOnly_Green seed=1337 texture=2048 decimation=80000
+[2026-05-02T23:54:39+00:00] DONE Hero_15_Asmon_TypeA_BeachGoer_BodyOnly_Green 4202716 bytes duration=76s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_15_Asmon_TypeA_BeachGoer_BodyOnly_Green_S1337_D80000_Trellis2.glb
+[2026-05-02T23:54:39+00:00] START Hero_15_Asmon_TypeA_BeachGoer_WeaponOnly_Green seed=1337 texture=2048 decimation=200000
+[2026-05-02T23:55:42+00:00] DONE Hero_15_Asmon_TypeA_BeachGoer_WeaponOnly_Green 7346788 bytes duration=63s -> /workspace/T66/ModelGeneration/Runs/Heroes/TypeA_Masculine_Batch01/Raw/Trellis/Hero_15_Asmon_TypeA_BeachGoer_WeaponOnly_Green_S1337_D200000_Trellis2.glb

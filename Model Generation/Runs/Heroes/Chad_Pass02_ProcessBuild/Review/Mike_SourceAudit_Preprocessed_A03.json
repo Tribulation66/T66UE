@@ -1,0 +1,68 @@
+{
+  "input_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Inputs\\preprocessed",
+  "expected_bg": "white",
+  "total": 3,
+  "failed": 0,
+  "results": [
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Inputs\\preprocessed\\Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A01.png",
+      "part": "head",
+      "size": [
+        1254,
+        1254
+      ],
+      "border_median_rgb": [
+        254,
+        254,
+        254
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.0,
+      "internal_disconnected_white_pct": 0.011,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Inputs\\preprocessed\\Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A02.png",
+      "part": "head",
+      "size": [
+        1254,
+        1254
+      ],
+      "border_median_rgb": [
+        254,
+        254,
+        254
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.0,
+      "internal_disconnected_white_pct": 0.011,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "file": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\Chad_Pass02_ProcessBuild\\Inputs\\preprocessed\\Hero_3_Mike_Chad_Standard_HeadOnly_White_NeckNarrow_A03.png",
+      "part": "head",
+      "size": [
+        1254,
+        1254
+      ],
+      "border_median_rgb": [
+        255,
+        255,
+        255
+      ],
+      "border_nonuniform_pct_gt10": 0.0,
+      "border_nonuniform_pct_gt25": 0.0,
+      "internal_green_pct": 0.0,
+      "internal_disconnected_white_pct": 0.011,
+      "status": "pass",
+      "failures": [],
+      "warnings": []
+    }
+  ]
+}
