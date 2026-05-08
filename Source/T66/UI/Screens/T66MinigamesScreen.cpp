@@ -13,6 +13,7 @@
 #include "UI/Style/T66Style.h"
 #include "UI/T66UIManager.h"
 #include "UObject/StrongObjectPtr.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -27,7 +28,7 @@ namespace
 	TMap<FString, TSharedPtr<FSlateBrush>> GMinigamesGeneratedBrushCache;
 	TMap<FString, TSharedPtr<FButtonStyle>> GMinigamesGeneratedButtonStyleCache;
 
-	bool T66IsPausedGameplayWidget(const UUserWidget* Widget)
+	bool T66IsMinigamesPausedGameplayWidget(const UUserWidget* Widget)
 	{
 		const APlayerController* PC = Widget ? Widget->GetOwningPlayer() : nullptr;
 		return PC && PC->IsPaused();
@@ -43,7 +44,7 @@ namespace
 		return FLinearColor(0.024f, 0.025f, 0.030f, 1.0f);
 	}
 
-	FString MakeSettingsAssetPath(const TCHAR* FileName)
+	FString MakeMinigamesSettingsAssetPath(const TCHAR* FileName)
 	{
 		const FString Name(FileName);
 		const auto BasicButtonPath = [](const TCHAR* State) -> FString
@@ -257,10 +258,10 @@ namespace
 	{
 		return ResolveMinigamesGeneratedButtonStyle(
 			TEXT("Minigames.CompactButton"),
-			MakeSettingsAssetPath(TEXT("settings_compact_neutral_normal.png")),
-			MakeSettingsAssetPath(TEXT("settings_compact_neutral_hover.png")),
-			MakeSettingsAssetPath(TEXT("settings_compact_neutral_pressed.png")),
-			MakeSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")));
+			MakeMinigamesSettingsAssetPath(TEXT("settings_compact_neutral_normal.png")),
+			MakeMinigamesSettingsAssetPath(TEXT("settings_compact_neutral_hover.png")),
+			MakeMinigamesSettingsAssetPath(TEXT("settings_compact_neutral_pressed.png")),
+			MakeMinigamesSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")));
 	}
 
 	TSharedRef<SWidget> MakeMinigamesGeneratedPanel(
@@ -382,7 +383,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 			.Clipping(EWidgetClipping::ClipToBounds)
 			[
 				MakeMinigamesGeneratedPanel(
-					MakeSettingsAssetPath(TEXT("settings_row_shell_split.png")),
+					MakeMinigamesSettingsAssetPath(TEXT("settings_row_shell_split.png")),
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
 					.FillWidth(1.f)
@@ -424,7 +425,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 						.Clipping(EWidgetClipping::ClipToBounds)
 						[
 							MakeMinigamesGeneratedPanel(
-								MakeSettingsAssetPath(bClickable ? TEXT("settings_toggle_on_normal.png") : TEXT("settings_toggle_inactive_normal.png")),
+								MakeMinigamesSettingsAssetPath(bClickable ? TEXT("settings_toggle_on_normal.png") : TEXT("settings_toggle_inactive_normal.png")),
 								SNew(STextBlock)
 								.Text(Tag)
 								.Font(FT66Style::Tokens::FontBold(bClickable ? 18 : 12))
@@ -456,7 +457,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 		.Padding(FMargin(14.f, TopInset, 14.f, 0.f))
 		[
 			MakeMinigamesGeneratedPanel(
-				MakeSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
+				MakeMinigamesSettingsAssetPath(TEXT("settings_content_shell_frame.png")),
 				SNew(SOverlay)
 				+ SOverlay::Slot()
 				[
@@ -485,7 +486,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 						.Padding(0.f, 0.f, 0.f, 14.f)
 						[
 							MakeMinigamesGeneratedPanel(
-								MakeSettingsAssetPath(TEXT("settings_row_shell_split.png")),
+								MakeMinigamesSettingsAssetPath(TEXT("settings_row_shell_split.png")),
 								SNew(STextBlock)
 								.Text(MinigamesDescriptionText)
 								.Font(FT66Style::Tokens::FontRegular(17))
@@ -576,7 +577,7 @@ void UT66MinigamesScreen::OnScreenDeactivated_Implementation()
 
 void UT66MinigamesScreen::OnBackClicked()
 {
-	if (T66IsPausedGameplayWidget(this) && UIManager)
+	if (T66IsMinigamesPausedGameplayWidget(this) && UIManager)
 	{
 		ShowModal(ET66ScreenType::PauseMenu);
 		return;

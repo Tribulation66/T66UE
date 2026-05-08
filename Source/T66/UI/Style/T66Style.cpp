@@ -239,9 +239,10 @@ namespace
 		}
 	}
 
-	FString GetMainMenuReferenceAssetPath(const TCHAR* RelativePath)
+	FString GetProjectRelativeAssetPath(const TCHAR* RelativePath)
 	{
-		return FPaths::ProjectDir() / TEXT("SourceAssets/UI/MainMenuReference") / RelativePath;
+		const FString Path(RelativePath ? RelativePath : TEXT(""));
+		return FPaths::ProjectDir() / Path;
 	}
 
 	const FSlateBrush* ResolveMinimapFrameBrush()
@@ -261,16 +262,16 @@ namespace
 		switch (Kind)
 		{
 		case ET66InRunPlateKind::Primary:
-			return TEXT("Center/cta_button_new_game_plate.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_new_game_button_normal.png");
 		case ET66InRunPlateKind::Danger:
-			return TEXT("Center/cta_button_daily_challenge_plate.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_new_game_button_pressed.png");
 		case ET66InRunPlateKind::TabActive:
-			return TEXT("RightPanel/tab_weekly_active.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_selected.png");
 		case ET66InRunPlateKind::TabInactive:
-			return TEXT("RightPanel/tab_all_time_inactive.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_normal.png");
 		case ET66InRunPlateKind::Neutral:
 		default:
-			return TEXT("Center/cta_button_load_game_plate.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_load_game_button_normal.png");
 		}
 	}
 
@@ -1098,7 +1099,7 @@ const FSlateBrush* FT66Style::GetInRunButtonPlateBrush(const ET66ButtonType Type
 	return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 		GetInRunPlateEntry(Kind),
 		nullptr,
-		GetMainMenuReferenceAssetPath(GetInRunPlateRelativePath(Kind)),
+		GetProjectRelativeAssetPath(GetInRunPlateRelativePath(Kind)),
 		GetInRunPlateMargin(Kind),
 		TEXT("InRunButtonPlate"));
 }
@@ -1109,7 +1110,7 @@ const FSlateBrush* FT66Style::GetInRunTabPlateBrush(const bool bSelected)
 	return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 		GetInRunPlateEntry(Kind),
 		nullptr,
-		GetMainMenuReferenceAssetPath(GetInRunPlateRelativePath(Kind)),
+		GetProjectRelativeAssetPath(GetInRunPlateRelativePath(Kind)),
 		GetInRunPlateMargin(Kind),
 		TEXT("InRunTabPlate"));
 }

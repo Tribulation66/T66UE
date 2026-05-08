@@ -1,7 +1,0 @@
-Create one centered stylized game-ready 3D model source image on an opaque pure white background (#ffffff). No floor, no ground plane, no pedestal, no platform, no reflection, no cast shadow, no contact shadow, no gradient, no gray patch, no border, no text, no UI, no watermark, no room, no scene.
-
-Subject: a canonical treasure chest world interactable. Chunky wooden chest body, curved lid, metal bands, oversized latch, reinforced corners, slightly heroic proportions, compact footprint, and clear front-facing read. It can use warm wood, dark metal, and small gold accents, but it should be named and read as the generic canonical Chest rather than a yellow-only chest.
-
-Style: stylized action roguelike prop model source, clean silhouette, crisp bevels, strong material separation, readable at gameplay distance. Slight three-quarter front view, fully closed or barely ajar with no spilling coins. Fully visible and centered. Background must remain pure white and shadowless.
-
-Reject if it has coins spilling onto a floor, a rarity color label, text, duplicate chests, open-mouth mimic teeth, floor/contact shadow, or a platform under it.

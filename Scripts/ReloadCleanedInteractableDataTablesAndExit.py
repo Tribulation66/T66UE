@@ -16,7 +16,6 @@ import SetupAudioEventsDataTable
 import SetupCharacterVisualsDataTable
 import SetupHouseNPCsDataTable
 import SetupPlayerExperienceDataTable
-import SetupPropsDataTable
 
 
 def main():
@@ -25,7 +24,6 @@ def main():
     SetupArcadeInteractablesDataTable.main()
     SetupCharacterVisualsDataTable.main()
     SetupHouseNPCsDataTable.main()
-    SetupPropsDataTable.main()
     audio_json_path = SetupAudioEventsDataTable.project_root() / SetupAudioEventsDataTable.JSON_RELATIVE_PATH
     SetupAudioEventsDataTable.reload_datatable(audio_json_path)
     unreal.log("=== ReloadCleanedInteractableDataTablesAndExit DONE ===")

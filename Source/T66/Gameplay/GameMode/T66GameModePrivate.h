@@ -60,7 +60,6 @@
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66GameplayLayout.h"
-#include "Core/T66PropSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66PlayerController.h"

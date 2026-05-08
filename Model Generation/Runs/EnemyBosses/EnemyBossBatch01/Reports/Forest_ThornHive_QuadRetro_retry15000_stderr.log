@@ -1,8 +1,0 @@
-C:\UE\T66\Model Generation\Scripts\t66_quad_retro_character_pipeline.py:548: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
-  if not mat.use_nodes:
-C:\UE\T66\Model Generation\Scripts\t66_quad_retro_character_pipeline.py:516: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
-  mat.use_nodes = True
-C:\UE\T66\Model Generation\Scripts\t66_quad_retro_character_pipeline.py:816: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
-  mat.use_nodes = True
-C:\UE\T66\Model Generation\Scripts\t66_quad_retro_character_pipeline.py:864: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
-  scene.world.use_nodes = True

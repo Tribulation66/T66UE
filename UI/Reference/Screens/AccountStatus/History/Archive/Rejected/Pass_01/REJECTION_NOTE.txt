@@ -1,4 +1,0 @@
-Rejected first generated sheet.
-Reason: generated sheet was text-free but included a parent-like table composite with baked header/row/column layout, which violates the atomic component rule for Phase A. Regenerating with stricter separation of panel shell, header strip, row background, and divider components.
-Source: C:\Users\DoPra\.codex\generated_images\019dfaa9-0761-7150-82a9-8745f66f516f\ig_09798ed5522d61340169fa89b470908199b408566c1c3cbd9d.png
-Archived: C:\UE\T66\UI\Reference\Screens\AccountStatus\History\Archive\Rejected\Pass_01\accountstatus_history_textfree_sheet_pass01_REJECTED_baked_table_composite.png

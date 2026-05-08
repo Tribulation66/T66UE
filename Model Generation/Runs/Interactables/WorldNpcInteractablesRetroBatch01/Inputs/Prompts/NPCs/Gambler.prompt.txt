@@ -1,7 +1,0 @@
-Create one centered stylized game-ready 3D model source image on an opaque pure white background (#ffffff). No floor, no ground plane, no pedestal, no platform, no reflection, no cast shadow, no contact shadow, no gradient, no gray patch, no border, no text, no UI, no watermark, no casino room, no scene.
-
-Subject: a demon gambler guy standing behind a small gambling stand placed directly in front of him. The demon is humanoid, readable, and charismatic: red skin, short curved horns, sharp grin, pointed ears, dark vest or coat, gold accents, clawed hands resting near the stand. The stand is compact and waist-high, like a portable betting booth with a felt top, coin tray, dice cup, and a few oversized readable chips. The stand must be part of the same isolated subject, not a separate background object.
-
-Style: premium stylized action roguelike prop/NPC model source, clean silhouette, chunky proportions, crisp material separation, readable from a top-down gameplay camera, high contrast but not realistic horror. Front-facing or slight three-quarter front view. Fully visible from horns to feet and full stand footprint. Keep the background perfectly white and shadowless.
-
-Reject if there is any old axe-wielding patriot look, flag costume, realistic casino environment, floor shadow, text label, extra characters, duplicate demon, floating cards outside the stand, or cropped feet/horns.

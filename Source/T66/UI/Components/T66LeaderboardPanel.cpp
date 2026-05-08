@@ -46,7 +46,6 @@ namespace
 	constexpr int32 LeaderboardVisibleEntryCount = 10;
 	const FLinearColor LeaderboardShellFill(0.78f, 0.55f, 0.28f, 0.0f);
 	constexpr bool GMirrorWeeklyToAllTime = false;
-	const FString ReferenceRightPanelSourceDir = TEXT("SourceAssets/UI/MainMenuReference/RightPanel");
 	const FString ReferenceSharedSourceDir = TEXT("SourceAssets/UI/Reference/Shared");
 	const FString ReferenceUltrakillElementDir = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements");
 
@@ -68,21 +67,6 @@ namespace
 	const FLinearColor ReferenceWoodControlMuted(0.72f, 0.66f, 0.58f, 0.88f);
 	const FLinearColor ReferenceLeaderboardTitleText(0.96f, 0.04f, 0.02f, 1.0f);
 	const FLinearColor ReferenceLeaderboardTitleShadow(0.02f, 0.0f, 0.0f, 1.0f);
-
-	const FSlateBrush* ResolveReferenceRightPanelBrush(
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
-		const TCHAR* FileName,
-		const FMargin Margin,
-		const TCHAR* DebugLabel)
-	{
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(ReferenceRightPanelSourceDir / FileName),
-			Margin,
-			DebugLabel,
-			TextureFilter::TF_Trilinear);
-	}
 
 	const FSlateBrush* ResolveMasterLibrarySliceBrush(
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
@@ -1042,21 +1026,6 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		ConfigureReferenceRowBrush(ReferenceLeaderboardRowHoverBrush);
 		ConfigureReferenceRowBrush(ReferencePlayerRowNormalBrush);
 		ConfigureReferenceRowBrush(ReferencePlayerRowHoverBrush);
-		const FSlateBrush* ReferenceAvatarFallback01 = ResolveReferenceRightPanelBrush(
-			ReferenceAvatarFallbackBrush01,
-			TEXT("leaderboard_avatar_fallback_01.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceAvatarFallback01"));
-		const FSlateBrush* ReferenceAvatarFallback02 = ResolveReferenceRightPanelBrush(
-			ReferenceAvatarFallbackBrush02,
-			TEXT("leaderboard_avatar_fallback_02.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceAvatarFallback02"));
-		const FSlateBrush* ReferenceAvatarFallback03 = ResolveReferenceRightPanelBrush(
-			ReferenceAvatarFallbackBrush03,
-			TEXT("leaderboard_avatar_fallback_03.png"),
-			FMargin(0.f),
-			TEXT("LBReferenceAvatarFallback03"));
 
 		auto GetDailyModeVisibility = [this]() -> EVisibility
 		{

@@ -176,9 +176,6 @@ private:
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceLeaderboardRowHoverBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferencePlayerRowNormalBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferencePlayerRowHoverBrush;
-	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceAvatarFallbackBrush01;
-	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceAvatarFallbackBrush02;
-	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceAvatarFallbackBrush03;
 
 	void NormalizeEntryIdentity(FLeaderboardEntry& Entry, int32 EntryIndex);
 	const FSlateBrush* GetPortraitBrushForEntry(const FLeaderboardEntry& Entry);

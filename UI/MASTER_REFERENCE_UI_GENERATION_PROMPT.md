@@ -7,7 +7,7 @@ Copy this whole prompt into the target chat, then fill the target-specific field
 ```text
 T66 Reference UI Generation From Image
 
-Read C:\UE\T66\UI\Reference\SCREEN_MODAL_TASK.md first. Then read C:\UE\T66\Docs\UI\UI_GENERATION.md and follow it as the global authority. This master prompt is self-contained; if an older instruction conflicts with this prompt, follow this prompt for execution order and proof policy.
+Read C:\UE\T66\UI\Processes\SCREEN_MODAL_TASK.md first. Then read C:\UE\T66\UI\Processes\UI_GENERATION.md and follow it as the global authority. This master prompt is self-contained; if an older instruction conflicts with this prompt, follow this prompt for execution order and proof policy.
 
 TARGET FIELDS TO FILL BEFORE STARTING
 
@@ -28,8 +28,8 @@ Protected/shared scope notes:
 NON-NEGOTIABLE EXECUTION CONTRACT
 
 Required preflight:
-- Confirm C:\UE\T66\UI\Reference\SCREEN_MODAL_TASK.md exists and read it.
-- Confirm C:\UE\T66\Docs\UI\UI_GENERATION.md exists and read it.
+- Confirm C:\UE\T66\UI\Processes\SCREEN_MODAL_TASK.md exists and read it.
+- Confirm C:\UE\T66\UI\Processes\UI_GENERATION.md exists and read it.
 - Confirm C:\UE\T66\Scripts\CaptureT66UIScreen.ps1 exists.
 - Confirm C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe exists. If it is missing or stale after a runtime-facing change, refresh the staged standalone build before final visual proof.
 - Confirm the exact target reference image exists before imagegen or implementation.

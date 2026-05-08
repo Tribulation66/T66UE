@@ -455,11 +455,6 @@ void AT66GameMode::SpawnStageStructuresAndInteractables(UWorld* World, bool bUsi
 	}
 }
 
-void AT66GameMode::SpawnStageDecorativeProps(bool)
-{
-	UE_LOG(LogT66GameMode, Verbose, TEXT("Decorative prop spawning is disabled; generated world props are deprecated."));
-}
-
 void AT66GameMode::PrepareMainMapStage(UWorld* World)
 {
 	SpawnTricksterAndCowardiceGate();

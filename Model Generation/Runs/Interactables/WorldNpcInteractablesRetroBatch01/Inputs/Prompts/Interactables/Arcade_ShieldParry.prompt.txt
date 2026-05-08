@@ -1,1 +1,0 @@
-Create one centered, full-object source image for a Shield Parry arcade interactable. Plain background, no text, no UI, no scene, no floor, no cropped parts. Use a readable chunky silhouette and simple material breaks that survive low-poly Quad Retro treatment. Make it an arcade cabinet or compact arcade station themed to the row ID.

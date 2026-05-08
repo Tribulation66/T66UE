@@ -5,7 +5,7 @@ The active prompt is `C:\UE\T66\UI\MASTER_REFERENCE_UI_GENERATION_PROMPT.md`. Tr
 1. Copy the full master prompt into the target chat and fill in every target field.
 2. Confirm the exact reference image, target source files, capture script, and staged standalone executable exist before imagegen or edits.
 3. Work only on the named target and state. Keep shared top bars and sibling states out of scope unless the prompt explicitly includes them.
-4. Archive active generated runtime assets for the target before starting fresh. Never delete reference screenshots.
+4. Archive active generated runtime assets for the target before starting fresh. Do not keep generated reference/proof screenshots in the repo after the pass; keep only accepted runtime assets.
 5. Generate a reference-derived text-free sprite/component sheet with built-in imagegen only. API keys, SDK fallback scripts, and inline-preview excuses are not part of this workflow.
 6. Run the sprite sheet quality gate before slicing or assembly. If the sheet does not match the reference art family, reject it and generate another sheet.
 7. Build a 1920x1080 hierarchy and containment map from the reference before assembly. Every card, panel, row, button, slot, and child control must fit inside its intended parent. If a child overflows, fix the hierarchy size or placement instead of accepting the overflow.
@@ -19,7 +19,7 @@ The active prompt is `C:\UE\T66\UI\MASTER_REFERENCE_UI_GENERATION_PROMPT.md`. Tr
 Working capture command pattern:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File C:\UE\T66\Scripts\CaptureT66UIScreen.ps1 -Exe C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe -Screen <ScreenKey> -ResX 1920 -ResY 1080 -Output C:\UE\T66\UI\Reference\Screens\<ScreenName>\Proof\<capture_name>.png
+powershell -ExecutionPolicy Bypass -File C:\UE\T66\Scripts\CaptureT66UIScreen.ps1 -Exe C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe -Screen <ScreenKey> -ResX 1920 -ResY 1080 -Output C:\UE\T66\Saved\Codex\UI\<ScreenName>\Proof\<capture_name>.png
 ```
 
 If the capture script times out, it now checks the cooked sandbox mirror for the requested output path and copies the screenshot back when Unreal wrote it there first.

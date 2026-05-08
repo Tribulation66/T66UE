@@ -1,3 +1,0 @@
-Rejected by coordinator for gray full-screen frame/interior material drift and missing native-to-normalized rect accounting.
-The full-screen/background component must preserve the reference dark wood material and brown/gold border.
-Manifest must record native reference size 1672x941, scaleX=1920/1672, scaleY=1080/941, and native plus normalized rects.

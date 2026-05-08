@@ -4,7 +4,7 @@
 
 namespace
 {
-	FString T66GetJsonStringOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, const FString& DefaultValue = FString())
+	FString T66RunApiGetJsonStringOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, const FString& DefaultValue = FString())
 	{
 		FString Value;
 		return Json.IsValid() && Json->TryGetStringField(FieldName, Value) ? Value : DefaultValue;
@@ -453,9 +453,9 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 		return;
 	}
 
-	const FString Status = T66GetJsonStringOrDefault(Json, TEXT("status"), TEXT("unknown"));
+	const FString Status = T66RunApiGetJsonStringOrDefault(Json, TEXT("status"), TEXT("unknown"));
 	LastSubmitRunStatus = Status;
-	LastSubmitRunReason = T66GetJsonStringOrDefault(Json, TEXT("reason"));
+	LastSubmitRunReason = T66RunApiGetJsonStringOrDefault(Json, TEXT("reason"));
 	if (Status == TEXT("accepted"))
 	{
 		double ScoreRankAlltimeValue = 0.0;
@@ -505,8 +505,8 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 	}
 	else if (Status == TEXT("unranked"))
 	{
-		const FString ReasonCode = T66GetJsonStringOrDefault(Json, TEXT("reason_code"), TEXT("unranked"));
-		const FString Reason = T66GetJsonStringOrDefault(Json, TEXT("reason"), TEXT("Run is not eligible for ranked submission."));
+		const FString ReasonCode = T66RunApiGetJsonStringOrDefault(Json, TEXT("reason_code"), TEXT("unranked"));
+		const FString Reason = T66RunApiGetJsonStringOrDefault(Json, TEXT("reason"), TEXT("Run is not eligible for ranked submission."));
 		LastSubmitRunReason = Reason;
 		UE_LOG(LogT66Backend, Log, TEXT("Backend: submit-run unranked (%s) — %s"), *ReasonCode, *Reason);
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
@@ -514,7 +514,7 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 	}
 	else if (Status == TEXT("flagged") || Status == TEXT("banned") || Status == TEXT("suspended"))
 	{
-		const FString Reason = T66GetJsonStringOrDefault(Json, TEXT("reason"));
+		const FString Reason = T66RunApiGetJsonStringOrDefault(Json, TEXT("reason"));
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: submit-run %s — %s"), *Status, *Reason);
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
 		OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);

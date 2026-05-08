@@ -56,7 +56,7 @@ Avoid: any readable or pseudo-readable text, digits, printed icons, letters, log
 Main script:
 
 ```powershell
-C:\UE\T66\Tools\Items\T66ProcessReimaginedItemSheets.py
+C:\UE\T66\Tools\ArtPipeline\Items\T66ProcessReimaginedItemSheets.py
 ```
 
 Current pass folder:
@@ -111,13 +111,13 @@ Pixel Composer CLI still needs a prepared `.pxc` graph with export nodes before 
 Generate the prompt pack:
 
 ```powershell
-python .\Tools\Items\T66ProcessReimaginedItemSheets.py --write-prompts
+python .\Tools\ArtPipeline\Items\T66ProcessReimaginedItemSheets.py --write-prompts
 ```
 
 Split all raw sheets, flatten backgrounds, pixelate icons, and build the review sheet:
 
 ```powershell
-python .\Tools\Items\T66ProcessReimaginedItemSheets.py --process --contact-sheet
+python .\Tools\ArtPipeline\Items\T66ProcessReimaginedItemSheets.py --process --contact-sheet
 ```
 
 Review sheet:
@@ -129,7 +129,7 @@ C:\UE\T66\SourceAssets\ItemSprites\_ReimaginedItemPass_20260427\contact_sheets\R
 Promote pixelated icons into the live source sprite names consumed by Unreal:
 
 ```powershell
-python .\Tools\Items\T66ProcessReimaginedItemSheets.py --promote-live
+python .\Tools\ArtPipeline\Items\T66ProcessReimaginedItemSheets.py --promote-live
 ```
 
 Import the live source sprites into Unreal and reload `DT_Items`:
@@ -181,7 +181,7 @@ Imported DataTable 'DT_Items' - 0 Problems
 Run a whitespace check after script/data/code edits:
 
 ```powershell
-git diff --check -- Content/Data/Items.csv Scripts/ImportItemSprites.py Source/T66/Core/T66LocalizationSubsystem.cpp Tools/Items/T66ProcessReimaginedItemSheets.py
+git diff --check -- Content/Data/Items.csv Scripts/ImportItemSprites.py Source/T66/Core/T66LocalizationSubsystem.cpp Tools/ArtPipeline/Items/T66ProcessReimaginedItemSheets.py
 ```
 
 ## Live Item Rules

@@ -230,17 +230,11 @@ def _get_row_names(data_table):
 
 
 def _check_data_tables(v):
-    dt_props = _load_asset("/Game/Data/DT_Props.DT_Props")
     dt_items = _load_asset("/Game/Data/DT_Items.DT_Items")
     dt_visuals = _load_asset("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals")
 
-    v.add("DT_Props asset", bool(dt_props), "/Game/Data/DT_Props.DT_Props")
     v.add("DT_Items asset", bool(dt_items), "/Game/Data/DT_Items.DT_Items")
     v.add("DT_CharacterVisuals asset", bool(dt_visuals), "/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals")
-
-    if dt_props:
-        rows = _get_row_names(dt_props)
-        v.add("DT_Props has no live prop rows", len(rows) == 0, f"rows={len(rows)}")
 
     if dt_items:
         rows = _get_row_names(dt_items)

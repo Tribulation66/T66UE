@@ -1,7 +1,0 @@
-Create one centered stylized game-ready 3D model source image on an opaque pure white background (#ffffff). No floor, no ground plane, no pedestal, no platform, no reflection, no cast shadow, no contact shadow, no gradient, no gray patch, no border, no text, no UI, no watermark, no room, no scene.
-
-Subject: a classic upright arcade machine cabinet for a fantasy arcade interactable. Large dark glass screen, chunky side panels, bright colored trim, joystick, two or three big buttons, coin slot, speaker grille, thick base, and slightly exaggerated readable proportions. The cabinet should feel like a physical world prop, not a flat UI icon.
-
-Style: stylized action roguelike prop model source, clean silhouette, crisp bevels, clear material zones, saturated arcade colors, front-facing or slight three-quarter front view. Fully visible, centered, with enough margin around the cabinet for clean generation and later cropping. Background must remain pure white and shadowless.
-
-Reject if it includes brand logos, readable text, wall art, floor, neon room lighting, cast/contact shadow, extra props, duplicate cabinets, or a flat 2D poster-like cabinet.

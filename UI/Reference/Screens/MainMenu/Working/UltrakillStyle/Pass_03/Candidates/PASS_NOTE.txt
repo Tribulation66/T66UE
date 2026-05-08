@@ -1,2 +1,0 @@
-Pass 03 candidate.
-Prompt corrections from pass 02: icon-only settings/language/power buttons, no S/L/Q text labels, exactly one currency indicator, all top-bar items as dedicated bordered buttons, Solo/Easy as dropdown fields, Global Leaderboard centered.

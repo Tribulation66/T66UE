@@ -27,7 +27,7 @@ namespace
 		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
 			Entry,
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/MainMenuReference/scene_background_purple_imagegen_1920x1080.png")),
+			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/Reference/Shared/ScreenArt/MainMenu/main_menu_scene_plate.png")),
 			FMargin(0.f),
 			TEXT("MiniSceneBackground"));
 	}

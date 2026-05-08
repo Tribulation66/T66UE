@@ -2370,3 +2370,128 @@ Decision:
 - Recommended keep: modular dungeon/environment-kit process.
 - Recommended delete after consolidation: topical `MEMORY.md`, duplicate shared pipeline doc, useful-links-only doc, and stale local-cache references.
 - Recommended move/merge: TRELLIS and shared generation rules into the canonical `Model Generation/Instructions` cleanup.
+
+## Alpha 0.1 Worker A Implementation Notes - 2026-05-08
+
+Documentation/component cleanup implemented for the accepted doc-folder scope. No Source, Content, Config, top-level Scripts, Tools, RuntimeDependencies, SourceAssets, or binary Unreal assets were edited by this Worker A pass. No builds or git commands were run.
+
+Created component documentation roots:
+
+- `Backend/`
+- `Backend/Anti Cheat/`
+- `Backend/Community/`
+- `Gameplay/`
+- `Gameplay/Audio/`
+- `Gameplay/Camera/`
+- `Gameplay/Combat/`
+- `Gameplay/Minigames/`
+- `Gameplay/Movement/`
+- `Gameplay/Stats/`
+- `Gameplay/Traps/`
+- `Gameplay/World/`
+- `Release/`
+- `Release/QA/`
+- `Release/Steam/`
+- `UI/Processes/`
+- `Model Generation/Instructions/`
+
+Moved active master/component docs:
+
+- Backend docs moved from `MASTER DOCS` into `Backend/`.
+- Anti-cheat docs moved from `MASTER DOCS/Backend Anti Cheat` into `Backend/Anti Cheat/`.
+- Steamworks docs moved from `MASTER DOCS` into `Release/Steam/`.
+- Gameplay camera/combat/movement/stats/player-experience/trap/world docs moved from `MASTER DOCS` into `Gameplay` subfolders.
+- Minigame docs moved from `Docs` into `Gameplay/Minigames`.
+- Audio, enemy/boss roster, console-command, community mods/challenges, and tower implementation-plan docs moved from `Docs` into their owning component folders.
+- UI generation docs moved from `Docs/UI` and `UI/Reference` into `UI/Processes`.
+- Import pipeline and TRELLIS workflow guidance is now represented by the numbered `Model Generation/Instructions` docs, especially `00_MASTER.md`, `01_TRELLIS_RUNPOD_SETUP.md`, and `05_UNREAL_IMPORT_AND_VALIDATION.md`.
+
+Merged or replaced docs:
+
+- Replaced central master-doc indexing with component `README.md` files under `Backend`, `Gameplay`, `Gameplay/Minigames`, `Release`, `Model Generation`, and `Model Generation/Instructions`.
+- Merged the useful `Video Generation` main-menu video process into `UI/Processes/Main Menu Video Background.md`, using the current main-menu source plate and `Content/Movies/MainMenuBackground.mp4` as the final movie target.
+- Replaced the old `World Generation` master/memory/useful-links set with `Gameplay/World/HY_WORLD_RESEARCH.md`.
+- Kept the modular dungeon kit process as `Gameplay/World/MODULAR_DUNGEON_KIT_PROCESS.md`.
+- Folded model-generation root docs, import guidance, and shared model/world pipeline rules into the current numbered `Model Generation/Instructions` shape.
+
+Deleted obsolete documentation roots after rehome/merge:
+
+- `Docs/`
+- `MASTER DOCS/`
+- `Guidelines/`
+- `World Generation/`
+- `Video Generation/`
+- root `ANTI_CHEAT/` was already absent before this pass
+
+Deleted obsolete one-off docs/prompts in this scope:
+
+- `MASTER DOCS/README.md`
+- `MASTER DOCS/T66_DECISION_LOG.md`
+- `MASTER DOCS/T66_PROJECT_CATALOGUE.md`
+- `Docs/README.md`
+- `UI/MEMORY.md`
+- `World Generation/MASTER.md`
+- `World Generation/MEMORY.md`
+- `World Generation/ROOM_GENERATION_PROCESS.md`
+- `World Generation/SETUP.md`
+- `World Generation/USEFUL_LINKS.md`
+- `Video Generation/API_STATUS.md`
+- `Video Generation/NEXT_STEPS.md`
+- `Video Generation/PROMPTS.md`
+- `Video Generation/README.md`
+- `Video Generation/scripts/regenerate_kling_masks.py`
+- `Video Generation/scripts/submit_kling_motion_brush.py`
+- `Gameplay/Minigames/OLD_Docs_Minigames_README.md`
+
+Current notes and open risks:
+
+- Active docs were mechanically updated away from `MASTER DOCS`, `Docs`, and `World Generation` paths where they now point at component docs.
+- Some moved historical audit docs still mention deleted old prompt-pack paths as historical context; they are not live process authorities.
+- UI generated-output folders such as `UI/archive`, `UI/generation`, `UI/screens`, and bulky `UI/Reference` artifacts were not removed by this Worker A pass because this pass stayed on documentation/process docs rather than generated UI asset/output cleanup.
+- Model Generation appears in its current cleaned shape as `README.md`, `Instructions/`, `Scripts/`, and `Tools/`; the detailed instruction set is now the numbered `00_` through `06_` docs in `Model Generation/Instructions`.
+
+## Alpha 0.1 Integration Notes - 2026-05-08
+
+Implemented the accepted cleanup decisions that crossed worker ownership boundaries.
+
+Deleted root clutter and generated-output folders:
+
+- `_codex_previews`
+- `Archive`
+- `ArchivedBuilds`
+- `Art reference images`
+- `CodexSkills`
+- `DerivedDataCache`
+- `Exports`
+- `output`
+- `Plugins`
+- `tmp`
+- generated `Saved` contents except `Saved/StagedBuilds` and `Saved/StandaloneLogs`
+- `UI/archive`
+- `UI/generation`
+- `UI/screens`
+- `UI/Reference`
+
+Cleaned active references after the folder removals:
+
+- UI process docs now treat generated proof/reference captures as temporary `Saved/Codex/UI` output, not persistent repo roots.
+- Steam documentation no longer points at the deleted old `UI/screens` capture path.
+- Tool references now point at `Tools/Release/Steam`, `Tools/ArtPipeline/Items`, or `Tools/ArtPipeline/Minigames`.
+
+Runtime/content cleanup implemented from the accepted inventory:
+
+- Removed `UT66PropSubsystem` and the main-map prop spawn path.
+- Deleted `Content/Data/Props.csv` and `Content/Data/DT_Props.uasset`.
+- Removed the reusable import verifier's deleted-props data-table expectation.
+- Deleted the one-off `Scripts/BuildWorldNpcInteractablesRetroBatch01ManifestAndExit.py` manifest generator because it depended on the retired props table and belonged to the completed World/NPC interactables batch.
+- Deleted obsolete `Content/Characters/Enemies/Enemy1` and `Content/Characters/Enemies/Enemy2`.
+- Deleted Arthur source/reference preview artifacts that were not part of the still-live Hero 1 sword VFX path.
+- Removed stale `SourceAssets/UI/MainMenuReference` code paths from active UI code, replacing Mini screen backgrounds and in-run button plate lookups with the current `SourceAssets/UI/Reference` runtime asset library.
+
+Verification status:
+
+- `T66Editor Win64 Development` build succeeded after source cleanup.
+- Full standalone stage/cook/package succeeded, followed by a source-only `-SkipCook` refresh after UI path cleanup.
+- `T66 Standalone.lnk` and the pinned taskbar shortcut both resolve to `C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe`.
+- Staged executable smoke boot reached `BP_FrontendGameMode_C` and `Engine is initialized`; it remained running after 25 seconds and was stopped by the verification script.
+- `Intermediate`, `DerivedDataCache`, and generated `Saved` folders were cleared again after verification, preserving only `Saved/StagedBuilds` and `Saved/StandaloneLogs`.

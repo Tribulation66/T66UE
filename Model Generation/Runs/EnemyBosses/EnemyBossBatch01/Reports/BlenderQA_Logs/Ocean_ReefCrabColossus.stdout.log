@@ -1,7 +1,0 @@
-04:32:41 | INFO: Data are loaded, start creating Blender stuff
-04:32:41 | INFO: Blender create Mesh node geometry_0
-04:32:42 | INFO: glTF import finished in 0.50s
-00:04.625  render           | Saved: 'C:\UE\T66\Model Generation\Runs\EnemyBosses\EnemyBossBatch01\QA\TrellisFront\Bosses\Ocean_ReefCrabColossus_front.png'
-Blender 5.1.1 (hash b70da489d7f4 built 2026-04-14 01:37:22)
-
-Blender quit

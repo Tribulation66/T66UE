@@ -8,25 +8,25 @@
 
 namespace
 {
-	int32 T66GetJsonIntOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, int32 DefaultValue)
+	int32 T66RunSummaryGetJsonIntOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, int32 DefaultValue)
 	{
 		double Value = 0.0;
 		return Json.IsValid() && Json->TryGetNumberField(FieldName, Value) ? static_cast<int32>(Value) : DefaultValue;
 	}
 
-	float T66GetJsonFloatOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, float DefaultValue)
+	float T66RunSummaryGetJsonFloatOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, float DefaultValue)
 	{
 		double Value = 0.0;
 		return Json.IsValid() && Json->TryGetNumberField(FieldName, Value) ? static_cast<float>(Value) : DefaultValue;
 	}
 
-	FString T66GetJsonStringOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, const FString& DefaultValue = FString())
+	FString T66RunSummaryGetJsonStringOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, const FString& DefaultValue = FString())
 	{
 		FString Value;
 		return Json.IsValid() && Json->TryGetStringField(FieldName, Value) ? Value : DefaultValue;
 	}
 
-	bool T66GetJsonBoolOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, bool bDefaultValue)
+	bool T66RunSummaryGetJsonBoolOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, bool bDefaultValue)
 	{
 		bool bValue = false;
 		return Json.IsValid() && Json->TryGetBoolField(FieldName, bValue) ? bValue : bDefaultValue;
@@ -42,40 +42,40 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 
 	UT66LeaderboardRunSummarySaveGame* S = NewObject<UT66LeaderboardRunSummarySaveGame>(Outer);
 
-	S->SchemaVersion = T66GetJsonIntOrDefault(Json, TEXT("schema_version"), 6);
-	S->EntryId = T66GetJsonStringOrDefault(Json, TEXT("entry_id"));
-	S->OwnerSteamId = T66GetJsonStringOrDefault(Json, TEXT("steam_id"));
-	S->StageReached = T66GetJsonIntOrDefault(Json, TEXT("stage_reached"), 1);
-	S->Score = T66GetJsonIntOrDefault(Json, TEXT("score"), 0);
-	S->ScoreRankAllTime = T66GetJsonIntOrDefault(Json, TEXT("score_rank_alltime"), 0);
-	S->ScoreRankWeekly = T66GetJsonIntOrDefault(Json, TEXT("score_rank_weekly"), 0);
-	S->SpeedRunRankAllTime = T66GetJsonIntOrDefault(Json, TEXT("speedrun_rank_alltime"), 0);
-	S->SpeedRunRankWeekly = T66GetJsonIntOrDefault(Json, TEXT("speedrun_rank_weekly"), 0);
-	S->RunDurationSeconds = T66GetJsonFloatOrDefault(Json, TEXT("time_seconds"), 0.f);
+	S->SchemaVersion = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("schema_version"), 6);
+	S->EntryId = T66RunSummaryGetJsonStringOrDefault(Json, TEXT("entry_id"));
+	S->OwnerSteamId = T66RunSummaryGetJsonStringOrDefault(Json, TEXT("steam_id"));
+	S->StageReached = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("stage_reached"), 1);
+	S->Score = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("score"), 0);
+	S->ScoreRankAllTime = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("score_rank_alltime"), 0);
+	S->ScoreRankWeekly = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("score_rank_weekly"), 0);
+	S->SpeedRunRankAllTime = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("speedrun_rank_alltime"), 0);
+	S->SpeedRunRankWeekly = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("speedrun_rank_weekly"), 0);
+	S->RunDurationSeconds = T66RunSummaryGetJsonFloatOrDefault(Json, TEXT("time_seconds"), 0.f);
 
-	const FString HeroIdStr = T66GetJsonStringOrDefault(Json, TEXT("hero_id"));
+	const FString HeroIdStr = T66RunSummaryGetJsonStringOrDefault(Json, TEXT("hero_id"));
 	S->HeroID = HeroIdStr.IsEmpty() ? NAME_None : FName(*HeroIdStr);
 
-	const FString CompanionIdStr = T66GetJsonStringOrDefault(Json, TEXT("companion_id"));
+	const FString CompanionIdStr = T66RunSummaryGetJsonStringOrDefault(Json, TEXT("companion_id"));
 	S->CompanionID = CompanionIdStr.IsEmpty() ? NAME_None : FName(*CompanionIdStr);
 
-	S->HeroLevel = T66GetJsonIntOrDefault(Json, TEXT("hero_level"), 1);
-	S->DisplayName = T66GetJsonStringOrDefault(Json, TEXT("display_name"));
+	S->HeroLevel = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("hero_level"), 1);
+	S->DisplayName = T66RunSummaryGetJsonStringOrDefault(Json, TEXT("display_name"));
 
 	const TSharedPtr<FJsonObject>* IntegrityObj = nullptr;
 	if (Json->TryGetObjectField(TEXT("integrity_context"), IntegrityObj) && IntegrityObj && (*IntegrityObj).IsValid())
 	{
 		const TSharedPtr<FJsonObject>& Integrity = *IntegrityObj;
-		S->IntegrityContext.Verdict = T66GetJsonStringOrDefault(Integrity, TEXT("verdict"), TEXT("unknown"));
-		S->IntegrityContext.SteamAppId = T66GetJsonStringOrDefault(Integrity, TEXT("steam_app_id"));
-		S->IntegrityContext.SteamBuildId = T66GetJsonIntOrDefault(Integrity, TEXT("steam_build_id"), 0);
-		S->IntegrityContext.SteamBetaName = T66GetJsonStringOrDefault(Integrity, TEXT("steam_beta_name"));
-		S->IntegrityContext.ManifestId = T66GetJsonStringOrDefault(Integrity, TEXT("manifest_id"));
-		S->IntegrityContext.ManifestRootHash = T66GetJsonStringOrDefault(Integrity, TEXT("manifest_root_hash"));
-		S->IntegrityContext.ModuleListHash = T66GetJsonStringOrDefault(Integrity, TEXT("module_list_hash"));
-		S->IntegrityContext.MountedContentHash = T66GetJsonStringOrDefault(Integrity, TEXT("mounted_content_hash"));
-		S->IntegrityContext.BaselineHash = T66GetJsonStringOrDefault(Integrity, TEXT("baseline_hash"));
-		S->IntegrityContext.FinalHash = T66GetJsonStringOrDefault(Integrity, TEXT("final_hash"));
+		S->IntegrityContext.Verdict = T66RunSummaryGetJsonStringOrDefault(Integrity, TEXT("verdict"), TEXT("unknown"));
+		S->IntegrityContext.SteamAppId = T66RunSummaryGetJsonStringOrDefault(Integrity, TEXT("steam_app_id"));
+		S->IntegrityContext.SteamBuildId = T66RunSummaryGetJsonIntOrDefault(Integrity, TEXT("steam_build_id"), 0);
+		S->IntegrityContext.SteamBetaName = T66RunSummaryGetJsonStringOrDefault(Integrity, TEXT("steam_beta_name"));
+		S->IntegrityContext.ManifestId = T66RunSummaryGetJsonStringOrDefault(Integrity, TEXT("manifest_id"));
+		S->IntegrityContext.ManifestRootHash = T66RunSummaryGetJsonStringOrDefault(Integrity, TEXT("manifest_root_hash"));
+		S->IntegrityContext.ModuleListHash = T66RunSummaryGetJsonStringOrDefault(Integrity, TEXT("module_list_hash"));
+		S->IntegrityContext.MountedContentHash = T66RunSummaryGetJsonStringOrDefault(Integrity, TEXT("mounted_content_hash"));
+		S->IntegrityContext.BaselineHash = T66RunSummaryGetJsonStringOrDefault(Integrity, TEXT("baseline_hash"));
+		S->IntegrityContext.FinalHash = T66RunSummaryGetJsonStringOrDefault(Integrity, TEXT("final_hash"));
 
 		const TArray<TSharedPtr<FJsonValue>>* ReasonArr = nullptr;
 		if (Integrity->TryGetArrayField(TEXT("reasons"), ReasonArr) && ReasonArr)
@@ -95,14 +95,14 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 	if (Json->TryGetObjectField(TEXT("stats"), StatsObj) && StatsObj && (*StatsObj).IsValid())
 	{
 		const TSharedPtr<FJsonObject>& St = *StatsObj;
-		S->DamageStat = T66GetJsonIntOrDefault(St, TEXT("damage"), 1);
-		S->AttackSpeedStat = T66GetJsonIntOrDefault(St, TEXT("attack_speed"), 1);
-		S->AttackScaleStat = T66GetJsonIntOrDefault(St, TEXT("attack_scale"), 1);
-		S->AccuracyStat = T66GetJsonIntOrDefault(St, TEXT("accuracy"), 1);
-		S->ArmorStat = T66GetJsonIntOrDefault(St, TEXT("armor"), 1);
-		S->EvasionStat = T66GetJsonIntOrDefault(St, TEXT("evasion"), 1);
-		S->LuckStat = T66GetJsonIntOrDefault(St, TEXT("luck"), 1);
-		S->SpeedStat = T66GetJsonIntOrDefault(St, TEXT("speed"), 1);
+		S->DamageStat = T66RunSummaryGetJsonIntOrDefault(St, TEXT("damage"), 1);
+		S->AttackSpeedStat = T66RunSummaryGetJsonIntOrDefault(St, TEXT("attack_speed"), 1);
+		S->AttackScaleStat = T66RunSummaryGetJsonIntOrDefault(St, TEXT("attack_scale"), 1);
+		S->AccuracyStat = T66RunSummaryGetJsonIntOrDefault(St, TEXT("accuracy"), 1);
+		S->ArmorStat = T66RunSummaryGetJsonIntOrDefault(St, TEXT("armor"), 1);
+		S->EvasionStat = T66RunSummaryGetJsonIntOrDefault(St, TEXT("evasion"), 1);
+		S->LuckStat = T66RunSummaryGetJsonIntOrDefault(St, TEXT("luck"), 1);
+		S->SpeedStat = T66RunSummaryGetJsonIntOrDefault(St, TEXT("speed"), 1);
 	}
 
 	const TSharedPtr<FJsonObject>* SecObj = nullptr;
@@ -165,10 +165,10 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 		}
 	}
 
-	S->LuckRating0To100 = T66GetJsonIntOrDefault(Json, TEXT("luck_rating"), -1);
-	S->LuckRatingQuantity0To100 = T66GetJsonIntOrDefault(Json, TEXT("luck_quantity"), -1);
-	S->LuckRatingQuality0To100 = T66GetJsonIntOrDefault(Json, TEXT("luck_quality"), -1);
-	S->SkillRating0To100 = T66GetJsonIntOrDefault(Json, TEXT("skill_rating"), -1);
+	S->LuckRating0To100 = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("luck_rating"), -1);
+	S->LuckRatingQuantity0To100 = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("luck_quantity"), -1);
+	S->LuckRatingQuality0To100 = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("luck_quality"), -1);
+	S->SkillRating0To100 = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("skill_rating"), -1);
 
 	const TArray<TSharedPtr<FJsonValue>>* IdolsArr = nullptr;
 	if (Json->TryGetArrayField(TEXT("equipped_idols"), IdolsArr) && IdolsArr)
@@ -264,7 +264,7 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 	}
 
 	Json->TryGetStringField(TEXT("proof_of_run_url"), S->ProofOfRunUrl);
-	S->bProofOfRunLocked = T66GetJsonBoolOrDefault(Json, TEXT("proof_locked"), !S->ProofOfRunUrl.IsEmpty());
+	S->bProofOfRunLocked = T66RunSummaryGetJsonBoolOrDefault(Json, TEXT("proof_locked"), !S->ProofOfRunUrl.IsEmpty());
 
 	return S;
 }

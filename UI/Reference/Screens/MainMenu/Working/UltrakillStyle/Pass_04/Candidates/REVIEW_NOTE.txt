@@ -1,5 +1,0 @@
-User review for pass 04:
-- Simplify the red line below PARTY to just a red line.
-- High Score pressed/selected state should be only a red square, with no white line/stroke.
-- NEW GAME button should look different from LOAD GAME button.
-- Move party slots lower in the left panel; there should be less empty space below the slots.

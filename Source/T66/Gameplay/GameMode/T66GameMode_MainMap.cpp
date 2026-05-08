@@ -964,13 +964,6 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UT66PropSubsystem* PropSub = GI->GetSubsystem<UT66PropSubsystem>())
-		{
-			PropSub->ClearProps();
-		}
-	}
 	if (UT66TrapSubsystem* TrapSubsystem = World->GetSubsystem<UT66TrapSubsystem>())
 	{
 		TrapSubsystem->ClearManagedTrapActors();

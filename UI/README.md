@@ -11,16 +11,15 @@ Use that single master prompt for every screen, modal, and screen state. Fill in
 Supporting instructions:
 
 ```text
-C:\UE\T66\UI\Reference\SCREEN_MODAL_TASK.md
-C:\UE\T66\Docs\UI\UI_GENERATION.md
+C:\UE\T66\UI\Processes\SCREEN_MODAL_TASK.md
+C:\UE\T66\UI\Processes\UI_GENERATION.md
 C:\UE\T66\UI\SCREEN_WORKFLOW.md
 ```
 
-Reference screenshots live under:
+Reference screenshots and generated proof images are temporary review outputs. Keep accepted runtime art in `SourceAssets`; do not recreate persistent `UI/generation`, `UI/screens`, `UI/Reference`, or `UI/archive` output roots.
 
 ```text
-C:\UE\T66\UI\generation\ReferenceFullScreens_2026-05-02_inventory_locked\
-C:\UE\T66\UI\screens\<target>\reference\
+C:\UE\T66\Saved\Codex\UI\<ScreenName>\
 ```
 
 Runtime assets belong under target-owned folders:
@@ -30,11 +29,7 @@ C:\UE\T66\SourceAssets\UI\Reference\Screens\<ScreenName>\
 C:\UE\T66\SourceAssets\UI\Reference\Modals\<ModalName>\
 ```
 
-Old per-screen copy-paste prompt bundles were archived under:
-
-```text
-C:\UE\T66\UI\archive\PromptFiles_PreMaster_*
-```
+Old per-screen copy-paste prompt bundles were removed during the Alpha 0.1 cleanup. Recover them from the `v4.1` snapshot only if a historical prompt is specifically needed.
 
 Each target owns its runtime image assets. If a shared-looking piece is needed for a target, duplicate it into that target's runtime folder unless the current task explicitly includes shared chrome.
 

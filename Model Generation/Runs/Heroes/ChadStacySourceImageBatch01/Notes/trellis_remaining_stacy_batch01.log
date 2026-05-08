@@ -1,8 +1,0 @@
-[2026-05-06T22:41:05+00:00] START GambaStacy_Source_01 seed=1337 texture=2048 decimation=80000
-[2026-05-06T22:42:13+00:00] DONE GambaStacy_Source_01 4462288 bytes duration=68s -> /workspace/T66/ModelGeneration/Runs/Heroes/ChadStacySourceImageBatch01/Raw/Trellis/GambaStacy_Source_01_S1337_D80000_Trellis2.glb
-[2026-05-06T22:42:13+00:00] START MonotoneStacy_Source_01 seed=1337 texture=2048 decimation=80000
-[2026-05-06T22:43:19+00:00] DONE MonotoneStacy_Source_01 4677288 bytes duration=66s -> /workspace/T66/ModelGeneration/Runs/Heroes/ChadStacySourceImageBatch01/Raw/Trellis/MonotoneStacy_Source_01_S1337_D80000_Trellis2.glb
-[2026-05-06T22:43:19+00:00] START BaldStacy_Source_01 seed=1337 texture=2048 decimation=80000
-[2026-05-06T22:44:27+00:00] DONE BaldStacy_Source_01 4238696 bytes duration=68s -> /workspace/T66/ModelGeneration/Runs/Heroes/ChadStacySourceImageBatch01/Raw/Trellis/BaldStacy_Source_01_S1337_D80000_Trellis2.glb
-[2026-05-06T22:44:27+00:00] START RoachStacy_Source_01 seed=1337 texture=2048 decimation=80000
-[2026-05-06T22:45:40+00:00] DONE RoachStacy_Source_01 5900840 bytes duration=73s -> /workspace/T66/ModelGeneration/Runs/Heroes/ChadStacySourceImageBatch01/Raw/Trellis/RoachStacy_Source_01_S1337_D80000_Trellis2.glb

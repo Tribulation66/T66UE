@@ -210,7 +210,6 @@ protected:
 	void ScheduleGameplayVisualCleanup(UWorld* World);
 	void ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay);
 	void SpawnStageStructuresAndInteractables(UWorld* World, bool bUsingMainMapTerrain);
-	void SpawnStageDecorativeProps(bool bUsingMainMapTerrain);
 	void PrepareMainMapStage(UWorld* World);
 	void ScheduleStandardStageCombatBootstrap(UWorld* World);
 	void PreloadStageCharacterVisuals();
