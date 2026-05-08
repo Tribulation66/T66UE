@@ -30,8 +30,6 @@ namespace T66RuntimeUIBrushAccess
 		UTexture2D* GetTexture() const;
 	};
 
-	T66_API const FString& GetDotaGeneratedSourceDir();
-
 	T66_API const FSlateBrush* ResolveDotaButtonPlateBrush(ET66DotaPlateBrushKind Kind);
 
 	T66_API bool ShouldUseSimpleReferenceFallback(const FString& SourcePath);

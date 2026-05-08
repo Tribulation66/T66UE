@@ -684,6 +684,9 @@ Decision:
 - Proposed delete after asset-registry check: `Content/SourceAssets/UI/Dota/Generated/debug_downscaled`.
 - Proposed follow-up: handle the rest of `Content` as dedicated subfolder-level cleanup passes, not as one top-level delete.
 
+Implementation update:
+- Superseded by the Alpha 0.1 implementation notes below. The later cleanup pass removed the Dota UI fallback path, audited the full old UI target set, and deleted all of `Content/SourceAssets/UI`, not just `debug_downscaled`.
+
 ### Deeper `Content` follow-up: stale maps, external actors, characters, props, and UI
 
 Additional user-raised cleanup targets:
@@ -873,6 +876,9 @@ Accepted Content cleanup direction:
 - Accepted later Arthur cleanup: retire old Hero_1 Arthur skeletal import folders and `ArthurPreview` media after script/reference cleanup; keep live sword VFX until renamed/replaced.
 - Accepted later props cleanup: remove `UT66PropSubsystem` and its main-map call sites so `Props.csv`, `DT_Props`, and remaining old prop validation/import scripts can be deleted.
 - Accepted later UI cleanup: delete Dota, retro wood, retro sky, old main-menu, old topbar, and stale hero portrait assets from `Content/UI` once the style/preload code no longer points at them.
+
+Implementation update:
+- Superseded by the Alpha 0.1 implementation notes below. Hero 13-15 data ownership, props removal, stale enemies, `T66MapAssets`, old Dota/retro/main-menu/topbar UI, and the accepted script retirements were implemented and verified in later passes.
 
 ## 12. `DerivedDataCache`
 
@@ -2495,3 +2501,67 @@ Verification status:
 - `T66 Standalone.lnk` and the pinned taskbar shortcut both resolve to `C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe`.
 - Staged executable smoke boot reached `BP_FrontendGameMode_C` and `Engine is initialized`; it remained running after 25 seconds and was stopped by the verification script.
 - `Intermediate`, `DerivedDataCache`, and generated `Saved` folders were cleared again after verification, preserving only `Saved/StagedBuilds` and `Saved/StandaloneLogs`.
+
+## Alpha 0.1 Content/Data Cleanup Notes - 2026-05-08
+
+Implemented the next accepted project-content cleanup pass against the actual Unreal project tree, not the staged Windows packaged build.
+
+Enemy cleanup implemented:
+
+- Redirected old `GoblinThief_*` rarity visual IDs to current enemy visual IDs in `T66GoblinThiefEnemy.cpp`.
+- Redirected the unique debuff enemy away from the old `Enemy3` visual and onto a current caster visual.
+- Removed the generic old `Boss` preload from game-mode bootstrap.
+- Removed stale `Boss` and `GoblinThief_*` rows from `Content/Data/CharacterVisuals.csv`.
+- Regenerated `Content/Data/DT_CharacterVisuals.uasset` through `Scripts/SetupCharacterVisualsDataTable.py`.
+- Ran an Unreal package/text audit for the legacy enemy folders and confirmed no live outside references.
+- Deleted legacy enemy folders:
+  - `Content/Characters/Enemies/Boss`
+  - `Content/Characters/Enemies/Cow`
+  - `Content/Characters/Enemies/Enemy3`
+  - `Content/Characters/Enemies/Goat`
+  - `Content/Characters/Enemies/GoblinThief`
+  - `Content/Characters/Enemies/Pig`
+  - `Content/Characters/Enemies/Roost`
+- Current main enemy folders are now the active `Bosses` and `Regular` roots.
+
+UI cleanup implemented:
+
+- Replaced old Dota button-plate cooked-asset loading with the current `SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements` runtime fallback path.
+- Removed retro sky and retro wood button-border paths from the style code.
+- Removed old main-menu preload paths for `MMRed`, `sky_bg`, `fire_moon`, and `pyramid_chad`.
+- Removed stale `MainMenu` and `PartyPicker` scan roots from the UI texture-quality helper.
+- Ran `Saved/Audits/UIAssetCleanupTargetsAudit.json`; all 36 old UI targets had zero outside package referencers and zero source/data/script text references.
+- Deleted old UI/content roots and assets:
+  - `Content/SourceAssets/UI`
+  - `Content/UI/MainMenu`
+  - `Content/UI/PartyPicker`
+  - `Content/UI/Assets/TopBar`
+  - `Content/UI/Assets/Medals`
+  - `Content/UI/Obsidian.uasset`
+  - old Dota plate textures under `Content/UI/Assets`
+  - old retro wood trim textures under `Content/UI/Assets`
+  - old `ButtonLight_*` and `PanelLight` assets
+  - old retro sky and retro wood materials/material instances under `Content/UI/Materials`
+- Current `Content/UI` roots after cleanup:
+  - `Leaderboard`
+  - `Materials` with `M_UI_Glow.uasset`
+  - `Minigames`
+  - `Preview`
+  - `Sprites`
+  - `M_PixelationPostProcess.uasset`
+- A post-delete source/config/data/script search found no remaining old Dota, retro wood/sky, old main-menu, old party-picker, old topbar, or old content-medal path references. Remaining `medal_*` references are the current hero-selection runtime fallback image names under `SourceAssets/UI/Reference`, not the deleted `Content/UI/Assets/Medals` folder.
+
+Script lifecycle cleanup implemented:
+
+- Deleted stale one-off scripts:
+  - `Scripts/InspectImportLightingIssues.py`
+  - `Scripts/FixCookWarningRoots.py`
+- Temporary audit scripts used for this pass were removed after their audit output was written.
+
+Verification status for this incremental pass:
+
+- `T66Editor Win64 Development` build succeeded.
+- Full standalone build/cook/package/stage succeeded through `Scripts/StageStandaloneBuild.ps1`.
+- `T66 Standalone.lnk` and the pinned taskbar shortcut both resolve to `C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe`.
+- Staged executable smoke boot reached `BP_FrontendGameMode_C` and `Engine is initialized` with no fatal/error markers in `Saved/StandaloneLogs/T66_CleanupSmoke.log`.
+- Generated support folders were cleared again after verification, preserving `Saved/StagedBuilds` and `Saved/StandaloneLogs`.

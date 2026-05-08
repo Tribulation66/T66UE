@@ -50,31 +50,19 @@ namespace
 		}
 	}
 
-	const TCHAR* GetDotaButtonPlateAssetPath(T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind Kind)
-	{
-		switch (Kind)
-		{
-		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Primary:
-			return TEXT("/Game/UI/Assets/T_UI_DotaPrimaryButtonPlate.T_UI_DotaPrimaryButtonPlate");
-		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Danger:
-			return TEXT("/Game/UI/Assets/T_UI_DotaDangerButtonPlate.T_UI_DotaDangerButtonPlate");
-		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Neutral:
-		default:
-			return TEXT("/Game/UI/Assets/T_UI_DotaNeutralButtonPlate.T_UI_DotaNeutralButtonPlate");
-		}
-	}
+	FString MakeUltrakillElementFallbackPath(const TCHAR* FileName);
 
 	FString GetDotaButtonPlateFallbackPath(T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind Kind)
 	{
 		switch (Kind)
 		{
 		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Primary:
-			return T66RuntimeUIBrushAccess::GetDotaGeneratedSourceDir() / TEXT("dota_primary_button_plate.png");
+			return MakeUltrakillElementFallbackPath(TEXT("cta_new_game_button_normal.png"));
 		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Danger:
-			return T66RuntimeUIBrushAccess::GetDotaGeneratedSourceDir() / TEXT("dota_danger_button_plate.png");
+			return MakeUltrakillElementFallbackPath(TEXT("cta_load_game_button_normal.png"));
 		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Neutral:
 		default:
-			return T66RuntimeUIBrushAccess::GetDotaGeneratedSourceDir() / TEXT("dota_neutral_button_plate.png");
+			return MakeUltrakillElementFallbackPath(TEXT("leaderboard_tab_button_normal.png"));
 		}
 	}
 
@@ -256,20 +244,14 @@ namespace T66RuntimeUIBrushAccess
 		return FileTexture.IsValid() ? FileTexture.Get() : nullptr;
 	}
 
-	const FString& GetDotaGeneratedSourceDir()
-	{
-		static const FString Dir = FPaths::ProjectContentDir() / TEXT("SourceAssets/UI/Dota/Generated");
-		return Dir;
-	}
-
 	const FSlateBrush* ResolveDotaButtonPlateBrush(const ET66DotaPlateBrushKind Kind)
 	{
 		return ResolveOptionalTextureBrush(
 			GetDotaButtonPlateEntry(Kind),
-			GetDotaButtonPlateAssetPath(Kind),
+			nullptr,
 			GetDotaButtonPlateFallbackPath(Kind),
 			GetDotaButtonPlateMargin(Kind),
-			TEXT("DotaButtonPlate"));
+			TEXT("T66ButtonPlate"));
 	}
 
 	bool ShouldUseSimpleReferenceFallback(const FString& SourcePath)

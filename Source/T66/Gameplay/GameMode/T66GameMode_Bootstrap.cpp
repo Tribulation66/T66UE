@@ -557,8 +557,6 @@ void AT66GameMode::PreloadStageCharacterVisuals()
 					}
 				}
 			}
-			Visuals->PreloadCharacterVisual(FName(TEXT("Boss")));
-
 			UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, EnemyD=%s, EnemyE=%s, Boss=%s, EncounterMembers=%d) in %.1fms"),
 				StageNum,
 				*StageData.EnemyA.ToString(), *StageData.EnemyB.ToString(), *StageData.EnemyC.ToString(),

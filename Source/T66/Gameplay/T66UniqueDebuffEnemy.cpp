@@ -47,8 +47,7 @@ AT66UniqueDebuffEnemy::AT66UniqueDebuffEnemy()
 {
 	EnemyFamily = ET66EnemyFamily::Special;
 
-	// Unique enemy uses Enemy3 mesh from DT_CharacterVisuals (same as stage EnemyC).
-	CharacterVisualID = FName(TEXT("Enemy3"));
+	CharacterVisualID = FName(TEXT("Martian_PlasmaSpitter"));
 
 	// Unique enemies do not drop loot or XP in the Bible.
 	bDropsLoot = false;
@@ -74,7 +73,7 @@ AT66UniqueDebuffEnemy::AT66UniqueDebuffEnemy()
 
 void AT66UniqueDebuffEnemy::BeginPlay()
 {
-	// Stage-driven tuning (CharacterVisualID = Enemy3 set in constructor; base applies it in Super::BeginPlay).
+	// Base BeginPlay applies the configured projectile-caster visual.
 	int32 StageNum = 1;
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{

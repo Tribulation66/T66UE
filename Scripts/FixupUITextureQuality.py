@@ -18,9 +18,7 @@ LOG = "[UITexFixup]"
 SCAN_DIRS = [
     "/Game/UI/Sprites",
     "/Game/UI/Leaderboard",
-    "/Game/UI/PartyPicker",
     "/Game/UI/Assets",
-    "/Game/UI/MainMenu",
     "/Game/UI/PowerUp",
     "/Game/Items/Sprites",
     "/Game/Idols/Sprites",

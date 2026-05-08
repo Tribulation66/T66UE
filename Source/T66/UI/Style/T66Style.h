@@ -24,8 +24,6 @@ enum class ET66ButtonBorderVisual : uint8
 {
 	Default,   // Resolve from the active shared style theme
 	None,      // Use the base button chrome only (no decorative overlay)
-	RetroSky,  // Legacy full-rect retro border treatment
-	RetroWood, // Thick rectangular border with a banded wood-grain trim
 };
 
 /** Optional background treatment layered under the base button body. */

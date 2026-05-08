@@ -67,12 +67,18 @@ def collect_csv_asset_refs(rows):
 
 
 def load_asset_class(asset_path):
-    asset = unreal.EditorAssetLibrary.load_asset(asset_path)
+    try:
+        asset = unreal.EditorAssetLibrary.load_asset(asset_path)
+    except Exception as exc:
+        return f"LoadError: {exc}"
     return asset.get_class().get_name() if asset else "Unknown"
 
 
 def get_referencers(asset_path):
-    refs = unreal.EditorAssetLibrary.find_package_referencers_for_asset(asset_path, True)
+    try:
+        refs = unreal.EditorAssetLibrary.find_package_referencers_for_asset(asset_path, True)
+    except Exception as exc:
+        return [f"ReferencerError: {exc}"]
     return sorted(str(ref) for ref in refs)
 
 

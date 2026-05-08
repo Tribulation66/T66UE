@@ -905,7 +905,7 @@ void FT66Style::Initialize()
 			}
 		}
 
-		// Flat rectangular button body for custom border treatments like RetroWood.
+	// Flat rectangular button body for custom border treatments.
 		{
 			const FSlateRoundedBoxBrush FlatBrush(FLinearColor::White, 0.f, FLinearColor::Transparent, 0.f);
 			StyleInstance->Set("T66.Button.FlatRect", FButtonStyle()
@@ -994,12 +994,7 @@ ET66ButtonBorderVisual FT66Style::ResolveButtonBorderVisual(const FT66ButtonPara
 		return ET66ButtonBorderVisual::None;
 	}
 
-	if (IsDotaTheme())
-	{
-		return ET66ButtonBorderVisual::None;
-	}
-
-	return ET66ButtonBorderVisual::RetroWood;
+	return ET66ButtonBorderVisual::None;
 }
 
 ET66ButtonBackgroundVisual FT66Style::ResolveButtonBackgroundVisual(const FT66ButtonParams& Params)
@@ -1029,14 +1024,7 @@ ET66ButtonBorderVisual FT66Style::ResolvePanelBorderVisual(const FT66PanelParams
 		return Params.BorderVisual;
 	}
 
-	if (IsDotaTheme())
-	{
-		return ET66ButtonBorderVisual::None;
-	}
-
-	return Params.Type == ET66PanelType::Bg
-		? ET66ButtonBorderVisual::None
-		: ET66ButtonBorderVisual::RetroWood;
+	return ET66ButtonBorderVisual::None;
 }
 
 ET66ButtonBackgroundVisual FT66Style::ResolvePanelBackgroundVisual(const FT66PanelParams& Params)
@@ -1159,11 +1147,6 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	const TSharedPtr<FT66ButtonFillBrushSet> FillBrushSet = FT66ButtonVisuals::CreateFillBrushSet(ResolvedBackgroundVisual);
 	const bool bHasCustomFill = FillBrushSet.IsValid() && FillBrushSet->IsValid();
 
-	if (ResolvedBorderVisual == ET66ButtonBorderVisual::RetroWood)
-	{
-		StyleName = bHasCustomFill ? "T66.Button.FlatTransparent" : "T66.Button.FlatRect";
-	}
-
 	const FButtonStyle& BtnStyle = Get().GetWidgetStyle<FButtonStyle>(StyleName);
 	const FTextBlockStyle& TxtStyle = Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
 
@@ -1177,7 +1160,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	const bool bUsesTextureChrome =
 		!IsDotaTheme()
 		&& HasButtonTextures()
-		&& ResolvedBorderVisual != ET66ButtonBorderVisual::RetroWood;
+		&& ResolvedBorderVisual != ET66ButtonBorderVisual::None;
 	TAttribute<FSlateColor> BtnColor;
 	if (bHasCustomFill)
 	{
@@ -1395,15 +1378,6 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 			*BorderState = NewState;
 		}
 	};
-
-	if (ResolvedBorderVisual == ET66ButtonBorderVisual::RetroWood)
-	{
-		UE_LOG(LogT66Style, Verbose, TEXT("[BORDER] MakeButton: Label='%s' BrushSet=%d BrushSetValid=%d Thickness=%.1f"),
-			*Params.Label.ToString(),
-			BorderBrushSet.IsValid() ? 1 : 0,
-			(BorderBrushSet.IsValid() && BorderBrushSet->IsValid()) ? 1 : 0,
-			BorderThickness);
-	}
 
 	const TSharedRef<SWidget> GlowWidget =
 		!bEnableButtonGlow
