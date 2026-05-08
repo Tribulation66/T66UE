@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Containers/Ticker.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "HAL/PlatformTime.h"
 #include "T66LagTrackerSubsystem.generated.h"
@@ -92,13 +93,17 @@ private:
 struct FLagScopedScope
 {
 	FLagScopedScope(UWorld* World, const TCHAR* Cause, float CustomThresholdMs = -1.f)
-		: StartSeconds(FPlatformTime::Seconds())
-		, ThresholdMs(CustomThresholdMs)
+		: ThresholdMs(CustomThresholdMs)
 	{
-		CauseStr = Cause;
 		if (World && World->GetGameInstance())
 		{
-			Subsystem = World->GetGameInstance()->GetSubsystem<UT66LagTrackerSubsystem>();
+			UT66LagTrackerSubsystem* Lag = World->GetGameInstance()->GetSubsystem<UT66LagTrackerSubsystem>();
+			if (Lag && Lag->IsEnabled())
+			{
+				Subsystem = Lag;
+				CauseStr = Cause;
+				StartSeconds = FPlatformTime::Seconds();
+			}
 		}
 	}
 
@@ -123,6 +128,6 @@ struct FLagScopedScope
 private:
 	TWeakObjectPtr<UT66LagTrackerSubsystem> Subsystem;
 	FString CauseStr;
-	double StartSeconds;
+	double StartSeconds = 0.0;
 	float ThresholdMs;
 };

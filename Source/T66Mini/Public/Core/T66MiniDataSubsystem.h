@@ -46,8 +46,9 @@ public:
 	const FT66MiniInteractableDefinition* FindInteractable(FName InteractableID) const;
 	const FT66MiniItemDefinition* FindItem(FName ItemID) const;
 	const FT66MiniCircusGameDefinition* FindCircusGame(FName GameID) const;
-	float FindRuntimeTuningValue(FName TuningKey, float DefaultValue = 0.f) const;
-	int32 FindRuntimeTuningInt(FName TuningKey, int32 DefaultValue = 0) const;
+	bool TryFindRuntimeTuningValue(FName TuningKey, float& OutValue) const;
+	float FindRequiredRuntimeTuningValue(FName TuningKey) const;
+	int32 FindRequiredRuntimeTuningInt(FName TuningKey) const;
 
 private:
 	void LoadHeroes();

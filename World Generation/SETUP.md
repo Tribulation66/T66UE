@@ -55,7 +55,76 @@ Older research cache paths:
 
 Treat the local clone as a convenience cache only. Refresh from the official GitHub repo before installing or debugging a pod.
 
-## RunPod Target
+## TRELLIS RunPod Target For Modular Kits
+
+For modular dungeon/world-kit generation, use the `Model Generation` TRELLIS.2
+baseline. Do not use the HY-World / WorldMirror package versions in the next
+section for TRELLIS work.
+
+Authoritative local files:
+
+- [MASTER_WORKFLOW.md](C:/UE/T66/Model%20Generation/MASTER_WORKFLOW.md)
+- [ENVIRONMENT_LOCK.md](C:/UE/T66/Model%20Generation/ENVIRONMENT_LOCK.md)
+- [bootstrap_trellis2_pod.sh](C:/UE/T66/Model%20Generation/Scripts/bootstrap_trellis2_pod.sh)
+- [Invoke-RunPodHfLogin.ps1](C:/UE/T66/Model%20Generation/Scripts/Invoke-RunPodHfLogin.ps1)
+
+Current locked TRELLIS baseline:
+
+- repo: `microsoft/TRELLIS.2`
+- commit: `5565d240c4a494caaf9ece7a554542b76ffa36d3`
+- repo path on pod: `/workspace/TRELLIS.2`
+- conda env: `trellis2`
+- Python: `3.10`
+- RunPod template: `runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04`
+- required exposed ports: `8000`, `8888`, and SSH
+- `torch==2.6.0` from the `cu124` wheel index
+- `torchvision==0.21.0` from the `cu124` wheel index
+- `transformers==5.2.0`
+- `flash-attn==2.7.3`
+- native extensions: `cumesh`, `o_voxel`, `flex_gemm`,
+  `nvdiffrast.torch`, and `nvdiffrec_render`
+- active compatibility patches: `BiRefNet.py` replaced by the `rembg` wrapper,
+  and `flow_euler.py` drops leaked `cfg_strength`
+- Hugging Face access required for `facebook/dinov3-vitl16-pretrain-lvd1689m`
+- server: `/workspace/TRELLIS.2/trellis_server.py`
+- health check: `curl -s http://127.0.0.1:8000/health`
+- generation endpoint: `POST http://127.0.0.1:8000/generate`
+
+Bootstrap a fresh TRELLIS pod by uploading and running:
+
+```powershell
+scp.exe -P <SSH_PORT> -i C:\Users\DoPra\.ssh\id_ed25519 `
+  "C:\UE\T66\Model Generation\Scripts\bootstrap_trellis2_pod.sh" `
+  root@<POD_IP>:/workspace/bootstrap_trellis2_pod.sh
+
+ssh.exe -p <SSH_PORT> -i C:\Users\DoPra\.ssh\id_ed25519 root@<POD_IP> `
+  "chmod +x /workspace/bootstrap_trellis2_pod.sh && bash /workspace/bootstrap_trellis2_pod.sh"
+```
+
+Then authenticate Hugging Face without printing or writing raw tokens into repo
+docs:
+
+```powershell
+powershell -ExecutionPolicy Bypass `
+  -File "C:\UE\T66\Model Generation\Scripts\Invoke-RunPodHfLogin.ps1" `
+  -PodIp "<POD_IP>" `
+  -Port <SSH_PORT>
+```
+
+Start the TRELLIS server with the command in
+[MASTER_WORKFLOW.md](C:/UE/T66/Model%20Generation/MASTER_WORKFLOW.md). Prefer
+pod-local `curl` plus `scp` for generation; SSH tunnels are not the reliable
+path for long runs.
+
+Known-good modular-kit settings:
+
+- seed: `1337`
+- texture size: `2048`
+- decimation: `80000`
+- `preprocess_image=True`
+- source images: split module crops, not full coherent sheets
+
+## HY-World / WorldMirror RunPod Target
 
 Preferred first pod:
 
@@ -75,9 +144,13 @@ Official install baseline:
 
 Single-GPU inference is the first target. Multi-GPU is available for `WorldMirror 2.0`, but the official pipeline requires the number of input images to be at least the GPU count.
 
-## Pod Bootstrap Draft
+This section is for HY-World / WorldMirror reconstruction only. For TRELLIS
+modular-kit generation, use the locked TRELLIS section above.
 
-Run this after the user provides RunPod SSH details.
+## HY-World Pod Bootstrap Draft
+
+Run this after the user provides RunPod SSH details for a HY-World /
+WorldMirror reconstruction experiment.
 
 ```bash
 cd /workspace

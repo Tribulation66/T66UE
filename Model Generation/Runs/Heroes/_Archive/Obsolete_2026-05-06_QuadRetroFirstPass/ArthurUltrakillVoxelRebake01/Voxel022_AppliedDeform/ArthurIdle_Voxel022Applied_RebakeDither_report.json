@@ -1,0 +1,23 @@
+{
+  "input": "C:\\UE\\T66\\_codex_previews\\old_arthur_extract\\SourceAssets\\Import\\ArthurIdle.fbx",
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ArthurUltrakillVoxelRebake01\\Voxel022_AppliedDeform\\Models\\ArthurIdle_Voxel022Applied_RebakeDither.glb",
+  "raw_source_triangles": 585037,
+  "source_triangles_after_bake": 585037,
+  "target_triangles_before_decimate": 23688,
+  "target_triangles_after_decimate": 23688,
+  "voxel_size": 0.022,
+  "bake_size": 512,
+  "texture_size": 256,
+  "palette_steps": 5,
+  "dither_strength": 1.1,
+  "objects": [
+    {
+      "source": "geometry_0",
+      "target": "geometry_0_voxel_rebake",
+      "triangles_before_voxel": 585037,
+      "triangles_after_voxel": 23688,
+      "bake_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ArthurUltrakillVoxelRebake01\\Voxel022_AppliedDeform\\Textures\\ArthurIdle_00_baked.png",
+      "dithered_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ArthurUltrakillVoxelRebake01\\Voxel022_AppliedDeform\\Textures\\ArthurIdle_00_baked_dithered.png"
+    }
+  ]
+}

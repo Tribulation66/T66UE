@@ -44,6 +44,48 @@ First integration principle:
 - use hidden `UBoxComponent` cube/slab proxies for wall and floor collision
 - use old visible cuboid wall/floor geometry only as fallback when the generated kit is unavailable or disabled
 
+## Runtime Performance Contract
+
+Generated Trellis modules are source assets, not automatically runtime-safe modular pieces. CoherentThemeKit01 raw wall and floor GLBs are roughly `70k-80k` triangles each, so the runtime must not place them at tiny source-tile density across every generated floor.
+
+Current runtime rule:
+
+- floor and ceiling visuals use `T66.Tower.GeneratedKitFloorVisualTileSize`
+- wall visuals use `T66.Tower.GeneratedKitWallVisualSegmentLength`
+- both default to two tower cells (`2600 cm`) and clamp to the actual procedural box/span so holes and narrow bands stay open
+- collision remains layout-authored hidden box/slab proxies and must not be derived from the visual mesh triangle count
+
+This is still not the final low-end PC solution. The production target is a runtime-safe kit with automated Unreal LODs/Nanite fallback at minimum, and true RetopoFlow assets where a human topology pass improves the shape:
+
+| Module Type | Runtime Triangle Target | Hard Warning |
+|---|---:|---:|
+| floor tile | `<= 1,500` tris | `> 5,000` tris |
+| wall segment | `<= 3,000` tris | `> 8,000` tris |
+| large hero prop / interactable | `<= 8,000` tris | `> 20,000` tris |
+
+High-poly Trellis exports should stay in `Raw/Trellis`. Runtime imports should come from `UnrealImport` or a retopo output folder once that pass exists.
+
+For `CoherentThemeKit01`, the current Unreal-side optimization pass is:
+
+```powershell
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe" "C:\UE\T66\T66.uproject" -ExecutePythonScript="C:\UE\T66\Scripts\OptimizeCoherentThemeKit01MeshesAndExit.py" -unattended -nop4 -nosplash
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe" "C:\UE\T66\T66.uproject" -ExecutePythonScript="C:\UE\T66\Scripts\VerifyCoherentThemeKit01OptimizationAndExit.py" -unattended -nop4 -nosplash
+```
+
+This pass adds generated StaticMesh LODs, enables Nanite, configures Nanite fallback percentages, and marks the approved unlit material parents as usable with Nanite and instanced static meshes. It does not count as accepted RetopoFlow topology and does not delete the high-poly raw TRELLIS artifacts.
+
+### 2026-05-05 Lag Fix Applied
+
+The floor-two hitch was caused by placing raw Trellis wall/floor meshes too densely. Each raw CoherentThemeKit01 module was roughly `70k-80k` triangles, and the old source-tile placement created thousands of high-poly instances across the tower.
+
+The accepted fix has three parts:
+
+- aggregate generated floor, ceiling, and wall visual placement to two-cell chunks by default (`2600 cm`) with `T66.Tower.GeneratedKitFloorVisualTileSize` and `T66.Tower.GeneratedKitWallVisualSegmentLength`
+- keep gameplay collision on hidden simple box/slab proxies instead of visual mesh triangles
+- run `Scripts\OptimizeCoherentThemeKit01MeshesAndExit.py`, then `Scripts\VerifyCoherentThemeKit01OptimizationAndExit.py`, so all `40/40` kit meshes have Unreal-generated LODs, Nanite enabled, and explicit Nanite fallback percentages
+
+The packaged smoke-test target after this fix was roughly `1,867` total tower HISM instances across five floors, with floor two around `589` HISM instances and total terrain spawn time around `87 ms`. If lag returns, check HISM instance counts and StaticMesh LOD/Nanite verification before changing gameplay systems.
+
 ## Modular Kit Contract
 
 ### Shared Unit System
@@ -179,11 +221,12 @@ A coherent source sheet is allowed as an upstream imagegen artifact when the goa
 
 Good source image traits:
 
-- isolated object on opaque green or white background
+- isolated object on a pure flat opaque white `#ffffff` background
 - straight-on orthographic-like view
 - clear silhouette
 - visible front/top/underside surface depending on module type
 - no character, no hand, no UI, no text
+- no alpha, floor plane, cast shadow, contact shadow, reflection, gradient, gray patch, or border card
 - no dramatic perspective that warps the module dimensions
 - enough thickness cues that TRELLIS understands it is a mesh, not a flat decal
 
@@ -207,8 +250,9 @@ Rules:
 - use a 2x2 atlas when the target set is four modules
 - wall sheet target: `3072 x 2048`, four `1536 x 1024` crops
 - floor sheet target: `2048 x 2048`, four `1024 x 1024` crops
-- keep all cells on the same flat chroma background
+- keep all cells on the same pure flat opaque white `#ffffff` background
 - keep camera, palette, material language, and lighting consistent across all cells
+- use even, front-readable lighting only; do not add floor/contact shadows to separate the module from the background
 - design details as chunky low-poly geometry, not fine painted texture noise
 - save source sheets under `Inputs/source_sheets`
 - save split TRELLIS crops under `Inputs/approved_seed_images`
@@ -223,30 +267,66 @@ Current raw TRELLIS review target:
 - 40 raw GLBs total: Dungeon/Easy, Forest/Medium, Ocean/Hard, Martian/VeryHard, and Hell/Impossible, each with four walls and four floors
 - first gate is visual scale comparison in Blender beside the accepted Arthur model before normalization or Unreal import
 
+## Floor And Wall Recolor Pass
+
+TRELLIS and image generation will not reliably produce identical floor or wall colors across a whole kit, even when the source sheets use the same palette. Do not solve that by asking for green backgrounds, shadows, alpha cutouts, or manual per-asset material edits.
+
+For `CoherentThemeKit01`, the canonical color-normalization pass is:
+
+```powershell
+python Scripts\RecolorCoherentThemeKitTextures.py
+```
+
+That script reads:
+
+```text
+SourceAssets\Import\WorldKit\CoherentThemeKit01\Textures\
+```
+
+and writes normalized sources to:
+
+```text
+SourceAssets\Import\WorldKit\CoherentThemeKit01\Textures_Recolored\
+```
+
+The Unreal importer prefers `Textures_Recolored` when a matching PNG exists:
+
+```powershell
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe" "C:\UE\T66\T66.uproject" -ExecutePythonScript="C:\UE\T66\Scripts\RunImportCoherentThemeKit01AndExit.py" -unattended -nop4 -nosplash
+```
+
+Acceptance notes:
+
+- floor textures in one theme should share one stable target color while retaining luminance detail
+- wall textures in one theme should share one stable target color while retaining relief detail
+- generated texture assets should list `Textures_Recolored` in their import data
+- 2026-05-05 packaged taskbar build validation: floor recolor was confirmed successful in-game and this process is the accepted floor color pipeline
+- this pass is for world floor/wall consistency; character skin matching will get a separate rule before character recolor work starts
+
 ## Prompt Templates
 
 ### Wall Segment
 
 ```text
-Single modular dungeon wall segment, isolated on solid green background, straight-on orthographic front view, chunky carved stone blocks, rectangular slab silhouette, shallow relief depth, rusted chains attached to the stone, cracks and worn edges, game-ready low-poly stylized fantasy asset, no floor, no ceiling, no room, no character, no text.
+Single modular dungeon wall segment, isolated on pure flat opaque white #ffffff background, straight-on orthographic front view, chunky carved stone blocks, rectangular slab silhouette, shallow relief depth, rusted chains attached to the stone, cracks and worn edges, game-ready low-poly stylized fantasy asset, no floor, no ceiling, no room, no character, no text, no alpha, no cast shadow, no contact shadow, no reflection, no gradient, no border card.
 ```
 
 ### Floor Tile
 
 ```text
-Single square modular dungeon floor tile, isolated on solid green background, top-down orthographic view, chunky stone slabs, low-profile bones embedded between cracks, worn edges, game-ready stylized fantasy asset, flat walkable top, no walls, no room, no character, no text.
+Single square modular dungeon floor tile, isolated on pure flat opaque white #ffffff background, top-down orthographic view, chunky stone slabs, low-profile bones embedded between cracks, worn edges, game-ready stylized fantasy asset, flat walkable top with clean neutral slab sides and underside, no walls, no room, no character, no text, no alpha, no floor plane, no cast shadow, no contact shadow, no reflection, no gradient, no border card.
 ```
 
 ### Ceiling Tile
 
 ```text
-Single square modular dungeon ceiling underside tile, isolated on solid green background, straight underside view, heavy stone slabs, cracks, small chain anchors, shallow relief details, game-ready stylized fantasy asset, no floor, no walls, no room, no character, no text.
+Single square modular dungeon ceiling underside tile, isolated on pure flat opaque white #ffffff background, straight underside view, heavy stone slabs, cracks, small chain anchors, shallow relief details, game-ready stylized fantasy asset, no floor, no walls, no room, no character, no text, no alpha, no cast shadow, no contact shadow, no reflection, no gradient, no border card.
 ```
 
 ### Doorway / Arch
 
 ```text
-Single modular dungeon doorway arch wall segment, isolated on solid green background, straight-on orthographic front view, rectangular module bounds, carved stone arch opening, worn blocks, metal studs, game-ready stylized fantasy asset, no full room, no floor, no character, no text.
+Single modular dungeon doorway arch wall segment, isolated on pure flat opaque white #ffffff background, straight-on orthographic front view, rectangular module bounds, carved stone arch opening, worn blocks, metal studs, game-ready stylized fantasy asset, no full room, no floor, no character, no text, no alpha, no cast shadow, no contact shadow, no reflection, no gradient, no border card.
 ```
 
 ## TRELLIS Run Rules
@@ -259,7 +339,7 @@ Recommended first-pass settings:
 - texture size: `2048`
 - decimation: `80000` for raw environment modules
 - `preprocess_image=True`
-- opaque green or white backgrounds
+- pure flat opaque white `#ffffff` backgrounds only; do not use green backgrounds for new model or world generation work
 
 For each serious module candidate:
 

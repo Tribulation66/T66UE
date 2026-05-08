@@ -11,6 +11,7 @@
 class UT66LocalizationSubsystem;
 class UT66AchievementsSubsystem;
 class UT66PlayerSettingsSubsystem;
+class SVerticalBox;
 
 /**
  * Achievements Screen

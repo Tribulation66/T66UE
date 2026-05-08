@@ -177,6 +177,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mini")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -278,8 +279,8 @@ private:
 	class AT66MiniEnemyBase* FindClosestEnemyFromLocation(const FVector& Origin, const AActor* IgnoreActor, float MaxRange) const;
 	class AT66MiniEnemyBase* FindBestTarget(float MaxRange) const;
 	float GetNextLevelThreshold() const;
-	float GetRuntimeTuningValue(const TCHAR* Key, float DefaultValue = 0.f) const;
-	int32 GetRuntimeTuningInt(const TCHAR* Key, int32 DefaultValue = 0) const;
+	float GetRuntimeTuningValue(const TCHAR* Key) const;
+	int32 GetRuntimeTuningInt(const TCHAR* Key) const;
 
 	UFUNCTION(Server, Unreliable)
 	void ServerSetDesiredMoveLocation(const FVector& InDesiredLocation);

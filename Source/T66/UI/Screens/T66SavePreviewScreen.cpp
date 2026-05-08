@@ -21,7 +21,7 @@
 
 namespace
 {
-	constexpr float T66SavePreviewButtonHeight = 48.f;
+	constexpr float T66SavePreviewButtonHeight = 58.f;
 
 	FLinearColor T66SavePreviewBrightText()
 	{
@@ -68,9 +68,17 @@ namespace
 		bool bInitialized = false;
 	};
 
-	const TCHAR* GetSavePreviewButtonPrefix(const ET66ButtonType /*Type*/)
+	const TCHAR* GetSavePreviewButtonFamily(const ET66ButtonType Type)
 	{
-		return TEXT("basic_button");
+		switch (Type)
+		{
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::Success:
+		case ET66ButtonType::ToggleActive:
+			return TEXT("CTA");
+		default:
+			return TEXT("Pill");
+		}
 	}
 
 	FSavePreviewReferenceButtonBrushSet& GetSavePreviewButtonBrushSet(const ET66ButtonType Type)
@@ -113,7 +121,7 @@ namespace
 
 	const FSlateBrush* ResolveSavePreviewButtonBrush(
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
-		const TCHAR* Prefix,
+		const TCHAR* Family,
 		const TCHAR* State,
 		const TCHAR* DebugLabel)
 	{
@@ -122,7 +130,7 @@ namespace
 			: State;
 		return ResolveSavePreviewBrush(
 			Entry,
-			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), *AssetState),
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(Family, *AssetState),
 			FMargin(0.f),
 			DebugLabel,
 			TextureFilter::TF_Nearest);
@@ -139,20 +147,20 @@ namespace
 			StyleEntry.Style.SetPressedPadding(FMargin(0.f));
 
 			FSavePreviewReferenceButtonBrushSet& BrushSet = GetSavePreviewButtonBrushSet(Type);
-			const TCHAR* Prefix = GetSavePreviewButtonPrefix(Type);
-			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Normal, Prefix, TEXT("normal"), TEXT("SavePreviewButtonNormal")))
+			const TCHAR* Family = GetSavePreviewButtonFamily(Type);
+			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Normal, Family, TEXT("normal"), TEXT("SavePreviewButtonNormal")))
 			{
 				StyleEntry.Style.SetNormal(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Hovered, Prefix, TEXT("hover"), TEXT("SavePreviewButtonHover")))
+			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Hovered, Family, TEXT("hover"), TEXT("SavePreviewButtonHover")))
 			{
 				StyleEntry.Style.SetHovered(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Pressed, Prefix, TEXT("pressed"), TEXT("SavePreviewButtonPressed")))
+			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Pressed, Family, TEXT("pressed"), TEXT("SavePreviewButtonPressed")))
 			{
 				StyleEntry.Style.SetPressed(*Brush);
 			}
-			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Disabled, TEXT("basic_button"), TEXT("disabled"), TEXT("SavePreviewButtonDisabled")))
+			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Disabled, Family, TEXT("disabled"), TEXT("SavePreviewButtonDisabled")))
 			{
 				StyleEntry.Style.SetDisabled(*Brush);
 			}
@@ -166,9 +174,10 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSavePreviewBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/SavePreview/Panels/savepreview_panels_inner_panel_normal.png"),
-			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
-			TEXT("SavePreviewShell"));
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
+			TEXT("SavePreviewShell"),
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetSavePreviewSceneBrush()
@@ -176,20 +185,22 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSavePreviewBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/SavePreview/ScreenArt/savepreview_screen_art_mainmenu_main_menu_scene_plate_v1.png"),
+			T66ScreenSlateHelpers::MakeReferenceSharedAssetPath(TEXT("ScreenArt/MainMenu/main_menu_scene_plate.png")),
 			FMargin(0.f),
-			TEXT("SavePreviewScene"));
+			TEXT("SavePreviewScene"),
+			TextureFilter::TF_Nearest);
 	}
 
 	TSharedRef<SWidget> MakeSavePreviewShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
-			TEXT("Panels/Modal/modal_shell_wide.png"),
-			Content,
-			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
-			Padding,
-			TEXT("SavePreviewShellV14"),
-			FLinearColor(0.f, 0.f, 0.f, 0.92f));
+		return SNew(SBorder)
+			.BorderImage(GetSavePreviewShellBrush() ? GetSavePreviewShellBrush() : FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(GetSavePreviewShellBrush() ? FLinearColor::White : FLinearColor(0.f, 0.f, 0.f, 0.92f))
+			.Padding(Padding)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			[
+				Content
+			];
 	}
 
 	TSharedRef<SWidget> MakeSavePreviewButton(FT66ButtonParams Params)
@@ -248,15 +259,17 @@ TSharedRef<SWidget> UT66SavePreviewScreen::BuildSlateUI()
 	const TSharedRef<SWidget> BackButton =
 		MakeSavePreviewButton(
 			FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleBackClicked), ET66ButtonType::Neutral)
-			.SetMinWidth(160.f)
+			.SetMinWidth(210.f)
 			.SetHeight(T66SavePreviewButtonHeight)
-			.SetFontSize(28));
+			.SetFontSize(22)
+			.SetPadding(FMargin(20.f, 8.f)));
 	const TSharedRef<SWidget> LoadButton =
 		MakeSavePreviewButton(
 			FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleLoadClicked), ET66ButtonType::Primary)
-			.SetMinWidth(160.f)
+			.SetMinWidth(210.f)
 			.SetHeight(T66SavePreviewButtonHeight)
-			.SetFontSize(28));
+			.SetFontSize(22)
+			.SetPadding(FMargin(20.f, 8.f)));
 
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
@@ -293,6 +306,7 @@ TSharedRef<SWidget> UT66SavePreviewScreen::BuildSlateUI()
 						.Font(FT66Style::Tokens::FontBold(30))
 						.ColorAndOpacity(T66SavePreviewGoldText())
 						.Justification(ETextJustify::Center)
+						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -303,6 +317,7 @@ TSharedRef<SWidget> UT66SavePreviewScreen::BuildSlateUI()
 						.Font(FT66Style::Tokens::FontRegular(17))
 						.ColorAndOpacity(T66SavePreviewMutedText())
 						.AutoWrapText(true)
+						.WrapTextAt(650.f)
 						.Justification(ETextJustify::Center)
 					]
 					+ SVerticalBox::Slot()

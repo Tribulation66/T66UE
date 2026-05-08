@@ -10,6 +10,8 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Gameplay/T66VisualUtil.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 
 AT66HeroProjectile::AT66HeroProjectile()
 {
@@ -39,10 +41,14 @@ AT66HeroProjectile::AT66HeroProjectile()
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), TintColor);
 	}
 
+	TrailVFXComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailVFX"));
+	TrailVFXComponent->SetupAttachment(VisualMesh);
+	TrailVFXComponent->SetAutoActivate(false);
+
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->InitialSpeed = 2400.f;
 	ProjectileMovement->MaxSpeed = 2400.f;
-	ProjectileMovement->bRotationFollowsVelocity = false;
+	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->ProjectileGravityScale = 0.f;
 	ProjectileMovement->bIsHomingProjectile = false;
 	ProjectileMovement->HomingAccelerationMagnitude = 40000.f;
@@ -71,38 +77,53 @@ void AT66HeroProjectile::Tick(float DeltaSeconds)
 
 	// If we have an intended target, keep steering to it and guarantee impact.
 	AActor* T = TargetActor.Get();
-	if (!T)
+	if (T && IsTargetAlive())
 	{
-		return;
+		TargetLocation = T->GetActorLocation();
+		bHasTargetLocation = true;
 	}
-
-	if (!IsTargetAlive())
+	else if (!bVisualOnly)
 	{
 		Destroy();
 		return;
 	}
 
-	const FVector TargetLoc = T->GetActorLocation();
+	if (!bHasTargetLocation)
+	{
+		Destroy();
+		return;
+	}
+
 	const FVector MyLoc = GetActorLocation();
-	const float DistSq = FVector::DistSquared(MyLoc, TargetLoc);
+	const float DistSq = FVector::DistSquared(MyLoc, TargetLocation);
 	const float HitRadius = CollisionSphere ? CollisionSphere->GetScaledSphereRadius() : 30.f;
 	if (DistSq <= (HitRadius * HitRadius))
 	{
-		ApplyDamageToTarget(T);
+		if (!bVisualOnly)
+		{
+			ApplyDamageToTarget(T);
+		}
 		Destroy();
 		return;
 	}
 
 	// Fallback steering (in case HomingTargetComponent isn't set for some target).
-	if (ProjectileMovement && !ProjectileMovement->bIsHomingProjectile)
+	if (ProjectileMovement && (!ProjectileMovement->bIsHomingProjectile || bVisualOnly))
 	{
-		const FVector Dir = (TargetLoc - MyLoc).GetSafeNormal();
+		const FVector Dir = (TargetLocation - MyLoc).GetSafeNormal();
 		ProjectileMovement->Velocity = Dir * ProjectileMovement->InitialSpeed;
+		if (bVisualOnly && (!T || !IsTargetAlive()))
+		{
+			ProjectileMovement->bIsHomingProjectile = false;
+			ProjectileMovement->HomingTargetComponent = nullptr;
+		}
 	}
 }
 
 void AT66HeroProjectile::SetTargetLocation(const FVector& TargetLoc)
 {
+	TargetLocation = TargetLoc;
+	bHasTargetLocation = true;
 	FVector Dir = (TargetLoc - GetActorLocation()).GetSafeNormal();
 	ProjectileMovement->Velocity = Dir * ProjectileMovement->InitialSpeed;
 }
@@ -110,6 +131,11 @@ void AT66HeroProjectile::SetTargetLocation(const FVector& TargetLoc)
 void AT66HeroProjectile::SetTargetActor(AActor* InTargetActor)
 {
 	TargetActor = InTargetActor;
+	if (InTargetActor)
+	{
+		TargetLocation = InTargetActor->GetActorLocation();
+		bHasTargetLocation = true;
+	}
 	if (!InTargetActor || !ProjectileMovement)
 	{
 		return;
@@ -137,6 +163,49 @@ void AT66HeroProjectile::SetScaleMultiplier(float InScaleMultiplier)
 	{
 		CollisionSphere->SetSphereRadius(30.f * ScaleMultiplier);
 	}
+}
+
+void AT66HeroProjectile::SetProjectileMesh(UStaticMesh* InMesh)
+{
+	if (VisualMesh && InMesh)
+	{
+		VisualMesh->SetStaticMesh(InMesh);
+	}
+}
+
+void AT66HeroProjectile::SetProjectileSpeed(float InSpeed)
+{
+	if (!ProjectileMovement)
+	{
+		return;
+	}
+
+	const float ResolvedSpeed = FMath::Max(1.f, InSpeed);
+	ProjectileMovement->InitialSpeed = ResolvedSpeed;
+	ProjectileMovement->MaxSpeed = ResolvedSpeed;
+	if (bHasTargetLocation)
+	{
+		SetTargetLocation(TargetLocation);
+	}
+}
+
+void AT66HeroProjectile::SetTrailVFX(UNiagaraSystem* InTrailSystem, const FLinearColor& InTrailColor)
+{
+	if (!TrailVFXComponent || !InTrailSystem)
+	{
+		return;
+	}
+
+	TrailVFXComponent->SetAsset(InTrailSystem);
+	TrailVFXComponent->SetVariableLinearColor(FName(TEXT("User.Color")), InTrailColor);
+	TrailVFXComponent->SetVariableLinearColor(FName(TEXT("User.Tint")), InTrailColor);
+	TrailVFXComponent->SetVariableLinearColor(FName(TEXT("Color")), InTrailColor);
+	TrailVFXComponent->Activate(true);
+}
+
+void AT66HeroProjectile::SetVisualOnly(bool bInVisualOnly)
+{
+	bVisualOnly = bInVisualOnly;
 }
 
 void AT66HeroProjectile::SetTintColor(const FLinearColor& InColor)
@@ -177,6 +246,7 @@ bool AT66HeroProjectile::IsTargetAlive() const
 void AT66HeroProjectile::ApplyDamageToTarget(AActor* Target)
 {
 	if (!Target) return;
+	if (Damage <= 0) return;
 	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
 
 	if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
@@ -202,6 +272,15 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 {
 	if (OtherActor == GetOwner()) return; // ignore hero
 
+	if (bVisualOnly)
+	{
+		if (AActor* Intended = TargetActor.Get(); Intended && OtherActor == Intended)
+		{
+			Destroy();
+		}
+		return;
+	}
+
 	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
 
 	// If this shot has an intended target, ignore any other overlaps so it can't "hit the wrong enemy".
@@ -224,7 +303,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 		return;
 	}
 
-	// Boss (stage, Gambler, Vendor) damage per hit
+	// Boss (stage, Gambler, Shop) damage per hit
 	AT66BossBase* Boss = Cast<AT66BossBase>(OtherActor);
 	if (Boss && Boss->IsAwakened() && Boss->IsAlive())
 	{

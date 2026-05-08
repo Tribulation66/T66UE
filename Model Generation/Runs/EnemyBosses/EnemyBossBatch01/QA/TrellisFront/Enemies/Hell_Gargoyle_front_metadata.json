@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Enemies\\Hell_Gargoyle\\Hell_Gargoyle_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Enemies\\Hell_Gargoyle_front.png",
+  "export": null,
+  "raw_triangles": 79668,
+  "triangles_before_decimate": 79668,
+  "triangles_after_decimate": 79668,
+  "bounds": {
+    "min": [
+      -0.49662089347839355,
+      -0.21555835008621216,
+      -0.48753952980041504
+    ],
+    "max": [
+      0.4992045760154724,
+      0.17649272084236145,
+      0.4824869632720947
+    ],
+    "size": [
+      0.995825469493866,
+      0.3920510709285736,
+      0.9700264930725098
+    ]
+  }
+}

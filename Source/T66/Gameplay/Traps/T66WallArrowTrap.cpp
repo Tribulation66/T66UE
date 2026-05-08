@@ -6,6 +6,7 @@
 
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
+#include "Core/T66TrapTuningConfig.h"
 #include "Gameplay/T66ArthurSwordVisuals.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -13,16 +14,15 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
-#include "Kismet/GameplayStatics.h"
+#include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
-#include "UObject/SoftObjectPath.h"
 
 namespace
 {
 	UStaticMesh* LoadWallArrowVisualMesh()
 	{
-		static TSoftObjectPtr<UStaticMesh> Mesh(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Meshes/SM_Arrows_PickUp.SM_Arrows_PickUp")));
-		return Mesh.LoadSynchronous();
+		const FT66TrapVisualAssetConfig& TrapAssets = UT66TrapTuningConfig::GetRuntimeTrapAssets();
+		return UT66TrapTuningConfig::LoadConfiguredTrapStaticMesh(TrapAssets.WallArrowMesh, TEXT("TrapAssets.WallArrowMesh"));
 	}
 
 	bool IsPrimitiveFallbackMesh(const UStaticMesh* Mesh)
@@ -193,16 +193,14 @@ AT66HeroBase* AT66WallArrowTrap::ResolveTargetHero(FVector& OutTargetLocation) c
 		return nullptr;
 	}
 
-	TArray<AActor*> HeroActors;
-	UGameplayStatics::GetAllActorsOfClass(World, AT66HeroBase::StaticClass(), HeroActors);
-
 	const float MaxDistanceSq = FMath::Square(DetectionRange);
 	AT66HeroBase* BestHero = nullptr;
 	float BestDistanceSq = TNumericLimits<float>::Max();
 
-	for (AActor* HeroActor : HeroActors)
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 	{
-		AT66HeroBase* Hero = Cast<AT66HeroBase>(HeroActor);
+		APlayerController* PlayerController = It->Get();
+		AT66HeroBase* Hero = PlayerController ? Cast<AT66HeroBase>(PlayerController->GetPawn()) : nullptr;
 		if (!IsHeroTargetable(Hero))
 		{
 			continue;

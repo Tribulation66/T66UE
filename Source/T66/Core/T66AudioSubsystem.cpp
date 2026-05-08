@@ -3,8 +3,10 @@
 #include "Core/T66AudioSubsystem.h"
 
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Engine/AssetManager.h"
 #include "Engine/DataTable.h"
 #include "Engine/Engine.h"
+#include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundAttenuation.h"
 #include "Sound/SoundBase.h"
@@ -24,18 +26,49 @@ void UT66AudioSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	LoadAudioEvents();
-	PrimeConfiguredAssets();
 }
 
 void UT66AudioSubsystem::Deinitialize()
 {
+	if (AudioEventTableLoadHandle.IsValid())
+	{
+		AudioEventTableLoadHandle->CancelHandle();
+		AudioEventTableLoadHandle.Reset();
+	}
+	for (TPair<FString, TSharedPtr<FStreamableHandle>>& Pair : PendingSoundLoads)
+	{
+		if (Pair.Value.IsValid())
+		{
+			Pair.Value->CancelHandle();
+		}
+	}
+	for (TPair<FString, TSharedPtr<FStreamableHandle>>& Pair : PendingAttenuationLoads)
+	{
+		if (Pair.Value.IsValid())
+		{
+			Pair.Value->CancelHandle();
+		}
+	}
+	for (TPair<FString, TSharedPtr<FStreamableHandle>>& Pair : PendingConcurrencyLoads)
+	{
+		if (Pair.Value.IsValid())
+		{
+			Pair.Value->CancelHandle();
+		}
+	}
 	AudioEventTable = nullptr;
 	AudioEvents.Reset();
 	CachedSounds.Reset();
 	CachedAttenuations.Reset();
 	CachedConcurrencies.Reset();
+	PendingSoundLoads.Reset();
+	PendingAttenuationLoads.Reset();
+	PendingConcurrencyLoads.Reset();
 	LastPlayTimeByEvent.Reset();
 	WarnedMissingSoundPaths.Reset();
+	WarnedMissingAttenuationPaths.Reset();
+	WarnedMissingConcurrencyPaths.Reset();
+	WarnedUnreadyEventIDs.Reset();
 	Super::Deinitialize();
 }
 
@@ -43,20 +76,43 @@ void UT66AudioSubsystem::LoadAudioEvents()
 {
 	AudioEvents.Reset();
 
-	AudioEventTable = LoadObject<UDataTable>(nullptr, T66AudioEventTablePath);
+	const FSoftObjectPath TablePath(T66AudioEventTablePath);
+	if (UDataTable* ResidentTable = Cast<UDataTable>(TablePath.ResolveObject()))
+	{
+		if (CacheAudioEventRows(ResidentTable))
+		{
+			PrimeConfiguredAssets();
+		}
+		return;
+	}
+
+	AudioEventTableLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		TArray<FSoftObjectPath>{ TablePath },
+		FStreamableDelegate::CreateUObject(this, &UT66AudioSubsystem::HandleAudioEventTableLoaded));
+	if (!AudioEventTableLoadHandle.IsValid())
+	{
+		UE_LOG(LogT66Audio, Error, TEXT("Failed to queue async load for audio event table at %s."), T66AudioEventTablePath);
+	}
+}
+
+bool UT66AudioSubsystem::CacheAudioEventRows(UDataTable* LoadedTable)
+{
+	AudioEvents.Reset();
+	AudioEventTable = LoadedTable;
 	if (!AudioEventTable)
 	{
-		UE_LOG(LogT66Audio, Warning, TEXT("Audio event table not found at %s."), T66AudioEventTablePath);
-		return;
+		UE_LOG(LogT66Audio, Error, TEXT("Audio event table not found at %s."), T66AudioEventTablePath);
+		return false;
 	}
 
 	if (AudioEventTable->GetRowStruct() != FT66AudioEventRow::StaticStruct())
 	{
-		UE_LOG(LogT66Audio, Warning, TEXT("Audio event table %s uses row struct %s, expected %s."),
+		UE_LOG(LogT66Audio, Error, TEXT("Audio event table %s uses row struct %s, expected %s."),
 			T66AudioEventTablePath,
 			AudioEventTable->GetRowStruct() ? *AudioEventTable->GetRowStruct()->GetName() : TEXT("<null>"),
 			*FT66AudioEventRow::StaticStruct()->GetName());
-		return;
+		AudioEventTable = nullptr;
+		return false;
 	}
 
 	for (const FName& RowName : AudioEventTable->GetRowNames())
@@ -69,6 +125,19 @@ void UT66AudioSubsystem::LoadAudioEvents()
 	}
 
 	UE_LOG(LogT66Audio, Log, TEXT("Loaded %d audio event rows from %s."), AudioEvents.Num(), T66AudioEventTablePath);
+	return AudioEvents.Num() > 0;
+}
+
+void UT66AudioSubsystem::HandleAudioEventTableLoaded()
+{
+	AudioEventTableLoadHandle.Reset();
+	const FSoftObjectPath TablePath(T66AudioEventTablePath);
+	if (!CacheAudioEventRows(Cast<UDataTable>(TablePath.ResolveObject())))
+	{
+		return;
+	}
+
+	PrimeConfiguredAssets();
 }
 
 void UT66AudioSubsystem::PrimeConfiguredAssets()
@@ -224,13 +293,14 @@ USoundBase* UT66AudioSubsystem::ResolveSound(const FSoftObjectPath& AssetPath, c
 		return Cached->Get();
 	}
 
-	USoundBase* Sound = Cast<USoundBase>(AssetPath.TryLoad());
+	USoundBase* Sound = Cast<USoundBase>(AssetPath.ResolveObject());
 	if (!Sound)
 	{
-		if (bWarnOnFailure && !WarnedMissingSoundPaths.Contains(AssetPathString))
+		QueueSoundLoad(AssetPath);
+		if (bWarnOnFailure && !PendingSoundLoads.Contains(AssetPathString) && !WarnedMissingSoundPaths.Contains(AssetPathString))
 		{
 			WarnedMissingSoundPaths.Add(AssetPathString);
-			UE_LOG(LogT66Audio, Warning, TEXT("Audio sound asset missing or not a USoundBase: %s"), *AssetPathString);
+			UE_LOG(LogT66Audio, Warning, TEXT("Audio sound asset is not resident and could not be queued: %s"), *AssetPathString);
 		}
 		return nullptr;
 	}
@@ -252,12 +322,15 @@ USoundAttenuation* UT66AudioSubsystem::ResolveAttenuation(const FSoftObjectPath&
 		return Cached->Get();
 	}
 
-	USoundAttenuation* Attenuation = Cast<USoundAttenuation>(AssetPath.TryLoad());
+	USoundAttenuation* Attenuation = Cast<USoundAttenuation>(AssetPath.ResolveObject());
 	if (Attenuation)
 	{
 		CachedAttenuations.Add(AssetPathString, Attenuation);
+		return Attenuation;
 	}
-	return Attenuation;
+
+	QueueAttenuationLoad(AssetPath);
+	return nullptr;
 }
 
 USoundConcurrency* UT66AudioSubsystem::ResolveConcurrency(const FSoftObjectPath& AssetPath)
@@ -273,12 +346,15 @@ USoundConcurrency* UT66AudioSubsystem::ResolveConcurrency(const FSoftObjectPath&
 		return Cached->Get();
 	}
 
-	USoundConcurrency* Concurrency = Cast<USoundConcurrency>(AssetPath.TryLoad());
+	USoundConcurrency* Concurrency = Cast<USoundConcurrency>(AssetPath.ResolveObject());
 	if (Concurrency)
 	{
 		CachedConcurrencies.Add(AssetPathString, Concurrency);
+		return Concurrency;
 	}
-	return Concurrency;
+
+	QueueConcurrencyLoad(AssetPath);
+	return nullptr;
 }
 
 USoundBase* UT66AudioSubsystem::SelectSoundForRow(const FName EventID, const FT66AudioEventRow& Row)
@@ -299,8 +375,132 @@ USoundBase* UT66AudioSubsystem::SelectSoundForRow(const FName EventID, const FT6
 		}
 	}
 
-	UE_LOG(LogT66Audio, Warning, TEXT("Audio event %s has no loadable sound assets."), *EventID.ToString());
+	if (!WarnedUnreadyEventIDs.Contains(EventID))
+	{
+		WarnedUnreadyEventIDs.Add(EventID);
+		UE_LOG(LogT66Audio, Warning, TEXT("Audio event %s has no resident sound assets yet; async load queued for configured paths."), *EventID.ToString());
+	}
 	return nullptr;
+}
+
+void UT66AudioSubsystem::QueueSoundLoad(const FSoftObjectPath& AssetPath)
+{
+	if (AssetPath.IsNull())
+	{
+		return;
+	}
+
+	const FString AssetPathString = AssetPath.ToString();
+	if (CachedSounds.Contains(AssetPathString) || PendingSoundLoads.Contains(AssetPathString) || WarnedMissingSoundPaths.Contains(AssetPathString))
+	{
+		return;
+	}
+
+	TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		TArray<FSoftObjectPath>{ AssetPath },
+		FStreamableDelegate::CreateUObject(this, &UT66AudioSubsystem::HandleSoundLoaded, AssetPath));
+	if (Handle.IsValid())
+	{
+		PendingSoundLoads.Add(AssetPathString, Handle);
+	}
+}
+
+void UT66AudioSubsystem::QueueAttenuationLoad(const FSoftObjectPath& AssetPath)
+{
+	if (AssetPath.IsNull())
+	{
+		return;
+	}
+
+	const FString AssetPathString = AssetPath.ToString();
+	if (CachedAttenuations.Contains(AssetPathString) || PendingAttenuationLoads.Contains(AssetPathString) || WarnedMissingAttenuationPaths.Contains(AssetPathString))
+	{
+		return;
+	}
+
+	TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		TArray<FSoftObjectPath>{ AssetPath },
+		FStreamableDelegate::CreateUObject(this, &UT66AudioSubsystem::HandleAttenuationLoaded, AssetPath));
+	if (Handle.IsValid())
+	{
+		PendingAttenuationLoads.Add(AssetPathString, Handle);
+	}
+}
+
+void UT66AudioSubsystem::QueueConcurrencyLoad(const FSoftObjectPath& AssetPath)
+{
+	if (AssetPath.IsNull())
+	{
+		return;
+	}
+
+	const FString AssetPathString = AssetPath.ToString();
+	if (CachedConcurrencies.Contains(AssetPathString) || PendingConcurrencyLoads.Contains(AssetPathString) || WarnedMissingConcurrencyPaths.Contains(AssetPathString))
+	{
+		return;
+	}
+
+	TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		TArray<FSoftObjectPath>{ AssetPath },
+		FStreamableDelegate::CreateUObject(this, &UT66AudioSubsystem::HandleConcurrencyLoaded, AssetPath));
+	if (Handle.IsValid())
+	{
+		PendingConcurrencyLoads.Add(AssetPathString, Handle);
+	}
+}
+
+void UT66AudioSubsystem::HandleSoundLoaded(FSoftObjectPath AssetPath)
+{
+	const FString AssetPathString = AssetPath.ToString();
+	PendingSoundLoads.Remove(AssetPathString);
+
+	if (USoundBase* Sound = Cast<USoundBase>(AssetPath.ResolveObject()))
+	{
+		CachedSounds.Add(AssetPathString, Sound);
+		return;
+	}
+
+	if (!WarnedMissingSoundPaths.Contains(AssetPathString))
+	{
+		WarnedMissingSoundPaths.Add(AssetPathString);
+		UE_LOG(LogT66Audio, Warning, TEXT("Audio sound asset missing or not a USoundBase after async load: %s"), *AssetPathString);
+	}
+}
+
+void UT66AudioSubsystem::HandleAttenuationLoaded(FSoftObjectPath AssetPath)
+{
+	const FString AssetPathString = AssetPath.ToString();
+	PendingAttenuationLoads.Remove(AssetPathString);
+
+	if (USoundAttenuation* Attenuation = Cast<USoundAttenuation>(AssetPath.ResolveObject()))
+	{
+		CachedAttenuations.Add(AssetPathString, Attenuation);
+		return;
+	}
+
+	if (!WarnedMissingAttenuationPaths.Contains(AssetPathString))
+	{
+		WarnedMissingAttenuationPaths.Add(AssetPathString);
+		UE_LOG(LogT66Audio, Warning, TEXT("Audio attenuation asset missing or wrong type after async load: %s"), *AssetPathString);
+	}
+}
+
+void UT66AudioSubsystem::HandleConcurrencyLoaded(FSoftObjectPath AssetPath)
+{
+	const FString AssetPathString = AssetPath.ToString();
+	PendingConcurrencyLoads.Remove(AssetPathString);
+
+	if (USoundConcurrency* Concurrency = Cast<USoundConcurrency>(AssetPath.ResolveObject()))
+	{
+		CachedConcurrencies.Add(AssetPathString, Concurrency);
+		return;
+	}
+
+	if (!WarnedMissingConcurrencyPaths.Contains(AssetPathString))
+	{
+		WarnedMissingConcurrencyPaths.Add(AssetPathString);
+		UE_LOG(LogT66Audio, Warning, TEXT("Audio concurrency asset missing or wrong type after async load: %s"), *AssetPathString);
+	}
 }
 
 float UT66AudioSubsystem::ResolveVolumeMultiplier(const FT66AudioEventRow& Row) const

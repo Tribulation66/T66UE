@@ -69,5 +69,5 @@ void UT66RngTuningConfig::LoadFromConfig()
 	LoadRngStructValue(ConfigFilename, TEXT("GoblinCountPerWave"), GoblinCountPerWave);
 	LoadRngStructValue(ConfigFilename, TEXT("SpecialEnemyRarityBase"), SpecialEnemyRarityBase);
 
-	LoadRngStructValue(ConfigFilename, TEXT("TreesPerStage"), TreesPerStage);
+	LoadRngStructValue(ConfigFilename, TEXT("FountainsPerStage"), FountainsPerStage);
 }

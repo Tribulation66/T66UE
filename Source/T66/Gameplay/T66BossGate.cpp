@@ -3,15 +3,13 @@
 #include "Gameplay/T66BossGate.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66BossBase.h"
-#include "Gameplay/T66EnemyDirector.h"
+#include "Gameplay/T66GameMode.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
-#include "EngineUtils.h"
-#include "Kismet/GameplayStatics.h"
 
 namespace
 {
@@ -127,9 +125,9 @@ void AT66BossGate::TryTriggerForActor(AActor* OtherActor)
 		}
 	}
 
-	for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
+	if (AT66GameMode* GameMode = World->GetAuthGameMode<AT66GameMode>())
 	{
-		It->SetSpawningPaused(true);
+		GameMode->SetEnemyDirectorSpawningPaused(true);
 	}
 }
 

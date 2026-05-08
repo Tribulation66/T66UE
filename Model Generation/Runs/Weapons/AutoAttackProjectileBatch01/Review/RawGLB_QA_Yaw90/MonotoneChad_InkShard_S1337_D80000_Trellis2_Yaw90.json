@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Raw\\Trellis\\MonotoneChad_InkShard_S1337_D80000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Review\\RawGLB_QA_Yaw90\\MonotoneChad_InkShard_S1337_D80000_Trellis2_Yaw90.png",
+  "export": null,
+  "raw_triangles": 77572,
+  "triangles_before_decimate": 77572,
+  "triangles_after_decimate": 77572,
+  "bounds": {
+    "min": [
+      -0.4182867109775543,
+      -0.05507386475801468,
+      -0.49870771169662476
+    ],
+    "max": [
+      0.4139958322048187,
+      0.05494079738855362,
+      0.5006717443466187
+    ],
+    "size": [
+      0.832282543182373,
+      0.1100146621465683,
+      0.9993794560432434
+    ]
+  }
+}

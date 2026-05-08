@@ -90,10 +90,22 @@ namespace T66SlateTexture
 			Brush.SetResourceObject(nullptr);
 		}
 
-		// NOTE: The caller owns the brush memory. We only mutate it if the requester is still valid.
-		Pool->RequestTexture(Soft, Requester, RequestKey, [&Brush](UTexture2D* Loaded)
+		if (!Requester || !IsValid(Requester))
 		{
-			Brush.SetResourceObject(Loaded);
+			return;
+		}
+
+		// The caller owns this brush memory. BindBrushAsync is only for brush
+		// members whose lifetime is tied to Requester; stack/local brushes must
+		// use BindSharedBrushAsync or avoid async callbacks.
+		FSlateBrush* BrushPtr = &Brush;
+		const TWeakObjectPtr<UObject> WeakRequester(Requester);
+		Pool->RequestTexture(Soft, Requester, RequestKey, [BrushPtr, WeakRequester](UTexture2D* Loaded)
+		{
+			if (WeakRequester.IsValid() && BrushPtr)
+			{
+				BrushPtr->SetResourceObject(Loaded);
+			}
 		});
 	}
 }

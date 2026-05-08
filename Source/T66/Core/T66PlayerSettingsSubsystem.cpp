@@ -5,12 +5,14 @@
 #include "Gameplay/T66PlayerController.h"
 #include "UI/Style/T66Style.h"
 
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameUserSettings.h"
 #include "Misc/App.h"
-#include "Misc/PackageName.h"
 #include "Sound/SoundClass.h"
 #include "Core/T66MediaViewerSubsystem.h"
+#include "UObject/SoftObjectPath.h"
 
 const FString UT66PlayerSettingsSubsystem::SlotName(TEXT("T66_PlayerSettings"));
 
@@ -19,6 +21,8 @@ namespace
 	constexpr float T66LockedChaseTurnSensitivityDefaultPercent = 65.0f;
 	constexpr float T66LockedChaseTurnRateMinDegreesPerSecond = 55.0f;
 	constexpr float T66LockedChaseTurnRateMaxDegreesPerSecond = 165.0f;
+	const TCHAR* T66MusicSoundClassPath = TEXT("/Game/Audio/SC_Music.SC_Music");
+	const TCHAR* T66SfxSoundClassPath = TEXT("/Game/Audio/SC_SFX.SC_SFX");
 
 	ET66MediaViewerSource SanitizeMediaViewerSourceIndex(int32 RawValue)
 	{
@@ -100,12 +104,23 @@ void UT66PlayerSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 	LoadOrCreate();
 	ApplyUIScale();
 
+	QueueSoundClassPreloads();
 	ApplyAudioToEngine();
 	ApplyUnfocusedAudioToEngine();
 }
 
 void UT66PlayerSettingsSubsystem::Deinitialize()
 {
+	if (MusicSoundClassLoadHandle.IsValid())
+	{
+		MusicSoundClassLoadHandle->CancelHandle();
+		MusicSoundClassLoadHandle.Reset();
+	}
+	if (SfxSoundClassLoadHandle.IsValid())
+	{
+		SfxSoundClassLoadHandle->CancelHandle();
+		SfxSoundClassLoadHandle.Reset();
+	}
 	Super::Deinitialize();
 }
 
@@ -1015,27 +1030,99 @@ void UT66PlayerSettingsSubsystem::ApplyClassVolumesIfPresent()
 {
 	if (!SettingsObj) return;
 
-	// Foundation: if/when we create SoundClass assets, we can apply per-class volume multipliers.
-	// This is safe to call even if assets don't exist yet.
-	static const TCHAR* MusicClassPackagePath = TEXT("/Game/Audio/SC_Music");
-	static const TCHAR* MusicClassPath = TEXT("/Game/Audio/SC_Music.SC_Music");
-	static const TCHAR* SfxClassPackagePath = TEXT("/Game/Audio/SC_SFX");
-	static const TCHAR* SfxClassPath = TEXT("/Game/Audio/SC_SFX.SC_SFX");
+	if (!CachedMusicClass)
+	{
+		CachedMusicClass = Cast<USoundClass>(FSoftObjectPath(T66MusicSoundClassPath).ResolveObject());
+	}
+	if (!CachedSfxClass)
+	{
+		CachedSfxClass = Cast<USoundClass>(FSoftObjectPath(T66SfxSoundClassPath).ResolveObject());
+	}
 
-	if (FPackageName::DoesPackageExist(MusicClassPackagePath))
+	if (CachedMusicClass)
 	{
-		if (USoundClass* Music = LoadObject<USoundClass>(nullptr, MusicClassPath))
+		CachedMusicClass->Properties.Volume = FMath::Clamp(SettingsObj->MusicVolume, 0.0f, 1.0f);
+	}
+	if (CachedSfxClass)
+	{
+		CachedSfxClass->Properties.Volume = FMath::Clamp(SettingsObj->SfxVolume, 0.0f, 1.0f);
+	}
+
+	if (!CachedMusicClass || !CachedSfxClass)
+	{
+		QueueSoundClassPreloads();
+	}
+}
+
+void UT66PlayerSettingsSubsystem::QueueSoundClassPreloads()
+{
+	if (!CachedMusicClass && !MusicSoundClassLoadHandle.IsValid() && !bWarnedMissingMusicSoundClass)
+	{
+		const FSoftObjectPath MusicPath(T66MusicSoundClassPath);
+		CachedMusicClass = Cast<USoundClass>(MusicPath.ResolveObject());
+		if (!CachedMusicClass)
 		{
-			Music->Properties.Volume = FMath::Clamp(SettingsObj->MusicVolume, 0.0f, 1.0f);
+			MusicSoundClassLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+				TArray<FSoftObjectPath>{ MusicPath },
+				FStreamableDelegate::CreateUObject(this, &UT66PlayerSettingsSubsystem::HandleMusicSoundClassLoaded));
+			if (!MusicSoundClassLoadHandle.IsValid() && !bWarnedMissingMusicSoundClass)
+			{
+				bWarnedMissingMusicSoundClass = true;
+				UE_LOG(LogTemp, Warning, TEXT("PlayerSettings: failed to queue Music SoundClass preload at '%s'."), T66MusicSoundClassPath);
+			}
 		}
 	}
-	if (FPackageName::DoesPackageExist(SfxClassPackagePath))
+
+	if (!CachedSfxClass && !SfxSoundClassLoadHandle.IsValid() && !bWarnedMissingSfxSoundClass)
 	{
-		if (USoundClass* Sfx = LoadObject<USoundClass>(nullptr, SfxClassPath))
+		const FSoftObjectPath SfxPath(T66SfxSoundClassPath);
+		CachedSfxClass = Cast<USoundClass>(SfxPath.ResolveObject());
+		if (!CachedSfxClass)
 		{
-			Sfx->Properties.Volume = FMath::Clamp(SettingsObj->SfxVolume, 0.0f, 1.0f);
+			SfxSoundClassLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+				TArray<FSoftObjectPath>{ SfxPath },
+				FStreamableDelegate::CreateUObject(this, &UT66PlayerSettingsSubsystem::HandleSfxSoundClassLoaded));
+			if (!SfxSoundClassLoadHandle.IsValid() && !bWarnedMissingSfxSoundClass)
+			{
+				bWarnedMissingSfxSoundClass = true;
+				UE_LOG(LogTemp, Warning, TEXT("PlayerSettings: failed to queue SFX SoundClass preload at '%s'."), T66SfxSoundClassPath);
+			}
 		}
 	}
+}
+
+void UT66PlayerSettingsSubsystem::HandleMusicSoundClassLoaded()
+{
+	MusicSoundClassLoadHandle.Reset();
+	CachedMusicClass = Cast<USoundClass>(FSoftObjectPath(T66MusicSoundClassPath).ResolveObject());
+	if (!CachedMusicClass)
+	{
+		if (!bWarnedMissingMusicSoundClass)
+		{
+			bWarnedMissingMusicSoundClass = true;
+			UE_LOG(LogTemp, Warning, TEXT("PlayerSettings: Music SoundClass missing or wrong type after async preload at '%s'."), T66MusicSoundClassPath);
+		}
+		return;
+	}
+
+	ApplyClassVolumesIfPresent();
+}
+
+void UT66PlayerSettingsSubsystem::HandleSfxSoundClassLoaded()
+{
+	SfxSoundClassLoadHandle.Reset();
+	CachedSfxClass = Cast<USoundClass>(FSoftObjectPath(T66SfxSoundClassPath).ResolveObject());
+	if (!CachedSfxClass)
+	{
+		if (!bWarnedMissingSfxSoundClass)
+		{
+			bWarnedMissingSfxSoundClass = true;
+			UE_LOG(LogTemp, Warning, TEXT("PlayerSettings: SFX SoundClass missing or wrong type after async preload at '%s'."), T66SfxSoundClassPath);
+		}
+		return;
+	}
+
+	ApplyClassVolumesIfPresent();
 }
 
 

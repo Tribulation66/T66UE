@@ -80,15 +80,31 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> WeaponsDataTable;
 
-	/** Reference to the Bosses DataTable (v0: placeholder boss) */
+	/** Reference to the Bosses DataTable. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> BossesDataTable;
 
-	/** Reference to the Stages DataTable (v0: placeholder stages) */
+	/** Reference to the Stages DataTable. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> StagesDataTable;
 
-	/** Reference to the House NPCs DataTable (Vendor/Gambler/Saint/Ouroboros) */
+	/** Reference to the Enemies DataTable. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> EnemiesDataTable;
+
+	/** Reference to negative status effect data applied by enemies. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> StatusEffectsDataTable;
+
+	/** Reference to boss encounter metadata. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> BossEncountersDataTable;
+
+	/** Reference to boss encounter member rows. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> BossEncounterMembersDataTable;
+
+	/** Reference to the House NPCs DataTable (Gambler/Saint/Ouroboros) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> HouseNPCsDataTable;
 
@@ -330,6 +346,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetStagesDataTable();
 
+	/** Get the loaded Enemies DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetEnemiesDataTable();
+
+	/** Get the loaded Status Effects DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetStatusEffectsDataTable();
+
+	/** Get the loaded Boss Encounters DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetBossEncountersDataTable();
+
+	/** Get the loaded Boss Encounter Members DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetBossEncounterMembersDataTable();
+
 	/** Get the loaded House NPCs DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetHouseNPCsDataTable();
@@ -365,6 +397,22 @@ public:
 	/** Get stage data by stage number. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetStageData(int32 StageNumber, FStageData& OutStageData);
+
+	/** Get enemy data by ID. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetEnemyData(FName EnemyID, FT66EnemyData& OutEnemyData);
+
+	/** Get negative status effect data by ID. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetStatusEffectData(FName StatusEffectID, FT66StatusEffectData& OutStatusEffectData);
+
+	/** Get boss encounter data by ID. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetBossEncounterData(FName BossEncounterID, FT66BossEncounterData& OutEncounterData);
+
+	/** Get all member rows for a boss encounter, sorted by MemberIndex. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	void GetBossEncounterMemberData(FName BossEncounterID, TArray<FT66BossEncounterMemberData>& OutMembers);
 
 	/** Get house NPC data by ID (row name). Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -617,6 +665,22 @@ private:
 	/** Cached loaded Stages DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedStagesDataTable;
+
+	/** Cached loaded Enemies DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedEnemiesDataTable;
+
+	/** Cached loaded Status Effects DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedStatusEffectsDataTable;
+
+	/** Cached loaded Boss Encounters DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedBossEncountersDataTable;
+
+	/** Cached loaded Boss Encounter Members DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedBossEncounterMembersDataTable;
 
 
 	/** Cached loaded House NPCs DataTable */

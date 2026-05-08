@@ -1,25 +1,41 @@
 # T66 UI Reference Workspace
 
-The authoritative instructions are in:
+The active prompt is:
 
 ```text
-C:\UE\T66\Docs\UI\UI_GENERATION.md
+C:\UE\T66\UI\MASTER_REFERENCE_UI_GENERATION_PROMPT.md
 ```
 
-This workspace now supports screen-by-screen and modal-by-modal UI generation.
+Use that single master prompt for every screen, modal, and screen state. Fill in the target fields inside the prompt before starting a new chat.
 
-Key folders:
+Supporting instructions:
 
 ```text
-C:\UE\T66\UI\Reference\Screens\<ScreenName>\PROMPT.md
-C:\UE\T66\UI\Reference\Modals\<ModalName>\PROMPT.md
-C:\UE\T66\UI\Reference\PROMPT_INDEX.md
+C:\UE\T66\UI\Reference\SCREEN_MODAL_TASK.md
+C:\UE\T66\Docs\UI\UI_GENERATION.md
+C:\UE\T66\UI\SCREEN_WORKFLOW.md
+```
+
+Reference screenshots live under:
+
+```text
+C:\UE\T66\UI\generation\ReferenceFullScreens_2026-05-02_inventory_locked\
+C:\UE\T66\UI\screens\<target>\reference\
+```
+
+Runtime assets belong under target-owned folders:
+
+```text
 C:\UE\T66\SourceAssets\UI\Reference\Screens\<ScreenName>\
 C:\UE\T66\SourceAssets\UI\Reference\Modals\<ModalName>\
 ```
 
-Use the prompt index to start a new Codex chat per target. Each target owns its runtime image assets. If an asset from Shared or another target is useful, duplicate it into the current target folder and route the target to that copy.
+Old per-screen copy-paste prompt bundles were archived under:
 
-Generated image outputs should be reported as local links/paths, not embedded inline, unless the user explicitly asks for inline previews.
+```text
+C:\UE\T66\UI\archive\PromptFiles_PreMaster_*
+```
 
-Every implementation pass must end with packaged visual comparison. Compile success alone is not completion.
+Each target owns its runtime image assets. If a shared-looking piece is needed for a target, duplicate it into that target's runtime folder unless the current task explicitly includes shared chrome.
+
+Individual screen agents should use working captures from the local development executable and loose `SourceAssets` while iterating. They should not run full UAT/stage/cook/package for each target. Final packaged verification belongs to the coordinating pass after target work is finished.

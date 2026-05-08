@@ -274,22 +274,6 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 
 	if (bUsingMainMapTerrain)
 	{
-		if (World)
-		{
-			FTimerHandle DeferredPropsHandle;
-			World->GetTimerManager().SetTimer(
-				DeferredPropsHandle,
-				FTimerDelegate::CreateWeakLambda(this, [this]()
-				{
-					const double PropSpawnStartSeconds = FPlatformTime::Seconds();
-					SpawnStageDecorativeProps(true);
-					UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] Deferred main-map props spawned in %.1f ms."),
-						(FPlatformTime::Seconds() - PropSpawnStartSeconds) * 1000.0);
-				}),
-				0.35f,
-				false);
-		}
-
 		const double PrepareStageStartSeconds = FPlatformTime::Seconds();
 		PrepareMainMapStage(World);
 		UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] PrepareMainMapStage finished in %.1f ms."),
@@ -300,10 +284,6 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 		return;
 	}
 
-	const double PropSpawnStartSeconds = FPlatformTime::Seconds();
-	SpawnStageDecorativeProps(false);
-	UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] SpawnStageDecorativeProps finished in %.1f ms."),
-		(FPlatformTime::Seconds() - PropSpawnStartSeconds) * 1000.0);
 	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
 	ScheduleStandardStageCombatBootstrap(World);
 	ScheduleGameplayVisualCleanup(World);
@@ -350,7 +330,7 @@ void AT66GameMode::ScheduleGameplayVisualCleanup(UWorld* World)
 		return;
 	}
 
-	// Re-run world visual cleanup after runtime terrain/props register so no legacy sky/light actors survive PIE startup.
+	// Re-run world visual cleanup after runtime terrain registers so no legacy sky/light actors survive PIE startup.
 	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
@@ -458,8 +438,7 @@ void AT66GameMode::SpawnStageStructuresAndInteractables(UWorld* World, bool bUsi
 
 	if (!IsUsingTowerMainMapLayout())
 	{
-		SpawnCasinoInteractableIfNeeded();
-		SpawnSupportVendorAtStartIfNeeded();
+		SpawnGamblerNPCIfNeeded();
 		SpawnGuaranteedStartAreaInteractables();
 	}
 	else
@@ -476,49 +455,9 @@ void AT66GameMode::SpawnStageStructuresAndInteractables(UWorld* World, bool bUsi
 	}
 }
 
-void AT66GameMode::SpawnStageDecorativeProps(bool bUsingMainMapTerrain)
+void AT66GameMode::SpawnStageDecorativeProps(bool)
 {
-	if (bUsingMainMapTerrain && IsUsingTowerMainMapLayout())
-	{
-		// Tower uses a dedicated terrain scaffold; grouped prop placement still assumes the legacy board generator.
-		return;
-	}
-
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UT66PropSubsystem* PropSub = GI->GetSubsystem<UT66PropSubsystem>())
-		{
-			UT66GameInstance* T66GI = GetT66GameInstance();
-			const int32 PropSeed = (T66GI && T66GI->RunSeed != 0) ? T66GI->RunSeed : FMath::Rand();
-			if (bUsingMainMapTerrain)
-			{
-				const TArray<FName> MainMapPropRows = {
-					FName(TEXT("Barn")),
-					FName(TEXT("Boulder")),
-					FName(TEXT("Fence")),
-					FName(TEXT("Fence2")),
-					FName(TEXT("Fence3")),
-					FName(TEXT("Haybell")),
-					FName(TEXT("Log")),
-					FName(TEXT("Rocks")),
-					FName(TEXT("Scarecrow")),
-					FName(TEXT("Silo")),
-					FName(TEXT("Stump")),
-					FName(TEXT("Tractor")),
-					FName(TEXT("Tree")),
-					FName(TEXT("Tree2")),
-					FName(TEXT("Tree3")),
-					FName(TEXT("Troth")),
-					FName(TEXT("Windmill"))
-				};
-				PropSub->SpawnMainMapPropsForStage(GetWorld(), PropSeed, MainMapPropRows);
-			}
-			else
-			{
-				PropSub->SpawnPropsForStage(GetWorld(), PropSeed);
-			}
-		}
-	}
+	UE_LOG(LogT66GameMode, Verbose, TEXT("Decorative prop spawning is disabled; generated world props are deprecated."));
 }
 
 void AT66GameMode::PrepareMainMapStage(UWorld* World)
@@ -607,21 +546,43 @@ void AT66GameMode::PreloadStageCharacterVisuals()
 			if (!StageData.EnemyA.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyA);
 			if (!StageData.EnemyB.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyB);
 			if (!StageData.EnemyC.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyC);
+			if (!StageData.EnemyD.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyD);
+			if (!StageData.EnemyE.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyE);
+			if (!StageData.BossID.IsNone()) Visuals->PreloadCharacterVisual(StageData.BossID);
+
+			TArray<FT66BossEncounterMemberData> EncounterMembers;
+			if (!StageData.BossEncounterID.IsNone())
+			{
+				T66GI->GetBossEncounterMemberData(StageData.BossEncounterID, EncounterMembers);
+				for (const FT66BossEncounterMemberData& Member : EncounterMembers)
+				{
+					if (!Member.BossID.IsNone())
+					{
+						Visuals->PreloadCharacterVisual(Member.BossID);
+					}
+				}
+			}
 			Visuals->PreloadCharacterVisual(FName(TEXT("Boss")));
 
-			UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, Boss=%s) in %.1fms"),
+			UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, EnemyD=%s, EnemyE=%s, Boss=%s, EncounterMembers=%d) in %.1fms"),
 				StageNum,
 				*StageData.EnemyA.ToString(), *StageData.EnemyB.ToString(), *StageData.EnemyC.ToString(),
+				*StageData.EnemyD.ToString(), *StageData.EnemyE.ToString(),
 				*StageData.BossID.ToString(),
+				EncounterMembers.Num(),
 				(FPlatformTime::Seconds() - PreloadStart) * 1000.0);
 		}
 
 		const FName FallbackA = FName(*FString::Printf(TEXT("Mob_Stage%02d_A"), RunState->GetCurrentStage()));
 		const FName FallbackB = FName(*FString::Printf(TEXT("Mob_Stage%02d_B"), RunState->GetCurrentStage()));
 		const FName FallbackC = FName(*FString::Printf(TEXT("Mob_Stage%02d_C"), RunState->GetCurrentStage()));
+		const FName FallbackD = FName(*FString::Printf(TEXT("Mob_Stage%02d_D"), RunState->GetCurrentStage()));
+		const FName FallbackE = FName(*FString::Printf(TEXT("Mob_Stage%02d_E"), RunState->GetCurrentStage()));
 		Visuals->PreloadCharacterVisual(FallbackA);
 		Visuals->PreloadCharacterVisual(FallbackB);
 		Visuals->PreloadCharacterVisual(FallbackC);
+		Visuals->PreloadCharacterVisual(FallbackD);
+		Visuals->PreloadCharacterVisual(FallbackE);
 	}
 
 	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: total preload time %.1fms"), (FPlatformTime::Seconds() - PreloadStart) * 1000.0);
@@ -776,6 +737,7 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 		return;
 	}
 
+	// Tutorial-map bootstrap only. TutorialManager is cached after first resolve.
 	for (TActorIterator<AT66TutorialManager> It(World); It; ++It)
 	{
 		if (AT66TutorialManager* ExistingTutorialManager = *It)

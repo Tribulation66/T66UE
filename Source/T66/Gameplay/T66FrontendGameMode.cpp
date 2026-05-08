@@ -43,6 +43,7 @@ namespace
 			return nullptr;
 		}
 
+		// Frontend preview setup cache miss only. Repeated UI refreshes use CachedStage.
 		for (TActorIterator<TStage> It(World); It; ++It)
 		{
 			if (TStage* ExistingStage = *It)

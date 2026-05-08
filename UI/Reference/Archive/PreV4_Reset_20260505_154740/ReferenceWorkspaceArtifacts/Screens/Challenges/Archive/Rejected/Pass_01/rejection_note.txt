@@ -1,0 +1,1 @@
+Pass 01 generated sheet assembled composite panels; runtime double-laid parchment/detail art and did not match reference geometry. Replaced with Pass 02 atomic components.

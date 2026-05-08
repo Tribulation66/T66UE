@@ -43,7 +43,7 @@ Update it whenever:
   - keep `T66TowerMapTerrain` as the normal tower generator
   - after `AT66GameMode::SpawnMainMapTerrain()` caches `MainMapSpawnSurfaceLocation`, use that cached value as the portal destination
   - spawn the player in a generated-room entry layer only for the dev prototype
-  - use an explicit-destination portal instead of reusing `AT66TeleportPadInteractable` directly, because the current teleport pad chooses a random destination pad
+  - use an explicit-destination generated-room portal for room transitions
 
 ### 2026-04-19
 

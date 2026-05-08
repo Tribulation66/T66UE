@@ -10,7 +10,7 @@
 #include "Input/DragAndDrop.h"
 #include "Styling/CoreStyle.h"
 #include "UI/T66GamblerOverlayWidget.h"
-#include "UI/T66VendorOverlayWidget.h"
+#include "UI/T66CasinoShopTabWidget.h"
 #include "UI/Style/T66Style.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Images/SImage.h"
@@ -81,13 +81,13 @@ namespace T66CasinoOverlayShared
 		}
 	}
 
-	template<typename TOwner, typename TConfigureGamblerFn, typename TConfigureVendorFn>
+	template<typename TOwner, typename TConfigureGamblerFn, typename TConfigureShopFn>
 	void EnsureShellTabWidgets(
 		TOwner* Owner,
 		TObjectPtr<UT66GamblerOverlayWidget>& GamblerTabWidget,
-		TObjectPtr<UT66VendorOverlayWidget>& VendorTabWidget,
+		TObjectPtr<UT66CasinoShopTabWidget>& ShopTabWidget,
 		TConfigureGamblerFn&& ConfigureGambler,
-		TConfigureVendorFn&& ConfigureVendor)
+		TConfigureShopFn&& ConfigureShop)
 	{
 		if (!Owner)
 		{
@@ -103,12 +103,12 @@ namespace T66CasinoOverlayShared
 			}
 		}
 
-		if (!VendorTabWidget)
+		if (!ShopTabWidget)
 		{
-			VendorTabWidget = CreateWidget<UT66VendorOverlayWidget>(Owner->GetOwningPlayer(), UT66VendorOverlayWidget::StaticClass());
-			if (VendorTabWidget)
+			ShopTabWidget = CreateWidget<UT66CasinoShopTabWidget>(Owner->GetOwningPlayer(), UT66CasinoShopTabWidget::StaticClass());
+			if (ShopTabWidget)
 			{
-				ConfigureVendor(VendorTabWidget);
+				ConfigureShop(ShopTabWidget);
 			}
 		}
 	}
@@ -151,11 +151,11 @@ namespace T66CasinoOverlayShared
 	}
 
 	template<typename TActivateTabFn>
-	void OpenVendorTab(UT66VendorOverlayWidget* VendorTabWidget, TActivateTabFn&& ActivateTab)
+	void OpenShopTab(UT66CasinoShopTabWidget* ShopTabWidget, TActivateTabFn&& ActivateTab)
 	{
-		if (VendorTabWidget)
+		if (ShopTabWidget)
 		{
-			VendorTabWidget->OpenShopPage();
+			ShopTabWidget->OpenShopPage();
 		}
 
 		ActivateTab();

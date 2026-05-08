@@ -9,7 +9,6 @@
 class AT66EnemyBase;
 class AT66BossBase;
 class AT66HouseNPCBase;
-class AT66CasinoInteractable;
 class AT66StageGate;
 class AT66MiasmaBoundary;
 class AT66WorldInteractableBase;
@@ -41,11 +40,6 @@ public:
 	void UnregisterNPC(AT66HouseNPCBase* NPC);
 	const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& GetNPCs() const { return NPCs; }
 
-	// --------------- Casino Safe Zones ---------------
-	void RegisterCasino(AT66CasinoInteractable* Casino);
-	void UnregisterCasino(AT66CasinoInteractable* Casino);
-	const TArray<TWeakObjectPtr<AT66CasinoInteractable>>& GetCasinos() const { return Casinos; }
-
 	// --------------- Stage Gates ---------------
 	void RegisterStageGate(AT66StageGate* Gate);
 	void UnregisterStageGate(AT66StageGate* Gate);
@@ -70,7 +64,6 @@ private:
 	TArray<TWeakObjectPtr<AT66EnemyBase>> Enemies;
 	TArray<TWeakObjectPtr<AT66BossBase>> Bosses;
 	TArray<TWeakObjectPtr<AT66HouseNPCBase>> NPCs;
-	TArray<TWeakObjectPtr<AT66CasinoInteractable>> Casinos;
 	TArray<TWeakObjectPtr<AT66StageGate>> StageGates;
 	TArray<TWeakObjectPtr<AT66MiasmaBoundary>> MiasmaBoundaries;
 	TArray<TWeakObjectPtr<AT66WorldInteractableBase>> WorldInteractables;

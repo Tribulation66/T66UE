@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66PlayerController.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -93,17 +94,29 @@ void AT66HouseNPCBase::BeginPlay()
 
 	SafeZoneSphere->OnComponentBeginOverlap.AddDynamic(this, &AT66HouseNPCBase::OnSafeZoneBeginOverlap);
 	SafeZoneSphere->OnComponentEndOverlap.AddDynamic(this, &AT66HouseNPCBase::OnSafeZoneEndOverlap);
+	if (InteractionSphere)
+	{
+		InteractionSphere->OnComponentBeginOverlap.AddDynamic(this, &AT66HouseNPCBase::OnInteractionBeginOverlap);
+		InteractionSphere->OnComponentEndOverlap.AddDynamic(this, &AT66HouseNPCBase::OnInteractionEndOverlap);
+		if (const AT66HeroBase* LocalHero = GetLocalHero())
+		{
+			LocalHeroInteractionOverlapCount = InteractionSphere->IsOverlappingActor(LocalHero) ? 1 : 0;
+		}
+	}
 
 	// Apply imported character mesh if available (data-driven).
 	bUsingCharacterVisual = false;
-	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	if (ShouldApplyCharacterVisual())
 	{
-		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 		{
-			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(NPCID, SkeletalMesh, VisualMesh, true);
-			if (!bUsingCharacterVisual && SkeletalMesh)
+			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 			{
-				SkeletalMesh->SetVisibility(false, true);
+				bUsingCharacterVisual = Visuals->ApplyCharacterVisual(NPCID, SkeletalMesh, VisualMesh, true);
+				if (!bUsingCharacterVisual && SkeletalMesh)
+				{
+					SkeletalMesh->SetVisibility(false, true);
+				}
 			}
 		}
 	}
@@ -111,6 +124,7 @@ void AT66HouseNPCBase::BeginPlay()
 	FT66VisualUtil::SnapToGround(this, GetWorld());
 	ApplyVisuals();
 	bGravitySettled = true;
+	RefreshInteractionPrompt();
 
 	if (bFacePlayerAlways)
 	{
@@ -128,7 +142,6 @@ void AT66HouseNPCBase::LoadFromDataTable()
 	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
 	if (!GI || NPCID.IsNone()) return;
-	if (NPCID == FName(TEXT("Trickster"))) return;
 
 	FHouseNPCData Data;
 	if (GI->GetHouseNPCData(NPCID, Data))
@@ -174,7 +187,7 @@ void AT66HouseNPCBase::ApplyVisuals()
 			}
 		}
 	}
-	if (VisualMesh)
+	if (VisualMesh && !bPreserveVisualMeshMaterials)
 	{
 		if (ColorMat)
 		{
@@ -194,6 +207,45 @@ bool AT66HouseNPCBase::Interact(APlayerController* PC)
 	return false;
 }
 
+void AT66HouseNPCBase::RefreshInteractionPrompt()
+{
+	if (HasAnyFlags(RF_ClassDefaultObject) || !GetWorld())
+	{
+		HideInteractionPrompt();
+		return;
+	}
+
+	const AT66HeroBase* LocalHero = GetLocalHero();
+	if (!LocalHero || LocalHeroInteractionOverlapCount <= 0 || NPCName.IsEmpty())
+	{
+		HideInteractionPrompt();
+		return;
+	}
+
+	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+	{
+		T66PC->ShowInteractionPrompt(this, NPCName);
+	}
+}
+
+void AT66HouseNPCBase::HideInteractionPrompt()
+{
+	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+	{
+		T66PC->HideInteractionPrompt(this);
+	}
+}
+
+bool AT66HouseNPCBase::IsLocalHeroActor(const AActor* OtherActor) const
+{
+	return OtherActor && GetWorld() && OtherActor == UGameplayStatics::GetPlayerPawn(this, 0);
+}
+
+const AT66HeroBase* AT66HouseNPCBase::GetLocalHero() const
+{
+	return GetWorld() ? Cast<AT66HeroBase>(UGameplayStatics::GetPlayerPawn(this, 0)) : nullptr;
+}
+
 float AT66HouseNPCBase::GetFeetOffset() const
 {
 	if (bUsingCharacterVisual && SkeletalMesh && SkeletalMesh->Bounds.SphereRadius > 1.f)
@@ -209,6 +261,8 @@ float AT66HouseNPCBase::GetFeetOffset() const
 
 void AT66HouseNPCBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	HideInteractionPrompt();
+
 	// [GOLD] Unregister from the actor registry.
 	if (UWorld* W = GetWorld())
 	{
@@ -217,6 +271,18 @@ void AT66HouseNPCBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			Registry->UnregisterNPC(this);
 		}
 	}
+
+	if (InteractionSphere)
+	{
+		InteractionSphere->OnComponentBeginOverlap.RemoveDynamic(this, &AT66HouseNPCBase::OnInteractionBeginOverlap);
+		InteractionSphere->OnComponentEndOverlap.RemoveDynamic(this, &AT66HouseNPCBase::OnInteractionEndOverlap);
+	}
+	if (SafeZoneSphere)
+	{
+		SafeZoneSphere->OnComponentBeginOverlap.RemoveDynamic(this, &AT66HouseNPCBase::OnSafeZoneBeginOverlap);
+		SafeZoneSphere->OnComponentEndOverlap.RemoveDynamic(this, &AT66HouseNPCBase::OnSafeZoneEndOverlap);
+	}
+
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -327,5 +393,47 @@ void AT66HouseNPCBase::OnSafeZoneEndOverlap(UPrimitiveComponent* OverlappedCompo
 
 	HeroOverlapCount = FMath::Max(0, HeroOverlapCount - 1);
 	Hero->AddSafeZoneOverlap(-1);
+}
+
+void AT66HouseNPCBase::OnInteractionBeginOverlap(
+	UPrimitiveComponent* OverlappedComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
+{
+	(void)OverlappedComponent;
+	(void)OtherComp;
+	(void)OtherBodyIndex;
+	(void)bFromSweep;
+	(void)SweepResult;
+
+	if (!IsLocalHeroActor(OtherActor))
+	{
+		return;
+	}
+
+	++LocalHeroInteractionOverlapCount;
+	RefreshInteractionPrompt();
+}
+
+void AT66HouseNPCBase::OnInteractionEndOverlap(
+	UPrimitiveComponent* OverlappedComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex)
+{
+	(void)OverlappedComponent;
+	(void)OtherComp;
+	(void)OtherBodyIndex;
+
+	if (!IsLocalHeroActor(OtherActor))
+	{
+		return;
+	}
+
+	LocalHeroInteractionOverlapCount = FMath::Max(0, LocalHeroInteractionOverlapCount - 1);
+	RefreshInteractionPrompt();
 }
 

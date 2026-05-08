@@ -9,7 +9,7 @@
 
 AT66CrateInteractable::AT66CrateInteractable()
 {
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Crate.Crate")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Crate/Crate_QuadRetro.Crate_QuadRetro")));
 	ApplyRarityVisuals();
 }
 
@@ -28,6 +28,13 @@ bool AT66CrateInteractable::Interact(APlayerController* PC)
 	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC))
 	{
 		T66PC->StartCrateOpenHUD();
+	}
+
+	if (IsShowcaseReusable())
+	{
+		bConsumed = false;
+		RefreshInteractionPrompt();
+		return true;
 	}
 
 	bConsumed = true;

@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/HeroSelection/T66HeroSelectionScreen_Private.h"
+
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 

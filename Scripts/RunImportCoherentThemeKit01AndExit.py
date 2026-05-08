@@ -19,6 +19,7 @@ DEST_DIR = ImportStaticMeshes.COHERENT_THEME_KIT_DEST
 SOURCE_PREFIX = "WorldKit/CoherentThemeKit01/"
 KIT_MESHES = tuple(f"{module_id}_UnrealReady" for module_id in ImportStaticMeshes.COHERENT_THEME_KIT_MODULES)
 SOURCE_TEXTURE_DIR = "WorldKit/CoherentThemeKit01/Textures"
+RECOLORED_TEXTURE_DIR = "WorldKit/CoherentThemeKit01/Textures_Recolored"
 PARENT_MATERIAL = "/Game/Materials/M_Environment_Unlit"
 KIT_TEXTURES = {
     asset_name: f"{asset_name}_BaseColor_00.png"
@@ -32,6 +33,13 @@ def _project_import_root():
         "SourceAssets",
         "Import",
     ).replace("\\", "/")
+
+
+def _resolve_texture_source(import_root, texture_file):
+    recolored_source = os.path.join(import_root, RECOLORED_TEXTURE_DIR, texture_file).replace("\\", "/")
+    if os.path.isfile(recolored_source):
+        return recolored_source
+    return os.path.join(import_root, SOURCE_TEXTURE_DIR, texture_file).replace("\\", "/")
 
 
 def _import_texture(source_path, texture_name):
@@ -139,7 +147,7 @@ def _apply_kit_textures():
     import_root = _project_import_root()
     applied = 0
     for asset_name, texture_file in KIT_TEXTURES.items():
-        texture_source = os.path.join(import_root, SOURCE_TEXTURE_DIR, texture_file).replace("\\", "/")
+        texture_source = _resolve_texture_source(import_root, texture_file)
         if not os.path.isfile(texture_source):
             unreal.log_warning(f"[RunImportCoherentThemeKit01AndExit] Missing texture source: {texture_source}")
             continue

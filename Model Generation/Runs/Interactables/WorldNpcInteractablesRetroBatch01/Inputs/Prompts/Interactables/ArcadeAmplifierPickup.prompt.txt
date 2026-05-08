@@ -1,0 +1,7 @@
+Create one centered stylized game-ready 3D model source image on an opaque pure white background (#ffffff). No floor, no ground plane, no pedestal, no platform, no reflection, no cast shadow, no contact shadow, no gradient, no gray patch, no border, no text, no UI, no watermark, no room, no scene.
+
+Subject: a compact arcade amplifier pickup reward. It is a small chunky speaker amplifier box with a clear front speaker grille, two or three knobs, reinforced corner caps, handle on top, and bright colored arcade energy accents. It should read as a collectible reward pickup at gameplay scale, not as a full-size stage amp.
+
+Style: stylized action roguelike pickup model source, readable silhouette, toy-like proportions, clean bevels, clear material separation, saturated arcade colors. Slight three-quarter front view, fully visible, centered, no loose cables extending far from the object. Background must remain pure white and shadowless.
+
+Reject if there are music notes, particles, transparent glow cards, floor shadow, text, brand logos, extra speakers, duplicate objects, or cable tangles that will confuse the mesh.

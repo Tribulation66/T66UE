@@ -1,0 +1,21 @@
+---,BossEncounterID,DisplayName,DifficultyID,ThemeID,StageNumber,LocalStageNumber,bBossOnlyFinale,EncounterType,PrimaryBossID,VisualConcept
+Encounter_Stage_01,Encounter_Stage_01,The Sewer Slime King,Easy,Dungeon,1,1,false,SingleBoss,Dungeon_SewerSlimeKing,Massive slime king boss for the first dungeon stage
+Encounter_Stage_02,Encounter_Stage_02,The Web Matriarch,Easy,Dungeon,2,2,false,SingleBoss,Dungeon_WebMatriarch,Spider queen boss for the web dungeon stage
+Encounter_Stage_03,Encounter_Stage_03,The Bone Jailer,Easy,Dungeon,3,3,false,SingleBoss,Dungeon_BoneJailer,Skeleton jailer boss for the bone dungeon stage
+Encounter_Stage_04,Encounter_Stage_04,Bael Fallen Chad,Easy,Dungeon,4,4,true,FinaleChad,Dungeon_BaelFallenChad,Demonic Chad capstone boss for dungeon difficulty
+Encounter_Stage_05,Encounter_Stage_05,The Bramble Treant,Medium,Forest,5,1,false,SingleBoss,Forest_BrambleTreant,Root and thorn boss for the first forest stage
+Encounter_Stage_06,Encounter_Stage_06,The Myconid Queen,Medium,Forest,6,2,false,SingleBoss,Forest_MyconidQueen,Fungal queen boss for the mushroom forest stage
+Encounter_Stage_07,Encounter_Stage_07,The Thorn Hive,Medium,Forest,7,3,false,SingleBoss,Forest_ThornHive,Wasp hive boss for the thorn forest stage
+Encounter_Stage_08,Encounter_Stage_08,Buer Verdant Chad,Medium,Forest,8,4,true,FinaleChad,Forest_BuerVerdantChad,Demonic Chad capstone boss for forest difficulty
+Encounter_Stage_09,Encounter_Stage_09,The Reef Crab Colossus,Hard,Ocean,9,1,false,SingleBoss,Ocean_ReefCrabColossus,Crab colossus boss for the first ocean stage
+Encounter_Stage_10,Encounter_Stage_10,The Abyssal Jellyfish,Hard,Ocean,10,2,false,SingleBoss,Ocean_AbyssalJellyfish,Electric jellyfish boss for the deep ocean stage
+Encounter_Stage_11,Encounter_Stage_11,The Drowned Captain,Hard,Ocean,11,3,false,SingleBoss,Ocean_DrownedCaptain,Undead captain boss for the shipwreck ocean stage
+Encounter_Stage_12,Encounter_Stage_12,Focalor Drowned Chad,Hard,Ocean,12,4,true,FinaleChad,Ocean_FocalorDrownedChad,Demonic Chad capstone boss for ocean difficulty
+Encounter_Stage_13,Encounter_Stage_13,The Red Sand Behemoth,VeryHard,Martian,13,1,false,SingleBoss,Martian_RedSandBehemoth,Red sand alien boss for the first martian stage
+Encounter_Stage_14,Encounter_Stage_14,The Crystal Mantis,VeryHard,Martian,14,2,false,SingleBoss,Martian_CrystalMantis,Crystal mantis boss for the martian crystal stage
+Encounter_Stage_15,Encounter_Stage_15,The Plasma Saucer Prime,VeryHard,Martian,15,3,false,SingleBoss,Martian_PlasmaSaucerPrime,UFO command boss for the martian plasma stage
+Encounter_Stage_16,Encounter_Stage_16,Stolas Astral Chad,VeryHard,Martian,16,4,true,FinaleChad,Martian_StolasAstralChad,Demonic Chad capstone boss for martian difficulty
+Encounter_Stage_17,Encounter_Stage_17,The Four Horsemen,Impossible,Hell,17,1,false,MultiBoss,Hell_Horseman_Conquest,Four simultaneous apocalypse horsemen bosses
+Encounter_Stage_18,Encounter_Stage_18,The False Prophet,Impossible,Hell,18,2,false,SingleBoss,Hell_FalseProphet,Infernal prophet boss for the second hell stage
+Encounter_Stage_19,Encounter_Stage_19,The Antichrist,Impossible,Hell,19,3,false,SingleBoss,Hell_Antichrist,Apocalyptic tyrant boss for the third hell stage
+Encounter_Stage_20,Encounter_Stage_20,The Great Dragon,Impossible,Hell,20,4,true,ApocalypseFinale,Hell_GreatDragon,Final red dragon boss for impossible difficulty

@@ -60,16 +60,16 @@ int32 UT66IdolManagerSubsystem::GetDifficultyStartStage(const ET66Difficulty Dif
 	const UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 	if (PlayerExperience)
 	{
-		return FMath::Clamp(PlayerExperience->GetDifficultyStartStage(Difficulty), 1, 23);
+		return FMath::Clamp(PlayerExperience->GetDifficultyStartStage(Difficulty), 1, 20);
 	}
 
 	switch (Difficulty)
 	{
 	case ET66Difficulty::Easy: return 1;
-	case ET66Difficulty::Medium: return 6;
-	case ET66Difficulty::Hard: return 11;
-	case ET66Difficulty::VeryHard: return 16;
-	case ET66Difficulty::Impossible: return 21;
+	case ET66Difficulty::Medium: return 5;
+	case ET66Difficulty::Hard: return 9;
+	case ET66Difficulty::VeryHard: return 13;
+	case ET66Difficulty::Impossible: return 17;
 	default: return 1;
 	}
 }
@@ -80,16 +80,16 @@ int32 UT66IdolManagerSubsystem::GetDifficultyEndStage(const ET66Difficulty Diffi
 	const UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 	if (PlayerExperience)
 	{
-		return FMath::Clamp(PlayerExperience->GetDifficultyEndStage(Difficulty), 1, 23);
+		return FMath::Clamp(PlayerExperience->GetDifficultyEndStage(Difficulty), 1, 20);
 	}
 
 	switch (Difficulty)
 	{
 	case ET66Difficulty::Easy: return 4;
-	case ET66Difficulty::Medium: return 9;
-	case ET66Difficulty::Hard: return 14;
-	case ET66Difficulty::VeryHard: return 19;
-	case ET66Difficulty::Impossible: return 23;
+	case ET66Difficulty::Medium: return 8;
+	case ET66Difficulty::Hard: return 12;
+	case ET66Difficulty::VeryHard: return 16;
+	case ET66Difficulty::Impossible: return 20;
 	default: return 4;
 	}
 }

@@ -54,5 +54,7 @@ private:
 	int32 NumTicks = 0;
 
 	float VFXAccum = 0.f;
-	UNiagaraSystem* CachedPixelVFX = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> CachedPixelVFX = nullptr;
 };

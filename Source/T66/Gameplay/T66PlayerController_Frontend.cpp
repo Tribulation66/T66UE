@@ -43,18 +43,14 @@
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
 #include "Core/T66SessionSubsystem.h"
-#include "Gameplay/T66FountainOfLifeInteractable.h"
+#include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
-#include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
 #include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66StageCatchUpGoldInteractable.h"
-#include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -71,7 +67,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "UI/T66LoadingScreenWidget.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66IdolAltar.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
@@ -87,7 +82,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Camera/CameraComponent.h"
 
 #include "Gameplay/T66GameMode.h"
-#include "Gameplay/T66ItemPickup.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
@@ -563,6 +557,13 @@ namespace
 			OutScreenType = ET66ScreenType::DeckMainMenu;
 			return true;
 		}
+		if (Normalized.Equals(TEXT("VersusMainMenu"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Versus"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("ChadpocalypseVersus"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::VersusMainMenu;
+			return true;
+		}
 		if (Normalized.Equals(TEXT("Challenges"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::Challenges;
@@ -647,6 +648,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Idle.T66IdleMainMenuScreen"));
 	case ET66ScreenType::DeckMainMenu:
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Deck.T66DeckMainMenuScreen"));
+	case ET66ScreenType::VersusMainMenu:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Versus.T66VersusMainMenuScreen"));
 	case ET66ScreenType::ReportBug:
 		return UT66ReportBugScreen::StaticClass();
 	case ET66ScreenType::Settings:
@@ -1262,6 +1265,10 @@ void AT66PlayerController::InitializeUI()
 	if (TSubclassOf<UT66ScreenBase> DeckMainMenuClass = ResolveScreenClass(ET66ScreenType::DeckMainMenu))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::DeckMainMenu, DeckMainMenuClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> VersusMainMenuClass = ResolveScreenClass(ET66ScreenType::VersusMainMenu))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::VersusMainMenu, VersusMainMenuClass);
 	}
 	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
 	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))

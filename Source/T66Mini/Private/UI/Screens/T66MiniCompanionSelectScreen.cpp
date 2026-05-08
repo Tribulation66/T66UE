@@ -534,6 +534,24 @@ FReply UT66MiniCompanionSelectScreen::HandleCompanionClicked(const FName Compani
 
 void UT66MiniCompanionSelectScreen::RebuildCompanionBrushes(const TArray<FT66MiniCompanionDefinition>& Companions)
 {
+	if (CompanionBrushes.Num() == Companions.Num())
+	{
+		bool bHasAllBrushes = true;
+		for (const FT66MiniCompanionDefinition& Companion : Companions)
+		{
+			if (!CompanionBrushes.Contains(Companion.CompanionID))
+			{
+				bHasAllBrushes = false;
+				break;
+			}
+		}
+
+		if (bHasAllBrushes)
+		{
+			return;
+		}
+	}
+
 	CompanionBrushes.Reset();
 
 	UT66MiniVisualSubsystem* VisualSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr;

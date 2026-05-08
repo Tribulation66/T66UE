@@ -68,7 +68,7 @@ public:
 	TSharedPtr<SBox> StatsPanelBox;
 	TSharedPtr<T66StatsPanelSlate::FT66LiveStatsPanel> LiveStatsPanel;
 
-	// Inventory strip (shared with vendor)
+	// Inventory strip (shared with shop)
 	static constexpr int32 InventorySlotCount = 5;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TArray<TSharedPtr<SWidget>> InventorySlotButtons;
@@ -121,6 +121,7 @@ public:
 	FSlateBrush CoinBrush_Side;
 	FTimerHandle CoinSpinTimerHandle;
 	float CoinSpinElapsed = 0.f;
+	float CoinSpinLastTickTimeSeconds = 0.f;
 	float CoinSpinDuration = 2.0f;
 	bool bCoinSpinActive = false;
 	bool bCoinSpinResultHeads = false; // final face to land on

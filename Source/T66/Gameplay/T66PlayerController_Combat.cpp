@@ -27,16 +27,12 @@
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
-#include "Gameplay/T66FountainOfLifeInteractable.h"
+#include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
-#include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
 #include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66StageCatchUpGoldInteractable.h"
-#include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
@@ -51,7 +47,6 @@
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
@@ -66,7 +61,6 @@
 #include "Camera/CameraComponent.h"
 
 #include "Gameplay/T66GameMode.h"
-#include "Gameplay/T66ItemPickup.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
@@ -445,6 +439,7 @@ void AT66PlayerController::PlayerTick(float DeltaTime)
 	Super::PlayerTick(DeltaTime);
 	SyncLockedCombatTargetFromCombat();
 	UpdateLockedChaseGameplayCamera(DeltaTime);
+	UpdateGameplayCameraWallOcclusion(DeltaTime);
 }
 
 bool AT66PlayerController::HasAttackLockedEnemy() const
@@ -1162,36 +1157,28 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66DifficultyTotem* ClosestTotem = nullptr;
 	AT66HouseNPCBase* ClosestNPC = nullptr;
 	AT66RecruitableCompanion* ClosestRecruitableCompanion = nullptr;
-	AT66ItemPickup* ClosestPickup = nullptr;
 	AT66LootBagPickup* ClosestLootBag = nullptr;
 	AT66TutorialPortal* ClosestTutorialPortal = nullptr;
 	AT66IdolAltar* ClosestIdolAltar = nullptr;
 	AT66PilotableTractor* ClosestTractor = nullptr;
-	AT66FountainOfLifeInteractable* ClosestFountain = nullptr;
+	AT66FountainInteractable* ClosestFountain = nullptr;
 	AT66ChestInteractable* ClosestChest = nullptr;
-	AT66WheelSpinInteractable* ClosestWheel = nullptr;
 	AT66CrateInteractable* ClosestCrate = nullptr;
 	AT66StageCatchUpGate* ClosestCatchUpGate = nullptr;
-	AT66StageCatchUpGoldInteractable* ClosestCatchUpGold = nullptr;
-	AT66StageCatchUpLootInteractable* ClosestCatchUpLoot = nullptr;
 	AT66WorldInteractableBase* ClosestWorldInteractable = nullptr;
 	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
 	float ClosestCowardiceGateDistSq = InteractRadius * InteractRadius;
 	float ClosestTotemDistSq = InteractRadius * InteractRadius;
 	float ClosestNPCDistSq = InteractRadius * InteractRadius;
 	float ClosestRecruitableCompanionDistSq = InteractRadius * InteractRadius;
-	float ClosestPickupDistSq = InteractRadius * InteractRadius;
 	float ClosestLootBagDistSq = InteractRadius * InteractRadius;
 	float ClosestTutorialPortalDistSq = InteractRadius * InteractRadius;
 	float ClosestIdolAltarDistSq = InteractRadius * InteractRadius;
 	float ClosestTractorDistSq = InteractRadius * InteractRadius;
 	float ClosestFountainDistSq = InteractRadius * InteractRadius;
 	float ClosestChestDistSq = InteractRadius * InteractRadius;
-	float ClosestWheelDistSq = InteractRadius * InteractRadius;
 	float ClosestCrateDistSq = InteractRadius * InteractRadius;
 	float ClosestCatchUpGateDistSq = InteractRadius * InteractRadius;
-	float ClosestCatchUpGoldDistSq = InteractRadius * InteractRadius;
-	float ClosestCatchUpLootDistSq = InteractRadius * InteractRadius;
 	float ClosestWorldInteractableDistSq = InteractRadius * InteractRadius;
 
 	for (const FOverlapResult& R : Overlaps)
@@ -1219,10 +1206,6 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestRecruitableCompanionDistSq) { ClosestRecruitableCompanionDistSq = DistSq; ClosestRecruitableCompanion = RC; }
 		}
-		else if (AT66ItemPickup* P = Cast<AT66ItemPickup>(A))
-		{
-			if (DistSq < ClosestPickupDistSq) { ClosestPickupDistSq = DistSq; ClosestPickup = P; }
-		}
 		else if (AT66LootBagPickup* Bag = Cast<AT66LootBagPickup>(A))
 		{
 			if (DistSq < ClosestLootBagDistSq) { ClosestLootBagDistSq = DistSq; ClosestLootBag = Bag; }
@@ -1239,17 +1222,13 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestTractorDistSq) { ClosestTractorDistSq = DistSq; ClosestTractor = Tractor; }
 		}
-		else if (AT66FountainOfLifeInteractable* Fountain = Cast<AT66FountainOfLifeInteractable>(A))
+		else if (AT66FountainInteractable* Fountain = Cast<AT66FountainInteractable>(A))
 		{
 			if (DistSq < ClosestFountainDistSq) { ClosestFountainDistSq = DistSq; ClosestFountain = Fountain; }
 		}
 		else if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(A))
 		{
 			if (DistSq < ClosestChestDistSq) { ClosestChestDistSq = DistSq; ClosestChest = Chest; }
-		}
-		else if (AT66WheelSpinInteractable* W = Cast<AT66WheelSpinInteractable>(A))
-		{
-			if (DistSq < ClosestWheelDistSq) { ClosestWheelDistSq = DistSq; ClosestWheel = W; }
 		}
 		else if (AT66CrateInteractable* CR = Cast<AT66CrateInteractable>(A))
 		{
@@ -1258,14 +1237,6 @@ void AT66PlayerController::HandleInteractPressed()
 		else if (AT66StageCatchUpGate* CUG = Cast<AT66StageCatchUpGate>(A))
 		{
 			if (DistSq < ClosestCatchUpGateDistSq) { ClosestCatchUpGateDistSq = DistSq; ClosestCatchUpGate = CUG; }
-		}
-		else if (AT66StageCatchUpGoldInteractable* CUGold = Cast<AT66StageCatchUpGoldInteractable>(A))
-		{
-			if (DistSq < ClosestCatchUpGoldDistSq) { ClosestCatchUpGoldDistSq = DistSq; ClosestCatchUpGold = CUGold; }
-		}
-		else if (AT66StageCatchUpLootInteractable* L = Cast<AT66StageCatchUpLootInteractable>(A))
-		{
-			if (DistSq < ClosestCatchUpLootDistSq) { ClosestCatchUpLootDistSq = DistSq; ClosestCatchUpLoot = L; }
 		}
 		else if (AT66WorldInteractableBase* WorldInteractable = Cast<AT66WorldInteractableBase>(A))
 		{
@@ -1327,7 +1298,7 @@ void AT66PlayerController::HandleInteractPressed()
 		return;
 	}
 
-	// NPCs (Vendor/Gambler/Saint/Ouroboros)
+	// NPCs (Gambler/Saint/Ouroboros)
 	if (ClosestNPC && ClosestNPC->Interact(this))
 	{
 		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestNPC);
@@ -1379,10 +1350,7 @@ void AT66PlayerController::HandleInteractPressed()
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestTractor, ClosestTractorDistSq, ComputeActorDistSq(ClosestTractor), ESecondaryInteractPriority::SpecificWorld);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestFountain, ClosestFountainDistSq, ComputeActorDistSq(ClosestFountain), ESecondaryInteractPriority::SpecificWorld);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestChest, ClosestChestDistSq, ComputeActorDistSq(ClosestChest), ESecondaryInteractPriority::SpecificWorld);
-	ConsiderSecondaryCandidate(SecondaryInteract, ClosestWheel, ClosestWheelDistSq, ComputeActorDistSq(ClosestWheel), ESecondaryInteractPriority::SpecificWorld);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestCrate, ClosestCrateDistSq, ComputeActorDistSq(ClosestCrate), ESecondaryInteractPriority::SpecificWorld);
-	ConsiderSecondaryCandidate(SecondaryInteract, ClosestCatchUpGold, ClosestCatchUpGoldDistSq, ComputeActorDistSq(ClosestCatchUpGold), ESecondaryInteractPriority::SpecificWorld);
-	ConsiderSecondaryCandidate(SecondaryInteract, ClosestCatchUpLoot, ClosestCatchUpLootDistSq, ComputeActorDistSq(ClosestCatchUpLoot), ESecondaryInteractPriority::SpecificWorld);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestWorldInteractable, ClosestWorldInteractableDistSq, ComputeActorDistSq(ClosestWorldInteractable), ESecondaryInteractPriority::GenericWorld);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestIdolAltar, ClosestIdolAltarDistSq, ComputeActorDistSq(ClosestIdolAltar), ESecondaryInteractPriority::IdolAltar);
 	if (AT66LootBagPickup* NearbyBag = NearbyLootBag.Get())
@@ -1431,7 +1399,7 @@ void AT66PlayerController::HandleInteractPressed()
 			return;
 		}
 	}
-	if (AT66FountainOfLifeInteractable* SelectedFountain = Cast<AT66FountainOfLifeInteractable>(SecondaryInteract.Actor))
+	if (AT66FountainInteractable* SelectedFountain = Cast<AT66FountainInteractable>(SecondaryInteract.Actor))
 	{
 		if (SelectedFountain->Interact(this))
 		{
@@ -1447,35 +1415,11 @@ void AT66PlayerController::HandleInteractPressed()
 			return;
 		}
 	}
-	if (AT66WheelSpinInteractable* SelectedWheel = Cast<AT66WheelSpinInteractable>(SecondaryInteract.Actor))
-	{
-		if (SelectedWheel->Interact(this))
-		{
-			PlayInteractAudio(FName(TEXT("Interact.Generic")), SelectedWheel);
-			return;
-		}
-	}
 	if (AT66CrateInteractable* SelectedCrate = Cast<AT66CrateInteractable>(SecondaryInteract.Actor))
 	{
 		if (SelectedCrate->Interact(this))
 		{
 			PlayInteractAudio(FName(TEXT("Interact.Crate.Open")), SelectedCrate);
-			return;
-		}
-	}
-	if (AT66StageCatchUpGoldInteractable* SelectedCatchUpGold = Cast<AT66StageCatchUpGoldInteractable>(SecondaryInteract.Actor))
-	{
-		if (SelectedCatchUpGold->Interact(this))
-		{
-			PlayInteractAudio(FName(TEXT("Pickup.Gold")), SelectedCatchUpGold);
-			return;
-		}
-	}
-	if (AT66StageCatchUpLootInteractable* SelectedCatchUpLoot = Cast<AT66StageCatchUpLootInteractable>(SecondaryInteract.Actor))
-	{
-		if (SelectedCatchUpLoot->Interact(this))
-		{
-			PlayInteractAudio(FName(TEXT("Pickup.Item")), SelectedCatchUpLoot);
 			return;
 		}
 	}
@@ -1505,20 +1449,6 @@ void AT66PlayerController::HandleInteractPressed()
 		if (SelectedWorldInteractable->Interact(this))
 		{
 			PlayInteractAudio(FName(TEXT("Interact.Generic")), SelectedWorldInteractable);
-			return;
-		}
-	}
-	// Backward-compat: if any old pickups exist, collect instantly (no popup).
-	if (ClosestPickup)
-	{
-		if (UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
-		{
-			if (RunState->HasInventorySpace())
-			{
-				RunState->AddItem(ClosestPickup->GetItemID());
-				PlayInteractAudio(FName(TEXT("Pickup.Item")), ClosestPickup);
-				ClosestPickup->Destroy();
-			}
 			return;
 		}
 	}

@@ -201,6 +201,12 @@ namespace
 UT66GameInstance::UT66GameInstance()
 {
 	WeaponsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Weapons.DT_Weapons")));
+	BossesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Bosses.DT_Bosses")));
+	StagesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Stages.DT_Stages")));
+	EnemiesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Enemies.DT_Enemies")));
+	StatusEffectsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_StatusEffects.DT_StatusEffects")));
+	BossEncountersDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossEncounters.DT_BossEncounters")));
+	BossEncounterMembersDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossEncounterMembers.DT_BossEncounterMembers")));
 	ArcadeInteractablesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables")));
 
 	// Default selections
@@ -234,8 +240,7 @@ void UT66GameInstance::Init()
 	PrimeCoreDataTablesAsync();
 	PrimeCorePresentationAssetsAsync();
 
-	// Preload the main-menu textures so they are often ready before BuildSlateUI's
-	// EnsureTexturesLoadedSync fallback fires. If these finish in time, the sync path becomes a no-op.
+	// Preload the main-menu textures so they are often ready before BuildSlateUI binds brushes.
 	if (UT66UITexturePoolSubsystem* TexPool = GetSubsystem<UT66UITexturePoolSubsystem>())
 	{
 		auto RequestFrontendTexture = [TexPool, this](const TCHAR* PackagePath, const TCHAR* ObjectPath, const TCHAR* RequestKey)
@@ -346,7 +351,7 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	bCoreDataTablesLoadRequested = true;
 
 	TArray<FSoftObjectPath> Paths;
-	Paths.Reserve(11);
+	Paths.Reserve(15);
 
 	auto AddDT = [&](const TSoftObjectPtr<UDataTable>& DT)
 	{
@@ -363,6 +368,10 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	AddDT(WeaponsDataTable);
 	AddDT(BossesDataTable);
 	AddDT(StagesDataTable);
+	AddDT(EnemiesDataTable);
+	AddDT(StatusEffectsDataTable);
+	AddDT(BossEncountersDataTable);
+	AddDT(BossEncounterMembersDataTable);
 	AddDT(HouseNPCsDataTable);
 	AddDT(LoanSharkDataTable);
 	AddDT(CharacterVisualsDataTable);
@@ -397,6 +406,10 @@ void UT66GameInstance::HandleCoreDataTablesLoaded()
 	if (!CachedWeaponsDataTable) CachedWeaponsDataTable = WeaponsDataTable.Get();
 	if (!CachedBossesDataTable) CachedBossesDataTable = BossesDataTable.Get();
 	if (!CachedStagesDataTable) CachedStagesDataTable = StagesDataTable.Get();
+	if (!CachedEnemiesDataTable) CachedEnemiesDataTable = EnemiesDataTable.Get();
+	if (!CachedStatusEffectsDataTable) CachedStatusEffectsDataTable = StatusEffectsDataTable.Get();
+	if (!CachedBossEncountersDataTable) CachedBossEncountersDataTable = BossEncountersDataTable.Get();
+	if (!CachedBossEncounterMembersDataTable) CachedBossEncounterMembersDataTable = BossEncounterMembersDataTable.Get();
 	if (!CachedHouseNPCsDataTable) CachedHouseNPCsDataTable = HouseNPCsDataTable.Get();
 	if (!CachedLoanSharkDataTable) CachedLoanSharkDataTable = LoanSharkDataTable.Get();
 	if (!CachedCharacterVisualsDataTable) CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
@@ -510,6 +523,7 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		}
 
 		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
+		AddPath(VisualRow->StaticMesh.ToSoftObjectPath());
 		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
@@ -643,6 +657,7 @@ void UT66GameInstance::PrimeHeroSelectionPreviewVisualsAsync()
 		}
 
 		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
+		AddPath(VisualRow->StaticMesh.ToSoftObjectPath());
 		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
@@ -676,15 +691,43 @@ void UT66GameInstance::HandleHeroSelectionPreviewVisualsLoaded()
 
 UDataTable* UT66GameInstance::ResolveCachedDataTable(TObjectPtr<UDataTable>& Cached, const TSoftObjectPtr<UDataTable>& Soft)
 {
-	if (!Cached && !Soft.IsNull())
+	if (Cached || Soft.IsNull())
 	{
-		Cached = Soft.Get();
-		if (!Cached)
+		return Cached;
+	}
+
+	Cached = Soft.Get();
+	if (Cached)
+	{
+		return Cached;
+	}
+
+	PrimeCoreDataTablesAsync();
+
+	if (CoreDataTablesLoadHandle.IsValid() && !CoreDataTablesLoadHandle->HasLoadCompleted())
+	{
+		const double WaitStartSeconds = FPlatformTime::Seconds();
+		CoreDataTablesLoadHandle->WaitUntilComplete();
+		const double WaitMs = (FPlatformTime::Seconds() - WaitStartSeconds) * 1000.0;
+		if (WaitMs > 5.0)
 		{
-			// Kick off async preload if we haven't already, but keep a safe sync fallback.
-			PrimeCoreDataTablesAsync();
-			Cached = Soft.LoadSynchronous();
+			UE_LOG(
+				LogT66GameInstance,
+				Log,
+				TEXT("[LOAD] ResolveCachedDataTable waited %.1fms for the existing core DataTable preload handle (%s)."),
+				WaitMs,
+				*Soft.ToString());
 		}
+	}
+
+	Cached = Soft.Get();
+	if (!Cached)
+	{
+		UE_LOG(
+			LogT66GameInstance,
+			Warning,
+			TEXT("[LOAD] Core DataTable was requested before the async preload made it available: %s"),
+			*Soft.ToString());
 	}
 	return Cached;
 }
@@ -849,6 +892,10 @@ FName UT66GameInstance::GetRandomItemIDForLootRarityFromStream(ET66Rarity LootRa
 
 UDataTable* UT66GameInstance::GetBossesDataTable() { return ResolveCachedDataTable(CachedBossesDataTable, BossesDataTable); }
 UDataTable* UT66GameInstance::GetStagesDataTable() { return ResolveCachedDataTable(CachedStagesDataTable, StagesDataTable); }
+UDataTable* UT66GameInstance::GetEnemiesDataTable() { return ResolveCachedDataTable(CachedEnemiesDataTable, EnemiesDataTable); }
+UDataTable* UT66GameInstance::GetStatusEffectsDataTable() { return ResolveCachedDataTable(CachedStatusEffectsDataTable, StatusEffectsDataTable); }
+UDataTable* UT66GameInstance::GetBossEncountersDataTable() { return ResolveCachedDataTable(CachedBossEncountersDataTable, BossEncountersDataTable); }
+UDataTable* UT66GameInstance::GetBossEncounterMembersDataTable() { return ResolveCachedDataTable(CachedBossEncounterMembersDataTable, BossEncounterMembersDataTable); }
 UDataTable* UT66GameInstance::GetHouseNPCsDataTable() { return ResolveCachedDataTable(CachedHouseNPCsDataTable, HouseNPCsDataTable); }
 UDataTable* UT66GameInstance::GetLoanSharkDataTable() { return ResolveCachedDataTable(CachedLoanSharkDataTable, LoanSharkDataTable); }
 UDataTable* UT66GameInstance::GetCharacterVisualsDataTable() { return ResolveCachedDataTable(CachedCharacterVisualsDataTable, CharacterVisualsDataTable); }
@@ -895,6 +942,50 @@ bool UT66GameInstance::GetStageData(int32 StageNumber, FStageData& OutStageData)
 {
 	const FName RowName(*FString::Printf(TEXT("Stage_%02d"), StageNumber));
 	return FindDataRow(GetStagesDataTable(), RowName, OutStageData, TEXT("GetStageData"), /*bRequireValidID=*/false);
+}
+
+bool UT66GameInstance::GetEnemyData(FName EnemyID, FT66EnemyData& OutEnemyData)
+{
+	return FindDataRow(GetEnemiesDataTable(), EnemyID, OutEnemyData, TEXT("GetEnemyData"));
+}
+
+bool UT66GameInstance::GetStatusEffectData(FName StatusEffectID, FT66StatusEffectData& OutStatusEffectData)
+{
+	return FindDataRow(GetStatusEffectsDataTable(), StatusEffectID, OutStatusEffectData, TEXT("GetStatusEffectData"));
+}
+
+bool UT66GameInstance::GetBossEncounterData(FName BossEncounterID, FT66BossEncounterData& OutEncounterData)
+{
+	return FindDataRow(GetBossEncountersDataTable(), BossEncounterID, OutEncounterData, TEXT("GetBossEncounterData"));
+}
+
+void UT66GameInstance::GetBossEncounterMemberData(FName BossEncounterID, TArray<FT66BossEncounterMemberData>& OutMembers)
+{
+	OutMembers.Reset();
+	if (BossEncounterID.IsNone())
+	{
+		return;
+	}
+
+	UDataTable* MembersTable = GetBossEncounterMembersDataTable();
+	if (!MembersTable)
+	{
+		return;
+	}
+
+	for (const FName RowName : MembersTable->GetRowNames())
+	{
+		const FT66BossEncounterMemberData* Row = MembersTable->FindRow<FT66BossEncounterMemberData>(RowName, TEXT("GetBossEncounterMemberData"));
+		if (Row && Row->BossEncounterID == BossEncounterID && !Row->BossID.IsNone())
+		{
+			OutMembers.Add(*Row);
+		}
+	}
+
+	OutMembers.Sort([](const FT66BossEncounterMemberData& A, const FT66BossEncounterMemberData& B)
+	{
+		return A.MemberIndex < B.MemberIndex;
+	});
 }
 
 bool UT66GameInstance::GetHouseNPCData(FName NPCID, FHouseNPCData& OutNPCData)
@@ -1292,8 +1383,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof")));
 		AddCoherentThemeKitAssets();
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Branch.Branch")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Rock.Rock")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile2.MI_HillTile2")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile3.MI_HillTile3")));
@@ -1347,7 +1436,7 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cube.Cube")));
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cylinder.Cylinder")));
 
-	// Main gameplay uses a dedicated terrain asset set. Preload the full terrain/prop contract
+	// Main gameplay uses a dedicated terrain asset set. Preload the full terrain contract
 	// before opening the gameplay level so the first entry does not depend on cold material state.
 	AddPath(CharacterVisualsDataTable.ToSoftObjectPath());
 	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit")));
@@ -1355,25 +1444,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof")));
 	AddCoherentThemeKitAssets();
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass.Grass")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Log.Log")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass/Materials/Material_0_014.Material_0_014")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree.Tree")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree2.Tree2")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree3.Tree3")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Rocks.Rocks")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Barn.Barn")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Boulder.Boulder")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Fence.Fence")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Fence2.Fence2")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Fence3.Fence3")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Haybell.Haybell")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Scarecrow.Scarecrow")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Silo.Silo")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Stump.Stump")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Troth.Troth")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Windmill.Windmill")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
 	AddAllTowerThemeAssets();
 	AddAllCombatEffectAssets();
 
@@ -1383,6 +1453,30 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : SelectedHeroSkinID));
 
 	AddVisualAssets(UT66CharacterVisualSubsystem::GetCompanionVisualID(SelectedCompanionID, FName(TEXT("Default"))));
+
+	if (UT66RunStateSubsystem* RunState = GetSubsystem<UT66RunStateSubsystem>())
+	{
+		FStageData StageData;
+		if (GetStageData(RunState->GetCurrentStage(), StageData))
+		{
+			AddVisualAssets(StageData.EnemyA);
+			AddVisualAssets(StageData.EnemyB);
+			AddVisualAssets(StageData.EnemyC);
+			AddVisualAssets(StageData.EnemyD);
+			AddVisualAssets(StageData.EnemyE);
+			AddVisualAssets(StageData.BossID);
+
+			TArray<FT66BossEncounterMemberData> EncounterMembers;
+			if (!StageData.BossEncounterID.IsNone())
+			{
+				GetBossEncounterMemberData(StageData.BossEncounterID, EncounterMembers);
+				for (const FT66BossEncounterMemberData& Member : EncounterMembers)
+				{
+					AddVisualAssets(Member.BossID);
+				}
+			}
+		}
+	}
 
 	if (Paths.Num() <= 0)
 	{

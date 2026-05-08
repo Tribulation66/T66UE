@@ -12,6 +12,8 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
 #include "Styling/SlateTypes.h"
+#include "Engine/World.h"
+#include "UObject/GarbageCollection.h"
 
 void UT66ScreenBase::NativeConstruct()
 {
@@ -20,9 +22,14 @@ void UT66ScreenBase::NativeConstruct()
 
 TSharedRef<SWidget> UT66ScreenBase::RebuildWidget()
 {
-	// Build our custom Slate UI
-	bSlateUIBuilt = true;
+	MarkSlateUIBuilt();
 	return FT66Style::MakeResponsiveRoot(BuildSlateUI());
+}
+
+void UT66ScreenBase::MarkSlateUIBuilt()
+{
+	bSlateRebuildQueued = false;
+	bSlateUIBuilt = true;
 }
 
 TSharedRef<SWidget> UT66ScreenBase::BuildSlateUI()
@@ -96,9 +103,30 @@ void UT66ScreenBase::CloseModal()
 
 void UT66ScreenBase::ForceRebuildSlate()
 {
+	RequestDeferredSlateRebuild();
+}
+
+void UT66ScreenBase::RequestDeferredSlateRebuild()
+{
 	// Defer the rebuild to the next tick so that if this is called from a Slate
 	// click/key handler the current event finishes processing before the widget
 	// tree is torn down (prevents dangling-pointer crashes).
+	if (IsInGameThread())
+	{
+		if (bSlateRebuildQueued)
+		{
+			return;
+		}
+
+		UWorld* World = GetWorld();
+		if (!World || World->bIsTearingDown || GExitPurge || IsGarbageCollecting())
+		{
+			return;
+		}
+
+		bSlateRebuildQueued = true;
+	}
+
 	FT66Style::DeferRebuild(this, bIsModal ? 100 : 0);
 }
 

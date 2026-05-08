@@ -18,6 +18,8 @@ class T66_API UT66WebImageCache : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Deinitialize() override;
+
 	/** Returns a cached texture for the URL, or nullptr if not yet downloaded. */
 	UTexture2D* GetCachedImage(const FString& Url) const;
 
@@ -35,6 +37,8 @@ public:
 	FOnWebImageReady OnWebImageReady;
 
 private:
+	bool bIsDeinitializing = false;
+
 	UPROPERTY(Transient)
 	TMap<FString, TObjectPtr<UTexture2D>> CachedTextures;
 

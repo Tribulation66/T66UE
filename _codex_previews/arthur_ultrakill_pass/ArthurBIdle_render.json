@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\SourceAssets\\Import\\Heros\\_Canonicalized\\Exports\\ArthurBIdle.glb",
+  "render": "C:\\UE\\T66\\_codex_previews\\arthur_ultrakill_pass\\ArthurBIdle_render.png",
+  "export": null,
+  "raw_triangles": 579989,
+  "triangles_before_decimate": 579989,
+  "triangles_after_decimate": 579989,
+  "bounds": {
+    "min": [
+      -0.9510578513145447,
+      -0.9999999403953552,
+      -1.0
+    ],
+    "max": [
+      0.9510578513145447,
+      0.9999999403953552,
+      1.8000030517578125
+    ],
+    "size": [
+      1.9021157026290894,
+      1.9999998807907104,
+      2.8000030517578125
+    ]
+  }
+}

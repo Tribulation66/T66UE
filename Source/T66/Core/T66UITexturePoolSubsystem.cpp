@@ -28,6 +28,8 @@ UTexture2D* UT66UITexturePoolSubsystem::CacheLoadedTexture(const FSoftObjectPath
 
 void UT66UITexturePoolSubsystem::Deinitialize()
 {
+	bIsDeinitializing = true;
+
 	// Cancel any in-flight loads (best-effort) and drop waiters so nothing calls back after teardown.
 	for (TPair<FSoftObjectPath, TSharedPtr<FStreamableHandle>>& Pair : ActiveLoads)
 	{
@@ -85,16 +87,19 @@ void UT66UITexturePoolSubsystem::RequestTexture(
 		return;
 	}
 
+	if (bIsDeinitializing)
+	{
+		return;
+	}
+
 	if (Soft.IsNull())
 	{
 		OnReady(nullptr);
 		return;
 	}
 
-	// If already loaded/cached, fulfill immediately.
-	if (UTexture2D* Loaded = GetLoadedTexture(Soft))
+	if (Requester && !IsValid(Requester))
 	{
-		OnReady(Loaded);
 		return;
 	}
 
@@ -105,10 +110,17 @@ void UT66UITexturePoolSubsystem::RequestTexture(
 		return;
 	}
 
-	// Record latest desired path for this key (used to suppress stale completions).
+	// Record latest desired path before any completion path so older in-flight loads cannot overwrite a newer bind.
 	if (Requester && !RequestKey.IsNone())
 	{
 		LatestRequestedPathByKey.FindOrAdd(Requester).Add(RequestKey, Path);
+	}
+
+	// If already loaded/cached, fulfill immediately.
+	if (UTexture2D* Loaded = GetLoadedTexture(Soft))
+	{
+		OnReady(Loaded);
+		return;
 	}
 
 	// Register waiter (gated by weak UObject).
@@ -167,26 +179,54 @@ void UT66UITexturePoolSubsystem::ClearAll()
 
 void UT66UITexturePoolSubsystem::EnsureTexturesLoadedSync(const TArray<FSoftObjectPath>& Paths)
 {
+	if (bIsDeinitializing || !UAssetManager::IsInitialized())
+	{
+		return;
+	}
+
 	for (const FSoftObjectPath& Path : Paths)
 	{
 		if (!Path.IsValid() || LoadedTextures.Contains(Path))
 		{
 			continue;
 		}
-		TSoftObjectPtr<UTexture2D> Soft(Path);
-		if (UTexture2D* Tex = Soft.LoadSynchronous())
+
+		if (UTexture2D* ResolvedTexture = Cast<UTexture2D>(Path.ResolveObject()))
 		{
-			Tex->bForceMiplevelsToBeResident = true;
-			Tex->NeverStream = true;
-			Tex->Filter = TextureFilter::TF_Trilinear;
-			Tex->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-			LoadedTextures.Add(Path, Tex);
+			CacheLoadedTexture(Path, ResolvedTexture);
+			continue;
+		}
+
+		if (ActiveLoads.Contains(Path))
+		{
+			continue;
+		}
+
+		TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+			Path,
+			FStreamableDelegate::CreateWeakLambda(this, [this, Path]()
+			{
+				HandleLoaded(Path);
+			}));
+
+		if (Handle.IsValid())
+		{
+			ActiveLoads.Add(Path, Handle);
+		}
+		else
+		{
+			HandleLoaded(Path);
 		}
 	}
 }
 
 void UT66UITexturePoolSubsystem::HandleLoaded(const FSoftObjectPath& Path)
 {
+	if (bIsDeinitializing)
+	{
+		return;
+	}
+
 	// Drop handle (if any).
 	ActiveLoads.Remove(Path);
 
@@ -232,6 +272,12 @@ void UT66UITexturePoolSubsystem::HandleLoaded(const FSoftObjectPath& Path)
 						{
 							continue;
 						}
+					}
+
+					PerKey->Remove(W.RequestKey);
+					if (PerKey->Num() == 0)
+					{
+						LatestRequestedPathByKey.Remove(W.Requester);
 					}
 				}
 			}

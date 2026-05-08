@@ -28,21 +28,17 @@ namespace T66GameModePrivate
 		switch (Difficulty)
 		{
 		case ET66Difficulty::Easy: return 4;
-		case ET66Difficulty::Medium: return 9;
-		case ET66Difficulty::Hard: return 14;
-		case ET66Difficulty::VeryHard: return 19;
-		case ET66Difficulty::Impossible: return 23;
+		case ET66Difficulty::Medium: return 8;
+		case ET66Difficulty::Hard: return 12;
+		case ET66Difficulty::VeryHard: return 16;
+		case ET66Difficulty::Impossible: return 20;
 		default: return 4;
 		}
 	}
 
 	bool T66IsReachableProgressionStage(const int32 StageNum)
 	{
-		return (StageNum >= 1 && StageNum <= 4)
-			|| (StageNum >= 6 && StageNum <= 9)
-			|| (StageNum >= 11 && StageNum <= 14)
-			|| (StageNum >= 16 && StageNum <= 19)
-			|| (StageNum >= 21 && StageNum <= 23);
+		return StageNum >= 1 && StageNum <= T66MaxGlobalStage;
 	}
 
 	// Helper: avoid PIE warnings ("StaticMeshComponent has to be 'Movable' if you'd like to move")
@@ -67,7 +63,7 @@ namespace T66GameModePrivate
 
 	bool T66_IsDifficultyBossStage(int32 StageNum)
 	{
-		return StageNum == 4 || StageNum == 9 || StageNum == 14 || StageNum == 19 || StageNum == 23;
+		return StageNum == 4 || StageNum == 8 || StageNum == 12 || StageNum == 16 || StageNum == 20;
 	}
 
 	int32 T66_CountReachableProgressionStagesUpTo(int32 StageNum)
@@ -91,7 +87,7 @@ namespace T66GameModePrivate
 	int32 T66_CountFinaleBonusUnlocksBeforeStage(int32 StageNum)
 	{
 		int32 Count = 0;
-		for (const int32 FinaleStage : { 4, 9, 14, 19 })
+		for (const int32 FinaleStage : { 4, 8, 12, 16 })
 		{
 			if (FinaleStage < StageNum)
 			{
@@ -130,7 +126,7 @@ namespace T66GameModePrivate
 		};
 
 		AddCompanionByIndex(BaseIndex);
-		if (StageNum == 4 || StageNum == 9 || StageNum == 14 || StageNum == 19 || StageNum == 23)
+		if (StageNum == 4 || StageNum == 8 || StageNum == 12 || StageNum == 16 || StageNum == 20)
 		{
 			AddCompanionByIndex(BaseIndex + 1);
 		}
@@ -138,7 +134,7 @@ namespace T66GameModePrivate
 
 	int32 T66ResolveFallbackBossStageNum(const FName BossID, const int32 DefaultStageNum)
 	{
-		const int32 ClampedDefaultStage = FMath::Clamp(DefaultStageNum, 1, 23);
+		const int32 ClampedDefaultStage = FMath::Clamp(DefaultStageNum, 1, T66MaxGlobalStage);
 		const FString BossName = BossID.ToString();
 		int32 SeparatorIndex = INDEX_NONE;
 		if (!BossName.FindLastChar(TEXT('_'), SeparatorIndex))
@@ -160,13 +156,13 @@ namespace T66GameModePrivate
 			}
 		}
 
-		return FMath::Clamp(FCString::Atoi(*Suffix), 1, 23);
+		return FMath::Clamp(FCString::Atoi(*Suffix), 1, T66MaxGlobalStage);
 	}
 
 	void T66BuildFallbackBossData(const int32 StageNum, const FName BossID, FBossData& OutBossData)
 	{
-		const int32 S = FMath::Clamp(StageNum, 1, 23);
-		const float T = static_cast<float>(S - 1) / 22.f; // 0..1
+		const int32 S = FMath::Clamp(StageNum, 1, T66MaxGlobalStage);
+		const float T = static_cast<float>(S - 1) / static_cast<float>(T66MaxGlobalStage - 1); // 0..1
 
 		OutBossData = FBossData{};
 		OutBossData.BossID = BossID.IsNone()
@@ -301,6 +297,8 @@ namespace T66GameModePrivate
 		GT66PlayerStartCache.Starts.Reset();
 		GT66PlayerStartCache.bScanned = true;
 
+		// Startup cache fill only. Later spawn/trace code reads GT66PlayerStartCache
+		// instead of walking the world again.
 		for (TActorIterator<APlayerStart> It(World); It; ++It)
 		{
 			if (APlayerStart* PlayerStart = *It)
@@ -371,6 +369,7 @@ namespace T66GameModePrivate
 			GT66TaggedActorCache.ActorsByTag.Remove(T66MainMapTerrainVisualTag);
 		}
 
+		// Cache-miss fallback for legacy/authored terrain markers.
 		for (TActorIterator<AActor> It(World); It; ++It)
 		{
 			AActor* Actor = *It;
@@ -418,6 +417,8 @@ namespace T66GameModePrivate
 			GT66TaggedActorCache.ActorsByTag.Remove(Tag);
 		}
 
+		// Cache-miss fallback for stage setup tags. Spawners call
+		// T66RememberTaggedActor once they create new runtime actors.
 		for (TActorIterator<AActor> It(World); It; ++It)
 		{
 			AActor* Actor = *It;
@@ -470,7 +471,7 @@ namespace T66GameModePrivate
 		}
 	}
 
-	bool T66HasRegisteredCasino(UWorld* World)
+	bool T66HasRegisteredGambler(UWorld* World)
 	{
 		if (!World)
 		{
@@ -479,9 +480,9 @@ namespace T66GameModePrivate
 
 		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
 		{
-			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
+			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
 			{
-				if (WeakCasino.IsValid())
+				if (Cast<AT66GamblerNPC>(WeakNPC.Get()))
 				{
 					return true;
 				}
@@ -707,6 +708,8 @@ namespace T66GameModePrivate
 			}
 		}
 
+		// Registry is authoritative for runtime boundaries. The iterator is only
+		// a teardown fallback for old maps or actors created before registration.
 		for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
 		{
 			if (AT66MiasmaBoundary* ExistingBoundary = *It)
@@ -1012,6 +1015,8 @@ AT66EnemyDirector* AT66GameMode::FindOrCacheEnemyDirector(UWorld* World)
 		return nullptr;
 	}
 
+	// One-shot fallback for legacy/authored maps. Runtime callers should use the
+	// cached GameMode seam instead of scanning their own world state.
 	for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
 	{
 		if (AT66EnemyDirector* ExistingDirector = *It)
@@ -1022,6 +1027,14 @@ AT66EnemyDirector* AT66GameMode::FindOrCacheEnemyDirector(UWorld* World)
 	}
 
 	return nullptr;
+}
+
+void AT66GameMode::SetEnemyDirectorSpawningPaused(const bool bPaused)
+{
+	if (AT66EnemyDirector* ExistingDirector = FindOrCacheEnemyDirector(GetWorld()))
+	{
+		ExistingDirector->SetSpawningPaused(bPaused);
+	}
 }
 
 AT66EnemyDirector* AT66GameMode::EnsureEnemyDirector(UWorld* World)
@@ -1056,6 +1069,8 @@ void AT66GameMode::DestroyEnemyDirectors(UWorld* World)
 
 	if (World)
 	{
+		// Cleanup-only fallback: this runs during world/stage teardown where we
+		// must remove any legacy duplicate director, not during gameplay ticks.
 		for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
 		{
 			if (AT66EnemyDirector* ExistingDirector = *It)
@@ -1125,16 +1140,10 @@ void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AT66GameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (IsUsingTowerMainMapLayout())
-	{
-		TowerTerrainSafetyAccumulator += DeltaTime;
-		if (TowerTerrainSafetyAccumulator >= 0.10f)
-		{
-			TowerTerrainSafetyAccumulator = 0.f;
-			MaintainPlayerTerrainSafety();
-		}
-	}
-	else
+	const bool bTowerLayout = IsUsingTowerMainMapLayout();
+	const float TerrainSafetyIntervalSeconds = bTowerLayout ? 0.10f : 0.15f;
+	TowerTerrainSafetyAccumulator += DeltaTime;
+	if (!bTerrainCollisionReady || TowerTerrainSafetyAccumulator >= TerrainSafetyIntervalSeconds)
 	{
 		TowerTerrainSafetyAccumulator = 0.f;
 		MaintainPlayerTerrainSafety();
@@ -1412,21 +1421,6 @@ void AT66GameMode::TrySpawnLoanSharkIfNeeded()
 			{
 				bInSafe = true;
 				break;
-			}
-		}
-		if (!bInSafe)
-		{
-			const TArray<TWeakObjectPtr<AT66CasinoInteractable>>& Casinos = Registry ? Registry->GetCasinos() : TArray<TWeakObjectPtr<AT66CasinoInteractable>>();
-			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Casinos)
-			{
-				AT66CasinoInteractable* Casino = WeakCasino.Get();
-				if (!Casino) continue;
-				const float R = Casino->GetSafeZoneRadius();
-				if (FVector::DistSquared2D(SpawnLoc, Casino->GetActorLocation()) < (R * R))
-				{
-					bInSafe = true;
-					break;
-				}
 			}
 		}
 		if (!bInSafe)

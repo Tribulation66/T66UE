@@ -44,6 +44,8 @@ AT66MiniPlayerPawn::AT66MiniPlayerPawn()
 	bReplicates = true;
 	bAlwaysRelevant = true;
 	SetReplicateMovement(true);
+	SetNetUpdateFrequency(30.f);
+	SetMinNetUpdateFrequency(15.f);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -141,6 +143,11 @@ void AT66MiniPlayerPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 void AT66MiniPlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		MiniGameMode->RegisterLivePlayerPawn(this);
+	}
+
 	DesiredMoveLocation = GetActorLocation();
 	if (HasAuthority() || IsLocallyControlled())
 	{
@@ -151,6 +158,16 @@ void AT66MiniPlayerPawn::BeginPlay()
 	{
 		UpdateCameraAnchor();
 	}
+}
+
+void AT66MiniPlayerPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AT66MiniGameMode>() : nullptr)
+	{
+		MiniGameMode->UnregisterLivePlayerPawn(this);
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AT66MiniPlayerPawn::Tick(const float DeltaSeconds)
@@ -292,11 +309,11 @@ void AT66MiniPlayerPawn::GainExperience(const float Amount)
 	{
 		Experience -= GetNextLevelThreshold();
 		++HeroLevel;
-		MaxHealth += GetRuntimeTuningValue(TEXT("LevelHealthAdd"), 6.f);
-		CurrentHealth = FMath::Min(MaxHealth, CurrentHealth + GetRuntimeTuningValue(TEXT("LevelHealAdd"), 5.f));
-		BaseDamageStat += GetRuntimeTuningValue(TEXT("LevelDamageAdd"), 0.35f);
-		BaseAttackSpeedStat += GetRuntimeTuningValue(TEXT("LevelAttackSpeedAdd"), 0.12f);
-		MoveSpeed += GetRuntimeTuningValue(TEXT("LevelMoveSpeedAdd"), 18.f);
+		MaxHealth += GetRuntimeTuningValue(TEXT("LevelHealthAdd"));
+		CurrentHealth = FMath::Min(MaxHealth, CurrentHealth + GetRuntimeTuningValue(TEXT("LevelHealAdd")));
+		BaseDamageStat += GetRuntimeTuningValue(TEXT("LevelDamageAdd"));
+		BaseAttackSpeedStat += GetRuntimeTuningValue(TEXT("LevelAttackSpeedAdd"));
+		MoveSpeed += GetRuntimeTuningValue(TEXT("LevelMoveSpeedAdd"));
 	}
 }
 
@@ -344,25 +361,25 @@ void AT66MiniPlayerPawn::ApplyDamage(const float Amount)
 		return;
 	}
 
-	const float ArmorMitigation = BaseArmorStat / (BaseArmorStat + GetRuntimeTuningValue(TEXT("DamageArmorMitigationDenominator"), 20.f));
+	const float ArmorMitigation = BaseArmorStat / (BaseArmorStat + GetRuntimeTuningValue(TEXT("DamageArmorMitigationDenominator")));
 	float FinalDamage = Amount * (1.f - ArmorMitigation);
 	if (PassiveType == ET66PassiveType::IronWill)
 	{
-		FinalDamage *= CurrentHealth <= (MaxHealth * GetRuntimeTuningValue(TEXT("IronWillLowHealthThreshold"), 0.35f))
-			? GetRuntimeTuningValue(TEXT("IronWillLowHealthDamageScalar"), 0.72f)
-			: GetRuntimeTuningValue(TEXT("IronWillDamageScalar"), 0.86f);
+		FinalDamage *= CurrentHealth <= (MaxHealth * GetRuntimeTuningValue(TEXT("IronWillLowHealthThreshold")))
+			? GetRuntimeTuningValue(TEXT("IronWillLowHealthDamageScalar"))
+			: GetRuntimeTuningValue(TEXT("IronWillDamageScalar"));
 	}
 	if (PassiveType == ET66PassiveType::Unflinching)
 	{
-		FinalDamage *= GetRuntimeTuningValue(TEXT("UnflinchingDamageScalar"), 0.84f);
+		FinalDamage *= GetRuntimeTuningValue(TEXT("UnflinchingDamageScalar"));
 	}
-	FinalDamage = FMath::Max(GetRuntimeTuningValue(TEXT("IncomingDamageMin"), 1.f), FinalDamage);
+	FinalDamage = FMath::Max(GetRuntimeTuningValue(TEXT("IncomingDamageMin")), FinalDamage);
 	if (PassiveType == ET66PassiveType::Endurance && !bEnduranceCheatUsedThisWave && CurrentHealth - FinalDamage <= 0.f)
 	{
 		bEnduranceCheatUsedThisWave = true;
-		CurrentHealth = GetRuntimeTuningValue(TEXT("EnduranceCheatHealth"), 1.f);
-		PassiveSecondaryBuffRemaining = GetRuntimeTuningValue(TEXT("EnduranceBuffDuration"), 4.0f);
-		TemporaryDamageMultiplier = FMath::Max(TemporaryDamageMultiplier, GetRuntimeTuningValue(TEXT("EnduranceDamageMultiplier"), 1.18f));
+		CurrentHealth = GetRuntimeTuningValue(TEXT("EnduranceCheatHealth"));
+		PassiveSecondaryBuffRemaining = GetRuntimeTuningValue(TEXT("EnduranceBuffDuration"));
+		TemporaryDamageMultiplier = FMath::Max(TemporaryDamageMultiplier, GetRuntimeTuningValue(TEXT("EnduranceDamageMultiplier")));
 		if (UT66MiniVFXSubsystem* VfxSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
 		{
 			VfxSubsystem->SpawnPulse(GetWorld(), GetActorLocation() + FVector(0.f, 0.f, 12.f), FVector(0.36f, 0.36f, 1.f), 0.20f, FLinearColor(0.94f, 0.92f, 0.42f, 0.44f), 0.75f);
@@ -374,7 +391,7 @@ void AT66MiniPlayerPawn::ApplyDamage(const float Amount)
 	if (bQuickReviveReady && CurrentHealth <= 0.f)
 	{
 		bQuickReviveReady = false;
-		CurrentHealth = FMath::Max(MaxHealth * GetRuntimeTuningValue(TEXT("QuickReviveHealthScalar"), 0.45f), GetRuntimeTuningValue(TEXT("QuickReviveMinHealth"), 24.f));
+		CurrentHealth = FMath::Max(MaxHealth * GetRuntimeTuningValue(TEXT("QuickReviveHealthScalar")), GetRuntimeTuningValue(TEXT("QuickReviveMinHealth")));
 		if (UT66MiniVFXSubsystem* VfxSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
 		{
 			VfxSubsystem->SpawnPulse(GetWorld(), GetActorLocation() + FVector(0.f, 0.f, 14.f), FVector(0.42f, 0.42f, 1.f), 0.22f, FLinearColor(0.40f, 1.0f, 0.64f, 0.42f), 0.90f);
@@ -415,7 +432,7 @@ void AT66MiniPlayerPawn::HandleSuccessfulHit(const float DamageDealt)
 
 	if (FMath::FRand() < LifeStealChance)
 	{
-		Heal(FMath::Max(GetRuntimeTuningValue(TEXT("LifeStealHealMin"), 1.f), DamageDealt * GetRuntimeTuningValue(TEXT("LifeStealDamageScalar"), 0.08f)));
+		Heal(FMath::Max(GetRuntimeTuningValue(TEXT("LifeStealHealMin")), DamageDealt * GetRuntimeTuningValue(TEXT("LifeStealDamageScalar"))));
 	}
 }
 
@@ -463,15 +480,15 @@ void AT66MiniPlayerPawn::ApplyItemDefinition(const FT66MiniItemDefinition& ItemD
 	const FString& Stat = ItemDefinition.SecondaryStatType;
 	if (Stat == TEXT("AoeDamage") || Stat == TEXT("BounceDamage") || Stat == TEXT("PierceDamage") || Stat == TEXT("DotDamage"))
 	{
-		BaseDamageStat += GetRuntimeTuningValue(TEXT("ItemDamageStatAdd"), 1.6f);
+		BaseDamageStat += GetRuntimeTuningValue(TEXT("ItemDamageStatAdd"));
 	}
 	else if (Stat == TEXT("AoeSpeed") || Stat == TEXT("BounceSpeed") || Stat == TEXT("PierceSpeed") || Stat == TEXT("DotSpeed"))
 	{
-		BaseAttackSpeedStat += GetRuntimeTuningValue(TEXT("ItemAttackSpeedAdd"), 0.22f);
+		BaseAttackSpeedStat += GetRuntimeTuningValue(TEXT("ItemAttackSpeedAdd"));
 	}
 	else if (Stat == TEXT("AoeScale"))
 	{
-		AoeRadiusBonus += GetRuntimeTuningValue(TEXT("ItemAoeRadiusAdd"), 70.f);
+		AoeRadiusBonus += GetRuntimeTuningValue(TEXT("ItemAoeRadiusAdd"));
 	}
 	else if (Stat == TEXT("BounceScale"))
 	{
@@ -483,59 +500,59 @@ void AT66MiniPlayerPawn::ApplyItemDefinition(const FT66MiniItemDefinition& ItemD
 	}
 	else if (Stat == TEXT("DotScale"))
 	{
-		DotDamageBonus += GetRuntimeTuningValue(TEXT("ItemDotDamageAdd"), 1.0f);
+		DotDamageBonus += GetRuntimeTuningValue(TEXT("ItemDotDamageAdd"));
 	}
 	else if (Stat == TEXT("AttackRange") || Stat == TEXT("Accuracy"))
 	{
-		AttackRange += GetRuntimeTuningValue(TEXT("ItemAttackRangeAdd"), 110.f);
+		AttackRange += GetRuntimeTuningValue(TEXT("ItemAttackRangeAdd"));
 	}
 	else if (Stat == TEXT("CritChance"))
 	{
-		CritChance += GetRuntimeTuningValue(TEXT("ItemCritChanceAdd"), 0.05f);
+		CritChance += GetRuntimeTuningValue(TEXT("ItemCritChanceAdd"));
 	}
 	else if (Stat == TEXT("CritDamage"))
 	{
-		CritDamageMultiplier += GetRuntimeTuningValue(TEXT("ItemCritDamageAdd"), 0.30f);
+		CritDamageMultiplier += GetRuntimeTuningValue(TEXT("ItemCritDamageAdd"));
 	}
 	else if (Stat == TEXT("DamageReduction") || Stat == TEXT("Taunt"))
 	{
-		BaseArmorStat += GetRuntimeTuningValue(TEXT("ItemArmorAdd"), 1.4f);
+		BaseArmorStat += GetRuntimeTuningValue(TEXT("ItemArmorAdd"));
 	}
 	else if (Stat == TEXT("HpRegen"))
 	{
-		PassiveRegenPerSecond += GetRuntimeTuningValue(TEXT("ItemRegenAdd"), 1.2f);
+		PassiveRegenPerSecond += GetRuntimeTuningValue(TEXT("ItemRegenAdd"));
 	}
 	else if (Stat == TEXT("LifeSteal"))
 	{
-		LifeStealChance += GetRuntimeTuningValue(TEXT("ItemLifeStealChanceAdd"), 0.08f);
+		LifeStealChance += GetRuntimeTuningValue(TEXT("ItemLifeStealChanceAdd"));
 	}
 	else if (Stat == TEXT("EvasionChance") || Stat == TEXT("Invisibility"))
 	{
-		EvasionChance += GetRuntimeTuningValue(TEXT("ItemEvasionChanceAdd"), 0.06f);
+		EvasionChance += GetRuntimeTuningValue(TEXT("ItemEvasionChanceAdd"));
 	}
 	else if (Stat == TEXT("Cheating"))
 	{
-		const float HealthAdd = GetRuntimeTuningValue(TEXT("ItemCheatingHealthAdd"), 18.f);
+		const float HealthAdd = GetRuntimeTuningValue(TEXT("ItemCheatingHealthAdd"));
 		MaxHealth += HealthAdd;
 		CurrentHealth += HealthAdd;
 	}
 	else if (Stat == TEXT("Assassinate") || Stat == TEXT("Crush") || Stat == TEXT("Stealing"))
 	{
-		BonusDamageMultiplier += GetRuntimeTuningValue(TEXT("ItemBonusDamageMultiplierAdd"), 0.06f);
+		BonusDamageMultiplier += GetRuntimeTuningValue(TEXT("ItemBonusDamageMultiplierAdd"));
 	}
 	else if (Stat == TEXT("CounterAttack") || Stat == TEXT("ReflectDamage"))
 	{
-		BaseArmorStat += GetRuntimeTuningValue(TEXT("ItemCounterArmorAdd"), 0.75f);
-		BaseDamageStat += GetRuntimeTuningValue(TEXT("ItemCounterDamageAdd"), 0.4f);
+		BaseArmorStat += GetRuntimeTuningValue(TEXT("ItemCounterArmorAdd"));
+		BaseDamageStat += GetRuntimeTuningValue(TEXT("ItemCounterDamageAdd"));
 	}
 	else if (Stat == TEXT("TreasureChest") || Stat == TEXT("LootCrate"))
 	{
-		BaseLuckStat += GetRuntimeTuningValue(TEXT("ItemLuckAdd"), 0.8f);
+		BaseLuckStat += GetRuntimeTuningValue(TEXT("ItemLuckAdd"));
 	}
 	else if (Stat == TEXT("Alchemy"))
 	{
-		BaseLuckStat += GetRuntimeTuningValue(TEXT("ItemAlchemyLuckAdd"), 0.6f);
-		MaterialGainMultiplier += GetRuntimeTuningValue(TEXT("ItemAlchemyMaterialGainAdd"), 0.15f);
+		BaseLuckStat += GetRuntimeTuningValue(TEXT("ItemAlchemyLuckAdd"));
+		MaterialGainMultiplier += GetRuntimeTuningValue(TEXT("ItemAlchemyMaterialGainAdd"));
 	}
 }
 
@@ -546,10 +563,10 @@ void AT66MiniPlayerPawn::ApplyLevelUpBonuses(const int32 LevelsToApply)
 		return;
 	}
 
-	MaxHealth += LevelsToApply * GetRuntimeTuningValue(TEXT("LevelHealthAdd"), 6.f);
-	BaseDamageStat += LevelsToApply * GetRuntimeTuningValue(TEXT("LevelDamageAdd"), 0.35f);
-	BaseAttackSpeedStat += LevelsToApply * GetRuntimeTuningValue(TEXT("LevelAttackSpeedAdd"), 0.12f);
-	MoveSpeed += LevelsToApply * GetRuntimeTuningValue(TEXT("LevelMoveSpeedAdd"), 18.f);
+	MaxHealth += LevelsToApply * GetRuntimeTuningValue(TEXT("LevelHealthAdd"));
+	BaseDamageStat += LevelsToApply * GetRuntimeTuningValue(TEXT("LevelDamageAdd"));
+	BaseAttackSpeedStat += LevelsToApply * GetRuntimeTuningValue(TEXT("LevelAttackSpeedAdd"));
+	MoveSpeed += LevelsToApply * GetRuntimeTuningValue(TEXT("LevelMoveSpeedAdd"));
 }
 
 void AT66MiniPlayerPawn::InitializeFromMiniRun()
@@ -576,8 +593,8 @@ void AT66MiniPlayerPawn::InitializeFromMiniRun()
 	Experience = SeedRun ? SeedRun->Experience : Experience;
 	const float SavedMaxHealth = SeedRun ? SeedRun->MaxHealth : MaxHealth;
 	const float SavedCurrentHealth = SeedRun ? SeedRun->CurrentHealth : CurrentHealth;
-	CritChance = GetRuntimeTuningValue(TEXT("BaseCritChance"), 0.05f);
-	CritDamageMultiplier = GetRuntimeTuningValue(TEXT("BaseCritDamageMultiplier"), 1.5f);
+	CritChance = GetRuntimeTuningValue(TEXT("BaseCritChance"));
+	CritDamageMultiplier = GetRuntimeTuningValue(TEXT("BaseCritDamageMultiplier"));
 	PassiveRegenPerSecond = 0.f;
 	EvasionChance = 0.f;
 	LifeStealChance = 0.f;
@@ -610,13 +627,13 @@ void AT66MiniPlayerPawn::InitializeFromMiniRun()
 		HeroDisplayName = HeroDefinition->DisplayName;
 		UltimateType = HeroDefinition->UltimateType;
 		PassiveType = HeroDefinition->PassiveType;
-		BaseDamageStat = FMath::Max(GetRuntimeTuningValue(TEXT("HeroMinBaseDamage"), 2.f), HeroDefinition->BaseDamage);
-		BaseAttackSpeedStat = FMath::Max(GetRuntimeTuningValue(TEXT("HeroMinBaseAttackSpeed"), 1.f), HeroDefinition->BaseAttackSpeed);
+		BaseDamageStat = FMath::Max(GetRuntimeTuningValue(TEXT("HeroMinBaseDamage")), HeroDefinition->BaseDamage);
+		BaseAttackSpeedStat = FMath::Max(GetRuntimeTuningValue(TEXT("HeroMinBaseAttackSpeed")), HeroDefinition->BaseAttackSpeed);
 		BaseArmorStat = HeroDefinition->BaseArmor;
 		BaseLuckStat = HeroDefinition->BaseLuck;
-		AttackRange = GetRuntimeTuningValue(TEXT("HeroAttackRangeBase"), 1100.f) + (HeroDefinition->BaseSpeed * GetRuntimeTuningValue(TEXT("HeroSpeedRangeScalar"), 120.f));
-		MoveSpeed = GetRuntimeTuningValue(TEXT("HeroMoveSpeedBase"), 700.f) + (HeroDefinition->BaseSpeed * GetRuntimeTuningValue(TEXT("HeroMoveSpeedScalar"), 120.f));
-		MaxHealth = GetRuntimeTuningValue(TEXT("HeroMaxHealthBase"), 90.f) + (HeroDefinition->BaseArmor * GetRuntimeTuningValue(TEXT("HeroArmorHealthScalar"), 6.f));
+		AttackRange = GetRuntimeTuningValue(TEXT("HeroAttackRangeBase")) + (HeroDefinition->BaseSpeed * GetRuntimeTuningValue(TEXT("HeroSpeedRangeScalar")));
+		MoveSpeed = GetRuntimeTuningValue(TEXT("HeroMoveSpeedBase")) + (HeroDefinition->BaseSpeed * GetRuntimeTuningValue(TEXT("HeroMoveSpeedScalar")));
+		MaxHealth = GetRuntimeTuningValue(TEXT("HeroMaxHealthBase")) + (HeroDefinition->BaseArmor * GetRuntimeTuningValue(TEXT("HeroArmorHealthScalar")));
 		CurrentHealth = MaxHealth;
 		ApplyLevelUpBonuses(HeroLevel - 1);
 	}
@@ -626,67 +643,67 @@ void AT66MiniPlayerPawn::InitializeFromMiniRun()
 	switch (PassiveType)
 	{
 	case ET66PassiveType::IronWill:
-		BaseArmorStat += GetRuntimeTuningValue(TEXT("PassiveIronWillArmorAdd"), 1.5f);
+		BaseArmorStat += GetRuntimeTuningValue(TEXT("PassiveIronWillArmorAdd"));
 		break;
 
 	case ET66PassiveType::ArcaneAmplification:
-		BaseDamageStat += GetRuntimeTuningValue(TEXT("PassiveArcaneDamageAdd"), 0.6f);
+		BaseDamageStat += GetRuntimeTuningValue(TEXT("PassiveArcaneDamageAdd"));
 		break;
 
 	case ET66PassiveType::MarksmanFocus:
-		AttackRange += GetRuntimeTuningValue(TEXT("PassiveMarksmanRangeAdd"), 90.f);
+		AttackRange += GetRuntimeTuningValue(TEXT("PassiveMarksmanRangeAdd"));
 		break;
 
 	case ET66PassiveType::ToxinStacking:
-		DotDamageBonus += GetRuntimeTuningValue(TEXT("PassiveToxinDotDamageAdd"), 0.5f);
+		DotDamageBonus += GetRuntimeTuningValue(TEXT("PassiveToxinDotDamageAdd"));
 		break;
 
 	case ET66PassiveType::QuickDraw:
-		CritChance += GetRuntimeTuningValue(TEXT("PassiveQuickDrawCritChanceAdd"), 0.04f);
+		CritChance += GetRuntimeTuningValue(TEXT("PassiveQuickDrawCritChanceAdd"));
 		break;
 
 	case ET66PassiveType::Headshot:
-		CritChance += GetRuntimeTuningValue(TEXT("PassiveHeadshotCritChanceAdd"), 0.08f);
-		AttackRange += GetRuntimeTuningValue(TEXT("PassiveHeadshotRangeAdd"), 150.f);
+		CritChance += GetRuntimeTuningValue(TEXT("PassiveHeadshotCritChanceAdd"));
+		AttackRange += GetRuntimeTuningValue(TEXT("PassiveHeadshotRangeAdd"));
 		break;
 
 	case ET66PassiveType::StaticCharge:
 	case ET66PassiveType::Overclock:
-		BaseAttackSpeedStat += GetRuntimeTuningValue(TEXT("PassiveSpeedsterAttackSpeedAdd"), 0.18f);
+		BaseAttackSpeedStat += GetRuntimeTuningValue(TEXT("PassiveSpeedsterAttackSpeedAdd"));
 		break;
 
 	case ET66PassiveType::ChaosTheory:
-		BaseLuckStat += GetRuntimeTuningValue(TEXT("PassiveChaosLuckAdd"), 0.8f);
+		BaseLuckStat += GetRuntimeTuningValue(TEXT("PassiveChaosLuckAdd"));
 		break;
 
 	case ET66PassiveType::Endurance:
-		MaxHealth += GetRuntimeTuningValue(TEXT("PassiveEnduranceHealthAdd"), 12.f);
-		CurrentHealth += GetRuntimeTuningValue(TEXT("PassiveEnduranceHealthAdd"), 12.f);
+		MaxHealth += GetRuntimeTuningValue(TEXT("PassiveEnduranceHealthAdd"));
+		CurrentHealth += GetRuntimeTuningValue(TEXT("PassiveEnduranceHealthAdd"));
 		break;
 
 	case ET66PassiveType::BrawlersFury:
-		BaseDamageStat += GetRuntimeTuningValue(TEXT("PassiveBrawlersDamageAdd"), 0.45f);
+		BaseDamageStat += GetRuntimeTuningValue(TEXT("PassiveBrawlersDamageAdd"));
 		break;
 
 	case ET66PassiveType::Unflinching:
-		BaseArmorStat += GetRuntimeTuningValue(TEXT("PassiveUnflinchingArmorAdd"), 2.0f);
-		MaxHealth += GetRuntimeTuningValue(TEXT("PassiveUnflinchingHealthAdd"), 16.f);
-		CurrentHealth += GetRuntimeTuningValue(TEXT("PassiveUnflinchingHealthAdd"), 16.f);
+		BaseArmorStat += GetRuntimeTuningValue(TEXT("PassiveUnflinchingArmorAdd"));
+		MaxHealth += GetRuntimeTuningValue(TEXT("PassiveUnflinchingHealthAdd"));
+		CurrentHealth += GetRuntimeTuningValue(TEXT("PassiveUnflinchingHealthAdd"));
 		break;
 
 	case ET66PassiveType::TreasureHunter:
-		MaterialGainMultiplier += GetRuntimeTuningValue(TEXT("PassiveTreasureMaterialGainAdd"), 0.25f);
-		GoldGainMultiplier += GetRuntimeTuningValue(TEXT("PassiveTreasureGoldGainAdd"), 0.20f);
-		BaseLuckStat += GetRuntimeTuningValue(TEXT("PassiveTreasureLuckAdd"), 1.0f);
+		MaterialGainMultiplier += GetRuntimeTuningValue(TEXT("PassiveTreasureMaterialGainAdd"));
+		GoldGainMultiplier += GetRuntimeTuningValue(TEXT("PassiveTreasureGoldGainAdd"));
+		BaseLuckStat += GetRuntimeTuningValue(TEXT("PassiveTreasureLuckAdd"));
 		break;
 
 	case ET66PassiveType::Evasive:
-		EvasionChance += GetRuntimeTuningValue(TEXT("PassiveEvasiveChanceAdd"), 0.10f);
-		MoveSpeed += GetRuntimeTuningValue(TEXT("PassiveEvasiveMoveSpeedAdd"), 80.f);
+		EvasionChance += GetRuntimeTuningValue(TEXT("PassiveEvasiveChanceAdd"));
+		MoveSpeed += GetRuntimeTuningValue(TEXT("PassiveEvasiveMoveSpeedAdd"));
 		break;
 
 	case ET66PassiveType::Frostbite:
-		BonusDamageMultiplier += GetRuntimeTuningValue(TEXT("PassiveFrostbiteDamageMultiplierAdd"), 0.04f);
+		BonusDamageMultiplier += GetRuntimeTuningValue(TEXT("PassiveFrostbiteDamageMultiplierAdd"));
 		break;
 
 	default:
@@ -710,8 +727,8 @@ void AT66MiniPlayerPawn::InitializeFromMiniRun()
 	}
 
 	CurrentHealth = FMath::Clamp(SavedCurrentHealth, 0.f, MaxHealth);
-	UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateCooldownBase"), 16.0f)
-		+ (CurrentWaveIndex * GetRuntimeTuningValue(TEXT("UltimateCooldownPerWave"), 1.1f));
+	UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateCooldownBase"))
+		+ (CurrentWaveIndex * GetRuntimeTuningValue(TEXT("UltimateCooldownPerWave")));
 	if (SpritePresentationComponent)
 	{
 		SpritePresentationComponent->SetBaseScale(SpriteComponent->GetRelativeScale3D());
@@ -879,8 +896,8 @@ void AT66MiniPlayerPawn::RefreshPickupMagnetProfile()
 	if (PickupMagnetComponent)
 	{
 		PickupMagnetComponent->SetMagnetProfile(
-			GetRuntimeTuningValue(TEXT("PickupMagnetBaseRadius"), 420.f) + (BaseLuckStat * GetRuntimeTuningValue(TEXT("PickupMagnetLuckRadiusScalar"), 18.f)),
-			GetRuntimeTuningValue(TEXT("PickupMagnetBasePullSpeed"), 620.f) + (BaseLuckStat * GetRuntimeTuningValue(TEXT("PickupMagnetLuckPullSpeedScalar"), 24.f)));
+			GetRuntimeTuningValue(TEXT("PickupMagnetBaseRadius")) + (BaseLuckStat * GetRuntimeTuningValue(TEXT("PickupMagnetLuckRadiusScalar"))),
+			GetRuntimeTuningValue(TEXT("PickupMagnetBasePullSpeed")) + (BaseLuckStat * GetRuntimeTuningValue(TEXT("PickupMagnetLuckPullSpeedScalar"))));
 	}
 }
 
@@ -923,7 +940,7 @@ void AT66MiniPlayerPawn::UpdateCombat(const float DeltaSeconds)
 	PassiveBuffRemaining = FMath::Max(0.f, PassiveBuffRemaining - DeltaSeconds);
 	if (PassiveType == ET66PassiveType::QuickDraw)
 	{
-		PassiveSecondaryBuffRemaining = FMath::Min(GetRuntimeTuningValue(TEXT("PassiveQuickDrawChargeMax"), 2.0f), PassiveSecondaryBuffRemaining + DeltaSeconds);
+		PassiveSecondaryBuffRemaining = FMath::Min(GetRuntimeTuningValue(TEXT("PassiveQuickDrawChargeMax")), PassiveSecondaryBuffRemaining + DeltaSeconds);
 	}
 	else
 	{
@@ -932,8 +949,8 @@ void AT66MiniPlayerPawn::UpdateCombat(const float DeltaSeconds)
 
 	if (UltimateType == ET66UltimateType::GoldRush)
 	{
-		GoldGainMultiplier = (PassiveType == ET66PassiveType::TreasureHunter ? GetRuntimeTuningValue(TEXT("GoldRushTreasureHunterGoldScalar"), 1.20f) : 1.0f)
-			* (PassiveSecondaryBuffRemaining > 0.f ? GetRuntimeTuningValue(TEXT("GoldRushActiveGoldScalar"), 1.6f) : 1.0f);
+		GoldGainMultiplier = (PassiveType == ET66PassiveType::TreasureHunter ? GetRuntimeTuningValue(TEXT("GoldRushTreasureHunterGoldScalar")) : 1.0f)
+			* (PassiveSecondaryBuffRemaining > 0.f ? GetRuntimeTuningValue(TEXT("GoldRushActiveGoldScalar")) : 1.0f);
 	}
 
 	if (PassiveBuffRemaining <= 0.f && (PassiveType == ET66PassiveType::RallyingBlow || PassiveType == ET66PassiveType::BrawlersFury || PassiveType == ET66PassiveType::Overclock))
@@ -956,15 +973,15 @@ void AT66MiniPlayerPawn::UpdateCombat(const float DeltaSeconds)
 	float AttackSpeedScalar = 1.f;
 	if (PassiveType == ET66PassiveType::RallyingBlow && PassiveBuffRemaining > 0.f)
 	{
-		AttackSpeedScalar += PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveRallyAttackSpeedPerStack"), 0.14f);
+		AttackSpeedScalar += PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveRallyAttackSpeedPerStack"));
 	}
 	if (PassiveType == ET66PassiveType::BrawlersFury && PassiveBuffRemaining > 0.f)
 	{
-		AttackSpeedScalar += PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveBrawlersAttackSpeedPerStack"), 0.08f);
+		AttackSpeedScalar += PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveBrawlersAttackSpeedPerStack"));
 	}
 	if (PassiveType == ET66PassiveType::Overclock && PassiveBuffRemaining > 0.f)
 	{
-		AttackSpeedScalar += PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveOverclockAttackSpeedPerStack"), 0.10f);
+		AttackSpeedScalar += PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveOverclockAttackSpeedPerStack"));
 	}
 
 	AutoAttackCooldownRemaining = FMath::Max(0.f, AutoAttackCooldownRemaining - (DeltaSeconds * AttackSpeedScalar));
@@ -978,9 +995,9 @@ void AT66MiniPlayerPawn::FireBasicAttack()
 {
 	AT66MiniEnemyBase* TargetEnemy = FindBestTarget(AttackRange);
 	const float CooldownScale = FMath::Max(
-		GetRuntimeTuningValue(TEXT("AutoAttackCooldownMin"), 0.22f),
-		GetRuntimeTuningValue(TEXT("AutoAttackCooldownNumerator"), 1.20f)
-			/ FMath::Max(1.f, BaseAttackSpeedStat + (HeroLevel * GetRuntimeTuningValue(TEXT("AutoAttackLevelSpeedScalar"), 0.08f))));
+		GetRuntimeTuningValue(TEXT("AutoAttackCooldownMin")),
+		GetRuntimeTuningValue(TEXT("AutoAttackCooldownNumerator"))
+			/ FMath::Max(1.f, BaseAttackSpeedStat + (HeroLevel * GetRuntimeTuningValue(TEXT("AutoAttackLevelSpeedScalar")))));
 	AutoAttackCooldownRemaining = CooldownScale;
 	if (!TargetEnemy)
 	{
@@ -995,31 +1012,31 @@ void AT66MiniPlayerPawn::FireBasicAttack()
 
 	const FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, 56.f);
 	const FVector FireDirection = (TargetEnemy->GetActorLocation() - SpawnLocation).GetSafeNormal();
-	float PrimaryDamage = ((BaseDamageStat * GetRuntimeTuningValue(TEXT("BasicDamageBaseScalar"), 0.95f))
-		+ (HeroLevel * GetRuntimeTuningValue(TEXT("BasicDamageLevelScalar"), 0.45f))) * BonusDamageMultiplier * TemporaryDamageMultiplier;
+	float PrimaryDamage = ((BaseDamageStat * GetRuntimeTuningValue(TEXT("BasicDamageBaseScalar")))
+		+ (HeroLevel * GetRuntimeTuningValue(TEXT("BasicDamageLevelScalar")))) * BonusDamageMultiplier * TemporaryDamageMultiplier;
 	if (PassiveType == ET66PassiveType::BrawlersFury && PassiveBuffRemaining > 0.f)
 	{
-		PrimaryDamage *= 1.f + (PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveBrawlersDamagePerStack"), 0.06f));
+		PrimaryDamage *= 1.f + (PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveBrawlersDamagePerStack")));
 	}
 	if (PassiveType == ET66PassiveType::MarksmanFocus && FocusTarget.Get() == TargetEnemy)
 	{
-		PrimaryDamage *= 1.f + (PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveMarksmanDamagePerStack"), 0.08f));
+		PrimaryDamage *= 1.f + (PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveMarksmanDamagePerStack")));
 	}
 	if (PassiveType == ET66PassiveType::ToxinStacking && TargetEnemy->HasActiveDot())
 	{
-		PrimaryDamage *= GetRuntimeTuningValue(TEXT("PassiveToxinDotTargetDamageScalar"), 1.16f);
+		PrimaryDamage *= GetRuntimeTuningValue(TEXT("PassiveToxinDotTargetDamageScalar"));
 	}
-	if (PassiveType == ET66PassiveType::QuickDraw && PassiveSecondaryBuffRemaining >= GetRuntimeTuningValue(TEXT("PassiveQuickDrawReadyThreshold"), 1.4f))
+	if (PassiveType == ET66PassiveType::QuickDraw && PassiveSecondaryBuffRemaining >= GetRuntimeTuningValue(TEXT("PassiveQuickDrawReadyThreshold")))
 	{
-		PrimaryDamage *= GetRuntimeTuningValue(TEXT("PassiveQuickDrawDamageScalar"), 1.45f);
+		PrimaryDamage *= GetRuntimeTuningValue(TEXT("PassiveQuickDrawDamageScalar"));
 		PassiveSecondaryBuffRemaining = 0.f;
 	}
 	float EffectiveCritChance = CritChance;
 	if (PassiveType == ET66PassiveType::Headshot)
 	{
-		EffectiveCritChance += GetRuntimeTuningValue(TEXT("PassiveHeadshotCritChanceCombatAdd"), 0.10f);
+		EffectiveCritChance += GetRuntimeTuningValue(TEXT("PassiveHeadshotCritChanceCombatAdd"));
 	}
-	const bool bGuaranteedCrit = PassiveType == ET66PassiveType::Headshot && ((PassiveShotCounter + 1) % FMath::Max(1, GetRuntimeTuningInt(TEXT("PassiveHeadshotGuaranteedCritEvery"), 6)) == 0);
+	const bool bGuaranteedCrit = PassiveType == ET66PassiveType::Headshot && ((PassiveShotCounter + 1) % FMath::Max(1, GetRuntimeTuningInt(TEXT("PassiveHeadshotGuaranteedCritEvery"))) == 0);
 	const bool bDidCrit = bGuaranteedCrit || (FMath::FRand() < EffectiveCritChance);
 	if (bDidCrit)
 	{
@@ -1037,12 +1054,12 @@ void AT66MiniPlayerPawn::FireBasicAttack()
 			ET66MiniProjectileBehavior::BasicAttack,
 			PrimaryDamage,
 			0.f,
-			GetRuntimeTuningValue(TEXT("BasicProjectileSpeed"), 2400.f),
-			GetRuntimeTuningValue(TEXT("BasicProjectileRadius"), 180.f),
+			GetRuntimeTuningValue(TEXT("BasicProjectileSpeed")),
+			GetRuntimeTuningValue(TEXT("BasicProjectileRadius")),
 			1,
 			0,
 			0.f,
-			GetRuntimeTuningValue(TEXT("BasicProjectileDotInterval"), 0.5f),
+			GetRuntimeTuningValue(TEXT("BasicProjectileDotInterval")),
 			0.f,
 			HeroProjectileTexture,
 			nullptr,
@@ -1053,13 +1070,13 @@ void AT66MiniPlayerPawn::FireBasicAttack()
 
 	if (PassiveType == ET66PassiveType::Overclock)
 	{
-		PassiveStacks = FMath::Clamp(PassiveStacks + 1, 0, GetRuntimeTuningInt(TEXT("PassiveOverclockMaxStacks"), 5));
-		PassiveBuffRemaining = GetRuntimeTuningValue(TEXT("PassiveOverclockBuffDuration"), 2.2f);
+		PassiveStacks = FMath::Clamp(PassiveStacks + 1, 0, GetRuntimeTuningInt(TEXT("PassiveOverclockMaxStacks")));
+		PassiveBuffRemaining = GetRuntimeTuningValue(TEXT("PassiveOverclockBuffDuration"));
 	}
 	if (PassiveType == ET66PassiveType::ChaosTheory)
 	{
 		++PassiveShotCounter;
-		if (PassiveShotCounter % FMath::Max(1, GetRuntimeTuningInt(TEXT("PassiveChaosBounceEvery"), 5)) == 0)
+		if (PassiveShotCounter % FMath::Max(1, GetRuntimeTuningInt(TEXT("PassiveChaosBounceEvery"))) == 0)
 		{
 			bChaosNextAttackBounces = true;
 		}
@@ -1082,7 +1099,7 @@ void AT66MiniPlayerPawn::FireBasicAttack()
 			VfxSubsystem->PlayShotSfx(this, 0.18f, 1.0f + FMath::FRandRange(-0.06f, 0.06f));
 		}
 
-		NextShotSoundTime = GetWorld()->GetTimeSeconds() + GetRuntimeTuningValue(TEXT("BasicShotVfxCooldown"), 0.08f);
+		NextShotSoundTime = GetWorld()->GetTimeSeconds() + GetRuntimeTuningValue(TEXT("BasicShotVfxCooldown"));
 	}
 }
 
@@ -1105,119 +1122,119 @@ bool AT66MiniPlayerPawn::TryActivateUltimate(const FVector& TargetLocation)
 	switch (UltimateType)
 	{
 	case ET66UltimateType::SpearStorm:
-		for (int32 Index = -GetRuntimeTuningInt(TEXT("UltimateSpearStormSideProjectiles"), 2); Index <= GetRuntimeTuningInt(TEXT("UltimateSpearStormSideProjectiles"), 2); ++Index)
+		for (int32 Index = -GetRuntimeTuningInt(TEXT("UltimateSpearStormSideProjectiles")); Index <= GetRuntimeTuningInt(TEXT("UltimateSpearStormSideProjectiles")); ++Index)
 		{
-			const FVector Direction = (TargetLocation - HeroLocation).GetSafeNormal2D().RotateAngleAxis(static_cast<float>(Index) * GetRuntimeTuningValue(TEXT("UltimateSpearStormAngleStep"), 7.f), FVector::UpVector);
-			FireProjectileTowardLocation(HeroLocation + (Direction * GetRuntimeTuningValue(TEXT("UltimateSpearStormSpawnDistance"), 180.f)), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateSpearStormDamageScalar"), 1.25f), ET66MiniProjectileBehavior::Pierce, GetRuntimeTuningValue(TEXT("UltimateSpearStormProjectileSpeed"), 2600.f), GetRuntimeTuningValue(TEXT("UltimateSpearStormProjectileRadius"), 240.f), GetRuntimeTuningInt(TEXT("UltimateSpearStormPierceCount"), 4), 0, 0.f, GetRuntimeTuningValue(TEXT("BasicProjectileDotInterval"), 0.5f), 0.f, 0.f);
+			const FVector Direction = (TargetLocation - HeroLocation).GetSafeNormal2D().RotateAngleAxis(static_cast<float>(Index) * GetRuntimeTuningValue(TEXT("UltimateSpearStormAngleStep")), FVector::UpVector);
+			FireProjectileTowardLocation(HeroLocation + (Direction * GetRuntimeTuningValue(TEXT("UltimateSpearStormSpawnDistance"))), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateSpearStormDamageScalar")), ET66MiniProjectileBehavior::Pierce, GetRuntimeTuningValue(TEXT("UltimateSpearStormProjectileSpeed")), GetRuntimeTuningValue(TEXT("UltimateSpearStormProjectileRadius")), GetRuntimeTuningInt(TEXT("UltimateSpearStormPierceCount")), 0, 0.f, GetRuntimeTuningValue(TEXT("BasicProjectileDotInterval")), 0.f, 0.f);
 		}
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateSpearStormCooldown"), 18.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateSpearStormCooldown"));
 		break;
 
 	case ET66UltimateType::MeteorStrike:
-		for (int32 Index = 0; Index < GetRuntimeTuningInt(TEXT("UltimateMeteorCount"), 5); ++Index)
+		for (int32 Index = 0; Index < GetRuntimeTuningInt(TEXT("UltimateMeteorCount")); ++Index)
 		{
-			const float Scatter = GetRuntimeTuningValue(TEXT("UltimateMeteorScatter"), 360.f);
+			const float Scatter = GetRuntimeTuningValue(TEXT("UltimateMeteorScatter"));
 			const FVector Offset(FMath::FRandRange(-Scatter, Scatter), FMath::FRandRange(-Scatter, Scatter), 0.f);
-			QueueBurst(TargetLocation + Offset, BaseDamage * GetRuntimeTuningValue(TEXT("UltimateMeteorDamageScalar"), 1.5f), GetRuntimeTuningValue(TEXT("UltimateMeteorRadius"), 320.f), GetRuntimeTuningValue(TEXT("UltimateMeteorDelayBase"), 0.28f) + (Index * GetRuntimeTuningValue(TEXT("UltimateMeteorDelayStep"), 0.12f)), FLinearColor(1.0f, 0.52f, 0.18f, 0.32f), 0.f, 0.f, 0.0f, true);
+			QueueBurst(TargetLocation + Offset, BaseDamage * GetRuntimeTuningValue(TEXT("UltimateMeteorDamageScalar")), GetRuntimeTuningValue(TEXT("UltimateMeteorRadius")), GetRuntimeTuningValue(TEXT("UltimateMeteorDelayBase")) + (Index * GetRuntimeTuningValue(TEXT("UltimateMeteorDelayStep"))), FLinearColor(1.0f, 0.52f, 0.18f, 0.32f), 0.f, 0.f, 0.0f, true);
 		}
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateMeteorCooldown"), 20.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateMeteorCooldown"));
 		break;
 
 	case ET66UltimateType::ChainLightning:
-		ApplyAreaDamage(HeroLocation, GetRuntimeTuningValue(TEXT("UltimateChainLightningRadius"), 1250.f), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateChainLightningDamageScalar"), 1.18f), GetRuntimeTuningValue(TEXT("UltimateChainLightningStun"), 0.12f), 0.f, 0.f);
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateChainLightningCooldown"), 18.f);
+		ApplyAreaDamage(HeroLocation, GetRuntimeTuningValue(TEXT("UltimateChainLightningRadius")), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateChainLightningDamageScalar")), GetRuntimeTuningValue(TEXT("UltimateChainLightningStun")), 0.f, 0.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateChainLightningCooldown"));
 		break;
 
 	case ET66UltimateType::PlagueCloud:
-		AddAreaEffect(TargetLocation, GetRuntimeTuningValue(TEXT("UltimatePlagueCloudRadius"), 360.f), BaseDamage * GetRuntimeTuningValue(TEXT("UltimatePlagueCloudTickDamageScalar"), 0.40f), GetRuntimeTuningValue(TEXT("UltimatePlagueCloudTickInterval"), 0.40f), GetRuntimeTuningValue(TEXT("UltimatePlagueCloudDuration"), 5.2f), FLinearColor(0.54f, 1.0f, 0.44f, 0.30f), 0.f);
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimatePlagueCloudCooldown"), 17.f);
+		AddAreaEffect(TargetLocation, GetRuntimeTuningValue(TEXT("UltimatePlagueCloudRadius")), BaseDamage * GetRuntimeTuningValue(TEXT("UltimatePlagueCloudTickDamageScalar")), GetRuntimeTuningValue(TEXT("UltimatePlagueCloudTickInterval")), GetRuntimeTuningValue(TEXT("UltimatePlagueCloudDuration")), FLinearColor(0.54f, 1.0f, 0.44f, 0.30f), 0.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimatePlagueCloudCooldown"));
 		break;
 
 	case ET66UltimateType::PrecisionStrike:
 	case ET66UltimateType::ScopedSniper:
 	case ET66UltimateType::Deadeye:
-		FireProjectileTowardLocation(TargetLocation, BaseDamage * (UltimateType == ET66UltimateType::PrecisionStrike ? GetRuntimeTuningValue(TEXT("UltimatePrecisionStrikeDamageScalar"), 2.6f) : GetRuntimeTuningValue(TEXT("UltimateSniperDamageScalar"), 3.0f)), ET66MiniProjectileBehavior::Pierce, GetRuntimeTuningValue(TEXT("UltimateSniperProjectileSpeed"), 3200.f), GetRuntimeTuningValue(TEXT("UltimateSniperProjectileRadius"), 260.f), GetRuntimeTuningInt(TEXT("UltimateSniperPierceCount"), 6), 0, 0.f, GetRuntimeTuningValue(TEXT("BasicProjectileDotInterval"), 0.5f), 0.f, GetRuntimeTuningValue(TEXT("UltimateSniperStun"), 0.15f));
-		UltimateCooldownDuration = UltimateType == ET66UltimateType::PrecisionStrike ? GetRuntimeTuningValue(TEXT("UltimatePrecisionStrikeCooldown"), 16.f) : GetRuntimeTuningValue(TEXT("UltimateSniperCooldown"), 19.f);
+		FireProjectileTowardLocation(TargetLocation, BaseDamage * (UltimateType == ET66UltimateType::PrecisionStrike ? GetRuntimeTuningValue(TEXT("UltimatePrecisionStrikeDamageScalar")) : GetRuntimeTuningValue(TEXT("UltimateSniperDamageScalar"))), ET66MiniProjectileBehavior::Pierce, GetRuntimeTuningValue(TEXT("UltimateSniperProjectileSpeed")), GetRuntimeTuningValue(TEXT("UltimateSniperProjectileRadius")), GetRuntimeTuningInt(TEXT("UltimateSniperPierceCount")), 0, 0.f, GetRuntimeTuningValue(TEXT("BasicProjectileDotInterval")), 0.f, GetRuntimeTuningValue(TEXT("UltimateSniperStun")));
+		UltimateCooldownDuration = UltimateType == ET66UltimateType::PrecisionStrike ? GetRuntimeTuningValue(TEXT("UltimatePrecisionStrikeCooldown")) : GetRuntimeTuningValue(TEXT("UltimateSniperCooldown"));
 		break;
 
 	case ET66UltimateType::FanTheHammer:
-		for (int32 Index = -GetRuntimeTuningInt(TEXT("UltimateFanSideProjectiles"), 3); Index <= GetRuntimeTuningInt(TEXT("UltimateFanSideProjectiles"), 3); ++Index)
+		for (int32 Index = -GetRuntimeTuningInt(TEXT("UltimateFanSideProjectiles")); Index <= GetRuntimeTuningInt(TEXT("UltimateFanSideProjectiles")); ++Index)
 		{
-			const FVector Direction = (TargetLocation - HeroLocation).GetSafeNormal2D().RotateAngleAxis(static_cast<float>(Index) * GetRuntimeTuningValue(TEXT("UltimateFanAngleStep"), 5.f), FVector::UpVector);
-			FireProjectileTowardLocation(HeroLocation + (Direction * GetRuntimeTuningValue(TEXT("UltimateFanSpawnDistance"), 160.f)), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateFanDamageScalar"), 0.78f), ET66MiniProjectileBehavior::Pierce, GetRuntimeTuningValue(TEXT("UltimateFanProjectileSpeed"), 3000.f), GetRuntimeTuningValue(TEXT("UltimateFanProjectileRadius"), 170.f), GetRuntimeTuningInt(TEXT("UltimateFanPierceCount"), 2), 0, 0.f, GetRuntimeTuningValue(TEXT("BasicProjectileDotInterval"), 0.5f), 0.f, 0.f);
+			const FVector Direction = (TargetLocation - HeroLocation).GetSafeNormal2D().RotateAngleAxis(static_cast<float>(Index) * GetRuntimeTuningValue(TEXT("UltimateFanAngleStep")), FVector::UpVector);
+			FireProjectileTowardLocation(HeroLocation + (Direction * GetRuntimeTuningValue(TEXT("UltimateFanSpawnDistance"))), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateFanDamageScalar")), ET66MiniProjectileBehavior::Pierce, GetRuntimeTuningValue(TEXT("UltimateFanProjectileSpeed")), GetRuntimeTuningValue(TEXT("UltimateFanProjectileRadius")), GetRuntimeTuningInt(TEXT("UltimateFanPierceCount")), 0, 0.f, GetRuntimeTuningValue(TEXT("BasicProjectileDotInterval")), 0.f, 0.f);
 		}
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateFanCooldown"), 16.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateFanCooldown"));
 		break;
 
 	case ET66UltimateType::Discharge:
-		ApplyAreaDamage(HeroLocation, GetRuntimeTuningValue(TEXT("UltimateDischargeRadius"), 520.f), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateDischargeDamageScalar"), 1.05f), GetRuntimeTuningValue(TEXT("UltimateDischargeStun"), 0.26f), 0.f, 0.f);
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateDischargeCooldown"), 17.f);
+		ApplyAreaDamage(HeroLocation, GetRuntimeTuningValue(TEXT("UltimateDischargeRadius")), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateDischargeDamageScalar")), GetRuntimeTuningValue(TEXT("UltimateDischargeStun")), 0.f, 0.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateDischargeCooldown"));
 		break;
 
 	case ET66UltimateType::Juiced:
-		TemporaryDamageMultiplier = GetRuntimeTuningValue(TEXT("UltimateJuicedDamageMultiplier"), 1.45f);
-		PassiveSecondaryBuffRemaining = GetRuntimeTuningValue(TEXT("UltimateJuicedDuration"), 6.0f);
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateJuicedCooldown"), 22.f);
+		TemporaryDamageMultiplier = GetRuntimeTuningValue(TEXT("UltimateJuicedDamageMultiplier"));
+		PassiveSecondaryBuffRemaining = GetRuntimeTuningValue(TEXT("UltimateJuicedDuration"));
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateJuicedCooldown"));
 		break;
 
 	case ET66UltimateType::DeathSpiral:
-		for (int32 Index = 0; Index < GetRuntimeTuningInt(TEXT("UltimateDeathSpiralBurstCount"), 4); ++Index)
+		for (int32 Index = 0; Index < GetRuntimeTuningInt(TEXT("UltimateDeathSpiralBurstCount")); ++Index)
 		{
 			QueueBurst(HeroLocation,
-				BaseDamage * (GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDamageScalarBase"), 0.90f) + (Index * GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDamageScalarStep"), 0.16f))),
-				GetRuntimeTuningValue(TEXT("UltimateDeathSpiralRadiusBase"), 260.f) + (Index * GetRuntimeTuningValue(TEXT("UltimateDeathSpiralRadiusStep"), 110.f)),
-				GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDelayBase"), 0.05f) + (Index * GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDelayStep"), 0.18f)),
+				BaseDamage * (GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDamageScalarBase")) + (Index * GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDamageScalarStep")))),
+				GetRuntimeTuningValue(TEXT("UltimateDeathSpiralRadiusBase")) + (Index * GetRuntimeTuningValue(TEXT("UltimateDeathSpiralRadiusStep"))),
+				GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDelayBase")) + (Index * GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDelayStep"))),
 				FLinearColor(0.62f, 0.34f, 1.0f, 0.28f),
-				BaseDamage * GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDotDamageScalar"), 0.18f),
-				GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDotDuration"), 2.2f),
+				BaseDamage * GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDotDamageScalar")),
+				GetRuntimeTuningValue(TEXT("UltimateDeathSpiralDotDuration")),
 				0.f,
 				false);
 		}
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateDeathSpiralCooldown"), 20.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateDeathSpiralCooldown"));
 		break;
 
 	case ET66UltimateType::Shockwave:
-		ApplyAreaDamage(HeroLocation, GetRuntimeTuningValue(TEXT("UltimateShockwaveRadius"), 460.f), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateShockwaveDamageScalar"), 1.35f), GetRuntimeTuningValue(TEXT("UltimateShockwaveStun"), 0.22f), 0.f, 0.f);
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateShockwaveCooldown"), 17.f);
+		ApplyAreaDamage(HeroLocation, GetRuntimeTuningValue(TEXT("UltimateShockwaveRadius")), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateShockwaveDamageScalar")), GetRuntimeTuningValue(TEXT("UltimateShockwaveStun")), 0.f, 0.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateShockwaveCooldown"));
 		break;
 
 	case ET66UltimateType::TidalWave:
-		for (int32 Index = 1; Index <= GetRuntimeTuningInt(TEXT("UltimateTidalWaveBurstCount"), 4); ++Index)
+		for (int32 Index = 1; Index <= GetRuntimeTuningInt(TEXT("UltimateTidalWaveBurstCount")); ++Index)
 		{
-			const FVector BurstLocation = HeroLocation + ((TargetLocation - HeroLocation).GetSafeNormal2D() * (Index * GetRuntimeTuningValue(TEXT("UltimateTidalWaveSpacing"), 220.f)));
-			QueueBurst(BurstLocation, BaseDamage * GetRuntimeTuningValue(TEXT("UltimateTidalWaveDamageScalar"), 0.92f), GetRuntimeTuningValue(TEXT("UltimateTidalWaveRadius"), 280.f), Index * GetRuntimeTuningValue(TEXT("UltimateTidalWaveDelayStep"), 0.12f), FLinearColor(0.34f, 0.72f, 1.0f, 0.28f), 0.f, 0.f, GetRuntimeTuningValue(TEXT("UltimateTidalWaveStun"), 0.12f), false);
+			const FVector BurstLocation = HeroLocation + ((TargetLocation - HeroLocation).GetSafeNormal2D() * (Index * GetRuntimeTuningValue(TEXT("UltimateTidalWaveSpacing"))));
+			QueueBurst(BurstLocation, BaseDamage * GetRuntimeTuningValue(TEXT("UltimateTidalWaveDamageScalar")), GetRuntimeTuningValue(TEXT("UltimateTidalWaveRadius")), Index * GetRuntimeTuningValue(TEXT("UltimateTidalWaveDelayStep")), FLinearColor(0.34f, 0.72f, 1.0f, 0.28f), 0.f, 0.f, GetRuntimeTuningValue(TEXT("UltimateTidalWaveStun")), false);
 		}
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateTidalWaveCooldown"), 18.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateTidalWaveCooldown"));
 		break;
 
 	case ET66UltimateType::GoldRush:
-		PassiveSecondaryBuffRemaining = GetRuntimeTuningValue(TEXT("UltimateGoldRushDuration"), 7.5f);
-		for (int32 Index = 0; Index < GetRuntimeTuningInt(TEXT("UltimateGoldRushBurstCount"), 5); ++Index)
+		PassiveSecondaryBuffRemaining = GetRuntimeTuningValue(TEXT("UltimateGoldRushDuration"));
+		for (int32 Index = 0; Index < GetRuntimeTuningInt(TEXT("UltimateGoldRushBurstCount")); ++Index)
 		{
-			const float AngleDeg = static_cast<float>(Index) * GetRuntimeTuningValue(TEXT("UltimateGoldRushAngleStep"), 72.f);
-			const FVector Offset = FVector(1.f, 0.f, 0.f).RotateAngleAxis(AngleDeg, FVector::UpVector) * GetRuntimeTuningValue(TEXT("UltimateGoldRushOffset"), 240.f);
-			QueueBurst(HeroLocation + Offset, BaseDamage, GetRuntimeTuningValue(TEXT("UltimateGoldRushRadius"), 220.f), GetRuntimeTuningValue(TEXT("UltimateGoldRushDelayStep"), 0.08f) * Index, FLinearColor(1.0f, 0.84f, 0.24f, 0.28f), 0.f, 0.f, 0.f, false);
+			const float AngleDeg = static_cast<float>(Index) * GetRuntimeTuningValue(TEXT("UltimateGoldRushAngleStep"));
+			const FVector Offset = FVector(1.f, 0.f, 0.f).RotateAngleAxis(AngleDeg, FVector::UpVector) * GetRuntimeTuningValue(TEXT("UltimateGoldRushOffset"));
+			QueueBurst(HeroLocation + Offset, BaseDamage, GetRuntimeTuningValue(TEXT("UltimateGoldRushRadius")), GetRuntimeTuningValue(TEXT("UltimateGoldRushDelayStep")) * Index, FLinearColor(1.0f, 0.84f, 0.24f, 0.28f), 0.f, 0.f, 0.f, false);
 		}
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateGoldRushCooldown"), 21.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateGoldRushCooldown"));
 		break;
 
 	case ET66UltimateType::MiasmaBomb:
-		QueueBurst(TargetLocation, BaseDamage * GetRuntimeTuningValue(TEXT("UltimateMiasmaBurstDamageScalar"), 1.25f), GetRuntimeTuningValue(TEXT("UltimateMiasmaBurstRadius"), 300.f), GetRuntimeTuningValue(TEXT("UltimateMiasmaBurstDelay"), 0.25f), FLinearColor(0.62f, 1.0f, 0.54f, 0.26f), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateMiasmaBurstDotDamageScalar"), 0.16f), GetRuntimeTuningValue(TEXT("UltimateMiasmaBurstDotDuration"), 3.2f), 0.f, true);
-		AddAreaEffect(TargetLocation, GetRuntimeTuningValue(TEXT("UltimateMiasmaAreaRadius"), 260.f), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateMiasmaAreaTickDamageScalar"), 0.24f), GetRuntimeTuningValue(TEXT("UltimateMiasmaAreaTickInterval"), 0.45f), GetRuntimeTuningValue(TEXT("UltimateMiasmaAreaDuration"), 4.4f), FLinearColor(0.56f, 1.0f, 0.48f, 0.20f), 0.f);
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateMiasmaCooldown"), 18.f);
+		QueueBurst(TargetLocation, BaseDamage * GetRuntimeTuningValue(TEXT("UltimateMiasmaBurstDamageScalar")), GetRuntimeTuningValue(TEXT("UltimateMiasmaBurstRadius")), GetRuntimeTuningValue(TEXT("UltimateMiasmaBurstDelay")), FLinearColor(0.62f, 1.0f, 0.54f, 0.26f), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateMiasmaBurstDotDamageScalar")), GetRuntimeTuningValue(TEXT("UltimateMiasmaBurstDotDuration")), 0.f, true);
+		AddAreaEffect(TargetLocation, GetRuntimeTuningValue(TEXT("UltimateMiasmaAreaRadius")), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateMiasmaAreaTickDamageScalar")), GetRuntimeTuningValue(TEXT("UltimateMiasmaAreaTickInterval")), GetRuntimeTuningValue(TEXT("UltimateMiasmaAreaDuration")), FLinearColor(0.56f, 1.0f, 0.48f, 0.20f), 0.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateMiasmaCooldown"));
 		break;
 
 	case ET66UltimateType::RabidFrenzy:
-		TemporaryDamageMultiplier = GetRuntimeTuningValue(TEXT("UltimateRabidDamageMultiplier"), 1.35f);
-		PassiveSecondaryBuffRemaining = GetRuntimeTuningValue(TEXT("UltimateRabidDuration"), 6.5f);
-		Heal(BaseDamage * GetRuntimeTuningValue(TEXT("UltimateRabidHealScalar"), 0.12f));
-		AddAreaEffect(HeroLocation, GetRuntimeTuningValue(TEXT("UltimateRabidAreaRadius"), 260.f), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateRabidAreaTickDamageScalar"), 0.18f), GetRuntimeTuningValue(TEXT("UltimateRabidAreaTickInterval"), 0.45f), GetRuntimeTuningValue(TEXT("UltimateRabidAreaDuration"), 4.0f), FLinearColor(1.0f, 0.40f, 0.22f, 0.18f), 0.f);
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateRabidCooldown"), 19.f);
+		TemporaryDamageMultiplier = GetRuntimeTuningValue(TEXT("UltimateRabidDamageMultiplier"));
+		PassiveSecondaryBuffRemaining = GetRuntimeTuningValue(TEXT("UltimateRabidDuration"));
+		Heal(BaseDamage * GetRuntimeTuningValue(TEXT("UltimateRabidHealScalar")));
+		AddAreaEffect(HeroLocation, GetRuntimeTuningValue(TEXT("UltimateRabidAreaRadius")), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateRabidAreaTickDamageScalar")), GetRuntimeTuningValue(TEXT("UltimateRabidAreaTickInterval")), GetRuntimeTuningValue(TEXT("UltimateRabidAreaDuration")), FLinearColor(1.0f, 0.40f, 0.22f, 0.18f), 0.f);
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateRabidCooldown"));
 		break;
 
 	case ET66UltimateType::Blizzard:
-		AddAreaEffect(TargetLocation, GetRuntimeTuningValue(TEXT("UltimateBlizzardRadius"), 420.f), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateBlizzardTickDamageScalar"), 0.34f), GetRuntimeTuningValue(TEXT("UltimateBlizzardTickInterval"), 0.42f), GetRuntimeTuningValue(TEXT("UltimateBlizzardDuration"), 5.5f), FLinearColor(0.72f, 0.90f, 1.0f, 0.22f), GetRuntimeTuningValue(TEXT("UltimateBlizzardStun"), 0.08f));
-		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateBlizzardCooldown"), 19.f);
+		AddAreaEffect(TargetLocation, GetRuntimeTuningValue(TEXT("UltimateBlizzardRadius")), BaseDamage * GetRuntimeTuningValue(TEXT("UltimateBlizzardTickDamageScalar")), GetRuntimeTuningValue(TEXT("UltimateBlizzardTickInterval")), GetRuntimeTuningValue(TEXT("UltimateBlizzardDuration")), FLinearColor(0.72f, 0.90f, 1.0f, 0.22f), GetRuntimeTuningValue(TEXT("UltimateBlizzardStun")));
+		UltimateCooldownDuration = GetRuntimeTuningValue(TEXT("UltimateBlizzardCooldown"));
 		break;
 
 	default:
@@ -1258,13 +1275,13 @@ void AT66MiniPlayerPawn::HandleEnemyKilled(const AT66MiniEnemyBase* Enemy)
 {
 	if (PassiveType == ET66PassiveType::RallyingBlow)
 	{
-		PassiveStacks = FMath::Clamp(PassiveStacks + 1, 0, GetRuntimeTuningInt(TEXT("PassiveRallyMaxStacks"), 3));
-		PassiveBuffRemaining = GetRuntimeTuningValue(TEXT("PassiveRallyBuffDuration"), 3.5f);
+		PassiveStacks = FMath::Clamp(PassiveStacks + 1, 0, GetRuntimeTuningInt(TEXT("PassiveRallyMaxStacks")));
+		PassiveBuffRemaining = GetRuntimeTuningValue(TEXT("PassiveRallyBuffDuration"));
 	}
 
 	if (PassiveType == ET66PassiveType::TreasureHunter)
 	{
-		GainGold(GetRuntimeTuningInt(TEXT("PassiveTreasureKillGold"), 2) + (Enemy && Enemy->IsBossEnemy() ? GetRuntimeTuningInt(TEXT("PassiveTreasureBossGoldBonus"), 6) : 0));
+		GainGold(GetRuntimeTuningInt(TEXT("PassiveTreasureKillGold")) + (Enemy && Enemy->IsBossEnemy() ? GetRuntimeTuningInt(TEXT("PassiveTreasureBossGoldBonus")) : 0));
 	}
 }
 
@@ -1455,15 +1472,15 @@ float AT66MiniPlayerPawn::GetPassiveDamageMultiplierAgainst(const AT66MiniEnemyB
 	float DamageScale = TemporaryDamageMultiplier;
 	if (PassiveType == ET66PassiveType::MarksmanFocus && FocusTarget.Get() == Enemy)
 	{
-		DamageScale *= 1.f + (PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveMarksmanDamagePerStack"), 0.08f));
+		DamageScale *= 1.f + (PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveMarksmanDamagePerStack")));
 	}
 	if (PassiveType == ET66PassiveType::ToxinStacking && Enemy && Enemy->HasActiveDot())
 	{
-		DamageScale *= GetRuntimeTuningValue(TEXT("PassiveToxinDotTargetDamageScalar"), 1.16f);
+		DamageScale *= GetRuntimeTuningValue(TEXT("PassiveToxinDotTargetDamageScalar"));
 	}
 	if (PassiveType == ET66PassiveType::BrawlersFury && PassiveBuffRemaining > 0.f)
 	{
-		DamageScale *= 1.f + (PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveBrawlersDamagePerStack"), 0.06f));
+		DamageScale *= 1.f + (PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveBrawlersDamagePerStack")));
 	}
 
 	return DamageScale;
@@ -1472,9 +1489,9 @@ float AT66MiniPlayerPawn::GetPassiveDamageMultiplierAgainst(const AT66MiniEnemyB
 float AT66MiniPlayerPawn::ConsumeOutgoingDamageScalar(const AT66MiniEnemyBase* Enemy)
 {
 	float DamageScale = GetPassiveDamageMultiplierAgainst(Enemy);
-	if (PassiveType == ET66PassiveType::QuickDraw && PassiveSecondaryBuffRemaining >= GetRuntimeTuningValue(TEXT("PassiveQuickDrawReadyThreshold"), 1.4f))
+	if (PassiveType == ET66PassiveType::QuickDraw && PassiveSecondaryBuffRemaining >= GetRuntimeTuningValue(TEXT("PassiveQuickDrawReadyThreshold")))
 	{
-		DamageScale *= GetRuntimeTuningValue(TEXT("PassiveQuickDrawDamageScalar"), 1.45f);
+		DamageScale *= GetRuntimeTuningValue(TEXT("PassiveQuickDrawDamageScalar"));
 		PassiveSecondaryBuffRemaining = 0.f;
 	}
 
@@ -1485,13 +1502,13 @@ void AT66MiniPlayerPawn::HandlePostDamageTaken(const float DamageTaken)
 {
 	if (PassiveType == ET66PassiveType::BrawlersFury)
 	{
-		PassiveStacks = FMath::Clamp(PassiveStacks + 1, 0, GetRuntimeTuningInt(TEXT("PassiveBrawlersMaxStacks"), 4));
-		PassiveBuffRemaining = GetRuntimeTuningValue(TEXT("PassiveBrawlersBuffDuration"), 5.0f);
+		PassiveStacks = FMath::Clamp(PassiveStacks + 1, 0, GetRuntimeTuningInt(TEXT("PassiveBrawlersMaxStacks")));
+		PassiveBuffRemaining = GetRuntimeTuningValue(TEXT("PassiveBrawlersBuffDuration"));
 	}
 
-	if (PassiveType == ET66PassiveType::IronWill && CurrentHealth <= (MaxHealth * GetRuntimeTuningValue(TEXT("PassiveIronWillRegenHealthThreshold"), 0.30f)))
+	if (PassiveType == ET66PassiveType::IronWill && CurrentHealth <= (MaxHealth * GetRuntimeTuningValue(TEXT("PassiveIronWillRegenHealthThreshold"))))
 	{
-		PassiveRegenPerSecond = FMath::Max(PassiveRegenPerSecond, GetRuntimeTuningValue(TEXT("PassiveIronWillRegenPerSecond"), 1.6f));
+		PassiveRegenPerSecond = FMath::Max(PassiveRegenPerSecond, GetRuntimeTuningValue(TEXT("PassiveIronWillRegenPerSecond")));
 	}
 }
 
@@ -1506,7 +1523,7 @@ void AT66MiniPlayerPawn::HandlePassiveOnBasicHit(AT66MiniEnemyBase* ImpactEnemy,
 	{
 		if (FocusTarget.Get() == ImpactEnemy)
 		{
-			PassiveStacks = FMath::Clamp(PassiveStacks + 1, 0, GetRuntimeTuningInt(TEXT("PassiveMarksmanMaxStacks"), 5));
+			PassiveStacks = FMath::Clamp(PassiveStacks + 1, 0, GetRuntimeTuningInt(TEXT("PassiveMarksmanMaxStacks")));
 		}
 		else
 		{
@@ -1515,48 +1532,48 @@ void AT66MiniPlayerPawn::HandlePassiveOnBasicHit(AT66MiniEnemyBase* ImpactEnemy,
 		}
 	}
 
-	if (PassiveType == ET66PassiveType::StaticCharge && (PassiveShotCounter % FMath::Max(1, GetRuntimeTuningInt(TEXT("PassiveStaticChargeEvery"), 4))) == 0)
+	if (PassiveType == ET66PassiveType::StaticCharge && (PassiveShotCounter % FMath::Max(1, GetRuntimeTuningInt(TEXT("PassiveStaticChargeEvery")))) == 0)
 	{
-		if (AT66MiniEnemyBase* SecondaryEnemy = FindClosestEnemyFromLocation(ImpactEnemy->GetActorLocation(), ImpactEnemy, GetRuntimeTuningValue(TEXT("PassiveStaticChargeRange"), 380.f)))
+		if (AT66MiniEnemyBase* SecondaryEnemy = FindClosestEnemyFromLocation(ImpactEnemy->GetActorLocation(), ImpactEnemy, GetRuntimeTuningValue(TEXT("PassiveStaticChargeRange"))))
 		{
-			SecondaryEnemy->ApplyDamage(DamageDealt * GetRuntimeTuningValue(TEXT("PassiveStaticChargeDamageScalar"), 0.60f));
-			HandleSuccessfulHit(DamageDealt * GetRuntimeTuningValue(TEXT("PassiveStaticChargeDamageScalar"), 0.60f));
+			SecondaryEnemy->ApplyDamage(DamageDealt * GetRuntimeTuningValue(TEXT("PassiveStaticChargeDamageScalar")));
+			HandleSuccessfulHit(DamageDealt * GetRuntimeTuningValue(TEXT("PassiveStaticChargeDamageScalar")));
 		}
 	}
 
-	if (PassiveType == ET66PassiveType::Frostbite && (PassiveShotCounter % FMath::Max(1, GetRuntimeTuningInt(TEXT("PassiveFrostbiteEvery"), 4))) == 0)
+	if (PassiveType == ET66PassiveType::Frostbite && (PassiveShotCounter % FMath::Max(1, GetRuntimeTuningInt(TEXT("PassiveFrostbiteEvery")))) == 0)
 	{
-		ImpactEnemy->ApplyStun(GetRuntimeTuningValue(TEXT("PassiveFrostbiteStun"), 0.22f));
+		ImpactEnemy->ApplyStun(GetRuntimeTuningValue(TEXT("PassiveFrostbiteStun")));
 	}
 
 	if (PassiveType == ET66PassiveType::ChaosTheory && bChaosNextAttackBounces)
 	{
 		bChaosNextAttackBounces = false;
-		if (AT66MiniEnemyBase* SecondaryEnemy = FindClosestEnemyFromLocation(ImpactEnemy->GetActorLocation(), ImpactEnemy, GetRuntimeTuningValue(TEXT("PassiveChaosBounceRange"), 340.f)))
+		if (AT66MiniEnemyBase* SecondaryEnemy = FindClosestEnemyFromLocation(ImpactEnemy->GetActorLocation(), ImpactEnemy, GetRuntimeTuningValue(TEXT("PassiveChaosBounceRange"))))
 		{
-			SecondaryEnemy->ApplyDamage(DamageDealt * GetRuntimeTuningValue(TEXT("PassiveChaosBounceDamageScalar"), 0.72f));
-			HandleSuccessfulHit(DamageDealt * GetRuntimeTuningValue(TEXT("PassiveChaosBounceDamageScalar"), 0.72f));
+			SecondaryEnemy->ApplyDamage(DamageDealt * GetRuntimeTuningValue(TEXT("PassiveChaosBounceDamageScalar")));
+			HandleSuccessfulHit(DamageDealt * GetRuntimeTuningValue(TEXT("PassiveChaosBounceDamageScalar")));
 		}
 	}
 
 	if (bEvasiveNextAttackAppliesDot)
 	{
 		bEvasiveNextAttackAppliesDot = false;
-		ImpactEnemy->ApplyDot(FMath::Max(GetRuntimeTuningValue(TEXT("PassiveEvasiveDotMin"), 1.0f), DamageDealt * GetRuntimeTuningValue(TEXT("PassiveEvasiveDotDamageScalar"), 0.18f)), GetRuntimeTuningValue(TEXT("PassiveEvasiveDotTickInterval"), 0.45f), GetRuntimeTuningValue(TEXT("PassiveEvasiveDotDuration"), 2.6f));
+		ImpactEnemy->ApplyDot(FMath::Max(GetRuntimeTuningValue(TEXT("PassiveEvasiveDotMin")), DamageDealt * GetRuntimeTuningValue(TEXT("PassiveEvasiveDotDamageScalar"))), GetRuntimeTuningValue(TEXT("PassiveEvasiveDotTickInterval")), GetRuntimeTuningValue(TEXT("PassiveEvasiveDotDuration")));
 	}
 }
 
 float AT66MiniPlayerPawn::GetUltimateBaseDamage() const
 {
-	float BaseDamage = ((BaseDamageStat * GetRuntimeTuningValue(TEXT("UltimateBaseDamageStatScalar"), 2.0f))
-		+ (HeroLevel * GetRuntimeTuningValue(TEXT("UltimateBaseDamageLevelScalar"), 1.4f))) * BonusDamageMultiplier * TemporaryDamageMultiplier;
+	float BaseDamage = ((BaseDamageStat * GetRuntimeTuningValue(TEXT("UltimateBaseDamageStatScalar")))
+		+ (HeroLevel * GetRuntimeTuningValue(TEXT("UltimateBaseDamageLevelScalar")))) * BonusDamageMultiplier * TemporaryDamageMultiplier;
 	if (PassiveType == ET66PassiveType::ArcaneAmplification)
 	{
-		BaseDamage *= GetRuntimeTuningValue(TEXT("PassiveArcaneUltimateDamageScalar"), 1.15f);
+		BaseDamage *= GetRuntimeTuningValue(TEXT("PassiveArcaneUltimateDamageScalar"));
 	}
 	if (PassiveType == ET66PassiveType::RallyingBlow && PassiveBuffRemaining > 0.f)
 	{
-		BaseDamage *= 1.f + (PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveRallyUltimateDamagePerStack"), 0.08f));
+		BaseDamage *= 1.f + (PassiveStacks * GetRuntimeTuningValue(TEXT("PassiveRallyUltimateDamagePerStack")));
 	}
 
 	return BaseDamage;
@@ -1569,8 +1586,8 @@ void AT66MiniPlayerPawn::HandleBasicAttackImpact(AT66MiniEnemyBase* ImpactEnemy,
 		return;
 	}
 
-	const float EstimatedDamage = ((BaseDamageStat * GetRuntimeTuningValue(TEXT("BasicDamageBaseScalar"), 0.95f))
-		+ (HeroLevel * GetRuntimeTuningValue(TEXT("BasicDamageLevelScalar"), 0.45f))) * BonusDamageMultiplier * TemporaryDamageMultiplier;
+	const float EstimatedDamage = ((BaseDamageStat * GetRuntimeTuningValue(TEXT("BasicDamageBaseScalar")))
+		+ (HeroLevel * GetRuntimeTuningValue(TEXT("BasicDamageLevelScalar")))) * BonusDamageMultiplier * TemporaryDamageMultiplier;
 	HandlePassiveOnBasicHit(ImpactEnemy, ImpactLocation, EstimatedDamage);
 
 	if (EquippedIdols.Num() == 0)
@@ -1819,27 +1836,33 @@ AT66MiniEnemyBase* AT66MiniPlayerPawn::FindBestTarget(const float MaxRange) cons
 	return BestEnemy;
 }
 
-float AT66MiniPlayerPawn::GetRuntimeTuningValue(const TCHAR* Key, const float DefaultValue) const
+float AT66MiniPlayerPawn::GetRuntimeTuningValue(const TCHAR* Key) const
 {
 	const UGameInstance* GameInstance = GetGameInstance();
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
-	return DataSubsystem ? DataSubsystem->FindRuntimeTuningValue(FName(Key), DefaultValue) : DefaultValue;
+	if (!DataSubsystem)
+	{
+		UE_LOG(LogTemp, Error, TEXT("T66MiniPlayerPawn: missing Mini data subsystem for required runtime tuning '%s'."), Key);
+		return 0.f;
+	}
+
+	return DataSubsystem->FindRequiredRuntimeTuningValue(FName(Key));
 }
 
-int32 AT66MiniPlayerPawn::GetRuntimeTuningInt(const TCHAR* Key, const int32 DefaultValue) const
+int32 AT66MiniPlayerPawn::GetRuntimeTuningInt(const TCHAR* Key) const
 {
-	return FMath::RoundToInt(GetRuntimeTuningValue(Key, static_cast<float>(DefaultValue)));
+	return FMath::RoundToInt(GetRuntimeTuningValue(Key));
 }
 
 float AT66MiniPlayerPawn::GetNextLevelThreshold() const
 {
-	return GetRuntimeTuningValue(TEXT("NextLevelBase"), 18.f)
-		+ (HeroLevel * GetRuntimeTuningValue(TEXT("NextLevelPerLevel"), 10.f));
+	return GetRuntimeTuningValue(TEXT("NextLevelBase"))
+		+ (HeroLevel * GetRuntimeTuningValue(TEXT("NextLevelPerLevel")));
 }
 
 float AT66MiniPlayerPawn::GetPickupMagnetRadius() const
 {
-	return PickupMagnetComponent ? PickupMagnetComponent->GetMagnetRadius() : GetRuntimeTuningValue(TEXT("PickupMagnetBaseRadius"), 420.f);
+	return PickupMagnetComponent ? PickupMagnetComponent->GetMagnetRadius() : GetRuntimeTuningValue(TEXT("PickupMagnetBaseRadius"));
 }
 
 int32 AT66MiniPlayerPawn::GetMaxHearts() const
@@ -1860,5 +1883,5 @@ float AT66MiniPlayerPawn::GetHeartFill(const int32 HeartIndex) const
 
 float AT66MiniPlayerPawn::GetPickupMagnetPullSpeed() const
 {
-	return PickupMagnetComponent ? PickupMagnetComponent->GetPullSpeed() : GetRuntimeTuningValue(TEXT("PickupMagnetBasePullSpeed"), 620.f);
+	return PickupMagnetComponent ? PickupMagnetComponent->GetPullSpeed() : GetRuntimeTuningValue(TEXT("PickupMagnetBasePullSpeed"));
 }

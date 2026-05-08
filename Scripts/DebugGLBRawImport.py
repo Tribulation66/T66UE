@@ -4,10 +4,7 @@ import os
 import unreal
 
 
-IMPORTS = [
-    ("Props/Tree2.glb", "/Game/__Debug/GLBRaw/Tree2", "Tree2Raw"),
-    ("Props/Rock.glb", "/Game/__Debug/GLBRaw/Rock", "RockRaw"),
-]
+IMPORTS = []
 
 REPORT_PATH = os.path.join(
     unreal.SystemLibrary.get_project_directory(),

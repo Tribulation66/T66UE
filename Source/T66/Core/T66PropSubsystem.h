@@ -7,6 +7,7 @@
 #include "T66PropSubsystem.generated.h"
 
 class UDataTable;
+struct FStreamableHandle;
 
 UCLASS()
 class T66_API UT66PropSubsystem : public UGameInstanceSubsystem
@@ -14,6 +15,8 @@ class T66_API UT66PropSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
 	/** Spawn all props for the current stage. Call after terrain is ready. */
 	void SpawnPropsForStage(UWorld* World, int32 Seed);
 
@@ -26,7 +29,11 @@ public:
 	int32 GetSpawnedPropCount() const { return SpawnedProps.Num(); }
 
 private:
-	UDataTable* GetPropsDataTable() const;
+	UDataTable* GetPropsDataTable();
+	void QueuePropsDataPreload();
+	void HandlePropsDataTableLoaded();
+	void QueuePropMeshPreload();
+	UStaticMesh* ResolvePropMesh(const TSoftObjectPtr<UStaticMesh>& Mesh);
 	void SpawnPropsInternal(
 		UWorld* World,
 		int32 Seed,
@@ -49,6 +56,9 @@ private:
 
 	UPROPERTY(Transient)
 	mutable TObjectPtr<UDataTable> CachedPropsDataTable;
+
+	mutable TSharedPtr<FStreamableHandle> PropsDataTableLoadHandle;
+	mutable TSharedPtr<FStreamableHandle> PropMeshLoadHandle;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<AActor>> SpawnedProps;

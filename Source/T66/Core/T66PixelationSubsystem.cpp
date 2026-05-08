@@ -1,17 +1,25 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66PixelationSubsystem.h"
+#include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "Engine/PostProcessVolume.h"
 #include "EngineUtils.h"
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/SoftObjectPath.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Pixelation, Log, All);
 
 static const TCHAR* PixelationMaterialPath = TEXT("/Game/UI/M_PixelationPostProcess.M_PixelationPostProcess");
 static const FName ParamNamePixelGridSize(TEXT("PixelGridSize"));
+
+void UT66PixelationSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+	QueuePixelationMaterialPreload();
+}
 
 // Level 1 = least pixelation (high grid), 10 = most (capped at former level 1). Linear: 680 down to 320.
 int32 UT66PixelationSubsystem::LevelToPixelGridSize(int32 Level)
@@ -24,12 +32,41 @@ int32 UT66PixelationSubsystem::LevelToPixelGridSize(int32 Level)
 
 UMaterialInterface* UT66PixelationSubsystem::GetOrCreatePixelationMaterial()
 {
-	UMaterialInterface* Loaded = LoadObject<UMaterialInterface>(nullptr, PixelationMaterialPath);
+	UMaterialInterface* Loaded = Cast<UMaterialInterface>(FSoftObjectPath(PixelationMaterialPath).ResolveObject());
 	if (!Loaded)
 	{
-		UE_LOG(LogT66Pixelation, Warning, TEXT("[Pixelation] Failed to load material at %s - pixelation disabled."), PixelationMaterialPath);
+		Loaded = FindObject<UMaterialInterface>(nullptr, PixelationMaterialPath);
+	}
+	if (!Loaded)
+	{
+		UE_LOG(LogT66Pixelation, Warning, TEXT("[Pixelation] Material at %s is not loaded yet - pixelation disabled until async preload completes."), PixelationMaterialPath);
 	}
 	return Loaded;
+}
+
+void UT66PixelationSubsystem::QueuePixelationMaterialPreload()
+{
+	if (PixelationMaterialLoadHandle.IsValid() || FSoftObjectPath(PixelationMaterialPath).ResolveObject())
+	{
+		return;
+	}
+
+	PixelationMaterialLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		FSoftObjectPath(PixelationMaterialPath),
+		FStreamableDelegate::CreateUObject(this, &UT66PixelationSubsystem::HandlePixelationMaterialLoaded));
+}
+
+void UT66PixelationSubsystem::HandlePixelationMaterialLoaded()
+{
+	PixelationMaterialLoadHandle.Reset();
+	if (CurrentLevel > 0)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			EnsureBlendableInWorld(World);
+			ApplyLevelToBlendable();
+		}
+	}
 }
 
 void UT66PixelationSubsystem::SetPixelationLevel(int32 Level)
@@ -62,6 +99,8 @@ void UT66PixelationSubsystem::EnsureBlendableInWorld(UWorld* World)
 		PixelationDMI = nullptr;
 	}
 
+	// One-time per world lookup: SetPixelationLevel() can be called repeatedly
+	// from settings, but cached PixelationVolume keeps this scan off the hot path.
 	// Find existing unbound volume to add our blendable to (avoids extra volume)
 	APostProcessVolume* UseVolume = nullptr;
 	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
@@ -105,6 +144,7 @@ void UT66PixelationSubsystem::EnsureBlendableInWorld(UWorld* World)
 	UMaterialInterface* BaseMat = GetOrCreatePixelationMaterial();
 	if (!BaseMat)
 	{
+		QueuePixelationMaterialPreload();
 		return;
 	}
 

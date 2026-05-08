@@ -99,7 +99,8 @@ public:
 	/** Baseline rarity distribution for special enemies (their variant rarity). */
 	FT66RarityWeights SpecialEnemyRarityBase;
 
-	FT66IntRange TreesPerStage = { 2, 5 };
+	/** Count range for fountain interactables on the main map. */
+	FT66IntRange FountainsPerStage = { 2, 5 };
 
 	void LoadFromConfig();
 };

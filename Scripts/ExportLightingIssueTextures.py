@@ -11,8 +11,6 @@ EXPORT_DIR = os.path.join(
 )
 
 TEXTURE_TARGETS = [
-    ("Rock", "/Game/World/Props/Rock.Rock", "BaseColorTexture"),
-    ("Tree2", "/Game/World/Props/Tree2.Tree2", "BaseColorTexture"),
     ("BlackBag", "/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black", "BaseColorTexture"),
 ]
 

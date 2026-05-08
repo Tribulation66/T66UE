@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\_codex_previews\\old_arthur_extract\\SourceAssets\\Import\\ArthurIdle.fbx",
+  "render": "C:\\UE\\T66\\_codex_previews\\arthur_ultrakill_pass\\old_branch_ArthurIdle_render.png",
+  "export": null,
+  "raw_triangles": 585037,
+  "triangles_before_decimate": 585037,
+  "triangles_after_decimate": 585037,
+  "bounds": {
+    "min": [
+      -0.4614304006099701,
+      -0.23089569807052612,
+      -0.0004058471822645515
+    ],
+    "max": [
+      0.47772178053855896,
+      0.29297369718551636,
+      1.96485435962677
+    ],
+    "size": [
+      0.939152181148529,
+      0.5238693952560425,
+      1.9652601480484009
+    ]
+  }
+}

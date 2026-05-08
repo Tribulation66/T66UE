@@ -9,7 +9,6 @@
 #include "Engine/Texture2D.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
-#include "Misc/Paths.h"
 #include "Save/T66DeckSaveSubsystem.h"
 #include "Save/T66DeckRunSaveGame.h"
 #include "Styling/CoreStyle.h"
@@ -32,12 +31,12 @@ namespace
 
 	const TCHAR* DeckMainMenuMockupPath()
 	{
-		return TEXT("UI/screens/minigames/chadpocalypse_deckbuilder/reference/chadpocalypse_deckbuilder_main_menu_mockup_1920x1080_imagegen_20260503_v2.png");
+		return TEXT("/Game/UI/Minigames/Deck/Mockups/T_Deck_MainMenu_Mockup.T_Deck_MainMenu_Mockup");
 	}
 
 	const TCHAR* DeckGameplayMockupPath()
 	{
-		return TEXT("UI/screens/minigames/chadpocalypse_deckbuilder/reference/chadpocalypse_deckbuilder_gameplay_mockup_1920x1080_imagegen_20260503_v2.png");
+		return TEXT("/Game/UI/Minigames/Deck/Mockups/T_Deck_Gameplay_Mockup.T_Deck_Gameplay_Mockup");
 	}
 
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GDeckMockupTextureCache;
@@ -53,38 +52,21 @@ namespace
 		return TAttribute<TOptional<float>>::Create(TAttribute<TOptional<float>>::FGetter::CreateUObject(Screen, Getter));
 	}
 
-	UTexture2D* LoadDeckMockupTexture(const FString& SourceRelativePath)
+	UTexture2D* LoadDeckMockupTexture(const FString& AssetPath)
 	{
-		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GDeckMockupTextureCache.Find(SourceRelativePath))
+		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GDeckMockupTextureCache.Find(AssetPath))
 		{
 			return CachedTexture->Get();
 		}
 
-		for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(SourceRelativePath))
+		UTexture2D* Texture = T66RuntimeUITextureAccess::LoadAssetTexture(
+			*AssetPath,
+			TextureFilter::TF_Nearest,
+			TEXT("ChadpocalypseDeckbuilderMockup"));
+		if (Texture)
 		{
-			if (!FPaths::FileExists(CandidatePath))
-			{
-				continue;
-			}
-
-			UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
-				CandidatePath,
-				TextureFilter::TF_Nearest,
-				TEXT("ChadpocalypseDeckbuilderMockup"));
-			if (!Texture)
-			{
-				Texture = T66RuntimeUITextureAccess::ImportFileTexture(
-					CandidatePath,
-					TextureFilter::TF_Nearest,
-					true,
-					TEXT("ChadpocalypseDeckbuilderMockup"));
-			}
-
-			if (Texture)
-			{
-				GDeckMockupTextureCache.Add(SourceRelativePath, TStrongObjectPtr<UTexture2D>(Texture));
-				return Texture;
-			}
+			GDeckMockupTextureCache.Add(AssetPath, TStrongObjectPtr<UTexture2D>(Texture));
+			return Texture;
 		}
 
 		return nullptr;

@@ -143,7 +143,7 @@ namespace
 		return Thresholds;
 	}
 
-	const TArray<int32>& GetExtraVendorPurchaseThresholds()
+	const TArray<int32>& GetExtraShopPurchaseThresholds()
 	{
 		static const TArray<int32> Thresholds = { 3, 5, 10, 15, 20, 25, 50, 100 };
 		return Thresholds;
@@ -308,7 +308,7 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	Profile->LifetimeBossesKilled = FMath::Max(0, Profile->LifetimeBossesKilled);
 	Profile->LifetimeStagesCleared = FMath::Max(0, Profile->LifetimeStagesCleared);
 	Profile->LifetimeRunsCompleted = FMath::Max(0, Profile->LifetimeRunsCompleted);
-	Profile->LifetimeVendorPurchases = FMath::Max(0, Profile->LifetimeVendorPurchases);
+	Profile->LifetimeShopPurchases = FMath::Max(0, Profile->LifetimeShopPurchases);
 	Profile->LifetimeGamblerWins = FMath::Max(0, Profile->LifetimeGamblerWins);
 	Profile->GamblersTokenUnlockedLevel = FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 5);
 
@@ -769,18 +769,18 @@ void UT66AchievementsSubsystem::RebuildDefinitions()
 			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraRunDesc", "Finish {0} runs."), FText::AsNumber(Requirement)));
 	}
 
-	const TArray<int32>& ExtraVendorThresholds = GetExtraVendorPurchaseThresholds();
-	for (int32 Index = 0; Index < ExtraVendorThresholds.Num(); ++Index)
+	const TArray<int32>& ExtraShopThresholds = GetExtraShopPurchaseThresholds();
+	for (int32 Index = 0; Index < ExtraShopThresholds.Num(); ++Index)
 	{
-		const int32 Requirement = ExtraVendorThresholds[Index];
+		const int32 Requirement = ExtraShopThresholds[Index];
 		AddGeneratedAchievement(
 			CachedDefinitions,
-			MakeExtraAchievementID(TEXT("ACH_EXT_VENDOR_"), Index),
+			MakeExtraAchievementID(TEXT("ACH_EXT_SHOP_"), Index),
 			Index,
-			ExtraVendorThresholds.Num(),
+			ExtraShopThresholds.Num(),
 			Requirement,
-			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraVendorTitle", "Customer {0}"), FText::AsNumber(Index + 1)),
-			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraVendorDesc", "Buy {0} items from the vendor."), FText::AsNumber(Requirement)));
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraShopTitle", "Customer {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraShopDesc", "Buy {0} items from the shop."), FText::AsNumber(Requirement)));
 	}
 
 	const TArray<int32>& ExtraGamblerThresholds = GetExtraGamblerWinThresholds();
@@ -1193,15 +1193,15 @@ void UT66AchievementsSubsystem::NotifyRunCompleted(UT66RunStateSubsystem* RunSta
 	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 }
 
-void UT66AchievementsSubsystem::NotifyVendorPurchase()
+void UT66AchievementsSubsystem::NotifyShopPurchase()
 {
 	if (!Profile) LoadOrCreateProfile();
 	if (!Profile) return;
-	Profile->LifetimeVendorPurchases = FMath::Clamp(Profile->LifetimeVendorPurchases + 1, 0, 2000000000);
-	const int32 Total = Profile->LifetimeVendorPurchases;
+	Profile->LifetimeShopPurchases = FMath::Clamp(Profile->LifetimeShopPurchases + 1, 0, 2000000000);
+	const int32 Total = Profile->LifetimeShopPurchases;
 	TArray<FName> NewlyUnlocked;
 	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_009")), Total, 1, &NewlyUnlocked);
-	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_VENDOR_"), GetExtraVendorPurchaseThresholds(), Total, &NewlyUnlocked);
+	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_SHOP_"), GetExtraShopPurchaseThresholds(), Total, &NewlyUnlocked);
 	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 }
 
@@ -1311,7 +1311,7 @@ void UT66AchievementsSubsystem::ResetProfileProgress()
 	Profile->LifetimeBossesKilled = 0;
 	Profile->LifetimeStagesCleared = 0;
 	Profile->LifetimeRunsCompleted = 0;
-	Profile->LifetimeVendorPurchases = 0;
+	Profile->LifetimeShopPurchases = 0;
 	Profile->LifetimeGamblerWins = 0;
 	Profile->CompanionUnionStagesClearedByID.Reset();
 	Profile->HeroUnityStagesClearedByID.Reset();

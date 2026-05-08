@@ -267,25 +267,6 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 	}
 }
 
-void AT66GameMode::SpawnVendorForPlayer(AController* Player)
-{
-	APawn* HeroPawn = Player ? Player->GetPawn() : nullptr;
-	if (!HeroPawn) return;
-
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	FVector SpawnLoc = HeroPawn->GetActorLocation() + FVector(300.f, 0.f, 0.f);
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	AT66VendorNPC* Vendor = World->SpawnActor<AT66VendorNPC>(AT66VendorNPC::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-	if (Vendor)
-	{
-		UE_LOG(LogT66GameMode, Log, TEXT("Spawned vendor NPC near hero"));
-	}
-}
-
 void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 {
 	(void)Player;

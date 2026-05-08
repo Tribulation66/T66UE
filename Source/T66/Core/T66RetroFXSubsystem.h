@@ -13,6 +13,7 @@ class UMaterialInstanceDynamic;
 class UMaterialInterface;
 class UMaterialParameterCollection;
 class UMeshComponent;
+struct FStreamableHandle;
 
 UENUM()
 enum class ET66RetroGeometryGroup : uint8
@@ -63,6 +64,8 @@ public:
 	void ApplySettings(const FT66RetroFXSettings& Settings, UWorld* World = nullptr);
 
 private:
+	void QueueRetroAssetPreloads();
+	void HandleRetroAssetPreloadComplete();
 	void EnsureBlendablesInWorld(UWorld* World);
 	void EnsurePs1PostProcessDMI(const FT66RetroFXSettings& Settings);
 	void ApplyBlendableWeights(const FT66RetroFXSettings& Settings);
@@ -148,8 +151,10 @@ private:
 	TArray<FT66RetroManagedMaterialSlot> ManagedGeometrySlots;
 
 	FDelegateHandle GeometrySpawnHandle;
+	TSharedPtr<FStreamableHandle> RetroAssetLoadHandle;
 	bool bWorldGeometryActive = false;
 	bool bCharacterGeometryActive = false;
+	bool bManagedGeometryFullScanComplete = false;
 	bool bResolutionRuntimeDefaultsCaptured = false;
 	bool bResolutionRuntimeActive = false;
 	FString ActivePs1MaterialPath;

@@ -12,6 +12,5 @@ enum class ET66BossAttackProfile : uint8
 	Sharpshooter UMETA(DisplayName = "Sharpshooter"),
 	Juggernaut UMETA(DisplayName = "Juggernaut"),
 	Duelist UMETA(DisplayName = "Duelist"),
-	Vendor UMETA(DisplayName = "Vendor"),
 	Gambler UMETA(DisplayName = "Gambler"),
 };

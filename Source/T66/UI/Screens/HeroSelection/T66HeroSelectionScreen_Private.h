@@ -22,6 +22,7 @@
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/T66TemporaryBuffUIUtils.h"
 #include "UI/Style/T66Style.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "Gameplay/T66CompanionBase.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroPreviewStage.h"
@@ -33,6 +34,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
@@ -61,7 +63,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogT66HeroSelection, Log, All);
 
 namespace T66HeroSelectionPrivate
 {
-	inline constexpr int32 HeroSelectionCarouselVisibleSlots = 9;
+	inline constexpr int32 HeroSelectionCarouselVisibleSlots = 7;
 	inline constexpr int32 HeroSelectionCarouselCenterIndex = HeroSelectionCarouselVisibleSlots / 2;
 
 	inline AT66PlayerController* T66GetLocalFrontendHeroPlayerController(UObject* ContextObject)
@@ -115,7 +117,7 @@ namespace T66HeroSelectionPrivate
 
 	inline FString GetHeroSelectionBalanceIconPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Screens/HeroSelection/Icons/heroselection_iconsgenerated_icon_07_coupon_ticket_white_v1.png");
+		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/coupon_ticket_icon.png");
 	}
 
 	inline FString MakeHeroSelectionReferenceAssetPath(const TCHAR* RelativePath)
@@ -125,14 +127,21 @@ namespace T66HeroSelectionPrivate
 			RelativePath ? RelativePath : TEXT(""));
 	}
 
+	inline FString MakeHeroSelectionUltrakillElementPath(const TCHAR* FileName)
+	{
+		return FString::Printf(
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/%s"),
+			FileName ? FileName : TEXT(""));
+	}
+
 	inline FSlateColor GetHeroSelectionParchmentText()
 	{
-		return FSlateColor(FLinearColor(0.08f, 0.045f, 0.015f, 1.0f));
+		return FSlateColor(FLinearColor(0.96f, 0.94f, 0.88f, 1.0f));
 	}
 
 	inline FSlateColor GetHeroSelectionParchmentMutedText()
 	{
-		return FSlateColor(FLinearColor(0.20f, 0.12f, 0.045f, 1.0f));
+		return FSlateColor(FLinearColor(0.98f, 0.48f, 0.34f, 1.0f));
 	}
 
 	inline FString GetHeroSelectionMedalImagePath(const ET66AccountMedalTier Tier)
@@ -309,6 +318,7 @@ namespace T66HeroSelectionPrivate
 	{
 		TStrongObjectPtr<UTexture2D> Texture;
 		TSharedPtr<FSlateBrush> Brush;
+		bool bSimpleFallback = false;
 	};
 
 	struct FHeroSelectionSpriteBrushSet
@@ -337,7 +347,7 @@ namespace T66HeroSelectionPrivate
 			Entry.Brush->Margin = Margin;
 		}
 
-		if (!Entry.Texture.IsValid())
+		if (!Entry.Texture.IsValid() && !Entry.bSimpleFallback)
 		{
 			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
@@ -353,8 +363,28 @@ namespace T66HeroSelectionPrivate
 			}
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+		if (Entry.Texture.IsValid())
+		{
+			Entry.bSimpleFallback = false;
+			Entry.Brush->SetResourceObject(Entry.Texture.Get());
+			return Entry.Brush.Get();
+		}
+
+		if (T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(RelativePath))
+		{
+			Entry.bSimpleFallback = true;
+			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+				*Entry.Brush,
+				RelativePath,
+				ImageSize,
+				Margin,
+				DrawAs);
+			return Entry.Brush.Get();
+		}
+
+		Entry.bSimpleFallback = false;
+		Entry.Brush->SetResourceObject(nullptr);
+		return nullptr;
 	}
 
 	inline const FSlateBrush* ResolveHeroSelectionSpriteRegionBrush(
@@ -378,7 +408,7 @@ namespace T66HeroSelectionPrivate
 		Entry.Brush->Margin = Margin;
 		Entry.Brush->SetUVRegion(UVRegion);
 
-		if (!Entry.Texture.IsValid())
+		if (!Entry.Texture.IsValid() && !Entry.bSimpleFallback)
 		{
 			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
@@ -394,8 +424,28 @@ namespace T66HeroSelectionPrivate
 			}
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+		if (Entry.Texture.IsValid())
+		{
+			Entry.bSimpleFallback = false;
+			Entry.Brush->SetResourceObject(Entry.Texture.Get());
+			return Entry.Brush.Get();
+		}
+
+		if (T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(RelativePath))
+		{
+			Entry.bSimpleFallback = true;
+			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+				*Entry.Brush,
+				RelativePath,
+				ImageSize,
+				Margin,
+				ESlateBrushDrawType::Box);
+			return Entry.Brush.Get();
+		}
+
+		Entry.bSimpleFallback = false;
+		Entry.Brush->SetResourceObject(nullptr);
+		return nullptr;
 	}
 
 	inline FHeroSelectionSpriteBrushSet& GetHeroSelectionButtonSpriteSet(ET66HeroSpriteFamily Family)
@@ -444,18 +494,29 @@ namespace T66HeroSelectionPrivate
 			break;
 		}
 
-		if (Family == ET66HeroSpriteFamily::ToggleOn && State == ET66ButtonBorderState::Normal)
+		if (Family == ET66HeroSpriteFamily::ToggleOn)
 		{
-			Suffix = TEXT("selected");
+			return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), TEXT("selected"));
+		}
+		if (Family == ET66HeroSpriteFamily::ToggleOff)
+		{
+			return FString::Printf(
+				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_load_game_button_%s.png"),
+				Suffix);
+		}
+		if (Family == ET66HeroSpriteFamily::CtaGreen
+			|| Family == ET66HeroSpriteFamily::CtaBlue
+			|| Family == ET66HeroSpriteFamily::CtaPurple)
+		{
+			return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("CTA"), Suffix);
 		}
 
-		return MakeHeroSelectionReferenceAssetPath(
-			*FString::Printf(TEXT("Buttons/heroselection_buttons_pill_%s.png"), Suffix));
+		return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), Suffix);
 	}
 
 	inline FVector2D GetHeroSelectionButtonSpriteSize(ET66HeroSpriteFamily /*Family*/, ET66ButtonBorderState /*State*/)
 	{
-		return FVector2D(270.f, 88.f);
+		return FVector2D(160.f, 66.f);
 	}
 
 	inline const FSlateBrush* ResolveHeroSelectionButtonSpriteBrush(ET66HeroSpriteFamily Family, ET66ButtonBorderState State)
@@ -485,8 +546,8 @@ namespace T66HeroSelectionPrivate
 		FHeroSelectionSpriteBrushSet& Set = GetHeroSelectionButtonSpriteSet(ET66HeroSpriteFamily::ToggleInactive);
 		return ResolveHeroSelectionSpriteBrush(
 			Set.Disabled,
-			MakeHeroSelectionReferenceAssetPath(TEXT("Buttons/heroselection_buttons_pill_disabled.png")),
-			FVector2D(270.f, 88.f),
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), TEXT("disabled")),
+			FVector2D(145.f, 66.f),
 			FMargin(0.180f, 0.240f, 0.180f, 0.240f),
 			ESlateBrushDrawType::Image,
 			TextureFilter::TF_Nearest);
@@ -514,9 +575,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/HeroSelection/Panels/heroselection_panels_fullscreen_fullscreen_panel_tall.png"),
-			FVector2D(732.f, 1446.f),
-			FMargin(0.115f, 0.055f, 0.115f, 0.055f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FVector2D(300.f, 548.f),
+			FMargin(0.105f, 0.055f, 0.105f, 0.055f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -526,9 +587,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/HeroSelection/Panels/heroselection_panels_fullscreen_fullscreen_panel_tall.png"),
-			FVector2D(732.f, 1446.f),
-			FMargin(0.115f, 0.055f, 0.115f, 0.055f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FVector2D(300.f, 548.f),
+			FMargin(0.105f, 0.055f, 0.105f, 0.055f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -538,9 +599,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/HeroSelection/Panels/heroselection_panels_fullscreen_fullscreen_panel_wide.png"),
-			FVector2D(1588.f, 653.f),
-			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FVector2D(1347.f, 120.f),
+			FMargin(0.040f, 0.250f, 0.040f, 0.250f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -550,9 +611,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/HeroSelection/Panels/heroselection_panels_fullscreen_row_shell_quiet.png"),
-			FVector2D(1632.f, 209.f),
-			FMargin(0.070f, 0.155f, 0.070f, 0.155f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/player_row_panel_normal.png"),
+			FVector2D(569.f, 95.f),
+			FMargin(0.070f, 0.240f, 0.070f, 0.240f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -562,9 +623,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			MakeHeroSelectionReferenceAssetPath(TEXT("Panels/heroselection_panels_reference_scroll_paper_frame.png")),
-			FVector2D(500.f, 321.f),
-			FMargin(0.080f, 0.125f, 0.080f, 0.125f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FVector2D(568.f, 287.f),
+			FMargin(0.075f, 0.125f, 0.075f, 0.125f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -574,9 +635,9 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			MakeHeroSelectionReferenceAssetPath(TEXT("Panels/heroselection_panels_reference_scroll_paper_frame.png")),
-			FVector2D(500.f, 321.f),
-			FMargin(0.080f, 0.125f, 0.080f, 0.125f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/player_row_panel_normal.png"),
+			FVector2D(569.f, 95.f),
+			FMargin(0.070f, 0.240f, 0.070f, 0.240f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -587,10 +648,10 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry SelectedEntry;
 		return ResolveHeroSelectionSpriteBrush(
 			bSelected ? SelectedEntry : NormalEntry,
-			bSelected
-				? MakeHeroSelectionReferenceAssetPath(TEXT("Slots/heroselection_slots_portrait_slot_selected.png"))
-				: MakeHeroSelectionReferenceAssetPath(TEXT("Slots/heroselection_slots_portrait_slot_normal.png")),
-			FVector2D(96.f, 96.f),
+			FString::Printf(
+				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_%s.png"),
+				bSelected ? TEXT("selected") : TEXT("normal")),
+			bSelected ? FVector2D(111.f, 79.f) : FVector2D(100.f, 75.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
 			TextureFilter::TF_Nearest);
@@ -622,9 +683,8 @@ namespace T66HeroSelectionPrivate
 		}
 		return ResolveHeroSelectionSpriteBrush(
 			*Entry,
-			MakeHeroSelectionReferenceAssetPath(
-				*FString::Printf(TEXT("Buttons/heroselection_buttons_square_%s.png"), Suffix)),
-			FVector2D(96.f, 96.f),
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("SquareIcon"), Suffix),
+			bSelected ? FVector2D(111.f, 79.f) : FVector2D(100.f, 75.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
 			TextureFilter::TF_Nearest);
@@ -637,34 +697,26 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry ThumbEntry;
 		static FHeroSelectionSpriteBrushEntry HoverEntry;
 
-		const FString ControlsPath = TEXT("SourceAssets/UI/Reference/Screens/HeroSelection/Controls/heroselection_controls_controls_sheet.png");
-		const FBox2f VerticalBarUV(
-			FVector2f(4.f / 1350.f, 4.f / 926.f),
-			FVector2f(90.f / 1350.f, 644.f / 926.f));
-
-		const FSlateBrush* TrackBrush = ResolveHeroSelectionSpriteRegionBrush(
+		const FSlateBrush* TrackBrush = ResolveHeroSelectionSpriteBrush(
 			TrackEntry,
-			ControlsPath,
-			FVector2D(14.f, 120.f),
-			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
-			VerticalBarUV,
-			FLinearColor(0.35f, 0.34f, 0.30f, 0.70f),
+			MakeHeroSelectionUltrakillElementPath(TEXT("progress_bar_track.png")),
+			FVector2D(1460.f, 104.f),
+			FMargin(0.065f, 0.300f, 0.065f, 0.300f),
+			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* ThumbBrush = ResolveHeroSelectionSpriteRegionBrush(
+		const FSlateBrush* ThumbBrush = ResolveHeroSelectionSpriteBrush(
 			ThumbEntry,
-			ControlsPath,
-			FVector2D(16.f, 96.f),
-			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
-			FLinearColor(0.93f, 0.82f, 0.52f, 1.0f),
+			MakeHeroSelectionUltrakillElementPath(TEXT("progress_bar_fill_cyan.png")),
+			FVector2D(1347.f, 108.f),
+			FMargin(0.030f, 0.080f, 0.030f, 0.080f),
+			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* HoverBrush = ResolveHeroSelectionSpriteRegionBrush(
+		const FSlateBrush* HoverBrush = ResolveHeroSelectionSpriteBrush(
 			HoverEntry,
-			ControlsPath,
-			FVector2D(16.f, 96.f),
-			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
-			FLinearColor(1.0f, 0.90f, 0.62f, 1.0f),
+			MakeHeroSelectionUltrakillElementPath(TEXT("progress_bar_fill_cyan.png")),
+			FVector2D(1347.f, 108.f),
+			FMargin(0.030f, 0.080f, 0.030f, 0.080f),
+			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 
 		if (TrackBrush && ThumbBrush && HoverBrush)
@@ -687,9 +739,11 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/HeroSelection/Controls/heroselection_controls_reference_dropdown_field_normal.png"),
-			FVector2D(218.f, 50.f),
-			FMargin(0.06f, 0.34f, 0.06f, 0.34f));
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/dropdown_field_normal.png"),
+			FVector2D(452.f, 75.f),
+			FMargin(0.130f, 0.235f, 0.130f, 0.235f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
 	}
 
 	inline const FSlateBrush* GetHeroSelectionPartySlotBrush()
@@ -697,8 +751,8 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/HeroSelection/Slots/heroselection_slots_reference_square_slot_frame_normal.png"),
-			FVector2D(112.f, 112.f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_normal.png"),
+			FVector2D(73.f, 73.f),
 			FMargin(0.20f, 0.18f, 0.20f, 0.18f));
 	}
 
@@ -910,6 +964,33 @@ namespace T66HeroSelectionPrivate
 		float MinWidth = 120.f)
 	{
 		return MakeHeroSelectionButton(FT66ButtonParams(Label, MoveTemp(OnClicked), Type).SetMinWidth(MinWidth));
+	}
+
+	inline TSharedRef<SWidget> MakeHeroSelectionFittedLabel(
+		const FText& Label,
+		const int32 FontSize,
+		const FSlateColor& Color,
+		const ETextJustify::Type Justification = ETextJustify::Center,
+		const EHorizontalAlignment HorizontalAlignment = HAlign_Center)
+	{
+		return SNew(SBox)
+			.HAlign(HorizontalAlignment)
+			.VAlign(VAlign_Center)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			[
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					SNew(STextBlock)
+					.Text(Label)
+					.Font(FT66Style::Tokens::FontBold(FontSize))
+					.ColorAndOpacity(Color)
+					.Justification(Justification)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)
+				]
+			];
 	}
 
 	inline TSharedRef<SWidget> MakeHeroSelectionDropdown(const FT66DropdownParams& Params)

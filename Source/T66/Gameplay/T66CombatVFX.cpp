@@ -11,7 +11,10 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
 #include "CollisionQueryParams.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "HAL/IConsoleManager.h"
+#include "Misc/CoreMisc.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
@@ -66,6 +69,21 @@ namespace
 		0,
 		TEXT("Emit detailed logs for idol DOT VFX requests."));
 
+	static TAutoConsoleVariable<int32> CVarT66CombatImportedVFXMaxPerFrame(
+		TEXT("T66.VFX.CombatImportedMaxPerFrame"),
+		24,
+		TEXT("Max imported combat Niagara/blueprint effect spawns per frame. Values <= 0 disable this cap."));
+
+	static TAutoConsoleVariable<int32> CVarT66CombatImportedVFXUseEffectsScalability(
+		TEXT("T66.VFX.CombatImportedUseEffectsScalability"),
+		1,
+		TEXT("Scale imported combat VFX caps by sg.EffectsQuality."));
+
+	static TAutoConsoleVariable<float> CVarT66CombatImportedVFXBudgetScale(
+		TEXT("T66.VFX.CombatImportedBudgetScale"),
+		1.0f,
+		TEXT("Global multiplier applied after EffectsQuality scaling for imported combat VFX."));
+
 	int32 GHeroOneStage1RequestSerial = 0;
 	int32 GHeroPierceStage2RequestSerial = 0;
 	int32 GIdolPierceStage3RequestSerial = 0;
@@ -75,16 +93,75 @@ namespace
 	int32 GIdolAOEStage7RequestSerial = 0;
 	int32 GIdolBounceStage8RequestSerial = 0;
 	int32 GIdolDOTStage9RequestSerial = 0;
+	uint64 GCombatImportedVFXBudgetFrame = MAX_uint64;
+	int32 GCombatImportedVFXEmittedThisFrame = 0;
 
-	UNiagaraSystem* LoadNiagaraSystemCached(const TCHAR* AssetPath)
+	float GetCombatImportedEffectsQualityScale()
+	{
+		if (CVarT66CombatImportedVFXUseEffectsScalability.GetValueOnGameThread() == 0)
+		{
+			return 1.0f;
+		}
+
+		IConsoleVariable* EffectsQualityCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("sg.EffectsQuality"));
+		const int32 EffectsQuality = EffectsQualityCVar ? FMath::Clamp(EffectsQualityCVar->GetInt(), 0, 4) : 3;
+		switch (EffectsQuality)
+		{
+		case 0:
+			return 0.35f;
+		case 1:
+			return 0.55f;
+		case 2:
+			return 0.75f;
+		case 4:
+			return 1.15f;
+		case 3:
+		default:
+			return 1.0f;
+		}
+	}
+
+	int32 GetCombatImportedVFXBudget()
+	{
+		const int32 BaseBudget = CVarT66CombatImportedVFXMaxPerFrame.GetValueOnGameThread();
+		if (BaseBudget <= 0)
+		{
+			return BaseBudget;
+		}
+
+		const float Scale = FMath::Max(0.05f, GetCombatImportedEffectsQualityScale() * CVarT66CombatImportedVFXBudgetScale.GetValueOnGameThread());
+		return FMath::Max(4, FMath::RoundToInt(static_cast<float>(BaseBudget) * Scale));
+	}
+
+	bool TryConsumeCombatImportedVFXBudget()
+	{
+		if (GCombatImportedVFXBudgetFrame != GFrameCounter)
+		{
+			GCombatImportedVFXBudgetFrame = GFrameCounter;
+			GCombatImportedVFXEmittedThisFrame = 0;
+		}
+
+		const int32 Budget = GetCombatImportedVFXBudget();
+		if (Budget > 0 && GCombatImportedVFXEmittedThisFrame >= Budget)
+		{
+			return false;
+		}
+
+		++GCombatImportedVFXEmittedThisFrame;
+		return true;
+	}
+
+	UNiagaraSystem* ResolveNiagaraSystemCached(const TCHAR* AssetPath)
 	{
 		static TMap<FString, TWeakObjectPtr<UNiagaraSystem>> Cache;
+		static TMap<FString, TSharedPtr<FStreamableHandle>> ActiveLoads;
 		if (!AssetPath || !*AssetPath)
 		{
 			return nullptr;
 		}
 
-		const FString Key(AssetPath);
+		const FSoftObjectPath Path(AssetPath);
+		const FString Key = Path.ToString();
 		if (const TWeakObjectPtr<UNiagaraSystem>* Found = Cache.Find(Key))
 		{
 			if (Found->IsValid())
@@ -93,24 +170,33 @@ namespace
 			}
 		}
 
-		UNiagaraSystem* Loaded = FindObject<UNiagaraSystem>(nullptr, AssetPath);
-		if (!Loaded)
+		if (UNiagaraSystem* Resolved = Cast<UNiagaraSystem>(Path.ResolveObject()))
 		{
-			Loaded = LoadObject<UNiagaraSystem>(nullptr, AssetPath);
+			Cache.Add(Key, Resolved);
+			return Resolved;
 		}
-		Cache.Add(Key, Loaded);
-		return Loaded;
+
+		if (!ActiveLoads.Contains(Key))
+		{
+			TArray<FSoftObjectPath> AssetPaths;
+			AssetPaths.Add(Path);
+			ActiveLoads.Add(Key, UAssetManager::GetStreamableManager().RequestAsyncLoad(AssetPaths, FStreamableDelegate()));
+		}
+
+		return nullptr;
 	}
 
-	UClass* LoadEffectBlueprintClassCached(const TCHAR* ClassPath)
+	UClass* ResolveEffectBlueprintClassCached(const TCHAR* ClassPath)
 	{
 		static TMap<FString, TWeakObjectPtr<UClass>> Cache;
+		static TMap<FString, TSharedPtr<FStreamableHandle>> ActiveLoads;
 		if (!ClassPath || !*ClassPath)
 		{
 			return nullptr;
 		}
 
-		const FString Key(ClassPath);
+		const FSoftObjectPath Path(ClassPath);
+		const FString Key = Path.ToString();
 		if (const TWeakObjectPtr<UClass>* Found = Cache.Find(Key))
 		{
 			if (Found->IsValid())
@@ -119,13 +205,20 @@ namespace
 			}
 		}
 
-		UClass* Loaded = FindObject<UClass>(nullptr, ClassPath);
-		if (!Loaded)
+		if (UClass* Resolved = Cast<UClass>(Path.ResolveObject()))
 		{
-			Loaded = StaticLoadClass(AActor::StaticClass(), nullptr, ClassPath);
+			Cache.Add(Key, Resolved);
+			return Resolved;
 		}
-		Cache.Add(Key, Loaded);
-		return Loaded;
+
+		if (!ActiveLoads.Contains(Key))
+		{
+			TArray<FSoftObjectPath> AssetPaths;
+			AssetPaths.Add(Path);
+			ActiveLoads.Add(Key, UAssetManager::GetStreamableManager().RequestAsyncLoad(AssetPaths, FStreamableDelegate()));
+		}
+
+		return nullptr;
 	}
 
 	void ScheduleNiagaraDeactivate(UWorld* World, UNiagaraComponent* NiagaraComponent, const float DelaySeconds)
@@ -159,11 +252,18 @@ namespace
 		const FVector& Scale,
 		const float ActiveDurationSeconds = 0.f)
 	{
-		UNiagaraSystem* System = LoadNiagaraSystemCached(AssetPath);
+		UNiagaraSystem* System = ResolveNiagaraSystemCached(AssetPath);
 		if (!World || !System)
 		{
 			return nullptr;
 		}
+		if (!TryConsumeCombatImportedVFXBudget())
+		{
+			return nullptr;
+		}
+
+		const bool bAutoDestroy = ActiveDurationSeconds <= 0.f;
+		const ENCPoolMethod PoolingMethod = bAutoDestroy ? ENCPoolMethod::AutoRelease : ENCPoolMethod::None;
 
 		UNiagaraComponent* NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			World,
@@ -171,15 +271,15 @@ namespace
 			Location,
 			Rotation,
 			Scale,
-			false,
+			bAutoDestroy,
 			true,
-			ENCPoolMethod::None,
+			PoolingMethod,
 			true);
 		if (NiagaraComponent)
 		{
-			NiagaraComponent->SetAutoDestroy(ActiveDurationSeconds <= 0.f);
-			if (ActiveDurationSeconds > 0.f)
+			if (!bAutoDestroy)
 			{
+				NiagaraComponent->SetAutoDestroy(false);
 				ScheduleNiagaraDeactivate(World, NiagaraComponent, ActiveDurationSeconds);
 			}
 		}
@@ -195,11 +295,18 @@ namespace
 		const FVector& Scale,
 		const float ActiveDurationSeconds)
 	{
-		UNiagaraSystem* System = LoadNiagaraSystemCached(AssetPath);
+		UNiagaraSystem* System = ResolveNiagaraSystemCached(AssetPath);
 		if (!World || !System || !AttachComponent)
 		{
 			return nullptr;
 		}
+		if (!TryConsumeCombatImportedVFXBudget())
+		{
+			return nullptr;
+		}
+
+		const bool bAutoDestroy = ActiveDurationSeconds <= 0.f;
+		const ENCPoolMethod PoolingMethod = bAutoDestroy ? ENCPoolMethod::AutoRelease : ENCPoolMethod::None;
 
 		UNiagaraComponent* NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 			System,
@@ -209,15 +316,15 @@ namespace
 			RelativeRotation,
 			Scale,
 			EAttachLocation::KeepRelativeOffset,
-			false,
-			ENCPoolMethod::None,
+			bAutoDestroy,
+			PoolingMethod,
 			true,
 			true);
 		if (NiagaraComponent)
 		{
-			NiagaraComponent->SetAutoDestroy(ActiveDurationSeconds <= 0.f);
-			if (ActiveDurationSeconds > 0.f)
+			if (!bAutoDestroy)
 			{
+				NiagaraComponent->SetAutoDestroy(false);
 				ScheduleNiagaraDeactivate(World, NiagaraComponent, ActiveDurationSeconds);
 			}
 		}
@@ -232,8 +339,12 @@ namespace
 		const FVector& Scale,
 		const float LifeSpanSeconds)
 	{
-		UClass* EffectClass = LoadEffectBlueprintClassCached(ClassPath);
+		UClass* EffectClass = ResolveEffectBlueprintClassCached(ClassPath);
 		if (!World || !EffectClass)
+		{
+			return false;
+		}
+		if (!TryConsumeCombatImportedVFXBudget())
 		{
 			return false;
 		}
@@ -252,7 +363,7 @@ namespace
 		return false;
 	}
 
-	void SpawnImportedEffectAlongLine(
+	bool SpawnImportedEffectAlongLine(
 		UWorld* World,
 		const TCHAR* AssetPath,
 		const FVector& Start,
@@ -260,31 +371,35 @@ namespace
 		const float VisualScale,
 		const float QuantityMultiplier)
 	{
-		UNiagaraSystem* System = LoadNiagaraSystemCached(AssetPath);
+		UNiagaraSystem* System = ResolveNiagaraSystemCached(AssetPath);
 		if (!World || !System)
 		{
-			return;
+			return false;
 		}
 
 		const FVector Delta = End - Start;
 		const float Distance = Delta.Size();
 		if (Distance <= KINDA_SMALL_NUMBER)
 		{
-			SpawnImportedNiagaraAtLocation(World, AssetPath, Start, FRotator::ZeroRotator, FVector(VisualScale));
-			return;
+			return SpawnImportedNiagaraAtLocation(World, AssetPath, Start, FRotator::ZeroRotator, FVector(VisualScale)) != nullptr;
 		}
 
 		const FRotator Rotation = Delta.Rotation();
 		const int32 SpawnCount = FMath::Clamp(FMath::RoundToInt((Distance / 150.f) * FMath::Max(0.5f, QuantityMultiplier)), 1, 18);
+		int32 SpawnedCount = 0;
 		for (int32 Index = 0; Index < SpawnCount; ++Index)
 		{
 			const float T = (SpawnCount > 1) ? static_cast<float>(Index) / static_cast<float>(SpawnCount - 1) : 0.5f;
 			const FVector SpawnLocation = FMath::Lerp(Start, End, T);
-			SpawnImportedNiagaraAtLocation(World, AssetPath, SpawnLocation, Rotation, FVector(VisualScale));
+			if (SpawnImportedNiagaraAtLocation(World, AssetPath, SpawnLocation, Rotation, FVector(VisualScale)))
+			{
+				++SpawnedCount;
+			}
 		}
+		return SpawnedCount > 0;
 	}
 
-	void SpawnImportedEffectAlongChain(
+	bool SpawnImportedEffectAlongChain(
 		UWorld* World,
 		const TCHAR* AssetPath,
 		const TArray<FVector>& Points,
@@ -293,13 +408,15 @@ namespace
 	{
 		if (!World || Points.Num() < 2)
 		{
-			return;
+			return false;
 		}
 
+		bool bSpawnedAny = false;
 		for (int32 Index = 0; Index < Points.Num() - 1; ++Index)
 		{
-			SpawnImportedEffectAlongLine(World, AssetPath, Points[Index], Points[Index + 1], VisualScale, QuantityMultiplier);
+			bSpawnedAny |= SpawnImportedEffectAlongLine(World, AssetPath, Points[Index], Points[Index + 1], VisualScale, QuantityMultiplier);
 		}
+		return bSpawnedAny;
 	}
 
 	const TCHAR* GetIdolNiagaraEffectPath(const FName& IdolID)
@@ -331,14 +448,50 @@ namespace
 		return nullptr;
 	}
 
+	void PreloadImportedCombatVFXAssetsAsync()
+	{
+		static bool bRequested = false;
+		if (bRequested)
+		{
+			return;
+		}
+		bRequested = true;
+
+		static const TCHAR* NiagaraPaths[] =
+		{
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Portal.P_Cosmic_Portal"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Fire.P_Fire"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Poison_02.P_Poison_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Liquid_Hit_03.P_Liquid_Hit_03"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/P_Electric_Projectile_02.P_Electric_Projectile_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Ice_Projectile_02.P_Ice_Projectile_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_02.P_Cosmic_Projectile_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_03.P_Cosmic_Projectile_03"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/P_Splash_02.P_Splash_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/P_Laser_02.P_Laser_02"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_01.P_Weapon_01"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Web_Projectile_01.P_Web_Projectile_01"),
+			TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_02.P_Weapon_02"),
+			TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"),
+			TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"),
+		};
+
+		for (const TCHAR* Path : NiagaraPaths)
+		{
+			ResolveNiagaraSystemCached(Path);
+		}
+		ResolveEffectBlueprintClassCached(TEXT("/Game/Stylized_VFX_StPack/Blueprints/BP_Storm.BP_Storm_C"));
+	}
+
 	UNiagaraSystem* FindPixelVFXSystem()
 	{
-		if (UNiagaraSystem* PixelSystem = LoadNiagaraSystemCached(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")))
+		if (UNiagaraSystem* PixelSystem = ResolveNiagaraSystemCached(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")))
 		{
 			return PixelSystem;
 		}
 
-		return LoadNiagaraSystemCached(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
+		return ResolveNiagaraSystemCached(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
 	}
 
 	FVector4 T66MakeBloodTint(bool bBrightCore)
@@ -710,6 +863,7 @@ namespace
 
 void UT66CombatComponent::WarmupVFXSystems()
 {
+	PreloadImportedCombatVFXAssetsAsync();
 	if (!CachedSlashVFXNiagara) { CachedSlashVFXNiagara = SlashVFXNiagara.Get(); }
 	if (!CachedPixelVFXNiagara) { CachedPixelVFXNiagara = PixelVFXNiagara.Get(); }
 	if (!CachedSlashVFXNiagara || !CachedPixelVFXNiagara) { PrimeCombatPresentationAssetsAsync(); }
@@ -1009,8 +1163,10 @@ void UT66CombatComponent::SpawnIdolPierceVFX(const FName& IdolID, const ET66Item
 	const float Quantity = T66CombatShared::GetIdolRarityVisualQuantity(Rarity) * T66CombatShared::GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::Pierce);
 	if (const TCHAR* AssetPath = GetIdolNiagaraEffectPath(IdolID))
 	{
-		SpawnImportedEffectAlongLine(World, AssetPath, Start + FVector(0.f, 0.f, 18.f), End + FVector(0.f, 0.f, 18.f), VisualScale, Quantity);
-		return;
+		if (SpawnImportedEffectAlongLine(World, AssetPath, Start + FVector(0.f, 0.f, 18.f), End + FVector(0.f, 0.f, 18.f), VisualScale, Quantity))
+		{
+			return;
+		}
 	}
 
 	SpawnPierceVFX(Start, End, IdolColor);
@@ -1109,8 +1265,10 @@ void UT66CombatComponent::SpawnIdolBounceVFX(const FName& IdolID, const ET66Item
 		{
 			ElevatedPositions.Add(Pos + FVector(0.f, 0.f, 24.f));
 		}
-		SpawnImportedEffectAlongChain(World, AssetPath, ElevatedPositions, VisualScale, Quantity);
-		return;
+		if (SpawnImportedEffectAlongChain(World, AssetPath, ElevatedPositions, VisualScale, Quantity))
+		{
+			return;
+		}
 	}
 
 	TArray<FVector> ElevatedPositions;

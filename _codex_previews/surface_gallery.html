@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T66 ULTRAKILL Surface Pass Gallery</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Arial, sans-serif;
+      background: #181818;
+      color: #f2f2f2;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+    }
+    h1 {
+      margin: 0 0 18px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    h2 {
+      margin: 28px 0 12px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .sheet {
+      display: block;
+      max-width: 100%;
+      border: 1px solid #3a3a3a;
+      background: #222;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: #242424;
+      border: 1px solid #3a3a3a;
+      padding: 12px;
+    }
+    .card img {
+      display: block;
+      width: 100%;
+      height: 320px;
+      object-fit: contain;
+      background: #bdbdbd;
+    }
+    .label {
+      margin: 10px 0 8px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    a {
+      color: #8fd0ff;
+    }
+  </style>
+</head>
+<body>
+  <h1>T66 ULTRAKILL Surface Pass Gallery</h1>
+
+  <h2>Side-by-side sheet</h2>
+  <a href="contact_sheet.png" target="_blank">
+    <img class="sheet" src="contact_sheet.png" alt="Filth reference and Mike surface pass comparison">
+  </a>
+
+  <h2>Individual images</h2>
+  <div class="grid">
+    <div class="card">
+      <img src="ultrakill_filth.png" alt="ULTRAKILL Filth reference">
+      <div class="label">ULTRAKILL Filth Reference</div>
+      <a href="ultrakill_filth.png" target="_blank">Open full image</a>
+    </div>
+    <div class="card">
+      <img src="mike_before.png" alt="Mike original">
+      <div class="label">Mike Original</div>
+      <a href="mike_before.png" target="_blank">Open full image</a>
+    </div>
+    <div class="card">
+      <img src="mike_after_no_dither.png" alt="Mike no dither">
+      <div class="label">Mike No Dither</div>
+      <a href="mike_after_no_dither.png" target="_blank">Open full image</a>
+    </div>
+    <div class="card">
+      <img src="mike_after_blocky.png" alt="Mike blocky">
+      <div class="label">Mike Blocky</div>
+      <a href="mike_after_blocky.png" target="_blank">Open full image</a>
+    </div>
+    <div class="card">
+      <img src="mike_after_dithered.png" alt="Mike stronger dithered decimate">
+      <div class="label">Mike Decimate + Stronger Dither</div>
+      <a href="mike_after_dithered.png" target="_blank">Open full image</a>
+    </div>
+    <div class="card">
+      <img src="mike_after_voxel_dithered.png" alt="Mike voxel coarse dithered">
+      <div class="label">Mike Voxel Coarse + Dither</div>
+      <a href="mike_after_voxel_dithered.png" target="_blank">Open full image</a>
+    </div>
+    <div class="card">
+      <img src="mike_after_voxel_fine_dithered.png" alt="Mike voxel fine dithered">
+      <div class="label">Mike Voxel Fine + Dither</div>
+      <a href="mike_after_voxel_fine_dithered.png" target="_blank">Open full image</a>
+    </div>
+  </div>
+</body>
+</html>

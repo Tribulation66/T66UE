@@ -10,7 +10,7 @@ This file holds rules that apply to both character/object model generation and w
 
 ## Generation Contract
 
-Use image generation only to create clean module or object references. The image should isolate one target asset on a simple opaque background, avoid UI/text/characters unless the character is the target, and avoid full-room compositions when the output should be a modular mesh.
+Use image generation only to create clean module or object references. The image should isolate one target asset on a pure flat opaque white `#ffffff` background with no cast shadow, contact shadow, floor plane, reflection, gradient, gray patch, alpha, green spill, border card, UI, or text. Avoid characters unless the character is the target, and avoid full-room compositions when the output should be a modular mesh.
 
 For TRELLIS runs:
 
@@ -25,7 +25,9 @@ For TRELLIS runs:
 
 RetopoFlow `4.1.5` is the only approved tool for intentional low-poly topology work. Do not promote Blender Decimate modifier output as an accepted low-poly model.
 
-Use RetopoFlow for characters, enemies, animation-sensitive meshes, and environment details where a human retopo pass can improve the visible chunky low-poly shape. For static wall, floor, and ceiling modules, RetopoFlow is optional: if the work would only reduce triangle count mechanically, keep the normalized raw TRELLIS mesh instead of using Decimate.
+Use RetopoFlow for characters, enemies, animation-sensitive meshes, and environment details where a human retopo pass can improve the visible chunky low-poly shape. For static wall, floor, and ceiling modules, RetopoFlow is optional: if the work would only reduce triangle count mechanically, keep the normalized raw TRELLIS mesh instead of using Blender Decimate.
+
+Static environment runtime optimization is a separate Unreal import step, not a RetopoFlow artifact. Imported wall, floor, and ceiling meshes may use Unreal-generated LODs, Nanite, and Nanite fallback reduction for packaged runtime performance. Those settings are allowed because they live on the Unreal StaticMesh asset and do not replace the required raw TRELLIS source, normalized export, or any real RetopoFlow source files.
 
 ## Unreal Import Contract
 
@@ -35,6 +37,7 @@ Required checks:
 
 - imported materials use approved unlit parents
 - imported normals/tangents and UV precision are preserved where needed
+- generated environment modules have runtime LODs, Nanite enabled where supported, and an explicit fallback budget
 - scale and pivot match the documented module/object contract
 - a fresh in-editor or standalone check proves the asset renders from the gameplay camera
 - collision is explicit and authored for gameplay, not assumed from generated visual mesh complexity

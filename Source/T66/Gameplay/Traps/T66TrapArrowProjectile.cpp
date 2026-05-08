@@ -7,6 +7,7 @@
 
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
+#include "Core/T66TrapTuningConfig.h"
 #include "Gameplay/T66ArthurSwordVisuals.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
@@ -15,26 +16,28 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
-#include "UObject/SoftObjectPath.h"
 
 namespace
 {
 	UNiagaraSystem* LoadTrapPixelVFX()
 	{
-		static TSoftObjectPtr<UNiagaraSystem> PixelSystem(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
-		if (UNiagaraSystem* System = PixelSystem.LoadSynchronous())
+		const FT66TrapVisualAssetConfig& TrapAssets = UT66TrapTuningConfig::GetRuntimeTrapAssets();
+		if (UNiagaraSystem* System = UT66TrapTuningConfig::LoadConfiguredTrapNiagaraSystem(
+			TrapAssets.ArrowProjectileTrailNiagara,
+			TEXT("TrapAssets.ArrowProjectileTrailNiagara")))
 		{
 			return System;
 		}
 
-		static TSoftObjectPtr<UNiagaraSystem> FallbackSystem(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
-		return FallbackSystem.LoadSynchronous();
+		return UT66TrapTuningConfig::LoadConfiguredTrapNiagaraSystem(
+			TrapAssets.ArrowProjectileFallbackTrailNiagara,
+			TEXT("TrapAssets.ArrowProjectileFallbackTrailNiagara"));
 	}
 
 	UStaticMesh* LoadTrapArrowMesh()
 	{
-		static TSoftObjectPtr<UStaticMesh> Mesh(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Meshes/SM_Arrows_PickUp.SM_Arrows_PickUp")));
-		return Mesh.LoadSynchronous();
+		const FT66TrapVisualAssetConfig& TrapAssets = UT66TrapTuningConfig::GetRuntimeTrapAssets();
+		return UT66TrapTuningConfig::LoadConfiguredTrapStaticMesh(TrapAssets.ArrowProjectileMesh, TEXT("TrapAssets.ArrowProjectileMesh"));
 	}
 }
 

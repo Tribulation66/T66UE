@@ -8,9 +8,9 @@ Read these in order:
 
 1. `C:\UE\T66\UI\Reference\SCREEN_MODAL_TASK.md`
 2. `C:\UE\T66\Docs\UI\UI_GENERATION.md`
-3. The target-specific `PROMPT.md` from `C:\UE\T66\UI\Reference\PROMPT_INDEX.md`
+3. `C:\UE\T66\UI\MASTER_REFERENCE_UI_GENERATION_PROMPT.md`
 
-`UI_GENERATION.md` is the global UI generation process. This file explains the specific reorganization strategy for this pass.
+`UI_GENERATION.md` is the global UI generation process. The master prompt is the active copy/paste handoff for each target chat.
 
 ## Why This Pass Exists
 
@@ -38,12 +38,10 @@ Compatibility/bootstrap assets:
 C:\UE\T66\SourceAssets\UI\Reference\Shared\
 ```
 
-Handoff prompts:
+Active prompt:
 
 ```text
-C:\UE\T66\UI\Reference\Screens\<ScreenName>\PROMPT.md
-C:\UE\T66\UI\Reference\Modals\<ModalName>\PROMPT.md
-C:\UE\T66\UI\Reference\PROMPT_INDEX.md
+C:\UE\T66\UI\MASTER_REFERENCE_UI_GENERATION_PROMPT.md
 ```
 
 ## Asset Ownership Rule
@@ -88,13 +86,16 @@ Keep live in Slate/UMG:
 
 For each target:
 
-1. Compare the reference image to the current packaged capture.
+1. Compare the exact reference image to the current working capture when one exists.
 2. Inventory missing or mismatched UI families.
 3. Use imagegen to create text-free sprite sheets or direct transparent component PNGs.
-4. Save accepted runtime PNGs under the target runtime asset folder.
-5. Implement the assets with explicit resize contracts.
-6. Stage and capture the packaged screen.
-7. Compare against the reference and repeat.
+4. Compare the generated text-free sprite/component sheet against the reference before slicing or assembly. Reject the sheet if it does not match the reference UI family.
+5. Build a hierarchy and containment map from the reference so each child control fits inside its intended parent panel, card, row, or shell.
+6. Save accepted runtime PNGs under the target runtime asset folder.
+7. Implement the assets with explicit resize contracts.
+8. Run a normal Unreal build only if source changed.
+9. Capture the working screen from `C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe`.
+10. Compare against the reference and repeat.
 
 Do not use Pillow/PIL or local pixel repair for generated UI art. Bad generated art goes back to imagegen. Bad runtime proportions go to the resize contract.
 
@@ -130,15 +131,9 @@ Do not embed generated imagegen outputs directly in chat unless the user explici
 
 ## Verification Requirement
 
-Compile success is not enough. Each implementation pass must stage/capture the packaged target and compare it to the reference.
+Compile success is not enough. Each implementation pass must produce an existing working screenshot or a true blocker status, then compare the working screenshot to the reference.
 
-Known current blocker from the cleanup pass: standalone staging was attempted, but the T66 standalone target was blocked by unrelated `T66IdleMainMenuScreen.cpp` undeclared identifiers:
-
-- `IdleBasePassiveDamage`
-- `IdleTapUpgradeStep`
-- `IdleEngineUpgradeStep`
-
-The editor build succeeded after the Reference cleanup. If standalone staging still fails on those idle constants, record it as an external blocker rather than changing unrelated idle code inside a screen/modal UI pass.
+Individual target chats should not run UAT, BuildCookRun, cook, stage, pak, or package. Final packaged verification belongs to the coordinating pass after target work is complete.
 
 ## Current Target Set
 
@@ -171,4 +166,4 @@ Modals:
 - HeroGrid
 - CompanionGrid
 
-Start from `C:\UE\T66\UI\Reference\PROMPT_INDEX.md` and paste the target prompt into a new chat.
+Start from `C:\UE\T66\UI\MASTER_REFERENCE_UI_GENERATION_PROMPT.md`, fill in the target fields, and paste the full prompt into a new chat.

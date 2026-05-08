@@ -5,10 +5,12 @@
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace
 {
@@ -47,8 +49,9 @@ AT66ArcadeMachineInteractable::AT66ArcadeMachineInteractable()
 	};
 	ArcadeData.bConsumeOnSuccess = true;
 	ArcadeData.bConsumeOnFailure = true;
-	ArcadeData.DisplayMeshScale = FVector(1.1f, 0.75f, 1.85f);
-	ArcadeData.DisplayMeshOffset = FVector(0.f, 0.f, 95.f);
+	ArcadeData.DisplayMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro")));
+	ArcadeData.DisplayMeshScale = FVector(1.f, 1.f, 1.f);
+	ArcadeData.DisplayMeshOffset = FVector::ZeroVector;
 	ArcadeData.Tint = FLinearColor(0.14f, 0.36f, 0.92f, 1.f);
 	ArcadeData.Modifiers.FloatValues.Add(T66ArcadeModifierKeys::ArcadeRoundSeconds, 10.f);
 	ArcadeData.Modifiers.FloatValues.Add(T66ArcadeModifierKeys::ArcadeStartInterval, 0.70f);

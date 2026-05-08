@@ -46,7 +46,7 @@ protected:
 private:
 	enum class EMiniCircusTab : uint8
 	{
-		Vendor = 0,
+		Market = 0,
 		Gambling,
 		Alchemy
 	};
@@ -63,7 +63,7 @@ private:
 	FReply HandleAlchemyTransmuteClicked();
 	FReply HandleAlchemyDissolveClicked();
 	FReply HandleContinueClicked();
-	FReply HandleVendorTabClicked();
+	FReply HandleMarketTabClicked();
 	FReply HandleGamblingTabClicked();
 	FReply HandleAlchemyTabClicked();
 	FString BuildShopUiStateKey() const;
@@ -73,7 +73,7 @@ private:
 
 	TSharedPtr<STextBlock> StatusTextBlock;
 	FText CurrentStatusText;
-	EMiniCircusTab ActiveTab = EMiniCircusTab::Vendor;
+	EMiniCircusTab ActiveTab = EMiniCircusTab::Market;
 	int32 LastAppliedStateRevision = 0;
 	FString LastShopUiStateKey;
 };

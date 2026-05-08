@@ -11,6 +11,8 @@
 #include "Core/T66SteamHelper.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
+#include "Engine/Texture2D.h"
+#include "Engine/TextureDefines.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Kismet/GameplayStatics.h"
 #include "Styling/CoreStyle.h"
@@ -26,6 +28,7 @@
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SSpacer.h"
@@ -35,8 +38,10 @@
 
 namespace
 {
-	constexpr float T66SaveFlowActionHeight = 44.f;
-	constexpr float T66SaveFlowPreviewSlotSize = 74.f;
+	constexpr float T66SaveFlowDesignWidth = 1920.f;
+	constexpr float T66SaveFlowDesignHeight = 1080.f;
+	constexpr float T66SaveFlowActionHeight = 54.f;
+	constexpr float T66SaveFlowPreviewSlotSize = 90.f;
 
 	FLinearColor T66SaveFlowGoldText()
 	{
@@ -102,6 +107,28 @@ namespace
 			TEXT("SourceAssets/UI/Reference/Screens/SaveSlots/Panels/saveslots_panels_fullscreen_fullscreen_panel_wide.png"),
 			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
 			TEXT("SaveSlotsContentShellV16"),
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetSaveFlowDividerBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveSaveFlowBrush(
+			Entry,
+			TEXT("SourceAssets/UI/Reference/Screens/SaveSlots/Controls/saveslots_controls_divider_long.png"),
+			FMargin(0.f),
+			TEXT("SaveSlotsDivider"),
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetSaveFlowOrnamentBrush()
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		return ResolveSaveFlowBrush(
+			Entry,
+			TEXT("SourceAssets/UI/Reference/Screens/SaveSlots/Controls/saveslots_controls_ornament_diamond.png"),
+			FMargin(0.f),
+			TEXT("SaveSlotsOrnament"),
 			TextureFilter::TF_Nearest);
 	}
 
@@ -218,12 +245,17 @@ namespace
 				.BorderBackgroundColor(FLinearColor(0.015f, 0.014f, 0.011f, 1.0f))
 			]
 			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
 			[
-				SNew(SImage)
-				.Image(GetSaveFlowSceneBrush())
-				.ColorAndOpacity(FLinearColor(0.88f, 0.88f, 0.88f, 1.0f))
+				SNew(SBox)
+				.WidthOverride(1230.f)
+				.HeightOverride(921.f)
+				[
+					SNew(SImage)
+					.Image(GetSaveFlowSceneBrush())
+					.ColorAndOpacity(FLinearColor(0.88f, 0.88f, 0.88f, 1.0f))
+				]
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)
@@ -233,6 +265,40 @@ namespace
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 				.BorderBackgroundColor(FLinearColor(0.02f, 0.025f, 0.035f, 0.48f))
 			];
+	}
+
+	TSharedRef<SWidget> MakeSaveFlowDesignSlot(const float W, const float H, const TSharedRef<SWidget>& Widget)
+	{
+		return SNew(SBox)
+			.WidthOverride(W)
+			.HeightOverride(H)
+			[
+				Widget
+			];
+	}
+
+	void AddSaveFlowCanvasSlot(
+		const TSharedRef<SConstraintCanvas>& Canvas,
+		const float X,
+		const float Y,
+		const float W,
+		const float H,
+		const TSharedRef<SWidget>& Widget)
+	{
+		Canvas->AddSlot()
+			.Anchors(FAnchors(0.f, 0.f))
+			.Alignment(FVector2D::ZeroVector)
+			.Offset(FMargin(X, Y, W, H))
+			[
+				MakeSaveFlowDesignSlot(W, H, Widget)
+			];
+	}
+
+	TSharedRef<SWidget> MakeSaveFlowThinLine(const FLinearColor& Tint = FLinearColor(0.50f, 0.28f, 0.07f, 0.68f))
+	{
+		return SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(Tint);
 	}
 
 	TSharedRef<SWidget> MakeSaveFlowShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
@@ -592,14 +658,8 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 		}
 	}
 
-	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
-	const float SurfaceWidth = FMath::Clamp(SafeFrameSize.X - 168.f, 1180.f, 1504.f);
-	const FMargin SurfacePadding(60.f, 42.f, 60.f, 36.f);
-	constexpr int32 SlotColumns = 2;
-	const float CardGapX = 36.f;
-	const float CardGapY = 12.f;
-	const float CardWidth = FMath::Max(600.f, (SurfaceWidth - SurfacePadding.Left - SurfacePadding.Right - (CardGapX * (SlotColumns - 1))) / SlotColumns);
-	const float CardHeight = 318.f;
+	const float CardWidth = 754.f;
+	const float CardHeight = 365.f;
 	const int32 CurrentPartyCount = PartySubsystem ? FMath::Max(1, PartySubsystem->GetPartyMemberCount()) : 1;
 
 	auto MakePartySizeMenu = [this, Loc]() -> TSharedRef<SWidget>
@@ -656,7 +716,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 					.ColorAndOpacity(FrameTint)
 				]
 				+ SOverlay::Slot()
-				.Padding(9.f)
+				.Padding(12.f)
 				[
 					bHasAvatar
 						? StaticCastSharedRef<SWidget>(
@@ -665,7 +725,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 						: StaticCastSharedRef<SWidget>(
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.08f, 0.10f, 0.09f, 0.96f))
+							.BorderBackgroundColor(FLinearColor(0.035f, 0.039f, 0.035f, 0.98f))
 							.HAlign(HAlign_Center)
 							.VAlign(VAlign_Center)
 							[
@@ -704,7 +764,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 					.ColorAndOpacity(FrameTint)
 				]
 				+ SOverlay::Slot()
-				.Padding(9.f)
+				.Padding(12.f)
 				[
 					bHasPortrait
 						? StaticCastSharedRef<SWidget>(
@@ -713,7 +773,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 						: StaticCastSharedRef<SWidget>(
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.075f, 0.085f, 0.075f, 0.96f))
+							.BorderBackgroundColor(FLinearColor(0.033f, 0.037f, 0.034f, 0.98f))
 							.HAlign(HAlign_Center)
 							.VAlign(VAlign_Center)
 							[
@@ -723,6 +783,9 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 								.ColorAndOpacity(SavedPlayer ? T66SaveFlowMutedText() : FLinearColor(0.46f, 0.43f, 0.36f, 1.f))
 								.Justification(ETextJustify::Center)
 								.AutoWrapText(true)
+								.WrapTextAt(T66SaveFlowPreviewSlotSize - 28.f)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+								.Clipping(EWidgetClipping::ClipToBounds)
 							])
 				]
 			];
@@ -733,12 +796,11 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 	PageSlotIndices.Init(INDEX_NONE, SlotsPerPage);
 	PageSlotHasVisibleSave.Init(false, SlotsPerPage);
 	TSet<int32> UsedDisplaySlotIndices;
-	auto CanUsePlaceholderSlot = [SaveSub, &UsedDisplaySlotIndices](const int32 SlotIndex) -> bool
+	auto CanUsePlaceholderSlot = [&UsedDisplaySlotIndices](const int32 SlotIndex) -> bool
 	{
 		return SlotIndex >= 0
 			&& SlotIndex < UT66SaveSubsystem::MaxSlots
-			&& !UsedDisplaySlotIndices.Contains(SlotIndex)
-			&& (!SaveSub || !SaveSub->DoesSlotExist(SlotIndex));
+			&& !UsedDisplaySlotIndices.Contains(SlotIndex);
 	};
 
 	for (int32 LocalIndex = 0; LocalIndex < SlotsPerPage; ++LocalIndex)
@@ -872,7 +934,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			const FT66SavedPartyPlayerState* SavedPlayer = SavedPlayers.IsValidIndex(PartyIndex) ? &SavedPlayers[PartyIndex] : nullptr;
 			const bool bLastPreviewColumn = PartyIndex == MaxPartyPreviewSlots - 1;
 			SlotGrid->AddSlot(PartyIndex, 0)
-				.Padding(0.f, 0.f, bLastPreviewColumn ? 0.f : 8.f, 8.f)
+				.Padding(0.f, 0.f, bLastPreviewColumn ? 0.f : 8.f, 10.f)
 				[
 					MakePartyMemberSlot(LocalIndex, PartyIndex, SavedPlayer)
 				];
@@ -884,147 +946,123 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				];
 		}
 
+		TSharedRef<SConstraintCanvas> CardCanvas = SNew(SConstraintCanvas);
+		AddSaveFlowCanvasSlot(
+			CardCanvas,
+			34.f, 22.f, 188.f, 36.f,
+			SNew(STextBlock)
+			.Text(FText::Format(NSLOCTEXT("T66.SaveSlots", "SlotHeader", "Save Slot {0}"), FText::AsNumber(SlotIndex + 1)))
+			.Font(FT66Style::Tokens::FontBold(22))
+			.ColorAndOpacity(bIsSelected ? FLinearColor(0.43f, 0.22f, 0.04f, 1.f) : T66SaveFlowInkText())
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds));
+		AddSaveFlowCanvasSlot(CardCanvas, 210.f, 40.f, 388.f, 4.f, MakeSaveFlowThinLine(FLinearColor(0.52f, 0.30f, 0.08f, 0.86f)));
+		AddSaveFlowCanvasSlot(CardCanvas, 34.f, 74.f, 392.f, 190.f, SlotGrid);
+		AddSaveFlowCanvasSlot(CardCanvas, 444.f, 70.f, 3.f, 190.f, MakeSaveFlowThinLine(FLinearColor(0.56f, 0.35f, 0.12f, 0.52f)));
+		AddSaveFlowCanvasSlot(
+			CardCanvas,
+			475.f, 72.f, 258.f, 188.f,
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(STextBlock)
+				.Text(StageText)
+				.Font(FT66Style::Tokens::FontBold(18))
+				.ColorAndOpacity(bHasRunData ? T66SaveFlowInkText() : T66SaveFlowInkMutedText())
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 4.f, 0.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(DateText)
+				.Font(FT66Style::Tokens::FontBold(16))
+				.ColorAndOpacity(T66SaveFlowInkMutedText())
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 4.f, 0.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(TimeText)
+				.Font(FT66Style::Tokens::FontBold(16))
+				.ColorAndOpacity(T66SaveFlowInkMutedText())
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 16.f, 0.f, 0.f)
+			[
+			SNew(SBox)
+			.WidthOverride(258.f)
+			.HeightOverride(4.f)
+			[
+				MakeSaveFlowThinLine(FLinearColor(0.52f, 0.30f, 0.08f, 0.72f))
+			]
+		]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 14.f, 0.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(StatusText)
+				.Font(FT66Style::Tokens::FontBold(17))
+				.ColorAndOpacity(!bHasRunData ? T66SaveFlowInkText() : (bCanLoad ? FLinearColor(0.34f, 0.20f, 0.04f, 1.f) : FLinearColor(0.52f, 0.17f, 0.10f, 1.f)))
+				.AutoWrapText(true)
+				.WrapTextAt(258.f)
+				.WrappingPolicy(ETextWrappingPolicy::AllowPerCharacterWrapping)
+				.Clipping(EWidgetClipping::ClipToBounds)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 5.f, 0.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(TimePlaceholderText)
+				.Font(FT66Style::Tokens::FontBold(16))
+				.ColorAndOpacity(T66SaveFlowInkMutedText())
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				.Visibility(bHasRunData ? EVisibility::Collapsed : EVisibility::Visible)
+			]);
+		AddSaveFlowCanvasSlot(
+			CardCanvas,
+			39.f, 279.f, 337.f, 54.f,
+			MakeSaveFlowPlateButton(
+				FT66ButtonParams(PreviewText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandlePreviewClicked, SlotIndex), ET66ButtonType::Neutral)
+				.SetMinWidth(337.f)
+				.SetHeight(54.f)
+				.SetFontSize(22)
+				.SetEnabled(bHasRunData),
+				bHasRunData));
+		AddSaveFlowCanvasSlot(
+			CardCanvas,
+			389.f, 279.f, 337.f, 54.f,
+			MakeSaveFlowPlateButton(
+				FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleLoadClicked, SlotIndex), bCanLoad ? ET66ButtonType::Primary : ET66ButtonType::Neutral)
+				.SetMinWidth(337.f)
+				.SetHeight(54.f)
+				.SetFontSize(22)
+				.SetEnabled(bCanLoad),
+				bCanLoad));
+
 		return SNew(SBox)
 			.WidthOverride(CardWidth)
 			.HeightOverride(CardHeight)
 			[
 				MakeSaveFlowCardShell(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(0.f, 0.f, 0.f, 12.f)
-					[
-						SNew(STextBlock)
-						.Text(FText::Format(NSLOCTEXT("T66.SaveSlots", "SlotHeader", "Save Slot {0}"), FText::AsNumber(SlotIndex + 1)))
-						.Font(FT66Style::Tokens::FontBold(22))
-						.ColorAndOpacity(bIsSelected ? FLinearColor(0.43f, 0.22f, 0.04f, 1.f) : T66SaveFlowInkText())
-					]
-					+ SVerticalBox::Slot()
-					.FillHeight(1.f)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.VAlign(VAlign_Top)
-						[
-							SlotGrid
-						]
-						+ SHorizontalBox::Slot()
-						.FillWidth(1.f)
-						.Padding(30.f, 2.f, 0.f, 0.f)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							[
-								SNew(STextBlock)
-								.Text(StageText)
-								.Font(FT66Style::Tokens::FontBold(18))
-								.ColorAndOpacity(bHasRunData ? T66SaveFlowInkText() : T66SaveFlowInkMutedText())
-							]
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0.f, 4.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(DateText)
-								.Font(FT66Style::Tokens::FontBold(16))
-								.ColorAndOpacity(T66SaveFlowInkMutedText())
-							]
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0.f, 4.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(TimeText)
-								.Font(FT66Style::Tokens::FontBold(16))
-								.ColorAndOpacity(T66SaveFlowInkMutedText())
-							]
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0.f, 6.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(DatePlaceholderText)
-								.Font(FT66Style::Tokens::FontBold(16))
-								.ColorAndOpacity(T66SaveFlowInkMutedText())
-								.Visibility(bHasRunData ? EVisibility::Collapsed : EVisibility::Visible)
-							]
-							+ SVerticalBox::Slot()
-							.FillHeight(1.f)
-							[
-								SNew(SSpacer)
-							]
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							[
-								SNew(STextBlock)
-								.Text(StatusText)
-								.Font(FT66Style::Tokens::FontBold(17))
-								.ColorAndOpacity(!bHasRunData ? T66SaveFlowInkText() : (bCanLoad ? FLinearColor(0.34f, 0.20f, 0.04f, 1.f) : FLinearColor(0.52f, 0.17f, 0.10f, 1.f)))
-							]
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0.f, 5.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(TimePlaceholderText)
-								.Font(FT66Style::Tokens::FontBold(16))
-								.ColorAndOpacity(T66SaveFlowInkMutedText())
-								.Visibility(bHasRunData ? EVisibility::Collapsed : EVisibility::Visible)
-							]
-						]
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(0.f, 12.f, 0.f, 0.f)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.FillWidth(1.f)
-						.Padding(0.f, 0.f, 10.f, 0.f)
-						[
-							MakeSaveFlowPlateButton(
-								FT66ButtonParams(PreviewText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandlePreviewClicked, SlotIndex), ET66ButtonType::Neutral)
-								.SetMinWidth(128.f)
-								.SetHeight(T66SaveFlowActionHeight)
-								.SetFontSize(22)
-								.SetEnabled(bHasRunData),
-								bHasRunData)
-						]
-						+ SHorizontalBox::Slot()
-						.FillWidth(1.f)
-						[
-							MakeSaveFlowPlateButton(
-								FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleLoadClicked, SlotIndex), bCanLoad ? ET66ButtonType::Primary : ET66ButtonType::Neutral)
-								.SetMinWidth(128.f)
-								.SetHeight(T66SaveFlowActionHeight)
-								.SetFontSize(22)
-								.SetEnabled(bCanLoad),
-								bCanLoad)
-						]
-					],
-					FMargin(32.f, 23.f, 32.f, 17.f),
+					CardCanvas,
+					FMargin(0.f),
 					bIsSelected,
 					bHasRunData && bCanLoad)
 			];
 	};
-
-	TSharedRef<SGridPanel> CardGrid = SNew(SGridPanel);
-	for (int32 LocalIndex = 0; LocalIndex < SlotsPerPage; ++LocalIndex)
-	{
-		const int32 Row = LocalIndex / SlotColumns;
-		const int32 Column = LocalIndex % SlotColumns;
-		CardGrid->AddSlot(Column, Row)
-			.Padding(FMargin(
-				0.f,
-				0.f,
-				Column + 1 < SlotColumns ? CardGapX : 0.f,
-				Row + 1 < (SlotsPerPage / SlotColumns) ? CardGapY : 0.f))
-			[
-				MakeSlotCard(LocalIndex)
-			];
-	}
 
 	const FText PageText = FText::Format(
 		NSLOCTEXT("T66.SaveSlots", "PageFormat", "Page {0} / {1}"),
@@ -1036,6 +1074,107 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 	const bool bCanGoPrev = CurrentPage > 0;
 	const bool bCanGoNext = CurrentPage < TotalPages - 1;
 
+	TSharedRef<SConstraintCanvas> DesignCanvas = SNew(SConstraintCanvas);
+
+	AddSaveFlowCanvasSlot(
+		DesignCanvas,
+		100.f, 10.f, 1718.f, 1062.f,
+		SNew(SImage)
+		.Image(GetSaveFlowContentShellBrush()));
+
+	AddSaveFlowCanvasSlot(
+		DesignCanvas,
+		163.f, 239.f, 1591.f, 752.f,
+		MakeSaveFlowShell(SNew(SSpacer), FMargin(0.f)));
+
+	AddSaveFlowCanvasSlot(
+		DesignCanvas,
+		169.f, 60.f, 143.f, 62.f,
+		MakeSaveFlowPlateButton(
+			FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleBackClicked), ET66ButtonType::Neutral)
+			.SetMinWidth(143.f)
+			.SetHeight(62.f)
+			.SetFontSize(22),
+			true));
+
+	AddSaveFlowCanvasSlot(
+		DesignCanvas,
+		748.f, 58.f, 397.f, 61.f,
+		SNew(STextBlock)
+		.Text(LoadGameTitleText)
+		.Font(FT66Style::Tokens::FontBold(54))
+		.ColorAndOpacity(T66SaveFlowGoldText())
+		.Justification(ETextJustify::Center));
+
+	AddSaveFlowCanvasSlot(
+		DesignCanvas,
+		651.f, 139.f, 588.f, 4.f,
+		MakeSaveFlowThinLine(FLinearColor(0.94f, 0.76f, 0.34f, 0.78f)));
+
+	AddSaveFlowCanvasSlot(
+		DesignCanvas,
+		167.f, 158.f, 242.f, 64.f,
+		MakeSaveFlowDropdown(
+			FT66DropdownParams(
+				SNew(STextBlock)
+				.Text(T66PartySizeText(Loc, ActivePartySizeFilter))
+				.Font(FT66Style::Tokens::FontBold(20))
+				.ColorAndOpacity(T66SaveFlowBrightText())
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds),
+				MakePartySizeMenu)
+			.SetMinWidth(242.f)
+			.SetHeight(64.f)
+			.SetPadding(FMargin(16.f, 15.f))));
+
+	AddSaveFlowCanvasSlot(
+		DesignCanvas,
+		432.f, 178.f, 566.f, 28.f,
+		SNew(STextBlock)
+		.Text(FilterHintText)
+		.Font(FT66Style::Tokens::FontBold(18))
+		.ColorAndOpacity(T66SaveFlowMutedText())
+		.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+		.Clipping(EWidgetClipping::ClipToBounds));
+
+	AddSaveFlowCanvasSlot(
+		DesignCanvas,
+		1642.f, 179.f, 109.f, 27.f,
+		SNew(STextBlock)
+		.Text(PageText)
+		.Font(FT66Style::Tokens::FontBold(18))
+		.ColorAndOpacity(T66SaveFlowGoldText())
+		.Justification(ETextJustify::Right)
+		.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+		.Clipping(EWidgetClipping::ClipToBounds));
+
+	AddSaveFlowCanvasSlot(DesignCanvas, 179.f, 254.f, CardWidth, CardHeight, MakeSlotCard(0));
+	AddSaveFlowCanvasSlot(DesignCanvas, 975.f, 254.f, CardWidth, CardHeight, MakeSlotCard(1));
+	AddSaveFlowCanvasSlot(DesignCanvas, 179.f, 632.f, CardWidth, CardHeight, MakeSlotCard(2));
+	AddSaveFlowCanvasSlot(DesignCanvas, 975.f, 632.f, CardWidth, CardHeight, MakeSlotCard(3));
+
+	AddSaveFlowCanvasSlot(
+		DesignCanvas,
+		175.f, 1000.f, 179.f, 60.f,
+		MakeSaveFlowPlateButton(
+			FT66ButtonParams(PrevText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandlePrevPageClicked), ET66ButtonType::Neutral)
+			.SetMinWidth(179.f)
+			.SetHeight(60.f)
+			.SetFontSize(22)
+			.SetEnabled(bCanGoPrev),
+			bCanGoPrev));
+
+	AddSaveFlowCanvasSlot(
+		DesignCanvas,
+		367.f, 1000.f, 181.f, 60.f,
+		MakeSaveFlowPlateButton(
+			FT66ButtonParams(NextText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleNextPageClicked), ET66ButtonType::Neutral)
+			.SetMinWidth(181.f)
+			.SetHeight(60.f)
+			.SetFontSize(22)
+			.SetEnabled(bCanGoNext),
+			bCanGoNext));
+
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
@@ -1045,122 +1184,18 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Fill)
-		.Padding(FMargin(0.f, 10.f, 0.f, 10.f))
+		.VAlign(VAlign_Center)
 		[
-			SNew(SBox)
-			.WidthOverride(SurfaceWidth)
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::Both)
 			[
-				MakeSaveFlowShell(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(0.f, 0.f, 0.f, 16.f)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.VAlign(VAlign_Center)
-						[
-							MakeSaveFlowPlateButton(
-								FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleBackClicked), ET66ButtonType::Neutral)
-								.SetMinWidth(124.f)
-								.SetHeight(T66SaveFlowActionHeight)
-								.SetFontSize(22),
-								true)
-						]
-						+ SHorizontalBox::Slot()
-						.FillWidth(1.f)
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						[
-							SNew(STextBlock)
-							.Text(LoadGameTitleText)
-							.Font(FT66Style::Tokens::FontBold(54))
-							.ColorAndOpacity(T66SaveFlowGoldText())
-							.Justification(ETextJustify::Center)
-						]
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						[
-							SNew(SBox)
-							.WidthOverride(124.f)
-						]
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(0.f)
-						[
-							MakeSaveFlowDropdown(
-								FT66DropdownParams(
-									SNew(STextBlock)
-									.Text(T66PartySizeText(Loc, ActivePartySizeFilter))
-									.Font(FT66Style::Tokens::FontBold(20))
-									.ColorAndOpacity(T66SaveFlowBrightText()),
-									MakePartySizeMenu)
-								.SetMinWidth(210.f)
-								.SetHeight(54.f)
-								.SetPadding(FMargin(16.f, 12.f)))
-						]
-						+ SHorizontalBox::Slot()
-						.FillWidth(1.f)
-						.VAlign(VAlign_Center)
-						.Padding(16.f, 0.f, 0.f, 0.f)
-						[
-							SNew(STextBlock)
-							.Text(FilterHintText)
-							.Font(FT66Style::Tokens::FontBold(18))
-							.ColorAndOpacity(T66SaveFlowMutedText())
-						]
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.VAlign(VAlign_Center)
-						[
-							SNew(STextBlock)
-							.Text(PageText)
-							.Font(FT66Style::Tokens::FontBold(18))
-							.ColorAndOpacity(T66SaveFlowGoldText())
-						]
-					]
-					+ SVerticalBox::Slot()
-					.FillHeight(1.f)
-					.Padding(0.f, 24.f, 0.f, 16.f)
-					[
-						CardGrid
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(0.f, 0.f, 12.f, 0.f)
-						[
-							MakeSaveFlowPlateButton(
-								FT66ButtonParams(PrevText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandlePrevPageClicked), ET66ButtonType::Neutral)
-								.SetMinWidth(118.f)
-								.SetHeight(T66SaveFlowActionHeight)
-								.SetFontSize(22)
-								.SetEnabled(bCanGoPrev),
-								bCanGoPrev)
-						]
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						[
-							MakeSaveFlowPlateButton(
-								FT66ButtonParams(NextText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleNextPageClicked), ET66ButtonType::Neutral)
-								.SetMinWidth(118.f)
-								.SetHeight(T66SaveFlowActionHeight)
-								.SetFontSize(22)
-								.SetEnabled(bCanGoNext),
-								bCanGoNext)
-						]
-					],
-					SurfacePadding)
+				SNew(SBox)
+				.WidthOverride(T66SaveFlowDesignWidth)
+				.HeightOverride(T66SaveFlowDesignHeight)
+				[
+					DesignCanvas
+				]
 			]
 		];
 }

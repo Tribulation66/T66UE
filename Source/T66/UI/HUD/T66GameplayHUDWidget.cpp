@@ -63,7 +63,13 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 		RefreshHUD();
 	}
 
-	RefreshSpeedRunTimers();
+	SpeedRunRefreshAccumSeconds += InDeltaTime;
+	if (SpeedRunRefreshAccumSeconds >= SpeedRunRefreshIntervalSeconds)
+	{
+		SpeedRunRefreshAccumSeconds = 0.f;
+		RefreshSpeedRunTimers();
+	}
+
 	DPSRefreshAccumSeconds += InDeltaTime;
 	if (DPSRefreshAccumSeconds >= DPSRefreshIntervalSeconds)
 	{
@@ -93,7 +99,11 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 		TowerRevealAccumSeconds = TowerRevealIntervalSeconds;
 	}
 
-	GetPresentationController().Tick(InDeltaTime);
+	FT66HUDPresentationController& Presentation = GetPresentationController();
+	if (Presentation.HasPendingPresentationWork())
+	{
+		Presentation.Tick(InDeltaTime);
+	}
 
 	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
@@ -106,8 +116,13 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 		}
 		if (CenterCrosshairBox.IsValid())
 		{
-			CenterCrosshairBox->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+			if (!bCenterCrosshairPivotInitialized)
+			{
+				CenterCrosshairBox->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+				bCenterCrosshairPivotInitialized = true;
+			}
 			FVector2D CrosshairScreenPosition = FVector2D::ZeroVector;
+			FVector2D DesiredCrosshairOffset = FVector2D::ZeroVector;
 			if (T66PC->GetAttackLockScreenPosition(CrosshairScreenPosition))
 			{
 				int32 ViewportSizeX = 0;
@@ -116,11 +131,13 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 				const FVector2D ViewportCenter(
 					static_cast<float>(ViewportSizeX) * 0.5f,
 					static_cast<float>(ViewportSizeY) * 0.5f);
-				CenterCrosshairBox->SetRenderTransform(FSlateRenderTransform(CrosshairScreenPosition - ViewportCenter));
+				DesiredCrosshairOffset = CrosshairScreenPosition - ViewportCenter;
 			}
-			else
+			if (!bLastCrosshairOffsetSet || !DesiredCrosshairOffset.Equals(LastCrosshairRenderOffset, KINDA_SMALL_NUMBER))
 			{
-				CenterCrosshairBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+				LastCrosshairRenderOffset = DesiredCrosshairOffset;
+				bLastCrosshairOffsetSet = true;
+				CenterCrosshairBox->SetRenderTransform(FSlateRenderTransform(DesiredCrosshairOffset));
 			}
 			if (bScoped != bLastScopedHudVisible)
 			{
@@ -180,12 +197,23 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 		}
 		if (CenterCrosshairBox.IsValid())
 		{
-			CenterCrosshairBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
-			CenterCrosshairBox->SetVisibility(EVisibility::HitTestInvisible);
+			if (!bLastCrosshairOffsetSet || !LastCrosshairRenderOffset.Equals(FVector2D::ZeroVector, KINDA_SMALL_NUMBER))
+			{
+				LastCrosshairRenderOffset = FVector2D::ZeroVector;
+				bLastCrosshairOffsetSet = true;
+				CenterCrosshairBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+			}
+			if (CenterCrosshairBox->GetVisibility() != EVisibility::HitTestInvisible)
+			{
+				CenterCrosshairBox->SetVisibility(EVisibility::HitTestInvisible);
+			}
 		}
 		if (ScopedSniperOverlayBorder.IsValid())
 		{
-			ScopedSniperOverlayBorder->SetVisibility(EVisibility::Collapsed);
+			if (ScopedSniperOverlayBorder->GetVisibility() != EVisibility::Collapsed)
+			{
+				ScopedSniperOverlayBorder->SetVisibility(EVisibility::Collapsed);
+			}
 		}
 		bLastCrosshairLocked = false;
 		bLastScopedHudVisible = false;

@@ -28,3 +28,11 @@ This first pass is infrastructure only. It does not register shared screens, edi
 - Central frontend routing and `ET66ScreenType` registration.
 - Battle runtime, card execution, enemy AI, reward screens, map screen, shop/rest/event screens.
 - Backend-authoritative progression, leaderboards, or anti-cheat validation. Any backend integration must be designed separately before implementation.
+
+## Shared Art And Animation Process
+
+Deck uses the shared minigame animation process for combat idles, attacks, hit reactions, enemies, summons, and VFX:
+
+- [T66Minigame_CharacterAnimationProcess.md](C:/UE/T66/Docs/Minigames/T66Minigame_CharacterAnimationProcess.md)
+
+Deck does not need to start with full 8-direction sheets. Use the smallest scope that supports the battle read, usually `idle-only`, `idle-hit`, or `idle-attack`.

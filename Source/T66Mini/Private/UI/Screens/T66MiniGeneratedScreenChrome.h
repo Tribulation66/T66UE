@@ -12,6 +12,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
@@ -55,11 +56,13 @@ namespace T66MiniGeneratedChrome
 		case ESlice::SummaryRow:
 			return T66MiniUI::MasterInnerPanelPath();
 		case ESlice::CardNormal:
-		case ESlice::CardSelected:
-		case ESlice::CardDisabled:
 		case ESlice::PortraitFrame:
 		case ESlice::BadgeFrame:
-			return TEXT("SourceAssets/UI/Reference/Shared/Slots/reference_square_slot_frame_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_normal.png");
+		case ESlice::CardSelected:
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_selected.png");
+		case ESlice::CardDisabled:
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_disabled.png");
 		case ESlice::ButtonGreenNormal:
 			return T66MiniUI::MasterSelectedButtonPath();
 		case ESlice::ButtonBlueNormal:
@@ -121,6 +124,25 @@ namespace T66MiniGeneratedChrome
 			TEXT("MiniGeneratedChrome"));
 	}
 
+	inline FMargin ContentSafePadding(const ESlice Slice, const FMargin& Padding)
+	{
+		switch (Slice)
+		{
+		case ESlice::PanelLarge:
+		case ESlice::PanelMedium:
+			return Padding + FMargin(10.f, 4.f, 12.f, 4.f);
+		case ESlice::PanelSmall:
+		case ESlice::RowLong:
+		case ESlice::StatChip:
+		case ESlice::IdolOfferRow:
+		case ESlice::IdolOfferRowAction:
+		case ESlice::SummaryRow:
+			return Padding + FMargin(8.f, 3.f, 10.f, 3.f);
+		default:
+			return Padding;
+		}
+	}
+
 	inline TSharedRef<SWidget> MakePanel(
 		const TSharedRef<SWidget>& Content,
 		const FMargin& Padding,
@@ -130,7 +152,7 @@ namespace T66MiniGeneratedChrome
 		return SNew(SBorder)
 			.BorderImage(Brush ? Brush : T66MiniUI::WhiteBrush())
 			.BorderBackgroundColor(Brush ? FLinearColor::White : T66MiniUI::PanelFill())
-			.Padding(Padding)
+			.Padding(ContentSafePadding(Slice, Padding))
 			[
 				Content
 			];
@@ -153,13 +175,18 @@ namespace T66MiniGeneratedChrome
 			.HeightOverride(Height)
 			[
 				MakePanel(
-					SNew(STextBlock)
-					.Text(Label)
-					.Font(T66MiniUI::TitleFont(FontSize))
-					.ColorAndOpacity(Color)
-					.Justification(ETextJustify::Center)
-					.ShadowOffset(FVector2D(2.f, 2.f))
-					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.95f)),
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFit)
+					.StretchDirection(EStretchDirection::DownOnly)
+					[
+						SNew(STextBlock)
+						.Text(Label)
+						.Font(T66MiniUI::TitleFont(FontSize))
+						.ColorAndOpacity(Color)
+						.Justification(ETextJustify::Center)
+						.ShadowOffset(FVector2D(2.f, 2.f))
+						.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.95f))
+					],
 					FMargin(58.f, 12.f, 58.f, 10.f),
 					ESlice::TitlePlaque)
 			];
@@ -197,7 +224,7 @@ namespace T66MiniGeneratedChrome
 		const FT66ButtonParams& Params)
 	{
 		FT66ButtonParams ResolvedParams = Params;
-		ResolvedParams.SetUseDotaPlateOverlay(false);
+		ResolvedParams.SetUseDotaPlateOverlay(true);
 		return FT66Style::MakeButton(ResolvedParams);
 	}
 

@@ -9,6 +9,28 @@ Status legend:
 - `fail`: generation crashed or the result was unusable
 - `smoke`: infrastructure verification only
 
+## 2026-05-06
+
+### Quad Retro Hero Direction
+
+| Run ID | Source | Target | Status | Artifacts | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `QR1` | Boxer Chad and Boxer Stacy source-image exploration | TRELLIS-safe source image candidates | `partial` | [source exploration](C:/UE/T66/Model%20Generation/Runs/Heroes/QuadRetroSourceExploration01) | Selected the best male and female boxer references as calibration inputs. The male reference is `BoxerChad_ExaggeratedV_04.png`; it is now the silhouette guide for the next male batch. |
+| `QR2` | Boxer Chad selected source | TRELLIS model generation and Quad Retro pipeline setup | `pass` | [model test](C:/UE/T66/Model%20Generation/Runs/Heroes/QuadRetroModelTest01) | Proved the one-image, one-model direction can produce a usable Boxer Chad raw model for Quad Remesher testing. |
+| `QR3` | Boxer Chad raw GLB | first Low/Medium/High pipeline presets | `fail` | archived under `_Archive/Obsolete_2026-05-06_QuadRetroFirstPass` | The first preset ladder was too destructive. Even Low used palette reduction and too much texture/pixel degradation, which erased outfit color identity such as boxing gloves. Do not use this ladder as an art baseline. |
+| `QR4` | Boxer Chad raw GLB | color-preserving Low/Medium/High pipeline presets | `pass` | [fixed bake preset test](C:/UE/T66/Model%20Generation/Runs/Heroes/QuadRetroPipelinePresetTest02_FixedBake) | Medium was the best visual result. The successful lesson is to preserve colors first: `palette_mode=none`, `dither_type=none`, `dither_strength=0`, with Low `30000` quads, Medium `12000` quads, and High `3000` quads. |
+| `QR5` | new-agent batch command attempt | Medium wrapper call | `fail` | [medium summary](C:/UE/T66/Model%20Generation/Runs/Heroes/ChadStacySourceImageBatch01/Notes/QUAD_RETRO_PIPELINE_MEDIUM_SUMMARY_20260506_195550.md) | The generated PowerShell command passed loose `$true` / `$false` boolean tokens through another shell and every wrapper call failed before Blender opened. Fixed by documenting `-RenderQA:$true -Background:$false`, adding [QUAD_RETRO_DO_THIS_RUNBOOK.md](C:/UE/T66/Model%20Generation/QUAD_RETRO_DO_THIS_RUNBOOK.md), and hardening `RunQuadRetroCharacterPipeline.ps1` to accept string booleans. |
+
+### Data And Prompt Handoff
+
+- Active hero display names were changed to the safer Chad naming direction:
+  Royal Chad, Chinese Chad, Boxer Chad, Founding Chad, Robo Chad, Billy Chad,
+  Rabbit Chad, CS Chad, Goblino Chad, Monotone Chad, Bald Chad, and Roach Chad.
+- New prompt source of truth:
+  [HERO_CHAD_STACY_PROMPT_GUIDE.md](C:/UE/T66/Model%20Generation/HERO_CHAD_STACY_PROMPT_GUIDE.md)
+- Next-chat handoff:
+  [NEXT_CHAT_HERO_MALE_IMAGEGEN_PROMPT.md](C:/UE/T66/Model%20Generation/NEXT_CHAT_HERO_MALE_IMAGEGEN_PROMPT.md)
+
 ## 2026-04-18
 
 | Run ID | Input | Seed | Texture | Decimation | Baseline | Status | Artifacts | Notes |

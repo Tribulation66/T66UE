@@ -7,6 +7,7 @@
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66BossAttackTypes.h"
 #include "Gameplay/T66BossPartTypes.h"
+#include "TimerManager.h"
 #include "T66BossBase.generated.h"
 
 class UStaticMeshComponent;

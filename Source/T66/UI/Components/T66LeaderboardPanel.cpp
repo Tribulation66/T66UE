@@ -48,6 +48,7 @@ namespace
 	constexpr bool GMirrorWeeklyToAllTime = false;
 	const FString ReferenceRightPanelSourceDir = TEXT("SourceAssets/UI/MainMenuReference/RightPanel");
 	const FString ReferenceSharedSourceDir = TEXT("SourceAssets/UI/Reference/Shared");
+	const FString ReferenceUltrakillElementDir = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements");
 
 	const FVector2D ReferenceFilterButtonSize(64.0f, 64.0f);
 	const FVector2D ReferenceFilterIconSize(58.0f, 58.0f);
@@ -59,13 +60,14 @@ namespace
 	const FVector2D ReferenceSpeedRunToggleSize(206.0f, 36.0f);
 	const FVector2D ReferenceAvatarFrameSize(42.0f, 42.0f);
 	const FVector2D ReferenceAvatarInsetSize(32.0f, 32.0f);
-	const FLinearColor ReferenceLeaderboardText(0.17f, 0.09f, 0.035f, 1.0f);
-	const FLinearColor ReferenceLeaderboardRowText(0.13f, 0.075f, 0.035f, 1.0f);
-	const FLinearColor ReferenceLeaderboardMuted(0.36f, 0.22f, 0.12f, 1.0f);
-	const FLinearColor ReferenceWoodControlText(0.98f, 0.96f, 0.90f, 1.0f);
-	const FLinearColor ReferenceWoodControlMuted(0.86f, 0.84f, 0.78f, 0.88f);
-	const FLinearColor ReferenceLeaderboardTitleText(0.84f, 0.64f, 0.38f, 1.0f);
-	const FLinearColor ReferenceLeaderboardTitleShadow(0.13f, 0.07f, 0.03f, 0.96f);
+	constexpr float ReferenceLeaderboardListWidth = 470.0f;
+	const FLinearColor ReferenceLeaderboardText(0.96f, 0.04f, 0.02f, 1.0f);
+	const FLinearColor ReferenceLeaderboardRowText(0.96f, 0.92f, 0.84f, 1.0f);
+	const FLinearColor ReferenceLeaderboardMuted(0.64f, 0.56f, 0.50f, 0.82f);
+	const FLinearColor ReferenceWoodControlText(0.98f, 0.94f, 0.84f, 1.0f);
+	const FLinearColor ReferenceWoodControlMuted(0.72f, 0.66f, 0.58f, 0.88f);
+	const FLinearColor ReferenceLeaderboardTitleText(0.96f, 0.04f, 0.02f, 1.0f);
+	const FLinearColor ReferenceLeaderboardTitleShadow(0.02f, 0.0f, 0.0f, 1.0f);
 
 	const FSlateBrush* ResolveReferenceRightPanelBrush(
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
@@ -645,7 +647,7 @@ void ST66LeaderboardPanel::GetStageRangeForDifficulty(const ET66Difficulty Diffi
 		return;
 	case ET66Difficulty::Impossible:
 		OutStartStage = 1;
-		OutEndStage = 3;
+		OutEndStage = 4;
 		return;
 	}
 }
@@ -925,64 +927,69 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		const FMargin WideTabMargin(0.f);
 		const FMargin DropdownFieldMargin(0.157f, 0.292f, 0.157f, 0.292f);
 		const FMargin AvatarSlotMargin(0.f);
+		const FMargin RowPanelMargin(0.035f, 0.200f, 0.035f, 0.200f);
 		constexpr TextureFilter ButtonTextureFilter = TextureFilter::TF_Nearest;
 		const FSlateBrush* ReferenceWideTabSelectedBrush = ResolveReferenceGeneratedBrush(
 			ReferenceTabWeeklyActiveBrush,
-			ReferenceSharedSourceDir,
-			TEXT("Buttons/Pill/selected.png"),
+			ReferenceUltrakillElementDir,
+			TEXT("leaderboard_tab_button_selected.png"),
 			WideTabMargin,
 			TEXT("LBMasterWeekly"),
 			ButtonTextureFilter);
 		const FSlateBrush* ReferenceWideTabNormalBrush = ResolveReferenceGeneratedBrush(
 			ReferenceTabAllTimeInactiveBrush,
-			ReferenceSharedSourceDir,
-			TEXT("Buttons/Pill/normal.png"),
+			ReferenceUltrakillElementDir,
+			TEXT("leaderboard_tab_button_normal.png"),
 			WideTabMargin,
 			TEXT("LBMasterAllTime"),
 			ButtonTextureFilter);
 		const FSlateBrush* ReferenceWideTabHoverBrush = ResolveReferenceGeneratedBrush(
 			ReferenceTabHoverBrush,
-			ReferenceSharedSourceDir,
-			TEXT("Buttons/Pill/hover.png"),
+			ReferenceUltrakillElementDir,
+			TEXT("leaderboard_tab_button_hover.png"),
 			WideTabMargin,
 			TEXT("LBMasterTabHover"),
 			ButtonTextureFilter);
 		const FSlateBrush* ReferenceWideTabPressedBrush = ResolveReferenceGeneratedBrush(
 			ReferenceTabPressedBrush,
-			ReferenceSharedSourceDir,
-			TEXT("Buttons/Pill/pressed.png"),
+			ReferenceUltrakillElementDir,
+			TEXT("leaderboard_tab_button_pressed.png"),
 			WideTabMargin,
 			TEXT("LBMasterTabPressed"),
 			ButtonTextureFilter);
 		const FSlateBrush* ReferenceLeftDropdownBrush = ResolveReferenceGeneratedBrush(
 			ReferenceDropdownLeftBrush,
-			ReferenceSharedSourceDir,
-			TEXT("Controls/reference_dropdown_field_normal.png"),
+			ReferenceUltrakillElementDir,
+			TEXT("dropdown_field_normal.png"),
 			DropdownFieldMargin,
 			TEXT("LBMasterDropdownLeft"),
 			TextureFilter::TF_Nearest);
 		const FSlateBrush* ReferenceRightDropdownBrush = ResolveReferenceGeneratedBrush(
 			ReferenceDropdownRightBrush,
-			ReferenceSharedSourceDir,
-			TEXT("Controls/reference_dropdown_field_normal.png"),
+			ReferenceUltrakillElementDir,
+			TEXT("dropdown_field_normal.png"),
 			DropdownFieldMargin,
 			TEXT("LBMasterDropdownRight"),
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* ReferenceChevronBrush = ResolveMasterLibrarySliceBrush(
-			ReferenceDropdownChevronBrush,
-			TEXT("Icons/dropdown_chevron.png"),
+		const FSlateBrush* ReferenceChevronBrush = nullptr;
+		const FSlateBrush* ReferenceToggleSelectedBrush = ResolveReferenceGeneratedBrush(
+			ReferenceToggleScoreSelectedBrush,
+			ReferenceUltrakillElementDir,
+			TEXT("check_square_selected.png"),
 			FMargin(0.f),
-			TEXT("LBMasterDropdownChevron"),
+			TEXT("LBMasterToggleSelected"),
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* ReferenceToggleNormalBrush = ResolveMasterLibrarySliceBrush(
+		const FSlateBrush* ReferenceToggleNormalBrush = ResolveReferenceGeneratedBrush(
 			ReferenceToggleSpeedRunUnselectedBrush,
-			TEXT("Controls/radio_circle_normal.png"),
+			ReferenceUltrakillElementDir,
+			TEXT("check_square_normal.png"),
 			FMargin(0.f),
-			TEXT("LBMasterToggleSpeedRun"));
+			TEXT("LBMasterToggleNormal"),
+			TextureFilter::TF_Nearest);
 		ResolveReferenceGeneratedBrush(
 			ReferenceAvatarFrameBrush,
-			ReferenceSharedSourceDir,
-			TEXT("Slots/reference_square_slot_frame_normal.png"),
+			ReferenceUltrakillElementDir,
+			TEXT("profile_slot_normal.png"),
 			AvatarSlotMargin,
 			TEXT("LBMasterAvatarFrame"),
 			TextureFilter::TF_Nearest);
@@ -992,6 +999,49 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			ReferenceAvatarFrameBrush.Brush->Tiling = ESlateBrushTileType::NoTile;
 			ReferenceAvatarFrameBrush.Brush->Margin = FMargin(0.f);
 		}
+		ResolveReferenceGeneratedBrush(
+			ReferenceLeaderboardRowNormalBrush,
+			ReferenceUltrakillElementDir,
+			TEXT("leaderboard_row_normal.png"),
+			RowPanelMargin,
+			TEXT("LBMasterLeaderboardRowNormal"),
+			TextureFilter::TF_Nearest);
+		ResolveReferenceGeneratedBrush(
+			ReferenceLeaderboardRowHoverBrush,
+			ReferenceUltrakillElementDir,
+			TEXT("leaderboard_row_hover.png"),
+			RowPanelMargin,
+			TEXT("LBMasterLeaderboardRowHover"),
+			TextureFilter::TF_Nearest);
+		ResolveReferenceGeneratedBrush(
+			ReferencePlayerRowNormalBrush,
+			ReferenceUltrakillElementDir,
+			TEXT("player_row_panel_normal.png"),
+			RowPanelMargin,
+			TEXT("LBMasterPlayerRowNormal"),
+			TextureFilter::TF_Nearest);
+		ResolveReferenceGeneratedBrush(
+			ReferencePlayerRowHoverBrush,
+			ReferenceUltrakillElementDir,
+			TEXT("player_row_panel_hover.png"),
+			RowPanelMargin,
+			TEXT("LBMasterPlayerRowHover"),
+			TextureFilter::TF_Nearest);
+		auto ConfigureReferenceRowBrush = [](T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry)
+		{
+			if (!Entry.Brush.IsValid())
+			{
+				return;
+			}
+
+			Entry.Brush->DrawAs = ESlateBrushDrawType::Image;
+			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
+			Entry.Brush->Margin = FMargin(0.f);
+		};
+		ConfigureReferenceRowBrush(ReferenceLeaderboardRowNormalBrush);
+		ConfigureReferenceRowBrush(ReferenceLeaderboardRowHoverBrush);
+		ConfigureReferenceRowBrush(ReferencePlayerRowNormalBrush);
+		ConfigureReferenceRowBrush(ReferencePlayerRowHoverBrush);
 		const FSlateBrush* ReferenceAvatarFallback01 = ResolveReferenceRightPanelBrush(
 			ReferenceAvatarFallbackBrush01,
 			TEXT("leaderboard_avatar_fallback_01.png"),
@@ -1064,11 +1114,10 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				];
 		};
 
-		auto MakeReferenceTypeButton = [this, &NoBorderButtonStyle, ReferenceToggleFont, ReferenceToggleNormalBrush](
+		auto MakeReferenceTypeButton = [this, &NoBorderButtonStyle, ReferenceToggleFont, ReferenceToggleSelectedBrush, ReferenceToggleNormalBrush](
 			const ET66LeaderboardType Type,
 			const FVector2D& Size) -> TSharedRef<SWidget>
 		{
-			const FSlateBrush* RadioBrush = ReferenceToggleNormalBrush ? ReferenceToggleNormalBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
 			return SNew(SBox)
 				.WidthOverride(Size.X)
 				.HeightOverride(Size.Y)
@@ -1093,22 +1142,16 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 									+ SOverlay::Slot()
 									[
 										SNew(SImage)
-										.Image(RadioBrush)
-										.ColorAndOpacity(ReferenceToggleNormalBrush ? FLinearColor::White : ReferenceWoodControlMuted)
-									]
-									+ SOverlay::Slot()
-									.HAlign(HAlign_Center)
-									.VAlign(VAlign_Center)
-									[
-										SNew(STextBlock)
-										.Text(FText::FromString(TEXT("\u25CF")))
-										.Font(FT66Style::MakeFont(TEXT("Bold"), 15))
-										.ColorAndOpacity(ReferenceWoodControlText)
-										.Visibility_Lambda([this, Type]()
+										.Image_Lambda([this, Type, ReferenceToggleSelectedBrush, ReferenceToggleNormalBrush]() -> const FSlateBrush*
 										{
-											return CurrentType == Type ? EVisibility::HitTestInvisible : EVisibility::Collapsed;
+											if (CurrentType == Type && ReferenceToggleSelectedBrush)
+											{
+												return ReferenceToggleSelectedBrush;
+											}
+
+											return ReferenceToggleNormalBrush ? ReferenceToggleNormalBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
 										})
-										.Justification(ETextJustify::Center)
+										.ColorAndOpacity((ReferenceToggleSelectedBrush || ReferenceToggleNormalBrush) ? FLinearColor::White : ReferenceWoodControlMuted)
 									]
 								]
 							]
@@ -1258,6 +1301,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
+				.HAlign(HAlign_Center)
 				.Padding(FMargin(0.f, 0.f, 0.f, 0.f))
 				[
 					SNew(SHorizontalBox)
@@ -1289,6 +1333,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
+				.HAlign(HAlign_Center)
 				.Padding(FMargin(0.f, 8.f, 0.f, 8.f))
 				[
 					SNew(SHorizontalBox)
@@ -1356,6 +1401,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
+				.HAlign(HAlign_Center)
 				.Padding(FMargin(0.f, 0.f, 0.f, 0.f))
 				[
 					SNew(SHorizontalBox)
@@ -1386,71 +1432,86 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(FMargin(6.f, 10.f, 0.f, 0.f))
+				.HAlign(HAlign_Center)
+				.Padding(FMargin(0.f, 10.f, 0.f, 0.f))
 				[
-					SNew(SHorizontalBox)
-					.Visibility_Lambda(GetLeaderboardControlsVisibility)
-					+ SHorizontalBox::Slot().AutoWidth()
+					SNew(SBox)
+					.WidthOverride(ReferenceLeaderboardListWidth)
 					[
-						SNew(SBox)
-						.WidthOverride(73.f)
+						SNew(SHorizontalBox)
+						.Visibility_Lambda(GetLeaderboardControlsVisibility)
+						+ SHorizontalBox::Slot().AutoWidth()
 						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66.Leaderboard", "Rank", "RANK"))
-							.Font(ReferenceHeaderFont)
-							.ColorAndOpacity(ReferenceLeaderboardText)
-							.Justification(ETextJustify::Left)
+							SNew(SBox)
+							.WidthOverride(82.f)
+							[
+								SNew(STextBlock)
+								.Text(NSLOCTEXT("T66.Leaderboard", "Rank", "RANK"))
+								.Font(ReferenceHeaderFont)
+								.ColorAndOpacity(ReferenceLeaderboardText)
+								.Justification(ETextJustify::Center)
+							]
 						]
-					]
-					+ SHorizontalBox::Slot().FillWidth(1.f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Leaderboard", "Name", "NAME"))
-						.Font(ReferenceHeaderFont)
-						.ColorAndOpacity(ReferenceLeaderboardText)
-					]
-					+ SHorizontalBox::Slot().AutoWidth()
-					.HAlign(HAlign_Right)
-					[
-						SNew(SBox)
-						.WidthOverride(84.f)
+						+ SHorizontalBox::Slot().FillWidth(1.f)
 						[
 							SNew(STextBlock)
-							.Text_Lambda([this]()
-							{
-								return CurrentTimeFilter == ET66LeaderboardTime::Daily || CurrentType == ET66LeaderboardType::Score
-									? NSLOCTEXT("T66.Leaderboard", "Score", "SCORE")
-									: NSLOCTEXT("T66.Leaderboard", "Time", "TIME");
-							})
+							.Text(NSLOCTEXT("T66.Leaderboard", "Name", "NAME"))
 							.Font(ReferenceHeaderFont)
 							.ColorAndOpacity(ReferenceLeaderboardText)
-							.Justification(ETextJustify::Right)
+						]
+						+ SHorizontalBox::Slot().AutoWidth()
+						.HAlign(HAlign_Right)
+						[
+							SNew(SBox)
+							.WidthOverride(84.f)
+							[
+								SNew(STextBlock)
+								.Text_Lambda([this]()
+								{
+									return CurrentTimeFilter == ET66LeaderboardTime::Daily || CurrentType == ET66LeaderboardType::Score
+										? NSLOCTEXT("T66.Leaderboard", "Score", "SCORE")
+										: NSLOCTEXT("T66.Leaderboard", "Time", "TIME");
+								})
+								.Font(ReferenceHeaderFont)
+								.ColorAndOpacity(ReferenceLeaderboardText)
+								.Justification(ETextJustify::Right)
+							]
 						]
 					]
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
-				.Padding(FMargin(4.f, 8.f, 0.f, 0.f))
+				.HAlign(HAlign_Center)
+				.Padding(FMargin(0.f, 8.f, 0.f, 0.f))
 				[
-					SNew(SBorder)
-					.Visibility_Lambda(GetLeaderboardControlsVisibility)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.44f, 0.27f, 0.12f, 0.36f))
-					.Padding(FMargin(0.f, 1.f))
+					SNew(SBox)
+					.WidthOverride(ReferenceLeaderboardListWidth)
+					[
+						SNew(SBorder)
+						.Visibility_Lambda(GetLeaderboardControlsVisibility)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.44f, 0.27f, 0.12f, 0.36f))
+						.Padding(FMargin(0.f, 1.f))
+					]
 				]
 				+ SVerticalBox::Slot()
 				.FillHeight(1.f)
-				.Padding(FMargin(0.f, 10.f, 0.f, 0.f))
+				.HAlign(HAlign_Center)
+				.Padding(FMargin(0.f, 2.f, 0.f, 0.f))
 				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
+					SNew(SBox)
+					.WidthOverride(ReferenceLeaderboardListWidth)
 					[
-						SAssignNew(EntryListBox, SVerticalBox)
-						.Visibility_Lambda(GetLeaderboardControlsVisibility)
-					]
-					+ SOverlay::Slot()
-					[
-						MakeStreamerRequestPanel()
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SAssignNew(EntryListBox, SVerticalBox)
+							.Visibility_Lambda(GetLeaderboardControlsVisibility)
+						]
+						+ SOverlay::Slot()
+						[
+							MakeStreamerRequestPanel()
+						]
 					]
 				]
 			]
@@ -1939,10 +2000,13 @@ void ST66LeaderboardPanel::RebuildEntryList()
 	if (bReferenceMirrorMode)
 	{
 		const FSlateBrush* AvatarFrameBrush = ReferenceAvatarFrameBrush.Brush.IsValid() ? ReferenceAvatarFrameBrush.Brush.Get() : nullptr;
+		const FSlateBrush* LeaderboardRowNormalBrush = ReferenceLeaderboardRowNormalBrush.Brush.IsValid() ? ReferenceLeaderboardRowNormalBrush.Brush.Get() : nullptr;
+		const FSlateBrush* LeaderboardRowHoverBrush = ReferenceLeaderboardRowHoverBrush.Brush.IsValid() ? ReferenceLeaderboardRowHoverBrush.Brush.Get() : LeaderboardRowNormalBrush;
+		const FSlateBrush* PlayerRowNormalBrush = ReferencePlayerRowNormalBrush.Brush.IsValid() ? ReferencePlayerRowNormalBrush.Brush.Get() : LeaderboardRowNormalBrush;
+		const FSlateBrush* PlayerRowHoverBrush = ReferencePlayerRowHoverBrush.Brush.IsValid() ? ReferencePlayerRowHoverBrush.Brush.Get() : PlayerRowNormalBrush;
 		const FSlateFontInfo ReferenceRankFont = FT66Style::MakeFont(TEXT("Bold"), 20);
 		const FSlateFontInfo ReferenceNameFont = FT66Style::MakeFont(TEXT("Regular"), 20);
 		const FSlateFontInfo ReferenceScoreFont = FT66Style::MakeFont(TEXT("Regular"), 19);
-		const bool bStretchReferenceRows = LeaderboardEntries.Num() >= LeaderboardVisibleEntryCount;
 
 		for (int32 EntryIndex = 0; EntryIndex < LeaderboardEntries.Num(); ++EntryIndex)
 		{
@@ -1954,6 +2018,14 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			const FLinearColor HoverRowColor = Entry.bIsLocalPlayer
 				? FLinearColor(0.58f, 0.35f, 0.14f, 0.26f)
 				: FLinearColor(0.44f, 0.26f, 0.10f, 0.18f);
+			const FSlateBrush* RowNormalBrush = Entry.bIsLocalPlayer ? PlayerRowNormalBrush : LeaderboardRowNormalBrush;
+			const FSlateBrush* RowHoverBrush = Entry.bIsLocalPlayer ? PlayerRowHoverBrush : LeaderboardRowHoverBrush;
+			const FLinearColor RankMetricTextColor = Entry.bIsLocalPlayer
+				? FLinearColor(1.0f, 0.82f, 0.04f, 1.0f)
+				: ReferenceLeaderboardText;
+			const FLinearColor NameTextColor = Entry.bIsLocalPlayer
+				? RankMetricTextColor
+				: ReferenceLeaderboardRowText;
 
 			const FString RankString = FString::Printf(TEXT("#%d"), FMath::Max(1, Entry.Rank));
 			const FString MetricString = (CurrentTimeFilter == ET66LeaderboardTime::Daily || CurrentType == ET66LeaderboardType::Score)
@@ -2017,12 +2089,13 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
 					SNew(SBox)
-					.WidthOverride(31.f)
+					.WidthOverride(37.f)
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString(RankString))
 						.Font(ReferenceRankFont)
-						.ColorAndOpacity(ReferenceLeaderboardRowText)
+						.ColorAndOpacity(RankMetricTextColor)
+						.Justification(ETextJustify::Center)
 					]
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(3.f, 0.f, 0.f, 0.f)
@@ -2037,37 +2110,45 @@ void ST66LeaderboardPanel::RebuildEntryList()
 						return FText::FromString(ResolveEntryDisplayName(Entry));
 					})
 					.Font(ReferenceNameFont)
-					.ColorAndOpacity(ReferenceLeaderboardRowText)
+					.ColorAndOpacity(NameTextColor)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
 				[
 					SNew(SBox)
-					.WidthOverride(76.f)
+					.WidthOverride(78.f)
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString(MetricString))
 						.Font(ReferenceScoreFont)
-						.ColorAndOpacity(ReferenceLeaderboardRowText)
+						.ColorAndOpacity(RankMetricTextColor)
 						.Justification(ETextJustify::Right)
 					]
 				];
 
 			const FMargin EntryPadding(
 				0.f,
-				Entry.bIsLocalPlayer && Entry.Rank > LeaderboardVisibleEntryCount ? 4.f : 0.f,
+				Entry.bIsLocalPlayer && Entry.Rank > LeaderboardVisibleEntryCount ? 8.f : 0.f,
 				0.f,
 				EntryIndex + 1 < LeaderboardEntries.Num() ? 1.f : 0.f);
+			const float ReferenceEntryHeight = Entry.bIsLocalPlayer ? 58.f : 52.f;
 			const TSharedRef<SWidget> EntryRowWidget =
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot()
 				.FillHeight(1.f)
 				[
 					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
-					.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([bIsRowHovered, BaseRowColor, HoverRowColor]() -> FSlateColor
+					.BorderImage(TAttribute<const FSlateBrush*>::CreateLambda([bIsRowHovered, RowNormalBrush, RowHoverBrush]() -> const FSlateBrush*
 					{
-						return FSlateColor(*bIsRowHovered ? HoverRowColor : BaseRowColor);
+						return *bIsRowHovered && RowHoverBrush
+							? RowHoverBrush
+							: (RowNormalBrush ? RowNormalBrush : FCoreStyle::Get().GetBrush("NoBorder"));
+					}))
+					.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([bIsRowHovered, BaseRowColor, HoverRowColor, RowNormalBrush, RowHoverBrush]() -> FSlateColor
+					{
+						return (RowNormalBrush || RowHoverBrush)
+							? FSlateColor(FLinearColor::White)
+							: FSlateColor(*bIsRowHovered ? HoverRowColor : BaseRowColor);
 					}))
 					.Padding(FMargin(5.f, 4.f, 5.f, 4.f))
 					[
@@ -2087,29 +2168,21 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.44f, 0.27f, 0.12f, 0.36f))
+					.BorderBackgroundColor((RowNormalBrush || RowHoverBrush) ? FLinearColor::Transparent : FLinearColor(0.44f, 0.27f, 0.12f, 0.36f))
 					.Padding(FMargin(0.f, 1.f))
 				]
 			;
 
-			if (bStretchReferenceRows)
-			{
-				EntryListBox->AddSlot()
-				.FillHeight(1.f)
-				.Padding(EntryPadding)
+			EntryListBox->AddSlot()
+			.AutoHeight()
+			.Padding(EntryPadding)
+			[
+				SNew(SBox)
+				.HeightOverride(ReferenceEntryHeight)
 				[
 					EntryRowWidget
-				];
-			}
-			else
-			{
-				EntryListBox->AddSlot()
-				.AutoHeight()
-				.Padding(EntryPadding)
-				[
-					EntryRowWidget
-				];
-			}
+				]
+			];
 		}
 
 		return;

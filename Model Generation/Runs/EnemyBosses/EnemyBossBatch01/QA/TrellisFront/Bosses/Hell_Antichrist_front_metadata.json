@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Bosses\\Hell_Antichrist\\Hell_Antichrist_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_Antichrist_front.png",
+  "export": null,
+  "raw_triangles": 194893,
+  "triangles_before_decimate": 194893,
+  "triangles_after_decimate": 194893,
+  "bounds": {
+    "min": [
+      -0.5003235340118408,
+      -0.2495245635509491,
+      -0.4999900162220001
+    ],
+    "max": [
+      0.5005370378494263,
+      0.22892026603221893,
+      0.49976587295532227
+    ],
+    "size": [
+      1.000860571861267,
+      0.47844481468200684,
+      0.999755859375
+    ]
+  }
+}

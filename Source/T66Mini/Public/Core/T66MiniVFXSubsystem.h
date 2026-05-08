@@ -16,6 +16,8 @@ class T66MINI_API UT66MiniVFXSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Deinitialize() override;
+
 	AT66MiniGroundTelegraphActor* SpawnGroundTelegraph(UWorld* World, const FVector& Location, float Radius, float LifetimeSeconds, const FLinearColor& Tint);
 	AT66MiniFlipbookVFXActor* SpawnPulse(UWorld* World, const FVector& Location, const FVector& Scale, float LifetimeSeconds, const FLinearColor& Tint, float GrowthFactor = 0.65f);
 	AT66MiniFlipbookVFXActor* SpawnSpritePulse(UWorld* World, const FVector& Location, const FVector& Scale, float LifetimeSeconds, const FLinearColor& Tint, UTexture* Texture, float GrowthFactor = 0.65f);

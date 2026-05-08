@@ -136,7 +136,7 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 		return;
 	}
 
-	CurrentStage = FMath::Clamp(Snapshot.CurrentStage, 1, 23);
+	CurrentStage = FMath::Clamp(Snapshot.CurrentStage, 1, 20);
 	CurrentHP = FMath::Max(0.f, Snapshot.CurrentHP);
 	MaxHP = FMath::Max(1.f, Snapshot.MaxHP);
 	if (Snapshot.HeartSlotTiers.Num() >= DefaultMaxHearts)
@@ -316,6 +316,6 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	BossChanged.Broadcast();
 	HeroProgressChanged.Broadcast();
 	SurvivalChanged.Broadcast();
-	VendorChanged.Broadcast();
+	ShopChanged.Broadcast();
 	StatusEffectsChanged.Broadcast();
 }

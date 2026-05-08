@@ -23,15 +23,10 @@ public:
 	void ShowNextAchievementNotification();
 	void HideAchievementNotificationAndShowNext();
 
-	void StartWheelSpin(ET66Rarity WheelRarity);
 	void StartCrateOpen();
 	void StartChestReward(ET66Rarity ChestRarity, int32 GoldAmount);
 	bool TrySkipActivePresentation();
 	void ClearActiveCratePresentation(UT66CrateOverlayWidget* Overlay);
-
-	void TickWheelSpin();
-	void ResolveWheelSpin();
-	void CloseWheelSpin();
 
 	int32 GetChestRewardRevealThresholdGold(ET66Rarity Rarity) const;
 	ET66Rarity ResolveChestRewardDisplayedRarity(int32 DisplayedGold) const;
@@ -43,9 +38,9 @@ public:
 	void ShowPickupItemCard(FName ItemID, ET66ItemRarity ItemRarity);
 	void HidePickupCard();
 
-	bool IsWheelPanelOpen() const { return bWheelPanelOpen; }
 	bool IsPickupCardVisible() const { return bPickupCardVisible; }
 	bool IsChestRewardVisible() const { return bChestRewardVisible; }
+	bool HasPendingPresentationWork() const { return bChestRewardVisible || QueuedChestRewards.Num() > 0 || QueuedPickupCards.Num() > 0; }
 
 private:
 	struct FQueuedChestReward
@@ -77,18 +72,6 @@ private:
 	TArray<FQueuedChestReward> QueuedChestRewards;
 	TArray<FQueuedPickupCard> QueuedPickupCards;
 
-	bool bWheelPanelOpen = false;
-	bool bWheelSpinning = false;
-	float WheelSpinElapsed = 0.f;
-	float WheelSpinDuration = 2.0f;
-	float WheelStartAngleDeg = 0.f;
-	float WheelTotalAngleDeg = 0.f;
-	float WheelLastTickTimeSeconds = 0.f;
-	int32 WheelPendingGold = 0;
-	ET66Rarity ActiveWheelRarity = static_cast<ET66Rarity>(0);
-	FTimerHandle WheelSpinTickHandle;
-	FTimerHandle WheelResolveHandle;
-	FTimerHandle WheelCloseHandle;
 	TWeakObjectPtr<UT66CrateOverlayWidget> ActiveCrateOverlay;
 
 	TArray<FName> AchievementNotificationQueue;

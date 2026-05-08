@@ -301,7 +301,7 @@ FText UT66LocalizationSubsystem::GetText_SecondaryStatName(ET66SecondaryStatType
 	case ET66SecondaryStatType::Goblin:            return NSLOCTEXT("T66.SecondaryStats", "Goblin", "Goblin");
 	case ET66SecondaryStatType::Leprechaun:        return NSLOCTEXT("T66.SecondaryStats", "Leprechaun", "Leprechaun");
 	case ET66SecondaryStatType::TreasureChest:     return NSLOCTEXT("T66.SecondaryStats", "TreasureChest", "Treasure Chest");
-	case ET66SecondaryStatType::Fountain:          return NSLOCTEXT("T66.SecondaryStats", "Fountain", "Fountain of Life");
+	case ET66SecondaryStatType::Fountain:          return NSLOCTEXT("T66.SecondaryStats", "Fountain", "Fountain");
 	case ET66SecondaryStatType::Cheating:          return NSLOCTEXT("T66.SecondaryStats", "Cheating", "Cheating");
 	case ET66SecondaryStatType::Stealing:          return NSLOCTEXT("T66.SecondaryStats", "Stealing", "Stealing");
 	case ET66SecondaryStatType::MovementSpeed:     return NSLOCTEXT("T66.SecondaryStats", "MovementSpeed", "Movement Speed");
@@ -370,14 +370,14 @@ FText UT66LocalizationSubsystem::GetText_SecondaryStatDescription(ET66SecondaryS
 	case ET66SecondaryStatType::Goblin:          return NSLOCTEXT("T66.StatTooltips", "Goblin", "Chance to encounter a gold-dropping goblin.");
 	case ET66SecondaryStatType::Leprechaun:      return NSLOCTEXT("T66.StatTooltips", "Leprechaun", "Chance to encounter a leprechaun with bonus rewards.");
 	case ET66SecondaryStatType::TreasureChest:   return NSLOCTEXT("T66.StatTooltips", "TreasureChest", "Chance to find a treasure chest on the map.");
-	case ET66SecondaryStatType::Fountain:        return NSLOCTEXT("T66.StatTooltips", "Fountain", "Chance to find a Fountain of Life that fully heals you and grants +1 max heart.");
+	case ET66SecondaryStatType::Fountain:        return NSLOCTEXT("T66.StatTooltips", "Fountain", "Chance to find a Fountain that fully heals you and grants +1 max heart.");
 	case ET66SecondaryStatType::Cheating:        return NSLOCTEXT("T66.StatTooltips", "Cheating", "Success chance when attempting to cheat at the Gambler.");
-	case ET66SecondaryStatType::Stealing:        return NSLOCTEXT("T66.StatTooltips", "Stealing", "Success chance when attempting to steal from the Vendor.");
+	case ET66SecondaryStatType::Stealing:        return NSLOCTEXT("T66.StatTooltips", "Stealing", "Success chance when attempting to steal from the shop.");
 	case ET66SecondaryStatType::MovementSpeed:   return NSLOCTEXT("T66.StatTooltips", "MovementSpeed", "Bonus movement speed multiplier from secondary stat sources.");
 	case ET66SecondaryStatType::LootCrate:       return NSLOCTEXT("T66.StatTooltips", "LootCrate", "Improves the odds of higher-rarity rewards when opening a crate.");
 	case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.StatTooltips", "DamageReduction", "Bonus damage reduction generated from your current Armor stat.");
 	case ET66SecondaryStatType::EvasionChance:   return NSLOCTEXT("T66.StatTooltips", "EvasionChance", "Bonus dodge chance generated from your current Evasion stat.");
-	case ET66SecondaryStatType::GamblerToken:    return NSLOCTEXT("T66.StatTooltips", "GamblerToken", "A unique vendor token that improves item sell prices. Higher levels push the sell rate up to 90%.");
+	case ET66SecondaryStatType::GamblerToken:    return NSLOCTEXT("T66.StatTooltips", "GamblerToken", "A unique shop token that improves item sell prices. Higher levels push the sell rate up to 90%.");
 	case ET66SecondaryStatType::Alchemy:         return NSLOCTEXT("T66.StatTooltips", "Alchemy", "Chance for alchemy upgrades to jump an extra rarity tier.");
 	case ET66SecondaryStatType::Accuracy:        return NSLOCTEXT("T66.StatTooltips", "Accuracy", "Chance for untargeted auto-attacks to prefer enemy head hit zones.");
 	default: return FText::GetEmpty();
@@ -786,7 +786,7 @@ FText UT66LocalizationSubsystem::GetText_AchievementDescription(FName Achievemen
 	if (AchievementID == FName(TEXT("ACH_BLK_008"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_008_Desc", "Clear 1 stage with any companion.");
 	if (AchievementID == FName(TEXT("ACH_RED_004"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_004_Desc", "Clear 5 stages with the same companion.");
 	if (AchievementID == FName(TEXT("ACH_YEL_002"))) return NSLOCTEXT("T66.Achievements", "ACH_YEL_002_Desc", "Reach Hyper Union with any companion.");
-	if (AchievementID == FName(TEXT("ACH_BLK_009"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_009_Desc", "Buy an item from the Vendor.");
+	if (AchievementID == FName(TEXT("ACH_BLK_009"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_009_Desc", "Buy an item from the shop.");
 	if (AchievementID == FName(TEXT("ACH_BLK_010"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_010_Desc", "Win a gamble at the Gambler.");
 	if (AchievementID == FName(TEXT("ACH_RED_005"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_005_Desc", "Hold 500+ gold in a single run.");
 	if (AchievementID == FName(TEXT("ACH_RED_006"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_006_Desc", "Pay off all debt in a run.");
@@ -1558,42 +1558,32 @@ FText UT66LocalizationSubsystem::GetText_Preview() const
 	return NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 }
 
-FText UT66LocalizationSubsystem::GetText_Vendor() const
-{
-	return NSLOCTEXT("T66.Vendor", "VendorTitle", "VENDOR");
-}
-
 FText UT66LocalizationSubsystem::GetText_Shop() const
 {
-	return NSLOCTEXT("T66.Vendor", "ShopTitle", "SHOP");
+	return NSLOCTEXT("T66.Shop", "ShopTitle", "SHOP");
 }
 
 FText UT66LocalizationSubsystem::GetText_YourItems() const
 {
-	return NSLOCTEXT("T66.Vendor", "InventoryTitle", "INVENTORY");
+	return NSLOCTEXT("T66.Shop", "InventoryTitle", "INVENTORY");
 }
 
 FText UT66LocalizationSubsystem::GetText_Upgrade() const
 {
-	return NSLOCTEXT("T66.Vendor", "UpgradeTag", "UPGRADE");
+	return NSLOCTEXT("T66.Shop", "UpgradeTag", "UPGRADE");
 }
 
 FText UT66LocalizationSubsystem::GetText_Steal() const
 {
-	return NSLOCTEXT("T66.Vendor", "Steal", "STEAL");
+	return NSLOCTEXT("T66.Shop", "Steal", "STEAL");
 }
 
 FText UT66LocalizationSubsystem::GetText_Reroll() const
 {
-	return NSLOCTEXT("T66.Vendor", "Reroll", "REROLL");
+	return NSLOCTEXT("T66.Shop", "Reroll", "REROLL");
 }
 
 // ========== Gameplay Overlays ==========
-
-FText UT66LocalizationSubsystem::GetText_WheelSpinTitle() const
-{
-	return NSLOCTEXT("T66.Wheel", "Title", "WHEEL SPIN");
-}
 
 FText UT66LocalizationSubsystem::GetText_Spin() const
 {
@@ -2054,8 +2044,8 @@ FText UT66LocalizationSubsystem::GetText_Casino() const
 
 FText UT66LocalizationSubsystem::GetText_Bank() const
 {
-	// Shared label used in both Vendor and Gambler UI.
-	return NSLOCTEXT("T66.Vendor", "BankTitle", "BANK");
+	// Shared label used in both Shop and Gambler UI.
+	return NSLOCTEXT("T66.Shop", "BankTitle", "BANK");
 }
 
 FText UT66LocalizationSubsystem::GetText_Games() const

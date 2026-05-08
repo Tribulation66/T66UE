@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Raw\\Trellis\\RoboChad_GearBlade_S1337_D80000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Review\\RawGLB_QA_Yaw90\\RoboChad_GearBlade_S1337_D80000_Trellis2_Yaw90.png",
+  "export": null,
+  "raw_triangles": 79748,
+  "triangles_before_decimate": 79748,
+  "triangles_after_decimate": 79748,
+  "bounds": {
+    "min": [
+      -0.5004554986953735,
+      -0.10685452818870544,
+      -0.4994864761829376
+    ],
+    "max": [
+      0.50031578540802,
+      0.10663055628538132,
+      0.4968697130680084
+    ],
+    "size": [
+      1.0007712841033936,
+      0.21348509192466736,
+      0.996356189250946
+    ]
+  }
+}

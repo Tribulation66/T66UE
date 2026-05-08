@@ -11,6 +11,8 @@
 #include "Data/T66DataTypes.h"
 #include "T66PlayerExperienceSubSystem.generated.h"
 
+struct FStreamableHandle;
+
 USTRUCT(BlueprintType)
 struct T66_API FT66RarityIntRanges
 {
@@ -34,10 +36,10 @@ struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "1", ClampMax = "23"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "1", ClampMax = "20"))
 	int32 StartStage = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunShape", meta = (ClampMin = "1", ClampMax = "23"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunShape", meta = (ClampMin = "1", ClampMax = "20"))
 	int32 EndStage = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "0"))
@@ -48,12 +50,6 @@ struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "0"))
 	int32 StartHeroBonusLevels = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart")
-	bool bSpawnSupportVendorAtRunStart = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart")
-	bool bSupportVendorAllowSteal = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Loot", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float EnemyLootBagDropChanceBase = 0.0f;
@@ -80,24 +76,6 @@ struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
 	float ChestMimicChance = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
-	FT66IntRange WheelsPerStage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
-	FT66RarityWeights WheelRarityWeights;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
-	FT66FloatRange WheelGoldRangeBlack;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
-	FT66FloatRange WheelGoldRangeRed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
-	FT66FloatRange WheelGoldRangeYellow;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
-	FT66FloatRange WheelGoldRangeWhite;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
 	FT66IntRange CratesPerStage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
@@ -107,7 +85,7 @@ struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
 	float GamblerCheatSuccessChanceBase = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float VendorStealSuccessChanceOnTimingHitBase = 0.0f;
+	float ShopStealSuccessChanceOnTimingHitBase = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Totems")
 	FT66TotemRules TotemRules;
@@ -131,7 +109,7 @@ public:
 	FT66PlayerExperienceDifficultyTuning VeryHard;
 	FT66PlayerExperienceDifficultyTuning Impossible;
 
-	void LoadFromDataTable(const UDataTable* DataTable);
+	bool LoadFromDataTable(const UDataTable* DataTable);
 	const FT66PlayerExperienceDifficultyTuning& Get(ET66Difficulty Difficulty) const;
 };
 
@@ -168,12 +146,6 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
 	int32 GetDifficultyStartHeroBonusLevels(ET66Difficulty Difficulty) const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
-	bool ShouldSpawnSupportVendorAtRunStart(ET66Difficulty Difficulty) const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
-	bool ShouldSupportVendorAllowSteal(ET66Difficulty Difficulty) const;
-
 	const FT66PlayerExperienceDifficultyTuning& GetDifficultyTuning(ET66Difficulty Difficulty) const;
 	float GetDifficultyEnemyLootBagDropChanceBase(ET66Difficulty Difficulty) const;
 	FT66IntRange GetDifficultyEnemyLootBagCountOnDrop(ET66Difficulty Difficulty) const;
@@ -183,13 +155,10 @@ public:
 	FT66RarityWeights GetDifficultyChestRarityWeights(ET66Difficulty Difficulty) const;
 	FT66IntRange GetDifficultyChestGoldRange(ET66Difficulty Difficulty, ET66Rarity Rarity) const;
 	float GetDifficultyChestMimicChance(ET66Difficulty Difficulty) const;
-	FT66IntRange GetDifficultyWheelCountRange(ET66Difficulty Difficulty) const;
-	FT66RarityWeights GetDifficultyWheelRarityWeights(ET66Difficulty Difficulty) const;
-	FT66FloatRange GetDifficultyWheelGoldRange(ET66Difficulty Difficulty, ET66Rarity Rarity) const;
 	FT66IntRange GetDifficultyCrateCountRange(ET66Difficulty Difficulty) const;
 	FT66RarityWeights GetDifficultyCrateRarityWeights(ET66Difficulty Difficulty) const;
 	float GetDifficultyGamblerCheatSuccessChanceBase(ET66Difficulty Difficulty) const;
-	float GetDifficultyVendorStealSuccessChanceOnTimingHitBase(ET66Difficulty Difficulty) const;
+	float GetDifficultyShopStealSuccessChanceOnTimingHitBase(ET66Difficulty Difficulty) const;
 	FT66TotemRules GetDifficultyTotemRules(ET66Difficulty Difficulty) const;
 	int32 GetDifficultyTotemUsesPerTotem(ET66Difficulty Difficulty) const;
 	int32 GetDifficultySkullColorBandSize(ET66Difficulty Difficulty) const;
@@ -205,5 +174,12 @@ public:
 	int32 ResolveBossScore(ET66Difficulty Difficulty, int32 BasePointValue, float DifficultyScalar) const;
 
 private:
+	void QueueTuningDataTableLoad();
+	void HandleTuningDataTableLoaded();
+	bool IsTuningReady(const TCHAR* Caller) const;
+
 	FT66PlayerExperienceTuningTable CachedTuning;
+	bool bTuningLoaded = false;
+	mutable bool bWarnedTuningUnavailable = false;
+	TSharedPtr<FStreamableHandle> TuningDataTableLoadHandle;
 };

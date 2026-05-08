@@ -1,0 +1,1 @@
+Pass 01 rejected: text-free but too ornate in places, includes unrelated large frames, has a gray matte/background, and is not a clean exact component-family match for the Achievements Steam reference.

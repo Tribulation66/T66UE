@@ -30,7 +30,6 @@
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66OuroborosNPC.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66GameMode.h"
@@ -467,19 +466,15 @@ namespace
 	{
 		static const TMap<FName, FT66LooseMinimapIconSpec> Specs = {
 			{ FName(TEXT("NPC")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/npc.png"), FVector2D(22.f, 18.f) } },
-			{ FName(TEXT("Vendor")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/vendor.png"), FVector2D(20.f, 20.f) } },
-			{ FName(TEXT("SupportVendor")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/support_vendor.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Gambler")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/gambler.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Saint")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/saint.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Ouroboros")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/ouroboros.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Collector")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/collector.png"), FVector2D(20.f, 20.f) } },
-			{ FName(TEXT("Trickster")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/trickster.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Gate")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/gate.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Miasma")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/miasma.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Chest")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/chest.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Crate")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/crate.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("LootBag")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/loot_bag.png"), FVector2D(20.f, 20.f) } },
-			{ FName(TEXT("CatchUpLoot")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/catch_up_loot.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Enemy")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/enemy.png"), FVector2D(18.f, 18.f) } },
 			{ FName(TEXT("PlayerArrow")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/player_arrow.png"), FVector2D(22.f, 22.f) } },
 		};

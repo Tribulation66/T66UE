@@ -64,6 +64,7 @@ AT66MiniHazardTrap::AT66MiniHazardTrap()
 	SetReplicateMovement(false);
 	SetNetUpdateFrequency(10.f);
 	SetMinNetUpdateFrequency(5.f);
+	SetNetCullDistanceSquared(FMath::Square(3400.f));
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);

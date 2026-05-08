@@ -105,22 +105,22 @@ namespace T66TDUI
 
 	inline const TCHAR* MasterBasicPanelPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Shared/Panels/inner_panel_normal.png");
+		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png");
 	}
 
 	inline const TCHAR* MasterInnerPanelPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Shared/Panels/inner_panel_normal.png");
+		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png");
 	}
 
 	inline const TCHAR* MasterBasicButtonPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/normal.png");
+		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_normal.png");
 	}
 
 	inline const TCHAR* MasterSelectedButtonPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/selected.png");
+		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_selected.png");
 	}
 
 	inline const FMargin& MasterPanelMargin()
@@ -203,10 +203,11 @@ namespace T66TDUI
 		const FLinearColor& FallbackColor,
 		const FMargin& Padding)
 	{
+		const FMargin SafePadding = Brush ? Padding + FMargin(8.f, 4.f, 10.f, 4.f) : Padding;
 		return SNew(SBorder)
 			.BorderImage(Brush ? Brush : WhiteBrush())
 			.BorderBackgroundColor(Brush ? FLinearColor::White : FallbackColor)
-			.Padding(Padding)
+			.Padding(SafePadding)
 			[
 				Content
 			];
@@ -241,7 +242,7 @@ namespace T66TDUI
 			.SetFontSize(FontSize)
 			.SetPadding(FMargin(14.f, 8.f, 14.f, 6.f))
 			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(false)
+			.SetUseDotaPlateOverlay(true)
 			.SetDotaPlateOverrideBrush(ButtonPlateBrush(ET66ButtonType::Success))
 			.SetTextColor(BrightText())
 			.SetStateTextShadowColors(
@@ -261,7 +262,7 @@ namespace T66TDUI
 			.SetFontSize(FontSize)
 			.SetPadding(FMargin(12.f, 4.f, 12.f, 3.f))
 			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(false)
+			.SetUseDotaPlateOverlay(true)
 			.SetDotaPlateOverrideBrush(ButtonPlateBrush(ET66ButtonType::Neutral))
 			.SetTextColor(BrightText());
 		return Params;

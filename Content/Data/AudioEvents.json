@@ -1297,27 +1297,6 @@
     ]
   },
   {
-    "Name": "Boss.Projectile.Fire.Vendor",
-    "Description": "Vendor boss projectile fire.",
-    "VolumeBus": "SFX",
-    "bEnabled": true,
-    "bPlay2D": false,
-    "bIsUISound": false,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.78,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.035,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.055,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_001.HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_001",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_002.HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_002",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_003.HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_003"
-    ]
-  },
-  {
     "Name": "Boss.Projectile.Fire.Gambler",
     "Description": "Gambler boss projectile fire.",
     "VolumeBus": "SFX",
@@ -1417,27 +1396,6 @@
       "/Game/Audio/HeltonPixelCombat/HYPC_WHSH_MOVEMENT_Phase_Sweeps_HY_PC_001.HYPC_WHSH_MOVEMENT_Phase_Sweeps_HY_PC_001",
       "/Game/Audio/HeltonPixelCombat/HYPC_WHSH_MOVEMENT_Phase_Sweeps_HY_PC_002.HYPC_WHSH_MOVEMENT_Phase_Sweeps_HY_PC_002",
       "/Game/Audio/HeltonPixelCombat/HYPC_WHSH_MOVEMENT_Phase_Sweeps_HY_PC_003.HYPC_WHSH_MOVEMENT_Phase_Sweeps_HY_PC_003"
-    ]
-  },
-  {
-    "Name": "Boss.AOE.Warning.Vendor",
-    "Description": "Vendor boss AOE warning.",
-    "VolumeBus": "SFX",
-    "bEnabled": true,
-    "bPlay2D": false,
-    "bIsUISound": false,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.7,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.03,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.1,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_INTERFACE_Zap_Select_HY_PC_001.HYPC_DSGNMisc_INTERFACE_Zap_Select_HY_PC_001",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_INTERFACE_Zap_Select_HY_PC_002.HYPC_DSGNMisc_INTERFACE_Zap_Select_HY_PC_002",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_INTERFACE_Zap_Select_HY_PC_003.HYPC_DSGNMisc_INTERFACE_Zap_Select_HY_PC_003"
     ]
   },
   {
@@ -1859,120 +1817,6 @@
       "/Game/Audio/HeltonPixelCombat/HYPC_UIMisc_INTERFACE_Denied_HY_PC_001.HYPC_UIMisc_INTERFACE_Denied_HY_PC_001",
       "/Game/Audio/HeltonPixelCombat/HYPC_UIMisc_INTERFACE_Denied_HY_PC_002.HYPC_UIMisc_INTERFACE_Denied_HY_PC_002",
       "/Game/Audio/HeltonPixelCombat/HYPC_UIMisc_INTERFACE_Denied_HY_PC_003.HYPC_UIMisc_INTERFACE_Denied_HY_PC_003"
-    ]
-  },
-  {
-    "Name": "Arcade.Whack.Hit",
-    "Description": "Whack-a-Mole target hit.",
-    "VolumeBus": "UI",
-    "bEnabled": true,
-    "bPlay2D": true,
-    "bIsUISound": true,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.82,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.035,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.02,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/Arcade/Arcade_Whack_Hit_01.Arcade_Whack_Hit_01"
-    ]
-  },
-  {
-    "Name": "Arcade.Whack.Miss",
-    "Description": "Whack-a-Mole expired target or miss.",
-    "VolumeBus": "UI",
-    "bEnabled": true,
-    "bPlay2D": true,
-    "bIsUISound": true,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.74,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.025,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.04,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/Arcade/Arcade_Whack_Miss_01.Arcade_Whack_Miss_01"
-    ]
-  },
-  {
-    "Name": "Arcade.Topwar.Choice",
-    "Description": "Topwar upgrade gate choice.",
-    "VolumeBus": "UI",
-    "bEnabled": true,
-    "bPlay2D": true,
-    "bIsUISound": true,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.8,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.03,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.03,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/Arcade/Arcade_Topwar_Choice_01.Arcade_Topwar_Choice_01"
-    ]
-  },
-  {
-    "Name": "Arcade.Round.End",
-    "Description": "Arcade round complete chime.",
-    "VolumeBus": "UI",
-    "bEnabled": true,
-    "bPlay2D": true,
-    "bIsUISound": true,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.78,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.015,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.2,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/Arcade/Arcade_Round_End_01.Arcade_Round_End_01"
-    ]
-  },
-  {
-    "Name": "Arcade.Machine.Explode",
-    "Description": "Arcade cabinet payout explosion.",
-    "VolumeBus": "SFX",
-    "bEnabled": true,
-    "bPlay2D": false,
-    "bIsUISound": false,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.95,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.035,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.2,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/Arcade/Arcade_Machine_Explode_01.Arcade_Machine_Explode_01"
-    ]
-  },
-  {
-    "Name": "Arcade.Amplifier.Pickup",
-    "Description": "Arcade amplifier pickup.",
-    "VolumeBus": "SFX",
-    "bEnabled": true,
-    "bPlay2D": true,
-    "bIsUISound": false,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.86,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.025,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.06,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/Arcade/Arcade_Amplifier_Pickup_01.Arcade_Amplifier_Pickup_01"
     ]
   }
 ]

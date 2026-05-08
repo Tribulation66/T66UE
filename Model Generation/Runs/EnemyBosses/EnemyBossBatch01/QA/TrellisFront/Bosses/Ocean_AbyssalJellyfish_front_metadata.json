@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Bosses\\Ocean_AbyssalJellyfish\\Ocean_AbyssalJellyfish_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Ocean_AbyssalJellyfish_front.png",
+  "export": null,
+  "raw_triangles": 199226,
+  "triangles_before_decimate": 199226,
+  "triangles_after_decimate": 199226,
+  "bounds": {
+    "min": [
+      -0.40748968720436096,
+      -0.32734978199005127,
+      -0.5007084012031555
+    ],
+    "max": [
+      0.40760889649391174,
+      0.328029990196228,
+      0.5005574226379395
+    ],
+    "size": [
+      0.8150985836982727,
+      0.6553797721862793,
+      1.0012657642364502
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66DifficultyTotem.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -8,7 +9,6 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
-#include "EngineUtils.h"
 #include "UObject/SoftObjectPath.h"
 #include "Gameplay/T66VisualUtil.h"
 
@@ -24,7 +24,7 @@ AT66DifficultyTotem::AT66DifficultyTotem()
 		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 	}
 
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Totem.Totem")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/DifficultyTotem/DifficultyTotem_QuadRetro.DifficultyTotem_QuadRetro")));
 }
 
 void AT66DifficultyTotem::BeginPlay()
@@ -58,6 +58,12 @@ bool AT66DifficultyTotem::Interact(APlayerController* PC)
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return false;
 
+	if (IsShowcaseReusable() && (bConsumed || RemainingInteractions <= 0))
+	{
+		RemainingInteractions = FMath::Max(1, MaxInteractions);
+		bConsumed = false;
+	}
+
 	if (bConsumed || RemainingInteractions <= 0)
 	{
 		bConsumed = true;
@@ -68,6 +74,11 @@ bool AT66DifficultyTotem::Interact(APlayerController* PC)
 	RunState->AddDifficultySkulls(1);
 	RemainingInteractions = FMath::Max(0, RemainingInteractions - 1);
 	bConsumed = RemainingInteractions <= 0;
+	if (IsShowcaseReusable())
+	{
+		RemainingInteractions = FMath::Max(1, MaxInteractions);
+		bConsumed = false;
+	}
 	RefreshInteractionPrompt();
 
 	const int32 InteractionCount = RunState->RegisterTotemActivated();
@@ -75,11 +86,14 @@ bool AT66DifficultyTotem::Interact(APlayerController* PC)
 	// All totems in the map grow taller on each interaction.
 	if (UWorld* World = GetWorld())
 	{
-		for (TActorIterator<AT66DifficultyTotem> It(World); It; ++It)
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
 		{
-			if (AT66DifficultyTotem* Totem = *It)
+			for (const TWeakObjectPtr<AT66WorldInteractableBase>& WeakInteractable : Registry->GetWorldInteractables())
 			{
-				Totem->ApplyGrowthFromInteractionCount(InteractionCount);
+				if (AT66DifficultyTotem* Totem = Cast<AT66DifficultyTotem>(WeakInteractable.Get()))
+				{
+					Totem->ApplyGrowthFromInteractionCount(InteractionCount);
+				}
 			}
 		}
 	}

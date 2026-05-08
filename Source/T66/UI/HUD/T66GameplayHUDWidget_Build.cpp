@@ -142,18 +142,6 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			T66SlateTexture::BindSharedBrushAsync(TexPool, UltSoft, this, UltimateBrush, FName(TEXT("HUDUltimate")), false);
 		}
 	}
-	// Wheel spin texture
-	{
-		WheelTextureBrush = FSlateBrush();
-		WheelTextureBrush.ImageSize = FVector2D(124.f, 124.f);
-		WheelTextureBrush.DrawAs = ESlateBrushDrawType::Image;
-		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
-		if (TexPool)
-		{
-			const TSoftObjectPtr<UTexture2D> WheelSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/Wheel/Firefly_Gemini_Flash_Remove_background_286654.Firefly_Gemini_Flash_Remove_background_286654")));
-			T66SlateTexture::BindBrushAsync(TexPool, WheelSoft, this, WheelTextureBrush, FName(TEXT("HUDWheel")), /*bClearWhileLoading*/ true);
-		}
-	}
 	// Heart sprite brush
 	if (!HeartBrush.IsValid())
 	{
@@ -1282,102 +1270,6 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					],
 					FT66PanelParams(ET66PanelType::Panel).SetPadding(6.f)
 				)
-		]
-
-		// Wheel spin HUD animation (same lane/layout as chest reward)
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Right)
-		.VAlign(VAlign_Bottom)
-		.Padding(BottomRightPickupPadding)
-		[
-			SAssignNew(WheelSpinBox, SBox)
-			.WidthOverride(PickupCardWidth)
-			.HeightOverride(PickupCardHeight)
-			.Visibility(EVisibility::Collapsed)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.24f, 0.24f, 0.28f, 1.f))
-				.Padding(2.f)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.030f, 0.025f, 0.021f, 0.98f))
-					.Padding(0.f)
-					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight()
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.055f, 0.043f, 0.032f, 0.98f))
-							.Padding(FMargin(8.f, 6.f))
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
-								[
-									SNew(SHorizontalBox)
-									+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-									[
-										SNew(SBox)
-										.WidthOverride(18.f)
-										.HeightOverride(18.f)
-										[
-											SNew(SImage)
-											.Image(GoldCurrencyBrush.Get())
-											.ColorAndOpacity(FLinearColor::White)
-										]
-									]
-									+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(6.f, 0.f, 0.f, 0.f)
-									[
-										SAssignNew(WheelSpinText, STextBlock)
-										.Text(FText::GetEmpty())
-										.Font(FT66Style::Tokens::FontBold(18))
-										.ColorAndOpacity(FLinearColor(0.98f, 0.83f, 0.24f, 1.f))
-										.Justification(ETextJustify::Center)
-									]
-								]
-							]
-						]
-						+ SVerticalBox::Slot().FillHeight(1.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.03f, 0.03f, 0.05f, 1.f))
-							.Padding(FMargin(6.f))
-							[
-								SNew(SOverlay)
-								+ SOverlay::Slot()
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								[
-									SNew(SBox)
-									.WidthOverride(124.f)
-									.HeightOverride(124.f)
-									[
-										SAssignNew(WheelSpinDisk, SImage)
-										.Image(&WheelTextureBrush)
-									]
-								]
-							]
-						]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.070f, 0.055f, 0.032f, 0.95f))
-							.Padding(FMargin(8.f, 4.f))
-							[
-								SAssignNew(WheelSpinSkipText, STextBlock)
-								.Text(FText::GetEmpty())
-								.Font(FT66Style::Tokens::FontBold(11))
-								.ColorAndOpacity(FLinearColor::White)
-								.Justification(ETextJustify::Center)
-							]
-						]
-					]
-				]
-			]
 		]
 
 		// Bottom-left portrait stack with a tighter, uniform panel footprint.

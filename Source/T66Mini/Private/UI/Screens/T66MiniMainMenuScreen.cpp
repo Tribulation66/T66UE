@@ -286,7 +286,7 @@ FReply UT66MiniMainMenuScreen::HandleDailyClicked()
 void UT66MiniMainMenuScreen::RequestMiniMenuTextures()
 {
 	SetupLooseBrush(SkyBackgroundBrush, SkyBackgroundTexture, TEXT("SourceAssets/UI/MainMenuReference/scene_background_1920x1080.png"), MiniBgSize, true, TEXT("MiniMainMenuScene"));
-	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("SourceAssets/UI/Reference/Shared/Buttons/CTA/normal.png"), FVector2D(360.f, 104.f), false, TEXT("MiniMainMenuCTA"));
+	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_new_game_button_normal.png"), FVector2D(360.f, 104.f), false, TEXT("MiniMainMenuCTA"));
 }
 
 void UT66MiniMainMenuScreen::ReleaseRetainedSlateState()

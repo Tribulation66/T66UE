@@ -4,9 +4,9 @@
 **Scope:** Single-source handoff for T66 online state: Steam, Steamworks, Steam AppIDs, Vercel, backend services, live status, and the recommended path to private multiplayer testing under the real Steam AppID.
 **Companion policy doc:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`
 **Companion Steam ops doc:** `MASTER DOCS/MASTER_STEAMWORKS.md`
-**Companion anti-cheat doc:** `ANTI_CHEAT/MASTER_ANTI_CHEAT.md`
+**Companion anti-cheat doc:** `MASTER DOCS/Backend Anti Cheat/MASTER_ANTI_CHEAT.md`
 **Historical predecessor docs:** `Docs/Archive/Systems/backend_architecture_historical.md`, `Docs/Archive/Systems/backend_0.1_checklist_historical.md`, `Docs/Archive/Systems/version_0.1_full_checklist_historical.md`
-**Maintenance rule:** Update this file after every Steam, backend, online, multiplayer, upload, deployment, or other internet-connected systems change. Update `MASTER DOCS/MASTER_STEAMWORKS.md` in the same pass for any Steamworks/build/upload/private-test workflow change. If the change also affects project policy, workflow, or anti-cheat enforcement, update `MASTER DOCS/T66_MASTER_GUIDELINES.md` and `ANTI_CHEAT/MASTER_ANTI_CHEAT.md` in the same pass.
+**Maintenance rule:** Update this file after every Steam, backend, online, multiplayer, upload, deployment, or other internet-connected systems change. Update `MASTER DOCS/MASTER_STEAMWORKS.md` in the same pass for any Steamworks/build/upload/private-test workflow change. If the change also affects project policy, workflow, or anti-cheat enforcement, update `MASTER DOCS/T66_MASTER_GUIDELINES.md` and `MASTER DOCS/Backend Anti Cheat/MASTER_ANTI_CHEAT.md` in the same pass.
 **Status note:** For the current Steamworks operational state, active build ID, upload workflow, and private-testing procedure, prefer `MASTER DOCS/MASTER_STEAMWORKS.md`. This backend document still contains historical transition details from the earlier `480` to `4464300` migration period.
 
 ## 1. Primary Source Files

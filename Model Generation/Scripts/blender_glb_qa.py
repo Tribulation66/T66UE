@@ -46,9 +46,15 @@ def reset_scene():
     return scene
 
 
-def import_glb(path):
+def import_model(path):
     before = set(bpy.data.objects)
-    bpy.ops.import_scene.gltf(filepath=path)
+    ext = os.path.splitext(path)[1].lower()
+    if ext in {".glb", ".gltf"}:
+        bpy.ops.import_scene.gltf(filepath=path)
+    elif ext == ".fbx":
+        bpy.ops.import_scene.fbx(filepath=path, use_image_search=True)
+    else:
+        raise RuntimeError(f"Unsupported model format: {path}")
     imported = [obj for obj in bpy.data.objects if obj not in before]
     meshes = [obj for obj in imported if obj.type == "MESH"]
     if not meshes:
@@ -169,7 +175,7 @@ def main():
     scene.render.resolution_x = args.resolution
     scene.render.resolution_y = args.resolution
 
-    _, meshes = import_glb(args.input)
+    _, meshes = import_model(args.input)
     raw_tris = total_triangles(meshes)
 
     before_tris, after_tris = decimate_meshes(meshes, args.target_tris)

@@ -248,15 +248,23 @@ namespace
 				const int32 StatValue = GetPrimaryStatValue(StatIndex);
 				Column->AddSlot()
 				.AutoHeight()
-				.Padding(0.f, 0.f, 0.f, 2.f)
+				.Padding(0.f, 0.f, 0.f, 3.f)
 				[
-					SNew(STextBlock)
-					.Text(FText::Format(
-						StatLineFormat,
-						GetPrimaryStatLabel(StatIndex),
-						FText::AsNumber(StatValue)))
-					.Font(FT66Style::Tokens::FontBold(14))
-					.ColorAndOpacity(GetHeroSelectionParchmentText())
+					SNew(SBox)
+					.HeightOverride(18.f)
+					.HAlign(HAlign_Fill)
+					.Clipping(EWidgetClipping::ClipToBounds)
+					[
+						MakeHeroSelectionFittedLabel(
+							FText::Format(
+								StatLineFormat,
+								GetPrimaryStatLabel(StatIndex),
+								FText::AsNumber(StatValue)),
+							15,
+							GetHeroSelectionParchmentText(),
+							ETextJustify::Left,
+							HAlign_Fill)
+					]
 				];
 			}
 			return Column;
@@ -279,7 +287,7 @@ namespace
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.78f, 0.80f, 0.88f, 0.42f))
+					.BorderBackgroundColor(FLinearColor(0.98f, 0.48f, 0.34f, 0.72f))
 				]
 			]
 			+ SHorizontalBox::Slot()
@@ -413,9 +421,10 @@ void UT66HeroSelectionScreen::RefreshHeroStatsPanels()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.HeroSelection", "HeroSummaryStatsHeader", "STATS"))
-					.Font(FT66Style::Tokens::FontBold(17))
+					.Font(FT66Style::Tokens::FontBold(20))
 					.ColorAndOpacity(GetHeroSelectionParchmentMutedText())
 					.Justification(ETextJustify::Center)
+					.Clipping(EWidgetClipping::ClipToBounds)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()

@@ -380,7 +380,8 @@ void FT66VisualUtil::EnsureUnlitMaterials(UMeshComponent* Mesh, UObject* Outer)
 
 void FT66VisualUtil::EnsureAllWorldMeshesUnlit(UWorld* World)
 {
-	// Log-only audit pass - does NOT replace any materials.
+	// Editor/dev log-only audit pass - does NOT replace any materials.
+	// This is not a runtime gameplay lookup.
 	if (!World) return;
 
 	int32 EngineMatCount = 0;

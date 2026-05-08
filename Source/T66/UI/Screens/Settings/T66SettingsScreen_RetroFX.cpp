@@ -15,10 +15,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildRetroFXTab()
 
 	auto MakeSectionHeader = [](const FText& Text) -> TSharedRef<SWidget>
 	{
-		return SNew(STextBlock)
-			.Text(Text)
-			.Font(SettingsBoldFont(22))
-			.ColorAndOpacity(FT66Style::TextMuted());
+		return MakeSettingsSectionHeader(Text, 22);
 	};
 
 	auto MakeRetroButton = [](const FText& Label, TFunction<bool()> IsSelected, FOnClicked OnClicked, float MinWidth = 88.0f) -> TSharedRef<SWidget>
@@ -26,6 +23,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildRetroFXTab()
 		return MakeSelectableSettingsButton(
 			FT66ButtonParams(Label, MoveTemp(OnClicked), ET66ButtonType::Neutral)
 			.SetMinWidth(MinWidth)
+			.SetHeight(40.f)
 			.SetFontSize(18)
 			.SetPadding(FMargin(12.0f, 6.0f))
 			.SetTextColor(GetRetroButtonText()),
@@ -102,10 +100,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildRetroFXTab()
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 12.0f)
 			[
-				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.Settings", "RetroFXHeader", "Retro FX"))
-				.Font(SettingsBoldFont(24))
-				.ColorAndOpacity(GetSettingsPageText())
+				MakeSettingsSectionHeader(NSLOCTEXT("T66.Settings", "RetroFXHeader", "Retro FX"), 28)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 14.0f)
 			[
@@ -131,7 +126,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildRetroFXTab()
 				.ColorAndOpacity(bRetroFXDirty ? FT66Style::ButtonPrimary() : GetSettingsPageMuted())
 				.AutoWrapText(true)
 			]
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.0f, 0.0f, 0.0f, 18.0f)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.0f, 0.0f, 0.0f, 4.0f)
 			[
 				MakeActionRow(false)
 			]

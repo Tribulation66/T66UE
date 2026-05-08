@@ -3,6 +3,7 @@
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 
 #include "Engine/Texture2D.h"
+#include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
@@ -23,6 +24,7 @@ namespace T66ScreenSlateHelpers
 	namespace
 	{
 		const TCHAR* ReferenceProgressSheetPath = TEXT("SourceAssets/UI/Reference/Shared/Progress/reference_progress_meter_sheet.png");
+		const TCHAR* ReferenceUltrakillElementDir = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements");
 		const FBox2f ReferenceProgressTrackUV(FVector2f(0.0530f, 0.2950f), FVector2f(0.9550f, 0.4440f));
 		const FBox2f ReferenceProgressFillUV(FVector2f(0.0670f, 0.6320f), FVector2f(0.9320f, 0.6960f));
 
@@ -231,6 +233,8 @@ namespace T66ScreenSlateHelpers
 			DrawSlice(FVector2D(Size.X - DestCapWidth, 0.0f), FVector2D(DestCapWidth, Size.Y), 1.0f - CapU, 1.0f);
 		}
 
+		const FSlateBrush* GetSimpleReferenceButtonFallbackBrush();
+
 		class ST66ReferenceSlicedPlateButton : public SCompoundWidget
 		{
 		public:
@@ -340,7 +344,7 @@ namespace T66ScreenSlateHelpers
 				{
 					return HoveredBrush;
 				}
-				return NormalBrush ? NormalBrush : FCoreStyle::Get().GetBrush("WhiteBrush");
+				return NormalBrush ? NormalBrush : GetSimpleReferenceButtonFallbackBrush();
 			}
 
 			FMargin GetContentPadding() const
@@ -372,6 +376,23 @@ namespace T66ScreenSlateHelpers
 				FMargin(0.0f),
 				TEXT("ReferenceProgressSheet"),
 				TextureFilter::TF_Nearest);
+		}
+
+		const FSlateBrush* GetSimpleReferenceButtonFallbackBrush()
+		{
+			static FSlateBrush Brush;
+			static bool bInitialized = false;
+			if (!bInitialized)
+			{
+				bInitialized = true;
+				T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+					Brush,
+					TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/normal.png"),
+					FVector2D(1.f, 1.f),
+					FMargin(0.18f, 0.24f, 0.18f, 0.24f),
+					ESlateBrushDrawType::Box);
+			}
+			return &Brush;
 		}
 
 		class ST66ReferenceProgressBar : public SLeafWidget
@@ -678,10 +699,32 @@ namespace T66ScreenSlateHelpers
 	{
 		const TCHAR* SafeFamily = NormalizeReferenceChromeButtonFamily(Family);
 		const TCHAR* SafeState = State ? State : TEXT("normal");
+		const FString NormalizedState = FString(SafeState).Equals(TEXT("hovered"), ESearchCase::IgnoreCase)
+			? FString(TEXT("hover"))
+			: FString(SafeState).ToLower();
+		const TCHAR* FamilyFileStem = TEXT("leaderboard_tab_button");
+		if (FCString::Stricmp(SafeFamily, TEXT("CTA")) == 0)
+		{
+			FamilyFileStem = TEXT("cta_new_game_button");
+			if (NormalizedState.Equals(TEXT("selected"), ESearchCase::IgnoreCase))
+			{
+				return FString::Printf(TEXT("%s/%s_normal.png"), ReferenceUltrakillElementDir, FamilyFileStem);
+			}
+		}
+		else if (FCString::Stricmp(SafeFamily, TEXT("SquareIcon")) == 0)
+		{
+			FamilyFileStem = TEXT("topbar_icon_button");
+			if (NormalizedState.Equals(TEXT("selected"), ESearchCase::IgnoreCase))
+			{
+				return FString::Printf(TEXT("%s/%s_normal.png"), ReferenceUltrakillElementDir, FamilyFileStem);
+			}
+		}
+
 		return FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Shared/Buttons/%s/%s.png"),
-			SafeFamily,
-			SafeState);
+			TEXT("%s/%s_%s.png"),
+			ReferenceUltrakillElementDir,
+			FamilyFileStem,
+			*NormalizedState);
 	}
 
 	FString MakeReferenceButtonAssetPath(
@@ -694,6 +737,80 @@ namespace T66ScreenSlateHelpers
 	FString MakeReferenceSharedAssetPath(const TCHAR* RelativeAssetPath)
 	{
 		const TCHAR* SafeRelativeAssetPath = RelativeAssetPath ? RelativeAssetPath : TEXT("");
+		const FString Relative(SafeRelativeAssetPath);
+		if (Relative.StartsWith(TEXT("Panels/Modal/"), ESearchCase::IgnoreCase)
+			|| Relative.StartsWith(TEXT("Panels/"), ESearchCase::IgnoreCase))
+		{
+			return FString::Printf(TEXT("%s/main_panel_normal.png"), ReferenceUltrakillElementDir);
+		}
+		if (Relative.StartsWith(TEXT("Buttons/DangerCTA/"), ESearchCase::IgnoreCase))
+		{
+			const FString State = FPaths::GetBaseFilename(Relative).ToLower();
+			return FString::Printf(
+				TEXT("%s/cta_load_game_button_%s.png"),
+				ReferenceUltrakillElementDir,
+				State.Equals(TEXT("selected"), ESearchCase::IgnoreCase) ? TEXT("normal") : *State);
+		}
+		if (Relative.StartsWith(TEXT("Buttons/CTA/"), ESearchCase::IgnoreCase))
+		{
+			const FString State = FPaths::GetBaseFilename(Relative).ToLower();
+			return FString::Printf(
+				TEXT("%s/cta_new_game_button_%s.png"),
+				ReferenceUltrakillElementDir,
+				State.Equals(TEXT("selected"), ESearchCase::IgnoreCase) ? TEXT("normal") : *State);
+		}
+		if (Relative.StartsWith(TEXT("Buttons/SquareIcon/"), ESearchCase::IgnoreCase))
+		{
+			const FString State = FPaths::GetBaseFilename(Relative).ToLower();
+			return FString::Printf(
+				TEXT("%s/topbar_icon_button_%s.png"),
+				ReferenceUltrakillElementDir,
+				State.Equals(TEXT("selected"), ESearchCase::IgnoreCase) ? TEXT("normal") : *State);
+		}
+		if (Relative.StartsWith(TEXT("Buttons/basic_button/"), ESearchCase::IgnoreCase)
+			|| Relative.StartsWith(TEXT("Buttons/Pill/"), ESearchCase::IgnoreCase))
+		{
+			const FString State = FPaths::GetBaseFilename(Relative).ToLower();
+			return FString::Printf(TEXT("%s/leaderboard_tab_button_%s.png"), ReferenceUltrakillElementDir, *State);
+		}
+		if (Relative.StartsWith(TEXT("Slots/"), ESearchCase::IgnoreCase))
+		{
+			const FString State = FPaths::GetBaseFilename(Relative).ToLower();
+			const TCHAR* SlotState = TEXT("normal");
+			if (State.Contains(TEXT("disabled")))
+			{
+				SlotState = TEXT("disabled");
+			}
+			else if (State.Contains(TEXT("selected")))
+			{
+				SlotState = TEXT("selected");
+			}
+			else if (State.Contains(TEXT("hover")))
+			{
+				SlotState = TEXT("hover");
+			}
+			return FString::Printf(TEXT("%s/profile_slot_%s.png"), ReferenceUltrakillElementDir, SlotState);
+		}
+		if (Relative.StartsWith(TEXT("Controls/dropdown_field"), ESearchCase::IgnoreCase)
+			|| Relative.StartsWith(TEXT("Controls/dropdown_field_"), ESearchCase::IgnoreCase))
+		{
+			FString State = FPaths::GetBaseFilename(Relative).ToLower();
+			if (State.StartsWith(TEXT("dropdown_field_"), ESearchCase::IgnoreCase))
+			{
+				State.RightChopInline(15, EAllowShrinking::No);
+			}
+			if (State.IsEmpty() || State.Equals(TEXT("dropdown_field"), ESearchCase::IgnoreCase))
+			{
+				State = TEXT("normal");
+			}
+			if (State.Equals(TEXT("selected"), ESearchCase::IgnoreCase)
+				|| State.Equals(TEXT("focused"), ESearchCase::IgnoreCase))
+			{
+				State = TEXT("hover");
+			}
+			return FString::Printf(TEXT("%s/dropdown_field_%s.png"), ReferenceUltrakillElementDir, *State);
+		}
+
 		return FString::Printf(
 			TEXT("SourceAssets/UI/Reference/Shared/%s"),
 			SafeRelativeAssetPath);

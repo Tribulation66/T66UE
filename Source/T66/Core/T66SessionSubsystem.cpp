@@ -33,7 +33,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Session, Log, All);
 static TAutoConsoleVariable<float> CVarT66PendingFriendJoinRetryDelaySeconds(
 	TEXT("T66.Session.PendingFriendJoinRetryDelaySeconds"),
 	0.10f,
-	TEXT("Delay before retrying a pending friend-session join lookup."),
+	TEXT("Delay before retrying the fallback friend-session join lookup after direct invite data is unavailable or stale."),
 	ECVF_Default);
 
 const FName UT66SessionSubsystem::PartySessionName(TEXT("T66PartySession"));
@@ -445,7 +445,12 @@ bool UT66SessionSubsystem::SendInviteToFriendInternal(const FString& FriendPlaye
 	return false;
 }
 
-void UT66SessionSubsystem::PrimePendingJoinContext(const FString& HostSteamId, const FString& LobbyId, const FString& InviteId, const FString& AppId)
+void UT66SessionSubsystem::PrimePendingJoinContext(
+	const FString& HostSteamId,
+	const FString& LobbyId,
+	const FString& InviteId,
+	const FString& AppId,
+	const ET66PendingFriendJoinRetryPolicy RetryPolicy)
 {
 	PendingJoinFriendPlayerId = HostSteamId;
 	PendingExpectedJoinLobbyId = LobbyId;
@@ -453,6 +458,7 @@ void UT66SessionSubsystem::PrimePendingJoinContext(const FString& HostSteamId, c
 	PendingJoinSourceAppId = AppId;
 	PendingFoundLobbyId = LobbyId;
 	PendingJoinFriendLookupAttempts = 0;
+	PendingFriendJoinRetryPolicy = RetryPolicy;
 }
 
 bool UT66SessionSubsystem::StartDirectJoinByHostSteamId(
@@ -478,6 +484,7 @@ bool UT66SessionSubsystem::StartDirectJoinByHostSteamId(
 	DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
 	DiagnosticFields.Add(TEXT("has_lobby_id"), LobbyId.IsEmpty() ? TEXT("false") : TEXT("true"));
 	DiagnosticFields.Add(TEXT("join_reason"), JoinReason ? FString(JoinReason) : TEXT("direct"));
+	DiagnosticFields.Add(TEXT("retry_policy"), TEXT("disabled"));
 
 	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
 	{
@@ -537,7 +544,7 @@ bool UT66SessionSubsystem::StartDirectJoinByHostSteamId(
 		DiagnosticFields.Add(TEXT("resolved_app_id"), EffectiveAppId);
 	}
 
-	PrimePendingJoinContext(HostSteamId, EffectiveLobbyId, InviteId, EffectiveAppId);
+	PrimePendingJoinContext(HostSteamId, EffectiveLobbyId, InviteId, EffectiveAppId, ET66PendingFriendJoinRetryPolicy::Disabled);
 	ClearPendingFriendJoinRetry();
 
 	if (bJoinInProgress)
@@ -1138,17 +1145,14 @@ bool UT66SessionSubsystem::StartJoinByFriendId(const FString& FriendPlayerId, co
 		return false;
 	}
 
-	PendingJoinFriendPlayerId = FriendPlayerId;
-	PendingExpectedJoinLobbyId = ExpectedLobbyId;
-	PendingJoinInviteId = InviteId;
-	PendingJoinSourceAppId = AppId;
+	PrimePendingJoinContext(FriendPlayerId, ExpectedLobbyId, InviteId, AppId, ET66PendingFriendJoinRetryPolicy::FriendLookupFallback);
 	PendingFoundLobbyId.Reset();
-	PendingJoinFriendLookupAttempts = 0;
 	ClearPendingFriendJoinRetry();
 	UE_LOG(LogT66Session, Log, TEXT("StartJoinByFriendId friend=%s expectedLobby=%s"), *PendingJoinFriendPlayerId, *PendingExpectedJoinLobbyId);
 	TMap<FString, FString> DiagnosticFields;
 	DiagnosticFields.Add(TEXT("host_steam_id"), FriendPlayerId);
 	DiagnosticFields.Add(TEXT("source_app_id"), AppId);
+	DiagnosticFields.Add(TEXT("retry_policy"), TEXT("friend_lookup_fallback"));
 	SubmitSessionDiagnostic(TEXT("join_lookup_start"), TEXT("info"), TEXT("Starting host party lookup."), InviteId, ExpectedLobbyId, FString(), DiagnosticFields);
 	return AttemptPendingFriendJoinLookup();
 }
@@ -1187,7 +1191,7 @@ bool UT66SessionSubsystem::AttemptPendingFriendJoinLookup()
 		DiagnosticFields.Add(TEXT("join_in_progress"), bJoinInProgress ? TEXT("true") : TEXT("false"));
 		DiagnosticFields.Add(TEXT("destroy_in_progress"), bDestroyInProgress ? TEXT("true") : TEXT("false"));
 		SubmitSessionDiagnostic(TEXT("join_lookup_deferred"), TEXT("info"), TEXT("Join lookup deferred until current transition finishes."), FString(), FString(), FString(), DiagnosticFields);
-		SchedulePendingFriendJoinRetry();
+		SchedulePendingFriendJoinRetry(TEXT("transition_in_progress"));
 		return true;
 	}
 
@@ -1241,13 +1245,28 @@ bool UT66SessionSubsystem::AttemptPendingFriendJoinLookup()
 	DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
 	SubmitSessionDiagnostic(TEXT("join_lookup_retry_scheduled"), TEXT("warning"), TEXT("Host party is not joinable yet. Retrying."), FString(), FString(), FString(), DiagnosticFields);
 	BroadcastStateChanged(TEXT("Host party is not joinable yet. Retrying..."));
-	SchedulePendingFriendJoinRetry();
+	SchedulePendingFriendJoinRetry(TEXT("lookup_start_failed"));
 	return true;
 }
 
-void UT66SessionSubsystem::SchedulePendingFriendJoinRetry()
+bool UT66SessionSubsystem::ShouldRetryPendingFriendJoin() const
+{
+	return PendingFriendJoinRetryPolicy == ET66PendingFriendJoinRetryPolicy::FriendLookupFallback;
+}
+
+void UT66SessionSubsystem::SchedulePendingFriendJoinRetry(const TCHAR* RetryReason)
 {
 	FLagScopedScope LagScope(GetWorld(), TEXT("MP-03 Session::SchedulePendingFriendJoinRetry"));
+
+	if (!ShouldRetryPendingFriendJoin())
+	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("retry_policy"), TEXT("disabled"));
+		DiagnosticFields.Add(TEXT("retry_reason"), RetryReason ? FString(RetryReason) : FString());
+		DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
+		SubmitSessionDiagnostic(TEXT("join_lookup_retry_suppressed"), TEXT("info"), TEXT("Retry was suppressed because this join is on the direct healthy path."), PendingJoinInviteId, PendingExpectedJoinLobbyId, PendingFoundLobbyId, DiagnosticFields);
+		return;
+	}
 
 	if (PendingJoinFriendPlayerId.IsEmpty() || PendingJoinFriendRetryTickerHandle.IsValid())
 	{
@@ -1255,6 +1274,12 @@ void UT66SessionSubsystem::SchedulePendingFriendJoinRetry()
 	}
 
 	const float RetryDelaySeconds = FMath::Max(0.05f, CVarT66PendingFriendJoinRetryDelaySeconds.GetValueOnGameThread());
+	TMap<FString, FString> DiagnosticFields;
+	DiagnosticFields.Add(TEXT("retry_policy"), TEXT("friend_lookup_fallback"));
+	DiagnosticFields.Add(TEXT("retry_delay_seconds"), FString::SanitizeFloat(RetryDelaySeconds));
+	DiagnosticFields.Add(TEXT("retry_reason"), RetryReason ? FString(RetryReason) : FString());
+	DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
+	SubmitSessionDiagnostic(TEXT("join_lookup_retry_timer_started"), TEXT("info"), TEXT("Scheduled fallback friend-session join retry."), PendingJoinInviteId, PendingExpectedJoinLobbyId, PendingFoundLobbyId, DiagnosticFields);
 	PendingJoinFriendRetryTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
 		FTickerDelegate::CreateUObject(this, &UT66SessionSubsystem::HandlePendingFriendJoinRetryTicker),
 		RetryDelaySeconds);
@@ -1279,6 +1304,7 @@ void UT66SessionSubsystem::ClearPendingJoinState()
 	PendingFoundLobbyId.Reset();
 	PendingDirectJoinConnectString.Reset();
 	PendingJoinFriendLookupAttempts = 0;
+	PendingFriendJoinRetryPolicy = ET66PendingFriendJoinRetryPolicy::Disabled;
 }
 
 bool UT66SessionSubsystem::HandlePendingFriendJoinRetryTicker(float DeltaTime)
@@ -2213,7 +2239,7 @@ void UT66SessionSubsystem::HandleFindFriendSessionComplete(int32 LocalUserNum, b
 			DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
 			SubmitSessionDiagnostic(TEXT("find_friend_session_retry"), TEXT("warning"), TEXT("Host party was not found yet. Retrying."), FString(), FString(), FoundLobbyId, DiagnosticFields);
 			BroadcastStateChanged(TEXT("Host party was not found yet. Retrying..."));
-			SchedulePendingFriendJoinRetry();
+			SchedulePendingFriendJoinRetry(TEXT("friend_session_not_found"));
 			return;
 		}
 
@@ -2235,7 +2261,7 @@ void UT66SessionSubsystem::HandleFindFriendSessionComplete(int32 LocalUserNum, b
 			DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
 			SubmitSessionDiagnostic(TEXT("find_friend_session_outdated_retry"), TEXT("warning"), TEXT("Found an outdated host party. Retrying."), FString(), FString(), FoundLobbyId, DiagnosticFields);
 			BroadcastStateChanged(TEXT("Found an outdated host party. Retrying..."));
-			SchedulePendingFriendJoinRetry();
+			SchedulePendingFriendJoinRetry(TEXT("friend_session_lobby_mismatch"));
 			return;
 		}
 
@@ -2308,7 +2334,7 @@ void UT66SessionSubsystem::HandleJoinSessionComplete(FName SessionName, EOnJoinS
 		DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
 		SubmitSessionDiagnostic(TEXT("join_session_retry"), TEXT("warning"), TEXT("Join target was not ready. Retrying."), FString(), FString(), FString(), DiagnosticFields);
 		BroadcastStateChanged(TEXT("Join target was not ready. Retrying..."));
-		SchedulePendingFriendJoinRetry();
+		SchedulePendingFriendJoinRetry(TEXT("join_session_not_ready"));
 		return;
 	}
 

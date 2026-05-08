@@ -480,6 +480,24 @@ FReply UT66MiniCharacterSelectScreen::HandleHeroClicked(const FName HeroID)
 
 void UT66MiniCharacterSelectScreen::RebuildHeroSpriteBrushes(const TArray<FT66MiniHeroDefinition>& Heroes)
 {
+	if (HeroSpriteBrushes.Num() == Heroes.Num())
+	{
+		bool bHasAllBrushes = true;
+		for (const FT66MiniHeroDefinition& Hero : Heroes)
+		{
+			if (!HeroSpriteBrushes.Contains(Hero.HeroID))
+			{
+				bHasAllBrushes = false;
+				break;
+			}
+		}
+
+		if (bHasAllBrushes)
+		{
+			return;
+		}
+	}
+
 	HeroSpriteBrushes.Reset();
 
 	UT66MiniVisualSubsystem* VisualSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr;

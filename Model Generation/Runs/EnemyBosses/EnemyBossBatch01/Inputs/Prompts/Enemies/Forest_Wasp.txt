@@ -1,0 +1,13 @@
+Use case: stylized-concept
+Asset type: Trellis source image for T66 regular enemy reconstruction
+Primary request: Create a clean full-body or whole-creature game enemy concept for Forest Wasp, EnemyID Forest_Wasp.
+Theme: Forest difficulty Medium; family Flying; role Flying.
+Visual concept: Large wasp with bright striped abdomen and leaf-like wings.
+CSV direction: Generate a clean game enemy concept of a giant forest wasp with striped body transparent background.
+Exact anatomy constraint: giant wasp, striped abdomen, six legs, transparent leaf-like wings, no humanoid features.
+Whole creature silhouette: full subject visible, all key limbs, wings, fins, legs, tail, and appendages visible, centered front-facing or clean orthographic three-quarter front view if needed for creature readability.
+Style: clean painted video game concept art, flat cel-shaded color blocks, simple readable materials, minimal surface noise, strong silhouette, no tiny facial detail, no texture clutter.
+Camera and framing: centered square image, orthographic-feeling camera, subject fills about 80 percent of frame, full subject visible with generous padding.
+Background and lighting: pure flat opaque magenta #FF00FF background, no alpha, no shadow, no floor plane, even ambient lighting, no highlights or reflections.
+Output must contain no text, no UI, no logo, no watermark.
+Negative: text, letters, watermark, UI, logo, caption, scene background, environment, floor, ground plane, cast shadow, contact shadow, drop shadow, gradient background, poster border, cropped body, headshot, portrait, half body, multiple characters, duplicate creature, extra random limbs, mutated anatomy, blurry output, photorealism, pixel art, noisy texture, cinematic lighting, dramatic shadows, rim light, glow effects, particle effects, smoke, transparent background, black background, white background.

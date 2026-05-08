@@ -1,0 +1,101 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Enemies\\Ocean_SharkPup\\Ocean_SharkPup_Trellis.glb",
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Models\\Ocean_SharkPup_QuadRetro.glb",
+  "output_blend": "",
+  "baked_texture": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Textures\\Ocean_SharkPup_QuadRetro_Bake1024.png",
+  "pixelated_texture": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Textures\\Ocean_SharkPup_QuadRetro_Pixelated_512.png",
+  "qa_renders": [
+    "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Renders\\Ocean_SharkPup_QuadRetro_front.png",
+    "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Renders\\Ocean_SharkPup_QuadRetro_right.png",
+    "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Renders\\Ocean_SharkPup_QuadRetro_back.png",
+    "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Renders\\Ocean_SharkPup_QuadRetro_oblique.png"
+  ],
+  "raw_triangles": 75980,
+  "raw_quads": 0,
+  "source_triangles_after_cleanup": 75973,
+  "retopo_triangles": 24976,
+  "retopo_quads": 12444,
+  "adjustable_values": {
+    "target_quads": 12000,
+    "adaptive_size": 50.0,
+    "adapt_quad_count": false,
+    "use_materials": true,
+    "use_normals": false,
+    "autodetect_hard_edges": true,
+    "symmetry_x": false,
+    "symmetry_y": false,
+    "symmetry_z": false,
+    "normalize_height": 2.0,
+    "merge_distance": 0.0001,
+    "delete_loose": true,
+    "recalculate_normals": true,
+    "shade_flat": true,
+    "qremesh_source_target_tris": 8000,
+    "bake_size": 1024,
+    "bake_margin": 16,
+    "cage_extrusion": 0.035,
+    "max_ray_distance": 0.12,
+    "dilate_pixels": 20,
+    "texture_size": 512,
+    "palette_mode": "none",
+    "palette_size": 0,
+    "palette_steps": 256,
+    "kmeans_iterations": 8,
+    "kmeans_sample_limit": 20000,
+    "dither_type": "none",
+    "dither_strength": 0.0,
+    "unlit_emission_material": true
+  },
+  "normalize_report": {
+    "initial_height": 0.5005151033401489,
+    "target_height": 2.0,
+    "final_size": [
+      4.002026081085205,
+      2.0570905208587646,
+      2.0
+    ],
+    "final_min": [
+      -2.0010130405426025,
+      -1.0285452604293823,
+      0.0
+    ],
+    "final_max": [
+      2.0010130405426025,
+      1.0285452604293823,
+      2.0
+    ]
+  },
+  "qremesh_source_report": {
+    "source_triangles": 75973,
+    "target_triangles": 8000,
+    "used_duplicate": true,
+    "output_triangles": 7999,
+    "decimate_ratio": 0.10530056730680637
+  },
+  "qremesh_report": {
+    "engine": "C:\\ProgramData\\Exoside\\QuadRemesher\\Datas_Blender\\QuadRemesherEngine_1.4\\xremesh.exe",
+    "input_fbx": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\inputMesh.fbx",
+    "output_fbx": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\retopo.fbx",
+    "settings": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\RetopoSettings.txt",
+    "progress": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\progress.txt",
+    "copied_input_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Working\\QuadRemesher\\inputMesh.fbx",
+    "copied_output_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Working\\QuadRemesher\\retopo.fbx",
+    "copied_settings": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Working\\QuadRemesher\\RetopoSettings.txt",
+    "copied_progress": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Enemies\\Ocean_SharkPup\\Working\\QuadRemesher\\progress.txt",
+    "elapsed_seconds": 26.058,
+    "last_progress": 2.0,
+    "last_text": ""
+  },
+  "pixel_report": {
+    "source_size": [
+      1024,
+      1024
+    ],
+    "texture_size": [
+      512,
+      512
+    ],
+    "palette": [],
+    "palette_count": 0
+  }
+}

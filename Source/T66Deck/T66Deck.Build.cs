@@ -33,8 +33,6 @@ public class T66Deck : ModuleRules
 
 		AddLooseDeckRuntimeDependency("Content/Deck/Data/...");
 		AddLooseDeckRuntimeDependency("SourceAssets/Deck/...");
-		AddLooseDeckRuntimeDependency("UI/screens/minigames/chadpocalypse_deckbuilder/reference/chadpocalypse_deckbuilder_main_menu_mockup_1920x1080_imagegen_20260503_v2.png");
-		AddLooseDeckRuntimeDependency("UI/screens/minigames/chadpocalypse_deckbuilder/reference/chadpocalypse_deckbuilder_gameplay_mockup_1920x1080_imagegen_20260503_v2.png");
 
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory));
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public"));

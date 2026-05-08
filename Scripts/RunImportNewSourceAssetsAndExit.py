@@ -19,7 +19,6 @@ TARGET_RELATIVE_PATHS = {
     "Cow.glb",
     "FullBody.glb",
     "RoboCow.glb",
-    "TeleportPad.glb",
 }
 
 

@@ -63,7 +63,8 @@ enum class ET66ScreenType : uint8
 	// Legacy serialized value retained so old Blueprint defaults can be loaded and repaired.
 	PartySizePicker = 45 UMETA(Hidden),
 	IdleMainMenu = 46 UMETA(DisplayName = "Idle Chadpocalypse Main Menu"),
-	DeckMainMenu = 47 UMETA(DisplayName = "Chadpocalypse Deckbuilder Main Menu")
+	DeckMainMenu = 47 UMETA(DisplayName = "Chadpocalypse Deckbuilder Main Menu"),
+	VersusMainMenu = 48 UMETA(DisplayName = "Versus Main Menu")
 };
 
 UENUM(BlueprintType)

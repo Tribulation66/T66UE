@@ -2,6 +2,33 @@
 
 #include "Core/Backend/T66BackendPrivate.h"
 
+namespace
+{
+	int32 T66GetJsonIntOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, int32 DefaultValue)
+	{
+		double Value = 0.0;
+		return Json.IsValid() && Json->TryGetNumberField(FieldName, Value) ? static_cast<int32>(Value) : DefaultValue;
+	}
+
+	int64 T66GetJsonInt64OrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, int64 DefaultValue)
+	{
+		double Value = 0.0;
+		return Json.IsValid() && Json->TryGetNumberField(FieldName, Value) ? static_cast<int64>(Value) : DefaultValue;
+	}
+
+	FString T66GetJsonStringOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, const FString& DefaultValue = FString())
+	{
+		FString Value;
+		return Json.IsValid() && Json->TryGetStringField(FieldName, Value) ? Value : DefaultValue;
+	}
+
+	bool T66GetJsonBoolOrDefault(const TSharedPtr<FJsonObject>& Json, const FString& FieldName, bool bDefaultValue)
+	{
+		bool bValue = false;
+		return Json.IsValid() && Json->TryGetBoolField(FieldName, bValue) ? bValue : bDefaultValue;
+	}
+}
+
 void UT66BackendSubsystem::FetchDailyLeaderboard(const FString& Filter)
 {
 	if (!IsBackendConfigured())
@@ -306,12 +333,8 @@ void UT66BackendSubsystem::OnMyRankResponseReceived(FHttpRequestPtr Request, FHt
 		return;
 	}
 
-	int32 Rank = 0;
-	if (Json->HasTypedField<EJson::Number>(TEXT("rank")))
-	{
-		Rank = static_cast<int32>(Json->GetNumberField(TEXT("rank")));
-	}
-	const int32 Total = static_cast<int32>(Json->GetNumberField(TEXT("total_entries")));
+	const int32 Rank = T66GetJsonIntOrDefault(Json, TEXT("rank"), 0);
+	const int32 Total = T66GetJsonIntOrDefault(Json, TEXT("total_entries"), 0);
 
 	Cached.bSuccess = true;
 	Cached.Rank = Rank;
@@ -482,7 +505,7 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 	}
 
 	FCachedLeaderboard Cached;
-	Cached.TotalEntries = static_cast<int32>(Json->GetNumberField(TEXT("total_entries")));
+	Cached.TotalEntries = T66GetJsonIntOrDefault(Json, TEXT("total_entries"), 0);
 
 	for (const TSharedPtr<FJsonValue>& Val : *EntriesArray)
 	{
@@ -495,8 +518,8 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 		const TSharedPtr<FJsonObject>& E = *EntryObj;
 
 		FLeaderboardEntry Entry;
-		Entry.Rank = static_cast<int32>(E->GetNumberField(TEXT("rank")));
-		Entry.PlayerName = E->GetStringField(TEXT("display_name"));
+		Entry.Rank = T66GetJsonIntOrDefault(E, TEXT("rank"), 0);
+		Entry.PlayerName = T66GetJsonStringOrDefault(E, TEXT("display_name"));
 		Entry.PlayerNames.Add(Entry.PlayerName);
 		E->TryGetStringField(TEXT("steam_id"), Entry.SteamId);
 		if (!Entry.SteamId.IsEmpty())
@@ -534,23 +557,23 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 			}
 		}
 
-		Entry.Score = static_cast<int64>(E->GetNumberField(TEXT("score")));
+		Entry.Score = T66GetJsonInt64OrDefault(E, TEXT("score"), 0);
 		if (bIsSpeedRunLeaderboard)
 		{
 			Entry.TimeSeconds = static_cast<float>(Entry.Score) / 1000.0f;
 		}
-		Entry.StageReached = static_cast<int32>(E->GetNumberField(TEXT("stage_reached")));
+		Entry.StageReached = T66GetJsonIntOrDefault(E, TEXT("stage_reached"), 0);
 
-		const FString HeroIdStr = E->GetStringField(TEXT("hero_id"));
+		const FString HeroIdStr = T66GetJsonStringOrDefault(E, TEXT("hero_id"));
 		Entry.HeroID = HeroIdStr.IsEmpty() ? NAME_None : FName(*HeroIdStr);
 
-		const FString PartySizeStr = E->GetStringField(TEXT("party_size"));
+		const FString PartySizeStr = T66GetJsonStringOrDefault(E, TEXT("party_size"));
 		Entry.PartySize = ApiStringToPartySize(PartySizeStr);
 
 		Entry.bIsLocalPlayer = false;
 
-		Entry.EntryId = E->GetStringField(TEXT("entry_id"));
-		Entry.bHasRunSummary = E->HasField(TEXT("has_run_summary")) && E->GetBoolField(TEXT("has_run_summary"));
+		Entry.EntryId = T66GetJsonStringOrDefault(E, TEXT("entry_id"));
+		Entry.bHasRunSummary = T66GetJsonBoolOrDefault(E, TEXT("has_run_summary"), false);
 
 		FString AvUrl;
 		if (E->TryGetStringField(TEXT("avatar_url"), AvUrl))

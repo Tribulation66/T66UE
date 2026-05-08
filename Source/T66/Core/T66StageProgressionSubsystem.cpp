@@ -108,8 +108,8 @@ FT66StageProgressionSnapshot UT66StageProgressionSubsystem::BuildSnapshot() cons
 	Snapshot.DifficultyEndStage = PlayerExperience
 		? PlayerExperience->GetDifficultyEndStage(Snapshot.SelectedDifficulty)
 		: 4;
-	Snapshot.DifficultyStartStage = FMath::Clamp(Snapshot.DifficultyStartStage, 1, 23);
-	Snapshot.DifficultyEndStage = FMath::Clamp(Snapshot.DifficultyEndStage, Snapshot.DifficultyStartStage, 23);
+	Snapshot.DifficultyStartStage = FMath::Clamp(Snapshot.DifficultyStartStage, 1, 20);
+	Snapshot.DifficultyEndStage = FMath::Clamp(Snapshot.DifficultyEndStage, Snapshot.DifficultyStartStage, 20);
 	Snapshot.LocalStageCount = FMath::Max(1, Snapshot.DifficultyEndStage - Snapshot.DifficultyStartStage + 1);
 	Snapshot.LocalStageIndex = FMath::Clamp(Snapshot.GlobalStage - Snapshot.DifficultyStartStage + 1, 1, Snapshot.LocalStageCount);
 	Snapshot.DifficultySkulls = RunState ? RunState->GetDifficultySkulls() : 0;

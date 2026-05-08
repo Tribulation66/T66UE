@@ -14,7 +14,6 @@
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "UObject/SoftObjectPath.h"
 
 AT66PilotableTractor::AT66PilotableTractor()
 {
@@ -45,7 +44,7 @@ AT66PilotableTractor::AT66PilotableTractor()
 	VisualMesh->SetupAttachment(TractorRoot);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>();
 
 	RemainingPilotSeconds = TotalPilotSeconds;
 	ApplyRarityVisuals();
@@ -291,6 +290,14 @@ void AT66PilotableTractor::DismountHero(bool bDestroyAfterExit)
 
 	if (bDestroyAfterExit)
 	{
+		if (IsShowcaseReusable())
+		{
+			RemainingPilotSeconds = TotalPilotSeconds;
+			bConsumed = false;
+			RefreshInteractionPrompt();
+			return;
+		}
+
 		bConsumed = true;
 		Destroy();
 	}
@@ -301,6 +308,14 @@ void AT66PilotableTractor::ExpireTractor()
 	if (MountedHero.IsValid())
 	{
 		DismountHero(false);
+	}
+
+	if (IsShowcaseReusable())
+	{
+		RemainingPilotSeconds = TotalPilotSeconds;
+		bConsumed = false;
+		RefreshInteractionPrompt();
+		return;
 	}
 
 	bConsumed = true;

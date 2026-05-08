@@ -6,7 +6,6 @@
 #include "Core/T66InteractionPromptSubsystem.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/StaticMeshComponent.h"
-#include "UObject/SoftObjectPath.h"
 
 namespace
 {
@@ -61,13 +60,13 @@ namespace
 
 AT66ArcadeTruckInteractable::AT66ArcadeTruckInteractable()
 {
-	ArcadeData.ArcadeID = FName(TEXT("Arcade_Truck"));
-	ArcadeData.DisplayName = NSLOCTEXT("T66.Arcade", "TruckDisplayName", "Arcade Truck");
-	ArcadeData.InteractionVerb = NSLOCTEXT("T66.Arcade", "TruckInteractVerb", "pilot truck");
-	ArcadeData.ExitInteractionVerb = NSLOCTEXT("T66.Arcade", "TruckExitVerb", "exit truck");
+	ArcadeData.ArcadeID = FName(TEXT("Vehicle"));
+	ArcadeData.DisplayName = NSLOCTEXT("T66.Arcade", "VehicleDisplayName", "Vehicle");
+	ArcadeData.InteractionVerb = NSLOCTEXT("T66.Arcade", "VehicleInteractVerb", "pilot vehicle");
+	ArcadeData.ExitInteractionVerb = NSLOCTEXT("T66.Arcade", "VehicleExitVerb", "exit vehicle");
 	ArcadeData.ArcadeClass = ET66ArcadeInteractableClass::WorldMode;
 	ArcadeData.ArcadeGameType = ET66ArcadeGameType::None;
-	ArcadeData.DisplayMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
+	ArcadeData.DisplayMesh = TSoftObjectPtr<UStaticMesh>();
 	ArcadeData.DisplayMeshScale = FVector(1.f, 1.f, 1.f);
 	ArcadeData.Tint = FLinearColor(0.94f, 0.53f, 0.17f, 1.f);
 	ArcadeData.Modifiers.FloatValues.Add(T66ArcadeModifierKeys::VehicleDuration, 20.f);
@@ -80,6 +79,15 @@ AT66ArcadeTruckInteractable::AT66ArcadeTruckInteractable()
 	ResolvedArcadeData = ArcadeData;
 	ApplyArcadeTruckTuning();
 	ApplyRarityVisuals();
+}
+
+void AT66ArcadeTruckInteractable::SetArcadeRowID(FName InArcadeRowID)
+{
+	ArcadeRowID = InArcadeRowID;
+	RefreshResolvedArcadeData();
+	ApplyArcadeTruckTuning();
+	ApplyRarityVisuals();
+	RefreshInteractionPrompt();
 }
 
 void AT66ArcadeTruckInteractable::OnConstruction(const FTransform& Transform)
@@ -195,10 +203,10 @@ FText AT66ArcadeTruckInteractable::ResolvePromptVerb() const
 	{
 		return !Data.ExitInteractionVerb.IsEmpty()
 			? Data.ExitInteractionVerb
-			: NSLOCTEXT("T66.Arcade", "FallbackTruckExitVerb", "exit truck");
+			: NSLOCTEXT("T66.Arcade", "FallbackVehicleExitVerb", "exit vehicle");
 	}
 
 	return !Data.InteractionVerb.IsEmpty()
 		? Data.InteractionVerb
-		: NSLOCTEXT("T66.Arcade", "FallbackTruckInteractVerb", "pilot truck");
+		: NSLOCTEXT("T66.Arcade", "FallbackVehicleInteractVerb", "pilot vehicle");
 }

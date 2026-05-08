@@ -23,8 +23,6 @@ KNOWN_TEXTURE_PARAMS = [
 ]
 
 ASSETS_TO_INSPECT = [
-    "/Game/World/Props/Rock.Rock",
-    "/Game/World/Props/Tree2.Tree2",
     "/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black",
     "/Game/Characters/Enemies/GoblinThief/Black/BlackGoblinRun.BlackGoblinRun",
     "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",

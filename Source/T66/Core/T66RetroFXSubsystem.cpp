@@ -5,7 +5,9 @@
 #include "Components/MeshComponent.h"
 #include "Core/T66PixelationSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/Texture.h"
@@ -14,10 +16,13 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
+#include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialParameterCollection.h"
 #include "Materials/MaterialParameterCollectionInstance.h"
+#include "UnrealClient.h"
+#include "UObject/SoftObjectPath.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66RetroFXRuntime, Log, All);
 
@@ -46,11 +51,28 @@ namespace
 	static const TCHAR* GeometryCollectionPath = TEXT("/Game/Materials/Retro/MPC_T66_RetroGeometry.MPC_T66_RetroGeometry");
 	static constexpr float RetroPostProcessPriority = 5000.0f;
 
+	template <typename TObjectType>
+	static TObjectType* ResolveLoadedRetroObject(const TCHAR* ObjectPath)
+	{
+		if (!ObjectPath || ObjectPath[0] == TEXT('\0'))
+		{
+			return nullptr;
+		}
+
+		const FSoftObjectPath SoftPath(ObjectPath);
+		if (UObject* Resolved = SoftPath.ResolveObject())
+		{
+			return Cast<TObjectType>(Resolved);
+		}
+
+		return FindObject<TObjectType>(nullptr, ObjectPath);
+	}
+
 	static UMaterialInterface* LoadFirstAvailableMaterial(const TCHAR* const* CandidatePaths, int32 CandidateCount)
 	{
 		for (int32 Index = 0; Index < CandidateCount; ++Index)
 		{
-			if (UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, CandidatePaths[Index]))
+			if (UMaterialInterface* Material = ResolveLoadedRetroObject<UMaterialInterface>(CandidatePaths[Index]))
 			{
 				return Material;
 			}
@@ -133,11 +155,11 @@ namespace
 		static TObjectPtr<UTexture> Cached = nullptr;
 		if (!Cached)
 		{
-			Cached = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
-		}
-		if (!Cached)
-		{
-			Cached = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+			Cached = ResolveLoadedRetroObject<UTexture>(TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+			if (!Cached)
+			{
+				Cached = ResolveLoadedRetroObject<UTexture>(TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+			}
 		}
 		return Cached.Get();
 	}
@@ -377,6 +399,7 @@ namespace
 void UT66RetroFXSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+	QueueRetroAssetPreloads();
 }
 
 void UT66RetroFXSubsystem::Deinitialize()
@@ -388,6 +411,7 @@ void UT66RetroFXSubsystem::Deinitialize()
 	ManagedGeometryWorld = nullptr;
 	bWorldGeometryActive = false;
 	bCharacterGeometryActive = false;
+	bManagedGeometryFullScanComplete = false;
 	bResolutionRuntimeActive = false;
 
 	ActiveVolume = nullptr;
@@ -404,6 +428,69 @@ void UT66RetroFXSubsystem::Deinitialize()
 	GlbRetroGeometryMaterial = nullptr;
 
 	Super::Deinitialize();
+}
+
+void UT66RetroFXSubsystem::QueueRetroAssetPreloads()
+{
+	if (RetroAssetLoadHandle.IsValid())
+	{
+		return;
+	}
+
+	TArray<FSoftObjectPath> Paths;
+	auto AddPath = [&Paths](const TCHAR* ObjectPath)
+	{
+		if (ObjectPath && ObjectPath[0] != TEXT('\0'))
+		{
+			Paths.AddUnique(FSoftObjectPath(ObjectPath));
+		}
+	};
+
+	for (const TCHAR* CandidatePath : Ps1CandidatePaths)
+	{
+		AddPath(CandidatePath);
+	}
+	for (uint8 Mask = 0; Mask < 8; ++Mask)
+	{
+		Paths.AddUnique(FSoftObjectPath(GetPs1VariantMaterialPath(Mask)));
+	}
+	AddPath(N64BlurPath);
+	AddPath(N64BlurReplaceTonemapperPath);
+	AddPath(ChromaticAberrationMaterialPath);
+	AddPath(ResolutionCollectionPath);
+	AddPath(GeometryCollectionPath);
+	AddPath(CharacterRetroGeometryMaterialPath);
+	AddPath(EnvironmentRetroGeometryMaterialPath);
+	AddPath(FbxRetroGeometryMaterialPath);
+	AddPath(GlbRetroGeometryMaterialPath);
+	AddPath(TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+	AddPath(TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+
+	for (int32 Index = Paths.Num() - 1; Index >= 0; --Index)
+	{
+		if (Paths[Index].IsNull() || Paths[Index].ResolveObject())
+		{
+			Paths.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+		}
+	}
+
+	if (Paths.Num() <= 0)
+	{
+		return;
+	}
+
+	RetroAssetLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		Paths,
+		FStreamableDelegate::CreateUObject(this, &UT66RetroFXSubsystem::HandleRetroAssetPreloadComplete));
+}
+
+void UT66RetroFXSubsystem::HandleRetroAssetPreloadComplete()
+{
+	RetroAssetLoadHandle.Reset();
+	if (UWorld* World = ResolveWorld(nullptr))
+	{
+		ApplyCurrentSettings(World);
+	}
 }
 
 void UT66RetroFXSubsystem::ApplyCurrentSettings(UWorld* World)
@@ -811,6 +898,10 @@ void UT66RetroFXSubsystem::ApplyGeometryMaterials(const FT66RetroFXSettings& Set
 {
 	const bool bEnableWorldGeometry = HasWorldGeometryEnabled(Settings) && !UsesMainMapTerrain(World);
 	const bool bEnableCharacterGeometry = HasCharacterGeometryEnabled(Settings);
+	const bool bSameManagedWorld = ManagedGeometryWorld == World;
+	const bool bGeometryEnablementChanged =
+		bWorldGeometryActive != bEnableWorldGeometry
+		|| bCharacterGeometryActive != bEnableCharacterGeometry;
 
 	bWorldGeometryActive = bEnableWorldGeometry;
 	bCharacterGeometryActive = bEnableCharacterGeometry;
@@ -820,10 +911,19 @@ void UT66RetroFXSubsystem::ApplyGeometryMaterials(const FT66RetroFXSettings& Set
 	{
 		RestoreManagedMaterials(true, true);
 		CleanupManagedSlots();
+		bManagedGeometryFullScanComplete = false;
 		return;
 	}
 
-	RefreshWorldGeometryMaterials(World, bEnableWorldGeometry, bEnableCharacterGeometry);
+	const bool bNeedsFullWorldScan =
+		!bSameManagedWorld
+		|| bGeometryEnablementChanged
+		|| !bManagedGeometryFullScanComplete;
+	if (bNeedsFullWorldScan)
+	{
+		RefreshWorldGeometryMaterials(World, bEnableWorldGeometry, bEnableCharacterGeometry);
+		bManagedGeometryFullScanComplete = true;
+	}
 	RestoreManagedMaterials(!bEnableWorldGeometry, !bEnableCharacterGeometry);
 	CleanupManagedSlots();
 
@@ -841,6 +941,9 @@ void UT66RetroFXSubsystem::RefreshWorldGeometryMaterials(UWorld* World, bool bEn
 		return;
 	}
 
+	// Full-world scan is needed only when geometry material swapping first turns on,
+	// changes enabled groups, or moves to a new world. Actor-spawn binding handles
+	// incremental runtime additions after the initial pass.
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
 		RefreshActorGeometryMaterials(*It, bEnableWorldGeometry, bEnableCharacterGeometry);
@@ -1002,6 +1105,7 @@ void UT66RetroFXSubsystem::UpdateGeometrySpawnBinding(UWorld* World, bool bShoul
 		RestoreManagedMaterials(true, true);
 		ManagedGeometrySlots.Reset();
 		ManagedGeometryWorld = nullptr;
+		bManagedGeometryFullScanComplete = false;
 	}
 
 	if (!bShouldListen)
@@ -1012,6 +1116,7 @@ void UT66RetroFXSubsystem::UpdateGeometrySpawnBinding(UWorld* World, bool bShoul
 			GeometrySpawnHandle.Reset();
 		}
 		ManagedGeometryWorld = nullptr;
+		bManagedGeometryFullScanComplete = false;
 		return;
 	}
 
@@ -1050,24 +1155,27 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadPs1PostProcessMaterialVariant(cons
 {
 	const uint8 VariantMask = BuildPs1VariantMask(Settings);
 	const FString VariantPath = GetPs1VariantMaterialPath(VariantMask);
-	if (UMaterialInterface* VariantMaterial = LoadObject<UMaterialInterface>(nullptr, *VariantPath))
+	if (UMaterialInterface* VariantMaterial = ResolveLoadedRetroObject<UMaterialInterface>(*VariantPath))
 	{
 		return VariantMaterial;
 	}
 
+	QueueRetroAssetPreloads();
 	return LoadPs1PostProcessMaterial();
 }
 
 UMaterialInterface* UT66RetroFXSubsystem::LoadN64BlurMaterial(bool bReplaceTonemapper)
 {
-	return LoadObject<UMaterialInterface>(nullptr, bReplaceTonemapper ? N64BlurReplaceTonemapperPath : N64BlurPath);
+	QueueRetroAssetPreloads();
+	return ResolveLoadedRetroObject<UMaterialInterface>(bReplaceTonemapper ? N64BlurReplaceTonemapperPath : N64BlurPath);
 }
 
 UMaterialInterface* UT66RetroFXSubsystem::LoadCharacterRetroGeometryMaterial()
 {
 	if (!CharacterRetroGeometryMaterial)
 	{
-		CharacterRetroGeometryMaterial = LoadObject<UMaterialInterface>(nullptr, CharacterRetroGeometryMaterialPath);
+		QueueRetroAssetPreloads();
+		CharacterRetroGeometryMaterial = ResolveLoadedRetroObject<UMaterialInterface>(CharacterRetroGeometryMaterialPath);
 	}
 	return CharacterRetroGeometryMaterial;
 }
@@ -1076,7 +1184,8 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadEnvironmentRetroGeometryMaterial()
 {
 	if (!EnvironmentRetroGeometryMaterial)
 	{
-		EnvironmentRetroGeometryMaterial = LoadObject<UMaterialInterface>(nullptr, EnvironmentRetroGeometryMaterialPath);
+		QueueRetroAssetPreloads();
+		EnvironmentRetroGeometryMaterial = ResolveLoadedRetroObject<UMaterialInterface>(EnvironmentRetroGeometryMaterialPath);
 	}
 	return EnvironmentRetroGeometryMaterial;
 }
@@ -1085,7 +1194,8 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadFbxRetroGeometryMaterial()
 {
 	if (!FbxRetroGeometryMaterial)
 	{
-		FbxRetroGeometryMaterial = LoadObject<UMaterialInterface>(nullptr, FbxRetroGeometryMaterialPath);
+		QueueRetroAssetPreloads();
+		FbxRetroGeometryMaterial = ResolveLoadedRetroObject<UMaterialInterface>(FbxRetroGeometryMaterialPath);
 	}
 	return FbxRetroGeometryMaterial;
 }
@@ -1094,21 +1204,24 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadGlbRetroGeometryMaterial()
 {
 	if (!GlbRetroGeometryMaterial)
 	{
-		GlbRetroGeometryMaterial = LoadObject<UMaterialInterface>(nullptr, GlbRetroGeometryMaterialPath);
+		QueueRetroAssetPreloads();
+		GlbRetroGeometryMaterial = ResolveLoadedRetroObject<UMaterialInterface>(GlbRetroGeometryMaterialPath);
 	}
 	return GlbRetroGeometryMaterial;
 }
 
 UMaterialInterface* UT66RetroFXSubsystem::LoadChromaticAberrationMaterial()
 {
-	return LoadObject<UMaterialInterface>(nullptr, ChromaticAberrationMaterialPath);
+	QueueRetroAssetPreloads();
+	return ResolveLoadedRetroObject<UMaterialInterface>(ChromaticAberrationMaterialPath);
 }
 
 UMaterialParameterCollection* UT66RetroFXSubsystem::LoadResolutionCollection()
 {
 	if (!ResolutionCollection)
 	{
-		ResolutionCollection = LoadObject<UMaterialParameterCollection>(nullptr, ResolutionCollectionPath);
+		QueueRetroAssetPreloads();
+		ResolutionCollection = ResolveLoadedRetroObject<UMaterialParameterCollection>(ResolutionCollectionPath);
 	}
 	return ResolutionCollection;
 }
@@ -1117,7 +1230,8 @@ UMaterialParameterCollection* UT66RetroFXSubsystem::LoadGeometryCollection()
 {
 	if (!GeometryCollection)
 	{
-		GeometryCollection = LoadObject<UMaterialParameterCollection>(nullptr, GeometryCollectionPath);
+		QueueRetroAssetPreloads();
+		GeometryCollection = ResolveLoadedRetroObject<UMaterialParameterCollection>(GeometryCollectionPath);
 	}
 	return GeometryCollection;
 }

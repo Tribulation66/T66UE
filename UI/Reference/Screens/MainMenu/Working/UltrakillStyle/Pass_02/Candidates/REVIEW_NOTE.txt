@@ -1,0 +1,8 @@
+User review for pass 02:
+- Settings button should not have an S next to it.
+- Language button should not have an L next to it.
+- Power off button should not have a Q next to it.
+- Solo and Easy should be dropdown fields.
+- Top bar buttons should all be dedicated bordered buttons.
+- Global Leaderboard title should be centered at the top of the right panel.
+- Preserve one currency indicator only; keep the power/quit button as icon-only.

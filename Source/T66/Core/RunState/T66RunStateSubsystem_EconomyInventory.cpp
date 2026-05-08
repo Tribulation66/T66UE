@@ -12,70 +12,64 @@ float UT66RunStateSubsystem::AddGamblerAngerFromBet(int32 BetGold)
 
 float UT66RunStateSubsystem::AddCasinoAngerFromGold(int32 AngerGold)
 {
-	const float Delta = FMath::Clamp(static_cast<float>(FMath::Max(0, AngerGold)) / static_cast<float>(VendorAngerThresholdGold), 0.f, 1.f);
+	const float Delta = FMath::Clamp(static_cast<float>(FMath::Max(0, AngerGold)) / static_cast<float>(ShopAngerThresholdGold), 0.f, 1.f);
 	const float NewAnger01 = FMath::Clamp(GamblerAnger01 + Delta, 0.f, 1.f);
-	const int32 NewVendorAngerGold = FMath::RoundToInt(NewAnger01 * static_cast<float>(VendorAngerThresholdGold));
-	if (FMath::IsNearlyEqual(NewAnger01, GamblerAnger01) && VendorAngerGold == NewVendorAngerGold)
+	const int32 NewShopAngerGold = FMath::RoundToInt(NewAnger01 * static_cast<float>(ShopAngerThresholdGold));
+	if (FMath::IsNearlyEqual(NewAnger01, GamblerAnger01) && ShopAngerGold == NewShopAngerGold)
 	{
 		return GamblerAnger01;
 	}
 
 	GamblerAnger01 = NewAnger01;
-	VendorAngerGold = NewVendorAngerGold;
+	ShopAngerGold = NewShopAngerGold;
 	GamblerAngerChanged.Broadcast();
-	VendorChanged.Broadcast();
+	ShopChanged.Broadcast();
 	return GamblerAnger01;
 }
 
 
 void UT66RunStateSubsystem::ResetGamblerAnger()
 {
-	if (FMath::IsNearlyZero(GamblerAnger01) && VendorAngerGold == 0) return;
+	if (FMath::IsNearlyZero(GamblerAnger01) && ShopAngerGold == 0) return;
 	GamblerAnger01 = 0.f;
-	VendorAngerGold = 0;
+	ShopAngerGold = 0;
 	GamblerAngerChanged.Broadcast();
-	VendorChanged.Broadcast();
+	ShopChanged.Broadcast();
 }
 
 
-void UT66RunStateSubsystem::ResetVendorForStage()
+void UT66RunStateSubsystem::ResetShopForStage()
 {
-	VendorAngerGold = 0;
-	VendorStockStage = 0;
-	VendorStockItemIDs.Reset();
-	VendorStockSlots.Reset();
-	VendorStockSold.Reset();
-	bVendorBoughtSomethingThisStage = false;
-	VendorChanged.Broadcast();
+	ShopAngerGold = 0;
+	ShopStockStage = 0;
+	ShopStockItemIDs.Reset();
+	ShopStockSlots.Reset();
+	ShopStockSold.Reset();
+	bBoughtFromShopThisStage = false;
+	ShopChanged.Broadcast();
 }
 
 
-void UT66RunStateSubsystem::ResetVendorAnger()
+void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 {
-	ResetGamblerAnger();
-}
-
-
-void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
-{
-	const int32 Stage = FMath::Clamp(CurrentStage, 1, 23);
-	if (VendorStockStage == Stage && VendorStockItemIDs.Num() > 0 && VendorStockSold.Num() == VendorStockItemIDs.Num())
+	const int32 Stage = FMath::Clamp(CurrentStage, 1, 20);
+	if (ShopStockStage == Stage && ShopStockItemIDs.Num() > 0 && ShopStockSold.Num() == ShopStockItemIDs.Num())
 	{
 		return;
 	}
 
 	// Reset reroll counter and seen-counts when stage changes.
-	if (VendorStockRerollStage != Stage)
+	if (ShopStockRerollStage != Stage)
 	{
-		VendorStockRerollStage = Stage;
-		VendorStockRerollCounter = 0;
-		VendorSeenCounts.Reset();
+		ShopStockRerollStage = Stage;
+		ShopStockRerollCounter = 0;
+		ShopSeenCounts.Reset();
 	}
 
-	VendorStockStage = Stage;
-	VendorStockItemIDs.Reset();
-	VendorStockSold.Reset();
-	VendorStockSlots.Reset();
+	ShopStockStage = Stage;
+	ShopStockItemIDs.Reset();
+	ShopStockSold.Reset();
+	ShopStockSlots.Reset();
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	if (!GI)
@@ -91,11 +85,11 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		};
 		for (const FT66InventorySlot& Slot : FallbackStock)
 		{
-			VendorStockSlots.Add(Slot);
-			VendorStockItemIDs.Add(Slot.ItemTemplateID);
+			ShopStockSlots.Add(Slot);
+			ShopStockItemIDs.Add(Slot.ItemTemplateID);
 		}
-		VendorStockSold.Init(false, VendorStockSlots.Num());
-		VendorChanged.Broadcast();
+		ShopStockSold.Init(false, ShopStockSlots.Num());
+		ShopChanged.Broadcast();
 		return;
 	}
 
@@ -143,7 +137,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	}
 
 	// Seed: per-stage and per-reroll, plus run seed so the first shop display is randomized each run.
-	int32 Seed = Stage * 777 + 13 + VendorStockRerollCounter * 10007;
+	int32 Seed = Stage * 777 + 13 + ShopStockRerollCounter * 10007;
 	if (UT66RngSubsystem* RngSub = GI->GetSubsystem<UT66RngSubsystem>())
 	{
 		Seed ^= RngSub->GetRunSeed();
@@ -157,11 +151,11 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	Weights.SetNumUninitialized(TemplatePool.Num());
 	for (int32 TemplateIndex = 0; TemplateIndex < TemplatePool.Num(); ++TemplateIndex)
 	{
-		const int32 Seen = VendorSeenCounts.FindRef(TemplatePool[TemplateIndex]);
+		const int32 Seen = ShopSeenCounts.FindRef(TemplatePool[TemplateIndex]);
 		Weights[TemplateIndex] = FMath::Max(WeightFloor, 1.0f / (1.0f + static_cast<float>(Seen) * DecayFactor));
 	}
 
-	const ET66ItemRarity SlotRarities[VendorDisplaySlotCount] =
+	const ET66ItemRarity SlotRarities[ShopDisplaySlotCount] =
 	{
 		ET66ItemRarity::Black,
 		ET66ItemRarity::Black,
@@ -170,12 +164,12 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		ET66ItemRarity::Yellow
 	};
 
-	for (int32 SlotIndex = 0; SlotIndex < VendorDisplaySlotCount; ++SlotIndex)
+	for (int32 SlotIndex = 0; SlotIndex < ShopDisplaySlotCount; ++SlotIndex)
 	{
 		float TotalWeight = 0.f;
 		for (int32 TemplateIndex = 0; TemplateIndex < TemplatePool.Num(); ++TemplateIndex)
 		{
-			if (!VendorStockItemIDs.Contains(TemplatePool[TemplateIndex]))
+			if (!ShopStockItemIDs.Contains(TemplatePool[TemplateIndex]))
 			{
 				TotalWeight += Weights[TemplateIndex];
 			}
@@ -189,7 +183,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		float Roll = Rng.FRand() * TotalWeight;
 		for (int32 TemplateIndex = 0; TemplateIndex < TemplatePool.Num(); ++TemplateIndex)
 		{
-			if (VendorStockItemIDs.Contains(TemplatePool[TemplateIndex]))
+			if (ShopStockItemIDs.Contains(TemplatePool[TemplateIndex]))
 			{
 				continue;
 			}
@@ -204,7 +198,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		{
 			for (int32 TemplateIndex = 0; TemplateIndex < TemplatePool.Num(); ++TemplateIndex)
 			{
-				if (!VendorStockItemIDs.Contains(TemplatePool[TemplateIndex]))
+				if (!ShopStockItemIDs.Contains(TemplatePool[TemplateIndex]))
 				{
 					Chosen = TemplatePool[TemplateIndex];
 					break;
@@ -216,7 +210,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 			Chosen = TemplatePool[0];
 		}
 
-		VendorSeenCounts.FindOrAdd(Chosen)++;
+		ShopSeenCounts.FindOrAdd(Chosen)++;
 
 		const ET66ItemRarity Rarity = SlotRarities[SlotIndex];
 		int32 RollMin = 1;
@@ -224,75 +218,75 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		FItemData::GetLine1RollRange(Rarity, RollMin, RollMax);
 		const int32 Rolled = Rng.RandRange(RollMin, RollMax);
 
-		VendorStockSlots.Add(FT66InventorySlot(Chosen, Rarity, Rolled));
-		VendorStockItemIDs.Add(Chosen);
+		ShopStockSlots.Add(FT66InventorySlot(Chosen, Rarity, Rolled));
+		ShopStockItemIDs.Add(Chosen);
 	}
 
-	VendorStockSold.Init(false, VendorStockSlots.Num());
-	VendorChanged.Broadcast();
+	ShopStockSold.Init(false, ShopStockSlots.Num());
+	ShopChanged.Broadcast();
 }
 
 
-void UT66RunStateSubsystem::RerollVendorStockForCurrentStage()
+void UT66RunStateSubsystem::RerollShopStockForCurrentStage()
 {
-	const int32 Stage = FMath::Clamp(CurrentStage, 1, 23);
-	if (VendorStockRerollStage != Stage)
+	const int32 Stage = FMath::Clamp(CurrentStage, 1, 20);
+	if (ShopStockRerollStage != Stage)
 	{
-		VendorStockRerollStage = Stage;
-		VendorStockRerollCounter = 0;
+		ShopStockRerollStage = Stage;
+		ShopStockRerollCounter = 0;
 	}
-	VendorStockRerollCounter = FMath::Clamp(VendorStockRerollCounter + 1, 0, 9999);
+	ShopStockRerollCounter = FMath::Clamp(ShopStockRerollCounter + 1, 0, 9999);
 
 	// Force regeneration even if the stage didn't change.
-	VendorStockStage = 0;
-	VendorStockItemIDs.Reset();
-	VendorStockSold.Reset();
-	EnsureVendorStockForCurrentStage();
-	// EnsureVendorStockForCurrentStage broadcasts VendorChanged.
+	ShopStockStage = 0;
+	ShopStockItemIDs.Reset();
+	ShopStockSold.Reset();
+	EnsureShopStockForCurrentStage();
+	// EnsureShopStockForCurrentStage broadcasts ShopChanged.
 }
 
 
-bool UT66RunStateSubsystem::IsVendorStockSlotSold(int32 Index) const
+bool UT66RunStateSubsystem::IsShopStockSlotSold(int32 Index) const
 {
-	if (Index < 0 || Index >= VendorStockSold.Num()) return true;
-	return VendorStockSold[Index];
+	if (Index < 0 || Index >= ShopStockSold.Num()) return true;
+	return ShopStockSold[Index];
 }
 
 
-bool UT66RunStateSubsystem::TryBuyVendorStockSlot(int32 Index)
+bool UT66RunStateSubsystem::TryBuyShopStockSlot(int32 Index)
 {
-	EnsureVendorStockForCurrentStage();
-	if (Index < 0 || Index >= VendorStockSlots.Num()) return false;
-	if (IsVendorStockSlotSold(Index)) return false;
+	EnsureShopStockForCurrentStage();
+	if (Index < 0 || Index >= ShopStockSlots.Num()) return false;
+	if (IsShopStockSlotSold(Index)) return false;
 	if (!HasInventorySpace()) return false;
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	FItemData D;
-	const FT66InventorySlot& Slot = VendorStockSlots[Index];
+	const FT66InventorySlot& Slot = ShopStockSlots[Index];
 	if (!GI || !GI->GetItemData(Slot.ItemTemplateID, D)) return false;
 	const int32 BuyPrice = D.GetBuyGoldForRarity(Slot.Rarity);
 	if (BuyPrice <= 0) return false;
 	if (!TrySpendGold(BuyPrice)) return false;
 
 	AddItemSlot(Slot);
-	VendorStockSold[Index] = true;
-	bVendorBoughtSomethingThisStage = true;
-	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("VendorPurchase=%s"), *Slot.ItemTemplateID.ToString()));
-	VendorChanged.Broadcast();
+	ShopStockSold[Index] = true;
+	bBoughtFromShopThisStage = true;
+	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ShopPurchase=%s"), *Slot.ItemTemplateID.ToString()));
+	ShopChanged.Broadcast();
 	return true;
 }
 
 
-bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingHit, bool bRngSuccess)
+bool UT66RunStateSubsystem::ResolveShopStealAttempt(int32 Index, bool bTimingHit, bool bRngSuccess)
 {
 	(void)bRngSuccess;
-	EnsureVendorStockForCurrentStage();
-	if (Index < 0 || Index >= VendorStockSlots.Num()) return false;
-	if (IsVendorStockSlotSold(Index)) return false;
+	EnsureShopStockForCurrentStage();
+	if (Index < 0 || Index >= ShopStockSlots.Num()) return false;
+	if (IsShopStockSlotSold(Index)) return false;
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	FItemData D;
-	const FT66InventorySlot& StealSlot = VendorStockSlots[Index];
+	const FT66InventorySlot& StealSlot = ShopStockSlots[Index];
 	if (!GI || !GI->GetItemData(StealSlot.ItemTemplateID, D)) return false;
 	const int32 BuyPrice = D.GetBuyGoldForRarity(StealSlot.Rarity);
 	if (BuyPrice <= 0) return false;
@@ -316,7 +310,7 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 		const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
 		const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
 		BaseChance = PlayerExperience
-			? PlayerExperience->GetDifficultyVendorStealSuccessChanceOnTimingHitBase(Difficulty)
+			? PlayerExperience->GetDifficultyShopStealSuccessChanceOnTimingHitBase(Difficulty)
 			: 0.65f;
 	}
 	BaseChance = FMath::Clamp(BaseChance, 0.f, 1.f);
@@ -343,30 +337,30 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 		}
 	}
 
-	LastVendorStealOutcome = ET66VendorStealOutcome::None;
+	LastShopStealOutcome = ET66ShopStealOutcome::None;
 	if (!bTimingHit)
 	{
-		LastVendorStealOutcome = ET66VendorStealOutcome::Miss;
+		LastShopStealOutcome = ET66ShopStealOutcome::Miss;
 	}
 	else if (!bSuccess)
 	{
-		LastVendorStealOutcome = ET66VendorStealOutcome::Failed;
+		LastShopStealOutcome = ET66ShopStealOutcome::Failed;
 	}
 	else if (!HasInventorySpace())
 	{
-		LastVendorStealOutcome = ET66VendorStealOutcome::InventoryFull;
+		LastShopStealOutcome = ET66ShopStealOutcome::InventoryFull;
 	}
 	else
 	{
-		LastVendorStealOutcome = ET66VendorStealOutcome::Success;
+		LastShopStealOutcome = ET66ShopStealOutcome::Success;
 	}
 
 	bool bGranted = false;
-	if (LastVendorStealOutcome == ET66VendorStealOutcome::Success)
+	if (LastShopStealOutcome == ET66ShopStealOutcome::Success)
 	{
 		AddItemSlot(StealSlot);
-		VendorStockSold[Index] = true;
-		AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("VendorSteal=%s"), *StealSlot.ItemTemplateID.ToString()));
+		ShopStockSold[Index] = true;
+		AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ShopSteal=%s"), *StealSlot.ItemTemplateID.ToString()));
 		bGranted = true;
 		// Success: no anger increase.
 	}
@@ -376,17 +370,17 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 		AddCasinoAngerFromGold(BuyPrice);
 	}
 
-	// Luck Rating tracking (quantity): vendor steal success means item granted with no anger increase.
+	// Luck Rating tracking (quantity): shop steal success means item granted with no anger increase.
 	RecordLuckQuantityBool(
-		FName(TEXT("VendorStealSuccess")),
-		(LastVendorStealOutcome == ET66VendorStealOutcome::Success),
+		FName(TEXT("ShopStealSuccess")),
+		(LastShopStealOutcome == ET66ShopStealOutcome::Success),
 		AppliedChance,
 		DrawIndex,
 		PreDrawSeed);
 
-	if (LastVendorStealOutcome == ET66VendorStealOutcome::Success)
+	if (LastShopStealOutcome == ET66ShopStealOutcome::Success)
 	{
-		VendorChanged.Broadcast();
+		ShopChanged.Broadcast();
 	}
 	return bGranted;
 }
@@ -720,7 +714,7 @@ bool UT66RunStateSubsystem::SellInventoryItemAt(int32 InventoryIndex)
 	BuybackPool.Add(Slot);
 	InventorySlots.RemoveAt(InventoryIndex);
 	RecomputeItemDerivedStats();
-	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Vendor,ItemID=%s"), SellGold, *Slot.ItemTemplateID.ToString()));
+	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Shop,ItemID=%s"), SellGold, *Slot.ItemTemplateID.ToString()));
 	GoldChanged.Broadcast();
 	InventoryChanged.Broadcast();
 	BuybackChanged.Broadcast();

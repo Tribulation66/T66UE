@@ -28,7 +28,6 @@
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "UI/Style/T66Style.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
@@ -393,7 +392,7 @@ void UT66GamblerOverlayWidget::RefreshCasinoGameChrome()
 		CasinoModeToggleText->SetText(
 			bShowingBuyback
 				? NSLOCTEXT("T66.Gambler", "Games", "GAMES")
-				: NSLOCTEXT("T66.Vendor", "Buyback", "BUYBACK"));
+				: NSLOCTEXT("T66.Shop", "Buyback", "BUYBACK"));
 	}
 	if (CasinoRerollButtonWidget.IsValid())
 	{
@@ -544,7 +543,7 @@ void UT66GamblerOverlayWidget::RefreshBuyback()
 		if (BuybackPriceTexts.IsValidIndex(i) && BuybackPriceTexts[i].IsValid())
 		{
 			BuybackPriceTexts[i]->SetText(bHasSlot
-				? FText::Format(NSLOCTEXT("T66.Vendor", "BuyPriceFormat", "BUY ({0}g)"), FText::AsNumber(SellPrice > 0 ? SellPrice : 1))
+				? FText::Format(NSLOCTEXT("T66.Shop", "BuyPriceFormat", "BUY ({0}g)"), FText::AsNumber(SellPrice > 0 ? SellPrice : 1))
 				: (Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY")));
 		}
 		if (BuybackBuyButtons.IsValidIndex(i) && BuybackBuyButtons[i].IsValid())
@@ -572,18 +571,18 @@ FReply UT66GamblerOverlayWidget::OnSellSelectedClicked()
 
 	if (SelectedInventoryIndex < 0)
 	{
-		SetStatus(NSLOCTEXT("T66.Vendor", "SelectItemToSell", "Select an item to sell."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		SetStatus(NSLOCTEXT("T66.Shop", "SelectItemToSell", "Select an item to sell."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 		return FReply::Handled();
 	}
 
 	const bool bSold = RunState->SellInventoryItemAt(SelectedInventoryIndex);
 	if (bSold)
 	{
-		SetStatus(NSLOCTEXT("T66.Vendor", "SoldStatus", "Sold."), FLinearColor(0.3f, 1.f, 0.4f, 1.f));
+		SetStatus(NSLOCTEXT("T66.Shop", "SoldStatus", "Sold."), FLinearColor(0.3f, 1.f, 0.4f, 1.f));
 	}
 	else
 	{
-		SetStatus(NSLOCTEXT("T66.Vendor", "CouldNotSell", "Could not sell."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		SetStatus(NSLOCTEXT("T66.Shop", "CouldNotSell", "Could not sell."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 	}
 
 	RefreshTopBar();
@@ -600,8 +599,8 @@ FReply UT66GamblerOverlayWidget::OnBuybackSlot(int32 SlotIndex)
 
 	const bool bBought = RunState->TryBuybackSlot(SlotIndex);
 	SetStatus(bBought
-		? NSLOCTEXT("T66.Vendor", "Purchased", "Purchased.")
-		: NSLOCTEXT("T66.Vendor", "CouldNotPurchase", "Could not purchase."),
+		? NSLOCTEXT("T66.Shop", "Purchased", "Purchased.")
+		: NSLOCTEXT("T66.Shop", "CouldNotPurchase", "Could not purchase."),
 		bBought ? FLinearColor(0.3f, 1.f, 0.4f, 1.f) : FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 	RefreshTopBar();
 	RefreshInventory();
@@ -792,7 +791,7 @@ void UT66GamblerOverlayWidget::RefreshSellPanel()
 			}
 		}
 		SellItemPriceText->SetText(FText::Format(
-			NSLOCTEXT("T66.Vendor", "SellForFormat", "SELL FOR: {0}g"),
+			NSLOCTEXT("T66.Shop", "SellForFormat", "SELL FOR: {0}g"),
 			FText::AsNumber(SellValue)));
 	}
 

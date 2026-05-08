@@ -50,42 +50,6 @@ namespace
 		bool bApplyThemeMaterial = false;
 	};
 
-	const FT66PreviewDecorSpec ForestDecorSpecs[] = {
-		{ TEXT("/Game/World/Props/Tree3.Tree3"), FVector(980.f, -920.f, 0.f), FRotator(0.f, -8.f, 0.f), FVector(1.18f, 1.18f, 1.18f), false },
-		{ TEXT("/Game/World/Props/Tree.Tree"),  FVector(1140.f, -260.f, 0.f), FRotator::ZeroRotator, FVector(1.05f, 1.05f, 1.05f), false },
-		{ TEXT("/Game/World/Props/Tree2.Tree2"), FVector(1110.f, 320.f, 0.f), FRotator(0.f, 6.f, 0.f), FVector(1.10f, 1.10f, 1.10f), false },
-		{ TEXT("/Game/World/Props/Tree.Tree"),  FVector(930.f, 920.f, 0.f), FRotator::ZeroRotator, FVector(1.16f, 1.16f, 1.16f), false },
-		{ TEXT("/Game/World/Props/Bush.Bush"),  FVector(430.f, -620.f, 0.f), FRotator(0.f, 18.f, 0.f), FVector(1.10f, 1.10f, 1.10f), false },
-		{ TEXT("/Game/World/Props/Bush.Bush"),  FVector(390.f, 620.f, 0.f), FRotator(0.f, -12.f, 0.f), FVector(1.00f, 1.00f, 1.00f), false }
-	};
-
-	const FT66PreviewDecorSpec OceanDecorSpecs[] = {
-		{ TEXT("/Game/World/Props/Grass.Grass"), FVector(930.f, -880.f, 0.f), FRotator(0.f, 12.f, 0.f), FVector(1.55f, 1.55f, 1.30f), true },
-		{ TEXT("/Game/World/Props/Bush.Bush"),   FVector(1120.f, -280.f, 0.f), FRotator(0.f, -12.f, 0.f), FVector(1.10f, 1.10f, 1.10f), true },
-		{ TEXT("/Game/World/Props/Rocks.Rocks"), FVector(1160.f, 340.f, 0.f), FRotator(0.f, 22.f, 0.f), FVector(1.16f, 1.16f, 1.16f), true },
-		{ TEXT("/Game/World/Props/Grass.Grass"), FVector(900.f, 880.f, 0.f), FRotator(0.f, -18.f, 0.f), FVector(1.45f, 1.45f, 1.28f), true },
-		{ TEXT("/Game/World/Props/Rock.Rock"),   FVector(420.f, -560.f, 0.f), FRotator(0.f, 48.f, 0.f), FVector(1.10f, 1.10f, 1.10f), true },
-		{ TEXT("/Game/World/Props/Rock.Rock"),   FVector(380.f, 580.f, 0.f), FRotator(0.f, -40.f, 0.f), FVector(1.00f, 1.00f, 1.00f), true }
-	};
-
-	const FT66PreviewDecorSpec MartianDecorSpecs[] = {
-		{ TEXT("/Game/World/Props/Boulder.Boulder"), FVector(980.f, -860.f, 0.f), FRotator(0.f, -6.f, 0.f), FVector(1.10f, 1.10f, 1.10f), true },
-		{ TEXT("/Game/World/Props/Rocks.Rocks"),    FVector(1150.f, -230.f, 0.f), FRotator(0.f, 18.f, 0.f), FVector(1.22f, 1.22f, 1.22f), true },
-		{ TEXT("/Game/World/Props/Rock.Rock"),      FVector(1170.f, 340.f, 0.f), FRotator(0.f, 30.f, 0.f), FVector(1.15f, 1.15f, 1.15f), true },
-		{ TEXT("/Game/World/Props/Boulder.Boulder"), FVector(920.f, 900.f, 0.f), FRotator(0.f, -10.f, 0.f), FVector(1.04f, 1.04f, 1.04f), true },
-		{ TEXT("/Game/World/Props/Branch.Branch"),  FVector(420.f, -600.f, 0.f), FRotator(0.f, 36.f, 0.f), FVector(1.25f, 1.25f, 1.25f), true },
-		{ TEXT("/Game/World/Props/Rock.Rock"),      FVector(360.f, 600.f, 0.f), FRotator(0.f, -28.f, 0.f), FVector(1.08f, 1.08f, 1.08f), true }
-	};
-
-	const FT66PreviewDecorSpec HellDecorSpecs[] = {
-		{ TEXT("/Game/World/Props/Rock.Rock"),       FVector(950.f, -860.f, 0.f), FRotator(0.f, 22.f, 0.f), FVector(1.18f, 1.18f, 1.18f), true },
-		{ TEXT("/Game/World/Props/Stump.Stump"),     FVector(1130.f, -220.f, 0.f), FRotator(0.f, -14.f, 0.f), FVector(1.18f, 1.18f, 1.18f), true },
-		{ TEXT("/Game/World/Props/Branch.Branch"),   FVector(1170.f, 340.f, 0.f), FRotator(0.f, 34.f, 0.f), FVector(1.30f, 1.30f, 1.30f), true },
-		{ TEXT("/Game/World/Props/Boulder.Boulder"), FVector(930.f, 900.f, 0.f), FRotator(0.f, -18.f, 0.f), FVector(1.05f, 1.05f, 1.05f), true },
-		{ TEXT("/Game/World/Props/Rocks.Rocks"),     FVector(430.f, -610.f, 0.f), FRotator(0.f, 30.f, 0.f), FVector(1.20f, 1.20f, 1.20f), true },
-		{ TEXT("/Game/World/Props/Stump.Stump"),     FVector(360.f, 620.f, 0.f), FRotator(0.f, -24.f, 0.f), FVector(1.06f, 1.06f, 1.06f), true }
-	};
-
 	FT66PreviewThemeProfile ResolvePreviewThemeProfile(const ET66Difficulty Difficulty)
 	{
 		const int32 GameplayLevelNumber = T66TowerMapTerrain::ResolveGameplayLevelNumberForDifficulty(Difficulty);
@@ -127,28 +91,10 @@ namespace
 		}
 	}
 
-	const FT66PreviewDecorSpec* GetDecorSpecsForTheme(const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme, int32& OutCount)
+	const FT66PreviewDecorSpec* GetDecorSpecsForTheme(const T66TowerMapTerrain::ET66TowerGameplayLevelTheme, int32& OutCount)
 	{
 		OutCount = 0;
-
-		switch (Theme)
-		{
-		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Forest:
-			OutCount = UE_ARRAY_COUNT(ForestDecorSpecs);
-			return ForestDecorSpecs;
-		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Ocean:
-			OutCount = UE_ARRAY_COUNT(OceanDecorSpecs);
-			return OceanDecorSpecs;
-		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Martian:
-			OutCount = UE_ARRAY_COUNT(MartianDecorSpecs);
-			return MartianDecorSpecs;
-		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell:
-			OutCount = UE_ARRAY_COUNT(HellDecorSpecs);
-			return HellDecorSpecs;
-		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon:
-		default:
-			return nullptr;
-		}
+		return nullptr;
 	}
 
 	UStaticMeshComponent* FindPreviewComponent(AActor* Owner, const FName& ComponentName)

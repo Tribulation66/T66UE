@@ -1,0 +1,26 @@
+09:51:50 | INFO: Data are loaded, start creating Blender stuff
+09:51:50 | INFO: Blender create Mesh node geometry_0
+09:51:51 | INFO: glTF import finished in 0.45s
+Info: Removed 92308 vertices
+Info: Removed: 1 vertices, 1 edges, 0 faces
+Info: Removed: 21 vertices, 13 edges, 0 faces
+
+FBX export starting... 'C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\inputMesh.fbx'
+export finished in 0.0480 sec.
+FBX version: 7400
+Info: Circular dependency for image "Forest_ThornHive_QuadRemesh_Bake_1024" from object "Forest_ThornHive_QuadRemesh"
+Info: Baking map saved to internal image, save it externally or pack it
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.1\5.1\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+09:59:19 | INFO: Starting glTF 2.0 export
+09:59:19 | INFO: Extracting primitive: Forest_ThornHive_QuadRemesh_Mesh
+09:59:19 | INFO: Primitives created: 1
+09:59:19 | INFO: Finished glTF 2.0 export in 0.09826850891113281 s
+07:33.500  render           | Saved: 'C:\UE\T66\Model Generation\Runs\EnemyBosses\EnemyBossBatch01\QuadRetro\Medium\Bosses\Forest_ThornHive\Renders\Forest_ThornHive_QuadRetro_front.png'
+07:33.859  render           | Saved: 'C:\UE\T66\Model Generation\Runs\EnemyBosses\EnemyBossBatch01\QuadRetro\Medium\Bosses\Forest_ThornHive\Renders\Forest_ThornHive_QuadRetro_right.png'
+07:34.172  render           | Saved: 'C:\UE\T66\Model Generation\Runs\EnemyBosses\EnemyBossBatch01\QuadRetro\Medium\Bosses\Forest_ThornHive\Renders\Forest_ThornHive_QuadRetro_back.png'
+07:34.500  render           | Saved: 'C:\UE\T66\Model Generation\Runs\EnemyBosses\EnemyBossBatch01\QuadRetro\Medium\Bosses\Forest_ThornHive\Renders\Forest_ThornHive_QuadRetro_oblique.png'
+
+{
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Bosses\\Forest_ThornHive\\Models\\Forest_ThornHive_QuadRetro.glb",
+  "report": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QuadRetro\\Medium\\Bosses\\Forest_ThornHive\\Reports\\Forest_ThornHive_QuadRetro_report.json"
+}

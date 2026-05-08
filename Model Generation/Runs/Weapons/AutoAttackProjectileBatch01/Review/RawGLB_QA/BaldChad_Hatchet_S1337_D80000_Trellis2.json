@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Raw\\Trellis\\BaldChad_Hatchet_S1337_D80000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Review\\RawGLB_QA\\BaldChad_Hatchet_S1337_D80000_Trellis2.png",
+  "export": null,
+  "raw_triangles": 79758,
+  "triangles_before_decimate": 79758,
+  "triangles_after_decimate": 79758,
+  "bounds": {
+    "min": [
+      -0.4198184907436371,
+      -0.08205705881118774,
+      -0.5005313158035278
+    ],
+    "max": [
+      0.4225173592567444,
+      0.08240243047475815,
+      0.500773549079895
+    ],
+    "size": [
+      0.8423358201980591,
+      0.1644594967365265,
+      1.0013048648834229
+    ]
+  }
+}

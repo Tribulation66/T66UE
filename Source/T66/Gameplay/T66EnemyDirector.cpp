@@ -2,9 +2,11 @@
 
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyBase.h"
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/Enemies/T66EnemyFamilyResolver.h"
+#include "Gameplay/Enemies/T66FlyingEnemy.h"
 #include "Gameplay/Enemies/T66MeleeEnemy.h"
+#include "Gameplay/Enemies/T66RangedEnemy.h"
+#include "Gameplay/Enemies/T66RushEnemy.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66HeroBase.h"
@@ -41,6 +43,8 @@ namespace
 		FName MobA = FName(*FString::Printf(TEXT("Mob_Stage%02d_A"), StageNum));
 		FName MobB = FName(*FString::Printf(TEXT("Mob_Stage%02d_B"), StageNum));
 		FName MobC = FName(*FString::Printf(TEXT("Mob_Stage%02d_C"), StageNum));
+		FName MobD = FName(*FString::Printf(TEXT("Mob_Stage%02d_D"), StageNum));
+		FName MobE = FName(*FString::Printf(TEXT("Mob_Stage%02d_E"), StageNum));
 		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 		{
 			FStageData StageData;
@@ -49,10 +53,52 @@ namespace
 				if (!StageData.EnemyA.IsNone()) MobA = StageData.EnemyA;
 				if (!StageData.EnemyB.IsNone()) MobB = StageData.EnemyB;
 				if (!StageData.EnemyC.IsNone()) MobC = StageData.EnemyC;
+				if (!StageData.EnemyD.IsNone()) MobD = StageData.EnemyD;
+				if (!StageData.EnemyE.IsNone()) MobE = StageData.EnemyE;
 			}
 		}
 
-		OutMobIDs = { MobA, MobB, MobC };
+		OutMobIDs = { MobA, MobB, MobC, MobD, MobE };
+	}
+
+	static TSubclassOf<AT66EnemyBase> T66ResolveEnemyClassFromFamilyID(const FName FamilyID, TSubclassOf<AT66EnemyBase> FallbackClass)
+	{
+		if (FamilyID == FName(TEXT("Flying")))
+		{
+			return AT66FlyingEnemy::StaticClass();
+		}
+		if (FamilyID == FName(TEXT("Ranged")))
+		{
+			return AT66RangedEnemy::StaticClass();
+		}
+		if (FamilyID == FName(TEXT("Rush")))
+		{
+			return AT66RushEnemy::StaticClass();
+		}
+		if (FamilyID == FName(TEXT("Melee")))
+		{
+			return AT66MeleeEnemy::StaticClass();
+		}
+
+		if (FallbackClass)
+		{
+			return FallbackClass;
+		}
+		return AT66MeleeEnemy::StaticClass();
+	}
+
+	static TSubclassOf<AT66EnemyBase> T66ResolveStageEnemyClass(UT66GameInstance* T66GI, const FName MobID, TSubclassOf<AT66EnemyBase> FallbackClass)
+	{
+		if (T66GI)
+		{
+			FT66EnemyData EnemyData;
+			if (T66GI->GetEnemyData(MobID, EnemyData))
+			{
+				return T66ResolveEnemyClassFromFamilyID(EnemyData.FamilyID, FallbackClass);
+			}
+		}
+
+		return FT66EnemyFamilyResolver::ResolveEnemyClass(MobID, FallbackClass);
 	}
 }
 
@@ -115,21 +161,38 @@ void AT66EnemyDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AT66EnemyDirector::SpawnInitialPopulationForStage()
 {
 	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode());
+	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
 	if (!GameMode || !GameMode->IsUsingTowerMainMapLayout())
 	{
 		return;
 	}
 
+	SpawnInitialPopulationForTowerFloor(GameMode->GetCurrentTowerFloorIndex());
+}
+
+int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 RequestedFloorNumber)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return 0;
+	}
+
+	AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode());
+	if (!GameMode || !GameMode->IsUsingTowerMainMapLayout())
+	{
+		return 0;
+	}
+
 	T66TowerMapTerrain::FLayout TowerLayout;
 	if (!GameMode->GetTowerMainMapLayout(TowerLayout))
 	{
-		return;
+		return 0;
+	}
+	const int32 ActiveGameplayFloorNumber = RequestedFloorNumber;
+	if (ActiveGameplayFloorNumber == INDEX_NONE || TowerFloorsWithInitialPopulation.Contains(ActiveGameplayFloorNumber))
+	{
+		return 0;
 	}
 
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
@@ -156,11 +219,12 @@ void AT66EnemyDirector::SpawnInitialPopulationForStage()
 	T66ResolveStageMobIDs(GI, StageNum, MobIDs);
 	if (MobIDs.Num() <= 0)
 	{
-		return;
+		return 0;
 	}
 
 	FRandomStream Rng((StageNum * 4051) + 177);
-	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
+	if (T66GI)
 	{
 		if (T66GI->RunSeed != 0)
 		{
@@ -171,9 +235,14 @@ void AT66EnemyDirector::SpawnInitialPopulationForStage()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
+	int32 SpawnedCount = 0;
 	for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 	{
 		if (!Floor.bGameplayFloor)
+		{
+			continue;
+		}
+		if (ActiveGameplayFloorNumber != INDEX_NONE && Floor.FloorNumber != ActiveGameplayFloorNumber)
 		{
 			continue;
 		}
@@ -185,30 +254,37 @@ void AT66EnemyDirector::SpawnInitialPopulationForStage()
 		for (int32 SpawnIndex = 0; SpawnIndex < InitialPopulationCount; ++SpawnIndex)
 		{
 			FVector SpawnLoc = FVector::ZeroVector;
-			bool bFoundLocation = false;
-			for (int32 Attempt = 0; Attempt < 24; ++Attempt)
+			auto TryFindInitialTowerSpawnLocation = [&](const float EdgePadding, const float HolePadding, const int32 Attempts) -> bool
 			{
-				if (T66TowerMapTerrain::TryGetRandomSurfaceLocationOnFloor(
-					World,
-					TowerLayout,
-					Floor.FloorNumber,
-					Rng,
-					SpawnLoc,
-					InitialTowerSpawnEdgePadding,
-					InitialTowerSpawnHolePadding))
+				for (int32 Attempt = 0; Attempt < Attempts; ++Attempt)
 				{
-					bFoundLocation = true;
-					break;
+					if (T66TowerMapTerrain::TryGetRandomSurfaceLocationOnFloor(
+						World,
+						TowerLayout,
+						Floor.FloorNumber,
+						Rng,
+						SpawnLoc,
+						EdgePadding,
+						HolePadding))
+					{
+						return true;
+					}
 				}
-			}
+				return false;
+			};
 
-			if (!bFoundLocation)
+			if (!TryFindInitialTowerSpawnLocation(InitialTowerSpawnEdgePadding, InitialTowerSpawnHolePadding, 24)
+				&& !TryFindInitialTowerSpawnLocation(600.0f, 850.0f, 24)
+				&& !TryFindInitialTowerSpawnLocation(100.0f, 100.0f, 24))
 			{
 				continue;
 			}
 
+			static constexpr float EnemyCapsuleHalfHeight = 88.f;
+			SpawnLoc.Z += EnemyCapsuleHalfHeight;
+
 			const FName MobID = MobIDs[Rng.RandRange(0, MobIDs.Num() - 1)];
-			const TSubclassOf<AT66EnemyBase> MobClass = FT66EnemyFamilyResolver::ResolveEnemyClass(MobID, RegularClass);
+			const TSubclassOf<AT66EnemyBase> MobClass = T66ResolveStageEnemyClass(T66GI, MobID, RegularClass);
 			const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
 			AT66EnemyBase* Enemy = World->SpawnActorDeferred<AT66EnemyBase>(
 				MobClass,
@@ -235,8 +311,24 @@ void AT66EnemyDirector::SpawnInitialPopulationForStage()
 			}
 
 			++AliveCount;
+			++SpawnedCount;
 		}
 	}
+
+	if (SpawnedCount > 0)
+	{
+		TowerFloorsWithInitialPopulation.Add(ActiveGameplayFloorNumber);
+		UE_LOG(LogT66EnemyDirector, Log, TEXT("[SPAWN] Tower initial enemies floor=%d spawned=%d alive=%d."),
+			ActiveGameplayFloorNumber,
+			SpawnedCount,
+			AliveCount);
+	}
+	else
+	{
+		UE_LOG(LogT66EnemyDirector, Warning, TEXT("[SPAWN] Tower initial enemies floor=%d spawned=0; will retry on next floor activation."),
+			ActiveGameplayFloorNumber);
+	}
+	return SpawnedCount;
 }
 
 void AT66EnemyDirector::NotifyEnemyDied(AT66EnemyBase* Enemy)
@@ -398,11 +490,13 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	if (PlayerPawns.Num() <= 0) return;
 
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
 	FRandomStream LocalRng(static_cast<int32>(FPlatformTime::Cycles()));
 	FRandomStream& Rng = RngSub ? RngSub->GetRunStream() : LocalRng;
 	APawn* PlayerPawn = PlayerPawns[RngSub ? RngSub->RunRandRange(0, PlayerPawns.Num() - 1) : Rng.RandRange(0, PlayerPawns.Num() - 1)];
 	if (!PlayerPawn) return;
+	const FVector PlayerLoc = PlayerPawn->GetActorLocation();
 
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66StageProgressionSubsystem* StageProgression = GI ? GI->GetSubsystem<UT66StageProgressionSubsystem>() : nullptr;
@@ -423,6 +517,9 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 
 	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
 	const bool bTowerLayout = GameMode && GameMode->IsUsingTowerMainMapLayout();
+	T66TowerMapTerrain::FLayout TowerLayout;
+	const bool bHasTowerLayout = bTowerLayout && GameMode && GameMode->GetTowerMainMapLayout(TowerLayout);
+	const int32 PlayerTowerFloorNumber = bHasTowerLayout ? GameMode->GetTowerFloorIndexForLocation(PlayerLoc) : INDEX_NONE;
 	if (bTowerLayout && !T66EnableTowerEnemySpawns)
 	{
 		return;
@@ -484,21 +581,6 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 				return true;
 			}
 		}
-		for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
-		{
-			AT66CasinoInteractable* Casino = WeakCasino.Get();
-			if (!Casino) continue;
-			if (bTowerLayout && GameMode && CandidateFloorNumber != INDEX_NONE
-				&& GameMode->GetTowerFloorIndexForLocation(Casino->GetActorLocation()) != CandidateFloorNumber)
-			{
-				continue;
-			}
-			const float R = Casino->GetSafeZoneRadius();
-			if (FVector::DistSquared2D(Loc, Casino->GetActorLocation()) < (R * R))
-			{
-				return true;
-			}
-		}
 		return false;
 	};
 
@@ -543,21 +625,23 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		RegularClass = AT66MeleeEnemy::StaticClass();
 	}
 
-	// Stage mobs: pull exact roster from DT_Stages (EnemyA/B/C). Fallback is deterministic IDs.
+	// Stage mobs: pull exact roster from DT_Stages (EnemyA/B/C/D/E). Fallback is deterministic IDs.
 	const int32 StageNum = RunState->GetCurrentStage();
 	TArray<FName> MobIDs;
 	T66ResolveStageMobIDs(GI, StageNum, MobIDs);
 	const FName MobA = MobIDs.IsValidIndex(0) ? MobIDs[0] : NAME_None;
 	const FName MobB = MobIDs.IsValidIndex(1) ? MobIDs[1] : NAME_None;
 	const FName MobC = MobIDs.IsValidIndex(2) ? MobIDs[2] : NAME_None;
+	const FName MobD = MobIDs.IsValidIndex(3) ? MobIDs[3] : NAME_None;
+	const FName MobE = MobIDs.IsValidIndex(4) ? MobIDs[4] : NAME_None;
 
 #if !UE_BUILD_SHIPPING
 	static int32 LoggedMobWaves = 0;
 	if (LoggedMobWaves < 3)
 	{
 		++LoggedMobWaves;
-		UE_LOG(LogT66EnemyDirector, Verbose, TEXT("[SPAWN] SpawnWave Stage=%d MobIDs: A=%s  B=%s  C=%s (generic fallback would be Mob_StageXX_X — if you see that, reimport DT_Stages)"),
-			StageNum, *MobA.ToString(), *MobB.ToString(), *MobC.ToString());
+		UE_LOG(LogT66EnemyDirector, Verbose, TEXT("[SPAWN] SpawnWave Stage=%d MobIDs: A=%s  B=%s  C=%s  D=%s  E=%s (generic fallback would be Mob_StageXX_X - if you see that, reimport DT_Stages)"),
+			StageNum, *MobA.ToString(), *MobB.ToString(), *MobC.ToString(), *MobD.ToString(), *MobE.ToString());
 	}
 #endif
 
@@ -669,7 +753,6 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	EffectiveSpawnMin = FMath::Max(EffectiveSpawnMin, FMath::Max(MinimumPlayerSpawnClearance, 0.f));
 	EffectiveSpawnMax = FMath::Max(EffectiveSpawnMax, EffectiveSpawnMin + 400.f);
 
-	const FVector PlayerLoc = PlayerPawn->GetActorLocation();
 	auto TraceGroundZAtXY = [&](const FVector& XYLoc, float& OutGroundZ) -> bool
 	{
 		if (bTowerLayout)
@@ -750,6 +833,7 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	{
 		FVector SpawnLoc(PlayerLoc.X, PlayerLoc.Y, PlayerGroundZ);
 		FVector SpawnWallNormal = FVector::ZeroVector;
+		bool bSpawnFromWall = false;
 		bool bFoundSpawnLoc = false;
 		if (bTowerLayout && GameMode)
 		{
@@ -764,12 +848,43 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 
 				SpawnLoc = ResolveGroundedSpawnLocation(WallSpawnSurface);
 				SpawnWallNormal = WallNormal;
+				bSpawnFromWall = true;
 				if (!IsInAnySafeZone2D(SpawnLoc)
 					&& !IsInBlockedTraversalZone2D(SpawnLoc)
 					&& IsFarEnoughFromPlayers2D(SpawnLoc, EffectiveSpawnMin))
 				{
 					bFoundSpawnLoc = true;
 					break;
+				}
+			}
+
+			if (!bFoundSpawnLoc && bHasTowerLayout && PlayerTowerFloorNumber != INDEX_NONE)
+			{
+				for (int32 Try = 0; Try < 18; ++Try)
+				{
+					FVector SurfaceSpawn = FVector::ZeroVector;
+					if (!T66TowerMapTerrain::TryGetRandomSurfaceLocationOnFloor(
+						World,
+						TowerLayout,
+						PlayerTowerFloorNumber,
+						Rng,
+						SurfaceSpawn,
+						600.0f,
+						850.0f))
+					{
+						continue;
+					}
+
+					SpawnLoc = ResolveGroundedSpawnLocation(SurfaceSpawn);
+					SpawnWallNormal = FVector::ZeroVector;
+					bSpawnFromWall = false;
+					if (!IsInAnySafeZone2D(SpawnLoc)
+						&& !IsInBlockedTraversalZone2D(SpawnLoc)
+						&& IsFarEnoughFromPlayers2D(SpawnLoc, EffectiveSpawnMin))
+					{
+						bFoundSpawnLoc = true;
+						break;
+					}
 				}
 			}
 		}
@@ -818,33 +933,6 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 					if (Dir.Normalize())
 					{
 						SpawnLoc = NPC->GetActorLocation() + Dir * (R + SafeZonePushMargin);
-						SpawnLoc.Z = PlayerGroundZ;
-					}
-					break;
-				}
-			}
-			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
-			{
-				AT66CasinoInteractable* Casino = WeakCasino.Get();
-				if (!Casino) continue;
-				const float R = Casino->GetSafeZoneRadius();
-				FVector ToSpawnPt = SpawnLoc - Casino->GetActorLocation();
-				ToSpawnPt.Z = 0.f;
-				const float Dist2D = ToSpawnPt.Size();
-				if (Dist2D < R && Dist2D > 1.f)
-				{
-					FVector Dir = ToSpawnPt / Dist2D;
-					SpawnLoc = Casino->GetActorLocation() + FVector(Dir.X, Dir.Y, 0.f) * (R + SafeZonePushMargin);
-					SpawnLoc.Z = PlayerGroundZ;
-					break;
-				}
-				else if (Dist2D <= 1.f)
-				{
-					FVector Dir(Rng.FRandRange(-1.f, 1.f), Rng.FRandRange(-1.f, 1.f), 0.f);
-					Dir.Z = 0.f;
-					if (Dir.Normalize())
-					{
-						SpawnLoc = Casino->GetActorLocation() + Dir * (R + SafeZonePushMargin);
 						SpawnLoc.Z = PlayerGroundZ;
 					}
 					break;
@@ -936,7 +1024,7 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		const FName MobID = bIsMob ? MobIDs[RngSub ? RngSub->RunRandRange(0, MobIDs.Num() - 1) : Rng.RandRange(0, MobIDs.Num() - 1)] : NAME_None;
 		if (bIsMob)
 		{
-			ClassToSpawn = FT66EnemyFamilyResolver::ResolveEnemyClass(MobID, RegularClass);
+			ClassToSpawn = T66ResolveStageEnemyClass(T66GI, MobID, RegularClass);
 		}
 
 		FPendingEnemySpawn Slot;
@@ -944,7 +1032,7 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		Slot.ClassToSpawn = ClassToSpawn;
 		Slot.MobID = MobID;
 		Slot.bIsMiniBoss = bIsMiniBossSlot;
-		Slot.bSpawnFromWall = bTowerLayout;
+		Slot.bSpawnFromWall = bTowerLayout && bSpawnFromWall;
 		Slot.DifficultyScalar = Scalar;
 		Slot.FinaleScalar = FinaleScalar;
 		Slot.EnemyProgressionScalar = Snapshot.EnemyStatScalar;

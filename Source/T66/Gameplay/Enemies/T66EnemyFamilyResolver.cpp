@@ -9,39 +9,53 @@
 
 FName FT66EnemyFamilyResolver::NormalizeMobID(const FName MobID)
 {
-	if (MobID == FName(TEXT("Rooster")))
-	{
-		return FName(TEXT("Roost"));
-	}
-
 	return MobID;
 }
 
 bool FT66EnemyFamilyResolver::IsStageMobID(FName MobID)
 {
 	MobID = NormalizeMobID(MobID);
-	return MobID == FName(TEXT("Cow"))
-		|| MobID == FName(TEXT("Pig"))
-		|| MobID == FName(TEXT("Goat"))
-		|| MobID == FName(TEXT("Roost"));
+	return ResolveFamily(MobID) != ET66EnemyFamily::Special;
 }
 
 ET66EnemyFamily FT66EnemyFamilyResolver::ResolveFamily(FName MobID)
 {
 	MobID = NormalizeMobID(MobID);
-	if (MobID == FName(TEXT("Pig")))
-	{
-		return ET66EnemyFamily::Rush;
-	}
-	if (MobID == FName(TEXT("Goat")))
-	{
-		return ET66EnemyFamily::Ranged;
-	}
-	if (MobID == FName(TEXT("Roost")))
+	if (MobID == FName(TEXT("Dungeon_Bat"))
+		|| MobID == FName(TEXT("Forest_Wasp"))
+		|| MobID == FName(TEXT("Ocean_GhostRay"))
+		|| MobID == FName(TEXT("Martian_SaucerDrone"))
+		|| MobID == FName(TEXT("Hell_Gargoyle")))
 	{
 		return ET66EnemyFamily::Flying;
 	}
-	if (MobID == FName(TEXT("Cow")) || MobID == FName(TEXT("RegularEnemy")))
+	if (MobID == FName(TEXT("Dungeon_WebSpider"))
+		|| MobID == FName(TEXT("Forest_ThornImp"))
+		|| MobID == FName(TEXT("Ocean_Jellyfish"))
+		|| MobID == FName(TEXT("Martian_PlasmaSpitter"))
+		|| MobID == FName(TEXT("Hell_FireSkull")))
+	{
+		return ET66EnemyFamily::Ranged;
+	}
+	if (MobID == FName(TEXT("Dungeon_RabidRat"))
+		|| MobID == FName(TEXT("Forest_Boar"))
+		|| MobID == FName(TEXT("Ocean_SharkPup"))
+		|| MobID == FName(TEXT("Martian_RocketLeaper"))
+		|| MobID == FName(TEXT("Hellhound")))
+	{
+		return ET66EnemyFamily::Rush;
+	}
+	if (MobID == FName(TEXT("RegularEnemy"))
+		|| MobID == FName(TEXT("Dungeon_Slime"))
+		|| MobID == FName(TEXT("Dungeon_Skeleton"))
+		|| MobID == FName(TEXT("Forest_MushroomBrute"))
+		|| MobID == FName(TEXT("Forest_TreantSapling"))
+		|| MobID == FName(TEXT("Ocean_CrabGuard"))
+		|| MobID == FName(TEXT("Ocean_DrownedSailor"))
+		|| MobID == FName(TEXT("Martian_DroneGrunt"))
+		|| MobID == FName(TEXT("Martian_CrystalCrawler"))
+		|| MobID == FName(TEXT("Hell_Imp"))
+		|| MobID == FName(TEXT("Hell_BoneKnight")))
 	{
 		return ET66EnemyFamily::Melee;
 	}

@@ -1,62 +1,68 @@
 # Current Handoff Prompt
 
-Use this prompt in a fresh Codex session to continue from the current state without losing context:
+Use [NEXT_CHAT_HERO_MALE_IMAGEGEN_PROMPT.md](C:/UE/T66/Model%20Generation/NEXT_CHAT_HERO_MALE_IMAGEGEN_PROMPT.md)
+for the next fresh Codex session.
+
+The active handoff is no longer the old Arthur/environment-kit prompt. The
+current workstream is the Chad/Stacy Quad Retro hero source-image batch:
+
+- read the Model Generation workspace docs
+- use Boxer Chad as the male silhouette reference
+- generate male source-image candidates for the remaining 11 Chad heroes
+- do not run TRELLIS, Blender, or Stacy variants until the male source images
+  are approved
+
+Copy-paste handoff:
 
 ```text
-Use [MASTER_WORKFLOW.md](C:/UE/T66/Model Generation/MASTER_WORKFLOW.md) as the authoritative source of truth for this task. Also read [RUN_HISTORY.md](C:/UE/T66/Model Generation/RUN_HISTORY.md), [NEXT_STEPS.md](C:/UE/T66/Model Generation/NEXT_STEPS.md), [KNOWN_ISSUES.md](C:/UE/T66/Model Generation/KNOWN_ISSUES.md), and [ENVIRONMENT_LOCK.md](C:/UE/T66/Model Generation/ENVIRONMENT_LOCK.md) before doing work.
+We are continuing the T66 Quad Retro hero art pipeline in C:\UE\T66.
 
-Important current state:
-- The JSX-parity TRELLIS.2 environment has already been restored and documented.
-- The official Blender Lab MCP setup is the active Blender bridge; if Blender is disconnected, run [launch_blender_lab_mcp.ps1](C:/UE/T66/Model%20Generation/Tools/BlenderLabMCP/launch_blender_lab_mcp.ps1).
-- The active environment-art set is [CoherentThemeKit01](C:/UE/T66/Model%20Generation/Runs/Environment/CoherentThemeKit01), with 40 raw TRELLIS GLBs under `Raw/Trellis`: Dungeon/Easy, Forest/Medium, Ocean/Hard, Martian/VeryHard, and Hell/Impossible wall and floor modules.
-- The best accepted Arthur raw body is [Arthur_HeroReference_Full_White_S1337_D80000_Trellis2.glb](C:/UE/T66/Model Generation/Runs/Arthur/Raw/Arthur_HeroReference_Full_White_S1337_D80000_Trellis2.glb).
-- The best accepted Arthur low-poly body is [Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k.glb](C:/UE/T66/Model Generation/Runs/Arthur/Raw/Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k.glb).
-- The accepted raw sword source is [Arthur_ExcaliburProxy_FlatGreen_Tight_S1337_Trellis2.glb](C:/UE/T66/Model Generation/Runs/Arthur/Raw/Arthur_ExcaliburProxy_FlatGreen_Tight_S1337_Trellis2.glb).
-- The current sword-hold attempt [Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k_WithSword_ValidatedHold.glb](C:/UE/T66/Model Generation/Runs/Arthur/Raw/Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k_WithSword_ValidatedHold.glb) is NOT accepted. Treat it as a failed-but-useful reference only.
-- The working Blender scene is [Arthur_EasyEnemy_Lineup.blend](C:/UE/T66/Model Generation/Scenes/Arthur_EasyEnemy_Lineup.blend).
-- The easy enemy batch already exists and should be used later for rigging / baked-mesh exploration, not regenerated from scratch yet.
+First read these files, in this order:
+1. C:\UE\T66\Model Generation\README.md
+2. C:\UE\T66\Model Generation\TRELLIS_SOURCE_IMAGE_RULES.md
+3. C:\UE\T66\Model Generation\RETRO_CHARACTER_PIPELINE.md
+4. C:\UE\T66\Model Generation\HERO_CHAD_STACY_PROMPT_GUIDE.md
+5. C:\UE\T66\Model Generation\QUAD_RETRO_DO_THIS_RUNBOOK.md
 
-Primary goal:
-- Review the CoherentThemeKit01 TRELLIS-generated wall and floor modules in Blender beside the Arthur scale reference.
+Task:
+Generate source image candidates for the remaining 11 male Chad heroes only. Do not run TRELLIS yet, do not run Blender yet, and do not generate Stacy variants yet.
 
-Environment-kit review rules:
-- Start with the raw GLBs in [Raw/Trellis](C:/UE/T66/Model%20Generation/Runs/Environment/CoherentThemeKit01/Raw/Trellis).
-- Include [Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k.glb](C:/UE/T66/Model%20Generation/Runs/Arthur/Raw/Arthur_HeroReference_Full_White_S1337_D80000_Decimate40k.glb) in the scene as the height/scale reference.
-- Arrange modules by difficulty/theme and surface so scale issues can be compared quickly.
-- Do not normalize or import modules into Unreal until the raw visual/scale review is complete.
-- Reject any module with unwanted platform geometry, detached fragments, unreadable proportions, or a silhouette that cannot fit the wall/floor modular contract.
+Use Boxer Chad as the silhouette/style reference:
+C:\UE\T66\Model Generation\Runs\Heroes\QuadRetroSourceExploration01\Inputs\imagegen_candidates\BoxerChad_ExaggeratedV_04.png
 
-Next environment goal:
-- After the environment-kit review, normalize accepted modules to the documented Unreal-ready wall/floor pivot and footprint rules.
+The already-selected reference hero is:
+- Hero_3: Boxer Chad
 
-Deferred sword-hold rules:
-- Start in Blender with the existing Arthur low-poly body plus separate sword asset.
-- Try transform-only sword placement first.
-- Save at least these screenshots for each serious attempt:
-  - front
-  - side
-  - oblique
-  - one user-like gameplay or showcase angle
-- For each rejected attempt, state which angle failed and why before making the next adjustment.
-- Reject any attempt where the grip does not clearly overlap the hand volume in any one of those views.
-- Do not call the sword solved until the user agrees it reads correctly.
-- If two or three serious transform-only attempts keep failing for the same reason, escalate to a minimal hand-pose edit, socket rule, or lightweight rig step instead of endlessly nudging transforms.
+Generate 4 source-image variants each for:
+- Hero_1 Royal Chad
+- Hero_2 Chinese Chad
+- Hero_4 Founding Chad
+- Hero_5 Robo Chad
+- Hero_6 Billy Chad
+- Hero_7 Rabbit Chad
+- Hero_8 CS Chad
+- Hero_9 Goblino Chad
+- Hero_10 Monotone Chad
+- Hero_11 Bald Chad
+- Hero_12 Roach Chad
 
-Deferred character goal:
-- Return to Arthur sword/rigging work after the environment-kit review no longer blocks the world-art pass.
+Save all outputs under:
+C:\UE\T66\Model Generation\Runs\Heroes\ChadStacySourceImageBatch01\Inputs\male_candidates
 
-Rigging / bake exploration rules:
-- Start with Arthur first.
-- Then test one easy enemy family as a representative case before generalizing.
-- Determine whether the best path is:
-  - baked static meshes only
-  - rigged characters
-  - or both outputs from the same source assets
-- Record the pros, blockers, and recommended pipeline in the docs.
+Rules:
+- Use the built-in Codex image generation workflow if available. Do not switch to an API-key workflow unless I explicitly ask.
+- Source images must be clean TRELLIS input, not final retro art.
+- Full-body front view, neutral A-pose, arms angled 30-45 degrees down and separated from torso.
+- Orthographic/flat camera, no perspective distortion, no action pose.
+- Flat magenta #FF00FF background unless a character uses too much magenta, then use chroma green #00FF00.
+- Flat even lighting, no floor, no shadow, no glow.
+- Clean painted/cel-shaded concept art, not photoreal, not pixel art.
+- Push the male body silhouette harder than realistic bodybuilding: extremely wide shoulders, oversized chest/traps, thick arms, very thin waist, dramatic V-shaped torso, hips much narrower than shoulders.
+- Face is low-detail and not the identity carrier. Identity comes from costume, equipment, hair/headwear, and large color blocks.
+- Use HERO_CHAD_STACY_PROMPT_GUIDE.md for each hero's identity block.
 
-Process rules:
-- If Blender MCP is disconnected, run [launch_blender_lab_mcp.ps1](C:/UE/T66/Model%20Generation/Tools/BlenderLabMCP/launch_blender_lab_mcp.ps1) before falling back.
-- Save PNG review images to disk even if chat previews fail.
-- Update [RUN_HISTORY.md](C:/UE/T66/Model Generation/RUN_HISTORY.md), [MASTER_WORKFLOW.md](C:/UE/T66/Model Generation/MASTER_WORKFLOW.md), [KNOWN_ISSUES.md](C:/UE/T66/Model Generation/KNOWN_ISSUES.md), and [NEXT_STEPS.md](C:/UE/T66/Model Generation/NEXT_STEPS.md) with any real findings.
-- Do not restart hero TRELLIS seed sweeps unless you find a concrete reason the current accepted body can no longer support the pipeline.
+After generation:
+- Make the outputs easy to review with direct links or a contact sheet.
+- Tell me which 1-2 candidates per hero look most TRELLIS-safe and why.
+- Do not proceed to TRELLIS until I approve the source images.
 ```

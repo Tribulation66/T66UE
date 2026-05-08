@@ -12,7 +12,7 @@
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
-#include "UI/T66VendorOverlayWidget.h"
+#include "UI/T66CasinoShopTabWidget.h"
 #include "UI/Style/T66OverlayChromeStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Input/DragAndDrop.h"
@@ -37,16 +37,16 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 	SharedOverlay::EnsureShellTabWidgets(
 		this,
 		GamblerTabWidget,
-		VendorTabWidget,
+		ShopTabWidget,
 		[this](UT66GamblerOverlayWidget* Widget)
 		{
 			Widget->SetEmbeddedInCasinoShell(true);
 			Widget->SetWinGoldAmount(PendingGamblingWinGoldAmount);
 		},
-		[this](UT66VendorOverlayWidget* Widget)
+		[this](UT66CasinoShopTabWidget* Widget)
 		{
 			Widget->SetEmbeddedInCasinoShell(true);
-			Widget->SetVendorAllowsSteal(bVendorAllowsSteal);
+			Widget->SetShopAllowsSteal(bShopAllowsSteal);
 		});
 
 	if (RunState)
@@ -58,7 +58,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 	}
 
 	const FText GamblingTabText = NSLOCTEXT("T66.Casino", "TabGambling", "GAMBLING");
-	const FText VendorTabText = NSLOCTEXT("T66.Casino", "TabVendor", "VENDOR");
+	const FText ShopTabText = NSLOCTEXT("T66.Casino", "TabVendor", "VENDOR");
 	const FText CloseText = NSLOCTEXT("T66.Casino", "Close", "CLOSE");
 	const float HeaderPanelPaddingX = 8.f;
 	const float HeaderPanelPaddingY = 6.f;
@@ -71,7 +71,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 	const FMargin ShellButtonPadding(10.f, 6.f);
 	const FMargin ShellTopBarPadding(10.f, 8.f);
 
-	TSharedRef<SWidget> VendorPage = VendorTabWidget ? VendorTabWidget->TakeWidget() : SNullWidget::NullWidget;
+	TSharedRef<SWidget> ShopPage = ShopTabWidget ? ShopTabWidget->TakeWidget() : SNullWidget::NullWidget;
 	TSharedRef<SWidget> GamblingPage = GamblerTabWidget ? GamblerTabWidget->TakeWidget() : SNullWidget::NullWidget;
 	TSharedRef<SWidget> HeaderSummaryPanel =
 		T66OverlayChromeStyle::MakePanel(
@@ -156,12 +156,12 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 								[
 									T66OverlayChromeStyle::MakeButton(
 										T66OverlayChromeStyle::MakeButtonParams(
-											VendorTabText,
-											FOnClicked::CreateLambda([this]() { OpenVendorTab(); return FReply::Handled(); }),
+											ShopTabText,
+											FOnClicked::CreateLambda([this]() { OpenShopTab(); return FReply::Handled(); }),
 											ET66OverlayChromeButtonFamily::Tab)
 										.SetPadding(ShellButtonPadding)
 										.SetFontSize(ShellButtonFontSize)
-										.SetSelected(TAttribute<bool>::CreateLambda([this]() { return ActiveTab == ECasinoTab::Vendor; }))
+										.SetSelected(TAttribute<bool>::CreateLambda([this]() { return ActiveTab == ECasinoTab::Shop; }))
 								)
 								]
 								+ SHorizontalBox::Slot().AutoWidth()
@@ -202,7 +202,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 						SAssignNew(TabSwitcher, SWidgetSwitcher)
 						+ SWidgetSwitcher::Slot()
 						[
-							VendorPage
+							ShopPage
 						]
 						+ SWidgetSwitcher::Slot()
 						[
@@ -226,7 +226,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 		];
 
 	RefreshHeaderSummary();
-	OpenVendorTab();
+	OpenShopTab();
 	return FT66Style::MakeResponsiveRoot(Root);
 }
 
@@ -238,7 +238,7 @@ void UT66CasinoOverlayWidget::NativeDestruct()
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66CasinoOverlayWidget::HandleStageTimerChanged);
 	}
 
-	SharedOverlay::RemoveFromParentAndReset(VendorTabWidget);
+	SharedOverlay::RemoveFromParentAndReset(ShopTabWidget);
 	SharedOverlay::RemoveFromParentAndReset(GamblerTabWidget);
 
 	Super::NativeDestruct();
@@ -254,14 +254,14 @@ void UT66CasinoOverlayWidget::OpenGamblingTab()
 	SharedOverlay::OpenGamblingTab(GamblerTabWidget, [this]() { SetActiveTab(ECasinoTab::Gambling); });
 }
 
-void UT66CasinoOverlayWidget::OpenVendorTab()
+void UT66CasinoOverlayWidget::OpenShopTab()
 {
-	SharedOverlay::OpenVendorTab(VendorTabWidget, [this]() { SetActiveTab(ECasinoTab::Vendor); });
+	SharedOverlay::OpenShopTab(ShopTabWidget, [this]() { SetActiveTab(ECasinoTab::Shop); });
 }
 
 void UT66CasinoOverlayWidget::OpenAlchemyTab()
 {
-	OpenVendorTab();
+	OpenShopTab();
 }
 
 void UT66CasinoOverlayWidget::SetGamblingWinGoldAmount(int32 InAmount)
@@ -273,12 +273,12 @@ void UT66CasinoOverlayWidget::SetGamblingWinGoldAmount(int32 InAmount)
 	}
 }
 
-void UT66CasinoOverlayWidget::SetVendorAllowsSteal(bool bInAllowsSteal)
+void UT66CasinoOverlayWidget::SetShopAllowsSteal(bool bInAllowsSteal)
 {
-	bVendorAllowsSteal = bInAllowsSteal;
-	if (VendorTabWidget)
+	bShopAllowsSteal = bInAllowsSteal;
+	if (ShopTabWidget)
 	{
-		VendorTabWidget->SetVendorAllowsSteal(bVendorAllowsSteal);
+		ShopTabWidget->SetShopAllowsSteal(bShopAllowsSteal);
 	}
 }
 

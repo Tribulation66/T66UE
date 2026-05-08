@@ -23,8 +23,35 @@ bool UT66WebImageCache::HasCachedImage(const FString& Url) const
 	return CachedTextures.Contains(Url);
 }
 
+void UT66WebImageCache::Deinitialize()
+{
+	bIsDeinitializing = true;
+	PendingDownloads.Reset();
+	Waiters.Reset();
+	OnWebImageReady.Clear();
+
+	for (TPair<FString, TObjectPtr<UTexture2D>>& Pair : CachedTextures)
+	{
+		if (UTexture2D* Texture = Pair.Value.Get())
+		{
+			if (Texture->IsRooted())
+			{
+				Texture->RemoveFromRoot();
+			}
+		}
+	}
+	CachedTextures.Reset();
+
+	Super::Deinitialize();
+}
+
 void UT66WebImageCache::RequestImage(const FString& Url, TFunction<void(UTexture2D*)> OnReady)
 {
+	if (bIsDeinitializing)
+	{
+		return;
+	}
+
 	if (Url.IsEmpty())
 	{
 		if (OnReady) OnReady(nullptr);
@@ -55,18 +82,25 @@ void UT66WebImageCache::RequestImage(const FString& Url, TFunction<void(UTexture
 	Request->SetTimeout(15.0f);
 
 	FString CapturedUrl = Url;
+	TWeakObjectPtr<UT66WebImageCache> WeakThis(this);
 	Request->OnProcessRequestComplete().BindLambda(
-		[this, CapturedUrl](FHttpRequestPtr Req, FHttpResponsePtr Resp, bool bConnected)
+		[WeakThis, CapturedUrl](FHttpRequestPtr Req, FHttpResponsePtr Resp, bool bConnected)
 		{
+			UT66WebImageCache* Cache = WeakThis.Get();
+			if (!Cache || Cache->bIsDeinitializing)
+			{
+				return;
+			}
+
 			if (bConnected && Resp.IsValid() && Resp->GetResponseCode() == 200)
 			{
-				OnDownloadComplete(CapturedUrl, Resp->GetContent(), true);
+				Cache->OnDownloadComplete(CapturedUrl, Resp->GetContent(), true);
 			}
 			else
 			{
 				UE_LOG(LogT66WebImageCache, Warning, TEXT("WebImageCache: download failed for %s (code=%d)"),
 					*CapturedUrl, Resp.IsValid() ? Resp->GetResponseCode() : 0);
-				OnDownloadComplete(CapturedUrl, TArray<uint8>(), false);
+				Cache->OnDownloadComplete(CapturedUrl, TArray<uint8>(), false);
 			}
 		});
 
@@ -76,30 +110,37 @@ void UT66WebImageCache::RequestImage(const FString& Url, TFunction<void(UTexture
 void UT66WebImageCache::OnDownloadComplete(const FString& Url, const TArray<uint8>& Data, bool bSuccess)
 {
 	// HTTP completion runs on a worker thread; Slate/UI and texture creation must run on game thread.
-	AsyncTask(ENamedThreads::GameThread, [this, Url, Data, bSuccess]()
+	TWeakObjectPtr<UT66WebImageCache> WeakThis(this);
+	AsyncTask(ENamedThreads::GameThread, [WeakThis, Url, Data, bSuccess]()
 	{
-		PendingDownloads.Remove(Url);
+		UT66WebImageCache* Cache = WeakThis.Get();
+		if (!Cache || Cache->bIsDeinitializing)
+		{
+			return;
+		}
+
+		Cache->PendingDownloads.Remove(Url);
 
 		UTexture2D* Texture = nullptr;
 		if (bSuccess && Data.Num() > 0)
 		{
-			Texture = CreateTextureFromData(Data, Url);
+			Texture = Cache->CreateTextureFromData(Data, Url);
 			if (Texture)
 			{
-				CachedTextures.Add(Url, Texture);
+				Cache->CachedTextures.Add(Url, Texture);
 			}
 		}
 
-		if (TArray<TFunction<void(UTexture2D*)>>* WaiterList = Waiters.Find(Url))
+		if (TArray<TFunction<void(UTexture2D*)>>* WaiterList = Cache->Waiters.Find(Url))
 		{
 			for (auto& Cb : *WaiterList)
 			{
 				if (Cb) Cb(Texture);
 			}
-			Waiters.Remove(Url);
+			Cache->Waiters.Remove(Url);
 		}
 
-		OnWebImageReady.Broadcast(Url, Texture);
+		Cache->OnWebImageReady.Broadcast(Url, Texture);
 	});
 }
 

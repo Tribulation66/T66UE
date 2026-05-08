@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Styling/SlateBrush.h"
 #include "UObject/StrongObjectPtr.h"
 
 class UTexture2D;
-struct FSlateBrush;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogT66RuntimeUI, Log, All);
 
@@ -25,6 +25,7 @@ namespace T66RuntimeUIBrushAccess
 		TStrongObjectPtr<UTexture2D> FileTexture;
 		TSharedPtr<FSlateBrush> Brush;
 		bool bChecked = false;
+		bool bSimpleReferenceFallback = false;
 
 		UTexture2D* GetTexture() const;
 	};
@@ -32,6 +33,15 @@ namespace T66RuntimeUIBrushAccess
 	T66_API const FString& GetDotaGeneratedSourceDir();
 
 	T66_API const FSlateBrush* ResolveDotaButtonPlateBrush(ET66DotaPlateBrushKind Kind);
+
+	T66_API bool ShouldUseSimpleReferenceFallback(const FString& SourcePath);
+
+	T66_API void ConfigureSimpleReferenceFallbackBrush(
+		FSlateBrush& Brush,
+		const FString& SourcePath,
+		const FVector2D& ImageSize,
+		const FMargin& Margin,
+		ESlateBrushDrawType::Type DrawAs = ESlateBrushDrawType::Box);
 
 	T66_API UTexture2D* LoadOptionalTexture(
 		FOptionalTextureBrush& Entry,

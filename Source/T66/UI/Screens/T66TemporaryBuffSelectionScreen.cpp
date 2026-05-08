@@ -7,16 +7,17 @@
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66SteamHelper.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "Engine/Texture2D.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Kismet/GameplayStatics.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Screens/T66HeroSelectionScreen.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66TemporaryBuffUIUtils.h"
 #include "UI/T66UIManager.h"
-#include "Engine/Texture2D.h"
 #include "Styling/SlateBrush.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/Images/SImage.h"
@@ -52,6 +53,7 @@ namespace
 	{
 		TStrongObjectPtr<UTexture2D> Texture;
 		TSharedPtr<FSlateBrush> Brush;
+		bool bSimpleFallback = false;
 	};
 
 	struct FT66TempBuffButtonBrushSet
@@ -65,6 +67,16 @@ namespace
 	const FLinearColor T66TempBuffFantasyText(0.953f, 0.925f, 0.835f, 1.0f);
 	const FLinearColor T66TempBuffFantasyMuted(0.738f, 0.708f, 0.648f, 1.0f);
 	const FLinearColor T66TempBuffFallbackPanel(0.025f, 0.023f, 0.034f, 0.97f);
+
+	FString GetTempBuffReferencePanelPath()
+	{
+		return T66ScreenSlateHelpers::MakeReferenceSharedAssetPath(TEXT("Panels/Modal/modal_shell_medium.png"));
+	}
+
+	FString GetTempBuffReferenceElementPath(const TCHAR* FileName)
+	{
+		return FString::Printf(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/%s"), FileName ? FileName : TEXT(""));
+	}
 
 	const FSlateBrush* ResolveTempBuffSpriteBrush(
 		FT66TempBuffSpriteBrushEntry& Entry,
@@ -84,7 +96,7 @@ namespace
 			Entry.Brush->Margin = Margin;
 		}
 
-		if (!Entry.Texture.IsValid())
+		if (!Entry.Texture.IsValid() && !Entry.bSimpleFallback)
 		{
 			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
@@ -100,50 +112,28 @@ namespace
 			}
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
-	}
-
-	const FSlateBrush* ResolveTempBuffSpriteRegionBrush(
-		FT66TempBuffSpriteBrushEntry& Entry,
-		const FString& RelativePath,
-		const FVector2D& ImageSize,
-		const FMargin& Margin,
-		const FBox2f& UVRegion,
-		const FLinearColor& Tint,
-		const ESlateBrushDrawType::Type DrawAs,
-		const TextureFilter Filter = TextureFilter::TF_Trilinear)
-	{
-		if (!Entry.Brush.IsValid())
+		if (Entry.Texture.IsValid())
 		{
-			Entry.Brush = MakeShared<FSlateBrush>();
+			Entry.bSimpleFallback = false;
+			Entry.Brush->SetResourceObject(Entry.Texture.Get());
+			return Entry.Brush.Get();
 		}
 
-		Entry.Brush->DrawAs = DrawAs;
-		Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
-		Entry.Brush->TintColor = FSlateColor(Tint);
-		Entry.Brush->ImageSize = ImageSize;
-		Entry.Brush->Margin = Margin;
-		Entry.Brush->SetUVRegion(UVRegion);
-
-		if (!Entry.Texture.IsValid())
+		if (T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(RelativePath))
 		{
-			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
-			{
-				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
-					CandidatePath,
-					Filter,
-					true,
-					TEXT("TempBuffSelectionReferenceRegionSprite")))
-				{
-					Entry.Texture.Reset(Texture);
-					break;
-				}
-			}
+			Entry.bSimpleFallback = true;
+			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+				*Entry.Brush,
+				RelativePath,
+				ImageSize,
+				Margin,
+				DrawAs);
+			return Entry.Brush.Get();
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+		Entry.bSimpleFallback = false;
+		Entry.Brush->SetResourceObject(nullptr);
+		return nullptr;
 	}
 
 	const FSlateBrush* GetTempBuffContentShellBrush()
@@ -151,7 +141,7 @@ namespace
 		static FT66TempBuffSpriteBrushEntry Entry;
 		return ResolveTempBuffSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffSelection/Panels/temporarybuffselection_panels_fullscreen_fullscreen_panel_wide.png"),
+			GetTempBuffReferencePanelPath(),
 			FVector2D(1588.f, 653.f),
 			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
 			ESlateBrushDrawType::Box,
@@ -163,7 +153,7 @@ namespace
 		static FT66TempBuffSpriteBrushEntry Entry;
 		return ResolveTempBuffSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffSelection/Panels/temporarybuffselection_panels_fullscreen_row_shell_quiet.png"),
+			GetTempBuffReferencePanelPath(),
 			FVector2D(1632.f, 209.f),
 			FMargin(0.070f, 0.155f, 0.070f, 0.155f),
 			ESlateBrushDrawType::Box,
@@ -178,7 +168,7 @@ namespace
 		FT66TempBuffSpriteBrushEntry& Entry = bDisabled ? Disabled : (bSelected ? Selected : Normal);
 		return ResolveTempBuffSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffSelection/Panels/temporarybuffselection_panels_fullscreen_row_shell_quiet.png"),
+			GetTempBuffReferencePanelPath(),
 			FVector2D(1632.f, 209.f),
 			FMargin(0.070f, 0.155f, 0.070f, 0.155f),
 			ESlateBrushDrawType::Box,
@@ -190,10 +180,10 @@ namespace
 		static FT66TempBuffSpriteBrushEntry Entry;
 		return ResolveTempBuffSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffSelection/Slots/temporarybuffselection_slots_reference_square_slot_frame_normal.png"),
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("SquareIcon"), TEXT("normal")),
 			FVector2D(132.f, 132.f),
-			FMargin(0.125f),
-			ESlateBrushDrawType::Box,
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
 			TextureFilter::TF_Nearest);
 	}
 
@@ -204,36 +194,25 @@ namespace
 		static FT66TempBuffSpriteBrushEntry ThumbEntry;
 		static FT66TempBuffSpriteBrushEntry HoverEntry;
 
-		const FString ControlsPath = TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffSelection/Controls/temporarybuffselection_controls_controls_sheet.png");
-		const FBox2f VerticalBarUV(
-			FVector2f(4.f / 1350.f, 4.f / 926.f),
-			FVector2f(90.f / 1350.f, 644.f / 926.f));
-
-		const FSlateBrush* TrackBrush = ResolveTempBuffSpriteRegionBrush(
+		const FSlateBrush* TrackBrush = ResolveTempBuffSpriteBrush(
 			TrackEntry,
-			ControlsPath,
+			GetTempBuffReferenceElementPath(TEXT("progress_bar_track.png")),
 			FVector2D(14.f, 120.f),
 			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
-			VerticalBarUV,
-			FLinearColor(0.35f, 0.34f, 0.30f, 0.70f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* ThumbBrush = ResolveTempBuffSpriteRegionBrush(
+		const FSlateBrush* ThumbBrush = ResolveTempBuffSpriteBrush(
 			ThumbEntry,
-			ControlsPath,
+			GetTempBuffReferenceElementPath(TEXT("progress_bar_fill_cyan.png")),
 			FVector2D(16.f, 96.f),
 			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
-			FLinearColor(0.93f, 0.82f, 0.52f, 1.0f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* HoverBrush = ResolveTempBuffSpriteRegionBrush(
+		const FSlateBrush* HoverBrush = ResolveTempBuffSpriteBrush(
 			HoverEntry,
-			ControlsPath,
+			GetTempBuffReferenceElementPath(TEXT("progress_bar_fill_cyan.png")),
 			FVector2D(16.f, 96.f),
 			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
-			FLinearColor(1.0f, 0.90f, 0.62f, 1.0f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 
@@ -269,10 +248,7 @@ namespace
 			Suffix = TEXT("pressed");
 		}
 
-		return FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffSelection/Buttons/temporarybuffselection_buttons_%s_%s.png"),
-			bCta ? TEXT("cta") : TEXT("pill"),
-			Suffix);
+		return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(bCta ? TEXT("CTA") : TEXT("Pill"), Suffix);
 	}
 
 	FVector2D GetTempBuffButtonSize(const ET66TempBuffButtonFamily Family, const ET66TempBuffButtonState State)
@@ -342,10 +318,8 @@ namespace
 		FT66TempBuffButtonBrushSet& Set = GetTempBuffButtonBrushSet(Family);
 		return ResolveTempBuffSpriteBrush(
 			Set.Disabled,
-			FString::Printf(
-				TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffSelection/Buttons/temporarybuffselection_buttons_%s_disabled.png"),
-				bCta ? TEXT("cta") : TEXT("pill")),
-			bCta ? FVector2D(240.f, 200.f) : FVector2D(180.f, 69.f),
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(bCta ? TEXT("CTA") : TEXT("Pill"), TEXT("disabled")),
+			bCta ? FVector2D(388.f, 100.f) : FVector2D(180.f, 69.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
 			TextureFilter::TF_Nearest);
@@ -417,12 +391,19 @@ namespace
 
 		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
 			OnClicked,
-			SNew(STextBlock)
-			.Text(Label)
-			.Font(FT66Style::Tokens::FontBold(FontSize))
-			.ColorAndOpacity(TextColorAttr)
-			.Justification(ETextJustify::Center)
-			.AutoWrapText(true),
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::DownOnly)
+			[
+				SNew(STextBlock)
+				.Text(Label)
+				.Font(FT66Style::Tokens::FontBold(FontSize))
+				.ColorAndOpacity(TextColorAttr)
+				.Justification(ETextJustify::Center)
+				.AutoWrapText(false)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
+			],
 			NormalBrush,
 			HoverBrush,
 			PressedBrush,
@@ -934,7 +915,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 						],
 						GetTempBuffCardShellBrush(bFocusedSlotMatches, !(bCanUseOwnedCopy || bCanAffordPurchase)),
 						FMargin(10.f),
-						bFocusedSlotMatches ? FLinearColor(0.20f, 0.28f, 0.20f, 1.0f) : FT66Style::Tokens::Panel)
+						bFocusedSlotMatches ? FLinearColor(0.045f, 0.070f, 0.050f, 1.0f) : T66TempBuffFallbackPanel)
 				]
 			];
 	}
@@ -962,20 +943,24 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 				,
 				GetTempBuffRowShellBrush(),
 				FMargin(20.f),
-				FT66Style::Tokens::Panel));
+				T66TempBuffFallbackPanel));
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FT66Style::Scrim())
 		[
-			SNew(SBox)
-			.WidthOverride(ModalWidth)
-			.HeightOverride(ModalHeight)
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::DownOnly)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				MakeTempBuffSpritePanel(
-					SNew(SVerticalBox)
+				SNew(SBox)
+				.WidthOverride(ModalWidth)
+				.HeightOverride(ModalHeight)
+				[
+					MakeTempBuffSpritePanel(
+						SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
@@ -1072,9 +1057,10 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 						]
 					]
 					,
-					GetTempBuffContentShellBrush(),
-					FMargin(24.f, 8.f, 24.f, 18.f),
-					FT66Style::Panel())
+						GetTempBuffContentShellBrush(),
+						FMargin(24.f, 8.f, 24.f, 18.f),
+						T66TempBuffFallbackPanel)
+				]
 			]
 		];
 }

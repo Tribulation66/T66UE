@@ -25,7 +25,6 @@ class UT66ArcadePopupWidget;
 class UT66LoadingScreenWidget;
 class AT66LootBagPickup;
 class AT66HouseNPCBase;
-class AT66VendorNPC;
 class AT66GamblerNPC;
 class AT66RecruitableCompanion;
 class AT66HeroBase;
@@ -38,12 +37,26 @@ class SWidget;
 class SWeakWidget;
 class UInputAction;
 class UInputMappingContext;
+class UMaterialInterface;
+class UPrimitiveComponent;
 class ACameraActor;
 class AT66HeroPreviewStage;
 class AT66CompanionPreviewStage;
 struct FStreamableHandle;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FT66NearbyLootBagChanged);
+
+USTRUCT()
+struct FT66CameraWallOccluderOriginalMaterials
+{
+	GENERATED_BODY()
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UMaterialInterface>> Materials;
+
+	UPROPERTY(Transient)
+	bool bHadDisallowNanite = false;
+};
 
 /**
  * Player Controller for Tribulation 66
@@ -142,19 +155,19 @@ public:
 	/** Dev console overlay: Enter to open, Esc to close. Non-shipping builds only. */
 	void ToggleDevConsole();
 
-	/** Open the shared casino shell overlay (gambling + vendor + alchemy). */
+	/** Open the shared casino shell overlay (gambling + shop + alchemy). */
 	void OpenCasinoOverlay();
 
 	/** Close the shared casino shell overlay and return to gameplay input. */
 	void CloseCasinoOverlay();
 
 	void SwitchCasinoOverlayToGambling();
-	void SwitchCasinoOverlayToVendor();
+	void SwitchCasinoOverlayToShopTab();
 	void SwitchCasinoOverlayToAlchemy();
 	bool IsCasinoOverlayOpen() const;
 	bool TriggerCasinoBossIfAngry();
 
-	void OpenCasinoVendorTabForVendor(AT66VendorNPC* Vendor);
+	void OpenCasinoShopTab();
 
 	/** Open the Lab Collector full-screen overlay (non-pausing). */
 	void OpenCollectorOverlay();
@@ -176,9 +189,6 @@ public:
 
 	/** Open the Cowardice prompt (non-pausing). */
 	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
-
-	/** Wheel spin: play HUD animation + award gold (no overlay). */
-	void StartWheelSpinHUD(ET66Rarity Rarity);
 
 	/** Crate open: play CS:GO-style item reveal HUD animation. */
 	void StartCrateOpenHUD();
@@ -256,7 +266,7 @@ protected:
 	void HandleTikTokPrevPressed();
 	void HandleTikTokNextPressed();
 
-	/** Interact (F): vendor sell or pickup collect */
+	/** Interact (F): shop sell or pickup collect */
 	void HandleInteractPressed();
 
 	/** Ultimate (R): AoE damage with cooldown */
@@ -302,6 +312,11 @@ private:
 	void ClampGameplayCameraPitch();
 	void UpdateLockedChaseGameplayCamera(float DeltaTime);
 	void UpdateGameplayCameraSideWallSpring(float DeltaTime);
+	void UpdateGameplayCameraWallOcclusion(float DeltaTime);
+	void ClearGameplayCameraWallOcclusion();
+	UMaterialInterface* GetCameraWallOccluderFadeMaterial();
+	void ApplyCameraWallOcclusion(UPrimitiveComponent* Component, UMaterialInterface* FadeMaterial);
+	void RestoreCameraWallOcclusion(UPrimitiveComponent* Component);
 
 	TSubclassOf<UT66ScreenBase> ResolveScreenClass(ET66ScreenType ScreenType) const;
 	TSubclassOf<UT66GameplayHUDWidget> ResolveGameplayHUDClass() const;
@@ -481,6 +496,12 @@ private:
 	float SavedPreLockedChaseCameraArmLength = 0.0f;
 	FVector SavedPreLockedChaseCameraBoomRelativeLocation = FVector::ZeroVector;
 	TWeakObjectPtr<AT66HeroBase> LockedChaseCameraInitializedHero;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> CameraWallOccluderFadeMaterial = nullptr;
+
+	UPROPERTY(Transient)
+	TMap<TObjectPtr<UPrimitiveComponent>, FT66CameraWallOccluderOriginalMaterials> CameraWallOccludedComponents;
 
 	bool bHeroOneScopedUltActive = false;
 	bool bHeroOneScopeViewEnabled = false;

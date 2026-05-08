@@ -18,7 +18,7 @@ namespace
 {
 	bool T66IsDifficultyBossStage(const int32 StageNum)
 	{
-		return StageNum == 4 || StageNum == 9 || StageNum == 14 || StageNum == 19 || StageNum == 23;
+		return StageNum == 4 || StageNum == 8 || StageNum == 12 || StageNum == 16 || StageNum == 20;
 	}
 }
 

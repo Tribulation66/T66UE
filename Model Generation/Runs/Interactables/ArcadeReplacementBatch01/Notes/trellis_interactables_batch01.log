@@ -1,0 +1,10 @@
+[2026-05-05T16:19:50+00:00] START GamblerDemonStand_White seed=1337 texture=2048 decimation=80000
+[2026-05-05T16:22:24+00:00] DONE GamblerDemonStand_White 4101828 bytes duration=154s -> /workspace/T66/ModelGeneration/Runs/Interactables/ArcadeReplacementBatch01/Raw/Trellis/GamblerDemonStand_White_S1337_D80000_Trellis2.glb
+[2026-05-05T16:22:24+00:00] START ArcadeMachine_White seed=1337 texture=2048 decimation=80000
+[2026-05-05T16:23:54+00:00] DONE ArcadeMachine_White 3836604 bytes duration=90s -> /workspace/T66/ModelGeneration/Runs/Interactables/ArcadeReplacementBatch01/Raw/Trellis/ArcadeMachine_White_S1337_D80000_Trellis2.glb
+[2026-05-05T16:23:54+00:00] START ArcadeAmplifierPickup_White seed=1337 texture=2048 decimation=80000
+[2026-05-05T16:27:37+00:00] DONE ArcadeAmplifierPickup_White 4514704 bytes duration=223s -> /workspace/T66/ModelGeneration/Runs/Interactables/ArcadeReplacementBatch01/Raw/Trellis/ArcadeAmplifierPickup_White_S1337_D80000_Trellis2.glb
+[2026-05-05T16:27:37+00:00] START ArcadeAmplifierPickup_Charged_White seed=1337 texture=2048 decimation=80000
+[2026-05-05T16:31:53+00:00] DONE ArcadeAmplifierPickup_Charged_White 4738684 bytes duration=256s -> /workspace/T66/ModelGeneration/Runs/Interactables/ArcadeReplacementBatch01/Raw/Trellis/ArcadeAmplifierPickup_Charged_White_S1337_D80000_Trellis2.glb
+[2026-05-05T16:31:53+00:00] START Chest_White seed=1337 texture=2048 decimation=80000
+[2026-05-05T16:36:08+00:00] DONE Chest_White 4023236 bytes duration=255s -> /workspace/T66/ModelGeneration/Runs/Interactables/ArcadeReplacementBatch01/Raw/Trellis/Chest_White_S1337_D80000_Trellis2.glb

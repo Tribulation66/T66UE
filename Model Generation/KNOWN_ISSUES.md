@@ -47,7 +47,8 @@ Impact:
 
 Current mitigation:
 
-- baseline tests now use opaque green-background PNGs
+- baseline tests now use opaque flat-white `#ffffff` PNGs
+- reject green backgrounds, alpha, floor cards, cast shadows, contact shadows, gradients, reflections, and poster panels for new production inputs
 
 ## 4. Environment Drift Can Break DINOv3
 
@@ -239,7 +240,7 @@ Impact:
 Current mitigation:
 
 - treat source PNG visual review as the first gate, before TRELLIS
-- for Chad Pass02, prefer opaque flat-white source backgrounds with no alpha, floor, shadow, reflection, gradient, or border panel
+- prefer opaque flat-white source backgrounds with no alpha, floor, cast shadow, contact shadow, reflection, gradient, green spill, or border panel
 - require body-only sources to be truly headless with a clean neck socket
 - require head-only sources to be head plus neck only, with no shoulders or clothing
 - reject raw body GLBs with near-flat side views or body depth under roughly `0.15m`

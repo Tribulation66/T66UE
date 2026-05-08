@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\Raw\\Trellis\\Interactables\\Arcade_BladeSweep\\Arcade_BladeSweep_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\QA\\TrellisFront\\Interactables\\Arcade_BladeSweep_front.png",
+  "export": null,
+  "raw_triangles": 76393,
+  "triangles_before_decimate": 76393,
+  "triangles_after_decimate": 76393,
+  "bounds": {
+    "min": [
+      -0.3895854949951172,
+      -0.2776944041252136,
+      -0.5009802579879761
+    ],
+    "max": [
+      0.38951003551483154,
+      0.2775096297264099,
+      0.5009775757789612
+    ],
+    "size": [
+      0.7790955305099487,
+      0.5552040338516235,
+      1.001957893371582
+    ]
+  }
+}

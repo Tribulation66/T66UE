@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-04-18  
 **Scope:** Single-source handoff for combat runtime flow, targeting, damage routing, hit feedback, and the implementation plan for spatial headshots, accuracy-driven aiming, and boss body-part combat.  
-**Companion docs:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`, `MASTER DOCS/T66_PROJECT_CATALOGUE.md`, `ANTI_CHEAT/MASTER_ANTI_CHEAT.md`  
+**Companion docs:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`, `MASTER DOCS/T66_PROJECT_CATALOGUE.md`, `MASTER DOCS/Backend Anti Cheat/MASTER_ANTI_CHEAT.md`  
 **Maintenance rule:** Update this file after every material combat, targeting, damage-model, hitbox, projectile, boss-health, or combat-UI change.
 
 ## 1. Executive Summary

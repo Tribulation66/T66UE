@@ -7,6 +7,7 @@ using namespace T66GameModePrivate;
 namespace
 {
 	static const FName T66TowerMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
+	static const FName T66TowerMapTerrainCollisionProxyTag(TEXT("T66_MainMapTerrain_CollisionProxy"));
 	static const TCHAR* T66TowerTerrainFloorTagPrefix = TEXT("T66_Floor_Tower_");
 
 	static int32 T66ReadTerrainFloorTag(const AActor* Actor)
@@ -43,10 +44,20 @@ namespace
 			return;
 		}
 
+		int32 ChangedVisualActors = 0;
+		int32 ChangedCollisionProxyActors = 0;
+		// Floor-transition visibility/collision pass only; not part of per-frame gameplay.
 		for (TActorIterator<AActor> It(World); It; ++It)
 		{
 			AActor* Actor = *It;
-			if (!Actor || !Actor->ActorHasTag(T66TowerMapTerrainVisualTag))
+			if (!Actor)
+			{
+				continue;
+			}
+
+			const bool bIsVisualActor = Actor->ActorHasTag(T66TowerMapTerrainVisualTag);
+			const bool bIsCollisionProxyActor = Actor->ActorHasTag(T66TowerMapTerrainCollisionProxyTag);
+			if (!bIsVisualActor && !bIsCollisionProxyActor)
 			{
 				continue;
 			}
@@ -57,7 +68,36 @@ namespace
 				continue;
 			}
 
-			Actor->SetActorHiddenInGame(ActorFloorNumber != VisibleFloorNumber);
+			const bool bActiveFloor = ActorFloorNumber == VisibleFloorNumber;
+			if (bIsVisualActor)
+			{
+				const bool bShouldBeHidden = !bActiveFloor;
+				if (Actor->IsHidden() != bShouldBeHidden)
+				{
+					Actor->SetActorHiddenInGame(bShouldBeHidden);
+					++ChangedVisualActors;
+				}
+			}
+
+			if (bIsCollisionProxyActor)
+			{
+				if (Actor->GetActorEnableCollision() != bActiveFloor)
+				{
+					Actor->SetActorEnableCollision(bActiveFloor);
+					++ChangedCollisionProxyActors;
+				}
+			}
+		}
+
+		if (ChangedVisualActors > 0 || ChangedCollisionProxyActors > 0)
+		{
+			UE_LOG(
+				LogT66GameMode,
+				Log,
+				TEXT("[MAP] Tower terrain active floor %d (visual actors changed=%d, collision proxies changed=%d)."),
+				VisibleFloorNumber,
+				ChangedVisualActors,
+				ChangedCollisionProxyActors);
 		}
 	}
 }
@@ -349,12 +389,25 @@ void AT66GameMode::HandleTowerDescentHoleTriggered(APawn* Pawn, const int32 From
 		SyncTowerMiasmaSourceAnchor(ToFloorNumber, Pawn->GetActorLocation());
 	}
 
-	T66SetTowerTerrainVisualFloor(GetWorld(), ToFloorNumber);
+	if (ToFloorNumber != INDEX_NONE && ToFloorNumber != ActiveTowerTerrainVisualFloorNumber)
+	{
+		T66SetTowerTerrainVisualFloor(GetWorld(), ToFloorNumber);
+		ActiveTowerTerrainVisualFloorNumber = ToFloorNumber;
+	}
 
 	if (!bTowerMiasmaActive && ToFloorNumber >= CachedTowerMainMapLayout.FirstGameplayFloorNumber)
 	{
 		const FVector FloorAnchor = Pawn->GetActorLocation();
 		TryStartTowerMiasma(&FloorAnchor, ToFloorNumber);
+	}
+
+	if (ToFloorNumber >= CachedTowerMainMapLayout.FirstGameplayFloorNumber
+		&& ToFloorNumber <= CachedTowerMainMapLayout.LastGameplayFloorNumber)
+	{
+		if (AT66EnemyDirector* ExistingEnemyDirector = FindOrCacheEnemyDirector(GetWorld()))
+		{
+			ExistingEnemyDirector->SpawnInitialPopulationForTowerFloor(ToFloorNumber);
+		}
 	}
 
 	if (ToFloorNumber == CachedTowerMainMapLayout.BossFloorNumber)
@@ -430,6 +483,7 @@ void AT66GameMode::SyncTowerTrapActivation(const bool bForce)
 			ActiveTowerTrapFloorNumber = INDEX_NONE;
 			TrapSubsystem->SetActiveTowerFloor(INDEX_NONE);
 		}
+		ActiveTowerTerrainVisualFloorNumber = INDEX_NONE;
 		return;
 	}
 
@@ -437,15 +491,15 @@ void AT66GameMode::SyncTowerTrapActivation(const bool bForce)
 	const bool bFloorChanged = CurrentFloorNumber != ActiveTowerTrapFloorNumber;
 	if (!bForce && !bFloorChanged)
 	{
-		TowerTrapActivationAccumulator += World->GetDeltaSeconds();
-		if (TowerTrapActivationAccumulator < 0.10f)
-		{
-			return;
-		}
+		return;
 	}
 
 	TowerTrapActivationAccumulator = 0.f;
 	ActiveTowerTrapFloorNumber = CurrentFloorNumber;
 	TrapSubsystem->SetActiveTowerFloor(CurrentFloorNumber);
-	T66SetTowerTerrainVisualFloor(World, CurrentFloorNumber);
+	if (bForce || CurrentFloorNumber != ActiveTowerTerrainVisualFloorNumber)
+	{
+		T66SetTowerTerrainVisualFloor(World, CurrentFloorNumber);
+		ActiveTowerTerrainVisualFloorNumber = CurrentFloorNumber;
+	}
 }

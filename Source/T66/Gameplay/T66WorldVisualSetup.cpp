@@ -24,6 +24,8 @@ namespace
 			return 0;
 		}
 
+		// Setup-only classification: this intentionally scans the world during
+		// visual bootstrap/cleanup, not during per-frame gameplay.
 		TArray<TActor*> ActorsToDestroy;
 		for (TActorIterator<TActor> It(World); It; ++It)
 		{
@@ -48,6 +50,7 @@ namespace
 			return 0;
 		}
 
+		// Setup-only classification: tag cleanup is bounded to world bootstrap.
 		TArray<AActor*> ActorsToDestroy;
 		for (TActorIterator<AActor> It(World); It; ++It)
 		{
@@ -75,6 +78,7 @@ namespace
 			return 0;
 		}
 
+		// Setup-only classification: legacy class cleanup is bounded to world bootstrap.
 		TArray<AActor*> ActorsToDestroy;
 		for (TActorIterator<AActor> It(World); It; ++It)
 		{
@@ -109,6 +113,8 @@ namespace
 			return nullptr;
 		}
 
+		// Setup/helper lookup: callers cache their returned volume when used from
+		// runtime settings paths, so this scan should not sit on a tick path.
 		for (TActorIterator<APostProcessVolume> It(World); It; ++It)
 		{
 			if (APostProcessVolume* Volume = *It; Volume && Volume->bUnbound)

@@ -193,7 +193,6 @@ namespace
 		case ET66BossAttackProfile::Sharpshooter: return TEXT("Sharpshooter");
 		case ET66BossAttackProfile::Juggernaut:   return TEXT("Juggernaut");
 		case ET66BossAttackProfile::Duelist:      return TEXT("Duelist");
-		case ET66BossAttackProfile::Vendor:       return TEXT("Vendor");
 		case ET66BossAttackProfile::Gambler:      return TEXT("Gambler");
 		case ET66BossAttackProfile::Balanced:
 		default:                                  return TEXT("Balanced");
@@ -729,16 +728,19 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 		}
 	}
 
-	// Use the same live mob visual as the in-game Cow enemy so boss testing matches
-	// the actual enemy asset path rather than a static showcase prop.
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
-			const bool bApplied = Visuals->ApplyCharacterVisual(FName(TEXT("Cow")), GetMesh(), VisualMesh, true);
+			const FName BossVisualID = BossID.IsNone() ? FName(TEXT("Boss")) : BossID;
+			bool bApplied = Visuals->ApplyCharacterVisual(BossVisualID, GetMesh(), nullptr, true, false, false, VisualMesh);
+			if (!bApplied && BossVisualID != FName(TEXT("Boss")))
+			{
+				bApplied = Visuals->ApplyCharacterVisual(FName(TEXT("Boss")), GetMesh(), VisualMesh, true);
+			}
 			if (USkeletalMeshComponent* SkelMesh = GetMesh())
 			{
-				if (bApplied)
+				if (bApplied && SkelMesh->IsVisible())
 				{
 					SkelMesh->SetRelativeScale3D(SkelMesh->GetRelativeScale3D() * 3.0f);
 				}
@@ -1379,16 +1381,6 @@ void AT66BossBase::FireAtPlayer()
 		}
 		break;
 
-	case ET66BossAttackProfile::Vendor:
-		QueueProjectileFanBurst(TargetLocation, 4 + Phase, 22.f + 4.f * static_cast<float>(Phase), 0.05f, 1.00f + 0.04f * static_cast<float>(Phase), 0.f, 52.f, false);
-		QueueProjectileShotTowards(TargetLocation, 0.12f, -18.f, 1.10f, FVector::ZeroVector, true);
-		QueueProjectileShotTowards(TargetLocation, 0.17f, 18.f, 1.10f, FVector::ZeroVector, true);
-		if (Phase >= 2)
-		{
-			QueueRadialBurst(8, 0.025f, PlanarToTarget.Rotation().Yaw + 22.5f, 0.90f, 0.30f, false);
-		}
-		break;
-
 	case ET66BossAttackProfile::Gambler:
 		QueueRadialBurst(6 + Phase * 2, 0.02f, FMath::FRandRange(0.f, 360.f), 0.86f + 0.04f * static_cast<float>(Phase), 0.f, true);
 		QueueProjectileFanBurst(TargetLocation, 3 + Phase, 16.f + 2.f * static_cast<float>(Phase), 0.05f, 1.10f + 0.05f * static_cast<float>(Phase), 0.16f, 20.f, false);
@@ -1535,21 +1527,6 @@ void AT66BossBase::SpawnGroundAOE()
 		if (Phase >= 2)
 		{
 			SpawnGroundAOEAtLocation(TargetLoc - Forward * GroundAOERadius * 0.82f, 0.72f, 0.76f, false);
-		}
-		break;
-
-	case ET66BossAttackProfile::Vendor:
-		SpawnGroundAOEAtLocation(TargetLoc, 0.92f, 0.94f, false);
-		SpawnGroundAOEAtLocation(TargetLoc + Right * GroundAOERadius * 0.78f, 0.74f, 0.82f, true);
-		SpawnGroundAOEAtLocation(TargetLoc - Right * GroundAOERadius * 0.78f, 0.74f, 0.82f, true);
-		if (Phase >= 1)
-		{
-			SpawnGroundAOEAtLocation(TargetLoc + Forward * GroundAOERadius * 0.78f, 0.74f, 0.80f, false);
-			SpawnGroundAOEAtLocation(TargetLoc - Forward * GroundAOERadius * 0.78f, 0.74f, 0.80f, false);
-		}
-		if (Phase >= 2)
-		{
-			SpawnGroundAOEAtLocation(GetActorLocation(), 1.08f, 0.88f, true);
 		}
 		break;
 

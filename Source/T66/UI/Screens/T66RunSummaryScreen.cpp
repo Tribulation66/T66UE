@@ -28,6 +28,7 @@
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "Engine/TextureDefines.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Data/T66DataTypes.h"
@@ -45,6 +46,8 @@
 #include "Styling/SlateBrush.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SScaleBox.h"
+#include "Widgets/SCanvas.h"
 #include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
@@ -106,7 +109,7 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 	// NOTE: Snapshot loading also happens during RebuildWidget() so the first open should already be correct.
 	if (bConsumedRequest || (bWasViewingSaved != bViewingSavedLeaderboardRunSummary) || (PrevSummary != LoadedSavedSummary))
 	{
-		ForceRebuildSlate();
+		RequestDeferredSlateRebuild();
 	}
 
 	// Default: banners are only relevant for a freshly-finished run (not for viewing saved leaderboard snapshots).
@@ -165,7 +168,7 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 		// The UI manager reuses modal widget instances, so the cached Slate tree can
 		// still reflect the previous button stack/popup state unless we rebuild after
 		// activation has resolved the current live-run mode.
-		ForceRebuildSlate();
+		RequestDeferredSlateRebuild();
 	}
 	else
 	{
@@ -244,6 +247,7 @@ namespace
 	{
 		TStrongObjectPtr<UTexture2D> Texture;
 		TSharedPtr<FSlateBrush> Brush;
+		bool bSimpleFallback = false;
 	};
 
 	struct FT66RunSummaryButtonBrushSet
@@ -255,9 +259,36 @@ namespace
 	};
 
 	const FLinearColor RunSummaryFantasyText(0.953f, 0.925f, 0.835f, 1.0f);
-	constexpr float RunSummaryContentRowWidth = 1560.f;
-	constexpr float RunSummaryRankPanelWidth = 410.f;
-	constexpr float RunSummaryActionPanelWidth = 255.f;
+	constexpr float RunSummaryReferenceWidth = 1920.f;
+	constexpr float RunSummaryReferenceHeight = 1080.f;
+
+	FString GetRunSummaryReferencePanelPath()
+	{
+		return T66ScreenSlateHelpers::MakeReferenceSharedAssetPath(TEXT("Panels/Modal/modal_shell_medium.png"));
+	}
+
+	FString GetRunSummaryReferenceElementPath(const TCHAR* FileName)
+	{
+		return FString::Printf(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/%s"), FileName ? FileName : TEXT(""));
+	}
+
+	const FEditableTextBoxStyle& GetRunSummaryTextBoxStyle()
+	{
+		static FEditableTextBoxStyle Style;
+		static bool bInitialized = false;
+		if (!bInitialized)
+		{
+			bInitialized = true;
+			Style = FCoreStyle::Get().GetWidgetStyle<FEditableTextBoxStyle>("NormalEditableTextBox");
+			const FSlateBrush* NoBrush = FCoreStyle::Get().GetBrush("NoBrush");
+			Style.SetBackgroundImageNormal(*NoBrush);
+			Style.SetBackgroundImageHovered(*NoBrush);
+			Style.SetBackgroundImageFocused(*NoBrush);
+			Style.SetBackgroundImageReadOnly(*NoBrush);
+			Style.SetPadding(FMargin(0.f));
+		}
+		return Style;
+	}
 
 	const FSlateBrush* ResolveRunSummarySpriteBrush(
 		FT66RunSummarySpriteBrushEntry& Entry,
@@ -277,7 +308,7 @@ namespace
 			Entry.Brush->Margin = Margin;
 		}
 
-		if (!Entry.Texture.IsValid())
+		if (!Entry.Texture.IsValid() && !Entry.bSimpleFallback)
 		{
 			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
@@ -293,50 +324,28 @@ namespace
 			}
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
-	}
-
-	const FSlateBrush* ResolveRunSummarySpriteRegionBrush(
-		FT66RunSummarySpriteBrushEntry& Entry,
-		const FString& RelativePath,
-		const FVector2D& ImageSize,
-		const FMargin& Margin,
-		const FBox2f& UVRegion,
-		const FLinearColor& Tint,
-		const ESlateBrushDrawType::Type DrawAs,
-		const TextureFilter Filter = TextureFilter::TF_Trilinear)
-	{
-		if (!Entry.Brush.IsValid())
+		if (Entry.Texture.IsValid())
 		{
-			Entry.Brush = MakeShared<FSlateBrush>();
+			Entry.bSimpleFallback = false;
+			Entry.Brush->SetResourceObject(Entry.Texture.Get());
+			return Entry.Brush.Get();
 		}
 
-		Entry.Brush->DrawAs = DrawAs;
-		Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
-		Entry.Brush->TintColor = FSlateColor(Tint);
-		Entry.Brush->ImageSize = ImageSize;
-		Entry.Brush->Margin = Margin;
-		Entry.Brush->SetUVRegion(UVRegion);
-
-		if (!Entry.Texture.IsValid())
+		if (T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(RelativePath))
 		{
-			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
-			{
-				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
-					CandidatePath,
-					Filter,
-					true,
-					TEXT("RunSummaryReferenceRegionSprite")))
-				{
-					Entry.Texture.Reset(Texture);
-					break;
-				}
-			}
+			Entry.bSimpleFallback = true;
+			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+				*Entry.Brush,
+				RelativePath,
+				ImageSize,
+				Margin,
+				DrawAs);
+			return Entry.Brush.Get();
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+		Entry.bSimpleFallback = false;
+		Entry.Brush->SetResourceObject(nullptr);
+		return nullptr;
 	}
 
 	const FSlateBrush* GetRunSummaryContentShellBrush()
@@ -344,9 +353,9 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_fullscreen_panel_wide.png"),
-			FVector2D(1588.f, 653.f),
-			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
+			GetRunSummaryReferencePanelPath(),
+			FVector2D(1055.f, 645.f),
+			FMargin(0.035f, 0.055f, 0.035f, 0.055f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -356,9 +365,57 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_row_shell_quiet.png"),
-			FVector2D(1632.f, 209.f),
-			FMargin(0.045f, 0.085f, 0.045f, 0.085f),
+			GetRunSummaryReferencePanelPath(),
+			FVector2D(620.f, 175.f),
+			FMargin(0.055f, 0.175f, 0.055f, 0.175f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetRunSummaryGeneratedRankPanelBrush()
+	{
+		static FT66RunSummarySpriteBrushEntry Entry;
+		return ResolveRunSummarySpriteBrush(
+			Entry,
+			GetRunSummaryReferencePanelPath(),
+			FVector2D(620.f, 175.f),
+			FMargin(0.055f, 0.175f, 0.055f, 0.175f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetRunSummaryGeneratedMetricCardBrush()
+	{
+		static FT66RunSummarySpriteBrushEntry Entry;
+		return ResolveRunSummarySpriteBrush(
+			Entry,
+			GetRunSummaryReferencePanelPath(),
+			FVector2D(520.f, 115.f),
+			FMargin(0.070f, 0.230f, 0.070f, 0.230f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetRunSummaryGeneratedDamagePanelBrush()
+	{
+		static FT66RunSummarySpriteBrushEntry Entry;
+		return ResolveRunSummarySpriteBrush(
+			Entry,
+			GetRunSummaryReferencePanelPath(),
+			FVector2D(535.f, 236.f),
+			FMargin(0.070f, 0.130f, 0.070f, 0.130f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetRunSummaryStatsPanelBrush()
+	{
+		static FT66RunSummarySpriteBrushEntry Entry;
+		return ResolveRunSummarySpriteBrush(
+			Entry,
+			GetRunSummaryReferencePanelPath(),
+			FVector2D(486.f, 209.f),
+			FMargin(0.070f, 0.130f, 0.070f, 0.130f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -368,9 +425,9 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_fullscreen_panel_tall.png"),
-			FVector2D(260.f, 260.f),
-			FMargin(0.115f, 0.055f, 0.115f, 0.055f),
+			GetRunSummaryReferencePanelPath(),
+			FVector2D(386.f, 336.f),
+			FMargin(0.085f, 0.085f, 0.085f, 0.085f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -380,9 +437,21 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Slots/runsummary_slots_reference_square_slot_frame_normal.png"),
-			FVector2D(56.f, 56.f),
-			FMargin(0.20f, 0.18f, 0.20f, 0.18f),
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("SquareIcon"), TEXT("normal")),
+			FVector2D(151.f, 151.f),
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetRunSummaryFieldBrush()
+	{
+		static FT66RunSummarySpriteBrushEntry Entry;
+		return ResolveRunSummarySpriteBrush(
+			Entry,
+			GetRunSummaryReferenceElementPath(TEXT("dropdown_field_normal.png")),
+			FVector2D(580.f, 72.f),
+			FMargin(0.075f, 0.240f, 0.075f, 0.240f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -394,36 +463,25 @@ namespace
 		static FT66RunSummarySpriteBrushEntry ThumbEntry;
 		static FT66RunSummarySpriteBrushEntry HoverEntry;
 
-		const FString ControlsPath = TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Controls/runsummary_controls_controls_sheet.png");
-		const FBox2f VerticalBarUV(
-			FVector2f(4.f / 1350.f, 4.f / 926.f),
-			FVector2f(90.f / 1350.f, 644.f / 926.f));
-
-		const FSlateBrush* TrackBrush = ResolveRunSummarySpriteRegionBrush(
+		const FSlateBrush* TrackBrush = ResolveRunSummarySpriteBrush(
 			TrackEntry,
-			ControlsPath,
-			FVector2D(14.f, 120.f),
-			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
-			VerticalBarUV,
-			FLinearColor(0.35f, 0.34f, 0.30f, 0.70f),
+			GetRunSummaryReferenceElementPath(TEXT("progress_bar_track.png")),
+			FVector2D(34.f, 707.f),
+			FMargin(0.38f, 0.055f, 0.38f, 0.055f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* ThumbBrush = ResolveRunSummarySpriteRegionBrush(
+		const FSlateBrush* ThumbBrush = ResolveRunSummarySpriteBrush(
 			ThumbEntry,
-			ControlsPath,
-			FVector2D(16.f, 96.f),
-			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
-			FLinearColor(0.93f, 0.82f, 0.52f, 1.0f),
+			GetRunSummaryReferenceElementPath(TEXT("progress_bar_fill_cyan.png")),
+			FVector2D(36.f, 260.f),
+			FMargin(0.38f, 0.085f, 0.38f, 0.085f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* HoverBrush = ResolveRunSummarySpriteRegionBrush(
+		const FSlateBrush* HoverBrush = ResolveRunSummarySpriteBrush(
 			HoverEntry,
-			ControlsPath,
-			FVector2D(16.f, 96.f),
-			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
-			FLinearColor(1.0f, 0.90f, 0.62f, 1.0f),
+			GetRunSummaryReferenceElementPath(TEXT("progress_bar_fill_cyan.png")),
+			FVector2D(36.f, 260.f),
+			FMargin(0.38f, 0.085f, 0.38f, 0.085f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 
@@ -436,7 +494,7 @@ namespace
 				.SetNormalThumbImage(*ThumbBrush)
 				.SetHoveredThumbImage(*HoverBrush)
 				.SetDraggedThumbImage(*HoverBrush)
-				.SetThickness(14.f);
+				.SetThickness(18.f);
 		}
 
 		return &Style;
@@ -449,18 +507,11 @@ namespace
 		const FMargin& ContentPadding = FMargin(4.f))
 	{
 		const FSlateBrush* SlotFrameBrush = GetRunSummarySlotFrameBrush();
-		const FLinearColor AccentFill(AccentColor.R, AccentColor.G, AccentColor.B, 0.48f);
 		return SNew(SBox)
 			.WidthOverride(Size)
 			.HeightOverride(Size)
 			[
 				SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(AccentFill)
-				]
 				+ SOverlay::Slot()
 				.Padding(ContentPadding)
 				[
@@ -483,7 +534,6 @@ namespace
 
 	FString GetRunSummaryButtonPath(const ET66RunSummaryButtonFamily Family, const ET66RunSummaryButtonState State)
 	{
-		const bool bCta = Family == ET66RunSummaryButtonFamily::CtaGreen || Family == ET66RunSummaryButtonFamily::CtaBlue;
 		const TCHAR* Suffix = TEXT("normal");
 		if (Family == ET66RunSummaryButtonFamily::ToggleOn && State == ET66RunSummaryButtonState::Normal)
 		{
@@ -501,34 +551,33 @@ namespace
 		{
 			Suffix = TEXT("disabled");
 		}
-		const TCHAR* FamilyName = bCta ? TEXT("cta") : TEXT("pill");
-		const TCHAR* FolderName = bCta ? TEXT("CTA") : TEXT("Pill");
-		return FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/RunSummary/Buttons/%s/runsummary_buttons_%s_%s.png"),
-			FolderName,
-			FamilyName,
-			Suffix);
+		const bool bCta = Family == ET66RunSummaryButtonFamily::CtaGreen || Family == ET66RunSummaryButtonFamily::CtaBlue;
+		if (bCta)
+		{
+			return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("CTA"), Suffix);
+		}
+		return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), Suffix);
 	}
 
 	FVector2D GetRunSummaryButtonSize(const ET66RunSummaryButtonFamily Family, const ET66RunSummaryButtonState State)
 	{
 		if (Family == ET66RunSummaryButtonFamily::CtaGreen)
 		{
-			return FVector2D(388.f, 100.f);
+			return FVector2D(390.f, 124.f);
 		}
 		if (Family == ET66RunSummaryButtonFamily::CtaBlue)
 		{
-			return FVector2D(388.f, 97.f);
+			return FVector2D(390.f, 124.f);
 		}
 		if (Family == ET66RunSummaryButtonFamily::ToggleOn)
 		{
-			return State == ET66RunSummaryButtonState::Pressed ? FVector2D(187.f, 67.f) : FVector2D(180.f, 68.f);
+			return FVector2D(390.f, 124.f);
 		}
 		if (Family == ET66RunSummaryButtonFamily::ToggleOff)
 		{
-			return State == ET66RunSummaryButtonState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
+			return FVector2D(390.f, 124.f);
 		}
-		return State == ET66RunSummaryButtonState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
+		return FVector2D(390.f, 124.f);
 	}
 
 	FT66RunSummaryButtonBrushSet& GetRunSummaryButtonBrushSet(const ET66RunSummaryButtonFamily Family)
@@ -614,12 +663,24 @@ namespace
 
 		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
 			OnClicked,
-			SNew(STextBlock)
-			.Text(Label)
-			.Font(FT66Style::Tokens::FontBold(FontSize))
-			.ColorAndOpacity(RunSummaryFantasyText)
-			.Justification(ETextJustify::Center)
-			.AutoWrapText(true),
+			SNew(SBox)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			[
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					SNew(STextBlock)
+					.Text(Label)
+					.Font(FT66Style::Tokens::FontBold(FontSize))
+					.ColorAndOpacity(RunSummaryFantasyText)
+					.Justification(ETextJustify::Center)
+					.AutoWrapText(false)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				]
+			],
 			NormalBrush,
 			HoverBrush,
 			PressedBrush,
@@ -644,6 +705,16 @@ namespace
 		return FText::FromString(FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds));
 	}
 
+	static FText MakeRunSummarySingleLinePreview(const FString& Value, const int32 MaxChars)
+	{
+		if (Value.Len() <= MaxChars)
+		{
+			return FText::FromString(Value);
+		}
+
+		return FText::FromString(Value.Left(FMath::Max(0, MaxChars - 3)) + TEXT("..."));
+	}
+
 	static FText FormatRunSummaryRankText(int32 Rank)
 	{
 		return (Rank > 0)
@@ -661,7 +732,7 @@ namespace
 			return 1;
 		}
 
-		const int32 StageCount = (Difficulty == ET66Difficulty::Impossible) ? 3 : 4;
+		const int32 StageCount = 4;
 		if (!PlayerExperience)
 		{
 			return FMath::Clamp(StageReached, 1, StageCount);
@@ -727,6 +798,8 @@ namespace
 	static TStage* FindStage(UWorld* World)
 	{
 		if (!World) return nullptr;
+		// One-time preview-stage lookup. UT66RunSummaryScreen caches the result
+		// after first activation, so this does not run during normal summary refreshes.
 		for (TActorIterator<TStage> It(World); It; ++It)
 		{
 			return *It;
@@ -1288,7 +1361,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::RebuildWidget()
 	{
 		bDifficultyClearSummaryMode = false;
 	}
-	return FT66Style::MakeResponsiveRoot(BuildSlateUI());
+	MarkSlateUIBuilt();
+	return BuildSlateUI();
 }
 
 void UT66RunSummaryScreen::RebuildLogItems()
@@ -1335,6 +1409,10 @@ TSharedRef<ITableRow> UT66RunSummaryScreen::GenerateLogRow(TSharedPtr<FString> I
 			.Text(FText::FromString(Line))
 			.Font(RunSummaryRegularFont(12))
 			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.AutoWrapText(true)
+			.WrapTextAt(430.f)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds)
 		];
 }
 
@@ -1395,6 +1473,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->LuckStat :
 		(RunState ? RunState->GetLuckStat() : 1);
 
+	const int32 SpeedStat =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->SpeedStat :
+		(RunState ? RunState->GetSpeedStat() : 1);
+
 	UT66LocalizationSubsystem* Loc = GIBase ? GIBase->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
 	UT66UITexturePoolSubsystem* TexPool = GIBase ? GIBase->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
@@ -1453,7 +1535,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				Body
 			],
-			GetRunSummaryRowShellBrush(),
+			GetRunSummaryGeneratedRankPanelBrush(),
 			FT66Style::Tokens::Space4);
 	};
 
@@ -1591,7 +1673,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					]
 				]
 			],
-			GetRunSummaryRowShellBrush(),
+			GetRunSummaryGeneratedMetricCardBrush(),
 			FT66Style::Tokens::Space4);
 	};
 
@@ -1613,7 +1695,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				Body
 			],
-			GetRunSummaryRowShellBrush(),
+			GetRunSummaryGeneratedRankPanelBrush(),
 			FT66Style::Tokens::Space4);
 	};
 
@@ -1699,8 +1781,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	auto MakeHeroPreview = [](const TSharedPtr<FSlateBrush>& Brush) -> TSharedRef<SWidget>
 	{
-		constexpr float PreviewWidth = 340.f;
-		constexpr float PreviewHeight = 315.f;
+		constexpr float PreviewWidth = 462.f;
+		constexpr float PreviewHeight = 380.f;
 		TSharedRef<SWidget> PreviewContent = Brush.IsValid()
 			? StaticCastSharedRef<SWidget>(SNew(SBox)
 				.WidthOverride(PreviewWidth)
@@ -1718,7 +1800,15 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					.Font(RunSummaryBodyFont())
 					.Justification(ETextJustify::Center)
 				]);
-		return MakeRunSummarySpritePanel(PreviewContent, GetRunSummaryPreviewFrameBrush(), FMargin(12.f));
+		return MakeRunSummarySpritePanel(
+			SNew(SBox)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Top)
+			[
+				PreviewContent
+			],
+			GetRunSummaryPreviewFrameBrush(),
+			FMargin(18.f, 28.f, 18.f, 44.f));
 	};
 
 	// Event log (hidden by default; opened via "EVENT LOG" button).
@@ -1759,13 +1849,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 			[
-				FT66Style::MakePanel(
-					SNew(SHyperlink)
-					.Text_Lambda([this]() { return FText::FromString(ProofOfRunUrl); })
-					.OnNavigate(FSimpleDelegate::CreateUObject(this, &UT66RunSummaryScreen::HandleProofLinkNavigate)),
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(10.f, 8.f))
-						.SetVisibility(TAttribute<EVisibility>::CreateLambda([this]() { return (bProofOfRunLocked && !ProofOfRunUrl.IsEmpty()) ? EVisibility::Visible : EVisibility::Collapsed; }))
-				)
+				SNew(SBox)
+				.Visibility(TAttribute<EVisibility>::CreateLambda([this]() { return (bProofOfRunLocked && !ProofOfRunUrl.IsEmpty()) ? EVisibility::Visible : EVisibility::Collapsed; }))
+				[
+					MakeRunSummarySpritePanel(
+						SNew(SHyperlink)
+						.Text_Lambda([this]() { return MakeRunSummarySingleLinePreview(ProofOfRunUrl, 76); })
+						.OnNavigate(FSimpleDelegate::CreateUObject(this, &UT66RunSummaryScreen::HandleProofLinkNavigate)),
+						GetRunSummaryFieldBrush(),
+						FMargin(14.f, 8.f),
+						FLinearColor(0.035f, 0.038f, 0.048f, 0.96f))
+				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 			[
@@ -1787,15 +1881,22 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			.Visibility_Lambda([this, bIsOwnerOfViewedRun]() { return (bIsOwnerOfViewedRun && !bProofOfRunLocked) ? EVisibility::Visible : EVisibility::Collapsed; })
 			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 			[
-				SAssignNew(ProofUrlTextBox, SEditableTextBox)
-				.Text(FText::FromString(ProofOfRunUrl))
-				.OnTextChanged_Lambda([this](const FText& NewText)
-				{
-					// Keep the draft in sync with what the player typed.
-					ProofOfRunUrl = NewText.ToString();
-				})
-				.HintText(NSLOCTEXT("T66.RunSummary", "ProofHint", "Paste YouTube link here..."))
-				.MinDesiredWidth(420.f)
+				MakeRunSummarySpritePanel(
+					SAssignNew(ProofUrlTextBox, SEditableTextBox)
+					.Style(&GetRunSummaryTextBoxStyle())
+					.Text(FText::FromString(ProofOfRunUrl))
+					.OnTextChanged_Lambda([this](const FText& NewText)
+					{
+						// Keep the draft in sync with what the player typed.
+						ProofOfRunUrl = NewText.ToString();
+					})
+					.HintText(NSLOCTEXT("T66.RunSummary", "ProofHint", "Paste YouTube link here..."))
+					.Font(RunSummaryRegularFont(14))
+					.ForegroundColor(FT66Style::Tokens::Text)
+					.MinDesiredWidth(420.f),
+					GetRunSummaryFieldBrush(),
+					FMargin(14.f, 8.f),
+					FLinearColor(0.035f, 0.038f, 0.048f, 0.96f))
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 			[
@@ -1815,10 +1916,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			NSLOCTEXT("T66.RunSummary", "TheyreCheating", "THEY'RE CHEATING"),
 			FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCheatingClicked),
 			ET66RunSummaryButtonFamily::ToggleOff,
-			180.f,
-			38.f,
-			12,
-			FMargin(14.f, 10.f));
+			300.f,
+			58.f,
+			14,
+			FMargin(20.f, 12.f));
 
 	TSharedRef<SWidget> ReportPrompt =
 		MakeRunSummarySpritePanel(
@@ -1832,9 +1933,20 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				SAssignNew(ReportReasonTextBox, SMultiLineEditableTextBox)
-				.HintText(NSLOCTEXT("T66.RunSummary", "ReportReasonHint", "Describe why you believe they're cheating..."))
-				.AutoWrapText(true)
+				SNew(SBox)
+				.HeightOverride(120.f)
+				[
+					MakeRunSummarySpritePanel(
+						SAssignNew(ReportReasonTextBox, SMultiLineEditableTextBox)
+						.Style(&GetRunSummaryTextBoxStyle())
+						.HintText(NSLOCTEXT("T66.RunSummary", "ReportReasonHint", "Describe why you believe they're cheating..."))
+						.Font(RunSummaryRegularFont(14))
+						.ForegroundColor(FT66Style::Tokens::Text)
+						.AutoWrapText(true),
+						GetRunSummaryFieldBrush(),
+						FMargin(16.f, 12.f),
+						FLinearColor(0.035f, 0.038f, 0.048f, 0.96f))
+				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
 			[
@@ -1858,29 +1970,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			Text,
 			FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleViewLogClicked),
 			ET66RunSummaryButtonFamily::CompactNeutral,
-			160.f,
-			36.f,
-			12,
-			FMargin(14.f, 8.f));
+			274.f,
+			65.f,
+			16,
+			FMargin(20.f, 12.f));
 	};
 
-	// Stats panel: same width and content as Vendor/Gambler (primary + secondary, scroll). Header "STATS".
-	constexpr float StatsPanelWidth = 320.f;
-	constexpr float DamagePanelWidth = 340.f;
+	// Stats panel: same width and content as Shop/Gambler (primary + secondary, scroll). Header "STATS".
+	constexpr float StatsPanelWidth = 460.f;
+	constexpr float DamagePanelWidth = 450.f;
 	TSharedRef<SWidget> BaseStatsPanel = [&]() -> TSharedRef<SWidget>
 	{
-		if (RunState && !bViewingSavedLeaderboardRunSummary)
-		{
-			return T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, StatsPanelWidth, false, T66RunSummaryFontDelta);
-		}
-		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary && LoadedSavedSummary->SecondaryStatValues.Num() > 0)
-		{
-			T66StatsPanelSlate::FT66SnapshotStatsPanelOptions RunSummaryStatsOptions;
-			RunSummaryStatsOptions.WidthOverride = StatsPanelWidth;
-			RunSummaryStatsOptions.FontSizeAdjustment = T66RunSummaryFontDelta;
-			RunSummaryStatsOptions.bExtended = false;
-			return T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithOptions(LoadedSavedSummary, Loc, RunSummaryStatsOptions);
-		}
 		TSharedRef<SVerticalBox> PrimaryStatsBox = SNew(SVerticalBox);
 		const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
 		auto AddStatLine = [&](const FText& Label, int32 Value)
@@ -1892,6 +1992,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
 				.Font(RunSummaryBodyFont())
 				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 			];
 		};
 		AddStatLine(Loc ? Loc->GetText_Level() : NSLOCTEXT("T66.Common", "Level", "LEVEL"), HeroLevel);
@@ -1902,8 +2003,19 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		AddStatLine(Loc ? Loc->GetText_Stat_Armor() : NSLOCTEXT("T66.Stats", "Armor", "Armor"), ArmorStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_Evasion() : NSLOCTEXT("T66.Stats", "Evasion", "Evasion"), EvasionStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_Luck() : NSLOCTEXT("T66.Stats", "Luck", "Luck"), LuckStat);
-		TSharedRef<SWidget> PrimaryContent = SNew(SBox)
-			.HeightOverride(FT66Style::Tokens::NPCStatsPanelContentHeight)
+		AddStatLine(Loc ? Loc->GetText_Stat_Speed() : NSLOCTEXT("T66.Stats", "Speed", "Speed"), SpeedStat);
+
+		// Header must be "STATS" (same as Shop/Gambler), not "Base Stats", for leaderboard/saved run summaries.
+		return SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.StatsPanel", "Header", "STATS"))
+				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+				.Font(RunSummaryHeadingFont())
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			]
+			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
 				SNew(SScrollBox)
 				.ScrollBarStyle(GetRunSummaryReferenceScrollBarStyle())
@@ -1911,25 +2023,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				.ScrollBarPadding(FMargin(8.f, 0.f, 0.f, 0.f))
 				.ScrollBarVisibility(EVisibility::Visible)
 				+ SScrollBox::Slot()[PrimaryStatsBox]
-			];
-		// Header must be "STATS" (same as Vendor/Gambler), not "Base Stats", for leaderboard/saved run summaries.
-		return SNew(SBox)
-			.WidthOverride(StatsPanelWidth)
-			.HeightOverride(365.f)
-			[
-				MakeRunSummarySpritePanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.StatsPanel", "Header", "STATS"))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
-						.Font(RunSummaryHeadingFont())
-					]
-					+ SVerticalBox::Slot().AutoHeight()[PrimaryContent],
-					GetRunSummaryRowShellBrush(),
-					FT66Style::Tokens::Space4
-				)
 			];
 	}();
 
@@ -1970,8 +2063,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	const TArray<uint8> EmptyIdolTiers;
 	const TArray<uint8>& IdolTiers = IdolTiersPtr ? *IdolTiersPtr : EmptyIdolTiers;
 
-	static constexpr float IdolSlotPad = 3.f;
-	static constexpr float IdolSlotSize = 76.f;
+	static constexpr float IdolSlotPad = 10.f;
+	static constexpr float IdolSlotSize = 100.f;
 	TSharedRef<SHorizontalBox> IdolSlotsRow = SNew(SHorizontalBox);
 	for (int32 i = 0; i < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++i)
 	{
@@ -2011,14 +2104,15 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	}
 	TSharedRef<SWidget> IdolsBorderedGrid = MakeRunSummarySpritePanel(
 		IdolSlotsRow,
-		GetRunSummaryRowShellBrush(),
-		FMargin(7.f, 5.f));
+		nullptr,
+		FMargin(7.f, 5.f),
+		FLinearColor::Transparent);
 
 	// Inventory: slot grid (2x10), sprites only — larger slots than in-game.
 	static constexpr int32 InvCols = 10;
 	static constexpr int32 InvRows = 2;
-	static constexpr float InvSlotSize = 58.f;
-	static constexpr float InvSlotPad = 2.f;
+	static constexpr float InvSlotSize = 82.f;
+	static constexpr float InvSlotPad = 3.f;
 	const FLinearColor InvSlotBorderColor(0.45f, 0.55f, 0.50f, 0.5f);
 	InventoryItemIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxInventorySlots; ++i)
@@ -2070,8 +2164,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	}
 	TSharedRef<SWidget> InventorySlotGrid = MakeRunSummarySpritePanel(
 		InvGridRef,
-		GetRunSummaryRowShellBrush(),
-		FMargin(8.f, 6.f));
+		nullptr,
+		FMargin(8.f, 6.f),
+		FLinearColor::Transparent);
 
 	static constexpr float TempBuffSlotSize = 40.f;
 	static constexpr float TempBuffSlotPad = 3.f;
@@ -2150,7 +2245,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight()
 				[
-					MakeRunSummarySpriteButton(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), ET66RunSummaryButtonFamily::CtaBlue, 220.f, 44.f, 12, FMargin(18.f, 10.f))
+					MakeRunSummarySpriteButton(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), ET66RunSummaryButtonFamily::CtaBlue, 342.f, 85.f, 18, FMargin(18.f, 10.f))
 				]);
 		}
 
@@ -2167,7 +2262,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					{
 						DifficultyClearButtons->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 						[
-							MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "Continue", "CONTINUE"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleContinueDifficultyClicked), ET66RunSummaryButtonFamily::CtaGreen, 220.f, 44.f, 12, FMargin(18.f, 10.f))
+							MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "Continue", "CONTINUE"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleContinueDifficultyClicked), ET66RunSummaryButtonFamily::CtaGreen, 342.f, 58.f, 14, FMargin(18.f, 10.f))
 						];
 					}
 				}
@@ -2175,12 +2270,12 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 			DifficultyClearButtons->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "SaveGame", "SAVE GAME"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleSaveAndQuitClicked), ET66RunSummaryButtonFamily::CompactNeutral, 220.f, 42.f, 12, FMargin(18.f, 10.f))
+				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "SaveGame", "SAVE GAME"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleSaveAndQuitClicked), ET66RunSummaryButtonFamily::CompactNeutral, 342.f, 58.f, 14, FMargin(18.f, 10.f))
 			];
 
 			DifficultyClearButtons->AddSlot().AutoHeight()
 			[
-				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "QuitRun", "QUIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleQuitToMainMenuClicked), ET66RunSummaryButtonFamily::ToggleOff, 220.f, 42.f, 12, FMargin(18.f, 10.f))
+				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "QuitRun", "QUIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleQuitToMainMenuClicked), ET66RunSummaryButtonFamily::ToggleOff, 342.f, 58.f, 14, FMargin(18.f, 10.f))
 			];
 
 			return StaticCastSharedRef<SWidget>(DifficultyClearButtons);
@@ -2190,11 +2285,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
 			[
-				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "GoAgain", "GO AGAIN!"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66RunSummaryButtonFamily::CtaGreen, 255.f, 62.f, 18, FMargin(22.f, 14.f))
+				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "GoAgain", "GO AGAIN!"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66RunSummaryButtonFamily::CtaGreen, 342.f, 85.f, 18, FMargin(22.f, 14.f))
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				MakeRunSummarySpriteButton(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), ET66RunSummaryButtonFamily::CtaBlue, 255.f, 62.f, 18, FMargin(22.f, 14.f))
+				MakeRunSummarySpriteButton(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), ET66RunSummaryButtonFamily::CtaBlue, 342.f, 85.f, 18, FMargin(22.f, 14.f))
 			]);
 	}();
 
@@ -2204,11 +2299,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				SNew(STextBlock)
-				.Text(ValueText)
-				.Font(RunSummaryBoldFont(FontSize))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-				.Justification(ETextJustify::Center)
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					SNew(STextBlock)
+					.Text(ValueText)
+					.Font(RunSummaryBoldFont(FontSize))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Center)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				]
 			];
 	};
 
@@ -2316,16 +2417,30 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	const FText RankHeader = NSLOCTEXT("T66.RunSummary", "DamageTableRank", "Rank");
 	const FText SourceHeader = NSLOCTEXT("T66.RunSummary", "DamageTableSource", "Source");
 	const FText DamageHeader = NSLOCTEXT("T66.RunSummary", "DamageTableDamage", "Damage");
+	constexpr float DamageRankColumnWidth = 38.f;
+	constexpr float DamageSourceColumnWidth = 172.f;
+	constexpr float DamageValueColumnWidth = 92.f;
+	auto MakeDamageCellText = [&BodyStyle](const FText& Text, const FLinearColor& Color, const FSlateFontInfo& Font, const ETextJustify::Type Justification = ETextJustify::Left) -> TSharedRef<SWidget>
+	{
+		return SNew(STextBlock)
+			.Text(Text)
+			.TextStyle(&BodyStyle)
+			.ColorAndOpacity(Color)
+			.Font(Font)
+			.Justification(Justification)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds);
+	};
 	TSharedRef<SVerticalBox> DamageBySourceBox = SNew(SVerticalBox);
 	DamageBySourceBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 		[
 			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
-			[SNew(STextBlock).Text(RankHeader).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::TextMuted).Font(RunSummaryBoldFont(12))]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 80.f, 0.f)
-			[SNew(STextBlock).Text(SourceHeader).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::TextMuted).Font(RunSummaryBoldFont(12))]
-			+ SHorizontalBox::Slot().FillWidth(1.f)
-			[SNew(STextBlock).Text(DamageHeader).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::TextMuted).Font(RunSummaryBoldFont(12))]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)
+			[SNew(SBox).WidthOverride(DamageRankColumnWidth)[MakeDamageCellText(RankHeader, FT66Style::Tokens::TextMuted, RunSummaryBoldFont(12))]]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)
+			[SNew(SBox).WidthOverride(DamageSourceColumnWidth)[MakeDamageCellText(SourceHeader, FT66Style::Tokens::TextMuted, RunSummaryBoldFont(12))]]
+			+ SHorizontalBox::Slot().AutoWidth()
+			[SNew(SBox).WidthOverride(DamageValueColumnWidth)[MakeDamageCellText(DamageHeader, FT66Style::Tokens::TextMuted, RunSummaryBoldFont(12), ETextJustify::Right)]]
 		];
 	for (int32 Rank = 0; Rank < TableRows.Num(); ++Rank)
 	{
@@ -2333,23 +2448,29 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		DamageBySourceBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 			[
 				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
-				[SNew(STextBlock).Text(FText::AsNumber(Rank + 1)).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::Text).Font(RunSummaryBodyFont())]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 80.f, 0.f)
-				[SNew(STextBlock).Text(GetDamageSourceDisplayName(Entry.SourceID)).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::Text).Font(RunSummaryBodyFont())]
-				+ SHorizontalBox::Slot().FillWidth(1.f)
-				[SNew(STextBlock).Text(FText::AsNumber(Entry.TotalDamage)).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::Text).Font(RunSummaryBodyFont())]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)
+				[SNew(SBox).WidthOverride(DamageRankColumnWidth)[MakeDamageCellText(FText::AsNumber(Rank + 1), FT66Style::Tokens::Text, RunSummaryBodyFont())]]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)
+				[SNew(SBox).WidthOverride(DamageSourceColumnWidth)[MakeDamageCellText(GetDamageSourceDisplayName(Entry.SourceID), FT66Style::Tokens::Text, RunSummaryBodyFont())]]
+				+ SHorizontalBox::Slot().AutoWidth()
+				[SNew(SBox).WidthOverride(DamageValueColumnWidth)[MakeDamageCellText(FText::AsNumber(Entry.TotalDamage), FT66Style::Tokens::Text, RunSummaryBodyFont(), ETextJustify::Right)]]
 			];
 	}
-	TSharedRef<SWidget> DamageBySourcePanel = MakeSectionPanel(
-		NSLOCTEXT("T66.RunSummary", "DamageBySourcePanel", "DAMAGE BY SOURCE"),
-		DamageBySourceBox
-	);
-
-	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
-	{
-		return FT66Style::GetSafeFrameInsets();
-	});
+	TSharedRef<SWidget> DamageBySourcePanel = MakeRunSummarySpritePanel(
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+		[
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("T66.RunSummary", "DamageBySourcePanel", "DAMAGE BY SOURCE"))
+			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+			.Font(RunSummaryHeadingFont())
+		]
+		+ SVerticalBox::Slot().FillHeight(1.f)
+		[
+			DamageBySourceBox
+		],
+		GetRunSummaryGeneratedDamagePanelBrush(),
+		FT66Style::Tokens::Space4);
 
 	const TAttribute<FMargin> SafeBackPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
@@ -2373,18 +2494,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		return FOptionalSize(FMath::Clamp(SafeFrame.Y - 140.f, 420.f, 620.f));
 	});
 
-	const TAttribute<FOptionalSize> MainPanelWidthAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
-	{
-		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize();
-		return FOptionalSize(FMath::Clamp(SafeFrame.X - 96.f, 1320.f, 1720.f));
-	});
-
-	const TAttribute<FOptionalSize> MainPanelHeightAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
-	{
-		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize();
-		return FOptionalSize(FMath::Clamp(SafeFrame.Y - 56.f, 760.f, 990.f));
-	});
-
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(bDotaTheme ? FT66Style::ScreenBackground() : FT66Style::Tokens::Bg)
@@ -2397,222 +2506,140 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 				.BorderBackgroundColor(FT66Style::Scrim())
 			]
-			// Main full-screen panel
+			// RunSummary reference-occupancy canvas. Coordinates match the normalized 1920x1080 map in MANIFEST_MASTER.md.
 			+ SOverlay::Slot()
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
 			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-				.Padding(SafeContentInsets)
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::Both)
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Center)
 				[
 					SNew(SBox)
-					.WidthOverride(MainPanelWidthAttr)
-					.HeightOverride(MainPanelHeightAttr)
+					.WidthOverride(RunSummaryReferenceWidth)
+					.HeightOverride(RunSummaryReferenceHeight)
 					[
-						MakeRunSummarySpritePanel(
-							SNew(SScrollBox)
-							.Orientation(Orient_Vertical)
-							.ScrollBarStyle(GetRunSummaryReferenceScrollBarStyle())
-							.ScrollBarThickness(FVector2D(14.f, 14.f))
-							.ScrollBarPadding(FMargin(10.f, 0.f, 2.f, 0.f))
-							.ScrollBarVisibility(EVisibility::Visible)
-							.ConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible)
-							+ SScrollBox::Slot()
-							.Padding(0.f, 0.f, 10.f, 48.f)
-							[
-								SNew(SVerticalBox)
-						// Header row: title left, Event Log button right
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+						SNew(SCanvas)
+						+ SCanvas::Slot().Position(FVector2D(10.f, 8.f)).Size(FVector2D(1900.f, 1055.f))
 						[
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+							MakeRunSummarySpritePanel(SNew(SSpacer), GetRunSummaryContentShellBrush(), FMargin(0.f))
+						]
+							+ SCanvas::Slot().Position(FVector2D(60.f, 55.f)).Size(FVector2D(720.f, 55.f))
 							[
 								SNew(STextBlock)
 								.Text(TitleText)
 								.Font(RunSummaryBoldFont(36))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 							]
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+							+ SCanvas::Slot().Position(FVector2D(60.f, 120.f)).Size(FVector2D(860.f, 28.f))
+							[
+								SNew(STextBlock)
+								.Text(StageScoreText)
+								.Font(RunSummaryBoldFont(18))
+								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+							]
+							+ SCanvas::Slot().Position(FVector2D(820.f, 58.f)).Size(FVector2D(360.f, 24.f))
+							[
+								SNew(STextBlock)
+								.Visibility_Lambda([this]() { return (bNewPersonalBestScore && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
+								.Text_Lambda([this, Loc]()
+								{
+									return Loc ? Loc->GetText_NewPersonalBestScore() : NSLOCTEXT("T66.RunSummary", "NewPersonalBestScore", "New Personal Score");
+								})
+								.Font(RunSummaryBoldFont(15))
+								.ColorAndOpacity(FT66Style::Tokens::Success)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+							]
+							+ SCanvas::Slot().Position(FVector2D(820.f, 86.f)).Size(FVector2D(360.f, 24.f))
+							[
+								SNew(STextBlock)
+								.Visibility_Lambda([this]() { return (bNewPersonalBestTime && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
+								.Text_Lambda([this, Loc]()
+								{
+									return Loc ? Loc->GetText_NewPersonalBestTime() : NSLOCTEXT("T66.RunSummary", "NewPersonalBestTime", "New Personal Best Time");
+								})
+								.Font(RunSummaryBoldFont(15))
+								.ColorAndOpacity(FT66Style::Tokens::Success)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+							]
+							+ SCanvas::Slot().Position(FVector2D(1564.f, 42.f)).Size(FVector2D(274.f, 65.f))
 							[
 								MakeEventLogButton(NSLOCTEXT("T66.RunSummary", "EventLogTitle", "EVENT LOG"))
 							]
-						]
-						// Stage reached / high score line
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
-						[
-							SNew(STextBlock)
-							.Text(StageScoreText)
-							.Font(RunSummaryBoldFont(18))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-						]
-						// Personal best banners (only for newly-finished runs)
-						+ SVerticalBox::Slot().AutoHeight().Padding(TAttribute<FMargin>::CreateLambda([this]() -> FMargin
-						{
-							return (bNewPersonalBestScore && !bViewingSavedLeaderboardRunSummary) ? FMargin(0.f, -10.f, 0.f, 6.f) : FMargin(0.f);
-						}))
-						[
-							SNew(STextBlock)
-							.Visibility_Lambda([this]() { return (bNewPersonalBestScore && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
-							.Text_Lambda([this, Loc]()
-							{
-								return Loc ? Loc->GetText_NewPersonalBestScore() : NSLOCTEXT("T66.RunSummary", "NewPersonalBestScore", "New Personal Score");
-							})
-							.Font(RunSummaryBoldFont(16))
-							.ColorAndOpacity(FT66Style::Tokens::Success)
-						]
-						+ SVerticalBox::Slot().AutoHeight().Padding(TAttribute<FMargin>::CreateLambda([this]() -> FMargin
-						{
-							return (bNewPersonalBestTime && !bViewingSavedLeaderboardRunSummary) ? FMargin(0.f, 0.f, 0.f, 18.f) : FMargin(0.f);
-						}))
-						[
-							SNew(STextBlock)
-							.Visibility_Lambda([this]() { return (bNewPersonalBestTime && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
-							.Text_Lambda([this, Loc]()
-							{
-								return Loc ? Loc->GetText_NewPersonalBestTime() : NSLOCTEXT("T66.RunSummary", "NewPersonalBestTime", "New Personal Best Time");
-							})
-							.Font(RunSummaryBoldFont(16))
-							.ColorAndOpacity(FT66Style::Tokens::Success)
-						]
-						// Main content: Left = Seed Luck, Integrity, buttons/proof. Center = Hero (middle), idols (1x6), inventory. Right = Stats, Damage.
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, -14.f, 0.f, 26.f)
-						[
-							SNew(SBox)
-							.WidthOverride(RunSummaryContentRowWidth)
+							+ SCanvas::Slot().Position(FVector2D(62.f, 165.f)).Size(FVector2D(578.f, 115.f))
 							[
-								SNew(SHorizontalBox)
-							// Left side: Seed Luck, Integrity, buttons/proof.
-							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
+								SNew(SBox)
+								.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+								[ bDailyClimbSummaryMode ? DailyRankPanel : WeeklyRankPanel ]
+							]
+							+ SCanvas::Slot().Position(FVector2D(62.f, 300.f)).Size(FVector2D(578.f, 115.f))
 							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, bDailyClimbSummaryMode ? 12.f : 10.f)
-								[
-									SNew(SBox)
-									.WidthOverride(RunSummaryRankPanelWidth)
-									.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
-									[
-										bDailyClimbSummaryMode ? DailyRankPanel : WeeklyRankPanel
-									]
-								]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, -4.f)
-								[
-									SNew(SBox)
-									.WidthOverride(RunSummaryRankPanelWidth)
-									.Visibility_Lambda([this]() { return (!bViewingSavedLeaderboardRunSummary && !bDailyClimbSummaryMode) ? EVisibility::Visible : EVisibility::Collapsed; })
-									[
-										AllTimeRankPanel
-									]
-								]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, 12.f)
-								[
-									SNew(SBox)
-									.WidthOverride(RunSummaryActionPanelWidth)
-									[
-										SeedLuckPanel
-									]
-								]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, 12.f)
-								[
-									SNew(SBox)
-									.WidthOverride(RunSummaryActionPanelWidth)
-									[
-										IntegrityPanel
-									]
-								]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 0.f, 0.f, 18.f)
-								[
-									SNew(SBox)
-									.WidthOverride(RunSummaryActionPanelWidth)
-									.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
-									[
-										ButtonsStack
-									]
-								]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-								[
-									SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })[ProofOfRunPanel]
-								]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-								[
-									SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })
-									[ReportCheatButton]
-								]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-								[
-									SNew(SBox).Visibility_Lambda([this]() { return bReportPromptVisible ? EVisibility::Visible : EVisibility::Collapsed; })
-									[ReportPrompt]
-								]
-								+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SSpacer)]
+								SNew(SBox)
+								.Visibility_Lambda([this]() { return (!bViewingSavedLeaderboardRunSummary && !bDailyClimbSummaryMode) ? EVisibility::Visible : EVisibility::Collapsed; })
+								[ AllTimeRankPanel ]
 							]
-							// Center: Hero preview (middle), then idols (1 row x 6), inventory, then temp buffs
-							+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
+							+ SCanvas::Slot().Position(FVector2D(59.f, 446.f)).Size(FVector2D(350.f, 130.f))
 							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 6.f)
-								[
-									SNew(SBox)
-									.RenderTransform(FSlateRenderTransform(FVector2D(-22.f, 3.f)))
-									[
-										MakeHeroPreview(HeroPreviewBrush)
-									]
-								]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
-								[
-									SNew(SBox)
-									.RenderTransform(FSlateRenderTransform(FVector2D(-31.f, -19.f)))
-									[
-										IdolsBorderedGrid
-									]
-								]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
-								[
-									SNew(SBox)
-									.RenderTransform(FSlateRenderTransform(FVector2D(-151.f, -36.f)))
-									[
-										InventorySlotGrid
-									]
-								]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-								[
-									SNew(SBox)
-									.Visibility(bHasAnyTemporaryBuff ? EVisibility::Visible : EVisibility::Collapsed)
-									[
-										TemporaryBuffsPanel
-									]
-								]
+								SeedLuckPanel
 							]
-							// Right: Stats, Damage by source
-							+ SHorizontalBox::Slot().AutoWidth().Padding(24.f, 0.f, 0.f, 0.f)
+							+ SCanvas::Slot().Position(FVector2D(59.f, 592.f)).Size(FVector2D(350.f, 120.f))
 							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 0.f, 0.f, 6.f)
-								[
-									SNew(SBox)
-									.WidthOverride(StatsPanelWidth)
-									.HeightOverride(287.f)
-									[
-										BaseStatsPanel
-									]
-								]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
-								[
-									SNew(SBox)
-									.WidthOverride(DamagePanelWidth)
-									.HeightOverride(306.f)
-									[
-										DamageBySourcePanel
-									]
-								]
+								IntegrityPanel
 							]
+							+ SCanvas::Slot().Position(FVector2D(64.f, 745.f)).Size(FVector2D(342.f, 190.f))
+							[
+								SNew(SBox)
+								.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+								[ ButtonsStack ]
 							]
-						]
-						],
-							GetRunSummaryContentShellBrush(),
-							FT66Style::Tokens::Space6
-						)
+							+ SCanvas::Slot().Position(FVector2D(62.f, 165.f)).Size(FVector2D(578.f, 185.f))
+							[
+								SNew(SBox)
+								.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })
+								[ ProofOfRunPanel ]
+							]
+							+ SCanvas::Slot().Position(FVector2D(64.f, 370.f)).Size(FVector2D(342.f, 65.f))
+							[
+								SNew(SBox)
+								.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })
+								[ ReportCheatButton ]
+							]
+							+ SCanvas::Slot().Position(FVector2D(62.f, 455.f)).Size(FVector2D(578.f, 260.f))
+							[
+								SNew(SBox)
+								.Visibility_Lambda([this]() { return (bViewingSavedLeaderboardRunSummary && bReportPromptVisible) ? EVisibility::Visible : EVisibility::Collapsed; })
+								[ ReportPrompt ]
+							]
+							+ SCanvas::Slot().Position(FVector2D(700.f, 165.f)).Size(FVector2D(498.f, 452.f))
+							[
+								MakeHeroPreview(HeroPreviewBrush)
+							]
+							+ SCanvas::Slot().Position(FVector2D(710.f, 630.f)).Size(FVector2D(480.f, 106.f))
+							[
+								IdolsBorderedGrid
+							]
+							+ SCanvas::Slot().Position(FVector2D(465.f, 760.f)).Size(FVector2D(884.f, 195.f))
+							[
+								InventorySlotGrid
+							]
+							+ SCanvas::Slot().Position(FVector2D(1208.f, 630.f)).Size(FVector2D(150.f, 112.f))
+							[
+								SNew(SBox)
+								.Visibility(bHasAnyTemporaryBuff ? EVisibility::Visible : EVisibility::Collapsed)
+								[ TemporaryBuffsPanel ]
+							]
+							+ SCanvas::Slot().Position(FVector2D(1366.f, 157.f)).Size(FVector2D(460.f, 415.f))
+							[
+								MakeRunSummarySpritePanel(BaseStatsPanel, GetRunSummaryStatsPanelBrush(), FMargin(28.f, 24.f, 24.f, 22.f))
+							]
+							+ SCanvas::Slot().Position(FVector2D(1376.f, 596.f)).Size(FVector2D(450.f, 360.f))
+							[
+								DamageBySourcePanel
+							]
 					]
 				]
 			]
@@ -3123,7 +3150,7 @@ void UT66RunSummaryScreen::HandleBackendSubmitRunDataReadyForSummary(
 		}
 	}
 
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 }
 
 void UT66RunSummaryScreen::HandleBackendDailyClimbSubmitDataReadyForSummary(
@@ -3164,7 +3191,7 @@ void UT66RunSummaryScreen::HandleBackendDailyClimbSubmitDataReadyForSummary(
 	}
 
 	ResolveChadCouponsPopupForLiveRun(Status == TEXT("accepted") && !bLiveRunCheatFlagged);
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 }
 
 void UT66RunSummaryScreen::OnRestartClicked()

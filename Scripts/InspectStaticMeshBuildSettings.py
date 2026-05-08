@@ -12,8 +12,6 @@ REPORT_PATH = os.path.join(
 )
 
 ASSET_PATHS = [
-    "/Game/World/Props/Tree2.Tree2",
-    "/Game/World/Props/Rock.Rock",
     "/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black",
     "/Game/World/LootBags/Red/SM_LootBag_Red.SM_LootBag_Red",
     "/Game/World/LootBags/Yellow/SM_LootBag_Yellow.SM_LootBag_Yellow",

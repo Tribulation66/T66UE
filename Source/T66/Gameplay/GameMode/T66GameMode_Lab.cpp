@@ -20,6 +20,7 @@ void AT66GameMode::SpawnLabFloorIfNeeded()
 
 	// One central floor: ~1/4 of gameplay map (100k: MainHalfExtent 50000 -> Lab half 12500)
 	static const FName LabFloorTag(TEXT("T66_Floor_Lab"));
+	// Lab setup only: replace an authored/test floor once before spawning fallback geometry.
 	for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
 	{
 		if (It->Tags.Contains(LabFloorTag))
@@ -65,6 +66,7 @@ void AT66GameMode::SpawnLabCollectorIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World || !IsLabLevel()) return;
 
+	// Lab setup only: collector is a single practice-room actor and is cached by spawn flow.
 	for (TActorIterator<AT66LabCollector> It(World); It; ++It)
 	{
 		return;  // Already have a Collector
@@ -222,7 +224,7 @@ AActor* AT66GameMode::SpawnLabBoss(FName BossID)
 	return Boss;
 }
 
-AActor* AT66GameMode::SpawnLabFountainOfLife()
+AActor* AT66GameMode::SpawnLabFountain()
 {
 	if (!IsLabLevel()) return nullptr;
 	UWorld* World = GetWorld();
@@ -232,7 +234,7 @@ AActor* AT66GameMode::SpawnLabFountainOfLife()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	FVector Loc = GetRandomLabSpawnLocation();
 	FRotator Rot = FRotator::ZeroRotator;
-	AT66FountainOfLifeInteractable* Fountain = World->SpawnActor<AT66FountainOfLifeInteractable>(AT66FountainOfLifeInteractable::StaticClass(), Loc, Rot, SpawnParams);
+	AT66FountainInteractable* Fountain = World->SpawnActor<AT66FountainInteractable>(AT66FountainInteractable::StaticClass(), Loc, Rot, SpawnParams);
 	if (Fountain)
 	{
 		LabSpawnedActors.Add(Fountain);
@@ -248,11 +250,9 @@ AActor* AT66GameMode::SpawnLabInteractable(FName InteractableID)
 
 	UClass* ClassToSpawn = nullptr;
 	if (InteractableID == FName(TEXT("Fountain")))
-		ClassToSpawn = AT66FountainOfLifeInteractable::StaticClass();
+		ClassToSpawn = AT66FountainInteractable::StaticClass();
 	else if (InteractableID == FName(TEXT("Chest")))
 		ClassToSpawn = AT66ChestInteractable::StaticClass();
-	else if (InteractableID == FName(TEXT("WheelSpin")))
-		ClassToSpawn = AT66WheelSpinInteractable::StaticClass();
 	else if (InteractableID == FName(TEXT("IdolAltar")))
 		ClassToSpawn = AT66IdolAltar::StaticClass();
 	else if (InteractableID == FName(TEXT("Crate")))

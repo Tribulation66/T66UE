@@ -4,6 +4,8 @@
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Engine/GameInstance.h"
+#include "Engine/Texture2D.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
@@ -13,6 +15,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 
@@ -161,7 +164,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush ShellBrush;
 		return ResolveMasterLibraryBrush(
 			ShellBrush,
-			TEXT("SourceAssets/UI/Reference/Modals/QuitConfirmation/Panels/quitconfirmation_panels_inner_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("QuitModalShell"));
 	}
@@ -174,7 +177,7 @@ namespace
 			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
 			Padding,
 			TEXT("QuitModalShellV14"),
-			FT66Style::Panel());
+			FLinearColor(0.010f, 0.012f, 0.018f, 0.98f));
 	}
 
 	TSharedRef<SWidget> MakeMasterLibraryButton(const FT66ButtonParams& Params)
@@ -196,15 +199,20 @@ namespace
 		const TSharedRef<SWidget> ButtonContent = Params.CustomContent.IsValid()
 			? Params.CustomContent.ToSharedRef()
 			: StaticCastSharedRef<SWidget>(
-				SNew(STextBlock)
-				.Text(ButtonText)
-				.Font(ButtonFont)
-				.ColorAndOpacity(TextColor)
-				.Justification(ETextJustify::Center)
-				.ShadowOffset(FVector2D(1.0f, 1.0f))
-				.ShadowColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 0.68f))
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds));
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					SNew(STextBlock)
+					.Text(ButtonText)
+					.Font(ButtonFont)
+					.ColorAndOpacity(TextColor)
+					.Justification(ETextJustify::Center)
+					.ShadowOffset(FVector2D(1.0f, 1.0f))
+					.ShadowColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 0.68f))
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)
+				]);
 
 		const FButtonStyle& ButtonStyle = GetMasterLibraryButtonStyle(Params.Type);
 		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
@@ -256,7 +264,7 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 			.SetPadding(FMargin(18.f, 8.f, 18.f, 7.f)));
 
 	FSlateFontInfo TitleFont = FT66Style::Tokens::FontBold(38);
-	TitleFont.LetterSpacing = 130;
+	TitleFont.LetterSpacing = 0;
 
 	return T66ScreenSlateHelpers::MakeCenteredScrimModal(
 		SNew(SBox)
@@ -269,11 +277,18 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 			.HAlign(HAlign_Center)
 			.Padding(0.0f, 0.0f, 0.0f, 18.0f)
 			[
-				SNew(STextBlock)
-				.Text(TitleText)
-				.Font(TitleFont)
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-				.Justification(ETextJustify::Center)
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					SNew(STextBlock)
+					.Text(TitleText)
+					.Font(TitleFont)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Center)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)
+				]
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()

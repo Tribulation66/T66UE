@@ -36,18 +36,14 @@
 #include "UI/T66QuickArcadeWidget.h"
 #include "UI/T66TopwarArcadeWidget.h"
 #include "UI/T66WhackAMoleArcadeWidget.h"
-#include "Gameplay/T66FountainOfLifeInteractable.h"
+#include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
-#include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66ArcadeInteractableBase.h"
 #include "Gameplay/T66ArcadeMachineInteractable.h"
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
 #include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66StageCatchUpGoldInteractable.h"
-#include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -59,7 +55,6 @@
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
@@ -71,7 +66,6 @@
 #include "GameFramework/InputSettings.h"
 #include "GameFramework/PlayerInput.h"
 #include "Gameplay/T66GameMode.h"
-#include "Gameplay/T66ItemPickup.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
@@ -123,27 +117,6 @@ namespace
 				if (TNpcType* Npc = Cast<TNpcType>(WeakNpc.Get()))
 				{
 					return Npc;
-				}
-			}
-		}
-
-		return nullptr;
-	}
-
-	AT66CasinoInteractable* T66FindRegisteredCasino(UWorld* World)
-	{
-		if (!World)
-		{
-			return nullptr;
-		}
-
-		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
-		{
-			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
-			{
-				if (AT66CasinoInteractable* Casino = WeakCasino.Get())
-				{
-					return Casino;
 				}
 			}
 		}
@@ -433,10 +406,10 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		return;
 	}
 
-	if (Mode == TEXT("casinovendor") || Mode == TEXT("vendor") || Mode == TEXT("casinotabvendor"))
+	if (Mode == TEXT("casinoshop") || Mode == TEXT("shop") || Mode == TEXT("casinotabshop"))
 	{
 		OpenCasinoOverlay();
-		SwitchCasinoOverlayToVendor();
+		SwitchCasinoOverlayToShopTab();
 		return;
 	}
 
@@ -450,7 +423,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 	if (Mode == TEXT("casinoalchemy") || Mode == TEXT("alchemy") || Mode == TEXT("casinotabalchemy"))
 	{
 		OpenCasinoOverlay();
-		SwitchCasinoOverlayToVendor();
+		SwitchCasinoOverlayToShopTab();
 		return;
 	}
 
@@ -616,7 +589,7 @@ void AT66PlayerController::OpenCasinoOverlay()
 
 	if (CasinoOverlayWidget)
 	{
-		CasinoOverlayWidget->OpenVendorTab();
+		CasinoOverlayWidget->OpenShopTab();
 		if (!CasinoOverlayWidget->IsInViewport())
 		{
 			CasinoOverlayWidget->AddToViewport(100);
@@ -646,11 +619,11 @@ void AT66PlayerController::SwitchCasinoOverlayToGambling()
 	}
 }
 
-void AT66PlayerController::SwitchCasinoOverlayToVendor()
+void AT66PlayerController::SwitchCasinoOverlayToShopTab()
 {
 	if (CasinoOverlayWidget)
 	{
-		CasinoOverlayWidget->OpenVendorTab();
+		CasinoOverlayWidget->OpenShopTab();
 	}
 }
 
@@ -658,7 +631,7 @@ void AT66PlayerController::SwitchCasinoOverlayToAlchemy()
 {
 	if (CasinoOverlayWidget)
 	{
-		CasinoOverlayWidget->OpenVendorTab();
+		CasinoOverlayWidget->OpenShopTab();
 	}
 }
 
@@ -687,20 +660,12 @@ bool AT66PlayerController::TriggerCasinoBossIfAngry()
 
 	FVector SpawnLoc = FVector::ZeroVector;
 	bool bHasSpawnLoc = false;
-	if (AT66CasinoInteractable* Casino = T66FindRegisteredCasino(World))
-	{
-		SpawnLoc = Casino->GetActorLocation();
-		bHasSpawnLoc = true;
-	}
 
-	if (!bHasSpawnLoc)
+	if (AT66GamblerNPC* Gambler = T66FindRegisteredNpc<AT66GamblerNPC>(World))
 	{
-		if (AT66GamblerNPC* Gambler = T66FindRegisteredNpc<AT66GamblerNPC>(World))
-		{
-			SpawnLoc = Gambler->GetActorLocation();
-			bHasSpawnLoc = true;
-			Gambler->Destroy();
-		}
+		SpawnLoc = Gambler->GetActorLocation();
+		bHasSpawnLoc = true;
+		Gambler->Destroy();
 	}
 
 	if (!bHasSpawnLoc)
@@ -728,16 +693,15 @@ bool AT66PlayerController::TriggerCasinoBossIfAngry()
 	return true;
 }
 
-void AT66PlayerController::OpenCasinoVendorTabForVendor(AT66VendorNPC* Vendor)
+void AT66PlayerController::OpenCasinoShopTab()
 {
 	if (!IsGameplayLevel()) return;
-	if (!Vendor) return;
 
 	OpenCasinoOverlay();
 	if (CasinoOverlayWidget)
 	{
-		CasinoOverlayWidget->SetVendorAllowsSteal(Vendor->DoesAllowSteal());
-		CasinoOverlayWidget->OpenVendorTab();
+		CasinoOverlayWidget->SetShopAllowsSteal(false);
+		CasinoOverlayWidget->OpenShopTab();
 	}
 }
 
@@ -956,17 +920,6 @@ void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 		bShowMouseCursor = true;
 	}
 }
-
-void AT66PlayerController::StartWheelSpinHUD(ET66Rarity Rarity)
-{
-	if (!IsGameplayLevel()) return;
-	if (IsPaused()) return;
-	if (GameplayHUDWidget)
-	{
-		GameplayHUDWidget->StartWheelSpin(Rarity);
-	}
-}
-
 
 void AT66PlayerController::StartCrateOpenHUD()
 {

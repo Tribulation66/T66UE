@@ -10,6 +10,7 @@
 
 class UT66LocalizationSubsystem;
 class AT66CompanionPreviewStage;
+class AT66HeroPreviewStage;
 
 /**
  * Companion Selection Screen - Mirrors Hero Selection layout
@@ -94,6 +95,7 @@ private:
 	TSharedPtr<class STextBlock> ACBalanceTextBlock;
 
 	AT66CompanionPreviewStage* GetCompanionPreviewStage() const;
+	AT66HeroPreviewStage* GetHeroPreviewStage() const;
 	TSharedRef<SWidget> CreateCompanionPreviewWidget(const FLinearColor& FallbackColor);
 
 	void RefreshCompanionList();
@@ -106,6 +108,8 @@ private:
 
 	/** Brushes for the 5-slot companion carousel portraits (prev2..next2). */
 	TArray<TSharedPtr<struct FSlateBrush>> CompanionCarouselPortraitBrushes;
+	mutable TWeakObjectPtr<AT66CompanionPreviewStage> CachedCompanionPreviewStage;
+	mutable TWeakObjectPtr<AT66HeroPreviewStage> CachedHeroPreviewStage;
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	bool IsCompanionUnlocked(FName CompanionID) const;

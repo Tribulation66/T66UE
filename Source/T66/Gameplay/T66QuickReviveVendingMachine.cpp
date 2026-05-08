@@ -11,7 +11,7 @@
 
 AT66QuickReviveVendingMachine::AT66QuickReviveVendingMachine()
 {
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Vending/Vending.Vending")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro")));
 
 	if (VisualMesh)
 	{
@@ -71,6 +71,11 @@ bool AT66QuickReviveVendingMachine::ShouldShowInteractionPrompt(const AT66HeroBa
 		return false;
 	}
 
+	if (IsShowcaseReusable())
+	{
+		return true;
+	}
+
 	const UT66RunStateSubsystem* RunState = GetRunState();
 	return RunState && !RunState->HasQuickReviveCharge() && !RunState->IsInQuickReviveDownedState();
 }
@@ -93,7 +98,7 @@ bool AT66QuickReviveVendingMachine::Interact(APlayerController* PC)
 	{
 		RefreshInteractionPrompt();
 	}
-	return bGranted;
+	return bGranted || IsShowcaseReusable();
 }
 
 void AT66QuickReviveVendingMachine::HandleQuickReviveStateChanged()

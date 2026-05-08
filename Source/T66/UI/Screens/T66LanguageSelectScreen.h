@@ -7,6 +7,8 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "T66LanguageSelectScreen.generated.h"
 
+class SVerticalBox;
+
 /**
  * Language Select Modal Screen
  * Shows a vertical list of available languages

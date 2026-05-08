@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ArthurUltrakillVoxelRebake01\\Voxel022_AppliedDeform\\Models\\ArthurIdle_Voxel022Applied_RebakeDither.glb",
+  "render": "C:\\UE\\T66\\_codex_previews\\arthur_ultrakill_pass\\arthur_voxel022_applied_rebake_dither_render.png",
+  "export": null,
+  "raw_triangles": 23688,
+  "triangles_before_decimate": 23688,
+  "triangles_after_decimate": 23688,
+  "bounds": {
+    "min": [
+      -0.4592301547527313,
+      -0.22393210232257843,
+      0.012066680938005447
+    ],
+    "max": [
+      0.47497251629829407,
+      0.2904372215270996,
+      1.9596744775772095
+    ],
+    "size": [
+      0.9342026710510254,
+      0.5143693089485168,
+      1.9476077556610107
+    ]
+  }
+}

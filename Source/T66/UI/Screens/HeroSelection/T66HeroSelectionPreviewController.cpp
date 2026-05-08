@@ -3,11 +3,18 @@
 #include "UI/Screens/HeroSelection/T66HeroSelectionPreviewController.h"
 #include "UI/Screens/HeroSelection/T66HeroSelectionScreen_Private.h"
 
+#include "Core/T66CharacterVisualSubsystem.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+#include "TimerManager.h"
+
 using namespace T66HeroSelectionPrivate;
 
 void UT66HeroSelectionPreviewController::Initialize(UT66HeroSelectionScreen* InOwnerScreen)
 {
 	OwnerScreen = InOwnerScreen;
+	CachedHeroPreviewStage.Reset();
+	CachedCompanionPreviewStage.Reset();
 }
 
 TSharedRef<SWidget> UT66HeroSelectionPreviewController::CreateHeroPreviewWidget(const FLinearColor& FallbackColor)
@@ -152,20 +159,15 @@ void UT66HeroSelectionPreviewController::ApplySelectionDifficultyToPreviewStages
 		PreviewStage->SetPreviewDifficulty(SelectedDifficulty);
 	}
 
-	if (UT66HeroSelectionScreen* Screen = GetOwnerScreen())
+	if (GetOwnerScreen())
 	{
-		if (UWorld* World = Screen->GetWorld())
+		if (AT66CompanionPreviewStage* CompanionStage = GetCompanionPreviewStage())
 		{
-			for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
-			{
-				AT66CompanionPreviewStage* CompanionStage = *It;
-				CompanionStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-				CompanionStage->SetPreviewDifficulty(SelectedDifficulty);
-				break;
-			}
-
-			PositionPreviewCamera();
+			CompanionStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+			CompanionStage->SetPreviewDifficulty(SelectedDifficulty);
 		}
+
+		PositionPreviewCamera();
 	}
 }
 
@@ -202,6 +204,52 @@ void UT66HeroSelectionPreviewController::ApplyHeroPreviewStage(
 			*PreviewedHeroID.ToString(),
 			static_cast<int32>(SelectedBodyType),
 			*EffectiveSkinID.ToString());
+		FString AutomationScreenshotPath;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66AutoScreenshot="), AutomationScreenshotPath))
+		{
+			const FName HeroVisualID = UT66CharacterVisualSubsystem::GetHeroVisualID(PreviewedHeroID, SelectedBodyType, EffectiveSkinID);
+			if (!bPendingAutomationPreviewRefresh)
+			{
+				if (UT66CharacterVisualSubsystem* Visuals = GameInstance ? GameInstance->GetSubsystem<UT66CharacterVisualSubsystem>() : nullptr)
+				{
+					if (!Visuals->IsCharacterVisualReady(HeroVisualID))
+					{
+						bPendingAutomationPreviewRefresh = true;
+						if (UWorld* World = GetOwnerScreen() ? GetOwnerScreen()->GetWorld() : nullptr)
+						{
+							FTimerHandle RetryHandle;
+							const TWeakObjectPtr<UT66HeroSelectionPreviewController> WeakThis(const_cast<UT66HeroSelectionPreviewController*>(this));
+							World->GetTimerManager().SetTimer(
+								RetryHandle,
+								FTimerDelegate::CreateLambda([
+									WeakThis,
+									GameInstance,
+									PreviewedHeroID,
+									PreviewedCompanionID,
+									SelectedBodyType,
+									SelectedDifficulty,
+									FallbackColor]()
+								{
+									if (UT66HeroSelectionPreviewController* Controller = WeakThis.Get())
+									{
+										Controller->bPendingAutomationPreviewRefresh = false;
+										Controller->ApplyHeroPreviewStage(
+											GameInstance,
+											PreviewedHeroID,
+											PreviewedCompanionID,
+											SelectedBodyType,
+											SelectedDifficulty,
+											FallbackColor);
+									}
+								}),
+								1.25f,
+								false);
+						}
+					}
+				}
+			}
+			PreviewStage->SetPreviewHero(NAME_None, SelectedBodyType, EffectiveSkinID, NAME_None, NAME_None);
+		}
 		PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID, PreviewedCompanionID, EffectiveCompanionSkinID);
 		PositionPreviewCamera();
 		return;
@@ -322,6 +370,11 @@ const FSlateBrush* UT66HeroSelectionPreviewController::GetCompanionInfoPortraitB
 
 AT66HeroPreviewStage* UT66HeroSelectionPreviewController::GetHeroPreviewStage() const
 {
+	if (AT66HeroPreviewStage* CachedStage = CachedHeroPreviewStage.Get())
+	{
+		return CachedStage;
+	}
+
 	UT66HeroSelectionScreen* Screen = GetOwnerScreen();
 	UWorld* World = Screen ? Screen->GetWorld() : nullptr;
 	if (!World)
@@ -334,9 +387,50 @@ AT66HeroPreviewStage* UT66HeroSelectionPreviewController::GetHeroPreviewStage() 
 		PC->EnsureLocalFrontendPreviewScene();
 	}
 
+	if (AT66HeroPreviewStage* CachedStage = CachedHeroPreviewStage.Get())
+	{
+		return CachedStage;
+	}
+
+	// UI setup fallback: preview stages are spawned once by the frontend scene and
+	// cached here so repeated selection refreshes do not rescan the world.
 	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
 	{
-		return *It;
+		CachedHeroPreviewStage = *It;
+		return CachedHeroPreviewStage.Get();
+	}
+	return nullptr;
+}
+
+AT66CompanionPreviewStage* UT66HeroSelectionPreviewController::GetCompanionPreviewStage() const
+{
+	if (AT66CompanionPreviewStage* CachedStage = CachedCompanionPreviewStage.Get())
+	{
+		return CachedStage;
+	}
+
+	UT66HeroSelectionScreen* Screen = GetOwnerScreen();
+	UWorld* World = Screen ? Screen->GetWorld() : nullptr;
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	if (AT66PlayerController* PC = T66GetLocalFrontendHeroPlayerController(Screen))
+	{
+		PC->EnsureLocalFrontendPreviewScene();
+	}
+
+	if (AT66CompanionPreviewStage* CachedStage = CachedCompanionPreviewStage.Get())
+	{
+		return CachedStage;
+	}
+
+	// UI setup fallback: cached after first resolve for this controller.
+	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+	{
+		CachedCompanionPreviewStage = *It;
+		return CachedCompanionPreviewStage.Get();
 	}
 	return nullptr;
 }

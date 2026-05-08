@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\Raw\\Trellis\\Interactables\\Arcade_PotionPour\\Arcade_PotionPour_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\QA\\TrellisFront\\Interactables\\Arcade_PotionPour_front.png",
+  "export": null,
+  "raw_triangles": 77739,
+  "triangles_before_decimate": 77739,
+  "triangles_after_decimate": 77739,
+  "bounds": {
+    "min": [
+      -0.3809751868247986,
+      -0.2617938220500946,
+      -0.5009697079658508
+    ],
+    "max": [
+      0.3814884424209595,
+      0.2621513903141022,
+      0.5007994174957275
+    ],
+    "size": [
+      0.7624636292457581,
+      0.5239452123641968,
+      1.0017690658569336
+    ]
+  }
+}

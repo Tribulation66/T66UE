@@ -1,0 +1,169 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroModelTest01\\Raw\\Trellis\\BoxerChad_ExaggeratedV_04_S1337_D80000_Trellis2.glb",
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest01\\High\\BoxerChad\\Models\\BoxerChad_High_QuadRetro.glb",
+  "output_blend": "",
+  "baked_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest01\\High\\BoxerChad\\Textures\\BoxerChad_High_QuadRetro_Bake1024.png",
+  "pixelated_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest01\\High\\BoxerChad\\Textures\\BoxerChad_High_QuadRetro_Pixelated_64.png",
+  "qa_renders": [],
+  "raw_triangles": 77656,
+  "raw_quads": 0,
+  "source_triangles_after_cleanup": 77496,
+  "retopo_triangles": 8833,
+  "retopo_quads": 4333,
+  "adjustable_values": {
+    "target_quads": 2500,
+    "adaptive_size": 65.0,
+    "adapt_quad_count": false,
+    "use_materials": true,
+    "use_normals": false,
+    "autodetect_hard_edges": true,
+    "symmetry_x": false,
+    "symmetry_y": false,
+    "symmetry_z": false,
+    "normalize_height": 2.0,
+    "merge_distance": 0.0001,
+    "delete_loose": true,
+    "recalculate_normals": true,
+    "shade_flat": true,
+    "bake_size": 1024,
+    "bake_margin": 16,
+    "cage_extrusion": 0.035,
+    "max_ray_distance": 0.12,
+    "dilate_pixels": 20,
+    "texture_size": 64,
+    "palette_mode": "kmeans",
+    "palette_size": 16,
+    "palette_steps": 5,
+    "kmeans_iterations": 8,
+    "kmeans_sample_limit": 20000,
+    "dither_type": "bayer4",
+    "dither_strength": 1.15,
+    "unlit_emission_material": true
+  },
+  "normalize_report": {
+    "initial_height": 1.0017859935760498,
+    "target_height": 2.0,
+    "final_size": [
+      1.4545921087265015,
+      0.49384093284606934,
+      2.0
+    ],
+    "final_min": [
+      -0.7272960543632507,
+      -0.24692046642303467,
+      0.0
+    ],
+    "final_max": [
+      0.7272960543632507,
+      0.24692046642303467,
+      2.0
+    ]
+  },
+  "qremesh_report": {
+    "engine": "C:\\ProgramData\\Exoside\\QuadRemesher\\Datas_Blender\\QuadRemesherEngine_1.4\\xremesh.exe",
+    "input_fbx": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\inputMesh.fbx",
+    "output_fbx": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\retopo.fbx",
+    "settings": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\RetopoSettings.txt",
+    "progress": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\progress.txt",
+    "copied_input_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest01\\High\\BoxerChad\\Working\\QuadRemesher\\inputMesh.fbx",
+    "copied_output_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest01\\High\\BoxerChad\\Working\\QuadRemesher\\retopo.fbx",
+    "copied_settings": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest01\\High\\BoxerChad\\Working\\QuadRemesher\\RetopoSettings.txt",
+    "copied_progress": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest01\\High\\BoxerChad\\Working\\QuadRemesher\\progress.txt",
+    "elapsed_seconds": 12.531,
+    "last_progress": 2.0,
+    "last_text": ""
+  },
+  "pixel_report": {
+    "source_size": [
+      1024,
+      1024
+    ],
+    "texture_size": [
+      64,
+      64
+    ],
+    "palette": [
+      [
+        0.05808,
+        0.03335,
+        0.00658
+      ],
+      [
+        0.92044,
+        0.91977,
+        0.91927
+      ],
+      [
+        0.0208,
+        0.01977,
+        0.0188
+      ],
+      [
+        0.44882,
+        0.43227,
+        0.41689
+      ],
+      [
+        0.31991,
+        0.18087,
+        0.02518
+      ],
+      [
+        0.24524,
+        0.23601,
+        0.226
+      ],
+      [
+        0.14747,
+        0.08461,
+        0.01805
+      ],
+      [
+        0.97353,
+        0.973,
+        0.97334
+      ],
+      [
+        0.38241,
+        0.32128,
+        0.26168
+      ],
+      [
+        0.24389,
+        0.144,
+        0.03524
+      ],
+      [
+        0.07171,
+        0.06838,
+        0.06543
+      ],
+      [
+        0.85532,
+        0.84597,
+        0.83678
+      ],
+      [
+        0.82312,
+        0.7385,
+        0.63765
+      ],
+      [
+        0.13902,
+        0.13095,
+        0.12272
+      ],
+      [
+        0.35918,
+        0.20517,
+        0.05438
+      ],
+      [
+        0.09047,
+        0.05183,
+        0.01058
+      ]
+    ],
+    "palette_count": 16
+  }
+}

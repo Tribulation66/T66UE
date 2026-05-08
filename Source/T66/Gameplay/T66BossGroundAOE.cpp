@@ -11,14 +11,81 @@
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "Engine/StaticMesh.h"
+#include "HAL/IConsoleManager.h"
+#include "Misc/CoreMisc.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
-#include "UObject/UObjectGlobals.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace
 {
-	UNiagaraSystem* T66LoadBossAOEImpactSystem(const TCHAR* AssetPath)
+	static TAutoConsoleVariable<int32> CVarT66BossAOEVFXMaxPerFrame(
+		TEXT("T66.VFX.BossAOEMaxPerFrame"),
+		12,
+		TEXT("Max boss AOE Niagara impact spawns per frame. Values <= 0 disable this cap."));
+
+	static TAutoConsoleVariable<int32> CVarT66BossAOEVFXUseEffectsScalability(
+		TEXT("T66.VFX.BossAOEUseEffectsScalability"),
+		1,
+		TEXT("Scale boss AOE VFX caps by sg.EffectsQuality."));
+
+	uint64 GBossAOEVFXBudgetFrame = MAX_uint64;
+	int32 GBossAOEVFXEmittedThisFrame = 0;
+
+	float T66GetBossAOEEffectsQualityScale()
+	{
+		if (CVarT66BossAOEVFXUseEffectsScalability.GetValueOnGameThread() == 0)
+		{
+			return 1.0f;
+		}
+
+		IConsoleVariable* EffectsQualityCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("sg.EffectsQuality"));
+		const int32 EffectsQuality = EffectsQualityCVar ? FMath::Clamp(EffectsQualityCVar->GetInt(), 0, 4) : 3;
+		switch (EffectsQuality)
+		{
+		case 0:
+			return 0.35f;
+		case 1:
+			return 0.55f;
+		case 2:
+			return 0.75f;
+		case 4:
+			return 1.15f;
+		case 3:
+		default:
+			return 1.0f;
+		}
+	}
+
+	bool T66TryConsumeBossAOEVFXBudget()
+	{
+		if (GBossAOEVFXBudgetFrame != GFrameCounter)
+		{
+			GBossAOEVFXBudgetFrame = GFrameCounter;
+			GBossAOEVFXEmittedThisFrame = 0;
+		}
+
+		const int32 BaseBudget = CVarT66BossAOEVFXMaxPerFrame.GetValueOnGameThread();
+		if (BaseBudget <= 0)
+		{
+			++GBossAOEVFXEmittedThisFrame;
+			return true;
+		}
+
+		const int32 ScaledBudget = FMath::Max(2, FMath::RoundToInt(static_cast<float>(BaseBudget) * T66GetBossAOEEffectsQualityScale()));
+		if (GBossAOEVFXEmittedThisFrame >= ScaledBudget)
+		{
+			return false;
+		}
+
+		++GBossAOEVFXEmittedThisFrame;
+		return true;
+	}
+
+	UNiagaraSystem* T66ResolveBossAOEImpactSystem(const TCHAR* AssetPath)
 	{
 		if (!AssetPath || !*AssetPath)
 		{
@@ -26,7 +93,9 @@ namespace
 		}
 
 		static TMap<FString, TWeakObjectPtr<UNiagaraSystem>> Cache;
-		const FString Key(AssetPath);
+		static TMap<FString, TSharedPtr<FStreamableHandle>> ActiveLoads;
+		const FSoftObjectPath Path(AssetPath);
+		const FString Key = Path.ToString();
 		if (const TWeakObjectPtr<UNiagaraSystem>* Found = Cache.Find(Key))
 		{
 			if (Found->IsValid())
@@ -35,14 +104,20 @@ namespace
 			}
 		}
 
-		UNiagaraSystem* Loaded = FindObject<UNiagaraSystem>(nullptr, AssetPath);
-		if (!Loaded)
+		if (UNiagaraSystem* Resolved = Cast<UNiagaraSystem>(Path.ResolveObject()))
 		{
-			Loaded = LoadObject<UNiagaraSystem>(nullptr, AssetPath);
+			Cache.Add(Key, Resolved);
+			return Resolved;
 		}
 
-		Cache.Add(Key, Loaded);
-		return Loaded;
+		if (!ActiveLoads.Contains(Key))
+		{
+			TArray<FSoftObjectPath> AssetPaths;
+			AssetPaths.Add(Path);
+			ActiveLoads.Add(Key, UAssetManager::GetStreamableManager().RequestAsyncLoad(AssetPaths, FStreamableDelegate()));
+		}
+
+		return nullptr;
 	}
 
 	const TCHAR* T66GetBossAOEImpactPath(const ET66BossAttackProfile AttackProfile)
@@ -55,8 +130,6 @@ namespace
 			return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02");
 		case ET66BossAttackProfile::Duelist:
 			return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_02.P_Cosmic_Projectile_02");
-		case ET66BossAttackProfile::Vendor:
-			return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_02.P_Weapon_02");
 		case ET66BossAttackProfile::Gambler:
 			return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Portal.P_Cosmic_Portal");
 		case ET66BossAttackProfile::Balanced:
@@ -64,11 +137,31 @@ namespace
 			return TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1");
 		}
 	}
+
+	void T66PreloadBossAOEImpactSystemsAsync()
+	{
+		static bool bRequested = false;
+		if (bRequested)
+		{
+			return;
+		}
+		bRequested = true;
+
+		T66ResolveBossAOEImpactSystem(TEXT("/Game/Stylized_VFX_StPack/Particles/P_Laser_02.P_Laser_02"));
+		T66ResolveBossAOEImpactSystem(TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02"));
+		T66ResolveBossAOEImpactSystem(TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_02.P_Cosmic_Projectile_02"));
+		T66ResolveBossAOEImpactSystem(TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Portal.P_Cosmic_Portal"));
+		T66ResolveBossAOEImpactSystem(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
+	}
 }
 
 AT66BossGroundAOE::AT66BossGroundAOE()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	if (!HasAnyFlags(RF_ClassDefaultObject))
+	{
+		T66PreloadBossAOEImpactSystemsAsync();
+	}
 
 	DamageZone = CreateDefaultSubobject<USphereComponent>(TEXT("DamageZone"));
 	DamageZone->SetSphereRadius(300.f);
@@ -106,7 +199,8 @@ void AT66BossGroundAOE::ConfigureVisualStyle(
 	AttackProfile = InAttackProfile;
 	TelegraphColor = InTelegraphColor;
 	ImpactColor = InImpactColor;
-	CachedImpactVFX = T66LoadBossAOEImpactSystem(T66GetBossAOEImpactPath(AttackProfile));
+	T66PreloadBossAOEImpactSystemsAsync();
+	CachedImpactVFX = T66ResolveBossAOEImpactSystem(T66GetBossAOEImpactPath(AttackProfile));
 }
 
 void AT66BossGroundAOE::RefreshVisualState(const float WarningAlpha)
@@ -138,7 +232,7 @@ void AT66BossGroundAOE::BeginPlay()
 
 	if (!CachedImpactVFX)
 	{
-		CachedImpactVFX = T66LoadBossAOEImpactSystem(T66GetBossAOEImpactPath(AttackProfile));
+		CachedImpactVFX = T66ResolveBossAOEImpactSystem(T66GetBossAOEImpactPath(AttackProfile));
 	}
 
 	RefreshVisualState(0.f);
@@ -231,7 +325,7 @@ void AT66BossGroundAOE::ActivateDamage()
 
 	DamageZone->SetGenerateOverlapEvents(false);
 
-	if (CachedImpactVFX && GetWorld())
+	if (CachedImpactVFX && GetWorld() && T66TryConsumeBossAOEVFXBudget())
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),

@@ -27,6 +27,8 @@ class T66_API UT66PixelVFXSubsystem : public UWorldSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 	virtual bool DoesSupportWorldType(EWorldType::Type WorldType) const override;
 
 	UNiagaraComponent* SpawnPixelAtLocation(
@@ -50,6 +52,8 @@ public:
 	int64 GetTotalDropped() const { return TotalDropped; }
 
 private:
+	void RequestDefaultPixelSystemsAsync();
+	void HandleDefaultPixelSystemsLoaded();
 	void ResetFrameBudgetIfNeeded();
 	bool ConsumeBudget(ET66PixelVFXPriority Priority);
 
@@ -58,6 +62,8 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraSystem> CachedLegacyPixelSystem = nullptr;
+
+	TSharedPtr<struct FStreamableHandle> DefaultPixelSystemsLoadHandle;
 
 	uint64 LastBudgetFrame = MAX_uint64;
 	int32 RequestedThisFrame = 0;

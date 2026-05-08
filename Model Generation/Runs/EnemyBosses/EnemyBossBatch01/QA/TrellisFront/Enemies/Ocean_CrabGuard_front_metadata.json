@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Enemies\\Ocean_CrabGuard\\Ocean_CrabGuard_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Enemies\\Ocean_CrabGuard_front.png",
+  "export": null,
+  "raw_triangles": 78771,
+  "triangles_before_decimate": 78771,
+  "triangles_after_decimate": 78771,
+  "bounds": {
+    "min": [
+      -0.4993706941604614,
+      -0.3178979456424713,
+      -0.45435911417007446
+    ],
+    "max": [
+      0.49973928928375244,
+      0.3145325481891632,
+      0.45378726720809937
+    ],
+    "size": [
+      0.9991099834442139,
+      0.6324304938316345,
+      0.9081463813781738
+    ]
+  }
+}

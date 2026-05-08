@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Bosses\\Hell_GreatDragon\\Hell_GreatDragon_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_GreatDragon_front.png",
+  "export": null,
+  "raw_triangles": 189489,
+  "triangles_before_decimate": 189489,
+  "triangles_after_decimate": 189489,
+  "bounds": {
+    "min": [
+      -0.4939671456813812,
+      -0.4963037669658661,
+      -0.43683117628097534
+    ],
+    "max": [
+      0.49379920959472656,
+      0.49191009998321533,
+      0.43793997168540955
+    ],
+    "size": [
+      0.9877663850784302,
+      0.9882138967514038,
+      0.8747711181640625
+    ]
+  }
+}

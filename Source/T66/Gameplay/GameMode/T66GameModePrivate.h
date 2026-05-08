@@ -6,13 +6,11 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66CompanionBase.h"
 #include "Gameplay/T66EnemyDirector.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66StartGate.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66MiasmaManager.h"
 #include "Gameplay/T66MiasmaBoundary.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66SaintNPC.h"
 #include "Gameplay/T66OuroborosNPC.h"
@@ -20,7 +18,7 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66CowardiceGate.h"
 #include "Gameplay/T66VisualUtil.h"
-#include "Gameplay/T66TricksterNPC.h"
+#include "Gameplay/T66GalleryDisplayActor.h"
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66BossGate.h"
 #include "Gameplay/T66TowerDescentHole.h"
@@ -30,20 +28,15 @@
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Gameplay/T66IdolAltar.h"
-#include "Gameplay/T66FountainOfLifeInteractable.h"
+#include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
-#include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66ArcadeMachineInteractable.h"
 #include "Gameplay/T66ArcadeTruckInteractable.h"
 #include "Gameplay/T66QuickReviveVendingMachine.h"
-#include "Gameplay/T66TeleportPadInteractable.h"
 #include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66StageCatchUpGoldInteractable.h"
-#include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66StageEffects.h"
 #include "Gameplay/T66SpawnPlateau.h"
 #include "Gameplay/T66LabCollector.h"
@@ -103,15 +96,20 @@
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66TerrainThemeAssets.h"
 #include "Gameplay/T66WorldVisualSetup.h"
+#include "Gameplay/Traps/T66FloorFlameTrap.h"
+#include "Gameplay/Traps/T66FloorSpikePatchTrap.h"
+#include "Gameplay/Traps/T66TrapBase.h"
+#include "Gameplay/Traps/T66TrapPressurePlate.h"
+#include "Gameplay/Traps/T66WallArrowTrap.h"
 #include "T66.h"
+#include "Engine/DataTable.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogT66GameMode, Log, All);
 
 namespace T66GameModePrivate
 {
 	inline constexpr float T66TowerStageTransitionDropHeight = 7800.0f;
-	inline constexpr int32 T66MaxGlobalStage = 23;
-	inline constexpr bool T66EnableWheelSpinSpawns = false;
+	inline constexpr int32 T66MaxGlobalStage = 20;
 	inline constexpr float T66MainMapRoomReserveRadiusCells = 2.70f;
 	inline constexpr float T66MainMapCorridorReserveRadiusCells = 0.80f;
 	inline constexpr float T66FinalDifficultySurvivalDurationSeconds = 60.0f;
@@ -147,7 +145,7 @@ namespace T66GameModePrivate
 	AActor* T66FindTaggedActor(UWorld* World, FName Tag);
 	void T66RememberTaggedActor(AActor* Actor, FName Tag);
 	void T66ForgetTaggedActor(UWorld* World, FName Tag);
-	bool T66HasRegisteredCasino(UWorld* World);
+	bool T66HasRegisteredGambler(UWorld* World);
 	bool T66ShouldIgnoreTowerCeilingHit(const FHitResult& Hit);
 	FName T66MakeTowerFloorTag(int32 FloorNumber);
 	int32 T66ReadTowerFloorTag(const AActor* Actor);

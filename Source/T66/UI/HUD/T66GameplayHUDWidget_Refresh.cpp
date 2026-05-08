@@ -1246,23 +1246,8 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	if (IdolSlotsPanelBox.IsValid()) IdolSlotsPanelBox->SetVisibility(ElemVis(HUDPS ? HUDPS->GetHudToggleAffectsIdolSlots() : true));
 	if (PortraitStatPanelBox.IsValid()) PortraitStatPanelBox->SetVisibility(ElemVis(HUDPS ? HUDPS->GetHudToggleAffectsPortraitStats() : true));
 
-	// Wheel spin panel: hide when all toggled panels would be collapsed (any one visible is enough to show wheel in its slot).
-	const bool bAnyPanelVisible = (!HUDPS || HUDPS->GetHudToggleAffectsInventory() || HUDPS->GetHudToggleAffectsMinimap() || HUDPS->GetHudToggleAffectsIdolSlots() || HUDPS->GetHudToggleAffectsPortraitStats())
-		? bPanelsVisible
-		: true;
 	RefreshPausePresentation();
 	UpdateTikTokVisibility();
-	if (WheelSpinBox.IsValid())
-	{
-		if (!bAnyPanelVisible)
-		{
-			WheelSpinBox->SetVisibility(EVisibility::Collapsed);
-		}
-		else
-		{
-			WheelSpinBox->SetVisibility(GetPresentationController().IsWheelPanelOpen() ? EVisibility::Visible : EVisibility::Collapsed);
-		}
-	}
 }
 
 

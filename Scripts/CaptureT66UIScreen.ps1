@@ -162,6 +162,19 @@ if ($outputPath) {
     Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
 
     if (-not (Test-Path -LiteralPath $outputPath)) {
+        $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..")).TrimEnd('\')
+        $outputFull = [System.IO.Path]::GetFullPath($outputPath)
+        if ($outputFull.StartsWith($projectRoot + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
+            $relativeOutput = $outputFull.Substring($projectRoot.Length + 1)
+            $cookedSandboxOutput = Join-Path $projectRoot (Join-Path "Saved\Cooked\Windows\T66" $relativeOutput)
+            if (Test-Path -LiteralPath $cookedSandboxOutput) {
+                Copy-Item -LiteralPath $cookedSandboxOutput -Destination $outputPath -Force
+                Write-Host "Recovered screenshot from cooked sandbox: $cookedSandboxOutput -> $outputPath"
+            }
+        }
+    }
+
+    if (-not (Test-Path -LiteralPath $outputPath)) {
         throw "Screenshot was not created before timeout: $outputPath"
     }
 

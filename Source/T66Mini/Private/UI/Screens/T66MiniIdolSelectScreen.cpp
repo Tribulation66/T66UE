@@ -546,10 +546,18 @@ FReply UT66MiniIdolSelectScreen::HandleRerollClicked()
 	UT66MiniFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniFrontendStateSubsystem>() : nullptr;
 	if (DataSubsystem && FrontendState)
 	{
+		const TArray<FName> PreviousOffers = FrontendState->GetCurrentIdolOfferIDs();
 		FrontendState->RerollIdolOffers(DataSubsystem);
 		T66MiniEnsureIdolOffers(DataSubsystem, FrontendState);
 		CurrentStatusText = NSLOCTEXT("T66Mini.IdolSelect", "RerolledStatus", "Idol offers rerolled. Pick the best fit for your run.");
-		ForceRebuildSlate();
+		if (PreviousOffers != FrontendState->GetCurrentIdolOfferIDs())
+		{
+			ForceRebuildSlate();
+		}
+		else
+		{
+			SetStatus(CurrentStatusText);
+		}
 	}
 
 	return FReply::Handled();
@@ -677,6 +685,24 @@ void UT66MiniIdolSelectScreen::SetStatus(const FText& InText)
 
 void UT66MiniIdolSelectScreen::RebuildIdolBrushes(const TArray<FT66MiniIdolDefinition>& Idols)
 {
+	if (IdolBrushes.Num() == Idols.Num())
+	{
+		bool bHasAllBrushes = true;
+		for (const FT66MiniIdolDefinition& Idol : Idols)
+		{
+			if (!IdolBrushes.Contains(Idol.IdolID))
+			{
+				bHasAllBrushes = false;
+				break;
+			}
+		}
+
+		if (bHasAllBrushes)
+		{
+			return;
+		}
+	}
+
 	IdolBrushes.Reset();
 	UT66MiniVisualSubsystem* VisualSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVisualSubsystem>() : nullptr;
 

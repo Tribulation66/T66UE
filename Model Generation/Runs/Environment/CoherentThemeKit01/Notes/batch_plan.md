@@ -50,9 +50,9 @@ Floor sheets:
 
 All sheets:
 
-- flat solid `#00ff00` background
+- pure flat opaque white `#ffffff` background only
 - consistent camera, lighting, palette, and material language across all four cells
-- no text, labels, watermarks, UI, decorative borders, or cast shadows
+- no text, labels, watermarks, UI, decorative borders, alpha, floor plane, cast shadows, contact shadows, reflections, gradients, gray patches, poster cards, or green backgrounds
 - no fine filigree, tiny surface noise, hair-thin roots, wire-thin chains, or dense rubble
 - details must be designed as broad low-poly forms that can survive 3D reconstruction
 - props such as bones, torches, chains, roots, crystals, and skulls must be attached to the module surface

@@ -2,7 +2,14 @@
 
 #include "Core/T66TrapTuningConfig.h"
 
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
+#include "Engine/StaticMesh.h"
 #include "Misc/ConfigCacheIni.h"
+#include "NiagaraSystem.h"
+#include "UObject/SoftObjectPath.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogT66TrapAssets, Log, All);
 
 namespace
 {
@@ -13,6 +20,59 @@ namespace
 		FString ConfigFilename;
 		FConfigCacheIni::LoadGlobalIniFile(ConfigFilename, TEXT("T66TrapTuning"));
 		return ConfigFilename;
+	}
+
+	static TMap<FString, TSharedPtr<FStreamableHandle>>& GetTrapAssetAsyncLoadHandles()
+	{
+		static TMap<FString, TSharedPtr<FStreamableHandle>> ActiveLoads;
+		return ActiveLoads;
+	}
+
+	static void QueueTrapAssetAsyncLoad(const FSoftObjectPath& ObjectPath)
+	{
+		if (!ObjectPath.IsValid() || ObjectPath.ResolveObject())
+		{
+			return;
+		}
+		if (!UAssetManager::IsInitialized())
+		{
+			return;
+		}
+
+		const FString Key = ObjectPath.ToString();
+		TMap<FString, TSharedPtr<FStreamableHandle>>& ActiveLoads = GetTrapAssetAsyncLoadHandles();
+		if (ActiveLoads.Contains(Key))
+		{
+			return;
+		}
+
+		TArray<FSoftObjectPath> AssetPaths;
+		AssetPaths.Add(ObjectPath);
+		ActiveLoads.Add(Key, UAssetManager::GetStreamableManager().RequestAsyncLoad(AssetPaths, FStreamableDelegate()));
+	}
+
+	static void QueueConfiguredTrapAssetPreload(const FString& ObjectPathString)
+	{
+		const FString TrimmedPath = ObjectPathString.TrimStartAndEnd();
+		if (TrimmedPath.IsEmpty())
+		{
+			return;
+		}
+
+		const FSoftObjectPath ObjectPath(TrimmedPath);
+		QueueTrapAssetAsyncLoad(ObjectPath);
+	}
+
+	static void QueueConfiguredTrapAssetPreloads(const FT66TrapVisualAssetConfig& TrapAssets)
+	{
+		QueueConfiguredTrapAssetPreload(TrapAssets.WallArrowMesh);
+		QueueConfiguredTrapAssetPreload(TrapAssets.ArrowProjectileMesh);
+		QueueConfiguredTrapAssetPreload(TrapAssets.ArrowProjectileTrailNiagara);
+		QueueConfiguredTrapAssetPreload(TrapAssets.ArrowProjectileFallbackTrailNiagara);
+		QueueConfiguredTrapAssetPreload(TrapAssets.FloorFlameNiagara);
+		QueueConfiguredTrapAssetPreload(TrapAssets.FloorSpikeMesh);
+		QueueConfiguredTrapAssetPreload(TrapAssets.FloorSpikeClusterMesh);
+		QueueConfiguredTrapAssetPreload(TrapAssets.FloorSpikeRiseBurstNiagara);
 	}
 
 	template <typename StructType>
@@ -36,6 +96,52 @@ namespace
 		}
 
 		StructTypeInfo->ImportText(*RawValue, &Value, nullptr, PPF_None, GLog, StructTypeInfo->GetName());
+	}
+
+	template <typename AssetType>
+	static AssetType* LoadConfiguredTrapAsset(const FString& ObjectPathString, const TCHAR* ConfigKey, const TCHAR* AssetTypeName)
+	{
+		static TSet<FString> WarnedFailures;
+
+		const FString TrimmedPath = ObjectPathString.TrimStartAndEnd();
+		const FString AssetPathForLog = TrimmedPath.IsEmpty() ? TEXT("<empty>") : TrimmedPath;
+		const FString WarningKey = FString::Printf(TEXT("%s|%s|%s"), ConfigKey, AssetTypeName, *AssetPathForLog);
+
+		auto WarnOnce = [&]()
+		{
+			if (!WarnedFailures.Contains(WarningKey))
+			{
+				WarnedFailures.Add(WarningKey);
+				UE_LOG(
+					LogT66TrapAssets,
+					Warning,
+					TEXT("Trap asset config %s is missing or invalid for %s path '%s'. Check Config/DefaultT66TrapTuning.ini before shipping."),
+					ConfigKey,
+					AssetTypeName,
+					*AssetPathForLog);
+			}
+		};
+
+		if (TrimmedPath.IsEmpty())
+		{
+			WarnOnce();
+			return nullptr;
+		}
+
+		const FSoftObjectPath ObjectPath(TrimmedPath);
+		if (!ObjectPath.IsValid())
+		{
+			WarnOnce();
+			return nullptr;
+		}
+
+		if (AssetType* LoadedAsset = Cast<AssetType>(ObjectPath.ResolveObject()))
+		{
+			return LoadedAsset;
+		}
+
+		QueueTrapAssetAsyncLoad(ObjectPath);
+		return nullptr;
 	}
 
 	static FT66TrapSpawnWindow MakeSpawnWindow(const int32 MinCount, const int32 MaxCount, const int32 Attempts, const float MinSpacing)
@@ -180,6 +286,8 @@ void UT66TrapTuningConfig::LoadFromConfig()
 	LoadTrapStructValue(ConfigFilename, TEXT("GameplayLevel4"), GameplayLevel4);
 	LoadTrapStructValue(ConfigFilename, TEXT("GameplayLevel5"), GameplayLevel5);
 
+	LoadTrapStructValue(ConfigFilename, TEXT("TrapAssets"), TrapAssets);
+
 	LoadTrapStructValue(ConfigFilename, TEXT("DungeonWallArrow"), DungeonWallArrow);
 	LoadTrapStructValue(ConfigFilename, TEXT("DungeonFloorFlame"), DungeonFloorFlame);
 	LoadTrapStructValue(ConfigFilename, TEXT("DungeonFloorSpikePatch"), DungeonFloorSpikePatch);
@@ -242,4 +350,29 @@ const FT66AreaControlTrapTuning* UT66TrapTuningConfig::FindAreaControlTuning(con
 	if (RegistryKey == TEXT("MartianCrystalPatch")) return &MartianCrystalPatch;
 	if (RegistryKey == TEXT("HellBrimstonePatch")) return &HellBrimstonePatch;
 	return nullptr;
+}
+
+const FT66TrapVisualAssetConfig& UT66TrapTuningConfig::GetRuntimeTrapAssets()
+{
+	static UT66TrapTuningConfig RuntimeConfig;
+	static bool bLoaded = false;
+
+	if (!bLoaded)
+	{
+		RuntimeConfig.LoadFromConfig();
+		QueueConfiguredTrapAssetPreloads(RuntimeConfig.TrapAssets);
+		bLoaded = true;
+	}
+
+	return RuntimeConfig.TrapAssets;
+}
+
+UStaticMesh* UT66TrapTuningConfig::LoadConfiguredTrapStaticMesh(const FString& ObjectPathString, const TCHAR* ConfigKey)
+{
+	return LoadConfiguredTrapAsset<UStaticMesh>(ObjectPathString, ConfigKey, TEXT("UStaticMesh"));
+}
+
+UNiagaraSystem* UT66TrapTuningConfig::LoadConfiguredTrapNiagaraSystem(const FString& ObjectPathString, const TCHAR* ConfigKey)
+{
+	return LoadConfiguredTrapAsset<UNiagaraSystem>(ObjectPathString, ConfigKey, TEXT("UNiagaraSystem"));
 }

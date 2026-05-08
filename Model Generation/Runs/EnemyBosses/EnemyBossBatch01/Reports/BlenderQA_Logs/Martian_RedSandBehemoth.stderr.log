@@ -1,0 +1,2 @@
+C:\UE\T66\Model Generation\Scripts\blender_glb_qa.py:42: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes = True

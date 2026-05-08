@@ -119,9 +119,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	int32 LifetimeRunsCompleted = 0;
 
-	/** Lifetime vendor purchases. */
+	/** Lifetime shop purchases. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
-	int32 LifetimeVendorPurchases = 0;
+	int32 LifetimeShopPurchases = 0;
 
 	/** Lifetime gambler wins. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")

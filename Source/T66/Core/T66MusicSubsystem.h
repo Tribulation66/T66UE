@@ -10,6 +10,7 @@ class UAudioComponent;
 class USoundBase;
 class UT66RunStateSubsystem;
 class UT66PlayerSettingsSubsystem;
+struct FStreamableHandle;
 
 /**
  * Simple music state manager.
@@ -116,6 +117,16 @@ private:
 	USoundBase* ResolveAndLoadSurvivalSound();
 	USoundBase* ResolveAndLoadGameplayThemeSound(UWorld* World);
 	USoundBase* ResolveAndLoadBossThemeSound(UWorld* World);
+	void QueueBaseMusicPreloads();
+	void QueueMainThemePreload();
+	void QueueThemePreload();
+	void QueueSurvivalPreload();
+	void HandleMainThemePreloaded();
+	void HandleThemePreloaded();
+	void HandleSurvivalPreloaded();
+	USoundBase* ResolveFirstResidentSoundInFolder(const FString& FolderPath);
+	void QueueFolderSoundPreload(const FString& FolderPath, const TArray<FSoftObjectPath>& CandidatePaths);
+	void HandleFolderSoundPreloaded(FString FolderPath);
 
 	void EnsureMainThemePlaying(UWorld* World);
 	void EnsureThemePlaying(UWorld* World);
@@ -138,5 +149,12 @@ private:
 
 	UFUNCTION()
 	void HandleBossFinished();
-};
 
+	TSharedPtr<FStreamableHandle> MainThemeLoadHandle;
+	TSharedPtr<FStreamableHandle> ThemeLoadHandle;
+	TSharedPtr<FStreamableHandle> SurvivalLoadHandle;
+	TMap<FString, TObjectPtr<USoundBase>> CachedFolderSounds;
+	TMap<FString, TSharedPtr<FStreamableHandle>> PendingFolderSoundLoads;
+	TMap<FString, TArray<FSoftObjectPath>> FolderSoundCandidatePaths;
+	TSet<FString> WarnedMissingFolderSounds;
+};

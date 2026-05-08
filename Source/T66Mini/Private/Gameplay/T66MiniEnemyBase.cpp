@@ -107,6 +107,7 @@ AT66MiniEnemyBase::AT66MiniEnemyBase()
 	SetReplicateMovement(true);
 	SetNetUpdateFrequency(16.f);
 	SetMinNetUpdateFrequency(8.f);
+	SetNetCullDistanceSquared(FMath::Square(4200.f));
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);

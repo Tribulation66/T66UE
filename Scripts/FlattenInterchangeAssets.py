@@ -14,13 +14,9 @@ ended up in Interchange's nested folder structure.
 import unreal
 
 EXPECTED_ASSETS = [
-    ("/Game/World/Interactables/Chests/Yellow", "ChestYellow"),
+    ("/Game/World/Interactables/Chests/ChestModel", "Chest"),
     ("/Game/World/Interactables",               "Crate"),
     ("/Game/World/Interactables",               "Totem"),
-    ("/Game/World/Interactables/Wheels",        "Wheel"),
-    ("/Game/World/Props",                       "Barn"),
-    ("/Game/World/Props",                       "Tree"),
-    ("/Game/World/Props",                       "Tree2"),
 ]
 
 

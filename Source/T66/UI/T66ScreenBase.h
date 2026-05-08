@@ -89,8 +89,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Screen")
 	void ForceRebuildSlate();
 
+	/**
+	 * Queue a safe Slate rebuild for the next tick.
+	 * Repeated requests before RebuildWidget() runs are collapsed into one rebuild.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Screen")
+	void RequestDeferredSlateRebuild();
+
 	UFUNCTION(BlueprintPure, Category = "Screen")
 	bool HasBuiltSlateUI() const { return bSlateUIBuilt; }
+
+	UFUNCTION(BlueprintPure, Category = "Screen")
+	bool IsSlateRebuildQueued() const { return bSlateRebuildQueued; }
 
 	virtual bool ShouldRefreshUnderlyingScreenOnModalClose() const { return true; }
 
@@ -105,6 +115,9 @@ protected:
 
 	/** Override to construct the widget */
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+
+	/** Mark a custom RebuildWidget override as having rebuilt the Slate tree. */
+	void MarkSlateUIBuilt();
 
 	// ========== Slate UI Building Helpers ==========
 
@@ -124,6 +137,9 @@ protected:
 
 	/** Flag indicating if UI was built */
 	bool bSlateUIBuilt = false;
+
+	/** True while a deferred rebuild request is already waiting for the next tick. */
+	bool bSlateRebuildQueued = false;
 
 	/** Tracks whether the screen has already been activated once. */
 	bool bHasBeenActivated = false;

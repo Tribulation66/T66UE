@@ -9,7 +9,7 @@ bool AT66GameMode::IsBossRushFinaleStage() const
 	const UT66GameInstance* T66GI = GetT66GameInstance();
 	const UGameInstance* GI = GetGameInstance();
 	const UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!T66GI || !RunState || T66GI->SelectedDifficulty == ET66Difficulty::Impossible)
+	if (!T66GI || !RunState)
 	{
 		return false;
 	}
@@ -88,7 +88,7 @@ void AT66GameMode::SpawnFinalDifficultyTotem(const FVector& SpawnLocation)
 
 	if (UStaticMeshComponent* SMC = TotemActor->GetStaticMeshComponent())
 	{
-		TSoftObjectPtr<UStaticMesh> TotemMesh(FSoftObjectPath(TEXT("/Game/World/Interactables/Totem.Totem")));
+		TSoftObjectPtr<UStaticMesh> TotemMesh(FSoftObjectPath(TEXT("/Game/World/Interactables/DifficultyTotem/DifficultyTotem_QuadRetro.DifficultyTotem_QuadRetro")));
 		if (UStaticMesh* LoadedMesh = TotemMesh.LoadSynchronous())
 		{
 			SMC->SetStaticMesh(LoadedMesh);
@@ -757,7 +757,31 @@ void AT66GameMode::SpawnBossForCurrentStage()
 		}
 	}
 
-	const int32 FinalFloorBossCount = 1 + FinalFloorOwedBossIDs.Num();
+	TArray<FName> EncounterBossIDs;
+	if (!StageData.BossEncounterID.IsNone())
+	{
+		TArray<FT66BossEncounterMemberData> EncounterMembers;
+		T66GI->GetBossEncounterMemberData(StageData.BossEncounterID, EncounterMembers);
+		for (const FT66BossEncounterMemberData& Member : EncounterMembers)
+		{
+			if (!Member.BossID.IsNone())
+			{
+				EncounterBossIDs.Add(Member.BossID);
+			}
+		}
+	}
+	if (EncounterBossIDs.Num() <= 0 && !StageData.BossID.IsNone())
+	{
+		EncounterBossIDs.Add(StageData.BossID);
+	}
+	if (EncounterBossIDs.Num() <= 0)
+	{
+		EncounterBossIDs.Add(FName(*FString::Printf(TEXT("FallbackStageBoss_%02d"), StageNum)));
+	}
+	StageData.BossID = EncounterBossIDs[0];
+
+	const int32 StageEncounterBossCount = FMath::Max(1, EncounterBossIDs.Num());
+	const int32 FinalFloorBossCount = StageEncounterBossCount + FinalFloorOwedBossIDs.Num();
 
 	if (T66UsesMainMapTerrainStage(World) && !MainMapBossSpawnSurfaceLocation.IsNearlyZero())
 	{
@@ -886,6 +910,45 @@ void AT66GameMode::SpawnBossForCurrentStage()
 		}
 	}
 
+	for (int32 EncounterBossIndex = 1; EncounterBossIndex < EncounterBossIDs.Num(); ++EncounterBossIndex)
+	{
+		const FName EncounterBossID = EncounterBossIDs[EncounterBossIndex];
+		FBossData EncounterBossData;
+		T66BuildFallbackBossData(StageNum, EncounterBossID, EncounterBossData);
+		if (FBossData FromBossTable; T66GI->GetBossData(EncounterBossID, FromBossTable))
+		{
+			EncounterBossData = FromBossTable;
+		}
+
+		const FVector EncounterBossSpawnLocation = T66ComputeBossClusterLocation(StageData.BossSpawnLocation, EncounterBossIndex, FinalFloorBossCount);
+		FActorSpawnParameters EncounterSpawnParams;
+		EncounterSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AActor* EncounterSpawnedActor = World->SpawnActor<AActor>(T66LoadBossClassSync(EncounterBossData), EncounterBossSpawnLocation, FRotator::ZeroRotator, EncounterSpawnParams);
+		if (AT66BossBase* EncounterBoss = Cast<AT66BossBase>(EncounterSpawnedActor))
+		{
+			EncounterBoss->InitializeBoss(EncounterBossData);
+			if (IsUsingTowerMainMapLayout())
+			{
+				if (!T66TrySnapActorToTowerFloor(World, EncounterBoss, CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber, EncounterBossSpawnLocation))
+				{
+					T66TrySnapActorToTowerFloor(World, EncounterBoss, CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber, StageData.BossSpawnLocation);
+				}
+				T66AssignTowerFloorTag(EncounterBoss, CachedTowerMainMapLayout.BossFloorNumber);
+			}
+			else
+			{
+				TrySnapActorToTerrainAtLocation(EncounterBoss, EncounterBossSpawnLocation);
+			}
+			const int32 BossScoreBudget = PlayerExperience
+				? PlayerExperience->ResolveBossScore(T66GI->SelectedDifficulty, EncounterBoss->GetPointValue(), RunState->GetDifficultyScalar())
+				: FMath::Max(0, FMath::RoundToInt(static_cast<float>(EncounterBoss->GetPointValue()) * RunState->GetDifficultyScalar()));
+			RunState->RegisterSpawnedBossScoreBudget(BossScoreBudget, StageNum, EncounterBoss->BossID);
+
+			UE_LOG(LogT66GameMode, Log, TEXT("Spawned encounter boss member for Stage %d (BossID=%s EncounterID=%s)"),
+				StageNum, *EncounterBossData.BossID.ToString(), *StageData.BossEncounterID.ToString());
+		}
+	}
+
 	for (int32 BossIndex = 0; BossIndex < FinalFloorOwedBossIDs.Num(); ++BossIndex)
 	{
 		const FName OwedBossID = FinalFloorOwedBossIDs[BossIndex];
@@ -896,7 +959,7 @@ void AT66GameMode::SpawnBossForCurrentStage()
 			OwedBossData = FromBossTable;
 		}
 
-		const FVector OwedBossSpawnLocation = T66ComputeBossClusterLocation(StageData.BossSpawnLocation, BossIndex + 1, FinalFloorBossCount);
+		const FVector OwedBossSpawnLocation = T66ComputeBossClusterLocation(StageData.BossSpawnLocation, StageEncounterBossCount + BossIndex, FinalFloorBossCount);
 		FActorSpawnParameters OwedSpawnParams;
 		OwedSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		AActor* OwedSpawnedActor = World->SpawnActor<AActor>(T66LoadBossClassSync(OwedBossData), OwedBossSpawnLocation, FRotator::ZeroRotator, OwedSpawnParams);
@@ -1060,6 +1123,8 @@ void AT66GameMode::SpawnBossBeaconIfNeeded()
 	static const FName BossBeaconTag(TEXT("T66_Boss_Beacon"));
 
 	TArray<AActor*> ExistingBeacons;
+	// Stage-transition cleanup only. BossBeaconActor is cached after spawn, but
+	// this pass removes legacy duplicate beacons from older saved maps.
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
 		if (It->Tags.Contains(BossBeaconTag))

@@ -18,7 +18,30 @@ Use the front-end names for current and future work:
 
 Some historical scripts, folders, reports, and notes still use `TypeA` or `TypeB`. Treat those names as legacy implementation names unless the current DataTable, asset path, or user-facing UI says otherwise. Do not rename old script paths casually during a quality pass; migrate names only when the affected import, redirector, DataTable, and staged-build checks are part of the same task.
 
-## Required Source Split
+## Current Quad Retro Source Rule
+
+For new Quad Retro heroes, use one approved full-body source image and one
+resulting TRELLIS model per character. The split body/head workflow below is
+legacy Type A process guidance and is not the default for this new art
+direction.
+
+Before generating or approving a source image, read
+[TRELLIS_SOURCE_IMAGE_RULES.md](C:/UE/T66/Model%20Generation/TRELLIS_SOURCE_IMAGE_RULES.md).
+The short version is:
+
+- A-pose, straight-on, orthographic-feeling camera
+- flat saturated chroma background, usually `#FF00FF` or `#00FF00`
+- clean painted/cel-shaded concept art, not pixel art and not photoreal
+- extremely wide shoulders, narrow waist, V-shaped Chad silhouette
+- simple under-detailed face
+- identity carried by costume, hair, equipment, and large color blocks
+
+After TRELLIS, use
+[RETRO_CHARACTER_PIPELINE.md](C:/UE/T66/Model%20Generation/RETRO_CHARACTER_PIPELINE.md)
+for Quad Remesher reduction, diffuse bake, palette reduction, dithering, and
+final GLB export.
+
+## Legacy Type A Required Source Split
 
 Do not use one all-in character image as the production path when identity or outfit quality matters.
 
@@ -38,11 +61,11 @@ Reject or reroll source images that contain:
 - visible green-screen contamination that Trellis turns into mesh
 - handheld weapons already baked into the body image
 
-For the next Chad quality pass, generate source images on opaque flat white
-instead of green when testing new prompts. The white background must be a true
-flat source background: no alpha, floor, cast shadow, contact shadow, gradient,
-reflection, gray patch, white poster card, or border panel. If white causes
-silhouette loss, reroll the prompt or garment colors rather than adding shadows.
+Historical Type A tests used opaque flat white for some body/head split prompts.
+Do not carry that white-background rule into the new Quad Retro one-image hero
+process; use the saturated chroma background rule in
+[TRELLIS_SOURCE_IMAGE_RULES.md](C:/UE/T66/Model%20Generation/TRELLIS_SOURCE_IMAGE_RULES.md)
+instead.
 
 Chad body-only images must be headless bodies with an open neck socket, not
 full bodies with the head painted out. Chad head-only images must be head plus

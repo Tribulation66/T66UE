@@ -1,7 +1,6 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66LootBagPickup.h"
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66WorldInteractableBase.h"
@@ -92,10 +91,10 @@ AT66LootBagPickup::AT66LootBagPickup()
 
 	// Default expected import locations (safe if missing; we fall back to the cube).
 	// Note: meshes are imported into per-color subfolders so their materials/textures don't collide.
-	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black")));
-	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Red/SM_LootBag_Red.SM_LootBag_Red")));
-	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Yellow/SM_LootBag_Yellow.SM_LootBag_Yellow")));
-	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/White/SM_LootBag_White.SM_LootBag_White")));
+	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro")));
+	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Red/SM_LootBag_Red_QuadRetro.SM_LootBag_Red_QuadRetro")));
+	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Yellow/SM_LootBag_Yellow_QuadRetro.SM_LootBag_Yellow_QuadRetro")));
+	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/White/SM_LootBag_White_QuadRetro.SM_LootBag_White_QuadRetro")));
 
 	if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 	{
@@ -162,8 +161,20 @@ void AT66LootBagPickup::SetExplicitLine1RolledValue(int32 InRolledValue)
 	ExplicitLine1RolledValue = InRolledValue;
 }
 
+void AT66LootBagPickup::SetShowcaseReusable(const bool bInShowcaseReusable)
+{
+	bShowcaseReusable = bInShowcaseReusable;
+	InitialLifeSpan = bShowcaseReusable ? 0.f : 120.f;
+	SetLifeSpan(InitialLifeSpan);
+}
+
 void AT66LootBagPickup::ConsumeAndDestroy()
 {
+	if (bShowcaseReusable)
+	{
+		return;
+	}
+
 	Destroy();
 }
 
@@ -181,6 +192,18 @@ void AT66LootBagPickup::ResolveSpawnClearance()
 	const float BagToBagPadding = 50.f;
 	const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
 	const bool bTowerLayout = GameMode && GameMode->IsUsingTowerMainMapLayout();
+	UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
+
+	// Spawn-clearance setup snapshot: idol altars do not use the actor registry yet,
+	// so keep the iterator out of the six-step adjustment loop.
+	TArray<TWeakObjectPtr<AT66IdolAltar>> ExistingIdolAltars;
+	for (TActorIterator<AT66IdolAltar> It(World); It; ++It)
+	{
+		if (AT66IdolAltar* Altar = *It)
+		{
+			ExistingIdolAltars.Add(Altar);
+		}
+	}
 
 	auto IsSameTowerFloor = [&](const AActor* OtherActor) -> bool
 	{
@@ -199,7 +222,7 @@ void AT66LootBagPickup::ResolveSpawnClearance()
 		FVector TotalAdjustment = FVector::ZeroVector;
 		const FVector CurrentLocation = GetActorLocation();
 
-		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		if (Registry)
 		{
 			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
 			{
@@ -219,29 +242,43 @@ void AT66LootBagPickup::ResolveSpawnClearance()
 					NPC->GetSafeZoneRadius() + BagInteractionRadius + SafeZoneClearancePadding);
 			}
 
-			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
+			for (const TWeakObjectPtr<AT66WorldInteractableBase>& WeakInteractable : Registry->GetWorldInteractables())
 			{
-				const AT66CasinoInteractable* Casino = WeakCasino.Get();
-				if (!Casino || Casino == GetOwner())
+				const AT66WorldInteractableBase* Interactable = WeakInteractable.Get();
+				if (!Interactable || Interactable == GetOwner())
 				{
 					continue;
 				}
-				if (!IsSameTowerFloor(Casino))
+				if (!IsSameTowerFloor(Interactable))
 				{
 					continue;
 				}
 
-				TotalAdjustment += T66BuildTriggerSeparation2D(CurrentLocation, Casino->TriggerBox, BagInteractionRadius + InteractableClearancePadding);
+				TotalAdjustment += T66BuildTriggerSeparation2D(CurrentLocation, Interactable->TriggerBox, BagInteractionRadius + InteractableClearancePadding);
+			}
+
+			for (const TWeakObjectPtr<AT66LootBagPickup>& WeakLootBag : Registry->GetLootBags())
+			{
+				const AT66LootBagPickup* OtherBag = WeakLootBag.Get();
+				if (!OtherBag || OtherBag == this || !OtherBag->SphereComponent)
+				{
+					continue;
+				}
+				if (!IsSameTowerFloor(OtherBag))
+				{
+					continue;
+				}
+
 				TotalAdjustment += T66BuildSeparationVector2D(
 					CurrentLocation,
-					Casino->GetActorLocation(),
-					Casino->GetSafeZoneRadius() + BagInteractionRadius + SafeZoneClearancePadding);
+					OtherBag->GetActorLocation(),
+					BagInteractionRadius + OtherBag->SphereComponent->GetScaledSphereRadius() + BagToBagPadding);
 			}
 		}
 
-		for (TActorIterator<AT66IdolAltar> It(World); It; ++It)
+		for (const TWeakObjectPtr<AT66IdolAltar>& WeakAltar : ExistingIdolAltars)
 		{
-			const AT66IdolAltar* Altar = *It;
+			const AT66IdolAltar* Altar = WeakAltar.Get();
 			if (!Altar || Altar == GetOwner())
 			{
 				continue;
@@ -252,39 +289,6 @@ void AT66LootBagPickup::ResolveSpawnClearance()
 			}
 
 			TotalAdjustment += T66BuildTriggerSeparation2D(CurrentLocation, Altar->InteractTrigger, BagInteractionRadius + InteractableClearancePadding);
-		}
-
-		for (TActorIterator<AT66WorldInteractableBase> It(World); It; ++It)
-		{
-			const AT66WorldInteractableBase* Interactable = *It;
-			if (!Interactable || Interactable == GetOwner())
-			{
-				continue;
-			}
-			if (!IsSameTowerFloor(Interactable))
-			{
-				continue;
-			}
-
-			TotalAdjustment += T66BuildTriggerSeparation2D(CurrentLocation, Interactable->TriggerBox, BagInteractionRadius + InteractableClearancePadding);
-		}
-
-		for (TActorIterator<AT66LootBagPickup> It(World); It; ++It)
-		{
-			const AT66LootBagPickup* OtherBag = *It;
-			if (!OtherBag || OtherBag == this || !OtherBag->SphereComponent)
-			{
-				continue;
-			}
-			if (!IsSameTowerFloor(OtherBag))
-			{
-				continue;
-			}
-
-			TotalAdjustment += T66BuildSeparationVector2D(
-				CurrentLocation,
-				OtherBag->GetActorLocation(),
-				BagInteractionRadius + OtherBag->SphereComponent->GetScaledSphereRadius() + BagToBagPadding);
 		}
 
 		TotalAdjustment.Z = 0.f;

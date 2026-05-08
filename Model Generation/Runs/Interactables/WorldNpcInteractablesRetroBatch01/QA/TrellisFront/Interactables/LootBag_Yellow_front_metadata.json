@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\Raw\\Trellis\\Interactables\\LootBag_Yellow\\LootBag_Yellow_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\QA\\TrellisFront\\Interactables\\LootBag_Yellow_front.png",
+  "export": null,
+  "raw_triangles": 79199,
+  "triangles_before_decimate": 79199,
+  "triangles_after_decimate": 79199,
+  "bounds": {
+    "min": [
+      -0.3978841304779053,
+      -0.38771355152130127,
+      -0.5003236532211304
+    ],
+    "max": [
+      0.39784908294677734,
+      0.3900871276855469,
+      0.5002717971801758
+    ],
+    "size": [
+      0.7957332134246826,
+      0.7778006792068481,
+      1.0005954504013062
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+Started 2026-05-06T20:01:53.5518845-03:00
+20:01:56 | INFO: Data are loaded, start creating Blender stuff
+20:01:56 | INFO: Blender create Mesh node geometry_0
+20:01:57 | INFO: glTF import finished in 0.23s
+Traceback (most recent call last):
+  File "C:\UE\T66\Model Generation\Scripts\t66_quad_retro_character_pipeline.py", line 956, in <module>
+    main()
+    ~~~~^^
+  File "C:\UE\T66\Model Generation\Scripts\t66_quad_retro_character_pipeline.py", line 864, in main
+    qremesh_fbx, qremesh_report = run_quad_remesher(source, args, work_dir)
+                                  ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\UE\T66\Model Generation\Scripts\t66_quad_retro_character_pipeline.py", line 400, in run_quad_remesher
+    raise RuntimeError(f"Quad Remesher timed out after {args.timeout_seconds}s")
+RuntimeError: Quad Remesher timed out after 900s
+Info: Removed 31965 vertices
+Info: Removed: 2 vertices, 1 edges, 0 faces
+
+FBX export starting... 'C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\inputMesh.fbx'
+export finished in 0.2320 sec.

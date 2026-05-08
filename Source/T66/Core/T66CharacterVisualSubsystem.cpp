@@ -5,11 +5,13 @@
 #include "Engine/DataTable.h"
 #include "Engine/AssetManager.h"
 #include "Engine/SkeletalMesh.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimSequence.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Modules/ModuleManager.h"
 #include "GameFramework/Character.h"
@@ -44,15 +46,7 @@ static UTexture* GetWhiteFallbackTexture()
 	UTexture* LoadedTexture = FindObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
 	if (!LoadedTexture)
 	{
-		LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
-	}
-	if (!LoadedTexture)
-	{
 		LoadedTexture = FindObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
-		if (!LoadedTexture)
-		{
-			LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
-		}
 	}
 
 	CachedTexture = LoadedTexture;
@@ -129,6 +123,7 @@ static void T66AppendAnimationFallbackPreloadPaths(const TSoftObjectPtr<UAnimati
 static void T66AppendCharacterVisualAssetPaths(const FT66CharacterVisualRow& Row, TArray<FSoftObjectPath>& OutPaths)
 {
 	T66AddUniqueCharacterVisualPath(Row.SkeletalMesh.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.StaticMesh.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.LoopingAnimation.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.AlertAnimation.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.RunAnimation.ToSoftObjectPath(), OutPaths);
@@ -502,7 +497,7 @@ static void T66ApplySafeCharacterMaterialOverrides(USkeletalMeshComponent* Targe
 
 /** If the given path points to a non-animation (e.g. SkeletalMesh), try the same path with _Anim suffix (e.g. AM_X.AM_X -> AM_X_Anim.AM_X_Anim). */
 template <typename TObjectType>
-static TObjectType* TryLoadSoftObjectIfPackageExists(const TSoftObjectPtr<TObjectType>& SoftPath)
+static TObjectType* ResolveSoftObjectIfPackageExists(const TSoftObjectPtr<TObjectType>& SoftPath)
 {
 	if (TObjectType* LoadedObject = SoftPath.Get())
 	{
@@ -528,7 +523,7 @@ static UAnimationAsset* LoadAnimationFallbackWithAnimSuffix(const TSoftObjectPtr
 	FString Base = PathStr.Left(DotIdx);
 	FString ObjName = PathStr.Mid(DotIdx + 1);
 	FString NewPath = Base + TEXT("_Anim.") + ObjName + TEXT("_Anim");
-	return TryLoadSoftObjectIfPackageExists(TSoftObjectPtr<UAnimationAsset>(FSoftObjectPath(NewPath)));
+	return ResolveSoftObjectIfPackageExists(TSoftObjectPtr<UAnimationAsset>(FSoftObjectPath(NewPath)));
 }
 
 /** If path is Package_Anim.Object_Anim and package doesn't exist, try Package.Object_Anim (FBX import creates package without _Anim). */
@@ -556,13 +551,19 @@ static UAnimationAsset* LoadAnimationFallbackStripPackageAnimSuffix(const TSoftO
 
 	for (const FString& CandidatePath : CandidatePaths)
 	{
-		if (UAnimationAsset* Animation = TryLoadSoftObjectIfPackageExists(TSoftObjectPtr<UAnimationAsset>(FSoftObjectPath(CandidatePath))))
+		if (UAnimationAsset* Animation = ResolveSoftObjectIfPackageExists(TSoftObjectPtr<UAnimationAsset>(FSoftObjectPath(CandidatePath))))
 		{
 			return Animation;
 		}
 	}
 
 	return nullptr;
+}
+
+void UT66CharacterVisualSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+	GetVisualsDataTable();
 }
 
 FName UT66CharacterVisualSubsystem::GetFallbackVisualID(FName VisualID)
@@ -729,11 +730,19 @@ UDataTable* UT66CharacterVisualSubsystem::GetVisualsDataTable() const
 		}
 	}
 
-	// Fallback: load by canonical path if present.
 	CachedVisualsDataTable = FindObject<UDataTable>(nullptr, T66_DefaultCharacterVisualsDTPath);
-	if (!CachedVisualsDataTable)
+	if (!CachedVisualsDataTable && GEngine)
 	{
-		CachedVisualsDataTable = LoadObject<UDataTable>(nullptr, T66_DefaultCharacterVisualsDTPath);
+		static bool bLoggedMissingVisualsTable = false;
+		if (!bLoggedMissingVisualsTable)
+		{
+			bLoggedMissingVisualsTable = true;
+			UE_LOG(
+				LogT66CharacterVisuals,
+				Warning,
+				TEXT("[MESH] DT_CharacterVisuals was not preloaded. Character visual resolution will wait for GameInstance async core tables instead of sync-loading %s."),
+				T66_DefaultCharacterVisualsDTPath);
+		}
 	}
 	return CachedVisualsDataTable;
 }
@@ -862,20 +871,29 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 	{
 		Res.Row = *Row;
 		Res.bHasRow = true;
+		bool bMissingRequiredLoadedAsset = false;
 
 		if (!Res.Row.SkeletalMesh.IsNull())
 		{
-			Res.Mesh = TryLoadSoftObjectIfPackageExists(Res.Row.SkeletalMesh);
+			Res.Mesh = ResolveSoftObjectIfPackageExists(Res.Row.SkeletalMesh);
+			bMissingRequiredLoadedAsset |= (Res.Mesh == nullptr);
 			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[MESH] ResolveVisual VisualID=%s ResolvedRow=%s SkeletalMesh path=%s Loaded=%s"),
 				*VisualID.ToString(), *ResolvedVisualID.ToString(), *Res.Row.SkeletalMesh.ToString(), Res.Mesh ? TEXT("YES") : TEXT("NO"));
 		}
-		else
+		if (!Res.Row.StaticMesh.IsNull())
 		{
-			UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MESH] ResolveVisual VisualID=%s ResolvedRow=%s SkeletalMesh path is NULL in DataTable row!"), *VisualID.ToString(), *ResolvedVisualID.ToString());
+			Res.StaticMesh = ResolveSoftObjectIfPackageExists(Res.Row.StaticMesh);
+			bMissingRequiredLoadedAsset |= (Res.StaticMesh == nullptr);
+			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[MESH] ResolveVisual VisualID=%s ResolvedRow=%s StaticMesh path=%s Loaded=%s"),
+				*VisualID.ToString(), *ResolvedVisualID.ToString(), *Res.Row.StaticMesh.ToString(), Res.StaticMesh ? TEXT("YES") : TEXT("NO"));
+		}
+		if (Res.Row.SkeletalMesh.IsNull() && Res.Row.StaticMesh.IsNull())
+		{
+			UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MESH] ResolveVisual VisualID=%s ResolvedRow=%s has no SkeletalMesh or StaticMesh in DataTable row!"), *VisualID.ToString(), *ResolvedVisualID.ToString());
 		}
 		if (!Res.Row.LoopingAnimation.IsNull())
 		{
-			Res.LoopingAnim = TryLoadSoftObjectIfPackageExists(Res.Row.LoopingAnimation);
+			Res.LoopingAnim = ResolveSoftObjectIfPackageExists(Res.Row.LoopingAnimation);
 			if (!Res.LoopingAnim)
 				Res.LoopingAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.LoopingAnimation);
 			if (!Res.LoopingAnim)
@@ -883,7 +901,7 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 		}
 		if (!Res.Row.AlertAnimation.IsNull())
 		{
-			Res.AlertAnim = TryLoadSoftObjectIfPackageExists(Res.Row.AlertAnimation);
+			Res.AlertAnim = ResolveSoftObjectIfPackageExists(Res.Row.AlertAnimation);
 			if (!Res.AlertAnim)
 				Res.AlertAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.AlertAnimation);
 			if (!Res.AlertAnim)
@@ -897,11 +915,21 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 		}
 		if (!Res.Row.RunAnimation.IsNull())
 		{
-			Res.RunAnim = TryLoadSoftObjectIfPackageExists(Res.Row.RunAnimation);
+			Res.RunAnim = ResolveSoftObjectIfPackageExists(Res.Row.RunAnimation);
 			if (!Res.RunAnim)
 				Res.RunAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.RunAnimation);
 			if (!Res.RunAnim)
 				Res.RunAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.RunAnimation);
+		}
+		if (bMissingRequiredLoadedAsset)
+		{
+			UE_LOG(
+				LogT66CharacterVisuals,
+				Warning,
+				TEXT("[MESH] ResolveVisual VisualID=%s row exists but required mesh was not loaded. Queuing async preload and skipping cache until ready."),
+				*VisualID.ToString());
+			PreloadCharacterVisual(VisualID);
+			return FT66ResolvedCharacterVisual();
 		}
 		// If no explicit animation is set, try to find any AnimSequence for this Skeleton (cached).
 		if (!Res.LoopingAnim && Res.Mesh && Res.Mesh->GetSkeleton())
@@ -1050,25 +1078,90 @@ void UT66CharacterVisualSubsystem::GetMovementAnimsForVisual(FName VisualID, UAn
 	OutAlert = Res.AlertAnim;
 }
 
+bool UT66CharacterVisualSubsystem::HasCharacterVisual(FName VisualID) const
+{
+	return FindVisualRow(VisualID) != nullptr;
+}
+
 bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 	FName VisualID,
 	USkeletalMeshComponent* TargetMesh,
 	USceneComponent* PlaceholderToHide,
 	bool bEnableSingleNodeAnimation,
 	bool bUseAlertAnimation,
-	bool bIsPreviewContext)
+	bool bIsPreviewContext,
+	UStaticMeshComponent* TargetStaticMesh)
 {
-	if (VisualID.IsNone() || !TargetMesh)
+	if (VisualID.IsNone() || (!TargetMesh && !TargetStaticMesh))
 	{
 		return false;
 	}
 
 	const FT66ResolvedCharacterVisual Res = ResolveVisual(VisualID);
-	if (!Res.bHasRow || !Res.Mesh)
+	if (!Res.bHasRow || (!Res.Mesh && !Res.StaticMesh))
 	{
-		UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MESH] ApplyCharacterVisual FAILED for VisualID=%s: bHasRow=%d, Mesh=%s"),
-			*VisualID.ToString(), Res.bHasRow ? 1 : 0, Res.Mesh ? *Res.Mesh->GetName() : TEXT("(null)"));
+		UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MESH] ApplyCharacterVisual FAILED for VisualID=%s: bHasRow=%d, SkeletalMesh=%s StaticMesh=%s"),
+			*VisualID.ToString(),
+			Res.bHasRow ? 1 : 0,
+			Res.Mesh ? *Res.Mesh->GetName() : TEXT("(null)"),
+			Res.StaticMesh ? *Res.StaticMesh->GetName() : TEXT("(null)"));
 		return false;
+	}
+
+	if (Res.StaticMesh && (!Res.Mesh || !TargetMesh) && TargetStaticMesh)
+	{
+		TargetStaticMesh->EmptyOverrideMaterials();
+		TargetStaticMesh->SetStaticMesh(Res.StaticMesh);
+		TargetStaticMesh->SetRelativeRotation(Res.Row.MeshRelativeRotation);
+
+		const FVector Scale = Res.Row.MeshRelativeScale.IsNearlyZero() ? FVector::OneVector : Res.Row.MeshRelativeScale;
+		TargetStaticMesh->SetRelativeScale3D(Scale);
+
+		FVector RelLoc = Res.Row.MeshRelativeLocation;
+		const bool bIsCharacterOwner = Cast<ACharacter>(TargetStaticMesh->GetOwner()) != nullptr;
+		const FBoxSphereBounds B = Res.StaticMesh->GetBounds();
+		const float BottomZ = (B.Origin.Z - B.BoxExtent.Z) * Scale.Z;
+		if (bIsCharacterOwner)
+		{
+			if (const ACharacter* OwnerChar = Cast<ACharacter>(TargetStaticMesh->GetOwner()))
+			{
+				if (const UCapsuleComponent* Cap = OwnerChar->GetCapsuleComponent())
+				{
+					RelLoc.Z += -Cap->GetScaledCapsuleHalfHeight() - BottomZ;
+				}
+			}
+		}
+		else if (Res.Row.bAutoGroundToActorOrigin)
+		{
+			RelLoc.Z -= BottomZ;
+		}
+
+		TargetStaticMesh->SetRelativeLocation(RelLoc);
+		TargetStaticMesh->SetHiddenInGame(false, true);
+		TargetStaticMesh->SetVisibility(true, true);
+
+		if (TargetMesh)
+		{
+			TargetMesh->SetHiddenInGame(true, true);
+			TargetMesh->SetVisibility(false, true);
+		}
+		if (PlaceholderToHide && PlaceholderToHide != TargetStaticMesh)
+		{
+			PlaceholderToHide->SetVisibility(false, true);
+			PlaceholderToHide->SetHiddenInGame(true, true);
+		}
+		return true;
+	}
+
+	if (!TargetMesh || !Res.Mesh)
+	{
+		return false;
+	}
+
+	if (TargetStaticMesh)
+	{
+		TargetStaticMesh->SetHiddenInGame(true, true);
+		TargetStaticMesh->SetVisibility(false, true);
 	}
 
 	// Clear any previous dynamic material overrides before setting the new mesh.

@@ -4,11 +4,13 @@
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "Engine/GameInstance.h"
+#include "Engine/Texture2D.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66TemporaryBuffUIUtils.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
-#include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
@@ -45,6 +47,7 @@ namespace
 	{
 		TStrongObjectPtr<UTexture2D> Texture;
 		TSharedPtr<FSlateBrush> Brush;
+		bool bSimpleFallback = false;
 	};
 
 	struct FT66BuffShopButtonBrushSet
@@ -58,6 +61,16 @@ namespace
 	const FLinearColor T66BuffShopTextColor(0.953f, 0.925f, 0.835f, 1.0f);
 	const FLinearColor T66BuffShopMutedTextColor(0.738f, 0.708f, 0.648f, 1.0f);
 	const FLinearColor T66BuffShopFallbackPanel(0.025f, 0.023f, 0.034f, 0.97f);
+
+	FString GetBuffShopReferencePanelPath()
+	{
+		return T66ScreenSlateHelpers::MakeReferenceSharedAssetPath(TEXT("Panels/Modal/modal_shell_medium.png"));
+	}
+
+	FString GetBuffShopReferenceElementPath(const TCHAR* FileName)
+	{
+		return FString::Printf(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/%s"), FileName ? FileName : TEXT(""));
+	}
 
 	const FSlateBrush* ResolveBuffShopSpriteBrush(
 		FT66BuffShopSpriteBrushEntry& Entry,
@@ -77,7 +90,7 @@ namespace
 			Entry.Brush->Margin = Margin;
 		}
 
-		if (!Entry.Texture.IsValid())
+		if (!Entry.Texture.IsValid() && !Entry.bSimpleFallback)
 		{
 			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
@@ -93,50 +106,28 @@ namespace
 			}
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
-	}
-
-	const FSlateBrush* ResolveBuffShopSpriteRegionBrush(
-		FT66BuffShopSpriteBrushEntry& Entry,
-		const FString& RelativePath,
-		const FVector2D& ImageSize,
-		const FMargin& Margin,
-		const FBox2f& UVRegion,
-		const FLinearColor& Tint,
-		const ESlateBrushDrawType::Type DrawAs,
-		const TextureFilter Filter = TextureFilter::TF_Trilinear)
-	{
-		if (!Entry.Brush.IsValid())
+		if (Entry.Texture.IsValid())
 		{
-			Entry.Brush = MakeShared<FSlateBrush>();
+			Entry.bSimpleFallback = false;
+			Entry.Brush->SetResourceObject(Entry.Texture.Get());
+			return Entry.Brush.Get();
 		}
 
-		Entry.Brush->DrawAs = DrawAs;
-		Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
-		Entry.Brush->TintColor = FSlateColor(Tint);
-		Entry.Brush->ImageSize = ImageSize;
-		Entry.Brush->Margin = Margin;
-		Entry.Brush->SetUVRegion(UVRegion);
-
-		if (!Entry.Texture.IsValid())
+		if (T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(RelativePath))
 		{
-			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
-			{
-				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
-					CandidatePath,
-					Filter,
-					true,
-					TEXT("TempBuffShopReferenceRegionSprite")))
-				{
-					Entry.Texture.Reset(Texture);
-					break;
-				}
-			}
+			Entry.bSimpleFallback = true;
+			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+				*Entry.Brush,
+				RelativePath,
+				ImageSize,
+				Margin,
+				DrawAs);
+			return Entry.Brush.Get();
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+		Entry.bSimpleFallback = false;
+		Entry.Brush->SetResourceObject(nullptr);
+		return nullptr;
 	}
 
 	const FSlateBrush* GetBuffShopContentShellBrush()
@@ -144,7 +135,7 @@ namespace
 		static FT66BuffShopSpriteBrushEntry Entry;
 		return ResolveBuffShopSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffShop/Panels/temporarybuffshop_panels_fullscreen_fullscreen_panel_wide.png"),
+			GetBuffShopReferencePanelPath(),
 			FVector2D(1588.f, 653.f),
 			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
 			ESlateBrushDrawType::Box,
@@ -156,7 +147,7 @@ namespace
 		static FT66BuffShopSpriteBrushEntry Entry;
 		return ResolveBuffShopSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffShop/Panels/temporarybuffshop_panels_fullscreen_fullscreen_panel_tall.png"),
+			GetBuffShopReferencePanelPath(),
 			FVector2D(208.f, 188.f),
 			FMargin(0.115f, 0.055f, 0.115f, 0.055f),
 			ESlateBrushDrawType::Box,
@@ -170,36 +161,25 @@ namespace
 		static FT66BuffShopSpriteBrushEntry ThumbEntry;
 		static FT66BuffShopSpriteBrushEntry HoverEntry;
 
-		const FString ControlsPath = TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffShop/Controls/temporarybuffshop_controls_controls_sheet.png");
-		const FBox2f VerticalBarUV(
-			FVector2f(4.f / 1350.f, 4.f / 926.f),
-			FVector2f(90.f / 1350.f, 644.f / 926.f));
-
-		const FSlateBrush* TrackBrush = ResolveBuffShopSpriteRegionBrush(
+		const FSlateBrush* TrackBrush = ResolveBuffShopSpriteBrush(
 			TrackEntry,
-			ControlsPath,
+			GetBuffShopReferenceElementPath(TEXT("progress_bar_track.png")),
 			FVector2D(14.f, 120.f),
 			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
-			VerticalBarUV,
-			FLinearColor(0.35f, 0.34f, 0.30f, 0.70f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* ThumbBrush = ResolveBuffShopSpriteRegionBrush(
+		const FSlateBrush* ThumbBrush = ResolveBuffShopSpriteBrush(
 			ThumbEntry,
-			ControlsPath,
+			GetBuffShopReferenceElementPath(TEXT("progress_bar_fill_cyan.png")),
 			FVector2D(16.f, 96.f),
 			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
-			FLinearColor(0.93f, 0.82f, 0.52f, 1.0f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* HoverBrush = ResolveBuffShopSpriteRegionBrush(
+		const FSlateBrush* HoverBrush = ResolveBuffShopSpriteBrush(
 			HoverEntry,
-			ControlsPath,
+			GetBuffShopReferenceElementPath(TEXT("progress_bar_fill_cyan.png")),
 			FVector2D(16.f, 96.f),
 			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
-			FLinearColor(1.0f, 0.90f, 0.62f, 1.0f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 
@@ -294,7 +274,7 @@ namespace
 		FT66BuffShopButtonBrushSet& Set = GetBuffShopButtonBrushSet(ET66BuffShopButtonFamily::ToggleInactive);
 		return ResolveBuffShopSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/Reference/Screens/TemporaryBuffShop/Buttons/temporarybuffshop_buttons_pill_disabled.png"),
+			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), TEXT("disabled")),
 			FVector2D(180.f, 69.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
@@ -346,12 +326,19 @@ namespace
 
 		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
 			OnClicked,
-			SNew(STextBlock)
-			.Text(Label)
-			.Font(FT66Style::Tokens::FontBold(FontSize))
-			.ColorAndOpacity(TextColorAttr)
-			.Justification(ETextJustify::Center)
-			.AutoWrapText(true),
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::DownOnly)
+			[
+				SNew(STextBlock)
+				.Text(Label)
+				.Font(FT66Style::Tokens::FontBold(FontSize))
+				.ColorAndOpacity(TextColorAttr)
+				.Justification(ETextJustify::Center)
+				.AutoWrapText(false)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
+			],
 			NormalBrush,
 			HoverBrush,
 			PressedBrush,
@@ -404,10 +391,16 @@ TSharedRef<SWidget> UT66TemporaryBuffShopScreen::BuildSlateUI()
 		TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
 	}
 
-	const float ModalWidth = 1880.0f;
-	const float ModalHeight = 1058.0f;
-	const int32 Columns = 5;
+	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
+	const float ModalWidth = FMath::Min(1880.0f, FMath::Max(1100.0f, SafeFrameSize.X * 0.965f));
+	const float ModalHeight = FMath::Min(1058.0f, FMath::Max(720.0f, SafeFrameSize.Y * 0.94f));
+	const int32 Columns = ModalWidth >= 1700.0f ? 7 : (ModalWidth >= 1450.0f ? 6 : 5);
 	const float CardGap = 10.0f;
+	const float GridWidthReserve = 108.0f;
+	const float CardWidth = FMath::FloorToFloat(
+		(ModalWidth - GridWidthReserve - CardGap * static_cast<float>(Columns - 1))
+		/ static_cast<float>(Columns));
+	constexpr float CardHeight = 196.0f;
 
 	const FText TitleText = NSLOCTEXT("T66.TempBuffShop", "Title", "TEMP BUFF SHOP");
 	const FText BackText = NSLOCTEXT("T66.TempBuffShop", "BackToBuffs", "BACK TO BUFFS");
@@ -439,8 +432,8 @@ TSharedRef<SWidget> UT66TemporaryBuffShopScreen::BuildSlateUI()
 			.Padding(Col < Columns - 1 ? FMargin(0.f, 0.f, CardGap, CardGap) : FMargin(0.f, 0.f, 0.f, CardGap))
 			[
 				SNew(SBox)
-				.WidthOverride(230.f)
-				.HeightOverride(196.f)
+				.WidthOverride(CardWidth)
+				.HeightOverride(CardHeight)
 				[
 					MakeBuffShopSpritePanel(
 						SNew(SVerticalBox)
@@ -513,7 +506,7 @@ TSharedRef<SWidget> UT66TemporaryBuffShopScreen::BuildSlateUI()
 					],
 						GetBuffShopCardShellBrush(),
 						FMargin(10.f),
-						FT66Style::Tokens::Panel)
+						T66BuffShopFallbackPanel)
 				]
 			];
 	}
@@ -522,14 +515,18 @@ TSharedRef<SWidget> UT66TemporaryBuffShopScreen::BuildSlateUI()
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FLinearColor(0.009f, 0.011f, 0.016f, 1.0f))
 		[
-			SNew(SBox)
-			.WidthOverride(ModalWidth)
-			.HeightOverride(ModalHeight)
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::DownOnly)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				MakeBuffShopSpritePanel(
-					SNew(SVerticalBox)
+				SNew(SBox)
+				.WidthOverride(ModalWidth)
+				.HeightOverride(ModalHeight)
+				[
+					MakeBuffShopSpritePanel(
+						SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
@@ -593,9 +590,10 @@ TSharedRef<SWidget> UT66TemporaryBuffShopScreen::BuildSlateUI()
 							Grid
 						]
 					],
-					GetBuffShopContentShellBrush(),
-					FMargin(24.f, 20.f),
-					FT66Style::Panel())
+						GetBuffShopContentShellBrush(),
+						FMargin(24.f, 20.f),
+						T66BuffShopFallbackPanel)
+				]
 			]
 		];
 }

@@ -110,9 +110,8 @@ That patch was only needed after the environment drifted to `transformers 5.5.4`
 These should remain true unless there is a deliberate workflow change:
 
 - use `preprocess_image=True`
-- use opaque green-background PNGs for baseline reproduction
-- opaque flat-white PNGs are allowed for Chad Pass02 source rerolls when the
-  image has no shadows, floor, alpha, gradient, or contact patch
+- use opaque flat-white `#ffffff` PNGs for baseline reproduction and production runs
+- reject any input with green backgrounds, alpha, floor, cast shadow, contact shadow, reflection, gradient, gray patch, poster card, or border panel
 - prefer pod-local `curl` plus `scp` for reliable transport
 - keep weapons separate from character generation
 - treat full-body generation as the primary current path
@@ -127,7 +126,7 @@ These are not environment requirements, but they are the current proven operatin
   - `X-Texture-Size: 2048`
   - `X-Decimation: 80000`
 - Easy enemy family batch:
-  - input style: clean front-view opaque green reference
+  - input style: clean front-view opaque flat-white reference
   - seed: `1337`
   - `X-Texture-Size: 2048`
   - `X-Decimation: 200000`
@@ -170,5 +169,5 @@ Check these first:
 2. `image_feature_extractor.py` was not custom-patched
 3. `BiRefNet.py` still points to `rembg`
 4. `flow_euler.py` still contains the `cfg_strength` fix
-5. input images are opaque green or approved flat-white PNGs, not alpha cutouts
+5. input images are opaque flat-white PNGs, not alpha cutouts or green-background images
 6. Blender-exported low-poly GLBs still survive a clean Blender re-import render

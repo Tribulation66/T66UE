@@ -7,6 +7,34 @@
 #include "VFX/T66MiniFlipbookVFXActor.h"
 #include "VFX/T66MiniGroundTelegraphActor.h"
 
+namespace
+{
+	constexpr int32 T66MiniMaxGroundTelegraphsPerWorld = 12;
+	constexpr int32 T66MiniMaxPulseActorsPerWorld = 48;
+
+	template <typename ActorType>
+	int32 T66MiniCountPooledActorsForWorld(const TArray<TObjectPtr<ActorType>>& Pool, const UWorld* World)
+	{
+		int32 Count = 0;
+		for (const TObjectPtr<ActorType>& Candidate : Pool)
+		{
+			const ActorType* Actor = Candidate.Get();
+			if (IsValid(Actor) && Actor->GetWorld() == World)
+			{
+				++Count;
+			}
+		}
+		return Count;
+	}
+}
+
+void UT66MiniVFXSubsystem::Deinitialize()
+{
+	GroundTelegraphPool.Reset();
+	PulseActorPool.Reset();
+	Super::Deinitialize();
+}
+
 AT66MiniGroundTelegraphActor* UT66MiniVFXSubsystem::AcquireGroundTelegraph(UWorld* World)
 {
 	if (!World)
@@ -20,6 +48,11 @@ AT66MiniGroundTelegraphActor* UT66MiniVFXSubsystem::AcquireGroundTelegraph(UWorl
 		{
 			return Telegraph;
 		}
+	}
+
+	if (T66MiniCountPooledActorsForWorld(GroundTelegraphPool, World) >= T66MiniMaxGroundTelegraphsPerWorld)
+	{
+		return nullptr;
 	}
 
 	FActorSpawnParameters SpawnParams;
@@ -46,6 +79,11 @@ AT66MiniFlipbookVFXActor* UT66MiniVFXSubsystem::AcquirePulseActor(UWorld* World)
 		{
 			return Pulse;
 		}
+	}
+
+	if (T66MiniCountPooledActorsForWorld(PulseActorPool, World) >= T66MiniMaxPulseActorsPerWorld)
+	{
+		return nullptr;
 	}
 
 	FActorSpawnParameters SpawnParams;

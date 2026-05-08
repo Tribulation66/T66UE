@@ -1,0 +1,1 @@
+Rejected Pass 02: improved isolated panels/rows/buttons, but atomic gate still failed because the top and bottom scrollbar button shells include baked arrow glyphs. Phase A requires empty atomic button/state shells only, with icons separated or omitted.

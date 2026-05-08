@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\Raw\\Trellis\\Interactables\\Arcade_ShieldParry\\Arcade_ShieldParry_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\QA\\TrellisFront\\Interactables\\Arcade_ShieldParry_front.png",
+  "export": null,
+  "raw_triangles": 77375,
+  "triangles_before_decimate": 77375,
+  "triangles_after_decimate": 77375,
+  "bounds": {
+    "min": [
+      -0.3842051923274994,
+      -0.23338067531585693,
+      -0.5009748935699463
+    ],
+    "max": [
+      0.38491320610046387,
+      0.22089406847953796,
+      0.5009806156158447
+    ],
+    "size": [
+      0.7691184282302856,
+      0.4542747437953949,
+      1.001955509185791
+    ]
+  }
+}

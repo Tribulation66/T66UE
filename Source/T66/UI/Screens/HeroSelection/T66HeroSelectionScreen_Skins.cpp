@@ -261,7 +261,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 							.SetMinWidth(ActionMinWidth)
 							.SetHeight(ActionMinHeight)
 							.SetPadding(FMargin(7.f, 3.f))
-							.SetContent(SNew(STextBlock).Text(EquipText).Font(FT66Style::Tokens::FontBold(SkinActionFontSize)).ColorAndOpacity(FT66Style::Tokens::Text).Justification(ETextJustify::Center))
+							.SetContent(MakeHeroSelectionFittedLabel(EquipText, SkinActionFontSize, FT66Style::Tokens::Text))
 						)
 						]
 						+ SWidgetSwitcher::Slot()
@@ -294,7 +294,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 								.SetMinWidth(ActionMinWidth)
 								.SetHeight(ActionMinHeight)
 								.SetPadding(FMargin(7.f, 3.f, 7.f, 2.f))
-								.SetContent(SNew(STextBlock).Text(PreviewText).Font(FT66Style::Tokens::FontBold(SkinActionFontSize)).ColorAndOpacity(FT66Style::Tokens::Text).Justification(ETextJustify::Center)))
+								.SetContent(MakeHeroSelectionFittedLabel(PreviewText, SkinActionFontSize, FT66Style::Tokens::Text)))
 						]
 						+ SWidgetSwitcher::Slot()
 						[
@@ -304,7 +304,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 								.SetMinWidth(ActionMinWidth)
 								.SetHeight(ActionMinHeight)
 								.SetPadding(FMargin(7.f, 3.f, 7.f, 2.f))
-								.SetContent(SNew(STextBlock).Text(EquipText).Font(FT66Style::Tokens::FontBold(SkinActionFontSize)).ColorAndOpacity(FT66Style::Tokens::Text).Justification(ETextJustify::Center)))
+								.SetContent(MakeHeroSelectionFittedLabel(EquipText, SkinActionFontSize, FT66Style::Tokens::Text)))
 						]
 						+ SWidgetSwitcher::Slot()
 						[
@@ -394,7 +394,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 							.SetMinWidth(ActionMinWidth)
 							.SetHeight(ActionMinHeight)
 							.SetPadding(FMargin(7.f, 3.f, 7.f, 2.f))
-							.SetContent(SNew(STextBlock).Text(RefundText).Font(FT66Style::Tokens::FontBold(SkinActionFontSize)).ColorAndOpacity(FT66Style::Tokens::Text).Justification(ETextJustify::Center))
+							.SetContent(MakeHeroSelectionFittedLabel(RefundText, SkinActionFontSize, FT66Style::Tokens::Text))
 						)
 						]
 					]

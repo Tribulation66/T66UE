@@ -26,7 +26,7 @@ namespace T66CommunityContentLimits
 	static constexpr int32 MinStatBonus = -99;
 	static constexpr int32 MaxStatBonus = 99;
 	static constexpr int32 MaxStartLevelOverride = 99;
-	static constexpr int32 MaxRequiredStageReached = 23;
+	static constexpr int32 MaxRequiredStageReached = 20;
 	static constexpr int32 MaxRunTimeSeconds = 3600;
 	static constexpr int32 MaxRewardChadCoupons = 9999;
 

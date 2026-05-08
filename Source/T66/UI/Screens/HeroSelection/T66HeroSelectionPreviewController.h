@@ -7,6 +7,7 @@
 #include "T66HeroSelectionPreviewController.generated.h"
 
 class AT66HeroPreviewStage;
+class AT66CompanionPreviewStage;
 class UT66GameInstance;
 class UT66HeroSelectionScreen;
 class SBorder;
@@ -71,10 +72,13 @@ public:
 	AT66HeroPreviewStage* GetHeroPreviewStage() const;
 
 private:
+	AT66CompanionPreviewStage* GetCompanionPreviewStage() const;
 	void PositionPreviewCamera() const;
 	UT66HeroSelectionScreen* GetOwnerScreen() const;
 
 	TWeakObjectPtr<UT66HeroSelectionScreen> OwnerScreen;
+	mutable TWeakObjectPtr<AT66HeroPreviewStage> CachedHeroPreviewStage;
+	mutable TWeakObjectPtr<AT66CompanionPreviewStage> CachedCompanionPreviewStage;
 	TWeakPtr<SBorder> HeroPreviewColorBox;
 	TWeakPtr<SImage> HeroPreviewVideoImage;
 	TWeakPtr<STextBlock> HeroPreviewPlaceholderText;
@@ -85,4 +89,5 @@ private:
 	ET66HeroSelectionPreviewClip SelectedHeroPreviewClip = ET66HeroSelectionPreviewClip::Overview;
 	FName PreviewSkinIDOverride = NAME_None;
 	FName PreviewedCompanionSkinIDOverride = NAME_None;
+	mutable bool bPendingAutomationPreviewRefresh = false;
 };

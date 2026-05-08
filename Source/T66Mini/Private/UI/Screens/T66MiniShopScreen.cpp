@@ -91,21 +91,33 @@ namespace
 		return Result;
 	}
 
-	float T66MiniShopTuning(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key, const float DefaultValue)
+	float T66MiniShopTuning(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key)
 	{
-		return DataSubsystem ? DataSubsystem->FindRuntimeTuningValue(FName(Key), DefaultValue) : DefaultValue;
+		const FName TuningKey(Key);
+		if (!DataSubsystem)
+		{
+			static TSet<FName> LoggedMissingDataSubsystemKeys;
+			if (!LoggedMissingDataSubsystemKeys.Contains(TuningKey))
+			{
+				LoggedMissingDataSubsystemKeys.Add(TuningKey);
+				UE_LOG(LogTemp, Error, TEXT("T66MiniShopScreen: missing Mini data subsystem for required runtime tuning '%s'."), Key);
+			}
+			return 0.f;
+		}
+
+		return DataSubsystem->FindRequiredRuntimeTuningValue(TuningKey);
 	}
 
-	int32 T66MiniShopTuningInt(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key, const int32 DefaultValue)
+	int32 T66MiniShopTuningInt(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key)
 	{
-		return FMath::RoundToInt(T66MiniShopTuning(DataSubsystem, Key, static_cast<float>(DefaultValue)));
+		return FMath::RoundToInt(T66MiniShopTuning(DataSubsystem, Key));
 	}
 
-	int32 T66MiniGetVendorRerollCost(const UT66MiniCircusSubsystem* CircusSubsystem, const UT66MiniDataSubsystem* DataSubsystem)
+	int32 T66MiniGetMarketRerollCost(const UT66MiniCircusSubsystem* CircusSubsystem, const UT66MiniDataSubsystem* DataSubsystem)
 	{
-		const int32 RerollCount = CircusSubsystem ? CircusSubsystem->GetVendorRerollCount() : 0;
-		return T66MiniShopTuningInt(DataSubsystem, TEXT("VendorRerollBaseCost"), 12)
-			+ (RerollCount * T66MiniShopTuningInt(DataSubsystem, TEXT("VendorRerollCostPerReroll"), 6));
+		const int32 RerollCount = CircusSubsystem ? CircusSubsystem->GetMarketRerollCount() : 0;
+		return T66MiniShopTuningInt(DataSubsystem, TEXT("MarketRerollBaseCost"))
+			+ (RerollCount * T66MiniShopTuningInt(DataSubsystem, TEXT("MarketRerollCostPerReroll")));
 	}
 
 	TSharedPtr<FSlateBrush> T66MiniMakeBrush(const FVector2D& Size)
@@ -308,7 +320,7 @@ void UT66MiniShopScreen::OnScreenActivated_Implementation()
 	if (DataSubsystem && CircusSubsystem)
 	{
 		CircusSubsystem->SeedFromRunSave(ActiveRun);
-		CircusSubsystem->PrimeVendorOffers(DataSubsystem);
+		CircusSubsystem->PrimeMarketOffers(DataSubsystem);
 	}
 
 	if (FrontendState)
@@ -349,7 +361,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 		const int32 Materials = ActiveRun->Materials;
 		const int32 Debt = CircusSubsystem->GetDebt();
 		const int32 AngerPct = FMath::RoundToInt(CircusSubsystem->GetAnger01() * 100.f);
-		const int32 RerollCost = T66MiniGetVendorRerollCost(CircusSubsystem, DataSubsystem);
+		const int32 RerollCost = T66MiniGetMarketRerollCost(CircusSubsystem, DataSubsystem);
 		const float CardWidth = FT66Style::Tokens::NPCCompactShopCardWidth;
 		const float CardHeight = FT66Style::Tokens::NPCCompactShopCardHeight;
 		const float CardIconSize = CardWidth - 10.f;
@@ -436,10 +448,10 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 
 		TSharedRef<SWidget> ActiveTabContent = OwnedItemsPanel;
 		FText DefaultStatus = NSLOCTEXT("T66Mini.Shop", "DefaultCircusStatus", "The Mini circus now uses the same compact circus shell as the main game.");
-		if (ActiveTab == EMiniCircusTab::Vendor)
+		if (ActiveTab == EMiniCircusTab::Market)
 		{
 			TSharedRef<SHorizontalBox> OfferRow = SNew(SHorizontalBox);
-			for (const FName OfferID : CircusSubsystem->GetCurrentVendorOfferIDs())
+			for (const FName OfferID : CircusSubsystem->GetCurrentMarketOfferIDs())
 			{
 				const FT66MiniItemDefinition* Item = DataSubsystem ? DataSubsystem->FindItem(OfferID) : nullptr;
 				if (!Item)
@@ -475,12 +487,12 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 			ActiveTabContent = SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f)[SNew(SBox).WidthOverride(186.f)[MakeRunPanel()]]
 				+ SHorizontalBox::Slot().FillWidth(1.f)[T66MiniMakeShopPanel(SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "VendorTitle", "VENDOR")).Font(FT66Style::MakeFont(TEXT("Bold"), 24)).ColorAndOpacity(FT66Style::Text())]
+					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "MarketTitle", "MARKET")).Font(FT66Style::MakeFont(TEXT("Bold"), 24)).ColorAndOpacity(FT66Style::Text())]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[SNew(SScrollBox).Orientation(Orient_Horizontal) + SScrollBox::Slot()[OfferRow]]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "OwnedItemsTitle", "OWNED ITEMS")).Font(FT66Style::MakeFont(TEXT("Bold"), 10)).ColorAndOpacity(FT66Style::Text())]
 					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 8.f, 0.f, 0.f)[SNew(SScrollBox) + SScrollBox::Slot()[OwnedItemsPanel]], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(16.f)))]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f)[SNew(SBox).WidthOverride(220.f)[T66MiniMakeShopPanel(SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "HouseTitleVendor", "CIRCUS HOUSE")).Font(FT66Style::MakeFont(TEXT("Bold"), 16)).ColorAndOpacity(FT66Style::Text())]
+					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NSLOCTEXT("T66Mini.Shop", "HouseTitleMarket", "CIRCUS HOUSE")).Font(FT66Style::MakeFont(TEXT("Bold"), 16)).ColorAndOpacity(FT66Style::Text())]
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 0.f)[T66MiniMakeShopPanel(SNew(STextBlock).Text(FText::Format(NSLOCTEXT("T66Mini.Shop", "AngerFmt", "ANGER {0}%"), FText::AsNumber(AngerPct))).Font(FT66Style::MakeFont(TEXT("Bold"), 18)).ColorAndOpacity(AngerPct >= 75 ? FT66Style::Danger() : FT66Style::Accent2()), FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(10.f)))]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[T66MiniMakeInfoRow(NSLOCTEXT("T66Mini.Shop", "DebtLabel", "Debt"), FText::AsNumber(Debt))]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[T66MiniMakeInfoRow(NSLOCTEXT("T66Mini.Shop", "GoldLabel", "Gold"), FText::AsNumber(Gold))]
@@ -550,8 +562,8 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 
 		const auto MakeTabButton = [this](const EMiniCircusTab Tab, const FText& Label) -> TSharedRef<SWidget>
 		{
-			const FOnClicked OnClicked = (Tab == EMiniCircusTab::Vendor)
-				? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleVendorTabClicked)
+			const FOnClicked OnClicked = (Tab == EMiniCircusTab::Market)
+				? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleMarketTabClicked)
 				: (Tab == EMiniCircusTab::Gambling)
 					? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleGamblingTabClicked)
 					: FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyTabClicked);
@@ -571,7 +583,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 							+ SHorizontalBox::Slot().AutoWidth()[T66MiniMakeMetricChip(NSLOCTEXT("T66Mini.Shop", "HeaderWave", "WAVE"), FText::AsNumber(ActiveRun->WaveIndex), FT66Style::Text())], FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(8.f, 6.f)))]
 						+ SHorizontalBox::Slot().FillWidth(1.f)[SNew(SSpacer)]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(EMiniCircusTab::Vendor, NSLOCTEXT("T66Mini.Shop", "VendorTab", "VENDOR"))]
+							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(EMiniCircusTab::Market, NSLOCTEXT("T66Mini.Shop", "MarketTab", "MARKET"))]
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(EMiniCircusTab::Gambling, NSLOCTEXT("T66Mini.Shop", "GamblingTab", "GAMBLING"))]
 							+ SHorizontalBox::Slot().AutoWidth()[MakeTabButton(EMiniCircusTab::Alchemy, NSLOCTEXT("T66Mini.Shop", "AlchemyTab", "ALCHEMY"))]]
 						+ SHorizontalBox::Slot().FillWidth(1.f)[SNew(SSpacer)]
@@ -586,8 +598,8 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 	{
 		const auto MakeTabButton = [this](const EMiniCircusTab Tab, const FText& Label) -> TSharedRef<SWidget>
 		{
-			const FOnClicked OnClicked = (Tab == EMiniCircusTab::Vendor)
-				? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleVendorTabClicked)
+			const FOnClicked OnClicked = (Tab == EMiniCircusTab::Market)
+				? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleMarketTabClicked)
 				: (Tab == EMiniCircusTab::Gambling)
 					? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleGamblingTabClicked)
 					: FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyTabClicked);
@@ -609,7 +621,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 							.ColorAndOpacity(FT66Style::TextMuted()), FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f)))]
 						+ SHorizontalBox::Slot().FillWidth(1.f)[SNew(SSpacer)]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(EMiniCircusTab::Vendor, NSLOCTEXT("T66Mini.Shop", "VendorTab", "VENDOR"))]
+							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(EMiniCircusTab::Market, NSLOCTEXT("T66Mini.Shop", "MarketTab", "MARKET"))]
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeTabButton(EMiniCircusTab::Gambling, NSLOCTEXT("T66Mini.Shop", "GamblingTab", "GAMBLING"))]
 							+ SHorizontalBox::Slot().AutoWidth()[MakeTabButton(EMiniCircusTab::Alchemy, NSLOCTEXT("T66Mini.Shop", "AlchemyTab", "ALCHEMY"))]]
 						+ SHorizontalBox::Slot().FillWidth(1.f)[SNew(SSpacer)]
@@ -640,7 +652,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 0.f)
 								[
 									SNew(STextBlock)
-									.Text(NSLOCTEXT("T66Mini.Shop", "NoActiveRunBody", "Vendor offers, gambling tables, and alchemy inputs appear here only while a mini run is active."))
+									.Text(NSLOCTEXT("T66Mini.Shop", "NoActiveRunBody", "Market offers, gambling tables, and alchemy inputs appear here only while a mini run is active."))
 									.Font(FT66Style::MakeFont(TEXT("Regular"), 13))
 									.ColorAndOpacity(FT66Style::TextMuted())
 									.AutoWrapText(true)
@@ -679,7 +691,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 	TSharedRef<SVerticalBox> BuybackItemsPanel = SNew(SVerticalBox);
 	if (DataSubsystem && CircusSubsystem)
 	{
-		const TArray<FName>& OfferIDs = CircusSubsystem->GetCurrentVendorOfferIDs();
+		const TArray<FName>& OfferIDs = CircusSubsystem->GetCurrentMarketOfferIDs();
 		for (int32 Index = 0; Index < OfferIDs.Num(); ++Index)
 		{
 			const FT66MiniItemDefinition* Item = DataSubsystem->FindItem(OfferIDs[Index]);
@@ -688,7 +700,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 				continue;
 			}
 
-			const bool bLocked = CircusSubsystem->IsVendorOfferLocked(Item->ItemID);
+			const bool bLocked = CircusSubsystem->IsMarketOfferLocked(Item->ItemID);
 			const bool bAffordable = ActiveRun && ActiveRun->Gold >= Item->BaseBuyGold;
 			OfferGrid->AddSlot(Index % 2, Index / 2)
 			[
@@ -948,11 +960,11 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 		}
 	}
 
-	const int32 RerollCost = T66MiniGetVendorRerollCost(CircusSubsystem, DataSubsystem);
+	const int32 RerollCost = T66MiniGetMarketRerollCost(CircusSubsystem, DataSubsystem);
 
 	TSharedRef<SWidget> ActiveTabContent = SNullWidget::NullWidget;
-	FText DefaultStatus = NSLOCTEXT("T66Mini.Shop", "DefaultStatusVendor", "The mini circus vendor now supports buy, steal, reroll, lock, and buyback. Debt and anger persist through the intermission flow.");
-	if (ActiveTab == EMiniCircusTab::Vendor)
+	FText DefaultStatus = NSLOCTEXT("T66Mini.Shop", "DefaultStatusMarket", "The mini circus market now supports buy, steal, reroll, lock, and buyback. Debt and anger persist through the intermission flow.");
+	if (ActiveTab == EMiniCircusTab::Market)
 	{
 		ActiveTabContent =
 			SNew(SVerticalBox)
@@ -1137,8 +1149,8 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 	const auto MakeTabButton = [this](const EMiniCircusTab Tab, const FText& Label) -> TSharedRef<SWidget>
 	{
 		const bool bIsActive = ActiveTab == Tab;
-		const FOnClicked OnClicked = (Tab == EMiniCircusTab::Vendor)
-			? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleVendorTabClicked)
+		const FOnClicked OnClicked = (Tab == EMiniCircusTab::Market)
+			? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleMarketTabClicked)
 			: (Tab == EMiniCircusTab::Gambling)
 				? FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleGamblingTabClicked)
 				: FOnClicked::CreateUObject(this, &UT66MiniShopScreen::HandleAlchemyTabClicked);
@@ -1157,7 +1169,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 		,
 		FMargin(12.f),
 		true);
-	if (ActiveTab == EMiniCircusTab::Vendor)
+	if (ActiveTab == EMiniCircusTab::Market)
 	{
 		BottomLeftWidget =
 			T66MiniMakeShopButton(
@@ -1217,7 +1229,7 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 					[
-						MakeTabButton(EMiniCircusTab::Vendor, NSLOCTEXT("T66Mini.Shop", "VendorTab", "VENDOR"))
+						MakeTabButton(EMiniCircusTab::Market, NSLOCTEXT("T66Mini.Shop", "MarketTab", "MARKET"))
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 					[
@@ -1377,16 +1389,16 @@ bool UT66MiniShopScreen::ExecuteLocalRequest(const FT66MiniShopRequestPayload& R
 	}
 	else if (Request.Action == MiniShopActionToggleLock)
 	{
-		CircusSubsystem->ToggleVendorOfferLock(Request.ItemID);
+		CircusSubsystem->ToggleMarketOfferLock(Request.ItemID);
 		Result = FString::Printf(TEXT("%s %s a circus lock on %s."),
 			TEXT("Player"),
-			CircusSubsystem->IsVendorOfferLocked(Request.ItemID) ? TEXT("placed") : TEXT("removed"),
+			CircusSubsystem->IsMarketOfferLocked(Request.ItemID) ? TEXT("placed") : TEXT("removed"),
 			*Request.ItemID.ToString());
 		bRequestApplied = true;
 	}
 	else if (Request.Action == MiniShopActionReroll)
 	{
-		bRequestApplied = CircusSubsystem->TryRerollVendor(ActiveRun, DataSubsystem, Result);
+		bRequestApplied = CircusSubsystem->TryRerollMarket(ActiveRun, DataSubsystem, Result);
 	}
 	else if (Request.Action == MiniShopActionBorrow)
 	{
@@ -1426,14 +1438,14 @@ bool UT66MiniShopScreen::ExecuteLocalRequest(const FT66MiniShopRequestPayload& R
 	return bRequestApplied;
 }
 
-FReply UT66MiniShopScreen::HandleVendorTabClicked()
+FReply UT66MiniShopScreen::HandleMarketTabClicked()
 {
-	if (ActiveTab == EMiniCircusTab::Vendor)
+	if (ActiveTab == EMiniCircusTab::Market)
 	{
 		return FReply::Handled();
 	}
 
-	ActiveTab = EMiniCircusTab::Vendor;
+	ActiveTab = EMiniCircusTab::Market;
 	RequestShopRebuildIfStateChanged();
 	return FReply::Handled();
 }

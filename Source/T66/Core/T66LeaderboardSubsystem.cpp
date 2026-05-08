@@ -17,9 +17,12 @@
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66SteamHelper.h"
 
+#include "Engine/AssetManager.h"
 #include "Engine/DataTable.h"
+#include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "HAL/IConsoleManager.h"
+#include "UObject/SoftObjectPath.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Leaderboard, Log, All);
 
@@ -109,7 +112,7 @@ void UT66LeaderboardSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	LoadOrCreateLocalSave();
-	if (!LoadTargetsFromDataTablesIfPresent())
+	if (!LoadTargetsFromDataTablesIfPresent() && !LeaderboardTargetsLoadHandle.IsValid())
 	{
 		UE_LOG(
 			LogT66RuntimeData,
@@ -850,7 +853,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	Snapshot->bWasFullClear = RunState->DidRunEndInVictory() || RunState->HasPendingDifficultyClearSummary();
 	Snapshot->bWasSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
 
-	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 23);
+	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 20);
 	Snapshot->Score = FMath::Max(0, Score);
 
 	Snapshot->SecondaryStatValues.Reset();
@@ -1111,100 +1114,185 @@ bool UT66LeaderboardSubsystem::LoadTargetsFromDataTablesIfPresent()
 		return true;
 	}
 
-	TSoftObjectPtr<UDataTable> ScoreDT = bNeedScoreTargets
-		? TSoftObjectPtr<UDataTable>(FSoftObjectPath(ScoreTargetsDTPath))
-		: TSoftObjectPtr<UDataTable>();
-	TSoftObjectPtr<UDataTable> SpeedDT = bNeedSpeedRunTargets
-		? TSoftObjectPtr<UDataTable>(FSoftObjectPath(SpeedRunTargetsDTPath))
-		: TSoftObjectPtr<UDataTable>();
-
-	UDataTable* SrcDT = bNeedScoreTargets ? ScoreDT.LoadSynchronous() : nullptr;
-	UDataTable* SDT = bNeedSpeedRunTargets ? SpeedDT.LoadSynchronous() : nullptr;
-
-	// If neither exists, caller should fall back to CSV.
-	if (!SrcDT && !SDT)
-	{
-		return false;
-	}
+	const FSoftObjectPath ScoreTablePath(ScoreTargetsDTPath);
+	const FSoftObjectPath SpeedRunTablePath(SpeedRunTargetsDTPath);
+	const UDataTable* SrcDT = bNeedScoreTargets ? Cast<UDataTable>(ScoreTablePath.ResolveObject()) : nullptr;
+	const UDataTable* SDT = bNeedSpeedRunTargets ? Cast<UDataTable>(SpeedRunTablePath.ResolveObject()) : nullptr;
 
 	if (SrcDT)
 	{
-		if (SrcDT->GetRowStruct() != FT66LeaderboardScoreTargetRow::StaticStruct())
-		{
-			UE_LOG(LogT66Leaderboard, Warning, TEXT("DT_Leaderboard_ScoreTargets exists but has wrong RowStruct. Expected FT66LeaderboardScoreTargetRow."));
-		}
-		else
-		{
-			static const FString Ctx(TEXT("ScoreTargetsDT"));
-			const int32 InitialCount = ScoreTarget10ByKey.Num();
-			TArray<FT66LeaderboardScoreTargetRow*> Rows;
-			SrcDT->GetAllRows<FT66LeaderboardScoreTargetRow>(Ctx, Rows);
-			for (const FT66LeaderboardScoreTargetRow* R : Rows)
-			{
-				if (!R) continue;
-				if (R->TargetScore10 <= 0) continue;
-				ScoreTarget10ByKey.Add(MakeScoreKey(R->Difficulty, R->PartySize), R->TargetScore10);
-			}
-
-			if (ScoreTarget10ByKey.Num() > InitialCount)
-			{
-				ScoreTargetRuntimeSource = ET66RuntimeDataSource::CookedDataTable;
-				UE_LOG(
-					LogT66RuntimeData,
-					Log,
-					TEXT("RuntimeData: loaded leaderboard score targets from cooked DataTable '%s' Added=%d Total=%d"),
-					ScoreTargetsDTPath,
-					ScoreTarget10ByKey.Num() - InitialCount,
-					ScoreTarget10ByKey.Num());
-			}
-		}
+		CacheScoreTargetsFromDataTable(SrcDT);
 	}
-	else if (bNeedScoreTargets)
-	{
-		UE_LOG(LogT66RuntimeData, Warning, TEXT("RuntimeData: cooked leaderboard score target DataTable missing at '%s'"), ScoreTargetsDTPath);
-	}
-
 	if (SDT)
 	{
-		if (SDT->GetRowStruct() != FT66LeaderboardSpeedRunTargetRow::StaticStruct())
-		{
-			UE_LOG(LogT66Leaderboard, Warning, TEXT("DT_Leaderboard_SpeedrunTargets exists but has wrong RowStruct. Expected FT66LeaderboardSpeedRunTargetRow."));
-		}
-		else
-		{
-			static const FString Ctx(TEXT("SpeedRunTargetsDT"));
-			const int32 InitialCount = SpeedRunTarget10ByKey_DiffStage.Num();
-			TArray<FT66LeaderboardSpeedRunTargetRow*> Rows;
-			SDT->GetAllRows<FT66LeaderboardSpeedRunTargetRow>(Ctx, Rows);
-			for (const FT66LeaderboardSpeedRunTargetRow* R : Rows)
-			{
-				if (!R) continue;
-				if (R->Stage <= 0 || R->TargetTime10Seconds <= 0.f) continue;
-				SpeedRunTarget10ByKey_DiffStage.Add(MakeSpeedRunKey_DiffStage(R->Difficulty, R->Stage), R->TargetTime10Seconds);
-			}
-
-			if (SpeedRunTarget10ByKey_DiffStage.Num() > InitialCount)
-			{
-				SpeedRunTargetRuntimeSource = ET66RuntimeDataSource::CookedDataTable;
-				UE_LOG(
-					LogT66RuntimeData,
-					Log,
-					TEXT("RuntimeData: loaded leaderboard speed run targets from cooked DataTable '%s' Added=%d Total=%d"),
-					SpeedRunTargetsDTPath,
-					SpeedRunTarget10ByKey_DiffStage.Num() - InitialCount,
-					SpeedRunTarget10ByKey_DiffStage.Num());
-			}
-		}
+		CacheSpeedRunTargetsFromDataTable(SDT);
 	}
-	else if (bNeedSpeedRunTargets)
+
+	const bool bStillNeedScoreTargets = bNeedScoreTargets && ScoreTarget10ByKey.Num() <= 0;
+	const bool bStillNeedSpeedRunTargets = bNeedSpeedRunTargets && SpeedRunTarget10ByKey_DiffStage.Num() <= 0;
+	if ((bStillNeedScoreTargets || bStillNeedSpeedRunTargets)
+		&& !LeaderboardTargetsLoadHandle.IsValid()
+		&& !bLeaderboardTargetsPreloadAttempted)
 	{
-		UE_LOG(LogT66RuntimeData, Warning, TEXT("RuntimeData: cooked leaderboard speed run target DataTable missing at '%s'"), SpeedRunTargetsDTPath);
+		TArray<FSoftObjectPath> PendingPaths;
+		if (bStillNeedScoreTargets)
+		{
+			PendingPaths.Add(ScoreTablePath);
+		}
+		if (bStillNeedSpeedRunTargets)
+		{
+			PendingPaths.Add(SpeedRunTablePath);
+		}
+
+		LeaderboardTargetsLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+			PendingPaths,
+			FStreamableDelegate::CreateUObject(this, &UT66LeaderboardSubsystem::HandleLeaderboardTargetsLoaded));
+		bLeaderboardTargetsPreloadAttempted = true;
+		if (!LeaderboardTargetsLoadHandle.IsValid())
+		{
+			UE_LOG(
+				LogT66RuntimeData,
+				Warning,
+				TEXT("RuntimeData: failed to queue leaderboard target DataTable preload ScorePath='%s' SpeedRunPath='%s'"),
+				ScoreTargetsDTPath,
+				SpeedRunTargetsDTPath);
+		}
+	}
+	else
+	{
+		if (bStillNeedScoreTargets)
+		{
+			UE_LOG(LogT66RuntimeData, Warning, TEXT("RuntimeData: cooked leaderboard score target DataTable missing or empty at '%s'"), ScoreTargetsDTPath);
+		}
+		if (bStillNeedSpeedRunTargets)
+		{
+			UE_LOG(LogT66RuntimeData, Warning, TEXT("RuntimeData: cooked leaderboard speed run target DataTable missing or empty at '%s'"), SpeedRunTargetsDTPath);
+		}
 	}
 
-	// Success if we loaded the missing target set(s) from DTs.
+	// Success if the requested target set(s) are resident and cached.
 	return (!bNeedScoreTargets || ScoreTarget10ByKey.Num() > 0)
 		&& (!bNeedSpeedRunTargets || SpeedRunTarget10ByKey_DiffStage.Num() > 0);
 }
+
+bool UT66LeaderboardSubsystem::CacheScoreTargetsFromDataTable(const UDataTable* DataTable)
+{
+	if (!DataTable)
+	{
+		UE_LOG(LogT66RuntimeData, Warning, TEXT("RuntimeData: cooked leaderboard score target DataTable missing at '%s'"), ScoreTargetsDTPath);
+		return false;
+	}
+
+	if (DataTable->GetRowStruct() != FT66LeaderboardScoreTargetRow::StaticStruct())
+	{
+		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard score target DataTable '%s' has wrong RowStruct. Expected FT66LeaderboardScoreTargetRow."),
+			*DataTable->GetPathName());
+		return false;
+	}
+
+	static const FString Ctx(TEXT("ScoreTargetsDT"));
+	const int32 InitialCount = ScoreTarget10ByKey.Num();
+	TArray<FT66LeaderboardScoreTargetRow*> Rows;
+	DataTable->GetAllRows<FT66LeaderboardScoreTargetRow>(Ctx, Rows);
+	for (const FT66LeaderboardScoreTargetRow* R : Rows)
+	{
+		if (!R)
+		{
+			continue;
+		}
+		if (R->TargetScore10 <= 0)
+		{
+			UE_LOG(LogT66RuntimeData, Warning, TEXT("RuntimeData: ignoring invalid leaderboard score target row Difficulty=%s Party=%s TargetScore10=%lld"),
+				*DifficultyKey(R->Difficulty),
+				*PartySizeKey(R->PartySize),
+				static_cast<long long>(R->TargetScore10));
+			continue;
+		}
+		ScoreTarget10ByKey.Add(MakeScoreKey(R->Difficulty, R->PartySize), R->TargetScore10);
+	}
+
+	if (ScoreTarget10ByKey.Num() > InitialCount)
+	{
+		ScoreTargetRuntimeSource = ET66RuntimeDataSource::CookedDataTable;
+		UE_LOG(
+			LogT66RuntimeData,
+			Log,
+			TEXT("RuntimeData: loaded leaderboard score targets from cooked DataTable '%s' Added=%d Total=%d"),
+			ScoreTargetsDTPath,
+			ScoreTarget10ByKey.Num() - InitialCount,
+			ScoreTarget10ByKey.Num());
+		return true;
+	}
+
+	return ScoreTarget10ByKey.Num() > 0;
+}
+
+bool UT66LeaderboardSubsystem::CacheSpeedRunTargetsFromDataTable(const UDataTable* DataTable)
+{
+	if (!DataTable)
+	{
+		UE_LOG(LogT66RuntimeData, Warning, TEXT("RuntimeData: cooked leaderboard speed run target DataTable missing at '%s'"), SpeedRunTargetsDTPath);
+		return false;
+	}
+
+	if (DataTable->GetRowStruct() != FT66LeaderboardSpeedRunTargetRow::StaticStruct())
+	{
+		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard speed run target DataTable '%s' has wrong RowStruct. Expected FT66LeaderboardSpeedRunTargetRow."),
+			*DataTable->GetPathName());
+		return false;
+	}
+
+	static const FString Ctx(TEXT("SpeedRunTargetsDT"));
+	const int32 InitialCount = SpeedRunTarget10ByKey_DiffStage.Num();
+	TArray<FT66LeaderboardSpeedRunTargetRow*> Rows;
+	DataTable->GetAllRows<FT66LeaderboardSpeedRunTargetRow>(Ctx, Rows);
+	for (const FT66LeaderboardSpeedRunTargetRow* R : Rows)
+	{
+		if (!R)
+		{
+			continue;
+		}
+		if (R->Stage <= 0 || R->TargetTime10Seconds <= 0.f)
+		{
+			UE_LOG(LogT66RuntimeData, Warning, TEXT("RuntimeData: ignoring invalid leaderboard speed run target row Difficulty=%s Stage=%d TargetTime10Seconds=%.2f"),
+				*DifficultyKey(R->Difficulty),
+				R->Stage,
+				R->TargetTime10Seconds);
+			continue;
+		}
+		SpeedRunTarget10ByKey_DiffStage.Add(MakeSpeedRunKey_DiffStage(R->Difficulty, R->Stage), R->TargetTime10Seconds);
+	}
+
+	if (SpeedRunTarget10ByKey_DiffStage.Num() > InitialCount)
+	{
+		SpeedRunTargetRuntimeSource = ET66RuntimeDataSource::CookedDataTable;
+		UE_LOG(
+			LogT66RuntimeData,
+			Log,
+			TEXT("RuntimeData: loaded leaderboard speed run targets from cooked DataTable '%s' Added=%d Total=%d"),
+			SpeedRunTargetsDTPath,
+			SpeedRunTarget10ByKey_DiffStage.Num() - InitialCount,
+			SpeedRunTarget10ByKey_DiffStage.Num());
+		return true;
+	}
+
+	return SpeedRunTarget10ByKey_DiffStage.Num() > 0;
+}
+
+void UT66LeaderboardSubsystem::HandleLeaderboardTargetsLoaded()
+{
+	LeaderboardTargetsLoadHandle.Reset();
+	if (!LoadTargetsFromDataTablesIfPresent())
+	{
+		UE_LOG(
+			LogT66RuntimeData,
+			Warning,
+			TEXT("RuntimeData: leaderboard target DataTables completed async preload but required targets are still unavailable ScorePath='%s' SpeedRunPath='%s'"),
+			ScoreTargetsDTPath,
+			SpeedRunTargetsDTPath);
+	}
+}
+
 int64 UT66LeaderboardSubsystem::GetScoreTarget10(ET66Difficulty Difficulty, ET66PartySize PartySize) const
 {
 	const uint64 Key = MakeScoreKey(Difficulty, PartySize);
@@ -1213,34 +1301,33 @@ int64 UT66LeaderboardSubsystem::GetScoreTarget10(ET66Difficulty Difficulty, ET66
 		return *Found;
 	}
 
-	// Fallback tuning (lower numbers so the player can realistically break into Top 10).
-	const int32 DiffIndex = FMath::Clamp(static_cast<int32>(Difficulty), 0, 999);
-	const int32 PartyIndex = FMath::Clamp(static_cast<int32>(PartySize), 0, 3);
-	return static_cast<int64>(600 + (DiffIndex * 400) + (PartyIndex * 150));
+	if (!WarnedMissingScoreTargetKeys.Contains(Key))
+	{
+		WarnedMissingScoreTargetKeys.Add(Key);
+		UE_LOG(LogT66RuntimeData, Warning, TEXT("RuntimeData: missing leaderboard score target Difficulty=%s Party=%s; no C++ fallback will be used."),
+			*DifficultyKey(Difficulty),
+			*PartySizeKey(PartySize));
+	}
+	return 0;
 }
 
 float UT66LeaderboardSubsystem::GetSpeedRunTarget10(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const
 {
 	const uint64 Key = MakeSpeedRunKey_DiffStage(Difficulty, Stage);
-	float Base = 0.f;
 	if (const float* Found = SpeedRunTarget10ByKey_DiffStage.Find(Key))
 	{
-		Base = *Found;
+		return *Found;
 	}
-	else
+
+	if (!WarnedMissingSpeedRunTargetKeys.Contains(Key))
 	{
-		// Fallback tuning: stage-based, difficulty-based, and scaled slightly by party size.
-		const int32 DiffIndex = FMath::Clamp(static_cast<int32>(Difficulty), 0, 999);
-		const int32 S = FMath::Clamp(Stage, 1, 23);
-		Base = 35.f + (static_cast<float>(S) * 12.f) + (static_cast<float>(DiffIndex) * 6.f);
+		WarnedMissingSpeedRunTargetKeys.Add(Key);
+		UE_LOG(LogT66RuntimeData, Warning, TEXT("RuntimeData: missing leaderboard speed run target Difficulty=%s Party=%s Stage=%d; no C++ fallback will be used."),
+			*DifficultyKey(Difficulty),
+			*PartySizeKey(PartySize),
+			Stage);
 	}
-
-	const float PartyMult =
-		(PartySize == ET66PartySize::Solo) ? 1.0f :
-		(PartySize == ET66PartySize::Duo) ? 1.06f :
-		(PartySize == ET66PartySize::Trio) ? 1.12f : 1.18f;
-
-	return FMath::Max(1.f, Base * PartyMult);
+	return 0.f;
 }
 
 bool UT66LeaderboardSubsystem::GetSpeedRunTarget10Seconds(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage, float& OutSeconds) const
@@ -1526,7 +1613,7 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 		return false;
 	}
 
-	Stage = FMath::Clamp(Stage, 1, 23);
+	Stage = FMath::Clamp(Stage, 1, 20);
 	Seconds = FMath::Max(0.f, Seconds);
 	if (Seconds <= 0.01f) return false;
 	bLastSpeedRunWasNewBest = false;

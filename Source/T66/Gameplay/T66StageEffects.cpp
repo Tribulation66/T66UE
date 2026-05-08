@@ -52,7 +52,7 @@ AT66Shroom::AT66Shroom()
 	ShroomMesh->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 	ShroomMesh->SetRelativeScale3D(FVector(1.5f, 1.5f, 1.5f));
 
-	ShroomMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Shroom.Shroom")));
+	ShroomMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Shroom/Shroom_QuadRetro.Shroom_QuadRetro")));
 }
 
 void AT66Shroom::BeginPlay()
@@ -84,8 +84,10 @@ void AT66Shroom::BeginPlay()
 		FT66VisualUtil::ApplyT66Color(ShroomMesh, this, FLinearColor(0.55f, 0.15f, 0.65f, 1.f));
 	}
 
-	// Load pixel VFX.
-	CachedPixelVFX = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
+	if (UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>())
+	{
+		CachedPixelVFX = PixelVFX->GetDefaultPixelSystem();
+	}
 
 	FT66VisualUtil::SnapToGround(this, GetWorld());
 
@@ -153,7 +155,7 @@ void AT66Shroom::OnSideTriggerOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 void AT66Shroom::SpawnPixelBurst(const FVector& Location, const FLinearColor& Color) const
 {
-	if (!CachedPixelVFX || !GetWorld()) return;
+	if (!GetWorld()) return;
 	if (UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>())
 	{
 		PixelVFX->SpawnPixelAtLocation(

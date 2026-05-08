@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\UltrakillSurfacePrototype01\\Models\\Hero_4_Mike_TypeA_Standard_HeadBody_Assembled_UltrakillSurfaceDithered.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\UltrakillSurfacePrototype01\\Review\\Mike_after_dithered.png",
+  "export": null,
+  "raw_triangles": 17997,
+  "triangles_before_decimate": 17997,
+  "triangles_after_decimate": 17997,
+  "bounds": {
+    "min": [
+      -0.30108505487442017,
+      -0.1411772072315216,
+      -0.5052538514137268
+    ],
+    "max": [
+      0.30180463194847107,
+      0.12884992361068726,
+      0.7010146975517273
+    ],
+    "size": [
+      0.6028896570205688,
+      0.27002713084220886,
+      1.206268548965454
+    ]
+  }
+}

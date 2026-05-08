@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Enemies\\Martian_CrystalCrawler\\Martian_CrystalCrawler_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Enemies\\Martian_CrystalCrawler_front.png",
+  "export": null,
+  "raw_triangles": 77103,
+  "triangles_before_decimate": 77103,
+  "triangles_after_decimate": 77103,
+  "bounds": {
+    "min": [
+      -0.36014774441719055,
+      -0.3766597509384155,
+      -0.36045897006988525
+    ],
+    "max": [
+      0.35223859548568726,
+      0.4883899688720703,
+      0.3609992265701294
+    ],
+    "size": [
+      0.7123863697052002,
+      0.8650497198104858,
+      0.7214581966400146
+    ]
+  }
+}

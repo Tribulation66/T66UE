@@ -44,6 +44,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interactable")
 	bool bConsumed = false;
 
+	/** Showcase/test mode: interactions may fire repeatedly and must not hide or destroy the actor. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable")
+	bool bShowcaseReusable = false;
+
 	/** Per-rarity imported mesh overrides. If populated, TryApplyImportedMesh() picks by current Rarity. */
 	UPROPERTY(EditDefaultsOnly, Category = "Interactable|Meshes")
 	TMap<ET66Rarity, TSoftObjectPtr<UStaticMesh>> RarityMeshes;
@@ -54,6 +58,9 @@ public:
 
 	/** Assign rarity and refresh visuals. */
 	void SetRarity(ET66Rarity InRarity);
+
+	void SetShowcaseReusable(bool bInShowcaseReusable);
+	bool IsShowcaseReusable() const { return bShowcaseReusable; }
 
 	/** Press-F interaction. Returns true if consumed. */
 	virtual bool Interact(APlayerController* PC) PURE_VIRTUAL(AT66WorldInteractableBase::Interact, return false;);

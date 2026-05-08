@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Raw\\Trellis\\RoyalChad_Sword_S1337_D80000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Review\\RawGLB_QA_Yaw90\\RoyalChad_Sword_S1337_D80000_Trellis2_Yaw90.png",
+  "export": null,
+  "raw_triangles": 77668,
+  "triangles_before_decimate": 77668,
+  "triangles_after_decimate": 77668,
+  "bounds": {
+    "min": [
+      -0.06276240944862366,
+      -0.40146172046661377,
+      -0.4962284564971924
+    ],
+    "max": [
+      0.06273293495178223,
+      0.3983670473098755,
+      0.5006309747695923
+    ],
+    "size": [
+      0.12549534440040588,
+      0.7998287677764893,
+      0.9968594312667847
+    ]
+  }
+}

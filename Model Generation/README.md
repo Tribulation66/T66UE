@@ -9,14 +9,20 @@ If an agent needs to work on TRELLIS, Blender cleanup, retopo, or mesh QA, start
 Read these in order:
 
 1. [MASTER_WORKFLOW.md](C:/UE/T66/Model%20Generation/MASTER_WORKFLOW.md)
-2. [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md)
-3. [Model Importing.md](C:/UE/T66/Model%20Generation/Model%20Importing.md)
-4. [ENVIRONMENT_LOCK.md](C:/UE/T66/Model%20Generation/ENVIRONMENT_LOCK.md)
-5. [RUN_HISTORY.md](C:/UE/T66/Model%20Generation/RUN_HISTORY.md)
-6. [KNOWN_ISSUES.md](C:/UE/T66/Model%20Generation/KNOWN_ISSUES.md)
-7. [NEXT_STEPS.md](C:/UE/T66/Model%20Generation/NEXT_STEPS.md)
+2. [TRELLIS_SOURCE_IMAGE_RULES.md](C:/UE/T66/Model%20Generation/TRELLIS_SOURCE_IMAGE_RULES.md)
+3. [HERO_CHAD_STACY_PROMPT_GUIDE.md](C:/UE/T66/Model%20Generation/HERO_CHAD_STACY_PROMPT_GUIDE.md)
+4. [RETRO_CHARACTER_PIPELINE.md](C:/UE/T66/Model%20Generation/RETRO_CHARACTER_PIPELINE.md)
+5. [QUAD_RETRO_DO_THIS_RUNBOOK.md](C:/UE/T66/Model%20Generation/QUAD_RETRO_DO_THIS_RUNBOOK.md)
+6. [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md)
+7. [Model Importing.md](C:/UE/T66/Model%20Generation/Model%20Importing.md)
+8. [ENVIRONMENT_LOCK.md](C:/UE/T66/Model%20Generation/ENVIRONMENT_LOCK.md)
+9. [RUN_HISTORY.md](C:/UE/T66/Model%20Generation/RUN_HISTORY.md)
+10. [KNOWN_ISSUES.md](C:/UE/T66/Model%20Generation/KNOWN_ISSUES.md)
+11. [NEXT_STEPS.md](C:/UE/T66/Model%20Generation/NEXT_STEPS.md)
 
-For character work after raw TRELLIS output exists, read [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md) before Blender assembly, rigging, Unreal import, DataTable wiring, or staged visual verification.
+For new Quad Retro hero work, read [TRELLIS_SOURCE_IMAGE_RULES.md](C:/UE/T66/Model%20Generation/TRELLIS_SOURCE_IMAGE_RULES.md) before source generation, [RETRO_CHARACTER_PIPELINE.md](C:/UE/T66/Model%20Generation/RETRO_CHARACTER_PIPELINE.md) for pipeline concepts, and [QUAD_RETRO_DO_THIS_RUNBOOK.md](C:/UE/T66/Model%20Generation/QUAD_RETRO_DO_THIS_RUNBOOK.md) before executing Blender/Quad Remesher. For legacy assembly, rigging, Unreal import, DataTable wiring, or staged visual verification, read [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md).
+
+For the current Chad/Stacy hero naming and prompt direction, read [HERO_CHAD_STACY_PROMPT_GUIDE.md](C:/UE/T66/Model%20Generation/HERO_CHAD_STACY_PROMPT_GUIDE.md). For the next male source-image batch handoff, use [NEXT_CHAT_HERO_MALE_IMAGEGEN_PROMPT.md](C:/UE/T66/Model%20Generation/NEXT_CHAT_HERO_MALE_IMAGEGEN_PROMPT.md).
 
 For modular dungeon environment pieces, read [MODULAR_DUNGEON_KIT_PROCESS.md](C:/UE/T66/World%20Generation/MODULAR_DUNGEON_KIT_PROCESS.md) and [SHARED_ASSET_PIPELINE.md](C:/UE/T66/World%20Generation/SHARED_ASSET_PIPELINE.md).
 
@@ -26,6 +32,16 @@ Use [CURRENT_HANDOFF_PROMPT.md](C:/UE/T66/Model%20Generation/CURRENT_HANDOFF_PRO
 
 - `MASTER_WORKFLOW.md`
   - source of truth for the current production workflow
+- `TRELLIS_SOURCE_IMAGE_RULES.md`
+  - active source-image contract for one-image Quad Retro hero generation
+- `HERO_CHAD_STACY_PROMPT_GUIDE.md`
+  - active Chad/Stacy naming map, Boxer Chad silhouette reference, and per-hero prompt identity blocks
+- `NEXT_CHAT_HERO_MALE_IMAGEGEN_PROMPT.md`
+  - copy-paste handoff for generating the remaining male Chad source-image candidates
+- `RETRO_CHARACTER_PIPELINE.md`
+  - Quad Remesher plus bake, palette, pixelation, dithering, and GLB export flow
+- `QUAD_RETRO_DO_THIS_RUNBOOK.md`
+  - single practical runbook for foreground Blender, fixed-bake Medium baseline, commands, outputs, verification, and common failures
 - `Model Processing.md`
   - required post-TRELLIS character setup, scale, material, import, and verification guide
 - `Model Importing.md`

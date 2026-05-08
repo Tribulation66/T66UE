@@ -9,6 +9,7 @@
 #include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Data/T66DataTypes.h"
@@ -18,6 +19,7 @@
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SSpacer.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SBoxPanel.h"
@@ -45,6 +47,7 @@ namespace
 	{
 		TStrongObjectPtr<UTexture2D> Texture;
 		TSharedPtr<FSlateBrush> Brush;
+		bool bSimpleFallback = false;
 	};
 
 	struct FT66PickerButtonBrushSet
@@ -57,6 +60,11 @@ namespace
 
 	const FLinearColor T66PickerFantasyText(0.953f, 0.925f, 0.835f, 1.0f);
 	const FLinearColor T66PickerFallbackPanel(0.025f, 0.023f, 0.034f, 0.97f);
+
+	FString GetPickerReferenceElementPath(const TCHAR* FileName)
+	{
+		return FString::Printf(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/%s"), FileName ? FileName : TEXT(""));
+	}
 
 	const FSlateBrush* ResolvePickerSpriteBrush(
 		FT66PickerSpriteBrushEntry& Entry,
@@ -76,7 +84,7 @@ namespace
 			Entry.Brush->Margin = Margin;
 		}
 
-		if (!Entry.Texture.IsValid())
+		if (!Entry.Texture.IsValid() && !Entry.bSimpleFallback)
 		{
 			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
@@ -92,8 +100,28 @@ namespace
 			}
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+		if (Entry.Texture.IsValid())
+		{
+			Entry.bSimpleFallback = false;
+			Entry.Brush->SetResourceObject(Entry.Texture.Get());
+			return Entry.Brush.Get();
+		}
+
+		if (T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(RelativePath))
+		{
+			Entry.bSimpleFallback = true;
+			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+				*Entry.Brush,
+				RelativePath,
+				ImageSize,
+				Margin,
+				DrawAs);
+			return Entry.Brush.Get();
+		}
+
+		Entry.bSimpleFallback = false;
+		Entry.Brush->SetResourceObject(nullptr);
+		return nullptr;
 	}
 
 	const FSlateBrush* GetPickerContentShellBrush()
@@ -101,10 +129,11 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/PlayerSummaryPicker/Panels/playersummarypicker_panels_inner_panel_normal.png"),
+			GetPickerReferenceElementPath(TEXT("main_panel_normal.png")),
 			FVector2D(1521.f, 463.f),
-			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
-			ESlateBrushDrawType::Box);
+			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetPickerRowShellBrush()
@@ -112,10 +141,11 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/PlayerSummaryPicker/Panels/playersummarypicker_panels_inner_panel_normal.png"),
+			GetPickerReferenceElementPath(TEXT("player_row_panel_normal.png")),
 			FVector2D(861.f, 74.f),
-			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
-			ESlateBrushDrawType::Box);
+			FMargin(0.075f, 0.220f, 0.075f, 0.220f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
 	}
 
 	const FSlateBrush* GetPickerAvatarFrameBrush()
@@ -123,10 +153,11 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/PlayerSummaryPicker/Slots/playersummarypicker_slots_reference_square_slot_frame_normal.png"),
-			FVector2D(56.f, 56.f),
-			FMargin(0.167f, 0.160f, 0.167f, 0.160f),
-			ESlateBrushDrawType::Box);
+			GetPickerReferenceElementPath(TEXT("profile_slot_normal.png")),
+			FVector2D(96.f, 96.f),
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			TextureFilter::TF_Nearest);
 	}
 
 	FString GetPickerButtonPath(const ET66PickerButtonFamily Family, const ET66PickerButtonState State)
@@ -203,6 +234,7 @@ namespace
 			.BorderImage(Brush ? Brush : FCoreStyle::Get().GetBrush("WhiteBrush"))
 			.BorderBackgroundColor(Brush ? FLinearColor::White : FallbackColor)
 			.Padding(Padding)
+			.Clipping(EWidgetClipping::ClipToBounds)
 			[
 				Content
 			];
@@ -231,11 +263,18 @@ namespace
 
 		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
 			OnClicked,
-			SNew(STextBlock)
-			.Text(Label)
-			.Font(FT66Style::Tokens::FontBold(FontSize))
-			.ColorAndOpacity(T66PickerFantasyText)
-			.Justification(ETextJustify::Center),
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::DownOnly)
+			[
+				SNew(STextBlock)
+				.Text(Label)
+				.Font(FT66Style::Tokens::FontBold(FontSize))
+				.ColorAndOpacity(T66PickerFantasyText)
+				.Justification(ETextJustify::Center)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
+			],
 			NormalBrush,
 			HoverBrush,
 			PressedBrush,
@@ -344,16 +383,18 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 	}
 
 	TSharedRef<SHorizontalBox> OptionsBox = SNew(SHorizontalBox);
+	int32 ValidOptionCount = 0;
 	for (int32 i = 0; i < Snapshots.Num(); ++i)
 	{
 		UT66LeaderboardRunSummarySaveGame* Snap = Snapshots[i];
 		if (!Snap) continue;
+		++ValidOptionCount;
 
 		const FString DisplayName = Snap->DisplayName.IsEmpty() ? TEXT("Player") : Snap->DisplayName;
 		const int32 CapturedIndex = i;
 
 		OptionsBox->AddSlot()
-			.FillWidth(1.0f)
+			.AutoWidth()
 			.Padding(16.0f, 0.0f)
 			[
 				MakePickerSpritePanel(
@@ -362,12 +403,18 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 					.AutoHeight()
 					.HAlign(HAlign_Center)
 					.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-					[
-						SNew(STextBlock)
-						.Text(FText::FromString(DisplayName))
-						.Font(FT66Style::Tokens::FontBold(16))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
+						[
+							SNew(SBox)
+							.WidthOverride(218.f)
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString(DisplayName))
+								.Font(FT66Style::Tokens::FontBold(16))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Justification(ETextJustify::Center)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+							]
+						]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					.HAlign(HAlign_Center)
@@ -416,16 +463,27 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 			];
 	}
 
+	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
+	const float PickerModalWidthMax = FMath::Max(620.0f, FMath::Min(1240.0f, SafeFrameSize.X * 0.92f));
+	const float PickerModalWidth = FMath::Clamp(
+		(static_cast<float>(ValidOptionCount) * 286.0f) + 96.0f,
+		620.0f,
+		PickerModalWidthMax);
+
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FT66Style::Scrim())
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
 		[
-			MakePickerSpritePanel(
-				SNew(SBox)
-				.WidthOverride(900.f)
-				.Padding(FMargin(10.f, 4.f))
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::DownOnly)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				MakePickerSpritePanel(
+					SNew(SBox)
+					.WidthOverride(PickerModalWidth)
+					.Padding(FMargin(10.f, 4.f))
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
@@ -440,15 +498,17 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
+					.HAlign(HAlign_Center)
 					[
 						OptionsBox
 					]
 				],
-				T66ScreenSlateHelpers::GetReferenceSharedBrush(
-					TEXT("Panels/Modal/modal_shell_wide.png"),
-					FMargin(0.075f, 0.105f, 0.075f, 0.105f),
-					TEXT("PlayerPickerShellWideV14")),
-				FMargin(30.0f, 24.0f))
+					T66ScreenSlateHelpers::GetReferenceSharedBrush(
+						TEXT("Panels/Modal/modal_shell_wide.png"),
+						FMargin(0.075f, 0.105f, 0.075f, 0.105f),
+						TEXT("PlayerPickerShellWideV14")),
+					FMargin(30.0f, 24.0f))
+			]
 		];
 }
 

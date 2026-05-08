@@ -237,10 +237,6 @@ bool T66TowerThemeVisuals::ResolveTheme(
 		};
 		T66ConfigureGeneratedThemeKit(OutTheme, WallModules, UE_ARRAY_COUNT(WallModules), FloorModules, UE_ARRAY_COUNT(FloorModules));
 		OutTheme.DecorationMaterialOverride = nullptr;
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Tree.Tree"));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Tree2.Tree2"));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Tree3.Tree3"));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Rocks.Rocks"));
 		break;
 	}
 	case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Ocean:
@@ -260,10 +256,6 @@ bool T66TowerThemeVisuals::ResolveTheme(
 		};
 		T66ConfigureGeneratedThemeKit(OutTheme, WallModules, UE_ARRAY_COUNT(WallModules), FloorModules, UE_ARRAY_COUNT(FloorModules));
 		OutTheme.DecorationMaterialOverride = OutTheme.WallMaterial;
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Tree2.Tree2"));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Tree3.Tree3"));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Branch.Branch"));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Rocks.Rocks"));
 		break;
 	}
 	case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Martian:
@@ -283,9 +275,6 @@ bool T66TowerThemeVisuals::ResolveTheme(
 			TEXT("MartianFloor_CraterCracks_A"),
 		};
 		T66ConfigureGeneratedThemeKit(OutTheme, WallModules, UE_ARRAY_COUNT(WallModules), FloorModules, UE_ARRAY_COUNT(FloorModules));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Rock.Rock"));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Rocks.Rocks"));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Boulder.Boulder"));
 		break;
 	}
 	case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell:
@@ -305,9 +294,6 @@ bool T66TowerThemeVisuals::ResolveTheme(
 			TEXT("HellFloor_BoneAsh_A"),
 		};
 		T66ConfigureGeneratedThemeKit(OutTheme, WallModules, UE_ARRAY_COUNT(WallModules), FloorModules, UE_ARRAY_COUNT(FloorModules));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Branch.Branch"));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Stump.Stump"));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Rocks.Rocks"));
 		break;
 	}
 	case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon:
@@ -327,7 +313,6 @@ bool T66TowerThemeVisuals::ResolveTheme(
 			TEXT("DungeonFloor_Bones_A"),
 		};
 		T66ConfigureGeneratedThemeKit(OutTheme, WallModules, UE_ARRAY_COUNT(WallModules), FloorModules, UE_ARRAY_COUNT(FloorModules));
-		T66AddLoadedMesh(OutTheme.DecorationMeshes, TEXT("/Game/World/Props/Rocks.Rocks"));
 		break;
 	}
 	}

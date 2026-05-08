@@ -9,7 +9,6 @@ Archived from `UI\screens`:
 - `party_size_picker`
 - `casino_overlay`
 - `gambler_overlay`
-- `vendor_overlay`
 - `leaderboard`
 
 Canonical active naming now uses:

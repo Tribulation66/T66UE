@@ -651,7 +651,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 
 		if (bExtended)
 		{
-			// Secondary stats by category: line, bold header, stat lines, line (Vendor/Gambler)
+			// Secondary stats by category: line, bold header, stat lines, line (Shop/Gambler)
 			const FSlateBrush* WhiteBrush = FCoreStyle::Get().GetBrush("WhiteBrush");
 			const FLinearColor LineColor(0.35f, 0.38f, 0.42f, 0.9f);
 			const FTextBlockStyle& HeadingStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");

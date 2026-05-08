@@ -12,6 +12,7 @@
 #include "Styling/SlateBrush.h"
 #include "UObject/StrongObjectPtr.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UIManager.h"
@@ -22,6 +23,7 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SSpacer.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
@@ -64,6 +66,7 @@ namespace
 	{
 		TStrongObjectPtr<UTexture2D> Texture;
 		TSharedPtr<FSlateBrush> Brush;
+		bool bSimpleFallback = false;
 	};
 
 	struct FT66ChallengeButtonBrushSet
@@ -126,8 +129,8 @@ namespace
 
 	const FLinearColor ChallengeFantasyText(0.953f, 0.925f, 0.835f, 1.0f);
 	const FLinearColor ChallengeFantasyMuted(0.738f, 0.708f, 0.648f, 1.0f);
-	const FLinearColor ChallengePaperText(0.19f, 0.115f, 0.040f, 1.0f);
-	const FLinearColor ChallengePaperMuted(0.35f, 0.235f, 0.100f, 1.0f);
+	const FLinearColor ChallengePaperText(0.98f, 0.91f, 0.70f, 1.0f);
+	const FLinearColor ChallengePaperMuted(0.74f, 0.66f, 0.48f, 1.0f);
 	const FLinearColor ChallengeGoldText(0.92f, 0.74f, 0.42f, 1.0f);
 
 	const FSlateBrush* ResolveChallengeSpriteBrush(
@@ -148,7 +151,7 @@ namespace
 			Entry.Brush->Margin = Margin;
 		}
 
-		if (!Entry.Texture.IsValid())
+		if (!Entry.Texture.IsValid() && !Entry.bSimpleFallback)
 		{
 			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
@@ -164,8 +167,28 @@ namespace
 			}
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+		if (Entry.Texture.IsValid())
+		{
+			Entry.bSimpleFallback = false;
+			Entry.Brush->SetResourceObject(Entry.Texture.Get());
+			return Entry.Brush.Get();
+		}
+
+		if (T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(RelativePath))
+		{
+			Entry.bSimpleFallback = true;
+			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+				*Entry.Brush,
+				RelativePath,
+				ImageSize,
+				Margin,
+				DrawAs);
+			return Entry.Brush.Get();
+		}
+
+		Entry.bSimpleFallback = false;
+		Entry.Brush->SetResourceObject(nullptr);
+		return nullptr;
 	}
 
 	const FSlateBrush* ResolveChallengeSpriteRegionBrush(
@@ -189,7 +212,7 @@ namespace
 			Entry.Brush->SetUVRegion(UVRegion);
 		}
 
-		if (!Entry.Texture.IsValid())
+		if (!Entry.Texture.IsValid() && !Entry.bSimpleFallback)
 		{
 			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
@@ -205,8 +228,28 @@ namespace
 			}
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+		if (Entry.Texture.IsValid())
+		{
+			Entry.bSimpleFallback = false;
+			Entry.Brush->SetResourceObject(Entry.Texture.Get());
+			return Entry.Brush.Get();
+		}
+
+		if (T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(RelativePath))
+		{
+			Entry.bSimpleFallback = true;
+			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+				*Entry.Brush,
+				RelativePath,
+				ImageSize,
+				Margin,
+				DrawAs);
+			return Entry.Brush.Get();
+		}
+
+		Entry.bSimpleFallback = false;
+		Entry.Brush->SetResourceObject(nullptr);
+		return nullptr;
 	}
 
 	const FSlateBrush* GetChallengeContentShellBrush()
@@ -214,7 +257,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Challenges/Panels/challenges_panels_fullscreen_fullscreen_panel_wide.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
 			FVector2D(1588.f, 653.f),
 			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
 			ESlateBrushDrawType::Box,
@@ -226,9 +269,33 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Challenges/Panels/challenges_panels_fullscreen_row_shell_quiet.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/player_row_panel_normal.png"),
 			FVector2D(1632.f, 209.f),
 			FMargin(0.070f, 0.155f, 0.070f, 0.155f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetChallengeListPanelBrush()
+	{
+		static FT66ChallengeSpriteBrushEntry Entry;
+		return ResolveChallengeSpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FVector2D(777.f, 380.f),
+			FMargin(0.065f, 0.090f, 0.065f, 0.105f),
+			ESlateBrushDrawType::Box,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetChallengeDetailFrameBrush()
+	{
+		static FT66ChallengeSpriteBrushEntry Entry;
+		return ResolveChallengeSpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FVector2D(405.f, 388.f),
+			FMargin(0.090f, 0.090f, 0.090f, 0.105f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -238,9 +305,9 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Challenges/Panels/challenges_panels_challenge_row_plate_v1.png"),
-			FVector2D(954.f, 211.f),
-			FMargin(0.075f, 0.220f, 0.075f, 0.220f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_row_normal.png"),
+			FVector2D(563.f, 107.f),
+			FMargin(0.090f, 0.220f, 0.090f, 0.220f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -250,9 +317,9 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Challenges/Panels/challenges_panels_challenge_detail_paper_v1.png"),
-			FVector2D(972.f, 419.f),
-			FMargin(0.060f, 0.130f, 0.060f, 0.130f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FVector2D(451.f, 148.f),
+			FMargin(0.095f, 0.185f, 0.095f, 0.185f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -262,9 +329,9 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Challenges/Panels/challenges_panels_challenge_rules_paper_v1.png"),
-			FVector2D(377.f, 672.f),
-			FMargin(0.135f, 0.075f, 0.135f, 0.075f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FVector2D(457.f, 181.f),
+			FMargin(0.085f, 0.165f, 0.085f, 0.165f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -274,8 +341,8 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Challenges/Panels/challenges_panels_challenge_status_bar_v1.png"),
-			FVector2D(845.f, 115.f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/progress_bar_track.png"),
+			FVector2D(693.f, 39.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
 			TextureFilter::TF_Nearest);
@@ -286,8 +353,8 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Challenges/Controls/challenges_controls_tag_pill_v1.png"),
-			FVector2D(303.f, 99.f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/topbar_text_button_normal.png"),
+			FVector2D(181.f, 60.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
 			TextureFilter::TF_Nearest);
@@ -298,7 +365,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Challenges/Controls/challenges_controls_state_socket_v1.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/check_square_normal.png"),
 			FVector2D(123.f, 116.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
@@ -310,8 +377,8 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Challenges/Controls/challenges_controls_header_divider_v1.png"),
-			FVector2D(858.f, 60.f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/progress_bar_fill_cyan.png"),
+			FVector2D(144.f, 6.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
 			TextureFilter::TF_Nearest);
@@ -324,37 +391,26 @@ namespace
 		static FT66ChallengeSpriteBrushEntry ThumbEntry;
 		static FT66ChallengeSpriteBrushEntry HoverEntry;
 
-		const FString ControlsPath = TEXT("SourceAssets/UI/Reference/Screens/Challenges/Controls/challenges_controls_controls_sheet.png");
-		const FBox2f VerticalBarUV(
-			FVector2f(4.f / 1350.f, 4.f / 926.f),
-			FVector2f(90.f / 1350.f, 644.f / 926.f));
-
-		const FSlateBrush* TrackBrush = ResolveChallengeSpriteRegionBrush(
+		const FSlateBrush* TrackBrush = ResolveChallengeSpriteBrush(
 			TrackEntry,
-			ControlsPath,
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/progress_bar_track.png"),
 			FVector2D(14.f, 120.f),
 			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
-			VerticalBarUV,
 			ESlateBrushDrawType::Box,
-			FLinearColor(0.35f, 0.34f, 0.30f, 0.70f),
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* ThumbBrush = ResolveChallengeSpriteRegionBrush(
+		const FSlateBrush* ThumbBrush = ResolveChallengeSpriteBrush(
 			ThumbEntry,
-			ControlsPath,
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/progress_bar_fill_cyan.png"),
 			FVector2D(16.f, 96.f),
 			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
 			ESlateBrushDrawType::Box,
-			FLinearColor(0.93f, 0.82f, 0.52f, 1.0f),
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* HoverBrush = ResolveChallengeSpriteRegionBrush(
+		const FSlateBrush* HoverBrush = ResolveChallengeSpriteBrush(
 			HoverEntry,
-			ControlsPath,
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/progress_bar_fill_cyan.png"),
 			FVector2D(16.f, 96.f),
 			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
 			ESlateBrushDrawType::Box,
-			FLinearColor(1.0f, 0.90f, 0.62f, 1.0f),
 			TextureFilter::TF_Nearest);
 
 		if (TrackBrush && ThumbBrush && HoverBrush)
@@ -393,7 +449,7 @@ namespace
 		}
 
 		return FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/Challenges/Buttons/challenges_buttons_pill_%s.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_%s.png"),
 			Suffix);
 	}
 
@@ -586,12 +642,19 @@ namespace
 		const FMargin& ContentPadding = FMargin(12.f, 7.f, 12.f, 6.f))
 	{
 		return MakeChallengeSpriteButtonContent(
-			SNew(STextBlock)
-			.Text(Label)
-			.Font(FT66Style::Tokens::FontBold(FontSize))
-			.ColorAndOpacity(Family == ET66ChallengeButtonFamily::ToggleInactive ? ChallengeFantasyMuted : ChallengeFantasyText)
-			.Justification(ETextJustify::Center)
-			.AutoWrapText(false),
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::DownOnly)
+			[
+				SNew(STextBlock)
+				.Text(Label)
+				.Font(FT66Style::Tokens::FontBold(FontSize))
+				.ColorAndOpacity(Family == ET66ChallengeButtonFamily::ToggleInactive ? ChallengeFantasyMuted : ChallengeFantasyText)
+				.Justification(ETextJustify::Center)
+				.AutoWrapText(false)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
+			],
 			OnClicked,
 			Family,
 			MinWidth,
@@ -848,7 +911,7 @@ const FSlateBrush* UT66ChallengesScreen::GetOrCreateAvatarBrush(const FString& A
 		{
 			if (UT66ChallengesScreen* Screen = WeakScreen.Get())
 			{
-				Screen->ForceRebuildSlate();
+				Screen->RequestDeferredSlateRebuild();
 			}
 		}
 	});
@@ -1026,13 +1089,13 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		Community->RefreshMySubmissionStates(false);
 	}
 
-	const int32 SafeFrameHeight = static_cast<int32>(FT66Style::GetSafeFrameSize().Y);
-	const float TopBarInset = UIManager ? UIManager->GetFrontendTopBarReservedHeight() : 0.0f;
-	const float ListPanelWidth = 960.0f;
-	const float DetailPanelWidth = 850.0f;
-	const float BodyPanelHeight = FMath::Clamp(static_cast<float>(SafeFrameHeight) - TopBarInset - 245.0f, 620.0f, 675.0f);
-	const float DetailColumnWidth = DetailPanelWidth - 74.0f;
-	const float ListColumnWidth = ListPanelWidth - 64.0f;
+	const float ReferenceCanvasWidth = 1672.0f;
+	const float ReferenceCanvasHeight = 941.0f;
+	const float ListPanelWidth = 672.0f;
+	const float DetailPanelWidth = 900.0f;
+	const float BodyPanelHeight = 548.0f;
+	const float DetailColumnWidth = DetailPanelWidth - 46.0f;
+	const float ListColumnWidth = ListPanelWidth - 44.0f;
 	const int32 HeaderTabFontSize = 18;
 	const int32 SourceTabFontSize = 20;
 	const int32 ActionButtonFontSize = 19;
@@ -1051,7 +1114,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 	const FString DetailListHeader = ActiveKind == ET66CommunityContentKind::Mod ? TEXT("Rules") : TEXT("Rules And Requirements");
 	const FString StatusMessage = Community ? Community->GetLastStatusMessage() : FString();
 
-	auto MakeConstraintRow = [](const FString& ConstraintText) -> TSharedRef<SWidget>
+	auto MakeConstraintRow = [DetailColumnWidth](const FString& ConstraintText) -> TSharedRef<SWidget>
 	{
 		return SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 1.f, 8.f, 0.f)
@@ -1065,9 +1128,11 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(ConstraintText))
-				.Font(FT66Style::Tokens::FontBold(18))
+				.Font(FT66Style::Tokens::FontBold(15))
 				.ColorAndOpacity(ChallengePaperText)
 				.AutoWrapText(true)
+				.WrapTextAt(FMath::Max(260.f, DetailColumnWidth - 104.f))
+				.Clipping(EWidgetClipping::ClipToBounds)
 			];
 	};
 
@@ -1092,13 +1157,13 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			Label,
 			FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSourceTabSelected, SourceTabIndex),
 			bActive ? ET66ChallengeButtonFamily::ToggleOn : ET66ChallengeButtonFamily::CompactNeutral,
-			330.f,
-			58.f,
+			296.f,
+			44.f,
 			SourceTabFontSize,
 			FMargin(16.f, 8.f));
 	};
 
-	auto MakeEntryRow = [this, CurrentSourceTabIndex, Community](const FT66CommunityContentEntry& Entry, const int32 EntryIndex) -> TSharedRef<SWidget>
+	auto MakeEntryRow = [this, CurrentSourceTabIndex, Community, ListColumnWidth](const FT66CommunityContentEntry& Entry, const int32 EntryIndex) -> TSharedRef<SWidget>
 	{
 		const FName SelectedId = GetSelectedEntryIdForView(ActiveTabIndex, CurrentSourceTabIndex);
 		const bool bSelected = Entry.LocalId == SelectedId;
@@ -1115,22 +1180,15 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			.WidthOverride(52.f)
 			.HeightOverride(52.f)
 			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					SNew(SImage)
-					.Image(GetChallengeStateSocketBrush())
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
+				MakeChallengeSpritePanel(
 					SNew(STextBlock)
 					.Text(bConfirmed ? NSLOCTEXT("T66.Challenges", "ConfirmedMarker", "X") : FText::GetEmpty())
 					.Font(FT66Style::Tokens::FontBold(14))
 					.ColorAndOpacity(bConfirmed ? ChallengeGoldText : FLinearColor::Transparent)
-					.Justification(ETextJustify::Center)
-				]
+					.Justification(ETextJustify::Center),
+					GetChallengeStateSocketBrush(),
+					FMargin(0.f),
+					ChallengeMutedBadgeTint())
 			];
 
 		const TSharedRef<SWidget> RowContent =
@@ -1146,8 +1204,9 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(Entry.Title))
-					.Font(FT66Style::Tokens::FontBold(25))
+					.Font(FT66Style::Tokens::FontBold(21))
 					.ColorAndOpacity(bSelected ? ChallengePaperText : ChallengePaperMuted)
+					.WrapTextAt(FMath::Max(210.f, ListColumnWidth * 0.34f))
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					.Clipping(EWidgetClipping::ClipToBounds)
 				]
@@ -1160,15 +1219,16 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Community ? Community->BuildRewardSummary(Entry) : TEXT("No reward data")))
-				.Font(FT66Style::Tokens::FontBold(17))
+				.Font(FT66Style::Tokens::FontBold(14))
 				.ColorAndOpacity(ChallengeRewardTint())
-				.AutoWrapText(true)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
 			]
 			+ SHorizontalBox::Slot().FillWidth(0.24f).VAlign(VAlign_Center).Padding(20.f, 0.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Entry.IsDraft() ? GetDraftSubmissionLabel(Entry) : Entry.AuthorDisplayName))
-				.Font(FT66Style::Tokens::FontBold(16))
+				.Font(FT66Style::Tokens::FontBold(13))
 				.ColorAndOpacity(ChallengePaperMuted)
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				.Clipping(EWidgetClipping::ClipToBounds)
@@ -1287,8 +1347,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		FText::FromString(ActiveKind == ET66CommunityContentKind::Mod ? TEXT("CREATE MOD") : TEXT("CREATE CHALLENGE")),
 		FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCreateDraftClicked),
 		ET66ChallengeButtonFamily::ToggleOn,
-		382.f,
-		58.f,
+		264.f,
+		44.f,
 		ActionButtonFontSize,
 		FMargin(18.f, 8.f));
 
@@ -1576,12 +1636,19 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		TSharedRef<SVerticalBox> DetailLayout = SNew(SVerticalBox);
 		DetailLayout->AddSlot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 6.f)
 		[
-			SNew(STextBlock)
-			.Text(FText::FromString(SelectedEntry.Title))
-			.Font(FT66Style::Tokens::FontBold(34))
-			.ColorAndOpacity(ChallengeFantasyText)
-			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-			.Clipping(EWidgetClipping::ClipToBounds)
+			SNew(SBox)
+			.WidthOverride(DetailColumnWidth - 18.f)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(SelectedEntry.Title))
+				.Font(FT66Style::Tokens::FontBold(28))
+				.ColorAndOpacity(ChallengeFantasyText)
+				.Justification(ETextJustify::Center)
+				.AutoWrapText(true)
+				.WrapTextAt(DetailColumnWidth - 24.f)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
+			]
 		];
 		DetailLayout->AddSlot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
 		[
@@ -1609,6 +1676,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.Font(FT66Style::Tokens::FontBold(16))
 				.ColorAndOpacity(ChallengeGoldText)
 				.AutoWrapText(true)
+				.WrapTextAt(DetailColumnWidth - 84.f)
+				.Clipping(EWidgetClipping::ClipToBounds)
 			]
 		];
 		DetailLayout->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
@@ -1619,9 +1688,11 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				MakeChallengeSpritePanel(
 					SNew(STextBlock)
 					.Text(FText::FromString(SelectedEntry.Description))
-					.Font(FT66Style::Tokens::FontBold(18))
+					.Font(FT66Style::Tokens::FontBold(16))
 					.ColorAndOpacity(ChallengePaperText)
-					.AutoWrapText(true),
+					.AutoWrapText(true)
+					.WrapTextAt(DetailColumnWidth - 86.f)
+					.Clipping(EWidgetClipping::ClipToBounds),
 					GetChallengeDetailPaperBrush(),
 					FMargin(26.f, 24.f),
 					ChallengePanelInsetFill())
@@ -1631,8 +1702,10 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(DetailListHeader))
-			.Font(FT66Style::Tokens::FontBold(25))
+			.Font(FT66Style::Tokens::FontBold(22))
 			.ColorAndOpacity(ChallengeFantasyText)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds)
 		];
 		DetailLayout->AddSlot().AutoHeight()
 		[
@@ -1658,8 +1731,11 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(Community ? Community->BuildRewardSummary(SelectedEntry) : TEXT("No reward data")))
-			.Font(FT66Style::Tokens::FontBold(22))
+			.Font(FT66Style::Tokens::FontBold(18))
 			.ColorAndOpacity(ChallengeGoldText)
+			.AutoWrapText(true)
+			.WrapTextAt(DetailColumnWidth - 12.f)
+			.Clipping(EWidgetClipping::ClipToBounds)
 		];
 		DetailLayout->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 		[
@@ -1668,6 +1744,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.Font(FT66Style::Tokens::FontRegular(11))
 				.ColorAndOpacity(ChallengeFantasyMuted)
 				.AutoWrapText(true)
+				.WrapTextAt(DetailColumnWidth - 12.f)
+				.Clipping(EWidgetClipping::ClipToBounds)
 		];
 
 		if (SelectedEntry.IsDraft())
@@ -1678,6 +1756,9 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.Text(FText::FromString(GetDraftSubmissionLabel(SelectedEntry)))
 				.Font(FT66Style::Tokens::FontBold(14))
 				.ColorAndOpacity(ChallengeDangerTint())
+				.AutoWrapText(true)
+				.WrapTextAt(DetailColumnWidth - 12.f)
+				.Clipping(EWidgetClipping::ClipToBounds)
 			];
 			DetailLayout->AddSlot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 			[
@@ -1709,6 +1790,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.Font(FT66Style::Tokens::FontRegular(11))
 				.ColorAndOpacity(ChallengeFantasyMuted)
 				.AutoWrapText(true)
+				.WrapTextAt(DetailColumnWidth - 12.f)
+				.Clipping(EWidgetClipping::ClipToBounds)
 			];
 			DetailLayout->AddSlot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 16.f, 0.f, 0.f)
 			[
@@ -1735,23 +1818,23 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			];
 	}
 
-	return SNew(SBorder)
+	const TSharedRef<SWidget> ChallengeCanvas = SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FLinearColor(0.030f, 0.015f, 0.008f, 1.0f))
 		[
 			SNew(SBox)
-			.WidthOverride(1920.f)
-			.HeightOverride(1080.f)
+			.WidthOverride(ReferenceCanvasWidth)
+			.HeightOverride(ReferenceCanvasHeight)
 			[
 				SNew(SOverlay)
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Top)
-				.Padding(FMargin(8.f, 26.f, 0.f, 0.f))
+				.Padding(FMargin(6.f, 26.f, 0.f, 0.f))
 				[
 					SNew(SBox)
-					.WidthOverride(1904.f)
-					.HeightOverride(930.f)
+					.WidthOverride(1660.f)
+					.HeightOverride(887.f)
 					[
 						MakeChallengeSpritePanel(
 							SNew(SSpacer),
@@ -1763,7 +1846,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Top)
-				.Padding(FMargin(0.f, 44.f, 0.f, 0.f))
+				.Padding(FMargin(0.f, 70.f, 0.f, 0.f))
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(HeaderTitle.ToUpper()))
@@ -1775,45 +1858,31 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Top)
-				.Padding(FMargin(1228.f, 52.f, 0.f, 0.f))
-				[
-					MakeTopTabButton(static_cast<int32>(ETabIndex::Challenges), NSLOCTEXT("T66.Challenges", "ChallengesTab", "CHALLENGES"))
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(1494.f, 52.f, 0.f, 0.f))
-				[
-					MakeTopTabButton(static_cast<int32>(ETabIndex::Mods), NSLOCTEXT("T66.Challenges", "ModsTab", "MODS"))
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(374.f, 142.f, 0.f, 0.f))
+				.Padding(FMargin(254.f, 164.f, 0.f, 0.f))
 				[
 					MakeSourceTabButton(static_cast<int32>(ESourceTabIndex::Official), NSLOCTEXT("T66.Challenges", "OfficialTab", "OFFICIAL"))
 				]
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Top)
-				.Padding(FMargin(756.f, 142.f, 0.f, 0.f))
+				.Padding(FMargin(516.f, 164.f, 0.f, 0.f))
 				[
 					MakeSourceTabButton(static_cast<int32>(ESourceTabIndex::Community), NSLOCTEXT("T66.Challenges", "CommunityTab", "COMMUNITY"))
 				]
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Top)
-				.Padding(FMargin(1190.f, 142.f, 0.f, 0.f))
+				.Padding(FMargin(810.f, 164.f, 0.f, 0.f))
 				[
 					CreateButtonContent
 				]
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Top)
-				.Padding(FMargin(44.f, 212.f, 0.f, 0.f))
+				.Padding(FMargin(36.f, 209.f, 0.f, 0.f))
 				[
 					SNew(SBox)
-					.WidthOverride(1832.f)
+					.WidthOverride(1600.f)
 					.HeightOverride(48.f)
 					[
 						MakeChallengeHorizontalSlicedPanel(
@@ -1834,23 +1903,19 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Top)
-				.Padding(FMargin(38.f, 278.f, 0.f, 0.f))
+				.Padding(FMargin(0.f, 266.f, 0.f, 0.f))
 				[
 					SNew(SBox)
 					.WidthOverride(ListPanelWidth)
 					.HeightOverride(BodyPanelHeight)
 					[
 						MakeChallengeSpritePanel(
-							MakeChallengeSpritePanel(
-								SNew(SBox)
-								.WidthOverride(ListColumnWidth)
-								[
-									ListPanelContent
-								],
-								GetChallengeDetailPaperBrush(),
-								FMargin(18.f, 20.f),
-								ChallengePanelInsetFill()),
-							GetChallengeContentShellBrush(),
+							SNew(SBox)
+							.WidthOverride(ListColumnWidth)
+							[
+								ListPanelContent
+							],
+							GetChallengeListPanelBrush(),
 							FMargin(22.f, 28.f),
 							ChallengePanelFill())
 					]
@@ -1858,7 +1923,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Top)
-				.Padding(FMargin(1040.f, 278.f, 0.f, 0.f))
+				.Padding(FMargin(716.f, 266.f, 0.f, 0.f))
 				[
 					SNew(SBox)
 					.WidthOverride(DetailPanelWidth)
@@ -1870,11 +1935,24 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 							[
 								DetailPanelContent
 							],
-							GetChallengeContentShellBrush(),
+							GetChallengeDetailFrameBrush(),
 							FMargin(34.f, 28.f, 32.f, 28.f),
 							ChallengePanelFill())
 					]
 				]
+			]
+		];
+
+	return SNew(SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::Both)
+			[
+				ChallengeCanvas
 			]
 		];
 }
@@ -1900,7 +1978,7 @@ FReply UT66ChallengesScreen::HandleTabSelected(const int32 TabIndex)
 	InitializeSelectionState();
 	ActiveTabIndex = FMath::Clamp(TabIndex, 0, static_cast<int32>(ETabIndex::Count) - 1);
 	EndDraftEditor();
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
@@ -1909,7 +1987,7 @@ FReply UT66ChallengesScreen::HandleSourceTabSelected(const int32 SourceTabIndex)
 	InitializeSelectionState();
 	ActiveSourceTabIndex[ActiveTabIndex] = FMath::Clamp(SourceTabIndex, 0, static_cast<int32>(ESourceTabIndex::Count) - 1);
 	EndDraftEditor();
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
@@ -1923,7 +2001,7 @@ FReply UT66ChallengesScreen::HandleEntrySelected(const int32 EntryIndex)
 	}
 
 	EndDraftEditor();
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
@@ -1955,7 +2033,7 @@ FReply UT66ChallengesScreen::HandleCreateDraftClicked()
 	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
 	{
 		BeginDraftEditor(Community->CreateDraftTemplate(GetActiveKind()));
-		ForceRebuildSlate();
+		RequestDeferredSlateRebuild();
 	}
 	return FReply::Handled();
 }
@@ -1966,7 +2044,7 @@ FReply UT66ChallengesScreen::HandleEditDraftClicked()
 	if (FindCurrentSelectedEntry(Entry) && Entry.IsDraft())
 	{
 		BeginDraftEditor(Entry);
-		ForceRebuildSlate();
+		RequestDeferredSlateRebuild();
 	}
 	return FReply::Handled();
 }
@@ -1981,7 +2059,7 @@ FReply UT66ChallengesScreen::HandleDeleteDraftClicked()
 			Community->DeleteDraft(Entry.LocalId);
 			EndDraftEditor();
 			PendingSelections[ActiveTabIndex][ActiveSourceTabIndex[ActiveTabIndex]] = NAME_None;
-			ForceRebuildSlate();
+			RequestDeferredSlateRebuild();
 		}
 	}
 	return FReply::Handled();
@@ -1994,7 +2072,7 @@ FReply UT66ChallengesScreen::HandleSaveDraftClicked()
 		Community->SaveDraft(DraftEditorEntry);
 		PendingSelections[ActiveTabIndex][static_cast<int32>(ESourceTabIndex::Community)] = DraftEditorEntry.LocalId;
 	}
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
@@ -2040,77 +2118,77 @@ FReply UT66ChallengesScreen::HandleSubmitDraftClicked()
 		}
 		Community->SubmitDraftForApproval(DraftId);
 	}
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleCancelDraftEditorClicked()
 {
 	EndDraftEditor();
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleAdjustDraftReward(const int32 Delta)
 {
 	DraftEditorEntry.SuggestedRewardChadCoupons = T66CommunityContentLimits::ClampRewardChadCoupons(DraftEditorEntry.SuggestedRewardChadCoupons + Delta);
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleAdjustDraftStartLevel(const int32 Delta)
 {
 	DraftEditorEntry.Rules.StartLevelOverride = T66CommunityContentLimits::ClampStartLevelOverride(DraftEditorEntry.Rules.StartLevelOverride + Delta);
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleAdjustDraftRequiredStage(const int32 Delta)
 {
 	DraftEditorEntry.Rules.RequiredStageReached = T66CommunityContentLimits::ClampRequiredStageReached(DraftEditorEntry.Rules.RequiredStageReached + Delta);
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleAdjustDraftMaxRunTime(const int32 Delta)
 {
 	DraftEditorEntry.Rules.MaxRunTimeSeconds = T66CommunityContentLimits::ClampRunTimeSeconds(DraftEditorEntry.Rules.MaxRunTimeSeconds + Delta);
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleToggleDraftMaxStats()
 {
 	DraftEditorEntry.Rules.bSetMaxHeroStats = !DraftEditorEntry.Rules.bSetMaxHeroStats;
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleAdjustDraftStatClicked(const EDraftStatField Field, const int32 Delta)
 {
 	AdjustDraftStat(Field, Delta);
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleCycleDraftPassiveClicked(const int32 Direction)
 {
 	CycleDraftPassive(Direction);
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleCycleDraftUltimateClicked(const int32 Direction)
 {
 	CycleDraftUltimate(Direction);
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
 FReply UT66ChallengesScreen::HandleCycleDraftStartingItemClicked(const int32 Direction)
 {
 	CycleDraftStartingItem(Direction);
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
@@ -2136,5 +2214,5 @@ void UT66ChallengesScreen::HandleDraftNoDamageChanged(const ECheckBoxState NewSt
 
 void UT66ChallengesScreen::HandleCommunityContentChanged()
 {
-	ForceRebuildSlate();
+	RequestDeferredSlateRebuild();
 }

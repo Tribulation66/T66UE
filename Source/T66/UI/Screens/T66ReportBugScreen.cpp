@@ -8,6 +8,8 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Engine/GameInstance.h"
+#include "Engine/Texture2D.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
@@ -24,6 +26,7 @@
 #include "Styling/SlateTypes.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
@@ -174,18 +177,18 @@ namespace
 			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
 			Padding,
 			TEXT("ReportBugShellV14"),
-			FT66Style::Panel());
+			FLinearColor(0.010f, 0.012f, 0.018f, 0.98f));
 	}
 
 	TSharedRef<SWidget> MakeReportBugField(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
 		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
-			TEXT("Controls/Input/multiline_input_normal.png"),
+			TEXT("Panels/Modal/modal_shell_medium.png"),
 			Content,
-			FMargin(0.04f, 0.065f, 0.04f, 0.065f),
+			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
 			Padding,
 			TEXT("ReportBugFieldV14"),
-			FT66Style::PanelInner());
+			FLinearColor(0.012f, 0.014f, 0.020f, 0.96f));
 	}
 
 	const FEditableTextBoxStyle& GetReportBugTextBoxStyle()
@@ -227,14 +230,20 @@ namespace
 		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
 			? Params.CustomContent.ToSharedRef()
 			: StaticCastSharedRef<SWidget>(
-				SNew(STextBlock)
-				.Text(ButtonText)
-				.Font(ButtonFont)
-				.ColorAndOpacity(TextColor)
-				.Justification(ETextJustify::Center)
-				.ShadowOffset(FVector2D(0.f, 1.f))
-				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis));
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					SNew(STextBlock)
+					.Text(ButtonText)
+					.Font(ButtonFont)
+					.ColorAndOpacity(TextColor)
+					.Justification(ETextJustify::Center)
+					.ShadowOffset(FVector2D(0.f, 1.f))
+					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)
+				]);
 
 		const FButtonStyle& ButtonStyle = GetReportBugButtonStyle(Params.Type);
 		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
@@ -285,9 +294,12 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 	});
 
 	return SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FT66Style::Scrim())
 		[
-			SNew(SBox)
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::DownOnly)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[

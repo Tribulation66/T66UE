@@ -9,6 +9,9 @@
 class USphereComponent;
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
+class UStaticMesh;
+class UNiagaraComponent;
+class UNiagaraSystem;
 
 UCLASS(Blueprintable)
 class T66_API AT66HeroProjectile : public AActor
@@ -37,6 +40,10 @@ public:
 	void SetTargetActor(AActor* InTargetActor);
 	void SetScaleMultiplier(float InScaleMultiplier);
 	void SetTintColor(const FLinearColor& InColor);
+	void SetProjectileMesh(UStaticMesh* InMesh);
+	void SetProjectileSpeed(float InSpeed);
+	void SetTrailVFX(UNiagaraSystem* InTrailSystem, const FLinearColor& InTrailColor);
+	void SetVisualOnly(bool bInVisualOnly);
 
 protected:
 	virtual void BeginPlay() override;
@@ -56,7 +63,13 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> VisualMID = nullptr;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraComponent> TrailVFXComponent = nullptr;
+
 	FLinearColor TintColor = FLinearColor(1.f, 0.2f, 0.2f, 1.f);
+	FVector TargetLocation = FVector::ZeroVector;
+	bool bHasTargetLocation = false;
+	bool bVisualOnly = false;
 
 	bool IsTargetAlive() const;
 	void ApplyDamageToTarget(AActor* Target);

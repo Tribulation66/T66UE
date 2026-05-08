@@ -33,8 +33,6 @@ public class T66Idle : ModuleRules
 
 		AddLooseIdleRuntimeDependency("Content/Idle/...");
 		AddLooseIdleRuntimeDependency("SourceAssets/Idle/...");
-		AddLooseIdleRuntimeDependency("UI/screens/minigames/idle_chadpocalypse/reference/idle_chadpocalypse_main_menu_mockup_1920x1080_imagegen_20260503_v2.png");
-		AddLooseIdleRuntimeDependency("UI/screens/minigames/idle_chadpocalypse/reference/idle_chadpocalypse_gameplay_mockup_1920x1080_imagegen_20260503_v2.png");
 
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory));
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public"));

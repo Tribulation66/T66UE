@@ -1,0 +1,1 @@
+Create one centered, full-object source image for a Ouroboros friendly NPC. Plain background, no text, no UI, no scene, no floor, no cropped parts. Use a readable chunky silhouette and simple material breaks that survive low-poly Quad Retro treatment. Full body, neutral pose, no weapon emphasis, no enemies or bosses.

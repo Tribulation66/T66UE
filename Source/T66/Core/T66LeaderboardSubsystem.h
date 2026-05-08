@@ -16,6 +16,7 @@ struct FLeaderboardEntry;
 class UT66LocalLeaderboardSaveGame;
 class UT66LeaderboardRunSummarySaveGame;
 class UDataTable;
+struct FStreamableHandle;
 
 /**
  * Handles local leaderboard persistence plus online backend sync for the
@@ -248,12 +249,20 @@ private:
 	FT66LocalCompletedRunTimeRecord* FindLocalCompletedRunTimeRecordMutable(ET66Difficulty Difficulty, ET66PartySize PartySize);
 
 	bool LoadTargetsFromDataTablesIfPresent();
+	bool CacheScoreTargetsFromDataTable(const UDataTable* DataTable);
+	bool CacheSpeedRunTargetsFromDataTable(const UDataTable* DataTable);
+	void HandleLeaderboardTargetsLoaded();
 
 	static uint64 MakeScoreKey(ET66Difficulty Difficulty, ET66PartySize PartySize);
 	static uint64 MakeSpeedRunKey_DiffStage(ET66Difficulty Difficulty, int32 Stage);
 
 	int64 GetScoreTarget10(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 	float GetSpeedRunTarget10(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
+
+	TSharedPtr<FStreamableHandle> LeaderboardTargetsLoadHandle;
+	bool bLeaderboardTargetsPreloadAttempted = false;
+	mutable TSet<uint64> WarnedMissingScoreTargetKeys;
+	mutable TSet<uint64> WarnedMissingSpeedRunTargetKeys;
 
 	bool GetSettingsPracticeAndAnon(bool& bOutPractice, bool& bOutAnon) const;
 	FString MakePendingBestRankRequestKey(EBestRankRecordType Type, ET66Difficulty Difficulty, ET66PartySize PartySize) const;

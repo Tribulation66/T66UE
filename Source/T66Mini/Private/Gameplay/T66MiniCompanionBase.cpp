@@ -21,6 +21,9 @@ AT66MiniCompanionBase::AT66MiniCompanionBase()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	SetReplicateMovement(true);
+	SetNetUpdateFrequency(16.f);
+	SetMinNetUpdateFrequency(8.f);
+	SetNetCullDistanceSquared(FMath::Square(3600.f));
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);

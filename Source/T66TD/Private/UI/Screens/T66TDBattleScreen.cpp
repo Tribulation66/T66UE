@@ -876,8 +876,8 @@ namespace
 			else
 			{
 				FRandomStream ThreatStream(static_cast<int32>(GetTypeHash(MapDefinition.MapID) ^ (PreviewWave * 977)));
-				const int32 ThreatSampleCount = FMath::Max(1, GetTuningInt(TEXT("ThreatPreviewSampleCount"), 16));
-				const int32 ThreatBossSampleIndex = FMath::Clamp(GetTuningInt(TEXT("ThreatPreviewBossSampleIndex"), ThreatSampleCount - 1), 0, ThreatSampleCount - 1);
+				const int32 ThreatSampleCount = FMath::Max(1, GetTuningInt(TEXT("ThreatPreviewSampleCount")));
+				const int32 ThreatBossSampleIndex = FMath::Clamp(GetTuningInt(TEXT("ThreatPreviewBossSampleIndex")), 0, ThreatSampleCount - 1);
 				for (int32 SampleIndex = 0; SampleIndex < ThreatSampleCount; ++SampleIndex)
 				{
 					const ET66TDEnemyFamily Family =
@@ -1053,8 +1053,8 @@ namespace
 
 		FReply HandleSpeedClicked()
 		{
-			const float NormalSpeed = GetTuningValue(TEXT("SimulationSpeedNormal"), 1.f);
-			const float FastSpeed = GetTuningValue(TEXT("SimulationSpeedFast"), 2.f);
+			const float NormalSpeed = GetTuningValue(TEXT("SimulationSpeedNormal"));
+			const float FastSpeed = GetTuningValue(TEXT("SimulationSpeedFast"));
 			SimulationSpeed = (SimulationSpeed >= (FastSpeed - 0.1f)) ? NormalSpeed : FastSpeed;
 			return FReply::Handled();
 		}
@@ -1392,18 +1392,26 @@ namespace
 			return EActiveTimerReturnType::Continue;
 		}
 
-		float GetTuningValue(const TCHAR* Key, const float DefaultValue = 0.f) const
+		float GetTuningValue(const TCHAR* Key) const
 		{
-			if (const float* FoundValue = BattleTuningValues.Find(FName(Key)))
+			const FName TuningKey(Key);
+			if (const float* FoundValue = BattleTuningValues.Find(TuningKey))
 			{
 				return *FoundValue;
 			}
-			return DefaultValue;
+
+			if (!MissingBattleTuningKeys.Contains(TuningKey))
+			{
+				MissingBattleTuningKeys.Add(TuningKey);
+				UE_LOG(LogTemp, Error, TEXT("T66 TD missing required battle tuning row '%s' in T66TD_BattleTuning.csv."), *TuningKey.ToString());
+			}
+
+			return 0.f;
 		}
 
-		int32 GetTuningInt(const TCHAR* Key, const int32 DefaultValue = 0) const
+		int32 GetTuningInt(const TCHAR* Key) const
 		{
-			return FMath::RoundToInt(GetTuningValue(Key, static_cast<float>(DefaultValue)));
+			return FMath::RoundToInt(GetTuningValue(Key));
 		}
 
 		FT66TDEnemyArchetype GetEnemyArchetype(const ET66TDEnemyFamily Family) const
@@ -1441,12 +1449,12 @@ namespace
 		{
 			Materials = StageDefinition.StartingMaterials > 0
 				? StageDefinition.StartingMaterials
-				: GetTuningInt(TEXT("StartingMaterials"), 340);
+				: GetTuningInt(TEXT("StartingMaterials"));
 			Gold = FMath::Max(0, StageDefinition.StartingGold);
-			Hearts = GetTuningInt(TEXT("StartingHearts"), 20);
+			Hearts = GetTuningInt(TEXT("StartingHearts"));
 			CurrentWave = 0;
 			MatchState = ET66TDMatchState::AwaitingWave;
-			SimulationSpeed = GetTuningValue(TEXT("SimulationSpeedNormal"), 1.f);
+			SimulationSpeed = GetTuningValue(TEXT("SimulationSpeedNormal"));
 			SelectedPadIndex = INDEX_NONE;
 			PreviewPadIndex = INDEX_NONE;
 			bPreviewPlacementValid = false;
@@ -1623,22 +1631,22 @@ namespace
 
 			ET66TDEnemyModifier Modifiers = ET66TDEnemyModifier::None;
 
-			if (WaveNumber >= GetTuningInt(TEXT("ArmorStartWave"), 4)
+			if (WaveNumber >= GetTuningInt(TEXT("ArmorStartWave"))
 				&& (Family == ET66TDEnemyFamily::Cow
 					|| Family == ET66TDEnemyFamily::Pig
-					|| (WaveNumber >= GetTuningInt(TEXT("ArmorGoatStartWave"), 10) && Family == ET66TDEnemyFamily::Goat)))
+					|| (WaveNumber >= GetTuningInt(TEXT("ArmorGoatStartWave")) && Family == ET66TDEnemyFamily::Goat)))
 			{
-				float ArmorChance = GetTuningValue(TEXT("ArmorChanceBase"), 0.18f)
-					+ (WaveNumber * GetTuningValue(TEXT("ArmorChancePerWave"), 0.012f));
+				float ArmorChance = GetTuningValue(TEXT("ArmorChanceBase"))
+					+ (WaveNumber * GetTuningValue(TEXT("ArmorChancePerWave")));
 				if (ThemeRule)
 				{
 					ArmorChance += ThemeRule->ArmorChanceBonus;
 				}
 				if (bImpossible)
 				{
-					ArmorChance += GetTuningValue(TEXT("ImpossibleArmorChanceBonus"), 0.08f);
+					ArmorChance += GetTuningValue(TEXT("ImpossibleArmorChanceBonus"));
 				}
-				if (((SpawnIndex + WaveNumber) % FMath::Max(1, GetTuningInt(TEXT("ArmorGuaranteedModulo"), 5)) == 0) || Roll(ArmorChance))
+				if (((SpawnIndex + WaveNumber) % FMath::Max(1, GetTuningInt(TEXT("ArmorGuaranteedModulo"))) == 0) || Roll(ArmorChance))
 				{
 					Modifiers |= ET66TDEnemyModifier::Armored;
 				}
@@ -1649,25 +1657,25 @@ namespace
 				&& (Family == ET66TDEnemyFamily::Roost || Family == ET66TDEnemyFamily::Goat)
 				&& WaveNumber >= ThemeRule->HiddenMinWave)
 			{
-				const float HiddenChance = GetTuningValue(TEXT("HiddenChanceBase"), 0.20f)
-					+ (WaveNumber * GetTuningValue(TEXT("HiddenChancePerWave"), 0.010f))
+				const float HiddenChance = GetTuningValue(TEXT("HiddenChanceBase"))
+					+ (WaveNumber * GetTuningValue(TEXT("HiddenChancePerWave")))
 					+ ThemeRule->HiddenChanceBonus;
-				if (((SpawnIndex + WaveNumber) % FMath::Max(1, GetTuningInt(TEXT("HiddenGuaranteedModulo"), 4)) == 0) || Roll(HiddenChance))
+				if (((SpawnIndex + WaveNumber) % FMath::Max(1, GetTuningInt(TEXT("HiddenGuaranteedModulo"))) == 0) || Roll(HiddenChance))
 				{
 					Modifiers |= ET66TDEnemyModifier::Hidden;
 				}
 			}
 
-			if (ThemeRule && ThemeRule->bEnableRegen && WaveNumber >= GetTuningInt(TEXT("RegenStartWave"), 6))
+			if (ThemeRule && ThemeRule->bEnableRegen && WaveNumber >= GetTuningInt(TEXT("RegenStartWave")))
 			{
-				float RegenChance = GetTuningValue(TEXT("RegenChanceBase"), 0.12f)
-					+ (WaveNumber * GetTuningValue(TEXT("RegenChancePerWave"), 0.008f));
+				float RegenChance = GetTuningValue(TEXT("RegenChanceBase"))
+					+ (WaveNumber * GetTuningValue(TEXT("RegenChancePerWave")));
 				if (Family == ET66TDEnemyFamily::Pig || Family == ET66TDEnemyFamily::Cow)
 				{
-					RegenChance += GetTuningValue(TEXT("RegenHeavyChanceBonus"), 0.06f);
+					RegenChance += GetTuningValue(TEXT("RegenHeavyChanceBonus"));
 				}
 				RegenChance += ThemeRule->RegenChanceBonus;
-				if (((SpawnIndex + (WaveNumber * GetTuningInt(TEXT("RegenWaveModuloMultiplier"), 2))) % FMath::Max(1, GetTuningInt(TEXT("RegenGuaranteedModulo"), 6)) == 0) || Roll(RegenChance))
+				if (((SpawnIndex + (WaveNumber * GetTuningInt(TEXT("RegenWaveModuloMultiplier")))) % FMath::Max(1, GetTuningInt(TEXT("RegenGuaranteedModulo"))) == 0) || Roll(RegenChance))
 				{
 					Modifiers |= ET66TDEnemyModifier::Regenerating;
 				}
@@ -1680,26 +1688,26 @@ namespace
 					|| Family == ET66TDEnemyFamily::Pig
 					|| (ThemeRule->bShieldGoat && Family == ET66TDEnemyFamily::Goat)))
 			{
-				const float ShieldChance = GetTuningValue(TEXT("ShieldChanceBase"), 0.18f)
-					+ (WaveNumber * GetTuningValue(TEXT("ShieldChancePerWave"), 0.011f))
+				const float ShieldChance = GetTuningValue(TEXT("ShieldChanceBase"))
+					+ (WaveNumber * GetTuningValue(TEXT("ShieldChancePerWave")))
 					+ ThemeRule->ShieldChanceBonus;
-				if (((SpawnIndex + WaveNumber) % FMath::Max(1, GetTuningInt(TEXT("ShieldGuaranteedModulo"), 3)) == 0) || Roll(ShieldChance))
+				if (((SpawnIndex + WaveNumber) % FMath::Max(1, GetTuningInt(TEXT("ShieldGuaranteedModulo"))) == 0) || Roll(ShieldChance))
 				{
 					Modifiers |= ET66TDEnemyModifier::Shielded;
 				}
 			}
 
-			if (bImpossible && WaveNumber >= GetTuningInt(TEXT("ImpossibleForcedModifierStartWave"), 10))
+			if (bImpossible && WaveNumber >= GetTuningInt(TEXT("ImpossibleForcedModifierStartWave")))
 			{
 				if ((Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig)
 					&& !HasEnemyModifier(Modifiers, ET66TDEnemyModifier::Shielded)
-					&& (SpawnIndex % FMath::Max(1, GetTuningInt(TEXT("ImpossibleForcedShieldModulo"), 4)) == GetTuningInt(TEXT("ImpossibleForcedShieldRemainder"), 1)))
+					&& (SpawnIndex % FMath::Max(1, GetTuningInt(TEXT("ImpossibleForcedShieldModulo"))) == GetTuningInt(TEXT("ImpossibleForcedShieldRemainder"))))
 				{
 					Modifiers |= ET66TDEnemyModifier::Shielded;
 				}
 				if ((Family == ET66TDEnemyFamily::Roost || Family == ET66TDEnemyFamily::Goat)
 					&& !HasEnemyModifier(Modifiers, ET66TDEnemyModifier::Hidden)
-					&& (SpawnIndex % FMath::Max(1, GetTuningInt(TEXT("ImpossibleForcedHiddenModulo"), 5)) == GetTuningInt(TEXT("ImpossibleForcedHiddenRemainder"), 2)))
+					&& (SpawnIndex % FMath::Max(1, GetTuningInt(TEXT("ImpossibleForcedHiddenModulo"))) == GetTuningInt(TEXT("ImpossibleForcedHiddenRemainder"))))
 				{
 					Modifiers |= ET66TDEnemyModifier::Hidden;
 				}
@@ -1712,18 +1720,18 @@ namespace
 		{
 			PendingSpawns.Reset();
 			const int32 LaneCount = FMath::Max(1, PathRuntimes.Num());
-			const float SpawnDelayBase = GetTuningValue(TEXT("SpawnDelayBase"), 0.54f);
+			const float SpawnDelayBase = GetTuningValue(TEXT("SpawnDelayBase"));
 			const float SpawnDelay = FMath::Clamp(
-				SpawnDelayBase - (WaveNumber * GetTuningValue(TEXT("SpawnDelayPerWave"), 0.02f)),
-				GetTuningValue(TEXT("SpawnDelayMin"), 0.18f),
+				SpawnDelayBase - (WaveNumber * GetTuningValue(TEXT("SpawnDelayPerWave"))),
+				GetTuningValue(TEXT("SpawnDelayMin")),
 				SpawnDelayBase);
 			FRandomStream Stream(static_cast<int32>(GetTypeHash(MapDefinition.MapID) ^ (WaveNumber * 977)));
 
 			if (WaveNumber >= MapDefinition.BossWave)
 			{
-				float DelayCursor = GetTuningValue(TEXT("BossPreludeInitialDelay"), 0.35f);
-				const int32 PreludeCount = FMath::Max(0, GetTuningInt(TEXT("BossPreludeCount"), 12));
-				const int32 PreludeHeavyCount = FMath::Clamp(GetTuningInt(TEXT("BossPreludeHeavyCount"), 6), 0, PreludeCount);
+				float DelayCursor = GetTuningValue(TEXT("BossPreludeInitialDelay"));
+				const int32 PreludeCount = FMath::Max(0, GetTuningInt(TEXT("BossPreludeCount")));
+				const int32 PreludeHeavyCount = FMath::Clamp(GetTuningInt(TEXT("BossPreludeHeavyCount")), 0, PreludeCount);
 				for (int32 Index = 0; Index < PreludeCount; ++Index)
 				{
 					const bool bHeavyPrelude = Index < PreludeHeavyCount;
@@ -1735,25 +1743,25 @@ namespace
 						Family,
 						Index % LaneCount,
 						DelayCursor,
-						bHeavyPrelude ? GetTuningValue(TEXT("BossPreludeHeavyHealthScalar"), 1.65f) : GetTuningValue(TEXT("BossPreludeLightHealthScalar"), 1.28f),
-						bHeavyPrelude ? GetTuningValue(TEXT("BossPreludeHeavySpeedScalar"), 1.04f) : GetTuningValue(TEXT("BossPreludeLightSpeedScalar"), 1.14f),
+						bHeavyPrelude ? GetTuningValue(TEXT("BossPreludeHeavyHealthScalar")) : GetTuningValue(TEXT("BossPreludeLightHealthScalar")),
+						bHeavyPrelude ? GetTuningValue(TEXT("BossPreludeHeavySpeedScalar")) : GetTuningValue(TEXT("BossPreludeLightSpeedScalar")),
 						Modifiers,
 						false });
-					DelayCursor += SpawnDelay * GetTuningValue(TEXT("BossPreludeDelayScalar"), 0.70f);
+					DelayCursor += SpawnDelay * GetTuningValue(TEXT("BossPreludeDelayScalar"));
 				}
-				PendingSpawns.Add({ ET66TDEnemyFamily::Boss, (LaneCount - 1) % LaneCount, DelayCursor + GetTuningValue(TEXT("BossSpawnDelayBonus"), 0.8f), 1.0f, 1.0f, BuildSpawnModifiers(ET66TDEnemyFamily::Boss, WaveNumber, 99, true, Stream), true });
+				PendingSpawns.Add({ ET66TDEnemyFamily::Boss, (LaneCount - 1) % LaneCount, DelayCursor + GetTuningValue(TEXT("BossSpawnDelayBonus")), 1.0f, 1.0f, BuildSpawnModifiers(ET66TDEnemyFamily::Boss, WaveNumber, 99, true, Stream), true });
 				return;
 			}
 
-			int32 RoostCount = GetTuningInt(TEXT("RoostBaseCount"), 6) + (WaveNumber * GetTuningInt(TEXT("RoostPerWave"), 2));
-			int32 GoatCount = GetTuningInt(TEXT("GoatBaseCount"), 2) + (WaveNumber * GetTuningInt(TEXT("GoatPerWave"), 1)) + (LaneCount - 1);
-			int32 CowCount = WaveNumber >= GetTuningInt(TEXT("CowStartWave"), 4) ? (WaveNumber / FMath::Max(1, GetTuningInt(TEXT("CowWaveDivisor"), 2))) + LaneCount : 0;
-			int32 PigCount = WaveNumber >= GetTuningInt(TEXT("PigStartWave"), 7) ? (WaveNumber / FMath::Max(1, GetTuningInt(TEXT("PigWaveDivisor"), 3))) + LaneCount - 1 : 0;
+			int32 RoostCount = GetTuningInt(TEXT("RoostBaseCount")) + (WaveNumber * GetTuningInt(TEXT("RoostPerWave")));
+			int32 GoatCount = GetTuningInt(TEXT("GoatBaseCount")) + (WaveNumber * GetTuningInt(TEXT("GoatPerWave"))) + (LaneCount - 1);
+			int32 CowCount = WaveNumber >= GetTuningInt(TEXT("CowStartWave")) ? (WaveNumber / FMath::Max(1, GetTuningInt(TEXT("CowWaveDivisor")))) + LaneCount : 0;
+			int32 PigCount = WaveNumber >= GetTuningInt(TEXT("PigStartWave")) ? (WaveNumber / FMath::Max(1, GetTuningInt(TEXT("PigWaveDivisor")))) + LaneCount - 1 : 0;
 
-			if (WaveNumber == GetTuningInt(TEXT("MilestoneWaveA"), 5) || WaveNumber == GetTuningInt(TEXT("MilestoneWaveB"), 10))
+			if (WaveNumber == GetTuningInt(TEXT("MilestoneWaveA")) || WaveNumber == GetTuningInt(TEXT("MilestoneWaveB")))
 			{
-				CowCount += GetTuningInt(TEXT("MilestoneCowBonus"), 3);
-				PigCount += GetTuningInt(TEXT("MilestonePigBonus"), 2);
+				CowCount += GetTuningInt(TEXT("MilestoneCowBonus"));
+				PigCount += GetTuningInt(TEXT("MilestonePigBonus"));
 			}
 
 			TArray<ET66TDEnemyFamily> Families;
@@ -1768,19 +1776,19 @@ namespace
 				Families.Swap(Index, Stream.RandRange(0, Index));
 			}
 
-			float DelayCursor = GetTuningValue(TEXT("NormalInitialDelay"), 0.25f);
+			float DelayCursor = GetTuningValue(TEXT("NormalInitialDelay"));
 			for (int32 SpawnIndex = 0; SpawnIndex < Families.Num(); ++SpawnIndex)
 			{
 				const ET66TDEnemyFamily Family = Families[SpawnIndex];
 				const float FamilyDelayMultiplier = (Family == ET66TDEnemyFamily::Roost)
-					? GetTuningValue(TEXT("RoostDelayMultiplier"), 0.82f)
-					: (Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig ? GetTuningValue(TEXT("HeavyDelayMultiplier"), 1.18f) : 1.0f);
+					? GetTuningValue(TEXT("RoostDelayMultiplier"))
+					: (Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig ? GetTuningValue(TEXT("HeavyDelayMultiplier")) : 1.0f);
 				const float HealthScalar = 1.0f
-					+ (WaveNumber * GetTuningValue(TEXT("WaveHealthPerWave"), 0.09f))
-					+ ((Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig) ? GetTuningValue(TEXT("WaveHeavyHealthBonus"), 0.18f) : 0.f);
+					+ (WaveNumber * GetTuningValue(TEXT("WaveHealthPerWave")))
+					+ ((Family == ET66TDEnemyFamily::Cow || Family == ET66TDEnemyFamily::Pig) ? GetTuningValue(TEXT("WaveHeavyHealthBonus")) : 0.f);
 				const float SpeedScalar = 1.0f
-					+ (WaveNumber * GetTuningValue(TEXT("WaveSpeedPerWave"), 0.02f))
-					+ (Family == ET66TDEnemyFamily::Roost ? GetTuningValue(TEXT("RoostSpeedBonus"), 0.05f) : 0.f);
+					+ (WaveNumber * GetTuningValue(TEXT("WaveSpeedPerWave")))
+					+ (Family == ET66TDEnemyFamily::Roost ? GetTuningValue(TEXT("RoostSpeedBonus")) : 0.f);
 				const ET66TDEnemyModifier Modifiers = BuildSpawnModifiers(Family, WaveNumber, SpawnIndex, false, Stream);
 				PendingSpawns.Add({ Family, SpawnIndex % LaneCount, DelayCursor, HealthScalar, SpeedScalar, Modifiers, false });
 				DelayCursor += SpawnDelay * FamilyDelayMultiplier;
@@ -1901,7 +1909,7 @@ namespace
 				else
 				{
 					MatchState = ET66TDMatchState::AwaitingWave;
-					Materials += GetTuningInt(TEXT("WaveClearRewardBase"), 18) + (CurrentWave * GetTuningInt(TEXT("WaveClearRewardPerWave"), 3));
+					Materials += GetTuningInt(TEXT("WaveClearRewardBase")) + (CurrentWave * GetTuningInt(TEXT("WaveClearRewardPerWave")));
 				}
 			}
 		}
@@ -1933,24 +1941,24 @@ namespace
 			Enemy.Health = Enemy.MaxHealth;
 			Enemy.Speed = Archetype.BaseSpeed * QueuedSpawn.SpeedScalar * DifficultyDefinition.EnemySpeedScalar;
 			Enemy.Radius = Archetype.Radius;
-			Enemy.LeakDamage = QueuedSpawn.bBoss ? GetTuningInt(TEXT("BossLeakDamage"), Archetype.LeakDamage) : Archetype.LeakDamage;
-			Enemy.Bounty = FMath::RoundToInt(Archetype.Bounty * DifficultyDefinition.RewardScalar * (QueuedSpawn.bBoss ? GetTuningValue(TEXT("BossRewardMultiplier"), 1.8f) : 1.0f));
+			Enemy.LeakDamage = QueuedSpawn.bBoss ? GetTuningInt(TEXT("BossLeakDamage")) : Archetype.LeakDamage;
+			Enemy.Bounty = FMath::RoundToInt(Archetype.Bounty * DifficultyDefinition.RewardScalar * (QueuedSpawn.bBoss ? GetTuningValue(TEXT("BossRewardMultiplier")) : 1.0f));
 			Enemy.Modifiers = QueuedSpawn.Modifiers;
 			Enemy.Tint = GetEnemyTint(Archetype, QueuedSpawn.Modifiers, QueuedSpawn.bBoss);
 			if (HasEnemyModifier(QueuedSpawn.Modifiers, ET66TDEnemyModifier::Armored))
 			{
-				Enemy.Armor = FMath::Max(GetTuningValue(TEXT("ArmorMin"), 4.f), Enemy.MaxHealth * GetTuningValue(TEXT("ArmorHealthScalar"), 0.050f));
+				Enemy.Armor = FMath::Max(GetTuningValue(TEXT("ArmorMin")), Enemy.MaxHealth * GetTuningValue(TEXT("ArmorHealthScalar")));
 			}
 			if (HasEnemyModifier(QueuedSpawn.Modifiers, ET66TDEnemyModifier::Shielded))
 			{
 				Enemy.MaxShield = FMath::Max(
-					GetTuningValue(TEXT("ShieldMin"), 18.f),
-					Enemy.MaxHealth * (QueuedSpawn.bBoss ? GetTuningValue(TEXT("BossShieldScalar"), 0.30f) : GetTuningValue(TEXT("ShieldScalar"), 0.22f)));
+					GetTuningValue(TEXT("ShieldMin")),
+					Enemy.MaxHealth * (QueuedSpawn.bBoss ? GetTuningValue(TEXT("BossShieldScalar")) : GetTuningValue(TEXT("ShieldScalar"))));
 				Enemy.Shield = Enemy.MaxShield;
 			}
 			if (HasEnemyModifier(QueuedSpawn.Modifiers, ET66TDEnemyModifier::Regenerating))
 			{
-				Enemy.RegenPerSecond = FMath::Max(GetTuningValue(TEXT("RegenMin"), 3.5f), Enemy.MaxHealth * GetTuningValue(TEXT("RegenScalar"), 0.028f));
+				Enemy.RegenPerSecond = FMath::Max(GetTuningValue(TEXT("RegenMin")), Enemy.MaxHealth * GetTuningValue(TEXT("RegenScalar")));
 			}
 			Enemy.bBoss = QueuedSpawn.bBoss;
 		}
@@ -2247,18 +2255,18 @@ namespace
 			switch (UpgradeType)
 			{
 			case ET66TDTowerUpgradeType::Damage:
-				return GetTuningInt(TEXT("DamageUpgradeCostBase"), 75) + (CurrentLevel * GetTuningInt(TEXT("DamageUpgradeCostPerLevel"), 55));
+				return GetTuningInt(TEXT("DamageUpgradeCostBase")) + (CurrentLevel * GetTuningInt(TEXT("DamageUpgradeCostPerLevel")));
 			case ET66TDTowerUpgradeType::Range:
-				return GetTuningInt(TEXT("RangeUpgradeCostBase"), 65) + (CurrentLevel * GetTuningInt(TEXT("RangeUpgradeCostPerLevel"), 45));
+				return GetTuningInt(TEXT("RangeUpgradeCostBase")) + (CurrentLevel * GetTuningInt(TEXT("RangeUpgradeCostPerLevel")));
 			case ET66TDTowerUpgradeType::Tempo:
 			default:
-				return GetTuningInt(TEXT("TempoUpgradeCostBase"), 80) + (CurrentLevel * GetTuningInt(TEXT("TempoUpgradeCostPerLevel"), 60));
+				return GetTuningInt(TEXT("TempoUpgradeCostBase")) + (CurrentLevel * GetTuningInt(TEXT("TempoUpgradeCostPerLevel")));
 			}
 		}
 
 		int32 GetTowerSellValue(const FT66TDPlacedTower& Tower) const
 		{
-			return FMath::RoundToInt(Tower.MaterialsInvested * GetTuningValue(TEXT("TowerSellScalar"), 0.70f));
+			return FMath::RoundToInt(Tower.MaterialsInvested * GetTuningValue(TEXT("TowerSellScalar")));
 		}
 
 		FString GetUpgradeTrackLabelString(const FT66TDPlacedTower* Tower, const ET66TDTowerUpgradeType UpgradeType) const
@@ -2460,14 +2468,14 @@ namespace
 				TEXT("%s %d/%d: %s. %s."),
 				*GetUpgradeTrackLabelString(&Tower, UpgradeType),
 				CurrentLevel,
-				GetTuningInt(TEXT("UpgradeMaxLevel"), 3),
+				GetTuningInt(TEXT("UpgradeMaxLevel")),
 				*GetUpgradeTrackEffectHint(Tower, UpgradeType),
 				*GetUpgradeCapstoneHint(Tower, UpgradeType));
 		}
 
 		bool CanUpgradeTower(const FT66TDPlacedTower& Tower, const ET66TDTowerUpgradeType UpgradeType) const
 		{
-			return GetUpgradeLevel(Tower, UpgradeType) < GetTuningInt(TEXT("UpgradeMaxLevel"), 3) && Materials >= GetUpgradeCost(Tower, UpgradeType);
+			return GetUpgradeLevel(Tower, UpgradeType) < GetTuningInt(TEXT("UpgradeMaxLevel")) && Materials >= GetUpgradeCost(Tower, UpgradeType);
 		}
 
 		bool CanUpgradeSelectedTower(const ET66TDTowerUpgradeType UpgradeType) const
@@ -2486,7 +2494,7 @@ namespace
 
 			const int32 CurrentLevel = GetUpgradeLevel(*SelectedTower, UpgradeType);
 			const FString UpgradeLabel = GetUpgradeTrackLabelString(SelectedTower, UpgradeType).ToUpper();
-			if (CurrentLevel >= GetTuningInt(TEXT("UpgradeMaxLevel"), 3))
+			if (CurrentLevel >= GetTuningInt(TEXT("UpgradeMaxLevel")))
 			{
 				return FText::FromString(FString::Printf(TEXT("%s  |  MAX"), *UpgradeLabel));
 			}
@@ -2527,7 +2535,7 @@ namespace
 				}
 				else if (FlavorProfile.Range >= 0.20f)
 				{
-					Tower.Profile.BossDamageMultiplier += GetTuningValue(TEXT("CapstoneDamageBossMultiplierAdd"), 0.35f);
+					Tower.Profile.BossDamageMultiplier += GetTuningValue(TEXT("CapstoneDamageBossMultiplierAdd"));
 					Tower.Profile.bPrioritizeBoss = true;
 				}
 				else
@@ -2556,7 +2564,7 @@ namespace
 				else if (FlavorProfile.Range >= 0.18f)
 				{
 					Tower.Profile.bPrioritizeBoss = true;
-					Tower.Profile.BossDamageMultiplier += GetTuningValue(TEXT("CapstoneRangeBossMultiplierAdd"), 0.15f);
+					Tower.Profile.BossDamageMultiplier += GetTuningValue(TEXT("CapstoneRangeBossMultiplierAdd"));
 				}
 				else
 				{
@@ -2590,8 +2598,8 @@ namespace
 				else
 				{
 					Tower.Profile.FireInterval = FMath::Max(
-						GetTuningValue(TEXT("CapstoneFireIntervalMin"), 0.10f),
-						Tower.Profile.FireInterval * GetTuningValue(TEXT("CapstoneTempoFireIntervalMultiplier"), 0.88f));
+						GetTuningValue(TEXT("CapstoneFireIntervalMin")),
+						Tower.Profile.FireInterval * GetTuningValue(TEXT("CapstoneTempoFireIntervalMultiplier")));
 				}
 				break;
 			}
@@ -2613,25 +2621,25 @@ namespace
 			{
 			case ET66TDTowerUpgradeType::Damage:
 				++SelectedTower->DamageUpgradeLevel;
-				SelectedTower->Profile.Damage *= GetTuningValue(TEXT("DamageUpgradeMultiplier"), 1.35f);
-				SelectedTower->Profile.DotDamagePerSecond *= GetTuningValue(TEXT("DotDamageUpgradeMultiplier"), 1.25f);
+				SelectedTower->Profile.Damage *= GetTuningValue(TEXT("DamageUpgradeMultiplier"));
+				SelectedTower->Profile.DotDamagePerSecond *= GetTuningValue(TEXT("DotDamageUpgradeMultiplier"));
 				if (SelectedTower->Profile.SplashRadius > 0.f)
 				{
-					SelectedTower->Profile.SplashRadius *= GetTuningValue(TEXT("SplashDamageUpgradeMultiplier"), 1.05f);
+					SelectedTower->Profile.SplashRadius *= GetTuningValue(TEXT("SplashDamageUpgradeMultiplier"));
 				}
 				break;
 
 			case ET66TDTowerUpgradeType::Range:
 				++SelectedTower->RangeUpgradeLevel;
-				SelectedTower->Profile.Range *= GetTuningValue(TEXT("RangeUpgradeMultiplier"), 1.16f);
-				SelectedTower->Profile.ChainRadius *= GetTuningValue(TEXT("ChainRadiusUpgradeMultiplier"), 1.18f);
+				SelectedTower->Profile.Range *= GetTuningValue(TEXT("RangeUpgradeMultiplier"));
+				SelectedTower->Profile.ChainRadius *= GetTuningValue(TEXT("ChainRadiusUpgradeMultiplier"));
 				if (SelectedTower->Profile.SplashRadius > 0.f)
 				{
-					SelectedTower->Profile.SplashRadius *= GetTuningValue(TEXT("SplashRadiusUpgradeMultiplier"), 1.14f);
+					SelectedTower->Profile.SplashRadius *= GetTuningValue(TEXT("SplashRadiusUpgradeMultiplier"));
 				}
 				if (SelectedTower->Profile.SlowDuration > 0.f)
 				{
-					SelectedTower->Profile.SlowDuration += GetTuningValue(TEXT("SlowDurationUpgradeAdd"), 0.20f);
+					SelectedTower->Profile.SlowDuration += GetTuningValue(TEXT("SlowDurationUpgradeAdd"));
 				}
 				break;
 
@@ -2639,22 +2647,22 @@ namespace
 			default:
 				++SelectedTower->TempoUpgradeLevel;
 				SelectedTower->Profile.FireInterval = FMath::Max(
-					GetTuningValue(TEXT("TempoFireIntervalMin"), 0.12f),
-					SelectedTower->Profile.FireInterval * GetTuningValue(TEXT("TempoFireIntervalMultiplier"), 0.84f));
+					GetTuningValue(TEXT("TempoFireIntervalMin")),
+					SelectedTower->Profile.FireInterval * GetTuningValue(TEXT("TempoFireIntervalMultiplier")));
 				if (SelectedTower->Profile.DotDuration > 0.f)
 				{
-					SelectedTower->Profile.DotDuration += GetTuningValue(TEXT("TempoDotDurationAdd"), 0.35f);
+					SelectedTower->Profile.DotDuration += GetTuningValue(TEXT("TempoDotDurationAdd"));
 				}
 				if (SelectedTower->Profile.SlowMultiplier < 0.999f)
 				{
 					SelectedTower->Profile.SlowMultiplier = FMath::Max(
-						GetTuningValue(TEXT("SlowMultiplierUpgradeMin"), 0.45f),
-						SelectedTower->Profile.SlowMultiplier * GetTuningValue(TEXT("SlowMultiplierUpgradeMultiplier"), 0.94f));
+						GetTuningValue(TEXT("SlowMultiplierUpgradeMin")),
+						SelectedTower->Profile.SlowMultiplier * GetTuningValue(TEXT("SlowMultiplierUpgradeMultiplier")));
 				}
 				break;
 			}
 
-			if (GetUpgradeLevel(*SelectedTower, UpgradeType) >= GetTuningInt(TEXT("UpgradeMaxLevel"), 3))
+			if (GetUpgradeLevel(*SelectedTower, UpgradeType) >= GetTuningInt(TEXT("UpgradeMaxLevel")))
 			{
 				ApplyUpgradeCapstone(*SelectedTower, UpgradeType);
 			}
@@ -2676,6 +2684,7 @@ namespace
 		TMap<FName, FT66TDEnemyArchetype> EnemyArchetypeLookup;
 		TMap<FName, FT66TDThemeModifierRule> ThemeModifierLookup;
 		FT66TDBattleTuningMap BattleTuningValues;
+		mutable TSet<FName> MissingBattleTuningKeys;
 		FT66TDHeroBrushMap HeroBrushes;
 		FT66TDEnemyBrushMap EnemyBrushes;
 		FT66TDEnemyBrushMap BossBrushes;

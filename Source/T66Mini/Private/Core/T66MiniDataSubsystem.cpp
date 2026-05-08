@@ -307,18 +307,38 @@ const FT66MiniCircusGameDefinition* UT66MiniDataSubsystem::FindCircusGame(const 
 	});
 }
 
-float UT66MiniDataSubsystem::FindRuntimeTuningValue(const FName TuningKey, const float DefaultValue) const
+bool UT66MiniDataSubsystem::TryFindRuntimeTuningValue(const FName TuningKey, float& OutValue) const
 {
 	if (const float* FoundValue = RuntimeTuningValues.Find(TuningKey))
 	{
-		return *FoundValue;
+		OutValue = *FoundValue;
+		return true;
 	}
-	return DefaultValue;
+
+	return false;
 }
 
-int32 UT66MiniDataSubsystem::FindRuntimeTuningInt(const FName TuningKey, const int32 DefaultValue) const
+float UT66MiniDataSubsystem::FindRequiredRuntimeTuningValue(const FName TuningKey) const
 {
-	return FMath::RoundToInt(FindRuntimeTuningValue(TuningKey, static_cast<float>(DefaultValue)));
+	float FoundValue = 0.f;
+	if (TryFindRuntimeTuningValue(TuningKey, FoundValue))
+	{
+		return FoundValue;
+	}
+
+	static TSet<FName> LoggedMissingRuntimeTuningKeys;
+	if (!LoggedMissingRuntimeTuningKeys.Contains(TuningKey))
+	{
+		LoggedMissingRuntimeTuningKeys.Add(TuningKey);
+		UE_LOG(LogTemp, Error, TEXT("T66MiniDataSubsystem: missing required runtime tuning row '%s' in Content/Mini/Data/T66Mini_RuntimeTuning.csv."), *TuningKey.ToString());
+	}
+
+	return 0.f;
+}
+
+int32 UT66MiniDataSubsystem::FindRequiredRuntimeTuningInt(const FName TuningKey) const
+{
+	return FMath::RoundToInt(FindRequiredRuntimeTuningValue(TuningKey));
 }
 
 void UT66MiniDataSubsystem::LoadHeroes()

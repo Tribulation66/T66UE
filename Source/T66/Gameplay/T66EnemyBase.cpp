@@ -5,7 +5,6 @@
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyAIController.h"
 #include "Gameplay/T66ArcadeMachineInteractable.h"
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66HeroBase.h"
@@ -33,6 +32,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
@@ -130,23 +130,6 @@ namespace
 			}
 
 			T66ConsiderSafeZoneHit(QueryLocation, NPC->GetActorLocation(), NPC->GetSafeZoneRadius(), Result);
-		}
-
-		for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
-		{
-			const AT66CasinoInteractable* Casino = WeakCasino.Get();
-			if (!Casino)
-			{
-				continue;
-			}
-
-			if (bTowerLayout && QueryFloorNumber != INDEX_NONE
-				&& GameMode->GetTowerFloorIndexForLocation(Casino->GetActorLocation()) != QueryFloorNumber)
-			{
-				continue;
-			}
-
-			T66ConsiderSafeZoneHit(QueryLocation, Casino->GetActorLocation(), Casino->GetSafeZoneRadius(), Result);
 		}
 
 		for (const TWeakObjectPtr<AT66WorldInteractableBase>& WeakInteractable : Registry->GetWorldInteractables())
@@ -248,8 +231,11 @@ AT66EnemyBase::AT66EnemyBase()
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
 	if (Capsule)
 	{
+		Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		Capsule->SetCollisionObjectType(ECC_Pawn);
+		Capsule->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+		Capsule->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 		Capsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block); // no overlap with hero or other enemies
-		Capsule->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap); // so projectile overlaps and hits
 		// Allow click-to-lock trace (screen-space hit test) to hit enemies.
 		Capsule->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	}
@@ -453,19 +439,19 @@ void AT66EnemyBase::ConfigureAsMob(FName InMobID)
 			{
 				if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 				{
-					bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CharacterVisualID, GetMesh(), VisualMesh, true);
-					if (USkeletalMeshComponent* Skel = GetMesh())
+					bUsingCharacterVisual = Visuals->HasCharacterVisual(CharacterVisualID)
+						&& Visuals->ApplyCharacterVisual(CharacterVisualID, GetMesh(), VisualMesh, true, false, false, VisualMesh);
+					if (!bUsingCharacterVisual)
 					{
-						if (!bUsingCharacterVisual || !Skel->GetSkeletalMeshAsset())
+						if (USkeletalMeshComponent* Skel = GetMesh())
 						{
-							bUsingCharacterVisual = false;
 							Skel->SetHiddenInGame(true, true);
 							Skel->SetVisibility(false, true);
-							if (VisualMesh)
-							{
-								VisualMesh->SetHiddenInGame(false, true);
-								VisualMesh->SetVisibility(true, true);
-							}
+						}
+						if (VisualMesh)
+						{
+							VisualMesh->SetHiddenInGame(false, true);
+							VisualMesh->SetVisibility(true, true);
 						}
 					}
 				}
@@ -570,20 +556,19 @@ void AT66EnemyBase::BeginPlay()
 		{
 			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 			{
-				bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CharacterVisualID, GetMesh(), VisualMesh, true);
-				if (USkeletalMeshComponent* Skel = GetMesh())
+				bUsingCharacterVisual = Visuals->HasCharacterVisual(CharacterVisualID)
+					&& Visuals->ApplyCharacterVisual(CharacterVisualID, GetMesh(), VisualMesh, true, false, false, VisualMesh);
+				if (!bUsingCharacterVisual)
 				{
-					// If we didn't apply a skeletal mesh, keep the character mesh hidden and use the cylinder.
-					if (!bUsingCharacterVisual || !Skel->GetSkeletalMeshAsset())
+					if (USkeletalMeshComponent* Skel = GetMesh())
 					{
-						bUsingCharacterVisual = false;
 						Skel->SetHiddenInGame(true, true);
 						Skel->SetVisibility(false, true);
-						if (VisualMesh)
-						{
-							VisualMesh->SetHiddenInGame(false, true);
-							VisualMesh->SetVisibility(true, true);
-						}
+					}
+					if (VisualMesh)
+					{
+						VisualMesh->SetHiddenInGame(false, true);
+						VisualMesh->SetVisibility(true, true);
 					}
 				}
 			}
@@ -789,6 +774,7 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	SetActorScale3D(FVector::OneVector);
 	LastTouchDamageTime = -9999.f;
 	CachedPlayerPawn = nullptr;
+	PlayerPawnRefreshCooldownSeconds = 0.f;
 	CachedWanderDir = FVector::ZeroVector;
 	WanderDirRefreshAccum = 0.f;
 	bCachedInsideSafeZone = false;
@@ -874,6 +860,22 @@ void AT66EnemyBase::ResetFamilyState()
 {
 }
 
+APawn* AT66EnemyBase::ResolveCachedPlayerPawn(const float DeltaSeconds)
+{
+	PlayerPawnRefreshCooldownSeconds -= DeltaSeconds;
+
+	APawn* ExistingPawn = CachedPlayerPawn.Get();
+	if (ExistingPawn && PlayerPawnRefreshCooldownSeconds > 0.f)
+	{
+		return ExistingPawn;
+	}
+
+	APawn* ResolvedPawn = T66ResolveClosestPlayerPawn(this);
+	CachedPlayerPawn = ResolvedPawn;
+	PlayerPawnRefreshCooldownSeconds = PlayerPawnRefreshIntervalSeconds + FMath::FRandRange(0.f, PlayerPawnRefreshJitterSeconds);
+	return ResolvedPawn;
+}
+
 void AT66EnemyBase::TickFamilyBehavior(APawn* PlayerPawn, float DeltaSeconds, float Dist2DToPlayer, const bool bShouldRunAwayFromPlayer)
 {
 	if (!PlayerPawn)
@@ -933,10 +935,7 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		return;
 	}
 
-	APawn* PlayerPawn = T66ResolveClosestPlayerPawn(this);
-	CachedPlayerPawn = PlayerPawn;
-	UE_LOG(LogT66Enemy, Verbose, TEXT("[GOLD] PlayerPawnCache: enemy %s resolved pawn %s"),
-		*GetName(), PlayerPawn ? *PlayerPawn->GetName() : TEXT("null"));
+	APawn* PlayerPawn = ResolveCachedPlayerPawn(DeltaSeconds);
 	if (!PlayerPawn) return;
 
 	UCharacterMovementComponent* Move = GetCharacterMovement();

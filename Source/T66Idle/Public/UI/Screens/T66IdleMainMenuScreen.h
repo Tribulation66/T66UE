@@ -104,6 +104,8 @@ private:
 	double EngineProgress = 0.0;
 	double UncollectedProgress = 0.0;
 	float AutosaveAccumulator = 0.f;
+	float IdleRunTickAccumulator = 0.f;
+	static constexpr float IdleRunTickIntervalSeconds = 1.f / 15.f;
 	int32 CurrentStage = 1;
 	int32 BossStagesCleared = 0;
 	int32 LastSubmittedLeaderboardScore = INDEX_NONE;

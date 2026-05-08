@@ -9,12 +9,12 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "Engine/Texture2D.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
-#include "Engine/Texture2D.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
@@ -91,27 +91,29 @@ namespace
 	{
 		if (State == ET66CompanionGridPlateState::Disabled)
 		{
-			return (Family == ET66CompanionGridPlateFamily::TileNeutral || Family == ET66CompanionGridPlateFamily::TileSelected)
-				? TEXT("SourceAssets/UI/Reference/Modals/CompanionGrid/Panels/companiongrid_panels_inner_panel_normal.png")
-				: TEXT("SourceAssets/UI/Reference/Modals/CompanionGrid/Buttons/companiongrid_buttons_pill_disabled.png");
+			if (Family == ET66CompanionGridPlateFamily::TileNeutral || Family == ET66CompanionGridPlateFamily::TileSelected)
+			{
+				return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_disabled.png");
+			}
+			return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), TEXT("disabled"));
 		}
 
 		if (Family == ET66CompanionGridPlateFamily::TileSelected)
 		{
-			return TEXT("SourceAssets/UI/Reference/Modals/CompanionGrid/Panels/companiongrid_panels_inner_panel_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_selected.png");
 		}
 
 		if (Family == ET66CompanionGridPlateFamily::TileNeutral)
 		{
 			if (State == ET66CompanionGridPlateState::Hovered)
 			{
-				return TEXT("SourceAssets/UI/Reference/Modals/CompanionGrid/Panels/companiongrid_panels_inner_panel_normal.png");
+				return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_hover.png");
 			}
 			if (State == ET66CompanionGridPlateState::Pressed)
 			{
-				return TEXT("SourceAssets/UI/Reference/Modals/CompanionGrid/Panels/companiongrid_panels_inner_panel_normal.png");
+				return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_selected.png");
 			}
-			return TEXT("SourceAssets/UI/Reference/Modals/CompanionGrid/Panels/companiongrid_panels_inner_panel_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_normal.png");
 		}
 
 		const TCHAR* Suffix = State == ET66CompanionGridPlateState::Pressed
@@ -161,7 +163,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/CompanionGrid/Panels/companiongrid_panels_inner_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("CompanionGridModalShell"));
 	}
@@ -182,7 +184,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/CompanionGrid/ScreenArt/companiongrid_screen_art_mainmenu_main_menu_scene_plate_v1.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
 			FMargin(0.f),
 			TEXT("CompanionGridSceneBackground"));
 	}
@@ -392,7 +394,7 @@ namespace
 			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
 			Padding,
 			TEXT("CompanionGridModalShellV14"),
-			FT66Style::Tokens::Panel);
+			FLinearColor(0.010f, 0.012f, 0.018f, 0.98f));
 	}
 }
 

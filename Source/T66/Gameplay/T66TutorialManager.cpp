@@ -13,9 +13,9 @@
 #include "GameFramework/PlayerController.h"
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66LootBagPickup.h"
-#include "Gameplay/T66TreeOfLifeInteractable.h"
 #include "Gameplay/T66TutorialGuideCompanion.h"
 #include "Gameplay/T66TutorialPortal.h"
 #include "Kismet/GameplayStatics.h"
@@ -252,8 +252,8 @@ void AT66TutorialManager::StartFountainLessonStep()
 	Step = ET66TutorialStep::FountainLesson;
 	AdvanceGuideToMarker(TutorialFountainMarkerTag);
 	SetTutorialPresentation(
-		NSLOCTEXT("T66.Tutorial", "FountainSubtitle", "Fountain of Life. It heals you to full and gives you another max heart. Learn to value it before you're desperate."),
-		NSLOCTEXT("T66.Tutorial", "FountainObjective", "Use the Fountain of Life"));
+		NSLOCTEXT("T66.Tutorial", "FountainSubtitle", "Fountain. It heals you to full and gives you another max heart. Learn to value it before you're desperate."),
+		NSLOCTEXT("T66.Tutorial", "FountainObjective", "Use the Fountain"));
 
 	MaxHPBeforeFountainUse = RunState ? RunState->GetMaxHP() : 0.f;
 	if (RunState)
@@ -275,7 +275,7 @@ void AT66TutorialManager::StartFountainLessonStep()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	const FVector SpawnLocation = GetGroundPoint(GetTaggedLocation(TutorialFountainAnchorTag, FVector(-300.f, 63150.f, 0.f)));
-	TutorialFountain = World->SpawnActor<AT66TreeOfLifeInteractable>(AT66TreeOfLifeInteractable::StaticClass(), SpawnLocation, GetTaggedRotation(TutorialFountainAnchorTag, FRotator::ZeroRotator), SpawnParams);
+	TutorialFountain = World->SpawnActor<AT66FountainInteractable>(AT66FountainInteractable::StaticClass(), SpawnLocation, GetTaggedRotation(TutorialFountainAnchorTag, FRotator::ZeroRotator), SpawnParams);
 }
 
 void AT66TutorialManager::StartTotemLessonStep()
@@ -407,11 +407,24 @@ AActor* AT66TutorialManager::FindTaggedActor(FName Tag) const
 		return nullptr;
 	}
 
+	if (TWeakObjectPtr<AActor>* CachedActor = CachedTaggedActors.Find(Tag))
+	{
+		if (AActor* Actor = CachedActor->Get())
+		{
+			return Actor;
+		}
+
+		CachedTaggedActors.Remove(Tag);
+	}
+
+	// Tutorial marker lookup: cache first hit by tag so scripted step changes do
+	// not rescan the map for the same authored marker.
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
 		AActor* Actor = *It;
 		if (Actor && Actor != this && Actor->ActorHasTag(Tag))
 		{
+			CachedTaggedActors.Add(Tag, Actor);
 			return Actor;
 		}
 	}

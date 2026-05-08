@@ -86,45 +86,8 @@ IMPORTS = [
     # --- Generated tower theme kit ---
     *COHERENT_THEME_KIT_IMPORTS,
 
-    # --- Props ---
-    ("Props/Barn.glb",     "/Game/World/Props",              "Barn"),
-    ("Props/Boulder.glb",  "/Game/World/Props",              "Boulder"),
-    ("Props/Branch.glb",   "/Game/World/Props",              "Branch"),
-    ("Props/Bush.glb",     "/Game/World/Props",              "Bush"),
-    ("Props/Fence.glb",    "/Game/World/Props",              "Fence"),
-    ("Props/Fence2.glb",   "/Game/World/Props",              "Fence2"),
-    ("Props/Fence3.glb",   "/Game/World/Props",              "Fence3"),
-    ("Props/Haybell.glb",  "/Game/World/Props",              "Haybell"),
-    ("Props/House.glb",    "/Game/World/Props",              "House"),
-    ("Props/Log.glb",      "/Game/World/Props",              "Log"),
-    ("Props/Mud.glb",      "/Game/World/Props",              "Mud"),
-    ("Props/Rocks.glb",    "/Game/World/Props",              "Rocks"),
-    ("Props/Scarecrow.glb","/Game/World/Props",              "Scarecrow"),
-    ("Props/Silo.glb",     "/Game/World/Props",              "Silo"),
-    ("Props/Stump.glb",    "/Game/World/Props",              "Stump"),
-    ("Props/Tractor.glb",  "/Game/World/Props",              "Tractor"),
-    ("Props/Tree.glb",     "/Game/World/Props",              "Tree"),
-    (
-        "Props/Tree2.glb",
-        "/Game/World/Props",
-        "Tree2",
-        {},
-        {
-            "BaseColorTexture": {
-                "mip_gen_settings": unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS,
-                "never_stream": True,
-            },
-        },
-    ),
-    ("Props/Tree3.glb",    "/Game/World/Props",              "Tree3"),
-    ("Props/Troth.glb",    "/Game/World/Props",              "Troth"),
-    ("Props/Windmill.glb", "/Game/World/Props",              "Windmill"),
-    ("Cow.glb",            "/Game/World/Props/StartAreaDecor", "Cow"),
-    ("FullBody.glb",       "/Game/World/Props/StartAreaDecor", "FullBody"),
-    ("RoboCow.glb",        "/Game/World/Props/StartAreaDecor", "RoboCow"),
+    # Generated world props were retired on 2026-05-07; archived row data lives under Archive/DataReorg_2026-05-07_PropsRemoval.
     ("Vending.glb",        "/Game/World/Interactables/Vending", "Vending"),
-    ("Casino.glb",         "/Game/World/Interactables/Casino",  "Casino"),
-    ("TeleportPad.glb",    "/Game/World/Interactables/TeleportPad", "TeleportPad"),
 ]
 
 DEFAULT_STATIC_MESH_BUILD_SETTINGS = {

@@ -6,6 +6,9 @@
 #include "Core/T66RngTuningConfig.h"
 #include "T66TrapTuningConfig.generated.h"
 
+class UNiagaraSystem;
+class UStaticMesh;
+
 USTRUCT(BlueprintType)
 struct T66_API FT66TrapSpawnWindow
 {
@@ -28,6 +31,36 @@ struct T66_API FT66TrapLevelSpawnTuning
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Level", meta = (ClampMin = "0"))
 	FT66IntRange TotalTrapCount = { 3, 4 };
+};
+
+USTRUCT(BlueprintType)
+struct T66_API FT66TrapVisualAssetConfig
+{
+	GENERATED_BODY()
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Assets")
+	FString WallArrowMesh;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Assets")
+	FString ArrowProjectileMesh;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Assets")
+	FString ArrowProjectileTrailNiagara;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Assets")
+	FString ArrowProjectileFallbackTrailNiagara;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Assets")
+	FString FloorFlameNiagara;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Assets")
+	FString FloorSpikeMesh;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Assets")
+	FString FloorSpikeClusterMesh;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Assets")
+	FString FloorSpikeRiseBurstNiagara;
 };
 
 USTRUCT(BlueprintType)
@@ -156,11 +189,17 @@ public:
 	const FT66FloorBurstTrapTuning* FindFloorBurstTuning(FName RegistryKey) const;
 	const FT66AreaControlTrapTuning* FindAreaControlTuning(FName RegistryKey) const;
 
+	static const FT66TrapVisualAssetConfig& GetRuntimeTrapAssets();
+	static UStaticMesh* LoadConfiguredTrapStaticMesh(const FString& ObjectPathString, const TCHAR* ConfigKey);
+	static UNiagaraSystem* LoadConfiguredTrapNiagaraSystem(const FString& ObjectPathString, const TCHAR* ConfigKey);
+
 	FT66TrapLevelSpawnTuning GameplayLevel1;
 	FT66TrapLevelSpawnTuning GameplayLevel2;
 	FT66TrapLevelSpawnTuning GameplayLevel3;
 	FT66TrapLevelSpawnTuning GameplayLevel4;
 	FT66TrapLevelSpawnTuning GameplayLevel5;
+
+	FT66TrapVisualAssetConfig TrapAssets;
 
 	FT66WallProjectileTrapTuning DungeonWallArrow;
 	FT66FloorBurstTrapTuning DungeonFloorFlame;

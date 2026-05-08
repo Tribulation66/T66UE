@@ -1,0 +1,96 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ChadStacySourceImageBatch01\\Raw\\Trellis\\RabbitStacy_Source_01_S1337_D80000_Trellis2.glb",
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ChadStacySourceImageBatch01\\QuadRetroPipeline\\Medium\\RabbitStacy\\Models\\RabbitStacy_QuadRetro.glb",
+  "output_blend": "",
+  "baked_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ChadStacySourceImageBatch01\\QuadRetroPipeline\\Medium\\RabbitStacy\\Textures\\RabbitStacy_QuadRetro_Bake1024.png",
+  "pixelated_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ChadStacySourceImageBatch01\\QuadRetroPipeline\\Medium\\RabbitStacy\\Textures\\RabbitStacy_QuadRetro_Pixelated_512.png",
+  "qa_renders": [],
+  "raw_triangles": 76967,
+  "raw_quads": 0,
+  "source_triangles_after_cleanup": 76469,
+  "retopo_triangles": 23948,
+  "retopo_quads": 11379,
+  "adjustable_values": {
+    "target_quads": 12000,
+    "adaptive_size": 50.0,
+    "adapt_quad_count": false,
+    "use_materials": true,
+    "use_normals": false,
+    "autodetect_hard_edges": true,
+    "symmetry_x": false,
+    "symmetry_y": false,
+    "symmetry_z": false,
+    "normalize_height": 2.0,
+    "merge_distance": 0.0001,
+    "delete_loose": true,
+    "recalculate_normals": true,
+    "shade_flat": true,
+    "qremesh_source_target_tris": 10000,
+    "bake_size": 1024,
+    "bake_margin": 16,
+    "cage_extrusion": 0.035,
+    "max_ray_distance": 0.12,
+    "dilate_pixels": 20,
+    "texture_size": 512,
+    "palette_mode": "none",
+    "palette_size": 0,
+    "palette_steps": 256,
+    "kmeans_iterations": 8,
+    "kmeans_sample_limit": 20000,
+    "dither_type": "none",
+    "dither_strength": 0.0,
+    "unlit_emission_material": true
+  },
+  "normalize_report": {
+    "initial_height": 1.0013902187347412,
+    "target_height": 2.0,
+    "final_size": [
+      1.1528728008270264,
+      0.5941520929336548,
+      1.9999998807907104
+    ],
+    "final_min": [
+      -0.5764364004135132,
+      -0.2970760464668274,
+      0.0
+    ],
+    "final_max": [
+      0.5764364004135132,
+      0.2970760464668274,
+      1.9999998807907104
+    ]
+  },
+  "qremesh_source_report": {
+    "source_triangles": 76469,
+    "target_triangles": 10000,
+    "used_duplicate": true,
+    "output_triangles": 10000,
+    "decimate_ratio": 0.13077194680197204
+  },
+  "qremesh_report": {
+    "engine": "C:\\ProgramData\\Exoside\\QuadRemesher\\Datas_Blender\\QuadRemesherEngine_1.4\\xremesh.exe",
+    "input_fbx": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\inputMesh.fbx",
+    "output_fbx": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\retopo.fbx",
+    "settings": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\RetopoSettings.txt",
+    "progress": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\progress.txt",
+    "copied_input_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ChadStacySourceImageBatch01\\QuadRetroPipeline\\Medium\\RabbitStacy\\Working\\QuadRemesher\\inputMesh.fbx",
+    "copied_output_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ChadStacySourceImageBatch01\\QuadRetroPipeline\\Medium\\RabbitStacy\\Working\\QuadRemesher\\retopo.fbx",
+    "copied_settings": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ChadStacySourceImageBatch01\\QuadRetroPipeline\\Medium\\RabbitStacy\\Working\\QuadRemesher\\RetopoSettings.txt",
+    "copied_progress": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ChadStacySourceImageBatch01\\QuadRetroPipeline\\Medium\\RabbitStacy\\Working\\QuadRemesher\\progress.txt",
+    "elapsed_seconds": 11.031,
+    "last_progress": 2.0,
+    "last_text": ""
+  },
+  "pixel_report": {
+    "source_size": [
+      1024,
+      1024
+    ],
+    "texture_size": [
+      512,
+      512
+    ],
+    "palette": [],
+    "palette_count": 0
+  }
+}

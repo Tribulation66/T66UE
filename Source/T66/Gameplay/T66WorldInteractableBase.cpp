@@ -163,6 +163,16 @@ void AT66WorldInteractableBase::SetRarity(ET66Rarity InRarity)
 	RefreshInteractionPrompt();
 }
 
+void AT66WorldInteractableBase::SetShowcaseReusable(const bool bInShowcaseReusable)
+{
+	bShowcaseReusable = bInShowcaseReusable;
+	if (bShowcaseReusable)
+	{
+		bConsumed = false;
+	}
+	RefreshInteractionPrompt();
+}
+
 void AT66WorldInteractableBase::ApplyRarityVisuals()
 {
 	if (!VisualMesh) return;
@@ -171,7 +181,7 @@ void AT66WorldInteractableBase::ApplyRarityVisuals()
 
 bool AT66WorldInteractableBase::ShouldShowInteractionPrompt(const AT66HeroBase* LocalHero) const
 {
-	return LocalHero && !bConsumed && LocalHeroOverlapCount > 0;
+	return LocalHero && (!bConsumed || bShowcaseReusable) && LocalHeroOverlapCount > 0;
 }
 
 FText AT66WorldInteractableBase::BuildInteractionPromptText() const

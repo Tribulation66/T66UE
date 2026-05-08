@@ -278,7 +278,7 @@ NormalTowerStartDestination = MainMapSpawnSurfaceLocation
 - Spawn a new explicit-destination portal actor in the generated room.
 - On interaction, teleport the player to `NormalTowerStartDestination`.
 
-Do not reuse `AT66TeleportPadInteractable` directly for this first test because it chooses a random destination pad. Either add explicit-destination support behind a new mode or create a small `AT66GeneratedRoomPortal` actor.
+Use a small `AT66GeneratedRoomPortal` actor with an explicit destination for generated-room transitions.
 
 Combat and pacing requirements:
 

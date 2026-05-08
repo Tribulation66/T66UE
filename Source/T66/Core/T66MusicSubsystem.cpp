@@ -7,6 +7,8 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Components/AudioComponent.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "UObject/SoftObjectPath.h"
@@ -16,29 +18,38 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Music, Log, All);
 
 // NOTE: This file must remain in the runtime module so the UHT-generated glue links correctly.
 
-static USoundBase* TryLoadFirstSoundAsset(const TArray<FSoftObjectPath>& Candidates, TSoftObjectPtr<USoundBase>& InOutSoftPtr)
+static bool IsT66MusicSoundAssetData(const FAssetData& AssetData)
 {
-	for (const FSoftObjectPath& P : Candidates)
+	const FName AssetClassName = AssetData.AssetClassPath.GetAssetName();
+	return AssetClassName == TEXT("SoundWave")
+		|| AssetClassName == TEXT("SoundCue")
+		|| AssetClassName == TEXT("MetaSoundSource");
+}
+
+static USoundBase* ResolveFirstResidentSoundAsset(const TArray<FSoftObjectPath>& Candidates, TSoftObjectPtr<USoundBase>& InOutSoftPtr)
+{
+	for (const FSoftObjectPath& Path : Candidates)
 	{
-		if (!P.IsValid()) continue;
-		if (UObject* Obj = P.TryLoad())
+		if (!Path.IsValid())
 		{
-			if (USoundBase* SB = Cast<USoundBase>(Obj))
-			{
-				InOutSoftPtr = TSoftObjectPtr<USoundBase>(P);
-				return SB;
-			}
+			continue;
+		}
+
+		if (USoundBase* Sound = Cast<USoundBase>(Path.ResolveObject()))
+		{
+			InOutSoftPtr = TSoftObjectPtr<USoundBase>(Path);
+			return Sound;
 		}
 	}
 	return nullptr;
 }
 
-static USoundBase* TryLoadFirstSoundInFolder(const FString& FolderPath)
+static TArray<FSoftObjectPath> CollectSoundAssetPathsInFolder(const FString& FolderPath)
 {
-	// FolderPath should be like "/Game/Audio/OSTS/Heroes/Hero_Example"
+	TArray<FSoftObjectPath> OutPaths;
 	if (FolderPath.IsEmpty())
 	{
-		return nullptr;
+		return OutPaths;
 	}
 
 	const FName PathName(*FolderPath);
@@ -48,7 +59,7 @@ static USoundBase* TryLoadFirstSoundInFolder(const FString& FolderPath)
 	ARM.Get().GetAssetsByPath(PathName, Assets, /*bRecursive=*/true);
 	if (Assets.Num() <= 0)
 	{
-		return nullptr;
+		return OutPaths;
 	}
 
 	// Deterministic selection: alphabetical by asset name.
@@ -59,13 +70,12 @@ static USoundBase* TryLoadFirstSoundInFolder(const FString& FolderPath)
 
 	for (const FAssetData& AD : Assets)
 	{
-		UObject* Obj = AD.GetAsset();
-		if (USoundBase* SB = Cast<USoundBase>(Obj))
+		if (IsT66MusicSoundAssetData(AD))
 		{
-			return SB;
+			OutPaths.AddUnique(AD.GetSoftObjectPath());
 		}
 	}
-	return nullptr;
+	return OutPaths;
 }
 
 void UT66MusicSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -93,6 +103,7 @@ void UT66MusicSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		FSoftObjectPath(TEXT("/Game/Audio/Music/Survival.Survival")),
 		FSoftObjectPath(TEXT("/Game/Audio/Survival.Survival")),
 	};
+	QueueBaseMusicPreloads();
 
 	// Listen for world creation so we can start Theme even on FrontendLevel.
 	PostWorldInitHandle = FWorldDelegates::OnPostWorldInitialization.AddUObject(this, &UT66MusicSubsystem::HandlePostWorldInit);
@@ -156,6 +167,33 @@ void UT66MusicSubsystem::Deinitialize()
 			PS->OnSettingsChanged.RemoveDynamic(this, &UT66MusicSubsystem::HandleSettingsChanged);
 		}
 	}
+
+	if (MainThemeLoadHandle.IsValid())
+	{
+		MainThemeLoadHandle->CancelHandle();
+		MainThemeLoadHandle.Reset();
+	}
+	if (ThemeLoadHandle.IsValid())
+	{
+		ThemeLoadHandle->CancelHandle();
+		ThemeLoadHandle.Reset();
+	}
+	if (SurvivalLoadHandle.IsValid())
+	{
+		SurvivalLoadHandle->CancelHandle();
+		SurvivalLoadHandle.Reset();
+	}
+	for (TPair<FString, TSharedPtr<FStreamableHandle>>& Pair : PendingFolderSoundLoads)
+	{
+		if (Pair.Value.IsValid())
+		{
+			Pair.Value->CancelHandle();
+		}
+	}
+	PendingFolderSoundLoads.Reset();
+	FolderSoundCandidatePaths.Reset();
+	CachedFolderSounds.Reset();
+	WarnedMissingFolderSounds.Reset();
 
 	Super::Deinitialize();
 }
@@ -330,7 +368,7 @@ void UT66MusicSubsystem::EnsureMainThemePlaying(UWorld* World)
 	USoundBase* Sound = ResolveAndLoadMainThemeSound();
 	if (!Sound)
 	{
-		if (!bMainThemeStarted)
+		if (!bMainThemeStarted && !MainThemeLoadHandle.IsValid())
 		{
 			UE_LOG(LogT66Music, Warning, TEXT("MainTheme not found. Import the MainTheme asset so one of these exists: /Game/Audio/OSTS/MainTheme, /Game/Audio/Music/MainTheme, /Game/Audio/MainTheme."));
 			bMainThemeStarted = true; // avoid spam
@@ -353,6 +391,11 @@ void UT66MusicSubsystem::EnsureMainThemePlaying(UWorld* World)
 		}
 	}
 
+	if (MainThemeComp && MainThemeComp->Sound != Sound)
+	{
+		MainThemeComp->SetSound(Sound);
+	}
+
 	if (MainThemeComp && !MainThemeComp->IsPlaying() && !bSurvivalActive)
 	{
 		MainThemeComp->Play(0.0f);
@@ -368,7 +411,7 @@ void UT66MusicSubsystem::EnsureThemePlaying(UWorld* World)
 	USoundBase* Sound = ResolveAndLoadGameplayThemeSound(World);
 	if (!Sound)
 	{
-		if (!bThemeStarted)
+		if (!bThemeStarted && !ThemeLoadHandle.IsValid())
 		{
 			UE_LOG(LogT66Music, Warning, TEXT("Theme music not found. Import the Theme asset into UE (SoundWave/SoundCue) so one of these exists: /Game/Audio/OSTS/Theme, /Game/Audio/Music/Theme, /Game/Audio/Theme."));
 			bThemeStarted = true; // avoid spam
@@ -391,6 +434,11 @@ void UT66MusicSubsystem::EnsureThemePlaying(UWorld* World)
 		}
 	}
 
+	if (ThemeComp && ThemeComp->Sound != Sound)
+	{
+		ThemeComp->SetSound(Sound);
+	}
+
 	if (ThemeComp && !ThemeComp->IsPlaying() && !bSurvivalActive)
 	{
 		ThemeComp->Play(0.0f);
@@ -406,7 +454,10 @@ void UT66MusicSubsystem::EnsureSurvivalPlaying(UWorld* World)
 	USoundBase* Sound = ResolveAndLoadSurvivalSound();
 	if (!Sound)
 	{
-		UE_LOG(LogT66Music, Warning, TEXT("Survival music not found. Import the Survival asset into UE (SoundWave/SoundCue) so one of these exists: /Game/Audio/OSTS/Survival, /Game/Audio/Music/Survival, /Game/Audio/Survival."));
+		if (!SurvivalLoadHandle.IsValid())
+		{
+			UE_LOG(LogT66Music, Warning, TEXT("Survival music not found. Import the Survival asset into UE (SoundWave/SoundCue) so one of these exists: /Game/Audio/OSTS/Survival, /Game/Audio/Music/Survival, /Game/Audio/Survival."));
+		}
 		return;
 	}
 
@@ -538,11 +589,8 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadMainThemeSound()
 	{
 		return Existing;
 	}
-	if (USoundBase* Loaded = MainThemeSound.LoadSynchronous())
-	{
-		return Loaded;
-	}
-	return TryLoadFirstSoundAsset(MainThemeCandidates, MainThemeSound);
+	QueueMainThemePreload();
+	return ResolveFirstResidentSoundAsset(MainThemeCandidates, MainThemeSound);
 }
 
 USoundBase* UT66MusicSubsystem::ResolveAndLoadThemeSound()
@@ -551,11 +599,8 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadThemeSound()
 	{
 		return Existing;
 	}
-	if (USoundBase* Loaded = ThemeSound.LoadSynchronous())
-	{
-		return Loaded;
-	}
-	return TryLoadFirstSoundAsset(ThemeCandidates, ThemeSound);
+	QueueThemePreload();
+	return ResolveFirstResidentSoundAsset(ThemeCandidates, ThemeSound);
 }
 
 USoundBase* UT66MusicSubsystem::ResolveAndLoadSurvivalSound()
@@ -564,11 +609,8 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadSurvivalSound()
 	{
 		return Existing;
 	}
-	if (USoundBase* Loaded = SurvivalSound.LoadSynchronous())
-	{
-		return Loaded;
-	}
-	return TryLoadFirstSoundAsset(SurvivalCandidates, SurvivalSound);
+	QueueSurvivalPreload();
+	return ResolveFirstResidentSoundAsset(SurvivalCandidates, SurvivalSound);
 }
 
 USoundBase* UT66MusicSubsystem::ResolveAndLoadGameplayThemeSound(UWorld* World)
@@ -594,7 +636,7 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadGameplayThemeSound(UWorld* World)
 	if (!HeroKey.IsNone())
 	{
 		const FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Heroes/%s"), *HeroKey.ToString());
-		if (USoundBase* HeroTheme = TryLoadFirstSoundInFolder(Folder))
+		if (USoundBase* HeroTheme = ResolveFirstResidentSoundInFolder(Folder))
 		{
 			return HeroTheme;
 		}
@@ -614,13 +656,11 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadBossThemeSound(UWorld* World)
 	if (BossID.IsNone()) return nullptr;
 
 	const FString BossIdStr = BossID.ToString();
-	// Only special bosses (Vendor/Gambler/Ouroboros) get automatic folder-based music here.
+	// Only special bosses (Gambler/Ouroboros) get automatic folder-based music here.
 	// All other boss music is assigned individually per boss.
 	const bool bSpecial =
-		BossID == FName(TEXT("VendorBoss")) ||
 		BossID == FName(TEXT("GamblerBoss")) ||
 		BossID == FName(TEXT("OuroborosBoss")) ||
-		BossIdStr.Contains(TEXT("Vendor"), ESearchCase::IgnoreCase) ||
 		BossIdStr.Contains(TEXT("Gambler"), ESearchCase::IgnoreCase) ||
 		BossIdStr.Contains(TEXT("Ouroboros"), ESearchCase::IgnoreCase);
 
@@ -631,12 +671,152 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadBossThemeSound(UWorld* World)
 
 	FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/Special/%s"), *BossID.ToString());
 
-	if (USoundBase* BossTheme = TryLoadFirstSoundInFolder(Folder))
+	if (USoundBase* BossTheme = ResolveFirstResidentSoundInFolder(Folder))
 	{
 		return BossTheme;
 	}
 
 	// If nothing in the folder yet, fall back to base theme (no override).
 	return nullptr;
+}
+
+void UT66MusicSubsystem::QueueBaseMusicPreloads()
+{
+	QueueMainThemePreload();
+	QueueThemePreload();
+	QueueSurvivalPreload();
+}
+
+void UT66MusicSubsystem::QueueMainThemePreload()
+{
+	if (MainThemeLoadHandle.IsValid() || MainThemeSound.Get())
+	{
+		return;
+	}
+
+	MainThemeLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		MainThemeCandidates,
+		FStreamableDelegate::CreateUObject(this, &UT66MusicSubsystem::HandleMainThemePreloaded));
+}
+
+void UT66MusicSubsystem::QueueThemePreload()
+{
+	if (ThemeLoadHandle.IsValid() || ThemeSound.Get())
+	{
+		return;
+	}
+
+	ThemeLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		ThemeCandidates,
+		FStreamableDelegate::CreateUObject(this, &UT66MusicSubsystem::HandleThemePreloaded));
+}
+
+void UT66MusicSubsystem::QueueSurvivalPreload()
+{
+	if (SurvivalLoadHandle.IsValid() || SurvivalSound.Get())
+	{
+		return;
+	}
+
+	SurvivalLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		SurvivalCandidates,
+		FStreamableDelegate::CreateUObject(this, &UT66MusicSubsystem::HandleSurvivalPreloaded));
+}
+
+void UT66MusicSubsystem::HandleMainThemePreloaded()
+{
+	MainThemeLoadHandle.Reset();
+	if (!ResolveFirstResidentSoundAsset(MainThemeCandidates, MainThemeSound))
+	{
+		UE_LOG(LogT66Music, Warning, TEXT("MainTheme music async preload completed but no candidate resolved as a USoundBase."));
+	}
+	UpdateMusicState();
+}
+
+void UT66MusicSubsystem::HandleThemePreloaded()
+{
+	ThemeLoadHandle.Reset();
+	if (!ResolveFirstResidentSoundAsset(ThemeCandidates, ThemeSound))
+	{
+		UE_LOG(LogT66Music, Warning, TEXT("Theme music async preload completed but no candidate resolved as a USoundBase."));
+	}
+	UpdateMusicState();
+}
+
+void UT66MusicSubsystem::HandleSurvivalPreloaded()
+{
+	SurvivalLoadHandle.Reset();
+	if (!ResolveFirstResidentSoundAsset(SurvivalCandidates, SurvivalSound))
+	{
+		UE_LOG(LogT66Music, Warning, TEXT("Survival music async preload completed but no candidate resolved as a USoundBase."));
+	}
+	UpdateMusicState();
+}
+
+USoundBase* UT66MusicSubsystem::ResolveFirstResidentSoundInFolder(const FString& FolderPath)
+{
+	if (FolderPath.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	if (TObjectPtr<USoundBase>* CachedSound = CachedFolderSounds.Find(FolderPath))
+	{
+		return CachedSound->Get();
+	}
+
+	TArray<FSoftObjectPath> CandidatePaths = CollectSoundAssetPathsInFolder(FolderPath);
+	for (const FSoftObjectPath& CandidatePath : CandidatePaths)
+	{
+		if (USoundBase* Sound = Cast<USoundBase>(CandidatePath.ResolveObject()))
+		{
+			CachedFolderSounds.Add(FolderPath, Sound);
+			return Sound;
+		}
+	}
+
+	QueueFolderSoundPreload(FolderPath, CandidatePaths);
+	return nullptr;
+}
+
+void UT66MusicSubsystem::QueueFolderSoundPreload(const FString& FolderPath, const TArray<FSoftObjectPath>& CandidatePaths)
+{
+	if (FolderPath.IsEmpty() || CandidatePaths.Num() <= 0 || PendingFolderSoundLoads.Contains(FolderPath))
+	{
+		return;
+	}
+
+	FolderSoundCandidatePaths.Add(FolderPath, CandidatePaths);
+	TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		CandidatePaths,
+		FStreamableDelegate::CreateUObject(this, &UT66MusicSubsystem::HandleFolderSoundPreloaded, FolderPath));
+	if (Handle.IsValid())
+	{
+		PendingFolderSoundLoads.Add(FolderPath, Handle);
+	}
+}
+
+void UT66MusicSubsystem::HandleFolderSoundPreloaded(FString FolderPath)
+{
+	PendingFolderSoundLoads.Remove(FolderPath);
+
+	TArray<FSoftObjectPath> CandidatePaths;
+	FolderSoundCandidatePaths.RemoveAndCopyValue(FolderPath, CandidatePaths);
+	for (const FSoftObjectPath& CandidatePath : CandidatePaths)
+	{
+		if (USoundBase* Sound = Cast<USoundBase>(CandidatePath.ResolveObject()))
+		{
+			CachedFolderSounds.Add(FolderPath, Sound);
+			UpdateMusicState();
+			return;
+		}
+	}
+
+	if (!WarnedMissingFolderSounds.Contains(FolderPath))
+	{
+		WarnedMissingFolderSounds.Add(FolderPath);
+		UE_LOG(LogT66Music, Warning, TEXT("Music folder async preload completed but no USoundBase resolved under %s."), *FolderPath);
+	}
+	UpdateMusicState();
 }
 

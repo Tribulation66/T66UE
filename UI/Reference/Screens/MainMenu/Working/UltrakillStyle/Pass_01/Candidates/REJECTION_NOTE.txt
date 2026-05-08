@@ -1,0 +1,2 @@
+Rejected pass 01 after user review.
+Reasons: layout/content drift; settings and language controls missing; top-bar order wrong; extra currency was introduced; power/quit button disappeared; style direction needs a different Ultrakill-inspired treatment.

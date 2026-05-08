@@ -108,6 +108,10 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	FLinearColor PlaceholderColor = FLinearColor::White;
 
+	/** Hero-specific physical mesh used by auto-attack projectile presentation. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UStaticMesh> AutoAttackProjectileMesh;
+
 	/** The actual character Blueprint class to spawn (can be null for placeholder) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
 	TSoftClassPtr<APawn> HeroClass;
@@ -1126,7 +1130,7 @@ struct T66_API FT66InventorySlot
 };
 
 /**
- * Boss data row for the Bosses DataTable (v0: single placeholder boss)
+ * Boss data row for the Bosses DataTable.
  */
 UENUM(BlueprintType)
 enum class ET66BossPartProfile : uint8
@@ -1146,6 +1150,34 @@ struct T66_API FBossData : public FTableRowBase
 	/** Unique identifier for this boss */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FName BossID;
+
+	/** Localized/designer-facing name for this boss. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FText DisplayName;
+
+	/** Difficulty bucket this boss belongs to, for authored roster validation. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName DifficultyID;
+
+	/** Visual theme bucket this boss belongs to. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName ThemeID;
+
+	/** Stage index within the selected difficulty, 1..4. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	int32 LocalStageNumber = 1;
+
+	/** Encounter row that owns this boss. Single-boss encounters still have a row. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName BossEncounterID;
+
+	/** Boss role inside the encounter, such as Primary, Horseman, Finale, or Owed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName BossRoleID;
+
+	/** Short art direction used by the image/model generation pass. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FText VisualConcept;
 
 	/** Optional override class to spawn (defaults to AT66BossBase if unset) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
@@ -1192,8 +1224,170 @@ struct T66_API FBossData : public FTableRowBase
 	{}
 };
 
+/** Regular enemy roster row. Meshes are intentionally separate so Trellis output can replace only the visual mapping later. */
+USTRUCT(BlueprintType)
+struct T66_API FT66EnemyData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName EnemyID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName DifficultyID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName ThemeID;
+
+	/** Melee, Ranged, Rush, or Flying. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	FName FamilyID;
+
+	/** MeleeA, MeleeB, Ranged, Rush, or Flying within a difficulty roster. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	FName RoleID;
+
+	/** Optional status effect applied by this enemy's primary hit. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	FName StatusEffectOnHit;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FText VisualConcept;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FText ImagePrompt;
+
+	/** PendingImage, PendingMesh, MeshReady, or Retired. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pipeline")
+	FName ModelStatus;
+
+	FT66EnemyData()
+		: EnemyID(NAME_None)
+		, FamilyID(TEXT("Melee"))
+		, RoleID(TEXT("MeleeA"))
+		, StatusEffectOnHit(NAME_None)
+		, ModelStatus(TEXT("PendingImage"))
+	{}
+};
+
+/** Negative status effect data applied to heroes by enemies. */
+USTRUCT(BlueprintType)
+struct T66_API FT66StatusEffectData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName StatusEffectID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	FName IconID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	FText EffectSummary;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	FText HeroImpact;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	float DefaultDurationSeconds = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	float DefaultMagnitude = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	bool bIsMovementImpairing = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	bool bIsDamageOverTime = false;
+
+	FT66StatusEffectData()
+		: StatusEffectID(NAME_None)
+	{}
+};
+
+/** Boss encounter row. One stage maps to one encounter, and an encounter can contain multiple bosses. */
+USTRUCT(BlueprintType)
+struct T66_API FT66BossEncounterData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName BossEncounterID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName DifficultyID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName ThemeID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	int32 StageNumber = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	int32 LocalStageNumber = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	bool bBossOnlyFinale = false;
+
+	/** SingleBoss, MultiBoss, FinaleChad, or ApocalypseFinale. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Encounter")
+	FName EncounterType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Encounter")
+	FName PrimaryBossID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FText VisualConcept;
+
+	FT66BossEncounterData()
+		: BossEncounterID(NAME_None)
+		, EncounterType(TEXT("SingleBoss"))
+		, PrimaryBossID(NAME_None)
+	{}
+};
+
+/** Boss encounter member row. Used when one stage needs multiple active bosses, such as the Four Horsemen. */
+USTRUCT(BlueprintType)
+struct T66_API FT66BossEncounterMemberData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Encounter")
+	FName BossEncounterID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Encounter")
+	FName BossID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Encounter")
+	int32 MemberIndex = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Encounter")
+	FName RoleID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Encounter")
+	float SpawnWeight = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Encounter")
+	FVector SpawnOffset = FVector::ZeroVector;
+
+	FT66BossEncounterMemberData()
+		: BossEncounterID(NAME_None)
+		, BossID(NAME_None)
+		, RoleID(TEXT("Primary"))
+	{}
+};
+
 /**
- * Stage data row for the Stages DataTable (v0: stages are the same, but data-driven)
+ * Stage data row for the Stages DataTable.
  *
  * Row name convention recommended: Stage_01, Stage_02, ...
  */
@@ -1202,13 +1396,33 @@ struct T66_API FStageData : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	/** Stage number (1..23) */
+	/** Stage number (1..20) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
 	int32 StageNumber = 1;
+
+	/** Difficulty bucket for this stage. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	FName DifficultyID;
+
+	/** Theme bucket for this stage. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	FName ThemeID;
+
+	/** Stage index within the difficulty, 1..4. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	int32 LocalStageNumber = 1;
 
 	/** Boss to spawn for this stage (Bosses DT row name) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
 	FName BossID;
+
+	/** Boss encounter row. Supports multi-boss encounters without overloading BossID. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	FName BossEncounterID;
+
+	/** True when this stage should use the boss-only finale tower layout. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	bool bBossOnlyFinale = false;
 
 	/** Boss spawn location for this stage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
@@ -1226,7 +1440,7 @@ struct T66_API FStageData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Effects")
 	float StageEffectStrength = 1.f;
 
-	/** Mob roster for this stage (exactly 3). */
+	/** Mob roster for this stage: 2 melee, 1 ranged, 1 rush, 1 flying. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
 	FName EnemyA;
 
@@ -1235,6 +1449,12 @@ struct T66_API FStageData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
 	FName EnemyC;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyD;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyE;
 
 	FStageData()
 		: StageNumber(1)
@@ -1397,7 +1617,7 @@ struct T66_API FIdolData : public FTableRowBase
 };
 
 /**
- * House NPC data row (Vendor/Gambler/Saint/Ouroboros).
+ * House NPC data row (Gambler/Saint/Ouroboros).
  */
 USTRUCT(BlueprintType)
 struct T66_API FHouseNPCData : public FTableRowBase
@@ -1458,9 +1678,10 @@ struct T66_API FLoanSharkData : public FTableRowBase
 
 /**
  * Character visual mapping row.
- * Maps a stable gameplay ID (HeroID / CompanionID / NPCID / BossID / EnemyVisualID) to imported skeletal assets.
+ * Maps a stable gameplay ID (HeroID / CompanionID / NPCID / BossID / EnemyVisualID) to imported character assets.
  *
  * - SkeletalMesh: the mesh to assign to a USkeletalMeshComponent
+ * - StaticMesh: optional unrigged mesh to assign to a UStaticMeshComponent when no rig is available
  * - LoopingAnimation: walk animation (used when moving slowly)
  * - AlertAnimation: alert/stand animation (e.g. hero/companion selection preview)
  * - RunAnimation: run animation (used when moving fast); if unset, walk is used for all movement
@@ -1474,6 +1695,10 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 	/** Primary mesh to display. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<USkeletalMesh> SkeletalMesh;
+
+	/** Optional unrigged/static mesh to display when no skeletal mesh is available yet. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UStaticMesh> StaticMesh;
 
 	/** Walk animation (looping). Used when moving below run threshold. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
@@ -1701,7 +1926,7 @@ struct T66_API FLeaderboardEntry : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	ET66Difficulty Difficulty = ET66Difficulty::Easy;
 
-	/** Stage reached (1-23) */
+	/** Stage reached (1-20) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	int32 StageReached = 0;
 

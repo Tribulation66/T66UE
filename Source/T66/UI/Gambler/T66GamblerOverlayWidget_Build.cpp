@@ -29,7 +29,6 @@
 #include "Styling/SlateBrush.h"
 #include "UI/Style/T66OverlayChromeStyle.h"
 #include "UI/Style/T66Style.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
@@ -348,7 +347,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		}
 	}
 
-	// Inventory slot icon brushes — same as Vendor (160×160)
+	// Inventory slot icon brushes — same as Shop (160×160)
 	const float InvSlotSz = InventorySlotSize;
 	for (int32 i = 0; i < InventorySlotIconBrushes.Num(); ++i)
 	{
@@ -388,17 +387,17 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 
 	// --- Casino layout: left content switcher + right panel + bottom inventory ---
 	const FText CasinoTitle = Loc ? Loc->GetText_Casino() : NSLOCTEXT("T66.Gambler", "Casino", "CASINO");
-	const FText BuybackTitle = NSLOCTEXT("T66.Vendor", "Buyback", "BUYBACK");
-	const FText RerollText = Loc ? Loc->GetText_Reroll() : NSLOCTEXT("T66.Vendor", "Reroll", "REROLL");
-	const FText BankTitle = Loc ? Loc->GetText_Bank() : NSLOCTEXT("T66.Vendor", "BankTitle", "BANK");
-	const FText InventoryTitle = Loc ? Loc->GetText_YourItems() : NSLOCTEXT("T66.Vendor", "InventoryTitle", "INVENTORY");
+	const FText BuybackTitle = NSLOCTEXT("T66.Shop", "Buyback", "BUYBACK");
+	const FText RerollText = Loc ? Loc->GetText_Reroll() : NSLOCTEXT("T66.Shop", "Reroll", "REROLL");
+	const FText BankTitle = Loc ? Loc->GetText_Bank() : NSLOCTEXT("T66.Shop", "BankTitle", "BANK");
+	const FText InventoryTitle = Loc ? Loc->GetText_YourItems() : NSLOCTEXT("T66.Shop", "InventoryTitle", "INVENTORY");
 	const FText GamesTitle = NSLOCTEXT("T66.Gambler", "Games", "GAMES");
 
-	// Right panel: gambler portrait + bank. Embedded casino layout uses the smaller vendor footprint.
+	// Right panel: gambler portrait + bank. Embedded casino layout uses the smaller shop footprint.
 	TSharedRef<SWidget> RightPanel =
 		T66OverlayChromeStyle::MakePanel(
 			SNew(SVerticalBox)
-			// Gambler portrait (top) — larger than Vendor for prominence
+			// Gambler portrait (top) — larger than Shop for prominence
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
 			[
 				SNew(SBox)
@@ -414,7 +413,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SNew(SSpacer)
 			]
-			// Bank (bottom, separate panel) — same wrapper as Vendor
+			// Bank (bottom, separate panel) - same wrapper as Shop
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
 			[
 				T66OverlayChromeStyle::MakePanel(
@@ -460,7 +459,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
 							T66OverlayChromeStyle::MakeButton(T66OverlayChromeStyle::MakeButtonParams(
-								Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Vendor", "Borrow_Button", "BORROW"),
+								Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Shop", "Borrow_Button", "BORROW"),
 								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBorrowClicked),
 								ET66OverlayChromeButtonFamily::Neutral)
 								.SetMinWidth(0.f)
@@ -487,7 +486,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
 							T66OverlayChromeStyle::MakeButton(T66OverlayChromeStyle::MakeButtonParams(
-								Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Vendor", "Payback_Button", "PAYBACK"),
+								Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Shop", "Payback_Button", "PAYBACK"),
 								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackClicked),
 								ET66OverlayChromeButtonFamily::Neutral)
 								.SetMinWidth(0.f)
@@ -503,7 +502,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			ET66OverlayChromeBrush::ContentPanelTall,
 			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6));
 
-	// Game card: icon + game name above Play button; compact embedded layout mirrors vendor card sizing.
+	// Game card: icon + game name above Play button; compact embedded layout mirrors shop card sizing.
 	auto MakeGameCard = [&](const FText& TitleText, const FOnClicked& OnClicked, const FSlateBrush* IconBrush) -> TSharedRef<SWidget>
 	{
 		const FText PlayText = NSLOCTEXT("T66.Gambler", "Play", "Play");
@@ -1254,7 +1253,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			ET66OverlayChromeBrush::ContentPanelWide,
 			FMargin(FT66Style::Tokens::Space6));
 
-	// Buyback row (shared slot count with vendor buyback)
+	// Buyback row (shared slot count with shop buyback)
 	static constexpr int32 BuybackSlotCount = UT66RunStateSubsystem::BuybackDisplaySlotCount;
 	BuybackNameTexts.SetNum(BuybackSlotCount);
 	BuybackDescTexts.SetNum(BuybackSlotCount);
@@ -1507,7 +1506,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			ET66OverlayChromeBrush::ContentPanelWide,
 			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6));
 
-	// Inventory slot buttons: same structure as vendor (single panel, overlay image + dash, no inner box)
+	// Inventory slot buttons: same structure as shop (single panel, overlay image + dash, no inner box)
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxInventorySlots; ++i)
 	{
 		InventorySlotButtons[i] = FT66Style::MakeButton(
@@ -1561,7 +1560,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			.SetPadding(ActionButtonPadding)
 			.SetFontSize(CardButtonFontSize));
 
-	// Inventory grid: same as Vendor — 20 slots in horizontal scroll, each 160×160
+	// Inventory grid: same as Shop — 20 slots in horizontal scroll, each 160×160
 	TSharedRef<SUniformGridPanel> GamblerInventoryGrid = SNew(SUniformGridPanel)
 		.SlotPadding(FMargin(FT66Style::Tokens::Space2, 0.f));
 	for (int32 Inv = 0; Inv < UT66RunStateSubsystem::MaxInventorySlots; ++Inv)

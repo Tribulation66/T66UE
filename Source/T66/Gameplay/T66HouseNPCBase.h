@@ -14,6 +14,7 @@ class AT66HeroBase;
 class APlayerController;
 class UPrimitiveComponent;
 struct FHouseNPCData;
+struct FHitResult;
 
 /**
  * Base class for corner-house NPC placeholders.
@@ -51,7 +52,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	FLinearColor NPCColor = FLinearColor::White;
 
-	/** Row ID in DT_HouseNPCs (e.g. Vendor, Gambler, Saint, Ouroboros). */
+	/** Row ID in DT_HouseNPCs (e.g. Gambler, Saint, Ouroboros). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	FName NPCID;
 
@@ -79,9 +80,14 @@ public:
 protected:
 	/** Optional per-NPC customization beyond name/color/radius. */
 	virtual void ApplyNPCData(const FHouseNPCData& Data);
+	virtual bool ShouldApplyCharacterVisual() const { return true; }
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
+
+	/** True when a derived NPC owns a textured static mesh and should not receive the fallback flat-color tint. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Visuals")
+	bool bPreserveVisualMeshMaterials = false;
 
 	/** If true, NPC smoothly rotates in place to face the player (yaw only). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Facing")
@@ -102,7 +108,21 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 private:
+	void RefreshInteractionPrompt();
+	void HideInteractionPrompt();
+	bool IsLocalHeroActor(const AActor* OtherActor) const;
+	const AT66HeroBase* GetLocalHero() const;
+
+	UFUNCTION()
+	void OnInteractionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnInteractionEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 	int32 HeroOverlapCount = 0;
+	int32 LocalHeroInteractionOverlapCount = 0;
 
 	UPROPERTY(Transient)
 	bool bUsingCharacterVisual = false;

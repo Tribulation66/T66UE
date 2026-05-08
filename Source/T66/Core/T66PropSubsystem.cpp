@@ -11,6 +11,7 @@
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66GameplayLayout.h"
+#include "Engine/AssetManager.h"
 #include "Gameplay/T66MainMapTerrain.h"
 #include "Core/T66GameInstance.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
@@ -37,9 +38,6 @@ namespace
 	static const FName T66SiloRowName(TEXT("Silo"));
 	static const FName T66StumpRowName(TEXT("Stump"));
 	static const FName T66TractorRowName(TEXT("Tractor"));
-	static const FName T66TreeRowName(TEXT("Tree"));
-	static const FName T66Tree2RowName(TEXT("Tree2"));
-	static const FName T66Tree3RowName(TEXT("Tree3"));
 	static const FName T66TrothRowName(TEXT("Troth"));
 	static const FName T66WindmillRowName(TEXT("Windmill"));
 	static constexpr float T66MainMapBoulderScaleMultiplier = 5.0f;
@@ -55,6 +53,7 @@ namespace
 	static constexpr float T66MainMapClusterToBossKeepClearCells = 8.0f;
 	static constexpr float T66MainMapClusterToAnchorKeepClearCells = 8.0f;
 	static constexpr int32 T66MainMapGroupedSpawnAttempts = 18;
+	static const TCHAR* T66PropsDataTablePath = TEXT("/Game/Data/DT_Props.DT_Props");
 
 	enum class ET66MainMapPropClusterType : uint8
 	{
@@ -265,14 +264,110 @@ namespace
 	}
 }
 
-UDataTable* UT66PropSubsystem::GetPropsDataTable() const
+void UT66PropSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+	QueuePropsDataPreload();
+}
+
+UDataTable* UT66PropSubsystem::GetPropsDataTable()
 {
 	if (CachedPropsDataTable) return CachedPropsDataTable;
 
-	CachedPropsDataTable = Cast<UDataTable>(StaticLoadObject(
-		UDataTable::StaticClass(), nullptr,
-		TEXT("/Game/Data/DT_Props.DT_Props")));
+	CachedPropsDataTable = FindObject<UDataTable>(nullptr, T66PropsDataTablePath);
+	if (!CachedPropsDataTable)
+	{
+		QueuePropsDataPreload();
+		static bool bLoggedMissingPropsTable = false;
+		if (!bLoggedMissingPropsTable)
+		{
+			bLoggedMissingPropsTable = true;
+			UE_LOG(LogT66Props, Warning, TEXT("[PROPS] DT_Props is not loaded yet; skipping prop spawn instead of sync-loading %s."), T66PropsDataTablePath);
+		}
+	}
 	return CachedPropsDataTable;
+}
+
+void UT66PropSubsystem::QueuePropsDataPreload()
+{
+	if (CachedPropsDataTable || PropsDataTableLoadHandle.IsValid())
+	{
+		return;
+	}
+
+	const FSoftObjectPath DataTablePath(T66PropsDataTablePath);
+	if (UObject* Existing = DataTablePath.ResolveObject())
+	{
+		CachedPropsDataTable = Cast<UDataTable>(Existing);
+		QueuePropMeshPreload();
+		return;
+	}
+
+	PropsDataTableLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		DataTablePath,
+		FStreamableDelegate::CreateUObject(this, &UT66PropSubsystem::HandlePropsDataTableLoaded));
+}
+
+void UT66PropSubsystem::HandlePropsDataTableLoaded()
+{
+	PropsDataTableLoadHandle.Reset();
+	CachedPropsDataTable = Cast<UDataTable>(FSoftObjectPath(T66PropsDataTablePath).ResolveObject());
+	if (!CachedPropsDataTable)
+	{
+		UE_LOG(LogT66Props, Error, TEXT("[PROPS] Async load completed but DT_Props was still unavailable at %s."), T66PropsDataTablePath);
+		return;
+	}
+
+	QueuePropMeshPreload();
+}
+
+void UT66PropSubsystem::QueuePropMeshPreload()
+{
+	if (!CachedPropsDataTable || PropMeshLoadHandle.IsValid())
+	{
+		return;
+	}
+
+	TArray<FSoftObjectPath> MeshPaths;
+	for (const FName& RowName : CachedPropsDataTable->GetRowNames())
+	{
+		if (const FT66PropRow* Row = CachedPropsDataTable->FindRow<FT66PropRow>(RowName, TEXT("QueuePropMeshPreload"), false))
+		{
+			if (!Row->Mesh.IsNull())
+			{
+				MeshPaths.AddUnique(Row->Mesh.ToSoftObjectPath());
+			}
+		}
+	}
+
+	for (int32 Index = MeshPaths.Num() - 1; Index >= 0; --Index)
+	{
+		if (MeshPaths[Index].IsNull() || MeshPaths[Index].ResolveObject())
+		{
+			MeshPaths.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+		}
+	}
+
+	if (MeshPaths.Num() > 0)
+	{
+		PropMeshLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(MeshPaths);
+	}
+}
+
+UStaticMesh* UT66PropSubsystem::ResolvePropMesh(const TSoftObjectPtr<UStaticMesh>& Mesh)
+{
+	if (UStaticMesh* Loaded = Mesh.Get())
+	{
+		return Loaded;
+	}
+
+	if (UObject* Resolved = Mesh.ToSoftObjectPath().ResolveObject())
+	{
+		return Cast<UStaticMesh>(Resolved);
+	}
+
+	QueuePropMeshPreload();
+	return nullptr;
 }
 
 void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
@@ -372,7 +467,7 @@ bool UT66PropSubsystem::SpawnMainMapGroupedProps(
 		}
 
 		const bool bSpawnPilotableTractor = (RowName == T66TractorRowName);
-		UStaticMesh* Mesh = Row->Mesh.LoadSynchronous();
+		UStaticMesh* Mesh = ResolvePropMesh(Row->Mesh);
 		T66EnsureMeshHasBlockingCollision(Mesh);
 		if (!Mesh && !bSpawnPilotableTractor)
 		{
@@ -713,10 +808,10 @@ bool UT66PropSubsystem::SpawnMainMapGroupedProps(
 		ResolvedRows.Contains(T66WindmillRowName) ||
 		ResolvedRows.Contains(T66SiloRowName);
 	const bool bHasGroveRows =
-		ResolvedRows.Contains(T66TreeRowName) ||
-		ResolvedRows.Contains(T66Tree2RowName) ||
-		ResolvedRows.Contains(T66Tree3RowName) ||
-		ResolvedRows.Contains(T66BoulderRowName);
+		ResolvedRows.Contains(T66BoulderRowName) ||
+		ResolvedRows.Contains(T66RocksRowName) ||
+		ResolvedRows.Contains(T66StumpRowName) ||
+		ResolvedRows.Contains(T66LogRowName);
 
 	const int32 TargetFarmsteadCount = bHasFarmsteadRows
 		? Rng.RandRange(T66MainMapFarmsteadCountMin, T66MainMapFarmsteadCountMax)
@@ -870,19 +965,19 @@ bool UT66PropSubsystem::SpawnMainMapGroupedProps(
 				FVector(1.0f),
 				5000.0f);
 
-			int32 TreesSpawned = 0;
-			const int32 GroveTreeCount = FMath::Min(Rng.RandRange(5, 7), static_cast<int32>(UE_ARRAY_COUNT(GroveOffsets)));
-			for (int32 Index = 0; Index < GroveTreeCount; ++Index)
+			int32 GroveAccentsSpawned = 0;
+			const int32 GroveAccentCount = FMath::Min(Rng.RandRange(5, 7), static_cast<int32>(UE_ARRAY_COUNT(GroveOffsets)));
+			for (int32 Index = 0; Index < GroveAccentCount; ++Index)
 			{
-				const FName TreeRow = PickAvailableRow({ T66TreeRowName, T66Tree2RowName, T66Tree3RowName });
-				if (TreeRow == NAME_None)
+				const FName AccentRow = PickAvailableRow({ T66RocksRowName, T66StumpRowName, T66LogRowName });
+				if (AccentRow == NAME_None)
 				{
 					break;
 				}
 
 				const FVector2D Offset = GroveOffsets[Index];
 				if (TrySpawnGroupedProp(
-					TreeRow,
+					AccentRow,
 					MakeClusterPosition(Offset.X, Offset.Y),
 					CellSize * 0.22f,
 					FRotator::ZeroRotator,
@@ -890,11 +985,11 @@ bool UT66PropSubsystem::SpawnMainMapGroupedProps(
 					FVector(1.0f),
 					850.0f))
 				{
-					++TreesSpawned;
+					++GroveAccentsSpawned;
 				}
 			}
 
-			if (TreesSpawned <= 0)
+			if (GroveAccentsSpawned <= 0)
 			{
 				continue;
 			}
@@ -984,7 +1079,7 @@ void UT66PropSubsystem::SpawnPropsInternal(
 		const bool bSpawnPilotableTractor = (RowName == FName(TEXT("Tractor")));
 		const bool bOversizedMainMapBoulder = (AllowedRows != nullptr && RowName == T66BoulderRowName);
 
-		UStaticMesh* Mesh = Row->Mesh.LoadSynchronous();
+		UStaticMesh* Mesh = ResolvePropMesh(Row->Mesh);
 		T66EnsureMeshHasBlockingCollision(Mesh);
 		if (!Mesh && !bSpawnPilotableTractor) continue;
 

@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\Raw\\Trellis\\Interactables\\Arcade_MimicMemory\\Arcade_MimicMemory_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\QA\\TrellisFront\\Interactables\\Arcade_MimicMemory_front.png",
+  "export": null,
+  "raw_triangles": 75546,
+  "triangles_before_decimate": 75546,
+  "triangles_after_decimate": 75546,
+  "bounds": {
+    "min": [
+      -0.38229167461395264,
+      -0.25454649329185486,
+      -0.5009680986404419
+    ],
+    "max": [
+      0.3824159801006317,
+      0.25205662846565247,
+      0.5009726881980896
+    ],
+    "size": [
+      0.7647076845169067,
+      0.5066031217575073,
+      1.0019407272338867
+    ]
+  }
+}

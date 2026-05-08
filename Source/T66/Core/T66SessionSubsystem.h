@@ -72,6 +72,12 @@ public:
 private:
 	static const FName PartySessionName;
 
+	enum class ET66PendingFriendJoinRetryPolicy : uint8
+	{
+		Disabled,
+		FriendLookupFallback
+	};
+
 	IOnlineSessionPtr GetSessionInterface() const;
 	IOnlineIdentityPtr GetIdentityInterface() const;
 	AT66PlayerController* GetPrimaryPlayerController() const;
@@ -88,7 +94,12 @@ private:
 	void ClearSteamRichPresence();
 	struct FT66LobbyPlayerInfo BuildLocalLobbyProfile() const;
 	bool SendInviteToFriendInternal(const FString& FriendPlayerId, const FString& FriendDisplayName);
-	void PrimePendingJoinContext(const FString& HostSteamId, const FString& LobbyId, const FString& InviteId, const FString& AppId);
+	void PrimePendingJoinContext(
+		const FString& HostSteamId,
+		const FString& LobbyId,
+		const FString& InviteId,
+		const FString& AppId,
+		ET66PendingFriendJoinRetryPolicy RetryPolicy);
 	bool StartDirectJoinByHostSteamId(
 		const FString& HostSteamId,
 		const FString& LobbyId = FString(),
@@ -97,7 +108,8 @@ private:
 		const TCHAR* JoinReason = nullptr);
 	bool StartJoinByFriendId(const FString& FriendPlayerId, const FString& ExpectedLobbyId = FString(), const FString& InviteId = FString(), const FString& AppId = FString());
 	bool AttemptPendingFriendJoinLookup();
-	void SchedulePendingFriendJoinRetry();
+	bool ShouldRetryPendingFriendJoin() const;
+	void SchedulePendingFriendJoinRetry(const TCHAR* RetryReason = nullptr);
 	void ClearPendingFriendJoinRetry();
 	void ClearPendingJoinState();
 	void PruneInviteFeedbackState();
@@ -160,6 +172,7 @@ private:
 	FString PendingFoundLobbyId;
 	FString PendingDirectJoinConnectString;
 	int32 PendingJoinFriendLookupAttempts = 0;
+	ET66PendingFriendJoinRetryPolicy PendingFriendJoinRetryPolicy = ET66PendingFriendJoinRetryPolicy::Disabled;
 	FTSTicker::FDelegateHandle PendingJoinFriendRetryTickerHandle;
 	TMap<FString, double> InviteFeedbackExpiryByFriendId;
 	TMap<FString, TMap<FString, FString>> PartyRunSummaryJsonByRequestKey;

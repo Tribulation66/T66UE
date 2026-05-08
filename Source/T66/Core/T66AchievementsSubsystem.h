@@ -197,9 +197,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void NotifyRunCompleted(UT66RunStateSubsystem* RunState);
 
-	/** Gameplay event: player bought an item from the Vendor. */
+	/** Gameplay event: player bought an item from the shop. */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
-	void NotifyVendorPurchase();
+	void NotifyShopPurchase();
 
 	/** Gameplay event: player won a gamble at the Gambler. */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")

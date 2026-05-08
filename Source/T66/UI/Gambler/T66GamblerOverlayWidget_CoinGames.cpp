@@ -28,7 +28,6 @@
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "UI/Style/T66Style.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
@@ -192,7 +191,11 @@ void UT66GamblerOverlayWidget::TickCoinSpin()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	CoinSpinElapsed += 0.033f; // ~30 Hz
+	const float Now = static_cast<float>(World->GetTimeSeconds());
+	float Delta = CoinSpinLastTickTimeSeconds > 0.f ? Now - CoinSpinLastTickTimeSeconds : 1.f / 15.f;
+	CoinSpinLastTickTimeSeconds = Now;
+	Delta = FMath::Clamp(Delta, 0.f, 0.10f);
+	CoinSpinElapsed += Delta;
 	const float Alpha = FMath::Clamp(CoinSpinElapsed / CoinSpinDuration, 0.f, 1.f);
 
 	// Cycle: Heads → Side → Tails → Side → repeat
@@ -224,6 +227,7 @@ void UT66GamblerOverlayWidget::TickCoinSpin()
 void UT66GamblerOverlayWidget::FinishCoinSpin()
 {
 	bCoinSpinActive = false;
+	CoinSpinLastTickTimeSeconds = 0.f;
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(CoinSpinTimerHandle);

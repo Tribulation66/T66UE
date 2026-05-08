@@ -1,0 +1,2 @@
+Pass 04 candidate.
+Style direction: simplified component-friendly retro FPS gore/blood treatment on the accepted pass-03 layout. Blood/gore constrained to stains, smears, and red-black surface texture on existing UI chrome; no new background/content intended.

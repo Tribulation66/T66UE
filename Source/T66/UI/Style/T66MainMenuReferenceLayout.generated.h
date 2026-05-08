@@ -13,41 +13,41 @@ namespace T66MainMenuReferenceLayout
 	namespace TopBar
 	{
 		inline constexpr FT66ReferenceRect TopbarStripFull{0.0f, 0.0f, 1920.0f, 132.0f};
-		inline constexpr FT66ReferenceRect ButtonSettings{33.0f, 26.0f, 117.0f, 91.0f};
-		inline constexpr FT66ReferenceRect ButtonChat{161.0f, 28.0f, 134.0f, 89.0f};
-		inline constexpr FT66ReferenceRect TabAccount{306.0f, 28.0f, 268.0f, 88.0f};
-		inline constexpr FT66ReferenceRect BadgeProfile{585.0f, 18.0f, 123.0f, 104.0f};
-		inline constexpr FT66ReferenceRect TabPowerUp{719.0f, 28.0f, 249.0f, 88.0f};
-		inline constexpr FT66ReferenceRect TabAchievements{979.0f, 28.0f, 305.0f, 88.0f};
-		inline constexpr FT66ReferenceRect TabMinigames{1296.0f, 28.0f, 270.0f, 88.0f};
-		inline constexpr FT66ReferenceRect CurrencySlot{1577.0f, 28.0f, 180.0f, 88.0f};
-		inline constexpr FT66ReferenceRect ButtonPower{1768.0f, 28.0f, 119.0f, 88.0f};
+		inline constexpr FT66ReferenceRect ButtonSettings{10.0f, 0.0f, 112.0f, 106.0f};
+		inline constexpr FT66ReferenceRect ButtonChat{136.0f, 0.0f, 112.0f, 106.0f};
+		inline constexpr FT66ReferenceRect TabAccount{249.0f, 0.0f, 340.0f, 106.0f};
+		inline constexpr FT66ReferenceRect BadgeProfile{606.0f, 0.0f, 134.0f, 128.0f};
+		inline constexpr FT66ReferenceRect TabPowerUp{760.0f, 0.0f, 295.0f, 106.0f};
+		inline constexpr FT66ReferenceRect TabAchievements{1067.0f, 0.0f, 305.0f, 106.0f};
+		inline constexpr FT66ReferenceRect TabMinigames{1386.0f, 0.0f, 218.0f, 106.0f};
+		inline constexpr FT66ReferenceRect CurrencySlot{1616.0f, 0.0f, 154.0f, 106.0f};
+		inline constexpr FT66ReferenceRect ButtonPower{1788.0f, 0.0f, 112.0f, 106.0f};
 	}
 
 	namespace Center
 	{
 		inline constexpr FT66ReferenceRect CenterBackdropFull{460.0f, 138.0f, 1003.0f, 942.0f};
-		inline constexpr FT66ReferenceRect TitleLockup{558.0f, 118.0f, 804.0f, 150.0f};
-		inline constexpr FT66ReferenceRect SubtitleLockup{725.0f, 252.0f, 524.0f, 71.0f};
+		inline constexpr FT66ReferenceRect TitleLockup{558.0f, 350.0f, 760.0f, 264.0f};
+		inline constexpr FT66ReferenceRect SubtitleLockup{725.0f, 484.0f, 524.0f, 71.0f};
 		inline constexpr FT66ReferenceRect HeroStage{475.0f, 298.0f, 975.0f, 416.0f};
-		inline constexpr FT66ReferenceRect CtaStackFull{718.0f, 718.0f, 486.0f, 226.0f};
-		inline constexpr FT66ReferenceRect CtaButtonNewGame{718.0f, 718.0f, 486.0f, 104.0f};
-		inline constexpr FT66ReferenceRect CtaButtonLoadGame{718.0f, 840.0f, 486.0f, 104.0f};
+		inline constexpr FT66ReferenceRect CtaStackFull{646.0f, 650.0f, 585.0f, 312.0f};
+		inline constexpr FT66ReferenceRect CtaButtonNewGame{646.0f, 650.0f, 585.0f, 164.0f};
+		inline constexpr FT66ReferenceRect CtaButtonLoadGame{646.0f, 814.0f, 585.0f, 148.0f};
 		inline constexpr FT66ReferenceRect CtaButtonDailyChallenge{718.0f, 960.0f, 486.0f, 92.0f};
 	}
 
 	namespace CenterRuntime
 	{
-		inline constexpr FT66ReferenceRect CtaButtonNewGamePlate{718.0f, 718.0f, 486.0f, 104.0f};
-		inline constexpr FT66ReferenceRect CtaButtonLoadGamePlate{718.0f, 840.0f, 486.0f, 104.0f};
+		inline constexpr FT66ReferenceRect CtaButtonNewGamePlate{646.0f, 650.0f, 585.0f, 164.0f};
+		inline constexpr FT66ReferenceRect CtaButtonLoadGamePlate{646.0f, 814.0f, 585.0f, 148.0f};
 		inline constexpr FT66ReferenceRect CtaButtonDailyChallengePlate{718.0f, 960.0f, 486.0f, 92.0f};
 	}
 
 	namespace Left
 	{
-		inline constexpr FT66ReferenceRect ShellFullReference{0.0f, 132.0f, 496.0f, 948.0f};
-		inline constexpr FT66ReferenceRect ProfileCardReference{36.0f, 162.0f, 452.0f, 108.0f};
-		inline constexpr FT66ReferenceRect SearchFieldReference{36.0f, 291.0f, 452.0f, 54.0f};
+		inline constexpr FT66ReferenceRect ShellFullReference{-16.0f, 109.0f, 580.0f, 971.0f};
+		inline constexpr FT66ReferenceRect ProfileCardReference{36.0f, 162.0f, 500.0f, 200.0f};
+		inline constexpr FT66ReferenceRect SearchFieldReference{36.0f, 390.0f, 452.0f, 54.0f};
 		inline constexpr FT66ReferenceRect SearchIcon{48.0f, 302.0f, 34.0f, 32.0f};
 		inline constexpr FT66ReferenceRect FriendStarButton{291.0f, 598.0f, 62.0f, 57.0f};
 		inline constexpr FT66ReferenceRect FriendInviteButton{355.0f, 598.0f, 96.0f, 57.0f};
@@ -59,7 +59,7 @@ namespace T66MainMenuReferenceLayout
 
 	namespace Right
 	{
-		inline constexpr FT66ReferenceRect ShellFullReference{1420.0f, 132.0f, 500.0f, 948.0f};
+		inline constexpr FT66ReferenceRect ShellFullReference{1272.0f, 109.0f, 680.0f, 971.0f};
 		inline constexpr FT66ReferenceRect FilterWorldButton{1435.0f, 149.0f, 136.0f, 72.0f};
 		inline constexpr FT66ReferenceRect FilterFriendsButton{1585.0f, 149.0f, 136.0f, 72.0f};
 		inline constexpr FT66ReferenceRect FilterCrownButton{1735.0f, 149.0f, 136.0f, 72.0f};
@@ -76,8 +76,8 @@ namespace T66MainMenuReferenceLayout
 	namespace MainMenu
 	{
 		inline constexpr FT66ReferenceRect FullCanvas{0.0f, 0.0f, 1920.0f, 1080.0f};
-		inline constexpr FT66ReferenceRect LeftPanelAssembly{0.0f, 132.0f, 496.0f, 948.0f};
-		inline constexpr FT66ReferenceRect RightPanelAssembly{1338.0f, 132.0f, 582.0f, 948.0f};
+		inline constexpr FT66ReferenceRect LeftPanelAssembly{-16.0f, 109.0f, 580.0f, 971.0f};
+		inline constexpr FT66ReferenceRect RightPanelAssembly{1272.0f, 109.0f, 680.0f, 971.0f};
 	}
 
 }

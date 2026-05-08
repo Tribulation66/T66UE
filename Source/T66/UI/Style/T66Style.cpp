@@ -30,6 +30,7 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SDPIScaler.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Layout/Visibility.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
@@ -145,8 +146,10 @@ namespace
 		Brush.Tiling = ESlateBrushTileType::NoTile;
 		Brush.SetResourceObject(Tex);
 		Brush.TintColor = FSlateColor(FLinearColor::White);
-		Brush.ImageSize = FVector2D(270.f, 88.f);
-		Brush.Margin = FMargin(0.180f, 0.240f, 0.180f, 0.240f);
+		Brush.ImageSize = Tex
+			? FVector2D(static_cast<float>(Tex->GetSizeX()), static_cast<float>(Tex->GetSizeY()))
+			: FVector2D(213.f, 83.f);
+		Brush.Margin = FMargin(0.104f, 0.250f, 0.104f, 0.250f);
 		return Brush;
 	}
 
@@ -186,15 +189,15 @@ namespace
 	{
 		if (GMasterBasicButtonNormal.IsValid()) return;
 
-		LoadMasterLibraryTexture(GMasterBasicButtonNormal, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/normal.png"), TEXT("MasterBasicButtonNormal"));
-		LoadMasterLibraryTexture(GMasterBasicButtonHover, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/hover.png"), TEXT("MasterBasicButtonHover"));
-		LoadMasterLibraryTexture(GMasterBasicButtonPressed, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/pressed.png"), TEXT("MasterBasicButtonPressed"));
-		LoadMasterLibraryTexture(GMasterBasicButtonDisabled, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/disabled.png"), TEXT("MasterBasicButtonDisabled"));
-		LoadMasterLibraryTexture(GMasterSelectButtonNormal, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/normal.png"), TEXT("MasterSelectButtonNormal"));
-		LoadMasterLibraryTexture(GMasterSelectButtonHover, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/hover.png"), TEXT("MasterSelectButtonHover"));
-		LoadMasterLibraryTexture(GMasterSelectButtonPressed, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/pressed.png"), TEXT("MasterSelectButtonPressed"));
-		LoadMasterLibraryTexture(GMasterSelectButtonSelected, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/selected.png"), TEXT("MasterSelectButtonSelected"));
-		LoadMasterLibraryTexture(GMasterSelectButtonDisabled, TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/disabled.png"), TEXT("MasterSelectButtonDisabled"));
+		LoadMasterLibraryTexture(GMasterBasicButtonNormal, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_normal.png"), TEXT("MasterBasicButtonNormal"));
+		LoadMasterLibraryTexture(GMasterBasicButtonHover, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_hover.png"), TEXT("MasterBasicButtonHover"));
+		LoadMasterLibraryTexture(GMasterBasicButtonPressed, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_pressed.png"), TEXT("MasterBasicButtonPressed"));
+		LoadMasterLibraryTexture(GMasterBasicButtonDisabled, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_disabled.png"), TEXT("MasterBasicButtonDisabled"));
+		LoadMasterLibraryTexture(GMasterSelectButtonNormal, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_normal.png"), TEXT("MasterSelectButtonNormal"));
+		LoadMasterLibraryTexture(GMasterSelectButtonHover, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_hover.png"), TEXT("MasterSelectButtonHover"));
+		LoadMasterLibraryTexture(GMasterSelectButtonPressed, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_pressed.png"), TEXT("MasterSelectButtonPressed"));
+		LoadMasterLibraryTexture(GMasterSelectButtonSelected, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_selected.png"), TEXT("MasterSelectButtonSelected"));
+		LoadMasterLibraryTexture(GMasterSelectButtonDisabled, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_disabled.png"), TEXT("MasterSelectButtonDisabled"));
 	}
 
 	// MasterLibrary global panel textures.
@@ -497,8 +500,8 @@ namespace
 	{
 		if (GMasterPanel.IsValid()) return;
 
-		LoadMasterLibraryTexture(GMasterPanel, TEXT("SourceAssets/UI/Reference/Shared/Panels/inner_panel_normal.png"), TEXT("MasterBasicPanel"));
-		LoadMasterLibraryTexture(GMasterInnerPanel, TEXT("SourceAssets/UI/Reference/Shared/Panels/inner_panel_normal.png"), TEXT("MasterInnerPanel"));
+		LoadMasterLibraryTexture(GMasterPanel, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"), TEXT("MasterBasicPanel"));
+		LoadMasterLibraryTexture(GMasterInnerPanel, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"), TEXT("MasterInnerPanel"));
 	}
 
 	void ApplyThemePalette()
@@ -579,14 +582,11 @@ namespace
 	float ComputeResponsiveScale(const FVector2D& ReferenceResolution, bool bAllowUpscale)
 	{
 		const FVector2D ViewportSize = GetViewportSizeOrFallback();
-		float Scale = GetConfiguredDPIScale(ViewportSize) * GetPlayerUIScaleOrDefault();
-		if (Scale <= 0.f)
-		{
-			const FVector2D SafeReference(
-				FMath::Max(ReferenceResolution.X, 1.f),
-				FMath::Max(ReferenceResolution.Y, 1.f));
-			Scale = FMath::Min(ViewportSize.X / SafeReference.X, ViewportSize.Y / SafeReference.Y);
-		}
+		const FVector2D SafeReference(
+			FMath::Max(ReferenceResolution.X, 1.f),
+			FMath::Max(ReferenceResolution.Y, 1.f));
+		float Scale = FMath::Min(ViewportSize.X / SafeReference.X, ViewportSize.Y / SafeReference.Y);
+		Scale *= GetPlayerUIScaleOrDefault();
 
 		if (!bAllowUpscale)
 		{
@@ -2600,9 +2600,9 @@ TSharedRef<SWidget> FT66Style::MakeResponsiveRoot(
 	const FVector2D& ReferenceResolution,
 	bool bAllowUpscale)
 {
-	const TAttribute<float> Scale = TAttribute<float>::CreateLambda([ReferenceResolution, bAllowUpscale]() -> float
+	const TAttribute<float> Scale = TAttribute<float>::CreateLambda([]() -> float
 	{
-		return FT66Style::GetViewportResponsiveScale(ReferenceResolution, bAllowUpscale);
+		return FT66Style::GetGlobalUIScale();
 	});
 
 	return SNew(SDPIScaler)

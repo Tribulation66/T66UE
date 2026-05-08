@@ -32,7 +32,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHeroProgressChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUltimateChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSurvivalChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnQuickReviveChanged);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnVendorChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnShopChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStatusEffectsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialHintChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialSubtitleChanged);
@@ -71,8 +71,8 @@ FORCEINLINE uint32 GetTypeHash(const FT66DotKey& Key)
 	return HashCombine(GetTypeHash(Key.Target.Get()), GetTypeHash(Key.SourceIdolID));
 }
 
-/** Result of a vendor steal attempt (used by UI feedback). */
-enum class ET66VendorStealOutcome : uint8
+/** Result of a shop steal attempt (used by UI feedback). */
+enum class ET66ShopStealOutcome : uint8
 {
 	None = 0,
 	Miss,
@@ -115,8 +115,8 @@ public:
 	static constexpr float SurvivalChargePerHeart = 0.20f; // 5 hearts of damage -> full
 	static constexpr float LastStandDurationSeconds = 10.f;
 	static constexpr float QuickReviveDownedDurationSeconds = 3.f;
-	static constexpr int32 VendorAngerThresholdGold = 100;
-	static constexpr int32 VendorDisplaySlotCount = 5;
+	static constexpr int32 ShopAngerThresholdGold = 100;
+	static constexpr int32 ShopDisplaySlotCount = 5;
 	static constexpr int32 BuybackDisplaySlotCount = 5;
 	// Safety: keep logs bounded so low-end machines never accumulate unbounded memory / UI work.
 	static constexpr int32 MaxEventLogEntries = 400;
@@ -208,9 +208,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnQuickReviveChanged QuickReviveChanged;
 
-	/** Vendor shop / anger changed (used by Vendor overlay). */
+	/** Shop / anger changed (used by shop tab). */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
-	FOnVendorChanged VendorChanged;
+	FOnShopChanged ShopChanged;
 
 	/** Hero status effects changed (burn/chill/curse). */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
@@ -604,7 +604,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FRunEvent>& GetStructuredEventLog() const { return StructuredEventLog; }
 
-	/** Set current stage (1–23). */
+	/** Set current stage (1-20). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void SetCurrentStage(int32 Stage);
 
@@ -1117,57 +1117,49 @@ public:
 	float GetAccuracyChance01() const;
 
 	// ============================================
-	// Vendor (Shop + Anger + Stealing)
+	// Shop (Inventory + Anger + Stealing)
 	// ============================================
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
-	int32 GetVendorAngerGold() const { return VendorAngerGold; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
+	int32 GetShopAngerGold() const { return ShopAngerGold; }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
-	float GetVendorAnger01() const { return FMath::Clamp(static_cast<float>(VendorAngerGold) / static_cast<float>(VendorAngerThresholdGold), 0.f, 1.f); }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
+	float GetShopAnger01() const { return FMath::Clamp(static_cast<float>(ShopAngerGold) / static_cast<float>(ShopAngerThresholdGold), 0.f, 1.f); }
 
-	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
-	void ResetVendorForStage();
+	UFUNCTION(BlueprintCallable, Category = "RunState|Shop")
+	void ResetShopForStage();
 
-	/** Reset only vendor anger (used when VendorBoss is defeated). */
-	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
-	void ResetVendorAnger();
+	UFUNCTION(BlueprintCallable, Category = "RunState|Shop")
+	void EnsureShopStockForCurrentStage();
 
-	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
-	void EnsureVendorStockForCurrentStage();
+	/** Force a reroll of the current stage's shop stock (resets sold flags). */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Shop")
+	void RerollShopStockForCurrentStage();
 
-	/** Force a reroll of the current stage's vendor stock (resets sold flags). */
-	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
-	void RerollVendorStockForCurrentStage();
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
+	const TArray<FName>& GetShopStockItemIDs() const { return ShopStockItemIDs; }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
-	const TArray<FName>& GetVendorStockItemIDs() const { return VendorStockItemIDs; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
+	const TArray<FT66InventorySlot>& GetShopStockSlots() const { return ShopStockSlots; }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
-	const TArray<FT66InventorySlot>& GetVendorStockSlots() const { return VendorStockSlots; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
+	bool IsShopStockSlotSold(int32 Index) const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
-	bool IsVendorStockSlotSold(int32 Index) const;
+	/** Attempt to buy a shop slot; returns true if purchased. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Shop")
+	bool TryBuyShopStockSlot(int32 Index);
 
-	/** Attempt to buy a vendor slot; returns true if purchased. */
-	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
-	bool TryBuyVendorStockSlot(int32 Index);
+	/** Attempt to steal a shop slot (grants item if success). Always increases anger based on attempt outcome. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Shop")
+	bool ResolveShopStealAttempt(int32 Index, bool bTimingHit, bool bRngSuccess);
 
-	/** Attempt to steal a vendor slot (grants item if success). Always increases anger based on attempt outcome. */
-	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
-	bool ResolveVendorStealAttempt(int32 Index, bool bTimingHit, bool bRngSuccess);
+	ET66ShopStealOutcome GetLastShopStealOutcome() const { return LastShopStealOutcome; }
 
-	ET66VendorStealOutcome GetLastVendorStealOutcome() const { return LastVendorStealOutcome; }
-
-	/** True if vendor anger has reached threshold and a boss should spawn. */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
-	bool IsVendorAngryEnoughToBoss() const { return VendorAngerGold >= VendorAngerThresholdGold; }
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
-	bool HasBoughtFromVendorThisStage() const { return bVendorBoughtSomethingThisStage; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
+	bool HasBoughtFromShopThisStage() const { return bBoughtFromShopThisStage; }
 
 	// ============================================
-	// Buyback (Vendor + Gambler: items sold this run, repurchase at sell price)
+	// Buyback (Shop + Gambler: items sold this run, repurchase at sell price)
 	// ============================================
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBuybackChanged);
@@ -1839,25 +1831,25 @@ private:
 	int32 LastBroadcastQuickReviveSecond = 0;
 
 	// ============================================
-	// Vendor shop state (per-stage)
+	// Shop state (per-stage)
 	// ============================================
 
-	int32 VendorAngerGold = 0;
-	int32 VendorStockStage = 0;
-	int32 VendorStockRerollStage = 0;
-	int32 VendorStockRerollCounter = 0;
-	TArray<FName> VendorStockItemIDs;
-	TArray<FT66InventorySlot> VendorStockSlots;
-	TArray<bool> VendorStockSold;
+	int32 ShopAngerGold = 0;
+	int32 ShopStockStage = 0;
+	int32 ShopStockRerollStage = 0;
+	int32 ShopStockRerollCounter = 0;
+	TArray<FName> ShopStockItemIDs;
+	TArray<FT66InventorySlot> ShopStockSlots;
+	TArray<bool> ShopStockSold;
 
 	TArray<FT66InventorySlot> BuybackPool;
 	TArray<FT66InventorySlot> BuybackDisplaySlots;
 	int32 BuybackDisplayPage = 0;
 
-	/** Smart reroll: times each item has been shown this vendor session (reset on stage change). */
-	TMap<FName, int32> VendorSeenCounts;
-	bool bVendorBoughtSomethingThisStage = false;
-	ET66VendorStealOutcome LastVendorStealOutcome = ET66VendorStealOutcome::None;
+	/** Smart reroll: times each item has been shown this shop session (reset on stage change). */
+	TMap<FName, int32> ShopSeenCounts;
+	bool bBoughtFromShopThisStage = false;
+	ET66ShopStealOutcome LastShopStealOutcome = ET66ShopStealOutcome::None;
 
 	// Aggregated tracking for Luck Rating (per run).
 	TMap<FName, FT66LuckAccumulator> LuckQuantityByCategory;

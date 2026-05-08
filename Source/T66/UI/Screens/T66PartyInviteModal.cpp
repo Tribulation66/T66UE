@@ -4,6 +4,8 @@
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
+#include "Engine/GameInstance.h"
+#include "Engine/Texture2D.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
@@ -14,6 +16,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 
@@ -171,7 +174,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolvePartyInviteReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/PartyInvite/Panels/partyinvite_panels_inner_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("PartyInviteShell"));
 	}
@@ -181,7 +184,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolvePartyInviteReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/PartyInvite/Panels/partyinvite_panels_inner_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/player_row_panel_normal.png"),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			TEXT("PartyInviteRowShell"));
 	}
@@ -194,7 +197,7 @@ namespace
 			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
 			Padding,
 			TEXT("PartyInviteShellV14"),
-			FT66Style::Panel());
+			FLinearColor(0.010f, 0.012f, 0.018f, 0.98f));
 	}
 
 	TSharedRef<SWidget> MakePartyInviteRow(const TSharedRef<SWidget>& Content, const FMargin& Padding)
@@ -205,7 +208,7 @@ namespace
 			FMargin(0.09f, 0.30f, 0.09f, 0.30f),
 			Padding,
 			TEXT("PartyInviteRowV14"),
-			FT66Style::Panel());
+			FLinearColor(0.012f, 0.014f, 0.020f, 0.96f));
 	}
 
 	TSharedRef<SWidget> MakePartyInviteButton(const FT66ButtonParams& Params)
@@ -225,14 +228,20 @@ namespace
 		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
 			? Params.CustomContent.ToSharedRef()
 			: StaticCastSharedRef<SWidget>(
-				SNew(STextBlock)
-				.Text(ButtonText)
-				.Font(ButtonFont)
-				.ColorAndOpacity(TextColor)
-				.Justification(ETextJustify::Center)
-				.ShadowOffset(FVector2D(0.f, 1.f))
-				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis));
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					SNew(STextBlock)
+					.Text(ButtonText)
+					.Font(ButtonFont)
+					.ColorAndOpacity(TextColor)
+					.Justification(ETextJustify::Center)
+					.ShadowOffset(FVector2D(0.f, 1.f))
+					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)
+				]);
 
 		const FButtonStyle& ButtonStyle = GetPartyInviteButtonStyle(Params.Type);
 		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
@@ -368,9 +377,12 @@ TSharedRef<SWidget> UT66PartyInviteModal::BuildSlateUI()
 	const FMargin T66InviteButtonPadding(24.f, 12.f);
 
 	return SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FT66Style::Scrim())
 		[
-			SNew(SBox)
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::DownOnly)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[

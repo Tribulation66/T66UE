@@ -11,7 +11,6 @@
 class UWidgetComponent;
 class UStaticMeshComponent;
 class AT66EnemyDirector;
-class AT66ItemPickup;
 class UT66CombatHitZoneComponent;
 class UPrimitiveComponent;
 
@@ -193,7 +192,7 @@ public:
 	/** Apply difficulty tier (Tier 0 = 1.0x, Tier 1 = 1.1x, Tier 2 = 1.2x, ...). */
 	void ApplyDifficultyTier(int32 Tier);
 
-	/** Stage mob ID (data-driven via DT_Stages EnemyA/B/C). NAME_None means "not a stage mob". */
+	/** Stage mob ID (data-driven via DT_Stages EnemyA/B/C/D/E). NAME_None means "not a stage mob". */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mob")
 	FName MobID;
 
@@ -240,6 +239,7 @@ protected:
 
 private:
 	bool ApplyResolvedDamage(int32 Damage, bool bCreditHeroKill, FName DamageSourceID, FName EventType);
+	APawn* ResolveCachedPlayerPawn(float DeltaSeconds);
 	void RebuildScaledCombatStats(bool bResetCurrentHPToMax);
 	void RefreshCombatHitZoneState();
 	ET66HitZoneType ResolveHitZoneType(const UPrimitiveComponent* HitComponent, ET66HitZoneType PreferredZone) const;
@@ -288,8 +288,11 @@ private:
 	float FreezeSecondsRemaining = 0.f;
 	float AutoAttackKnockbackSecondsRemaining = 0.f;
 
-	/** Cached player pawn reference (avoid UGameplayStatics::GetPlayerPawn every tick per enemy). */
+	/** Cached closest player pawn reference (avoid controller scans every tick per enemy). */
 	TWeakObjectPtr<APawn> CachedPlayerPawn;
+	float PlayerPawnRefreshCooldownSeconds = 0.f;
+	static constexpr float PlayerPawnRefreshIntervalSeconds = 0.10f;
+	static constexpr float PlayerPawnRefreshJitterSeconds = 0.05f;
 
 	/** Confusion: cached wander direction, refreshed once per second instead of every frame. */
 	FVector CachedWanderDir = FVector::ZeroVector;
@@ -312,7 +315,7 @@ private:
 	static constexpr float BuryDepth = 200.f;
 
 protected:
-	/** True if an imported skeletal mesh was applied and placeholders should be hidden. */
+	/** True if an imported character visual was applied and placeholder-only fallback is not needed. */
 	UPROPERTY(Transient)
 	bool bUsingCharacterVisual = false;
 };

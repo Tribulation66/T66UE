@@ -1,0 +1,25 @@
+{
+  "count": 1,
+  "reports": [
+    {
+      "input": "C:\\UE\\T66\\_codex_previews\\old_arthur_extract\\SourceAssets\\Import\\ArthurIdle.fbx",
+      "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\ArthurUltrakillVoxelRebake01\\ArthurDecimateBenchmark\\Models\\ArthurIdle_DecimateUV_Dither.glb",
+      "output_blend": "",
+      "objects_imported": 2,
+      "mesh_count": 1,
+      "raw_triangles": 585037,
+      "geometry_mode": "decimate",
+      "voxel_size": 0.055,
+      "triangles_before_voxel_remesh": 585037,
+      "triangles_after_voxel_remesh": 585037,
+      "triangles_before_decimate": 585037,
+      "triangles_after_decimate": 42980,
+      "materials_quantized": 5,
+      "texture_nodes_replaced": 6,
+      "target_tris": 24000,
+      "texture_size": 256,
+      "palette_steps": 6,
+      "dither_strength": 1.0
+    }
+  ]
+}

@@ -2,34 +2,42 @@
 
 #include "Core/T66PlayerExperienceSubSystem.h"
 
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerExperience, Log, All);
+
 namespace
 {
 	static constexpr const TCHAR* T66PlayerExperienceDataTablePath = TEXT("/Game/Data/DT_PlayerExperience.DT_PlayerExperience");
 
-	static void LoadDifficultyRow(const UDataTable* DataTable, const FName RowName, FT66PlayerExperienceDifficultyTuning& OutTuning)
+	static bool LoadDifficultyRow(const UDataTable* DataTable, const FName RowName, FT66PlayerExperienceDifficultyTuning& OutTuning)
 	{
 		if (!DataTable)
 		{
-			return;
+			return false;
 		}
 
 		if (const FT66PlayerExperienceDifficultyTuning* Row = DataTable->FindRow<FT66PlayerExperienceDifficultyTuning>(RowName, TEXT("PlayerExperienceDataTable")))
 		{
 			OutTuning = *Row;
-			return;
+			return true;
 		}
 
-		UE_LOG(LogTemp, Error, TEXT("PlayerExperience DataTable '%s' is missing row '%s'."), *DataTable->GetPathName(), *RowName.ToString());
+		UE_LOG(LogT66PlayerExperience, Error, TEXT("PlayerExperience DataTable '%s' is missing row '%s'."), *DataTable->GetPathName(), *RowName.ToString());
+		return false;
 	}
 }
 
-void FT66PlayerExperienceTuningTable::LoadFromDataTable(const UDataTable* DataTable)
+bool FT66PlayerExperienceTuningTable::LoadFromDataTable(const UDataTable* DataTable)
 {
-	LoadDifficultyRow(DataTable, TEXT("Easy"), Easy);
-	LoadDifficultyRow(DataTable, TEXT("Medium"), Medium);
-	LoadDifficultyRow(DataTable, TEXT("Hard"), Hard);
-	LoadDifficultyRow(DataTable, TEXT("VeryHard"), VeryHard);
-	LoadDifficultyRow(DataTable, TEXT("Impossible"), Impossible);
+	bool bLoadedAllRows = true;
+	bLoadedAllRows &= LoadDifficultyRow(DataTable, TEXT("Easy"), Easy);
+	bLoadedAllRows &= LoadDifficultyRow(DataTable, TEXT("Medium"), Medium);
+	bLoadedAllRows &= LoadDifficultyRow(DataTable, TEXT("Hard"), Hard);
+	bLoadedAllRows &= LoadDifficultyRow(DataTable, TEXT("VeryHard"), VeryHard);
+	bLoadedAllRows &= LoadDifficultyRow(DataTable, TEXT("Impossible"), Impossible);
+	return bLoadedAllRows;
 }
 
 const FT66PlayerExperienceDifficultyTuning& FT66PlayerExperienceTuningTable::Get(const ET66Difficulty Difficulty) const
@@ -48,15 +56,73 @@ const FT66PlayerExperienceDifficultyTuning& FT66PlayerExperienceTuningTable::Get
 void UT66PlayerExperienceSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+	QueueTuningDataTableLoad();
+}
 
-	UDataTable* PlayerExperienceDataTable = LoadObject<UDataTable>(nullptr, T66PlayerExperienceDataTablePath);
-	if (!PlayerExperienceDataTable)
+void UT66PlayerExperienceSubSystem::QueueTuningDataTableLoad()
+{
+	const FSoftObjectPath TuningTablePath(T66PlayerExperienceDataTablePath);
+	if (UDataTable* ResidentTable = Cast<UDataTable>(TuningTablePath.ResolveObject()))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to load player experience DataTable at '%s'."), T66PlayerExperienceDataTablePath);
+		if (ResidentTable->GetRowStruct() != FT66PlayerExperienceDifficultyTuning::StaticStruct())
+		{
+			UE_LOG(LogT66PlayerExperience, Error, TEXT("PlayerExperience DataTable '%s' has row struct '%s', expected '%s'."),
+				*ResidentTable->GetPathName(),
+				ResidentTable->GetRowStruct() ? *ResidentTable->GetRowStruct()->GetName() : TEXT("<null>"),
+				*FT66PlayerExperienceDifficultyTuning::StaticStruct()->GetName());
+			return;
+		}
+
+		bTuningLoaded = CachedTuning.LoadFromDataTable(ResidentTable);
 		return;
 	}
 
-	CachedTuning.LoadFromDataTable(PlayerExperienceDataTable);
+	TuningDataTableLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		TArray<FSoftObjectPath>{ TuningTablePath },
+		FStreamableDelegate::CreateUObject(this, &UT66PlayerExperienceSubSystem::HandleTuningDataTableLoaded));
+	if (!TuningDataTableLoadHandle.IsValid())
+	{
+		UE_LOG(LogT66PlayerExperience, Error, TEXT("Failed to queue async load for player experience DataTable at '%s'."), T66PlayerExperienceDataTablePath);
+	}
+}
+
+void UT66PlayerExperienceSubSystem::HandleTuningDataTableLoaded()
+{
+	TuningDataTableLoadHandle.Reset();
+
+	const FSoftObjectPath TuningTablePath(T66PlayerExperienceDataTablePath);
+	UDataTable* PlayerExperienceDataTable = Cast<UDataTable>(TuningTablePath.ResolveObject());
+	if (!PlayerExperienceDataTable)
+	{
+		UE_LOG(LogT66PlayerExperience, Error, TEXT("Failed to resolve player experience DataTable after async load at '%s'."), T66PlayerExperienceDataTablePath);
+		return;
+	}
+
+	if (PlayerExperienceDataTable->GetRowStruct() != FT66PlayerExperienceDifficultyTuning::StaticStruct())
+	{
+		UE_LOG(LogT66PlayerExperience, Error, TEXT("PlayerExperience DataTable '%s' has row struct '%s', expected '%s'."),
+			*PlayerExperienceDataTable->GetPathName(),
+			PlayerExperienceDataTable->GetRowStruct() ? *PlayerExperienceDataTable->GetRowStruct()->GetName() : TEXT("<null>"),
+			*FT66PlayerExperienceDifficultyTuning::StaticStruct()->GetName());
+		return;
+	}
+
+	bTuningLoaded = CachedTuning.LoadFromDataTable(PlayerExperienceDataTable);
+}
+
+bool UT66PlayerExperienceSubSystem::IsTuningReady(const TCHAR* Caller) const
+{
+	if (bTuningLoaded)
+	{
+		return true;
+	}
+
+	if (!bWarnedTuningUnavailable)
+	{
+		bWarnedTuningUnavailable = true;
+		UE_LOG(LogT66PlayerExperience, Warning, TEXT("PlayerExperience tuning requested by %s before DataTable '%s' was available; returning empty tuning."), Caller ? Caller : TEXT("<unknown>"), T66PlayerExperienceDataTablePath);
+	}
+	return false;
 }
 
 int32 UT66PlayerExperienceSubSystem::GetDifficultyIndex(const ET66Difficulty Difficulty) const
@@ -66,19 +132,28 @@ int32 UT66PlayerExperienceSubSystem::GetDifficultyIndex(const ET66Difficulty Dif
 
 const FT66PlayerExperienceDifficultyTuning& UT66PlayerExperienceSubSystem::GetDifficultyTuning(const ET66Difficulty Difficulty) const
 {
+	IsTuningReady(TEXT("GetDifficultyTuning"));
 	return CachedTuning.Get(Difficulty);
 }
 
 int32 UT66PlayerExperienceSubSystem::GetDifficultyStartStage(const ET66Difficulty Difficulty) const
 {
-	return FMath::Clamp(GetDifficultyTuning(Difficulty).StartStage, 1, 23);
+	if (!IsTuningReady(TEXT("GetDifficultyStartStage")))
+	{
+		return 0;
+	}
+	return FMath::Clamp(GetDifficultyTuning(Difficulty).StartStage, 1, 20);
 }
 
 int32 UT66PlayerExperienceSubSystem::GetDifficultyEndStage(const ET66Difficulty Difficulty) const
 {
+	if (!IsTuningReady(TEXT("GetDifficultyEndStage")))
+	{
+		return 0;
+	}
 	const FT66PlayerExperienceDifficultyTuning& Tuning = GetDifficultyTuning(Difficulty);
-	const int32 StartStage = FMath::Clamp(Tuning.StartStage, 1, 23);
-	return FMath::Clamp(Tuning.EndStage, StartStage, 23);
+	const int32 StartStage = FMath::Clamp(Tuning.StartStage, 1, 20);
+	return FMath::Clamp(Tuning.EndStage, StartStage, 20);
 }
 
 int32 UT66PlayerExperienceSubSystem::GetDifficultyStartGoldBonus(const ET66Difficulty Difficulty) const
@@ -94,16 +169,6 @@ int32 UT66PlayerExperienceSubSystem::GetDifficultyStartLootBags(const ET66Diffic
 int32 UT66PlayerExperienceSubSystem::GetDifficultyStartHeroBonusLevels(const ET66Difficulty Difficulty) const
 {
 	return FMath::Max(0, GetDifficultyTuning(Difficulty).StartHeroBonusLevels);
-}
-
-bool UT66PlayerExperienceSubSystem::ShouldSpawnSupportVendorAtRunStart(const ET66Difficulty Difficulty) const
-{
-	return GetDifficultyTuning(Difficulty).bSpawnSupportVendorAtRunStart;
-}
-
-bool UT66PlayerExperienceSubSystem::ShouldSupportVendorAllowSteal(const ET66Difficulty Difficulty) const
-{
-	return GetDifficultyTuning(Difficulty).bSupportVendorAllowSteal;
 }
 
 float UT66PlayerExperienceSubSystem::GetDifficultyEnemyLootBagDropChanceBase(const ET66Difficulty Difficulty) const
@@ -154,29 +219,6 @@ float UT66PlayerExperienceSubSystem::GetDifficultyChestMimicChance(const ET66Dif
 	return FMath::Clamp(GetDifficultyTuning(Difficulty).ChestMimicChance, 0.f, 1.f);
 }
 
-FT66IntRange UT66PlayerExperienceSubSystem::GetDifficultyWheelCountRange(const ET66Difficulty Difficulty) const
-{
-	return GetDifficultyTuning(Difficulty).WheelsPerStage;
-}
-
-FT66RarityWeights UT66PlayerExperienceSubSystem::GetDifficultyWheelRarityWeights(const ET66Difficulty Difficulty) const
-{
-	return GetDifficultyTuning(Difficulty).WheelRarityWeights;
-}
-
-FT66FloatRange UT66PlayerExperienceSubSystem::GetDifficultyWheelGoldRange(const ET66Difficulty Difficulty, const ET66Rarity Rarity) const
-{
-	const FT66PlayerExperienceDifficultyTuning& Tuning = GetDifficultyTuning(Difficulty);
-	switch (Rarity)
-	{
-	case ET66Rarity::Black: return Tuning.WheelGoldRangeBlack;
-	case ET66Rarity::Red: return Tuning.WheelGoldRangeRed;
-	case ET66Rarity::Yellow: return Tuning.WheelGoldRangeYellow;
-	case ET66Rarity::White: return Tuning.WheelGoldRangeWhite;
-	default: return Tuning.WheelGoldRangeBlack;
-	}
-}
-
 FT66IntRange UT66PlayerExperienceSubSystem::GetDifficultyCrateCountRange(const ET66Difficulty Difficulty) const
 {
 	return GetDifficultyTuning(Difficulty).CratesPerStage;
@@ -192,7 +234,7 @@ float UT66PlayerExperienceSubSystem::GetDifficultyGamblerCheatSuccessChanceBase(
 	return FMath::Clamp(GetDifficultyTuning(Difficulty).GamblerCheatSuccessChanceBase, 0.f, 1.f);
 }
 
-float UT66PlayerExperienceSubSystem::GetDifficultyVendorStealSuccessChanceOnTimingHitBase(const ET66Difficulty Difficulty) const
+float UT66PlayerExperienceSubSystem::GetDifficultyShopStealSuccessChanceOnTimingHitBase(const ET66Difficulty Difficulty) const
 {
-	return FMath::Clamp(GetDifficultyTuning(Difficulty).VendorStealSuccessChanceOnTimingHitBase, 0.f, 1.f);
+	return FMath::Clamp(GetDifficultyTuning(Difficulty).ShopStealSuccessChanceOnTimingHitBase, 0.f, 1.f);
 }

@@ -207,7 +207,7 @@ UT66MiniRunSaveGame* UT66MiniSaveSubsystem::CreateSeededRunSave(const UT66MiniFr
 	RunSave->CircusDebt = 0;
 	RunSave->CircusAnger01 = 0.f;
 	RunSave->CircusBuybackItemIDs.Reset();
-	RunSave->CircusVendorRerollCount = 0;
+	RunSave->CircusMarketRerollCount = 0;
 	RunSave->LastUpdatedUtc = BuildUtcNowString();
 	return RunSave;
 }

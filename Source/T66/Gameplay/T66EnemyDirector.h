@@ -123,6 +123,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Director")
 	void RefreshSpawningFromProgression();
 
+	UFUNCTION(BlueprintCallable, Category = "Director|Tower")
+	int32 SpawnInitialPopulationForTowerFloor(int32 FloorNumber);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -142,6 +145,8 @@ protected:
 	bool bSpawningArmed = false;
 
 	TArray<FPendingEnemySpawn> PendingSpawns;
+
+	TSet<int32> TowerFloorsWithInitialPopulation;
 
 	TWeakObjectPtr<AT66EnemyBase> ActiveMiniBoss;
 

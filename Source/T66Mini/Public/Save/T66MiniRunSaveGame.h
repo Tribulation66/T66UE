@@ -247,7 +247,7 @@ public:
 	TArray<FName> CircusBuybackItemIDs;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
-	int32 CircusVendorRerollCount = 0;
+	int32 CircusMarketRerollCount = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mini")
 	FString LastUpdatedUtc;

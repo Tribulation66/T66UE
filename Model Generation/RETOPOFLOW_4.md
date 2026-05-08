@@ -14,7 +14,9 @@ Use RetopoFlow for:
 - hands, faces, shoulders, elbows, knees, cloth edges, and other deformation-critical regions
 - environment assets where the low-poly shape itself matters, such as chunky chains, bones, arches, trim, and silhouettes
 
-For static environment walls, floors, and ceilings, RetopoFlow is optional. Use it only when a human can meaningfully redraw the visible large forms. If the job is just "reduce triangle count" on a static wall or floor, skip RetopoFlow and keep the raw TRELLIS mesh normalized for Unreal instead of using Decimate.
+For static environment walls, floors, and ceilings, RetopoFlow is optional. Use it only when a human can meaningfully redraw the visible large forms. If the job is just "reduce triangle count" on a static wall or floor, skip RetopoFlow and keep the raw TRELLIS mesh normalized for Unreal instead of using Blender Decimate.
+
+Unreal-side runtime optimization is allowed after import for static environment meshes. Generated StaticMesh LODs, Nanite enablement, and Nanite fallback reduction are packaging/runtime settings, not accepted RetopoFlow artifacts. Keep the raw TRELLIS GLB, normalized Unreal-ready export, and any true RetopoFlow `.blend` files separate so source provenance stays clear.
 
 ## Required RetopoFlow Artifact Trail
 
@@ -31,6 +33,7 @@ Every real RetopoFlow pass must keep:
 Dungeon walls, floors, and ceilings are allowed to ship from raw normalized TRELLIS output during the first modular-kit prototype. The important constraints are:
 
 - no Decimate modifier output in accepted imports
+- Unreal-generated LODs and Nanite fallback settings are allowed on imported StaticMesh assets
 - correct Unreal scale and pivot normalization
 - generated meshes are the actual spawned geometry when the kit is enabled
 - generated wall and floor meshes are visual-only; hidden `UBoxComponent` proxies carry collision

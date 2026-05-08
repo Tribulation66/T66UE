@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Enemies\\Martian_RocketLeaper\\Martian_RocketLeaper_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Enemies\\Martian_RocketLeaper_front.png",
+  "export": null,
+  "raw_triangles": 79233,
+  "triangles_before_decimate": 79233,
+  "triangles_after_decimate": 79233,
+  "bounds": {
+    "min": [
+      -0.477370023727417,
+      -0.2605106234550476,
+      -0.5006486177444458
+    ],
+    "max": [
+      0.47142425179481506,
+      0.2577247619628906,
+      0.4996817708015442
+    ],
+    "size": [
+      0.9487942457199097,
+      0.5182353854179382,
+      1.0003304481506348
+    ]
+  }
+}

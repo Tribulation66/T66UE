@@ -23,7 +23,8 @@ Use this input as the primary baseline:
 - [Arthur_LegacyDirect_Body_Green.png](C:/UE/T66/Model Generation/Runs/Arthur/Inputs/Arthur_LegacyDirect_Body_Green.png)
 
 Generation rules:
-- opaque green PNG input only
+- opaque flat-white `#ffffff` PNG input only
+- no alpha, floor plane, cast shadow, contact shadow, reflection, gradient, gray patch, poster card, border panel, or green background
 - preprocess_image=True
 - X-Texture-Size=2048
 - X-Decimation=200000

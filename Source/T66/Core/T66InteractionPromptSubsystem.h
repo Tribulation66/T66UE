@@ -16,14 +16,9 @@ enum class ET66InteractionPromptAction : uint8
 	ExitTractor,
 	UseFountain,
 	OpenChest,
-	SpinWheel,
 	OpenCrate,
-	EnterCasino,
 	GetQuickRevive,
-	UseTeleporter,
 	RaiseDifficulty,
-	ClaimGold,
-	ClaimLoot,
 };
 
 UCLASS()

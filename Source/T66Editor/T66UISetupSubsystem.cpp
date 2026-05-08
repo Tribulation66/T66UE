@@ -543,6 +543,10 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	const FString WeaponsTablePath = TEXT("/Game/Data/DT_Weapons.DT_Weapons");
 	const FString BossesTablePath = TEXT("/Game/Data/DT_Bosses.DT_Bosses");
 	const FString StagesTablePath = TEXT("/Game/Data/DT_Stages.DT_Stages");
+	const FString EnemiesTablePath = TEXT("/Game/Data/DT_Enemies.DT_Enemies");
+	const FString StatusEffectsTablePath = TEXT("/Game/Data/DT_StatusEffects.DT_StatusEffects");
+	const FString BossEncountersTablePath = TEXT("/Game/Data/DT_BossEncounters.DT_BossEncounters");
+	const FString BossEncounterMembersTablePath = TEXT("/Game/Data/DT_BossEncounterMembers.DT_BossEncounterMembers");
 	const FString HouseNPCsTablePath = TEXT("/Game/Data/DT_HouseNPCs.DT_HouseNPCs");
 	const FString CharacterVisualsTablePath = TEXT("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals");
 	const FString ArcadeInteractablesTablePath = TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables");
@@ -553,6 +557,10 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	UDataTable* WeaponsTable = LoadObject<UDataTable>(nullptr, *WeaponsTablePath);
 	UDataTable* BossesTable = LoadObject<UDataTable>(nullptr, *BossesTablePath);
 	UDataTable* StagesTable = LoadObject<UDataTable>(nullptr, *StagesTablePath);
+	UDataTable* EnemiesTable = LoadObject<UDataTable>(nullptr, *EnemiesTablePath);
+	UDataTable* StatusEffectsTable = LoadObject<UDataTable>(nullptr, *StatusEffectsTablePath);
+	UDataTable* BossEncountersTable = LoadObject<UDataTable>(nullptr, *BossEncountersTablePath);
+	UDataTable* BossEncounterMembersTable = LoadObject<UDataTable>(nullptr, *BossEncounterMembersTablePath);
 	UDataTable* HouseNPCsTable = LoadObject<UDataTable>(nullptr, *HouseNPCsTablePath);
 	UDataTable* CharacterVisualsTable = LoadObject<UDataTable>(nullptr, *CharacterVisualsTablePath);
 	UDataTable* ArcadeInteractablesTable = LoadObject<UDataTable>(nullptr, *ArcadeInteractablesTablePath);
@@ -615,6 +623,46 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	else
 	{
 		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_Stages (create via CreateAssets.py then ImportData.py)"));
+	}
+
+	if (EnemiesTable)
+	{
+		GameInstanceCDO->EnemiesDataTable = EnemiesTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set EnemiesDataTable to DT_Enemies"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_Enemies (create via SetupCombatRosterDataTables.py)"));
+	}
+
+	if (StatusEffectsTable)
+	{
+		GameInstanceCDO->StatusEffectsDataTable = StatusEffectsTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set StatusEffectsDataTable to DT_StatusEffects"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_StatusEffects (create via SetupCombatRosterDataTables.py)"));
+	}
+
+	if (BossEncountersTable)
+	{
+		GameInstanceCDO->BossEncountersDataTable = BossEncountersTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set BossEncountersDataTable to DT_BossEncounters"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_BossEncounters (create via SetupCombatRosterDataTables.py)"));
+	}
+
+	if (BossEncounterMembersTable)
+	{
+		GameInstanceCDO->BossEncounterMembersDataTable = BossEncounterMembersTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set BossEncounterMembersDataTable to DT_BossEncounterMembers"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_BossEncounterMembers (create via SetupCombatRosterDataTables.py)"));
 	}
 
 	if (HouseNPCsTable)

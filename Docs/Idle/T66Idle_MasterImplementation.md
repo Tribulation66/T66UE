@@ -34,3 +34,11 @@ Offline progress should be deterministic and local-first for the initial mode:
 - Persist the post-claim profile immediately after rewards are accepted.
 
 Backend authority can be evaluated later if ranked or competitive Idle state is added.
+
+## Shared Art And Animation Process
+
+Idle uses the shared minigame animation process for stage enemies, bosses, heroes, companions, and impact VFX:
+
+- [T66Minigame_CharacterAnimationProcess.md](C:/UE/T66/Docs/Minigames/T66Minigame_CharacterAnimationProcess.md)
+
+Idle should default to compact loops first: `bob-only`, `idle-only`, `idle-hit`, or `idle-attack`. Full directional sheets are only useful if the eventual presentation layer needs facing-specific motion.

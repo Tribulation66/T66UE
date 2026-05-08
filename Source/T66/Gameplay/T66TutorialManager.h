@@ -8,8 +8,8 @@
 
 class AT66DifficultyTotem;
 class AT66EnemyBase;
+class AT66FountainInteractable;
 class AT66IdolAltar;
-class AT66TreeOfLifeInteractable;
 class AT66TutorialGuideCompanion;
 class AT66TutorialPortal;
 class APawn;
@@ -124,13 +124,15 @@ private:
 	TObjectPtr<AT66IdolAltar> TutorialIdolAltar;
 
 	UPROPERTY()
-	TObjectPtr<AT66TreeOfLifeInteractable> TutorialFountain;
+	TObjectPtr<AT66FountainInteractable> TutorialFountain;
 
 	UPROPERTY()
 	TObjectPtr<AT66DifficultyTotem> TutorialDifficultyTotem;
 
 	UPROPERTY()
 	TObjectPtr<AT66TutorialPortal> TutorialPortal;
+
+	mutable TMap<FName, TWeakObjectPtr<AActor>> CachedTaggedActors;
 
 	int32 InventoryCountAtItemStepStart = 0;
 	float MaxHPBeforeFountainUse = 0.f;

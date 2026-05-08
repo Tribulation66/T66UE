@@ -57,13 +57,14 @@ public:
 	void ClearAll();
 
 	/**
-	 * Sync-load the given texture paths and cache them in the pool.
-	 * Only for use during a safe loading window (e.g. main menu first show).
-	 * Skips paths already cached. Used so main menu background + leaderboard icons show immediately.
+	 * Ensure the given texture paths are resident or queued for async loading.
+	 * Skips paths already cached. Existing callers bind Slate brushes async, so this must not block the game thread.
 	 */
 	void EnsureTexturesLoadedSync(const TArray<FSoftObjectPath>& Paths);
 
 private:
+	bool bIsDeinitializing = false;
+
 	struct FWaiter
 	{
 		bool bHasRequester = false;

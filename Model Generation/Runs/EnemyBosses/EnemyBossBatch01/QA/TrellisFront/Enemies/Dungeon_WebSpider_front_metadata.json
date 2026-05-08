@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Enemies\\Dungeon_WebSpider\\Dungeon_WebSpider_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Enemies\\Dungeon_WebSpider_front.png",
+  "export": null,
+  "raw_triangles": 78713,
+  "triangles_before_decimate": 78713,
+  "triangles_after_decimate": 78713,
+  "bounds": {
+    "min": [
+      -0.33633551001548767,
+      -0.49916648864746094,
+      -0.36570560932159424
+    ],
+    "max": [
+      0.3284316658973694,
+      0.4941543638706207,
+      0.36221057176589966
+    ],
+    "size": [
+      0.6647671461105347,
+      0.9933208227157593,
+      0.7279161810874939
+    ]
+  }
+}

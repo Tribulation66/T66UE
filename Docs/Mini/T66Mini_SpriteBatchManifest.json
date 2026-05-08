@@ -151,12 +151,12 @@
     },
     {
       "id": "npcs_batch_01",
-      "title": "Vendor Gambler Saint Ouroboros",
+      "title": "Market Gambler Saint Ouroboros",
       "category": "npcs",
       "output_dir": "SourceAssets/Mini/NPCs/Sheets",
       "split_output_dir": "SourceAssets/Mini/NPCs/Singles",
       "subjects": [
-        "Vendor",
+        "Market",
         "Gambler",
         "Saint",
         "Ouroboros"
@@ -167,7 +167,7 @@
         "SourceAssets/Mini/Heroes/Singles/Arthur.png",
         "SourceAssets/Mini/Heroes/Singles/Merlin.png"
       ],
-      "prompt": "Generate exactly one square 2x2 sprite sheet for special NPCs in the same thick-outline mini-chad style as the attached reference sprites. Output one image only. Transparent background if possible, otherwise flat pure white. No scene, no floor, no text, no UI. Keep all four isolated and easy to crop. Layout: top-left Vendor, shady merchant mini chad in a dark coat. Top-right Gambler, reckless axe-wielding patriot mini chad. Bottom-left Saint, halo monk healer mini chad. Bottom-right Ouroboros, ominous serpentine occult NPC. Full-body, readable, game-ready."
+      "prompt": "Generate exactly one square 2x2 sprite sheet for special NPCs in the same thick-outline mini-chad style as the attached reference sprites. Output one image only. Transparent background if possible, otherwise flat pure white. No scene, no floor, no text, no UI. Keep all four isolated and easy to crop. Layout: top-left Market, shady merchant mini chad in a dark coat. Top-right Gambler, reckless axe-wielding patriot mini chad. Bottom-left Saint, halo monk healer mini chad. Bottom-right Ouroboros, ominous serpentine occult NPC. Full-body, readable, game-ready."
     },
     {
       "id": "interactables_batch_01",

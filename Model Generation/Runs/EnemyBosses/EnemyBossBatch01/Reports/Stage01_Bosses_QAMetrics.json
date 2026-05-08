@@ -1,0 +1,140 @@
+[
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Dungeon_SewerSlimeKing_front.png",
+    "boss_id": "Dungeon_SewerSlimeKing",
+    "non_bg_ratio": 0.9998,
+    "bytes": 1688614
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Dungeon_WebMatriarch_front.png",
+    "boss_id": "Dungeon_WebMatriarch",
+    "non_bg_ratio": 1.0,
+    "bytes": 1580695
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Dungeon_BoneJailer_front.png",
+    "boss_id": "Dungeon_BoneJailer",
+    "non_bg_ratio": 1.0,
+    "bytes": 1662462
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Dungeon_BaelFallenChad_front.png",
+    "boss_id": "Dungeon_BaelFallenChad",
+    "non_bg_ratio": 1.0,
+    "bytes": 1685690
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Forest_BrambleTreant_front.png",
+    "boss_id": "Forest_BrambleTreant",
+    "non_bg_ratio": 1.0,
+    "bytes": 1752993
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Forest_MyconidQueen_front.png",
+    "boss_id": "Forest_MyconidQueen",
+    "non_bg_ratio": 0.9988,
+    "bytes": 1702865
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Forest_ThornHive_front.png",
+    "boss_id": "Forest_ThornHive",
+    "non_bg_ratio": 1.0,
+    "bytes": 1709726
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Forest_BuerVerdantChad_front.png",
+    "boss_id": "Forest_BuerVerdantChad",
+    "non_bg_ratio": 0.9989,
+    "bytes": 1733214
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Ocean_ReefCrabColossus_front.png",
+    "boss_id": "Ocean_ReefCrabColossus",
+    "non_bg_ratio": 0.9999,
+    "bytes": 1657242
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Ocean_AbyssalJellyfish_front.png",
+    "boss_id": "Ocean_AbyssalJellyfish",
+    "non_bg_ratio": 0.9998,
+    "bytes": 1690895
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Ocean_DrownedCaptain_front.png",
+    "boss_id": "Ocean_DrownedCaptain",
+    "non_bg_ratio": 1.0,
+    "bytes": 1715380
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Ocean_FocalorDrownedChad_front.png",
+    "boss_id": "Ocean_FocalorDrownedChad",
+    "non_bg_ratio": 1.0,
+    "bytes": 1770592
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Martian_RedSandBehemoth_front.png",
+    "boss_id": "Martian_RedSandBehemoth",
+    "non_bg_ratio": 1.0,
+    "bytes": 1744337
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Martian_CrystalMantis_front.png",
+    "boss_id": "Martian_CrystalMantis",
+    "non_bg_ratio": 0.9986,
+    "bytes": 1687510
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Martian_PlasmaSaucerPrime_front.png",
+    "boss_id": "Martian_PlasmaSaucerPrime",
+    "non_bg_ratio": 0.9993,
+    "bytes": 1653052
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Martian_StolasAstralChad_front.png",
+    "boss_id": "Martian_StolasAstralChad",
+    "non_bg_ratio": 1.0,
+    "bytes": 1768210
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_Horseman_Conquest_front.png",
+    "boss_id": "Hell_Horseman_Conquest",
+    "non_bg_ratio": 0.9984,
+    "bytes": 1649977
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_Horseman_War_front.png",
+    "boss_id": "Hell_Horseman_War",
+    "non_bg_ratio": 1.0,
+    "bytes": 1613294
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_Horseman_Famine_front.png",
+    "boss_id": "Hell_Horseman_Famine",
+    "non_bg_ratio": 0.9999,
+    "bytes": 1666039
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_Horseman_Death_front.png",
+    "boss_id": "Hell_Horseman_Death",
+    "non_bg_ratio": 1.0,
+    "bytes": 1601093
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_FalseProphet_front.png",
+    "boss_id": "Hell_FalseProphet",
+    "non_bg_ratio": 1.0,
+    "bytes": 1654552
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_Antichrist_front.png",
+    "boss_id": "Hell_Antichrist",
+    "non_bg_ratio": 1.0,
+    "bytes": 1686048
+  },
+  {
+    "file": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_GreatDragon_front.png",
+    "boss_id": "Hell_GreatDragon",
+    "non_bg_ratio": 1.0,
+    "bytes": 1506894
+  }
+]

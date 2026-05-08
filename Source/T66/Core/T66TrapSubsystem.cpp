@@ -5,7 +5,6 @@
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66StageProgressionSubsystem.h"
 #include "Data/T66DataTypes.h"
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/Traps/T66FloorFlameTrap.h"
@@ -615,14 +614,6 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 				}
 			}
 
-			for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
-			{
-				const AT66CasinoInteractable* Casino = WeakCasino.Get();
-				if (IsSafeZoneTooClose(Casino, (Casino ? Casino->GetSafeZoneRadius() : 0.f) + 500.f))
-				{
-					return false;
-				}
-			}
 		}
 
 		return true;

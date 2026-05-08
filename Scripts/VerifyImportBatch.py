@@ -2,10 +2,10 @@
 Verify the current import/gameplay batch in-editor.
 
 Checks:
-  - Imported prop / hero / companion assets exist
+  - Retired prop table is empty
+  - Imported hero / companion assets exist
   - Imported materials are parented to the expected Unlit masters
-  - DataTables contain the expected prop and character visual rows
-  - Tree2 import overrides and prop build settings still match the GLB pipeline
+  - DataTables contain the expected character visual rows
 
 Run in-editor or with the Python commandlet:
   py "C:/UE/T66/Scripts/VerifyImportBatch.py"
@@ -32,60 +32,11 @@ CHAR_UNLIT_PARENTS = (
     "/Game/Materials/Retro/M_FBX_Unlit_RetroGeometry",
 )
 
-PROP_ROW_NAMES = (
-    "Barn",
-    "Tree",
-    "Tree2",
-    "Rock",
-    "Grass",
-    "Bush",
-    "Boulder",
-    "Branch",
-    "Fence",
-    "Fence2",
-    "Fence3",
-    "Haybell",
-    "House",
-    "Log",
-    "Mud",
-    "Rocks",
-    "Scarecrow",
-    "Silo",
-    "Stump",
-    "Tractor",
-    "Tree3",
-    "Troth",
-    "Windmill",
-)
+PROP_ROW_NAMES = ()
 
-CURRENT_GLB_PROP_BATCH = (
-    "Barn",
-    "Boulder",
-    "Branch",
-    "Bush",
-    "Fence",
-    "Fence2",
-    "Fence3",
-    "Haybell",
-    "House",
-    "Log",
-    "Mud",
-    "Rocks",
-    "Scarecrow",
-    "Silo",
-    "Stump",
-    "Tractor",
-    "Tree",
-    "Tree2",
-    "Tree3",
-    "Troth",
-    "Windmill",
-)
+CURRENT_GLB_PROP_BATCH = ()
 
-STATIC_MESH_CHECKS = [
-    (f"Prop {name}", f"/Game/World/Props/{name}.{name}", GLB_UNLIT_PARENTS)
-    for name in PROP_ROW_NAMES
-]
+STATIC_MESH_CHECKS = []
 
 SKELETAL_MESH_CHECKS = [
     (
@@ -289,8 +240,7 @@ def _check_data_tables(v):
 
     if dt_props:
         rows = _get_row_names(dt_props)
-        for expected in PROP_ROW_NAMES:
-            v.add(f"DT_Props row {expected}", expected in rows, f"rows={len(rows)}")
+        v.add("DT_Props has no live prop rows", len(rows) == 0, f"rows={len(rows)}")
 
     if dt_items:
         rows = _get_row_names(dt_items)
@@ -310,39 +260,10 @@ def _check_data_tables(v):
             v.add(f"DT_CharacterVisuals row {expected}", expected in rows, f"rows={len(rows)}")
 
 def _check_import_overrides(v):
-    tree2_mesh = _load_asset("/Game/World/Props/Tree2.Tree2")
-    tree2_materials = _get_static_mesh_materials(tree2_mesh) if tree2_mesh else []
-    tree2 = tree2_materials[0] if tree2_materials else None
-    v.add(
-        "Tree2 material asset",
-        bool(tree2),
-        tree2.get_path_name() if tree2 else "<missing>",
-    )
-    if tree2:
-        texture = _get_material_instance_texture(tree2, "BaseColorTexture")
-        v.add("Tree2 BaseColorTexture asset", bool(texture), texture.get_path_name() if texture else "<missing>")
-        if texture:
-            try:
-                mip_gen = texture.get_editor_property("mip_gen_settings")
-                never_stream = texture.get_editor_property("never_stream")
-            except Exception as exc:
-                v.add("Tree2 texture overrides readable", False, exc)
-            else:
-                v.add(
-                    "Tree2 BaseColorTexture no mips",
-                    mip_gen == unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS,
-                    f"{mip_gen}",
-                )
-                v.add(
-                    "Tree2 BaseColorTexture never stream",
-                    bool(never_stream),
-                    f"{never_stream}",
-                )
-
-    build_setting_checks = [
-        (name, f"/Game/World/Props/{name}.{name}")
-        for name in CURRENT_GLB_PROP_BATCH
-    ]
+    build_setting_checks = []
+    if not build_setting_checks:
+        v.add("Prop build-setting checks retired", True, "no live prop mesh batch")
+        return
 
     try:
         build_settings_subsystem = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)

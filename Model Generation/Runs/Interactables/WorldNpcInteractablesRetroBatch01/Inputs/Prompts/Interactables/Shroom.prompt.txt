@@ -1,0 +1,1 @@
+Create one centered, full-object source image for a Bounce Shroom world interactable. Plain background, no text, no UI, no scene, no floor, no cropped parts. Use a readable chunky silhouette and simple material breaks that survive low-poly Quad Retro treatment. Keep it compact, iconic, and readable from a top-down gameplay camera.

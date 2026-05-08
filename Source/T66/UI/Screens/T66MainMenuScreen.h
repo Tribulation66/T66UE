@@ -142,11 +142,17 @@ private:
 	TStrongObjectPtr<UTexture2D> FriendAvatarFrameTexture;
 	TSharedPtr<FSlateBrush> PartySlotFrameBrush;
 	TStrongObjectPtr<UTexture2D> PartySlotFrameTexture;
+	TSharedPtr<FSlateBrush> PartyPlusIconBrush;
+	TStrongObjectPtr<UTexture2D> PartyPlusIconTexture;
 	TSharedPtr<FSlateBrush> CloseButtonBrush;
 	TStrongObjectPtr<UTexture2D> CloseButtonTexture;
 	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
 	TSharedPtr<FSlateBrush> ProfileAvatarFrameBrush;
 	TStrongObjectPtr<UTexture2D> ProfileAvatarFrameTexture;
+	TSharedPtr<FSlateBrush> ProgressTrackBrush;
+	TStrongObjectPtr<UTexture2D> ProgressTrackTexture;
+	TSharedPtr<FSlateBrush> ProgressFillBrush;
+	TStrongObjectPtr<UTexture2D> ProgressFillTexture;
 	TSharedPtr<FSlateBrush> CenterStackFrameBrush;
 	TStrongObjectPtr<UTexture2D> CenterStackFrameTexture;
 	FButtonStateBrushSet NewGameButtonBrushes;

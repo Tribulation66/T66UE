@@ -53,7 +53,7 @@ That means:
 - no mini-game flow inside the regular `AT66GameMode`
 - no mini-game save payloads inside the regular save classes
 - no mini-game HUD logic inside the regular HUD widgets
-- no mini-game shop logic inside the regular vendor/gambler/shop systems
+- no mini-game shop logic inside the regular shop/gambler/shop systems
 - no mini-game wave, enemy, boss, or movement logic inside regular runtime actors unless explicitly designated as a tiny bridge point
 
 ### 3.2 Allowed shared touchpoints
@@ -450,6 +450,8 @@ Use Codex-native image generation for mini-game sprite generation.
 
 Do not use browser-automation generation tooling or legacy request manifests.
 
+For full character animation atlases, use the shared minigame process: [T66Minigame_CharacterAnimationProcess.md](C:/UE/T66/Docs/Minigames/T66Minigame_CharacterAnimationProcess.md).
+
 Generation rule:
 
 - prompt for four related subjects per source image whenever practical
@@ -502,7 +504,7 @@ Examples of forbidden leakage:
 - putting mini save fields into `T66RunSaveGame`
 - putting mini enemy spawning into `T66EnemyDirector`
 - putting mini HUD sections into `T66GameplayHUDWidget`
-- putting mini shop logic into regular vendor/gambler screens
+- putting mini shop logic into regular shop/gambler screens
 
 ## 9. First Implementation Milestones
 

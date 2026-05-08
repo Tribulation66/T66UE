@@ -11,6 +11,7 @@ class USoundAttenuation;
 class USoundBase;
 class USoundConcurrency;
 class UDataTable;
+struct FStreamableHandle;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogT66Audio, Log, All);
 
@@ -39,11 +40,19 @@ public:
 private:
 	void LoadAudioEvents();
 	void PrimeConfiguredAssets();
+	bool CacheAudioEventRows(UDataTable* LoadedTable);
+	void HandleAudioEventTableLoaded();
 
 	USoundBase* ResolveSound(const FSoftObjectPath& AssetPath, bool bWarnOnFailure);
 	USoundAttenuation* ResolveAttenuation(const FSoftObjectPath& AssetPath);
 	USoundConcurrency* ResolveConcurrency(const FSoftObjectPath& AssetPath);
 	USoundBase* SelectSoundForRow(FName EventID, const FT66AudioEventRow& Row);
+	void QueueSoundLoad(const FSoftObjectPath& AssetPath);
+	void QueueAttenuationLoad(const FSoftObjectPath& AssetPath);
+	void QueueConcurrencyLoad(const FSoftObjectPath& AssetPath);
+	void HandleSoundLoaded(FSoftObjectPath AssetPath);
+	void HandleAttenuationLoaded(FSoftObjectPath AssetPath);
+	void HandleConcurrencyLoaded(FSoftObjectPath AssetPath);
 
 	float ResolveVolumeMultiplier(const FT66AudioEventRow& Row) const;
 	float ResolvePitchMultiplier(const FT66AudioEventRow& Row) const;
@@ -65,6 +74,14 @@ private:
 	UPROPERTY(Transient)
 	TMap<FString, TObjectPtr<USoundConcurrency>> CachedConcurrencies;
 
+	TSharedPtr<FStreamableHandle> AudioEventTableLoadHandle;
+	TMap<FString, TSharedPtr<FStreamableHandle>> PendingSoundLoads;
+	TMap<FString, TSharedPtr<FStreamableHandle>> PendingAttenuationLoads;
+	TMap<FString, TSharedPtr<FStreamableHandle>> PendingConcurrencyLoads;
+
 	TMap<FName, double> LastPlayTimeByEvent;
 	TSet<FString> WarnedMissingSoundPaths;
+	TSet<FString> WarnedMissingAttenuationPaths;
+	TSet<FString> WarnedMissingConcurrencyPaths;
+	TSet<FName> WarnedUnreadyEventIDs;
 };

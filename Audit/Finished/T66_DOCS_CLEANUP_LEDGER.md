@@ -31,8 +31,8 @@ These are the current source-of-truth docs and should remain:
 - `MASTER DOCS/MASTER_LIGHTING.md`
 - `MASTER DOCS/MASTER_MAP_DESIGN.md`
 - `MASTER DOCS/MASTER_TRAPS.md`
-- `ANTI_CHEAT/MASTER_ANTI_CHEAT.md`
-- `ANTI_CHEAT/ANTI_CHEAT_IMPLEMENTATION_CHECKLIST.md`
+- `MASTER DOCS/Backend Anti Cheat/MASTER_ANTI_CHEAT.md`
+- `MASTER DOCS/Backend Anti Cheat/ANTI_CHEAT_IMPLEMENTATION_CHECKLIST.md`
 
 ## 2. Keep As Active Supporting Docs
 

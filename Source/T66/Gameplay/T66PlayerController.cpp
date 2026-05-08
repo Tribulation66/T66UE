@@ -30,16 +30,12 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "UI/T66LoadingScreenWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
-#include "Gameplay/T66FountainOfLifeInteractable.h"
+#include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
-#include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
 #include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66StageCatchUpGoldInteractable.h"
-#include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66BackendSubsystem.h"
@@ -54,7 +50,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
@@ -63,13 +58,13 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Gameplay/T66GamblerBoss.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "EngineUtils.h"
 #include "GameFramework/InputSettings.h"
 #include "GameFramework/PlayerInput.h"
 #include "Camera/CameraComponent.h"
 
 #include "Gameplay/T66GameMode.h"
-#include "Gameplay/T66ItemPickup.h"
 #include "Gameplay/T66MainMapTerrain.h"
 #include "Gameplay/T66TowerMapTerrain.h"
 #include "Gameplay/T66WorldVisualSetup.h"
@@ -92,6 +87,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Engine/StreamableManager.h"
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "Engine/GameViewportClient.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SOverlay.h"
@@ -166,14 +163,44 @@ namespace
 		14,
 		TEXT("Number of overlap samples along the fixed camera arm used to catch side walls even when another static mesh blocks the sweep first."),
 		ECVF_Default);
+
 	static TAutoConsoleVariable<float> CVarT66CameraWallReturnSpeed(
 		TEXT("T66.Camera.WallReturnSpeed"),
 		14.0f,
 		TEXT("Speed used when the fixed camera expands back to its desired zoom after clearing a wall."),
 		ECVF_Default);
+	static TAutoConsoleVariable<int32> CVarT66CameraWallOcclusionEnabled(
+		TEXT("T66.Camera.WallOcclusionEnabled"),
+		1,
+		TEXT("0 disables camera-to-hero wall fade, 1 fades tower wall visuals between the camera and hero."),
+		ECVF_Default);
+	static TAutoConsoleVariable<float> CVarT66CameraWallOcclusionOpacity(
+		TEXT("T66.Camera.WallOcclusionOpacity"),
+		0.12f,
+		TEXT("Opacity used by the tower wall fade material when a wall sits between the gameplay camera and hero."),
+		ECVF_Default);
 	const FName T66PlayerControllerMainMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
 	const FName T66PlayerControllerTraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
 	const FName T66PlayerControllerTowerCeilingTag(TEXT("T66_Tower_Ceiling"));
+
+	static void T66CollectMainMapTerrainVisualActors(UWorld* World, TArray<AActor*>& OutActors)
+	{
+		OutActors.Reset();
+		if (!World)
+		{
+			return;
+		}
+
+		// Client setup fallback only. This runs after host run settings arrive and
+		// feeds duplicate cleanup, not per-frame terrain visibility.
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			if (AActor* Actor = *It; Actor && Actor->ActorHasTag(T66PlayerControllerMainMapTerrainVisualTag))
+			{
+				OutActors.Add(Actor);
+			}
+		}
+	}
 
 	static bool T66IsGameplayCameraWallActor(const AActor* Actor)
 	{
@@ -181,6 +208,21 @@ namespace
 			&& Actor->ActorHasTag(T66PlayerControllerMainMapTerrainVisualTag)
 			&& Actor->ActorHasTag(T66PlayerControllerTraversalBarrierTag)
 			&& !Actor->ActorHasTag(T66PlayerControllerTowerCeilingTag);
+	}
+
+	static bool T66IsGameplayCameraWallComponent(const UPrimitiveComponent* Component)
+	{
+		const AActor* Owner = Component ? Component->GetOwner() : nullptr;
+		if (!Owner || !Owner->ActorHasTag(T66PlayerControllerMainMapTerrainVisualTag))
+		{
+			return false;
+		}
+
+		const bool bWall = Owner->ActorHasTag(T66PlayerControllerTraversalBarrierTag)
+			|| Component->ComponentHasTag(T66PlayerControllerTraversalBarrierTag);
+		const bool bCeiling = Owner->ActorHasTag(T66PlayerControllerTowerCeilingTag)
+			|| Component->ComponentHasTag(T66PlayerControllerTowerCeilingTag);
+		return bWall && !bCeiling;
 	}
 }
 
@@ -352,7 +394,7 @@ void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime
 	Hero->CameraBoom->SetRelativeLocation(LockedChaseBoomLocation);
 
 	const float LockedChaseArmLength = FMath::Max(100.0f, CVarT66LockedChaseCameraArmLength.GetValueOnGameThread());
-	if (bNewLockedChaseHero || !FMath::IsNearlyEqual(DesiredGameplayCameraArmLength, LockedChaseArmLength, 1.0f))
+	if (bNewLockedChaseHero || DesiredGameplayCameraArmLength <= KINDA_SMALL_NUMBER)
 	{
 		DesiredGameplayCameraArmLength = LockedChaseArmLength;
 		if (bNewLockedChaseHero || Hero->CameraBoom->TargetArmLength > DesiredGameplayCameraArmLength)
@@ -575,6 +617,7 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	bClientGameplayWorldSetupComplete = false;
 	bReceivedGameplayRunSettingsFromServer = false;
 	GameplayPresentationAssetsLoadHandle.Reset();
+	ClearGameplayCameraWallOcclusion();
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -703,6 +746,177 @@ void AT66PlayerController::UpdateGameplayCameraSideWallSpring(const float DeltaT
 	}
 }
 
+UMaterialInterface* AT66PlayerController::GetCameraWallOccluderFadeMaterial()
+{
+	if (!CameraWallOccluderFadeMaterial)
+	{
+		CameraWallOccluderFadeMaterial = LoadObject<UMaterialInterface>(
+			nullptr,
+			TEXT("/Game/Materials/M_CameraWallOccluderFade.M_CameraWallOccluderFade"));
+	}
+	return CameraWallOccluderFadeMaterial;
+}
+
+void AT66PlayerController::ApplyCameraWallOcclusion(UPrimitiveComponent* Component, UMaterialInterface* FadeMaterial)
+{
+	if (!Component || !FadeMaterial || CameraWallOccludedComponents.Contains(Component))
+	{
+		return;
+	}
+
+	const int32 MaterialCount = Component->GetNumMaterials();
+	if (MaterialCount <= 0)
+	{
+		return;
+	}
+
+	FT66CameraWallOccluderOriginalMaterials OriginalMaterials;
+	OriginalMaterials.Materials.Reserve(MaterialCount);
+	if (UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Component))
+	{
+		OriginalMaterials.bHadDisallowNanite = StaticMeshComponent->IsDisallowNanite();
+		if (!OriginalMaterials.bHadDisallowNanite)
+		{
+			StaticMeshComponent->bDisallowNanite = true;
+			StaticMeshComponent->MarkRenderStateDirty();
+		}
+	}
+
+	for (int32 MaterialIndex = 0; MaterialIndex < MaterialCount; ++MaterialIndex)
+	{
+		OriginalMaterials.Materials.Add(Component->GetMaterial(MaterialIndex));
+
+		UMaterialInstanceDynamic* FadeMID = UMaterialInstanceDynamic::Create(FadeMaterial, this);
+		if (FadeMID)
+		{
+			FadeMID->SetScalarParameterValue(
+				TEXT("Opacity"),
+				FMath::Clamp(CVarT66CameraWallOcclusionOpacity.GetValueOnGameThread(), 0.02f, 0.95f));
+			Component->SetMaterial(MaterialIndex, FadeMID);
+		}
+	}
+
+	CameraWallOccludedComponents.Add(Component, MoveTemp(OriginalMaterials));
+}
+
+void AT66PlayerController::RestoreCameraWallOcclusion(UPrimitiveComponent* Component)
+{
+	if (!Component)
+	{
+		CameraWallOccludedComponents.Remove(Component);
+		return;
+	}
+
+	FT66CameraWallOccluderOriginalMaterials OriginalMaterials;
+	if (!CameraWallOccludedComponents.RemoveAndCopyValue(Component, OriginalMaterials))
+	{
+		return;
+	}
+
+	for (int32 MaterialIndex = 0; MaterialIndex < OriginalMaterials.Materials.Num(); ++MaterialIndex)
+	{
+		Component->SetMaterial(MaterialIndex, OriginalMaterials.Materials[MaterialIndex]);
+	}
+
+	if (UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Component))
+	{
+		if (StaticMeshComponent->IsDisallowNanite() != OriginalMaterials.bHadDisallowNanite)
+		{
+			StaticMeshComponent->bDisallowNanite = OriginalMaterials.bHadDisallowNanite;
+			StaticMeshComponent->MarkRenderStateDirty();
+		}
+	}
+}
+
+void AT66PlayerController::ClearGameplayCameraWallOcclusion()
+{
+	TArray<UPrimitiveComponent*> ComponentsToRestore;
+	ComponentsToRestore.Reserve(CameraWallOccludedComponents.Num());
+	for (const TPair<TObjectPtr<UPrimitiveComponent>, FT66CameraWallOccluderOriginalMaterials>& Pair : CameraWallOccludedComponents)
+	{
+		ComponentsToRestore.Add(Pair.Key.Get());
+	}
+
+	for (UPrimitiveComponent* Component : ComponentsToRestore)
+	{
+		RestoreCameraWallOcclusion(Component);
+	}
+	CameraWallOccludedComponents.Empty();
+}
+
+void AT66PlayerController::UpdateGameplayCameraWallOcclusion(const float DeltaTime)
+{
+	static_cast<void>(DeltaTime);
+
+	if (!IsLocalController()
+		|| !IsGameplayLevel()
+		|| bHeroOneScopeViewEnabled
+		|| CVarT66CameraWallOcclusionEnabled.GetValueOnGameThread() == 0)
+	{
+		ClearGameplayCameraWallOcclusion();
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
+	if (!World || !Hero || !Hero->FollowCamera)
+	{
+		ClearGameplayCameraWallOcclusion();
+		return;
+	}
+
+	UMaterialInterface* FadeMaterial = GetCameraWallOccluderFadeMaterial();
+	if (!FadeMaterial)
+	{
+		ClearGameplayCameraWallOcclusion();
+		return;
+	}
+
+	const FVector CameraLocation = Hero->FollowCamera->GetComponentLocation();
+	const FVector HeroVisibilityLocation = Hero->GetActorLocation() + FVector(0.0f, 0.0f, 120.0f);
+	if (FVector::DistSquared(CameraLocation, HeroVisibilityLocation) <= FMath::Square(10.0f))
+	{
+		ClearGameplayCameraWallOcclusion();
+		return;
+	}
+
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(T66GameplayCameraWallOcclusion), true);
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.AddIgnoredActor(Hero);
+	QueryParams.bFindInitialOverlaps = true;
+
+	TArray<FHitResult> Hits;
+	World->LineTraceMultiByChannel(Hits, CameraLocation, HeroVisibilityLocation, ECC_Camera, QueryParams);
+
+	TSet<UPrimitiveComponent*> CurrentOccluders;
+	for (const FHitResult& Hit : Hits)
+	{
+		UPrimitiveComponent* Component = Hit.GetComponent();
+		if (!T66IsGameplayCameraWallComponent(Component))
+		{
+			continue;
+		}
+
+		CurrentOccluders.Add(Component);
+		ApplyCameraWallOcclusion(Component, FadeMaterial);
+	}
+
+	TArray<UPrimitiveComponent*> ComponentsToRestore;
+	for (const TPair<TObjectPtr<UPrimitiveComponent>, FT66CameraWallOccluderOriginalMaterials>& Pair : CameraWallOccludedComponents)
+	{
+		UPrimitiveComponent* Component = Pair.Key.Get();
+		if (!Component || !CurrentOccluders.Contains(Component))
+		{
+			ComponentsToRestore.Add(Component);
+		}
+	}
+
+	for (UPrimitiveComponent* Component : ComponentsToRestore)
+	{
+		RestoreCameraWallOcclusion(Component);
+	}
+}
+
 void AT66PlayerController::RefreshGameplayViewTarget(bool bAllowRetry)
 {
 	if (!IsLocalController() || !IsGameplayLevel())
@@ -814,15 +1028,6 @@ void AT66PlayerController::EnsureClientGameplayWorldSetup(bool bAllowRetry)
 		return;
 	}
 
-	int32 ExistingTerrainVisualCount = 0;
-	for (TActorIterator<AActor> It(World); It; ++It)
-	{
-		if (AActor* Actor = *It; Actor && Actor->ActorHasTag(T66PlayerControllerMainMapTerrainVisualTag))
-		{
-			++ExistingTerrainVisualCount;
-		}
-	}
-
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
 	const bool bHasRunSettings = T66GI && (bReceivedGameplayRunSettingsFromServer || ApplyHostPartyRunSettingsToGameInstance());
 	if (!T66GI || !bHasRunSettings)
@@ -857,7 +1062,9 @@ void AT66PlayerController::EnsureClientGameplayWorldSetup(bool bAllowRetry)
 		return;
 	}
 
-	if (ExistingTerrainVisualCount >= 10)
+	TArray<AActor*> ExistingTerrainVisualActors;
+	T66CollectMainMapTerrainVisualActors(World, ExistingTerrainVisualActors);
+	if (ExistingTerrainVisualActors.Num() >= 10)
 	{
 		World->GetTimerManager().ClearTimer(ClientGameplayWorldSetupRetryTimerHandle);
 		ClientGameplayWorldSetupRetriesRemaining = 0;
@@ -866,18 +1073,9 @@ void AT66PlayerController::EnsureClientGameplayWorldSetup(bool bAllowRetry)
 		return;
 	}
 
-	if (ExistingTerrainVisualCount > 0)
+	if (ExistingTerrainVisualActors.Num() > 0)
 	{
-		TArray<AActor*> TerrainActorsToDestroy;
-		for (TActorIterator<AActor> It(World); It; ++It)
-		{
-			if (AActor* Actor = *It; Actor && Actor->ActorHasTag(T66PlayerControllerMainMapTerrainVisualTag))
-			{
-				TerrainActorsToDestroy.Add(Actor);
-			}
-		}
-
-		for (AActor* Actor : TerrainActorsToDestroy)
+		for (AActor* Actor : ExistingTerrainVisualActors)
 		{
 			if (Actor)
 			{

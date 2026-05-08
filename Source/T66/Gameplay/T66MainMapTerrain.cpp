@@ -49,7 +49,6 @@ namespace T66MainMapTerrain
 		static constexpr float TargetMainMapBoardScale = 10.0f;
 		static constexpr int32 MainMapBoardSizeCells = 81;
 		static constexpr int32 MainMapExtensionRoomRadiusCells = 2;
-		static constexpr float TreeDecorationSpawnThreshold = 0.82f;
 		static constexpr float RockDecorationSpawnThreshold = 0.69f;
 		static constexpr int32 WallHeightLevels = 50;
 		static constexpr bool bRenderFarmGrass = false;
@@ -115,9 +114,6 @@ namespace T66MainMapTerrain
 			UTexture* DirtTexture = nullptr;
 			UTexture* WallTexture = nullptr;
 			TArray<UMaterialInterface*> GrassMaterials;
-			UStaticMesh* TreeMesh1 = nullptr;
-			UStaticMesh* TreeMesh2 = nullptr;
-			UStaticMesh* TreeMesh3 = nullptr;
 			UStaticMesh* RockMesh1 = nullptr;
 			UStaticMesh* RockMesh2 = nullptr;
 			UStaticMesh* RockMesh3 = nullptr;
@@ -796,30 +792,7 @@ namespace T66MainMapTerrain
 			const float VerticalScale = Settings.StepHeight / 12.0f;
 			const float TopSurfaceOffset = Settings.StepHeight * 0.5f;
 			const float ImportedScale = Settings.BoardScale;
-			const float TreeJitter = Settings.CellSize * 0.34f;
 			const float RockJitter = Settings.CellSize * 0.40f;
-
-			if (ObjectToSpawn > TreeDecorationSpawnThreshold)
-			{
-				const float TreeScale = Rng.FRandRange(0.22f, 0.32f) * ImportedScale;
-				switch (Rng.RandRange(0, 2))
-				{
-				case 0: Cell.Decoration = ET66MapCellDecoration::Tree1; break;
-				case 1: Cell.Decoration = ET66MapCellDecoration::Tree2; break;
-				default: Cell.Decoration = ET66MapCellDecoration::Tree3; break;
-				}
-
-				Cell.DecorationLocalOffset = FVector(
-					Rng.FRandRange(-TreeJitter, TreeJitter),
-					Rng.FRandRange(-TreeJitter, TreeJitter),
-					TopSurfaceOffset + Rng.FRandRange(0.12f, 0.36f) * VerticalScale);
-				Cell.DecorationLocalRotation = FRotator(
-					Rng.FRandRange(-3.5f, 3.5f),
-					Rng.FRandRange(0.0f, 360.0f),
-					Rng.FRandRange(-3.5f, 3.5f));
-				Cell.DecorationLocalScale = FVector(TreeScale);
-				return;
-			}
 
 			if (ObjectToSpawn > RockDecorationSpawnThreshold)
 			{
@@ -879,9 +852,6 @@ namespace T66MainMapTerrain
 		{
 			switch (Decoration)
 			{
-			case ET66MapCellDecoration::Tree1: return Assets.TreeMesh1;
-			case ET66MapCellDecoration::Tree2: return Assets.TreeMesh2;
-			case ET66MapCellDecoration::Tree3: return Assets.TreeMesh3;
 			case ET66MapCellDecoration::Rock: return Assets.RockMesh1 ? Assets.RockMesh1 : Assets.RockMesh2;
 			case ET66MapCellDecoration::Rocks: return Assets.RockMesh3 ? Assets.RockMesh3 : Assets.RockMesh2;
 			case ET66MapCellDecoration::Log: return Assets.LogMesh;
@@ -928,27 +898,16 @@ namespace T66MainMapTerrain
 			}
 
 			OutAssets.PlaneMesh = T66FindOrLoadObject<UStaticMesh>(TEXT("/Engine/BasicShapes/Plane.Plane"));
-			OutAssets.GrassMesh = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Grass.Grass"));
-			if (UMaterialInterface* GrassMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Props/Grass/Materials/Material_0_014.Material_0_014")))
-			{
-				OutAssets.GrassMaterials.Add(GrassMaterial);
-			}
-
-			OutAssets.TreeMesh1 = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Tree.Tree"));
-			OutAssets.TreeMesh2 = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Tree2.Tree2"));
-			OutAssets.TreeMesh3 = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Tree3.Tree3"));
-			OutAssets.RockMesh1 = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Rocks.Rocks"));
-			OutAssets.RockMesh2 = OutAssets.RockMesh1;
-			OutAssets.RockMesh3 = OutAssets.RockMesh1;
-			OutAssets.LogMesh = T66FindOrLoadObject<UStaticMesh>(TEXT("/Game/World/Props/Log.Log"));
-			UE_LOG(LogT66MainMapTerrain, Log, TEXT("[MAP] Main map terrain assets: DirtMaterial=%s DirtTexture=%s WallMaterial=%s WallTexture=%s Tree1=%s Tree2=%s Tree3=%s Rock=%s Rocks=%s"),
+			OutAssets.GrassMesh = nullptr;
+			OutAssets.RockMesh1 = nullptr;
+			OutAssets.RockMesh2 = nullptr;
+			OutAssets.RockMesh3 = nullptr;
+			OutAssets.LogMesh = nullptr;
+			UE_LOG(LogT66MainMapTerrain, Log, TEXT("[MAP] Main map terrain assets: DirtMaterial=%s DirtTexture=%s WallMaterial=%s WallTexture=%s Rock=%s Rocks=%s"),
 				OutAssets.DirtMaterial ? TEXT("yes") : TEXT("no"),
 				OutAssets.DirtTexture ? TEXT("yes") : TEXT("no"),
 				OutAssets.WallMaterial ? TEXT("yes") : TEXT("no"),
 				OutAssets.WallTexture ? TEXT("yes") : TEXT("no"),
-				OutAssets.TreeMesh1 ? TEXT("yes") : TEXT("no"),
-				OutAssets.TreeMesh2 ? TEXT("yes") : TEXT("no"),
-				OutAssets.TreeMesh3 ? TEXT("yes") : TEXT("no"),
 				OutAssets.RockMesh1 ? TEXT("yes") : TEXT("no"),
 				OutAssets.RockMesh2 ? TEXT("yes") : TEXT("no"));
 			CachedLoadedAssets = OutAssets;

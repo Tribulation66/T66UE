@@ -28,16 +28,12 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
-#include "Gameplay/T66FountainOfLifeInteractable.h"
+#include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
-#include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
 #include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66StageCatchUpGoldInteractable.h"
-#include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -50,7 +46,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
@@ -65,7 +60,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "Camera/CameraComponent.h"
 
 #include "Gameplay/T66GameMode.h"
-#include "Gameplay/T66ItemPickup.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
@@ -357,7 +351,7 @@ void AT66PlayerController::SetupInputComponent()
 		InputComponent->BindAction(TEXT("Escape"), IE_Pressed, this, &AT66PlayerController::HandleEscapePressed);
 		InputComponent->BindAction(TEXT("Pause"), IE_Pressed, this, &AT66PlayerController::HandleEscapePressed);
 
-		// T = toggle HUD panels (inventory + minimap), F = interact (vendor / pickup)
+		// T = toggle HUD panels (inventory + minimap), F = interact (shop / pickup)
 		InputComponent->BindAction(TEXT("ToggleHUD"), IE_Pressed, this, &AT66PlayerController::HandleToggleHUDPressed);
 		InputComponent->BindAction(TEXT("ToggleImmortality"), IE_Pressed, this, &AT66PlayerController::HandleToggleImmortalityPressed);
 		InputComponent->BindAction(TEXT("TogglePower"), IE_Pressed, this, &AT66PlayerController::HandleTogglePowerPressed);

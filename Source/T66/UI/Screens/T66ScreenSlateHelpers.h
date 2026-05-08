@@ -50,7 +50,7 @@ namespace T66ScreenSlateHelpers
 		const FVector2D& DesiredSize = FVector2D(1.0f, 1.0f),
 		float SourceCapFraction = 0.105f);
 	float NormalizeReferenceSlicedButtonMinWidth(float RequestedMinWidth, float Height);
-	FString MakeReferenceChromeButtonAssetPath(
+	T66_API FString MakeReferenceChromeButtonAssetPath(
 		const TCHAR* Family,
 		const TCHAR* State);
 	FString MakeReferenceButtonAssetPath(
@@ -64,14 +64,14 @@ namespace T66ScreenSlateHelpers
 	bool IsReferenceChromeButtonAssetPath(const FString& SourceRelativePath);
 	bool IsReferenceChromePillButtonAssetPath(const FString& SourceRelativePath);
 	bool IsReferenceChromeCTAButtonAssetPath(const FString& SourceRelativePath);
-	TSharedRef<SWidget> MakeReferenceSharedBorder(
+	T66_API TSharedRef<SWidget> MakeReferenceSharedBorder(
 		const TCHAR* RelativeAssetPath,
 		const TSharedRef<SWidget>& Content,
 		const FMargin& BrushMargin,
 		const FMargin& Padding,
 		const TCHAR* DebugLabel,
 		const FLinearColor& FallbackColor);
-	TSharedRef<SWidget> MakeReferenceSlicedPlateButton(
+	T66_API TSharedRef<SWidget> MakeReferenceSlicedPlateButton(
 		FOnClicked OnClicked,
 		const TSharedRef<SWidget>& Content,
 		const FSlateBrush* NormalBrush,

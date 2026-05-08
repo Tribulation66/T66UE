@@ -9,6 +9,7 @@
 class SHorizontalBox;
 class SVerticalBox;
 class UT66BackendSubsystem;
+enum class ET66ButtonType : uint8;
 
 struct T66_API FT66MinigameDifficultyOption
 {
@@ -74,7 +75,13 @@ private:
 	TSharedRef<SWidget> BuildCenterPanel() const;
 	TSharedRef<SWidget> BuildLeaderboardPanel();
 	TSharedRef<SWidget> MakePanel(const TSharedRef<SWidget>& Content, const FMargin& Padding) const;
-	TSharedRef<SWidget> MakeMenuButton(const FText& Text, const FOnClicked& Handler, bool bEnabled, float Height) const;
+	TSharedRef<SWidget> MakeMenuButton(
+		const FText& Text,
+		const FOnClicked& Handler,
+		bool bEnabled,
+		float Height,
+		ET66ButtonType Type,
+		bool bSelected = false) const;
 	TSharedRef<SWidget> MakeScopeButton(const FText& Text, ET66MinigameLeaderboardScope Scope);
 	TSharedRef<SWidget> MakeDifficultyDropdown();
 	TSharedRef<SWidget> MakeLeaderboardRows() const;

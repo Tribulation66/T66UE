@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-04-18  
 **Scope:** Single-source handoff for the T66 player-experience system: expected outcomes, progression pacing, tower stage structure, miasma pressure, interactable frequency, hero growth, item/alchemy stat pressure, UI presentation rules, and the current anti-cheat linkage.  
-**Companion docs:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`, `MASTER DOCS/MASTER_STATS.md`, `MASTER DOCS/MASTER_MAP_DESIGN.md`, `MASTER DOCS/MASTER_COMBAT.md`, `ANTI_CHEAT/MASTER_ANTI_CHEAT.md`  
+**Companion docs:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`, `MASTER DOCS/MASTER_STATS.md`, `MASTER DOCS/MASTER_MAP_DESIGN.md`, `MASTER DOCS/MASTER_COMBAT.md`, `MASTER DOCS/Backend Anti Cheat/MASTER_ANTI_CHEAT.md`  
 **Maintenance rule:** Update this file after every material change to stage structure, pacing targets, difficulty starts, miasma timing, interactable frequency, hero XP curves, hero level-up behavior, item/alchemy stat grants, or expected-outcome telemetry.
 
 ## 1. Executive Summary

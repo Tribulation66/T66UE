@@ -83,7 +83,7 @@ void AT66UniqueDebuffEnemy::BeginPlay()
 			StageNum = RunState->GetCurrentStage();
 		}
 	}
-	StageNum = FMath::Clamp(StageNum, 1, 23);
+	StageNum = FMath::Clamp(StageNum, 1, 20);
 
 	Super::BeginPlay();
 

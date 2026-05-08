@@ -61,7 +61,7 @@ void UT66CollectorOverlayWidget::OnSpawnNPC(FName NPCID)
 {
 	AT66GameMode* GM = GetWorld() ? GetWorld()->GetAuthGameMode<AT66GameMode>() : nullptr;
 	if (!GM) return;
-	if (NPCID == FName(TEXT("Fountain"))) GM->SpawnLabFountainOfLife();
+	if (NPCID == FName(TEXT("Fountain"))) GM->SpawnLabFountain();
 	RefreshContent();
 }
 
@@ -248,8 +248,8 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	else if (CollectorTabIndex == 1)
 	{
 		AddSpawnCard(
-			LOCTEXT("FountainOfLifeName", "Fountain of Life"),
-			LOCTEXT("FountainOfLifeDesc", "NPC: Fountain of Life."),
+			LOCTEXT("FountainName", "Fountain"),
+			LOCTEXT("FountainDesc", "NPC: Fountain."),
 			[this]() { OnSpawnNPC(FName(TEXT("Fountain"))); }
 		);
 	}
@@ -257,10 +257,11 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	{
 		static const TArray<FName> MobIDs =
 		{
-			FName(TEXT("Cow")),
-			FName(TEXT("Pig")),
-			FName(TEXT("Goat")),
-			FName(TEXT("Roost")),
+			FName(TEXT("Dungeon_Slime")),
+			FName(TEXT("Dungeon_WebSpider")),
+			FName(TEXT("Forest_Boar")),
+			FName(TEXT("Ocean_Jellyfish")),
+			FName(TEXT("Hell_Gargoyle")),
 			FName(TEXT("GoblinThief")),
 			FName(TEXT("UniqueEnemy"))
 		};
@@ -275,9 +276,8 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	}
 	else
 	{
-		AddSpawnCard(LOCTEXT("FountainOfLifeInteractableName", "Fountain of Life"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("Fountain"))); });
+		AddSpawnCard(LOCTEXT("FountainInteractableName", "Fountain"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("Fountain"))); });
 		AddSpawnCard(LOCTEXT("Chest", "Chest"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("Chest"))); });
-		AddSpawnCard(LOCTEXT("WheelSpin", "Wheel Spin"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("WheelSpin"))); });
 		AddSpawnCard(LOCTEXT("IdolAltar", "Idol Altar"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("IdolAltar"))); });
 	}
 

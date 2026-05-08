@@ -3,6 +3,8 @@
 #include "UI/Screens/T66LanguageSelectScreen.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
+#include "Engine/GameInstance.h"
+#include "Engine/TextureDefines.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
@@ -11,6 +13,7 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Images/SImage.h"
@@ -88,7 +91,11 @@ namespace
 			Margin,
 			DebugLabel,
 			Filter);
-		if (!Texture || !Entry.Brush.IsValid())
+		if (!Texture)
+		{
+			return Entry.bSimpleReferenceFallback && Entry.Brush.IsValid() ? Entry.Brush.Get() : nullptr;
+		}
+		if (!Entry.Brush.IsValid())
 		{
 			return nullptr;
 		}
@@ -334,14 +341,20 @@ namespace
 		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
 			? Params.CustomContent.ToSharedRef()
 			: StaticCastSharedRef<SWidget>(
-				SNew(STextBlock)
-				.Text(ButtonText)
-				.Font(ButtonFont)
-				.ColorAndOpacity(TextColor)
-				.Justification(ETextJustify::Center)
-				.ShadowOffset(FVector2D(0.f, 1.f))
-				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.70f))
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis));
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					SNew(STextBlock)
+					.Text(ButtonText)
+					.Font(ButtonFont)
+					.ColorAndOpacity(TextColor)
+					.Justification(ETextJustify::Center)
+					.ShadowOffset(FVector2D(0.f, 1.f))
+					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.70f))
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)
+				]);
 
 		const FButtonStyle& ButtonStyle = GetLanguageReferenceButtonStyle(Params.Type);
 		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
@@ -393,20 +406,30 @@ namespace
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				SNew(STextBlock)
-				.Text(Label)
-				.Font(LabelFont)
-				.ColorAndOpacity(FLinearColor(0.98f, 0.86f, 0.62f, 1.0f))
-				.Justification(ETextJustify::Center)
-				.ShadowOffset(FVector2D(0.f, 2.f))
-				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.82f))
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				SNew(SBox)
+				.WidthOverride(692.f)
+				[
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFit)
+					.StretchDirection(EStretchDirection::DownOnly)
+					[
+						SNew(STextBlock)
+						.Text(Label)
+						.Font(LabelFont)
+						.ColorAndOpacity(FLinearColor(0.98f, 0.86f, 0.62f, 1.0f))
+						.Justification(ETextJustify::Center)
+						.ShadowOffset(FVector2D(0.f, 2.f))
+						.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.82f))
+						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+						.Clipping(EWidgetClipping::ClipToBounds)
+					]
+				]
 			],
 			&ButtonStyle.Normal,
 			&ButtonStyle.Hovered,
 			&ButtonStyle.Pressed,
 			&ButtonStyle.Disabled,
-			760.f,
+			792.f,
 			54.f,
 			FMargin(0.f),
 			TAttribute<bool>(true),
@@ -513,10 +536,10 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 			LanguageButtons->AddSlot()
 			.AutoHeight()
 			.HAlign(HAlign_Center)
-			.Padding(30.0f, 5.0f, 0.0f, 5.0f)
+			.Padding(0.0f, 4.0f, 0.0f, 4.0f)
 			[
 				SNew(SBox)
-				.WidthOverride(760.0f)
+				.WidthOverride(792.0f)
 				.HeightOverride(54.0f)
 				[
 					MakeLanguageRowButton(
@@ -616,19 +639,28 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 
 	const TSharedRef<SWidget> LanguageSurface =
 		SNew(SBox)
-		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Top)
+		.Padding(FMargin(ScreenPadding, TopInset + 12.f, ScreenPadding, ScreenPadding))
 		[
-			SNew(SBox)
-			.WidthOverride(1018.f)
-			.HeightOverride(604.f)
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
 			[
-				MakeLanguagePanel(
-					PageContent,
-					ET66PanelType::Panel,
-					T66LanguageShellFill(),
-					FMargin(0.f))
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::Both)
+				[
+					SNew(SBox)
+					.WidthOverride(1018.f)
+					.HeightOverride(604.f)
+					[
+						MakeLanguagePanel(
+							PageContent,
+							ET66PanelType::Panel,
+							T66LanguageShellFill(),
+							FMargin(0.f))
+					]
+				]
 			]
 		];
 

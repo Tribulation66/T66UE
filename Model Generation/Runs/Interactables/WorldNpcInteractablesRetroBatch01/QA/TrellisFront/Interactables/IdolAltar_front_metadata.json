@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\Raw\\Trellis\\Interactables\\IdolAltar\\IdolAltar_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\QA\\TrellisFront\\Interactables\\IdolAltar_front.png",
+  "export": null,
+  "raw_triangles": 78998,
+  "triangles_before_decimate": 78998,
+  "triangles_after_decimate": 78998,
+  "bounds": {
+    "min": [
+      -0.4625200033187866,
+      -0.0321187898516655,
+      -0.5009757280349731
+    ],
+    "max": [
+      0.4625943899154663,
+      0.032034825533628464,
+      0.5008122324943542
+    ],
+    "size": [
+      0.9251143932342529,
+      0.06415361166000366,
+      1.0017879009246826
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\UltrakillSurfacePrototype01\\Models\\Hero_4_Mike_TypeA_Standard_HeadBody_Assembled_UltrakillSurface.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\UltrakillSurfacePrototype01\\Review\\Mike_after.png",
+  "export": null,
+  "raw_triangles": 8998,
+  "triangles_before_decimate": 8998,
+  "triangles_after_decimate": 8998,
+  "bounds": {
+    "min": [
+      -0.30019593238830566,
+      -0.1411772072315216,
+      -0.5018064379692078
+    ],
+    "max": [
+      0.3001599609851837,
+      0.1355009526014328,
+      0.7010146975517273
+    ],
+    "size": [
+      0.600355863571167,
+      0.2766781449317932,
+      1.202821135520935
+    ]
+  }
+}

@@ -4,7 +4,6 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66HouseNPCBase.h"
-#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66MiasmaBoundary.h"
 #include "Gameplay/T66WorldInteractableBase.h"
@@ -87,22 +86,6 @@ void UT66ActorRegistrySubsystem::UnregisterNPC(AT66HouseNPCBase* NPC)
 	if (!NPC) return;
 	RemoveWeak(NPCs, NPC);
 	UE_LOG(LogT66ActorRegistry, Log, TEXT("[GOLD] ActorRegistry: unregistered NPC %s (total: %d)"), *NPC->GetName(), NPCs.Num());
-}
-
-// --------------- Casino Safe Zones ---------------
-
-void UT66ActorRegistrySubsystem::RegisterCasino(AT66CasinoInteractable* Casino)
-{
-	if (!Casino) return;
-	AddUniqueWeak(Casinos, Casino);
-	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: registered casino %s (total: %d)"), *Casino->GetName(), Casinos.Num());
-}
-
-void UT66ActorRegistrySubsystem::UnregisterCasino(AT66CasinoInteractable* Casino)
-{
-	if (!Casino) return;
-	RemoveWeak(Casinos, Casino);
-	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: unregistered casino %s (total: %d)"), *Casino->GetName(), Casinos.Num());
 }
 
 // --------------- Stage Gates ---------------

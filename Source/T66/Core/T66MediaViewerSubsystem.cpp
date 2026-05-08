@@ -121,7 +121,7 @@ void UT66MediaViewerSubsystem::PrewarmTikTok()
 		: FPaths::ConvertRelativePathToFull(FPaths::Combine(FPlatformProcess::BaseDir(), TEXT(".."), TEXT("..")));
 	const FString UserData = FPaths::ConvertRelativePathToFull(
 		FPaths::Combine(RootDir, TEXT("Saved"), TEXT("TikTokWebView2"), TEXT("UserData")));
-	IFileManager::Get().MakeDirectory(*UserData, /*Tree*/true);
+	IFileManager::Get().MakeDirectory(*UserData, /*CreateParents*/true);
 
 	if (TikTokWebView2->EnsureCreated(ParentHandle, UserData))
 	{
@@ -206,7 +206,7 @@ void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 			: FPaths::ConvertRelativePathToFull(FPaths::Combine(FPlatformProcess::BaseDir(), TEXT(".."), TEXT("..")));
 		const FString UserData = FPaths::ConvertRelativePathToFull(
 			FPaths::Combine(RootDir, TEXT("Saved"), TEXT("TikTokWebView2"), TEXT("UserData")));
-		IFileManager::Get().MakeDirectory(*UserData, /*Tree*/true);
+		IFileManager::Get().MakeDirectory(*UserData, /*CreateParents*/true);
 
 		if (TikTokWebView2->EnsureCreated(ParentHandle, UserData))
 		{

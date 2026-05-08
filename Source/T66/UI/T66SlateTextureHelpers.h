@@ -36,7 +36,13 @@ namespace T66SlateTexture
 		FName RequestKey = NAME_None,
 		bool bClearWhileLoading = true);
 
-	/** Same as above, but for a stack brush (e.g. `FSlateBrush` member). */
+	/**
+	 * Same as above, but for a requester-owned brush member.
+	 *
+	 * Do not pass stack/local brushes here: the async callback updates the
+	 * brush only while `Requester` is still valid, so the brush lifetime must be
+	 * tied to that requester.
+	 */
 	void BindBrushAsync(
 		UT66UITexturePoolSubsystem* Pool,
 		const TSoftObjectPtr<UTexture2D>& Soft,

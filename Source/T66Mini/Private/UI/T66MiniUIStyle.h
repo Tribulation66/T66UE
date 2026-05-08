@@ -118,22 +118,22 @@ namespace T66MiniUI
 
 	inline const TCHAR* MasterBasicPanelPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Shared/Panels/inner_panel_normal.png");
+		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png");
 	}
 
 	inline const TCHAR* MasterInnerPanelPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Shared/Panels/inner_panel_normal.png");
+		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png");
 	}
 
 	inline const TCHAR* MasterBasicButtonPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/normal.png");
+		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_normal.png");
 	}
 
 	inline const TCHAR* MasterSelectedButtonPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Shared/Buttons/Pill/selected.png");
+		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_selected.png");
 	}
 
 	inline const FMargin& MasterPanelMargin()
@@ -215,7 +215,7 @@ namespace T66MiniUI
 			.SetFontSize(FontSize)
 			.SetPadding(FMargin(14.f, 8.f, 14.f, 6.f))
 			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(false)
+			.SetUseDotaPlateOverlay(true)
 			.SetDotaPlateOverrideBrush(ButtonPlateBrush(Type))
 			.SetStateTextShadowColors(
 				FLinearColor(0.f, 0.f, 0.f, 0.44f),

@@ -134,7 +134,7 @@ namespace T66ItemCardTextUtils
 
 		if (!Line1.IsEmpty() && !Line2.IsEmpty())
 		{
-			return FText::Format(NSLOCTEXT("T66.Vendor", "TwoLineDesc", "{0}\n{1}"), Line1, Line2);
+			return FText::Format(NSLOCTEXT("T66.Shop", "TwoLineDesc", "{0}\n{1}"), Line1, Line2);
 		}
 
 		return !Line1.IsEmpty() ? Line1 : Line2;

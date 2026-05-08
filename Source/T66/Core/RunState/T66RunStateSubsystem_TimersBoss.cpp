@@ -144,7 +144,7 @@ bool UT66RunStateSubsystem::HasStagePacingPoint(const int32 Stage) const
 
 void UT66RunStateSubsystem::RecordStagePacingPoint(const int32 Stage, const float CumulativeElapsedSeconds)
 {
-	const int32 ClampedStage = FMath::Clamp(Stage, 1, 23);
+	const int32 ClampedStage = FMath::Clamp(Stage, 1, 20);
 	if (ClampedStage <= 0)
 	{
 		return;
@@ -178,11 +178,11 @@ void UT66RunStateSubsystem::RecordStagePacingPoint(const int32 Stage, const floa
 
 void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 {
-	const int32 NewStage = FMath::Clamp(Stage, 1, 23);
+	const int32 NewStage = FMath::Clamp(Stage, 1, 20);
 	if (CurrentStage == NewStage) return;
 
 	// If Speed Run Mode is enabled, record the stage completion time for the stage we're leaving.
-	// This is used for the main menu Speed Run leaderboard (stage 1..5 per difficulty).
+	// This is used for the main menu Speed Run leaderboard (stage 1..4 per difficulty).
 	{
 		UGameInstance* GI = GetGameInstance();
 		UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
@@ -213,7 +213,7 @@ void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 	HeroProgressChanged.Broadcast();
 	// Bible: gambler anger resets at end of every stage.
 	ResetGamblerAnger();
-	ResetVendorForStage();
+	ResetShopForStage();
 	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
 		IdolManager->HandleStageChanged(NewStage);

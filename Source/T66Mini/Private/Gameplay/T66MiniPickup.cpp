@@ -91,6 +91,7 @@ AT66MiniPickup::AT66MiniPickup()
 	SetReplicateMovement(true);
 	SetNetUpdateFrequency(12.f);
 	SetMinNetUpdateFrequency(6.f);
+	SetNetCullDistanceSquared(FMath::Square(3200.f));
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);

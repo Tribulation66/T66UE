@@ -197,6 +197,10 @@ UPrimitiveComponent* AT66HeroPreviewStage::GetPreviewTargetComponent() const
 			return Skel;
 		}
 	}
+	if (PreviewPawn->StaticVisualMesh && PreviewPawn->StaticVisualMesh->IsVisible() && PreviewPawn->StaticVisualMesh->GetStaticMesh())
+	{
+		return PreviewPawn->StaticVisualMesh;
+	}
 	if (PreviewPawn->PlaceholderMesh && PreviewPawn->PlaceholderMesh->IsVisible())
 	{
 		return PreviewPawn->PlaceholderMesh;
@@ -382,6 +386,11 @@ void AT66HeroPreviewStage::UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType
 			Skel->SetComponentTickEnabled(true);
 			Skel->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 			Skel->bEnableUpdateRateOptimizations = false;
+		}
+		if (PreviewPawn->StaticVisualMesh)
+		{
+			PreviewPawn->StaticVisualMesh->bForceMipStreaming = true;
+			PreviewPawn->StaticVisualMesh->StreamingDistanceMultiplier = 50.f;
 		}
 	}
 }

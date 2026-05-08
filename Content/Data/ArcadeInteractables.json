@@ -1,16 +1,16 @@
 [
   {
-    "Name": "Arcade_Truck",
+    "Name": "Vehicle",
     "ArcadeData": {
-      "ArcadeID": "Arcade_Truck",
-      "DisplayName": "Arcade Truck",
-      "InteractionVerb": "pilot truck",
-      "ExitInteractionVerb": "exit truck",
+      "ArcadeID": "Vehicle",
+      "DisplayName": "Vehicle",
+      "InteractionVerb": "pilot vehicle",
+      "ExitInteractionVerb": "exit vehicle",
       "ArcadeClass": "WorldMode",
       "ArcadeGameType": "None",
       "bConsumeOnSuccess": false,
       "bConsumeOnFailure": false,
-      "DisplayMesh": "/Game/World/Props/Tractor.Tractor",
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Vehicle/Vehicle_QuadRetro.Vehicle_QuadRetro",
       "DisplayMeshScale": {
         "X": 1.0,
         "Y": 1.0,
@@ -65,15 +65,16 @@
       ],
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro",
       "DisplayMeshScale": {
-        "X": 1.1,
-        "Y": 0.75,
-        "Z": 1.85
+        "X": 1.0,
+        "Y": 1.0,
+        "Z": 1.0
       },
       "DisplayMeshOffset": {
         "X": 0.0,
         "Y": 0.0,
-        "Z": 95.0
+        "Z": 0.0
       },
       "Tint": {
         "R": 0.14,
@@ -145,7 +146,8 @@
           "ArcadeScorePerHit": 10,
           "ArcadeMissPenalty": 2
         }
-      }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Arcade_WhackAMole_QuadRetro.Arcade_WhackAMole_QuadRetro"
     }
   },
   {
@@ -186,7 +188,8 @@
           "TopwarChoiceScore": 9,
           "TopwarSquadGain": 2
         }
-      }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_Topwar/Arcade_Topwar_QuadRetro.Arcade_Topwar_QuadRetro"
     }
   },
   {
@@ -230,7 +233,8 @@
           "GoldMinerGemScore": 45,
           "GoldMinerRockScore": 3
         }
-      }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Arcade_GoldMiner_QuadRetro.Arcade_GoldMiner_QuadRetro"
     }
   },
   {
@@ -244,11 +248,25 @@
       "ArcadeGameType": "RuneSwipe",
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
-      "Tint": { "R": 0.55, "G": 0.25, "B": 0.92, "A": 1.0 },
+      "Tint": {
+        "R": 0.55,
+        "G": 0.25,
+        "B": 0.92,
+        "A": 1.0
+      },
       "Modifiers": {
-        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.82, "ArcadeEndInterval": 0.30 },
-        "IntValues": { "ArcadeTargetScore": 110, "ArcadeScorePerHit": 10, "ArcadeMissPenalty": 3 }
-      }
+        "FloatValues": {
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.82,
+          "ArcadeEndInterval": 0.3
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 110,
+          "ArcadeScorePerHit": 10,
+          "ArcadeMissPenalty": 3
+        }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Arcade_RuneSwipe_QuadRetro.Arcade_RuneSwipe_QuadRetro"
     }
   },
   {
@@ -262,11 +280,25 @@
       "ArcadeGameType": "CartSwitcher",
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
-      "Tint": { "R": 0.75, "G": 0.52, "B": 0.20, "A": 1.0 },
+      "Tint": {
+        "R": 0.75,
+        "G": 0.52,
+        "B": 0.2,
+        "A": 1.0
+      },
       "Modifiers": {
-        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.78, "ArcadeEndInterval": 0.26 },
-        "IntValues": { "ArcadeTargetScore": 120, "ArcadeScorePerHit": 12, "ArcadeMissPenalty": 4 }
-      }
+        "FloatValues": {
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.78,
+          "ArcadeEndInterval": 0.26
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 120,
+          "ArcadeScorePerHit": 12,
+          "ArcadeMissPenalty": 4
+        }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Arcade_CartSwitcher_QuadRetro.Arcade_CartSwitcher_QuadRetro"
     }
   },
   {
@@ -280,11 +312,25 @@
       "ArcadeGameType": "CrystalDash",
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
-      "Tint": { "R": 0.16, "G": 0.70, "B": 0.95, "A": 1.0 },
+      "Tint": {
+        "R": 0.16,
+        "G": 0.7,
+        "B": 0.95,
+        "A": 1.0
+      },
       "Modifiers": {
-        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.72, "ArcadeEndInterval": 0.24 },
-        "IntValues": { "ArcadeTargetScore": 120, "ArcadeScorePerHit": 12, "ArcadeMissPenalty": 5 }
-      }
+        "FloatValues": {
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.72,
+          "ArcadeEndInterval": 0.24
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 120,
+          "ArcadeScorePerHit": 12,
+          "ArcadeMissPenalty": 5
+        }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Arcade_CrystalDash_QuadRetro.Arcade_CrystalDash_QuadRetro"
     }
   },
   {
@@ -298,11 +344,25 @@
       "ArcadeGameType": "PotionPour",
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
-      "Tint": { "R": 0.20, "G": 0.86, "B": 0.48, "A": 1.0 },
+      "Tint": {
+        "R": 0.2,
+        "G": 0.86,
+        "B": 0.48,
+        "A": 1.0
+      },
       "Modifiers": {
-        "FloatValues": { "ArcadeRoundSeconds": 11.0, "ArcadeStartInterval": 0.90, "ArcadeEndInterval": 0.35 },
-        "IntValues": { "ArcadeTargetScore": 100, "ArcadeScorePerHit": 14, "ArcadeMissPenalty": 4 }
-      }
+        "FloatValues": {
+          "ArcadeRoundSeconds": 11.0,
+          "ArcadeStartInterval": 0.9,
+          "ArcadeEndInterval": 0.35
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 100,
+          "ArcadeScorePerHit": 14,
+          "ArcadeMissPenalty": 4
+        }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Arcade_PotionPour_QuadRetro.Arcade_PotionPour_QuadRetro"
     }
   },
   {
@@ -316,11 +376,25 @@
       "ArcadeGameType": "RelicStack",
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
-      "Tint": { "R": 0.86, "G": 0.54, "B": 0.18, "A": 1.0 },
+      "Tint": {
+        "R": 0.86,
+        "G": 0.54,
+        "B": 0.18,
+        "A": 1.0
+      },
       "Modifiers": {
-        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.84, "ArcadeEndInterval": 0.30 },
-        "IntValues": { "ArcadeTargetScore": 100, "ArcadeScorePerHit": 15, "ArcadeMissPenalty": 5 }
-      }
+        "FloatValues": {
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.84,
+          "ArcadeEndInterval": 0.3
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 100,
+          "ArcadeScorePerHit": 15,
+          "ArcadeMissPenalty": 5
+        }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Arcade_RelicStack_QuadRetro.Arcade_RelicStack_QuadRetro"
     }
   },
   {
@@ -334,11 +408,25 @@
       "ArcadeGameType": "ShieldParry",
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
-      "Tint": { "R": 0.28, "G": 0.55, "B": 0.95, "A": 1.0 },
+      "Tint": {
+        "R": 0.28,
+        "G": 0.55,
+        "B": 0.95,
+        "A": 1.0
+      },
       "Modifiers": {
-        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.68, "ArcadeEndInterval": 0.22 },
-        "IntValues": { "ArcadeTargetScore": 120, "ArcadeScorePerHit": 12, "ArcadeMissPenalty": 5 }
-      }
+        "FloatValues": {
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.68,
+          "ArcadeEndInterval": 0.22
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 120,
+          "ArcadeScorePerHit": 12,
+          "ArcadeMissPenalty": 5
+        }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Arcade_ShieldParry_QuadRetro.Arcade_ShieldParry_QuadRetro"
     }
   },
   {
@@ -352,11 +440,25 @@
       "ArcadeGameType": "MimicMemory",
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
-      "Tint": { "R": 0.76, "G": 0.34, "B": 0.80, "A": 1.0 },
+      "Tint": {
+        "R": 0.76,
+        "G": 0.34,
+        "B": 0.8,
+        "A": 1.0
+      },
       "Modifiers": {
-        "FloatValues": { "ArcadeRoundSeconds": 12.0, "ArcadeStartInterval": 1.10, "ArcadeEndInterval": 0.42 },
-        "IntValues": { "ArcadeTargetScore": 100, "ArcadeScorePerHit": 8, "ArcadeMissPenalty": 4 }
-      }
+        "FloatValues": {
+          "ArcadeRoundSeconds": 12.0,
+          "ArcadeStartInterval": 1.1,
+          "ArcadeEndInterval": 0.42
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 100,
+          "ArcadeScorePerHit": 8,
+          "ArcadeMissPenalty": 4
+        }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Arcade_MimicMemory_QuadRetro.Arcade_MimicMemory_QuadRetro"
     }
   },
   {
@@ -370,11 +472,25 @@
       "ArcadeGameType": "BombSorter",
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
-      "Tint": { "R": 0.95, "G": 0.34, "B": 0.18, "A": 1.0 },
+      "Tint": {
+        "R": 0.95,
+        "G": 0.34,
+        "B": 0.18,
+        "A": 1.0
+      },
       "Modifiers": {
-        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.74, "ArcadeEndInterval": 0.24 },
-        "IntValues": { "ArcadeTargetScore": 120, "ArcadeScorePerHit": 12, "ArcadeMissPenalty": 6 }
-      }
+        "FloatValues": {
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.74,
+          "ArcadeEndInterval": 0.24
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 120,
+          "ArcadeScorePerHit": 12,
+          "ArcadeMissPenalty": 6
+        }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Arcade_BombSorter_QuadRetro.Arcade_BombSorter_QuadRetro"
     }
   },
   {
@@ -388,11 +504,25 @@
       "ArcadeGameType": "LanternLeap",
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
-      "Tint": { "R": 0.54, "G": 0.86, "B": 0.32, "A": 1.0 },
+      "Tint": {
+        "R": 0.54,
+        "G": 0.86,
+        "B": 0.32,
+        "A": 1.0
+      },
       "Modifiers": {
-        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.80, "ArcadeEndInterval": 0.28 },
-        "IntValues": { "ArcadeTargetScore": 110, "ArcadeScorePerHit": 11, "ArcadeMissPenalty": 4 }
-      }
+        "FloatValues": {
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.8,
+          "ArcadeEndInterval": 0.28
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 110,
+          "ArcadeScorePerHit": 11,
+          "ArcadeMissPenalty": 4
+        }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Arcade_LanternLeap_QuadRetro.Arcade_LanternLeap_QuadRetro"
     }
   },
   {
@@ -406,11 +536,25 @@
       "ArcadeGameType": "BladeSweep",
       "bConsumeOnSuccess": true,
       "bConsumeOnFailure": true,
-      "Tint": { "R": 0.92, "G": 0.24, "B": 0.14, "A": 1.0 },
+      "Tint": {
+        "R": 0.92,
+        "G": 0.24,
+        "B": 0.14,
+        "A": 1.0
+      },
       "Modifiers": {
-        "FloatValues": { "ArcadeRoundSeconds": 10.0, "ArcadeStartInterval": 0.70, "ArcadeEndInterval": 0.22 },
-        "IntValues": { "ArcadeTargetScore": 120, "ArcadeScorePerHit": 12, "ArcadeMissPenalty": 6 }
-      }
+        "FloatValues": {
+          "ArcadeRoundSeconds": 10.0,
+          "ArcadeStartInterval": 0.7,
+          "ArcadeEndInterval": 0.22
+        },
+        "IntValues": {
+          "ArcadeTargetScore": 120,
+          "ArcadeScorePerHit": 12,
+          "ArcadeMissPenalty": 6
+        }
+      },
+      "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Arcade_BladeSweep_QuadRetro.Arcade_BladeSweep_QuadRetro"
     }
   }
 ]

@@ -28,7 +28,6 @@
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "UI/Style/T66Style.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"

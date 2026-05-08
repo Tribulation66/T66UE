@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Bosses\\Hell_Horseman_Death\\Hell_Horseman_Death_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_Horseman_Death_front.png",
+  "export": null,
+  "raw_triangles": 199701,
+  "triangles_before_decimate": 199701,
+  "triangles_after_decimate": 199701,
+  "bounds": {
+    "min": [
+      -0.4060513377189636,
+      -0.49224892258644104,
+      -0.4582027196884155
+    ],
+    "max": [
+      0.4060105085372925,
+      0.5001729726791382,
+      0.488487184047699
+    ],
+    "size": [
+      0.8120618462562561,
+      0.9924218654632568,
+      0.9466899037361145
+    ]
+  }
+}

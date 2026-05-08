@@ -1,0 +1,45 @@
+TRELLIS HEALTH {"gpu":"NVIDIA A40","status":"ok","vram_total_gb":47.7,"vram_used_gb":0.0}
+TRELLIS SKIP Vehicle existing
+TRELLIS SKIP Arcade_WhackAMole existing
+TRELLIS SKIP Arcade_Topwar existing
+TRELLIS SKIP Arcade_GoldMiner existing
+TRELLIS SKIP Arcade_RuneSwipe existing
+TRELLIS SKIP Arcade_CartSwitcher existing
+TRELLIS SKIP Arcade_CrystalDash existing
+TRELLIS SKIP Arcade_PotionPour existing
+TRELLIS SKIP Arcade_RelicStack existing
+TRELLIS SKIP Arcade_ShieldParry existing
+TRELLIS SKIP Arcade_MimicMemory existing
+TRELLIS SKIP Arcade_BombSorter existing
+TRELLIS SKIP Arcade_LanternLeap existing
+TRELLIS SKIP Arcade_BladeSweep existing
+TRELLIS SKIP Crate existing
+TRELLIS START LootBag_Black seed=1337 texture=2048 decimation=80000
+TRELLIS DONE LootBag_Black size=4201220 duration=193.5s
+TRELLIS START LootBag_Red seed=1337 texture=2048 decimation=80000
+TRELLIS DONE LootBag_Red size=3682492 duration=62.0s
+TRELLIS START LootBag_Yellow seed=1337 texture=2048 decimation=80000
+TRELLIS DONE LootBag_Yellow size=4617756 duration=62.9s
+TRELLIS START LootBag_White seed=1337 texture=2048 decimation=80000
+TRELLIS DONE LootBag_White size=3337852 duration=64.1s
+TRELLIS START Fountain seed=1337 texture=2048 decimation=80000
+TRELLIS DONE Fountain size=3435404 duration=99.3s
+TRELLIS START DifficultyTotem seed=1337 texture=2048 decimation=80000
+TRELLIS DONE DifficultyTotem size=3387112 duration=54.4s
+TRELLIS START IdolAltar seed=1337 texture=2048 decimation=80000
+TRELLIS DONE IdolAltar size=3048920 duration=58.3s
+TRELLIS START QuickReviveVending seed=1337 texture=2048 decimation=80000
+TRELLIS DONE QuickReviveVending size=3954072 duration=168.9s
+TRELLIS START Shroom seed=1337 texture=2048 decimation=80000
+TRELLIS DONE Shroom size=3211860 duration=73.5s
+TRELLIS START Saint seed=1337 texture=2048 decimation=80000
+TRELLIS DONE Saint size=3253972 duration=88.9s
+TRELLIS START Ouroboros seed=1337 texture=2048 decimation=80000
+TRELLIS DONE Ouroboros size=3395972 duration=79.9s
+{
+  "total_stage_entries": 31,
+  "source_ready": 31,
+  "raw_ready": 31,
+  "front_qa_ready": 1,
+  "pending_trellis": 0
+}

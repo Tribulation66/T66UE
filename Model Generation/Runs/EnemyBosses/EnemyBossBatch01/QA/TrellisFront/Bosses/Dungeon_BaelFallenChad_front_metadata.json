@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Bosses\\Dungeon_BaelFallenChad\\Dungeon_BaelFallenChad_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Dungeon_BaelFallenChad_front.png",
+  "export": null,
+  "raw_triangles": 186398,
+  "triangles_before_decimate": 186398,
+  "triangles_after_decimate": 186398,
+  "bounds": {
+    "min": [
+      -0.5003578662872314,
+      -0.1979944109916687,
+      -0.5001227855682373
+    ],
+    "max": [
+      0.500382661819458,
+      0.20075978338718414,
+      0.4991660714149475
+    ],
+    "size": [
+      1.0007405281066895,
+      0.39875417947769165,
+      0.9992888569831848
+    ]
+  }
+}

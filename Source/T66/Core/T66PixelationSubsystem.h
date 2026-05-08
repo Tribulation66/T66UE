@@ -9,6 +9,7 @@
 class UMaterialInstanceDynamic;
 class UMaterialInterface;
 struct FPostProcessSettings;
+struct FStreamableHandle;
 
 /**
  * Applies retro pixelation via a post-process material blendable.
@@ -21,6 +22,8 @@ class T66_API UT66PixelationSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
 	/** Set pixelation level: 0 = off, 1 = least, 10 = most (10 = former slight). Affects current world's post-process. */
 	UFUNCTION(BlueprintCallable, Category = "T66|Pixelation")
 	void SetPixelationLevel(int32 Level);
@@ -33,6 +36,8 @@ public:
 	static UMaterialInterface* GetOrCreatePixelationMaterial();
 
 private:
+	void QueuePixelationMaterialPreload();
+	void HandlePixelationMaterialLoaded();
 	void EnsureBlendableInWorld(UWorld* World);
 	void ApplyLevelToBlendable();
 
@@ -41,6 +46,8 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<class APostProcessVolume> PixelationVolume;
+
+	TSharedPtr<FStreamableHandle> PixelationMaterialLoadHandle;
 
 	int32 CurrentLevel = 0;
 

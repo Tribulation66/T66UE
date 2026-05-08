@@ -1,0 +1,88 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroModelTest01\\Raw\\Trellis\\BoxerChad_ExaggeratedV_04_S1337_D80000_Trellis2.glb",
+  "output_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest02_FixedBake\\High\\BoxerChad\\Models\\BoxerChad_High_QuadRetro.glb",
+  "output_blend": "",
+  "baked_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest02_FixedBake\\High\\BoxerChad\\Textures\\BoxerChad_High_QuadRetro_Bake1024.png",
+  "pixelated_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest02_FixedBake\\High\\BoxerChad\\Textures\\BoxerChad_High_QuadRetro_Pixelated_256.png",
+  "qa_renders": [],
+  "raw_triangles": 77656,
+  "raw_quads": 0,
+  "source_triangles_after_cleanup": 77496,
+  "retopo_triangles": 9832,
+  "retopo_quads": 4836,
+  "adjustable_values": {
+    "target_quads": 3000,
+    "adaptive_size": 65.0,
+    "adapt_quad_count": false,
+    "use_materials": true,
+    "use_normals": false,
+    "autodetect_hard_edges": true,
+    "symmetry_x": false,
+    "symmetry_y": false,
+    "symmetry_z": false,
+    "normalize_height": 2.0,
+    "merge_distance": 0.0001,
+    "delete_loose": true,
+    "recalculate_normals": true,
+    "shade_flat": true,
+    "bake_size": 1024,
+    "bake_margin": 16,
+    "cage_extrusion": 0.035,
+    "max_ray_distance": 0.12,
+    "dilate_pixels": 20,
+    "texture_size": 256,
+    "palette_mode": "none",
+    "palette_size": 0,
+    "palette_steps": 256,
+    "kmeans_iterations": 8,
+    "kmeans_sample_limit": 20000,
+    "dither_type": "none",
+    "dither_strength": 0.0,
+    "unlit_emission_material": true
+  },
+  "normalize_report": {
+    "initial_height": 1.0017859935760498,
+    "target_height": 2.0,
+    "final_size": [
+      1.4545921087265015,
+      0.49384093284606934,
+      2.0
+    ],
+    "final_min": [
+      -0.7272960543632507,
+      -0.24692046642303467,
+      0.0
+    ],
+    "final_max": [
+      0.7272960543632507,
+      0.24692046642303467,
+      2.0
+    ]
+  },
+  "qremesh_report": {
+    "engine": "C:\\ProgramData\\Exoside\\QuadRemesher\\Datas_Blender\\QuadRemesherEngine_1.4\\xremesh.exe",
+    "input_fbx": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\inputMesh.fbx",
+    "output_fbx": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\retopo.fbx",
+    "settings": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\RetopoSettings.txt",
+    "progress": "C:\\Users\\DoPra\\AppData\\Local\\Temp\\Exoside\\QuadRemesher\\Blender\\progress.txt",
+    "copied_input_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest02_FixedBake\\High\\BoxerChad\\Working\\QuadRemesher\\inputMesh.fbx",
+    "copied_output_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest02_FixedBake\\High\\BoxerChad\\Working\\QuadRemesher\\retopo.fbx",
+    "copied_settings": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest02_FixedBake\\High\\BoxerChad\\Working\\QuadRemesher\\RetopoSettings.txt",
+    "copied_progress": "C:\\UE\\T66\\Model Generation\\Runs\\Heroes\\QuadRetroPipelinePresetTest02_FixedBake\\High\\BoxerChad\\Working\\QuadRemesher\\progress.txt",
+    "elapsed_seconds": 13.54,
+    "last_progress": 2.0,
+    "last_text": ""
+  },
+  "pixel_report": {
+    "source_size": [
+      1024,
+      1024
+    ],
+    "texture_size": [
+      256,
+      256
+    ],
+    "palette": [],
+    "palette_count": 0
+  }
+}

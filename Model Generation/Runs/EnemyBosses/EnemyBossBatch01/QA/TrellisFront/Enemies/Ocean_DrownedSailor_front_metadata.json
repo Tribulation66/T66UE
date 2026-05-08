@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Enemies\\Ocean_DrownedSailor\\Ocean_DrownedSailor_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Enemies\\Ocean_DrownedSailor_front.png",
+  "export": null,
+  "raw_triangles": 76455,
+  "triangles_before_decimate": 76455,
+  "triangles_after_decimate": 76455,
+  "bounds": {
+    "min": [
+      -0.3785880208015442,
+      -0.16448569297790527,
+      -0.4976433515548706
+    ],
+    "max": [
+      0.3583805561065674,
+      0.17788535356521606,
+      0.463290810585022
+    ],
+    "size": [
+      0.7369685769081116,
+      0.34237104654312134,
+      0.9609341621398926
+    ]
+  }
+}

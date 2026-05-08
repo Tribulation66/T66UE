@@ -385,10 +385,6 @@ void UT66GameplayHUDWidget::RefreshMapData()
 				{
 					MapCache.Add({ Interactable, EMapCacheMarkerType::POI, FT66Style::MinimapNeutral(), FText::GetEmpty(), FName(TEXT("Crate")) });
 				}
-				else if (Cast<AT66StageCatchUpLootInteractable>(Interactable))
-				{
-					MapCache.Add({ Interactable, EMapCacheMarkerType::POI, FT66Style::Accent2(), FText::GetEmpty(), FName(TEXT("CatchUpLoot")) });
-				}
 			}
 
 			for (const TWeakObjectPtr<AT66LootBagPickup>& WeakLootBag : Registry->GetLootBags())

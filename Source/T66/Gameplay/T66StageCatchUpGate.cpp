@@ -119,7 +119,7 @@ bool AT66StageCatchUpGate::EnterChosenStage()
 
 	RunState->SetInStageCatchUp(false);
 
-	RunState->SetCurrentStage(FMath::Clamp(TargetStage, 1, 23));
+	RunState->SetCurrentStage(FMath::Clamp(TargetStage, 1, 20));
 
 	T66GI->bIsStageTransition = true;
 	T66GI->bStageCatchUpPending = false;

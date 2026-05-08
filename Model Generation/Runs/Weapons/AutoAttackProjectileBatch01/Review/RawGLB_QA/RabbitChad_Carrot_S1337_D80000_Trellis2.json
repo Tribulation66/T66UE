@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Raw\\Trellis\\RabbitChad_Carrot_S1337_D80000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Review\\RawGLB_QA\\RabbitChad_Carrot_S1337_D80000_Trellis2.png",
+  "export": null,
+  "raw_triangles": 75848,
+  "triangles_before_decimate": 75848,
+  "triangles_after_decimate": 75848,
+  "bounds": {
+    "min": [
+      -0.24220925569534302,
+      -0.5005592107772827,
+      -0.23445835709571838
+    ],
+    "max": [
+      0.24272669851779938,
+      0.5007792711257935,
+      0.23497673869132996
+    ],
+    "size": [
+      0.4849359393119812,
+      1.0013384819030762,
+      0.46943509578704834
+    ]
+  }
+}

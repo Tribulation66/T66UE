@@ -122,7 +122,7 @@ public:
 	void ToggleFullMap();
 
 	// ============================================================
-	// In-world NPC dialogue (Vendor/Gambler) - HUD-rendered
+	// In-world NPC dialogue (Shop/Gambler) - HUD-rendered
 	// ============================================================
 	void ShowWorldDialogue(const TArray<FText>& Options, int32 SelectedIndex);
 	void HideWorldDialogue();
@@ -144,9 +144,6 @@ public:
 	/** TikTok placeholder toggle (O / ToggleTikTok). */
 	void ToggleTikTokPlaceholder();
 	bool IsTikTokPlaceholderVisible() const;
-
-	/** Wheel spin: show HUD animation + award gold (no overlay). */
-	void StartWheelSpin(ET66Rarity WheelRarity);
 
 	/** Crate open: show CS:GO-style item reveal overlay. */
 	void StartCrateOpen();
@@ -189,10 +186,6 @@ protected:
 	void HandleBackendLeaderboardDataReady(const FString& Key);
 	void HandleBackendRunSummaryReady(const FString& EntryId);
 
-	// Wheel spin animation (HUD-side; no overlay)
-	void TickWheelSpin();
-	void ResolveWheelSpin();
-	void CloseWheelSpin();
 	int32 GetChestRewardRevealThresholdGold(ET66Rarity Rarity) const;
 	ET66Rarity ResolveChestRewardDisplayedRarity(int32 DisplayedGold) const;
 	void RefreshChestRewardVisualState();
@@ -341,11 +334,6 @@ protected:
 	TSharedPtr<SBox> TikTokPlaceholderBox;
 	TSharedPtr<SBox> TikTokContentBox;
 	TSharedPtr<SBox> MediaViewerVideoBox; // Inner video area (WebView2 syncs to this, not the full panel)
-	TSharedPtr<SBox> WheelSpinBox;
-	TSharedPtr<SImage> WheelSpinDisk;
-	TSharedPtr<STextBlock> WheelSpinText;
-	TSharedPtr<STextBlock> WheelSpinSkipText;
-	FSlateBrush WheelTextureBrush;
 	TSharedPtr<ST66WorldMapWidget> MinimapWidget;
 	TSharedPtr<ST66WorldMapWidget> FullMapWidget;
 	TSharedPtr<SBox> InteractionPromptBox;
@@ -360,6 +348,8 @@ protected:
 	bool bHUDDirty = false;
 	float DPSRefreshAccumSeconds = 0.f;
 	static constexpr float DPSRefreshIntervalSeconds = 0.2f;
+	float SpeedRunRefreshAccumSeconds = 0.f;
+	static constexpr float SpeedRunRefreshIntervalSeconds = 1.f / 15.f;
 	int32 LastDisplayedDPS = -1;
 	FLinearColor LastDisplayedDPSColor = FLinearColor::Transparent;
 	int32 LastDisplayedSpeedRunTotalCs = -1;
@@ -378,6 +368,9 @@ protected:
 	ET66PassiveType LastPassiveType = ET66PassiveType::None;
 	bool bLastCrosshairLocked = false;
 	bool bLastScopedHudVisible = false;
+	bool bCenterCrosshairPivotInitialized = false;
+	bool bLastCrosshairOffsetSet = false;
+	FVector2D LastCrosshairRenderOffset = FVector2D::ZeroVector;
 	int32 LastScopedUltDisplayTenths = INDEX_NONE;
 	int32 LastScopedShotDisplayCentis = INDEX_NONE;
 	bool bLastScopedShotReady = false;

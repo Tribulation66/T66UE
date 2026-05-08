@@ -9,7 +9,6 @@
 #include "Engine/Texture2D.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
-#include "Misc/Paths.h"
 #include "Save/T66IdleSaveSubsystem.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Components/T66MinigameMenuLayout.h"
@@ -31,12 +30,12 @@ namespace
 
 	const TCHAR* IdleMainMenuMockupPath()
 	{
-		return TEXT("UI/screens/minigames/idle_chadpocalypse/reference/idle_chadpocalypse_main_menu_mockup_1920x1080_imagegen_20260503_v2.png");
+		return TEXT("/Game/UI/Minigames/Idle/Mockups/T_Idle_MainMenu_Mockup.T_Idle_MainMenu_Mockup");
 	}
 
 	const TCHAR* IdleGameplayMockupPath()
 	{
-		return TEXT("UI/screens/minigames/idle_chadpocalypse/reference/idle_chadpocalypse_gameplay_mockup_1920x1080_imagegen_20260503_v2.png");
+		return TEXT("/Game/UI/Minigames/Idle/Mockups/T_Idle_Gameplay_Mockup.T_Idle_Gameplay_Mockup");
 	}
 
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GIdleMockupTextureCache;
@@ -52,38 +51,21 @@ namespace
 		return TAttribute<TOptional<float>>::Create(TAttribute<TOptional<float>>::FGetter::CreateUObject(Screen, Getter));
 	}
 
-	UTexture2D* LoadIdleMockupTexture(const FString& SourceRelativePath)
+	UTexture2D* LoadIdleMockupTexture(const FString& AssetPath)
 	{
-		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GIdleMockupTextureCache.Find(SourceRelativePath))
+		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GIdleMockupTextureCache.Find(AssetPath))
 		{
 			return CachedTexture->Get();
 		}
 
-		for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(SourceRelativePath))
+		UTexture2D* Texture = T66RuntimeUITextureAccess::LoadAssetTexture(
+			*AssetPath,
+			TextureFilter::TF_Nearest,
+			TEXT("IdleChadpocalypseMockup"));
+		if (Texture)
 		{
-			if (!FPaths::FileExists(CandidatePath))
-			{
-				continue;
-			}
-
-			UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
-				CandidatePath,
-				TextureFilter::TF_Nearest,
-				TEXT("IdleChadpocalypseMockup"));
-			if (!Texture)
-			{
-				Texture = T66RuntimeUITextureAccess::ImportFileTexture(
-					CandidatePath,
-					TextureFilter::TF_Nearest,
-					true,
-					TEXT("IdleChadpocalypseMockup"));
-			}
-
-			if (Texture)
-			{
-				GIdleMockupTextureCache.Add(SourceRelativePath, TStrongObjectPtr<UTexture2D>(Texture));
-				return Texture;
-			}
+			GIdleMockupTextureCache.Add(AssetPath, TStrongObjectPtr<UTexture2D>(Texture));
+			return Texture;
 		}
 
 		return nullptr;
@@ -168,7 +150,17 @@ void UT66IdleMainMenuScreen::NativeTick(const FGeometry& MyGeometry, const float
 
 	if (ViewMode == EIdleViewMode::Gameplay && bRunStarted)
 	{
-		TickIdleRun(InDeltaTime);
+		IdleRunTickAccumulator += InDeltaTime;
+		if (IdleRunTickAccumulator >= IdleRunTickIntervalSeconds)
+		{
+			const float SimulatedDeltaSeconds = IdleRunTickAccumulator;
+			IdleRunTickAccumulator = 0.f;
+			TickIdleRun(SimulatedDeltaSeconds);
+		}
+	}
+	else
+	{
+		IdleRunTickAccumulator = 0.f;
 	}
 }
 
@@ -1090,6 +1082,7 @@ FReply UT66IdleMainMenuScreen::HandlePlayClicked()
 		FrontendState->BeginNewSession();
 	}
 	StartPlayableRun();
+	IdleRunTickAccumulator = 0.f;
 	ForceRebuildSlate();
 	return FReply::Handled();
 }
@@ -1102,6 +1095,7 @@ FReply UT66IdleMainMenuScreen::HandleLoadClicked()
 		FrontendState->BeginNewSession();
 	}
 	StartPlayableRun();
+	IdleRunTickAccumulator = 0.f;
 	ForceRebuildSlate();
 	return FReply::Handled();
 }
@@ -1135,6 +1129,7 @@ FReply UT66IdleMainMenuScreen::HandleDailyClicked()
 	}
 
 	StartPlayableRun();
+	IdleRunTickAccumulator = 0.f;
 	ForceRebuildSlate();
 	return FReply::Handled();
 }
@@ -1256,6 +1251,7 @@ FReply UT66IdleMainMenuScreen::HandleGameplayBackClicked()
 {
 	SaveProfileState();
 	ViewMode = EIdleViewMode::MainMenu;
+	IdleRunTickAccumulator = 0.f;
 	ForceRebuildSlate();
 	return FReply::Handled();
 }

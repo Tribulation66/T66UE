@@ -16,9 +16,6 @@ enum class ET66MapCellShape : uint8
 enum class ET66MapCellDecoration : uint8
 {
 	None,
-	Tree1,
-	Tree2,
-	Tree3,
 	Rock,
 	Rocks,
 	Log,

@@ -16,11 +16,11 @@
 
 AT66ChestInteractable::AT66ChestInteractable()
 {
-	const TSoftObjectPtr<UStaticMesh> YellowChestMesh(FSoftObjectPath(TEXT("/Game/World/Interactables/Chests/Yellow/ChestYellow.ChestYellow")));
-	RarityMeshes.Add(ET66Rarity::Black, YellowChestMesh);
-	RarityMeshes.Add(ET66Rarity::Red, YellowChestMesh);
-	RarityMeshes.Add(ET66Rarity::Yellow, YellowChestMesh);
-	RarityMeshes.Add(ET66Rarity::White, YellowChestMesh);
+	const TSoftObjectPtr<UStaticMesh> ChestMesh(FSoftObjectPath(TEXT("/Game/World/Interactables/Chests/ChestModel/Chest_QuadRetro.Chest_QuadRetro")));
+	RarityMeshes.Add(ET66Rarity::Black, ChestMesh);
+	RarityMeshes.Add(ET66Rarity::Red, ChestMesh);
+	RarityMeshes.Add(ET66Rarity::Yellow, ChestMesh);
+	RarityMeshes.Add(ET66Rarity::White, ChestMesh);
 
 	ApplyRarityVisuals();
 }
@@ -48,6 +48,14 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 
 	if (bIsMimic)
 	{
+		if (IsShowcaseReusable())
+		{
+			bIsMimic = false;
+			ApplyRarityVisuals();
+			RefreshInteractionPrompt();
+			return true;
+		}
+
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		World->SpawnActor<AT66ChestMimicEnemy>(AT66ChestMimicEnemy::StaticClass(), GetActorLocation(), GetActorRotation(), SpawnParams);
@@ -122,6 +130,13 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 	{
 		T66PC->StartChestRewardHUD(RewardRarity, Gold);
 	}
+	if (IsShowcaseReusable())
+	{
+		bConsumed = false;
+		RefreshInteractionPrompt();
+		return true;
+	}
+
 	bConsumed = true;
 	Destroy();
 	return true;

@@ -49,7 +49,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	// Build the widget switcher with all tab content (stored as class member)
 	const bool bModalPresentation = (UIManager && UIManager->GetCurrentModalType() == ScreenType) || (!UIManager && GetOwningPlayer() && GetOwningPlayer()->IsPaused());
 	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
-	const float TopBarOverlapPx = 8.f;
+	const float TopBarOverlapPx = 18.f;
 	const float TopInset = bModalPresentation
 		? 0.f
 		: FMath::Max(0.f, ((UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f) - TopBarOverlapPx) / ResponsiveScale);

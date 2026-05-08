@@ -56,3 +56,11 @@ Deferred to later passes:
 - save/load flow
 - hero placement, upgrades, enemy routing, and combat
 - run summary and leaderboard flow
+
+## 5. Shared Art And Animation Process
+
+TD uses the shared minigame animation process for enemies, bosses, towers, and combat VFX:
+
+- [T66Minigame_CharacterAnimationProcess.md](C:/UE/T66/Docs/Minigames/T66Minigame_CharacterAnimationProcess.md)
+
+The default TD enemy target is simple and readable: a `bob-only` or `idle-only` loop is enough for many creeps, similar to BTD-style enemies where path movement supplies traversal. Full 8-direction sheets are only needed when the battle runtime actually needs directional facing.

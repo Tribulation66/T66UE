@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Raw\\Trellis\\FoundingChad_Rapier_S1337_D80000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Review\\RawGLB_QA\\FoundingChad_Rapier_S1337_D80000_Trellis2.png",
+  "export": null,
+  "raw_triangles": 75528,
+  "triangles_before_decimate": 75528,
+  "triangles_after_decimate": 75528,
+  "bounds": {
+    "min": [
+      -0.5004931688308716,
+      -0.09625519812107086,
+      -0.499752938747406
+    ],
+    "max": [
+      0.500698983669281,
+      0.0962502583861351,
+      0.5006458759307861
+    ],
+    "size": [
+      1.0011920928955078,
+      0.19250544905662537,
+      1.000398874282837
+    ]
+  }
+}

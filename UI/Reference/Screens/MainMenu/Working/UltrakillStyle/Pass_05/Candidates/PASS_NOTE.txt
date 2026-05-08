@@ -1,0 +1,2 @@
+Pass 05 candidate.
+Corrections from pass 04: simplified Party divider, solid red High Score selected square, differentiated New Game and Load Game button styling, party slots moved lower in the left panel.

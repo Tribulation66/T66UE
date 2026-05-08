@@ -1,0 +1,3 @@
+Rejected candidate notes:
+- ig_0f8be39c39e3e6170169fa89aac058819b942c81543dd5e46d.png: mostly atomic and text-free but rejected for baked dropdown arrow in shell and slightly over-polished large parchment panel density.
+- ig_0fea4cea86a2c6f80169fa89b017c4819a8924c8e7949354ba.png: rejected for chroma-green background, composite-like large panel families, and baked dropdown arrow.

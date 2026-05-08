@@ -6,25 +6,8 @@
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Components/SphereComponent.h"
-#include "NiagaraFunctionLibrary.h"
-#include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
 #include "TimerManager.h"
-
-static UNiagaraSystem* LoadPixelVFX()
-{
-	static TObjectPtr<UNiagaraSystem> CachedSystem = nullptr;
-	static TObjectPtr<UNiagaraSystem> CachedFallbackSystem = nullptr;
-	if (!CachedSystem)
-	{
-		CachedSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
-	}
-	if (!CachedSystem && !CachedFallbackSystem)
-	{
-		CachedFallbackSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
-	}
-	return CachedSystem ? CachedSystem.Get() : CachedFallbackSystem.Get();
-}
 
 AT66HeroPlagueCloud::AT66HeroPlagueCloud()
 {
@@ -49,14 +32,21 @@ void AT66HeroPlagueCloud::BeginPlay()
 	{
 		DamageZone->SetSphereRadius(Radius);
 	}
-	CachedPixelVFX = LoadPixelVFX();
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66PixelVFXSubsystem* PixelVFX = World->GetSubsystem<UT66PixelVFXSubsystem>())
+		{
+			CachedPixelVFX = PixelVFX->GetDefaultPixelSystem();
+		}
+	}
 }
 
 void AT66HeroPlagueCloud::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!CachedPixelVFX || !GetWorld()) return;
+	UWorld* World = GetWorld();
+	if (!World) return;
 
 	VFXAccum += DeltaSeconds;
 	static constexpr float SpawnInterval = 0.08f;
@@ -65,7 +55,12 @@ void AT66HeroPlagueCloud::Tick(float DeltaSeconds)
 
 	const FVector Origin = GetActorLocation();
 	static constexpr int32 ParticlesPerBatch = 6;
-	UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>();
+	UT66PixelVFXSubsystem* PixelVFX = World->GetSubsystem<UT66PixelVFXSubsystem>();
+	if (!PixelVFX) return;
+	if (!CachedPixelVFX)
+	{
+		CachedPixelVFX = PixelVFX->GetDefaultPixelSystem();
+	}
 	for (int32 i = 0; i < ParticlesPerBatch; ++i)
 	{
 		const float Angle = FMath::FRandRange(0.f, 2.f * PI);
@@ -77,17 +72,14 @@ void AT66HeroPlagueCloud::Tick(float DeltaSeconds)
 
 		const float G = FMath::FRandRange(0.5f, 0.85f);
 		const FVector4 Tint(0.15f, G, 0.1f, 0.7f);
-		if (PixelVFX)
-		{
-			PixelVFX->SpawnPixelAtLocation(
-				Loc,
-				FLinearColor(Tint.X, Tint.Y, Tint.Z, Tint.W),
-				FVector2D(3.0f, 3.0f),
-				ET66PixelVFXPriority::Low,
-				FRotator::ZeroRotator,
-				FVector(1.f),
-				CachedPixelVFX);
-		}
+		PixelVFX->SpawnPixelAtLocation(
+			Loc,
+			FLinearColor(Tint.X, Tint.Y, Tint.Z, Tint.W),
+			FVector2D(3.0f, 3.0f),
+			ET66PixelVFXPriority::Low,
+			FRotator::ZeroRotator,
+			FVector(1.f),
+			CachedPixelVFX);
 	}
 }
 

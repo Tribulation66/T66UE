@@ -33,6 +33,7 @@ private:
 	FReply HandleOpenChadpocalypseTDClicked();
 	FReply HandleOpenIdleChadpocalypseClicked();
 	FReply HandleOpenChadpocalypseDeckbuilderClicked();
+	FReply HandleOpenVersusClicked();
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);

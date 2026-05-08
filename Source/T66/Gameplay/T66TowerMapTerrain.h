@@ -18,6 +18,14 @@ namespace T66TowerMapTerrain
 		Boss,
 	};
 
+	enum class ET66TowerStartGalleryCategory : uint8
+	{
+		Heroes,
+		Enemies,
+		Bosses,
+		World,
+	};
+
 	enum class ET66TowerGameplayLevelTheme : uint8
 	{
 		Dungeon,
@@ -111,6 +119,20 @@ namespace T66TowerMapTerrain
 		FName FloorTag = NAME_None;
 	};
 
+	struct FStartGalleryWing
+	{
+		ET66TowerStartGalleryCategory Category = ET66TowerStartGalleryCategory::Heroes;
+		FName CategoryID = NAME_None;
+		FVector Center = FVector::ZeroVector;
+		FVector Direction = FVector::ForwardVector;
+		FVector SideDirection = FVector::RightVector;
+		float SurfaceZ = 0.0f;
+		float AcrossHalfExtent = 4800.0f;
+		float DepthHalfExtent = 4400.0f;
+		FBox2D WalkableBox;
+		int32 FloorNumber = 0;
+	};
+
 	struct FLayout
 	{
 		FT66MapPreset Preset;
@@ -140,6 +162,7 @@ namespace T66TowerMapTerrain
 		FVector BossBeaconSurfaceLocation = FVector::ZeroVector;
 		FVector BossAreaCenterSurfaceLocation = FVector::ZeroVector;
 		TArray<FVector> RescueAnchorLocations;
+		TArray<FStartGalleryWing> StartGalleryWings;
 	};
 
 	int32 ResolveGameplayLevelNumberForDifficulty(ET66Difficulty Difficulty);

@@ -107,6 +107,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals|Placeholder")
 	TObjectPtr<UStaticMeshComponent> PlaceholderMesh;
 
+	/** Optional unrigged imported hero mesh used before rigging/animation is available. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
+	TObjectPtr<UStaticMeshComponent> StaticVisualMesh;
+
 	/** Visual ring showing the hero's current auto-attack range (toggle with HUD panels). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
 	TObjectPtr<UInstancedStaticMeshComponent> AttackRangeRingISM;
@@ -251,6 +255,8 @@ private:
 	FRotator DefaultPlaceholderRelativeRotation = FRotator::ZeroRotator;
 	FVector DefaultSkeletalMeshRelativeLocation = FVector::ZeroVector;
 	FRotator DefaultSkeletalMeshRelativeRotation = FRotator::ZeroRotator;
+	FVector DefaultStaticVisualRelativeLocation = FVector::ZeroVector;
+	FRotator DefaultStaticVisualRelativeRotation = FRotator::ZeroRotator;
 	TWeakObjectPtr<AT66PilotableTractor> MountedTractor;
 
 	FVector QuickReviveDownedVisualOffset = FVector(0.f, 0.f, -58.f);

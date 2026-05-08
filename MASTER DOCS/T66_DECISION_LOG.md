@@ -2,9 +2,15 @@
 
 This file records historical decisions, active exceptions, and known debt. The current policy lives in `T66_MASTER_GUIDELINES.md`.
 
+## 2026-05-07 Anti-Cheat Docs Return To Master Docs
+
+- The active anti-cheat docs moved from the top-level `ANTI_CHEAT/` folder into `MASTER DOCS/Backend Anti Cheat/`.
+- `MASTER DOCS/` is now the canonical home for active master docs, including backend anti-cheat policy and ranked-integrity implementation references.
+- The root `AGENTS.md` file is the automatic Codex startup instruction file. It should stay small and only contain rules that every agent must see before work.
+
 ## 2026-04-18 Anti-Cheat Docs Elevation And Ranked Integrity Policy
 
-- The active anti-cheat docs were moved out of `MASTER DOCS/Anti Cheat/` into the new top-level `ANTI_CHEAT/` folder.
+- The active anti-cheat docs were moved out of `MASTER DOCS/Anti Cheat/` into the new top-level `ANTI_CHEAT/` folder. This was later superseded by the 2026-05-07 move to `MASTER DOCS/Backend Anti Cheat/`.
 - Ranked mode policy is now explicitly "pristine build only."
 - Challenges, internal mods, and future external mods are intentionally unranked rather than punitive by default.
 - Local leaderboard state is being redefined as a cache of backend-accepted ranked runs only; recent-run history may still remain local.
@@ -28,8 +34,8 @@ This file records historical decisions, active exceptions, and known debt. The c
 ## 2026-04-10 Master Docs Reorganization
 
 - The active master handoff documents were moved out of `Guidelines/` and consolidated under the new top-level `MASTER DOCS/` folder.
-- At that checkpoint anti-cheat moved to `MASTER DOCS/Anti Cheat/MASTER_ANTI_CHEAT.md`; that location was later superseded by `ANTI_CHEAT/MASTER_ANTI_CHEAT.md` on 2026-04-18.
-- `Docs/README.md` and the master references treat `MASTER DOCS/` as the canonical home for most active master documentation, with anti-cheat later split into its own top-level `ANTI_CHEAT/` folder.
+- At that checkpoint anti-cheat moved to `MASTER DOCS/Anti Cheat/MASTER_ANTI_CHEAT.md`; that location was later superseded by `ANTI_CHEAT/MASTER_ANTI_CHEAT.md` on 2026-04-18, then by `MASTER DOCS/Backend Anti Cheat/MASTER_ANTI_CHEAT.md` on 2026-05-07.
+- `Docs/README.md` and the master references now treat `MASTER DOCS/` as the canonical home for active master documentation, including anti-cheat.
 
 ## 2026-04-02 Repo Cleanup
 

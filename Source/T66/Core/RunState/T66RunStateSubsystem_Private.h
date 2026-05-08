@@ -27,7 +27,6 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66GamblerBoss.h"
-#include "Gameplay/T66VendorBoss.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Subsystems/SubsystemCollection.h"
 

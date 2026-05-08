@@ -22,6 +22,7 @@
 #include "Rendering/DrawElements.h"
 #include "Styling/SlateTypes.h"
 #include "UI/Style/T66ButtonVisuals.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66RuntimeUIFontAccess.h"
 #include "UI/Style/T66Style.h"
@@ -49,6 +50,7 @@ namespace T66SettingsScreenPrivate
 	enum class ET66SettingsSpriteFamily : uint8
 	{
 		CompactNeutral,
+		TabSelected,
 		ToggleOn,
 		ToggleOff,
 		ToggleInactive
@@ -58,6 +60,7 @@ namespace T66SettingsScreenPrivate
 	{
 		TStrongObjectPtr<UTexture2D> Texture;
 		TSharedPtr<FSlateBrush> Brush;
+		bool bSimpleFallback = false;
 	};
 
 	struct FSettingsSpriteBrushSet
@@ -75,13 +78,14 @@ namespace T66SettingsScreenPrivate
 		const FMargin& Margin = FMargin(0.093f, 0.213f, 0.093f, 0.213f),
 		const TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
+		const FString SourceRelativePath(RelativePath ? RelativePath : TEXT(""));
+		const bool bImageDraw =
+			FMath::IsNearlyZero(Margin.Left)
+			&& FMath::IsNearlyZero(Margin.Top)
+			&& FMath::IsNearlyZero(Margin.Right)
+			&& FMath::IsNearlyZero(Margin.Bottom);
 		if (!Entry.Brush.IsValid())
 		{
-			const bool bImageDraw =
-				FMath::IsNearlyZero(Margin.Left)
-				&& FMath::IsNearlyZero(Margin.Top)
-				&& FMath::IsNearlyZero(Margin.Right)
-				&& FMath::IsNearlyZero(Margin.Bottom);
 			Entry.Brush = MakeShared<FSlateBrush>();
 			Entry.Brush->DrawAs = bImageDraw ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
 			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
@@ -90,9 +94,9 @@ namespace T66SettingsScreenPrivate
 			Entry.Brush->Margin = Margin;
 		}
 
-		if (!Entry.Texture.IsValid())
+		if (!Entry.Texture.IsValid() && !Entry.bSimpleFallback)
 		{
-			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(SourceRelativePath))
 			{
 				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 					CandidatePath,
@@ -106,8 +110,28 @@ namespace T66SettingsScreenPrivate
 			}
 		}
 
-		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
-		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
+		if (Entry.Texture.IsValid())
+		{
+			Entry.bSimpleFallback = false;
+			Entry.Brush->SetResourceObject(Entry.Texture.Get());
+			return Entry.Brush.Get();
+		}
+
+		if (T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(SourceRelativePath))
+		{
+			Entry.bSimpleFallback = true;
+			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+				*Entry.Brush,
+				SourceRelativePath,
+				ImageSize,
+				Margin,
+				bImageDraw ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box);
+			return Entry.Brush.Get();
+		}
+
+		Entry.bSimpleFallback = false;
+		Entry.Brush->SetResourceObject(nullptr);
+		return nullptr;
 	}
 
 	inline const FSlateBrush* ResolveSettingsRegionSpriteBrush(
@@ -126,6 +150,11 @@ namespace T66SettingsScreenPrivate
 			return nullptr;
 		}
 
+		if (!Entry.Texture.IsValid() && Entry.bSimpleFallback)
+		{
+			return Entry.Brush.Get();
+		}
+
 		Entry.Brush->DrawAs = DrawAs;
 		Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
 		Entry.Brush->ImageSize = ImageSize;
@@ -139,12 +168,15 @@ namespace T66SettingsScreenPrivate
 	inline FSettingsSpriteBrushSet& GetSettingsButtonSpriteSet(ET66SettingsSpriteFamily Family)
 	{
 		static FSettingsSpriteBrushSet CompactNeutral;
+		static FSettingsSpriteBrushSet TabSelected;
 		static FSettingsSpriteBrushSet ToggleOn;
 		static FSettingsSpriteBrushSet ToggleOff;
 		static FSettingsSpriteBrushSet ToggleInactive;
 
 		switch (Family)
 		{
+		case ET66SettingsSpriteFamily::TabSelected:
+			return TabSelected;
 		case ET66SettingsSpriteFamily::ToggleOn:
 			return ToggleOn;
 		case ET66SettingsSpriteFamily::ToggleOff:
@@ -182,8 +214,25 @@ namespace T66SettingsScreenPrivate
 		}
 
 		static FString Path;
+		if (Family == ET66SettingsSpriteFamily::TabSelected)
+		{
+			Path = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_selected.png");
+			return *Path;
+		}
+		if (Family == ET66SettingsSpriteFamily::ToggleOn)
+		{
+			Path = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_selected.png");
+			return *Path;
+		}
+		if (Family == ET66SettingsSpriteFamily::ToggleOff)
+		{
+			Path = FString::Printf(
+				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_load_game_button_%s.png"),
+				Suffix);
+			return *Path;
+		}
 		Path = FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/Settings/Buttons/settings_buttons_pill_%s.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_%s.png"),
 			Suffix);
 		return *Path;
 	}
@@ -192,17 +241,21 @@ namespace T66SettingsScreenPrivate
 	{
 		if (Family == ET66SettingsSpriteFamily::CompactNeutral)
 		{
-			return FVector2D(270.f, 88.f);
+			return FVector2D(213.f, 83.f);
+		}
+		if (Family == ET66SettingsSpriteFamily::TabSelected)
+		{
+			return FVector2D(221.f, 91.f);
 		}
 		if (Family == ET66SettingsSpriteFamily::ToggleOn)
 		{
-			return FVector2D(270.f, 88.f);
+			return FVector2D(148.f, 86.f);
 		}
 		if (Family == ET66SettingsSpriteFamily::ToggleOff)
 		{
-			return FVector2D(270.f, 88.f);
+			return FVector2D(186.f, 91.f);
 		}
-		return FVector2D(270.f, 88.f);
+		return FVector2D(213.f, 83.f);
 	}
 
 	inline const FSlateBrush* ResolveSettingsButtonSpriteBrush(ET66SettingsSpriteFamily Family, ET66ButtonBorderState State)
@@ -231,8 +284,8 @@ namespace T66SettingsScreenPrivate
 		FSettingsSpriteBrushSet& Set = GetSettingsButtonSpriteSet(ET66SettingsSpriteFamily::ToggleInactive);
 		return ResolveSettingsSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/Reference/Screens/Settings/Buttons/settings_buttons_pill_disabled.png"),
-			FVector2D(270.f, 88.f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_disabled.png"),
+			FVector2D(166.f, 91.f),
 			FMargin(0.f),
 			TextureFilter::TF_Nearest);
 	}
@@ -259,8 +312,8 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Settings/Panels/settings_panels_reference_scroll_paper_frame.png"),
-			FVector2D(500.f, 291.f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FVector2D(567.f, 379.f),
 			FMargin(0.070f, 0.120f, 0.070f, 0.120f),
 			TextureFilter::TF_Nearest);
 	}
@@ -270,9 +323,9 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Settings/Panels/settings_panels_reference_scroll_paper_frame.png"),
-			FVector2D(500.f, 291.f),
-			FMargin(0.075f, 0.175f, 0.075f, 0.175f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			FVector2D(550.f, 83.f),
+			FMargin(0.075f, 0.275f, 0.075f, 0.275f),
 			TextureFilter::TF_Nearest);
 	}
 
@@ -281,9 +334,9 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/Settings/Controls/settings_controls_reference_dropdown_field_normal.png"),
-			FVector2D(218.f, 50.f),
-			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/dropdown_field_normal.png"),
+			FVector2D(570.f, 71.f),
+			FMargin(0.055f, 0.34f, 0.055f, 0.34f),
 			TextureFilter::TF_Nearest);
 	}
 
@@ -443,12 +496,12 @@ namespace T66SettingsScreenPrivate
 
 	inline FLinearColor GetSettingsPageText()
 	{
-		return FLinearColor(0.045f, 0.030f, 0.012f, 1.0f);
+		return FLinearColor(0.98f, 0.90f, 0.62f, 1.0f);
 	}
 
 	inline FLinearColor GetSettingsPageMuted()
 	{
-		return FLinearColor(0.130f, 0.085f, 0.035f, 1.0f);
+		return FLinearColor(0.73f, 0.70f, 0.62f, 1.0f);
 	}
 
 	inline FLinearColor GetSettingsButtonText()
@@ -623,12 +676,17 @@ namespace T66SettingsScreenPrivate
 		(void)UnselectedColor;
 		FT66ButtonParams ButtonParams = Params;
 		const ET66SettingsSpriteFamily SelectedFamily = GetDefaultSettingsButtonFamily(ButtonParams.Type == ET66ButtonType::Neutral ? ET66ButtonType::Primary : ButtonParams.Type);
+		const bool bUseSelectedTabArt = ButtonParams.Height >= 58.f;
 		TSharedRef<TFunction<bool()>> IsSelectedRef = MakeShared<TFunction<bool()>>(MoveTemp(IsSelected));
 		return MakeSettingsSpriteButton(
 			ButtonParams,
-			TAttribute<ET66SettingsSpriteFamily>::CreateLambda([IsSelectedRef, SelectedFamily]() -> ET66SettingsSpriteFamily
+			TAttribute<ET66SettingsSpriteFamily>::CreateLambda([IsSelectedRef, SelectedFamily, bUseSelectedTabArt]() -> ET66SettingsSpriteFamily
 			{
-				return (*IsSelectedRef)() ? SelectedFamily : ET66SettingsSpriteFamily::CompactNeutral;
+				if (!(*IsSelectedRef)())
+				{
+					return ET66SettingsSpriteFamily::CompactNeutral;
+				}
+				return bUseSelectedTabArt ? ET66SettingsSpriteFamily::TabSelected : SelectedFamily;
 			}));
 	}
 
@@ -764,7 +822,41 @@ namespace T66SettingsScreenPrivate
 			+ SHorizontalBox::Slot().AutoWidth().Padding(Style.RightPadding, 0.f, 0.f, 0.f)
 			[
 				MakeSettingsToggleButtons(Loc, MoveTemp(GetValue), MoveTemp(SetValue), Style)
-			]);
+			],
+			FMargin(24.f, 14.f, 18.f, 12.f));
+	}
+
+	inline const FSlateBrush* GetSettingsSectionDividerBrush()
+	{
+		static FSettingsSpriteBrushEntry Entry;
+		return ResolveSettingsSpriteBrush(
+			Entry,
+			TEXT("SourceAssets/UI/Reference/Screens/Settings/Dividers/settings_dividers_section_heading_rule.png"),
+			FVector2D(1003.f, 126.f),
+			FMargin(0.f),
+			TextureFilter::TF_Nearest);
+	}
+
+	inline TSharedRef<SWidget> MakeSettingsSectionHeader(const FText& Text, const int32 FontSize = 22)
+	{
+		return SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(Text)
+				.Font(SettingsBoldFont(FontSize))
+				.ColorAndOpacity(GetSettingsPageText())
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(12.f, 1.f, 0.f, 0.f)
+			[
+				SNew(SBox)
+				.WidthOverride(145.f)
+				.HeightOverride(18.f)
+				[
+					SNew(SImage)
+					.Image(GetSettingsSectionDividerBrush())
+				]
+			];
 	}
 
 	inline TSharedRef<SWidget> MakeDynamicOnOffButton(
@@ -794,10 +886,10 @@ namespace T66SettingsScreenPrivate
 		return ResolveSettingsRegionSpriteBrush(
 			Entry,
 			TEXT("SourceAssets/UI/Reference/Screens/Settings/Controls/settings_controls_controls_sheet.png"),
-			FVector2D(24.f, 26.f),
+			FVector2D(37.f, 37.f),
 			FBox2f(
-				FVector2f(566.f / 1350.f, 845.f / 926.f),
-				FVector2f(641.f / 1350.f, 922.f / 926.f)),
+				FVector2f(24.f / 1536.f, 849.f / 1024.f),
+				FVector2f(61.f / 1536.f, 886.f / 1024.f)),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
 			FLinearColor::White,
@@ -912,12 +1004,13 @@ namespace T66SettingsScreenPrivate
 	inline const FSlateBrush* GetSettingsReferenceProgressSheetBrush()
 	{
 		static FSettingsSpriteBrushEntry Entry;
-		return ResolveSettingsSpriteBrush(
+		const FSlateBrush* Brush = ResolveSettingsSpriteBrush(
 			Entry,
 			TEXT("SourceAssets/UI/Reference/Screens/Settings/Controls/settings_controls_reference_progress_meter_sheet.png"),
-			FVector2D(1024.f, 1024.f),
+			FVector2D(1536.f, 1024.f),
 			FMargin(0.f),
 			TextureFilter::TF_Nearest);
+		return Entry.bSimpleFallback ? nullptr : Brush;
 	}
 
 	class ST66SettingsReferenceProgressBar : public SLeafWidget
@@ -959,8 +1052,8 @@ namespace T66SettingsScreenPrivate
 
 			const FSlateBrush* ProgressSheetBrush = GetSettingsReferenceProgressSheetBrush();
 			const FSlateBrush* WhiteBrush = FCoreStyle::Get().GetBrush("WhiteBrush");
-			const FBox2f TrackUV(FVector2f(0.0530f, 0.2950f), FVector2f(0.9550f, 0.4440f));
-			const FBox2f FillUV(FVector2f(0.0670f, 0.6320f), FVector2f(0.9320f, 0.6960f));
+			const FBox2f TrackUV(FVector2f(24.f / 1536.f, 849.f / 1024.f), FVector2f(501.f / 1536.f, 885.f / 1024.f));
+			const FBox2f FillUV(FVector2f(24.f / 1536.f, 890.f / 1024.f), FVector2f(501.f / 1536.f, 945.f / 1024.f));
 
 			if (ProgressSheetBrush)
 			{
@@ -1057,50 +1150,55 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry TrackEntry;
 		static FSettingsSpriteBrushEntry ThumbEntry;
 		static FSettingsSpriteBrushEntry HoverEntry;
+		static FSettingsSpriteBrushEntry UpEntry;
+		static FSettingsSpriteBrushEntry DownEntry;
 
-		const FBox2f VerticalBarUV(
-			FVector2f(4.f / 1350.f, 4.f / 926.f),
-			FVector2f(90.f / 1350.f, 644.f / 926.f));
-		const TCHAR* ControlsPath = TEXT("SourceAssets/UI/Reference/Screens/Settings/Controls/settings_controls_controls_sheet.png");
-
-		const FSlateBrush* TrackBrush = ResolveSettingsRegionSpriteBrush(
+		const FSlateBrush* TrackBrush = ResolveSettingsSpriteBrush(
 			TrackEntry,
-			ControlsPath,
-			FVector2D(14.f, 120.f),
-			VerticalBarUV,
-			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
-			ESlateBrushDrawType::Box,
-			FLinearColor(0.35f, 0.30f, 0.19f, 0.80f),
+			TEXT("SourceAssets/UI/Reference/Screens/Settings/Controls/settings_controls_scrollbar_track_generated.png"),
+			FVector2D(33.f, 445.f),
+			FMargin(0.34f, 0.11f, 0.34f, 0.11f),
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* ThumbBrush = ResolveSettingsRegionSpriteBrush(
+		const FSlateBrush* ThumbBrush = ResolveSettingsSpriteBrush(
 			ThumbEntry,
-			ControlsPath,
-			FVector2D(16.f, 96.f),
-			VerticalBarUV,
-			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			ESlateBrushDrawType::Box,
-			FLinearColor(0.95f, 0.75f, 0.34f, 1.f),
+			TEXT("SourceAssets/UI/Reference/Screens/Settings/Controls/settings_controls_scrollbar_thumb_generated.png"),
+			FVector2D(37.f, 444.f),
+			FMargin(0.34f, 0.16f, 0.34f, 0.16f),
 			TextureFilter::TF_Nearest);
-		const FSlateBrush* HoverBrush = ResolveSettingsRegionSpriteBrush(
+		const FSlateBrush* HoverBrush = ResolveSettingsSpriteBrush(
 			HoverEntry,
-			ControlsPath,
-			FVector2D(16.f, 96.f),
-			VerticalBarUV,
-			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			ESlateBrushDrawType::Box,
-			FLinearColor(1.f, 0.88f, 0.52f, 1.f),
+			TEXT("SourceAssets/UI/Reference/Screens/Settings/Controls/settings_controls_scrollbar_thumb_generated.png"),
+			FVector2D(37.f, 444.f),
+			FMargin(0.34f, 0.16f, 0.34f, 0.16f),
+			TextureFilter::TF_Nearest);
+		const FSlateBrush* UpBrush = ResolveSettingsSpriteBrush(
+			UpEntry,
+			TEXT("SourceAssets/UI/Reference/Screens/Settings/Controls/settings_controls_scrollbar_arrow_up.png"),
+			FVector2D(71.f, 71.f),
+			FMargin(0.f),
+			TextureFilter::TF_Nearest);
+		const FSlateBrush* DownBrush = ResolveSettingsSpriteBrush(
+			DownEntry,
+			TEXT("SourceAssets/UI/Reference/Screens/Settings/Controls/settings_controls_scrollbar_arrow_down.png"),
+			FVector2D(71.f, 71.f),
+			FMargin(0.f),
 			TextureFilter::TF_Nearest);
 
-		if (TrackBrush && ThumbBrush && HoverBrush)
+		if (TrackBrush && ThumbBrush && HoverBrush && UpBrush && DownBrush
+			&& !TrackEntry.bSimpleFallback
+			&& !ThumbEntry.bSimpleFallback
+			&& !HoverEntry.bSimpleFallback
+			&& !UpEntry.bSimpleFallback
+			&& !DownEntry.bSimpleFallback)
 		{
 			Style
 				.SetVerticalBackgroundImage(*TrackBrush)
-				.SetVerticalTopSlotImage(*TrackBrush)
-				.SetVerticalBottomSlotImage(*TrackBrush)
+				.SetVerticalTopSlotImage(*UpBrush)
+				.SetVerticalBottomSlotImage(*DownBrush)
 				.SetNormalThumbImage(*ThumbBrush)
 				.SetHoveredThumbImage(*HoverBrush)
 				.SetDraggedThumbImage(*HoverBrush)
-				.SetThickness(14.f);
+				.SetThickness(18.f);
 		}
 
 		return &Style;
@@ -1191,63 +1289,68 @@ namespace T66SettingsScreenPrivate
 			SetPercent(static_cast<float>(SnappedPercent));
 		};
 
-		return MakeSettingsRow(
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().FillWidth(0.46f).VAlign(VAlign_Center)
+		return SNew(SBox)
+			.HeightOverride(104.f)
 			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
-				[
-					SNew(STextBlock)
-					.Text(Label)
-					.Font(SettingsRegularFont(22))
-					.ColorAndOpacity(GetSettingsPageText())
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 18.f, 0.f)
-				[
-					SNew(STextBlock)
-					.Text(Description)
-					.Font(SettingsRegularFont(16))
-					.ColorAndOpacity(GetSettingsPageMuted())
-					.AutoWrapText(true)
-				]
-			]
-			+ SHorizontalBox::Slot().FillWidth(0.54f).VAlign(VAlign_Center).Padding(10.f, 0.f)
-			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
-				[
-					SNew(STextBlock)
-					.Text_Lambda([GetSnappedPercent]()
-					{
-						return FText::AsNumber(GetSnappedPercent());
-					})
-					.Font(SettingsBoldFont(24))
-					.ColorAndOpacity(GetSettingsPageText())
-					.Justification(ETextJustify::Center)
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-				[
-					MakeSettingsReferenceSlider(
-						TAttribute<float>::CreateLambda([GetSnappedPercent]() -> float
-						{
-							return static_cast<float>(GetSnappedPercent()) / 100.0f;
-						}),
-						0.01f,
-						FOnFloatValueChanged::CreateLambda([CommitSliderValue](float Value)
-						{
-							CommitSliderValue(Value);
-						}))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-				[
-					SNew(STextBlock)
-					.Text(HelpText)
-					.Font(SettingsRegularFont(14))
-					.ColorAndOpacity(GetSettingsPageMuted())
-					.AutoWrapText(true)
-				]
-			]);
+				MakeSettingsRow(
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(0.46f).VAlign(VAlign_Center)
+					[
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							SNew(STextBlock)
+							.Text(Label)
+							.Font(SettingsBoldFont(20))
+							.ColorAndOpacity(GetSettingsPageText())
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 18.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(Description)
+							.Font(SettingsRegularFont(14))
+							.ColorAndOpacity(GetSettingsPageMuted())
+							.AutoWrapText(true)
+						]
+					]
+					+ SHorizontalBox::Slot().FillWidth(0.54f).VAlign(VAlign_Center).Padding(10.f, 0.f)
+					[
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							SNew(STextBlock)
+							.Text_Lambda([GetSnappedPercent]()
+							{
+								return FText::AsNumber(GetSnappedPercent());
+							})
+							.Font(SettingsBoldFont(22))
+							.ColorAndOpacity(GetSettingsPageText())
+							.Justification(ETextJustify::Center)
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
+						[
+							MakeSettingsReferenceSlider(
+								TAttribute<float>::CreateLambda([GetSnappedPercent]() -> float
+								{
+									return static_cast<float>(GetSnappedPercent()) / 100.0f;
+								}),
+								0.01f,
+								FOnFloatValueChanged::CreateLambda([CommitSliderValue](float Value)
+								{
+									CommitSliderValue(Value);
+								}))
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(HelpText)
+							.Font(SettingsRegularFont(12))
+							.ColorAndOpacity(GetSettingsPageMuted())
+							.AutoWrapText(true)
+						]
+					],
+					FMargin(22.f, 8.f, 16.f, 8.f))
+			];
 	}
 
 	inline TSharedRef<SWidget> MakeSettingsDropdown(const FT66DropdownParams& Params);

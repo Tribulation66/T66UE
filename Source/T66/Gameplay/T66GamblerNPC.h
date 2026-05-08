@@ -6,7 +6,7 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "T66GamblerNPC.generated.h"
 
-/** Gambler NPC: opens a coin flip overlay (heads/tails). */
+/** Gambler NPC: opens the shared casino shell overlay. */
 UCLASS(Blueprintable)
 class T66_API AT66GamblerNPC : public AT66HouseNPCBase
 {
@@ -20,9 +20,13 @@ public:
 	int32 GetWinGoldAmount() const { return WinGoldAmount; }
 
 protected:
+	virtual void BeginPlay() override;
 	virtual void ApplyNPCData(const FHouseNPCData& Data) override;
+	virtual bool ShouldApplyCharacterVisual() const override { return false; }
 
 private:
+	void ApplyGamblerStaticVisual();
+
 	int32 WinGoldAmount = 10;
 };
 

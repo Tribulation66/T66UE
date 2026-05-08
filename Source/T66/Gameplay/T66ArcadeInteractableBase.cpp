@@ -191,6 +191,14 @@ AT66ArcadeInteractableBase::AT66ArcadeInteractableBase()
 	ApplyRarityVisuals();
 }
 
+void AT66ArcadeInteractableBase::SetArcadeRowID(const FName InArcadeRowID)
+{
+	ArcadeRowID = InArcadeRowID;
+	RefreshResolvedArcadeData();
+	ApplyRarityVisuals();
+	RefreshInteractionPrompt();
+}
+
 void AT66ArcadeInteractableBase::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
@@ -326,6 +334,13 @@ void AT66ArcadeInteractableBase::HandleArcadePopupClosed(const bool bSucceeded, 
 		}
 		PlayCompletionEffects(FinalScore);
 		SpawnCompletionRewards(FinalScore);
+		if (IsShowcaseReusable())
+		{
+			bConsumed = false;
+			RefreshInteractionPrompt();
+			return;
+		}
+
 		bConsumed = true;
 		Destroy();
 		return;
@@ -352,7 +367,6 @@ void AT66ArcadeInteractableBase::ApplyRarityVisuals()
 	if (TryApplyImportedMesh())
 	{
 		VisualMesh->SetRelativeLocation(T66ResolveImportedArcadeLocation(VisualMesh, Data.DisplayMeshOffset));
-		FT66VisualUtil::ApplyT66Color(VisualMesh, this, Data.Tint);
 		RefreshInteractionPrompt();
 		return;
 	}

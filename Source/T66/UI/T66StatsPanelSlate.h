@@ -11,7 +11,7 @@ class UT66LeaderboardRunSummarySaveGame;
 
 /**
  * Shared Slate builder for the essential stats panel (Level + 8 displayed stats).
- * Used by Pause menu, Vendor shop, Gambler casino, and gameplay HUD.
+ * Used by Pause menu, Shop, Gambler casino, and gameplay HUD.
  */
 namespace T66StatsPanelSlate
 {

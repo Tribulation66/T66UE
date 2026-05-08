@@ -1,0 +1,3 @@
+Pass 02 candidate.
+Prompt tightened top-bar order and preservation requirements after pass 01 user review.
+Style direction: cleaner Ultrakill-inspired terminal/HUD style over black background; fewer heavy metal surfaces; high-contrast black, white, red, yellow, small cyan highlights.

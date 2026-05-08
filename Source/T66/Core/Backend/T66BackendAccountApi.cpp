@@ -38,7 +38,8 @@ void UT66BackendSubsystem::OnAccountStatusResponseReceived(FHttpRequestPtr Reque
 		return;
 	}
 
-	const FString Restriction = Json->GetStringField(TEXT("restriction"));
+	FString Restriction;
+	Json->TryGetStringField(TEXT("restriction"), Restriction);
 	Json->TryGetStringField(TEXT("reason"), LastAccountStatusReason);
 	Json->TryGetStringField(TEXT("appeal_status"), LastAccountAppealStatus);
 	Json->TryGetStringField(TEXT("run_summary_id"), LastAccountRunSummaryId);
@@ -270,7 +271,8 @@ void UT66BackendSubsystem::OnRunReportResponseReceived(FHttpRequestPtr Request, 
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 	const bool bParsed = FJsonSerializer::Deserialize(Reader, Json) && Json.IsValid();
 	const int32 Code = Response->GetResponseCode();
-	if (Code == 200 && bParsed && Json->GetStringField(TEXT("status")) == TEXT("submitted"))
+	FString Status;
+	if (Code == 200 && bParsed && Json->TryGetStringField(TEXT("status"), Status) && Status == TEXT("submitted"))
 	{
 		OnRunReportComplete.Broadcast(true, TEXT("Run reported."));
 		return;
@@ -291,7 +293,8 @@ void UT66BackendSubsystem::OnAppealResponseReceived(FHttpRequestPtr Request, FHt
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 	const bool bParsed = FJsonSerializer::Deserialize(Reader, Json) && Json.IsValid();
 	const int32 Code = Response->GetResponseCode();
-	if (Code == 200 && bParsed && Json->GetStringField(TEXT("status")) == TEXT("submitted"))
+	FString Status;
+	if (Code == 200 && bParsed && Json->TryGetStringField(TEXT("status"), Status) && Status == TEXT("submitted"))
 	{
 		OnAppealSubmitComplete.Broadcast(true, TEXT("Appeal submitted."));
 		return;
@@ -312,7 +315,8 @@ void UT66BackendSubsystem::OnProofOfRunResponseReceived(FHttpRequestPtr Request,
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 	const bool bParsed = FJsonSerializer::Deserialize(Reader, Json) && Json.IsValid();
 	const int32 Code = Response->GetResponseCode();
-	if (Code == 200 && bParsed && Json->GetStringField(TEXT("status")) == TEXT("updated"))
+	FString Status;
+	if (Code == 200 && bParsed && Json->TryGetStringField(TEXT("status"), Status) && Status == TEXT("updated"))
 	{
 		OnProofOfRunComplete.Broadcast(true, TEXT("Proof of run updated."));
 		return;
@@ -333,7 +337,8 @@ void UT66BackendSubsystem::OnBugReportResponseReceived(FHttpRequestPtr Request, 
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 	const bool bParsed = FJsonSerializer::Deserialize(Reader, Json) && Json.IsValid();
 	const int32 Code = Response->GetResponseCode();
-	if (Code == 200 && bParsed && Json->GetStringField(TEXT("status")) == TEXT("submitted"))
+	FString Status;
+	if (Code == 200 && bParsed && Json->TryGetStringField(TEXT("status"), Status) && Status == TEXT("submitted"))
 	{
 		OnBugReportComplete.Broadcast(true, TEXT("Bug report submitted."));
 		return;
@@ -355,7 +360,8 @@ void UT66BackendSubsystem::OnStreamerRequestResponseReceived(FHttpRequestPtr Req
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 	const bool bParsed = FJsonSerializer::Deserialize(Reader, Json) && Json.IsValid();
 	const int32 Code = Response->GetResponseCode();
-	if ((Code == 200 || Code == 201) && bParsed && Json->GetStringField(TEXT("status")) == TEXT("submitted"))
+	FString Status;
+	if ((Code == 200 || Code == 201) && bParsed && Json->TryGetStringField(TEXT("status"), Status) && Status == TEXT("submitted"))
 	{
 		OnStreamerRequestComplete.Broadcast(true, TEXT("Streamer request submitted."));
 		OnStreamerRequestDataReady.Broadcast(true, TEXT("Streamer request submitted."));
@@ -396,18 +402,20 @@ void UT66BackendSubsystem::OnClientLaunchPolicyResponseReceived(FHttpRequestPtr 
 	bool bUpdateRequired = false;
 	Json->TryGetBoolField(TEXT("update_required"), bUpdateRequired);
 
-	if (Json->HasTypedField<EJson::Number>(TEXT("required_steam_build_id")))
+	double RequiredBuildIdValue = 0.0;
+	if (Json->TryGetNumberField(TEXT("required_steam_build_id"), RequiredBuildIdValue))
 	{
-		LastRequiredSteamBuildId = static_cast<int32>(Json->GetNumberField(TEXT("required_steam_build_id")));
+		LastRequiredSteamBuildId = static_cast<int32>(RequiredBuildIdValue);
 	}
 	else
 	{
 		LastRequiredSteamBuildId = 0;
 	}
 
-	if (Json->HasTypedField<EJson::Number>(TEXT("latest_steam_build_id")))
+	double LatestBuildIdValue = 0.0;
+	if (Json->TryGetNumberField(TEXT("latest_steam_build_id"), LatestBuildIdValue))
 	{
-		LastLatestSteamBuildId = static_cast<int32>(Json->GetNumberField(TEXT("latest_steam_build_id")));
+		LastLatestSteamBuildId = static_cast<int32>(LatestBuildIdValue);
 	}
 	else
 	{

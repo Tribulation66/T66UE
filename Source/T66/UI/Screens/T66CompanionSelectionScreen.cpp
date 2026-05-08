@@ -95,6 +95,11 @@ namespace
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush Disabled;
 	};
 
+	FString MakeCompanionUltrakillElementPath(const TCHAR* FileName)
+	{
+		return FString::Printf(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/%s"), FileName);
+	}
+
 	const FSlateBrush* ResolveCompanionReferenceBrush(
 		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
 		const FString& RelativePath,
@@ -182,13 +187,15 @@ namespace
 			StateSuffix = TEXT("selected");
 		}
 
-		const TCHAR* FamilyStem = Family == ET66CompanionReferenceButtonFamily::CtaPrimary
-			? TEXT("cta")
-			: TEXT("pill");
-		return FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Buttons/companionselection_buttons_%s_%s.png"),
-			FamilyStem,
-			StateSuffix);
+		if (Family == ET66CompanionReferenceButtonFamily::CtaPrimary)
+		{
+			const FString CtaState = FString(StateSuffix).Equals(TEXT("selected"), ESearchCase::IgnoreCase)
+				? FString(TEXT("normal"))
+				: FString(StateSuffix);
+			return MakeCompanionUltrakillElementPath(*FString::Printf(TEXT("cta_new_game_button_%s.png"), *CtaState));
+		}
+
+		return MakeCompanionUltrakillElementPath(*FString::Printf(TEXT("leaderboard_tab_button_%s.png"), StateSuffix));
 	}
 
 	FMargin GetCompanionReferenceButtonMargin(const ET66CompanionReferenceButtonFamily /*Family*/)
@@ -228,7 +235,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Panels/companionselection_panels_inner_panel_normal.png"),
+			MakeCompanionUltrakillElementPath(TEXT("main_panel_normal.png")),
 			FMargin(0.035f, 0.105f, 0.035f, 0.105f),
 			TEXT("CompanionLeftShellReference12"),
 			TextureFilter::TF_Nearest);
@@ -239,7 +246,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Panels/companionselection_panels_inner_panel_normal.png"),
+			MakeCompanionUltrakillElementPath(TEXT("main_panel_normal.png")),
 			FMargin(0.035f, 0.105f, 0.035f, 0.105f),
 			TEXT("CompanionRightShellReference12"),
 			TextureFilter::TF_Nearest);
@@ -250,7 +257,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Panels/companionselection_panels_reference_scroll_paper_frame.png"),
+			MakeCompanionUltrakillElementPath(TEXT("main_panel_normal.png")),
 			FMargin(0.095f, 0.13f, 0.095f, 0.13f),
 			TEXT("CompanionPaperFrameReference12"),
 			TextureFilter::TF_Nearest);
@@ -261,7 +268,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Panels/companionselection_panels_fullscreen_row_shell_quiet.png"),
+			MakeCompanionUltrakillElementPath(TEXT("player_row_panel_normal.png")),
 			FMargin(0.070f, 0.155f, 0.070f, 0.155f),
 			TEXT("CompanionRowShellV16"),
 			TextureFilter::TF_Nearest);
@@ -272,7 +279,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Controls/companionselection_controls_reference_dropdown_field_normal.png"),
+			MakeCompanionUltrakillElementPath(TEXT("dropdown_field_normal.png")),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
 			TEXT("CompanionFieldShell"));
 	}
@@ -282,7 +289,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Slots/companionselection_slots_reference_square_slot_frame_normal.png"),
+			MakeCompanionUltrakillElementPath(TEXT("profile_slot_normal.png")),
 			FMargin(0.20f, 0.20f, 0.20f, 0.20f),
 			TEXT("CompanionAvatarFrame"));
 	}
@@ -1190,14 +1197,16 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	const TSharedRef<SWidget> CompanionPassiveRowWidget =
 		SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.78f, 0.61f, 0.32f, 0.74f))
+		.BorderBackgroundColor(FLinearColor(0.055f, 0.043f, 0.034f, 0.92f))
 		.Padding(FMargin(12.0f, 10.0f))
 		[
 			SNew(STextBlock)
 			.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionPassivePlaceholder", "Passive: Heals the player during combat"))
 			.Font(FT66Style::Tokens::FontRegular(15))
-			.ColorAndOpacity(FLinearColor(0.075f, 0.055f, 0.025f, 1.0f))
-			.AutoWrapText(false)
+			.ColorAndOpacity(FLinearColor(0.98f, 0.91f, 0.70f, 1.0f))
+			.AutoWrapText(true)
+			.WrapTextAt(320.f)
+			.Clipping(EWidgetClipping::ClipToBounds)
 		];
 
 	const TSharedRef<SVerticalBox> CompanionInfoPaperContent = SNew(SVerticalBox);
@@ -1207,8 +1216,10 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			SAssignNew(CompanionLoreWidget, STextBlock)
 			.Text(CurrentCompanionLore)
 			.Font(FT66Style::Tokens::FontRegular(15))
-			.ColorAndOpacity(FLinearColor(0.075f, 0.055f, 0.025f, 1.0f))
+			.ColorAndOpacity(FLinearColor(0.98f, 0.91f, 0.70f, 1.0f))
 			.AutoWrapText(true)
+			.WrapTextAt(320.f)
+			.Clipping(EWidgetClipping::ClipToBounds)
 		];
 	CompanionInfoPaperContent->AddSlot()
 		.AutoHeight()
@@ -1625,14 +1636,58 @@ FReply UT66CompanionSelectionScreen::HandleBackClicked() { OnBackClicked(); retu
 
 AT66CompanionPreviewStage* UT66CompanionSelectionScreen::GetCompanionPreviewStage() const
 {
+	if (AT66CompanionPreviewStage* CachedStage = CachedCompanionPreviewStage.Get())
+	{
+		return CachedStage;
+	}
+
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
 	if (AT66PlayerController* PC = T66GetLocalFrontendCompanionPlayerController(const_cast<UT66CompanionSelectionScreen*>(this)))
 	{
 		PC->EnsureLocalFrontendPreviewScene();
 	}
+
+	if (AT66CompanionPreviewStage* CachedStage = CachedCompanionPreviewStage.Get())
+	{
+		return CachedStage;
+	}
+
+	// UI setup fallback: the frontend preview scene is resolved once and then
+	// cached so carousel refreshes do not rescan the world.
 	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
-		return *It;
+	{
+		CachedCompanionPreviewStage = *It;
+		return CachedCompanionPreviewStage.Get();
+	}
+	return nullptr;
+}
+
+AT66HeroPreviewStage* UT66CompanionSelectionScreen::GetHeroPreviewStage() const
+{
+	if (AT66HeroPreviewStage* CachedStage = CachedHeroPreviewStage.Get())
+	{
+		return CachedStage;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World) return nullptr;
+	if (AT66PlayerController* PC = T66GetLocalFrontendCompanionPlayerController(const_cast<UT66CompanionSelectionScreen*>(this)))
+	{
+		PC->EnsureLocalFrontendPreviewScene();
+	}
+
+	if (AT66HeroPreviewStage* CachedStage = CachedHeroPreviewStage.Get())
+	{
+		return CachedStage;
+	}
+
+	// UI setup fallback: cached after first resolve for this screen.
+	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+	{
+		CachedHeroPreviewStage = *It;
+		return CachedHeroPreviewStage.Get();
+	}
 	return nullptr;
 }
 
@@ -1972,7 +2027,7 @@ void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
 			SessionSubsystem->SetLocalLobbyReady(false);
 		}
 
-		if (UWorld* World = GetWorld())
+		if (AT66HeroPreviewStage* HeroStage = GetHeroPreviewStage())
 		{
 			FName EffectiveHeroSkinID = GI->SelectedHeroSkinID;
 			if (EffectiveHeroSkinID.IsNone())
@@ -1980,14 +2035,9 @@ void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
 				EffectiveHeroSkinID = FName(TEXT("Default"));
 			}
 
-			for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
-			{
-				AT66HeroPreviewStage* HeroStage = *It;
-				HeroStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-				HeroStage->SetPreviewDifficulty(GI->SelectedDifficulty);
-				HeroStage->SetPreviewHero(GI->SelectedHeroID, GI->SelectedHeroBodyType, EffectiveHeroSkinID, GI->SelectedCompanionID);
-				break;
-			}
+			HeroStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
+			HeroStage->SetPreviewDifficulty(GI->SelectedDifficulty);
+			HeroStage->SetPreviewHero(GI->SelectedHeroID, GI->SelectedHeroBodyType, EffectiveHeroSkinID, GI->SelectedCompanionID);
 		}
 	}
 	NavigateBack();

@@ -1,0 +1,878 @@
+{
+  "stage": "unreal_validation",
+  "output_root": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01",
+  "summary": {
+    "generated_rows": 31,
+    "imported_rows": 31,
+    "arcade_rows_checked": 15,
+    "character_visual_rows_checked": 3,
+    "stale_in_scope_references": 0,
+    "boss_excluded_legacy_references": 1,
+    "errors": 0
+  },
+  "generated_files": [
+    {
+      "row_id": "Vehicle",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_Machine",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_WhackAMole",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_Topwar",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_GoldMiner",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_RuneSwipe",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_CartSwitcher",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_CrystalDash",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_PotionPour",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_RelicStack",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_ShieldParry",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_MimicMemory",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_BombSorter",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_LanternLeap",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Arcade_BladeSweep",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Crate",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Chest",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "LootBag_Black",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "LootBag_Red",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "LootBag_Yellow",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "LootBag_White",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Fountain",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "DifficultyTotem",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "IdolAltar",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "QuickReviveVending",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Shroom",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "ArcadeAmplifierPickup",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "ArcadeAmplifierPickup_Charged",
+      "category": "Interactables",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Gambler",
+      "category": "NPCs",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Saint",
+      "category": "NPCs",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    },
+    {
+      "row_id": "Ouroboros",
+      "category": "NPCs",
+      "checks": {
+        "source_image": true,
+        "raw_trellis_glb": true,
+        "trellis_front_render": true,
+        "quad_retro_glb": true,
+        "quad_retro_front_render": true
+      },
+      "stage01_status": "ready_with_front_qa",
+      "stage02_status": "ready_with_front_qa"
+    }
+  ],
+  "imported_assets": [
+    {
+      "row_id": "Vehicle",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Vehicle/Vehicle_QuadRetro.Vehicle_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Vehicle/Materials/M_Vehicle_QuadRetro.M_Vehicle_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Vehicle/Textures/T_Vehicle_QuadRetro_Pixelated_512.T_Vehicle_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Vehicle/Textures/T_Vehicle_QuadRetro_Pixelated_512.T_Vehicle_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Vehicle/Textures/T_Vehicle_QuadRetro_Pixelated_512.T_Vehicle_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_Machine",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_Machine/Materials/M_Arcade_Machine_QuadRetro.M_Arcade_Machine_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_Machine/Textures/T_Arcade_Machine_QuadRetro_Pixelated_512.T_Arcade_Machine_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_Machine/Textures/T_Arcade_Machine_QuadRetro_Pixelated_512.T_Arcade_Machine_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_Machine/Textures/T_Arcade_Machine_QuadRetro_Pixelated_512.T_Arcade_Machine_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_WhackAMole",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Arcade_WhackAMole_QuadRetro.Arcade_WhackAMole_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Materials/M_Arcade_WhackAMole_QuadRetro.M_Arcade_WhackAMole_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Textures/T_Arcade_WhackAMole_QuadRetro_Pixelated_512.T_Arcade_WhackAMole_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Textures/T_Arcade_WhackAMole_QuadRetro_Pixelated_512.T_Arcade_WhackAMole_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Textures/T_Arcade_WhackAMole_QuadRetro_Pixelated_512.T_Arcade_WhackAMole_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_Topwar",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_Topwar/Arcade_Topwar_QuadRetro.Arcade_Topwar_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_Topwar/Materials/M_Arcade_Topwar_QuadRetro.M_Arcade_Topwar_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_Topwar/Textures/T_Arcade_Topwar_QuadRetro_Pixelated_512.T_Arcade_Topwar_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_Topwar/Textures/T_Arcade_Topwar_QuadRetro_Pixelated_512.T_Arcade_Topwar_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_Topwar/Textures/T_Arcade_Topwar_QuadRetro_Pixelated_512.T_Arcade_Topwar_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_GoldMiner",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Arcade_GoldMiner_QuadRetro.Arcade_GoldMiner_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Materials/M_Arcade_GoldMiner_QuadRetro.M_Arcade_GoldMiner_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Textures/T_Arcade_GoldMiner_QuadRetro_Pixelated_512.T_Arcade_GoldMiner_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Textures/T_Arcade_GoldMiner_QuadRetro_Pixelated_512.T_Arcade_GoldMiner_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Textures/T_Arcade_GoldMiner_QuadRetro_Pixelated_512.T_Arcade_GoldMiner_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_RuneSwipe",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Arcade_RuneSwipe_QuadRetro.Arcade_RuneSwipe_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Materials/M_Arcade_RuneSwipe_QuadRetro.M_Arcade_RuneSwipe_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Textures/T_Arcade_RuneSwipe_QuadRetro_Pixelated_512.T_Arcade_RuneSwipe_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Textures/T_Arcade_RuneSwipe_QuadRetro_Pixelated_512.T_Arcade_RuneSwipe_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Textures/T_Arcade_RuneSwipe_QuadRetro_Pixelated_512.T_Arcade_RuneSwipe_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_CartSwitcher",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Arcade_CartSwitcher_QuadRetro.Arcade_CartSwitcher_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Materials/M_Arcade_CartSwitcher_QuadRetro.M_Arcade_CartSwitcher_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Textures/T_Arcade_CartSwitcher_QuadRetro_Pixelated_512.T_Arcade_CartSwitcher_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Textures/T_Arcade_CartSwitcher_QuadRetro_Pixelated_512.T_Arcade_CartSwitcher_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Textures/T_Arcade_CartSwitcher_QuadRetro_Pixelated_512.T_Arcade_CartSwitcher_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_CrystalDash",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Arcade_CrystalDash_QuadRetro.Arcade_CrystalDash_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Materials/M_Arcade_CrystalDash_QuadRetro.M_Arcade_CrystalDash_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Textures/T_Arcade_CrystalDash_QuadRetro_Pixelated_512.T_Arcade_CrystalDash_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Textures/T_Arcade_CrystalDash_QuadRetro_Pixelated_512.T_Arcade_CrystalDash_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Textures/T_Arcade_CrystalDash_QuadRetro_Pixelated_512.T_Arcade_CrystalDash_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_PotionPour",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Arcade_PotionPour_QuadRetro.Arcade_PotionPour_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Materials/M_Arcade_PotionPour_QuadRetro.M_Arcade_PotionPour_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Textures/T_Arcade_PotionPour_QuadRetro_Pixelated_512.T_Arcade_PotionPour_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Textures/T_Arcade_PotionPour_QuadRetro_Pixelated_512.T_Arcade_PotionPour_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Textures/T_Arcade_PotionPour_QuadRetro_Pixelated_512.T_Arcade_PotionPour_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_RelicStack",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Arcade_RelicStack_QuadRetro.Arcade_RelicStack_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Materials/M_Arcade_RelicStack_QuadRetro.M_Arcade_RelicStack_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Textures/T_Arcade_RelicStack_QuadRetro_Pixelated_512.T_Arcade_RelicStack_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Textures/T_Arcade_RelicStack_QuadRetro_Pixelated_512.T_Arcade_RelicStack_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Textures/T_Arcade_RelicStack_QuadRetro_Pixelated_512.T_Arcade_RelicStack_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_ShieldParry",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Arcade_ShieldParry_QuadRetro.Arcade_ShieldParry_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Materials/M_Arcade_ShieldParry_QuadRetro.M_Arcade_ShieldParry_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Textures/T_Arcade_ShieldParry_QuadRetro_Pixelated_512.T_Arcade_ShieldParry_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Textures/T_Arcade_ShieldParry_QuadRetro_Pixelated_512.T_Arcade_ShieldParry_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Textures/T_Arcade_ShieldParry_QuadRetro_Pixelated_512.T_Arcade_ShieldParry_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_MimicMemory",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Arcade_MimicMemory_QuadRetro.Arcade_MimicMemory_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Materials/M_Arcade_MimicMemory_QuadRetro.M_Arcade_MimicMemory_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Textures/T_Arcade_MimicMemory_QuadRetro_Pixelated_512.T_Arcade_MimicMemory_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Textures/T_Arcade_MimicMemory_QuadRetro_Pixelated_512.T_Arcade_MimicMemory_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Textures/T_Arcade_MimicMemory_QuadRetro_Pixelated_512.T_Arcade_MimicMemory_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_BombSorter",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Arcade_BombSorter_QuadRetro.Arcade_BombSorter_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Materials/M_Arcade_BombSorter_QuadRetro.M_Arcade_BombSorter_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Textures/T_Arcade_BombSorter_QuadRetro_Pixelated_512.T_Arcade_BombSorter_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Textures/T_Arcade_BombSorter_QuadRetro_Pixelated_512.T_Arcade_BombSorter_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Textures/T_Arcade_BombSorter_QuadRetro_Pixelated_512.T_Arcade_BombSorter_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_LanternLeap",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Arcade_LanternLeap_QuadRetro.Arcade_LanternLeap_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Materials/M_Arcade_LanternLeap_QuadRetro.M_Arcade_LanternLeap_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Textures/T_Arcade_LanternLeap_QuadRetro_Pixelated_512.T_Arcade_LanternLeap_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Textures/T_Arcade_LanternLeap_QuadRetro_Pixelated_512.T_Arcade_LanternLeap_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Textures/T_Arcade_LanternLeap_QuadRetro_Pixelated_512.T_Arcade_LanternLeap_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Arcade_BladeSweep",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Arcade_BladeSweep_QuadRetro.Arcade_BladeSweep_QuadRetro",
+      "material": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Materials/M_Arcade_BladeSweep_QuadRetro.M_Arcade_BladeSweep_QuadRetro",
+      "texture": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Textures/T_Arcade_BladeSweep_QuadRetro_Pixelated_512.T_Arcade_BladeSweep_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Textures/T_Arcade_BladeSweep_QuadRetro_Pixelated_512.T_Arcade_BladeSweep_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Textures/T_Arcade_BladeSweep_QuadRetro_Pixelated_512.T_Arcade_BladeSweep_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Crate",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Crate/Crate_QuadRetro.Crate_QuadRetro",
+      "material": "/Game/World/Interactables/Crate/Materials/M_Crate_QuadRetro.M_Crate_QuadRetro",
+      "texture": "/Game/World/Interactables/Crate/Textures/T_Crate_QuadRetro_Pixelated_512.T_Crate_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Crate/Textures/T_Crate_QuadRetro_Pixelated_512.T_Crate_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Crate/Textures/T_Crate_QuadRetro_Pixelated_512.T_Crate_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Chest",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Chests/ChestModel/Chest_QuadRetro.Chest_QuadRetro",
+      "material": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest_QuadRetro.M_Chest_QuadRetro",
+      "texture": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_QuadRetro_Pixelated_512.T_Chest_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_QuadRetro_Pixelated_512.T_Chest_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_QuadRetro_Pixelated_512.T_Chest_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "LootBag_Black",
+      "category": "Interactables",
+      "mesh": "/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro",
+      "material": "/Game/World/LootBags/Black/Materials/M_SM_LootBag_Black_QuadRetro.M_SM_LootBag_Black_QuadRetro",
+      "texture": "/Game/World/LootBags/Black/Textures/T_SM_LootBag_Black_QuadRetro_Pixelated_512.T_SM_LootBag_Black_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/LootBags/Black/Textures/T_SM_LootBag_Black_QuadRetro_Pixelated_512.T_SM_LootBag_Black_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/LootBags/Black/Textures/T_SM_LootBag_Black_QuadRetro_Pixelated_512.T_SM_LootBag_Black_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "LootBag_Red",
+      "category": "Interactables",
+      "mesh": "/Game/World/LootBags/Red/SM_LootBag_Red_QuadRetro.SM_LootBag_Red_QuadRetro",
+      "material": "/Game/World/LootBags/Red/Materials/M_SM_LootBag_Red_QuadRetro.M_SM_LootBag_Red_QuadRetro",
+      "texture": "/Game/World/LootBags/Red/Textures/T_SM_LootBag_Red_QuadRetro_Pixelated_512.T_SM_LootBag_Red_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/LootBags/Red/Textures/T_SM_LootBag_Red_QuadRetro_Pixelated_512.T_SM_LootBag_Red_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/LootBags/Red/Textures/T_SM_LootBag_Red_QuadRetro_Pixelated_512.T_SM_LootBag_Red_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "LootBag_Yellow",
+      "category": "Interactables",
+      "mesh": "/Game/World/LootBags/Yellow/SM_LootBag_Yellow_QuadRetro.SM_LootBag_Yellow_QuadRetro",
+      "material": "/Game/World/LootBags/Yellow/Materials/M_SM_LootBag_Yellow_QuadRetro.M_SM_LootBag_Yellow_QuadRetro",
+      "texture": "/Game/World/LootBags/Yellow/Textures/T_SM_LootBag_Yellow_QuadRetro_Pixelated_512.T_SM_LootBag_Yellow_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/LootBags/Yellow/Textures/T_SM_LootBag_Yellow_QuadRetro_Pixelated_512.T_SM_LootBag_Yellow_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/LootBags/Yellow/Textures/T_SM_LootBag_Yellow_QuadRetro_Pixelated_512.T_SM_LootBag_Yellow_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "LootBag_White",
+      "category": "Interactables",
+      "mesh": "/Game/World/LootBags/White/SM_LootBag_White_QuadRetro.SM_LootBag_White_QuadRetro",
+      "material": "/Game/World/LootBags/White/Materials/M_SM_LootBag_White_QuadRetro.M_SM_LootBag_White_QuadRetro",
+      "texture": "/Game/World/LootBags/White/Textures/T_SM_LootBag_White_QuadRetro_Pixelated_512.T_SM_LootBag_White_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/LootBags/White/Textures/T_SM_LootBag_White_QuadRetro_Pixelated_512.T_SM_LootBag_White_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/LootBags/White/Textures/T_SM_LootBag_White_QuadRetro_Pixelated_512.T_SM_LootBag_White_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Fountain",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Fountain/Fountain_QuadRetro.Fountain_QuadRetro",
+      "material": "/Game/World/Interactables/Fountain/Materials/M_Fountain_QuadRetro.M_Fountain_QuadRetro",
+      "texture": "/Game/World/Interactables/Fountain/Textures/T_Fountain_QuadRetro_Pixelated_512.T_Fountain_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Fountain/Textures/T_Fountain_QuadRetro_Pixelated_512.T_Fountain_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Fountain/Textures/T_Fountain_QuadRetro_Pixelated_512.T_Fountain_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "DifficultyTotem",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/DifficultyTotem/DifficultyTotem_QuadRetro.DifficultyTotem_QuadRetro",
+      "material": "/Game/World/Interactables/DifficultyTotem/Materials/M_DifficultyTotem_QuadRetro.M_DifficultyTotem_QuadRetro",
+      "texture": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_QuadRetro_Pixelated_512.T_DifficultyTotem_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_QuadRetro_Pixelated_512.T_DifficultyTotem_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_QuadRetro_Pixelated_512.T_DifficultyTotem_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "IdolAltar",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/IdolAltar/IdolAltar_QuadRetro.IdolAltar_QuadRetro",
+      "material": "/Game/World/Interactables/IdolAltar/Materials/M_IdolAltar_QuadRetro.M_IdolAltar_QuadRetro",
+      "texture": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_QuadRetro_Pixelated_512.T_IdolAltar_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_QuadRetro_Pixelated_512.T_IdolAltar_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_QuadRetro_Pixelated_512.T_IdolAltar_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "QuickReviveVending",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro",
+      "material": "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro.M_QuickReviveVending_QuadRetro",
+      "texture": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512.T_QuickReviveVending_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512.T_QuickReviveVending_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512.T_QuickReviveVending_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Shroom",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/Shroom/Shroom_QuadRetro.Shroom_QuadRetro",
+      "material": "/Game/World/Interactables/Shroom/Materials/M_Shroom_QuadRetro.M_Shroom_QuadRetro",
+      "texture": "/Game/World/Interactables/Shroom/Textures/T_Shroom_QuadRetro_Pixelated_512.T_Shroom_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/Shroom/Textures/T_Shroom_QuadRetro_Pixelated_512.T_Shroom_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/Shroom/Textures/T_Shroom_QuadRetro_Pixelated_512.T_Shroom_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "ArcadeAmplifierPickup",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/ArcadeAmplifierPickup/ArcadeAmplifierPickup_QuadRetro.ArcadeAmplifierPickup_QuadRetro",
+      "material": "/Game/World/Interactables/ArcadeAmplifierPickup/Materials/M_ArcadeAmplifierPickup_QuadRetro.M_ArcadeAmplifierPickup_QuadRetro",
+      "texture": "/Game/World/Interactables/ArcadeAmplifierPickup/Textures/T_ArcadeAmplifierPickup_QuadRetro_Pixelated_512.T_ArcadeAmplifierPickup_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/ArcadeAmplifierPickup/Textures/T_ArcadeAmplifierPickup_QuadRetro_Pixelated_512.T_ArcadeAmplifierPickup_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/ArcadeAmplifierPickup/Textures/T_ArcadeAmplifierPickup_QuadRetro_Pixelated_512.T_ArcadeAmplifierPickup_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "ArcadeAmplifierPickup_Charged",
+      "category": "Interactables",
+      "mesh": "/Game/World/Interactables/ArcadeAmplifierPickup/ArcadeAmplifierPickup_Charged_QuadRetro.ArcadeAmplifierPickup_Charged_QuadRetro",
+      "material": "/Game/World/Interactables/ArcadeAmplifierPickup/Materials/M_ArcadeAmplifierPickup_Charged_QuadRetro.M_ArcadeAmplifierPickup_Charged_QuadRetro",
+      "texture": "/Game/World/Interactables/ArcadeAmplifierPickup/Textures/T_ArcadeAmplifierPickup_Charged_QuadRetro_Pixelated_512.T_ArcadeAmplifierPickup_Charged_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/World/Interactables/ArcadeAmplifierPickup/Textures/T_ArcadeAmplifierPickup_Charged_QuadRetro_Pixelated_512.T_ArcadeAmplifierPickup_Charged_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/World/Interactables/ArcadeAmplifierPickup/Textures/T_ArcadeAmplifierPickup_Charged_QuadRetro_Pixelated_512.T_ArcadeAmplifierPickup_Charged_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Gambler",
+      "category": "NPCs",
+      "mesh": "/Game/Characters/NPCs/Gambler/QuadRetro/SM_Gambler_QuadRetro.SM_Gambler_QuadRetro",
+      "material": "/Game/Characters/NPCs/Gambler/QuadRetro/Materials/M_SM_Gambler_QuadRetro.M_SM_Gambler_QuadRetro",
+      "texture": "/Game/Characters/NPCs/Gambler/QuadRetro/Textures/T_SM_Gambler_QuadRetro_Pixelated_512.T_SM_Gambler_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/Characters/NPCs/Gambler/QuadRetro/Textures/T_SM_Gambler_QuadRetro_Pixelated_512.T_SM_Gambler_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/Characters/NPCs/Gambler/QuadRetro/Textures/T_SM_Gambler_QuadRetro_Pixelated_512.T_SM_Gambler_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Saint",
+      "category": "NPCs",
+      "mesh": "/Game/Characters/NPCs/Saint/QuadRetro/SM_Saint_QuadRetro.SM_Saint_QuadRetro",
+      "material": "/Game/Characters/NPCs/Saint/QuadRetro/Materials/M_SM_Saint_QuadRetro.M_SM_Saint_QuadRetro",
+      "texture": "/Game/Characters/NPCs/Saint/QuadRetro/Textures/T_SM_Saint_QuadRetro_Pixelated_512.T_SM_Saint_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/Characters/NPCs/Saint/QuadRetro/Textures/T_SM_Saint_QuadRetro_Pixelated_512.T_SM_Saint_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/Characters/NPCs/Saint/QuadRetro/Textures/T_SM_Saint_QuadRetro_Pixelated_512.T_SM_Saint_QuadRetro_Pixelated_512"
+    },
+    {
+      "row_id": "Ouroboros",
+      "category": "NPCs",
+      "mesh": "/Game/Characters/NPCs/Ouroboros/QuadRetro/SM_Ouroboros_QuadRetro.SM_Ouroboros_QuadRetro",
+      "material": "/Game/Characters/NPCs/Ouroboros/QuadRetro/Materials/M_SM_Ouroboros_QuadRetro.M_SM_Ouroboros_QuadRetro",
+      "texture": "/Game/Characters/NPCs/Ouroboros/QuadRetro/Textures/T_SM_Ouroboros_QuadRetro_Pixelated_512.T_SM_Ouroboros_QuadRetro_Pixelated_512",
+      "material_parent": "/Game/Materials/M_Environment_Unlit",
+      "diffuse_texture": "/Game/Characters/NPCs/Ouroboros/QuadRetro/Textures/T_SM_Ouroboros_QuadRetro_Pixelated_512.T_SM_Ouroboros_QuadRetro_Pixelated_512",
+      "base_color_texture": "/Game/Characters/NPCs/Ouroboros/QuadRetro/Textures/T_SM_Ouroboros_QuadRetro_Pixelated_512.T_SM_Ouroboros_QuadRetro_Pixelated_512"
+    }
+  ],
+  "arcade_data": [
+    {
+      "row_id": "Vehicle",
+      "display_mesh": "/Game/World/Interactables/Arcade/Vehicle/Vehicle_QuadRetro.Vehicle_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Vehicle/Vehicle_QuadRetro.Vehicle_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_Machine",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_WhackAMole",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Arcade_WhackAMole_QuadRetro.Arcade_WhackAMole_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Arcade_WhackAMole_QuadRetro.Arcade_WhackAMole_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_Topwar",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_Topwar/Arcade_Topwar_QuadRetro.Arcade_Topwar_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_Topwar/Arcade_Topwar_QuadRetro.Arcade_Topwar_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_GoldMiner",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Arcade_GoldMiner_QuadRetro.Arcade_GoldMiner_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Arcade_GoldMiner_QuadRetro.Arcade_GoldMiner_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_RuneSwipe",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Arcade_RuneSwipe_QuadRetro.Arcade_RuneSwipe_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Arcade_RuneSwipe_QuadRetro.Arcade_RuneSwipe_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_CartSwitcher",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Arcade_CartSwitcher_QuadRetro.Arcade_CartSwitcher_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Arcade_CartSwitcher_QuadRetro.Arcade_CartSwitcher_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_CrystalDash",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Arcade_CrystalDash_QuadRetro.Arcade_CrystalDash_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Arcade_CrystalDash_QuadRetro.Arcade_CrystalDash_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_PotionPour",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Arcade_PotionPour_QuadRetro.Arcade_PotionPour_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Arcade_PotionPour_QuadRetro.Arcade_PotionPour_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_RelicStack",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Arcade_RelicStack_QuadRetro.Arcade_RelicStack_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Arcade_RelicStack_QuadRetro.Arcade_RelicStack_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_ShieldParry",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Arcade_ShieldParry_QuadRetro.Arcade_ShieldParry_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Arcade_ShieldParry_QuadRetro.Arcade_ShieldParry_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_MimicMemory",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Arcade_MimicMemory_QuadRetro.Arcade_MimicMemory_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Arcade_MimicMemory_QuadRetro.Arcade_MimicMemory_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_BombSorter",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Arcade_BombSorter_QuadRetro.Arcade_BombSorter_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Arcade_BombSorter_QuadRetro.Arcade_BombSorter_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_LanternLeap",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Arcade_LanternLeap_QuadRetro.Arcade_LanternLeap_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Arcade_LanternLeap_QuadRetro.Arcade_LanternLeap_QuadRetro",
+      "asset_exists": true
+    },
+    {
+      "row_id": "Arcade_BladeSweep",
+      "display_mesh": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Arcade_BladeSweep_QuadRetro.Arcade_BladeSweep_QuadRetro",
+      "expected": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Arcade_BladeSweep_QuadRetro.Arcade_BladeSweep_QuadRetro",
+      "asset_exists": true
+    }
+  ],
+  "character_visuals": [
+    {
+      "row_id": "Saint",
+      "skeletal_mesh": "",
+      "static_mesh": "/Game/Characters/NPCs/Saint/QuadRetro/SM_Saint_QuadRetro.SM_Saint_QuadRetro",
+      "expected": "/Game/Characters/NPCs/Saint/QuadRetro/SM_Saint_QuadRetro.SM_Saint_QuadRetro",
+      "asset_exists": true,
+      "b_loop_animation": "false",
+      "b_auto_ground": "true"
+    },
+    {
+      "row_id": "Ouroboros",
+      "skeletal_mesh": "",
+      "static_mesh": "/Game/Characters/NPCs/Ouroboros/QuadRetro/SM_Ouroboros_QuadRetro.SM_Ouroboros_QuadRetro",
+      "expected": "/Game/Characters/NPCs/Ouroboros/QuadRetro/SM_Ouroboros_QuadRetro.SM_Ouroboros_QuadRetro",
+      "asset_exists": true,
+      "b_loop_animation": "false",
+      "b_auto_ground": "true"
+    },
+    {
+      "row_id": "Gambler",
+      "skeletal_mesh": "",
+      "static_mesh": "/Game/Characters/NPCs/Gambler/QuadRetro/SM_Gambler_QuadRetro.SM_Gambler_QuadRetro",
+      "expected": "/Game/Characters/NPCs/Gambler/QuadRetro/SM_Gambler_QuadRetro.SM_Gambler_QuadRetro",
+      "asset_exists": true,
+      "b_loop_animation": "false",
+      "b_auto_ground": "true"
+    }
+  ],
+  "stale_in_scope_references": [],
+  "boss_excluded_legacy_references": [
+    {
+      "file": "Content/Data/CharacterVisuals.csv",
+      "line": 82,
+      "pattern": "/Game/Characters/NPCs/Gambler/Gambler/Meshy_AI_Axe_Wielding_Patriot_0130203714_texture",
+      "text": "\"GamblerBoss\",\"/Game/Characters/NPCs/Gambler/Gambler/Meshy_AI_Axe_Wielding_Patriot_0130203714_texture.Meshy_AI_Axe_Wielding_Patriot_0130203714_texture\",\"\",\"\",\"\",\"\",\"(X=0,Y=0,Z=-88)\",\"(Pitch=0,Yaw=-90,Roll=0)\",\"(X=1,Y=1,Z=1)\",\"true\",\"false\"",
+      "reason": "boss row/reference excluded by task constraint"
+    }
+  ],
+  "errors": [],
+  "updated_utc": "2026-05-07T19:11:38.360430+00:00",
+  "floor_wall_validation": {
+    "script": "C:/UE/T66/Scripts/VerifyCoherentThemeKit01AndExit.py",
+    "result": "ok",
+    "meshes": "40/40",
+    "materials": "40/40",
+    "textures": "40/40",
+    "material_parent": "/Game/Materials/M_Environment_Unlit",
+    "coherent_theme_kit": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01",
+    "trellis_regenerated": false,
+    "log_summary": "[VerifyCoherentThemeKit01] meshes=40/40 materials=40/40 textures=40/40; ok=true"
+  },
+  "cxx_build_validation": {
+    "command": "C:/Program Files/Epic Games/UE_5.7/Engine/Build/BatchFiles/Build.bat T66Editor Win64 Development -Project=C:/UE/T66/T66.uproject -WaitMutex",
+    "result": "succeeded"
+  }
+}

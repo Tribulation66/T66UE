@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Gameplay/T66StartGate.h"
 #include "Gameplay/T66TowerMapTerrain.h"
 #include "T66GameMode.generated.h"
 
@@ -18,13 +19,10 @@ class AT66BossBase;
 class AT66MiasmaManager;
 class AT66LoanShark;
 class AT66CowardiceGate;
-class AT66TricksterNPC;
 class AT66BossGate;
 class AT66IdolAltar;
 class AT66TowerDescentHole;
 class AT66StageCatchUpGate;
-class AT66StageCatchUpGoldInteractable;
-class AT66StageCatchUpLootInteractable;
 class AT66Shroom;
 class AT66SpawnPlateau;
 class AT66TutorialManager;
@@ -81,7 +79,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gates")
 	FVector StageGateSpawnOffset = FVector(10000.f, 0.f, 200.f);
 
-	/** Cowardice gate / Trickster spawn is placed before the boss area. */
+	/** Cowardice gate spawn is placed before the boss area. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gates")
 	FVector CowardiceGateSpawnOffset = FVector(5200.f, 0.f, 200.f);
 
@@ -118,6 +116,7 @@ public:
 	bool TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation) const;
 	bool TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation, FVector& OutWallNormal) const;
 	void HandleTowerDescentHoleTriggered(APawn* Pawn, int32 FromFloorNumber, int32 ToFloorNumber);
+	void SetEnemyDirectorSpawningPaused(bool bPaused);
 
 protected:
 	virtual void BeginPlay() override;
@@ -161,9 +160,6 @@ protected:
 	/** Spawn the selected companion (if any) and attach follow behavior */
 	void SpawnCompanionForPlayer(AController* Player);
 
-	/** Spawn vendor NPC near the hero (big cylinder) */
-	void SpawnVendorForPlayer(AController* Player);
-
 	/** Spawn Start Gate (walk-through, starts timer) near the hero spawn. */
 	void SpawnStartGateForPlayer(AController* Player);
 	/** Spawn the stage-entry idol altar near the start area. */
@@ -176,6 +172,7 @@ protected:
 	void SpawnWorldInteractablesForStage();
 	void SpawnGuaranteedStartAreaInteractables();
 	void SpawnModelShowcaseRow();
+	void SpawnStartGalleryShowcase();
 	void SpawnStageCatchUpPlatformAndInteractables();
 	void SpawnStageEffectsForStage();
 	void SpawnTutorialArenaIfNeeded();
@@ -190,8 +187,7 @@ protected:
 	void SpawnBossForCurrentStage();
 	void SpawnBossBeaconIfNeeded();
 
-	void SpawnCasinoInteractableIfNeeded();
-	void SpawnSupportVendorAtStartIfNeeded();
+	void SpawnGamblerNPCIfNeeded();
 
 	/** Called one frame after BeginPlay so the landscape/collision is ready. Spawns all ground-dependent content (NPCs, interactables, tiles, boss, etc.). */
 	void SpawnLevelContentAfterLandscapeReady();
@@ -257,7 +253,7 @@ public:
 	// The Lab: spawn / reset (only used when IsLabLevel())
 	// ============================================
 
-	/** Spawn one mob in the Lab (Cow, Pig, Goat, Roost, GoblinThief, UniqueEnemy). Returns spawned actor or null. */
+	/** Spawn one mob in the Lab from the current enemy roster. Returns spawned actor or null. */
 	UFUNCTION(BlueprintCallable, Category = "Lab")
 	AActor* SpawnLabMob(FName CharacterVisualID);
 
@@ -265,11 +261,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lab")
 	AActor* SpawnLabBoss(FName BossID);
 
-	/** Spawn Fountain of Life in the Lab (NPC tab). Returns spawned actor or null. */
+	/** Spawn Fountain in the Lab (NPC tab). Returns spawned actor or null. */
 	UFUNCTION(BlueprintCallable, Category = "Lab")
-	AActor* SpawnLabFountainOfLife();
+	AActor* SpawnLabFountain();
 
-	/** Spawn an interactable in the Lab (Fountain, Chest, WheelSpin, IdolAltar, Crate). Returns spawned actor or null. */
+	/** Spawn an interactable in the Lab (Fountain, Chest, IdolAltar, Crate). Returns spawned actor or null. */
 	UFUNCTION(BlueprintCallable, Category = "Lab")
 	AActor* SpawnLabInteractable(FName InteractableID);
 
@@ -297,9 +293,6 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<AT66CowardiceGate> CowardiceGate;
-
-	UPROPERTY()
-	TObjectPtr<AT66TricksterNPC> TricksterNPC;
 
 	UPROPERTY()
 	TObjectPtr<AT66StartGate> StartGate;
@@ -355,6 +348,7 @@ private:
 	FName PendingRunStartItemId = NAME_None;
 	bool bMainMapCombatStarted = false;
 	bool bWorldInteractablesSpawnedForStage = false;
+	bool bStartGalleryShowcaseSpawned = false;
 	bool bHasMainMapSpawnSurfaceLocation = false;
 	FVector MainMapSpawnSurfaceLocation = FVector::ZeroVector;
 	FVector MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
@@ -376,6 +370,7 @@ private:
 	float TowerMiasmaUpdateAccumulator = 0.f;
 	int32 TowerIdolSelectionsAtStageStart = 0;
 	int32 ActiveTowerTrapFloorNumber = INDEX_NONE;
+	int32 ActiveTowerTerrainVisualFloorNumber = INDEX_NONE;
 
 	bool bFinalDifficultySurvivalActive = false;
 	float FinalDifficultySurvivalElapsedSeconds = 0.f;

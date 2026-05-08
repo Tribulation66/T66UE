@@ -2,6 +2,8 @@
 
 This is the local process for generating minigame walk animation sheets with Codex-native image generation.
 
+For full 8-direction idle, walk, and attack atlases, use the shared [T66Minigame_CharacterAnimationProcess.md](C:/UE/T66/Docs/Minigames/T66Minigame_CharacterAnimationProcess.md). This file remains the lightweight Mini-specific 2x2 walk-candidate process.
+
 ## Goal
 
 Generate small, coherent 2D walk sheets that feel alive in motion without chopping the body into separate generated parts.

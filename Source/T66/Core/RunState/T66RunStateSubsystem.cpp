@@ -384,7 +384,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	DifficultySkulls = 0;
 	TotemsActivatedCount = 0;
 	GamblerAnger01 = 0.f;
-	ResetVendorForStage();
+	ResetShopForStage();
 	OwedBossIDs.Empty();
 	CowardiceGatesTakenCount = 0;
 	InventorySlots.Empty();
@@ -651,7 +651,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	DebtChanged.Broadcast();
 	DifficultyChanged.Broadcast();
 	GamblerAngerChanged.Broadcast();
-	VendorChanged.Broadcast();
+	ShopChanged.Broadcast();
 	InventoryChanged.Broadcast();
 	IdolsChanged.Broadcast();
 	PanelVisibilityChanged.Broadcast();

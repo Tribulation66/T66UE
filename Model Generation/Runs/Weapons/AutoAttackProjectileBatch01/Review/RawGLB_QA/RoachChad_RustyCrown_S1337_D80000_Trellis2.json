@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Raw\\Trellis\\RoachChad_RustyCrown_S1337_D80000_Trellis2.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Weapons\\AutoAttackProjectileBatch01\\Review\\RawGLB_QA\\RoachChad_RustyCrown_S1337_D80000_Trellis2.png",
+  "export": null,
+  "raw_triangles": 74690,
+  "triangles_before_decimate": 74690,
+  "triangles_after_decimate": 74690,
+  "bounds": {
+    "min": [
+      -0.5007294416427612,
+      -0.4384658932685852,
+      -0.24174755811691284
+    ],
+    "max": [
+      0.5003160834312439,
+      0.4405575394630432,
+      0.24146148562431335
+    ],
+    "size": [
+      1.0010454654693604,
+      0.8790234327316284,
+      0.4832090437412262
+    ]
+  }
+}

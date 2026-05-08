@@ -10,6 +10,8 @@
 class UDataTable;
 class USkeletalMeshComponent;
 class USkeletalMesh;
+class UStaticMesh;
+class UStaticMeshComponent;
 class UAnimationAsset;
 class USceneComponent;
 class USkeleton;
@@ -22,6 +24,9 @@ struct FT66ResolvedCharacterVisual
 
 	UPROPERTY()
 	TObjectPtr<USkeletalMesh> Mesh = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UStaticMesh> StaticMesh = nullptr;
 
 	UPROPERTY()
 	TObjectPtr<UAnimationAsset> LoopingAnim = nullptr;
@@ -54,7 +59,9 @@ class T66_API UT66CharacterVisualSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	/** Apply visual mapping to a SkeletalMeshComponent. Returns true if a mapping existed and was applied. */
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
+	/** Apply visual mapping to a SkeletalMeshComponent or optional StaticMeshComponent. Returns true if a mapping existed and was applied. */
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
 	bool ApplyCharacterVisual(
 		FName VisualID,
@@ -62,7 +69,8 @@ public:
 		USceneComponent* PlaceholderToHide = nullptr,
 		bool bEnableSingleNodeAnimation = true,
 		bool bUseAlertAnimation = false,
-		bool bIsPreviewContext = false);
+		bool bIsPreviewContext = false,
+		UStaticMeshComponent* TargetStaticMesh = nullptr);
 
 	/** Compute the legacy hero visual row ID from HeroID + body style + SkinID (for example Chad -> Hero_1_Chad). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
@@ -89,6 +97,10 @@ public:
 	/** Get alert, walk, and run animations for a visual (for runtime animation state). OutRun/OutAlert may be null. */
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
 	void GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutRun, UAnimationAsset*& OutAlert);
+
+	/** Returns true when a visual row exists for this ID or its fallback ID. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
+	bool HasCharacterVisual(FName VisualID) const;
 
 private:
 	FT66ResolvedCharacterVisual ResolveVisual(FName VisualID);

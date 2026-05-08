@@ -18,7 +18,8 @@ public class T66 : ModuleRules
 			"SlateCore",
 			"UMG",
 			"HTTP",
-			"Json"
+			"Json",
+			"DeveloperSettings"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
@@ -68,11 +69,13 @@ public class T66 : ModuleRules
 			RuntimeDependencies.Add("$(ProjectDir)/" + RelativeProjectPath.Replace('\\', '/'), StagedFileType.NonUFS);
 		}
 
+		// Canonical non-UFS runtime fallbacks used by T66RuntimeUI* helpers. Generated UI
+		// art stays here until the remaining screens move to cooked UTexture assets.
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/Fonts/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/...");
-		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/PowerUp/SecondaryBuffs/...");
-		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/PowerUp/Statues/forbidden_chad/...");
-		AddLooseRuntimeDependency("SourceAssets/OuterWallTexture.png");
+
+		// Source-art exceptions that still have live runtime callers. Keep these explicit and
+		// mirrored in UT66GameContentSettings so guardrails catch policy/staging drift.
 		AddLooseRuntimeDependency("SourceAssets/Arcade/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/HeroSelection/...");
 		AddLooseRuntimeDependency("SourceAssets/UI/Reference/...");

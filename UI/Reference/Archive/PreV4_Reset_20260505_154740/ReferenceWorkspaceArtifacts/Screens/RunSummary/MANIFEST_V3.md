@@ -1,0 +1,90 @@
+# RunSummary V3 Manifest
+
+## Pass 00
+
+- Preflight: confirmed `SCREEN_MODAL_TASK.md`, `UI_GENERATION.md`, `CaptureT66UIScreen.ps1`, `Binaries/Win64/T66.exe`, target reference image, and `Source/T66/UI/Screens/T66RunSummaryScreen.cpp` exist.
+- Reference geometry map at 1920x1080:
+  - Full wood frame: x=6 y=8 w=1904 h=1062, fixed outer frame / 9-slice panel family.
+  - Title block: x=62 y=55 w=412 h=42, live text.
+  - Run stat strip: x=63 y=119 w=495 h=28, live text.
+  - Event Log button: x=1564 y=44 w=274 h=66, horizontal sliced brown button family.
+  - Left weekly rank panel: x=64 y=164 w=577 h=116, 9-slice quiet wood strip.
+  - Left all-time rank panel: x=64 y=297 w=577 h=116, 9-slice quiet wood strip.
+  - Seed lock plate: x=62 y=448 w=343 h=123, 9-slice quiet wood info card.
+  - Integrity plate: x=62 y=589 w=343 h=123, 9-slice quiet wood info card.
+  - Go Again button: x=64 y=746 w=343 h=82, horizontal sliced brown button.
+  - Main Menu button: x=64 y=850 w=343 h=82, horizontal sliced brown button.
+  - Preview frame: x=702 y=164 w=496 h=453, 9-slice dark steel frame.
+  - Idol slots: x=710 y=631 w=481 h=105, four fixed/simple dark slot frames.
+  - Inventory slots: x=465 y=759 w=888 h=198, 20 fixed/simple dark slot frames in 2 rows.
+  - Stats slab: x=1368 y=155 w=460 h=418, quiet dark panel.
+  - Damage by source panel: x=1376 y=592 w=450 h=366, 9-slice quiet wood table panel.
+  - Scrollbar: x=1856 y=139 w=17 h=820, fixed vertical rail/thumb.
+- Built-in imagegen: used for the required reference-derived text-free chrome sheet.
+- Reference-derived sheet: built-in imagegen output from prompt in pass 00; no local path exposed by the tool response.
+- Generated candidate paths: built-in imagegen output retained in generator output location; accepted runtime assets listed below.
+- Accepted runtime paths:
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_fullscreen_panel_wide.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_row_shell_quiet.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_rank_panel_generated_v02.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_metric_card_generated_v02.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_damage_panel_generated_v02.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_fullscreen_panel_tall.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Slots/runsummary_steel_slot_generated_v02.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Controls/runsummary_controls_controls_sheet.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/CTA/runsummary_button_plate_generated_v02.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/Pill/runsummary_buttons_pill_normal.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/Pill/runsummary_buttons_pill_hover.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/Pill/runsummary_buttons_pill_pressed.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/Pill/runsummary_buttons_pill_disabled.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/Pill/runsummary_buttons_pill_selected.png`
+- Source files changed: pending pre-existing edits in `Source/T66/UI/Screens/T66RunSummaryScreen.cpp`; no additional C++ edit in pass 00 yet.
+- Build command/status: pending.
+- Screenshot proof path: pending.
+- Remaining differences: pending first working capture after build.
+- Approved live-data/top-bar differences: live run values, placeholder values, preview content, and runtime item/idol contents may differ; no shared top bar is owned by this target.
+- Next action: build the local development executable, capture RunSummary at 1920x1080, compare against the target reference, then iterate.
+
+## Pass 01
+
+- Built-in imagegen: yes.
+- Reference-derived sheet: yes; built-in imagegen output was created from the exact target reference screenshot prompt, but the tool response did not expose a stable local file path.
+- Generated candidate paths:
+  - Built-in imagegen generated output in the default generator output location.
+  - Runtime candidates promoted to `C:\UE\T66\SourceAssets\UI\Reference\Screens\RunSummary`.
+- Accepted runtime paths:
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_fullscreen_panel_wide.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_row_shell_quiet.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_rank_panel_generated_v02.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_metric_card_generated_v02.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_damage_panel_generated_v02.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Panels/runsummary_panels_fullscreen_fullscreen_panel_tall.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Slots/runsummary_steel_slot_generated_v02.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Controls/runsummary_controls_controls_sheet.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/CTA/runsummary_button_plate_generated_v02.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/Pill/runsummary_buttons_pill_normal.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/Pill/runsummary_buttons_pill_hover.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/Pill/runsummary_buttons_pill_pressed.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/Pill/runsummary_buttons_pill_disabled.png`
+  - `SourceAssets/UI/Reference/Screens/RunSummary/Buttons/Pill/runsummary_buttons_pill_selected.png`
+- Source files changed:
+  - `Source/T66/UI/Screens/T66RunSummaryScreen.cpp` had pre-existing uncommitted RunSummary layout/routing edits before this pass.
+  - No additional RunSummary C++ edits were made in pass 01.
+- Build command/status:
+  - Command: `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -NoHotReloadFromIDE`
+  - Status: failed before RunSummary proof due unrelated GameMode compile blockers. UHT reported `Source/T66/Gameplay/T66GameMode.h(300): Error: Member variable declaration: Expected name`. UBT log also reported unrelated `Source/T66/Gameplay/GameMode/T66GameMode_WorldInteractables.cpp` errors including `T66EnableWheelSpinSpawns` undeclared and `AT66WheelSpinInteractable` syntax fallout.
+- Screenshot proof:
+  - Required command attempted for `Proof/RunSummary_pass01_working_1920x1080.png`.
+  - Status: no screenshot created before timeout.
+  - Diagnostic direct launch with explicit `.uproject -game` also exited code 0 without producing screenshot or abslog.
+- Remaining differences:
+  - Cannot be visually classified yet because no working RunSummary screenshot proof was produced.
+  - Expected first-pass risk remains: generated runtime assets are deliberately restrained and may still need exact art/spacing iteration against capture.
+- Approved live-data/top-bar differences:
+  - Live run values, placeholder values, preview content, and runtime item/idol contents may differ.
+  - No shared top bar is owned by RunSummary.
+- Exact next action if not passing:
+  - Clear the unrelated GameMode build blockers or provide a runnable local development executable that reaches frontend automation.
+  - Rerun the required command:
+    `powershell -ExecutionPolicy Bypass -File C:\UE\T66\Scripts\CaptureT66UIScreen.ps1 -Exe C:\UE\T66\Binaries\Win64\T66.exe -Screen RunSummary -ResX 1920 -ResY 1080 -Output C:\UE\T66\UI\Reference\Screens\RunSummary\Proof\RunSummary_pass02_working_1920x1080.png`
+  - Compare against `C:\UE\T66\UI\generation\ReferenceFullScreens_2026-05-02_inventory_locked\RunSummary.png`, then do the next visual pass.

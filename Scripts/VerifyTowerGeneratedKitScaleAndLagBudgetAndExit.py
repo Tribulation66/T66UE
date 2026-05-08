@@ -33,7 +33,8 @@ CHARACTER_VISUALS_CSV = os.path.join(
 
 WALL_EXPECTED_HEIGHT_CM = 600.0
 WALL_EXPECTED_DEPTH_CM = 120.0
-FLOOR_EXPECTED_TILE_TARGET_CM = 600.0
+FLOOR_EXPECTED_TILE_TARGET_CM = 2600.0
+WALL_EXPECTED_VISUAL_SEGMENT_TARGET_CM = 2600.0
 FLOOR_EXPECTED_THICKNESS_CM = 24.0
 FLOOR_EXPECTED_SPACING_CM = WALL_EXPECTED_HEIGHT_CM + FLOOR_EXPECTED_THICKNESS_CM
 GENERATED_CEILING_BOTTOM_CM_ABOVE_FLOOR = WALL_EXPECTED_HEIGHT_CM
@@ -91,7 +92,7 @@ def _load_mesh_from_soft_path(path):
 def _module_count(span_length, module_size):
     if span_length <= 10.0 or module_size <= 1.0:
         return 0
-    return max(1, int(round(span_length / module_size)))
+    return max(1, int(math.ceil(span_length / module_size)))
 
 
 def _floor2_tile_count(tile_size):
@@ -151,7 +152,8 @@ def main():
 
     source_floor_tile = max(max(floor_x) if floor_x else 0.0, max(floor_y) if floor_y else 0.0)
     old_floor2_visual_actors = _floor2_tile_count(source_floor_tile) * 2 if source_floor_tile > 0.0 else 0
-    new_floor2_visual_instances = _floor2_tile_count(FLOOR_EXPECTED_TILE_TARGET_CM) * 2
+    runtime_floor_tile_size = max(source_floor_tile, FLOOR_EXPECTED_TILE_TARGET_CM)
+    new_floor2_visual_instances = _floor2_tile_count(runtime_floor_tile_size) * 2
     new_floor2_visual_actors = 4
     new_floor2_visual_components_max = 16
 
@@ -159,7 +161,8 @@ def main():
         "arthur_height": math.isclose(arthur_runtime_height, ARTHUR_EXPECTED_HEIGHT_CM, abs_tol=2.0),
         "wall_height": wall_z and math.isclose(WALL_EXPECTED_HEIGHT_CM, 600.0, abs_tol=0.01),
         "wall_depth": wall_x and min(wall_x) >= WALL_EXPECTED_DEPTH_CM - 1.0 and max(wall_x) <= WALL_EXPECTED_DEPTH_CM + 1.0,
-        "floor_target": math.isclose(FLOOR_EXPECTED_TILE_TARGET_CM, 600.0, abs_tol=0.01),
+        "floor_target": math.isclose(FLOOR_EXPECTED_TILE_TARGET_CM, 2600.0, abs_tol=0.01),
+        "wall_segment_target": math.isclose(WALL_EXPECTED_VISUAL_SEGMENT_TARGET_CM, 2600.0, abs_tol=0.01),
         "floor_thickness": floor_z and min(floor_z) >= 1.0 and FLOOR_EXPECTED_THICKNESS_CM == 24.0,
         "floor_spacing": math.isclose(FLOOR_EXPECTED_SPACING_CM, 624.0, abs_tol=0.01),
         "floor2_actor_budget": new_floor2_visual_actors <= 4 and new_floor2_visual_components_max <= 16,
@@ -173,8 +176,10 @@ def main():
         f"arthur_runtime_cm_z={arthur_runtime_height:.1f} "
         f"wall_cm_x={_range_text(wall_x)} wall_cm_y={_range_text(wall_y)} wall_cm_z={_range_text(wall_z)} "
         f"runtime_wall_cm_z={WALL_EXPECTED_HEIGHT_CM:.1f} "
+        f"runtime_wall_segment_target_cm={WALL_EXPECTED_VISUAL_SEGMENT_TARGET_CM:.1f} "
         f"source_floor_cm_x={_range_text(floor_x)} source_floor_cm_y={_range_text(floor_y)} "
         f"source_floor_cm_z={_range_text(floor_z)} runtime_floor_tile_cm_xy={FLOOR_EXPECTED_TILE_TARGET_CM:.1f} "
+        f"runtime_floor_tile_effective_cm_xy={runtime_floor_tile_size:.1f} "
         f"runtime_floor_thickness_cm_z={FLOOR_EXPECTED_THICKNESS_CM:.1f} "
         f"runtime_floor_spacing_cm_z={FLOOR_EXPECTED_SPACING_CM:.1f} "
         f"runtime_ceiling_bottom_above_floor_cm={GENERATED_CEILING_BOTTOM_CM_ABOVE_FLOOR:.1f} "

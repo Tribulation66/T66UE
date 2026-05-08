@@ -18,6 +18,7 @@ public:
 	virtual bool Interact(APlayerController* PC) override;
 
 	const FT66ArcadeInteractableData& GetArcadeData() const { return ResolvedArcadeData; }
+	void SetArcadeRowID(FName InArcadeRowID);
 	TArray<FT66ArcadeInteractableData> BuildArcadeSelectionOptions() const;
 	bool BuildArcadeSessionDataForGame(ET66ArcadeGameType GameType, FT66ArcadeInteractableData& OutData) const;
 	void HandleArcadePopupClosed(bool bSucceeded, int32 FinalScore);

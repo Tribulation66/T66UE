@@ -1,0 +1,1 @@
+Rejected pass 01 candidate 01: wrong UI family for this target. It generated broad parchment list rows and oversized frames instead of the PowerUp Drugs card/grid layout, with color/proportion drift from the reference.

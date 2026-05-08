@@ -1,0 +1,127 @@
+{
+  "run_id": "ArcadeReplacementBatch01",
+  "created_for": "missing interactable model prep for gambler, arcade, amplifier, chest, and vehicle naming",
+  "status": "generated_imported_verified",
+  "seed": 1337,
+  "texture_size": 2048,
+  "default_decimation": 80000,
+  "source_background": "#ffffff",
+  "global_source_rules": [
+    "single centered subject unless target explicitly requires a paired subject",
+    "opaque pure white background, exact visual intent #ffffff",
+    "no floor, ground plane, pedestal, platform, reflection, cast shadow, contact shadow, gradient, gray patch, border card, UI, text, watermark, or scene",
+    "game-ready stylized model source with readable silhouette and clean material breaks"
+  ],
+  "entries": [
+    {
+      "target_id": "GamblerDemonStand",
+      "category": "NPCInteractable",
+      "action": "generate",
+      "replaces_current_reference": "/Game/Characters/NPCs/Gambler/Gambler/Meshy_AI_Axe_Wielding_Patriot_0130203714_texture",
+      "prompt": "Inputs/prompts/GamblerDemonStand_White.prompt.txt",
+      "source_image": "Inputs/source_images/GamblerDemonStand_White.png",
+      "trellis_output": "Raw/Trellis/GamblerDemonStand_White_S1337_D80000_Trellis2.glb",
+      "unreal_ready_fbx": "SourceAssets/Import/Interactables/ArcadeReplacementBatch01/UnrealReady/GamblerDemonStand_UnrealReady.fbx",
+      "unreal_texture": "SourceAssets/Import/Interactables/ArcadeReplacementBatch01/Textures/GamblerDemonStand_BaseColor_00.png",
+      "imported_asset": "/Game/Characters/NPCs/Gambler/GamblerDemonStand/GamblerDemonStand",
+      "decimation": 80000,
+      "qa_focus": [
+        "demon gambler guy must read clearly from gameplay distance",
+        "small stand must be in front, attached composition, not a separate background prop",
+        "no casino room, floor, cards floating outside the stand, text, or signage"
+      ]
+    },
+    {
+      "target_id": "ArcadeMachine",
+      "category": "ArcadeInteractable",
+      "action": "generate",
+      "current_data_row": "Arcade_Machine",
+      "prompt": "Inputs/prompts/ArcadeMachine_White.prompt.txt",
+      "source_image": "Inputs/source_images/ArcadeMachine_White.png",
+      "trellis_output": "Raw/Trellis/ArcadeMachine_White_S1337_D80000_Trellis2.glb",
+      "unreal_ready_fbx": "SourceAssets/Import/Interactables/ArcadeReplacementBatch01/UnrealReady/ArcadeMachine_UnrealReady.fbx",
+      "unreal_texture": "SourceAssets/Import/Interactables/ArcadeReplacementBatch01/Textures/ArcadeMachine_BaseColor_00.png",
+      "imported_asset": "/Game/World/Interactables/ArcadeMachine/ArcadeMachine",
+      "decimation": 80000,
+      "qa_focus": [
+        "upright arcade cabinet silhouette",
+        "large readable screen, controls, coin slot, side panels",
+        "no brand logos, text, room, floor, or loose background props"
+      ]
+    },
+    {
+      "target_id": "ArcadeAmplifierPickup",
+      "category": "RewardPickup",
+      "action": "generate",
+      "current_data_source": "Arcade_Machine reward tuning amplifier fields",
+      "prompt": "Inputs/prompts/ArcadeAmplifierPickup_White.prompt.txt",
+      "source_image": "Inputs/source_images/ArcadeAmplifierPickup_White.png",
+      "trellis_output": "Raw/Trellis/ArcadeAmplifierPickup_White_S1337_D80000_Trellis2.glb",
+      "unreal_ready_fbx": "SourceAssets/Import/Interactables/ArcadeReplacementBatch01/UnrealReady/ArcadeAmplifierPickup_UnrealReady.fbx",
+      "unreal_texture": "SourceAssets/Import/Interactables/ArcadeReplacementBatch01/Textures/ArcadeAmplifierPickup_BaseColor_00.png",
+      "imported_asset": "/Game/World/Interactables/ArcadeAmplifierPickup/ArcadeAmplifierPickup",
+      "decimation": 80000,
+      "qa_focus": [
+        "compact pickup-scale amplifier, readable as a power reward",
+        "speaker grille, knobs, bright accent glow represented as material color not bloom haze",
+        "no cables spreading far from the body, no floor shadow, no text"
+      ]
+    },
+    {
+      "target_id": "ArcadeAmplifierPickup_Charged",
+      "category": "RewardPickup",
+      "action": "generate",
+      "current_data_source": "Arcade_Machine reward tuning amplifier fields",
+      "prompt": "Inputs/prompts/ArcadeAmplifierPickup_Charged_White.prompt.txt",
+      "source_image": "Inputs/source_images/ArcadeAmplifierPickup_Charged_White.png",
+      "trellis_output": "Raw/Trellis/ArcadeAmplifierPickup_Charged_White_S1337_D80000_Trellis2.glb",
+      "unreal_ready_fbx": "SourceAssets/Import/Interactables/ArcadeReplacementBatch01/UnrealReady/ArcadeAmplifierPickup_Charged_UnrealReady.fbx",
+      "unreal_texture": "SourceAssets/Import/Interactables/ArcadeReplacementBatch01/Textures/ArcadeAmplifierPickup_Charged_BaseColor_00.png",
+      "imported_asset": "/Game/World/Interactables/ArcadeAmplifierPickup/ArcadeAmplifierPickup_Charged",
+      "decimation": 80000,
+      "qa_focus": [
+        "same silhouette family as ArcadeAmplifierPickup",
+        "stronger energized accents while remaining a solid mesh source",
+        "no emitted particles, no scene lighting, no transparent glow cards"
+      ]
+    },
+    {
+      "target_id": "Chest",
+      "category": "WorldInteractable",
+      "action": "generate",
+      "canonical_name_note": "Use Chest as the canonical target name.",
+      "current_asset_reference": "/Game/World/Interactables/Chests/ChestModel/Chest",
+      "prompt": "Inputs/prompts/Chest_White.prompt.txt",
+      "source_image": "Inputs/source_images/Chest_White.png",
+      "trellis_output": "Raw/Trellis/Chest_White_S1337_D80000_Trellis2.glb",
+      "unreal_ready_fbx": "SourceAssets/Import/Interactables/ArcadeReplacementBatch01/UnrealReady/Chest_UnrealReady.fbx",
+      "unreal_texture": "SourceAssets/Import/Interactables/ArcadeReplacementBatch01/Textures/Chest_BaseColor_00.png",
+      "imported_asset": "/Game/World/Interactables/Chests/ChestModel/Chest",
+      "decimation": 80000,
+      "qa_focus": [
+        "canonical treasure chest, not yellow-only naming",
+        "chunky readable latch, metal bands, compact footprint",
+        "no floor, coins spilling out, text, or extra props"
+      ]
+    },
+    {
+      "target_id": "Vehicle",
+      "category": "ArcadeInteractable",
+      "action": "reuse_existing_model_rename_only",
+      "old_names": [
+        "ArcadeTruck"
+      ],
+      "current_data_row": "Vehicle",
+      "current_display_mesh": "/Game/World/Props/Tractor.Tractor",
+      "new_canonical_name": "Vehicle",
+      "imported_asset": "/Game/World/Props/Tractor",
+      "prompt": null,
+      "source_image": null,
+      "trellis_output": null,
+      "qa_focus": [
+        "keep same model; do not regenerate for this batch",
+        "rename/import/data work belongs to a later non-generation pass"
+      ]
+    }
+  ]
+}

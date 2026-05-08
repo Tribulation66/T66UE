@@ -301,13 +301,11 @@ def build_event_specs():
         event("Boss.Projectile.Fire.Sharpshooter", "Sharpshooter boss projectile fire.", ["pew laser"], VolumeMultiplier=0.82, PitchRandomRange=0.035, MinReplayIntervalSeconds=0.055),
         event("Boss.Projectile.Fire.Juggernaut", "Juggernaut boss projectile fire.", ["mecha core damage"], per_pattern=1, VolumeMultiplier=0.86, PitchRandomRange=0.025, MinReplayIntervalSeconds=0.07),
         event("Boss.Projectile.Fire.Duelist", "Duelist boss projectile fire.", ["ricochet 2"], VolumeMultiplier=0.82, PitchRandomRange=0.04, MinReplayIntervalSeconds=0.055),
-        event("Boss.Projectile.Fire.Vendor", "Vendor boss projectile fire.", ["coin toss"], VolumeMultiplier=0.78, PitchRandomRange=0.035, MinReplayIntervalSeconds=0.055),
         event("Boss.Projectile.Fire.Gambler", "Gambler boss projectile fire.", ["rattling click", "weirdness"], per_pattern=1, VolumeMultiplier=0.8, PitchRandomRange=0.04, MinReplayIntervalSeconds=0.055),
         event("Boss.AOE.Warning.Balanced", "Balanced boss AOE warning.", ["energy riser"], VolumeMultiplier=0.72, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.10),
         event("Boss.AOE.Warning.Sharpshooter", "Sharpshooter boss AOE warning.", ["sharp summon"], VolumeMultiplier=0.72, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.10),
         event("Boss.AOE.Warning.Juggernaut", "Juggernaut boss AOE warning.", ["high powering up"], per_pattern=1, VolumeMultiplier=0.76, PitchRandomRange=0.025, MinReplayIntervalSeconds=0.10),
         event("Boss.AOE.Warning.Duelist", "Duelist boss AOE warning.", ["phase sweeps"], VolumeMultiplier=0.72, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.10),
-        event("Boss.AOE.Warning.Vendor", "Vendor boss AOE warning.", ["zap select"], VolumeMultiplier=0.7, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.10),
         event("Boss.AOE.Warning.Gambler", "Gambler boss AOE warning.", ["weirdness"], VolumeMultiplier=0.72, PitchRandomRange=0.035, MinReplayIntervalSeconds=0.10),
 
         event("Trap.Arrow.Windup", "Wall arrow trap windup.", ["wind sweep swish"], **trap),

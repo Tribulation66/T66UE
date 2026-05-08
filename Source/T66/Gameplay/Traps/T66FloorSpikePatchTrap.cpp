@@ -6,6 +6,7 @@
 
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
+#include "Core/T66TrapTuningConfig.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/SphereComponent.h"
@@ -16,26 +17,25 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "TimerManager.h"
-#include "UObject/SoftObjectPath.h"
 
 namespace
 {
 	UStaticMesh* LoadFloorSpikeMesh()
 	{
-		static TSoftObjectPtr<UStaticMesh> Mesh(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Meshes/SM_Spike.SM_Spike")));
-		return Mesh.LoadSynchronous();
+		const FT66TrapVisualAssetConfig& TrapAssets = UT66TrapTuningConfig::GetRuntimeTrapAssets();
+		return UT66TrapTuningConfig::LoadConfiguredTrapStaticMesh(TrapAssets.FloorSpikeMesh, TEXT("TrapAssets.FloorSpikeMesh"));
 	}
 
 	UStaticMesh* LoadFloorSpikeClusterMesh()
 	{
-		static TSoftObjectPtr<UStaticMesh> Mesh(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Meshes/SM_Spikes.SM_Spikes")));
-		return Mesh.LoadSynchronous();
+		const FT66TrapVisualAssetConfig& TrapAssets = UT66TrapTuningConfig::GetRuntimeTrapAssets();
+		return UT66TrapTuningConfig::LoadConfiguredTrapStaticMesh(TrapAssets.FloorSpikeClusterMesh, TEXT("TrapAssets.FloorSpikeClusterMesh"));
 	}
 
 	UNiagaraSystem* LoadFloorSpikeBurstSystem()
 	{
-		static TSoftObjectPtr<UNiagaraSystem> System(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02")));
-		return System.LoadSynchronous();
+		const FT66TrapVisualAssetConfig& TrapAssets = UT66TrapTuningConfig::GetRuntimeTrapAssets();
+		return UT66TrapTuningConfig::LoadConfiguredTrapNiagaraSystem(TrapAssets.FloorSpikeRiseBurstNiagara, TEXT("TrapAssets.FloorSpikeRiseBurstNiagara"));
 	}
 }
 
@@ -485,7 +485,7 @@ void AT66FloorSpikePatchTrap::UpdateSpikeTransforms(const float RaisedAlpha)
 			BaseXYScale * ScaleJitter,
 			BaseXYScale * ScaleJitter,
 			FMath::Max(0.10f, RaisedAlpha) * BaseZScale);
-		SpikeInstances->UpdateInstanceTransform(Index, FTransform(Rotation, Location, Scale), false, true, true);
+		SpikeInstances->UpdateInstanceTransform(Index, FTransform(Rotation, Location, Scale), false, false, true);
 	}
 
 	SpikeInstances->MarkRenderStateDirty();

@@ -20,9 +20,6 @@ void FT66HUDPresentationController::Reset()
 {
 	if (UWorld* World = Owner.GetWorld())
 	{
-		World->GetTimerManager().ClearTimer(WheelSpinTickHandle);
-		World->GetTimerManager().ClearTimer(WheelResolveHandle);
-		World->GetTimerManager().ClearTimer(WheelCloseHandle);
 		World->GetTimerManager().ClearTimer(AchievementNotificationTimerHandle);
 	}
 
@@ -46,8 +43,6 @@ void FT66HUDPresentationController::Reset()
 	{
 		Owner.AchievementNotificationTitleText->SetText(FText::GetEmpty());
 	}
-
-	CloseWheelSpin();
 }
 
 
@@ -144,110 +139,6 @@ void FT66HUDPresentationController::QueueActivePickupCardToFront()
 }
 
 
-void FT66HUDPresentationController::StartWheelSpin(const ET66Rarity WheelRarity)
-{
-	UWorld* World = Owner.GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	if (!Owner.WheelSpinBox.IsValid() || !Owner.WheelSpinDisk.IsValid() || !Owner.WheelSpinText.IsValid() || !Owner.WheelSpinSkipText.IsValid())
-	{
-		return;
-	}
-
-	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bWheelPanelOpen)
-	{
-		return;
-	}
-
-	QueueActivePickupCardToFront();
-	HidePickupCard();
-
-	World->GetTimerManager().ClearTimer(WheelSpinTickHandle);
-	World->GetTimerManager().ClearTimer(WheelResolveHandle);
-	World->GetTimerManager().ClearTimer(WheelCloseHandle);
-
-	ActiveWheelRarity = WheelRarity;
-	bWheelPanelOpen = true;
-	bWheelSpinning = true;
-	WheelSpinElapsed = 0.f;
-	WheelSpinDuration = UT66GameplayHUDWidget::ChestRewardDisplaySeconds;
-	WheelStartAngleDeg = 0.f;
-	WheelTotalAngleDeg = 0.f;
-	WheelLastTickTimeSeconds = static_cast<float>(World->GetTimeSeconds());
-
-	FRandomStream SpinRng(static_cast<int32>(FPlatformTime::Cycles()));
-
-	int32 PendingGold = 50;
-	int32 MinGold = 0;
-	int32 MaxGold = 0;
-	if (UGameInstance* GI = Owner.GetGameInstance())
-	{
-		if (UT66RngSubsystem* RngSub = GI->GetSubsystem<UT66RngSubsystem>())
-		{
-			UT66RunStateSubsystem* RunState = Owner.GetRunState();
-			if (RunState)
-			{
-				RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
-			}
-
-			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
-			{
-				if (UT66PlayerExperienceSubSystem* PlayerExperience = GI->GetSubsystem<UT66PlayerExperienceSubSystem>())
-				{
-					const FT66FloatRange Range = PlayerExperience->GetDifficultyWheelGoldRange(T66GI->SelectedDifficulty, WheelRarity);
-					MinGold = FMath::FloorToInt(FMath::Min(Range.Min, Range.Max));
-					MaxGold = FMath::CeilToInt(FMath::Max(Range.Min, Range.Max));
-
-					FRandomStream& Stream = RngSub->GetRunStream();
-					PendingGold = FMath::Max(0, FMath::RoundToInt(RngSub->RollFloatRangeBiased(Range, Stream)));
-					const int32 DrawIndex = RngSub->GetLastRunDrawIndex();
-					const int32 PreDrawSeed = RngSub->GetLastRunPreDrawSeed();
-					if (RunState)
-					{
-						RunState->RecordLuckQuantityFloatRollRounded(
-							FName(TEXT("WheelGold")),
-							PendingGold,
-							MinGold,
-							MaxGold,
-							Range.Min,
-							Range.Max,
-							DrawIndex,
-							PreDrawSeed);
-					}
-				}
-			}
-		}
-	}
-	WheelPendingGold = PendingGold;
-
-	if (Owner.GoldCurrencyBrush.IsValid())
-	{
-		BindRuntimeHudBrush(Owner.GoldCurrencyBrush, GetGoldCurrencyRelativePath(), FVector2D(32.f, 32.f));
-	}
-
-	Owner.WheelSpinDisk->SetColorAndOpacity(FT66RarityUtil::GetRarityColor(WheelRarity));
-	Owner.WheelSpinDisk->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
-	Owner.WheelSpinDisk->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
-	Owner.WheelSpinText->SetText(FText::Format(
-		NSLOCTEXT("T66.Wheel", "GoldCounterFormat", "+{0}"),
-		FText::AsNumber(0)));
-	Owner.WheelSpinSkipText->SetText(BuildSkipCountdownText(WheelSpinDuration, FName(TEXT("Interact"))));
-	Owner.WheelSpinBox->SetVisibility(EVisibility::Visible);
-	Owner.WheelSpinBox->SetRenderOpacity(1.f);
-
-	WheelTotalAngleDeg = static_cast<float>(SpinRng.RandRange(5, 9)) * 360.f + static_cast<float>(SpinRng.RandRange(0, 359));
-
-	World->GetTimerManager().SetTimer(
-		WheelSpinTickHandle,
-		FTimerDelegate::CreateRaw(this, &FT66HUDPresentationController::TickWheelSpin),
-		0.033f,
-		true);
-}
-
-
 void FT66HUDPresentationController::StartCrateOpen()
 {
 	APlayerController* PC = Owner.GetOwningPlayer();
@@ -257,7 +148,7 @@ void FT66HUDPresentationController::StartCrateOpen()
 	}
 
 	HidePickupCard();
-	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bWheelPanelOpen)
+	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible)
 	{
 		return;
 	}
@@ -280,7 +171,7 @@ void FT66HUDPresentationController::StartChestReward(const ET66Rarity ChestRarit
 		return;
 	}
 
-	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bWheelPanelOpen)
+	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible)
 	{
 		FQueuedChestReward& QueuedReward = QueuedChestRewards.AddDefaulted_GetRef();
 		QueuedReward.Rarity = ChestRarity;
@@ -386,26 +277,6 @@ bool FT66HUDPresentationController::TrySkipActivePresentation()
 		return true;
 	}
 
-	if (bWheelPanelOpen)
-	{
-		if (bWheelSpinning)
-		{
-			WheelSpinElapsed = WheelSpinDuration;
-			if (Owner.WheelSpinText.IsValid())
-			{
-				Owner.WheelSpinText->SetText(FText::Format(
-					NSLOCTEXT("T66.Wheel", "GoldCounterFormat", "+{0}"),
-					FText::AsNumber(WheelPendingGold)));
-			}
-			ResolveWheelSpin();
-		}
-		else
-		{
-			CloseWheelSpin();
-		}
-		return true;
-	}
-
 	if (bChestRewardVisible)
 	{
 		const ET66Rarity CurrentDisplayRarity = ResolveChestRewardDisplayedRarity(FMath::Max(ChestRewardDisplayedGold, ChestRewardMinimumDisplayedGold));
@@ -444,113 +315,6 @@ void FT66HUDPresentationController::ClearActiveCratePresentation(UT66CrateOverla
 	{
 		ActiveCrateOverlay.Reset();
 	}
-}
-
-
-void FT66HUDPresentationController::TickWheelSpin()
-{
-	if (!bWheelSpinning || !Owner.WheelSpinDisk.IsValid())
-	{
-		return;
-	}
-
-	UWorld* World = Owner.GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	const float Now = static_cast<float>(World->GetTimeSeconds());
-	float Delta = Now - WheelLastTickTimeSeconds;
-	WheelLastTickTimeSeconds = Now;
-	Delta = FMath::Clamp(Delta, 0.f, 0.05f);
-
-	WheelSpinElapsed += Delta;
-	const float Alpha = FMath::Clamp(WheelSpinElapsed / FMath::Max(0.01f, WheelSpinDuration), 0.f, 1.f);
-	const float Ease = FMath::InterpEaseOut(0.f, 1.f, Alpha, 4.2f);
-	const float Angle = WheelStartAngleDeg + (WheelTotalAngleDeg * Ease);
-
-	Owner.WheelSpinDisk->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
-	Owner.WheelSpinDisk->SetRenderTransform(FSlateRenderTransform(FTransform2D(FQuat2D(FMath::DegreesToRadians(Angle)))));
-	if (Owner.WheelSpinText.IsValid())
-	{
-		const float CounterEase = FMath::InterpEaseOut(0.f, 1.f, Alpha, 2.5f);
-		const int32 DisplayedGold = FMath::RoundToInt(static_cast<float>(WheelPendingGold) * CounterEase);
-		Owner.WheelSpinText->SetText(FText::Format(
-			NSLOCTEXT("T66.Wheel", "GoldCounterFormat", "+{0}"),
-			FText::AsNumber(DisplayedGold)));
-	}
-	if (Owner.WheelSpinSkipText.IsValid())
-	{
-		Owner.WheelSpinSkipText->SetText(BuildSkipCountdownText(FMath::Max(0.f, WheelSpinDuration - WheelSpinElapsed), FName(TEXT("Interact"))));
-	}
-
-	if (Alpha >= 1.f)
-	{
-		ResolveWheelSpin();
-	}
-}
-
-
-void FT66HUDPresentationController::ResolveWheelSpin()
-{
-	if (!bWheelSpinning)
-	{
-		return;
-	}
-
-	bWheelSpinning = false;
-
-	if (UWorld* World = Owner.GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(WheelSpinTickHandle);
-	}
-
-	if (UT66RunStateSubsystem* RunState = Owner.GetRunState())
-	{
-		if (WheelPendingGold > 0)
-		{
-			RunState->AddGold(WheelPendingGold);
-		}
-	}
-
-	CloseWheelSpin();
-}
-
-
-void FT66HUDPresentationController::CloseWheelSpin()
-{
-	bWheelPanelOpen = false;
-	bWheelSpinning = false;
-	WheelSpinElapsed = 0.f;
-	WheelPendingGold = 0;
-	WheelLastTickTimeSeconds = 0.f;
-	WheelTotalAngleDeg = 0.f;
-	if (UWorld* World = Owner.GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(WheelSpinTickHandle);
-		World->GetTimerManager().ClearTimer(WheelResolveHandle);
-		World->GetTimerManager().ClearTimer(WheelCloseHandle);
-	}
-	if (Owner.WheelSpinBox.IsValid())
-	{
-		Owner.WheelSpinBox->SetVisibility(EVisibility::Collapsed);
-		Owner.WheelSpinBox->SetRenderOpacity(1.f);
-	}
-	if (Owner.WheelSpinDisk.IsValid())
-	{
-		Owner.WheelSpinDisk->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
-	}
-	if (Owner.WheelSpinText.IsValid())
-	{
-		Owner.WheelSpinText->SetText(FText::GetEmpty());
-	}
-	if (Owner.WheelSpinSkipText.IsValid())
-	{
-		Owner.WheelSpinSkipText->SetText(FText::GetEmpty());
-	}
-
-	TryShowQueuedPresentation();
 }
 
 
@@ -760,7 +524,7 @@ void FT66HUDPresentationController::HideChestReward()
 
 void FT66HUDPresentationController::TryShowQueuedPresentation()
 {
-	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bPickupCardVisible || bWheelPanelOpen)
+	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bPickupCardVisible)
 	{
 		return;
 	}
@@ -788,7 +552,7 @@ void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const
 	{
 		return;
 	}
-	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bPickupCardVisible || bWheelPanelOpen)
+	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bPickupCardVisible)
 	{
 		FQueuedPickupCard& QueuedPickup = QueuedPickupCards.AddDefaulted_GetRef();
 		QueuedPickup.ItemID = ItemID;

@@ -6,6 +6,7 @@
 
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
+#include "Core/T66TrapTuningConfig.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -15,14 +16,13 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "TimerManager.h"
-#include "UObject/SoftObjectPath.h"
 
 namespace
 {
 	UNiagaraSystem* LoadFloorFlameSystem()
 	{
-		static TSoftObjectPtr<UNiagaraSystem> System(FSoftObjectPath(TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Fire.P_Fire")));
-		return System.LoadSynchronous();
+		const FT66TrapVisualAssetConfig& TrapAssets = UT66TrapTuningConfig::GetRuntimeTrapAssets();
+		return UT66TrapTuningConfig::LoadConfiguredTrapNiagaraSystem(TrapAssets.FloorFlameNiagara, TEXT("TrapAssets.FloorFlameNiagara"));
 	}
 }
 

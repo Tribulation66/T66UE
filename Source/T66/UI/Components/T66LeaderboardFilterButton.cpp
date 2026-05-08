@@ -58,7 +58,7 @@ void UT66LeaderboardFilterButton::NativeConstruct()
 	if (SpriteSheetMaterial && FrameCount > 1)
 	{
 		SpriteDynamicMaterial = UMaterialInstanceDynamic::Create(SpriteSheetMaterial, this);
-		SpriteTime = 0.0f;
+		SpriteFrameIndex = 0;
 		if (IconImage && SpriteDynamicMaterial)
 		{
 			FSlateBrush Brush = IconImage->GetBrush();
@@ -66,37 +66,22 @@ void UT66LeaderboardFilterButton::NativeConstruct()
 			IconImage->SetBrush(Brush);
 		}
 	}
+	bSyncedBrushOnce = SyncBrushIfReady();
+	StartSpriteAnimationTimer();
 }
 
 void UT66LeaderboardFilterButton::NativeDestruct()
 {
+	StopSpriteAnimationTimer();
 	SpriteDynamicMaterial = nullptr;
 	Super::NativeDestruct();
-}
-
-void UT66LeaderboardFilterButton::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
-{
-	Super::NativeTick(MyGeometry, InDeltaTime);
-	// Apply icon once when we have texture/material and IconImage (handles late binding)
-	if (IconImage && (StaticTexture || SpriteSheetMaterial) && !bSyncedBrushOnce)
-	{
-		SyncBrush();
-		bSyncedBrushOnce = true;
-	}
-	if (SpriteDynamicMaterial && FrameCount > 1 && FramesPerSecond > 0.0f)
-	{
-		AdvanceSpriteFrame(InDeltaTime);
-	}
 }
 
 void UT66LeaderboardFilterButton::RefreshIcon()
 {
 	bSyncedBrushOnce = false;
-	SyncBrush();
-	if (IconImage && (StaticTexture || SpriteSheetMaterial))
-	{
-		bSyncedBrushOnce = true;
-	}
+	bSyncedBrushOnce = SyncBrushIfReady();
+	StartSpriteAnimationTimer();
 }
 
 void UT66LeaderboardFilterButton::SyncBrush()
@@ -130,19 +115,58 @@ void UT66LeaderboardFilterButton::SyncBrush()
 	}
 }
 
-void UT66LeaderboardFilterButton::AdvanceSpriteFrame(float DeltaTime)
+bool UT66LeaderboardFilterButton::SyncBrushIfReady()
 {
-	if (!SpriteDynamicMaterial || FrameCount <= 1) return;
-	SpriteTime += DeltaTime;
-	const float Period = 1.0f / FramesPerSecond;
-	while (SpriteTime >= Period)
+	if (!IconImage || (!StaticTexture && !SpriteSheetMaterial))
 	{
-		SpriteTime -= Period;
+		return false;
 	}
-	const int32 FrameIndex = FMath::Clamp(
-		FMath::FloorToInt(SpriteTime * FramesPerSecond) % FrameCount,
-		0, FrameCount - 1);
-	SpriteDynamicMaterial->SetScalarParameterValue(FName("Frame"), static_cast<float>(FrameIndex));
+
+	SyncBrush();
+	return true;
+}
+
+void UT66LeaderboardFilterButton::StartSpriteAnimationTimer()
+{
+	StopSpriteAnimationTimer();
+
+	if (!SpriteDynamicMaterial || FrameCount <= 1 || FramesPerSecond <= 0.0f)
+	{
+		return;
+	}
+
+	SpriteFrameIndex = 0;
+	SpriteDynamicMaterial->SetScalarParameterValue(FName("Frame"), 0.f);
+
+	if (UWorld* World = GetWorld())
+	{
+		const float Interval = 1.0f / FMath::Max(1.0f, FramesPerSecond);
+		World->GetTimerManager().SetTimer(
+			SpriteAnimationTimerHandle,
+			this,
+			&UT66LeaderboardFilterButton::AdvanceSpriteFrame,
+			Interval,
+			true);
+	}
+}
+
+void UT66LeaderboardFilterButton::StopSpriteAnimationTimer()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(SpriteAnimationTimerHandle);
+	}
+}
+
+void UT66LeaderboardFilterButton::AdvanceSpriteFrame()
+{
+	if (!SpriteDynamicMaterial || FrameCount <= 1)
+	{
+		return;
+	}
+
+	SpriteFrameIndex = (SpriteFrameIndex + 1) % FrameCount;
+	SpriteDynamicMaterial->SetScalarParameterValue(FName("Frame"), static_cast<float>(SpriteFrameIndex));
 }
 
 void UT66LeaderboardFilterButton::NotifyClicked()

@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\Raw\\Trellis\\Bosses\\Hell_FalseProphet\\Hell_FalseProphet_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\EnemyBosses\\EnemyBossBatch01\\QA\\TrellisFront\\Bosses\\Hell_FalseProphet_front.png",
+  "export": null,
+  "raw_triangles": 194256,
+  "triangles_before_decimate": 194256,
+  "triangles_after_decimate": 194256,
+  "bounds": {
+    "min": [
+      -0.390351802110672,
+      -0.22894439101219177,
+      -0.48423054814338684
+    ],
+    "max": [
+      0.39111748337745667,
+      0.2248779535293579,
+      0.4979453384876251
+    ],
+    "size": [
+      0.7814692854881287,
+      0.4538223445415497,
+      0.982175886631012
+    ]
+  }
+}

@@ -678,29 +678,23 @@ public:
 	FText GetText_Equip() const;
 	FText GetText_Preview() const;
 
-	// Vendor
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
-	FText GetText_Vendor() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	// Shop
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Shop")
 	FText GetText_Shop() const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Shop")
 	FText GetText_YourItems() const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Shop")
 	FText GetText_Upgrade() const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Shop")
 	FText GetText_Steal() const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Shop")
 	FText GetText_Reroll() const;
 
 	// Gameplay overlays / prompts
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
-	FText GetText_WheelSpinTitle() const;
-
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
 	FText GetText_Spin() const;
 

@@ -89,10 +89,7 @@ namespace
 					PlayerPawns.Add(PlayerPawn);
 				}
 
-				if (PlayerPawns.Num() > 0 || !bOnlyLiving)
-				{
-					return PlayerPawns;
-				}
+				return PlayerPawns;
 			}
 		}
 
@@ -153,7 +150,7 @@ AT66MiniPlayerPawn* AT66MiniGameMode::FindClosestPlayerPawn(const FVector& World
 {
 	AT66MiniPlayerPawn* BestPawn = nullptr;
 	float BestDistanceSq = TNumericLimits<float>::Max();
-	bool bUsedCachedPlayerSet = false;
+	const bool bHasCachedPlayerSet = LivePlayerPawns.Num() > 0;
 	for (AT66MiniPlayerPawn* Candidate : LivePlayerPawns)
 	{
 		if (!Candidate || (bRequireAlive && !Candidate->IsHeroAlive()))
@@ -161,7 +158,6 @@ AT66MiniPlayerPawn* AT66MiniGameMode::FindClosestPlayerPawn(const FVector& World
 			continue;
 		}
 
-		bUsedCachedPlayerSet = true;
 		const float DistanceSq = FVector::DistSquared2D(WorldLocation, Candidate->GetActorLocation());
 		if (DistanceSq < BestDistanceSq)
 		{
@@ -170,7 +166,7 @@ AT66MiniPlayerPawn* AT66MiniGameMode::FindClosestPlayerPawn(const FVector& World
 		}
 	}
 
-	if (bUsedCachedPlayerSet || !GetWorld())
+	if (bHasCachedPlayerSet || !GetWorld())
 	{
 		return BestPawn;
 	}
@@ -193,16 +189,41 @@ AT66MiniPlayerPawn* AT66MiniGameMode::FindClosestPlayerPawn(const FVector& World
 	return BestPawn;
 }
 
-float AT66MiniGameMode::GetRuntimeTuningValue(const TCHAR* Key, const float DefaultValue) const
+void AT66MiniGameMode::RegisterLivePlayerPawn(AT66MiniPlayerPawn* PlayerPawn)
+{
+	if (PlayerPawn)
+	{
+		LivePlayerPawns.AddUnique(PlayerPawn);
+	}
+}
+
+void AT66MiniGameMode::UnregisterLivePlayerPawn(const AT66MiniPlayerPawn* PlayerPawn)
+{
+	LivePlayerPawns.RemoveAllSwap(
+		[PlayerPawn](const TObjectPtr<AT66MiniPlayerPawn>& Candidate)
+		{
+			return Candidate.Get() == PlayerPawn;
+		},
+		EAllowShrinking::No);
+	PositionedPlayerPawns.Remove(TWeakObjectPtr<AT66MiniPlayerPawn>(const_cast<AT66MiniPlayerPawn*>(PlayerPawn)));
+}
+
+float AT66MiniGameMode::GetRuntimeTuningValue(const TCHAR* Key) const
 {
 	const UGameInstance* GameInstance = GetGameInstance();
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
-	return DataSubsystem ? DataSubsystem->FindRuntimeTuningValue(FName(Key), DefaultValue) : DefaultValue;
+	if (!DataSubsystem)
+	{
+		UE_LOG(LogTemp, Error, TEXT("T66MiniGameMode: missing Mini data subsystem for required runtime tuning '%s'."), Key);
+		return 0.f;
+	}
+
+	return DataSubsystem->FindRequiredRuntimeTuningValue(FName(Key));
 }
 
-int32 AT66MiniGameMode::GetRuntimeTuningInt(const TCHAR* Key, const int32 DefaultValue) const
+int32 AT66MiniGameMode::GetRuntimeTuningInt(const TCHAR* Key) const
 {
-	return FMath::RoundToInt(GetRuntimeTuningValue(Key, static_cast<float>(DefaultValue)));
+	return FMath::RoundToInt(GetRuntimeTuningValue(Key));
 }
 
 void AT66MiniGameMode::RegisterLiveTrap(AT66MiniHazardTrap* Trap)
@@ -367,9 +388,10 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 	UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
 	UT66MiniRunSaveGame* ActiveRun = RunState ? RunState->GetActiveRun() : nullptr;
-	PlayerRuntimeRefreshAccumulator += DeltaSeconds;
 	const bool bNeedsFastPlayerRefresh = !bAppliedSavedPawnState || PositionedPlayerPawns.Num() < LivePlayerPawns.Num();
-	if (PlayerRuntimeRefreshAccumulator >= (bNeedsFastPlayerRefresh ? 0.05f : 0.50f))
+	PlayerRuntimeRefreshAccumulator += DeltaSeconds;
+	const float PlayerRefreshInterval = (bNeedsFastPlayerRefresh || LivePlayerPawns.Num() == 0) ? 0.05f : 2.0f;
+	if (PlayerRuntimeRefreshAccumulator >= PlayerRefreshInterval)
 	{
 		UpdateLivePlayerPawnCache();
 		PositionPlayerPawns();
@@ -429,12 +451,12 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 			InteractableSpawnAccumulator += DeltaSeconds;
 			TrapSpawnAccumulator += DeltaSeconds;
 
-			float SpawnInterval = WaveDefinition ? WaveDefinition->SpawnInterval : GetRuntimeTuningValue(TEXT("SpawnIntervalFallback"), 1.2f);
+			float SpawnInterval = WaveDefinition ? WaveDefinition->SpawnInterval : GetRuntimeTuningValue(TEXT("SpawnIntervalFallback"));
 			if (DifficultyDefinition)
 			{
-				SpawnInterval = SpawnInterval / FMath::Max(GetRuntimeTuningValue(TEXT("SpawnRateScalarMin"), 0.65f), DifficultyDefinition->SpawnRateScalar);
+				SpawnInterval = SpawnInterval / FMath::Max(GetRuntimeTuningValue(TEXT("SpawnRateScalarMin")), DifficultyDefinition->SpawnRateScalar);
 			}
-			SpawnInterval = FMath::Max(GetRuntimeTuningValue(TEXT("SpawnIntervalMin"), 0.28f), SpawnInterval);
+			SpawnInterval = FMath::Max(GetRuntimeTuningValue(TEXT("SpawnIntervalMin")), SpawnInterval);
 
 			while (EnemySpawnAccumulator >= SpawnInterval && MiniGameState->WaveSecondsRemaining > 0.f)
 			{
@@ -444,7 +466,7 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 
 			const float InteractableInterval = WaveDefinition
 				? WaveDefinition->InteractableInterval
-				: (DifficultyDefinition ? DifficultyDefinition->InteractableInterval : GetRuntimeTuningValue(TEXT("InteractableIntervalFallback"), 18.f));
+				: (DifficultyDefinition ? DifficultyDefinition->InteractableInterval : GetRuntimeTuningValue(TEXT("InteractableIntervalFallback")));
 			if (InteractableSpawnAccumulator >= InteractableInterval)
 			{
 				InteractableSpawnAccumulator = 0.f;
@@ -452,9 +474,9 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 			}
 
 			const float TrapInterval = FMath::Max(
-				GetRuntimeTuningValue(TEXT("TrapIntervalMin"), 5.5f),
-				(GetRuntimeTuningValue(TEXT("TrapIntervalBase"), 13.5f) - (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapIntervalPerWave"), 1.25f)))
-					/ FMath::Max(GetRuntimeTuningValue(TEXT("TrapSpawnRateScalarMin"), 0.75f), DifficultyDefinition ? DifficultyDefinition->SpawnRateScalar : 1.0f));
+				GetRuntimeTuningValue(TEXT("TrapIntervalMin")),
+				(GetRuntimeTuningValue(TEXT("TrapIntervalBase")) - (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapIntervalPerWave"))))
+					/ FMath::Max(GetRuntimeTuningValue(TEXT("TrapSpawnRateScalarMin")), DifficultyDefinition ? DifficultyDefinition->SpawnRateScalar : 1.0f));
 			if (TrapSpawnAccumulator >= TrapInterval)
 			{
 				TrapSpawnAccumulator = 0.f;
@@ -468,7 +490,7 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 		}
 		else if (LiveEnemies.Num() == 0 && PostBossDelayRemaining <= 0.f)
 		{
-			PostBossDelayRemaining = GetRuntimeTuningValue(TEXT("PostBossDelaySeconds"), 2.0f);
+			PostBossDelayRemaining = GetRuntimeTuningValue(TEXT("PostBossDelaySeconds"));
 		}
 	}
 
@@ -514,11 +536,17 @@ void AT66MiniGameMode::Tick(const float DeltaSeconds)
 	}
 
 	AutosaveAccumulator += DeltaSeconds;
-	if (AutosaveAccumulator >= GetRuntimeTuningValue(TEXT("AutosaveInterval"), 1.0f))
+	if (AutosaveAccumulator >= GetRuntimeTuningValue(TEXT("AutosaveInterval")))
 	{
 		PersistActiveRunSnapshot(true);
 		AutosaveAccumulator = 0.f;
 	}
+}
+
+void AT66MiniGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+	UpdateLivePlayerPawnCache();
 }
 
 void AT66MiniGameMode::Logout(AController* Exiting)
@@ -722,7 +750,7 @@ int32 AT66MiniGameMode::GetMaxStageIndexForCurrentDifficulty() const
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	const AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>();
 	const int32 DataMaxStage = (DataSubsystem && MiniGameState) ? DataSubsystem->GetMaxStageIndexForDifficulty(MiniGameState->DifficultyID) : 0;
-	return DataMaxStage > 0 ? DataMaxStage : GetRuntimeTuningInt(TEXT("MaxWavesPerDifficulty"), 5);
+	return DataMaxStage > 0 ? DataMaxStage : GetRuntimeTuningInt(TEXT("MaxWavesPerDifficulty"));
 }
 
 const FT66MiniEnemyDefinition* AT66MiniGameMode::ChooseEnemyDefinition() const
@@ -802,8 +830,8 @@ void AT66MiniGameMode::SpawnWaveEnemy()
 	const float WaveHealthScalar = WaveDefinition ? WaveDefinition->EnemyHealthScalar : 1.0f;
 	const float WaveDamageScalar = WaveDefinition ? WaveDefinition->EnemyDamageScalar : 1.0f;
 	const float WaveSpeedScalar = WaveDefinition ? WaveDefinition->EnemySpeedScalar : 1.0f;
-	const float ProgressScalar = GetRuntimeTuningValue(TEXT("EnemyProgressScalarBase"), 1.0f)
-		+ ((MiniGameState->WaveIndex - 1) * GetRuntimeTuningValue(TEXT("EnemyProgressScalarPerWave"), 0.16f));
+	const float ProgressScalar = GetRuntimeTuningValue(TEXT("EnemyProgressScalarBase"))
+		+ ((MiniGameState->WaveIndex - 1) * GetRuntimeTuningValue(TEXT("EnemyProgressScalarPerWave")));
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -821,7 +849,7 @@ void AT66MiniGameMode::SpawnWaveEnemy()
 			-1.f,
 			EnemyDefinition->BehaviorProfile,
 			EnemyDefinition->Family,
-			EnemyDefinition->FireIntervalSeconds / FMath::Max(GetRuntimeTuningValue(TEXT("EnemyRangedFireSpawnRateMin"), 0.80f), DifficultyDefinition ? DifficultyDefinition->SpawnRateScalar : 1.0f),
+			EnemyDefinition->FireIntervalSeconds / FMath::Max(GetRuntimeTuningValue(TEXT("EnemyRangedFireSpawnRateMin")), DifficultyDefinition ? DifficultyDefinition->SpawnRateScalar : 1.0f),
 			EnemyDefinition->ProjectileSpeed,
 			EnemyDefinition->ProjectileDamage * DifficultyDamageScalar * WaveDamageScalar,
 			EnemyDefinition->PreferredRange);
@@ -860,10 +888,10 @@ void AT66MiniGameMode::BeginBossSpawnTelegraph()
 	{
 		PendingBossID = WaveDefinition->BossID;
 	}
-	PendingBossSpawnLocation = ClampPointToArena(PlayerPawn->GetActorLocation() + FVector(ArenaHalfExtent * GetRuntimeTuningValue(TEXT("BossSpawnOffsetScalar"), 0.72f), 0.f, 0.f));
+	PendingBossSpawnLocation = ClampPointToArena(PlayerPawn->GetActorLocation() + FVector(ArenaHalfExtent * GetRuntimeTuningValue(TEXT("BossSpawnOffsetScalar")), 0.f, 0.f));
 
 	const FT66MiniBossDefinition* BossDefinition = DataSubsystem->FindBoss(PendingBossID);
-	BossTelegraphRemaining = BossDefinition ? BossDefinition->TelegraphSeconds : GetRuntimeTuningValue(TEXT("BossTelegraphFallbackSeconds"), 1.2f);
+	BossTelegraphRemaining = BossDefinition ? BossDefinition->TelegraphSeconds : GetRuntimeTuningValue(TEXT("BossTelegraphFallbackSeconds"));
 	if (ActiveBossTelegraphActor)
 	{
 		ActiveBossTelegraphActor->DeactivateTelegraph();
@@ -871,7 +899,7 @@ void AT66MiniGameMode::BeginBossSpawnTelegraph()
 	}
 	if (UT66MiniVFXSubsystem* VfxSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
 	{
-		ActiveBossTelegraphActor = VfxSubsystem->SpawnGroundTelegraph(World, PendingBossSpawnLocation, GetRuntimeTuningValue(TEXT("BossTelegraphRadius"), 260.f), BossTelegraphRemaining, FLinearColor(0.98f, 0.26f, 0.20f, 0.38f));
+		ActiveBossTelegraphActor = VfxSubsystem->SpawnGroundTelegraph(World, PendingBossSpawnLocation, GetRuntimeTuningValue(TEXT("BossTelegraphRadius")), BossTelegraphRemaining, FLinearColor(0.98f, 0.26f, 0.20f, 0.38f));
 		VfxSubsystem->PlayBossAlertSfx(this);
 	}
 }
@@ -901,11 +929,11 @@ void AT66MiniGameMode::SpawnBossEnemy()
 	}
 
 	const FVector SpawnLocation = PendingBossSpawnLocation.IsNearlyZero()
-		? ClampPointToArena(ArenaOrigin + FVector(ArenaHalfExtent * GetRuntimeTuningValue(TEXT("BossFallbackOffsetScalar"), 0.70f), 0.f, 0.f))
+		? ClampPointToArena(ArenaOrigin + FVector(ArenaHalfExtent * GetRuntimeTuningValue(TEXT("BossFallbackOffsetScalar")), 0.f, 0.f))
 		: PendingBossSpawnLocation;
 	const float DifficultyScalar = DifficultyDefinition ? DifficultyDefinition->BossScalar : 1.0f;
-	const float WaveScalar = GetRuntimeTuningValue(TEXT("BossWaveScalarBase"), 1.0f)
-		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("BossWaveScalarPerWave"), 0.14f));
+	const float WaveScalar = GetRuntimeTuningValue(TEXT("BossWaveScalarBase"))
+		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("BossWaveScalarPerWave")));
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -923,10 +951,10 @@ void AT66MiniGameMode::SpawnBossEnemy()
 			-1.f,
 			BossDefinition->BehaviorProfile,
 			BossDefinition->Family,
-			BossDefinition->FireIntervalSeconds / FMath::Max(GetRuntimeTuningValue(TEXT("BossFireIntervalScalarMin"), 0.85f), DifficultyScalar),
+			BossDefinition->FireIntervalSeconds / FMath::Max(GetRuntimeTuningValue(TEXT("BossFireIntervalScalarMin")), DifficultyScalar),
 			BossDefinition->ProjectileSpeed,
 			BossDefinition->ProjectileDamage * DifficultyScalar,
-			GetRuntimeTuningValue(TEXT("BossPreferredRange"), 960.f));
+			GetRuntimeTuningValue(TEXT("BossPreferredRange")));
 		LiveEnemies.Add(Boss);
 	}
 
@@ -1010,23 +1038,23 @@ void AT66MiniGameMode::SpawnRandomTrap()
 	const float SpawnAngle = FMath::FRandRange(0.f, UE_TWO_PI);
 	const FVector SpawnDirection = FVector(FMath::Cos(SpawnAngle), FMath::Sin(SpawnAngle), 0.f);
 	FVector SpawnLocation = PlayerPawn->GetActorLocation() + (SpawnDirection * FMath::FRandRange(
-		GetRuntimeTuningValue(TEXT("TrapSpawnMinDistance"), 360.f),
-		GetRuntimeTuningValue(TEXT("TrapSpawnMaxDistance"), 980.f)));
+		GetRuntimeTuningValue(TEXT("TrapSpawnMinDistance")),
+		GetRuntimeTuningValue(TEXT("TrapSpawnMaxDistance"))));
 	SpawnLocation = ClampPointToArena(SpawnLocation);
 
-	const float Radius = GetRuntimeTuningValue(TEXT("TrapRadiusBase"), 180.f)
-		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapRadiusPerWave"), 24.f))
-		+ FMath::FRandRange(0.f, GetRuntimeTuningValue(TEXT("TrapRadiusRandomMax"), 80.f));
-	const float Damage = GetRuntimeTuningValue(TEXT("TrapDamageBase"), 7.f)
-		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapDamagePerWave"), 1.3f));
-	const float Warmup = GetRuntimeTuningValue(TEXT("TrapWarmupBase"), 0.95f)
-		+ FMath::FRandRange(0.0f, GetRuntimeTuningValue(TEXT("TrapWarmupRandomMax"), 0.35f));
-	const float ActiveSeconds = GetRuntimeTuningValue(TEXT("TrapActiveBase"), 3.8f)
-		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapActivePerWave"), 0.28f));
+	const float Radius = GetRuntimeTuningValue(TEXT("TrapRadiusBase"))
+		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapRadiusPerWave")))
+		+ FMath::FRandRange(0.f, GetRuntimeTuningValue(TEXT("TrapRadiusRandomMax")));
+	const float Damage = GetRuntimeTuningValue(TEXT("TrapDamageBase"))
+		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapDamagePerWave")));
+	const float Warmup = GetRuntimeTuningValue(TEXT("TrapWarmupBase"))
+		+ FMath::FRandRange(0.0f, GetRuntimeTuningValue(TEXT("TrapWarmupRandomMax")));
+	const float ActiveSeconds = GetRuntimeTuningValue(TEXT("TrapActiveBase"))
+		+ (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapActivePerWave")));
 	const float PulseInterval = FMath::Max(
-		GetRuntimeTuningValue(TEXT("TrapPulseIntervalMin"), 0.28f),
-		GetRuntimeTuningValue(TEXT("TrapPulseIntervalBase"), 0.72f) - (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapPulseIntervalPerWave"), 0.04f)));
-	const int32 TrapVariant = FMath::RandRange(0, GetRuntimeTuningInt(TEXT("TrapVariantMax"), 2));
+		GetRuntimeTuningValue(TEXT("TrapPulseIntervalMin")),
+		GetRuntimeTuningValue(TEXT("TrapPulseIntervalBase")) - (MiniGameState->WaveIndex * GetRuntimeTuningValue(TEXT("TrapPulseIntervalPerWave"))));
+	const int32 TrapVariant = FMath::RandRange(0, GetRuntimeTuningInt(TEXT("TrapVariantMax")));
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -1352,7 +1380,7 @@ void AT66MiniGameMode::RestoreTransientWaveState(const UT66MiniRunSaveGame* RunS
 	{
 		if (UT66MiniVFXSubsystem* VfxSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66MiniVFXSubsystem>() : nullptr)
 		{
-			ActiveBossTelegraphActor = VfxSubsystem->SpawnGroundTelegraph(GetWorld(), PendingBossSpawnLocation, GetRuntimeTuningValue(TEXT("BossTelegraphRadius"), 260.f), BossTelegraphRemaining, FLinearColor(0.98f, 0.26f, 0.20f, 0.38f));
+			ActiveBossTelegraphActor = VfxSubsystem->SpawnGroundTelegraph(GetWorld(), PendingBossSpawnLocation, GetRuntimeTuningValue(TEXT("BossTelegraphRadius")), BossTelegraphRemaining, FLinearColor(0.98f, 0.26f, 0.20f, 0.38f));
 		}
 	}
 }
@@ -1400,7 +1428,7 @@ void AT66MiniGameMode::RestoreWorldState(const UT66MiniRunSaveGame* RunSave)
 				FireIntervalSeconds = BossDefinition->FireIntervalSeconds;
 				ProjectileSpeed = BossDefinition->ProjectileSpeed;
 				ProjectileDamage = BossDefinition->ProjectileDamage;
-				PreferredRange = GetRuntimeTuningValue(TEXT("BossPreferredRange"), 960.f);
+				PreferredRange = GetRuntimeTuningValue(TEXT("BossPreferredRange"));
 			}
 		}
 		else if (const FT66MiniEnemyDefinition* EnemyDefinition = DataSubsystem->FindEnemy(Snapshot.EnemyID))
@@ -1617,7 +1645,13 @@ void AT66MiniGameMode::UpdateLiveEnemyCache()
 
 void AT66MiniGameMode::UpdateLivePlayerPawnCache()
 {
-	LivePlayerPawns.Reset();
+	for (int32 Index = LivePlayerPawns.Num() - 1; Index >= 0; --Index)
+	{
+		if (!IsValid(LivePlayerPawns[Index]))
+		{
+			LivePlayerPawns.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+		}
+	}
 
 	if (UWorld* World = GetWorld())
 	{

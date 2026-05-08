@@ -4,8 +4,6 @@ The HUD now attempts to load these loose files first and falls back to the old a
 
 Current supported filenames:
 - npc.png
-- vendor.png
-- support_vendor.png
 - gambler.png
 - saint.png
 - ouroboros.png

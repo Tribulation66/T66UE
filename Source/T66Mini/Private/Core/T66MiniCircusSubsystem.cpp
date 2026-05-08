@@ -31,14 +31,26 @@ namespace
 		return Count;
 	}
 
-	float T66MiniCircusTuning(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key, const float DefaultValue)
+	float T66MiniCircusTuning(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key)
 	{
-		return DataSubsystem ? DataSubsystem->FindRuntimeTuningValue(FName(Key), DefaultValue) : DefaultValue;
+		const FName TuningKey(Key);
+		if (!DataSubsystem)
+		{
+			static TSet<FName> LoggedMissingDataSubsystemKeys;
+			if (!LoggedMissingDataSubsystemKeys.Contains(TuningKey))
+			{
+				LoggedMissingDataSubsystemKeys.Add(TuningKey);
+				UE_LOG(LogTemp, Error, TEXT("T66MiniCircusSubsystem: missing Mini data subsystem for required runtime tuning '%s'."), Key);
+			}
+			return 0.f;
+		}
+
+		return DataSubsystem->FindRequiredRuntimeTuningValue(TuningKey);
 	}
 
-	int32 T66MiniCircusTuningInt(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key, const int32 DefaultValue)
+	int32 T66MiniCircusTuningInt(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key)
 	{
-		return FMath::RoundToInt(T66MiniCircusTuning(DataSubsystem, Key, static_cast<float>(DefaultValue)));
+		return FMath::RoundToInt(T66MiniCircusTuning(DataSubsystem, Key));
 	}
 }
 
@@ -50,12 +62,12 @@ void UT66MiniCircusSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UT66MiniCircusSubsystem::ResetCircusState()
 {
-	CurrentVendorOfferIDs.Reset();
-	LockedVendorOfferIDs.Reset();
+	CurrentMarketOfferIDs.Reset();
+	LockedMarketOfferIDs.Reset();
 	BuybackItemIDs.Reset();
 	CircusDebt = 0;
 	CircusAnger01 = 0.f;
-	VendorRerollCount = 0;
+	MarketRerollCount = 0;
 }
 
 void UT66MiniCircusSubsystem::SeedFromRunSave(const UT66MiniRunSaveGame* RunSave)
@@ -66,12 +78,12 @@ void UT66MiniCircusSubsystem::SeedFromRunSave(const UT66MiniRunSaveGame* RunSave
 		return;
 	}
 
-	CurrentVendorOfferIDs = RunSave->CurrentShopOfferIDs;
-	LockedVendorOfferIDs = RunSave->LockedShopOfferIDs;
+	CurrentMarketOfferIDs = RunSave->CurrentShopOfferIDs;
+	LockedMarketOfferIDs = RunSave->LockedShopOfferIDs;
 	BuybackItemIDs = RunSave->CircusBuybackItemIDs;
 	CircusDebt = FMath::Max(0, RunSave->CircusDebt);
 	CircusAnger01 = FMath::Clamp(RunSave->CircusAnger01, 0.f, 1.f);
-	VendorRerollCount = FMath::Max(0, RunSave->CircusVendorRerollCount);
+	MarketRerollCount = FMath::Max(0, RunSave->CircusMarketRerollCount);
 }
 
 void UT66MiniCircusSubsystem::WriteToRunSave(UT66MiniRunSaveGame* RunSave) const
@@ -81,43 +93,43 @@ void UT66MiniCircusSubsystem::WriteToRunSave(UT66MiniRunSaveGame* RunSave) const
 		return;
 	}
 
-	RunSave->CurrentShopOfferIDs = CurrentVendorOfferIDs;
-	RunSave->LockedShopOfferIDs = LockedVendorOfferIDs;
-	RunSave->ShopRerollCount = VendorRerollCount;
+	RunSave->CurrentShopOfferIDs = CurrentMarketOfferIDs;
+	RunSave->LockedShopOfferIDs = LockedMarketOfferIDs;
+	RunSave->ShopRerollCount = MarketRerollCount;
 	RunSave->CircusBuybackItemIDs = BuybackItemIDs;
 	RunSave->CircusDebt = CircusDebt;
 	RunSave->CircusAnger01 = CircusAnger01;
-	RunSave->CircusVendorRerollCount = VendorRerollCount;
+	RunSave->CircusMarketRerollCount = MarketRerollCount;
 }
 
-void UT66MiniCircusSubsystem::PrimeVendorOffers(const UT66MiniDataSubsystem* DataSubsystem)
+void UT66MiniCircusSubsystem::PrimeMarketOffers(const UT66MiniDataSubsystem* DataSubsystem)
 {
-	if (CurrentVendorOfferIDs.Num() == 0)
+	if (CurrentMarketOfferIDs.Num() == 0)
 	{
-		GenerateVendorOffers(DataSubsystem, false);
+		GenerateMarketOffers(DataSubsystem, false);
 	}
 }
 
-void UT66MiniCircusSubsystem::ToggleVendorOfferLock(const FName ItemID)
+void UT66MiniCircusSubsystem::ToggleMarketOfferLock(const FName ItemID)
 {
-	if (ItemID == NAME_None || !CurrentVendorOfferIDs.Contains(ItemID))
+	if (ItemID == NAME_None || !CurrentMarketOfferIDs.Contains(ItemID))
 	{
 		return;
 	}
 
-	if (LockedVendorOfferIDs.Contains(ItemID))
+	if (LockedMarketOfferIDs.Contains(ItemID))
 	{
-		LockedVendorOfferIDs.Remove(ItemID);
+		LockedMarketOfferIDs.Remove(ItemID);
 	}
 	else
 	{
-		LockedVendorOfferIDs.Add(ItemID);
+		LockedMarketOfferIDs.Add(ItemID);
 	}
 }
 
-bool UT66MiniCircusSubsystem::IsVendorOfferLocked(const FName ItemID) const
+bool UT66MiniCircusSubsystem::IsMarketOfferLocked(const FName ItemID) const
 {
-	return LockedVendorOfferIDs.Contains(ItemID);
+	return LockedMarketOfferIDs.Contains(ItemID);
 }
 
 bool UT66MiniCircusSubsystem::TryBuyOffer(UT66MiniRunSaveGame* ActiveRun, const UT66MiniDataSubsystem* DataSubsystem, const FName ItemID, FString& OutResult)
@@ -137,9 +149,9 @@ bool UT66MiniCircusSubsystem::TryBuyOffer(UT66MiniRunSaveGame* ActiveRun, const 
 
 	ActiveRun->Gold -= ItemDefinition->BaseBuyGold;
 	ActiveRun->OwnedItemIDs.Add(ItemID);
-	CurrentVendorOfferIDs.Remove(ItemID);
-	LockedVendorOfferIDs.Remove(ItemID);
-	GenerateVendorOffers(DataSubsystem, false);
+	CurrentMarketOfferIDs.Remove(ItemID);
+	LockedMarketOfferIDs.Remove(ItemID);
+	GenerateMarketOffers(DataSubsystem, false);
 	OutResult = FString::Printf(TEXT("%s purchased from the mini circus."), *ItemID.ToString());
 	return true;
 }
@@ -155,27 +167,27 @@ bool UT66MiniCircusSubsystem::TryStealOffer(UT66MiniRunSaveGame* ActiveRun, cons
 
 	const int32 StealSupport = CalculateStealSupportBonus(ActiveRun, DataSubsystem);
 	const float SuccessChance = FMath::Clamp(
-		T66MiniCircusTuning(DataSubsystem, TEXT("StealBaseChance"), 0.18f)
-			+ (StealSupport * T66MiniCircusTuning(DataSubsystem, TEXT("StealSupportChance"), 0.05f))
-			- (CircusAnger01 * T66MiniCircusTuning(DataSubsystem, TEXT("StealAngerPenalty"), 0.22f)),
-		T66MiniCircusTuning(DataSubsystem, TEXT("StealMinChance"), 0.08f),
-		T66MiniCircusTuning(DataSubsystem, TEXT("StealMaxChance"), 0.72f));
+		T66MiniCircusTuning(DataSubsystem, TEXT("StealBaseChance"))
+			+ (StealSupport * T66MiniCircusTuning(DataSubsystem, TEXT("StealSupportChance")))
+			- (CircusAnger01 * T66MiniCircusTuning(DataSubsystem, TEXT("StealAngerPenalty"))),
+		T66MiniCircusTuning(DataSubsystem, TEXT("StealMinChance")),
+		T66MiniCircusTuning(DataSubsystem, TEXT("StealMaxChance")));
 	const bool bSuccess = FMath::FRand() <= SuccessChance;
-	AddAnger(bSuccess ? T66MiniCircusTuning(DataSubsystem, TEXT("StealSuccessAnger"), 0.16f) : T66MiniCircusTuning(DataSubsystem, TEXT("StealFailAnger"), 0.30f));
+	AddAnger(bSuccess ? T66MiniCircusTuning(DataSubsystem, TEXT("StealSuccessAnger")) : T66MiniCircusTuning(DataSubsystem, TEXT("StealFailAnger")));
 
 	if (bSuccess)
 	{
 		ActiveRun->OwnedItemIDs.Add(ItemID);
-		CurrentVendorOfferIDs.Remove(ItemID);
-		LockedVendorOfferIDs.Remove(ItemID);
-		GenerateVendorOffers(DataSubsystem, false);
+		CurrentMarketOfferIDs.Remove(ItemID);
+		LockedMarketOfferIDs.Remove(ItemID);
+		GenerateMarketOffers(DataSubsystem, false);
 		OutResult = FString::Printf(TEXT("Steal succeeded. %s was lifted cleanly."), *ItemID.ToString());
 	}
 	else
 	{
 		CircusDebt += FMath::Max(
-			T66MiniCircusTuningInt(DataSubsystem, TEXT("StealFailDebtMin"), 8),
-			ItemDefinition->BaseSellGold + T66MiniCircusTuningInt(DataSubsystem, TEXT("StealFailDebtFlat"), 6));
+			T66MiniCircusTuningInt(DataSubsystem, TEXT("StealFailDebtMin")),
+			ItemDefinition->BaseSellGold + T66MiniCircusTuningInt(DataSubsystem, TEXT("StealFailDebtFlat")));
 		OutResult = FString::Printf(TEXT("Steal failed. The circus marked you and added debt."));
 	}
 
@@ -213,7 +225,7 @@ bool UT66MiniCircusSubsystem::TryBuybackItem(UT66MiniRunSaveGame* ActiveRun, con
 		return false;
 	}
 
-	const int32 BuybackCost = FMath::Max(T66MiniCircusTuningInt(DataSubsystem, TEXT("BuybackMinCost"), 1), ItemDefinition->BaseSellGold);
+	const int32 BuybackCost = FMath::Max(T66MiniCircusTuningInt(DataSubsystem, TEXT("BuybackMinCost")), ItemDefinition->BaseSellGold);
 	if (ActiveRun->Gold < BuybackCost)
 	{
 		OutResult = TEXT("Not enough gold to buy back that item.");
@@ -227,7 +239,7 @@ bool UT66MiniCircusSubsystem::TryBuybackItem(UT66MiniRunSaveGame* ActiveRun, con
 	return true;
 }
 
-bool UT66MiniCircusSubsystem::TryRerollVendor(UT66MiniRunSaveGame* ActiveRun, const UT66MiniDataSubsystem* DataSubsystem, FString& OutResult)
+bool UT66MiniCircusSubsystem::TryRerollMarket(UT66MiniRunSaveGame* ActiveRun, const UT66MiniDataSubsystem* DataSubsystem, FString& OutResult)
 {
 	if (!ActiveRun || !DataSubsystem)
 	{
@@ -235,18 +247,18 @@ bool UT66MiniCircusSubsystem::TryRerollVendor(UT66MiniRunSaveGame* ActiveRun, co
 		return false;
 	}
 
-	const int32 RerollCost = T66MiniCircusTuningInt(DataSubsystem, TEXT("VendorRerollBaseCost"), 12)
-		+ (VendorRerollCount * T66MiniCircusTuningInt(DataSubsystem, TEXT("VendorRerollCostPerReroll"), 6));
+	const int32 RerollCost = T66MiniCircusTuningInt(DataSubsystem, TEXT("MarketRerollBaseCost"))
+		+ (MarketRerollCount * T66MiniCircusTuningInt(DataSubsystem, TEXT("MarketRerollCostPerReroll")));
 	if (ActiveRun->Gold < RerollCost)
 	{
-		OutResult = TEXT("Not enough gold to reroll the circus vendor.");
+		OutResult = TEXT("Not enough gold to reroll the circus market.");
 		return false;
 	}
 
 	ActiveRun->Gold -= RerollCost;
-	AddAnger(T66MiniCircusTuning(DataSubsystem, TEXT("VendorRerollAnger"), 0.08f));
-	GenerateVendorOffers(DataSubsystem, true);
-	OutResult = FString::Printf(TEXT("Circus vendor rerolled for %d gold."), RerollCost);
+	AddAnger(T66MiniCircusTuning(DataSubsystem, TEXT("MarketRerollAnger")));
+	GenerateMarketOffers(DataSubsystem, true);
+	OutResult = FString::Printf(TEXT("Circus market rerolled for %d gold."), RerollCost);
 	HandleBacklash(ActiveRun, OutResult);
 	return true;
 }
@@ -263,9 +275,9 @@ bool UT66MiniCircusSubsystem::TryBorrowGold(UT66MiniRunSaveGame* ActiveRun, cons
 	UGameInstance* GameInstance = GetGameInstance();
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
 	CircusDebt += Amount + FMath::Max(
-		T66MiniCircusTuningInt(DataSubsystem, TEXT("BorrowDebtFlatMin"), 6),
-		Amount / FMath::Max(1, T66MiniCircusTuningInt(DataSubsystem, TEXT("BorrowDebtDivisor"), 4)));
-	AddAnger(T66MiniCircusTuning(DataSubsystem, TEXT("BorrowAnger"), 0.05f));
+		T66MiniCircusTuningInt(DataSubsystem, TEXT("BorrowDebtFlatMin")),
+		Amount / FMath::Max(1, T66MiniCircusTuningInt(DataSubsystem, TEXT("BorrowDebtDivisor"))));
+	AddAnger(T66MiniCircusTuning(DataSubsystem, TEXT("BorrowAnger")));
 	OutResult = FString::Printf(TEXT("Borrowed %d gold. The circus ledger got heavier."), Amount);
 	return true;
 }
@@ -280,7 +292,7 @@ bool UT66MiniCircusSubsystem::TryPayDebt(UT66MiniRunSaveGame* ActiveRun, const i
 
 	UGameInstance* GameInstance = GetGameInstance();
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
-	const int32 Payment = FMath::Min3(FMath::Max(T66MiniCircusTuningInt(DataSubsystem, TEXT("PayDebtMinPayment"), 1), Amount), ActiveRun->Gold, CircusDebt);
+	const int32 Payment = FMath::Min3(FMath::Max(T66MiniCircusTuningInt(DataSubsystem, TEXT("PayDebtMinPayment")), Amount), ActiveRun->Gold, CircusDebt);
 	if (Payment <= 0)
 	{
 		OutResult = TEXT("Not enough gold to pay down debt.");
@@ -289,7 +301,7 @@ bool UT66MiniCircusSubsystem::TryPayDebt(UT66MiniRunSaveGame* ActiveRun, const i
 
 	ActiveRun->Gold -= Payment;
 	CircusDebt -= Payment;
-	CircusAnger01 = FMath::Max(0.f, CircusAnger01 - T66MiniCircusTuning(DataSubsystem, TEXT("PayDebtAngerReduction"), 0.08f));
+	CircusAnger01 = FMath::Max(0.f, CircusAnger01 - T66MiniCircusTuning(DataSubsystem, TEXT("PayDebtAngerReduction")));
 	OutResult = FString::Printf(TEXT("Paid %d gold toward circus debt."), Payment);
 	return true;
 }
@@ -411,15 +423,15 @@ bool UT66MiniCircusSubsystem::TryPlayGame(const FName GameID, UT66MiniRunSaveGam
 		AddAnger(GameDefinition->AngerAdd);
 		const float Roll = FMath::FRand();
 		const float Multiplier =
-			Roll < T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoMissThreshold"), 0.18f)
+			Roll < T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoMissThreshold"))
 			? 0.0f
-			: (Roll < T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoLowThreshold"), 0.48f)
-				? T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoLowMultiplier"), 0.5f)
-				: (Roll < T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoMidThreshold"), 0.78f)
-					? T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoMidMultiplier"), 1.2f)
-					: (Roll < T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoHighThreshold"), 0.94f)
-						? T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoHighMultiplier"), 2.2f)
-						: T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoJackpotMultiplier"), 4.5f))));
+			: (Roll < T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoLowThreshold"))
+				? T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoLowMultiplier"))
+				: (Roll < T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoMidThreshold"))
+					? T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoMidMultiplier"))
+					: (Roll < T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoHighThreshold"))
+						? T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoHighMultiplier"))
+						: T66MiniCircusTuning(DataSubsystem, TEXT("PlinkoJackpotMultiplier")))));
 		const int32 Payout = FMath::RoundToInt(Bet * Multiplier);
 		ActiveRun->Gold += Payout;
 		OutResult = FString::Printf(TEXT("Plinko returned %d gold."), Payout);
@@ -469,7 +481,7 @@ bool UT66MiniCircusSubsystem::TryAlchemyTransmute(UT66MiniRunSaveGame* ActiveRun
 	const int32 PickedIndex = FMath::RandRange(0, DataSubsystem->GetItems().Num() - 1);
 	const FName RewardItem = DataSubsystem->GetItems()[PickedIndex].ItemID;
 	ActiveRun->OwnedItemIDs.Add(RewardItem);
-	AddAnger(T66MiniCircusTuning(DataSubsystem, TEXT("AlchemyTransmuteAnger"), 0.06f));
+	AddAnger(T66MiniCircusTuning(DataSubsystem, TEXT("AlchemyTransmuteAnger")));
 	OutResult = FString::Printf(TEXT("Alchemy fused %s and %s into %s."), *FirstItem.ToString(), *SecondItem.ToString(), *RewardItem.ToString());
 	HandleBacklash(ActiveRun, OutResult);
 	return true;
@@ -487,11 +499,11 @@ bool UT66MiniCircusSubsystem::TryAlchemyDissolveOldest(UT66MiniRunSaveGame* Acti
 	const FT66MiniItemDefinition* ItemDefinition = DataSubsystem->FindItem(ItemID);
 	ActiveRun->OwnedItemIDs.RemoveAt(0);
 	const int32 Value = ItemDefinition
-		? FMath::Max(T66MiniCircusTuningInt(DataSubsystem, TEXT("AlchemyDissolveMinValue"), 4), ItemDefinition->BaseSellGold)
-		: T66MiniCircusTuningInt(DataSubsystem, TEXT("AlchemyDissolveFallbackValue"), 8);
+		? FMath::Max(T66MiniCircusTuningInt(DataSubsystem, TEXT("AlchemyDissolveMinValue")), ItemDefinition->BaseSellGold)
+		: T66MiniCircusTuningInt(DataSubsystem, TEXT("AlchemyDissolveFallbackValue"));
 	if (CircusDebt > 0)
 	{
-		const int32 DebtBurn = Value * T66MiniCircusTuningInt(DataSubsystem, TEXT("AlchemyDebtBurnMultiplier"), 2);
+		const int32 DebtBurn = Value * T66MiniCircusTuningInt(DataSubsystem, TEXT("AlchemyDebtBurnMultiplier"));
 		CircusDebt = FMath::Max(0, CircusDebt - DebtBurn);
 		OutResult = FString::Printf(TEXT("Alchemy dissolved %s and burned away %d debt."), *ItemID.ToString(), DebtBurn);
 	}
@@ -501,22 +513,22 @@ bool UT66MiniCircusSubsystem::TryAlchemyDissolveOldest(UT66MiniRunSaveGame* Acti
 		OutResult = FString::Printf(TEXT("Alchemy dissolved %s into %d gold."), *ItemID.ToString(), Value);
 	}
 
-	AddAnger(T66MiniCircusTuning(DataSubsystem, TEXT("AlchemyDissolveAnger"), 0.04f));
+	AddAnger(T66MiniCircusTuning(DataSubsystem, TEXT("AlchemyDissolveAnger")));
 	return true;
 }
 
-void UT66MiniCircusSubsystem::GenerateVendorOffers(const UT66MiniDataSubsystem* DataSubsystem, const bool bCountAsReroll)
+void UT66MiniCircusSubsystem::GenerateMarketOffers(const UT66MiniDataSubsystem* DataSubsystem, const bool bCountAsReroll)
 {
 	TArray<FName> PreservedLockedOffers;
-	for (const FName LockedID : LockedVendorOfferIDs)
+	for (const FName LockedID : LockedMarketOfferIDs)
 	{
-		if (CurrentVendorOfferIDs.Contains(LockedID))
+		if (CurrentMarketOfferIDs.Contains(LockedID))
 		{
 			PreservedLockedOffers.Add(LockedID);
 		}
 	}
 
-	CurrentVendorOfferIDs = PreservedLockedOffers;
+	CurrentMarketOfferIDs = PreservedLockedOffers;
 	if (!DataSubsystem || DataSubsystem->GetItems().Num() == 0)
 	{
 		return;
@@ -524,30 +536,30 @@ void UT66MiniCircusSubsystem::GenerateVendorOffers(const UT66MiniDataSubsystem* 
 
 	if (bCountAsReroll)
 	{
-		++VendorRerollCount;
+		++MarketRerollCount;
 	}
 
 	TArray<int32> CandidateIndices;
 	CandidateIndices.Reserve(DataSubsystem->GetItems().Num());
 	for (int32 Index = 0; Index < DataSubsystem->GetItems().Num(); ++Index)
 	{
-		if (!CurrentVendorOfferIDs.Contains(DataSubsystem->GetItems()[Index].ItemID))
+		if (!CurrentMarketOfferIDs.Contains(DataSubsystem->GetItems()[Index].ItemID))
 		{
 			CandidateIndices.Add(Index);
 		}
 	}
 
-	FRandomStream Stream(static_cast<int32>(FDateTime::UtcNow().GetTicks() ^ VendorRerollCount ^ CandidateIndices.Num()));
+	FRandomStream Stream(static_cast<int32>(FDateTime::UtcNow().GetTicks() ^ MarketRerollCount ^ CandidateIndices.Num()));
 	for (int32 Index = CandidateIndices.Num() - 1; Index > 0; --Index)
 	{
 		CandidateIndices.Swap(Index, Stream.RandRange(0, Index));
 	}
 
-	const int32 OfferCount = FMath::Max(0, T66MiniCircusTuningInt(DataSubsystem, TEXT("VendorOfferCount"), 4));
-	while (CurrentVendorOfferIDs.Num() < OfferCount && CandidateIndices.Num() > 0)
+	const int32 OfferCount = FMath::Max(0, T66MiniCircusTuningInt(DataSubsystem, TEXT("MarketOfferCount")));
+	while (CurrentMarketOfferIDs.Num() < OfferCount && CandidateIndices.Num() > 0)
 	{
 		const int32 PickedIndex = CandidateIndices.Pop(EAllowShrinking::No);
-		CurrentVendorOfferIDs.Add(DataSubsystem->GetItems()[PickedIndex].ItemID);
+		CurrentMarketOfferIDs.Add(DataSubsystem->GetItems()[PickedIndex].ItemID);
 	}
 }
 
@@ -555,21 +567,21 @@ void UT66MiniCircusSubsystem::AddAnger(const float Amount)
 {
 	UGameInstance* GameInstance = GetGameInstance();
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
-	CircusAnger01 = FMath::Clamp(CircusAnger01 + Amount, 0.f, T66MiniCircusTuning(DataSubsystem, TEXT("AngerMax"), 1.5f));
+	CircusAnger01 = FMath::Clamp(CircusAnger01 + Amount, 0.f, T66MiniCircusTuning(DataSubsystem, TEXT("AngerMax")));
 }
 
 void UT66MiniCircusSubsystem::HandleBacklash(UT66MiniRunSaveGame* ActiveRun, FString& InOutResult)
 {
 	UGameInstance* GameInstance = GetGameInstance();
 	const UT66MiniDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66MiniDataSubsystem>() : nullptr;
-	if (!ActiveRun || CircusAnger01 < T66MiniCircusTuning(DataSubsystem, TEXT("BacklashThreshold"), 1.f))
+	if (!ActiveRun || CircusAnger01 < T66MiniCircusTuning(DataSubsystem, TEXT("BacklashThreshold")))
 	{
 		return;
 	}
 
-	CircusAnger01 = T66MiniCircusTuning(DataSubsystem, TEXT("BacklashResetAnger"), 0.35f);
-	CircusDebt += T66MiniCircusTuningInt(DataSubsystem, TEXT("BacklashDebtAdd"), 28);
-	const int32 SeizedGold = FMath::Min(T66MiniCircusTuningInt(DataSubsystem, TEXT("BacklashGoldSeizeMax"), 20), ActiveRun->Gold);
+	CircusAnger01 = T66MiniCircusTuning(DataSubsystem, TEXT("BacklashResetAnger"));
+	CircusDebt += T66MiniCircusTuningInt(DataSubsystem, TEXT("BacklashDebtAdd"));
+	const int32 SeizedGold = FMath::Min(T66MiniCircusTuningInt(DataSubsystem, TEXT("BacklashGoldSeizeMax")), ActiveRun->Gold);
 	ActiveRun->Gold -= SeizedGold;
 	InOutResult += FString::Printf(TEXT(" The circus snapped back, seized %d gold, and added debt."), SeizedGold);
 }

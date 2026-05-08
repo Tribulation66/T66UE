@@ -7,12 +7,12 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "Engine/Texture2D.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
-#include "Engine/Texture2D.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
@@ -48,7 +48,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/HeroGrid/Panels/herogrid_panels_inner_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("HeroGridModalShell"));
 	}
@@ -60,12 +60,12 @@ namespace
 		return bSelected
 			? ResolveHeroGridBrush(
 				Selected,
-				TEXT("SourceAssets/UI/Reference/Modals/HeroGrid/Panels/herogrid_panels_inner_panel_normal.png"),
+				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_selected.png"),
 				FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 				TEXT("HeroGridTileSelected"))
 			: ResolveHeroGridBrush(
 				Neutral,
-				TEXT("SourceAssets/UI/Reference/Modals/HeroGrid/Panels/herogrid_panels_inner_panel_normal.png"),
+				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_normal.png"),
 				FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 				TEXT("HeroGridTileNeutral"));
 	}
@@ -131,7 +131,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Modals/HeroGrid/ScreenArt/herogrid_screen_art_mainmenu_main_menu_scene_plate_v1.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
 			FMargin(0.f),
 			TEXT("HeroGridSceneBackground"));
 	}
@@ -144,7 +144,7 @@ namespace
 			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
 			Padding,
 			TEXT("HeroGridModalShellV14"),
-			FT66Style::Tokens::Panel);
+			FLinearColor(0.010f, 0.012f, 0.018f, 0.98f));
 	}
 
 	TSharedRef<SWidget> MakeHeroGridTextButton(const FT66ButtonParams& Params)

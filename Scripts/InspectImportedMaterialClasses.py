@@ -8,11 +8,6 @@ import unreal
 
 
 ROOTS = [
-    "/Game/World/Props/Tree2",
-    "/Game/World/Props/Rock",
-    "/Game/World/Props/Grass",
-    "/Game/World/Props/Bush",
-    "/Game/World/Props/Boulder",
     "/Game/World/Interactables/Fountain",
     "/Game/World/LootBags/Black",
 ]

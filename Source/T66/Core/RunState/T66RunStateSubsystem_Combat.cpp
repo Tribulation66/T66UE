@@ -701,7 +701,6 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 				const int32 CounterDmg = FMath::Max(1, FMath::RoundToInt(static_cast<float>(DamageHP) * 0.5f));
 				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker)) { if (E->CurrentHP > 0) E->TakeDamageFromHero(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
 				else if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Attacker)) { if (GB->CurrentHP > 0) GB->TakeDamageFromHeroHit(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
-				else if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(Attacker)) { if (VB->CurrentHP > 0) VB->TakeDamageFromHeroHit(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
 				else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker)) { if (B->IsAwakened() && B->IsAlive()) B->TakeDamageFromHeroHit(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
 				if (UT66FloatingCombatTextSubsystem* FloatingText = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
 				{
@@ -742,10 +741,6 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 			else if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Attacker))
 			{
 				if (GB->CurrentHP > 0) GB->TakeDamageFromHeroHit(ReflectedAmount, FName(TEXT("Reflect")), NAME_None);
-			}
-			else if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(Attacker))
-			{
-				if (VB->CurrentHP > 0) VB->TakeDamageFromHeroHit(ReflectedAmount, FName(TEXT("Reflect")), NAME_None);
 			}
 			else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker))
 			{

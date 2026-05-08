@@ -28,6 +28,14 @@ namespace
 
 	FString GetChromeSlicePath(const TCHAR* FileName)
 	{
+		const FString Relative(FileName ? FileName : TEXT(""));
+		if (Relative.StartsWith(TEXT("Buttons/"), ESearchCase::IgnoreCase)
+			|| Relative.StartsWith(TEXT("Controls/"), ESearchCase::IgnoreCase)
+			|| Relative.StartsWith(TEXT("Panels/"), ESearchCase::IgnoreCase)
+			|| Relative.StartsWith(TEXT("Slots/"), ESearchCase::IgnoreCase))
+		{
+			return FPaths::ProjectDir() / T66ScreenSlateHelpers::MakeReferenceSharedAssetPath(FileName);
+		}
 		return GetChromeSliceDir() / FileName;
 	}
 

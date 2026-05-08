@@ -38,10 +38,14 @@ git checkout "${LOCKED_COMMIT}"
 git submodule update --init --recursive
 
 if ! conda env list | awk '{print $1}' | grep -qx "${ENV_NAME}"; then
-  conda create -y -n "${ENV_NAME}" python=3.10
+  conda create -y -n "${ENV_NAME}" python=3.10 pip
 fi
 
 conda activate "${ENV_NAME}"
+
+if ! python -m pip --version >/dev/null 2>&1; then
+  conda install -y pip
+fi
 
 python -m pip install --upgrade pip
 python -m pip install --index-url https://download.pytorch.org/whl/cu124 torch==2.6.0 torchvision==0.21.0

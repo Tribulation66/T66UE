@@ -16,6 +16,7 @@ public:
 	AT66ArcadeTruckInteractable();
 
 	const FT66ArcadeInteractableData& GetArcadeData() const { return ResolvedArcadeData; }
+	void SetArcadeRowID(FName InArcadeRowID);
 
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;

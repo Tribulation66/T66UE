@@ -57,6 +57,9 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> TrailComponent = nullptr;
 
-	UNiagaraSystem* CachedTrailSystem = nullptr;
-	UNiagaraSystem* CachedImpactSystem = nullptr;
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> CachedTrailSystem = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> CachedImpactSystem = nullptr;
 };

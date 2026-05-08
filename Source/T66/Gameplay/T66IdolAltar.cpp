@@ -48,7 +48,7 @@ AT66IdolAltar::AT66IdolAltar()
 	}
 
 	// Default expected import location (safe if missing).
-	AltarMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/SM_IdolAltar.SM_IdolAltar")));
+	AltarMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/IdolAltar/IdolAltar_QuadRetro.IdolAltar_QuadRetro")));
 
 	// Pyramid-like stacking: wide base, smaller mid, smallest top.
 	// Grounded stack (bottom of base at Z=0).

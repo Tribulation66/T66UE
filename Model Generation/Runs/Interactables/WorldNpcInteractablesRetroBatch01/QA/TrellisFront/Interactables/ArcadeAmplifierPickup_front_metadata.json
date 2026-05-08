@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\Raw\\Trellis\\Interactables\\ArcadeAmplifierPickup\\ArcadeAmplifierPickup_Trellis.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Interactables\\WorldNpcInteractablesRetroBatch01\\QA\\TrellisFront\\Interactables\\ArcadeAmplifierPickup_front.png",
+  "export": null,
+  "raw_triangles": 77674,
+  "triangles_before_decimate": 77674,
+  "triangles_after_decimate": 77674,
+  "bounds": {
+    "min": [
+      -0.5008225440979004,
+      -0.321924090385437,
+      -0.5008168816566467
+    ],
+    "max": [
+      0.500730037689209,
+      0.3196038603782654,
+      0.4998704493045807
+    ],
+    "size": [
+      1.0015525817871094,
+      0.6415279507637024,
+      1.0006873607635498
+    ]
+  }
+}

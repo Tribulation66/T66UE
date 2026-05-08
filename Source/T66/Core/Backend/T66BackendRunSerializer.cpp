@@ -17,12 +17,11 @@ namespace
 		case ET66Difficulty::Medium:
 		case ET66Difficulty::Hard:
 		case ET66Difficulty::VeryHard:
-			return 4;
 		case ET66Difficulty::Impossible:
-			return 3;
 		default:
-			return 4;
+			break;
 		}
+		return 4;
 	}
 
 	int32 T66GetDifficultyStartStage(ET66Difficulty Difficulty)
@@ -30,10 +29,10 @@ namespace
 		switch (Difficulty)
 		{
 		case ET66Difficulty::Easy: return 1;
-		case ET66Difficulty::Medium: return 6;
-		case ET66Difficulty::Hard: return 11;
-		case ET66Difficulty::VeryHard: return 16;
-		case ET66Difficulty::Impossible: return 21;
+		case ET66Difficulty::Medium: return 5;
+		case ET66Difficulty::Hard: return 9;
+		case ET66Difficulty::VeryHard: return 13;
+		case ET66Difficulty::Impossible: return 17;
 		default: return 1;
 		}
 	}
@@ -56,12 +55,7 @@ namespace
 		const int32 StageStart = T66GetDifficultyStartStage(Difficulty);
 		const int32 CanonicalAbsoluteStage = StageStart + LocalStageReached - 1;
 
-		if (Difficulty != ET66Difficulty::Impossible && LocalStageReached == T66GetDifficultyStageCount(Difficulty))
-		{
-			return StageStart + 4;
-		}
-
-		if (StageReached < StageStart || StageReached > StageStart + 4)
+		if (StageReached < StageStart || StageReached > StageStart + T66GetDifficultyStageCount(Difficulty) - 1)
 		{
 			return CanonicalAbsoluteStage;
 		}

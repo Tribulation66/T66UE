@@ -17,4 +17,4 @@
 
 ## Integrator Notes
 
-The restored reference is an offline comparison target only. Vendor/gambler standalone overlays remain excluded; this tab is the casino vendor surface for this pass.
+The restored reference is an offline comparison target only. Standalone shop/gambler overlays remain excluded; this tab is the casino vendor surface for this pass.

@@ -28,7 +28,6 @@
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "UI/Style/T66Style.h"
-#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
@@ -265,10 +264,11 @@ FReply UT66GamblerOverlayWidget::OnCheatYes()
 			bCoinSpinResultHeads = bPendingCoinFlipResultHeads;
 			bCoinSpinActive = true;
 			CoinSpinElapsed = 0.f;
+			CoinSpinLastTickTimeSeconds = World ? static_cast<float>(World->GetTimeSeconds()) : 0.f;
 			if (World)
 			{
 				World->GetTimerManager().ClearTimer(CoinSpinTimerHandle);
-				World->GetTimerManager().SetTimer(CoinSpinTimerHandle, this, &UT66GamblerOverlayWidget::TickCoinSpin, 0.033f, true);
+				World->GetTimerManager().SetTimer(CoinSpinTimerHandle, this, &UT66GamblerOverlayWidget::TickCoinSpin, 1.f / 15.f, true);
 			}
 			RevealDelay = CoinSpinDuration + 0.15f; // reveal shortly after spin ends
 			break;
@@ -373,10 +373,11 @@ FReply UT66GamblerOverlayWidget::OnCheatNo()
 			bCoinSpinResultHeads = bPendingCoinFlipResultHeads;
 			bCoinSpinActive = true;
 			CoinSpinElapsed = 0.f;
+			CoinSpinLastTickTimeSeconds = World ? static_cast<float>(World->GetTimeSeconds()) : 0.f;
 			if (World)
 			{
 				World->GetTimerManager().ClearTimer(CoinSpinTimerHandle);
-				World->GetTimerManager().SetTimer(CoinSpinTimerHandle, this, &UT66GamblerOverlayWidget::TickCoinSpin, 0.033f, true);
+				World->GetTimerManager().SetTimer(CoinSpinTimerHandle, this, &UT66GamblerOverlayWidget::TickCoinSpin, 1.f / 15.f, true);
 			}
 			RevealDelay = CoinSpinDuration + 0.15f;
 			break;

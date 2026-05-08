@@ -68,5 +68,7 @@ private:
 	ET66BossAttackProfile AttackProfile = ET66BossAttackProfile::Balanced;
 	FLinearColor TelegraphColor = FLinearColor(1.f, 0.15f, 0.05f, 1.f);
 	FLinearColor ImpactColor = FLinearColor(1.f, 0.72f, 0.18f, 1.f);
-	UNiagaraSystem* CachedImpactVFX = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> CachedImpactVFX = nullptr;
 };

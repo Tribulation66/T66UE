@@ -8,24 +8,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Gameplay/T66HeroBase.h"
-#include "NiagaraFunctionLibrary.h"
-#include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
-
-static UNiagaraSystem* LoadPixelVFX_Debuff()
-{
-	static TObjectPtr<UNiagaraSystem> CachedSystem = nullptr;
-	static TObjectPtr<UNiagaraSystem> CachedFallbackSystem = nullptr;
-	if (!CachedSystem)
-	{
-		CachedSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
-	}
-	if (!CachedSystem && !CachedFallbackSystem)
-	{
-		CachedFallbackSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
-	}
-	return CachedSystem ? CachedSystem.Get() : CachedFallbackSystem.Get();
-}
 
 AT66UniqueDebuffProjectile::AT66UniqueDebuffProjectile()
 {
@@ -66,14 +49,21 @@ void AT66UniqueDebuffProjectile::BeginPlay()
 		default: break;
 	}
 
-	CachedPixelVFX = LoadPixelVFX_Debuff();
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66PixelVFXSubsystem* PixelVFX = World->GetSubsystem<UT66PixelVFXSubsystem>())
+		{
+			CachedPixelVFX = PixelVFX->GetDefaultPixelSystem();
+		}
+	}
 }
 
 void AT66UniqueDebuffProjectile::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!CachedPixelVFX || !GetWorld()) return;
+	UWorld* World = GetWorld();
+	if (!World) return;
 
 	VFXAccum += DeltaSeconds;
 	static constexpr float TrailInterval = 0.04f;
@@ -82,21 +72,23 @@ void AT66UniqueDebuffProjectile::Tick(float DeltaSeconds)
 
 	const FVector Loc = GetActorLocation();
 	static constexpr int32 TrailParticles = 2;
-	UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>();
+	UT66PixelVFXSubsystem* PixelVFX = World->GetSubsystem<UT66PixelVFXSubsystem>();
+	if (!PixelVFX) return;
+	if (!CachedPixelVFX)
+	{
+		CachedPixelVFX = PixelVFX->GetDefaultPixelSystem();
+	}
 	for (int32 i = 0; i < TrailParticles; ++i)
 	{
 		const FVector Jitter(FMath::FRandRange(-6.f, 6.f), FMath::FRandRange(-6.f, 6.f), FMath::FRandRange(-6.f, 6.f));
-		if (PixelVFX)
-		{
-			PixelVFX->SpawnPixelAtLocation(
-				Loc + Jitter,
-				TrailColor,
-				FVector2D(3.0f, 3.0f),
-				ET66PixelVFXPriority::Low,
-				FRotator::ZeroRotator,
-				FVector(1.f),
-				CachedPixelVFX);
-		}
+		PixelVFX->SpawnPixelAtLocation(
+			Loc + Jitter,
+			TrailColor,
+			FVector2D(3.0f, 3.0f),
+			ET66PixelVFXPriority::Low,
+			FRotator::ZeroRotator,
+			FVector(1.f),
+			CachedPixelVFX);
 	}
 }
 

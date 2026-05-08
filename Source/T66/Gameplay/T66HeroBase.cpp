@@ -84,6 +84,12 @@ AT66HeroBase::AT66HeroBase()
 	PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, -38.f));
 	PlaceholderMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // Capsule handles collision
 
+	StaticVisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticVisualMesh"));
+	StaticVisualMesh->SetupAttachment(RootComponent);
+	StaticVisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	StaticVisualMesh->SetVisibility(false, true);
+	StaticVisualMesh->SetHiddenInGame(true, true);
+
 	// Cache mesh assets in constructor
 	CacheMeshAssets();
 	ApplyBodyTypeDimensions(false);
@@ -472,6 +478,12 @@ void AT66HeroBase::CacheVehicleVisualDefaults()
 		DefaultSkeletalMeshRelativeRotation = Skel->GetRelativeRotation();
 	}
 
+	if (StaticVisualMesh)
+	{
+		DefaultStaticVisualRelativeLocation = StaticVisualMesh->GetRelativeLocation();
+		DefaultStaticVisualRelativeRotation = StaticVisualMesh->GetRelativeRotation();
+	}
+
 	bVehicleDefaultVisualTransformsCached = true;
 }
 
@@ -529,6 +541,12 @@ void AT66HeroBase::SetVehicleMounted(bool bMounted, AT66PilotableTractor* InMoun
 		}
 	}
 
+	if (StaticVisualMesh)
+	{
+		StaticVisualMesh->SetRelativeLocation(DefaultStaticVisualRelativeLocation + (bMounted ? VisualOffset : FVector::ZeroVector));
+		StaticVisualMesh->SetRelativeRotation(DefaultStaticVisualRelativeRotation + (bMounted ? VisualRotation : FRotator::ZeroRotator));
+	}
+
 	UpdateAttackRangeRing();
 }
 
@@ -571,6 +589,12 @@ void AT66HeroBase::SetQuickReviveDowned(bool bDowned)
 		Skel->SetRelativeLocation(DefaultSkeletalMeshRelativeLocation + (bQuickReviveDowned ? QuickReviveDownedVisualOffset : FVector::ZeroVector));
 		Skel->SetRelativeRotation(DefaultSkeletalMeshRelativeRotation + (bQuickReviveDowned ? QuickReviveDownedVisualRotation : FRotator::ZeroRotator));
 		Skel->GlobalAnimRateScale = (bQuickReviveDowned || bVehicleMounted) ? 0.f : 1.f;
+	}
+
+	if (StaticVisualMesh)
+	{
+		StaticVisualMesh->SetRelativeLocation(DefaultStaticVisualRelativeLocation + (bQuickReviveDowned ? QuickReviveDownedVisualOffset : FVector::ZeroVector));
+		StaticVisualMesh->SetRelativeRotation(DefaultStaticVisualRelativeRotation + (bQuickReviveDowned ? QuickReviveDownedVisualRotation : FRotator::ZeroRotator));
 	}
 
 	UpdateAttackRangeRing();
@@ -1003,26 +1027,32 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 			UE_LOG(LogT66Hero, Log, TEXT("[ANIM] HeroBase::InitializeHero HeroID=%s BodyStyle=%s SkinID=%s bPreviewMode=%d bUseIdleAnimation=%d VisualID=%s"),
 				*HeroID.ToString(), T66BodyTypeAliases::IsChad(InBodyType) ? TEXT("Chad") : TEXT("Stacy"), *SkinID.ToString(),
 				bPreviewMode ? 1 : 0, bUseIdleAnimation ? 1 : 0, *VisualID.ToString());
-			const bool bApplied = Visuals->ApplyCharacterVisual(VisualID, GetMesh(), PlaceholderMesh, true, bUseIdleAnimation, bPreviewMode);
+			const bool bApplied = Visuals->ApplyCharacterVisual(VisualID, GetMesh(), PlaceholderMesh, true, bUseIdleAnimation, bPreviewMode, StaticVisualMesh);
 			if (!bApplied)
 			{
 				if (GetMesh())
 				{
 					GetMesh()->SetVisibility(false, true);
 				}
+				if (StaticVisualMesh)
+				{
+					StaticVisualMesh->SetVisibility(false, true);
+					StaticVisualMesh->SetHiddenInGame(true, true);
+				}
 				if (PlaceholderMesh)
 				{
 					PlaceholderMesh->SetVisibility(true, true);
+					PlaceholderMesh->SetHiddenInGame(false, true);
 				}
 			}
 			else
 			{
-				if (GetMesh())
+				if (GetMesh() && GetMesh()->GetSkeletalMeshAsset())
 				{
 					GetMesh()->SetVisibility(true, true);
 				}
 			}
-			if (bApplied && !bPreviewMode)
+			if (bApplied && !bPreviewMode && GetMesh() && GetMesh()->GetSkeletalMeshAsset())
 			{
 				// Cache idle/walk/jump anims and init hero speed params.
 				UAnimationAsset* WalkRaw = nullptr;
@@ -1041,7 +1071,7 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 				LastMovementAnimState = EMovementAnimState::Walk;
 				if (HeroMovementComponent)
 				{
-					HeroMovementComponent->SetHeroBaseWalkSpeed(InHeroData.MaxSpeed * 2.0f);
+					HeroMovementComponent->SetHeroBaseWalkSpeed(InHeroData.MaxSpeed);
 				}
 			}
 		}

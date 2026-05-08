@@ -5,6 +5,7 @@
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HeroOneAttackVFX.h"
+#include "Gameplay/T66HeroProjectile.h"
 #include "Gameplay/T66CombatShared.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66AudioSubsystem.h"
@@ -22,6 +23,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Engine/AssetManager.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
@@ -381,7 +383,7 @@ void UT66CombatComponent::OnRangeBeginOverlap(UPrimitiveComponent* /*OverlappedC
 {
 	if (!OtherActor) return;
 
-	// Only track enemies and bosses (Gambler/Vendor are AT66BossBase).
+	// Only track enemies and bosses (Gambler/Shop are AT66BossBase).
 	if (Cast<AT66EnemyBase>(OtherActor) || Cast<AT66BossBase>(OtherActor))
 	{
 		EnemiesInRange.AddUnique(OtherActor);
@@ -1060,6 +1062,68 @@ void UT66CombatComponent::TryFire()
 	FT66CombatTargetHandle PrimaryTargetHandle;
 	TArray<AActor*> WeaponHitActors;
 	WeaponHitActors.Reserve(12);
+	UStaticMesh* ResolvedHeroProjectileMesh = nullptr;
+	bool bResolvedHeroProjectileMesh = false;
+
+	auto ResolveHeroProjectileMesh = [&]() -> UStaticMesh*
+	{
+		if (!bResolvedHeroProjectileMesh)
+		{
+			bResolvedHeroProjectileMesh = true;
+			if (bHaveHeroData && !HeroDataForPrimary.AutoAttackProjectileMesh.IsNull())
+			{
+				ResolvedHeroProjectileMesh = HeroDataForPrimary.AutoAttackProjectileMesh.LoadSynchronous();
+			}
+		}
+		return ResolvedHeroProjectileMesh;
+	};
+
+	auto SpawnWeaponProjectileVisual = [&](AActor* Target, const FName& SourceIdolID, const int32 PayloadIndex, const int32 PayloadCount)
+	{
+		if (!Target || !IsValidAutoTarget(Target))
+		{
+			return;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = OwnerActor;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		const FVector RightVector = OwnerActor->GetActorRightVector().GetSafeNormal();
+		const float CenteredIndex = static_cast<float>(PayloadIndex) - (static_cast<float>(FMath::Max(1, PayloadCount) - 1) * 0.5f);
+		const FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 48.f) + RightVector * (CenteredIndex * 34.f);
+		const FVector TargetLoc = Target->GetActorLocation() + FVector(0.f, 0.f, 36.f);
+		const FRotator SpawnRot = (TargetLoc - SpawnLoc).Rotation();
+
+		AT66HeroProjectile* Projectile = World->SpawnActor<AT66HeroProjectile>(
+			AT66HeroProjectile::StaticClass(),
+			SpawnLoc,
+			SpawnRot,
+			SpawnParams);
+		if (!Projectile)
+		{
+			return;
+		}
+
+		Projectile->SetVisualOnly(true);
+		Projectile->Damage = 0;
+		Projectile->DamageSourceID = SourceIdolID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : SourceIdolID;
+		Projectile->SetTintColor(bHaveHeroData ? HeroDataForPrimary.PlaceholderColor : FLinearColor::White);
+		Projectile->SetScaleMultiplier(ProjectileScaleMultiplier * (SourceIdolID.IsNone() ? 1.f : 0.86f));
+		if (bHaveHeroData && HeroDataForPrimary.ProjectileSpeed > 0.f)
+		{
+			Projectile->SetProjectileSpeed(HeroDataForPrimary.ProjectileSpeed);
+		}
+		if (UStaticMesh* ProjectileMesh = ResolveHeroProjectileMesh())
+		{
+			Projectile->SetProjectileMesh(ProjectileMesh);
+		}
+		if (!SourceIdolID.IsNone())
+		{
+			Projectile->SetTrailVFX(GetActiveVFXSystem(), UT66IdolManagerSubsystem::GetIdolColor(SourceIdolID));
+		}
+		Projectile->SetTargetActor(Target);
+	};
 
 	// --- Pierce (straight line): full range so enemies behind the first are hit; 10% damage reduction per pierced target. ---
 	auto PerformPierce = [&](AActor* PrimaryTarget, float PrimaryDamageMult) -> bool
@@ -1748,6 +1812,31 @@ void UT66CombatComponent::TryFire()
 		? ResolveAutoAttackTargetHandle(PrimaryTarget, LockedTarget.Actor.Get() == PrimaryTarget, RngSub)
 		: FT66CombatTargetHandle{};
 
+	if (PrimaryTarget)
+	{
+		int32 VisualPayloadCount = 1;
+		for (const FCachedIdolSlot& CachedIdolSlot : CachedIdolSlots)
+		{
+			if (CachedIdolSlot.bValid && !CachedIdolSlot.IdolID.IsNone())
+			{
+				++VisualPayloadCount;
+			}
+		}
+
+		SpawnWeaponProjectileVisual(PrimaryTarget, NAME_None, 0, VisualPayloadCount);
+		int32 VisualPayloadIndex = 1;
+		for (const FCachedIdolSlot& CachedIdolSlot : CachedIdolSlots)
+		{
+			if (!CachedIdolSlot.bValid || CachedIdolSlot.IdolID.IsNone())
+			{
+				continue;
+			}
+
+			SpawnWeaponProjectileVisual(PrimaryTarget, CachedIdolSlot.IdolID, VisualPayloadIndex, VisualPayloadCount);
+			++VisualPayloadIndex;
+		}
+	}
+
 	// Marksman's Focus: consecutive hits on same target stack +8% damage (max 5).
 	float PrimaryDamageMultiplier = 1.f;
 	if (CachedRunState && CachedRunState->GetPassiveType() == ET66PassiveType::MarksmanFocus && PrimaryTarget)
@@ -1819,7 +1908,7 @@ void UT66CombatComponent::TryFire()
 			SpawnDOTVFX(PrimaryTarget->GetActorLocation(), 2.f, 50.f, FLinearColor(0.9f, 0.3f, 0.1f));
 		}
 
-		// Idol load modifiers: idols now ride on the weapon payload instead of firing independent attacks.
+		// Idol payloads: each equipped idol adds a second visual projectile lane and applies its existing data-authored effect to the weapon hits.
 		if (CachedRunState)
 		{
 			if (WeaponHitActors.Num() == 0 && PrimaryTarget)
@@ -1905,7 +1994,7 @@ void UT66CombatComponent::TryFire()
 			}
 		}
 
-		// Legacy independent idol attacks are intentionally disabled; idols now modify the weapon load.
+		// Legacy independent idol attacks are intentionally disabled; the current contract is weapon payload + idol overlays.
 		if (false && CachedRunState)
 		{
 			const float IdolRange = AttackRange;

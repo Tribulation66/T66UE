@@ -1,24 +1,27 @@
 # Screen Workflow
 
-The authoritative process is `C:\UE\T66\Docs\UI\UI_GENERATION.md`.
+The active prompt is `C:\UE\T66\UI\MASTER_REFERENCE_UI_GENERATION_PROMPT.md`. Treat this file as a short checklist only; the master prompt carries the full execution contract.
 
-Use this file as a quick checklist:
+1. Copy the full master prompt into the target chat and fill in every target field.
+2. Confirm the exact reference image, target source files, capture script, and staged standalone executable exist before imagegen or edits.
+3. Work only on the named target and state. Keep shared top bars and sibling states out of scope unless the prompt explicitly includes them.
+4. Archive active generated runtime assets for the target before starting fresh. Never delete reference screenshots.
+5. Generate a reference-derived text-free sprite/component sheet with built-in imagegen only. API keys, SDK fallback scripts, and inline-preview excuses are not part of this workflow.
+6. Run the sprite sheet quality gate before slicing or assembly. If the sheet does not match the reference art family, reject it and generate another sheet.
+7. Build a 1920x1080 hierarchy and containment map from the reference before assembly. Every card, panel, row, button, slot, and child control must fit inside its intended parent. If a child overflows, fix the hierarchy size or placement instead of accepting the overflow.
+8. Store accepted runtime assets under the target folder in `C:\UE\T66\SourceAssets\UI\Reference\Screens` or `C:\UE\T66\SourceAssets\UI\Reference\Modals`.
+9. Implement each component with an explicit resize contract: fixed image, horizontal 3-slice, vertical 3-slice, 9-slice, or intentional tiled fill.
+10. Preserve the anti-squish button path: sliced plate renderer, nearest filtering, live text, and minimum width clamp.
+11. Keep labels, names, values, scores, avatars, selections, and runtime state live.
+12. Use a normal Unreal build only when C++ changes require it. Do not run UAT/full stage/cook/package for individual target iteration.
+13. Capture the working screen from the staged standalone executable, compare against the reference, write the difference list, fix the highest-impact difference, and repeat until the owned UI matches.
 
-1. Open the target prompt from `C:\UE\T66\UI\Reference\PROMPT_INDEX.md`.
-2. Work only on that screen or modal unless the user explicitly expands scope.
-3. Use image generation to create enough text-free sprite sheets and tight transparent component PNGs for missing UI chrome.
-4. Store accepted runtime assets under the target folder in `C:\UE\T66\SourceAssets\UI\Reference\Screens` or `C:\UE\T66\SourceAssets\UI\Reference\Modals`.
-5. Duplicate and rename reused assets into the current target folder before routing code to them.
-6. Implement each component with an explicit resize contract: fixed image, horizontal 3-slice, vertical 3-slice, 9-slice, or intentional tiled fill.
-7. Preserve the anti-squish button path: sliced plate renderer, nearest filtering, live text, and minimum width clamp.
-8. Keep labels, names, values, scores, avatars, selections, and runtime state live.
-9. Stage new runtime assets and capture the packaged screen.
-10. Compare packaged capture against the reference, write the difference list, fix the highest-impact difference, and repeat.
-
-Capture command pattern:
+Working capture command pattern:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File C:\UE\T66\Scripts\CaptureT66UIScreen.ps1 -Screen <ScreenKey> -ResX 1920 -ResY 1080 -Output C:\UE\T66\UI\Reference\Screens\<ScreenName>\Proof\<capture_name>.png
+powershell -ExecutionPolicy Bypass -File C:\UE\T66\Scripts\CaptureT66UIScreen.ps1 -Exe C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe -Screen <ScreenKey> -ResX 1920 -ResY 1080 -Output C:\UE\T66\UI\Reference\Screens\<ScreenName>\Proof\<capture_name>.png
 ```
 
-Do not manually pixel-edit generated UI art with Pillow/PIL or equivalent tools. Bad generated art routes back to image generation. Bad runtime proportions route to the resize contract.
+If the capture script times out, it now checks the cooked sandbox mirror for the requested output path and copies the screenshot back when Unreal wrote it there first.
+
+Do not manually pixel-edit generated UI art with Pillow/PIL or equivalent tools. Bad generated art routes back to imagegen. Bad runtime proportions route to the resize contract and containment map.

@@ -20,12 +20,6 @@ void UT66GameplayHUDWidget::HideAchievementNotificationAndShowNext()
 }
 
 
-void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
-{
-	GetPresentationController().StartWheelSpin(WheelRarity);
-}
-
-
 void UT66GameplayHUDWidget::StartCrateOpen()
 {
 	GetPresentationController().StartCrateOpen();
@@ -47,24 +41,6 @@ bool UT66GameplayHUDWidget::TrySkipActivePresentation()
 void UT66GameplayHUDWidget::ClearActiveCratePresentation(UT66CrateOverlayWidget* Overlay)
 {
 	GetPresentationController().ClearActiveCratePresentation(Overlay);
-}
-
-
-void UT66GameplayHUDWidget::TickWheelSpin()
-{
-	GetPresentationController().TickWheelSpin();
-}
-
-
-void UT66GameplayHUDWidget::ResolveWheelSpin()
-{
-	GetPresentationController().ResolveWheelSpin();
-}
-
-
-void UT66GameplayHUDWidget::CloseWheelSpin()
-{
-	GetPresentationController().CloseWheelSpin();
 }
 
 

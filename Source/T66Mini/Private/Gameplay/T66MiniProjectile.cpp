@@ -79,6 +79,7 @@ AT66MiniProjectile::AT66MiniProjectile()
 	SetReplicateMovement(true);
 	SetNetUpdateFrequency(30.f);
 	SetMinNetUpdateFrequency(15.f);
+	SetNetCullDistanceSquared(FMath::Square(3600.f));
 
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	SetRootComponent(CollisionComponent);

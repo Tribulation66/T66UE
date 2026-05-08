@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Data/T66DataTypes.h"
+#include "TimerManager.h"
 #include "T66LeaderboardFilterButton.generated.h"
 
 class UButton;
@@ -67,16 +68,19 @@ public:
 
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 protected:
 	void SyncBrush();
-	void AdvanceSpriteFrame(float DeltaTime);
+	bool SyncBrushIfReady();
+	void StartSpriteAnimationTimer();
+	void StopSpriteAnimationTimer();
+	void AdvanceSpriteFrame();
 	/** Create FilterButton and IconImage at runtime and add them to the root (used when Blueprint has no children). */
 	void EnsureButtonAndImageCreated();
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> SpriteDynamicMaterial;
-	float SpriteTime = 0.0f;
+	FTimerHandle SpriteAnimationTimerHandle;
+	int32 SpriteFrameIndex = 0;
 	bool bSyncedBrushOnce = false;
 };

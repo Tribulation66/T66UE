@@ -17,7 +17,7 @@ class FDragDropEvent;
 struct FGeometry;
 struct FPointerEvent;
 class UT66GamblerOverlayWidget;
-class UT66VendorOverlayWidget;
+class UT66CasinoShopTabWidget;
 class UT66LocalizationSubsystem;
 class UT66RunStateSubsystem;
 
@@ -32,15 +32,15 @@ public:
 
 	void CloseOverlay();
 	void OpenGamblingTab();
-	void OpenVendorTab();
+	void OpenShopTab();
 	void OpenAlchemyTab();
 	void SetGamblingWinGoldAmount(int32 InAmount);
-	void SetVendorAllowsSteal(bool bInAllowsSteal);
+	void SetShopAllowsSteal(bool bInAllowsSteal);
 
 private:
 	enum class ECasinoTab : uint8
 	{
-		Vendor = 0,
+		Shop = 0,
 		Gambling = 1,
 	};
 
@@ -84,7 +84,7 @@ private:
 	TObjectPtr<UT66GamblerOverlayWidget> GamblerTabWidget;
 
 	UPROPERTY()
-	TObjectPtr<UT66VendorOverlayWidget> VendorTabWidget;
+	TObjectPtr<UT66CasinoShopTabWidget> ShopTabWidget;
 
 	TSharedPtr<SWidgetSwitcher> TabSwitcher;
 	TSharedPtr<STextBlock> HeaderTimerText;
@@ -118,9 +118,9 @@ private:
 
 	int32 AlchemyTargetInventoryIndex = INDEX_NONE;
 	int32 AlchemySacrificeInventoryIndex = INDEX_NONE;
-	ECasinoTab ActiveTab = ECasinoTab::Vendor;
+	ECasinoTab ActiveTab = ECasinoTab::Shop;
 	FText AlchemyStatusMessage;
 	FLinearColor AlchemyStatusColor = FLinearColor::White;
 	int32 PendingGamblingWinGoldAmount = 10;
-	bool bVendorAllowsSteal = true;
+	bool bShopAllowsSteal = true;
 };

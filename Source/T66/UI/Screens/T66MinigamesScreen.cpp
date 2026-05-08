@@ -8,6 +8,7 @@
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
+#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UIManager.h"
@@ -70,15 +71,15 @@ namespace
 		}
 		if (Name == TEXT("settings_content_shell_frame.png"))
 		{
-			return TEXT("SourceAssets/UI/Reference/Screens/Minigames/Panels/minigames_panels_inner_panel_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png");
 		}
 		if (Name == TEXT("settings_row_shell_full.png") || Name == TEXT("settings_row_shell_split.png"))
 		{
-			return TEXT("SourceAssets/UI/Reference/Screens/Minigames/Panels/minigames_panels_inner_panel_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/player_row_panel_normal.png");
 		}
 		if (Name == TEXT("settings_dropdown_field.png"))
 		{
-			return TEXT("SourceAssets/UI/Reference/Screens/Minigames/Controls/minigames_controls_reference_dropdown_field_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/dropdown_field_normal.png");
 		}
 
 		return FString(TEXT("SourceAssets/UI/Reference/Shared")) / Name;
@@ -89,6 +90,14 @@ namespace
 		if (SourceRelativePath.Contains(TEXT("inner_panel_normal.png")))
 		{
 			return FMargin(0.067f, 0.043f, 0.067f, 0.043f);
+		}
+		if (SourceRelativePath.Contains(TEXT("main_panel_normal.png")))
+		{
+			return FMargin(0.070f, 0.120f, 0.070f, 0.120f);
+		}
+		if (SourceRelativePath.Contains(TEXT("player_row_panel_")))
+		{
+			return FMargin(0.070f, 0.280f, 0.070f, 0.280f);
 		}
 		if (SourceRelativePath.Contains(TEXT("dropdown_field_normal.png")))
 		{
@@ -170,7 +179,23 @@ namespace
 		UTexture2D* Texture = LoadMinigamesGeneratedTexture(SourceRelativePath);
 		if (!Texture)
 		{
-			return nullptr;
+			if (!T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(SourceRelativePath))
+			{
+				return nullptr;
+			}
+
+			TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+			const FMargin BrushMargin = GetMinigamesGeneratedBrushMargin(SourceRelativePath);
+			const bool bSlicedButton = IsMinigamesSlicedButtonPath(SourceRelativePath);
+			const FVector2D ResolvedSize = ImageSize.X > 0.f && ImageSize.Y > 0.f ? ImageSize : FVector2D(1.f, 1.f);
+			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
+				*Brush,
+				SourceRelativePath,
+				ResolvedSize,
+				bSlicedButton ? FMargin(0.f) : BrushMargin,
+				bSlicedButton || IsZeroMinigamesMargin(BrushMargin) ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box);
+			GMinigamesGeneratedBrushCache.Add(BrushKey, Brush);
+			return Brush.Get();
 		}
 
 		const FVector2D ResolvedSize = ImageSize.X > 0.f && ImageSize.Y > 0.f
@@ -339,6 +364,9 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 	const FText DeckTitle = NSLOCTEXT("T66.MiniGames", "SliceDeckTitle", "CHADPOCALYPSE DECKBUILDER");
 	const FText DeckBody = NSLOCTEXT("T66.MiniGames", "SliceDeckBody", "A dungeon-descent deckbuilder with card combat, route choices, relics, and reward drafts.");
 	const FText DeckTag = NSLOCTEXT("T66.MiniGames", "SliceDeckTag", "PROTOTYPE");
+	const FText VersusTitle = NSLOCTEXT("T66.MiniGames", "SliceVersusTitle", "VERSUS");
+	const FText VersusBody = NSLOCTEXT("T66.MiniGames", "SliceVersusBody", "A 1v1 arcade gauntlet where friends compete across cabinet games like Whack-a-Mole.");
+	const FText VersusTag = NSLOCTEXT("T66.MiniGames", "SliceVersusTag", "SETUP");
 	const float TopInset = T66ScreenSlateHelpers::GetFrontendChromeTopInset(UIManager);
 
 	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
@@ -350,7 +378,8 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 	{
 		TSharedRef<SWidget> SliceContent =
 			SNew(SBox)
-			.HeightOverride(98.f)
+			.HeightOverride(106.f)
+			.Clipping(EWidgetClipping::ClipToBounds)
 			[
 				MakeMinigamesGeneratedPanel(
 					MakeSettingsAssetPath(TEXT("settings_row_shell_split.png")),
@@ -358,6 +387,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 					+ SHorizontalBox::Slot()
 					.FillWidth(1.f)
 					.VAlign(VAlign_Center)
+					.Padding(0.f, 0.f, 14.f, 0.f)
 					[
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot()
@@ -365,18 +395,22 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(Title)
-							.Font(FT66Style::Tokens::FontBold(24))
+							.Font(FT66Style::Tokens::FontBold(22))
 							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+							.Clipping(EWidgetClipping::ClipToBounds)
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
-						.Padding(0.f, 4.f, 40.f, 0.f)
+						.Padding(0.f, 4.f, 0.f, 0.f)
 						[
 							SNew(STextBlock)
 							.Text(Body)
-							.Font(FT66Style::Tokens::FontRegular(13))
+							.Font(FT66Style::Tokens::FontRegular(12))
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 							.AutoWrapText(true)
+							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+							.Clipping(EWidgetClipping::ClipToBounds)
 						]
 					]
 					+ SHorizontalBox::Slot()
@@ -385,22 +419,25 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 					.HAlign(HAlign_Right)
 					[
 						SNew(SBox)
-						.WidthOverride(280.f)
-						.HeightOverride(40.f)
+						.WidthOverride(238.f)
+						.HeightOverride(36.f)
+						.Clipping(EWidgetClipping::ClipToBounds)
 						[
 							MakeMinigamesGeneratedPanel(
 								MakeSettingsAssetPath(bClickable ? TEXT("settings_toggle_on_normal.png") : TEXT("settings_toggle_inactive_normal.png")),
 								SNew(STextBlock)
 								.Text(Tag)
-								.Font(FT66Style::Tokens::FontBold(bClickable ? 22 : 13))
+								.Font(FT66Style::Tokens::FontBold(bClickable ? 18 : 12))
 								.ColorAndOpacity(bClickable ? FLinearColor(0.99f, 0.93f, 0.74f, 1.f) : FT66Style::Tokens::TextMuted)
-								.Justification(ETextJustify::Center),
-								FMargin(18.f, 8.f),
+								.Justification(ETextJustify::Center)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+								.Clipping(EWidgetClipping::ClipToBounds),
+								FMargin(14.f, 6.f),
 								FLinearColor::White,
 								bClickable ? Accent : FLinearColor(0.18f, 0.20f, 0.24f, 1.f))
 						]
 					],
-					FMargin(24.f, 10.f),
+					FMargin(30.f, 8.f),
 					bClickable ? FLinearColor::White : FLinearColor(0.72f, 0.76f, 0.82f, 1.f),
 					FLinearColor(0.018f, 0.020f, 0.026f, 1.0f))
 			];
@@ -440,6 +477,8 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 							.Justification(ETextJustify::Center)
 							.ShadowOffset(FVector2D(0.f, 2.f))
 							.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.75f))
+							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+							.Clipping(EWidgetClipping::ClipToBounds)
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
@@ -452,7 +491,8 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 								.Font(FT66Style::Tokens::FontRegular(17))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 								.Justification(ETextJustify::Center)
-								.AutoWrapText(true),
+								.AutoWrapText(true)
+								.Clipping(EWidgetClipping::ClipToBounds),
 								FMargin(18.f, 7.f),
 								FLinearColor::White,
 								T66MinigamesInsetFill())
@@ -478,6 +518,10 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 0.f)
 							[
 								MakeSlicePanel(DeckTitle, DeckBody, DeckTag, FLinearColor(0.26f, 0.64f, 0.78f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked))
+							]
+							+ SScrollBox::Slot().Padding(0.f, 10.f, 8.f, 0.f)
+							[
+								MakeSlicePanel(VersusTitle, VersusBody, VersusTag, FLinearColor(0.30f, 0.76f, 0.94f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenVersusClicked))
 							]
 						]
 					]
@@ -568,6 +612,12 @@ FReply UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked()
 FReply UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked()
 {
 	NavigateTo(ET66ScreenType::DeckMainMenu);
+	return FReply::Handled();
+}
+
+FReply UT66MinigamesScreen::HandleOpenVersusClicked()
+{
+	NavigateTo(ET66ScreenType::VersusMainMenu);
 	return FReply::Handled();
 }
 

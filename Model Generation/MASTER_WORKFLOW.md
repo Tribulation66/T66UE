@@ -6,7 +6,15 @@ Use this document as the source of truth.
 
 If you need the workspace map first, start with [README.md](C:/UE/T66/Model%20Generation/README.md).
 
-For character work after raw TRELLIS output exists, read [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md) before Blender assembly, rigging, Unreal import, DataTable wiring, or staged visual verification.
+For the current one-image Quad Retro hero direction, read
+[TRELLIS_SOURCE_IMAGE_RULES.md](C:/UE/T66/Model%20Generation/TRELLIS_SOURCE_IMAGE_RULES.md)
+and [HERO_CHAD_STACY_PROMPT_GUIDE.md](C:/UE/T66/Model%20Generation/HERO_CHAD_STACY_PROMPT_GUIDE.md)
+before generating source images and
+[RETRO_CHARACTER_PIPELINE.md](C:/UE/T66/Model%20Generation/RETRO_CHARACTER_PIPELINE.md)
+[QUAD_RETRO_DO_THIS_RUNBOOK.md](C:/UE/T66/Model%20Generation/QUAD_RETRO_DO_THIS_RUNBOOK.md)
+before executing Blender/Quad Remesher. For legacy post-TRELLIS character assembly,
+rigging, Unreal import, DataTable wiring, or staged visual verification, read
+[Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md).
 
 The JSX setup file in this folder is historical reference only:
 
@@ -15,11 +23,16 @@ The JSX setup file in this folder is historical reference only:
 Supporting operational files:
 
 - [RUN_HISTORY.md](C:/UE/T66/Model%20Generation/RUN_HISTORY.md)
+- [TRELLIS_SOURCE_IMAGE_RULES.md](C:/UE/T66/Model%20Generation/TRELLIS_SOURCE_IMAGE_RULES.md)
+- [HERO_CHAD_STACY_PROMPT_GUIDE.md](C:/UE/T66/Model%20Generation/HERO_CHAD_STACY_PROMPT_GUIDE.md)
+- [RETRO_CHARACTER_PIPELINE.md](C:/UE/T66/Model%20Generation/RETRO_CHARACTER_PIPELINE.md)
+- [QUAD_RETRO_DO_THIS_RUNBOOK.md](C:/UE/T66/Model%20Generation/QUAD_RETRO_DO_THIS_RUNBOOK.md)
 - [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md)
 - [ENVIRONMENT_LOCK.md](C:/UE/T66/Model%20Generation/ENVIRONMENT_LOCK.md)
 - [KNOWN_ISSUES.md](C:/UE/T66/Model%20Generation/KNOWN_ISSUES.md)
 - [NEXT_STEPS.md](C:/UE/T66/Model%20Generation/NEXT_STEPS.md)
 - [CURRENT_HANDOFF_PROMPT.md](C:/UE/T66/Model%20Generation/CURRENT_HANDOFF_PROMPT.md)
+- [NEXT_CHAT_HERO_MALE_IMAGEGEN_PROMPT.md](C:/UE/T66/Model%20Generation/NEXT_CHAT_HERO_MALE_IMAGEGEN_PROMPT.md)
 - [MESH_APPROVAL_CHECKLIST.md](C:/UE/T66/Model%20Generation/MESH_APPROVAL_CHECKLIST.md)
 - [WALLS_FLOORS_CEILINGS.md](C:/UE/T66/Model%20Generation/WALLS_FLOORS_CEILINGS.md)
 - [SECOND_ATTEMPT_PROMPT.md](C:/UE/T66/Model%20Generation/SECOND_ATTEMPT_PROMPT.md)
@@ -81,13 +94,18 @@ Current Arthur assets already copied here:
 
 - Use `TRELLIS.2`, not TRELLIS v1.
 - Use RunPod for generation, not the local laptop GPU.
-- For baseline parity with the older JSX workflow, use `opaque PNGs with green background`, not alpha cutouts.
+- For the current Quad Retro hero direction, use opaque full-body source PNGs
+  that follow [TRELLIS_SOURCE_IMAGE_RULES.md](C:/UE/T66/Model%20Generation/TRELLIS_SOURCE_IMAGE_RULES.md):
+  A-pose, flat saturated chroma background, clean painted style, no shadows, no
+  pixel art, no photoreal detail.
+- Pure flat white `#ffffff` source images are legacy baseline inputs for older
+  comparison runs, not the default for new Quad Retro heroes.
 - Leave `preprocess_image=True` so TRELLIS runs its own background removal path.
 - Keep `rembg` override and the `cfg_strength` patch.
 - Do not use the extra DINO compatibility patch unless the environment drifts away from the JSX version.
 - Weapons are separate assets and should be attached after the character mesh is acceptable.
 - Retopo starts only after a raw mesh is visually approved.
-- For small enemy-family batches, one clean front-view green reference plus a strong seed is enough to test the family quickly before spending time on rerolls.
+- For legacy small enemy-family batches, one clean front-view single-color-background reference plus a strong seed is enough to test the family quickly before spending time on rerolls. This does not override the current Quad Retro hero source-image rules.
 - For environment modules, generate one wall/floor/ceiling module at a time instead of full rooms.
 - Keep generated dungeon-kit visuals separate from gameplay collision until Unreal tests prove the module set is stable.
 - Equipment placement is not approved from a single screenshot. For swords or other handheld props, require front, side, oblique, and user-like Blender checks, plus explicit user approval, before calling the placement done.
@@ -306,17 +324,24 @@ scp.exe -P <SSH_PORT> -i C:\Users\DoPra\.ssh\id_ed25519 root@<POD_IP>:/tmp/Arthu
 
 ## Input Rules
 
-For baseline reproduction:
+For current Quad Retro hero source images, use
+[TRELLIS_SOURCE_IMAGE_RULES.md](C:/UE/T66/Model%20Generation/TRELLIS_SOURCE_IMAGE_RULES.md).
+The source must be a square full-body A-pose character on a flat saturated
+chroma background, with identity carried by silhouette, costume, hair, and
+equipment rather than detailed face work.
+
+For legacy baseline reproduction only:
 
 - Use the real in-game screenshot look, not a stylized redraw, whenever possible.
 - Use `opaque PNG` input.
-- Use a solid green background.
+- Use a pure flat opaque white `#ffffff` background.
+- Do not use alpha, floor planes, cast shadows, contact shadows, reflections, gradients, gray patches, poster cards, or green backgrounds.
 - Keep the figure centered and readable.
 - Avoid alpha inputs for baseline comparison.
 
-### Hero Type A Character Input Rule
+### Legacy Hero Type A Character Input Rule
 
-For the current masculine Type A hero pass, do not use one all-in character prompt as the production path.
+For the legacy masculine Type A hero pass, do not use one all-in character prompt as the production path.
 
 The post-TRELLIS character setup, scale, material, import, and staged-game verification rules are maintained in [Model Processing.md](C:/UE/T66/Model%20Generation/Model%20Processing.md). Dedicated Unreal import commands and script runbooks live in [Model Importing.md](C:/UE/T66/Model%20Generation/Model%20Importing.md). Read both before changing assembly, rigging, import, or DataTable wiring.
 

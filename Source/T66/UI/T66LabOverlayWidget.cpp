@@ -100,7 +100,7 @@ void UT66LabOverlayWidget::OnSpawnEnemy(FName EnemyID, int32 TabIndex)
 	if (!GM) return;
 	if (TabIndex == 1 && EnemyID == FName(TEXT("Fountain")))
 	{
-		GM->SpawnLabFountainOfLife();
+		GM->SpawnLabFountain();
 	}
 	else if (TabIndex == 2)
 	{
@@ -171,10 +171,11 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	static const FName FountainID(TEXT("Fountain"));
 	static const TArray<FName> MobIDs =
 	{
-		FName(TEXT("Cow")),
-		FName(TEXT("Pig")),
-		FName(TEXT("Goat")),
-		FName(TEXT("Roost")),
+		FName(TEXT("Dungeon_Slime")),
+		FName(TEXT("Dungeon_WebSpider")),
+		FName(TEXT("Forest_Boar")),
+		FName(TEXT("Ocean_Jellyfish")),
+		FName(TEXT("Hell_Gargoyle")),
 		FName(TEXT("GoblinThief")),
 		FName(TEXT("UniqueEnemy"))
 	};
@@ -215,7 +216,7 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 			FName CapturedEID = EID;
 			int32 CapturedTab = TabIdx;
 			const FText EntryLabel = (EID == FName(TEXT("Fountain")))
-				? LOCTEXT("LabFountainName", "Fountain of Life")
+				? LOCTEXT("LabFountainName", "Fountain")
 				: FText::FromName(EID);
 			Box->AddSlot()
 				.Padding(2.f)

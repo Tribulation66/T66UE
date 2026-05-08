@@ -7,7 +7,23 @@
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "GameFramework/Pawn.h"
+
+namespace
+{
+	UStaticMesh* T66LoadArcadeAmplifierPickupMesh()
+	{
+		static TObjectPtr<UStaticMesh> CachedMesh = nullptr;
+		if (!CachedMesh)
+		{
+			CachedMesh = LoadObject<UStaticMesh>(
+				nullptr,
+				TEXT("/Game/World/Interactables/ArcadeAmplifierPickup/ArcadeAmplifierPickup_QuadRetro.ArcadeAmplifierPickup_QuadRetro"));
+		}
+		return CachedMesh.Get();
+	}
+}
 
 AT66ArcadeAmplifierPickup::AT66ArcadeAmplifierPickup()
 {
@@ -86,6 +102,18 @@ void AT66ArcadeAmplifierPickup::RefreshVisuals()
 {
 	if (!VisualMesh)
 	{
+		return;
+	}
+
+	if (UStaticMesh* AmplifierMesh = T66LoadArcadeAmplifierPickupMesh())
+	{
+		VisualMesh->EmptyOverrideMaterials();
+		VisualMesh->SetStaticMesh(AmplifierMesh);
+		VisualMesh->SetRelativeScale3D(FVector(0.55f, 0.55f, 0.55f));
+		VisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
+		FT66VisualUtil::GroundMeshToActorOrigin(VisualMesh, AmplifierMesh);
+		const FVector GroundedLocation = VisualMesh->GetRelativeLocation();
+		VisualMesh->SetRelativeLocation(FVector(GroundedLocation.X, GroundedLocation.Y, GroundedLocation.Z + 28.f));
 		return;
 	}
 

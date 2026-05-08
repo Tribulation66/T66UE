@@ -8,6 +8,10 @@
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSaveGame.h"
 #include "UI/T66UITypes.h"
+
+class USoundClass;
+struct FStreamableHandle;
+
 #include "T66PlayerSettingsSubsystem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnT66PlayerSettingsChanged);
@@ -287,6 +291,20 @@ private:
 	void ApplyUnfocusedAudioToEngine();
 
 	void ApplyClassVolumesIfPresent();
+	void QueueSoundClassPreloads();
+	void HandleMusicSoundClassLoaded();
+	void HandleSfxSoundClassLoaded();
+
+	UPROPERTY(Transient)
+	TObjectPtr<USoundClass> CachedMusicClass = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USoundClass> CachedSfxClass = nullptr;
+
+	TSharedPtr<FStreamableHandle> MusicSoundClassLoadHandle;
+	TSharedPtr<FStreamableHandle> SfxSoundClassLoadHandle;
+	bool bWarnedMissingMusicSoundClass = false;
+	bool bWarnedMissingSfxSoundClass = false;
 };
 
 

@@ -17,6 +17,7 @@ static void DestroyActorsWithTag(UWorld* World, FName Tag)
 	}
 
 	TArray<AActor*> ToDestroy;
+	// Setup cleanup helper: used by level/terrain regeneration, not tick paths.
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
 		if (It->Tags.Contains(Tag))
@@ -243,23 +244,6 @@ bool AT66GameMode::TryFindRandomMainMapSurfaceLocation(int32 SeedOffset, FVector
 					break;
 				}
 			}
-			if (!bBlockedByNPC)
-			{
-				for (const TWeakObjectPtr<AT66CasinoInteractable>& WeakCasino : Registry->GetCasinos())
-				{
-					const AT66CasinoInteractable* Casino = WeakCasino.Get();
-					if (!Casino)
-					{
-						continue;
-					}
-					const float Clearance = Casino->GetSafeZoneRadius() + SafeBubbleMargin;
-					if (FVector::DistSquared2D(Candidate, Casino->GetActorLocation()) < FMath::Square(Clearance))
-					{
-						bBlockedByNPC = true;
-						break;
-					}
-				}
-			}
 		}
 
 		if (bBlockedByNPC)
@@ -395,9 +379,18 @@ void AT66GameMode::TryActivateMainMapCombat()
 		T66EnsureMiasmaBoundaryActor(World, SpawnParams);
 	}
 
-	if (!bSkipStandardEnemySpawning && !EnsureEnemyDirector(World))
+	if (!bSkipStandardEnemySpawning)
 	{
-		return;
+		AT66EnemyDirector* ActiveEnemyDirector = EnsureEnemyDirector(World);
+		if (!ActiveEnemyDirector)
+		{
+			return;
+		}
+
+		if (IsUsingTowerMainMapLayout())
+		{
+			ActiveEnemyDirector->SpawnInitialPopulationForTowerFloor(GetCurrentTowerFloorIndex());
+		}
 	}
 
 	bMainMapCombatStarted = true;
@@ -412,6 +405,7 @@ void AT66GameMode::EnsureLevelSetup()
 	UWorld* CleanupWorld = GetWorld();
 	if (CleanupWorld)
 	{
+		// BeginPlay setup cleanup for legacy/editor landscapes.
 		for (TActorIterator<ALandscape> It(CleanupWorld); It; ++It)
 		{
 			UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Destroying saved Landscape actor: %s"), *It->GetName());
@@ -419,6 +413,7 @@ void AT66GameMode::EnsureLevelSetup()
 		}
 		static const FName OldFoliageTag(TEXT("T66ProceduralFoliage"));
 		TArray<AActor*> ToDestroy;
+		// BeginPlay setup cleanup for old procedural foliage actors.
 		for (TActorIterator<AActor> It(CleanupWorld); It; ++It)
 		{
 			if (It->Tags.Contains(OldFoliageTag))
@@ -470,6 +465,7 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 		return;
 	}
 
+	// Setup/material pass only after level bootstrap or terrain regeneration.
 	for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
 	{
 		AStaticMeshActor* A = *It;
@@ -484,6 +480,7 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 	// Do not touch the runtime main-map terrain actor here; it owns its own
 	// difficulty-specific block/slope/dirt materials and this pass used to
 	// flatten the entire terrain into one old ground material on first load.
+	// Setup/material pass only after level bootstrap or terrain regeneration.
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
 		AActor* A = *It;
@@ -761,6 +758,8 @@ void AT66GameMode::SpawnMainMapTerrain()
 	}
 
 	TArray<AActor*> CleanupActors;
+	// Terrain regeneration cleanup only. Runtime terrain actors are remembered by
+	// tag after spawn; this scan removes stale authored/fallback floor pieces.
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
 		AActor* Actor = *It;
@@ -773,6 +772,7 @@ void AT66GameMode::SpawnMainMapTerrain()
 			|| Actor->Tags.Contains(T66MapRampTag)
 			|| Actor->Tags.Contains(T66FloorMainTag)
 			|| Actor->Tags.Contains(T66TraversalBarrierTag)
+			|| Actor->Tags.Contains(FName(TEXT("T66_StartGallery_Showcase")))
 			|| T66_HasAnyFloorTag(Actor))
 		{
 			CleanupActors.Add(Actor);
@@ -790,6 +790,7 @@ void AT66GameMode::SpawnMainMapTerrain()
 	bTerrainCollisionReady = false;
 	bMainMapCombatStarted = false;
 	bWorldInteractablesSpawnedForStage = false;
+	bStartGalleryShowcaseSpawned = false;
 	bHasMainMapSpawnSurfaceLocation = false;
 	bUsingTowerMainMapLayout = false;
 	CachedTowerMainMapLayout = T66TowerMapTerrain::FLayout{};
@@ -798,6 +799,7 @@ void AT66GameMode::SpawnMainMapTerrain()
 	TowerTerrainSafetyAccumulator = 0.f;
 	TowerTrapActivationAccumulator = 0.f;
 	ActiveTowerTrapFloorNumber = INDEX_NONE;
+	ActiveTowerTerrainVisualFloorNumber = INDEX_NONE;
 	MainMapSpawnSurfaceLocation = FVector::ZeroVector;
 	MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
 	MainMapStartPathSurfaceLocation = FVector::ZeroVector;
@@ -1019,11 +1021,6 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	{
 		CowardiceGate->Destroy();
 		CowardiceGate = nullptr;
-	}
-	if (TricksterNPC)
-	{
-		TricksterNPC->Destroy();
-		TricksterNPC = nullptr;
 	}
 	if (AT66BossBase* ExistingBoss = StageBoss.Get())
 	{

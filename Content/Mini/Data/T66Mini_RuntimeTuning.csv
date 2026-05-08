@@ -86,10 +86,10 @@ EnemyProgressScalarBase,EnemyProgressScalarBase,1
 EnemyProgressScalarPerWave,EnemyProgressScalarPerWave,0.16
 EnemyRangedFireSpawnRateMin,EnemyRangedFireSpawnRateMin,0.80
 BossFireIntervalScalarMin,BossFireIntervalScalarMin,0.85
-VendorRerollBaseCost,VendorRerollBaseCost,12
-VendorRerollCostPerReroll,VendorRerollCostPerReroll,6
-VendorRerollAnger,VendorRerollAnger,0.08
-VendorOfferCount,VendorOfferCount,4
+MarketRerollBaseCost,MarketRerollBaseCost,12
+MarketRerollCostPerReroll,MarketRerollCostPerReroll,6
+MarketRerollAnger,MarketRerollAnger,0.08
+MarketOfferCount,MarketOfferCount,4
 BorrowDebtFlatMin,BorrowDebtFlatMin,6
 BorrowDebtDivisor,BorrowDebtDivisor,4
 BorrowAnger,BorrowAnger,0.05

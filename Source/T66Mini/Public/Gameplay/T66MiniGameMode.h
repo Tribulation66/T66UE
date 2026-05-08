@@ -47,6 +47,8 @@ public:
 	FName GetPendingBossID() const { return PendingBossID; }
 	AT66MiniEnemyBase* GetActiveBossEnemy() const;
 	AT66MiniPlayerPawn* FindClosestPlayerPawn(const FVector& WorldLocation, bool bRequireAlive) const;
+	void RegisterLivePlayerPawn(AT66MiniPlayerPawn* PlayerPawn);
+	void UnregisterLivePlayerPawn(const AT66MiniPlayerPawn* PlayerPawn);
 	const TArray<TObjectPtr<AT66MiniPlayerPawn>>& GetLivePlayerPawns() const { return LivePlayerPawns; }
 	const TArray<TObjectPtr<AT66MiniEnemyBase>>& GetLiveEnemies() const { return LiveEnemies; }
 	const TArray<TObjectPtr<AT66MiniInteractable>>& GetLiveInteractables() const { return LiveInteractables; }
@@ -64,6 +66,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
 
 private:
@@ -95,8 +98,8 @@ private:
 	void UpdateLiveInteractableCache();
 	void UpdateLivePickupCache();
 	void UpdateCombatTexts(float DeltaSeconds);
-	float GetRuntimeTuningValue(const TCHAR* Key, float DefaultValue = 0.f) const;
-	int32 GetRuntimeTuningInt(const TCHAR* Key, int32 DefaultValue = 0) const;
+	float GetRuntimeTuningValue(const TCHAR* Key) const;
+	int32 GetRuntimeTuningInt(const TCHAR* Key) const;
 
 	float AutosaveAccumulator = 0.f;
 	float AudioMixRefreshAccumulator = 0.f;
