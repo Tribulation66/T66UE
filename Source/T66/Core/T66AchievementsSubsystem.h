@@ -66,6 +66,14 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
 	int32 GetChadCouponBalance() const;
 
+	/** Achievement IDs unlocked since the current run started. Reset by RunState::ResetForNewRun. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
+	TArray<FName> GetCurrentRunUnlockedAchievementIDs() const;
+
+	/** Clear the per-run achievement unlock summary. */
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	void ResetCurrentRunAchievementUnlockSummary();
+
 	/** Persistent account level shown in frontend profile chrome. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
 	int32 GetAccountLevel() const;
@@ -361,6 +369,8 @@ private:
 	UPROPERTY()
 	TArray<FAchievementData> CachedDefinitions;
 
+	TArray<FName> CurrentRunUnlockedAchievementIDs;
+
 	/** Accumulate saves to avoid disk IO per kill. */
 	bool bProfileDirty = false;
 	float LastProfileSaveWorldSeconds = -9999.f;
@@ -381,6 +391,7 @@ private:
 	/** Update progress from source value; unlock if >= Target. Returns true if state changed. If OutNewlyUnlocked, appends AchievementID when just unlocked. */
 	bool UpdateCountAchievement(FName AchievementID, int32 SourceValue, int32 Target, TArray<FName>* OutNewlyUnlocked = nullptr);
 	bool UpdateMilestoneAchievements(const TCHAR* Prefix, const TArray<int32>& Thresholds, int32 SourceValue, TArray<FName>* OutNewlyUnlocked = nullptr);
+	void BroadcastAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs);
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);

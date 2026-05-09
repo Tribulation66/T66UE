@@ -448,6 +448,13 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	SeedLuck0To100 = -1;
 	CompanionHealingDoneThisRun = 0.f;
 	SingleUseSecondaryMultipliers.Reset();
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			Achievements->ResetCurrentRunAchievementUnlockSummary();
+		}
+	}
 
 	// Skill Rating: reset per brand new run.
 	if (UGameInstance* GI3 = GetGameInstance())

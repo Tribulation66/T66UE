@@ -56,9 +56,11 @@ private:
 	FReply HandleContinueDifficultyClicked();
 	FReply HandleSaveAndQuitClicked();
 	FReply HandleQuitToMainMenuClicked();
+	FReply HandleStatsExpandClicked();
 	bool HasValidLiveRunSummaryContext() const;
 	void PrepareChadCouponsPopupForLiveRun();
 	void ResolveChadCouponsPopupForLiveRun(bool bAllowGrant);
+	void RefreshRunAchievementSummaryCounters();
 	void HandleBackendSubmitRunDataReadyForSummary(
 		const FString& RequestKey,
 		bool bSuccess,
@@ -123,6 +125,11 @@ private:
 
 	/** True when the popup checkbox is checked for the current summary. */
 	bool bChadCouponsPopupDontShowAgainChecked = false;
+
+	int32 SummaryAchievementsUnlocked = 0;
+	int32 SummarySecretAchievementsUnlocked = 0;
+
+	bool bStatsExpanded = false;
 
 	/** Brush for Power Coupons sprite (Content/UI/Sprites/PowerUp). */
 	TSharedPtr<struct FSlateBrush> PowerCouponSpriteBrush;

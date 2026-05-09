@@ -438,6 +438,16 @@ int32 UT66AchievementsSubsystem::GetChadCouponBalance() const
 	return Profile ? FMath::Max(0, Profile->ChadCouponsBalance) : 0;
 }
 
+TArray<FName> UT66AchievementsSubsystem::GetCurrentRunUnlockedAchievementIDs() const
+{
+	return CurrentRunUnlockedAchievementIDs;
+}
+
+void UT66AchievementsSubsystem::ResetCurrentRunAchievementUnlockSummary()
+{
+	CurrentRunUnlockedAchievementIDs.Reset();
+}
+
 int32 UT66AchievementsSubsystem::GetAccountLevel() const
 {
 	if (!Profile)
@@ -657,13 +667,31 @@ void UT66AchievementsSubsystem::MarkTutorialCompleted()
 	bProfileDirty = true;
 	SaveProfileIfNeeded(true);
 	AchievementsStateChanged.Broadcast();
-	if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked);
+	BroadcastAchievementsUnlocked(NewlyUnlocked);
 }
 
 const FT66AchievementState* UT66AchievementsSubsystem::FindState(FName AchievementID) const
 {
 	if (!Profile || AchievementID.IsNone()) return nullptr;
 	return Profile->AchievementStateByID.Find(AchievementID);
+}
+
+void UT66AchievementsSubsystem::BroadcastAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs)
+{
+	if (NewlyUnlockedIDs.Num() <= 0)
+	{
+		return;
+	}
+
+	for (const FName AchievementID : NewlyUnlockedIDs)
+	{
+		if (!AchievementID.IsNone())
+		{
+			CurrentRunUnlockedAchievementIDs.AddUnique(AchievementID);
+		}
+	}
+
+	AchievementsUnlocked.Broadcast(NewlyUnlockedIDs);
 }
 
 FT66AchievementState* UT66AchievementsSubsystem::FindOrAddState(FName AchievementID)
@@ -1044,7 +1072,7 @@ bool UT66AchievementsSubsystem::AddLabUnlockedItem(FName ItemID)
 	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_011")), NumItems, 5, &NewlyUnlocked);
 	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_ITEM_"), GetExtraLabItemThresholds(), NumItems, &NewlyUnlocked);
 	MarkDirtyAndMaybeSave(true);
-	if (bAnyChanged) { AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+	if (bAnyChanged) { AchievementsStateChanged.Broadcast(); BroadcastAchievementsUnlocked(NewlyUnlocked); }
 	return true;
 }
 
@@ -1060,7 +1088,7 @@ bool UT66AchievementsSubsystem::AddLabUnlockedEnemy(FName EnemyOrBossID)
 	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_RED_007")), NumEnemies, 5, &NewlyUnlocked);
 	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_LABENEMY_"), GetExtraLabEnemyThresholds(), NumEnemies, &NewlyUnlocked);
 	MarkDirtyAndMaybeSave(true);
-	if (bAnyChanged) { AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+	if (bAnyChanged) { AchievementsStateChanged.Broadcast(); BroadcastAchievementsUnlocked(NewlyUnlocked); }
 	return true;
 }
 
@@ -1121,7 +1149,7 @@ void UT66AchievementsSubsystem::NotifyEnemyKilled(int32 Count)
 	{
 		MarkDirtyAndMaybeSave(true);
 		AchievementsStateChanged.Broadcast();
-		if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked);
+		BroadcastAchievementsUnlocked(NewlyUnlocked);
 	}
 }
 
@@ -1137,7 +1165,7 @@ void UT66AchievementsSubsystem::NotifyBossKilled(int32 Count)
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_004")), Total, 1, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_002")), Total, 10, &NewlyUnlocked);
 	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_BOSS_"), GetExtraBossKillThresholds(), Total, &NewlyUnlocked);
-	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); BroadcastAchievementsUnlocked(NewlyUnlocked); }
 }
 
 void UT66AchievementsSubsystem::NotifyStageCleared(int32 Count)
@@ -1152,7 +1180,7 @@ void UT66AchievementsSubsystem::NotifyStageCleared(int32 Count)
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_006")), Total, 1, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_003")), Total, 10, &NewlyUnlocked);
 	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_STAGE_"), GetExtraStageClearThresholds(), Total, &NewlyUnlocked);
-	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); BroadcastAchievementsUnlocked(NewlyUnlocked); }
 }
 
 void UT66AchievementsSubsystem::NotifyRunCompleted(UT66RunStateSubsystem* RunState)
@@ -1190,7 +1218,7 @@ void UT66AchievementsSubsystem::NotifyRunCompleted(UT66RunStateSubsystem* RunSta
 		FT66AchievementState* SDebt = FindOrAddState(FName(TEXT("ACH_RED_006")));
 		if (SDebt && !SDebt->bIsUnlocked && Debt == 0) { SDebt->CurrentProgress = 1; SDebt->bIsUnlocked = true; bAnyChanged = true; NewlyUnlocked.Add(FName(TEXT("ACH_RED_006"))); }
 	}
-	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); BroadcastAchievementsUnlocked(NewlyUnlocked); }
 }
 
 void UT66AchievementsSubsystem::NotifyShopPurchase()
@@ -1202,7 +1230,7 @@ void UT66AchievementsSubsystem::NotifyShopPurchase()
 	TArray<FName> NewlyUnlocked;
 	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_009")), Total, 1, &NewlyUnlocked);
 	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_SHOP_"), GetExtraShopPurchaseThresholds(), Total, &NewlyUnlocked);
-	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); BroadcastAchievementsUnlocked(NewlyUnlocked); }
 }
 
 void UT66AchievementsSubsystem::NotifyGamblerWin()
@@ -1214,7 +1242,7 @@ void UT66AchievementsSubsystem::NotifyGamblerWin()
 	TArray<FName> NewlyUnlocked;
 	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_010")), Total, 1, &NewlyUnlocked);
 	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_GAMBLER_"), GetExtraGamblerWinThresholds(), Total, &NewlyUnlocked);
-	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); BroadcastAchievementsUnlocked(NewlyUnlocked); }
 }
 
 int32 UT66AchievementsSubsystem::GetGamblersTokenUnlockedLevel() const
@@ -1257,7 +1285,7 @@ int32 UT66AchievementsSubsystem::UpgradeGamblersTokenForDifficulty(ET66Difficult
 	AchievementsStateChanged.Broadcast();
 	if (bExtraAchievementsChanged && NewlyUnlocked.Num() > 0)
 	{
-		AchievementsUnlocked.Broadcast(NewlyUnlocked);
+		BroadcastAchievementsUnlocked(NewlyUnlocked);
 	}
 	return NewLevel;
 }
@@ -1409,7 +1437,7 @@ void UT66AchievementsSubsystem::AddCompanionUnionStagesCleared(FName CompanionID
 		(Prev < UnionTier_GoodStages && Next >= UnionTier_GoodStages) ||
 		(Prev < UnionTier_MediumStages && Next >= UnionTier_MediumStages) ||
 		(Prev < UnionTier_HyperStages && Next >= UnionTier_HyperStages);
-	if (bTierCrossed || bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+	if (bTierCrossed || bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); BroadcastAchievementsUnlocked(NewlyUnlocked); }
 	else MarkDirtyAndMaybeSave(false);
 }
 
