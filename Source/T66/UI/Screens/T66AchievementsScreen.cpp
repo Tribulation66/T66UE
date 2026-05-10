@@ -39,7 +39,12 @@ namespace
 
 	FString MakeAchievementsUltrakillElementPath(const TCHAR* FileName)
 	{
-		return FString(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements")) / FString(FileName ? FileName : TEXT(""));
+		return T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(FileName);
+	}
+
+	FString MakeAchievementsUltrakillSquareElementPath(const TCHAR* FileName)
+	{
+		return T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(FileName);
 	}
 
 	FString MakeAchievementsAssetPath(const TCHAR* RelativeAssetPath)
@@ -47,7 +52,7 @@ namespace
 		const FString Path(RelativeAssetPath ? RelativeAssetPath : TEXT(""));
 		if (Path.Contains(TEXT("progress_fill")))
 		{
-			return MakeAchievementsUltrakillElementPath(TEXT("progress_bar_fill_cyan.png"));
+			return MakeAchievementsUltrakillElementPath(TEXT("progress_bar_fill_red.png"));
 		}
 		if (Path.Contains(TEXT("progress_track")) || Path.Contains(TEXT("progress_meter")))
 		{
@@ -55,7 +60,7 @@ namespace
 		}
 		if (Path.Contains(TEXT("scrollbar_thumb")))
 		{
-			return MakeAchievementsUltrakillElementPath(TEXT("progress_bar_fill_cyan.png"));
+			return MakeAchievementsUltrakillElementPath(TEXT("progress_bar_fill_red.png"));
 		}
 		if (Path.Contains(TEXT("scrollbar_track")))
 		{
@@ -63,22 +68,30 @@ namespace
 		}
 		if (Path.Contains(TEXT("dropdown_field")))
 		{
-			return MakeAchievementsUltrakillElementPath(TEXT("dropdown_field_normal.png"));
+			return MakeAchievementsUltrakillSquareElementPath(TEXT("dropdown_field_normal_square_variant.png"));
 		}
 		if (Path.Contains(TEXT("/Slots/")) || Path.Contains(TEXT("slot_frame")))
 		{
-			return MakeAchievementsUltrakillElementPath(TEXT("profile_slot_normal.png"));
+			return MakeAchievementsUltrakillSquareElementPath(TEXT("profile_slot_normal_square_variant.png"));
 		}
 		if (Path.Contains(TEXT("row_shell")))
 		{
-			return MakeAchievementsUltrakillElementPath(TEXT("player_row_panel_normal.png"));
+			return T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal"));
 		}
-		if (Path.Contains(TEXT("ScreenArt/")) || Path.Contains(TEXT("fullscreen_panel")) || Path.Contains(TEXT("progress_panel")) || Path.Contains(TEXT("inner_panel")))
+		if (Path.Contains(TEXT("ScreenArt/")))
 		{
-			return MakeAchievementsUltrakillElementPath(TEXT("main_panel_normal.png"));
+			return FString();
+		}
+		if (Path.Contains(TEXT("progress_panel")))
+		{
+			return T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal"));
+		}
+		if (Path.Contains(TEXT("fullscreen_panel")) || Path.Contains(TEXT("inner_panel")))
+		{
+			return MakeAchievementsUltrakillSquareElementPath(TEXT("main_panel_normal_square_variant.png"));
 		}
 
-		return MakeAchievementsUltrakillElementPath(TEXT("main_panel_normal.png"));
+		return MakeAchievementsUltrakillSquareElementPath(TEXT("main_panel_normal_square_variant.png"));
 	}
 
 	FString MakeAchievementsButtonAssetPath(const TCHAR* Family, const TCHAR* State)
@@ -87,13 +100,14 @@ namespace
 		const FString StateName(State ? State : TEXT("normal"));
 		if (FamilyName.Equals(TEXT("SquareIcon"), ESearchCase::IgnoreCase))
 		{
-			return MakeAchievementsUltrakillElementPath(*FString::Printf(TEXT("topbar_icon_button_%s.png"), *StateName));
+			const FString IconState = StateName.Contains(TEXT("selected"), ESearchCase::IgnoreCase) ? FString(TEXT("selected")) : StateName.ToLower();
+			return MakeAchievementsUltrakillSquareElementPath(*FString::Printf(TEXT("topbar_icon_button_%s_square_variant.png"), *IconState));
 		}
 		if (FamilyName.Equals(TEXT("CTA"), ESearchCase::IgnoreCase))
 		{
-			return MakeAchievementsUltrakillElementPath(*FString::Printf(TEXT("cta_new_game_button_%s.png"), *StateName));
+			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*StateName);
 		}
-		return MakeAchievementsUltrakillElementPath(*FString::Printf(TEXT("leaderboard_tab_button_%s.png"), *StateName));
+		return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*StateName);
 	}
 
 	void SetAchievementsActiveStateFolder(const bool bShowingSecret)
@@ -114,22 +128,22 @@ namespace
 
 	FLinearColor T66AchievementsInsetFill()
 	{
-		return FLinearColor(0.024f, 0.025f, 0.030f, 1.0f);
+		return FLinearColor(0.046f, 0.018f, 0.020f, 0.98f);
 	}
 
 	FLinearColor T66AchievementsRowFill()
 	{
-		return FLinearColor(0.028f, 0.029f, 0.034f, 1.0f);
+		return FLinearColor(0.018f, 0.020f, 0.030f, 0.98f);
 	}
 
 	FLinearColor T66AchievementsUnlockedRowFill()
 	{
-		return FLinearColor(0.036f, 0.048f, 0.041f, 1.0f);
+		return FLinearColor(0.048f, 0.020f, 0.022f, 0.98f);
 	}
 
 	FLinearColor T66AchievementsTabActiveFill()
 	{
-		return FLinearColor(0.67f, 0.72f, 0.62f, 1.0f);
+		return FLinearColor(0.92f, 0.05f, 0.12f, 1.0f);
 	}
 
 	FLinearColor T66AchievementsTabInactiveFill()
@@ -139,27 +153,27 @@ namespace
 
 	FLinearColor T66AchievementsTabActiveText()
 	{
-		return FLinearColor(0.99f, 0.93f, 0.74f, 1.0f);
+		return FLinearColor(1.0f, 0.96f, 0.88f, 1.0f);
 	}
 
 	FLinearColor T66AchievementsTabInactiveText()
 	{
-		return FLinearColor(0.86f, 0.80f, 0.68f, 1.0f);
+		return FLinearColor(0.96f, 0.78f, 0.74f, 1.0f);
 	}
 
 	FLinearColor T66AchievementsParchmentText()
 	{
-		return FLinearColor(0.98f, 0.91f, 0.70f, 1.0f);
+		return FLinearColor(0.99f, 0.94f, 0.92f, 1.0f);
 	}
 
 	FLinearColor T66AchievementsParchmentMutedText()
 	{
-		return FLinearColor(0.78f, 0.68f, 0.48f, 1.0f);
+		return FLinearColor(0.84f, 0.62f, 0.58f, 1.0f);
 	}
 
 	FLinearColor T66AchievementsSectionText()
 	{
-		return FLinearColor(0.98f, 0.88f, 0.64f, 1.0f);
+		return FLinearColor(1.0f, 0.88f, 0.84f, 1.0f);
 	}
 
 	float T66AchievementProgress01(const FAchievementData& Achievement)
@@ -209,10 +223,6 @@ namespace
 	FString MakeSettingsAssetPath(const TCHAR* FileName)
 	{
 		const FString Name(FileName);
-		const auto BasicButtonPath = [](const TCHAR* State) -> FString
-		{
-			return MakeAchievementsButtonAssetPath(TEXT("Pill"), State);
-		};
 		const auto SelectButtonPath = [](const TCHAR* State) -> FString
 		{
 			return MakeAchievementsButtonAssetPath(TEXT("Pill"), State);
@@ -224,13 +234,19 @@ namespace
 		}
 		if (Name.StartsWith(TEXT("settings_compact_neutral_")) || Name.StartsWith(TEXT("settings_toggle_off_")))
 		{
+			if (Name.StartsWith(TEXT("settings_compact_neutral_")))
+			{
+				if (Name.Contains(TEXT("_hover"))) return MakeAchievementsButtonAssetPath(TEXT("CTA"), TEXT("hover"));
+				if (Name.Contains(TEXT("_pressed"))) return MakeAchievementsButtonAssetPath(TEXT("CTA"), TEXT("pressed"));
+				return MakeAchievementsButtonAssetPath(TEXT("CTA"), TEXT("normal"));
+			}
 			if (Name.Contains(TEXT("_hover"))) return SelectButtonPath(TEXT("hover"));
 			if (Name.Contains(TEXT("_pressed"))) return SelectButtonPath(TEXT("pressed"));
 			return SelectButtonPath(TEXT("normal"));
 		}
 		if (Name.StartsWith(TEXT("settings_toggle_inactive_")))
 		{
-			return BasicButtonPath(TEXT("disabled"));
+			return MakeAchievementsButtonAssetPath(TEXT("CTA"), TEXT("disabled"));
 		}
 		if (Name == TEXT("settings_content_shell_frame.png"))
 		{
@@ -249,7 +265,7 @@ namespace
 			return MakeAchievementsAssetPath(TEXT("Controls/achievements_controls_reference_dropdown_field_normal.png"));
 		}
 
-		return MakeAchievementsUltrakillElementPath(TEXT("main_panel_normal.png"));
+		return MakeAchievementsUltrakillSquareElementPath(TEXT("main_panel_normal_square_variant.png"));
 	}
 
 	FMargin GetAchievementsGeneratedBrushMargin(const FString& SourceRelativePath)
@@ -274,11 +290,12 @@ namespace
 		{
 			return FMargin(0.075f, 0.245f, 0.075f, 0.245f);
 		}
-		if (SourceRelativePath.Contains(TEXT("main_panel_normal.png")))
+		if (SourceRelativePath.Contains(TEXT("main_panel_normal.png")) || SourceRelativePath.Contains(TEXT("main_panel_normal_square_variant.png")))
 		{
 			return FMargin(0.052f, 0.095f, 0.052f, 0.095f);
 		}
-		if (SourceRelativePath.Contains(TEXT("player_row_panel_normal.png")) || SourceRelativePath.Contains(TEXT("player_row_panel_hover.png")))
+		if (SourceRelativePath.Contains(TEXT("player_row_panel_normal.png")) || SourceRelativePath.Contains(TEXT("player_row_panel_hover.png"))
+			|| SourceRelativePath.Contains(TEXT("player_row_panel_normal_square_variant.png")) || SourceRelativePath.Contains(TEXT("player_row_panel_hover_square_variant.png")))
 		{
 			return FMargin(0.070f, 0.245f, 0.070f, 0.245f);
 		}
@@ -286,7 +303,7 @@ namespace
 		{
 			return FMargin(0.085f, 0.210f, 0.085f, 0.210f);
 		}
-		if (SourceRelativePath.Contains(TEXT("progress_bar_track.png")) || SourceRelativePath.Contains(TEXT("progress_bar_fill_cyan.png")))
+		if (SourceRelativePath.Contains(TEXT("progress_bar_track.png")) || SourceRelativePath.Contains(TEXT("progress_bar_fill_red.png")))
 		{
 			return FMargin(0.055f, 0.34f, 0.055f, 0.34f);
 		}
@@ -302,7 +319,7 @@ namespace
 		{
 			return FMargin(0.42f, 0.085f, 0.42f, 0.085f);
 		}
-		if (SourceRelativePath.Contains(TEXT("dropdown_field_normal.png")))
+		if (SourceRelativePath.Contains(TEXT("dropdown_field_normal.png")) || SourceRelativePath.Contains(TEXT("dropdown_field_normal_square_variant.png")))
 		{
 			return FMargin(0.06f, 0.34f, 0.06f, 0.34f);
 		}
@@ -653,10 +670,9 @@ namespace
 			Params.Visibility);
 	}
 
-	TSharedRef<SWidget> MakeAchievementsProgressBar(const float Percent, const float Height)
+	TSharedRef<SWidget> MakeAchievementsProgressBarSized(const float Percent, const float Width, const float Height)
 	{
 		const float Pct = FMath::Clamp(Percent, 0.f, 1.f);
-		constexpr float Width = 1040.f;
 		const float BarHeight = FMath::Max(16.f, Height + 5.f);
 		const FSlateBrush* TrackBrush = ResolveAchievementsGeneratedBrush(
 			MakeAchievementsAssetPath(TEXT("Controls/achievements_controls_progress_track_v2.png")),
@@ -699,8 +715,13 @@ namespace
 		return T66ScreenSlateHelpers::MakeReferenceProgressBar(
 			Pct,
 			FVector2D(Width, BarHeight),
-			FLinearColor(0.10f, 0.64f, 0.96f, 1.0f),
+			FLinearColor(0.92f, 0.05f, 0.12f, 1.0f),
 			FMargin(4.f, 3.f));
+	}
+
+	TSharedRef<SWidget> MakeAchievementsProgressBar(const float Percent, const float Height)
+	{
+		return MakeAchievementsProgressBarSized(Percent, 1040.f, Height);
 	}
 
 	TSharedRef<SWidget> MakeAchievementsFixedImage(const FString& SourceRelativePath, const FVector2D& Size, const FLinearColor& Tint = FLinearColor::White)
@@ -723,7 +744,7 @@ namespace
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.11f, 0.065f, 0.030f, 1.0f))
+				.BorderBackgroundColor(FLinearColor(0.046f, 0.018f, 0.020f, 1.0f))
 				.Padding(FMargin(0.f))
 			];
 	}
@@ -746,7 +767,7 @@ namespace
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							MakeAchievementsFixedImage(PlatePath, FVector2D(54.f, 54.f), FLinearColor(0.62f, 0.48f, 0.35f, 1.0f))
+							MakeAchievementsFixedImage(PlatePath, FVector2D(54.f, 54.f), FLinearColor::White)
 						]
 						+ SOverlay::Slot()
 						.HAlign(HAlign_Center)
@@ -767,13 +788,6 @@ namespace
 			];
 	}
 
-	TSharedRef<SWidget> MakeAchievementsIconPlate()
-	{
-		return MakeAchievementsFixedImage(
-			MakeAchievementsAssetPath(TEXT("Slots/achievements_slots_reference_square_slot_frame_normal.png")),
-			FVector2D(58.f, 58.f),
-			FLinearColor(0.78f, 0.54f, 0.33f, 1.0f));
-	}
 }
 
 UT66AchievementsScreen::UT66AchievementsScreen(const FObjectInitializer& ObjectInitializer)
@@ -963,12 +977,8 @@ FText UT66AchievementsScreen::GetAchievementActionText(const FAchievementData& A
 
 TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 {
-	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-
-	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
 	const FText SteamText = NSLOCTEXT("T66.Achievements", "SteamTab", "STEAM");
 	const FText SecretText = NSLOCTEXT("T66.Achievements", "SecretTab", "SECRET");
-	const float TopInset = T66ScreenSlateHelpers::GetFrontendChromeTopInset(UIManager);
 
 	RefreshAchievements();
 	const TArray<FAchievementData> StandardAchievements = GetAchievementsForCategory(ET66AchievementCategory::Standard);
@@ -977,76 +987,39 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		? static_cast<float>(UnlockedStandardAchievements) / static_cast<float>(StandardAchievements.Num())
 		: 0.0f;
 	const bool bShowingSecret = ActiveTab == EAchievementTab::Secret;
+	const FText ActiveTabInfoText = bShowingSecret
+		? NSLOCTEXT("T66.Achievements", "SecretTabInfo", "Reveal hidden achievements by discovering secret conditions in runs.")
+		: NSLOCTEXT("T66.Achievements", "SteamTabInfo", "Track Steam achievements, rewards, and completion progress.");
 	SetAchievementsActiveStateFolder(bShowingSecret);
+	const T66ScreenSlateHelpers::FFrontendChromeMetrics& ChromeMetrics = T66ScreenSlateHelpers::GetFrontendChromeMetrics();
+	const FSlateFontInfo ChromeTabFont = T66ScreenSlateHelpers::MakeFrontendChromeTabFont();
 
-	auto MakeTabButton = [this](const FText& Label, bool bActive, bool bLeft, FReply(UT66AchievementsScreen::*Handler)()) -> TSharedRef<SWidget>
+	auto MakeTabButton = [this, &ChromeMetrics, ChromeTabFont](const FText& Label, bool bActive, bool bLeft, FReply(UT66AchievementsScreen::*Handler)()) -> TSharedRef<SWidget>
 	{
 		return MakeAchievementsGeneratedButton(
 			FT66ButtonParams(Label, FOnClicked::CreateUObject(this, Handler), bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
-			.SetMinWidth(304.f)
-			.SetHeight(44.f),
+			.SetMinWidth(ChromeMetrics.TabMinWidth)
+			.SetHeight(ChromeMetrics.TabHeight),
 			ResolveAchievementsToggleButtonStyle(bActive, bLeft),
-			AchievementsBoldFont(22),
+			ChromeTabFont,
 			bActive ? T66AchievementsTabActiveText() : T66AchievementsTabInactiveText(),
-			FMargin(16.f, 4.f, 16.f, 4.f));
+			ChromeMetrics.TabPadding);
 	};
 
 	const TSharedRef<SWidget> Root =
 		SNew(SBox)
-		.Padding(FMargin(8.f, FMath::Max(98.f, TopInset - 66.f), 8.f, 12.f))
+		.Padding(FMargin(-14.f, 0.f, -14.f, 8.f))
 		[
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.HAlign(HAlign_Center)
-			.Padding(0.f, 0.f, 0.f, 2.f)
+			.Padding(0.f, 0.f, 0.f, 12.f)
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
-				.VAlign(VAlign_Center)
-				.Padding(0.f, 0.f, 18.f, 0.f)
-				[
-					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("\u2726")))
-					.Font(FT66Style::Tokens::FontBold(30))
-					.ColorAndOpacity(FLinearColor(0.88f, 0.62f, 0.18f, 1.0f))
-					.ShadowOffset(FVector2D(0.f, 2.f))
-					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.75f))
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				[
-					SNew(STextBlock)
-					.Text(AchievementsText)
-					.Font(FT66Style::Tokens::FontBold(58))
-					.ColorAndOpacity(FLinearColor(0.96f, 0.85f, 0.57f, 1.0f))
-					.ShadowOffset(FVector2D(0.f, 3.f))
-					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				.Padding(18.f, 0.f, 0.f, 0.f)
-				[
-					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("\u2726")))
-					.Font(FT66Style::Tokens::FontBold(30))
-					.ColorAndOpacity(FLinearColor(0.88f, 0.62f, 0.18f, 1.0f))
-					.ShadowOffset(FVector2D(0.f, 2.f))
-					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.75f))
-				]
-			]
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Center)
-			.Padding(0.f, -12.f, 0.f, 0.f)
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.Padding(0.f, 0.f, 10.f, 0.f)
+				.Padding(0.f, 0.f, 20.f, 0.f)
 				[
 					MakeTabButton(
 						SteamText,
@@ -1066,7 +1039,31 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Padding(0.f, 1.f, 0.f, -14.f)
+			.Padding(0.f, 0.f, 0.f, 10.f)
+			[
+				SNew(SBox)
+				.HeightOverride(72.f)
+				[
+					MakeAchievementsGeneratedPanel(
+						T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal")),
+						SNew(SBox)
+						.VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(ActiveTabInfoText)
+							.Font(AchievementsRegularFont(16))
+							.ColorAndOpacity(T66AchievementsParchmentText())
+							.Justification(ETextJustify::Center)
+							.AutoWrapText(true)
+						],
+						FMargin(22.f, 12.f),
+						FLinearColor::White,
+						FLinearColor::White)
+				]
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 10.f)
 			[
 				SNew(SBox)
 				.HeightOverride(126.f)
@@ -1164,35 +1161,15 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			]
 		];
 
-	const TSharedRef<SWidget> CenteredRoot =
-		SNew(SOverlay)
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Fill)
-		[
-			SNew(SBox)
-			.WidthOverride(1600.f)
-			[
-				Root
-			]
-		];
-
 	RebuildAchievementList();
-	if (const FSlateBrush* SceneBackgroundBrush = ResolveAchievementsGeneratedBrush(MakeAchievementsAssetPath(TEXT("ScreenArt/achievements_screen_art_dark_wood_frame_v2.png"))))
-	{
-		return SNew(SOverlay)
-			+ SOverlay::Slot()
-			[
-				SNew(SImage)
-				.Image(SceneBackgroundBrush)
-			]
-			+ SOverlay::Slot()
-			[
-				CenteredRoot
-			];
-	}
-
-	return CenteredRoot;
+	return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
+		UIManager,
+		Root,
+		SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor::Black),
+		FLinearColor::Transparent,
+		FMargin(0.f, 0.f, 0.f, -4.f));
 }
 
 void UT66AchievementsScreen::RebuildAchievementList()
@@ -1259,26 +1236,19 @@ void UT66AchievementsScreen::RebuildAchievementList()
 			const FText ActionText = GetAchievementActionText(Achievement);
 			const FText FavoriteGlyph = FText::FromString(bIsFavorited ? TEXT("\u2605") : TEXT("\u2606"));
 			const FLinearColor FavoriteGlyphColor = bIsFavorited
-				? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f)
-				: FLinearColor(0.55f, 0.58f, 0.62f, 1.0f);
+				? FLinearColor(0.92f, 0.05f, 0.12f, 1.0f)
+				: T66AchievementsParchmentMutedText();
 
 			AchievementListBox->AddSlot()
 			.AutoHeight()
 			.Padding(0.f, 0.f, 0.f, 7.f)
 			[
 				SNew(SBox)
-				.HeightOverride(82.f)
+				.HeightOverride(96.f)
 				[
 					MakeAchievementsGeneratedPanel(
 						MakeSettingsAssetPath(TEXT("settings_row_shell_full.png")),
 						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.VAlign(VAlign_Center)
-						.Padding(0.f, 0.f, 14.f, 0.f)
-						[
-							MakeAchievementsIconPlate()
-						]
 						+ SHorizontalBox::Slot()
 						.FillWidth(1.f)
 						.VAlign(VAlign_Center)
@@ -1306,6 +1276,12 @@ void UT66AchievementsScreen::RebuildAchievementList()
 								.WrappingPolicy(ETextWrappingPolicy::AllowPerCharacterWrapping)
 								.Clipping(EWidgetClipping::ClipToBounds)
 							]
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(0.f, 6.f, 18.f, 0.f)
+							[
+								MakeAchievementsProgressBarSized(T66AchievementProgress01(Achievement), 760.f, 6.f)
+							]
 						]
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
@@ -1318,7 +1294,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 								SNew(STextBlock)
 								.Text(FText::FromString(ProgressString))
 								.Font(AchievementsBoldFont(18))
-								.ColorAndOpacity(Achievement.bIsUnlocked ? FLinearColor(0.44f, 1.0f, 0.48f, 1.0f) : T66AchievementsParchmentText())
+								.ColorAndOpacity(Achievement.bIsUnlocked ? FLinearColor(0.92f, 0.05f, 0.12f, 1.0f) : T66AchievementsParchmentText())
 								.Justification(ETextJustify::Center)
 								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 							]
@@ -1419,13 +1395,6 @@ void UT66AchievementsScreen::RebuildAchievementList()
 				MakeSettingsAssetPath(TEXT("settings_row_shell_full.png")),
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				.Padding(0.f, 0.f, 14.f, 0.f)
-				[
-					MakeAchievementsIconPlate()
-				]
-				+ SHorizontalBox::Slot()
 				.FillWidth(1.f)
 				.VAlign(VAlign_Center)
 				[
@@ -1451,6 +1420,12 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						.WrapTextAt(900.f)
 						.WrappingPolicy(ETextWrappingPolicy::AllowPerCharacterWrapping)
 						.Clipping(EWidgetClipping::ClipToBounds)
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 6.f, 18.f, 0.f)
+					[
+						MakeAchievementsProgressBarSized(0.0f, 760.f, 6.f)
 					]
 				]
 				+ SHorizontalBox::Slot()
@@ -1508,7 +1483,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 					]
 				,
 				FMargin(28.f, 7.f, 22.f, 7.f),
-				RowIndex % 2 == 0 ? FLinearColor::White : FLinearColor(0.92f, 1.0f, 0.88f, 1.0f),
+				FLinearColor::White,
 				RowIndex % 2 == 0 ? T66AchievementsRowFill() : T66AchievementsUnlockedRowFill())
 		];
 	}

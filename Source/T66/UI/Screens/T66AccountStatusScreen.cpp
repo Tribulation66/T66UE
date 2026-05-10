@@ -78,17 +78,12 @@ namespace
 
 	FLinearColor AccountGold()
 	{
-		return FLinearColor(0.18f, 0.86f, 1.0f, 1.0f);
+		return FLinearColor(0.92f, 0.05f, 0.12f, 1.0f);
 	}
 
 	FLinearColor AccountMutedGold()
 	{
-		return FLinearColor(0.50f, 0.70f, 0.82f, 1.0f);
-	}
-
-	FLinearColor AccountTitleGold()
-	{
-		return FLinearColor(0.80f, 0.97f, 1.0f, 1.0f);
+		return FLinearColor(0.88f, 0.34f, 0.30f, 1.0f);
 	}
 
 	FLinearColor AccountChromeText()
@@ -98,27 +93,27 @@ namespace
 
 	FLinearColor AccountPanelFill()
 	{
-		return FLinearColor(0.035f, 0.043f, 0.055f, 0.96f);
+		return FLinearColor(0.020f, 0.024f, 0.034f, 0.97f);
 	}
 
 	FLinearColor AccountPanelInnerFill()
 	{
-		return FLinearColor(0.060f, 0.078f, 0.100f, 0.96f);
+		return FLinearColor(0.046f, 0.018f, 0.020f, 0.96f);
 	}
 
 	FLinearColor AccountRowFill()
 	{
-		return FLinearColor(0.055f, 0.080f, 0.105f, 0.92f);
+		return FLinearColor(0.52f, 0.035f, 0.045f, 0.66f);
 	}
 
 	FLinearColor AccountRowAltFill()
 	{
-		return FLinearColor(0.040f, 0.060f, 0.080f, 0.90f);
+		return FLinearColor(0.34f, 0.024f, 0.034f, 0.58f);
 	}
 
 	FLinearColor AccountHeaderFill()
 	{
-		return FLinearColor(0.065f, 0.125f, 0.160f, 0.95f);
+		return FLinearColor(0.70f, 0.045f, 0.055f, 0.78f);
 	}
 
 	FLinearColor AccountText()
@@ -133,7 +128,7 @@ namespace
 
 	FLinearColor AccountSuccess()
 	{
-		return FLinearColor(0.34f, 1.0f, 0.62f, 1.0f);
+		return FLinearColor(1.0f, 0.24f, 0.22f, 1.0f);
 	}
 
 	FLinearColor AccountDanger()
@@ -172,11 +167,31 @@ namespace
 	}
 
 	const TCHAR* GAccountStatusReferenceStateFolder = TEXT("Overview");
-	const FString AccountMainMenuUltrakillElementDir = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements");
 
 	FString MakeAccountMainMenuElementPath(const TCHAR* FileName)
 	{
-		return AccountMainMenuUltrakillElementDir / FString(FileName ? FileName : TEXT(""));
+		return T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(FileName);
+	}
+
+	FString MakeAccountMainMenuSquareElementPath(const TCHAR* FileName)
+	{
+		const FString Name(FileName ? FileName : TEXT(""));
+		if (Name.StartsWith(TEXT("dropdown_field_"), ESearchCase::IgnoreCase)
+			|| Name.StartsWith(TEXT("leaderboard_tab_button_"), ESearchCase::IgnoreCase))
+		{
+			FString State = FPaths::GetBaseFilename(Name).ToLower();
+			State.RemoveFromStart(Name.StartsWith(TEXT("dropdown_field_"), ESearchCase::IgnoreCase)
+				? TEXT("dropdown_field_")
+				: TEXT("leaderboard_tab_button_"),
+				ESearchCase::IgnoreCase);
+			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*State);
+		}
+		return T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(FileName);
+	}
+
+	FString MakeAccountMainMenuLongPanelPath(const TCHAR* State = TEXT("normal"))
+	{
+		return T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(State);
 	}
 
 	FString ResolveAccountReferenceStateName(const FString& RelativePath)
@@ -210,39 +225,50 @@ namespace
 
 		if (LowerPath.Contains(TEXT("screenart")))
 		{
-			return TEXT("SourceAssets/UI/Reference/Shared/ScreenArt/MainMenu/main_menu_scene_plate.png");
+			return FString();
+		}
+
+		if (LowerPath.Contains(TEXT("scrollbar")))
+		{
+			return LowerPath.Contains(TEXT("thumb"))
+				? MakeAccountMainMenuElementPath(TEXT("progress_bar_fill_red.png"))
+				: MakeAccountMainMenuSquareElementPath(TEXT("dropdown_field_normal_square_variant.png"));
 		}
 
 		if (LowerPath.Contains(TEXT("buttons/")) || LowerPath.Contains(TEXT("_pill_")))
 		{
-			return MakeAccountMainMenuElementPath(*FString::Printf(TEXT("leaderboard_tab_button_%s.png"), *State));
+			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*State);
 		}
 
 		if (LowerPath.Contains(TEXT("dropdown_field")))
 		{
-			const FString DropdownState = State.Equals(TEXT("selected"), ESearchCase::IgnoreCase) ? FString(TEXT("hover")) : State;
-			return MakeAccountMainMenuElementPath(*FString::Printf(TEXT("dropdown_field_%s.png"), *DropdownState));
+			const FString DropdownState = State.Equals(TEXT("selected"), ESearchCase::IgnoreCase) ? FString(TEXT("pressed")) : State;
+			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*DropdownState);
 		}
 
 		if (LowerPath.Contains(TEXT("slots/")) || LowerPath.Contains(TEXT("avatar_slot")) || LowerPath.Contains(TEXT("square_slot")))
 		{
-			const FString SlotState = State.Equals(TEXT("pressed"), ESearchCase::IgnoreCase) ? FString(TEXT("selected")) : State;
-			return MakeAccountMainMenuElementPath(*FString::Printf(TEXT("profile_slot_%s.png"), *SlotState));
+			const FString SlotState = State.Equals(TEXT("pressed"), ESearchCase::IgnoreCase) || State.Equals(TEXT("selected"), ESearchCase::IgnoreCase)
+				? FString(TEXT("selected_red"))
+				: State;
+			return MakeAccountMainMenuSquareElementPath(*FString::Printf(TEXT("profile_slot_%s_square_variant.png"), *SlotState));
 		}
 
 		if (LowerPath.Contains(TEXT("progress")) || LowerPath.Contains(TEXT("meter")))
 		{
-			return MakeAccountMainMenuElementPath(LowerPath.Contains(TEXT("fill")) ? TEXT("progress_bar_fill_cyan.png") : TEXT("progress_bar_track.png"));
+			return MakeAccountMainMenuElementPath(LowerPath.Contains(TEXT("fill")) ? TEXT("progress_bar_fill_red.png") : TEXT("progress_bar_track.png"));
 		}
 
 		if (LowerPath.Contains(TEXT("row")) || LowerPath.Contains(TEXT("strip")) || LowerPath.Contains(TEXT("table")))
 		{
-			return MakeAccountMainMenuElementPath(LowerPath.Contains(TEXT("header")) ? TEXT("leaderboard_tab_button_normal.png") : TEXT("player_row_panel_normal.png"));
+			return LowerPath.Contains(TEXT("header"))
+				? T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal"))
+				: MakeAccountMainMenuLongPanelPath(TEXT("normal"));
 		}
 
 		if (LowerPath.Contains(TEXT("panels/")) || LowerPath.Contains(TEXT("panel")))
 		{
-			return MakeAccountMainMenuElementPath(TEXT("main_panel_normal.png"));
+			return MakeAccountMainMenuSquareElementPath(TEXT("main_panel_normal_square_variant.png"));
 		}
 
 		return FString();
@@ -431,13 +457,11 @@ namespace
 		const TCHAR* State,
 		const TCHAR* DebugLabel)
 	{
+		(void)Prefix;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			ResolveAccountStateAssetPath(
-				FString::Printf(TEXT("Buttons/accountstatus_overview_pill_%s.png"), State ? State : TEXT("normal")),
-				FString::Printf(TEXT("Buttons/accountstatus_buttons_pill_%s.png"), State ? State : TEXT("normal")),
-				FString::Printf(TEXT("SourceAssets/UI/Reference/Screens/AccountStatus/Buttons/accountstatus_buttons_pill_%s.png"), State ? State : TEXT("normal"))),
-			FMargin(0.f),
+			T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(State ? State : TEXT("normal")),
+			FMargin(0.083f, 0.231f, 0.083f, 0.231f),
 			DebugLabel,
 			TextureFilter::TF_Nearest);
 	}
@@ -500,19 +524,6 @@ namespace
 			TextureFilter::TF_Nearest);
 	}
 
-	const FSlateBrush* GetAccountSceneBackgroundBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveAccountReferenceBrush(
-			Entry,
-			ResolveAccountStateAssetPath(
-				TEXT("ScreenArt/accountstatus_screen_art_mainmenu_main_menu_scene_plate_v1.png"),
-				TEXT("ScreenArt/accountstatus_screen_art_mainmenu_main_menu_scene_plate_v1.png"),
-				TEXT("SourceAssets/UI/Reference/Screens/AccountStatus/ScreenArt/accountstatus_screen_art_mainmenu_main_menu_scene_plate_v1.png")),
-			FMargin(0.f),
-			TEXT("AccountSceneBackground"));
-	}
-
 	const FSlateBrush* GetAccountRowShellBrush()
 	{
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
@@ -556,8 +567,8 @@ namespace
 
 		if (IsAccountHistoryReferenceState())
 		{
-			const FString TrackPath = MakeAccountMainMenuElementPath(TEXT("dropdown_field_normal.png"));
-			const FString ThumbPath = MakeAccountMainMenuElementPath(TEXT("progress_bar_fill_cyan.png"));
+			const FString TrackPath = MakeAccountMainMenuSquareElementPath(TEXT("dropdown_field_normal_square_variant.png"));
+			const FString ThumbPath = MakeAccountMainMenuElementPath(TEXT("progress_bar_fill_red.png"));
 			const FSlateBrush* TrackBrush = ResolveAccountReferenceBrush(
 				HistoryTrackEntry,
 				TrackPath,
@@ -621,7 +632,7 @@ namespace
 			VerticalBarUV,
 			FVector2D(16.f, 96.f),
 			ESlateBrushDrawType::Box,
-			FLinearColor(0.18f, 0.86f, 1.0f, 1.0f),
+			FLinearColor(0.92f, 0.05f, 0.12f, 1.0f),
 			TEXT("AccountScrollbarThumbV16"),
 			TextureFilter::TF_Nearest);
 		const FSlateBrush* HoverBrush = ResolveAccountReferenceRegionBrush(
@@ -631,7 +642,7 @@ namespace
 			VerticalBarUV,
 			FVector2D(16.f, 96.f),
 			ESlateBrushDrawType::Box,
-			FLinearColor(0.72f, 0.97f, 1.0f, 1.0f),
+			FLinearColor(1.0f, 0.16f, 0.22f, 1.0f),
 			TEXT("AccountScrollbarThumbHoverV16"),
 			TextureFilter::TF_Nearest);
 
@@ -684,10 +695,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush HistoryEntry;
 		return ResolveAccountReferenceBrush(
 			IsAccountHistoryReferenceState() ? HistoryEntry : Entry,
-			ResolveAccountStateAssetPath(
-				TEXT("Slots/accountstatus_overview_square_slot_frame_normal.png"),
-				TEXT("Slots/accountstatus_slots_reference_square_slot_frame_normal.png"),
-				TEXT("SourceAssets/UI/Reference/Screens/AccountStatus/Slots/accountstatus_slots_reference_square_slot_frame_normal.png")),
+			MakeAccountMainMenuSquareElementPath(TEXT("profile_slot_selected_red_square_variant.png")),
 			FMargin(0.205f, 0.205f, 0.205f, 0.205f),
 			TEXT("AccountAvatarSlot"));
 	}
@@ -725,7 +733,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			MakeAccountMainMenuElementPath(TEXT("leaderboard_tab_button_normal.png")),
+			T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal")),
 			FMargin(0.130f, 0.165f, 0.130f, 0.165f),
 			TEXT("AccountHistoryTableHeader"),
 			TextureFilter::TF_Nearest);
@@ -736,8 +744,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			MakeAccountMainMenuElementPath(TEXT("player_row_panel_normal.png")),
-			FMargin(0.100f, 0.145f, 0.100f, 0.145f),
+			MakeAccountMainMenuLongPanelPath(TEXT("normal")),
+			FMargin(0.055f, 0.210f, 0.055f, 0.210f),
 			TEXT("AccountHistoryTableRow"),
 			TextureFilter::TF_Nearest);
 	}
@@ -846,6 +854,35 @@ namespace
 				.SetPadding(Padding));
 	}
 
+	TSharedRef<SWidget> MakeAccountRedBarPanel(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
+		if (const FSlateBrush* BarBrush = ResolveAccountReferenceBrush(
+			Entry,
+			T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal")),
+			FMargin(0.083f, 0.231f, 0.083f, 0.231f),
+			TEXT("AccountRedBarPanel"),
+			TextureFilter::TF_Nearest))
+		{
+			return SNew(SBorder)
+				.BorderImage(BarBrush)
+				.BorderBackgroundColor(FLinearColor::White)
+				.Padding(Padding)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				[
+					Content
+				];
+		}
+
+		return FT66Style::MakePanel(
+			Content,
+			FT66PanelParams(ET66PanelType::Panel2)
+				.SetBorderVisual(ET66ButtonBorderVisual::None)
+				.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+				.SetColor(AccountPanelInnerFill())
+				.SetPadding(Padding));
+	}
+
 	TSharedRef<SWidget> MakeAccountProgressBarSized(const float Percent, const FVector2D& DesiredSize, const FLinearColor& FallbackFill);
 
 	TSharedRef<SWidget> MakeAccountProgressBar(const float Percent, const float Height, const FLinearColor& FallbackFill)
@@ -856,37 +893,34 @@ namespace
 	TSharedRef<SWidget> MakeAccountProgressBarSized(const float Percent, const FVector2D& DesiredSize, const FLinearColor& FallbackFill)
 	{
 		const float Pct = FMath::Clamp(Percent, 0.f, 1.f);
-		if (!IsAccountHistoryReferenceState())
+		const FSlateBrush* TrackBrush = GetAccountOverviewProgressTrackBrush();
+		const FSlateBrush* FillBrush = GetAccountOverviewProgressFillBrush();
+		if (TrackBrush && FillBrush)
 		{
-			const FSlateBrush* TrackBrush = GetAccountOverviewProgressTrackBrush();
-			const FSlateBrush* FillBrush = GetAccountOverviewProgressFillBrush();
-			if (TrackBrush && FillBrush)
-			{
-				return SNew(SBox)
-					.WidthOverride(DesiredSize.X)
-					.HeightOverride(DesiredSize.Y)
+			return SNew(SBox)
+				.WidthOverride(DesiredSize.X)
+				.HeightOverride(DesiredSize.Y)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
 					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
+						SNew(SImage)
+						.Image(TrackBrush)
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Left)
+					[
+						SNew(SBox)
+						.WidthOverride(DesiredSize.X * Pct)
+						.HeightOverride(DesiredSize.Y)
+						.Clipping(EWidgetClipping::ClipToBounds)
 						[
 							SNew(SImage)
-							.Image(TrackBrush)
+							.Image(FillBrush)
+							.ColorAndOpacity(FLinearColor::White)
 						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Left)
-						[
-							SNew(SBox)
-							.WidthOverride(DesiredSize.X * Pct)
-							.HeightOverride(DesiredSize.Y)
-							.Clipping(EWidgetClipping::ClipToBounds)
-							[
-								SNew(SImage)
-								.Image(FillBrush)
-								.ColorAndOpacity(FLinearColor::White)
-							]
-						]
-					];
-			}
+					]
+				];
 		}
 
 		return T66ScreenSlateHelpers::MakeReferenceProgressBar(
@@ -1207,9 +1241,9 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 	const TWeakObjectPtr<UT66LeaderboardSubsystem> WeakLB = LB;
 
 	const bool bModalPresentation = UIManager && UIManager->GetCurrentModalType() == ScreenType;
-	const float TopInset = bModalPresentation
-		? 0.f
-		: T66ScreenSlateHelpers::GetFrontendChromeTopInset(UIManager);
+	const T66ScreenSlateHelpers::FTopBarScreenLayoutMetrics ScreenLayout =
+		T66ScreenSlateHelpers::MakeTopBarScreenLayoutMetrics(UIManager);
+	const bool bUseStackedOverviewLayout = ScreenLayout.bStacked;
 	const FT66AccountRestrictionRecord Restriction = LB ? LB->GetAccountRestrictionRecord() : FT66AccountRestrictionRecord();
 	const bool bAccountEligible = LB ? LB->IsAccountEligibleForLeaderboard() : true;
 	const bool bHasSuspension = Restriction.Restriction != ET66AccountRestrictionKind::None;
@@ -1227,7 +1261,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 	const TArray<ET66HeroStatType> PowerStats = {
 		ET66HeroStatType::Damage, ET66HeroStatType::AttackSpeed, ET66HeroStatType::AttackScale, ET66HeroStatType::Accuracy,
-		ET66HeroStatType::Armor, ET66HeroStatType::Evasion, ET66HeroStatType::Luck
+		ET66HeroStatType::Armor, ET66HeroStatType::Evasion, ET66HeroStatType::Luck, ET66HeroStatType::Speed
 	};
 	int32 UnlockedPowerUps = 0;
 	for (const ET66HeroStatType StatType : PowerStats) { UnlockedPowerUps += Buffs ? Buffs->GetUnlockedFillStepCount(StatType) : 0; }
@@ -1336,15 +1370,14 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		(void)InactiveColor;
 		const FLinearColor ResolvedActiveTextColor = ActiveTextColor == FLinearColor::Transparent ? AccountChromeText() : ActiveTextColor;
 		const FLinearColor ResolvedInactiveTextColor = InactiveTextColor == FLinearColor::Transparent ? AccountChromeText() : InactiveTextColor;
-		const float TabMinWidth = IsAccountHistoryReferenceState() ? 248.f : 238.f;
-		const float TabHeight = IsAccountHistoryReferenceState() ? 45.f : 40.f;
+		const T66ScreenSlateHelpers::FFrontendChromeMetrics& ChromeMetrics = T66ScreenSlateHelpers::GetFrontendChromeMetrics();
 
 		return MakeAccountReferenceButton(
 			FT66ButtonParams(Label, FOnClicked::CreateUObject(this, Handler), bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
-			.SetFontSize(19)
-			.SetMinWidth(TabMinWidth)
-			.SetHeight(TabHeight)
-			.SetPadding(FMargin(14.f, 3.f, 14.f, 2.f))
+			.SetFontSize(ChromeMetrics.TabFontSize)
+			.SetMinWidth(ChromeMetrics.TabMinWidth)
+			.SetHeight(ChromeMetrics.TabHeight)
+			.SetPadding(ChromeMetrics.TabPadding)
 			.SetTextColor(bActive ? ResolvedActiveTextColor : ResolvedInactiveTextColor));
 	};
 
@@ -1384,34 +1417,6 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			];
 	};
 
-	auto MakeHistoryProgressRow = [&](const FText& Label, int32 Current, int32 Total) -> TSharedRef<SWidget>
-	{
-		const float Pct = AccountPreviewProgress01(AccountProgressPreviewIndex++);
-		return SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(Label)
-				.Font(AccountBoldFont(11))
-				.ColorAndOpacity(AccountText())
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds)
-			]
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 10.f, 0.f)
-			[
-				MakeAccountProgressBarSized(Pct, FVector2D(252.f, 19.f), FLinearColor(0.08f, 0.38f, 0.95f, 1.0f))
-			]
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(FText::Format(NSLOCTEXT("T66.Account", "HistoryCountFmt", "{0}/{1}"), FText::AsNumber(Current), FText::AsNumber(Total)))
-				.Font(AccountBoldFont(11))
-				.ColorAndOpacity(AccountGold())
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds)
-			];
-	};
-
 	auto MakeProfileLevelPanel = [&]() -> TSharedRef<SWidget>
 	{
 		constexpr float PreviewExperienceProgress = 0.58f;
@@ -1419,7 +1424,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		const FSlateBrush* AvatarSlotBrush = GetAccountAvatarSlotBrush();
 
 		const TSharedRef<SWidget> LevelBar =
-			MakeAccountProgressBar(Pct, 12.f, FLinearColor(0.74f, 0.10f, 0.96f, 1.0f));
+			MakeAccountProgressBar(Pct, 12.f, FLinearColor(0.92f, 0.05f, 0.12f, 1.0f));
 
 		return MakeAccountPanel(
 			SNew(SHorizontalBox)
@@ -1722,20 +1727,22 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 	auto MakeHistoryFilterMenuEntry = [this](const FText& Label, bool bActive, TFunction<void()> OnSelected) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakeDropdownOptionButton(
-			Label,
-			FOnClicked::CreateLambda([this, OnSelected]()
-			{
-				OnSelected();
-				RequestDeferredSlateRebuild();
-				FSlateApplication::Get().DismissAllMenus();
-				return FReply::Handled();
-			}),
-			bActive,
-			0.f,
-			28.f,
-			AdjustAccountFontSize(11),
-			FMargin(10.f, 5.f, 10.f, 4.f));
+		return MakeAccountReferenceButton(
+			FT66ButtonParams(
+				Label,
+				FOnClicked::CreateLambda([this, OnSelected]()
+				{
+					OnSelected();
+					RequestDeferredSlateRebuild();
+					FSlateApplication::Get().DismissAllMenus();
+					return FReply::Handled();
+				}),
+				bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+			.SetFontSize(AdjustAccountFontSize(11))
+			.SetMinWidth(180.f)
+			.SetHeight(32.f)
+			.SetPadding(FMargin(10.f, 5.f, 10.f, 4.f))
+			.SetTextColor(AccountChromeText()));
 	};
 
 	auto MakeHistoryFilterDropdown = [&](const FText& Label, TFunction<FText()> GetValueText, TFunction<TSharedRef<SWidget>()> MakeMenu, float MinWidth) -> TSharedRef<SWidget>
@@ -2181,12 +2188,36 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 	auto MakeAccountTableRow = [](const TSharedRef<SWidget>& RowContent, const FLinearColor& BackgroundColor, const FMargin& RowPadding) -> TSharedRef<SWidget>
 	{
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(BackgroundColor)
-			.Padding(RowPadding)
+		return SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight()
 			[
-				RowContent
+				SNew(SBox)
+				.HeightOverride(1.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(BackgroundColor)
+				]
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.f))
+				.Padding(RowPadding)
+				[
+					RowContent
+				]
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(SBox)
+				.HeightOverride(1.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(BackgroundColor)
+				]
 			];
 	};
 
@@ -2276,345 +2307,177 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			ET66PanelType::Panel2, AccountPanelInnerFill(), FMargin(8.f));
 	};
 
-	TSharedRef<SWidget> OverviewContent =
-		SNew(SBox)
-		.WidthOverride(1760.f)
-		.HeightOverride(648.f)
-		.HAlign(HAlign_Fill)
-		[
-		SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot().FillWidth(748.f).Padding(0.f, 0.f, 16.f, 0.f)
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-			[
-				SNew(SBox)
-				.HeightOverride(142.f)
-				[
-					MakeProfileLevelPanel()
-				]
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-			[
-				SNew(SBox)
-				.HeightOverride(198.f)
-				[
-					MakeAccountPanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeSectionHeader(NSLOCTEXT("T66.Account", "StatusHeader", "ACCOUNT STATUS"))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(RestrictionText(Restriction.Restriction))
-				.Font(AccountBoldFont(22))
-				.ColorAndOpacity(bAccountEligible ? AccountSuccess() : AccountDanger())
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds)
-			]
-			+ SHorizontalBox::Slot().FillWidth(1.f)
-			[
-				SNew(SSpacer)
-			]
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
-			[
-				MakeAccountReferenceButton(
-					FT66ButtonParams(
-						NSLOCTEXT("T66.Account", "StandingHelpButton", "?"),
-						FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleStandingInfoClicked),
-						ET66ButtonType::Neutral)
-					.SetFontSize(AdjustAccountFontSize(11))
-					.SetMinWidth(42.f)
-					.SetHeight(42.f)
-					.SetPadding(FMargin(0.f))
-					.SetTextColor(AccountChromeText()))
-			]
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
-					[
-						SNew(SBox)
-						.Visibility(bShowStandingInfoPopup ? EVisibility::Visible : EVisibility::Collapsed)
-						[
-							MakeAccountPanel(
-								SNew(STextBlock)
-								.Text(NSLOCTEXT("T66.Account", "StandingHelpBody", "Cheating, client tampering, or exploit abuse will suspend this account. Suspended accounts and their runs are not eligible for leaderboards or ranked personal-best tracking until the restriction is cleared."))
-								.Font(AccountRegularFont(11))
-								.ColorAndOpacity(AccountText())
-								.AutoWrapText(true)
-								.Clipping(EWidgetClipping::ClipToBounds),
-								ET66PanelType::Panel2,
-								AccountPanelInnerFill(),
-								FMargin(10.f, 8.f))
-						]
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)[SNew(STextBlock).Text(bAccountEligible ? NSLOCTEXT("T66.Account", "EligibleBody", "Your account is eligible for ranked tracking and personal best progression.") : NSLOCTEXT("T66.Account", "RestrictedBody", "This account is suspended from leaderboard submissions until the restriction is cleared.")).Font(AccountRegularFont(12)).ColorAndOpacity(AccountText()).AutoWrapText(true).Clipping(EWidgetClipping::ClipToBounds)]
-					+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(AppealStatusText(Restriction.AppealStatus)).Font(AccountBoldFont(11)).ColorAndOpacity(AccountMutedText())]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[SNew(SBox).Visibility(!Restriction.RestrictionReason.IsEmpty() ? EVisibility::Visible : EVisibility::Collapsed)[MakeAccountPanel(SNew(STextBlock).Text(FText::FromString(Restriction.RestrictionReason)).Font(AccountRegularFont(11)).ColorAndOpacity(AccountText()).AutoWrapText(true), ET66PanelType::Panel2, AccountPanelInnerFill(), FMargin(10.f))]]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[SNew(SBox).Visibility(LB && LB->HasAccountRestrictionRunSummary() ? EVisibility::Visible : EVisibility::Collapsed)[MakeAccountReferenceButton(FT66ButtonParams(NSLOCTEXT("T66.Account", "ViewReviewed", "VIEW REVIEWED RUN"), FOnClicked::CreateLambda([this, WeakLB]() { if (UT66LeaderboardSubsystem* RuntimeLB = WeakLB.Get(); RuntimeLB && RuntimeLB->RequestOpenAccountRestrictionRunSummary()) { ShowModal(ET66ScreenType::RunSummary); } return FReply::Handled(); }), ET66ButtonType::Primary).SetFontSize(AdjustAccountFontSize(12)).SetMinWidth(190.f).SetHeight(32.f).SetPadding(FMargin(12.f, 6.f, 12.f, 4.f)).SetTextColor(AccountChromeText()))]],
-					ET66PanelType::Panel, AccountPanelFill(), FMargin(14.f))
-				]
-			]
-			+ SVerticalBox::Slot().AutoHeight()
-			[
-				SNew(SBox)
-				.HeightOverride(236.f)
-				[
-					MakeAccountPanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeSectionHeader(NSLOCTEXT("T66.Account", "ProgressHeader", "ACCOUNT PROGRESS"))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 5.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "AchProg", "Achievements Unlocked"), UnlockedAchievements, AchievementDefs.Num(), FLinearColor(0.62f, 0.16f, 0.84f, 1.0f))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 5.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "PowerProg", "Permanent Buffs Unlocked"), UnlockedPowerUps, PowerStats.Num() * UT66BuffSubsystem::MaxFillStepsPerStat, FLinearColor(0.92f, 0.63f, 0.14f, 1.0f))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 5.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "HeroProg", "Heroes Unlocked"), HeroIDs.Num(), HeroIDs.Num(), FLinearColor(0.08f, 0.38f, 0.95f, 1.0f))]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 5.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "CompProg", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num(), FLinearColor(0.30f, 0.72f, 0.18f))]
-					+ SVerticalBox::Slot().AutoHeight()[MakeProgressRow(NSLOCTEXT("T66.Account", "ChallengeProg", "Challenges Completed"), DisplayChallengesCompleted, TotalChallengeCount, FLinearColor(0.80f, 0.20f, 0.14f, 1.0f))],
-					ET66PanelType::Panel, AccountPanelFill(), FMargin(14.f))
-				]
-			]
-		]
-		+ SHorizontalBox::Slot().FillWidth(994.f)
-		[
-			MakeAccountPanel(
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 8.f, 0.f)[MakePBViewModeDropdown()]
-					+ SHorizontalBox::Slot().FillWidth(1.f)[MakePBPartySizeDropdown()]
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 8.f)[MakePBBlock(NSLOCTEXT("T66.Account", "TopScore", "HIGHEST SCORE"), false)]
-				+ SVerticalBox::Slot().AutoHeight()[MakePBBlock(NSLOCTEXT("T66.Account", "TopTime", "BEST SPEED RUN"), true)],
-				ET66PanelType::Panel, AccountPanelFill(), FMargin(14.f))
-		]
-		];
-
-	auto MakeReferenceHistoryTable = [&](const FText& Title, const TArray<FText>& Headers, int32 PlaceholderRows, float DesiredHeight) -> TSharedRef<SWidget>
+	auto MakeAccountStatusPanel = [&]() -> TSharedRef<SWidget>
 	{
-		TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
-		for (int32 RowIndex = 0; RowIndex < PlaceholderRows; ++RowIndex)
-		{
-			TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox);
-			for (int32 HeaderIndex = 0; HeaderIndex < Headers.Num(); ++HeaderIndex)
-			{
-				Row->AddSlot().FillWidth(1.f).HAlign(HAlign_Center)
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.Account", "HistoryPlaceholderDash", "--"))
-					.Font(AccountBoldFont(11))
-					.ColorAndOpacity(AccountText())
-					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-					.Clipping(EWidgetClipping::ClipToBounds)
-				];
-			}
-
-			Rows->AddSlot().AutoHeight().Padding(0.f, 3.f, 0.f, 3.f)
-			[
-				SNew(SBorder)
-				.BorderImage(GetAccountHistoryTableRowBrush())
-				.BorderBackgroundColor(GetAccountHistoryTableRowBrush() ? FLinearColor::White : FLinearColor(0.f, 0.f, 0.f, 0.f))
-				.Padding(FMargin(0.f, 6.f, 0.f, 5.f))
-				[
-					Row
-				]
-			];
-		}
-
-		TSharedRef<SHorizontalBox> HeaderRow = SNew(SHorizontalBox);
-		for (const FText& Header : Headers)
-		{
-			HeaderRow->AddSlot().FillWidth(1.f).HAlign(HAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(Header)
-				.Font(AccountBoldFont(10))
-				.ColorAndOpacity(AccountText())
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds)
-			];
-		}
-
-		return SNew(SBox)
-			.HeightOverride(DesiredHeight)
-			[
-				MakeAccountPanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
-					[
-						MakeSectionHeader(Title)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[
-						SNew(SBorder)
-						.BorderImage(GetAccountHistoryTableHeaderBrush())
-						.BorderBackgroundColor(GetAccountHistoryTableHeaderBrush() ? FLinearColor::White : FLinearColor(0.f, 0.f, 0.f, 0.f))
-						.Padding(FMargin(0.f, 8.f, 0.f, 7.f))
-						[
-							HeaderRow
-						]
-					]
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						Rows
-					],
-					ET66PanelType::Panel2,
-					AccountPanelInnerFill(),
-					FMargin(12.f, 10.f))
-			];
-	};
-
-	TArray<FText> StatHistoryHeaders;
-	StatHistoryHeaders.Add(NSLOCTEXT("T66.Account", "StatHistoryRecordType", "RECORD TYPE"));
-	StatHistoryHeaders.Add(NSLOCTEXT("T66.Account", "StatHistoryDetail", "DETAIL"));
-	StatHistoryHeaders.Add(NSLOCTEXT("T66.Account", "StatHistoryDifficulty", "DIFFICULTY"));
-	StatHistoryHeaders.Add(NSLOCTEXT("T66.Account", "StatHistoryDate", "DATE"));
-	StatHistoryHeaders.Add(NSLOCTEXT("T66.Account", "StatHistoryValue", "VALUE"));
-
-	TArray<FText> UnlockHistoryHeaders;
-	UnlockHistoryHeaders.Add(NSLOCTEXT("T66.Account", "UnlockHistoryItemType", "ITEM TYPE"));
-	UnlockHistoryHeaders.Add(NSLOCTEXT("T66.Account", "UnlockHistoryItemName", "ITEM NAME"));
-	UnlockHistoryHeaders.Add(NSLOCTEXT("T66.Account", "UnlockHistoryDate", "DATE"));
-	UnlockHistoryHeaders.Add(NSLOCTEXT("T66.Account", "UnlockHistoryDetail", "DETAIL"));
-
-	TSharedRef<SWidget> HistoryContent =
-		SNew(SBox)
-		.WidthOverride(1760.f)
-		.HeightOverride(648.f)
-		.HAlign(HAlign_Fill)
-		[
-			SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot().FillWidth(0.754f).Padding(0.f, 0.f, 14.f, 0.f)
-		[
+		return MakeAccountPanel(
 			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-			[
-				SNew(SBox)
-				.HeightOverride(142.f)
-				[
-					MakeProfileLevelPanel()
-				]
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-			[
-				SNew(SBox)
-				.HeightOverride(198.f)
-				[
-					MakeAccountPanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-					[
-						MakeSectionHeader(NSLOCTEXT("T66.Account", "HistoryStatusHeader", "ACCOUNT STATUS"))
-					]
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().FillWidth(1.f)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight()
-							[
-								SNew(STextBlock)
-								.Text(RestrictionText(Restriction.Restriction))
-								.Font(AccountBoldFont(22))
-								.ColorAndOpacity(bAccountEligible ? AccountSuccess() : AccountDanger())
-								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-								.Clipping(EWidgetClipping::ClipToBounds)
-							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(bAccountEligible ? NSLOCTEXT("T66.Account", "HistoryEligibleBody", "Your account is eligible for ranked tracking and personal best progression.") : NSLOCTEXT("T66.Account", "HistoryRestrictedBody", "This account is suspended from leaderboard submissions until the restriction is cleared."))
-								.Font(AccountRegularFont(12))
-								.ColorAndOpacity(AccountText())
-								.AutoWrapText(true)
-								.Clipping(EWidgetClipping::ClipToBounds)
-							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(AppealStatusText(Restriction.AppealStatus))
-								.Font(AccountBoldFont(11))
-								.ColorAndOpacity(AccountMutedText())
-							]
-						]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Top).Padding(10.f, 0.f, 0.f, 0.f)
-						[
-							SNew(SBox)
-							.WidthOverride(42.f)
-							.HeightOverride(42.f)
-							[
-								MakeAccountReferenceButton(
-									FT66ButtonParams(
-										NSLOCTEXT("T66.Account", "HistoryStandingHelpButton", "?"),
-										FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleStandingInfoClicked),
-										ET66ButtonType::Neutral)
-									.SetFontSize(AdjustAccountFontSize(18))
-									.SetMinWidth(42.f)
-									.SetHeight(42.f)
-									.SetPadding(FMargin(0.f))
-									.SetTextColor(AccountChromeText()))
-							]
-						]
-					],
-					ET66PanelType::Panel,
-					AccountPanelFill(),
-					FMargin(14.f))
-				]
-			]
-			+ SVerticalBox::Slot().AutoHeight()
-			[
-				SNew(SBox)
-				.HeightOverride(236.f)
-				[
-					MakeAccountPanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
-					[
-						MakeSectionHeader(NSLOCTEXT("T66.Account", "HistoryProgressHeader", "ACCOUNT PROGRESS"))
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeHistoryProgressRow(NSLOCTEXT("T66.Account", "HistoryAchProg", "Achievements Unlocked"), UnlockedAchievements, AchievementDefs.Num())]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeHistoryProgressRow(NSLOCTEXT("T66.Account", "HistoryPowerProg", "Permanent Buffs Unlocked"), UnlockedPowerUps, PowerStats.Num() * UT66BuffSubsystem::MaxFillStepsPerStat)]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeHistoryProgressRow(NSLOCTEXT("T66.Account", "HistoryHeroProg", "Heroes Unlocked"), HeroIDs.Num(), HeroIDs.Num())]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeHistoryProgressRow(NSLOCTEXT("T66.Account", "HistoryCompProg", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num())]
-					+ SVerticalBox::Slot().AutoHeight()[MakeHistoryProgressRow(NSLOCTEXT("T66.Account", "HistoryChallengeProg", "Challenges Completed"), DisplayChallengesCompleted, TotalChallengeCount)],
-					ET66PanelType::Panel,
-					AccountPanelFill(),
-					FMargin(14.f))
-				]
-			]
-		]
-		+ SHorizontalBox::Slot().FillWidth(1.0f)
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)[MakeSectionHeader(NSLOCTEXT("T66.Account", "StatusHeader", "ACCOUNT STATUS"))]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 			[
 				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 28.f, 0.f)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
-					MakeHistoryFilterDropdown(
-						NSLOCTEXT("T66.Account", "RecordTypeFilterLabel", ""),
-						[]() { return NSLOCTEXT("T66.Account", "AllRecordTypes", "All Record Types"); },
-						MakeCompletionHistoryFilterMenu,
-						422.f)
+					SNew(STextBlock)
+					.Text(RestrictionText(Restriction.Restriction))
+					.Font(AccountBoldFont(22))
+					.ColorAndOpacity(bAccountEligible ? AccountSuccess() : AccountDanger())
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f)
 				[
-					MakeHistoryFilterDropdown(
-						NSLOCTEXT("T66.Account", "HistoryDifficultyOnlyFilterLabel", ""),
-						GetDifficultyHistoryFilterText,
-						MakeDifficultyHistoryFilterMenu,
-						411.f)
+					SNew(SSpacer)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
+				[
+					MakeAccountReferenceButton(
+						FT66ButtonParams(
+							NSLOCTEXT("T66.Account", "StandingHelpButton", "?"),
+							FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleStandingInfoClicked),
+							ET66ButtonType::Neutral)
+						.SetFontSize(AdjustAccountFontSize(11))
+						.SetMinWidth(42.f)
+						.SetHeight(42.f)
+						.SetPadding(FMargin(0.f))
+						.SetTextColor(AccountChromeText()))
 				]
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
-				MakeReferenceHistoryTable(NSLOCTEXT("T66.Account", "StatRecordHistoryTitle", "STAT RECORD HISTORY"), StatHistoryHeaders, 5, 264.f)
+				SNew(SBox)
+				.Visibility(bShowStandingInfoPopup ? EVisibility::Visible : EVisibility::Collapsed)
+				[
+					MakeAccountPanel(
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.Account", "StandingHelpBody", "Cheating, client tampering, or exploit abuse will suspend this account. Suspended accounts and their runs are not eligible for leaderboards or ranked personal-best tracking until the restriction is cleared."))
+						.Font(AccountRegularFont(11))
+						.ColorAndOpacity(AccountText())
+						.AutoWrapText(true)
+						.Clipping(EWidgetClipping::ClipToBounds),
+						ET66PanelType::Panel2,
+						AccountPanelInnerFill(),
+						FMargin(10.f, 8.f))
+				]
 			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				SNew(STextBlock)
+				.Text(bAccountEligible ? NSLOCTEXT("T66.Account", "EligibleBody", "Your account is eligible for ranked tracking and personal best progression.") : NSLOCTEXT("T66.Account", "RestrictedBody", "This account is suspended from leaderboard submissions until the restriction is cleared."))
+				.Font(AccountRegularFont(12))
+				.ColorAndOpacity(AccountText())
+				.AutoWrapText(true)
+				.Clipping(EWidgetClipping::ClipToBounds)
+			]
+			+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(AppealStatusText(Restriction.AppealStatus)).Font(AccountBoldFont(11)).ColorAndOpacity(AccountMutedText())]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[SNew(SBox).Visibility(!Restriction.RestrictionReason.IsEmpty() ? EVisibility::Visible : EVisibility::Collapsed)[MakeAccountPanel(SNew(STextBlock).Text(FText::FromString(Restriction.RestrictionReason)).Font(AccountRegularFont(11)).ColorAndOpacity(AccountText()).AutoWrapText(true), ET66PanelType::Panel2, AccountPanelInnerFill(), FMargin(10.f))]]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[SNew(SBox).Visibility(LB && LB->HasAccountRestrictionRunSummary() ? EVisibility::Visible : EVisibility::Collapsed)[MakeAccountReferenceButton(FT66ButtonParams(NSLOCTEXT("T66.Account", "ViewReviewed", "VIEW REVIEWED RUN"), FOnClicked::CreateLambda([this, WeakLB]() { if (UT66LeaderboardSubsystem* RuntimeLB = WeakLB.Get(); RuntimeLB && RuntimeLB->RequestOpenAccountRestrictionRunSummary()) { ShowModal(ET66ScreenType::RunSummary); } return FReply::Handled(); }), ET66ButtonType::Primary).SetFontSize(AdjustAccountFontSize(12)).SetMinWidth(190.f).SetHeight(32.f).SetPadding(FMargin(12.f, 6.f, 12.f, 4.f)).SetTextColor(AccountChromeText()))]],
+			ET66PanelType::Panel, AccountPanelFill(), FMargin(14.f));
+	};
+
+	auto MakeAccountProgressPanel = [&]() -> TSharedRef<SWidget>
+	{
+		return MakeAccountPanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeSectionHeader(NSLOCTEXT("T66.Account", "ProgressHeader", "ACCOUNT PROGRESS"))]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "AchProg", "Achievements Unlocked"), UnlockedAchievements, AchievementDefs.Num(), FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "PowerProg", "Permanent Buffs Unlocked"), UnlockedPowerUps, PowerStats.Num() * UT66BuffSubsystem::MaxFillStepsPerStat, FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "HeroProg", "Heroes Unlocked"), HeroIDs.Num(), HeroIDs.Num(), FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "CompProg", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num(), FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
+			+ SVerticalBox::Slot().AutoHeight()[MakeProgressRow(NSLOCTEXT("T66.Account", "ChallengeProg", "Challenges Completed"), DisplayChallengesCompleted, TotalChallengeCount, FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
+			+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SSpacer)],
+			ET66PanelType::Panel, AccountPanelFill(), FMargin(14.f));
+	};
+
+	auto MakePersonalBestPanel = [&]() -> TSharedRef<SWidget>
+	{
+		return MakeAccountPanel(
+			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
-				MakeReferenceHistoryTable(NSLOCTEXT("T66.Account", "UnlockHistoryTitle", "UNLOCK HISTORY"), UnlockHistoryHeaders, 5, 264.f)
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 8.f, 0.f)[MakePBViewModeDropdown()]
+				+ SHorizontalBox::Slot().FillWidth(1.f)[MakePBPartySizeDropdown()]
 			]
-		]
+			+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 8.f, 0.f, 0.f)
+			[
+				SNew(SScrollBox)
+				.ScrollBarStyle(GetAccountReferenceScrollBarStyle())
+				.ScrollBarVisibility(EVisibility::Visible)
+				+ SScrollBox::Slot().Padding(0.f, 0.f, 0.f, 8.f)[MakePBBlock(NSLOCTEXT("T66.Account", "TopScore", "HIGHEST SCORE"), false)]
+				+ SScrollBox::Slot()[MakePBBlock(NSLOCTEXT("T66.Account", "TopTime", "BEST SPEED RUN"), true)]
+			],
+			ET66PanelType::Panel, AccountPanelFill(), FMargin(14.f));
+	};
+
+	TSharedRef<SWidget> OverviewContent = SNew(SBox);
+	if (bUseStackedOverviewLayout)
+	{
+		OverviewContent =
+			SNew(SScrollBox)
+			.ScrollBarStyle(GetAccountReferenceScrollBarStyle())
+			.ScrollBarVisibility(EVisibility::Visible)
+			+ SScrollBox::Slot().Padding(0.f, 0.f, 0.f, 10.f)[MakeProfileLevelPanel()]
+			+ SScrollBox::Slot().Padding(0.f, 0.f, 0.f, 10.f)[MakeAccountStatusPanel()]
+			+ SScrollBox::Slot().Padding(0.f, 0.f, 0.f, 10.f)[MakeAccountProgressPanel()]
+			+ SScrollBox::Slot()[MakePersonalBestPanel()];
+	}
+	else
+	{
+		OverviewContent =
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(0.42f).Padding(0.f, 0.f, 16.f, 0.f)
+			[
+				SNew(SScrollBox)
+				.ScrollBarStyle(GetAccountReferenceScrollBarStyle())
+				.ScrollBarVisibility(EVisibility::Visible)
+				+ SScrollBox::Slot().Padding(0.f, 0.f, 0.f, 10.f)[MakeProfileLevelPanel()]
+				+ SScrollBox::Slot().Padding(0.f, 0.f, 0.f, 10.f)[MakeAccountStatusPanel()]
+				+ SScrollBox::Slot()[MakeAccountProgressPanel()]
+			]
+			+ SHorizontalBox::Slot().FillWidth(0.58f).VAlign(VAlign_Top)
+			[
+				MakePersonalBestPanel()
+			];
+	}
+
+	TSharedRef<SWidget> HistoryContent =
+		SNew(SBox)
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+			[
+				HistoryFilterBar
+			]
+			+ SVerticalBox::Slot().FillHeight(1.f)
+			[
+				MakeAccountPanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 9.f)
+					[
+						MakeSectionHeader(NSLOCTEXT("T66.Account", "RunHistoryTitle", "RUN HISTORY"))
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+					[
+						HistoryColumnHeader
+					]
+					+ SVerticalBox::Slot().FillHeight(1.f)
+					[
+						SNew(SScrollBox)
+						.ScrollBarStyle(GetAccountReferenceScrollBarStyle())
+						.ScrollBarVisibility(EVisibility::Visible)
+						.ScrollBarThickness(FVector2D(18.f, 18.f))
+						.ScrollBarPadding(FMargin(10.f, 0.f, 0.f, 0.f))
+						+ SScrollBox::Slot()
+						[
+							HistoryRows
+						]
+					],
+					ET66PanelType::Panel,
+					AccountPanelFill(),
+					FMargin(14.f))
+			]
 		];
 
 	const FText SuspensionHeadline =
@@ -2637,8 +2500,8 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 	});
 	TSharedRef<SWidget> SuspensionContent =
 		SNew(SBox)
-		.WidthOverride(1760.f)
-		.HeightOverride(648.f)
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
 		[
 			MakeAccountPanel(
 				SNew(SVerticalBox)
@@ -2802,190 +2665,134 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		ActiveContent =
 			SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.035f, 0.022f, 0.013f, 1.0f))
+			.BorderBackgroundColor(FLinearColor(0.006f, 0.006f, 0.012f, 1.0f))
 			.Padding(FMargin(0.f))
 			[
 				ActiveContent
 			];
 	}
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
-	const FVector2D AccountScrollBarThickness = ActiveTab == EAccountTab::History ? FVector2D(22.f, 22.f) : FVector2D(24.f, 24.f);
-	const FMargin AccountScrollBarPadding(4.f, 0.f, 4.f, 0.f);
-
-	TSharedRef<SWidget> Content =
-		SNew(SBox)
-		.WidthOverride(1828.f)
-		.HeightOverride(792.f)
-		[
-			SNew(SConstraintCanvas)
-			+ SConstraintCanvas::Slot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			.Offset(FMargin(0.f, 0.f, 1828.f, 792.f))
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.026f, 0.014f, 0.006f, 0.98f))
-			]
-			+ SConstraintCanvas::Slot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			.Offset(FMargin(0.f, 0.f, 1828.f, 4.f))
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.10f, 0.68f, 0.88f, 0.86f))
-			]
-			+ SConstraintCanvas::Slot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			.Offset(FMargin(0.f, 788.f, 1828.f, 4.f))
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.10f, 0.68f, 0.88f, 0.86f))
-			]
-			+ SConstraintCanvas::Slot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			.Offset(FMargin(603.f, 24.f, 622.f, 58.f))
-			[
-				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.Account", "ScreenTitle", "ACCOUNT"))
-				.Font(FT66Style::Tokens::FontBold(42))
-				.ColorAndOpacity(AccountTitleGold())
-				.ShadowOffset(FVector2D(0.f, 2.f))
-				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.75f))
-				.Justification(ETextJustify::Center)
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds)
-			]
-			+ SConstraintCanvas::Slot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			.Offset(FMargin(530.f, 88.f, 768.f, 48.f))
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
-				[
-					SNew(SBox)
-					.Visibility(bHasSuspension ? EVisibility::Visible : EVisibility::Collapsed)
-					[
-						MakeTabButton(
-							NSLOCTEXT("T66.Account", "SuspensionTab", "SUSPENSION"),
-							ActiveTab == EAccountTab::Suspension,
-							&UT66AccountStatusScreen::HandleSuspensionTabClicked,
-							AccountDanger(),
-							FLinearColor(0.22f, 0.08f, 0.07f, 1.0f),
-							AccountChromeText(),
-							AccountDanger())
-					]
-				]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
-				[
-					MakeTabButton(NSLOCTEXT("T66.Account", "OverviewTab", "OVERVIEW"), ActiveTab == EAccountTab::Overview, &UT66AccountStatusScreen::HandleOverviewTabClicked)
-				]
-				+ SHorizontalBox::Slot().AutoWidth()
-				[
-					MakeTabButton(NSLOCTEXT("T66.Account", "HistoryTab", "HISTORY"), ActiveTab == EAccountTab::History, &UT66AccountStatusScreen::HandleHistoryTabClicked)
-				]
-			]
-			+ SConstraintCanvas::Slot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			.Offset(FMargin(84.f, 118.f, 1660.f, 620.f))
-			[
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				.StretchDirection(EStretchDirection::DownOnly)
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Top)
-				[
-					ActiveContent
-				]
-			]
-			+ SConstraintCanvas::Slot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			.Offset(FMargin(1748.f, 118.f, 36.f, 620.f))
-			[
-				SNew(SScrollBox)
-				.ScrollBarStyle(GetAccountReferenceScrollBarStyle())
-				.ScrollBarVisibility(EVisibility::Visible)
-				.ScrollBarThickness(AccountScrollBarThickness)
-				.ScrollBarPadding(AccountScrollBarPadding)
-				+ SScrollBox::Slot()
-				[
-					SNew(SBox)
-					.WidthOverride(1.f)
-					.HeightOverride(900.f)
-				]
-			]
-			+ SConstraintCanvas::Slot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			.Offset(FMargin(1660.f, 746.f, 116.f, 34.f))
+	auto MakeAccountTabRow = [&]() -> TSharedRef<SWidget>
+	{
+		return SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, bHasSuspension ? 20.f : 0.f, 0.f)
 			[
 				SNew(SBox)
-				.Visibility(bModalPresentation ? EVisibility::Visible : EVisibility::Collapsed)
+				.Visibility(bHasSuspension ? EVisibility::Visible : EVisibility::Collapsed)
 				[
-					MakeAccountReferenceButton(FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleBackClicked), ET66ButtonType::Neutral).SetFontSize(AdjustAccountFontSize(13)).SetMinWidth(116.f).SetHeight(34.f).SetPadding(FMargin(12.f, 7.f, 12.f, 5.f)).SetTextColor(AccountChromeText()))
+					MakeTabButton(
+						NSLOCTEXT("T66.Account", "SuspensionTab", "SUSPENSION"),
+						ActiveTab == EAccountTab::Suspension,
+						&UT66AccountStatusScreen::HandleSuspensionTabClicked,
+						AccountDanger(),
+						FLinearColor(0.22f, 0.08f, 0.07f, 1.0f),
+						AccountChromeText(),
+						AccountDanger())
 				]
 			]
-		];
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 20.f, 0.f)
+			[
+				MakeTabButton(NSLOCTEXT("T66.Account", "OverviewTab", "OVERVIEW"), ActiveTab == EAccountTab::Overview, &UT66AccountStatusScreen::HandleOverviewTabClicked)
+			]
+			+ SHorizontalBox::Slot().AutoWidth()
+			[
+				MakeTabButton(NSLOCTEXT("T66.Account", "HistoryTab", "HISTORY"), ActiveTab == EAccountTab::History, &UT66AccountStatusScreen::HandleHistoryTabClicked)
+			];
+	};
+	auto MakeAccountTabInfoStrip = [&]() -> TSharedRef<SWidget>
+	{
+		FText TabInfoText = NSLOCTEXT("T66.Account", "OverviewTabInfo", "Review account standing, profile level, progress, and personal bests.");
+		if (ActiveTab == EAccountTab::History)
+		{
+			TabInfoText = NSLOCTEXT("T66.Account", "HistoryTabInfo", "Filter run history and compare ranked highscores and speedruns.");
+		}
+		else if (ActiveTab == EAccountTab::Suspension)
+		{
+			TabInfoText = NSLOCTEXT("T66.Account", "SuspensionTabInfo", "Review moderation status, appeal state, and flagged run details.");
+		}
 
-	const TSharedRef<SWidget> ModalFrame = SNew(SBox).MaxDesiredWidth(1600.f)[MakeAccountPanel(Content, ET66PanelType::Panel, AccountPanelFill(), FMargin(18.f))];
-	const TSharedRef<SWidget> FullWidthFrame =
-		SNew(SScaleBox)
-		.Stretch(EStretch::ScaleToFit)
-		.StretchDirection(EStretchDirection::Both)
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Top)
-		[
-			Content
-		];
-	const FMargin FullWidthFramePadding(46.f, FMath::Max(0.f, TopInset - 8.f), 46.f, 0.f);
+		return SNew(SBox)
+			.HeightOverride(54.f)
+			[
+				MakeAccountRedBarPanel(
+					SNew(SBox)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(TabInfoText)
+						.Font(AccountRegularFont(14))
+						.ColorAndOpacity(AccountChromeText())
+						.Justification(ETextJustify::Center)
+						.AutoWrapText(true)
+					],
+					FMargin(18.f, 7.f))
+			];
+	};
+
 	if (bModalPresentation)
 	{
 		return SNew(SOverlay)
 			+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FT66Style::Scrim())]
-			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(FMargin(24.f, 30.f))[ModalFrame];
-	}
-
-	if (const FSlateBrush* SceneBackgroundBrush = GetAccountSceneBackgroundBrush())
-	{
-		return SNew(SOverlay)
-			+ SOverlay::Slot()
-			[
-				SNew(SImage)
-				.Image(SceneBackgroundBrush)
-			]
-			+ SOverlay::Slot()
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.006f, 0.004f, 0.002f, 0.34f))
-			]
-			+ SOverlay::Slot()
+			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(FMargin(24.f, 30.f))
 			[
 				SNew(SBox)
-				.Padding(FullWidthFramePadding)
+				.MaxDesiredWidth(1600.f)
 				[
-					FullWidthFrame
+					MakeAccountPanel(
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)[MakeAccountTabRow()]
+						+ SVerticalBox::Slot().AutoHeight().Padding(20.f, 0.f, 20.f, 12.f)[MakeAccountTabInfoStrip()]
+						+ SVerticalBox::Slot().AutoHeight()[ActiveContent]
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 12.f, 0.f, 0.f)
+						[
+							MakeAccountReferenceButton(FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleBackClicked), ET66ButtonType::Neutral).SetFontSize(AdjustAccountFontSize(13)).SetMinWidth(116.f).SetHeight(34.f).SetPadding(FMargin(12.f, 7.f, 12.f, 5.f)).SetTextColor(AccountChromeText()))
+						],
+						ET66PanelType::Panel, AccountPanelFill(), FMargin(18.f))
 				]
 			];
 	}
 
-	return SNew(SBorder)
+	const TSharedRef<SWidget> ScreenContent =
+		SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::ScreenBackground())
+		.BorderBackgroundColor(FLinearColor(0.006f, 0.006f, 0.012f, 0.98f))
 		[
-			SNew(SBox)
-			.Padding(FullWidthFramePadding)
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
-				FullWidthFrame
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(FMargin(0.f, ScreenLayout.bCompact ? 6.f : 8.f, 0.f, ScreenLayout.bCompact ? 6.f : 8.f))
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, ScreenLayout.bCompact ? 8.f : 10.f)[MakeAccountTabRow()]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, ScreenLayout.bCompact ? 8.f : 10.f)[MakeAccountTabInfoStrip()]
+					+ SVerticalBox::Slot().FillHeight(1.f)
+					[
+						ActiveContent
+					]
+				]
 			]
 		];
+
+	TSharedRef<SWidget> BackgroundContent = SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FLinearColor::Black);
+
+	const TSharedRef<SWidget> FullWidthScreenContent =
+		SNew(SBox)
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			ScreenContent
+		];
+
+	return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
+		UIManager,
+		FullWidthScreenContent,
+		BackgroundContent,
+		FLinearColor::Transparent,
+		FMargin(0.f));
 }
 
 const FSlateBrush* UT66AccountStatusScreen::GetOrCreateHeroPortraitBrush(UT66GameInstance* T66GI, FName HeroID)
