@@ -14,6 +14,10 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Pixelation, Log, All);
 
 static const TCHAR* PixelationMaterialPath = TEXT("/Game/UI/M_PixelationPostProcess.M_PixelationPostProcess");
 static const FName ParamNamePixelGridSize(TEXT("PixelGridSize"));
+static const FName ParamNameWorldPixelGridSize(TEXT("WorldPixelGridSize"));
+static const FName ParamNameCharacterPixelGridSize(TEXT("CharacterPixelGridSize"));
+static const FName ParamNameWorldPixelationWeight(TEXT("WorldPixelationWeight"));
+static const FName ParamNameCharacterPixelationWeight(TEXT("CharacterPixelationWeight"));
 
 void UT66PixelationSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -59,7 +63,7 @@ void UT66PixelationSubsystem::QueuePixelationMaterialPreload()
 void UT66PixelationSubsystem::HandlePixelationMaterialLoaded()
 {
 	PixelationMaterialLoadHandle.Reset();
-	if (CurrentLevel > 0)
+	if (CurrentLevel > 0 || CurrentWorldLevel > 0 || CurrentCharacterLevel > 0)
 	{
 		if (UWorld* World = GetWorld())
 		{
@@ -71,7 +75,15 @@ void UT66PixelationSubsystem::HandlePixelationMaterialLoaded()
 
 void UT66PixelationSubsystem::SetPixelationLevel(int32 Level)
 {
-	CurrentLevel = FMath::Clamp(Level, 0, 10);
+	SetPixelationLevels(Level, 0);
+}
+
+void UT66PixelationSubsystem::SetPixelationLevels(int32 WorldLevel, int32 CharacterLevel)
+{
+	CurrentWorldLevel = FMath::Clamp(WorldLevel, 0, 10);
+	CurrentCharacterLevel = FMath::Clamp(CharacterLevel, 0, 10);
+	CurrentLevel = FMath::Max(CurrentWorldLevel, CurrentCharacterLevel);
+
 	UWorld* World = GetWorld();
 	if (!World)
 	{
@@ -176,10 +188,18 @@ void UT66PixelationSubsystem::ApplyLevelToBlendable()
 	{
 		return;
 	}
+	const int32 WorldGridSize = LevelToPixelGridSize(CurrentWorldLevel);
+	const int32 CharacterGridSize = LevelToPixelGridSize(CurrentCharacterLevel);
 	const int32 GridSize = LevelToPixelGridSize(CurrentLevel);
+	const float WorldWeight = (CurrentWorldLevel > 0) ? 1.0f : 0.0f;
+	const float CharacterWeight = (CurrentCharacterLevel > 0) ? 1.0f : 0.0f;
 	const float Weight = (CurrentLevel > 0) ? 1.0f : 0.0f;
 
 	PixelationDMI->SetScalarParameterValue(ParamNamePixelGridSize, static_cast<float>(GridSize));
+	PixelationDMI->SetScalarParameterValue(ParamNameWorldPixelGridSize, static_cast<float>(WorldGridSize));
+	PixelationDMI->SetScalarParameterValue(ParamNameCharacterPixelGridSize, static_cast<float>(CharacterGridSize));
+	PixelationDMI->SetScalarParameterValue(ParamNameWorldPixelationWeight, WorldWeight);
+	PixelationDMI->SetScalarParameterValue(ParamNameCharacterPixelationWeight, CharacterWeight);
 
 	// Update blendable weight in the volume
 	FPostProcessSettings& PPS = PixelationVolume->Settings;

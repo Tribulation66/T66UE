@@ -5,23 +5,40 @@
 using namespace T66SettingsScreenPrivate;
 TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 {
+	if (bRetroFXPreviewPopup)
+	{
+		return BuildRetroFXPreviewPopupUI();
+	}
+
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	bool bShowMediaViewerTab = true;
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (const UT66RuntimePlatformSubsystem* RuntimePlatform = GI->GetSubsystem<UT66RuntimePlatformSubsystem>())
+		{
+			bShowMediaViewerTab = RuntimePlatform->ShouldShowMediaViewer();
+		}
+	}
+
 	struct FSettingsTabDefinition
 	{
 		FText Label;
 		ET66SettingsTab Tab = ET66SettingsTab::Gameplay;
 	};
 
-	const TArray<FSettingsTabDefinition> TabDefinitions = {
+	TArray<FSettingsTabDefinition> TabDefinitions = {
 		{ Loc ? Loc->GetText_SettingsTabGameplay() : NSLOCTEXT("T66.Settings", "TabGameplay", "GAMEPLAY"), ET66SettingsTab::Gameplay },
 		{ Loc ? Loc->GetText_SettingsTabGraphics() : NSLOCTEXT("T66.Settings", "TabGraphics", "GRAPHICS"), ET66SettingsTab::Graphics },
 		{ Loc ? Loc->GetText_SettingsTabControls() : NSLOCTEXT("T66.Settings", "TabControls", "CONTROLS"), ET66SettingsTab::Controls },
-		{ Loc ? Loc->GetText_SettingsTabHUD() : NSLOCTEXT("T66.Settings", "TabHUD", "HUD"), ET66SettingsTab::HUD },
-		{ Loc ? Loc->GetText_SettingsTabMediaViewer() : NSLOCTEXT("T66.Settings", "TabMediaViewer", "MEDIA VIEWER"), ET66SettingsTab::MediaViewer },
-		{ Loc ? Loc->GetText_SettingsTabAudio() : NSLOCTEXT("T66.Settings", "TabAudio", "AUDIO"), ET66SettingsTab::Audio },
-		{ Loc ? Loc->GetText_SettingsTabCrashing() : NSLOCTEXT("T66.Settings", "TabCrashing", "CRASHING"), ET66SettingsTab::Crashing },
-		{ NSLOCTEXT("T66.Settings", "TabRetroFX", "RETRO FX"), ET66SettingsTab::RetroFX }
+		{ Loc ? Loc->GetText_SettingsTabHUD() : NSLOCTEXT("T66.Settings", "TabHUD", "HUD"), ET66SettingsTab::HUD }
 	};
+	if (bShowMediaViewerTab)
+	{
+		TabDefinitions.Add({ Loc ? Loc->GetText_SettingsTabMediaViewer() : NSLOCTEXT("T66.Settings", "TabMediaViewer", "MEDIA VIEWER"), ET66SettingsTab::MediaViewer });
+	}
+	TabDefinitions.Add({ Loc ? Loc->GetText_SettingsTabAudio() : NSLOCTEXT("T66.Settings", "TabAudio", "AUDIO"), ET66SettingsTab::Audio });
+	TabDefinitions.Add({ Loc ? Loc->GetText_SettingsTabCrashing() : NSLOCTEXT("T66.Settings", "TabCrashing", "CRASHING"), ET66SettingsTab::Crashing });
+	TabDefinitions.Add({ NSLOCTEXT("T66.Settings", "TabRetroFX", "RETRO FX"), ET66SettingsTab::RetroFX });
 
 	const TSharedRef<SHorizontalBox> TabRow = SNew(SHorizontalBox);
 	for (const FSettingsTabDefinition& TabDefinition : TabDefinitions)
@@ -53,12 +70,12 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	const float TopInset = bModalPresentation
 		? 0.f
 		: FMath::Max(0.f, ((UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f) - TopBarOverlapPx) / ResponsiveScale);
-	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
-	const float SurfaceW = FMath::Max(1.f, SafeFrameSize.X - 28.f);
-	const float SurfaceH = FMath::Max(1.f, SafeFrameSize.Y - TopInset);
+	const FVector2D ViewportSize = FT66Style::GetViewportLogicalSize();
+	const float SurfaceW = FMath::Max(1.f, ViewportSize.X);
+	const float SurfaceH = FMath::Max(1.f, ViewportSize.Y - TopInset);
 	const FMargin ContentAreaPadding = bModalPresentation
 		? FMargin(8.f)
-		: FMargin(8.f);
+		: FMargin(0.f);
 
 	const TSharedRef<SWidget> SettingsContent =
 		SNew(SVerticalBox)
@@ -69,7 +86,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 		[
 			SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-			.Padding(FMargin(10.0f, 10.0f))
+			.Padding(FMargin(0.0f, 10.0f, 0.0f, 10.0f))
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.f)
@@ -147,11 +164,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 			SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 			.Clipping(EWidgetClipping::ClipToBounds)
-			.Padding(FMargin(8.f, 0.f, 8.f, 8.f))
+			.Padding(FMargin(0.f, 0.f, 0.f, 8.f))
 			[
 				SettingsContent
 			],
-			FMargin(26.f, 0.f, 26.f, 30.f));
+			FMargin(0.f, 0.f, 0.f, 30.f));
 
 	TSharedRef<SOverlay> Root = SNew(SOverlay);
 
@@ -161,28 +178,8 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	[
 		SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(T66SettingsShellFill())
+		.BorderBackgroundColor(FLinearColor::White)
 	];
-
-	if (const FSlateBrush* SceneBackgroundBrush = GetSettingsSceneBackgroundBrush())
-	{
-		Root->AddSlot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
-			SNew(SImage)
-			.Image(SceneBackgroundBrush)
-		];
-
-		Root->AddSlot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.02f, 0.025f, 0.035f, 0.48f))
-		];
-	}
 
 	if (bModalPresentation)
 	{
@@ -199,7 +196,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	Root->AddSlot()
 	.HAlign(HAlign_Fill)
 	.VAlign(VAlign_Fill)
-	.Padding(FMargin(14.f, TopInset, 14.f, 0.f))
+	.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
 	[
 		SNew(SBox)
 		.WidthOverride(SurfaceW)

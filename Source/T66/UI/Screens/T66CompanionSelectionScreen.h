@@ -6,11 +6,14 @@
 #include "UI/T66ScreenBase.h"
 #include "Data/T66DataTypes.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "UObject/StrongObjectPtr.h"
 #include "T66CompanionSelectionScreen.generated.h"
 
 class UT66LocalizationSubsystem;
 class AT66CompanionPreviewStage;
 class AT66HeroPreviewStage;
+class SImage;
+class UTexture2D;
 
 /**
  * Companion Selection Screen - Mirrors Hero Selection layout
@@ -27,6 +30,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Companion Selection")
 	FName PreviewedCompanionID;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Companion Selection")
+	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
 
 	/** When set, 3D preview shows this skin instead of equipped (e.g. Beachgoer preview). */
 	FName PreviewedCompanionSkinIDOverride = NAME_None;
@@ -69,6 +75,7 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
+	virtual void OnScreenDeactivated_Implementation() override;
 	virtual void RefreshScreen_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
@@ -79,6 +86,8 @@ private:
 	TSharedPtr<STextBlock> CompanionLoreWidget;
 	TSharedPtr<STextBlock> CompanionUnionText;
 	TSharedPtr<STextBlock> CompanionUnionHealingText;
+	TSharedPtr<STextBlock> CompanionRecordRankWidget;
+	TSharedPtr<STextBlock> DifficultyDropdownText;
 	TSharedPtr<SBorder> CompanionPreviewColorBox;
 	TSharedPtr<SBox> CompanionUnionBox;
 	TSharedPtr<class SProgressBar> CompanionUnionProgressBar;
@@ -93,6 +102,8 @@ private:
 	TSharedPtr<class SVerticalBox> SkinsListBoxWidget;
 	/** AC balance text in skins panel; updated when purchasing. */
 	TSharedPtr<class STextBlock> ACBalanceTextBlock;
+	TSharedPtr<struct FSlateBrush> ACBalanceIconBrush;
+	TStrongObjectPtr<UTexture2D> ACBalanceIconTexture;
 
 	AT66CompanionPreviewStage* GetCompanionPreviewStage() const;
 	AT66HeroPreviewStage* GetHeroPreviewStage() const;
@@ -101,6 +112,11 @@ private:
 	void RefreshCompanionList();
 	void UpdateCompanionDisplay();
 	void RefreshCompanionCarouselPortraits();
+	void RefreshDifficultyDropdownText();
+	void RefreshCompanionRecordRank();
+	void HandleBackendMyRankDataReady(const FString& Key, bool bSuccess, int32 Rank, int32 TotalEntries);
+	void HandlePartyStateChanged();
+	void HandleSessionStateChanged();
 	void GeneratePlaceholderSkins();
 	/** Repopulate skins list and AC display without full rebuild. */
 	void RefreshSkinsList();
@@ -108,8 +124,18 @@ private:
 
 	/** Brushes for the 5-slot companion carousel portraits (prev2..next2). */
 	TArray<TSharedPtr<struct FSlateBrush>> CompanionCarouselPortraitBrushes;
+	TArray<TSharedPtr<struct FSlateBrush>> PartyAvatarBrushes;
+	TArray<TSharedPtr<struct FSlateBrush>> PartyHeroPortraitBrushes;
+	TArray<TSharedPtr<SImage>> PartyAvatarImageWidgets;
+	TArray<TSharedPtr<SImage>> PartyHeroPortraitImageWidgets;
 	mutable TWeakObjectPtr<AT66CompanionPreviewStage> CachedCompanionPreviewStage;
 	mutable TWeakObjectPtr<AT66HeroPreviewStage> CachedHeroPreviewStage;
+	TArray<TSharedPtr<FString>> DifficultyOptions;
+	TSharedPtr<FString> CurrentDifficultyOption;
+	FString CompanionRecordRankRequestKey;
+	FDelegateHandle BackendMyRankReadyHandle;
+	FDelegateHandle PartyStateChangedHandle;
+	FDelegateHandle SessionStateChangedHandle;
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	bool IsCompanionUnlocked(FName CompanionID) const;
@@ -131,5 +157,13 @@ private:
 	FReply HandleNoCompanionClicked();
 	FReply HandleLoreClicked();
 	FReply HandleConfirmClicked();
+	FReply HandleEnterClicked();
+	FReply HandleChallengesClicked();
+	FReply HandleModsClicked();
 	FReply HandleBackClicked();
+	void OnDifficultyChanged(TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo);
+	void OnEnterTribulationClicked();
+	void OnChallengesClicked();
+	void OnModsClicked();
+	void OpenCommunityContent(bool bOpenMods);
 };

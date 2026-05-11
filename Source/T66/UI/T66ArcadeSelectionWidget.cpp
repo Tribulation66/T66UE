@@ -545,7 +545,7 @@ FLinearColor UT66ArcadeSelectionWidget::ResolveGameAccentColor(const ET66ArcadeG
 	case ET66ArcadeGameType::ShieldParry:
 		return FLinearColor(0.18f, 0.72f, 1.f, 1.f);
 	case ET66ArcadeGameType::MimicMemory:
-		return FLinearColor(0.78f, 0.32f, 0.96f, 1.f);
+		return FLinearColor(0.88f, 0.12f, 0.10f, 1.f);
 	case ET66ArcadeGameType::BombSorter:
 		return FLinearColor(0.94f, 0.18f, 0.14f, 1.f);
 	default:

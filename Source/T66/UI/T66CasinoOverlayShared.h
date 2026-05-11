@@ -276,9 +276,10 @@ namespace T66CasinoOverlayShared
 						.WidthOverride(72.f)
 						.HeightOverride(72.f)
 						[
-							SNew(SImage)
-							.Image(IconBrush.Get())
-							.ColorAndOpacity(FLinearColor::White)
+							FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+								SNew(SImage)
+								.Image(IconBrush.Get())
+								.ColorAndOpacity(FLinearColor::White)))
 						]
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)

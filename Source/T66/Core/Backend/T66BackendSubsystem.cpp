@@ -175,6 +175,8 @@ namespace
 		Summary->Inventory = { FName(TEXT("Item_GoldTooth")), FName(TEXT("Item_TravelerBoots")), FName(TEXT("Item_LuckyCoin")) };
 		Summary->DamageBySource.Add(FName(TEXT("PrimaryAttack")), FMath::Max(2500, Summary->Score / 2));
 		Summary->DamageBySource.Add(FName(TEXT("Ultimate")), FMath::Max(600, Summary->Score / 6));
+		Summary->DamageReceivedBySource.Add(FName(TEXT("Dungeon_Slime")), 120);
+		Summary->DamageReceivedBySource.Add(FName(TEXT("DungeonWallArrow")), 80);
 		Summary->DisplayName = DisplayName;
 
 		const TArray<float> TimeFractions = { 0.22f, 0.48f, 0.74f, 1.0f };

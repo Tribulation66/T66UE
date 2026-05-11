@@ -736,7 +736,8 @@ bool UT66LeaderboardSubsystem::PruneInvalidRecentRunRecords()
 			&& Snapshot->RunDurationSeconds <= KINDA_SMALL_NUMBER
 			&& !Snapshot->bWasFullClear
 			&& Snapshot->EventLog.Num() == 0
-			&& Snapshot->DamageBySource.Num() == 0;
+			&& Snapshot->DamageBySource.Num() == 0
+			&& Snapshot->DamageReceivedBySource.Num() == 0;
 		if (!bLooksLikeFrontendPlaceholder)
 		{
 			continue;
@@ -939,10 +940,16 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 
 	if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
 	{
-		const TArray<FDamageLogEntry> Sorted = DamageLog->GetDamageBySourceSorted();
-		for (const FDamageLogEntry& Entry : Sorted)
+		const TArray<FDamageLogEntry> Dealt = DamageLog->GetDamageBySourceSorted();
+		for (const FDamageLogEntry& Entry : Dealt)
 		{
 			Snapshot->DamageBySource.Add(Entry.SourceID, Entry.TotalDamage);
+		}
+
+		const TArray<FDamageLogEntry> Received = DamageLog->GetDamageReceivedBySourceSorted();
+		for (const FDamageLogEntry& Entry : Received)
+		{
+			Snapshot->DamageReceivedBySource.Add(Entry.SourceID, Entry.TotalDamage);
 		}
 	}
 

@@ -384,21 +384,42 @@ namespace T66OverlayChromeStyle
 	{
 		if (const FSlateBrush* ChromeBrush = GetBrush(Brush))
 		{
-			TSharedPtr<SBorder> Panel;
-			TSharedRef<SBorder> PanelRef =
-				SAssignNew(Panel, SBorder)
+			TSharedPtr<SBorder> ChromePanel;
+			TSharedRef<SBorder> ChromePanelRef =
+				SAssignNew(ChromePanel, SBorder)
 				.BorderImage(ChromeBrush)
 				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
+				.Padding(FMargin(0.f))
+				.Visibility(EVisibility::HitTestInvisible)
 				[
-					Content
+					SNew(SBox)
 				];
 
 			if (OutBorder)
 			{
-				*OutBorder = Panel;
+				*OutBorder = ChromePanel;
 			}
-			return PanelRef;
+
+			return SNew(SOverlay)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					FT66Style::MakeRetroUIChromeSurface(StaticCastSharedRef<SWidget>(ChromePanelRef))
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+					.Padding(Padding)
+					.Clipping(EWidgetClipping::ClipToBounds)
+					[
+						Content
+					]
+				];
 		}
 
 		return FT66Style::MakePanel(
@@ -411,12 +432,13 @@ namespace T66OverlayChromeStyle
 	{
 		TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
 			? Params.CustomContent.ToSharedRef()
-			: StaticCastSharedRef<SWidget>(
-				SNew(STextBlock)
-				.Text(Params.Label)
-				.Font(FT66Style::Tokens::FontBold(Params.FontSize))
-				.ColorAndOpacity(FSlateColor(FLinearColor(0.96f, 0.93f, 0.84f, 1.f)))
-				.Justification(ETextJustify::Center));
+			: FT66Style::MakeRetroUIText(
+				StaticCastSharedRef<SWidget>(
+					SNew(STextBlock)
+					.Text(Params.Label)
+					.Font(FT66Style::Tokens::FontBold(Params.FontSize))
+					.ColorAndOpacity(FSlateColor(FLinearColor(0.96f, 0.93f, 0.84f, 1.f)))
+					.Justification(ETextJustify::Center)));
 
 		return SNew(ST66OverlayChromeButton)
 			.Family(Params.Family)

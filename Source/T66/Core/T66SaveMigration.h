@@ -6,7 +6,7 @@
 
 constexpr int32 T66SparseActiveHeroIdProfileSaveVersion = 16;
 constexpr int32 T66SparseActiveHeroIdRunSaveVersion = 11;
-constexpr int32 T66SparseActiveHeroIdRunSummarySchemaVersion = 21;
+constexpr int32 T66SparseActiveHeroIdRunSummarySchemaVersion = 22;
 
 /**
  * One-time migration for the active roster moving from sparse authored IDs

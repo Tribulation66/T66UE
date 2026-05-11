@@ -132,7 +132,7 @@ struct T66IDLE_API FT66IdleIdolDefinition : public FTableRowBase
 	FString Category;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Idle")
-	FLinearColor AccentColor = FLinearColor(0.62f, 0.34f, 0.88f, 1.0f);
+	FLinearColor AccentColor = FLinearColor(0.82f, 0.24f, 0.18f, 1.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Idle")
 	double BaseCostGold = 0.0;

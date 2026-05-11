@@ -3,12 +3,16 @@
 #include "UI/Screens/T66DailyClimbScreen.h"
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66RunIntegritySubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66SaveSubsystem.h"
+#include "Core/T66LocalizationSubsystem.h"
 #include "Engine/Texture2D.h"
 #include "Misc/Paths.h"
+#include "UI/Components/T66LeaderboardPanel.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
+#include "UI/Style/T66ReferenceLayout.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
@@ -29,13 +33,18 @@
 
 namespace
 {
-	const FVector2D T66DailyClimbBackgroundImageSize(1920.f, 1080.f);
 	const FVector2D T66DailyClimbPanelReferenceSize(1920.f, 1080.f);
-	const FVector2D T66DailyClimbLeftShellSize(720.f, 780.f);
-	const FVector2D T66DailyClimbCenterStackSize(445.f, 311.f);
-	const FVector2D T66DailyClimbPrimaryButtonSize(588.f, 116.f);
-	const FVector2D T66DailyClimbSecondaryButtonSize(388.f, 97.f);
-	const FVector2D T66DailyClimbCompactButtonSize(180.f, 68.f);
+	const FVector2D T66DailyClimbLeftShellSize(T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly.Width, T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly.Height);
+	const FVector2D T66DailyClimbRightShellSize(T66MainMenuReferenceLayout::Right::ShellFullReference.Width, T66MainMenuReferenceLayout::Right::ShellFullReference.Height);
+	const FVector2D T66DailyClimbPrimaryButtonSize(460.f, 92.f);
+	const FVector2D T66DailyClimbCompactButtonSize(136.f, 72.f);
+	const FString DailyUltrakillElementDir = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements");
+	const FString DailyUltrakillSquareElementDir = DailyUltrakillElementDir / TEXT("SquareVariant");
+
+	FString MakeDailySquareElementPath(const TCHAR* FileName)
+	{
+		return DailyUltrakillSquareElementDir / FString(FileName ? FileName : TEXT(""));
+	}
 
 	struct FDailyReferenceBrushEntry
 	{
@@ -155,23 +164,53 @@ namespace
 		static FDailyReferenceBrushEntry Entry;
 		return ResolveDailyReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			*MakeDailySquareElementPath(TEXT("main_panel_normal_square_variant.png")),
 			T66DailyClimbLeftShellSize,
-			FMargin(0.115f, 0.055f, 0.115f, 0.055f),
+			FMargin(0.070f, 0.045f, 0.070f, 0.045f),
 			true,
 			TextureFilter::TF_Nearest);
 	}
 
-	const FSlateBrush* GetDailyCenterStackBrush()
+	const FSlateBrush* GetDailyRightShellBrush()
 	{
 		static FDailyReferenceBrushEntry Entry;
 		return ResolveDailyReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
-			T66DailyClimbCenterStackSize,
-			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
+			*MakeDailySquareElementPath(TEXT("main_panel_normal_square_variant.png")),
+			T66DailyClimbRightShellSize,
+			FMargin(0.070f, 0.045f, 0.070f, 0.045f),
 			true,
 			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetDailyLeaderboardFilterButtonBrush(const bool bSelected)
+	{
+		static FDailyReferenceBrushEntry NormalEntry;
+		static FDailyReferenceBrushEntry SelectedEntry;
+		return ResolveDailyReferenceBrush(
+			bSelected ? SelectedEntry : NormalEntry,
+			*MakeDailySquareElementPath(TEXT("cta_new_game_button_normal_red_square_variant.png")),
+			T66DailyClimbCompactButtonSize,
+			FMargin(0.f),
+			false,
+			TextureFilter::TF_Nearest);
+	}
+
+	const FSlateBrush* GetDailyLeaderboardFilterIconBrush(const ET66LeaderboardFilter Filter)
+	{
+		static FDailyReferenceBrushEntry GlobalEntry;
+		static FDailyReferenceBrushEntry FriendsEntry;
+		static FDailyReferenceBrushEntry StreamersEntry;
+		switch (Filter)
+		{
+		case ET66LeaderboardFilter::Friends:
+			return ResolveDailyReferenceBrush(FriendsEntry, *(DailyUltrakillElementDir / TEXT("leaderboard_filter_friends_icon.png")), FVector2D(58.f, 58.f), FMargin(0.f), false, TextureFilter::TF_Nearest);
+		case ET66LeaderboardFilter::Streamers:
+			return ResolveDailyReferenceBrush(StreamersEntry, *(DailyUltrakillElementDir / TEXT("leaderboard_filter_streamers_icon.png")), FVector2D(58.f, 58.f), FMargin(0.f), false, TextureFilter::TF_Nearest);
+		case ET66LeaderboardFilter::Global:
+		default:
+			return ResolveDailyReferenceBrush(GlobalEntry, *(DailyUltrakillElementDir / TEXT("leaderboard_filter_global_icon.png")), FVector2D(58.f, 58.f), FMargin(0.f), false, TextureFilter::TF_Nearest);
+		}
 	}
 
 	const FSlateBrush* GetDailyRowShellBrush()
@@ -217,30 +256,30 @@ namespace
 	FDailyPlateBrushSet GetDailyStartButtonBrushes()
 	{
 		return {
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_new_game_button_normal.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_new_game_button_hover.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_new_game_button_pressed.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_new_game_button_disabled.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_normal_square_variant.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_hover_square_variant.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_pressed_square_variant.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_disabled_square_variant.png"), T66DailyClimbPrimaryButtonSize),
 		};
 	}
 
 	FDailyPlateBrushSet GetDailyContinueButtonBrushes()
 	{
 		return {
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_load_game_button_normal.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_load_game_button_hover.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_load_game_button_pressed.png"), T66DailyClimbPrimaryButtonSize),
-			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_load_game_button_disabled.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_normal_square_variant.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_hover_square_variant.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_pressed_square_variant.png"), T66DailyClimbPrimaryButtonSize),
+			GetDailyCTAButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_disabled_square_variant.png"), T66DailyClimbPrimaryButtonSize),
 		};
 	}
 
 	FDailyPlateBrushSet GetDailyBackButtonBrushes()
 	{
 		return {
-			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/topbar_text_button_normal.png")),
-			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/topbar_text_button_hover.png")),
-			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/topbar_text_button_pressed.png")),
-			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/topbar_text_button_disabled.png")),
+			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_normal_red_square_variant.png")),
+			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_hover_red_square_variant.png")),
+			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_pressed_red_square_variant.png")),
+			GetDailyCompactButtonBrush(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_disabled_red_square_variant.png")),
 		};
 	}
 
@@ -433,7 +472,7 @@ namespace
 UT66DailyClimbScreen::UT66DailyClimbScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	ScreenType = ET66ScreenType::DailyClimb;
+	ScreenType = ET66ScreenType::DailyDescent;
 	bIsModal = false;
 }
 
@@ -546,10 +585,10 @@ FReply UT66DailyClimbScreen::HandleContinueClicked()
 		return FReply::Handled();
 	}
 
-	T66GI->SelectedHeroID = Loaded->HeroID;
+	T66GI->SelectedHeroID = T66GI->ResolvePlayableHeroID(Loaded->HeroID);
 	T66GI->SelectedHeroBodyType = Loaded->HeroBodyType;
 	T66GI->SelectedCompanionID = Loaded->CompanionID;
-	T66GI->SelectedDifficulty = Loaded->Difficulty;
+	T66GI->SelectedDifficulty = T66GI->ResolvePlayableDifficulty(Loaded->Difficulty);
 	T66GI->SelectedPartySize = ET66PartySize::Solo;
 	T66GI->RunSeed = Loaded->RunSeed;
 	T66GI->CachedDailyClimbChallenge = Loaded->DailyClimbChallenge;
@@ -668,20 +707,8 @@ void UT66DailyClimbScreen::RefreshContinueAvailability()
 	}
 }
 
-void UT66DailyClimbScreen::RequestBackgroundTexture()
-{
-	SetupDailyClimbRuntimeImageBrush(
-		SkyBackgroundBrush,
-		SkyBackgroundTexture,
-		nullptr,
-		TEXT("SourceAssets/UI/Reference/Shared/ScreenArt/MainMenu/main_menu_base.png"),
-		T66DailyClimbBackgroundImageSize);
-}
-
 TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 {
-	RequestBackgroundTexture();
-
 	UGameInstance* GI = GetGameInstance();
 	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
@@ -700,7 +727,6 @@ TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 	const bool bAttemptConsumed = bHasChallenge && Challenge->HasCompletedAttempt();
 	const bool bCanContinueChallenge = ContinueSaveSlotIndex != INDEX_NONE;
 	const bool bCanStartChallenge = bHasChallenge && !bAttemptStarted && !bAttemptConsumed && !bStartRequestInFlight;
-	const int32 SeedPreview = bHasChallenge ? ComputeSeedQualityPreview(Challenge->RunSeed) : 0;
 
 	FString HeroName = TEXT("Unknown Hero");
 	if (bHasChallenge && T66GI)
@@ -719,11 +745,11 @@ TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 	const FText StatusText =
 		!Backend ? NSLOCTEXT("T66.DailyClimb", "StatusOffline", "Backend unavailable.") :
 		(!bHasChallenge
-			? FText::FromString(Backend->GetLastDailyClimbMessage().IsEmpty() ? TEXT("Loading Daily Challenge...") : Backend->GetLastDailyClimbMessage())
+			? FText::FromString(Backend->GetLastDailyClimbMessage().IsEmpty() ? TEXT("Loading Daily Descent...") : Backend->GetLastDailyClimbMessage())
 			: (bCanContinueChallenge
-				? NSLOCTEXT("T66.DailyClimb", "ResumeReady", "Your Daily Challenge run is in progress. Continue to resume it.")
+				? NSLOCTEXT("T66.DailyClimb", "ResumeReady", "Your Daily Descent run is in progress. Continue to resume it.")
 				: (bAttemptConsumed
-					? NSLOCTEXT("T66.DailyClimb", "AttemptUsed", "Today's Daily Challenge is already completed.")
+					? NSLOCTEXT("T66.DailyClimb", "AttemptUsed", "Today's Daily Descent is already completed.")
 					: (bAttemptStarted
 						? NSLOCTEXT("T66.DailyClimb", "AttemptStarted", "Your Daily attempt is already active. Resume from your saved Daily run.")
 						: NSLOCTEXT("T66.DailyClimb", "Ready", "Everyone gets the same seed, hero, and rules. One attempt only.")))));
@@ -735,9 +761,9 @@ TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 				? NSLOCTEXT("T66.DailyClimb", "AttemptLockedButton", "RUN IN PROGRESS")
 				: (bStartRequestInFlight
 					? NSLOCTEXT("T66.DailyClimb", "Starting", "STARTING...")
-					: NSLOCTEXT("T66.DailyClimb", "StartChallenge", "START CHALLENGE")));
+					: NSLOCTEXT("T66.DailyClimb", "StartDescent", "START DESCENT")));
 
-	const FText ContinueButtonText = NSLOCTEXT("T66.DailyClimb", "ContinueChallenge", "CONTINUE CHALLENGE");
+	const FText ContinueButtonText = NSLOCTEXT("T66.DailyClimb", "ContinueDescent", "CONTINUE DESCENT");
 
 	TSharedRef<SVerticalBox> RulesBox = SNew(SVerticalBox);
 	if (bHasChallenge && Challenge->Rules.Num() > 0)
@@ -883,24 +909,58 @@ TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 
 	const FDailyPlateBrushSet StartButtonBrushes = GetDailyStartButtonBrushes();
 	const FDailyPlateBrushSet ContinueButtonBrushes = GetDailyContinueButtonBrushes();
+	const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
 
-	const TSharedRef<SWidget> PrimaryActionWidget = bCanContinueChallenge
-		? MakeMenuButton(
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66LeaderboardSubsystem* LeaderboardSubsystem = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	UT66SaveSubsystem* SaveSub = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
+	UT66RunSaveGame* ContinuePreviewSave = (bCanContinueChallenge && SaveSub) ? SaveSub->LoadFromSlot(ContinueSaveSlotIndex) : nullptr;
+
+	FString CompanionName = TEXT("None");
+	const FName DisplayCompanionID = ContinuePreviewSave ? ContinuePreviewSave->CompanionID : NAME_None;
+	if (T66GI && !DisplayCompanionID.IsNone())
+	{
+		FCompanionData CompanionData;
+		CompanionName = T66GI->GetCompanionData(DisplayCompanionID, CompanionData)
+			? CompanionData.DisplayName.ToString()
+			: DisplayCompanionID.ToString();
+	}
+
+	const FText ContinueSaveText = ContinuePreviewSave
+		? FText::Format(
+			NSLOCTEXT("T66.DailyClimb", "ContinueSaveHint", "Saved Slot {0} / Stage {1}"),
+			FText::AsNumber(ContinueSaveSlotIndex + 1),
+			FText::AsNumber(FMath::Max(1, ContinuePreviewSave->StageReached)))
+		: NSLOCTEXT("T66.DailyClimb", "NoContinueSaveHint", "No saved Daily run");
+
+	const TSharedRef<SWidget> ContinueActionWidget =
+		MakeMenuButton(
 			ContinueButtonText,
 			&UT66DailyClimbScreen::HandleContinueClicked,
-			true,
+			bCanContinueChallenge,
 			ContinueButtonBrushes,
 			T66DailyClimbPrimaryButtonSize,
-			20)
-		: MakeMenuButton(
+			23);
+
+	const TSharedRef<SWidget> StartActionWidget =
+		MakeMenuButton(
 			StartButtonText,
 			&UT66DailyClimbScreen::HandleStartClicked,
 			bCanStartChallenge,
 			StartButtonBrushes,
 			T66DailyClimbPrimaryButtonSize,
-			24);
+			23);
 
-	const TSharedRef<SWidget> RulesPanel =
+	auto MakeDetailRow = [MakeInfoCard](const FText& Label, const FText& Value) -> TSharedRef<SWidget>
+	{
+		return SNew(SBox)
+			.Padding(0.f, 0.f, 0.f, 8.f)
+			[
+				MakeInfoCard(Label, Value)
+			];
+	};
+
+	const TSharedRef<SWidget> LeftDetailsPanel =
 		SNew(SBox)
 		.WidthOverride(T66DailyClimbLeftShellSize.X)
 		.HeightOverride(T66DailyClimbLeftShellSize.Y)
@@ -914,14 +974,14 @@ TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 				.Image(GetDailyLeftShellBrush())
 			]
 			+ SOverlay::Slot()
-			.Padding(FMargin(54.f, 52.f, 54.f, 48.f))
+			.Padding(FMargin(20.f, 36.f, 20.f, 22.f))
 			[
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight()
 				[
 					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.DailyClimb", "RulesPanelTitle", "TODAY'S RULES"))
-					.Font(FT66Style::Tokens::FontHeading())
+					.Text(NSLOCTEXT("T66.DailyClimb", "RulesPanelTitle", "RULES OF THE DAY"))
+					.Font(FT66Style::MakeFont(TEXT("Black"), 34))
 					.ColorAndOpacity(DailyGoldText())
 					.ShadowOffset(FVector2D(0.f, 1.f))
 					.ShadowColorAndOpacity(FLinearColor(0.04f, 0.025f, 0.01f, 1.f))
@@ -938,51 +998,50 @@ TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 					SNew(SBorder)
 					.BorderImage(GetDailyRowShellBrush())
 					.BorderBackgroundColor(FLinearColor::White)
-					.Padding(FMargin(16.f, 12.f))
+					.Padding(FMargin(14.f, 10.f))
 					[
 						SNew(STextBlock)
 						.Text(StatusText)
-					.Font(FT66Style::Tokens::FontRegular(14))
+						.Font(FT66Style::Tokens::FontRegular(12))
 						.ColorAndOpacity(DailyBrightText())
 						.AutoWrapText(true)
-						.WrapTextAt(588.f)
+						.WrapTextAt(382.f)
 						.WrappingPolicy(ETextWrappingPolicy::AllowPerCharacterWrapping)
 						.Clipping(EWidgetClipping::ClipToBounds)
 					]
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 9.f, 0.f, 0.f)
 				[
-					SNew(SUniformGridPanel)
-					.SlotPadding(FMargin(4.f, 0.f, 4.f, 0.f))
-					+ SUniformGridPanel::Slot(0, 0)
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
 					[
-						MakeInfoCard(
-							NSLOCTEXT("T66.DailyClimb", "HeroLabel", "Hero"),
+						MakeDetailRow(
+							NSLOCTEXT("T66.DailyClimb", "HeroSelectedLabel", "Hero Selected"),
 							FText::FromString(bHasChallenge ? HeroName : TEXT("--")))
 					]
-					+ SUniformGridPanel::Slot(1, 0)
+					+ SVerticalBox::Slot().AutoHeight()
 					[
-						MakeInfoCard(
+						MakeDetailRow(
+							NSLOCTEXT("T66.DailyClimb", "CompanionSelectedLabel", "Companion Selected"),
+							FText::FromString(CompanionName))
+					]
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						MakeDetailRow(
 							NSLOCTEXT("T66.DailyClimb", "DifficultyLabel", "Difficulty"),
 							FText::FromString(bHasChallenge ? DifficultyLabel(Challenge->Difficulty) : TEXT("--")))
 					]
-					+ SUniformGridPanel::Slot(2, 0)
+					+ SVerticalBox::Slot().AutoHeight()
 					[
-						MakeInfoCard(
-							NSLOCTEXT("T66.DailyClimb", "SeedQualityLabel", "Seed Quality"),
-							FText::FromString(bHasChallenge ? FString::Printf(TEXT("%d / 100"), SeedPreview) : TEXT("--")))
-					]
-					+ SUniformGridPanel::Slot(3, 0)
-					[
-						MakeInfoCard(
-							NSLOCTEXT("T66.DailyClimb", "RewardLabel", "Reward"),
-							FText::FromString(bHasChallenge ? FString::Printf(TEXT("%d Chad Coupons"), Challenge->CouponReward) : TEXT("--")))
+						MakeDetailRow(
+							NSLOCTEXT("T66.DailyClimb", "ContinueSlotLabel", "Continue Save"),
+							ContinueSaveText)
 					]
 				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 5.f)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 5.f)
 				[
 					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.DailyClimb", "RulesHeader", "Rule Stack"))
+					.Text(NSLOCTEXT("T66.DailyClimb", "ModifiersHeader", "Modifiers"))
 					.Font(FT66Style::Tokens::FontBold(18))
 					.ColorAndOpacity(DailyBrightText())
 				]
@@ -998,6 +1057,190 @@ TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 			]
 		];
 
+	TSharedRef<SWidget> LeaderboardWidget =
+		SAssignNew(LeaderboardPanel, ST66LeaderboardPanel)
+		.LocalizationSubsystem(Loc)
+		.LeaderboardSubsystem(LeaderboardSubsystem)
+		.UIManager(UIManager)
+		.DailyChallengeMode(true)
+		.ReferenceMirrorMode(true);
+	const TWeakPtr<ST66LeaderboardPanel> WeakLeaderboardPanel = LeaderboardPanel;
+	const TSharedRef<TArray<TPair<ET66LeaderboardFilter, TWeakPtr<SImage>>>> LeaderboardFilterChromeImages =
+		MakeShared<TArray<TPair<ET66LeaderboardFilter, TWeakPtr<SImage>>>>();
+	auto GetLeaderboardFilterChromeBrush = [WeakLeaderboardPanel](const ET66LeaderboardFilter Filter) -> const FSlateBrush*
+	{
+		if (const TSharedPtr<ST66LeaderboardPanel> Panel = WeakLeaderboardPanel.Pin())
+		{
+			return GetDailyLeaderboardFilterButtonBrush(Panel->GetFilter() == Filter);
+		}
+		return GetDailyLeaderboardFilterButtonBrush(false);
+	};
+	auto RefreshLeaderboardFilterChrome = [LeaderboardFilterChromeImages, GetLeaderboardFilterChromeBrush]()
+	{
+		for (const TPair<ET66LeaderboardFilter, TWeakPtr<SImage>>& Entry : *LeaderboardFilterChromeImages)
+		{
+			if (const TSharedPtr<SImage> ButtonChromeImage = Entry.Value.Pin())
+			{
+				ButtonChromeImage->SetImage(GetLeaderboardFilterChromeBrush(Entry.Key));
+			}
+		}
+	};
+	auto MakeLeaderboardFilterButton = [WeakLeaderboardPanel, &NoBorderButtonStyle, LeaderboardFilterChromeImages, GetLeaderboardFilterChromeBrush, RefreshLeaderboardFilterChrome](
+		const ET66LeaderboardFilter Filter) -> TSharedRef<SWidget>
+	{
+		TSharedPtr<SImage> ButtonChromeImage;
+		TSharedRef<SWidget> ButtonWidget = SNew(SBox)
+			.WidthOverride(T66MainMenuReferenceLayout::Right::FilterWorldButton.Width)
+			.HeightOverride(T66MainMenuReferenceLayout::Right::FilterWorldButton.Height)
+			[
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						FOnClicked::CreateLambda([WeakLeaderboardPanel, Filter, RefreshLeaderboardFilterChrome]()
+						{
+							if (const TSharedPtr<ST66LeaderboardPanel> Panel = WeakLeaderboardPanel.Pin())
+							{
+								Panel->SetFilter(Filter);
+								Panel->Invalidate(EInvalidateWidgetReason::Layout);
+							}
+							RefreshLeaderboardFilterChrome();
+							return FReply::Handled();
+						}),
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SAssignNew(ButtonChromeImage, SImage)
+							.Image(GetLeaderboardFilterChromeBrush(Filter))
+							.ColorAndOpacity(FLinearColor::White)
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(SBox)
+							.WidthOverride(58.f)
+							.HeightOverride(58.f)
+							[
+								FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+									SNew(SImage)
+									.Image(GetDailyLeaderboardFilterIconBrush(Filter))
+									.ColorAndOpacity(FLinearColor::White)))
+							]
+						])
+					.SetButtonStyle(&NoBorderButtonStyle)
+					.SetPadding(FMargin(0.f)))
+			];
+		LeaderboardFilterChromeImages->Emplace(Filter, ButtonChromeImage);
+		return ButtonWidget;
+	};
+
+	const FT66ReferenceRect& RightPanelAssemblyRect = T66MainMenuReferenceLayout::MainMenu::RightPanelAssembly;
+	const FT66ReferenceRect& RightShellRect = T66MainMenuReferenceLayout::Right::ShellFullReference;
+	const float RightLeaderboardFrameInsetX = 18.f;
+	const float RightLeaderboardFrameInsetY = 18.f;
+	const FVector2D RightShellOffset(
+		RightShellRect.X - RightPanelAssemblyRect.X,
+		RightShellRect.Y - RightPanelAssemblyRect.Y);
+	const FMargin RightLeaderboardContentPadding(
+		RightShellOffset.X + RightLeaderboardFrameInsetX,
+		RightShellOffset.Y + RightLeaderboardFrameInsetY,
+		0.f,
+		0.f);
+	const TSharedRef<SWidget> RightLeaderboardPanel =
+		SNew(SBox)
+		.WidthOverride(RightPanelAssemblyRect.Width)
+		.HeightOverride(RightPanelAssemblyRect.Height)
+		[
+			SNew(SOverlay)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
+			.Padding(FMargin(T66MainMenuReferenceLayout::Right::FilterWorldButton.X - RightPanelAssemblyRect.X, T66MainMenuReferenceLayout::Right::FilterWorldButton.Y - RightPanelAssemblyRect.Y, 0.f, 0.f))
+			[
+				MakeLeaderboardFilterButton(ET66LeaderboardFilter::Global)
+			]
+			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
+			.Padding(FMargin(T66MainMenuReferenceLayout::Right::FilterFriendsButton.X - RightPanelAssemblyRect.X, T66MainMenuReferenceLayout::Right::FilterFriendsButton.Y - RightPanelAssemblyRect.Y, 0.f, 0.f))
+			[
+				MakeLeaderboardFilterButton(ET66LeaderboardFilter::Friends)
+			]
+			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
+			.Padding(FMargin(T66MainMenuReferenceLayout::Right::FilterCrownButton.X - RightPanelAssemblyRect.X, T66MainMenuReferenceLayout::Right::FilterCrownButton.Y - RightPanelAssemblyRect.Y, 0.f, 0.f))
+			[
+				MakeLeaderboardFilterButton(ET66LeaderboardFilter::Streamers)
+			]
+			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
+			.Padding(FMargin(RightShellOffset.X, RightShellOffset.Y, 0.f, 0.f))
+			[
+				SNew(SBox)
+				.WidthOverride(RightShellRect.Width)
+				.HeightOverride(RightShellRect.Height)
+				[
+					SNew(SImage)
+					.Image(GetDailyRightShellBrush())
+				]
+			]
+			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
+			.Padding(RightLeaderboardContentPadding)
+			[
+				SNew(SBox)
+				.WidthOverride(RightShellRect.Width - (RightLeaderboardFrameInsetX * 2.f))
+				.HeightOverride(RightShellRect.Height - (RightLeaderboardFrameInsetY * 2.f))
+				[
+					LeaderboardWidget
+				]
+			]
+		];
+
+	SetupDailyClimbRuntimeImageBrush(
+		SkyBackgroundBrush,
+		SkyBackgroundTexture,
+		nullptr,
+		TEXT("SourceAssets/UI/Reference/Screens/MainMenu/ScreenArt/mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_clean_bloodyretro_1920.png"),
+		T66DailyClimbPanelReferenceSize);
+	SetupDailyClimbRuntimeImageBrush(
+		ForegroundOccluderBrush,
+		ForegroundOccluderTexture,
+		nullptr,
+		TEXT("SourceAssets/UI/Reference/Screens/MainMenu/ScreenArt/mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_foreground_occluder.png"),
+		T66DailyClimbPanelReferenceSize);
+
+	TSharedRef<SOverlay> Background = SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			SkyBackgroundBrush.IsValid() && SkyBackgroundBrush->GetResourceObject()
+				? FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(SNew(SImage).Image(SkyBackgroundBrush.Get())))
+				: StaticCastSharedRef<SWidget>(SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor::Black))
+		];
+	if (ForegroundOccluderBrush.IsValid() && ForegroundOccluderBrush->GetResourceObject())
+	{
+		Background->AddSlot()
+		[
+			FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(SNew(SImage).Image(ForegroundOccluderBrush.Get())))
+		];
+	}
+
+	const FT66ReferenceRect& LeftPanelAssemblyRect = T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly;
+	const FT66ReferenceRect& CtaStackRect = T66MainMenuReferenceLayout::Center::CtaStackFull;
+	const float CenterButtonGap = 28.f;
+	const float CenterButtonLeft = (CtaStackRect.Width - T66DailyClimbPrimaryButtonSize.X) * 0.5f;
+	const float CenterButtonTop = (CtaStackRect.Height - (T66DailyClimbPrimaryButtonSize.Y * 2.f) - CenterButtonGap) * 0.5f;
+	const TSharedRef<SWidget> CenterActions =
+		SNew(SBox)
+		.WidthOverride(CtaStackRect.Width)
+		.HeightOverride(CtaStackRect.Height)
+		[
+			SNew(SOverlay)
+			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
+			.Padding(FMargin(CenterButtonLeft, CenterButtonTop, 0.f, 0.f))
+			[
+				StartActionWidget
+			]
+			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
+			.Padding(FMargin(CenterButtonLeft, CenterButtonTop + T66DailyClimbPrimaryButtonSize.Y + CenterButtonGap, 0.f, 0.f))
+			[
+				ContinueActionWidget
+			]
+		];
+
 	const TSharedRef<SWidget> Canvas = SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FLinearColor::Black)
@@ -1009,35 +1252,24 @@ TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 			[
 				SNew(SOverlay)
 			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
 			[
-				SNew(SImage)
-				.Image(SkyBackgroundBrush.Get())
-			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.28f))
+				Background
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Top)
-			.Padding(FMargin(0.f, 136.f, 0.f, 0.f))
+			.Padding(FMargin(0.f, 328.f, 0.f, 0.f))
 			[
 				SNew(SBox)
-				.WidthOverride(920.f)
-				.HeightOverride(132.f)
+				.WidthOverride(760.f)
+				.HeightOverride(150.f)
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
 						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.DailyClimb", "Title", "DAILY CHALLENGE"))
-						.Font(FT66Style::MakeFont(TEXT("Black"), 62))
+						.Text(NSLOCTEXT("T66.DailyClimb", "Title", "DAILY DESCENT"))
+						.Font(FT66Style::MakeFont(TEXT("Black"), 58))
 						.ColorAndOpacity(DailyGoldText())
 						.ShadowOffset(FVector2D(0.f, 2.f))
 						.ShadowColorAndOpacity(FLinearColor(0.08f, 0.04f, 0.01f, 1.f))
@@ -1058,16 +1290,23 @@ TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Top)
-			.Padding(FMargin(48.f, 276.f, 0.f, 0.f))
+			.Padding(FMargin(LeftPanelAssemblyRect.X, LeftPanelAssemblyRect.Y, 0.f, 0.f))
 			[
-				RulesPanel
+				LeftDetailsPanel
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Top)
-			.Padding(FMargin(1288.f, 904.f, 0.f, 0.f))
+			.Padding(FMargin(CtaStackRect.X, CtaStackRect.Y, 0.f, 0.f))
 			[
-				PrimaryActionWidget
+				CenterActions
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Top)
+			.Padding(FMargin(RightPanelAssemblyRect.X, RightPanelAssemblyRect.Y, 0.f, 0.f))
+			[
+				RightLeaderboardPanel
 			]
 			]
 		];

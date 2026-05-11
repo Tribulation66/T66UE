@@ -179,7 +179,10 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 					[
 						SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
 						[
-							SNew(SImage).Image(IconBrush.Get()).ColorAndOpacity(FLinearColor::White)
+							FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+								SNew(SImage)
+								.Image(IconBrush.Get())
+								.ColorAndOpacity(FLinearColor::White)))
 						]
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f)

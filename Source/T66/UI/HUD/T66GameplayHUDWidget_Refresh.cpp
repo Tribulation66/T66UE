@@ -594,9 +594,7 @@ void UT66GameplayHUDWidget::RefreshBossBar()
 	if (!RunState) return;
 
 	static constexpr float BossBarWidth = 560.f;
-	const FLinearColor BossBarBackgroundColor = FT66Style::IsDotaTheme()
-		? FT66Style::BossBarBackground()
-		: FLinearColor(0.08f, 0.08f, 0.08f, 0.9f);
+	const FLinearColor BossBarBackgroundColor = FLinearColor(0.08f, 0.08f, 0.08f, 0.9f);
 
 	// Boss health bar: visible only when boss awakened
 	const bool bBossActive = RunState->GetBossActive();
@@ -797,9 +795,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	{
 		PortraitBorder->SetBorderBackgroundColor(RunState->IsSaintBlessingActive()
 			? FLinearColor(0.92f, 0.92f, 0.98f, 1.f)
-			: (FT66Style::IsDotaTheme()
-				? FT66Style::PanelInner()
-				: FLinearColor(0.12f, 0.12f, 0.14f, 1.f)));
+			: FLinearColor(0.12f, 0.015f, 0.18f, 1.f));
 	}
 	const FName DesiredPortraitHeroID = GIAsT66 ? GIAsT66->SelectedHeroID : NAME_None;
 	const ET66BodyType DesiredPortraitBodyType = GIAsT66 ? GIAsT66->SelectedHeroBodyType : ET66BodyType::Chad;
@@ -985,7 +981,9 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		if (UltimateBorder.IsValid())
 		{
 			// Subtle glow tint when ready, neutral border otherwise
-			UltimateBorder->SetBorderBackgroundColor(bReady ? FLinearColor(0.08f, 0.08f, 0.10f, 1.f) : FLinearColor(0.08f, 0.08f, 0.10f, 1.f));
+			UltimateBorder->SetBorderBackgroundColor(bReady
+				? FLinearColor(0.86f, 0.05f, 0.10f, 0.96f)
+				: FLinearColor(0.40f, 0.045f, 0.70f, 0.94f));
 		}
 	}
 
@@ -1086,7 +1084,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	for (int32 i = 0; i < IdolSlotBorders.Num(); ++i)
 	{
 		if (!IdolSlotBorders[i].IsValid()) continue;
-		FLinearColor C = FLinearColor(0.08f, 0.14f, 0.12f, 0.92f);
+		FLinearColor C = FLinearColor(0.42f, 0.045f, 0.72f, 0.94f);
 		TSoftObjectPtr<UTexture2D> IdolIconSoft;
 		TSharedPtr<IToolTip> IdolTooltipWidget;
 		if (i < Idols.Num() && !Idols[i].IsNone())
@@ -1151,7 +1149,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	{
 		if (!InventorySlotBorders[i].IsValid()) continue;
 
-		FLinearColor SlotColor = FLinearColor(0.f, 0.f, 0.f, 0.25f);
+		FLinearColor SlotColor = FLinearColor(0.42f, 0.045f, 0.72f, 0.94f);
 		FText Tooltip = FText::GetEmpty();
 		TSoftObjectPtr<UTexture2D> SlotIconSoft;
 		if (i < Inv.Num() && !Inv[i].IsNone())

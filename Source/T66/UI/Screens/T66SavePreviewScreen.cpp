@@ -174,7 +174,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSavePreviewBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
 			TEXT("SavePreviewShell"),
 			TextureFilter::TF_Nearest);

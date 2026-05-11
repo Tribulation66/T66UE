@@ -2,8 +2,49 @@
 
 #include "Core/RunState/T66RunStateSubsystem_Private.h"
 #include "Core/T66AudioSubsystem.h"
+#include "Gameplay/Traps/T66TrapBase.h"
 
 using namespace T66RunStatePrivate;
+
+namespace
+{
+	FName T66ResolveDamageReceivedSourceID(AActor* Attacker)
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Attacker))
+		{
+			return Enemy->MobID.IsNone() ? FName(TEXT("Enemy")) : Enemy->MobID;
+		}
+
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Attacker))
+		{
+			return Boss->BossID.IsNone() ? FName(TEXT("Boss")) : Boss->BossID;
+		}
+
+		if (AT66TrapBase* Trap = Cast<AT66TrapBase>(Attacker))
+		{
+			const FName TrapTypeID = Trap->GetTrapTypeID();
+			if (!TrapTypeID.IsNone())
+			{
+				return TrapTypeID;
+			}
+
+			const FName TrapFamilyID = Trap->GetTrapFamilyID();
+			if (!TrapFamilyID.IsNone())
+			{
+				return TrapFamilyID;
+			}
+
+			return FName(TEXT("Trap"));
+		}
+
+		if (Attacker && Attacker->GetClass())
+		{
+			return FName(*Attacker->GetClass()->GetName());
+		}
+
+		return UT66DamageLogSubsystem::SourceID_Environment;
+	}
+}
 
 int32 UT66RunStateSubsystem::GetHeartDisplayTier() const
 {
@@ -772,6 +813,10 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 
 	LastDamageTime = Now;
 	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
+	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
+	{
+		DamageLog->RecordDamageReceived(T66ResolveDamageReceivedSourceID(Attacker), FMath::RoundToInt(Reduced));
+	}
 	UT66AudioSubsystem::PlayEventFromWorldContext(World, FName(TEXT("Hero.Damage")), FVector::ZeroVector, nullptr);
 	AntiCheatDamageTakenHitCount = FMath::Clamp(AntiCheatDamageTakenHitCount + 1, 0, 1000000);
 	AntiCheatCurrentConsecutiveDodges = 0;

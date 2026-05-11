@@ -4,6 +4,7 @@
 
 #include "Math/TransformCalculus2D.h"
 #include "Rendering/SlateRenderTransform.h"
+#include "UI/Style/T66Style.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SOverlay.h"
@@ -66,7 +67,7 @@ void ST66AnimatedBackground::Construct(const FArguments& InArgs)
 				.WidthOverride(LayerDefinition.DrawSize.X)
 				.HeightOverride(LayerDefinition.DrawSize.Y)
 				[
-					LayerImage
+					FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(LayerImage))
 				]
 			];
 		}
@@ -76,7 +77,7 @@ void ST66AnimatedBackground::Construct(const FArguments& InArgs)
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
 			[
-				LayerImage
+				FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(LayerImage))
 			];
 		}
 

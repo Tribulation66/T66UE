@@ -129,7 +129,7 @@ void UT66IdleDataSubsystem::LoadIdols()
 		Definition.DisplayName = T66IdleGetValue(Row, TEXT("DisplayName"));
 		Definition.Description = T66IdleGetValue(Row, TEXT("Description"));
 		Definition.Category = T66IdleGetValue(Row, TEXT("Category"));
-		Definition.AccentColor = T66IdleToColor(T66IdleGetValue(Row, TEXT("AccentColor")), FLinearColor(0.62f, 0.34f, 0.88f, 1.0f));
+		Definition.AccentColor = T66IdleToColor(T66IdleGetValue(Row, TEXT("AccentColor")), FLinearColor(0.82f, 0.24f, 0.18f, 1.0f));
 		Definition.BaseCostGold = T66IdleToDouble(T66IdleGetValue(Row, TEXT("BaseCostGold")));
 		Definition.TapDamageMultiplier = T66IdleToDouble(T66IdleGetValue(Row, TEXT("TapDamageMultiplier")), 1.0);
 		Definition.PassiveDamageMultiplier = T66IdleToDouble(T66IdleGetValue(Row, TEXT("PassiveDamageMultiplier")), 1.0);

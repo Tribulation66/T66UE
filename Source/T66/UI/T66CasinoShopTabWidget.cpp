@@ -391,9 +391,10 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 								.WidthOverride(ShopIconSize)
 								.HeightOverride(ShopIconSize)
 								[
-									SAssignNew(ItemIconImages[i], SImage)
-									.Image(ItemIconBrushes[i].Get())
-									.ColorAndOpacity(FLinearColor::White)
+									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+										SAssignNew(ItemIconImages[i], SImage)
+										.Image(ItemIconBrushes[i].Get())
+										.ColorAndOpacity(FLinearColor::White)))
 								],
 								ET66OverlayChromeBrush::SlotNormal,
 								FMargin(0.f),
@@ -502,9 +503,10 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 								.WidthOverride(ShopIconSize)
 								.HeightOverride(ShopIconSize)
 								[
-									SAssignNew(BuybackIconImages[i], SImage)
-									.Image(BuybackIconBrushes[i].Get())
-									.ColorAndOpacity(FLinearColor::White)
+									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+										SAssignNew(BuybackIconImages[i], SImage)
+										.Image(BuybackIconBrushes[i].Get())
+										.ColorAndOpacity(FLinearColor::White)))
 								],
 								ET66OverlayChromeBrush::SlotNormal,
 								FMargin(0.f),
@@ -632,9 +634,10 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 					SNew(SOverlay)
 					+ SOverlay::Slot()
 					[
-						SAssignNew(InventorySlotIconImages[Inv], SImage)
-						.Image(InventorySlotIconBrushes[Inv].Get())
-						.ColorAndOpacity(FLinearColor::White)
+						FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+							SAssignNew(InventorySlotIconImages[Inv], SImage)
+							.Image(InventorySlotIconBrushes[Inv].Get())
+							.ColorAndOpacity(FLinearColor::White)))
 					]
 					+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0.f, 6.f, 8.f, 0.f)
 					[

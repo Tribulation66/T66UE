@@ -314,7 +314,7 @@ void UT66PlayerSettingsSubsystem::SetUITheme(ET66UITheme NewTheme)
 
 ET66UITheme UT66PlayerSettingsSubsystem::GetUITheme() const
 {
-	return ET66UITheme::Dota;
+	return ET66UITheme::Classic;
 }
 
 void UT66PlayerSettingsSubsystem::SetUIScale(float NewScale)

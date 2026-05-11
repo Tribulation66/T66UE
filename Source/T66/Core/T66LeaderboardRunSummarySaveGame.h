@@ -24,7 +24,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 21;
+	int32 SchemaVersion = 22;
 
 	/** Backend leaderboard entry UUID when this snapshot came from the online service. */
 	UPROPERTY(SaveGame)
@@ -282,6 +282,10 @@ public:
 	/** Damage dealt by source this run (source ID -> total). SchemaVersion>=5. */
 	UPROPERTY(SaveGame)
 	TMap<FName, int32> DamageBySource;
+
+	/** Damage received by source this run (source ID -> total). SchemaVersion>=22. */
+	UPROPERTY(SaveGame)
+	TMap<FName, int32> DamageReceivedBySource;
 
 	/** Per-stage cumulative pacing checkpoints captured at the end of each cleared stage. SchemaVersion>=8. */
 	UPROPERTY(SaveGame)

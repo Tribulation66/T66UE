@@ -108,7 +108,7 @@ struct T66DECK_API FT66DeckCardDefinition : public FTableRowBase
 	FName RarityID = NAME_None;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Deck")
-	FLinearColor AccentColor = FLinearColor(0.45f, 0.25f, 0.86f, 1.0f);
+	FLinearColor AccentColor = FLinearColor(0.78f, 0.18f, 0.22f, 1.0f);
 };
 
 USTRUCT(BlueprintType)

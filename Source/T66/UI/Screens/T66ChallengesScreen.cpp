@@ -257,7 +257,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FVector2D(1588.f, 653.f),
 			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
 			ESlateBrushDrawType::Box,
@@ -269,9 +269,9 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/player_row_panel_normal.png"),
+			T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal")),
 			FVector2D(1632.f, 209.f),
-			FMargin(0.070f, 0.155f, 0.070f, 0.155f),
+			FMargin(0.055f, 0.210f, 0.055f, 0.210f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -281,7 +281,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FVector2D(777.f, 380.f),
 			FMargin(0.065f, 0.090f, 0.065f, 0.105f),
 			ESlateBrushDrawType::Box,
@@ -293,7 +293,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FVector2D(405.f, 388.f),
 			FMargin(0.090f, 0.090f, 0.090f, 0.105f),
 			ESlateBrushDrawType::Box,
@@ -305,9 +305,9 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_row_normal.png"),
+			T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal")),
 			FVector2D(563.f, 107.f),
-			FMargin(0.090f, 0.220f, 0.090f, 0.220f),
+			FMargin(0.055f, 0.210f, 0.055f, 0.210f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -317,7 +317,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FVector2D(451.f, 148.f),
 			FMargin(0.095f, 0.185f, 0.095f, 0.185f),
 			ESlateBrushDrawType::Box,
@@ -329,7 +329,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FVector2D(457.f, 181.f),
 			FMargin(0.085f, 0.165f, 0.085f, 0.165f),
 			ESlateBrushDrawType::Box,
@@ -353,7 +353,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/topbar_text_button_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_normal_red_square_variant.png"),
 			FVector2D(181.f, 60.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
@@ -448,9 +448,12 @@ namespace
 			Suffix = TEXT("disabled");
 		}
 
+		const FString ButtonState = FCString::Stricmp(Suffix, TEXT("selected")) == 0
+			? FString(TEXT("normal"))
+			: FString(Suffix);
 		return FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_%s.png"),
-			Suffix);
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_%s_red_square_variant.png"),
+			*ButtonState);
 	}
 
 	FVector2D GetChallengeButtonSize(const ET66ChallengeButtonFamily Family, const ET66ChallengeButtonState State)
@@ -715,6 +718,16 @@ UT66CommunityContentSubsystem* UT66ChallengesScreen::GetCommunitySubsystem() con
 ET66CommunityContentKind UT66ChallengesScreen::GetActiveKind() const
 {
 	return TabIndexToKind(ActiveTabIndex);
+}
+
+void UT66ChallengesScreen::OpenContentKind(const ET66CommunityContentKind ContentKind)
+{
+	InitializeSelectionState();
+	ActiveTabIndex = ContentKind == ET66CommunityContentKind::Mod
+		? static_cast<int32>(ETabIndex::Mods)
+		: static_cast<int32>(ETabIndex::Challenges);
+	EndDraftEditor();
+	RequestDeferredSlateRebuild();
 }
 
 TArray<FT66CommunityContentEntry> UT66ChallengesScreen::GetEntriesForView(const int32 TabIndex, const int32 SourceTabIndex) const
@@ -1089,7 +1102,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		Community->RefreshMySubmissionStates(false);
 	}
 
-	const float ReferenceCanvasWidth = 1672.0f;
+	const float ReferenceCanvasWidth = 1920.0f;
 	const float ReferenceCanvasHeight = 941.0f;
 	const float ListPanelWidth = 672.0f;
 	const float DetailPanelWidth = 900.0f;
@@ -1113,6 +1126,11 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 	const FString HeaderTitle = ActiveKind == ET66CommunityContentKind::Mod ? TEXT("Mods") : TEXT("Challenges");
 	const FString DetailListHeader = ActiveKind == ET66CommunityContentKind::Mod ? TEXT("Rules") : TEXT("Rules And Requirements");
 	const FString StatusMessage = Community ? Community->GetLastStatusMessage() : FString();
+	const bool bCanConfirmSelectedEntry = bHasSelectedEntry && !SelectedEntry.IsDraft();
+	const FText FooterConfirmLabel = FText::FromString(bSelectedEntryConfirmed ? TEXT("SELECTED") : TEXT("CONFIRM"));
+	const ET66ChallengeButtonFamily FooterConfirmFamily = bCanConfirmSelectedEntry
+		? ET66ChallengeButtonFamily::ToggleOn
+		: ET66ChallengeButtonFamily::ToggleInactive;
 
 	auto MakeConstraintRow = [DetailColumnWidth](const FString& ConstraintText) -> TSharedRef<SWidget>
 	{
@@ -1820,7 +1838,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 
 	const TSharedRef<SWidget> ChallengeCanvas = SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.030f, 0.015f, 0.008f, 1.0f))
+		.BorderBackgroundColor(FLinearColor::Black)
 		[
 			SNew(SBox)
 			.WidthOverride(ReferenceCanvasWidth)
@@ -1830,10 +1848,10 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Top)
-				.Padding(FMargin(6.f, 26.f, 0.f, 0.f))
+				.Padding(FMargin(0.f, 26.f, 0.f, 0.f))
 				[
 					SNew(SBox)
-					.WidthOverride(1660.f)
+					.WidthOverride(ReferenceCanvasWidth)
 					.HeightOverride(887.f)
 					[
 						MakeChallengeSpritePanel(
@@ -1882,7 +1900,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.Padding(FMargin(36.f, 209.f, 0.f, 0.f))
 				[
 					SNew(SBox)
-					.WidthOverride(1600.f)
+					.WidthOverride(ReferenceCanvasWidth - 72.f)
 					.HeightOverride(48.f)
 					[
 						MakeChallengeHorizontalSlicedPanel(
@@ -1940,13 +1958,54 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 							ChallengePanelFill())
 					]
 				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Right)
+				.VAlign(VAlign_Top)
+				.Padding(FMargin(0.f, 834.f, 96.f, 0.f))
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.Padding(0.f, 0.f, 16.f, 0.f)
+					[
+						MakeChallengeSpriteButton(
+							NSLOCTEXT("T66.Challenges", "FooterBack", "BACK"),
+							FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleBackClicked),
+							ET66ChallengeButtonFamily::CompactNeutral,
+							214.f,
+							62.f,
+							20,
+							FMargin(22.f, 10.f, 22.f, 8.f))
+					]
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					[
+						MakeChallengeSpriteButton(
+							FooterConfirmLabel,
+							FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleConfirmClicked),
+							FooterConfirmFamily,
+							270.f,
+							62.f,
+							20,
+							FMargin(22.f, 10.f, 22.f, 8.f))
+					]
 			]
+		]
 		];
 
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
-		.HAlign(HAlign_Center)
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor::Black)
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Center)
+		.Padding(FMargin(-14.f, 0.f, -14.f, 0.f))
 		[
 			SNew(SScaleBox)
 			.Stretch(EStretch::ScaleToFit)
@@ -2007,13 +2066,20 @@ FReply UT66ChallengesScreen::HandleEntrySelected(const int32 EntryIndex)
 
 FReply UT66ChallengesScreen::HandleConfirmClicked()
 {
+	bool bActivatedEntry = false;
 	FT66CommunityContentEntry Entry;
 	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
 	{
 		if (FindCurrentSelectedEntry(Entry))
 		{
 			Community->ActivateEntry(Entry.LocalId);
+			bActivatedEntry = true;
 		}
+	}
+
+	if (!bActivatedEntry)
+	{
+		return FReply::Handled();
 	}
 
 	bSelectionStateInitialized = false;

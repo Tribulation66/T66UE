@@ -56,9 +56,9 @@ namespace T66TDUI
 		return FLinearColor(0.24f, 0.48f, 0.26f, 1.0f);
 	}
 
-	inline FLinearColor StrokePurple()
+	inline FLinearColor StrokeRed()
 	{
-		return FLinearColor(0.36f, 0.24f, 0.50f, 1.0f);
+		return FLinearColor(0.50f, 0.12f, 0.14f, 1.0f);
 	}
 
 	inline FLinearColor BrightText()
@@ -86,9 +86,9 @@ namespace T66TDUI
 		return FLinearColor(0.32f, 0.70f, 0.36f, 1.0f);
 	}
 
-	inline FLinearColor AccentPurple()
+	inline FLinearColor AccentRed()
 	{
-		return FLinearColor(0.58f, 0.39f, 0.78f, 1.0f);
+		return FLinearColor(0.78f, 0.18f, 0.22f, 1.0f);
 	}
 
 	inline FLinearColor AccentAsh()

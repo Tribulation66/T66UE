@@ -48,6 +48,7 @@ public:
 	void SetUIManager(UT66UIManager* InUIManager);
 
 	void SetFilter(ET66LeaderboardFilter NewFilter);
+	ET66LeaderboardFilter GetFilter() const { return CurrentFilter; }
 	void SetTimeFilter(ET66LeaderboardTime NewTime);
 	void SetPartySize(ET66PartySize NewPartySize);
 	void SetDifficulty(ET66Difficulty NewDifficulty);
@@ -97,6 +98,7 @@ private:
 
 	// Backend async refresh
 	bool bBoundToBackendDelegate = false;
+	TWeakObjectPtr<UT66BackendSubsystem> BoundBackendSubsystem;
 	void OnBackendLeaderboardReady(const FString& Key);
 
 	// Backend run summary fetch
@@ -172,6 +174,7 @@ private:
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceToggleScoreSelectedBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceToggleSpeedRunUnselectedBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceAvatarFrameBrush;
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceAvatarFrameSelectedBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceLeaderboardRowNormalBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferenceLeaderboardRowHoverBrush;
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush ReferencePlayerRowNormalBrush;

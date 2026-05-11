@@ -48,7 +48,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("HeroGridModalShell"));
 	}
@@ -60,12 +60,12 @@ namespace
 		return bSelected
 			? ResolveHeroGridBrush(
 				Selected,
-				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_selected.png"),
+				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_selected_red_square_variant.png"),
 				FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 				TEXT("HeroGridTileSelected"))
 			: ResolveHeroGridBrush(
 				Neutral,
-				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_normal.png"),
+				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_normal_square_variant.png"),
 				FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 				TEXT("HeroGridTileNeutral"));
 	}
@@ -131,7 +131,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveHeroGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FMargin(0.f),
 			TEXT("HeroGridSceneBackground"));
 	}
@@ -239,7 +239,7 @@ void UT66HeroGridScreen::OnScreenActivated_Implementation()
 	AllHeroIDs.Empty();
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		AllHeroIDs = GI->GetAllHeroIDs();
+		AllHeroIDs = GI->GetPlayableHeroIDs();
 	}
 }
 
@@ -250,7 +250,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 	{
 		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 		{
-			AllHeroIDs = GI->GetAllHeroIDs();
+			AllHeroIDs = GI->GetPlayableHeroIDs();
 		}
 	}
 

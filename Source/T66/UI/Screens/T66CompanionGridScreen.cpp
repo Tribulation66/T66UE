@@ -93,27 +93,27 @@ namespace
 		{
 			if (Family == ET66CompanionGridPlateFamily::TileNeutral || Family == ET66CompanionGridPlateFamily::TileSelected)
 			{
-				return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_disabled.png");
+				return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_disabled_square_variant.png");
 			}
 			return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), TEXT("disabled"));
 		}
 
 		if (Family == ET66CompanionGridPlateFamily::TileSelected)
 		{
-			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_selected.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_selected_red_square_variant.png");
 		}
 
 		if (Family == ET66CompanionGridPlateFamily::TileNeutral)
 		{
 			if (State == ET66CompanionGridPlateState::Hovered)
 			{
-				return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_hover.png");
+				return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_hover_square_variant.png");
 			}
 			if (State == ET66CompanionGridPlateState::Pressed)
 			{
-				return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_selected.png");
+				return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_selected_red_square_variant.png");
 			}
-			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_normal.png");
+			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_normal_square_variant.png");
 		}
 
 		const TCHAR* Suffix = State == ET66CompanionGridPlateState::Pressed
@@ -163,7 +163,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("CompanionGridModalShell"));
 	}
@@ -184,7 +184,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveCompanionGridBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FMargin(0.f),
 			TEXT("CompanionGridSceneBackground"));
 	}

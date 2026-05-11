@@ -129,7 +129,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			GetPickerReferenceElementPath(TEXT("main_panel_normal.png")),
+			GetPickerReferenceElementPath(TEXT("SquareVariant/main_panel_normal_square_variant.png")),
 			FVector2D(1521.f, 463.f),
 			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
 			ESlateBrushDrawType::Box,
@@ -141,7 +141,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			GetPickerReferenceElementPath(TEXT("player_row_panel_normal.png")),
+			GetPickerReferenceElementPath(TEXT("SquareVariant/player_row_panel_normal_square_variant.png")),
 			FVector2D(861.f, 74.f),
 			FMargin(0.075f, 0.220f, 0.075f, 0.220f),
 			ESlateBrushDrawType::Box,
@@ -153,7 +153,7 @@ namespace
 		static FT66PickerSpriteBrushEntry Entry;
 		return ResolvePickerSpriteBrush(
 			Entry,
-			GetPickerReferenceElementPath(TEXT("profile_slot_normal.png")),
+			GetPickerReferenceElementPath(TEXT("SquareVariant/profile_slot_normal_square_variant.png")),
 			FVector2D(96.f, 96.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,

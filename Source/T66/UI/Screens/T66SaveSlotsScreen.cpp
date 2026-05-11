@@ -104,7 +104,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/SaveSlots/Panels/saveslots_panels_fullscreen_fullscreen_panel_wide.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
 			TEXT("SaveSlotsContentShellV16"),
 			TextureFilter::TF_Nearest);
@@ -137,8 +137,8 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/SaveSlots/Panels/saveslots_panels_fullscreen_row_shell_quiet.png"),
-			FMargin(0.070f, 0.155f, 0.070f, 0.155f),
+			*T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal")),
+			FMargin(0.055f, 0.210f, 0.055f, 0.210f),
 			TEXT("SaveSlotsRowShellV16"),
 			TextureFilter::TF_Nearest);
 	}
@@ -148,7 +148,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/SaveSlots/Panels/saveslots_panels_save_card_paper_frame.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FMargin(0.075f, 0.120f, 0.075f, 0.120f),
 			TEXT("SaveSlotsCardPaperFrame"),
 			TextureFilter::TF_Nearest);
@@ -159,7 +159,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveSaveFlowBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/SaveSlots/Controls/saveslots_controls_reference_dropdown_field_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/dropdown_field_normal_square_variant.png"),
 			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
 			TEXT("SaveSlotsDropdownField"));
 	}
@@ -221,9 +221,12 @@ namespace
 			break;
 		}
 
-		const FString RelativePath = FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/SaveSlots/Buttons/saveslots_buttons_pill_%s.png"),
-			StateName);
+		const FString ButtonState = FString(StateName).Equals(TEXT("selected"), ESearchCase::IgnoreCase)
+			? FString(TEXT("normal"))
+			: FString(StateName);
+		const FString StateFileName = FString::Printf(TEXT("cta_new_game_button_%s_red_square_variant.png"), *ButtonState);
+		const FString RelativePath =
+			FString(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant")) / StateFileName;
 
 		return ResolveSaveFlowBrush(
 			*Entry,
@@ -245,17 +248,13 @@ namespace
 				.BorderBackgroundColor(FLinearColor(0.015f, 0.014f, 0.011f, 1.0f))
 			]
 			+ SOverlay::Slot()
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
 			[
-				SNew(SBox)
-				.WidthOverride(1230.f)
-				.HeightOverride(921.f)
-				[
+				FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(
 					SNew(SImage)
 					.Image(GetSaveFlowSceneBrush())
-					.ColorAndOpacity(FLinearColor(0.88f, 0.88f, 0.88f, 1.0f))
-				]
+					.ColorAndOpacity(FLinearColor(0.88f, 0.88f, 0.88f, 1.0f))))
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)
@@ -1078,7 +1077,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 
 	AddSaveFlowCanvasSlot(
 		DesignCanvas,
-		100.f, 10.f, 1718.f, 1062.f,
+		0.f, 0.f, T66SaveFlowDesignWidth, T66SaveFlowDesignHeight,
 		SNew(SImage)
 		.Image(GetSaveFlowContentShellBrush()));
 
@@ -1281,10 +1280,10 @@ void UT66SaveSlotsScreen::PrepareGameInstanceForLoadedSave(UT66GameInstance* GI,
 		return;
 	}
 
-	GI->SelectedHeroID = Loaded->HeroID;
+	GI->SelectedHeroID = GI->ResolvePlayableHeroID(Loaded->HeroID);
 	GI->SelectedHeroBodyType = Loaded->HeroBodyType;
 	GI->SelectedCompanionID = Loaded->CompanionID;
-	GI->SelectedDifficulty = Loaded->Difficulty;
+	GI->SelectedDifficulty = GI->ResolvePlayableDifficulty(Loaded->Difficulty);
 	GI->SelectedPartySize = Loaded->PartySize;
 	GI->RunSeed = Loaded->RunSeed;
 	if (Loaded->bIsDailyClimbRun && Loaded->DailyClimbChallenge.IsValid())

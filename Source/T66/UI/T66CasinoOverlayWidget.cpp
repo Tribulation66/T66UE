@@ -348,10 +348,11 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 								.WidthOverride(CardIconSize)
 								.HeightOverride(CardIconSize)
 								[
-									SAssignNew(OutIconImage, SImage)
-									.Image(IconBrush.Get())
-									.ColorAndOpacity(FLinearColor::White)
-									.Visibility(EVisibility::Hidden)
+									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+										SAssignNew(OutIconImage, SImage)
+										.Image(IconBrush.Get())
+										.ColorAndOpacity(FLinearColor::White)
+										.Visibility(EVisibility::Hidden)))
 								],
 								ET66OverlayChromeBrush::SlotNormal,
 								FMargin(0.f))
@@ -755,7 +756,7 @@ bool UT66CasinoOverlayWidget::TryAssignAlchemySlot(const bool bIsTargetSlot, con
 	AlchemyTargetInventoryIndex = InventoryIndex;
 	if (!bIsTargetSlot)
 	{
-		SetAlchemyStatus(NSLOCTEXT("T66.Casino", "AlchemySingleTargetHint", "Alchemy only needs one selected item. Matching copies are consumed automatically."), FLinearColor(0.85f, 0.85f, 0.92f, 1.f));
+		SetAlchemyStatus(NSLOCTEXT("T66.Casino", "AlchemySingleTargetHint", "Alchemy only needs one selected item. Matching copies are consumed automatically."), FLinearColor(0.92f, 0.82f, 0.78f, 1.f));
 	}
 	else
 	{

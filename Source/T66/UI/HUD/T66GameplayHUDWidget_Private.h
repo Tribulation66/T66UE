@@ -145,7 +145,7 @@ namespace
 		case 0: return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Red.T_Heart_Red")));
 		case 1: return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Blue.T_Heart_Blue")));
 		case 2: return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Green.T_Heart_Green")));
-		case 3: return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Purple.T_Heart_Purple")));
+		case 3: return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Red.T_Heart_Red")));
 		case 4:
 		default:
 			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Gold.T_Heart_Gold")));

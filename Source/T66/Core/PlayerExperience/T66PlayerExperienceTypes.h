@@ -76,6 +76,12 @@ struct T66_API FT66SpawnBudget
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Spawning", meta = (ClampMin = "0.1"))
 	float RuntimeSpawnIntervalSeconds = 0.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Spawning", meta = (ClampMin = "0.0"))
+	float RuntimeWaveStaggerDurationSeconds = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Spawning", meta = (ClampMin = "1"))
+	int32 RuntimeMaxSpawnsPerStaggeredBatch = 1;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Spawning", meta = (ClampMin = "0"))
 	int32 EstimatedRuntimeWavesPerStage = 0;
 

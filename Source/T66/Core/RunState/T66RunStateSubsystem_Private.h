@@ -32,10 +32,8 @@
 
 namespace T66RunStatePrivate
 {
-	static const FName T66ArthurHeroID(TEXT("Hero_1"));
 	static const FName T66GamblersTokenItemID(TEXT("Item_GamblersToken"));
 	static const FName T66MaxHeroStatsRunModifierID(TEXT("Mod_MaxHeroStats"));
-	static constexpr int32 T66ArthurTestStatBoost = 50;
 
 	static int32 T66_GetDefaultInventoryRollSeed()
 	{

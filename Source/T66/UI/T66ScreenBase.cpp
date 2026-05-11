@@ -13,11 +13,22 @@
 #include "Widgets/SOverlay.h"
 #include "Styling/SlateTypes.h"
 #include "Engine/World.h"
+#include "InputCoreTypes.h"
 #include "UObject/GarbageCollection.h"
 
 void UT66ScreenBase::NativeConstruct()
 {
 	Super::NativeConstruct();
+}
+
+FReply UT66ScreenBase::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		return HandleBackAction() ? FReply::Handled() : FReply::Unhandled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
 TSharedRef<SWidget> UT66ScreenBase::RebuildWidget()
@@ -99,6 +110,17 @@ void UT66ScreenBase::CloseModal()
 	{
 		UIManager->CloseModal();
 	}
+}
+
+bool UT66ScreenBase::HandleBackAction()
+{
+	if (!UIManager)
+	{
+		return false;
+	}
+
+	UIManager->GoBack();
+	return true;
 }
 
 void UT66ScreenBase::ForceRebuildSlate()

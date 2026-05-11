@@ -310,6 +310,7 @@ private:
 	void UpdateHeroMovementIntent();
 	bool IsLockedChaseGameplayCameraMode() const;
 	void ClampGameplayCameraPitch();
+	void AdjustGameplayCameraPitchFromScroll(float ScrollValue);
 	void UpdateLockedChaseGameplayCamera(float DeltaTime);
 	void UpdateGameplayCameraSideWallSpring(float DeltaTime);
 	void UpdateGameplayCameraWallOcclusion(float DeltaTime);
@@ -493,6 +494,7 @@ private:
 	bool bInventoryInspectOpen = false;
 	bool bInventoryInspectRestoreFreeCursor = false;
 	float DesiredGameplayCameraArmLength = 0.0f;
+	float LockedChaseGameplayCameraPitchOffset = 0.0f;
 	float SavedPreLockedChaseCameraArmLength = 0.0f;
 	FVector SavedPreLockedChaseCameraBoomRelativeLocation = FVector::ZeroVector;
 	TWeakObjectPtr<AT66HeroBase> LockedChaseCameraInitializedHero;

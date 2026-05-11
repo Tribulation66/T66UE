@@ -2,6 +2,7 @@
 
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66RuntimePlatformSubsystem.h"
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformProcess.h"
@@ -70,8 +71,27 @@ void UT66MediaViewerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 }
 
+bool UT66MediaViewerSubsystem::IsMediaViewerAvailable() const
+{
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		if (const UT66RuntimePlatformSubsystem* RuntimePlatform = GI->GetSubsystem<UT66RuntimePlatformSubsystem>())
+		{
+			return RuntimePlatform->ShouldShowMediaViewer();
+		}
+	}
+
+	return true;
+}
+
 void UT66MediaViewerSubsystem::ToggleMediaViewer()
 {
+	if (!IsMediaViewerAvailable())
+	{
+		SetMediaViewerOpen(false);
+		return;
+	}
+
 	const double NowSeconds = FPlatformTime::Seconds();
 	if ((NowSeconds - LastToggleRealtimeSeconds) < ToggleDebounceSeconds)
 	{
@@ -85,6 +105,11 @@ void UT66MediaViewerSubsystem::ToggleMediaViewer()
 void UT66MediaViewerSubsystem::PrewarmTikTok()
 {
 #if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+	if (!IsMediaViewerAvailable())
+	{
+		return;
+	}
+
 	if (bHasPrewarmedTikTok)
 	{
 		return;
@@ -135,6 +160,11 @@ void UT66MediaViewerSubsystem::PrewarmTikTok()
 
 void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 {
+	if (bOpen && !IsMediaViewerAvailable())
+	{
+		bOpen = false;
+	}
+
 	if (bIsOpen == bOpen) return;
 	bIsOpen = bOpen;
 

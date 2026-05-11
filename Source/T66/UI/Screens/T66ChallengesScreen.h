@@ -16,6 +16,8 @@ class T66_API UT66ChallengesScreen : public UT66ScreenBase
 public:
 	UT66ChallengesScreen(const FObjectInitializer& ObjectInitializer);
 
+	void OpenContentKind(ET66CommunityContentKind ContentKind);
+
 protected:
 	virtual void OnScreenActivated_Implementation() override;
 	virtual void OnScreenDeactivated_Implementation() override;

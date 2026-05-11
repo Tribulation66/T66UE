@@ -66,10 +66,6 @@ Most of the actual UI surface area is not implemented as standalone `SWidget` su
 - `UT66HeroSelectionScreen`
 - `UT66LanguageSelectScreen`
 - `UT66LeaderboardScreen`
-- `UT66LobbyBackConfirmModal`
-- `UT66LobbyReadyCheckModal`
-- `UT66LobbyScreen`
-- `UT66PartySizePickerScreen`
 - `UT66PauseMenuScreen`
 - `UT66PlayerSummaryPickerScreen`
 - `UT66PowerUpScreen`
@@ -873,68 +869,6 @@ Important caveat:
 | Source/T66/UI/Screens/T66LeaderboardScreen.cpp | 60 | STextBlock | FontSize | 36 | .Font(FT66Style::Tokens::FontBold(36)) |
 | Source/T66/UI/Screens/T66LeaderboardScreen.cpp | 67 | SBox | WidthOverride | 120.f | .WidthOverride(120.f) |
 | Source/T66/UI/Screens/T66LeaderboardScreen.cpp | 81 | SBorder | Padding | FMargin(40.f | .Padding(FMargin(40.f)) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 45 | SVerticalBox | Padding | 0.0f, 0.0f, 0.0f, 20.0f | .Padding(0.0f, 0.0f, 0.0f, 20.0f) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 49 | STextBlock | FontSize | 36 | .Font(FT66Style::Tokens::FontBold(36)) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 55 | STextBlock | Padding | 0.0f, 0.0f, 0.0f, 30.0f | .Padding(0.0f, 0.0f, 0.0f, 30.0f) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 59 | STextBlock | FontSize | 18 | .Font(FT66Style::Tokens::FontRegular(18)) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 70 | SHorizontalBox | Padding | 10.0f, 0.0f | .Padding(10.0f, 0.0f) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 73 | SHorizontalBox | SetMinWidth | 200.f | .SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f))) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 73 | SHorizontalBox | SetPadding | FMargin(18.f, 10.f | .SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f))) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 77 | SHorizontalBox | Padding | 10.0f, 0.0f | .Padding(10.0f, 0.0f) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 80 | SHorizontalBox | SetMinWidth | 200.f | .SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f))) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 80 | SHorizontalBox | SetPadding | FMargin(18.f, 10.f | .SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f))) |
-| Source/T66/UI/Screens/T66LobbyBackConfirmModal.cpp | 84 | SHorizontalBox | SetPadding | FMargin(40.0f, 30.0f | FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(40.0f, 30.0f))) |
-| Source/T66/UI/Screens/T66LobbyReadyCheckModal.cpp | 43 | SVerticalBox | Padding | 0.0f, 0.0f, 0.0f, 20.0f | .Padding(0.0f, 0.0f, 0.0f, 20.0f) |
-| Source/T66/UI/Screens/T66LobbyReadyCheckModal.cpp | 47 | STextBlock | FontSize | 36 | .Font(FT66Style::Tokens::FontBold(36)) |
-| Source/T66/UI/Screens/T66LobbyReadyCheckModal.cpp | 57 | SHorizontalBox | Padding | 10.0f, 0.0f | .Padding(10.0f, 0.0f) |
-| Source/T66/UI/Screens/T66LobbyReadyCheckModal.cpp | 60 | SHorizontalBox | SetMinWidth | 200.f | .SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f))) |
-| Source/T66/UI/Screens/T66LobbyReadyCheckModal.cpp | 60 | SHorizontalBox | SetPadding | FMargin(18.f, 10.f | .SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f))) |
-| Source/T66/UI/Screens/T66LobbyReadyCheckModal.cpp | 64 | SHorizontalBox | Padding | 10.0f, 0.0f | .Padding(10.0f, 0.0f) |
-| Source/T66/UI/Screens/T66LobbyReadyCheckModal.cpp | 67 | SHorizontalBox | SetMinWidth | 200.f | .SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f))) |
-| Source/T66/UI/Screens/T66LobbyReadyCheckModal.cpp | 67 | SHorizontalBox | SetPadding | FMargin(18.f, 10.f | .SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f))) |
-| Source/T66/UI/Screens/T66LobbyReadyCheckModal.cpp | 71 | SHorizontalBox | SetPadding | FMargin(40.0f, 30.0f | FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(40.0f, 30.0f))) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 129 | Unknown | ImageSize | 64.f, 64.f | LocalPlayerHeroPortraitBrush->ImageSize = FVector2D(64.f, 64.f); |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 150 | Unknown | ImageSize | 48.f, 48.f | LocalPlayerCompanionPortraitBrush->ImageSize = FVector2D(48.f, 48.f); |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 196 | SBorder | Padding | 0.f | .Padding(0.f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 200 | STextBlock | FontSize | 24 | .Font(FT66Style::Tokens::FontBold(24)) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 224 | SBorder | Padding | 0.0f, 6.0f | .Padding(0.0f, 6.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 231 | SHorizontalBox | Padding | 0.0f, 0.0f, 8.0f, 0.0f | .Padding(0.0f, 0.0f, 8.0f, 0.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 234 | SBox | WidthOverride | 64.0f | .WidthOverride(64.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 235 | SBox | HeightOverride | 64.0f | .HeightOverride(64.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 243 | SBox | Padding | 0.0f, 0.0f, 12.0f, 0.0f | .Padding(0.0f, 0.0f, 12.0f, 0.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 246 | SBox | WidthOverride | 48.0f | .WidthOverride(48.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 247 | SBox | HeightOverride | 48.0f | .HeightOverride(48.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 262 | STextBlock | FontSize | 16 | .Font(FT66Style::Tokens::FontRegular(16)) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 267 | STextBlock | Padding | 0.0f, 2.0f, 0.0f, 0.0f | .Padding(0.0f, 2.0f, 0.0f, 0.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 271 | STextBlock | FontSize | 12 | .Font(FT66Style::Tokens::FontRegular(12)) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 276 | STextBlock | SetPadding | 12.0f | FT66PanelParams(ET66PanelType::Panel).SetPadding(12.0f).SetColor(FT66Style::Tokens::Panel) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 287 | SVerticalBox | Padding | 8.0f | .Padding(8.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 291 | STextBlock | FontSize | 12 | .Font(FT66Style::Tokens::FontRegular(12)) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 308 | STextBlock | Padding | 0.0f, 0.0f, 0.0f, 10.0f | .Padding(0.0f, 0.0f, 0.0f, 10.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 322 | STextBlock | FontSize | 15 | .Font(FT66Style::Tokens::FontRegular(15)) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 327 | STextBlock | Padding | 0.0f, 2.0f, 0.0f, 0.0f | .Padding(0.0f, 2.0f, 0.0f, 0.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 331 | STextBlock | FontSize | 12 | .Font(FT66Style::Tokens::FontRegular(12)) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 338 | STextBlock | Padding | 12.0f, 0.0f, 0.0f, 0.0f | .Padding(12.0f, 0.0f, 0.0f, 0.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 363 | STextBlock | SetMinWidth | 120.f | .SetMinWidth(120.f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 374 | SScrollBox | Padding | 8.0f | .Padding(8.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 404 | SVerticalBox | Padding | 0.0f, 0.0f, 0.0f, 12.0f | .Padding(0.0f, 0.0f, 0.0f, 12.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 407 | SBox | HeightOverride | 40.0f | .HeightOverride(40.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 408 | SBox | MinDesiredWidth | 200.0f | .MinDesiredWidth(200.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 418 | STextBlock | FontSize | 12 | .Font(FT66Style::Tokens::FontRegular(12)) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 429 | STextBlock | FontSize | 12 | .Font(FT66Style::Tokens::FontBold(12)) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 436 | STextBlock | Padding | 0.0f, 4.0f | .Padding(0.0f, 4.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 442 | STextBlock | Padding | 0.0f, 8.0f | .Padding(0.0f, 8.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 444 | SBox | HeightOverride | 44.0f | SNew(SBox).HeightOverride(44.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 449 | SBox | SetMinWidth | 180.f | .SetMinWidth(180.f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 460 | SHorizontalBox | Padding | 24.0f, 20.0f | .Padding(24.0f, 20.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 466 | SVerticalBox | Padding | 0.0f, 0.0f, 0.0f, 12.0f | .Padding(0.0f, 0.0f, 0.0f, 12.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 470 | STextBlock | FontSize | 20 | .Font(FT66Style::Tokens::FontBold(20)) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 484 | STextBlock | Padding | 16.0f, 20.0f | .Padding(16.0f, 20.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 490 | SVerticalBox | Padding | 0.0f, 0.0f, 0.0f, 12.0f | .Padding(0.0f, 0.0f, 0.0f, 12.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 494 | STextBlock | FontSize | 18 | .Font(FT66Style::Tokens::FontBold(18)) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 508 | STextBlock | Padding | 16.0f, 20.0f | .Padding(16.0f, 20.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 523 | SVerticalBox | Padding | 40.0f, 40.0f, 40.0f, 80.0f | .Padding(40.0f, 40.0f, 40.0f, 80.0f) |
-| Source/T66/UI/Screens/T66LobbyScreen.cpp | 531 | SVerticalBox | Padding | 20.0f, 0.0f, 0.0f, 20.0f | .Padding(20.0f, 0.0f, 0.0f, 20.0f) |
 | Source/T66/UI/Screens/T66MainMenuScreen.cpp | 379 | Unknown | ImageSize | 84.f, 84.f | LastRunHeroBrush->ImageSize = FVector2D(84.f, 84.f); |
 | Source/T66/UI/Screens/T66MainMenuScreen.cpp | 388 | Unknown | ImageSize | 44.f, 44.f | Brush->ImageSize = FVector2D(44.f, 44.f); |
 | Source/T66/UI/Screens/T66MainMenuScreen.cpp | 408 | Constant | CenterColumnWidth | 500.f | const float CenterColumnWidth = 500.f; |
@@ -1007,19 +941,6 @@ Important caveat:
 | Source/T66/UI/Screens/T66MainMenuScreen.cpp | 952 | SBorder | Padding | 0.f | .Padding(0.f) |
 | Source/T66/UI/Screens/T66MainMenuScreen.cpp | 973 | SBorder | Padding | 0.f, TopInset, 0.f, 0.f | .Padding(0.f, TopInset, 0.f, 0.f) |
 | Source/T66/UI/Screens/T66MainMenuScreen.cpp | 993 | SInvalidationPanel | Padding | 0.f, 0.f, 0.f, BottomFramePadding + CenterButtonLift | .Padding(0.f, 0.f, 0.f, BottomFramePadding + CenterButtonLift) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 43 | Unknown | ImageSize | 560.f, 560.f | SoloCardBrush->ImageSize = FVector2D(560.f, 560.f); |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 49 | Unknown | ImageSize | 560.f, 560.f | CoopCardBrush->ImageSize = FVector2D(560.f, 560.f); |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 104 | SBox | Padding | FMargin(8.0f, 0.0f | .Padding(FMargin(8.0f, 0.0f)) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 111 | SButton | ContentPadding | 0.0f | .ContentPadding(0.0f) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 118 | SVerticalBox | Padding | 0.0f, 0.0f, 0.0f, 12.0f | .Padding(0.0f, 0.0f, 0.0f, 12.0f) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 122 | SBox | WidthOverride | 560.0f | .WidthOverride(560.0f) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 123 | SBox | HeightOverride | 560.0f | .HeightOverride(560.0f) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 131 | SImage | SetPadding | 4.f | FT66PanelParams(ET66PanelType::Panel2).SetPadding(4.f)) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 140 | STextBlock | FontSize | 32 | .Font(FT66Style::Tokens::FontBold(32)) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 142 | STextBlock | SetPadding | FMargin(12.f, 8.f | FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(12.f, 8.f))) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 154 | SOverlay | SetPadding | 0.f | FT66Style::MakePanel(SNullWidget::NullWidget, FT66PanelParams(ET66PanelType::Bg).SetPadding(0.f)) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 174 | SVerticalBox | Padding | 20.0f, 380.0f, 20.0f, 60.0f | .Padding(20.0f, 380.0f, 20.0f, 60.0f) |
-| Source/T66/UI/Screens/T66PartySizePickerScreen.cpp | 191 | SHorizontalBox | Padding | 20.0f, 0.0f, 0.0f, 20.0f | .Padding(20.0f, 0.0f, 0.0f, 20.0f) |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 178 | SBox | Padding | FMargin(0.f, bDotaTheme ? 5.f : 6.f | .Padding(FMargin(0.f, bDotaTheme ? 5.f : 6.f)) |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 182 | SBox | SetFontSize | bDotaTheme ? 28 : 44 | .SetFontSize(bDotaTheme ? 28 : 44) |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 183 | SBox | SetPadding | bDotaTheme ? FMargin(22.f, 14.f, 22.f, 12.f | .SetPadding(bDotaTheme ? FMargin(22.f, 14.f, 22.f, 12.f) : FMargin(18.f)) |

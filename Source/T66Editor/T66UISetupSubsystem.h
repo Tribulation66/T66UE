@@ -7,12 +7,10 @@
 #include "T66UISetupSubsystem.generated.h"
 
 class UBlueprint;
-class UWidgetBlueprint;
 
 /**
  * Editor Subsystem for T66 UI Setup
- * Provides tools to configure Blueprint defaults, populate Widget Blueprints,
- * and set up levels for proper PIE testing
+ * Provides tools to configure Blueprint defaults and set up levels for proper PIE testing
  */
 UCLASS()
 class T66EDITOR_API UT66UISetupSubsystem : public UEditorSubsystem
@@ -55,7 +53,7 @@ public:
 	bool ConfigureGameplayGameMode();
 
 	/**
-	 * Configure BP_T66PlayerController with screen class mappings
+	 * Configure BP_T66PlayerController frontend defaults
 	 */
 	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
 	bool ConfigurePlayerController();

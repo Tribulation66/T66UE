@@ -1199,7 +1199,14 @@ void AT66PlayerController::EnsureGameplayUIManager()
 
 void AT66PlayerController::HandleEscapePressed()
 {
-	if (!IsGameplayLevel()) return;
+	if (!IsGameplayLevel())
+	{
+		if (UIManager)
+		{
+			UIManager->HandleBackAction();
+		}
+		return;
+	}
 
 #if !UE_BUILD_SHIPPING
 	// Highest priority: if dev console is open, Esc should close it and never open PauseMenu.

@@ -263,6 +263,19 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 		}
 	}
 
+	const TSharedPtr<FJsonObject>* DmgReceivedObj = nullptr;
+	if (Json->TryGetObjectField(TEXT("damage_received_by_source"), DmgReceivedObj) && DmgReceivedObj && (*DmgReceivedObj).IsValid())
+	{
+		for (const auto& Pair : (*DmgReceivedObj)->Values)
+		{
+			double Val = 0.0;
+			if (Pair.Value.IsValid() && Pair.Value->TryGetNumber(Val))
+			{
+				S->DamageReceivedBySource.Add(FName(*Pair.Key), static_cast<int32>(Val));
+			}
+		}
+	}
+
 	Json->TryGetStringField(TEXT("proof_of_run_url"), S->ProofOfRunUrl);
 	S->bProofOfRunLocked = T66RunSummaryGetJsonBoolOrDefault(Json, TEXT("proof_locked"), !S->ProofOfRunUrl.IsEmpty());
 

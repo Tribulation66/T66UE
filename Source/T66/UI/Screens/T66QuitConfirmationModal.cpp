@@ -164,7 +164,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush ShellBrush;
 		return ResolveMasterLibraryBrush(
 			ShellBrush,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FMargin(0.067f, 0.043f, 0.067f, 0.043f),
 			TEXT("QuitModalShell"));
 	}

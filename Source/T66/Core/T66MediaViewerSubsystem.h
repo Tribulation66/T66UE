@@ -37,6 +37,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "MediaViewer")
 	bool IsMediaViewerOpen() const { return bIsOpen; }
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "MediaViewer")
+	bool IsMediaViewerAvailable() const;
+
 	UFUNCTION(BlueprintCallable, Category = "MediaViewer")
 	void ToggleMediaViewer();
 

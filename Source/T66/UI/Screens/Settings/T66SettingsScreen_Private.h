@@ -7,6 +7,7 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RetroFXSubsystem.h"
+#include "Core/T66RuntimePlatformSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66PlayerSettingsSaveGame.h"
 #include "Gameplay/T66PlayerController.h"
@@ -216,23 +217,23 @@ namespace T66SettingsScreenPrivate
 		static FString Path;
 		if (Family == ET66SettingsSpriteFamily::TabSelected)
 		{
-			Path = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_selected.png");
+			Path = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_normal_red_square_variant.png");
 			return *Path;
 		}
 		if (Family == ET66SettingsSpriteFamily::ToggleOn)
 		{
-			Path = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_selected.png");
+			Path = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_normal_red_square_variant.png");
 			return *Path;
 		}
 		if (Family == ET66SettingsSpriteFamily::ToggleOff)
 		{
 			Path = FString::Printf(
-				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_load_game_button_%s.png"),
+				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_%s_red_square_variant.png"),
 				Suffix);
 			return *Path;
 		}
 		Path = FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_%s.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_%s_red_square_variant.png"),
 			Suffix);
 		return *Path;
 	}
@@ -284,7 +285,7 @@ namespace T66SettingsScreenPrivate
 		FSettingsSpriteBrushSet& Set = GetSettingsButtonSpriteSet(ET66SettingsSpriteFamily::ToggleInactive);
 		return ResolveSettingsSpriteBrush(
 			Set.Disabled,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_disabled.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_disabled_red_square_variant.png"),
 			FVector2D(166.f, 91.f),
 			FMargin(0.f),
 			TextureFilter::TF_Nearest);
@@ -312,7 +313,7 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FVector2D(567.f, 379.f),
 			FMargin(0.070f, 0.120f, 0.070f, 0.120f),
 			TextureFilter::TF_Nearest);
@@ -323,7 +324,7 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FVector2D(550.f, 83.f),
 			FMargin(0.075f, 0.275f, 0.075f, 0.275f),
 			TextureFilter::TF_Nearest);
@@ -334,7 +335,7 @@ namespace T66SettingsScreenPrivate
 		static FSettingsSpriteBrushEntry Entry;
 		return ResolveSettingsSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/dropdown_field_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/dropdown_field_normal_square_variant.png"),
 			FVector2D(570.f, 71.f),
 			FMargin(0.055f, 0.34f, 0.055f, 0.34f),
 			TextureFilter::TF_Nearest);
@@ -464,6 +465,11 @@ namespace T66SettingsScreenPrivate
 		return FT66Style::Tokens::FontBold(AdjustSettingsFontSize(BaseSize));
 	}
 
+	inline bool IsBloodyRetroSettingsPreset()
+	{
+		return T66ScreenSlateHelpers::GetReferenceChromePreset() == T66ScreenSlateHelpers::ET66ReferenceChromePreset::BloodyRetro;
+	}
+
 	inline FLinearColor T66SettingsShellFill()
 	{
 		return FLinearColor(0.018f, 0.014f, 0.010f, 1.0f);
@@ -471,12 +477,20 @@ namespace T66SettingsScreenPrivate
 
 	inline FLinearColor T66SettingsPageFill()
 	{
-		return FLinearColor(0.72f, 0.49f, 0.20f, 1.0f);
+		if (IsBloodyRetroSettingsPreset())
+		{
+			return FLinearColor(0.018f, 0.012f, 0.010f, 0.98f);
+		}
+		return FLinearColor::White;
 	}
 
 	inline FLinearColor T66SettingsRowFill()
 	{
-		return FLinearColor(0.67f, 0.44f, 0.18f, 0.96f);
+		if (IsBloodyRetroSettingsPreset())
+		{
+			return FLinearColor(0.030f, 0.020f, 0.016f, 0.94f);
+		}
+		return FLinearColor(0.94f, 0.94f, 0.91f, 1.0f);
 	}
 
 	inline FLinearColor T66SettingsButtonNeutralFill()
@@ -496,16 +510,28 @@ namespace T66SettingsScreenPrivate
 
 	inline FLinearColor GetSettingsPageText()
 	{
-		return FLinearColor(0.98f, 0.90f, 0.62f, 1.0f);
+		if (IsBloodyRetroSettingsPreset())
+		{
+			return FLinearColor(0.94f, 0.89f, 0.78f, 1.0f);
+		}
+		return FLinearColor(0.045f, 0.040f, 0.034f, 1.0f);
 	}
 
 	inline FLinearColor GetSettingsPageMuted()
 	{
-		return FLinearColor(0.73f, 0.70f, 0.62f, 1.0f);
+		if (IsBloodyRetroSettingsPreset())
+		{
+			return FLinearColor(0.66f, 0.58f, 0.48f, 1.0f);
+		}
+		return FLinearColor(0.30f, 0.29f, 0.26f, 1.0f);
 	}
 
 	inline FLinearColor GetSettingsButtonText()
 	{
+		if (IsBloodyRetroSettingsPreset())
+		{
+			return FLinearColor(0.98f, 0.94f, 0.86f, 1.0f);
+		}
 		return FLinearColor(0.98f, 0.84f, 0.48f, 1.0f);
 	}
 
@@ -563,10 +589,15 @@ namespace T66SettingsScreenPrivate
 	inline TSharedRef<SWidget> MakeSettingsPanel(const TSharedRef<SWidget>& Content, ET66PanelType Type, const FLinearColor& FillColor, const FMargin& Padding)
 	{
 		(void)Type;
-		const FSlateBrush* ShellBrush = GetSettingsContentShellBrush();
-		return SNew(SBorder)
-			.BorderImage(ShellBrush ? ShellBrush : FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(ShellBrush ? FLinearColor::White : FillColor)
+		return SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				FT66Style::MakeRetroUIChromeSurface(
+					StaticCastSharedRef<SWidget>(SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FillColor)))
+			]
+			+ SOverlay::Slot()
 			.Padding(Padding)
 			[
 				Content
@@ -575,12 +606,17 @@ namespace T66SettingsScreenPrivate
 
 	inline TSharedRef<SWidget> MakeSettingsContentShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		const FSlateBrush* ShellBrush = GetSettingsContentShellBrush();
-		return SNew(SBorder)
-			.BorderImage(ShellBrush ? ShellBrush : FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(ShellBrush ? FLinearColor::White : GetSettingsPageBackground())
-			.Padding(Padding)
+		return SNew(SOverlay)
 			.Clipping(EWidgetClipping::ClipToBounds)
+			+ SOverlay::Slot()
+			[
+				FT66Style::MakeRetroUIChromeSurface(
+					StaticCastSharedRef<SWidget>(SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(GetSettingsPageBackground())))
+			]
+			+ SOverlay::Slot()
+			.Padding(Padding)
 			[
 				Content
 			];
@@ -604,14 +640,14 @@ namespace T66SettingsScreenPrivate
 
 		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
 			? Params.CustomContent.ToSharedRef()
-			: StaticCastSharedRef<SWidget>(
+			: FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(
 				SNew(STextBlock)
 				.Text(Text)
 				.Font(Font)
 				.ColorAndOpacity(TextColor)
 				.ShadowOffset(FVector2D(1.f, 1.f))
 				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.65f))
-				.Justification(ETextJustify::Center));
+				.Justification(ETextJustify::Center)));
 
 		return SNew(ST66SettingsSpriteButton)
 			.SpriteFamily(SpriteFamily)
@@ -692,10 +728,15 @@ namespace T66SettingsScreenPrivate
 
 	inline TSharedRef<SWidget> MakeSettingsRow(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(26.f, 24.f, 18.f, 24.f))
 	{
-		const FSlateBrush* RowBrush = GetSettingsRowShellBrush();
-		return SNew(SBorder)
-			.BorderImage(RowBrush ? RowBrush : FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(RowBrush ? FLinearColor::White : T66SettingsRowFill())
+		return SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				FT66Style::MakeRetroUIChromeSurface(
+					StaticCastSharedRef<SWidget>(SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(T66SettingsRowFill())))
+			]
+			+ SOverlay::Slot()
 			.Padding(Padding)
 			[
 				Content
@@ -790,27 +831,27 @@ namespace T66SettingsScreenPrivate
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight()
 				[
-					SNew(STextBlock)
+					FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
 					.Text(Label)
 					.Font(SettingsRegularFont(22))
-					.ColorAndOpacity(GetSettingsPageText())
+					.ColorAndOpacity(GetSettingsPageText())))
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 18.f, 0.f)
 				[
-					SNew(STextBlock)
+					FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
 					.Text(Description)
 					.Font(SettingsRegularFont(16))
 					.ColorAndOpacity(GetSettingsPageMuted())
-					.AutoWrapText(true)
+					.AutoWrapText(true)))
 				])
 			: StaticCastSharedRef<SWidget>(
 				SNew(SBox)
 				.MinDesiredWidth(Style.LabelMinWidth)
 				[
-					SNew(STextBlock)
+					FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
 					.Text(Label)
 					.Font(SettingsRegularFont(22))
-					.ColorAndOpacity(GetSettingsPageText())
+					.ColorAndOpacity(GetSettingsPageText())))
 				]);
 
 		return MakeSettingsRow(
@@ -842,10 +883,10 @@ namespace T66SettingsScreenPrivate
 		return SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
-				SNew(STextBlock)
+				FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
 				.Text(Text)
 				.Font(SettingsBoldFont(FontSize))
-				.ColorAndOpacity(GetSettingsPageText())
+				.ColorAndOpacity(GetSettingsPageText())))
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(12.f, 1.f, 0.f, 0.f)
 			[
@@ -853,8 +894,9 @@ namespace T66SettingsScreenPrivate
 				.WidthOverride(145.f)
 				.HeightOverride(18.f)
 				[
-					SNew(SImage)
-					.Image(GetSettingsSectionDividerBrush())
+					FT66Style::MakeRetroUIChromeSurface(StaticCastSharedRef<SWidget>(
+						SNew(SImage)
+						.Image(GetSettingsSectionDividerBrush())))
 				]
 			];
 	}
@@ -1299,18 +1341,18 @@ namespace T66SettingsScreenPrivate
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight()
 						[
-							SNew(STextBlock)
+							FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
 							.Text(Label)
 							.Font(SettingsBoldFont(20))
-							.ColorAndOpacity(GetSettingsPageText())
+							.ColorAndOpacity(GetSettingsPageText())))
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 18.f, 0.f)
 						[
-							SNew(STextBlock)
+							FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
 							.Text(Description)
 							.Font(SettingsRegularFont(14))
 							.ColorAndOpacity(GetSettingsPageMuted())
-							.AutoWrapText(true)
+							.AutoWrapText(true)))
 						]
 					]
 					+ SHorizontalBox::Slot().FillWidth(0.54f).VAlign(VAlign_Center).Padding(10.f, 0.f)
@@ -1318,14 +1360,14 @@ namespace T66SettingsScreenPrivate
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight()
 						[
-							SNew(STextBlock)
+							FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
 							.Text_Lambda([GetSnappedPercent]()
 							{
 								return FText::AsNumber(GetSnappedPercent());
 							})
 							.Font(SettingsBoldFont(22))
 							.ColorAndOpacity(GetSettingsPageText())
-							.Justification(ETextJustify::Center)
+							.Justification(ETextJustify::Center)))
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
 						[
@@ -1342,11 +1384,11 @@ namespace T66SettingsScreenPrivate
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
 						[
-							SNew(STextBlock)
+							FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
 							.Text(HelpText)
 							.Font(SettingsRegularFont(12))
 							.ColorAndOpacity(GetSettingsPageMuted())
-							.AutoWrapText(true)
+							.AutoWrapText(true)))
 						]
 					],
 					FMargin(22.f, 8.f, 16.f, 8.f))

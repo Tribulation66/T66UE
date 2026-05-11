@@ -34,9 +34,6 @@ namespace
 {
 	static constexpr bool T66EnableTowerEnemySpawns = true;
 	static constexpr int32 T66TowerTargetInitialEnemiesPerGameplayFloor = 4;
-	static constexpr float T66TowerTargetRuntimeSpawnIntervalSeconds = 9.0f;
-	static constexpr int32 T66TowerTargetEnemiesPerWave = 1;
-	static constexpr int32 T66TowerTargetMaxAliveEnemies = 12;
 
 	static void T66ResolveStageMobIDs(UGameInstance* GI, const int32 StageNum, TArray<FName>& OutMobIDs)
 	{
@@ -154,6 +151,9 @@ void AT66EnemyDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
 	}
 	PendingSpawns.Empty();
+	ActiveStaggeredSpawnIntervalSeconds = FMath::Max(0.0f, StaggeredSpawnIntervalSeconds);
+	ActiveRuntimeWaveCooldownSeconds = 0.05f;
+	ActiveMaxSpawnsPerStaggeredBatch = FMath::Max(1, MaxSpawnsPerStaggeredBatch);
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -333,13 +333,37 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 
 void AT66EnemyDirector::NotifyEnemyDied(AT66EnemyBase* Enemy)
 {
-	if (Enemy && AliveCount > 0)
+	if (!Enemy)
+	{
+		return;
+	}
+
+	if (AliveCount > 0)
 	{
 		AliveCount--;
 	}
-	if (Enemy && ActiveMiniBoss.IsValid() && ActiveMiniBoss.Get() == Enemy)
+	if (ActiveMiniBoss.IsValid() && ActiveMiniBoss.Get() == Enemy)
 	{
 		ActiveMiniBoss = nullptr;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || bSpawningPaused || !bSpawningArmed)
+	{
+		return;
+	}
+
+	if (PendingSpawns.Num() > 0 || World->GetTimerManager().IsTimerActive(StaggeredSpawnTimerHandle))
+	{
+		return;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	const UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	if (RunState && RunState->GetStageTimerActive() && GameMode && GameMode->IsUsingTowerMainMapLayout())
+	{
+		ScheduleNextTowerRuntimeWave(0.05f);
 	}
 }
 
@@ -362,6 +386,9 @@ void AT66EnemyDirector::SetSpawningPaused(bool bPaused)
 	if (bSpawningPaused)
 	{
 		PendingSpawns.Empty();
+		ActiveStaggeredSpawnIntervalSeconds = FMath::Max(0.0f, StaggeredSpawnIntervalSeconds);
+		ActiveRuntimeWaveCooldownSeconds = 0.05f;
+		ActiveMaxSpawnsPerStaggeredBatch = FMath::Max(1, MaxSpawnsPerStaggeredBatch);
 		return;
 	}
 
@@ -394,11 +421,19 @@ void AT66EnemyDirector::RefreshSpawningFromProgression()
 		: FT66StageProgressionSnapshot{};
 	const AT66GameMode* ActiveGameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
 	const bool bTowerLayout = ActiveGameMode && ActiveGameMode->IsUsingTowerMainMapLayout();
+	if (bTowerLayout)
+	{
+		World->GetTimerManager().ClearTimer(SpawnTimerHandle);
+		if (PendingSpawns.Num() <= 0 && !World->GetTimerManager().IsTimerActive(StaggeredSpawnTimerHandle))
+		{
+			ScheduleNextTowerRuntimeWave(0.05f);
+		}
+		return;
+	}
+
 	const float RuntimeSpawnInterval = FMath::Max(
 		0.15f,
-		bTowerLayout
-			? FMath::Max(0.15f, Snapshot.SpawnBudget.RuntimeSpawnIntervalSeconds)
-			: (BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
+		(BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
 
 	World->GetTimerManager().ClearTimer(SpawnTimerHandle);
 	World->GetTimerManager().SetTimer(
@@ -444,14 +479,20 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 			const bool bTowerLayout = ActiveGameMode && ActiveGameMode->IsUsingTowerMainMapLayout();
 			const float RuntimeSpawnInterval = FMath::Max(
 				0.15f,
-				bTowerLayout
-					? FMath::Max(0.15f, Snapshot.SpawnBudget.RuntimeSpawnIntervalSeconds)
-					: (BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
+				(BaseSpawnIntervalSeconds * Snapshot.RuntimeTrickleIntervalScalar) / FMath::Max(1.0f, Snapshot.DifficultyScalar));
 
 			bSpawningArmed = true;
-			SpawnRuntimeTrickleWave();
 			World->GetTimerManager().ClearTimer(SpawnTimerHandle);
-			World->GetTimerManager().SetTimer(SpawnTimerHandle, this, &AT66EnemyDirector::SpawnRuntimeTrickleWave, RuntimeSpawnInterval, true);
+			SpawnRuntimeTrickleWave();
+			if (!bTowerLayout)
+			{
+				World->GetTimerManager().SetTimer(
+					SpawnTimerHandle,
+					this,
+					&AT66EnemyDirector::SpawnRuntimeTrickleWave,
+					RuntimeSpawnInterval,
+					true);
+			}
 		}
 	}
 	else
@@ -461,7 +502,27 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 		World->GetTimerManager().ClearTimer(SpawnTimerHandle);
 		World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
 		PendingSpawns.Empty();
+		ActiveStaggeredSpawnIntervalSeconds = FMath::Max(0.0f, StaggeredSpawnIntervalSeconds);
+		ActiveRuntimeWaveCooldownSeconds = 0.05f;
+		ActiveMaxSpawnsPerStaggeredBatch = FMath::Max(1, MaxSpawnsPerStaggeredBatch);
 	}
+}
+
+void AT66EnemyDirector::ScheduleNextTowerRuntimeWave(const float DelaySeconds)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	World->GetTimerManager().ClearTimer(SpawnTimerHandle);
+	World->GetTimerManager().SetTimer(
+		SpawnTimerHandle,
+		this,
+		&AT66EnemyDirector::SpawnRuntimeTrickleWave,
+		FMath::Max(0.05f, DelaySeconds),
+		false);
 }
 
 void AT66EnemyDirector::SpawnRuntimeTrickleWave()
@@ -524,6 +585,12 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	{
 		return;
 	}
+	if (bTowerLayout)
+	{
+		const float RuntimeSpawnInterval = FMath::Max(0.10f, Snapshot.SpawnBudget.RuntimeSpawnIntervalSeconds);
+		const float RuntimeWaveDuration = FMath::Max(0.0f, Snapshot.SpawnBudget.RuntimeWaveStaggerDurationSeconds);
+		ActiveRuntimeWaveCooldownSeconds = FMath::Max(0.0f, RuntimeSpawnInterval - RuntimeWaveDuration);
+	}
 
 	// Difficulty scaling affects enemy count (waves + max alive) outside the tower progression curve.
 	const float Scalar = RunState->GetDifficultyScalar();
@@ -551,7 +618,14 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	EffectiveMaxAlive = FMath::Max(EffectiveMaxAlive, EffectivePerWave);
 
 	int32 ToSpawn = FMath::Min(EffectivePerWave, EffectiveMaxAlive - AliveCount);
-	if (ToSpawn <= 0) return;
+	if (ToSpawn <= 0)
+	{
+		if (bTowerLayout)
+		{
+			ScheduleNextTowerRuntimeWave(0.25f);
+		}
+		return;
+	}
 
 	if (RngSub && RunState)
 	{
@@ -1042,6 +1116,28 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		PendingSpawns.Add(Slot);
 	}
 
+	if (PendingSpawns.Num() <= 0)
+	{
+		if (bTowerLayout)
+		{
+			ScheduleNextTowerRuntimeWave(0.25f);
+		}
+		return;
+	}
+
+	ActiveMaxSpawnsPerStaggeredBatch = bTowerLayout
+		? FMath::Clamp(Snapshot.SpawnBudget.RuntimeMaxSpawnsPerStaggeredBatch, 1, 128)
+		: FMath::Max(1, MaxSpawnsPerStaggeredBatch);
+	const int32 TotalStaggeredBatches = FMath::CeilToInt(static_cast<float>(PendingSpawns.Num()) / static_cast<float>(ActiveMaxSpawnsPerStaggeredBatch));
+	if (bTowerLayout && Snapshot.SpawnBudget.RuntimeWaveStaggerDurationSeconds > 0.0f && TotalStaggeredBatches > 1)
+	{
+		ActiveStaggeredSpawnIntervalSeconds = Snapshot.SpawnBudget.RuntimeWaveStaggerDurationSeconds / static_cast<float>(TotalStaggeredBatches - 1);
+	}
+	else
+	{
+		ActiveStaggeredSpawnIntervalSeconds = FMath::Max(0.0f, StaggeredSpawnIntervalSeconds);
+	}
+
 	World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
 	SpawnNextStaggeredBatch();
 }
@@ -1063,7 +1159,7 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
 	const bool bTowerLayout = GameMode && GameMode->IsUsingTowerMainMapLayout();
 
-	const int32 BatchSize = FMath::Max(1, MaxSpawnsPerStaggeredBatch);
+	const int32 BatchSize = FMath::Max(1, ActiveMaxSpawnsPerStaggeredBatch);
 	int32 ProcessedCount = 0;
 	while (ProcessedCount < PendingSpawns.Num() && ProcessedCount < BatchSize)
 	{
@@ -1173,11 +1269,17 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 			StaggeredSpawnTimerHandle,
 			this,
 			&AT66EnemyDirector::SpawnNextStaggeredBatch,
-			FMath::Max(0.0f, StaggeredSpawnIntervalSeconds),
+			FMath::Max(0.0f, ActiveStaggeredSpawnIntervalSeconds),
 			false);
 	}
 	else
 	{
 		World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
+		ActiveStaggeredSpawnIntervalSeconds = FMath::Max(0.0f, StaggeredSpawnIntervalSeconds);
+		ActiveMaxSpawnsPerStaggeredBatch = FMath::Max(1, MaxSpawnsPerStaggeredBatch);
+		if (bTowerLayout && !bSpawningPaused && bSpawningArmed && RunState && RunState->GetStageTimerActive())
+		{
+			ScheduleNextTowerRuntimeWave(ActiveRuntimeWaveCooldownSeconds);
+		}
 	}
 }

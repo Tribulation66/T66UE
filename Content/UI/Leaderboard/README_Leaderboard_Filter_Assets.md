@@ -17,7 +17,6 @@ Each is a border-only button whose content is an icon (PNG for Global/Friends, a
    This will:
    - Import `Global.png`, `Friends.png`, `Streamers_SpriteSheet.png` into `/Game/UI/Leaderboard/`
    - Create `M_LeaderboardStreamersSprite` (material with `Frame` and `SpriteSheet` parameters)
-   - Create `WBP_LeaderboardFilterButton` (widget Blueprint)
 
 3. **Wire the sprite-sheet material**  
    Open `M_LeaderboardStreamersSprite` in the Material Editor. Add the sprite-sheet UV logic:
@@ -26,10 +25,4 @@ Each is a border-only button whose content is an icon (PNG for Global/Friends, a
    - UV = `( (Col + TexCoord.U) / NumColumns, (Row + TexCoord.V) / NumRows )`.
    - Use that UV to sample the `SpriteSheet` texture and connect to Emissive Color (or Base Color).
 
-4. **Filter button Blueprint (optional – button/image created in C++ if empty)**  
-   Open `WBP_LeaderboardFilterButton`:
-   - Add a **Button** named exactly `FilterButton` (border-only style if desired).
-   - Add an **Image** named exactly `IconImage` as the button’s child (content).
-   - Save. You can also leave the hierarchy empty; the C++ code creates the Button and Image at runtime. If icons don't show, confirm `/Game/UI/Leaderboard/` has the texture assets.
-
-After this, the main menu will show the three icons (and the Streamers one will animate when the material and frame count are set).
+After this, the native Slate leaderboard panel will show the three icons, and the Streamers one will animate when the material and frame count are set.

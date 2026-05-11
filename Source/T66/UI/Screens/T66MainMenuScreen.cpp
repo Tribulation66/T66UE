@@ -48,7 +48,26 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66MainMenu, Log, All);
 
 namespace
 {
-	const FString MainMenuUltrakillElementDir = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements");
+	FString MakeMainMenuSquareElementPath(const TCHAR* FileName)
+	{
+		const FString Name(FileName ? FileName : TEXT(""));
+		if (Name.StartsWith(TEXT("dropdown_field_"), ESearchCase::IgnoreCase)
+			|| Name.StartsWith(TEXT("leaderboard_tab_button_"), ESearchCase::IgnoreCase))
+		{
+			FString State = FPaths::GetBaseFilename(Name).ToLower();
+			State.RemoveFromStart(Name.StartsWith(TEXT("dropdown_field_"), ESearchCase::IgnoreCase)
+				? TEXT("dropdown_field_")
+				: TEXT("leaderboard_tab_button_"),
+				ESearchCase::IgnoreCase);
+			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*State);
+		}
+		return T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(FileName);
+	}
+
+	FString MakeMainMenuElementPath(const TCHAR* FileName)
+	{
+		return T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(FileName);
+	}
 
 	void EnsureMainMenuRuntimeImageBrush(const TSharedPtr<FSlateBrush>& Brush, const FVector2D& ImageSize)
 	{
@@ -340,10 +359,11 @@ namespace
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							SNew(ST66MainMenuSlicedBrushImage)
-							.Brush(this, &ST66MainMenuPlateButton::GetCurrentBrush)
-							.DesiredSize(FVector2D(1.f, 1.f))
-							.SourceCapFraction(SourceCapFraction)
+							FT66Style::MakeRetroUIChromeSurface(
+								StaticCastSharedRef<SWidget>(SNew(ST66MainMenuSlicedBrushImage)
+								.Brush(this, &ST66MainMenuPlateButton::GetCurrentBrush)
+								.DesiredSize(FVector2D(1.f, 1.f))
+								.SourceCapFraction(SourceCapFraction)))
 						]
 						+ SOverlay::Slot()
 						.HAlign(HAlign_Fill)
@@ -450,6 +470,77 @@ namespace
 		FOnClicked ClickHandler;
 		FButtonStyle ButtonStyle;
 		TSharedPtr<SButton> Button;
+	};
+
+	class ST66MainMenuSpinningIcon : public SCompoundWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66MainMenuSpinningIcon)
+			: _Brush(nullptr)
+			, _IconSize(FVector2D(72.f, 72.f))
+			, _RotationPeriodSeconds(3.0f)
+			, _bClockwise(true)
+		{}
+			SLATE_ARGUMENT(const FSlateBrush*, Brush)
+			SLATE_ARGUMENT(FVector2D, IconSize)
+			SLATE_ARGUMENT(float, RotationPeriodSeconds)
+			SLATE_ARGUMENT(bool, bClockwise)
+		SLATE_END_ARGS()
+
+		~ST66MainMenuSpinningIcon()
+		{
+			if (ActiveTimerHandle.IsValid())
+			{
+				UnRegisterActiveTimer(ActiveTimerHandle.ToSharedRef());
+				ActiveTimerHandle.Reset();
+			}
+		}
+
+		void Construct(const FArguments& InArgs)
+		{
+			RotationPeriodSeconds = FMath::Max(0.1f, InArgs._RotationPeriodSeconds);
+			RotationDirection = InArgs._bClockwise ? 1.0f : -1.0f;
+
+			ChildSlot
+			[
+				FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+					SAssignNew(IconImage, SImage)
+					.Image(InArgs._Brush)
+					.ColorAndOpacity(InArgs._Brush ? FLinearColor::White : FLinearColor::Transparent)
+					.DesiredSizeOverride(InArgs._IconSize)))
+			];
+
+			if (IconImage.IsValid())
+			{
+				IconImage->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+			}
+
+			ActiveTimerHandle = RegisterActiveTimer(
+				0.f,
+				FWidgetActiveTimerDelegate::CreateSP(this, &ST66MainMenuSpinningIcon::HandleActiveTimer));
+		}
+
+	private:
+		EActiveTimerReturnType HandleActiveTimer(double, float InDeltaTime)
+		{
+			ElapsedSeconds += FMath::Max(0.f, InDeltaTime);
+			const float Turns = FMath::Fmod(ElapsedSeconds / RotationPeriodSeconds, 1.0f);
+			const float RotationRadians = FMath::DegreesToRadians(Turns * 360.f * RotationDirection);
+
+			if (IconImage.IsValid())
+			{
+				IconImage->SetRenderTransform(FSlateRenderTransform(FTransform2D(FQuat2D(RotationRadians))));
+			}
+
+			Invalidate(EInvalidateWidgetReason::Paint);
+			return EActiveTimerReturnType::Continue;
+		}
+
+		TSharedPtr<SImage> IconImage;
+		TSharedPtr<FActiveTimerHandle> ActiveTimerHandle;
+		float RotationPeriodSeconds = 3.0f;
+		float RotationDirection = 1.0f;
+		float ElapsedSeconds = 0.f;
 	};
 }
 
@@ -571,8 +662,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	FriendGroupsDividerBox.Reset();
 	NoMatchingFriendsBox.Reset();
 
-	const FText NewGameText = NSLOCTEXT("T66.MainMenu", "Start", "NEW GAME");
+	const bool bBloodyRetroChrome = T66ScreenSlateHelpers::GetReferenceChromePreset()
+		== T66ScreenSlateHelpers::ET66ReferenceChromePreset::BloodyRetro;
+	const FText NewGameText = NSLOCTEXT("T66.MainMenu", "EnterTribulation", "ENTER TRIBULATION");
 	const FText LoadGameText = NSLOCTEXT("T66.MainMenu", "Continue", "LOAD GAME");
+	const FText DailyDescentText = NSLOCTEXT("T66.MainMenu", "DailyDescent", "DAILY DESCENT");
 
 	struct FMenuFriendEntry
 	{
@@ -733,16 +827,16 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		FriendPortraitBrushes.Add(Brush);
 	}
 
-	const FLinearColor ShellFill(0.74f, 0.50f, 0.25f, 0.10f);
-	const FLinearColor BrightText(0.09f, 0.052f, 0.027f, 1.0f);
-	const FLinearColor HeaderText(0.14f, 0.075f, 0.035f, 1.0f);
-	const FLinearColor MutedText(0.18f, 0.105f, 0.052f, 1.0f);
-	const FLinearColor OfflineNameText(0.16f, 0.095f, 0.055f, 1.0f);
-	const FLinearColor OnlineHeaderText(0.15f, 0.075f, 0.032f, 1.0f);
-	const FLinearColor DividerColor(0.42f, 0.245f, 0.105f, 0.36f);
-	const FLinearColor AvatarAccentOnline(0.42f, 0.25f, 0.12f, 1.0f);
-	const FLinearColor AvatarAccentOffline(0.27f, 0.18f, 0.11f, 1.0f);
-	const FLinearColor LeaderSlotAccent(0.29f, 0.24f, 0.13f, 1.0f);
+	const FLinearColor ShellFill(0.030f, 0.020f, 0.022f, 0.20f);
+	const FLinearColor BrightText(0.98f, 0.93f, 0.90f, 1.0f);
+	const FLinearColor HeaderText(0.95f, 0.30f, 0.24f, 1.0f);
+	const FLinearColor MutedText(0.82f, 0.62f, 0.58f, 1.0f);
+	const FLinearColor OfflineNameText(0.54f, 0.40f, 0.38f, 1.0f);
+	const FLinearColor OnlineHeaderText(0.95f, 0.30f, 0.24f, 1.0f);
+	const FLinearColor DividerColor(0.95f, 0.05f, 0.04f, 0.58f);
+	const FLinearColor AvatarAccentOnline(0.95f, 0.08f, 0.06f, 1.0f);
+	const FLinearColor AvatarAccentOffline(0.34f, 0.19f, 0.18f, 1.0f);
+	const FLinearColor LeaderSlotAccent(0.95f, 0.05f, 0.04f, 1.0f);
 	const FLinearColor PartySlotAccent(0.15f, 0.17f, 0.19f, 1.0f);
 	const int32 LeftPanelTitleFontSize = 18;
 	const int32 FriendsPanelBodyFontSize = 18;
@@ -770,14 +864,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			];
 	};
 
-	auto MakePartyDivider = []() -> TSharedRef<SWidget>
+	auto MakePartyDivider = [DividerColor]() -> TSharedRef<SWidget>
 	{
 		return SNew(SBox)
 			.HeightOverride(2.f)
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.96f, 0.04f, 0.02f, 1.0f))
+				.BorderBackgroundColor(FLinearColor(DividerColor.R, DividerColor.G, DividerColor.B, 1.0f))
 			];
 	};
 
@@ -815,14 +909,15 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 						.WidthOverride(16.f)
 						.HeightOverride(16.f)
 						[
-							SAssignNew(ExpandArrowImage, SImage)
-							.Image(DownArrowBrush)
-							.ColorAndOpacity(HeaderText)
-							.RenderTransformPivot(FVector2D(0.5f, 0.5f))
-							.RenderTransform(
-								bExpanded
-									? FSlateRenderTransform(FTransform2D())
-									: FSlateRenderTransform(FTransform2D(FQuat2D(FMath::DegreesToRadians(90.f)))))
+							FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+								SAssignNew(ExpandArrowImage, SImage)
+								.Image(DownArrowBrush)
+								.ColorAndOpacity(HeaderText)
+								.RenderTransformPivot(FVector2D(0.5f, 0.5f))
+								.RenderTransform(
+									bExpanded
+										? FSlateRenderTransform(FTransform2D())
+										: FSlateRenderTransform(FTransform2D(FQuat2D(FMath::DegreesToRadians(90.f)))))))
 						])
 					.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
 					.SetPadding(FMargin(0.f)))
@@ -1108,8 +1203,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 								.Text(ResolveActionText())
 								.Font(FT66Style::MakeFont(TEXT("Bold"), FriendsPanelBodyFontSize - 4))
 								.ColorAndOpacity(CanInviteFriend()
-									? FLinearColor(0.98f, 0.96f, 0.90f, 1.0f)
-									: FLinearColor(0.84f, 0.82f, 0.76f, 0.88f))
+									? FLinearColor(0.98f, 0.96f, 1.0f, 1.0f)
+									: FLinearColor(0.64f, 0.44f, 0.42f, 0.88f))
 								.Visibility(ShouldShowActionOverlayText() ? EVisibility::Visible : EVisibility::Collapsed)
 								.Justification(ETextJustify::Center)
 							]
@@ -1167,6 +1262,86 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		.ReferenceMirrorMode(true);
 
 	const TSharedRef<SWidget> LeaderboardShell = LeaderboardWidget;
+	const TWeakPtr<ST66LeaderboardPanel> WeakLeaderboardPanel = LeaderboardPanel;
+	const TSharedRef<TArray<TPair<ET66LeaderboardFilter, TWeakPtr<SImage>>>> LeaderboardFilterChromeImages =
+		MakeShared<TArray<TPair<ET66LeaderboardFilter, TWeakPtr<SImage>>>>();
+
+	auto GetLeaderboardFilterChromeBrush = [this, WeakLeaderboardPanel](const ET66LeaderboardFilter Filter) -> const FSlateBrush*
+	{
+		if (const TSharedPtr<ST66LeaderboardPanel> Panel = WeakLeaderboardPanel.Pin())
+		{
+			if (Panel->GetFilter() == Filter && LeaderboardFilterButtonSelectedBrush.IsValid())
+			{
+				return LeaderboardFilterButtonSelectedBrush.Get();
+			}
+		}
+
+		return LeaderboardFilterButtonBrush.IsValid()
+			? LeaderboardFilterButtonBrush.Get()
+			: FCoreStyle::Get().GetBrush("NoBrush");
+	};
+
+	auto RefreshLeaderboardFilterChrome = [LeaderboardFilterChromeImages, GetLeaderboardFilterChromeBrush]()
+	{
+		for (const TPair<ET66LeaderboardFilter, TWeakPtr<SImage>>& Entry : *LeaderboardFilterChromeImages)
+		{
+			if (const TSharedPtr<SImage> ButtonChromeImage = Entry.Value.Pin())
+			{
+				ButtonChromeImage->SetImage(GetLeaderboardFilterChromeBrush(Entry.Key));
+			}
+		}
+	};
+
+	auto MakeLeaderboardFilterButton = [this, WeakLeaderboardPanel, &NoBorderButtonStyle, LeaderboardFilterChromeImages, GetLeaderboardFilterChromeBrush, RefreshLeaderboardFilterChrome](
+		const ET66LeaderboardFilter Filter,
+		const TSharedPtr<FSlateBrush>& IconBrush) -> TSharedRef<SWidget>
+	{
+		TSharedPtr<SImage> ButtonChromeImage;
+		TSharedRef<SWidget> ButtonWidget = SNew(SBox)
+			.WidthOverride(T66MainMenuReferenceLayout::Right::FilterWorldButton.Width)
+			.HeightOverride(T66MainMenuReferenceLayout::Right::FilterWorldButton.Height)
+			[
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(
+						FOnClicked::CreateLambda([WeakLeaderboardPanel, Filter, RefreshLeaderboardFilterChrome]()
+						{
+							if (const TSharedPtr<ST66LeaderboardPanel> Panel = WeakLeaderboardPanel.Pin())
+							{
+								Panel->SetFilter(Filter);
+								Panel->Invalidate(EInvalidateWidgetReason::Layout);
+							}
+							RefreshLeaderboardFilterChrome();
+							return FReply::Handled();
+						}),
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							FT66Style::MakeRetroUIChromeSurface(StaticCastSharedRef<SWidget>(
+								SAssignNew(ButtonChromeImage, SImage)
+								.Image(GetLeaderboardFilterChromeBrush(Filter))
+								.ColorAndOpacity(FLinearColor::White)))
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(SBox)
+							.WidthOverride(58.f)
+							.HeightOverride(58.f)
+							[
+								FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+									SNew(SImage)
+									.Image(IconBrush.Get())
+									.ColorAndOpacity(IconBrush.IsValid() ? FLinearColor::White : FLinearColor::Transparent)))
+							]
+						])
+					.SetButtonStyle(&NoBorderButtonStyle)
+					.SetPadding(FMargin(0.f)))
+			];
+
+		LeaderboardFilterChromeImages->Emplace(Filter, ButtonChromeImage);
+		return ButtonWidget;
+	};
 
 	const FText FriendSearchHintText = NSLOCTEXT("T66.MainMenu", "FriendSearchHint", "Search friends...");
 	const FText NoMatchingFriendsText = NSLOCTEXT("T66.MainMenu", "NoMatchingFriends", "No friends match this search.");
@@ -1205,9 +1380,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				.WidthOverride(31.f)
 				.HeightOverride(31.f)
 				[
-					SNew(SImage)
-					.Image(SearchIconBrush.Get())
-					.ColorAndOpacity(SearchIconBrush.IsValid() ? FLinearColor::White : FLinearColor::Transparent)
+					FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+						SNew(SImage)
+						.Image(SearchIconBrush.Get())
+						.ColorAndOpacity(SearchIconBrush.IsValid() ? FLinearColor::White : FLinearColor::Transparent)))
 				]
 			]
 		];
@@ -1312,10 +1488,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					.HAlign(HAlign_Center)
 					.VAlign(VAlign_Center)
 					[
-						SNew(SImage)
-						.Image(PartyPlusIconBrush.Get())
-						.ColorAndOpacity(PartyPlusIconBrush.IsValid() ? FLinearColor::White : FLinearColor(0.96f, 0.08f, 0.05f, 1.0f))
-						.Visibility(bOccupied ? EVisibility::Collapsed : EVisibility::Visible)
+						FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+							SNew(SImage)
+							.Image(PartyPlusIconBrush.Get())
+							.ColorAndOpacity(PartyPlusIconBrush.IsValid() ? FLinearColor::White : FLinearColor(0.96f, 0.08f, 0.05f, 1.0f))
+							.Visibility(bOccupied ? EVisibility::Collapsed : EVisibility::Visible)))
 					]
 				]
 			];
@@ -1327,7 +1504,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	{
 		PartySlots->AddSlot()
 		.AutoWidth()
-		.Padding(SlotIndex == 0 ? FMargin(0.f) : FMargin(16.f, 0.f, 0.f, 0.f))
+		.Padding(SlotIndex == 0 ? FMargin(0.f) : FMargin(6.f, 0.f, 0.f, 0.f))
 		[
 			MakePartyMemberSlot(PartyEntries.IsValidIndex(SlotIndex) ? &PartyEntries[SlotIndex] : nullptr)
 		];
@@ -1394,8 +1571,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 		[
 			SNew(SBox)
-			.WidthOverride(128.f)
-			.HeightOverride(123.f)
+			.WidthOverride(92.f)
+			.HeightOverride(92.f)
 			[
 				SNew(SOverlay)
 				+ SOverlay::Slot()
@@ -1407,7 +1584,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 						: StaticCastSharedRef<SWidget>(SNew(SSpacer))
 				]
 				+ SOverlay::Slot()
-				.Padding(FMargin(16.f, 15.f, 18.f, 18.f))
+				.Padding(FMargin(10.f))
 				[
 					SNew(SImage)
 					.Image(ProfileAvatarBrush.Get())
@@ -1430,7 +1607,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				SNew(STextBlock)
 				.Text(ProfileNameText)
 				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 8))
-				.ColorAndOpacity(FLinearColor(0.96f, 0.84f, 0.58f, 1.0f))
+				.ColorAndOpacity(BrightText)
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				.Clipping(EWidgetClipping::ClipToBounds)
 			]
@@ -1439,7 +1616,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				SNew(STextBlock)
 				.Text(ProfileLevelText)
 				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
-				.ColorAndOpacity(FLinearColor(0.98f, 0.96f, 0.90f, 1.0f))
+				.ColorAndOpacity(MutedText)
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				.Clipping(EWidgetClipping::ClipToBounds)
 			]
@@ -1458,7 +1635,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					SNew(STextBlock)
 					.Text(ProfileNextLevelText)
 					.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize - 2))
-					.ColorAndOpacity(FLinearColor(0.86f, 0.72f, 0.50f, 1.0f))
+					.ColorAndOpacity(FLinearColor(0.86f, 0.52f, 0.48f, 1.0f))
 				]
 			]
 		];
@@ -1468,7 +1645,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		+ SVerticalBox::Slot().AutoHeight()
 		[
 			SNew(SSpacer)
-			.Size(FVector2D(1.f, 42.f))
+			.Size(FVector2D(1.f, 2.f))
 		]
 		+ SVerticalBox::Slot().AutoHeight()
 		[
@@ -1478,7 +1655,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const TSharedRef<SWidget> ProfileCard =
 		SNew(SBox)
 		.WidthOverride(T66MainMenuReferenceLayout::Left::ProfileCardReference.Width)
-		.HeightOverride(T66MainMenuReferenceLayout::Left::ProfileCardReference.Height)
+		.HeightOverride(108.f)
 		.Clipping(EWidgetClipping::ClipToBounds)
 		[
 			FT66Style::MakeBareButton(
@@ -1490,7 +1667,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					}),
 			SNew(SOverlay)
 			+ SOverlay::Slot()
-			.Padding(FMargin(0.f, 0.f, 0.f, 8.f))
+			.Padding(FMargin(0.f))
 			[
 				ProfileCardContent
 			])
@@ -1504,77 +1681,191 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		[
-			SNew(SBox)
-			.HeightOverride(642.f)
+			ProfileCard
+		]
+		+ SVerticalBox::Slot()
+		.Padding(0.f, 8.f, 0.f, 0.f)
+		.AutoHeight()
+		[
+			MakeSubtleDivider()
+		]
+		+ SVerticalBox::Slot()
+		.Padding(0.f, 8.f, 0.f, 0.f)
+		.AutoHeight()
+		[
+			FriendSearchBox
+		]
+		+ SVerticalBox::Slot()
+		.FillHeight(1.f)
+		.Padding(0.f, 12.f, 0.f, 0.f)
+		[
+			SNew(SScrollBox)
+			.ScrollBarVisibility(EVisibility::Collapsed)
+			.ScrollBarThickness(FVector2D::ZeroVector)
+			+ SScrollBox::Slot()
 			[
-				SNew(SScrollBox)
-				.ScrollBarVisibility(EVisibility::Collapsed)
-				.ScrollBarThickness(FVector2D::ZeroVector)
-				+ SScrollBox::Slot()
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						ProfileCard
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-					[
-						MakeSubtleDivider()
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-					[
-						FriendSearchBox
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-					[
-						FriendsList
-					]
-				]
+				FriendsList
 			]
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.f, 14.f, 0.f, 0.f)
+		.Padding(0.f, 8.f, 0.f, 0.f)
 		[
 			SNew(SBox)
-			.HeightOverride(238.f)
+			.HeightOverride(164.f)
 			[
 				SNew(SConstraintCanvas)
 				+ SConstraintCanvas::Slot()
 				.Alignment(FVector2D(0.f, 0.f))
-				.Offset(FMargin(0.f, 0.f, T66MainMenuReferenceLayout::Left::SearchFieldReference.Width, 34.f))
+				.Offset(FMargin(0.f, 4.f, T66MainMenuReferenceLayout::Left::SearchFieldReference.Width, 30.f))
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.MainMenu", "PartySection", "PARTY"))
 					.Font(FT66Style::MakeFont(TEXT("Bold"), LeftPanelTitleFontSize + 2))
-					.ColorAndOpacity(FLinearColor(0.96f, 0.04f, 0.02f, 1.0f))
+					.ColorAndOpacity(HeaderText)
 				]
 				+ SConstraintCanvas::Slot()
 				.Alignment(FVector2D(0.f, 0.f))
-				.Offset(FMargin(0.f, 39.f, T66MainMenuReferenceLayout::Left::SearchFieldReference.Width, 2.f))
+				.Offset(FMargin(0.f, 34.f, T66MainMenuReferenceLayout::Left::SearchFieldReference.Width, 2.f))
 				[
 					MakePartyDivider()
 				]
 				+ SConstraintCanvas::Slot()
 				.Alignment(FVector2D(0.f, 0.f))
-				.Offset(FMargin(0.f, 96.f, T66MainMenuReferenceLayout::Left::SearchFieldReference.Width, T66MainMenuReferenceLayout::Left::PartySlotSource.Height))
+				.Offset(FMargin(0.f, 54.f, T66MainMenuReferenceLayout::Left::SearchFieldReference.Width, T66MainMenuReferenceLayout::Left::PartySlotSource.Height))
 				[
 					PartySlots
 				]
 			]
 		];
 
-	const FVector2D ReferenceCanvasSize(T66MainMenuReferenceLayout::CanvasWidth, T66MainMenuReferenceLayout::CanvasHeight);
+	const FVector2D MainMenuViewportSize = GetEffectiveFrontendViewportSize();
+	const float RuntimeReferenceCanvasHeight = bBloodyRetroChrome
+		? FMath::Max(
+			T66MainMenuReferenceLayout::CanvasHeight,
+			T66MainMenuReferenceLayout::CanvasWidth * (FMath::Max(1.f, MainMenuViewportSize.Y) / FMath::Max(1.f, MainMenuViewportSize.X)))
+		: T66MainMenuReferenceLayout::CanvasHeight;
+	const FVector2D ReferenceCanvasSize(T66MainMenuReferenceLayout::CanvasWidth, RuntimeReferenceCanvasHeight);
+	const FT66ReferenceRect& LeftPanelAssemblyRect = T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly;
+	const FT66ReferenceRect& RightPanelAssemblyRect = T66MainMenuReferenceLayout::MainMenu::RightPanelAssembly;
+	const FT66ReferenceRect& RightShellRect = T66MainMenuReferenceLayout::Right::ShellFullReference;
+	const float SidePanelBottomInset = bBloodyRetroChrome ? 8.f : (T66MainMenuReferenceLayout::CanvasHeight - LeftPanelAssemblyRect.Y - LeftPanelAssemblyRect.Height);
+	const float LeftPanelAssemblyHeight = bBloodyRetroChrome
+		? FMath::Max(LeftPanelAssemblyRect.Height, ReferenceCanvasSize.Y - LeftPanelAssemblyRect.Y - SidePanelBottomInset)
+		: LeftPanelAssemblyRect.Height;
+	const float RightPanelAssemblyHeight = bBloodyRetroChrome
+		? FMath::Max(RightPanelAssemblyRect.Height, ReferenceCanvasSize.Y - RightPanelAssemblyRect.Y - SidePanelBottomInset)
+		: RightPanelAssemblyRect.Height;
+	const float RightShellHeight = bBloodyRetroChrome
+		? FMath::Max(RightShellRect.Height, RightPanelAssemblyHeight - (RightShellRect.Y - RightPanelAssemblyRect.Y))
+		: RightShellRect.Height;
 	auto MakeCenterActionButton = [this, &NoBorderButtonStyle](
 		const FText& Text,
 		FReply (UT66MainMenuScreen::*ClickFunc)(),
 		const FButtonStateBrushSet& BrushSet,
 		float ReferenceWidth,
 		float ReferenceHeight,
-		const FLinearColor& TextColor) -> TSharedRef<SWidget>
+		const FLinearColor& TextColor,
+		const FSlateBrush* LeftIconBrush,
+		const FSlateBrush* RightIconBrush,
+		const FSlateBrush* TopRightBadgeBrush) -> TSharedRef<SWidget>
 	{
-		FSlateFontInfo CTAFont = FT66Style::MakeFont(TEXT("Bold"), 58);
+		const int32 CTAFontSize = FMath::RoundToInt(FMath::Clamp(ReferenceHeight * 0.39f, 30.f, 54.f));
+		FSlateFontInfo CTAFont = FT66Style::MakeFont(TEXT("Bold"), CTAFontSize);
 		CTAFont.LetterSpacing = 1;
+
+		const bool bHasSideIcons = LeftIconBrush || RightIconBrush;
+		const float SideIconSize = bHasSideIcons ? FMath::Clamp(ReferenceHeight * 0.66f, 58.f, 90.f) : 0.f;
+		const float SideIconInset = FMath::Clamp(ReferenceWidth * 0.055f, 28.f, 44.f);
+		const float TextSidePadding = bHasSideIcons ? SideIconSize + SideIconInset + 20.f : 24.f;
+		const float BadgeSize = TopRightBadgeBrush ? FMath::Clamp(ReferenceHeight * 0.62f, 48.f, 58.f) : 0.f;
+		TSharedRef<SOverlay> ButtonContent = SNew(SOverlay);
+		ButtonContent->AddSlot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		.Padding(FMargin(TextSidePadding, 0.f))
+		[
+			SNew(SBox)
+			.WidthOverride(FMath::Max(1.f, ReferenceWidth - (TextSidePadding * 2.f)))
+			.HeightOverride(ReferenceHeight)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
+					.Text(Text)
+					.Font(CTAFont)
+					.Justification(ETextJustify::Center)
+					.ColorAndOpacity(TextColor)
+					.ShadowOffset(FVector2D(2.f, 2.f))
+					.ShadowColorAndOpacity(FLinearColor(0.02f, 0.0f, 0.04f, 1.f))
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)))
+				]
+			]
+		];
+
+		if (LeftIconBrush)
+		{
+			ButtonContent->AddSlot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Center)
+			.Padding(FMargin(SideIconInset, 0.f, 0.f, 0.f))
+			[
+				SNew(SBox)
+				.WidthOverride(SideIconSize)
+				.HeightOverride(SideIconSize)
+				[
+					SNew(ST66MainMenuSpinningIcon)
+					.Brush(LeftIconBrush)
+					.IconSize(FVector2D(SideIconSize, SideIconSize))
+					.RotationPeriodSeconds(2.8f)
+					.bClockwise(true)
+				]
+			];
+		}
+
+		if (RightIconBrush)
+		{
+			ButtonContent->AddSlot()
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Center)
+			.Padding(FMargin(0.f, 0.f, SideIconInset, 0.f))
+			[
+				SNew(SBox)
+				.WidthOverride(SideIconSize)
+				.HeightOverride(SideIconSize)
+				[
+					SNew(ST66MainMenuSpinningIcon)
+					.Brush(RightIconBrush)
+					.IconSize(FVector2D(SideIconSize, SideIconSize))
+					.RotationPeriodSeconds(2.8f)
+					.bClockwise(false)
+				]
+			];
+		}
+
+		if (TopRightBadgeBrush)
+		{
+			ButtonContent->AddSlot()
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Top)
+			.Padding(FMargin(0.f, -12.f, -12.f, 0.f))
+			[
+				SNew(SBox)
+				.WidthOverride(BadgeSize)
+				.HeightOverride(BadgeSize)
+				[
+					FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+						SNew(SImage)
+						.Image(TopRightBadgeBrush)
+						.ColorAndOpacity(FLinearColor::White)))
+				]
+			];
+		}
 
 		return SNew(SBox)
 			.WidthOverride(ReferenceWidth)
@@ -1590,21 +1881,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
 				.ContentPadding(FMargin(0.f))
 				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					[
-						SNew(STextBlock)
-						.Text(Text)
-						.Font(CTAFont)
-						.Justification(ETextJustify::Center)
-						.ColorAndOpacity(TextColor)
-						.ShadowOffset(FVector2D(2.f, 2.f))
-						.ShadowColorAndOpacity(FLinearColor(0.04f, 0.025f, 0.015f, 1.f))
-						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-						.Clipping(EWidgetClipping::ClipToBounds)
-					]
+					ButtonContent
 				]
 			];
 	};
@@ -1612,31 +1889,33 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const TSharedRef<SWidget> LeftSocialShell =
 		SNew(SBox)
 		.WidthOverride(T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly.Width)
-		.HeightOverride(T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly.Height)
+		.HeightOverride(LeftPanelAssemblyHeight)
 		.Clipping(EWidgetClipping::ClipToBounds)
 		[
 			SNew(SOverlay)
 			.Clipping(EWidgetClipping::ClipToBounds)
 			+ SOverlay::Slot()
 			[
-				SNew(SBorder)
-				.BorderImage(LeftPanelShellBrush.IsValid() ? LeftPanelShellBrush.Get() : FCoreStyle::Get().GetBrush("NoBrush"))
-				.Padding(0.f)
+				FT66Style::MakeRetroUIChromeSurface(StaticCastSharedRef<SWidget>(
+					SNew(SBorder)
+					.BorderImage(LeftPanelShellBrush.IsValid() ? LeftPanelShellBrush.Get() : FCoreStyle::Get().GetBrush("NoBrush"))
+					.Padding(0.f)))
 			]
 			+ SOverlay::Slot()
 			.Padding(FMargin(22.f, 150.f, 22.f, 190.f))
 			[
-				SNew(SBorder)
-				.BorderImage(PaperBackgroundBrush.IsValid() ? PaperBackgroundBrush.Get() : FCoreStyle::Get().GetBrush("NoBrush"))
-				.BorderBackgroundColor(PaperBackgroundBrush.IsValid() ? FLinearColor::White : FLinearColor::Transparent)
-				.Padding(0.f)
+				FT66Style::MakeRetroUIChromeSurface(StaticCastSharedRef<SWidget>(
+					SNew(SBorder)
+					.BorderImage(PaperBackgroundBrush.IsValid() ? PaperBackgroundBrush.Get() : FCoreStyle::Get().GetBrush("NoBrush"))
+					.BorderBackgroundColor(PaperBackgroundBrush.IsValid() ? FLinearColor::White : FLinearColor::Transparent)
+					.Padding(0.f)))
 			]
 			+ SOverlay::Slot()
-			.Padding(FMargin(52.f, 48.f, 20.f, 22.f))
+			.Padding(FMargin(20.f, 36.f, 20.f, 22.f))
 			[
 				SNew(SBox)
-				.WidthOverride(T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly.Width - 72.f)
-				.HeightOverride(T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly.Height - 70.f)
+				.WidthOverride(T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly.Width - 40.f)
+				.HeightOverride(LeftPanelAssemblyHeight - 58.f)
 				.Clipping(EWidgetClipping::ClipToBounds)
 				[
 					LeftSocialContent
@@ -1644,11 +1923,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			]
 		];
 
-	const FT66ReferenceRect& LeftPanelAssemblyRect = T66MainMenuReferenceLayout::MainMenu::LeftPanelAssembly;
-	const FT66ReferenceRect& RightPanelAssemblyRect = T66MainMenuReferenceLayout::MainMenu::RightPanelAssembly;
-	const FT66ReferenceRect& RightShellRect = T66MainMenuReferenceLayout::Right::ShellFullReference;
-	const float RightLeaderboardFrameInsetX = 56.f;
-	const float RightLeaderboardFrameInsetY = 30.f;
+	const float RightLeaderboardFrameInsetX = 18.f;
+	const float RightLeaderboardFrameInsetY = 18.f;
 	const FVector2D RightShellOffset(
 		RightShellRect.X - RightPanelAssemblyRect.X,
 		RightShellRect.Y - RightPanelAssemblyRect.Y);
@@ -1661,7 +1937,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const TSharedRef<SWidget> RightLeaderboardShell =
 		SNew(SBox)
 		.WidthOverride(T66MainMenuReferenceLayout::MainMenu::RightPanelAssembly.Width)
-		.HeightOverride(T66MainMenuReferenceLayout::MainMenu::RightPanelAssembly.Height)
+		.HeightOverride(RightPanelAssemblyHeight)
 		.Clipping(EWidgetClipping::ClipToBounds)
 		[
 			SNew(SOverlay)
@@ -1669,15 +1945,49 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Top)
+			.Padding(FMargin(
+				T66MainMenuReferenceLayout::Right::FilterWorldButton.X - RightPanelAssemblyRect.X,
+				T66MainMenuReferenceLayout::Right::FilterWorldButton.Y - RightPanelAssemblyRect.Y,
+				0.f,
+				0.f))
+			[
+				MakeLeaderboardFilterButton(ET66LeaderboardFilter::Global, LeaderboardFilterGlobalIconBrush)
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Top)
+			.Padding(FMargin(
+				T66MainMenuReferenceLayout::Right::FilterFriendsButton.X - RightPanelAssemblyRect.X,
+				T66MainMenuReferenceLayout::Right::FilterFriendsButton.Y - RightPanelAssemblyRect.Y,
+				0.f,
+				0.f))
+			[
+				MakeLeaderboardFilterButton(ET66LeaderboardFilter::Friends, LeaderboardFilterFriendsIconBrush)
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Top)
+			.Padding(FMargin(
+				T66MainMenuReferenceLayout::Right::FilterCrownButton.X - RightPanelAssemblyRect.X,
+				T66MainMenuReferenceLayout::Right::FilterCrownButton.Y - RightPanelAssemblyRect.Y,
+				0.f,
+				0.f))
+			[
+				MakeLeaderboardFilterButton(ET66LeaderboardFilter::Streamers, LeaderboardFilterStreamersIconBrush)
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Top)
 			.Padding(FMargin(RightShellOffset.X, RightShellOffset.Y, 0.f, 0.f))
 			[
 				SNew(SBox)
 				.WidthOverride(RightShellRect.Width)
-				.HeightOverride(RightShellRect.Height)
+				.HeightOverride(RightShellHeight)
 				[
-					SNew(SBorder)
-					.BorderImage(RightPanelShellBrush.IsValid() ? RightPanelShellBrush.Get() : FCoreStyle::Get().GetBrush("NoBrush"))
-					.Padding(0.f)
+					FT66Style::MakeRetroUIChromeSurface(StaticCastSharedRef<SWidget>(
+						SNew(SBorder)
+						.BorderImage(RightPanelShellBrush.IsValid() ? RightPanelShellBrush.Get() : FCoreStyle::Get().GetBrush("NoBrush"))
+						.Padding(0.f)))
 				]
 			]
 			+ SOverlay::Slot()
@@ -1691,12 +2001,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			[
 				SNew(SBox)
 				.WidthOverride(RightShellRect.Width - (RightLeaderboardFrameInsetX * 2.f))
-				.HeightOverride(RightShellRect.Height - (RightLeaderboardFrameInsetY * 2.f) - 260.f)
+				.HeightOverride(RightShellHeight - (RightLeaderboardFrameInsetY * 2.f) - 260.f)
 				[
-					SNew(SBorder)
-					.BorderImage(PaperBackgroundBrush.IsValid() ? PaperBackgroundBrush.Get() : FCoreStyle::Get().GetBrush("NoBrush"))
-					.BorderBackgroundColor(PaperBackgroundBrush.IsValid() ? FLinearColor::White : FLinearColor::Transparent)
-					.Padding(0.f)
+					FT66Style::MakeRetroUIChromeSurface(StaticCastSharedRef<SWidget>(
+						SNew(SBorder)
+						.BorderImage(PaperBackgroundBrush.IsValid() ? PaperBackgroundBrush.Get() : FCoreStyle::Get().GetBrush("NoBrush"))
+						.BorderBackgroundColor(PaperBackgroundBrush.IsValid() ? FLinearColor::White : FLinearColor::Transparent)
+						.Padding(0.f)))
 				]
 			]
 			+ SOverlay::Slot()
@@ -1706,7 +2017,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			[
 				SNew(SBox)
 				.WidthOverride(RightShellRect.Width - (RightLeaderboardFrameInsetX * 2.f))
-				.HeightOverride(RightShellRect.Height - (RightLeaderboardFrameInsetY * 2.f))
+				.HeightOverride(RightShellHeight - (RightLeaderboardFrameInsetY * 2.f))
 				[
 					LeaderboardShell
 				]
@@ -1715,45 +2026,72 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 
 	const FT66ReferenceRect& TitleRect = T66MainMenuReferenceLayout::Center::TitleLockup;
 	const FT66ReferenceRect& CtaStackRect = T66MainMenuReferenceLayout::Center::CtaStackFull;
-	const FT66ReferenceRect& NewGamePlateRect = T66MainMenuReferenceLayout::Center::CtaButtonNewGame;
-	const FT66ReferenceRect& LoadGamePlateRect = T66MainMenuReferenceLayout::Center::CtaButtonLoadGame;
+	const FVector2D NewGameButtonSize(720.f, 132.f);
+	const FVector2D LoadGameButtonSize(486.f, 92.f);
+	const FVector2D DailyDescentButtonSize(486.f, 92.f);
+	const FVector2D RuntimeCtaStackSize(720.f, 346.f);
+	const float CtaStackTop = bBloodyRetroChrome ? 688.f : CtaStackRect.Y;
+	const float CenterCtaStackLeft = (ReferenceCanvasSize.X - RuntimeCtaStackSize.X) * 0.5f;
+	const FMargin NewGameButtonLocalOffset(0.f, 0.f, NewGameButtonSize.X, NewGameButtonSize.Y);
+	const FMargin LoadGameButtonLocalOffset(117.f, 148.f, LoadGameButtonSize.X, LoadGameButtonSize.Y);
+	const FMargin DailyDescentButtonLocalOffset(117.f, 254.f, DailyDescentButtonSize.X, DailyDescentButtonSize.Y);
 
 	const TSharedRef<SWidget> NewGameButtonWidget =
-		MakeCenterActionButton(NewGameText, &UT66MainMenuScreen::HandleNewGameClicked, NewGameButtonBrushes, NewGamePlateRect.Width, NewGamePlateRect.Height, FLinearColor(1.0f, 0.82f, 0.04f, 1.f));
+		MakeCenterActionButton(NewGameText, &UT66MainMenuScreen::HandleNewGameClicked, NewGameButtonBrushes, NewGameButtonSize.X, NewGameButtonSize.Y, FLinearColor(0.98f, 0.96f, 1.0f, 1.f), EnterTribulationSkullBrush.Get(), EnterTribulationSkullBrush.Get(), nullptr);
 	const TSharedRef<SWidget> LoadGameButtonWidget =
-		MakeCenterActionButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked, LoadGameButtonBrushes, LoadGamePlateRect.Width, LoadGamePlateRect.Height, FLinearColor(0.98f, 0.96f, 0.90f, 1.f));
-	const FMargin NewGameButtonLocalOffset(
-		NewGamePlateRect.X - CtaStackRect.X,
-		NewGamePlateRect.Y - CtaStackRect.Y,
-		NewGamePlateRect.Width,
-		NewGamePlateRect.Height);
-	const FMargin LoadGameButtonLocalOffset(
-		LoadGamePlateRect.X - CtaStackRect.X,
-		LoadGamePlateRect.Y - CtaStackRect.Y,
-		LoadGamePlateRect.Width,
-		LoadGamePlateRect.Height);
-	const float RuntimeCtaStackHeight = (LoadGamePlateRect.Y - CtaStackRect.Y) + LoadGamePlateRect.Height;
-	const float TitleArtHeight = TitleRect.Width * (526.f / 1512.f);
+		MakeCenterActionButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked, LoadGameButtonBrushes, LoadGameButtonSize.X, LoadGameButtonSize.Y, FLinearColor(0.98f, 0.96f, 1.0f, 1.f), nullptr, nullptr, nullptr);
+	const TSharedRef<SWidget> DailyDescentButtonWidget =
+		MakeCenterActionButton(DailyDescentText, &UT66MainMenuScreen::HandleDailyDescentClicked, DailyChallengeButtonBrushes, DailyDescentButtonSize.X, DailyDescentButtonSize.Y, FLinearColor(0.98f, 0.96f, 1.0f, 1.f), nullptr, nullptr, DailyDescentOneRunBadgeBrush.Get());
+	const float TitleArtWidth = bBloodyRetroChrome ? 820.f : TitleRect.Width;
+	const float TitleArtHeight = TitleArtWidth * (526.f / 1512.f);
+	const float TitleSlotHeight = bBloodyRetroChrome ? 300.f : TitleArtHeight;
+	const float SubtitleTop = bBloodyRetroChrome ? 200.f : TitleSlotHeight;
 	const TSharedRef<SWidget> CenterTitleArt =
 		SNew(SBox)
-		.WidthOverride(TitleRect.Width)
-		.HeightOverride(TitleArtHeight)
+		.WidthOverride(TitleArtWidth)
+		.HeightOverride(TitleSlotHeight)
 		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
+		.VAlign(VAlign_Top)
 		[
-			SNew(SScaleBox)
-			.Stretch(EStretch::ScaleToFit)
-			.StretchDirection(EStretchDirection::DownOnly)
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
 			[
-				SNew(SImage)
-				.Image(TitleLockupBrush.Get())
-				.ColorAndOpacity(TitleLockupBrush.IsValid() ? FLinearColor::White : FLinearColor::Transparent)
+				SNew(SBox)
+				.WidthOverride(TitleArtWidth)
+				.HeightOverride(TitleArtHeight)
+				[
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFit)
+					.StretchDirection(EStretchDirection::DownOnly)
+					[
+						FT66Style::MakeRetroUIChromeSurface(StaticCastSharedRef<SWidget>(
+							SNew(SImage)
+							.Image(TitleLockupBrush.Get())
+							.ColorAndOpacity(TitleLockupBrush.IsValid() ? FLinearColor::White : FLinearColor::Transparent)))
+					]
+				]
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Top)
+			.Padding(FMargin(0.f, SubtitleTop, 0.f, 0.f))
+			[
+				SNew(STextBlock)
+				.Visibility(bBloodyRetroChrome ? EVisibility::HitTestInvisible : EVisibility::Collapsed)
+				.Text(NSLOCTEXT("T66.MainMenu", "BloodyRetroSubtitle", "If you're not Chad it's over"))
+				.Font(FT66Style::Tokens::FontBold(38))
+				.ColorAndOpacity(FLinearColor(0.84f, 0.08f, 0.06f, 1.0f))
+				.ShadowOffset(FVector2D(0.f, 3.f))
+				.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.80f))
+				.Justification(ETextJustify::Center)
 			]
 		];
 	const TSharedRef<SWidget> CenterCtaStack =
 		SNew(SBox)
-		.WidthOverride(CtaStackRect.Width)
-		.HeightOverride(RuntimeCtaStackHeight)
+		.WidthOverride(RuntimeCtaStackSize.X)
+		.HeightOverride(RuntimeCtaStackSize.Y)
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -1773,18 +2111,23 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				[
 					LoadGameButtonWidget
 				]
+				+ SConstraintCanvas::Slot()
+				.Alignment(FVector2D(0.f, 0.f))
+				.Offset(DailyDescentButtonLocalOffset)
+				[
+					DailyDescentButtonWidget
+				]
 			]
 		];
 
 	const float RightPanelRightInset = ReferenceCanvasSize.X - RightPanelAssemblyRect.X - RightPanelAssemblyRect.Width;
-	const float LeftPanelBottomInset = ReferenceCanvasSize.Y - LeftPanelAssemblyRect.Y - LeftPanelAssemblyRect.Height;
-	const float RightPanelBottomInset = ReferenceCanvasSize.Y - RightPanelAssemblyRect.Y - RightPanelAssemblyRect.Height;
-	const float CenterTitleLeft = TitleRect.X;
-	const float CenterCtaStackLeft = CtaStackRect.X;
-	const float LeftPanelTop = ReferenceCanvasSize.Y - LeftPanelBottomInset - LeftPanelAssemblyRect.Height;
+	const float LeftPanelBottomInset = ReferenceCanvasSize.Y - LeftPanelAssemblyRect.Y - LeftPanelAssemblyHeight;
+	const float RightPanelBottomInset = ReferenceCanvasSize.Y - RightPanelAssemblyRect.Y - RightPanelAssemblyHeight;
+	const float CenterTitleLeft = bBloodyRetroChrome ? (ReferenceCanvasSize.X - TitleArtWidth) * 0.5f : TitleRect.X;
+	const float CenterTitleTop = bBloodyRetroChrome ? 70.f : TitleRect.Y;
+	const float LeftPanelTop = ReferenceCanvasSize.Y - LeftPanelBottomInset - LeftPanelAssemblyHeight;
 	const float RightPanelLeft = ReferenceCanvasSize.X - RightPanelRightInset - RightPanelAssemblyRect.Width;
-	const float RightPanelTop = ReferenceCanvasSize.Y - RightPanelBottomInset - RightPanelAssemblyRect.Height;
-	const float CtaStackTop = CtaStackRect.Y;
+	const float RightPanelTop = ReferenceCanvasSize.Y - RightPanelBottomInset - RightPanelAssemblyHeight;
 	const TSharedRef<SWidget> ReferenceCanvas =
 		SNew(SBox)
 		.WidthOverride(ReferenceCanvasSize.X)
@@ -1800,7 +2143,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Top)
-			.Padding(FMargin(CenterTitleLeft, TitleRect.Y, 0.f, 0.f))
+			.Padding(FMargin(CenterTitleLeft, CenterTitleTop, 0.f, 0.f))
 			[
 				CenterTitleArt
 			]
@@ -1818,7 +2161,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			[
 				SNew(SBox)
 				.WidthOverride(LeftPanelAssemblyRect.Width)
-				.HeightOverride(LeftPanelAssemblyRect.Height)
+				.HeightOverride(LeftPanelAssemblyHeight)
 				[
 				SNew(SInvalidationPanel)
 				.Clipping(EWidgetClipping::ClipToBounds)
@@ -1834,7 +2177,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			[
 				SNew(SBox)
 				.WidthOverride(RightPanelAssemblyRect.Width)
-				.HeightOverride(RightPanelAssemblyRect.Height)
+				.HeightOverride(RightPanelAssemblyHeight)
 				[
 				SNew(SInvalidationPanel)
 				.Clipping(EWidgetClipping::ClipToBounds)
@@ -1845,7 +2188,6 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			]
 		];
 
-	const FVector2D MainMenuViewportSize = GetEffectiveFrontendViewportSize();
 	TSharedRef<SWidget> Root =
 		SNew(SBox)
 		.WidthOverride(FMath::Max(1.f, MainMenuViewportSize.X))
@@ -1868,10 +2210,28 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					.VAlign(VAlign_Fill)
 					[
 						SNew(SScaleBox)
-						.Stretch(EStretch::ScaleToFit)
+						.Stretch(EStretch::ScaleToFill)
 						.StretchDirection(EStretchDirection::Both)
 						.HAlign(HAlign_Center)
 						.VAlign(VAlign_Center)
+						[
+							SNew(SBox)
+							.WidthOverride(ReferenceCanvasSize.X)
+							.HeightOverride(ReferenceCanvasSize.Y)
+							[
+								BuildMainMenuBackgroundWidget()
+							]
+						]
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
+					[
+						SNew(SScaleBox)
+						.Stretch(EStretch::ScaleToFit)
+						.StretchDirection(EStretchDirection::Both)
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Top)
 						[
 							ReferenceCanvas
 						]
@@ -2036,8 +2396,22 @@ void UT66MainMenuScreen::ReleaseRetainedSlateState()
 	ProgressTrackTexture.Reset();
 	ProgressFillBrush.Reset();
 	ProgressFillTexture.Reset();
+	LeaderboardFilterButtonBrush.Reset();
+	LeaderboardFilterButtonTexture.Reset();
+	LeaderboardFilterButtonSelectedBrush.Reset();
+	LeaderboardFilterButtonSelectedTexture.Reset();
+	LeaderboardFilterGlobalIconBrush.Reset();
+	LeaderboardFilterGlobalIconTexture.Reset();
+	LeaderboardFilterFriendsIconBrush.Reset();
+	LeaderboardFilterFriendsIconTexture.Reset();
+	LeaderboardFilterStreamersIconBrush.Reset();
+	LeaderboardFilterStreamersIconTexture.Reset();
 	CenterStackFrameBrush.Reset();
 	CenterStackFrameTexture.Reset();
+	EnterTribulationSkullBrush.Reset();
+	EnterTribulationSkullTexture.Reset();
+	DailyDescentOneRunBadgeBrush.Reset();
+	DailyDescentOneRunBadgeTexture.Reset();
 	NewGameButtonBrushes = {};
 	LoadGameButtonBrushes = {};
 	DailyChallengeButtonBrushes = {};
@@ -2190,8 +2564,8 @@ void UT66MainMenuScreen::RefreshFriendListVisualState()
 			RowRefs.ActionText->SetText(ActionText);
 			RowRefs.ActionText->SetColorAndOpacity(
 				bCanInvite
-					? FLinearColor(0.98f, 0.96f, 0.90f, 1.0f)
-					: FLinearColor(0.84f, 0.82f, 0.76f, 0.88f));
+					? FLinearColor(0.98f, 0.96f, 1.0f, 1.0f)
+					: FLinearColor(0.64f, 0.44f, 0.42f, 0.88f));
 			RowRefs.ActionText->SetVisibility(EVisibility::Visible);
 		}
 
@@ -2275,20 +2649,23 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildMainMenuBackgroundWidget() const
 {
 	if (!SkyBackgroundBrush.IsValid() || !SkyBackgroundBrush->GetResourceObject())
 	{
-		return SNew(SImage).Image(SkyBackgroundBrush.Get());
+		return FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(
+			SNew(SImage).Image(SkyBackgroundBrush.Get())));
 	}
 
 	TSharedRef<SOverlay> Background = SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
-			SNew(SImage).Image(SkyBackgroundBrush.Get())
+			FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(
+				SNew(SImage).Image(SkyBackgroundBrush.Get())))
 		];
 
 	if (ForegroundOccluderBrush.IsValid() && ForegroundOccluderBrush->GetResourceObject())
 	{
 		Background->AddSlot()
 		[
-			SNew(SImage).Image(ForegroundOccluderBrush.Get())
+			FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(
+				SNew(SImage).Image(ForegroundOccluderBrush.Get())))
 		];
 	}
 
@@ -2297,11 +2674,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildMainMenuBackgroundWidget() const
 
 void UT66MainMenuScreen::RequestBackgroundTexture()
 {
+	const TCHAR* BackgroundPath = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/ScreenArt/mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_clean_bloodyretro_1920.png");
+
 	SetupT66MainMenuRuntimeImageBrush(
 		SkyBackgroundBrush,
 		SkyBackgroundTexture,
 		nullptr,
-		TEXT("SourceAssets/UI/Reference/Screens/MainMenu/ScreenArt/mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_1920.png"),
+		BackgroundPath,
 		FVector2D(T66MainMenuReferenceLayout::CanvasWidth, T66MainMenuReferenceLayout::CanvasHeight));
 
 	SetupT66MainMenuRuntimeImageBrush(
@@ -2315,7 +2694,7 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 		TitleLockupBrush,
 		TitleLockupTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("main_menu_title_lockup.png")),
+		*MakeMainMenuElementPath(TEXT("main_menu_title_lockup.png")),
 		FVector2D(1512.f, 526.f),
 		TextureFilter::TF_Nearest);
 
@@ -2323,7 +2702,7 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 		LeftPanelShellBrush,
 		LeftPanelShellTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("main_panel_normal.png")),
+		*MakeMainMenuSquareElementPath(TEXT("main_panel_normal_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Left::ShellFullReference.Width, T66MainMenuReferenceLayout::Left::ShellFullReference.Height),
 		TextureFilter::TF_Nearest);
 	ConfigureMainMenuBoxBrush(LeftPanelShellBrush, FMargin(0.070f, 0.045f, 0.070f, 0.045f));
@@ -2332,7 +2711,7 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 		RightPanelShellBrush,
 		RightPanelShellTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("main_panel_normal.png")),
+		*MakeMainMenuSquareElementPath(TEXT("main_panel_normal_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Right::ShellFullReference.Width, T66MainMenuReferenceLayout::Right::ShellFullReference.Height),
 		TextureFilter::TF_Nearest);
 	ConfigureMainMenuBoxBrush(RightPanelShellBrush, FMargin(0.070f, 0.045f, 0.070f, 0.045f));
@@ -2347,7 +2726,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		SearchFieldShellBrush,
 		SearchFieldShellTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("search_bar_normal.png")),
+		*MakeMainMenuSquareElementPath(TEXT("dropdown_field_normal_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Left::SearchFieldReference.Width, T66MainMenuReferenceLayout::Left::SearchFieldReference.Height),
 		TextureFilter::TF_Nearest);
 	ConfigureMainMenuBoxBrush(SearchFieldShellBrush, FMargin(0.070f, 0.300f, 0.070f, 0.300f));
@@ -2356,7 +2735,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		SearchIconBrush,
 		SearchIconTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("search_magnifier_icon.png")),
+		*MakeMainMenuElementPath(TEXT("search_magnifier_icon.png")),
 		FVector2D(T66MainMenuReferenceLayout::Left::SearchIcon.Width, T66MainMenuReferenceLayout::Left::SearchIcon.Height),
 		TextureFilter::TF_Nearest);
 
@@ -2364,7 +2743,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		FriendInviteButtonBrush,
 		FriendInviteButtonTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("leaderboard_tab_button_normal.png")),
+		*T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal")),
 		FVector2D(T66MainMenuReferenceLayout::Left::FriendInviteButton.Width, T66MainMenuReferenceLayout::Left::FriendInviteButton.Height),
 		TextureFilter::TF_Nearest);
 
@@ -2372,7 +2751,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		FriendOfflineButtonBrush,
 		FriendOfflineButtonTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("leaderboard_tab_button_disabled.png")),
+		*T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("disabled")),
 		FVector2D(T66MainMenuReferenceLayout::Left::FriendOfflineButton.Width, T66MainMenuReferenceLayout::Left::FriendOfflineButton.Height),
 		TextureFilter::TF_Nearest);
 
@@ -2380,28 +2759,28 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		FriendActionButtonBrushes.NormalBrush,
 		FriendActionButtonBrushes.NormalTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("leaderboard_tab_button_normal.png")),
+		*T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal")),
 		FVector2D(T66MainMenuReferenceLayout::Left::FriendInviteButton.Width, T66MainMenuReferenceLayout::Left::FriendInviteButton.Height),
 		TextureFilter::TF_Nearest);
 	SetupT66MainMenuRuntimeImageBrush(
 		FriendActionButtonBrushes.HoverBrush,
 		FriendActionButtonBrushes.HoverTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("leaderboard_tab_button_hover.png")),
+		*T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("hover")),
 		FVector2D(T66MainMenuReferenceLayout::Left::FriendInviteButton.Width, T66MainMenuReferenceLayout::Left::FriendInviteButton.Height),
 		TextureFilter::TF_Nearest);
 	SetupT66MainMenuRuntimeImageBrush(
 		FriendActionButtonBrushes.PressedBrush,
 		FriendActionButtonBrushes.PressedTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("leaderboard_tab_button_pressed.png")),
+		*T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("pressed")),
 		FVector2D(T66MainMenuReferenceLayout::Left::FriendInviteButton.Width, T66MainMenuReferenceLayout::Left::FriendInviteButton.Height),
 		TextureFilter::TF_Nearest);
 	SetupT66MainMenuRuntimeImageBrush(
 		FriendActionButtonBrushes.DisabledBrush,
 		FriendActionButtonBrushes.DisabledTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("leaderboard_tab_button_disabled.png")),
+		*T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("disabled")),
 		FVector2D(T66MainMenuReferenceLayout::Left::FriendInviteButton.Width, T66MainMenuReferenceLayout::Left::FriendInviteButton.Height),
 		TextureFilter::TF_Nearest);
 	const FMargin FriendActionButtonMargin(0.130f, 0.165f, 0.130f, 0.165f);
@@ -2416,7 +2795,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		FriendAvatarFrameBrush,
 		FriendAvatarFrameTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("profile_slot_normal.png")),
+		*MakeMainMenuSquareElementPath(TEXT("profile_slot_normal_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Left::FriendAvatarFrameSource.Width, T66MainMenuReferenceLayout::Left::FriendAvatarFrameSource.Height),
 		TextureFilter::TF_Nearest);
 	ConfigureMainMenuImageBrush(FriendAvatarFrameBrush);
@@ -2425,7 +2804,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		PartySlotFrameBrush,
 		PartySlotFrameTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("profile_slot_normal.png")),
+		*MakeMainMenuSquareElementPath(TEXT("profile_slot_normal_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Left::PartySlotSource.Width, T66MainMenuReferenceLayout::Left::PartySlotSource.Height),
 		TextureFilter::TF_Nearest);
 	ConfigureMainMenuImageBrush(PartySlotFrameBrush);
@@ -2434,7 +2813,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		PartyPlusIconBrush,
 		PartyPlusIconTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("party_plus_icon.png")),
+		*MakeMainMenuElementPath(TEXT("party_plus_icon.png")),
 		FVector2D(42.f, 42.f),
 		TextureFilter::TF_Nearest);
 	ConfigureMainMenuImageBrush(PartyPlusIconBrush);
@@ -2443,7 +2822,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		CloseButtonBrush,
 		CloseButtonTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("power_off_icon.png")),
+		*MakeMainMenuElementPath(TEXT("power_off_icon.png")),
 		FVector2D(T66MainMenuReferenceLayout::Left::CloseButton.Width, T66MainMenuReferenceLayout::Left::CloseButton.Height),
 		TextureFilter::TF_Nearest);
 
@@ -2451,7 +2830,7 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		ProfileAvatarFrameBrush,
 		ProfileAvatarFrameTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("profile_slot_normal.png")),
+		*MakeMainMenuSquareElementPath(TEXT("profile_slot_selected_red_square_variant.png")),
 		FVector2D(101.f, 93.f),
 		TextureFilter::TF_Nearest);
 	ConfigureMainMenuImageBrush(ProfileAvatarFrameBrush);
@@ -2460,18 +2839,59 @@ void UT66MainMenuScreen::RequestMainMenuChromeBrushes()
 		ProgressTrackBrush,
 		ProgressTrackTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("progress_bar_track.png")),
+		*MakeMainMenuElementPath(TEXT("progress_bar_track.png")),
 		FVector2D(210.f, 18.f),
 		TextureFilter::TF_Nearest);
 	SetupT66MainMenuRuntimeImageBrush(
 		ProgressFillBrush,
 		ProgressFillTexture,
 		nullptr,
-		*(MainMenuUltrakillElementDir / TEXT("progress_bar_fill_cyan.png")),
+		*MakeMainMenuElementPath(TEXT("progress_bar_fill_red.png")),
 		FVector2D(210.f, 18.f),
 		TextureFilter::TF_Nearest);
 	ConfigureMainMenuBoxBrush(ProgressTrackBrush, FMargin(0.045f, 0.240f, 0.045f, 0.240f));
 	ConfigureMainMenuBoxBrush(ProgressFillBrush, FMargin(0.045f, 0.240f, 0.045f, 0.240f));
+
+	SetupT66MainMenuRuntimeImageBrush(
+		LeaderboardFilterButtonBrush,
+		LeaderboardFilterButtonTexture,
+		nullptr,
+		*T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal")),
+		FVector2D(136.f, 72.f),
+		TextureFilter::TF_Nearest);
+	SetupT66MainMenuRuntimeImageBrush(
+		LeaderboardFilterButtonSelectedBrush,
+		LeaderboardFilterButtonSelectedTexture,
+		nullptr,
+		*T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("selected")),
+		FVector2D(136.f, 72.f),
+		TextureFilter::TF_Nearest);
+	SetupT66MainMenuRuntimeImageBrush(
+		LeaderboardFilterGlobalIconBrush,
+		LeaderboardFilterGlobalIconTexture,
+		nullptr,
+		*MakeMainMenuElementPath(TEXT("leaderboard_filter_global_icon.png")),
+		FVector2D(58.f, 58.f),
+		TextureFilter::TF_Nearest);
+	SetupT66MainMenuRuntimeImageBrush(
+		LeaderboardFilterFriendsIconBrush,
+		LeaderboardFilterFriendsIconTexture,
+		nullptr,
+		*MakeMainMenuElementPath(TEXT("leaderboard_filter_friends_icon.png")),
+		FVector2D(58.f, 58.f),
+		TextureFilter::TF_Nearest);
+	SetupT66MainMenuRuntimeImageBrush(
+		LeaderboardFilterStreamersIconBrush,
+		LeaderboardFilterStreamersIconTexture,
+		nullptr,
+		*MakeMainMenuElementPath(TEXT("leaderboard_filter_streamers_icon.png")),
+		FVector2D(58.f, 58.f),
+		TextureFilter::TF_Nearest);
+	ConfigureMainMenuImageBrush(LeaderboardFilterButtonBrush);
+	ConfigureMainMenuImageBrush(LeaderboardFilterButtonSelectedBrush);
+	ConfigureMainMenuImageBrush(LeaderboardFilterGlobalIconBrush);
+	ConfigureMainMenuImageBrush(LeaderboardFilterFriendsIconBrush);
+	ConfigureMainMenuImageBrush(LeaderboardFilterStreamersIconBrush);
 
 }
 
@@ -2498,83 +2918,96 @@ void UT66MainMenuScreen::RequestCTAButtonBrushes()
 	LoadBrush(
 		CenterStackFrameBrush,
 		CenterStackFrameTexture,
-		*(MainMenuUltrakillElementDir / TEXT("main_panel_normal.png")),
+		*MakeMainMenuSquareElementPath(TEXT("main_panel_normal_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaStackFull.Width, T66MainMenuReferenceLayout::Center::CtaStackFull.Height),
 		TextureFilter::TF_Nearest);
 	ConfigureMainMenuBoxBrush(CenterStackFrameBrush, FMargin(0.067f, 0.043f, 0.067f, 0.043f));
 
 	LoadBrush(
+		EnterTribulationSkullBrush,
+		EnterTribulationSkullTexture,
+		TEXT("RuntimeDependencies/T66/UI/MainMenu/mainmenu_cta_skull_imagegen_20260510.png"),
+		FVector2D(256.f, 256.f),
+		ButtonTextureFilter);
+	LoadBrush(
+		DailyDescentOneRunBadgeBrush,
+		DailyDescentOneRunBadgeTexture,
+		TEXT("RuntimeDependencies/T66/UI/MainMenu/mainmenu_daily_descent_one_run_badge_imagegen_20260510.png"),
+		FVector2D(128.f, 128.f),
+		ButtonTextureFilter);
+
+	LoadBrush(
 		NewGameButtonBrushes.NormalBrush,
 		NewGameButtonBrushes.NormalTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_new_game_button_normal.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_normal_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Height),
 		ButtonTextureFilter);
 	LoadBrush(
 		NewGameButtonBrushes.HoverBrush,
 		NewGameButtonBrushes.HoverTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_new_game_button_hover.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_hover_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Height),
 		ButtonTextureFilter);
 	LoadBrush(
 		NewGameButtonBrushes.PressedBrush,
 		NewGameButtonBrushes.PressedTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_new_game_button_pressed.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_pressed_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Height),
 		ButtonTextureFilter);
 	LoadBrush(
 		NewGameButtonBrushes.DisabledBrush,
 		NewGameButtonBrushes.DisabledTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_new_game_button_disabled.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_disabled_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonNewGame.Height),
 		ButtonTextureFilter);
 
 	LoadBrush(
 		LoadGameButtonBrushes.NormalBrush,
 		LoadGameButtonBrushes.NormalTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_load_game_button_normal.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_normal_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Height),
 		ButtonTextureFilter);
 	LoadBrush(
 		LoadGameButtonBrushes.HoverBrush,
 		LoadGameButtonBrushes.HoverTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_load_game_button_hover.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_hover_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Height),
 		ButtonTextureFilter);
 	LoadBrush(
 		LoadGameButtonBrushes.PressedBrush,
 		LoadGameButtonBrushes.PressedTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_load_game_button_pressed.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_pressed_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Height),
 		ButtonTextureFilter);
 	LoadBrush(
 		LoadGameButtonBrushes.DisabledBrush,
 		LoadGameButtonBrushes.DisabledTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_load_game_button_disabled.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_disabled_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Width, T66MainMenuReferenceLayout::Center::CtaButtonLoadGame.Height),
 		ButtonTextureFilter);
 
 	LoadBrush(
 		DailyChallengeButtonBrushes.NormalBrush,
 		DailyChallengeButtonBrushes.NormalTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_new_game_button_normal.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_normal_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Width, T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Height),
 		ButtonTextureFilter);
 	LoadBrush(
 		DailyChallengeButtonBrushes.HoverBrush,
 		DailyChallengeButtonBrushes.HoverTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_new_game_button_hover.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_hover_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Width, T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Height),
 		ButtonTextureFilter);
 	LoadBrush(
 		DailyChallengeButtonBrushes.PressedBrush,
 		DailyChallengeButtonBrushes.PressedTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_new_game_button_pressed.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_pressed_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Width, T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Height),
 		ButtonTextureFilter);
 	LoadBrush(
 		DailyChallengeButtonBrushes.DisabledBrush,
 		DailyChallengeButtonBrushes.DisabledTexture,
-		*(MainMenuUltrakillElementDir / TEXT("cta_new_game_button_disabled.png")),
+		*MakeMainMenuSquareElementPath(TEXT("cta_new_game_button_disabled_square_variant.png")),
 		FVector2D(T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Width, T66MainMenuReferenceLayout::Center::CtaButtonDailyChallenge.Height),
 		ButtonTextureFilter);
 
@@ -2605,9 +3038,9 @@ FReply UT66MainMenuScreen::HandleLoadGameClicked()
 	return FReply::Handled();
 }
 
-FReply UT66MainMenuScreen::HandleDailyClimbClicked()
+FReply UT66MainMenuScreen::HandleDailyDescentClicked()
 {
-	OnDailyClimbClicked();
+	OnDailyDescentClicked();
 	return FReply::Handled();
 }
 
@@ -2717,9 +3150,9 @@ void UT66MainMenuScreen::OnLoadGameClicked()
 	NavigateTo(ET66ScreenType::SaveSlots);
 }
 
-void UT66MainMenuScreen::OnDailyClimbClicked()
+void UT66MainMenuScreen::OnDailyDescentClicked()
 {
-	NavigateTo(ET66ScreenType::DailyClimb);
+	NavigateTo(ET66ScreenType::DailyDescent);
 }
 
 void UT66MainMenuScreen::OnPowerUpClicked()

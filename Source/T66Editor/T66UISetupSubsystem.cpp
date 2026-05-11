@@ -4,7 +4,6 @@
 #include "T66Editor.h"
 #include "Engine/Blueprint.h"
 #include "Engine/World.h"
-#include "WidgetBlueprint.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UObject/SavePackage.h"
 #include "FileHelpers.h"
@@ -13,8 +12,6 @@
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/PlayerController.h"
 #include "UI/T66UITypes.h"
-#include "UI/T66ScreenBase.h"
-#include "UI/Screens/T66HeroSelectionScreen.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66FrontendGameMode.h"
 #include "Gameplay/T66GameMode.h"
@@ -441,73 +438,9 @@ bool UT66UISetupSubsystem::ConfigurePlayerController()
 		return false;
 	}
 
-	// Clear existing and set up runtime screen class mappings
+	// Screen routing is now owned by AT66PlayerController::ResolveScreenClass().
+	// Keep the Blueprint override map empty so the project uses native Slate screens.
 	PCCDO->RuntimeScreenClasses.Empty();
-
-	// Define screen mappings
-	struct FScreenMapping
-	{
-		ET66ScreenType Type;
-		const TCHAR* AssetPath;
-	};
-
-	static const FScreenMapping Mappings[] = {
-		{ ET66ScreenType::MainMenu, TEXT("/Game/Blueprints/UI/WBP_MainMenu.WBP_MainMenu_C") },
-		{ ET66ScreenType::CompanionSelection, TEXT("/Game/Blueprints/UI/WBP_CompanionSelection.WBP_CompanionSelection_C") },
-		{ ET66ScreenType::SaveSlots, TEXT("/Game/Blueprints/UI/WBP_SaveSlots.WBP_SaveSlots_C") },
-		{ ET66ScreenType::Settings, TEXT("/Game/Blueprints/UI/WBP_Settings.WBP_Settings_C") },
-		{ ET66ScreenType::Achievements, TEXT("/Game/Blueprints/UI/WBP_Achievements.WBP_Achievements_C") },
-		{ ET66ScreenType::QuitConfirmation, TEXT("/Game/Blueprints/UI/WBP_QuitConfirmation.WBP_QuitConfirmation_C") },
-		{ ET66ScreenType::LanguageSelect, TEXT("/Game/Blueprints/UI/WBP_LanguageSelect.WBP_LanguageSelect_C") },
-	};
-
-	for (const auto& Mapping : Mappings)
-	{
-		// Avoid noisy SkipPackage warnings: only attempt to load if the asset package exists.
-		FString PackagePath = Mapping.AssetPath;
-		int32 DotIdx = INDEX_NONE;
-		if (PackagePath.FindChar(TEXT('.'), DotIdx) && DotIdx > 0)
-		{
-			PackagePath = PackagePath.Left(DotIdx);
-		}
-
-		const bool bHasPackage = FPackageName::DoesPackageExist(PackagePath);
-		if (!bHasPackage)
-		{
-			const bool bOptional =
-				(Mapping.Type == ET66ScreenType::Achievements) ||
-				(Mapping.Type == ET66ScreenType::LanguageSelect) ||
-				(Mapping.Type == ET66ScreenType::HeroGrid) ||
-				(Mapping.Type == ET66ScreenType::CompanionGrid);
-			UE_LOG(LogT66Editor, Log, TEXT("%s widget asset missing: %s"),
-				bOptional ? TEXT("[SKIP] Optional") : TEXT("[WARN]"),
-				*PackagePath);
-			continue;
-		}
-
-		UClass* WidgetClass = LoadClass<UT66ScreenBase>(nullptr, Mapping.AssetPath);
-		if (WidgetClass)
-		{
-			PCCDO->RuntimeScreenClasses.Add(Mapping.Type, WidgetClass);
-			UE_LOG(LogT66Editor, Log, TEXT("Registered screen %d -> %s"), static_cast<int32>(Mapping.Type), Mapping.AssetPath);
-		}
-		else
-		{
-			// Optional Blueprint overrides: C++ screens exist and work without these.
-			const bool bOptional =
-				(Mapping.Type == ET66ScreenType::Achievements) ||
-				(Mapping.Type == ET66ScreenType::LanguageSelect) ||
-				(Mapping.Type == ET66ScreenType::HeroGrid) ||
-				(Mapping.Type == ET66ScreenType::CompanionGrid);
-			UE_LOG(LogT66Editor, Log, TEXT("%s widget class missing: %s"),
-				bOptional ? TEXT("[SKIP] Optional") : TEXT("[WARN]"),
-				Mapping.AssetPath);
-		}
-	}
-
-	// Hero selection is native and changes faster than the legacy Blueprint override.
-	PCCDO->RuntimeScreenClasses.Add(ET66ScreenType::HeroSelection, UT66HeroSelectionScreen::StaticClass());
-	UE_LOG(LogT66Editor, Log, TEXT("Registered native HeroSelection screen"));
 
 	// Set initial screen to MainMenu
 	PCCDO->InitialScreen = ET66ScreenType::MainMenu;

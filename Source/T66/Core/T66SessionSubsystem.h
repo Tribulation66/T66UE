@@ -29,7 +29,6 @@ public:
 	bool EnsurePartySessionReady(ET66PartySize DesiredPartySize = ET66PartySize::Duo, ET66ScreenType PartyHubScreen = ET66ScreenType::MainMenu);
 	bool PrepareToHostFrontendLobby(ET66PartySize DesiredPartySize);
 	void HandlePartyHubScreenActivated();
-	void HandleLobbyScreenActivated();
 	bool SendInviteToFriend(const FString& FriendPlayerId, const FString& FriendDisplayName = FString());
 	bool JoinFriendPartySessionBySteamId(const FString& FriendPlayerId, const FString& InviteId = FString(), const FString& AppId = FString());
 	bool JoinPartySessionByLobbyId(const FString& LobbyId, const FString& HostSteamId = FString(), const FString& AppId = FString(), const FString& InviteId = FString());

@@ -149,6 +149,13 @@ void UT66BuffSubsystem::LoadOrCreateSave()
 		bNeedsSave = true;
 	}
 
+	if (SaveData->SaveVersion < 11)
+	{
+		MigrateV10ToV11PrimarySpeed();
+		SaveData->SaveVersion = 11;
+		bNeedsSave = true;
+	}
+
 	EnsurePendingSingleUseStatesSize(SaveData->PendingSingleUseBuffStates);
 	EnsureSelectedSingleUseStatesSize(SaveData->SelectedSingleUseBuffStates);
 	SanitizeSelectedSingleUseStates(SaveData->SelectedSingleUseBuffStates, SaveData->PendingSingleUseBuffStates);
@@ -433,6 +440,18 @@ void UT66BuffSubsystem::MigrateV9ToV10SingleLoadoutSlots()
 	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v9 temp-buff presets to v10 single temp-buff loadout."));
 }
 
+void UT66BuffSubsystem::MigrateV10ToV11PrimarySpeed()
+{
+	if (!SaveData)
+	{
+		return;
+	}
+
+	EnsureFillStepStatesSize(SaveData->WedgeTiersSpeed);
+	SaveData->RandomBonusSpeed = FMath::Max(0, SaveData->RandomBonusSpeed);
+	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v10 saves to v11 primary Speed progression."));
+}
+
 void UT66BuffSubsystem::Save()
 {
 	if (SaveData)
@@ -702,6 +721,7 @@ int32 UT66BuffSubsystem::GetStatIndex(ET66HeroStatType StatType) const
 	case ET66HeroStatType::Armor:       return 4;
 	case ET66HeroStatType::Evasion:     return 5;
 	case ET66HeroStatType::Luck:        return 6;
+	case ET66HeroStatType::Speed:       return 7;
 	default:                            return INDEX_NONE;
 	}
 }
@@ -730,6 +750,7 @@ void UT66BuffSubsystem::AddBonusForStat(FT66HeroStatBonuses& Bonuses, ET66HeroSt
 	case ET66HeroStatType::Armor:       Bonuses.Armor += Amount; break;
 	case ET66HeroStatType::Evasion:     Bonuses.Evasion += Amount; break;
 	case ET66HeroStatType::Luck:        Bonuses.Luck += Amount; break;
+	case ET66HeroStatType::Speed:       Bonuses.Speed += Amount; break;
 	default:                            break;
 	}
 }
@@ -746,6 +767,7 @@ TArray<uint8>* UT66BuffSubsystem::GetFillStepStatesForStat(ET66HeroStatType Stat
 		case ET66HeroStatType::Armor:      return &SaveData->WedgeTiersArmor;
 		case ET66HeroStatType::Evasion:    return &SaveData->WedgeTiersEvasion;
 		case ET66HeroStatType::Luck:       return &SaveData->WedgeTiersLuck;
+		case ET66HeroStatType::Speed:      return &SaveData->WedgeTiersSpeed;
 		default: return nullptr;
 	}
 }
@@ -828,7 +850,8 @@ bool UT66BuffSubsystem::UnlockRandomStat()
 		ET66HeroStatType::Accuracy,
 		ET66HeroStatType::Armor,
 		ET66HeroStatType::Evasion,
-		ET66HeroStatType::Luck
+		ET66HeroStatType::Luck,
+		ET66HeroStatType::Speed
 	};
 	TArray<ET66HeroStatType> Shuffled = AllStats;
 	for (int32 i = Shuffled.Num() - 1; i > 0; --i)
@@ -882,6 +905,7 @@ FT66HeroStatBonuses UT66BuffSubsystem::GetPermanentBuffStatBonuses() const
 	Out.Armor = GetTotalStatBonus(ET66HeroStatType::Armor);
 	Out.Evasion = GetTotalStatBonus(ET66HeroStatType::Evasion);
 	Out.Luck = GetTotalStatBonus(ET66HeroStatType::Luck);
+	Out.Speed = GetTotalStatBonus(ET66HeroStatType::Speed);
 	return Out;
 }
 
@@ -1085,6 +1109,17 @@ int32 UT66BuffSubsystem::GetSelectedSingleUseBuffEditSlotIndex() const
 	return FMath::Clamp(ActiveSelectedSingleUseBuffEditSlotIndex, 0, SelectedSingleUseBuffSlotCount - 1);
 }
 
+void UT66BuffSubsystem::BeginHeroSelectionSingleUseBuffEdit(int32 SlotIndex)
+{
+	SetSelectedSingleUseBuffEditSlotIndex(SlotIndex);
+	bHeroSelectionSingleUseBuffEditActive = true;
+}
+
+void UT66BuffSubsystem::EndHeroSelectionSingleUseBuffEdit()
+{
+	bHeroSelectionSingleUseBuffEditActive = false;
+}
+
 bool UT66BuffSubsystem::SetSingleUseBuffSelected(ET66SecondaryStatType StatType, bool bSelected)
 {
 	if (bSelected)
@@ -1270,6 +1305,7 @@ int32 UT66BuffSubsystem::GetRandomBonusForStat(ET66HeroStatType StatType) const
 		case ET66HeroStatType::Armor:      return SaveData->RandomBonusArmor;
 		case ET66HeroStatType::Evasion:    return SaveData->RandomBonusEvasion;
 		case ET66HeroStatType::Luck:       return SaveData->RandomBonusLuck;
+		case ET66HeroStatType::Speed:      return SaveData->RandomBonusSpeed;
 		default: return 0;
 	}
 }

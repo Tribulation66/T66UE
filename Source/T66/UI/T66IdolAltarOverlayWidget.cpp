@@ -464,9 +464,10 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 								.WidthOverride(IdolIconSize)
 								.HeightOverride(IdolIconSize)
 								[
-									SAssignNew(OfferIconImages[SlotIndex], SImage)
-									.Image(OfferIconBrushes[SlotIndex].Get())
-									.ColorAndOpacity(FLinearColor::White)
+									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+										SAssignNew(OfferIconImages[SlotIndex], SImage)
+										.Image(OfferIconBrushes[SlotIndex].Get())
+										.ColorAndOpacity(FLinearColor::White)))
 								]
 							]
 						]

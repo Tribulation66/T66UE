@@ -456,9 +456,9 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			GetRunSummaryReferencePanelPath(),
+			T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal")),
 			FVector2D(620.f, 175.f),
-			FMargin(0.055f, 0.175f, 0.055f, 0.175f),
+			FMargin(0.055f, 0.210f, 0.055f, 0.210f),
 			ESlateBrushDrawType::Box,
 			TextureFilter::TF_Nearest);
 	}
@@ -2970,7 +2970,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					.HeightOverride(RunSummaryReferenceHeight)
 					[
 						SNew(SCanvas)
-						+ SCanvas::Slot().Position(FVector2D(10.f, 8.f)).Size(FVector2D(1900.f, 1055.f))
+						+ SCanvas::Slot().Position(FVector2D(0.f, 0.f)).Size(FVector2D(RunSummaryReferenceWidth, RunSummaryReferenceHeight))
 						[
 							MakeRunSummarySpritePanel(SNew(SSpacer), GetRunSummaryContentShellBrush(), FMargin(0.f))
 						]

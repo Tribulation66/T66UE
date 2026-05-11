@@ -23,13 +23,13 @@ void UT66HeroSelectionScreen::OnDifficultyChanged(TSharedPtr<FString> NewValue, 
 	int32 Index = DifficultyOptions.IndexOfByKey(NewValue);
 	if (Index != INDEX_NONE)
 	{
-		TArray<ET66Difficulty> Difficulties = {
-			ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard,
-			ET66Difficulty::VeryHard, ET66Difficulty::Impossible
+		UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+		const TArray<ET66Difficulty> Difficulties = GI ? GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
+			ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 		};
 		if (Index < Difficulties.Num())
 		{
-			SelectedDifficulty = Difficulties[Index];
+			SelectedDifficulty = GI ? GI->ResolvePlayableDifficulty(Difficulties[Index]) : Difficulties[Index];
 			CurrentDifficultyOption = NewValue;
 			CommitLocalSelectionsToLobby(true);
 			RefreshDifficultyDropdownText();
@@ -46,6 +46,8 @@ void UT66HeroSelectionScreen::CommitLocalSelectionsToLobby(bool bResetReady)
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
+		PreviewedHeroID = GI->ResolvePlayableHeroID(PreviewedHeroID);
+		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedCompanionID = PreviewedCompanionID;
 		GI->SelectedDifficulty = SelectedDifficulty;
@@ -92,7 +94,7 @@ void UT66HeroSelectionScreen::SyncToSharedPartyScreen()
 		return;
 	}
 
-	SelectedDifficulty = SessionSubsystem->GetSharedLobbyDifficulty();
+	SelectedDifficulty = GI->ResolvePlayableDifficulty(SessionSubsystem->GetSharedLobbyDifficulty());
 	GI->SelectedDifficulty = SelectedDifficulty;
 	RefreshDifficultyDropdownText();
 	RefreshHeroRecordRank();
@@ -114,12 +116,9 @@ void UT66HeroSelectionScreen::RefreshDifficultyDropdownText()
 {
 	if (DifficultyOptions.Num() > 0)
 	{
-		static const TArray<ET66Difficulty> Difficulties = {
-			ET66Difficulty::Easy,
-			ET66Difficulty::Medium,
-			ET66Difficulty::Hard,
-			ET66Difficulty::VeryHard,
-			ET66Difficulty::Impossible
+		UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+		const TArray<ET66Difficulty> Difficulties = GI ? GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
+			ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 		};
 
 		const int32 CurrentDiffIndex = Difficulties.IndexOfByKey(SelectedDifficulty);
@@ -141,6 +140,8 @@ void UT66HeroSelectionScreen::RefreshDifficultyDropdownText()
 
 void UT66HeroSelectionScreen::OnScreenDeactivated_Implementation()
 {
+	CommitPendingInlineRetroFXOnClose();
+
 	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
 	{
 		Loc->OnLanguageChanged.RemoveDynamic(this, &UT66HeroSelectionScreen::OnLanguageChanged);
@@ -228,7 +229,8 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 			BackendMyRankReadyHandle = Backend->OnMyRankDataReady.AddUObject(this, &UT66HeroSelectionScreen::HandleBackendMyRankDataReady);
 		}
 
-		SelectedDifficulty = SessionSubsystem ? SessionSubsystem->GetSharedLobbyDifficulty() : GI->SelectedDifficulty;
+		SelectedDifficulty = GI->ResolvePlayableDifficulty(SessionSubsystem ? SessionSubsystem->GetSharedLobbyDifficulty() : GI->SelectedDifficulty);
+		GI->SelectedDifficulty = SelectedDifficulty;
 		SelectedBodyType = GI->SelectedHeroBodyType;
 
 		FString RequestedBodyStyle;
@@ -319,7 +321,7 @@ void UT66HeroSelectionScreen::RefreshHeroList()
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		AllHeroIDs = GI->GetAllHeroIDs();
+		AllHeroIDs = GI->GetPlayableHeroIDs();
 	}
 }
 

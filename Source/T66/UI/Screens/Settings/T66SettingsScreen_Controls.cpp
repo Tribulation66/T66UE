@@ -170,7 +170,16 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 		bool bShowOnController = true;
 	};
 
-	const TArray<FControlDefinition> ControlDefinitions = {
+	bool bShowMediaViewerControls = true;
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (const UT66RuntimePlatformSubsystem* RuntimePlatform = GI->GetSubsystem<UT66RuntimePlatformSubsystem>())
+		{
+			bShowMediaViewerControls = RuntimePlatform->ShouldShowMediaViewer();
+		}
+	}
+
+	TArray<FControlDefinition> ControlDefinitions = {
 		{ Loc ? Loc->GetText_ControlMoveForward() : NSLOCTEXT("T66.Settings.Fallback", "Move Forward", "Move Forward"), true, FName(TEXT("MoveForward")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlMoveBack() : NSLOCTEXT("T66.Settings.Fallback", "Move Back", "Move Back"), true, FName(TEXT("MoveForward")), -1.f, true, true },
 		{ Loc ? Loc->GetText_ControlMoveLeft() : NSLOCTEXT("T66.Settings.Fallback", "Move Left", "Move Left"), true, FName(TEXT("MoveRight")), -1.f, true, true },
@@ -180,18 +189,21 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 		{ Loc ? Loc->GetText_ControlPauseMenuPrimary() : NSLOCTEXT("T66.Settings.Fallback", "Pause Menu (primary)", "Pause Menu (primary)"), false, FName(TEXT("Escape")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlPauseMenuSecondary() : NSLOCTEXT("T66.Settings.Fallback", "Pause Menu (secondary)", "Pause Menu (secondary)"), false, FName(TEXT("Pause")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlToggleHUD() : NSLOCTEXT("T66.Settings.Fallback", "Toggle HUD", "Toggle HUD"), false, FName(TEXT("ToggleHUD")), 1.f, true, true },
-		{ Loc ? Loc->GetText_ControlToggleTikTok() : NSLOCTEXT("T66.Settings.Fallback", "Toggle TikTok", "Toggle TikTok"), false, FName(TEXT("ToggleTikTok")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlOpenFullMap() : NSLOCTEXT("T66.Settings.Fallback", "Open Full Map", "Open Full Map"), false, FName(TEXT("OpenFullMap")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlInspectInventory() : NSLOCTEXT("T66.Settings.Fallback", "Inspect Inventory", "Inspect Inventory"), false, FName(TEXT("InspectInventory")), 1.f, true, true },
-		{ Loc ? Loc->GetText_ControlToggleMediaViewer() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Media Viewer", "Toggle Media Viewer"), false, FName(TEXT("ToggleMediaViewer")), 1.f, true, true },
-		{ Loc ? Loc->GetText_ControlToggleGamerMode() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Gamer Mode (Hitboxes)", "Toggle Gamer Mode (Hitboxes)"), false, FName(TEXT("ToggleGamerMode")), 1.f, true, true },
-		{ Loc ? Loc->GetText_ControlRestartRun() : NSLOCTEXT("T66.Settings.Fallback", "Restart Run", "Restart Run"), false, FName(TEXT("RestartRun")), 1.f, true, true },
+		{ Loc ? Loc->GetText_ControlToggleGamerMode() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Gamer Mode (Hitboxes)", "Toggle Gamer Mode (Hitboxes)"), false, FName(TEXT("ToggleGamerMode")), 1.f, true, false },
+		{ Loc ? Loc->GetText_ControlRestartRun() : NSLOCTEXT("T66.Settings.Fallback", "Restart Run", "Restart Run"), false, FName(TEXT("RestartRun")), 1.f, true, false },
 		{ Loc ? Loc->GetText_ControlDash() : NSLOCTEXT("T66.Settings.Fallback", "Dash", "Dash"), false, FName(TEXT("Dash")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlUltimate() : NSLOCTEXT("T66.Settings.Fallback", "Ultimate", "Ultimate"), false, FName(TEXT("Ultimate")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlAttackLock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Lock", "Attack Lock"), false, FName(TEXT("AttackLock")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlAttackUnlock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Unlock", "Attack Unlock"), false, FName(TEXT("AttackUnlock")), 1.f, true, true },
-		{ Loc ? Loc->GetText_ControlToggleMouseLock() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Mouse Lock", "Toggle Mouse Lock"), false, FName(TEXT("ToggleMouseLock")), 1.f, true, false }
+		{ Loc ? Loc->GetText_ControlToggleMouseLock() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Mouse Lock", "Toggle Mouse Lock"), false, FName(TEXT("ToggleMouseLock")), 1.f, true, true }
 	};
+	if (bShowMediaViewerControls)
+	{
+		ControlDefinitions.Add({ Loc ? Loc->GetText_ControlToggleTikTok() : NSLOCTEXT("T66.Settings.Fallback", "Toggle TikTok", "Toggle TikTok"), false, FName(TEXT("ToggleTikTok")), 1.f, true, false });
+		ControlDefinitions.Add({ Loc ? Loc->GetText_ControlToggleMediaViewer() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Media Viewer", "Toggle Media Viewer"), false, FName(TEXT("ToggleMediaViewer")), 1.f, true, true });
+	}
 
 	auto MakeDeviceBindingList = [MakeRow, &ControlDefinitions](bool bIsController) -> TSharedRef<SWidget>
 	{

@@ -175,7 +175,7 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildSharedMainMenuUI()
 	EnsureProfileLoaded();
 	return SAssignNew(SharedMenuLayout, ST66MinigameMenuLayout)
 		.GameID(FName(TEXT("idle")))
-		.Title(NSLOCTEXT("T66Idle.MainMenu", "IdleSharedTitle", "IDLE CHADPOCALYPSE"))
+		.Title(NSLOCTEXT("T66Idle.MainMenu", "IdleSharedTitle", "CHADPOCALYPSE IDLE"))
 		.Subtitle(NSLOCTEXT("T66Idle.MainMenu", "IdleSharedSubtitle", "Single-player idle progression"))
 		.DailyTitle(NSLOCTEXT("T66Idle.MainMenu", "IdleDailyTitle", "TODAY'S IDLE CHALLENGE"))
 		.DailyBody(NSLOCTEXT("T66Idle.MainMenu", "IdleDailyBody", "One daily snapshot run. Pick a difficulty, push stage progress, and cash out the best score before the reset."))
@@ -274,7 +274,7 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildMainMenuUI()
 					+ SVerticalBox::Slot().AutoHeight()
 					[
 						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66Idle.MainMenu", "Title", "IDLE CHADPOCALYPSE"))
+						.Text(NSLOCTEXT("T66Idle.MainMenu", "Title", "CHADPOCALYPSE IDLE"))
 						.Font(FT66Style::MakeFont(TEXT("Black"), 34))
 						.ColorAndOpacity(FLinearColor(0.98f, 0.76f, 0.34f, 1.0f))
 					]
@@ -551,7 +551,7 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::MakePurchasePanel()
 			MakePurchaseButton(
 				NSLOCTEXT("T66Idle.Gameplay", "IdolPurchase", "IDOL"),
 				MakeBody(NextIdol ? NextIdol->DisplayName : FString(), NextIdol ? NextIdol->BaseCostGold : 0.0, TEXT("Altar complete")),
-				FLinearColor(0.56f, 0.34f, 0.86f, 0.94f),
+				FLinearColor(0.82f, 0.24f, 0.18f, 0.94f),
 				FOnClicked::CreateUObject(this, &UT66IdleMainMenuScreen::HandleBuyIdolClicked))
 		],
 		FMargin(18.f),

@@ -8,10 +8,11 @@
 #include "T66DailyClimbScreen.generated.h"
 
 struct FSlateBrush;
+class ST66LeaderboardPanel;
 class UTexture2D;
 
 /**
- * Full-screen Daily Climb frontend.
+ * Full-screen Daily Descent frontend.
  * Mirrors the main menu shell while presenting a Daily-only rules panel and action flow.
  */
 UCLASS(Blueprintable)
@@ -34,16 +35,19 @@ private:
 	void HandleDailyClimbStatusReady(const FString& RequestTag);
 	void RefreshContinueAvailability();
 	int32 ComputeSeedQualityPreview(int32 RunSeed) const;
-	void RequestBackgroundTexture();
 
-	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
-	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
 	TSharedPtr<FSlateBrush> FireMoonBrush;
 	TStrongObjectPtr<UTexture2D> FireMoonTexture;
 	TSharedPtr<FSlateBrush> PyramidChadBrush;
 	TStrongObjectPtr<UTexture2D> PyramidChadTexture;
 	TSharedPtr<FSlateBrush> PrimaryCTAFillBrush;
 	TStrongObjectPtr<UTexture2D> PrimaryCTAFillTexture;
+	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
+	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
+	TSharedPtr<FSlateBrush> ForegroundOccluderBrush;
+	TStrongObjectPtr<UTexture2D> ForegroundOccluderTexture;
+
+	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
 
 	bool bStartRequestInFlight = false;
 	int32 ContinueSaveSlotIndex = INDEX_NONE;

@@ -23,8 +23,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66HeroPreview, Log, All);
 
 namespace
 {
-	constexpr float HeroPreviewLookUpFraction = 0.45f;
-	constexpr float MinHeroPreviewRadius = 185.f;
+	constexpr float HeroPreviewLookUpFraction = 0.18f;
+	constexpr float MinHeroPreviewRadius = 160.f;
 	constexpr float SoloPreviewRadiusScale = 1.0f;
 	constexpr float CompanionFrameShiftAlpha = 0.32f;
 	constexpr float CompanionFrameRadiusScale = 0.45f;
@@ -116,7 +116,7 @@ void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType, F
 	if (bHeroChanged || bCompanionChanged)
 	{
 		PreviewYawDegrees = 0.f;
-		OrbitPitchDegrees = 15.f;
+		OrbitPitchDegrees = 10.f;
 		PreviewZoomMultiplier = 1.0f;
 	}
 

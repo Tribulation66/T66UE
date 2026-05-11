@@ -43,6 +43,24 @@ struct FT66RetroManagedMaterialSlot
 	ET66RetroGeometryGroup Group = ET66RetroGeometryGroup::World;
 };
 
+USTRUCT()
+struct FT66RetroPixelationStencilSlot
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TWeakObjectPtr<UMeshComponent> MeshComponent;
+
+	UPROPERTY()
+	bool bOriginalRenderCustomDepth = false;
+
+	UPROPERTY()
+	int32 OriginalCustomDepthStencilValue = 0;
+
+	UPROPERTY()
+	ET66RetroGeometryGroup Group = ET66RetroGeometryGroup::World;
+};
+
 /**
  * Runtime owner for experimental retro blendables and geometry collections.
  * The subsystem only touches effects that are safe to drive from C++
@@ -75,14 +93,23 @@ private:
 	void ApplyResolutionCollection(const FT66RetroFXSettings& Settings, UWorld* World);
 	void ApplyResolutionRuntime(const FT66RetroFXSettings& Settings, UWorld* World);
 	void ApplyGeometryCollection(const FT66RetroFXSettings& Settings, UWorld* World);
+	void ApplyPixelationStencilMasks(const FT66RetroFXSettings& Settings, UWorld* World);
 	void ApplyGeometryMaterials(const FT66RetroFXSettings& Settings, UWorld* World);
 	void RefreshWorldGeometryMaterials(UWorld* World, bool bEnableWorldGeometry, bool bEnableCharacterGeometry);
 	void RefreshActorGeometryMaterials(AActor* Actor, bool bEnableWorldGeometry, bool bEnableCharacterGeometry);
 	void RefreshMeshComponentGeometryMaterials(UMeshComponent* MeshComponent, bool bEnableWorldGeometry, bool bEnableCharacterGeometry);
+	void RefreshWorldPixelationStencilMasks(UWorld* World, bool bEnableWorldPixelation, bool bEnableCharacterPixelation);
+	void RefreshActorPixelationStencilMasks(AActor* Actor, bool bEnableWorldPixelation, bool bEnableCharacterPixelation);
+	void RefreshMeshComponentPixelationStencilMask(UMeshComponent* MeshComponent, bool bEnableWorldPixelation, bool bEnableCharacterPixelation);
 	void RestoreManagedMaterials(bool bRestoreWorldGeometry, bool bRestoreCharacterGeometry);
 	void RestoreManagedSlot(int32 SlotIndex);
 	void CleanupManagedSlots();
 	int32 FindManagedSlotIndex(const UMeshComponent* MeshComponent, int32 MaterialIndex) const;
+	void RestorePixelationStencilMasks(bool bRestoreWorldPixelation, bool bRestoreCharacterPixelation);
+	void RestorePixelationStencilSlot(int32 SlotIndex);
+	void CleanupPixelationStencilSlots();
+	int32 FindPixelationStencilSlotIndex(const UMeshComponent* MeshComponent) const;
+	bool ResolveMeshComponentGeometryGroup(const UMeshComponent* MeshComponent, ET66RetroGeometryGroup& OutGroup) const;
 	void UpdateGeometrySpawnBinding(UWorld* World, bool bShouldListen);
 	void HandleActorSpawned(AActor* Actor);
 
@@ -150,11 +177,17 @@ private:
 	UPROPERTY()
 	TArray<FT66RetroManagedMaterialSlot> ManagedGeometrySlots;
 
+	UPROPERTY()
+	TArray<FT66RetroPixelationStencilSlot> PixelationStencilSlots;
+
 	FDelegateHandle GeometrySpawnHandle;
 	TSharedPtr<FStreamableHandle> RetroAssetLoadHandle;
 	bool bWorldGeometryActive = false;
 	bool bCharacterGeometryActive = false;
+	bool bWorldPixelationStencilActive = false;
+	bool bCharacterPixelationStencilActive = false;
 	bool bManagedGeometryFullScanComplete = false;
+	bool bPixelationStencilFullScanComplete = false;
 	bool bResolutionRuntimeDefaultsCaptured = false;
 	bool bResolutionRuntimeActive = false;
 	FString ActivePs1MaterialPath;

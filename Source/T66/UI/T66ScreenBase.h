@@ -81,6 +81,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Navigation")
 	void CloseModal();
 
+	/** Handle a generic Back action, including Escape. Returns true when consumed. */
+	virtual bool HandleBackAction();
+
 	/**
 	 * Force the underlying Slate widget tree to be rebuilt.
 	 * Use this when you need new localized text or layout changes to take effect
@@ -106,6 +109,7 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	/**
 	 * Override this in subclasses to build the Slate UI

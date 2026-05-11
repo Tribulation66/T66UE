@@ -36,9 +36,9 @@ class T66_API UT66BuffSaveGame : public USaveGame
 	GENERATED_BODY()
 
 public:
-	/** SaveVersion 10 = collapsed named temp-buff presets into one temp-buff loadout; 9 = added primary Accuracy progression; 8 = named temp-buff presets; 7 = selected secondary single-use buffs; 6 = secondary-stat single-use buffs; 5 = unified Chad Coupons buffs; 4 = 10 fill steps; 3 = 6 body-part unlocks; 2 = 10-slot wedge tiers; 1 = legacy slice counts. */
+	/** SaveVersion 11 = added primary Speed progression; 10 = collapsed named temp-buff presets into one temp-buff loadout; 9 = added primary Accuracy progression; 8 = named temp-buff presets; 7 = selected secondary single-use buffs; 6 = secondary-stat single-use buffs; 5 = unified Chad Coupons buffs; 4 = 10 fill steps; 3 = 6 body-part unlocks; 2 = 10-slot wedge tiers; 1 = legacy slice counts. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
-	int32 SaveVersion = 10;
+	int32 SaveVersion = 11;
 
 	/** @deprecated Replaced by the shared Chad Coupons wallet in SaveVersion 5. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
@@ -65,6 +65,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	TArray<uint8> WedgeTiersLuck;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
+	TArray<uint8> WedgeTiersSpeed;
 
 	/** Legacy (v1): slice counts from before per-slot state was introduced. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp", meta = (DeprecatedProperty))
@@ -97,6 +100,8 @@ public:
 	int32 RandomBonusEvasion = 0;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	int32 RandomBonusLuck = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
+	int32 RandomBonusSpeed = 0;
 
 	/** Owned temporary buff stack counts aligned to the 30 live secondary shop stats. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")

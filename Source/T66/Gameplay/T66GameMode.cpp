@@ -817,11 +817,15 @@ namespace T66GameModePrivate
 		{
 			if (!SessionPlayerState->GetSelectedHeroID().IsNone())
 			{
-				return SessionPlayerState->GetSelectedHeroID();
+				return GI
+					? const_cast<UT66GameInstance*>(GI)->ResolvePlayableHeroID(SessionPlayerState->GetSelectedHeroID())
+					: SessionPlayerState->GetSelectedHeroID();
 			}
 		}
 
-		return (GI && !GI->SelectedHeroID.IsNone()) ? GI->SelectedHeroID : FName(TEXT("Hero_1"));
+		return GI
+			? const_cast<UT66GameInstance*>(GI)->ResolvePlayableHeroID(GI->SelectedHeroID)
+			: FName(TEXT("Hero_1"));
 	}
 
 	FName T66GetSelectedCompanionID(const UT66GameInstance* GI, const AController* Controller)
@@ -1461,19 +1465,7 @@ void AT66GameMode::HandleSettingsChanged()
 		{
 			if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 			{
-				FT66RetroFXSettings RetroSettings = PS->GetRetroFXSettings();
-				if (T66UsesMainMapTerrainStage(GetWorld()))
-				{
-					RetroSettings.bEnableWorldGeometry = false;
-					RetroSettings.WorldVertexSnapPercent = 0.0f;
-					RetroSettings.WorldVertexSnapResolutionPercent = 0.0f;
-					RetroSettings.WorldVertexNoisePercent = 0.0f;
-					RetroSettings.WorldAffineBlendPercent = 0.0f;
-					RetroSettings.WorldAffineDistance1Percent = 0.0f;
-					RetroSettings.WorldAffineDistance2Percent = 0.0f;
-					RetroSettings.WorldAffineDistance3Percent = 0.0f;
-				}
-				RetroFX->ApplySettings(RetroSettings, GetWorld());
+				RetroFX->ApplySettings(PS->GetRetroFXSettings(), GetWorld());
 			}
 			else
 			{

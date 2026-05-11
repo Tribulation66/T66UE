@@ -537,6 +537,13 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 	}
 	RunObj->SetObjectField(TEXT("damage_by_source"), DmgObj);
 
+	TSharedPtr<FJsonObject> DmgReceivedObj = MakeShared<FJsonObject>();
+	for (const auto& Pair : Snapshot->DamageReceivedBySource)
+	{
+		DmgReceivedObj->SetNumberField(Pair.Key.ToString(), Pair.Value);
+	}
+	RunObj->SetObjectField(TEXT("damage_received_by_source"), DmgReceivedObj);
+
 	return RunObj;
 }
 

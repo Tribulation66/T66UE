@@ -58,8 +58,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Companion")
 	void SetLockedVisual(bool bLocked);
 
-	/** Gameplay healing rate derived from the companion's current Union tier. */
+	/** Legacy UI compatibility helper. New gameplay healing is fixed by difficulty. */
 	static float GetHealingPerSecondForUnionStages(int32 UnionStagesCleared);
+
+	static float GetHealingAmountForDifficulty(ET66Difficulty Difficulty);
+	static float GetHealingIntervalSecondsForDifficulty(ET66Difficulty Difficulty);
+	static float GetHealingPerSecondForDifficulty(ET66Difficulty Difficulty);
 
 	/** Offset from hero when following (e.g. behind and to the side) */
 	UPROPERTY(EditDefaultsOnly, Category = "Follow")
@@ -124,6 +128,7 @@ protected:
 
 	TWeakObjectPtr<APawn> CachedHeroPawn;
 	int32 CachedUnionStagesCleared = 0;
+	float CompanionHealAccumulatorSeconds = 0.f;
 	bool bHasCachedGroundZ = false;
 	float CachedGroundZ = 0.f;
 

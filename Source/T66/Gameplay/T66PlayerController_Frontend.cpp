@@ -28,8 +28,6 @@
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
 #include "UI/Screens/T66SavePreviewScreen.h"
 #include "UI/Screens/T66PowerUpScreen.h"
-#include "UI/Screens/T66TemporaryBuffSelectionScreen.h"
-#include "UI/Screens/T66TemporaryBuffShopScreen.h"
 #include "UI/Screens/T66MinigamesScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/Screens/T66ChallengesScreen.h"
@@ -450,17 +448,6 @@ namespace
 			OutScreenType = ET66ScreenType::CompanionGrid;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("TemporaryBuffSelection"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("TemporaryBuffs"), ESearchCase::IgnoreCase))
-		{
-			OutScreenType = ET66ScreenType::TemporaryBuffSelection;
-			return true;
-		}
-		if (Normalized.Equals(TEXT("TemporaryBuffShop"), ESearchCase::IgnoreCase))
-		{
-			OutScreenType = ET66ScreenType::TemporaryBuffShop;
-			return true;
-		}
 		if (Normalized.Equals(TEXT("QuitConfirmation"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("Quit"), ESearchCase::IgnoreCase))
 		{
@@ -569,9 +556,9 @@ namespace
 			OutScreenType = ET66ScreenType::Challenges;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("DailyClimb"), ESearchCase::IgnoreCase))
+		if (Normalized.Equals(TEXT("DailyDescent"), ESearchCase::IgnoreCase))
 		{
-			OutScreenType = ET66ScreenType::DailyClimb;
+			OutScreenType = ET66ScreenType::DailyDescent;
 			return true;
 		}
 
@@ -664,15 +651,11 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66SavePreviewScreen::StaticClass();
 	case ET66ScreenType::PowerUp:
 		return UT66PowerUpScreen::StaticClass();
-	case ET66ScreenType::TemporaryBuffSelection:
-		return UT66TemporaryBuffSelectionScreen::StaticClass();
-	case ET66ScreenType::TemporaryBuffShop:
-		return UT66TemporaryBuffShopScreen::StaticClass();
 	case ET66ScreenType::AccountStatus:
 		return UT66AccountStatusScreen::StaticClass();
 	case ET66ScreenType::Challenges:
 		return UT66ChallengesScreen::StaticClass();
-	case ET66ScreenType::DailyClimb:
+	case ET66ScreenType::DailyDescent:
 		return UT66DailyClimbScreen::StaticClass();
 	case ET66ScreenType::PartyInvite:
 		return UT66PartyInviteModal::StaticClass();
@@ -1202,14 +1185,6 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::Achievements, AchievementsClass);
 	}
-	if (TSubclassOf<UT66ScreenBase> TemporaryBuffSelectionClass = ResolveScreenClass(ET66ScreenType::TemporaryBuffSelection))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::TemporaryBuffSelection, TemporaryBuffSelectionClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> TemporaryBuffShopClass = ResolveScreenClass(ET66ScreenType::TemporaryBuffShop))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::TemporaryBuffShop, TemporaryBuffShopClass);
-	}
 	if (TSubclassOf<UT66ScreenBase> MinigamesClass = ResolveScreenClass(ET66ScreenType::Minigames))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::Minigames, MinigamesClass);
@@ -1279,9 +1254,9 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::Challenges, ChallengesClass);
 	}
-	if (TSubclassOf<UT66ScreenBase> DailyClimbClass = ResolveScreenClass(ET66ScreenType::DailyClimb))
+	if (TSubclassOf<UT66ScreenBase> DailyDescentClass = ResolveScreenClass(ET66ScreenType::DailyDescent))
 	{
-		UIManager->RegisterScreenClass(ET66ScreenType::DailyClimb, DailyClimbClass);
+		UIManager->RegisterScreenClass(ET66ScreenType::DailyDescent, DailyDescentClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> PartyInviteClass = ResolveScreenClass(ET66ScreenType::PartyInvite))
 	{

@@ -33,6 +33,8 @@ FT66SpawnBudget UT66PlayerExperienceSubSystem::BuildTowerSpawnBudget(
 	Budget.RuntimeSpawnIntervalSeconds = FMath::Max(
 		0.5f,
 		(FMath::Max(0.10f, Budget.RuntimeSpawnIntervalSeconds) * SafeRuntimeIntervalScalar) / SafeDifficultyScalar);
+	Budget.RuntimeWaveStaggerDurationSeconds = FMath::Max(0.0f, Budget.RuntimeWaveStaggerDurationSeconds);
+	Budget.RuntimeMaxSpawnsPerStaggeredBatch = FMath::Clamp(Budget.RuntimeMaxSpawnsPerStaggeredBatch, 1, 128);
 
 	Budget.EstimatedRuntimeWavesPerStage = FMath::CeilToInt(FMath::Max(0.0f, StageTimerSeconds) / Budget.RuntimeSpawnIntervalSeconds);
 	Budget.EstimatedRuntimeEnemiesPerStage = Budget.EstimatedRuntimeWavesPerStage * Budget.RuntimeEnemiesPerWave;

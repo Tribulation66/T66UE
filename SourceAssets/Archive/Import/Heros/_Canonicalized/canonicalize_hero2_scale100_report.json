@@ -1,0 +1,67 @@
+{
+  "count": 1,
+  "reports": [
+    {
+      "input_glb": "C:\\UE\\T66\\SourceAssets\\Import\\Heros\\_Canonicalized\\Exports\\SK_Hero_2_TypeA.glb",
+      "output_fbx": "C:\\UE\\T66\\SourceAssets\\Import\\Heros\\_Canonicalized\\CanonicalFBXScale100\\SK_Hero_2_TypeA_Canonical2m.fbx",
+      "output_glb": "C:\\UE\\T66\\SourceAssets\\Import\\Heros\\_Canonicalized\\CanonicalFBXScale100\\SK_Hero_2_TypeA_Canonical2m.glb",
+      "rotation_mode": "y_to_z",
+      "uniform_scale": 1.0000051973044717,
+      "fbx_global_scale": 100.0,
+      "before_bounds_m": {
+        "min": [
+          -1.0181788206100464,
+          -2.0,
+          -0.2698671221733093
+        ],
+        "max": [
+          1.0181794166564941,
+          -1.0669231414794922e-05,
+          0.2698664665222168
+        ],
+        "size": [
+          2.0363582372665405,
+          1.9999893307685852,
+          0.5397335886955261
+        ],
+        "center": [
+          2.980232238769531e-07,
+          -1.0000053346157074,
+          -3.2782554626464844e-07
+        ]
+      },
+      "after_bounds_m": {
+        "min": [
+          -1.0181832313537598,
+          -0.2698683738708496,
+          7.62939453125e-06
+        ],
+        "max": [
+          1.0181838274002075,
+          0.26986709237098694,
+          2.0000319480895996
+        ],
+        "size": [
+          2.0363670587539673,
+          0.5397354662418365,
+          2.0000243186950684
+        ],
+        "center": [
+          2.980232238769531e-07,
+          -6.407499313354492e-07,
+          1.0000197887420654
+        ]
+      },
+      "objects": [
+        {
+          "name": "SK_Hero_2_TypeA",
+          "type": "ARMATURE"
+        },
+        {
+          "name": "SK_Hero_2_TypeA.001",
+          "type": "MESH"
+        }
+      ]
+    }
+  ]
+}

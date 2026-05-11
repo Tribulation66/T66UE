@@ -135,12 +135,12 @@ namespace
 		ECVF_Default);
 	static TAutoConsoleVariable<float> CVarT66GameplayCameraPitchMin(
 		TEXT("T66.Camera.GameplayPitchMin"),
-		-34.0f,
+		-72.0f,
 		TEXT("Minimum gameplay camera pitch for the fixed-distance third-person camera."),
 		ECVF_Default);
 	static TAutoConsoleVariable<float> CVarT66GameplayCameraPitchMax(
 		TEXT("T66.Camera.GameplayPitchMax"),
-		-8.0f,
+		-4.0f,
 		TEXT("Maximum gameplay camera pitch for the fixed-distance third-person camera. Keep this below zero to prevent the camera from rotating under the floor."),
 		ECVF_Default);
 	static TAutoConsoleVariable<int32> CVarT66CameraConstrainAgainstTowerWalls(
@@ -300,6 +300,42 @@ void AT66PlayerController::ClampGameplayCameraPitch()
 	SetControlRotation(Rotation);
 }
 
+void AT66PlayerController::AdjustGameplayCameraPitchFromScroll(const float ScrollValue)
+{
+	if (!IsGameplayLevel() || FMath::IsNearlyZero(ScrollValue))
+	{
+		return;
+	}
+
+	const float PitchMin = FMath::Min(
+		CVarT66GameplayCameraPitchMin.GetValueOnGameThread(),
+		CVarT66GameplayCameraPitchMax.GetValueOnGameThread());
+	const float PitchMax = FMath::Max(
+		CVarT66GameplayCameraPitchMin.GetValueOnGameThread(),
+		CVarT66GameplayCameraPitchMax.GetValueOnGameThread());
+	constexpr float PitchStepPerWheel = 2.5f;
+
+	if (IsLockedChaseGameplayCameraMode() && !bHeroOneScopeViewEnabled)
+	{
+		const float BasePitch = CVarT66LockedChaseCameraPitch.GetValueOnGameThread();
+		const float CurrentPitch = FMath::Clamp(BasePitch + LockedChaseGameplayCameraPitchOffset, PitchMin, PitchMax);
+		const float NewPitch = FMath::Clamp(CurrentPitch + (ScrollValue * PitchStepPerWheel), PitchMin, PitchMax);
+		LockedChaseGameplayCameraPitchOffset = NewPitch - BasePitch;
+		if (PlayerCameraManager)
+		{
+			PlayerCameraManager->ViewPitchMin = PitchMin;
+			PlayerCameraManager->ViewPitchMax = PitchMax;
+		}
+		return;
+	}
+
+	FRotator Rotation = GetControlRotation();
+	Rotation.Pitch = FMath::Clamp(FRotator::NormalizeAxis(Rotation.Pitch) + (ScrollValue * PitchStepPerWheel), PitchMin, PitchMax);
+	Rotation.Roll = 0.0f;
+	SetControlRotation(Rotation);
+	ClampGameplayCameraPitch();
+}
+
 void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime)
 {
 	static_cast<void>(DeltaTime);
@@ -357,7 +393,10 @@ void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime
 	const float PitchMax = FMath::Max(
 		CVarT66GameplayCameraPitchMin.GetValueOnGameThread(),
 		CVarT66GameplayCameraPitchMax.GetValueOnGameThread());
-	const float ChasePitch = FMath::Clamp(CVarT66LockedChaseCameraPitch.GetValueOnGameThread(), PitchMin, PitchMax);
+	const float ChasePitch = FMath::Clamp(
+		CVarT66LockedChaseCameraPitch.GetValueOnGameThread() + LockedChaseGameplayCameraPitchOffset,
+		PitchMin,
+		PitchMax);
 
 	FRotator DesiredRotation(ChasePitch, Hero->GetActorRotation().Yaw, 0.0f);
 	SetControlRotation(DesiredRotation);
@@ -1005,7 +1044,7 @@ bool AT66PlayerController::ApplyHostPartyRunSettingsToGameInstance() const
 	}
 
 	T66GI->RunSeed = HostLobbyInfo.RunSeed;
-	T66GI->SelectedDifficulty = HostLobbyInfo.LobbyDifficulty;
+	T66GI->SelectedDifficulty = T66GI->ResolvePlayableDifficulty(HostLobbyInfo.LobbyDifficulty);
 	T66GI->CurrentMainMapLayoutVariant = HostLobbyInfo.MainMapLayoutVariant;
 	return true;
 }
@@ -1121,7 +1160,7 @@ void AT66PlayerController::ClientApplyGameplayRunSettings_Implementation(int32 I
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
 		T66GI->RunSeed = InRunSeed;
-		T66GI->SelectedDifficulty = InDifficulty;
+		T66GI->SelectedDifficulty = T66GI->ResolvePlayableDifficulty(InDifficulty);
 		T66GI->CurrentMainMapLayoutVariant = InLayoutVariant;
 	}
 

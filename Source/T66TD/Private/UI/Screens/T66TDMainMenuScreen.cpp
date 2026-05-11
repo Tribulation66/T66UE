@@ -125,7 +125,7 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 	RequestMenuTextures();
 	return SAssignNew(SharedMenuLayout, ST66MinigameMenuLayout)
 		.GameID(FName(TEXT("td")))
-		.Title(NSLOCTEXT("T66TD.MainMenu", "TDSharedTitle", "CHADPOCALYPSE TD"))
+		.Title(NSLOCTEXT("T66TD.MainMenu", "TDSharedTitle", "CHADPOCALYPSE TOWER DEFENSE"))
 		.Subtitle(NSLOCTEXT("T66TD.MainMenu", "TDSharedSubtitle", "Single-player tower defense"))
 		.DailyTitle(NSLOCTEXT("T66TD.MainMenu", "TDDailyTitle", "TODAY'S TD CHALLENGE"))
 		.DailyBody(NSLOCTEXT("T66TD.MainMenu", "TDDailyBody", "One seeded defense map per day. Choose a difficulty, survive the route, and bank the strongest score on the daily board."))
@@ -206,7 +206,7 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 				[
 					MakeInfoCard(
 						NSLOCTEXT("T66TD.MainMenu", "FormatTitle", "Format"),
-						NSLOCTEXT("T66TD.MainMenu", "FormatBody", "Chadpocalypse TD starts with one ruleset only: Regular. Pick one of five difficulties, then pick one of four maps inside that tier."))
+						NSLOCTEXT("T66TD.MainMenu", "FormatBody", "Chadpocalypse Tower Defense starts with one ruleset only: Regular. Pick one of five difficulties, then pick one of four maps inside that tier."))
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 				[
@@ -276,7 +276,7 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				[
 					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66TD.MainMenu", "Title", "CHADPOCALYPSE TD"))
+					.Text(NSLOCTEXT("T66TD.MainMenu", "Title", "CHADPOCALYPSE TOWER DEFENSE"))
 					.Font(TitleFont)
 					.ColorAndOpacity(FLinearColor(0.05f, 0.03f, 0.015f, 0.88f))
 					.RenderTransform(FSlateRenderTransform(FVector2D(4.f, 4.f)))
@@ -286,7 +286,7 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				[
 					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66TD.MainMenu", "Title", "CHADPOCALYPSE TD"))
+					.Text(NSLOCTEXT("T66TD.MainMenu", "Title", "CHADPOCALYPSE TOWER DEFENSE"))
 					.Font(TitleFont)
 					.ColorAndOpacity(FLinearColor(0.94f, 0.76f, 0.38f, 0.98f))
 					.ShadowOffset(FVector2D(2.f, 2.f))

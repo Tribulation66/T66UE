@@ -42,7 +42,7 @@ public:
 	void OnLoadGameClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Main Menu")
-	void OnDailyClimbClicked();
+	void OnDailyDescentClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Main Menu")
 	void OnSettingsClicked();
@@ -153,8 +153,22 @@ private:
 	TStrongObjectPtr<UTexture2D> ProgressTrackTexture;
 	TSharedPtr<FSlateBrush> ProgressFillBrush;
 	TStrongObjectPtr<UTexture2D> ProgressFillTexture;
+	TSharedPtr<FSlateBrush> LeaderboardFilterButtonBrush;
+	TStrongObjectPtr<UTexture2D> LeaderboardFilterButtonTexture;
+	TSharedPtr<FSlateBrush> LeaderboardFilterButtonSelectedBrush;
+	TStrongObjectPtr<UTexture2D> LeaderboardFilterButtonSelectedTexture;
+	TSharedPtr<FSlateBrush> LeaderboardFilterGlobalIconBrush;
+	TStrongObjectPtr<UTexture2D> LeaderboardFilterGlobalIconTexture;
+	TSharedPtr<FSlateBrush> LeaderboardFilterFriendsIconBrush;
+	TStrongObjectPtr<UTexture2D> LeaderboardFilterFriendsIconTexture;
+	TSharedPtr<FSlateBrush> LeaderboardFilterStreamersIconBrush;
+	TStrongObjectPtr<UTexture2D> LeaderboardFilterStreamersIconTexture;
 	TSharedPtr<FSlateBrush> CenterStackFrameBrush;
 	TStrongObjectPtr<UTexture2D> CenterStackFrameTexture;
+	TSharedPtr<FSlateBrush> EnterTribulationSkullBrush;
+	TStrongObjectPtr<UTexture2D> EnterTribulationSkullTexture;
+	TSharedPtr<FSlateBrush> DailyDescentOneRunBadgeBrush;
+	TStrongObjectPtr<UTexture2D> DailyDescentOneRunBadgeTexture;
 	FButtonStateBrushSet NewGameButtonBrushes;
 	FButtonStateBrushSet LoadGameButtonBrushes;
 	FButtonStateBrushSet DailyChallengeButtonBrushes;
@@ -183,7 +197,7 @@ private:
 	// Button click handlers for Slate (return FReply)
 	FReply HandleNewGameClicked();
 	FReply HandleLoadGameClicked();
-	FReply HandleDailyClimbClicked();
+	FReply HandleDailyDescentClicked();
 	FReply HandlePowerUpClicked();
 	FReply HandleMinigamesClicked();
 	FReply HandleAchievementsClicked();

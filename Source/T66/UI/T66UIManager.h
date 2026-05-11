@@ -8,6 +8,7 @@
 #include "T66UIManager.generated.h"
 
 class UT66ScreenBase;
+class UT66SettingsScreen;
 class UT66FrontendBackButtonWidget;
 class UT66FrontendTopBarWidget;
 class UUserWidget;
@@ -66,6 +67,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void GoBack();
 
+	bool HandleBackAction();
+
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	bool CanGoBack() const { return NavigationHistory.Num() > 0; }
 
@@ -107,6 +110,10 @@ public:
 
 	/** Rebuild all visible UI widgets (current screen and current modal). */
 	void RebuildAllVisibleUI();
+
+	void ShowRetroFXPreviewPopup();
+	void HideRetroFXPreviewPopup();
+	bool IsRetroFXPreviewPopupVisible() const;
 
 	/**
 	 * Hide all UI (for transitioning to gameplay)
@@ -155,6 +162,9 @@ protected:
 	/** Persistent frontend back button shown on non-home frontend screens. */
 	UPROPERTY()
 	TObjectPtr<UT66FrontendBackButtonWidget> FrontendBackButton;
+
+	UPROPERTY()
+	TObjectPtr<UT66SettingsScreen> RetroFXPreviewPopup;
 
 	/** Navigation history stack for back navigation */
 	UPROPERTY()

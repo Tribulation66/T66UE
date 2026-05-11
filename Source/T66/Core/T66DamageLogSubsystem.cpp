@@ -4,12 +4,52 @@
 
 const FName UT66DamageLogSubsystem::SourceID_AutoAttack(TEXT("AutoAttack"));
 const FName UT66DamageLogSubsystem::SourceID_Ultimate(TEXT("Ultimate"));
+const FName UT66DamageLogSubsystem::SourceID_Environment(TEXT("Environment"));
+
+namespace
+{
+	void T66AddDamageToMap(TMap<FName, int32>& DamageMap, const FName SourceID, const int32 Amount)
+	{
+		if (Amount <= 0 || SourceID.IsNone()) return;
+
+		int32& Total = DamageMap.FindOrAdd(SourceID);
+		Total = FMath::Clamp(Total + Amount, 0, 2000000000);
+	}
+
+	TArray<FDamageLogEntry> T66BuildDamageEntriesSorted(const TMap<FName, int32>& DamageMap)
+	{
+		TArray<FDamageLogEntry> Out;
+		Out.Reserve(DamageMap.Num());
+		for (const auto& Pair : DamageMap)
+		{
+			if (Pair.Value <= 0)
+			{
+				continue;
+			}
+
+			FDamageLogEntry E;
+			E.SourceID = Pair.Key;
+			E.TotalDamage = Pair.Value;
+			Out.Add(E);
+		}
+
+		Out.Sort([](const FDamageLogEntry& A, const FDamageLogEntry& B)
+		{
+			if (A.TotalDamage != B.TotalDamage)
+			{
+				return A.TotalDamage > B.TotalDamage;
+			}
+
+			return A.SourceID.LexicalLess(B.SourceID);
+		});
+		return Out;
+	}
+}
 
 void UT66DamageLogSubsystem::RecordDamageDealt(FName SourceID, int32 Amount)
 {
 	if (Amount <= 0 || SourceID.IsNone()) return;
-	int32& Total = DamageBySource.FindOrAdd(SourceID);
-	Total = FMath::Clamp(Total + Amount, 0, 2000000000);
+	T66AddDamageToMap(DamageBySource, SourceID, Amount);
 
 	const double NowSeconds = GetCurrentWorldTimeSeconds();
 	TrimRecentDamageSamples(NowSeconds);
@@ -20,19 +60,24 @@ void UT66DamageLogSubsystem::RecordDamageDealt(FName SourceID, int32 Amount)
 	RecentDamageInWindow = FMath::Clamp(RecentDamageInWindow + Amount, 0, 2000000000);
 }
 
+void UT66DamageLogSubsystem::RecordDamageReceived(FName SourceID, int32 Amount)
+{
+	if (SourceID.IsNone())
+	{
+		SourceID = SourceID_Environment;
+	}
+
+	T66AddDamageToMap(DamageReceivedBySource, SourceID, Amount);
+}
+
 TArray<FDamageLogEntry> UT66DamageLogSubsystem::GetDamageBySourceSorted() const
 {
-	TArray<FDamageLogEntry> Out;
-	Out.Reserve(DamageBySource.Num());
-	for (const auto& Pair : DamageBySource)
-	{
-		FDamageLogEntry E;
-		E.SourceID = Pair.Key;
-		E.TotalDamage = Pair.Value;
-		Out.Add(E);
-	}
-	Out.Sort([](const FDamageLogEntry& A, const FDamageLogEntry& B) { return A.TotalDamage > B.TotalDamage; });
-	return Out;
+	return T66BuildDamageEntriesSorted(DamageBySource);
+}
+
+TArray<FDamageLogEntry> UT66DamageLogSubsystem::GetDamageReceivedBySourceSorted() const
+{
+	return T66BuildDamageEntriesSorted(DamageReceivedBySource);
 }
 
 float UT66DamageLogSubsystem::GetRollingDPS()
@@ -45,6 +90,7 @@ float UT66DamageLogSubsystem::GetRollingDPS()
 void UT66DamageLogSubsystem::ResetForNewRun()
 {
 	DamageBySource.Empty();
+	DamageReceivedBySource.Empty();
 	RecentDamageSamples.Empty();
 	RecentDamageSampleHeadIndex = 0;
 	RecentDamageInWindow = 0;

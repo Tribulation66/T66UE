@@ -52,6 +52,8 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Input/Events.h"
 #include "HAL/FileManager.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "UI/Style/T66ButtonVisuals.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
@@ -63,8 +65,228 @@ DECLARE_LOG_CATEGORY_EXTERN(LogT66HeroSelection, Log, All);
 
 namespace T66HeroSelectionPrivate
 {
-	inline constexpr int32 HeroSelectionCarouselVisibleSlots = 7;
+	inline constexpr int32 HeroSelectionCarouselVisibleSlots = 5;
 	inline constexpr int32 HeroSelectionCarouselCenterIndex = HeroSelectionCarouselVisibleSlots / 2;
+
+	inline bool IsBloodyRetroSelectionPreset()
+	{
+		return T66ScreenSlateHelpers::GetReferenceChromePreset() == T66ScreenSlateHelpers::ET66ReferenceChromePreset::BloodyRetro;
+	}
+
+	inline FLinearColor HeroSelectionChromeAccent(float Alpha = 1.0f)
+	{
+		return IsBloodyRetroSelectionPreset()
+			? FLinearColor(0.64f, 0.035f, 0.030f, Alpha)
+			: FLinearColor(0.92f, 0.05f, 0.12f, Alpha);
+	}
+
+	inline FLinearColor HeroSelectionChromeAccentInactive(float Alpha = 0.75f)
+	{
+		return IsBloodyRetroSelectionPreset()
+			? FLinearColor(0.18f, 0.040f, 0.035f, Alpha)
+			: FLinearColor(0.20f, 0.055f, 0.065f, Alpha);
+	}
+
+	inline FLinearColor HeroSelectionChromeInnerFill(float Alpha = 0.96f)
+	{
+		return IsBloodyRetroSelectionPreset()
+			? FLinearColor(0.026f, 0.012f, 0.014f, Alpha)
+			: FLinearColor(0.035f, 0.014f, 0.016f, Alpha);
+	}
+
+	inline FLinearColor HeroSelectionChromeInnerFillAlt(float Alpha = 0.96f)
+	{
+		return IsBloodyRetroSelectionPreset()
+			? FLinearColor(0.040f, 0.014f, 0.016f, Alpha)
+			: FLinearColor(0.050f, 0.018f, 0.020f, Alpha);
+	}
+
+	inline FLinearColor HeroSelectionChromeTokenAccent()
+	{
+		return IsBloodyRetroSelectionPreset()
+			? FLinearColor(0.74f, 0.05f, 0.040f, 1.0f)
+			: FT66Style::Tokens::Accent;
+	}
+
+	struct FHeroSelectionSharedLayoutMetrics
+	{
+		FVector2D LayoutViewportSize = FVector2D(1920.f, 1080.f);
+		bool bShortViewport = false;
+		float ReferenceLayoutWidth = 1920.f;
+		float ReferenceLayoutHeight = 1080.f;
+		float PanelTouchOverlap = 12.f;
+		float LeftPanelWidth = 588.f;
+		float RightPanelWidth = 493.f;
+		float CenterPanelX = 576.f;
+		float CenterPreviewWidth = 863.f;
+		float PartyFooterWidth = 720.f;
+		float CompanionFooterWidth = 506.f;
+		float CompanionFooterX = 708.f;
+		float RunFooterX = 1202.f;
+		float RunFooterWidth = 718.f;
+		float CompanionFooterContentWidth = 486.f;
+		float RunFooterContentWidth = 694.f;
+		float UpperPanelY = 0.f;
+		float FooterPanelMinHeight = 186.f;
+		float FooterPanelY = 894.f;
+		float UpperSidePanelHeight = 894.f;
+		float RightStatsCardHeight = 200.f;
+		float RightUltRowHeight = 136.f;
+		float PanelGap = 0.f;
+		float OuterPanelBleed = 8.f;
+		float TopBarBottomGap = 8.f;
+		float LayoutCompactScale = 1.f;
+		float FooterToggleWidth = 239.f;
+		float FooterToggleHeight = 76.f;
+		float FooterActionHeight = 126.f;
+		float BalanceBadgeIconWidth = 56.f;
+		float BalanceBadgeIconHeight = 34.f;
+		float LeftSkinsCardHeight = 184.f;
+		float RightPreviewPanelHeight = 280.f;
+		float RightAbilityIconButtonSize = 90.f;
+		float RightAbilityIconSize = 70.f;
+		int32 ScreenHeaderFontSize = 21;
+		int32 BodyToggleFontSize = 21;
+		int32 PrimaryCtaFontSize = 26;
+		int32 HeroArrowFontSize = 24;
+		int32 ACBalanceFontSize = 23;
+		int32 HeroNameFontSize = 31;
+		int32 SecondaryButtonFontSize = 20;
+		int32 EntityDropdownFontSize = 20;
+		int32 BodyTextFontSize = 16;
+		int32 DifficultyMenuFontSize = 23;
+		float HeroArrowButtonWidth = 64.f;
+		float HeroArrowButtonHeight = 48.f;
+		float TopStripBackButtonWidth = 112.f;
+		float TopStripBackButtonHeight = 34.f;
+	};
+
+	inline FVector2D GetHeroSelectionLayoutViewportSize()
+	{
+		FVector2D LayoutViewportSize = FT66Style::GetViewportLogicalSize();
+		LayoutViewportSize.X = FMath::Max(LayoutViewportSize.X, 1.f);
+		LayoutViewportSize.Y = FMath::Max(LayoutViewportSize.Y, 1.f);
+
+		int32 AutomationViewportWidth = 0;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66AutomationResX="), AutomationViewportWidth) && AutomationViewportWidth > 0)
+		{
+			LayoutViewportSize.X = static_cast<float>(AutomationViewportWidth) / FMath::Max(0.01f, FT66Style::GetGlobalUIScale());
+		}
+		int32 AutomationViewportHeight = 0;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66AutomationResY="), AutomationViewportHeight) && AutomationViewportHeight > 0)
+		{
+			LayoutViewportSize.Y = static_cast<float>(AutomationViewportHeight) / FMath::Max(0.01f, FT66Style::GetGlobalUIScale());
+		}
+
+		return LayoutViewportSize;
+	}
+
+	inline FHeroSelectionSharedLayoutMetrics MakeHeroSelectionSharedLayoutMetrics(const bool bDotaTheme = FT66Style::IsDotaTheme())
+	{
+		FHeroSelectionSharedLayoutMetrics Metrics;
+		Metrics.LayoutViewportSize = GetHeroSelectionLayoutViewportSize();
+		Metrics.bShortViewport = Metrics.LayoutViewportSize.Y < 960.f;
+		Metrics.ReferenceLayoutWidth = 1920.f;
+		constexpr float ReferenceLayoutBaselineHeight = 1080.f;
+		Metrics.ReferenceLayoutHeight = FMath::Max(
+			ReferenceLayoutBaselineHeight,
+			FMath::CeilToFloat(Metrics.ReferenceLayoutWidth * Metrics.LayoutViewportSize.Y / Metrics.LayoutViewportSize.X));
+		Metrics.PanelTouchOverlap = 12.f;
+		Metrics.LeftPanelWidth = 588.f;
+		Metrics.RightPanelWidth = 493.f;
+		Metrics.CenterPanelX = Metrics.LeftPanelWidth - Metrics.PanelTouchOverlap;
+		Metrics.CenterPreviewWidth = Metrics.ReferenceLayoutWidth - Metrics.RightPanelWidth + Metrics.PanelTouchOverlap - Metrics.CenterPanelX;
+		Metrics.PartyFooterWidth = 720.f;
+		Metrics.CompanionFooterWidth = 506.f;
+		Metrics.CompanionFooterX = Metrics.PartyFooterWidth - Metrics.PanelTouchOverlap;
+		Metrics.RunFooterX = Metrics.CompanionFooterX + Metrics.CompanionFooterWidth - Metrics.PanelTouchOverlap;
+		Metrics.RunFooterWidth = Metrics.ReferenceLayoutWidth - Metrics.RunFooterX;
+		Metrics.CompanionFooterContentWidth = Metrics.CompanionFooterWidth - 20.f;
+		Metrics.RunFooterContentWidth = Metrics.RunFooterWidth - 24.f;
+		Metrics.UpperPanelY = 0.f;
+		Metrics.FooterPanelMinHeight = 186.f;
+		Metrics.FooterPanelY = Metrics.ReferenceLayoutHeight - Metrics.FooterPanelMinHeight;
+		Metrics.UpperSidePanelHeight = Metrics.FooterPanelY - Metrics.UpperPanelY;
+		Metrics.RightStatsCardHeight = 200.f;
+		Metrics.RightUltRowHeight = 136.f;
+		Metrics.PanelGap = 0.f;
+		Metrics.OuterPanelBleed = 8.f;
+		Metrics.TopBarBottomGap = 8.f;
+		Metrics.LayoutCompactScale = 1.f;
+		Metrics.FooterToggleWidth = FMath::RoundToFloat((Metrics.CompanionFooterContentWidth - 8.f) * 0.5f);
+		Metrics.FooterToggleHeight = Metrics.bShortViewport ? 68.f : 76.f;
+		Metrics.FooterActionHeight = 126.f;
+		Metrics.BalanceBadgeIconWidth = FMath::RoundToFloat(56.f * Metrics.LayoutCompactScale);
+		Metrics.BalanceBadgeIconHeight = FMath::RoundToFloat(34.f * Metrics.LayoutCompactScale);
+		Metrics.LeftSkinsCardHeight = 184.f;
+		Metrics.RightPreviewPanelHeight = 280.f;
+		Metrics.RightAbilityIconButtonSize = Metrics.bShortViewport ? 78.f : 90.f;
+		Metrics.RightAbilityIconSize = Metrics.bShortViewport ? 58.f : 70.f;
+		Metrics.ScreenHeaderFontSize = FMath::RoundToInt(21.f * Metrics.LayoutCompactScale);
+		Metrics.BodyToggleFontSize = FMath::RoundToInt(21.f * Metrics.LayoutCompactScale);
+		Metrics.PrimaryCtaFontSize = FMath::RoundToInt((Metrics.bShortViewport ? 22.f : 26.f) * Metrics.LayoutCompactScale);
+		Metrics.HeroArrowFontSize = FMath::RoundToInt(24.f * Metrics.LayoutCompactScale);
+		Metrics.ACBalanceFontSize = Metrics.ScreenHeaderFontSize + 2;
+		Metrics.HeroNameFontSize = FMath::RoundToInt(31.f * Metrics.LayoutCompactScale);
+		Metrics.SecondaryButtonFontSize = FMath::RoundToInt(20.f * Metrics.LayoutCompactScale);
+		Metrics.EntityDropdownFontSize = FMath::RoundToInt(20.f * Metrics.LayoutCompactScale);
+		Metrics.BodyTextFontSize = FMath::RoundToInt(16.f * Metrics.LayoutCompactScale);
+		Metrics.DifficultyMenuFontSize = FMath::RoundToInt(23.f * Metrics.LayoutCompactScale);
+		Metrics.HeroArrowButtonWidth = bDotaTheme ? 68.f : 64.f;
+		Metrics.HeroArrowButtonHeight = Metrics.bShortViewport ? 42.f : 48.f;
+		Metrics.TopStripBackButtonWidth = FMath::RoundToFloat(112.f * Metrics.LayoutCompactScale);
+		Metrics.TopStripBackButtonHeight = Metrics.bShortViewport ? 32.f : 34.f;
+		return Metrics;
+	}
+
+	inline void ResolveHeroSelectionLooseIconBrush(
+		const FString& RelativePath,
+		const FVector2D& ImageSize,
+		TSharedPtr<FSlateBrush>& Brush,
+		TStrongObjectPtr<UTexture2D>& Texture,
+		const TCHAR* DebugName)
+	{
+		if (!Brush.IsValid())
+		{
+			Brush = MakeShared<FSlateBrush>();
+			Brush->DrawAs = ESlateBrushDrawType::Image;
+			Brush->Tiling = ESlateBrushTileType::NoTile;
+			Brush->TintColor = FSlateColor(FLinearColor::White);
+		}
+
+		Brush->ImageSize = ImageSize;
+		if (!Texture.IsValid())
+		{
+			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+			{
+				if (!FPaths::FileExists(CandidatePath))
+				{
+					continue;
+				}
+
+				if (UTexture2D* LoadedTexture = T66RuntimeUITextureAccess::ImportFileTexture(
+					CandidatePath,
+					TextureFilter::TF_Trilinear,
+					true,
+					DebugName))
+				{
+					Texture.Reset(LoadedTexture);
+					break;
+				}
+
+				if (UTexture2D* LoadedTexture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
+					CandidatePath,
+					TextureFilter::TF_Trilinear,
+					DebugName))
+				{
+					Texture.Reset(LoadedTexture);
+					break;
+				}
+			}
+		}
+
+		Brush->SetResourceObject(Texture.IsValid() ? Texture.Get() : nullptr);
+	}
 
 	inline AT66PlayerController* T66GetLocalFrontendHeroPlayerController(UObject* ContextObject)
 	{
@@ -97,10 +319,10 @@ namespace T66HeroSelectionPrivate
 	{
 		switch (FMath::Abs(Offset))
 		{
-		case 0: return 48.f;
-		case 1: return 40.f;
-		case 2: return 36.f;
-		default: return 32.f;
+		case 0: return 128.f;
+		case 1: return 112.f;
+		case 2: return 96.f;
+		default: return 84.f;
 		}
 	}
 
@@ -109,9 +331,11 @@ namespace T66HeroSelectionPrivate
 		switch (FMath::Abs(Offset))
 		{
 		case 0: return 1.0f;
-		case 1: return 0.82f;
-		case 2: return 0.66f;
-		default: return 0.52f;
+		case 1: return 0.90f;
+		case 2: return 0.78f;
+		case 3: return 0.66f;
+		case 4: return 0.56f;
+		default: return 0.48f;
 		}
 	}
 
@@ -134,6 +358,13 @@ namespace T66HeroSelectionPrivate
 			FileName ? FileName : TEXT(""));
 	}
 
+	inline FString MakeHeroSelectionSquareVariantElementPath(const TCHAR* FileName)
+	{
+		return FString::Printf(
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/%s"),
+			FileName ? FileName : TEXT(""));
+	}
+
 	inline FSlateColor GetHeroSelectionParchmentText()
 	{
 		return FSlateColor(FLinearColor(0.96f, 0.94f, 0.88f, 1.0f));
@@ -142,27 +373,6 @@ namespace T66HeroSelectionPrivate
 	inline FSlateColor GetHeroSelectionParchmentMutedText()
 	{
 		return FSlateColor(FLinearColor(0.98f, 0.48f, 0.34f, 1.0f));
-	}
-
-	inline FString GetHeroSelectionMedalImagePath(const ET66AccountMedalTier Tier)
-	{
-		const FString MedalDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("RuntimeDependencies/T66/UI/HeroSelection/Medals/"));
-		switch (Tier)
-		{
-		case ET66AccountMedalTier::Bronze:
-			return MedalDir / TEXT("medal_easy_bronze_imagegen_20260427_v1.png");
-		case ET66AccountMedalTier::Silver:
-			return MedalDir / TEXT("medal_medium_silver_imagegen_20260427_v1.png");
-		case ET66AccountMedalTier::Gold:
-			return MedalDir / TEXT("medal_hard_gold_imagegen_20260427_v1.png");
-		case ET66AccountMedalTier::Platinum:
-			return MedalDir / TEXT("medal_veryhard_platinum_imagegen_20260427_v1.png");
-		case ET66AccountMedalTier::Diamond:
-			return MedalDir / TEXT("medal_impossible_diamond_imagegen_20260427_v1.png");
-		case ET66AccountMedalTier::None:
-		default:
-			return MedalDir / TEXT("medal_unproven_imagegen_20260427_v2.png");
-		}
 	}
 
 	inline FString GetHeroSelectionRankImagePath()
@@ -175,35 +385,35 @@ namespace T66HeroSelectionPrivate
 	{
 		switch (StatType)
 		{
-		case ET66SecondaryStatType::AoeDamage: return NSLOCTEXT("T66.HeroSelection", "DrugAoeDamage", "Blast Caps");
-		case ET66SecondaryStatType::BounceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugBounceDamage", "Rebound Pills");
-		case ET66SecondaryStatType::PierceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugPierceDamage", "Needle Rush");
-		case ET66SecondaryStatType::DotDamage: return NSLOCTEXT("T66.HeroSelection", "DrugDotDamage", "Venom Tonic");
-		case ET66SecondaryStatType::CritDamage: return NSLOCTEXT("T66.HeroSelection", "DrugCritDamage", "Redline Amp");
-		case ET66SecondaryStatType::AoeSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugAoeSpeed", "Blast Caffeine");
-		case ET66SecondaryStatType::BounceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugBounceSpeed", "Ricochet Tabs");
-		case ET66SecondaryStatType::PierceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugPierceSpeed", "Needle Sprint");
-		case ET66SecondaryStatType::DotSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugDotSpeed", "Toxin Drip");
-		case ET66SecondaryStatType::CritChance: return NSLOCTEXT("T66.HeroSelection", "DrugCritChance", "Lucky Dust");
-		case ET66SecondaryStatType::AoeScale: return NSLOCTEXT("T66.HeroSelection", "DrugAoeScale", "Blast Stretch");
-		case ET66SecondaryStatType::BounceScale: return NSLOCTEXT("T66.HeroSelection", "DrugBounceScale", "Rebound Foam");
-		case ET66SecondaryStatType::PierceScale: return NSLOCTEXT("T66.HeroSelection", "DrugPierceScale", "Needle Bloom");
-		case ET66SecondaryStatType::DotScale: return NSLOCTEXT("T66.HeroSelection", "DrugDotScale", "Toxic Bloom");
-		case ET66SecondaryStatType::AttackRange: return NSLOCTEXT("T66.HeroSelection", "DrugAttackRange", "Longshot Serum");
-		case ET66SecondaryStatType::Taunt: return NSLOCTEXT("T66.HeroSelection", "DrugTaunt", "Loudmouth Brew");
-		case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.HeroSelection", "DrugDamageReduction", "Stone Skin");
-		case ET66SecondaryStatType::ReflectDamage: return NSLOCTEXT("T66.HeroSelection", "DrugReflectDamage", "Mirror Dose");
-		case ET66SecondaryStatType::Crush: return NSLOCTEXT("T66.HeroSelection", "DrugCrush", "Crusher Shot");
-		case ET66SecondaryStatType::EvasionChance: return NSLOCTEXT("T66.HeroSelection", "DrugEvasionChance", "Ghost Step");
-		case ET66SecondaryStatType::CounterAttack: return NSLOCTEXT("T66.HeroSelection", "DrugCounterAttack", "Payback Tabs");
-		case ET66SecondaryStatType::Invisibility: return NSLOCTEXT("T66.HeroSelection", "DrugInvisibility", "Fade Powder");
-		case ET66SecondaryStatType::Assassinate: return NSLOCTEXT("T66.HeroSelection", "DrugAssassinate", "Killer Focus");
-		case ET66SecondaryStatType::TreasureChest: return NSLOCTEXT("T66.HeroSelection", "DrugTreasureChest", "Treasure Tonic");
-		case ET66SecondaryStatType::Cheating: return NSLOCTEXT("T66.HeroSelection", "DrugCheating", "Loaded Dice");
-		case ET66SecondaryStatType::Stealing: return NSLOCTEXT("T66.HeroSelection", "DrugStealing", "Sticky Fingers");
-		case ET66SecondaryStatType::LootCrate: return NSLOCTEXT("T66.HeroSelection", "DrugLootCrate", "Crate Cracker");
-		case ET66SecondaryStatType::Accuracy: return NSLOCTEXT("T66.HeroSelection", "DrugAccuracy", "True Aim");
-		default: return NSLOCTEXT("T66.HeroSelection", "DrugFallback", "Combat Dose");
+		case ET66SecondaryStatType::AoeDamage: return NSLOCTEXT("T66.HeroSelection", "DrugAoeDamage", "OXYMETHOLONE");
+		case ET66SecondaryStatType::BounceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugBounceDamage", "METHANDROSTENOLONE");
+		case ET66SecondaryStatType::PierceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugPierceDamage", "FLUOXYMESTERONE");
+		case ET66SecondaryStatType::DotDamage: return NSLOCTEXT("T66.HeroSelection", "DrugDotDamage", "NANDROLONE DECANOATE");
+		case ET66SecondaryStatType::CritDamage: return NSLOCTEXT("T66.HeroSelection", "DrugCritDamage", "TRENBOLONE ACETATE");
+		case ET66SecondaryStatType::AoeSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugAoeSpeed", "CAFFEINE CITRATE");
+		case ET66SecondaryStatType::BounceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugBounceSpeed", "MODAFINIL");
+		case ET66SecondaryStatType::PierceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugPierceSpeed", "EPHEDRINE HCL");
+		case ET66SecondaryStatType::DotSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugDotSpeed", "SALBUTAMOL SULFATE");
+		case ET66SecondaryStatType::CritChance: return NSLOCTEXT("T66.HeroSelection", "DrugCritChance", "STANOZOLOL");
+		case ET66SecondaryStatType::AoeScale: return NSLOCTEXT("T66.HeroSelection", "DrugAoeScale", "TESTOSTERONE ENANTHATE");
+		case ET66SecondaryStatType::BounceScale: return NSLOCTEXT("T66.HeroSelection", "DrugBounceScale", "BOLDENONE UNDECYLENATE");
+		case ET66SecondaryStatType::PierceScale: return NSLOCTEXT("T66.HeroSelection", "DrugPierceScale", "DROSTANOLONE PROPIONATE");
+		case ET66SecondaryStatType::DotScale: return NSLOCTEXT("T66.HeroSelection", "DrugDotScale", "METHENOLONE ENANTHATE");
+		case ET66SecondaryStatType::AttackRange: return NSLOCTEXT("T66.HeroSelection", "DrugAttackRange", "CLENBUTEROL HCL");
+		case ET66SecondaryStatType::Taunt: return NSLOCTEXT("T66.HeroSelection", "DrugTaunt", "HYDROCORTISONE");
+		case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.HeroSelection", "DrugDamageReduction", "PREDNISONE");
+		case ET66SecondaryStatType::ReflectDamage: return NSLOCTEXT("T66.HeroSelection", "DrugReflectDamage", "DEXAMETHASONE");
+		case ET66SecondaryStatType::Crush: return NSLOCTEXT("T66.HeroSelection", "DrugCrush", "BETAMETHASONE");
+		case ET66SecondaryStatType::EvasionChance: return NSLOCTEXT("T66.HeroSelection", "DrugEvasionChance", "SCOPOLAMINE HBR");
+		case ET66SecondaryStatType::CounterAttack: return NSLOCTEXT("T66.HeroSelection", "DrugCounterAttack", "LIDOCAINE HCL");
+		case ET66SecondaryStatType::Invisibility: return NSLOCTEXT("T66.HeroSelection", "DrugInvisibility", "DIPHENHYDRAMINE HCL");
+		case ET66SecondaryStatType::Assassinate: return NSLOCTEXT("T66.HeroSelection", "DrugAssassinate", "ATROPINE SULFATE");
+		case ET66SecondaryStatType::TreasureChest: return NSLOCTEXT("T66.HeroSelection", "DrugTreasureChest", "NICOTINAMIDE RIBOSIDE");
+		case ET66SecondaryStatType::Cheating: return NSLOCTEXT("T66.HeroSelection", "DrugCheating", "SILDENAFIL CITRATE");
+		case ET66SecondaryStatType::Stealing: return NSLOCTEXT("T66.HeroSelection", "DrugStealing", "LOPERAMIDE HCL");
+		case ET66SecondaryStatType::LootCrate: return NSLOCTEXT("T66.HeroSelection", "DrugLootCrate", "METFORMIN HCL");
+		case ET66SecondaryStatType::Accuracy: return NSLOCTEXT("T66.HeroSelection", "DrugAccuracy", "ATOMOXETINE HCL");
+		default: return NSLOCTEXT("T66.HeroSelection", "DrugFallback", "COMPOUND");
 		}
 	}
 
@@ -215,11 +425,6 @@ namespace T66HeroSelectionPrivate
 			NSLOCTEXT("T66.HeroSelection", "DrugEffectFormat", "+{0}% {1}"),
 			FText::AsNumber(Percent),
 			StatName);
-	}
-
-	inline FString GetHeroSelectionChallengesIconPath()
-	{
-		return TEXT("RuntimeDependencies/T66/UI/HeroSelection/challenges_crossed_swords.png");
 	}
 
 	inline FString GetHeroSelectionChadIconPath()
@@ -311,7 +516,7 @@ namespace T66HeroSelectionPrivate
 		ToggleInactive,
 		CtaGreen,
 		CtaBlue,
-		CtaPurple
+		CtaRed
 	};
 
 	struct FHeroSelectionSpriteBrushEntry
@@ -456,7 +661,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushSet ToggleInactive;
 		static FHeroSelectionSpriteBrushSet CtaGreen;
 		static FHeroSelectionSpriteBrushSet CtaBlue;
-		static FHeroSelectionSpriteBrushSet CtaPurple;
+		static FHeroSelectionSpriteBrushSet CtaRed;
 
 		switch (Family)
 		{
@@ -470,8 +675,8 @@ namespace T66HeroSelectionPrivate
 			return CtaGreen;
 		case ET66HeroSpriteFamily::CtaBlue:
 			return CtaBlue;
-		case ET66HeroSpriteFamily::CtaPurple:
-			return CtaPurple;
+		case ET66HeroSpriteFamily::CtaRed:
+			return CtaRed;
 		case ET66HeroSpriteFamily::CompactNeutral:
 		default:
 			return CompactNeutral;
@@ -496,22 +701,26 @@ namespace T66HeroSelectionPrivate
 
 		if (Family == ET66HeroSpriteFamily::ToggleOn)
 		{
-			return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), TEXT("selected"));
+			return MakeHeroSelectionSquareVariantElementPath(TEXT("cta_new_game_button_normal_red_square_variant.png"));
 		}
 		if (Family == ET66HeroSpriteFamily::ToggleOff)
 		{
-			return FString::Printf(
-				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_load_game_button_%s.png"),
-				Suffix);
+			return MakeHeroSelectionSquareVariantElementPath(*FString::Printf(
+				TEXT("cta_new_game_button_%s_red_square_variant.png"),
+				Suffix));
 		}
 		if (Family == ET66HeroSpriteFamily::CtaGreen
 			|| Family == ET66HeroSpriteFamily::CtaBlue
-			|| Family == ET66HeroSpriteFamily::CtaPurple)
+			|| Family == ET66HeroSpriteFamily::CtaRed)
 		{
-			return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("CTA"), Suffix);
+			return MakeHeroSelectionSquareVariantElementPath(*FString::Printf(
+				TEXT("cta_new_game_button_%s_red_square_variant.png"),
+				Suffix));
 		}
 
-		return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), Suffix);
+		return MakeHeroSelectionSquareVariantElementPath(*FString::Printf(
+			TEXT("cta_new_game_button_%s_red_square_variant.png"),
+			Suffix));
 	}
 
 	inline FVector2D GetHeroSelectionButtonSpriteSize(ET66HeroSpriteFamily /*Family*/, ET66ButtonBorderState /*State*/)
@@ -546,7 +755,7 @@ namespace T66HeroSelectionPrivate
 		FHeroSelectionSpriteBrushSet& Set = GetHeroSelectionButtonSpriteSet(ET66HeroSpriteFamily::ToggleInactive);
 		return ResolveHeroSelectionSpriteBrush(
 			Set.Disabled,
-			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), TEXT("disabled")),
+			MakeHeroSelectionSquareVariantElementPath(TEXT("cta_new_game_button_disabled_red_square_variant.png")),
 			FVector2D(145.f, 66.f),
 			FMargin(0.180f, 0.240f, 0.180f, 0.240f),
 			ESlateBrushDrawType::Image,
@@ -575,7 +784,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			MakeHeroSelectionSquareVariantElementPath(TEXT("main_panel_normal_square_variant.png")),
 			FVector2D(300.f, 548.f),
 			FMargin(0.105f, 0.055f, 0.105f, 0.055f),
 			ESlateBrushDrawType::Box,
@@ -587,7 +796,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			MakeHeroSelectionSquareVariantElementPath(TEXT("main_panel_normal_square_variant.png")),
 			FVector2D(300.f, 548.f),
 			FMargin(0.105f, 0.055f, 0.105f, 0.055f),
 			ESlateBrushDrawType::Box,
@@ -599,7 +808,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			MakeHeroSelectionSquareVariantElementPath(TEXT("player_row_panel_normal_square_variant.png")),
 			FVector2D(1347.f, 120.f),
 			FMargin(0.040f, 0.250f, 0.040f, 0.250f),
 			ESlateBrushDrawType::Box,
@@ -611,7 +820,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/player_row_panel_normal.png"),
+			MakeHeroSelectionSquareVariantElementPath(TEXT("player_row_panel_normal_square_variant.png")),
 			FVector2D(569.f, 95.f),
 			FMargin(0.070f, 0.240f, 0.070f, 0.240f),
 			ESlateBrushDrawType::Box,
@@ -623,7 +832,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			MakeHeroSelectionSquareVariantElementPath(TEXT("main_panel_normal_square_variant.png")),
 			FVector2D(568.f, 287.f),
 			FMargin(0.075f, 0.125f, 0.075f, 0.125f),
 			ESlateBrushDrawType::Box,
@@ -635,7 +844,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/player_row_panel_normal.png"),
+			MakeHeroSelectionSquareVariantElementPath(TEXT("player_row_panel_normal_square_variant.png")),
 			FVector2D(569.f, 95.f),
 			FMargin(0.070f, 0.240f, 0.070f, 0.240f),
 			ESlateBrushDrawType::Box,
@@ -649,7 +858,7 @@ namespace T66HeroSelectionPrivate
 		return ResolveHeroSelectionSpriteBrush(
 			bSelected ? SelectedEntry : NormalEntry,
 			FString::Printf(
-				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_%s.png"),
+				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_%s_square_variant.png"),
 				bSelected ? TEXT("selected") : TEXT("normal")),
 			bSelected ? FVector2D(111.f, 79.f) : FVector2D(100.f, 75.f),
 			FMargin(0.f),
@@ -683,7 +892,9 @@ namespace T66HeroSelectionPrivate
 		}
 		return ResolveHeroSelectionSpriteBrush(
 			*Entry,
-			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("SquareIcon"), Suffix),
+			MakeHeroSelectionSquareVariantElementPath(*FString::Printf(
+				TEXT("topbar_icon_button_%s_square_variant.png"),
+				Suffix)),
 			bSelected ? FVector2D(111.f, 79.f) : FVector2D(100.f, 75.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
@@ -739,7 +950,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/dropdown_field_normal.png"),
+			MakeHeroSelectionSquareVariantElementPath(TEXT("dropdown_field_normal_square_variant.png")),
 			FVector2D(452.f, 75.f),
 			FMargin(0.130f, 0.235f, 0.130f, 0.235f),
 			ESlateBrushDrawType::Box,
@@ -751,7 +962,7 @@ namespace T66HeroSelectionPrivate
 		static FHeroSelectionSpriteBrushEntry Entry;
 		return ResolveHeroSelectionSpriteBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_normal.png"),
+			MakeHeroSelectionSquareVariantElementPath(TEXT("profile_slot_normal_square_variant.png")),
 			FVector2D(73.f, 73.f),
 			FMargin(0.20f, 0.18f, 0.20f, 0.18f));
 	}
@@ -1075,50 +1286,18 @@ namespace T66HeroSelectionPrivate
 			];
 	}
 
-	inline FText HeroRecordMedalText(ET66AccountMedalTier Tier)
-	{
-		switch (Tier)
-		{
-		case ET66AccountMedalTier::Bronze:
-			return NSLOCTEXT("T66.HeroSelection", "MedalBronze", "Bronze");
-		case ET66AccountMedalTier::Silver:
-			return NSLOCTEXT("T66.HeroSelection", "MedalSilver", "Silver");
-		case ET66AccountMedalTier::Gold:
-			return NSLOCTEXT("T66.HeroSelection", "MedalGold", "Gold");
-		case ET66AccountMedalTier::Platinum:
-			return NSLOCTEXT("T66.HeroSelection", "MedalPlatinum", "Platinum");
-		case ET66AccountMedalTier::Diamond:
-			return NSLOCTEXT("T66.HeroSelection", "MedalDiamond", "Diamond");
-		case ET66AccountMedalTier::None:
-		default:
-			return NSLOCTEXT("T66.HeroSelection", "MedalNone", "Unproven");
-		}
-	}
-
-	inline FLinearColor HeroRecordMedalColor(ET66AccountMedalTier Tier)
-	{
-		switch (Tier)
-		{
-		case ET66AccountMedalTier::Bronze:
-			return FLinearColor(0.67f, 0.43f, 0.26f, 1.0f);
-		case ET66AccountMedalTier::Silver:
-			return FLinearColor(0.76f, 0.79f, 0.84f, 1.0f);
-		case ET66AccountMedalTier::Gold:
-			return FLinearColor(0.89f, 0.74f, 0.27f, 1.0f);
-		case ET66AccountMedalTier::Platinum:
-			return FLinearColor(0.56f, 0.77f, 0.88f, 1.0f);
-		case ET66AccountMedalTier::Diamond:
-			return FLinearColor(0.45f, 0.86f, 0.99f, 1.0f);
-		case ET66AccountMedalTier::None:
-		default:
-			return FLinearColor(0.74f, 0.74f, 0.74f, 1.0f);
-		}
-	}
-
 	inline FText FormatCompanionHealingPerSecondText(const float HealingPerSecond)
 	{
 		return FText::Format(
 			NSLOCTEXT("T66.HeroSelection", "CompanionHealingPerSecondFormat", "Heals / Second: {0}"),
 			FText::AsNumber(FMath::RoundToInt(HealingPerSecond)));
+	}
+
+	inline FText FormatCompanionDifficultyHealText(const float HealAmount, const float HealIntervalSeconds)
+	{
+		return FText::Format(
+			NSLOCTEXT("T66.HeroSelection", "CompanionDifficultyHealFormat", "Heals: {0} HP every {1}s"),
+			FText::AsNumber(FMath::RoundToInt(HealAmount)),
+			FText::AsNumber(HealIntervalSeconds));
 	}
 }

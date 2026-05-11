@@ -2,6 +2,8 @@
 
 #include "UI/Screens/T66HeroSelectionScreen.h"
 #include "UI/Screens/HeroSelection/T66HeroSelectionScreen_Private.h"
+#include "UI/Screens/T66ChallengesScreen.h"
+#include "UI/T66UIManager.h"
 
 using namespace T66HeroSelectionPrivate;
 
@@ -46,26 +48,17 @@ FReply UT66HeroSelectionScreen::HandleCompanionClicked() { OnChooseCompanionClic
 
 FReply UT66HeroSelectionScreen::HandleTemporaryBuffSlotClicked(int32 SlotIndex)
 {
-	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
-	{
-		if (!HasUnlockedHeroSelectionDrugs(GI->GetSubsystem<UT66AchievementsSubsystem>()))
-		{
-			bShowingTemporaryBuffPicker = false;
-			return FReply::Handled();
-		}
-	}
-
 	TemporaryBuffPickerSlotIndex = FMath::Clamp(SlotIndex, 0, UT66BuffSubsystem::MaxSelectedSingleUseBuffs - 1);
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
-			Buffs->SetSelectedSingleUseBuffEditSlotIndex(TemporaryBuffPickerSlotIndex);
+			Buffs->BeginHeroSelectionSingleUseBuffEdit(TemporaryBuffPickerSlotIndex);
 		}
 	}
 
-	bShowingTemporaryBuffPicker = true;
-	ForceRebuildSlate();
+	bShowingTemporaryBuffPicker = false;
+	NavigateTo(ET66ScreenType::PowerUp);
 	return FReply::Handled();
 }
 
@@ -85,12 +78,6 @@ FReply UT66HeroSelectionScreen::HandleTemporaryBuffBuyClicked(ET66SecondaryStatT
 
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		if (!HasUnlockedHeroSelectionDrugs(GI->GetSubsystem<UT66AchievementsSubsystem>()))
-		{
-			bShowingTemporaryBuffPicker = false;
-			return FReply::Handled();
-		}
-
 		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
 			if (Buffs->PurchaseSingleUseBuff(StatType))
@@ -112,12 +99,6 @@ FReply UT66HeroSelectionScreen::HandleTemporaryBuffEquipClicked(ET66SecondarySta
 
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		if (!HasUnlockedHeroSelectionDrugs(GI->GetSubsystem<UT66AchievementsSubsystem>()))
-		{
-			bShowingTemporaryBuffPicker = false;
-			return FReply::Handled();
-		}
-
 		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
 			const int32 SlotIndex = FMath::Clamp(TemporaryBuffPickerSlotIndex, 0, UT66BuffSubsystem::MaxSelectedSingleUseBuffs - 1);
@@ -141,12 +122,6 @@ FReply UT66HeroSelectionScreen::HandleClearTemporaryBuffsClicked()
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		if (!HasUnlockedHeroSelectionDrugs(GI->GetSubsystem<UT66AchievementsSubsystem>()))
-		{
-			bShowingTemporaryBuffPicker = false;
-			return FReply::Handled();
-		}
-
 		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
 			for (int32 SlotIndex = 0; SlotIndex < UT66BuffSubsystem::MaxSelectedSingleUseBuffs; ++SlotIndex)
@@ -172,9 +147,19 @@ FReply UT66HeroSelectionScreen::HandleEnterClicked() { OnEnterTribulationClicked
 
 FReply UT66HeroSelectionScreen::HandleChallengesClicked() { OnChallengesClicked(); return FReply::Handled(); }
 
+FReply UT66HeroSelectionScreen::HandleModsClicked() { OnModsClicked(); return FReply::Handled(); }
+
 FReply UT66HeroSelectionScreen::HandleRetroFXSettingsClicked()
 {
-	bShowingInlineRetroFXPanel = !bShowingInlineRetroFXPanel;
+	if (bShowingInlineRetroFXPanel)
+	{
+		CommitPendingInlineRetroFXOnClose();
+		bShowingInlineRetroFXPanel = false;
+		RefreshPanelSwitchers();
+		return FReply::Handled();
+	}
+
+	bShowingInlineRetroFXPanel = true;
 	if (bShowingInlineRetroFXPanel)
 	{
 		bShowingStatsPanel = false;
@@ -317,6 +302,15 @@ bool UT66HeroSelectionScreen::GetPreviewedCompanionData(FCompanionData& OutCompa
 
 void UT66HeroSelectionScreen::PreviewHero(FName HeroID)
 {
+	if (UT66GameInstance* GateGI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		HeroID = GateGI->ResolvePlayableHeroID(HeroID);
+		if (HeroID.IsNone())
+		{
+			return;
+		}
+	}
+
 	UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] PreviewHero START: switching to HeroID=%s"), *HeroID.ToString());
 	
 	PreviewedHeroID = HeroID;
@@ -447,7 +441,14 @@ void UT66HeroSelectionScreen::PreviewPreviousCompanion()
 
 void UT66HeroSelectionScreen::SelectDifficulty(ET66Difficulty Difficulty)
 {
-	SelectedDifficulty = Difficulty;
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		SelectedDifficulty = GI->ResolvePlayableDifficulty(Difficulty);
+	}
+	else
+	{
+		SelectedDifficulty = Difficulty;
+	}
 	RefreshHeroRecordRank();
 }
 
@@ -470,7 +471,31 @@ void UT66HeroSelectionScreen::OnChooseCompanionClicked()
 
 void UT66HeroSelectionScreen::OnHeroLoreClicked() { ShowModal(ET66ScreenType::HeroLore); }
 
-void UT66HeroSelectionScreen::OnChallengesClicked() { ShowModal(ET66ScreenType::Challenges); }
+void UT66HeroSelectionScreen::OpenCommunityContent(const bool bOpenMods)
+{
+	const ET66CommunityContentKind ContentKind = bOpenMods
+		? ET66CommunityContentKind::Mod
+		: ET66CommunityContentKind::Challenge;
+
+	ShowModal(ET66ScreenType::Challenges);
+
+	UT66ChallengesScreen* ChallengesScreen = UIManager
+		? Cast<UT66ChallengesScreen>(UIManager->GetCurrentScreen())
+		: nullptr;
+	if (!ChallengesScreen && UIManager)
+	{
+		ChallengesScreen = Cast<UT66ChallengesScreen>(UIManager->GetCurrentModal());
+	}
+
+	if (ChallengesScreen)
+	{
+		ChallengesScreen->OpenContentKind(ContentKind);
+	}
+}
+
+void UT66HeroSelectionScreen::OnChallengesClicked() { OpenCommunityContent(false); }
+
+void UT66HeroSelectionScreen::OnModsClicked() { OpenCommunityContent(true); }
 
 void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 {
@@ -478,6 +503,8 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	if (GI)
 	{
+		PreviewedHeroID = GI->ResolvePlayableHeroID(PreviewedHeroID);
+		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
@@ -495,7 +522,8 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 
 	if (SessionSubsystem && SessionSubsystem->IsPartyLobbyContextActive() && GI)
 	{
-		GI->SelectedDifficulty = SessionSubsystem->GetSharedLobbyDifficulty();
+		SelectedDifficulty = GI->ResolvePlayableDifficulty(SessionSubsystem->GetSharedLobbyDifficulty());
+		GI->SelectedDifficulty = SelectedDifficulty;
 		SessionSubsystem->SyncLocalLobbyProfile();
 
 		if (!SessionSubsystem->IsLocalPlayerPartyHost())
@@ -531,6 +559,8 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 
 void UT66HeroSelectionScreen::OnBackClicked()
 {
+	CommitPendingInlineRetroFXOnClose();
+
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
@@ -555,6 +585,18 @@ void UT66HeroSelectionScreen::OnBackClicked()
 	}
 
 	NavigateTo(ET66ScreenType::MainMenu);
+}
+
+bool UT66HeroSelectionScreen::HandleBackAction()
+{
+	OnBackClicked();
+	return true;
+}
+
+void UT66HeroSelectionScreen::NativeDestruct()
+{
+	CommitPendingInlineRetroFXOnClose();
+	Super::NativeDestruct();
 }
 
 UT66HeroSelectionPreviewController* UT66HeroSelectionScreen::GetOrCreatePreviewController()

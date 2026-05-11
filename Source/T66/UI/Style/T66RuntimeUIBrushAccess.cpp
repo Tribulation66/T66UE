@@ -13,6 +13,12 @@
 
 DEFINE_LOG_CATEGORY(LogT66RuntimeUI);
 
+namespace T66ScreenSlateHelpers
+{
+	FString MakeReferenceChromeElementAssetPath(const TCHAR* FileName);
+	FString MakeReferenceMainMenuElementAssetPath(const TCHAR* FileName);
+}
+
 namespace
 {
 	FSlateBrush MakeNineSliceBrush(UTexture2D* Texture, const FMargin& Margin)
@@ -57,12 +63,12 @@ namespace
 		switch (Kind)
 		{
 		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Primary:
-			return MakeUltrakillElementFallbackPath(TEXT("cta_new_game_button_normal.png"));
+			return MakeUltrakillElementFallbackPath(TEXT("cta_new_game_button_normal_red.png"));
 		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Danger:
-			return MakeUltrakillElementFallbackPath(TEXT("cta_load_game_button_normal.png"));
+			return MakeUltrakillElementFallbackPath(TEXT("cta_new_game_button_pressed_red.png"));
 		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Neutral:
 		default:
-			return MakeUltrakillElementFallbackPath(TEXT("leaderboard_tab_button_normal.png"));
+			return MakeUltrakillElementFallbackPath(TEXT("cta_new_game_button_normal_red.png"));
 		}
 	}
 
@@ -81,9 +87,83 @@ namespace
 
 	FString MakeUltrakillElementFallbackPath(const TCHAR* FileName)
 	{
+		FString ResolvedFileName(FileName ? FileName : TEXT(""));
+		if (!ResolvedFileName.Contains(TEXT("square_variant"), ESearchCase::IgnoreCase))
+		{
+			const FString BaseName = FPaths::GetBaseFilename(ResolvedFileName).ToLower();
+			auto ResolveButtonState = [](const FString& Name, const TCHAR* Prefix) -> FString
+			{
+				FString State = Name;
+				State.RemoveFromStart(Prefix, ESearchCase::IgnoreCase);
+				return State.IsEmpty() ? FString(TEXT("normal")) : State;
+			};
+
+			if (BaseName.StartsWith(TEXT("cta_new_game_button_"), ESearchCase::IgnoreCase)
+				|| BaseName.StartsWith(TEXT("cta_load_game_button_"), ESearchCase::IgnoreCase))
+			{
+				const FString State = BaseName.StartsWith(TEXT("cta_load_game_button_"), ESearchCase::IgnoreCase)
+					? ResolveButtonState(BaseName, TEXT("cta_load_game_button_"))
+					: ResolveButtonState(BaseName, TEXT("cta_new_game_button_"));
+				const FString BaseRedState = State.Equals(TEXT("selected"), ESearchCase::IgnoreCase)
+					? FString(TEXT("normal"))
+					: State;
+				const FString RedState = BaseRedState.Contains(TEXT("red"), ESearchCase::IgnoreCase)
+					? BaseRedState
+					: FString::Printf(TEXT("%s_red"), *BaseRedState);
+				ResolvedFileName = FString::Printf(TEXT("SquareVariant/cta_new_game_button_%s_square_variant.png"), *RedState);
+			}
+			else if (BaseName.StartsWith(TEXT("leaderboard_tab_button_"), ESearchCase::IgnoreCase))
+			{
+				const FString State = ResolveButtonState(BaseName, TEXT("leaderboard_tab_button_"));
+				const FString ButtonState = State.Contains(TEXT("selected"), ESearchCase::IgnoreCase)
+					? FString(TEXT("normal"))
+					: State;
+				ResolvedFileName = FString::Printf(TEXT("SquareVariant/cta_new_game_button_%s_red_square_variant.png"), *ButtonState);
+			}
+			else if (BaseName.StartsWith(TEXT("topbar_text_button_"), ESearchCase::IgnoreCase))
+			{
+				const FString State = ResolveButtonState(BaseName, TEXT("topbar_text_button_"));
+				const FString ButtonState = State.Contains(TEXT("selected"), ESearchCase::IgnoreCase)
+					? FString(TEXT("normal"))
+					: State;
+				ResolvedFileName = FString::Printf(TEXT("SquareVariant/cta_new_game_button_%s_red_square_variant.png"), *ButtonState);
+			}
+			else if (BaseName.StartsWith(TEXT("main_panel_normal"), ESearchCase::IgnoreCase))
+			{
+				ResolvedFileName = TEXT("SquareVariant/main_panel_normal_square_variant.png");
+			}
+			else if (BaseName.StartsWith(TEXT("player_row_panel_"), ESearchCase::IgnoreCase))
+			{
+				const FString State = BaseName.Contains(TEXT("hover")) ? FString(TEXT("hover")) : FString(TEXT("normal"));
+				ResolvedFileName = FString::Printf(TEXT("SquareVariant/player_row_panel_%s_square_variant.png"), *State);
+			}
+			else if (BaseName.StartsWith(TEXT("profile_slot_"), ESearchCase::IgnoreCase))
+			{
+				const FString State = ResolveButtonState(BaseName, TEXT("profile_slot_"));
+				ResolvedFileName = FString::Printf(TEXT("SquareVariant/profile_slot_%s_square_variant.png"), *State);
+			}
+			else if (BaseName.StartsWith(TEXT("dropdown_field_"), ESearchCase::IgnoreCase))
+			{
+				const FString State = ResolveButtonState(BaseName, TEXT("dropdown_field_"));
+				ResolvedFileName = FString::Printf(TEXT("SquareVariant/cta_new_game_button_%s_red_square_variant.png"), *State);
+			}
+		}
+
+		const FString SquareVariantPrefix = TEXT("SquareVariant/");
+		if (ResolvedFileName.StartsWith(SquareVariantPrefix, ESearchCase::IgnoreCase))
+		{
+			const FString ChromeFileName = ResolvedFileName.RightChop(SquareVariantPrefix.Len());
+			if (ChromeFileName.Contains(TEXT("_red_square_variant"), ESearchCase::IgnoreCase))
+			{
+				return FPaths::ProjectDir()
+					/ FString(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant"))
+					/ ChromeFileName;
+			}
+			return FPaths::ProjectDir() / T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(*ChromeFileName);
+		}
+
 		return FPaths::ProjectDir()
-			/ TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements")
-			/ FileName;
+			/ T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(*ResolvedFileName);
 	}
 
 	FString ResolveReferenceStateFromPath(const FString& NormalizedPath)

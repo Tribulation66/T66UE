@@ -522,6 +522,27 @@ public:
 	/** Check whether panel textures are loaded. */
 	static bool HasPanelTextures();
 
+	/** Current saved Retro FX UI chrome strength in 0..1, respecting the Retro FX master toggle. */
+	static float GetRetroUIChromeStrength();
+
+	/** Current saved Retro FX UI text strength in 0..1, respecting the Retro FX master toggle. */
+	static float GetRetroUITextStrength();
+
+	/** Paint-only pixel/scanline layer used by chrome wrappers. */
+	static TSharedRef<SWidget> MakeRetroUIChromeOverlay();
+
+	/** Wrap non-text chrome so Retro FX can affect panels, button plates, and images without distorting child text. */
+	static TSharedRef<SWidget> MakeRetroUIChromeSurface(const TSharedRef<SWidget>& ChromeWidget);
+
+	/** Wrap screen/background art so Retro FX can affect background images separately from chrome and text. */
+	static TSharedRef<SWidget> MakeRetroUIBackgroundImage(const TSharedRef<SWidget>& BackgroundImageWidget);
+
+	/** Wrap text only when the separate UI text slider is raised. */
+	static TSharedRef<SWidget> MakeRetroUIText(const TSharedRef<SWidget>& TextWidget);
+
+	/** Wrap icon/glyph imagery so icons follow the UI text treatment instead of chrome. */
+	static TSharedRef<SWidget> MakeRetroUIIcon(const TSharedRef<SWidget>& IconWidget);
+
 	/** Shared combo style (Panel bg, Text for arrow). Use for MakeDropdown and for SComboBox::ComboButtonStyle(). */
 	static const FComboButtonStyle& GetDropdownComboButtonStyle();
 

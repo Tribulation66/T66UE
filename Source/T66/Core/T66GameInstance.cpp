@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66GameInstance.h"
+#include "Core/T66ReleaseVariantSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -987,6 +988,70 @@ TArray<FName> UT66GameInstance::GetAllHeroIDs()
 	return DataTable ? DataTable->GetRowNames() : TArray<FName>();
 }
 
+TArray<FName> UT66GameInstance::GetPlayableHeroIDs()
+{
+	const TArray<FName> AllHeroIDs = GetAllHeroIDs();
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->FilterHeroIDs(AllHeroIDs);
+	}
+	return AllHeroIDs;
+}
+
+bool UT66GameInstance::IsHeroPlayable(FName HeroID) const
+{
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->IsHeroAllowed(HeroID);
+	}
+	return true;
+}
+
+FName UT66GameInstance::ResolvePlayableHeroID(FName HeroID)
+{
+	if (!HeroID.IsNone() && IsHeroPlayable(HeroID))
+	{
+		return HeroID;
+	}
+
+	const TArray<FName> PlayableHeroIDs = GetPlayableHeroIDs();
+	return PlayableHeroIDs.Num() > 0 ? PlayableHeroIDs[0] : NAME_None;
+}
+
+TArray<ET66Difficulty> UT66GameInstance::GetPlayableDifficulties() const
+{
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->GetPlayableDifficulties();
+	}
+
+	return {
+		ET66Difficulty::Easy,
+		ET66Difficulty::Medium,
+		ET66Difficulty::Hard,
+		ET66Difficulty::VeryHard,
+		ET66Difficulty::Impossible
+	};
+}
+
+bool UT66GameInstance::IsDifficultyPlayable(ET66Difficulty Difficulty) const
+{
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->IsDifficultyAllowed(Difficulty);
+	}
+	return true;
+}
+
+ET66Difficulty UT66GameInstance::ResolvePlayableDifficulty(ET66Difficulty Difficulty) const
+{
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->ResolvePlayableDifficulty(Difficulty);
+	}
+	return Difficulty;
+}
+
 TArray<FName> UT66GameInstance::GetAllCompanionIDs()
 {
 	UDataTable* DataTable = GetCompanionDataTable();
@@ -1106,9 +1171,9 @@ void UT66GameInstance::BeginDailyClimbRun(const FT66DailyClimbChallengeData& Cha
 	}
 
 	SelectedPartySize = ET66PartySize::Solo;
-	SelectedHeroID = Challenge.HeroID;
+	SelectedHeroID = ResolvePlayableHeroID(Challenge.HeroID);
 	SelectedCompanionID = NAME_None;
-	SelectedDifficulty = Challenge.Difficulty;
+	SelectedDifficulty = ResolvePlayableDifficulty(Challenge.Difficulty);
 	bPendingWeaponUpgradeOffer = false;
 	PendingWeaponUpgradeRarity = ET66WeaponRarity::Black;
 	SelectedRunModifierKind = ET66RunModifierKind::None;
@@ -1157,7 +1222,7 @@ void UT66GameInstance::RestoreRememberedSelectionDefaults()
 		if (!RememberedHeroID.IsNone())
 		{
 			FHeroData HeroData;
-			if (GetHeroData(RememberedHeroID, HeroData))
+			if (IsHeroPlayable(RememberedHeroID) && GetHeroData(RememberedHeroID, HeroData))
 			{
 				SelectedHeroID = RememberedHeroID;
 			}
@@ -1704,14 +1769,6 @@ void UT66GameInstance::TransitionToGameplayLevel()
 					GameplayRetroSettings = PlayerSettings->GetRetroFXSettings();
 				}
 
-				GameplayRetroSettings.bEnableWorldGeometry = false;
-				GameplayRetroSettings.WorldVertexSnapPercent = 0.0f;
-				GameplayRetroSettings.WorldVertexSnapResolutionPercent = 0.0f;
-				GameplayRetroSettings.WorldVertexNoisePercent = 0.0f;
-				GameplayRetroSettings.WorldAffineBlendPercent = 0.0f;
-				GameplayRetroSettings.WorldAffineDistance1Percent = 0.0f;
-				GameplayRetroSettings.WorldAffineDistance2Percent = 0.0f;
-				GameplayRetroSettings.WorldAffineDistance3Percent = 0.0f;
 				RetroFX->ApplySettings(GameplayRetroSettings, World);
 			}
 		}

@@ -148,7 +148,7 @@ Screens:
 - PowerUp
 - Achievements
 - Challenges
-- DailyClimb
+- DailyDescent
 - AccountStatus
 - TemporaryBuffSelection
 - TemporaryBuffShop

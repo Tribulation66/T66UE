@@ -4,6 +4,41 @@
 
 using namespace T66HeroSelectionPrivate;
 
+namespace
+{
+	FText FormatHeroRecordRankText(const int32 Rank)
+	{
+		if (Rank <= 0)
+		{
+			return NSLOCTEXT("T66.HeroSelection", "HeroRecordRankUnranked", "Unranked");
+		}
+
+		if (Rank <= 10000)
+		{
+			return FText::Format(
+				NSLOCTEXT("T66.HeroSelection", "HeroRecordRankExactFormat", "#{0}"),
+				FText::AsNumber(Rank));
+		}
+
+		if (Rank <= 25000)
+		{
+			return NSLOCTEXT("T66.HeroSelection", "HeroRecordRankTop25K", "Top 25K");
+		}
+
+		if (Rank <= 50000)
+		{
+			return NSLOCTEXT("T66.HeroSelection", "HeroRecordRankTop50K", "Top 50K");
+		}
+
+		if (Rank <= 100000)
+		{
+			return NSLOCTEXT("T66.HeroSelection", "HeroRecordRankTop100K", "Top 100K");
+		}
+
+		return NSLOCTEXT("T66.HeroSelection", "HeroRecordRankUnranked", "Unranked");
+	}
+}
+
 FReply UT66HeroSelectionScreen::HandleUltimatePreviewClicked()
 {
 	if (UT66HeroSelectionPreviewController* HeroPreviewController = GetOrCreatePreviewController())
@@ -81,16 +116,14 @@ void UT66HeroSelectionScreen::RefreshHeroRecordRank()
 	int32 TotalEntries = 0;
 	if (Backend->GetCachedMyRank(RankKey, bRankSuccess, Rank, TotalEntries))
 	{
+		static_cast<void>(TotalEntries);
 		if (bRankSuccess && Rank > 0)
 		{
-			HeroRecordRankWidget->SetText(FText::Format(
-				NSLOCTEXT("T66.HeroSelection", "HeroRecordRankFormat", "#{0} / {1}"),
-				FText::AsNumber(Rank),
-				FText::AsNumber(FMath::Max(0, TotalEntries))));
+			HeroRecordRankWidget->SetText(FormatHeroRecordRankText(Rank));
 		}
 		else
 		{
-			HeroRecordRankWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordRankUnavailableRank", "N/A"));
+			HeroRecordRankWidget->SetText(FormatHeroRecordRankText(0));
 		}
 		return;
 	}
@@ -178,16 +211,6 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 		}
 	};
 
-	auto SetMedalBrushForTier = [this, &SetImageBrushFromPath](const ET66AccountMedalTier MedalTier)
-	{
-		SetImageBrushFromPath(
-			GetHeroSelectionMedalImagePath(MedalTier),
-			HeroRecordMedalTexture,
-			HeroRecordMedalBrush,
-			FVector2D(46.f, 46.f),
-			TEXT("HeroSelectionMedalIcon"));
-	};
-
 	SetImageBrushFromPath(
 		GetHeroSelectionRankImagePath(),
 		HeroRecordRankTexture,
@@ -195,15 +218,8 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 		FVector2D(46.f, 46.f),
 		TEXT("HeroSelectionRankIcon"));
 
-	auto SetRecordValues = [this, &SetMedalBrushForTier](const ET66AccountMedalTier MedalTier)
+	auto RefreshRecordValues = [this]()
 	{
-		SetMedalBrushForTier(MedalTier);
-
-		if (HeroRecordMedalWidget.IsValid())
-		{
-			HeroRecordMedalWidget->SetText(HeroRecordMedalText(MedalTier));
-			HeroRecordMedalWidget->SetColorAndOpacity(HeroRecordMedalColor(MedalTier));
-		}
 		RefreshHeroRecordRank();
 	};
 
@@ -329,14 +345,14 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 		{
 			FCompanionData CompanionData;
 			const bool bHasCompanion = GetPreviewedCompanionData(CompanionData);
-			const ET66AccountMedalTier MedalTier = (Achievements && bHasCompanion)
-				? Achievements->GetCompanionHighestMedal(PreviewedCompanionID)
-				: ET66AccountMedalTier::None;
 			const int32 UnionStages = (Achievements && bHasCompanion)
 				? Achievements->GetCompanionUnionStagesCleared(PreviewedCompanionID)
 				: 0;
-			const float HealingPerSecond = bHasCompanion
-				? AT66CompanionBase::GetHealingPerSecondForUnionStages(UnionStages)
+			const float HealAmount = bHasCompanion
+				? AT66CompanionBase::GetHealingAmountForDifficulty(SelectedDifficulty)
+				: 0.f;
+			const float HealIntervalSeconds = bHasCompanion
+				? AT66CompanionBase::GetHealingIntervalSecondsForDifficulty(SelectedDifficulty)
 				: 0.f;
 			CompanionUnityStagesCleared = UnionStages;
 			CompanionUnityProgress01 = (Achievements && bHasCompanion)
@@ -350,7 +366,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 			{
 				CompanionHealsPerSecondWidget->SetText(
 					bHasCompanion
-						? FormatCompanionHealingPerSecondText(HealingPerSecond)
+						? FormatCompanionDifficultyHealText(HealAmount, HealIntervalSeconds)
 						: (Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.HeroSelection", "NoCompanionInfo", "No companion selected.")));
 			}
 			if (CompanionUnityTextWidget.IsValid())
@@ -361,9 +377,9 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 							NSLOCTEXT("T66.HeroSelection", "CompanionUnityFormat", "Unity: {0} / {1}"),
 							FText::AsNumber(CompanionUnityStagesCleared),
 							FText::AsNumber(UT66AchievementsSubsystem::UnionTier_HyperStages))
-						: NSLOCTEXT("T66.HeroSelection", "CompanionUnityNoSelection", "Select a companion to view unity."));
+					: NSLOCTEXT("T66.HeroSelection", "CompanionUnityNoSelection", "Select a companion to view unity."));
 			}
-			SetRecordValues(MedalTier);
+			RefreshRecordValues();
 		}
 		else
 		{
@@ -381,8 +397,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 			{
 				CompanionUnityTextWidget->SetText(NSLOCTEXT("T66.HeroSelection", "CompanionUnityDefault", "Unity: 0 / 20"));
 			}
-			const ET66AccountMedalTier MedalTier = Achievements ? Achievements->GetHeroHighestMedal(PreviewedHeroID) : ET66AccountMedalTier::None;
-			SetRecordValues(MedalTier);
+			RefreshRecordValues();
 		}
 	}
 	else
@@ -415,7 +430,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 		{
 			CompanionUnityTextWidget->SetText(NSLOCTEXT("T66.HeroSelection", "CompanionUnityDefault", "Unity: 0 / 20"));
 		}
-		SetRecordValues(ET66AccountMedalTier::None);
+		RefreshRecordValues();
 	}
 
 	if (HeroPreviewController)

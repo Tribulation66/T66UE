@@ -11,6 +11,7 @@
 
 class UT66LocalizationSubsystem;
 class UT66PlayerSettingsSubsystem;
+class UT66UIManager;
 struct FKeyEvent;
 struct FPointerEvent;
 
@@ -56,6 +57,8 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Settings")
 	ET66SettingsTab CurrentTab = ET66SettingsTab::RetroFX;
 
+	void ConfigureAsRetroFXPreviewPopup(UT66UIManager* InUIManager);
+
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void SwitchToTab(ET66SettingsTab Tab);
 
@@ -70,9 +73,12 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
+	virtual void OnScreenDeactivated_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
+	virtual bool HandleBackAction() override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual void NativeDestruct() override;
 
 private:
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
@@ -103,6 +109,8 @@ private:
 	FReply HandleSafeModeClicked();
 	FReply HandleApplyRetroFXClicked();
 	FReply HandleResetRetroFXClicked();
+	FReply HandleRetroFXPreviewModeClicked(bool bEnabled);
+	FReply HandleCloseRetroFXPreviewPopupClicked();
 
 	// ===== Keybinding capture =====
 	struct FPendingRebind
@@ -207,8 +215,14 @@ private:
 	FT66RetroFXSettings PendingRetroFXSettings;
 	bool bRetroFXInitialized = false;
 	bool bRetroFXDirty = false;
+	bool bRetroFXPreviewMode = false;
+	bool bRetroFXPreviewPopup = false;
 
 	void InitializeRetroFXFromUserSettingsIfNeeded();
 	void ApplyPendingRetroFX();
+	void CommitPendingRetroFXOnClose();
 	void ResetPendingRetroFXToDefaults();
+	void MarkRetroFXEdited();
+	bool ShouldLiveApplyRetroFX() const;
+	TSharedRef<SWidget> BuildRetroFXPreviewPopupUI();
 };

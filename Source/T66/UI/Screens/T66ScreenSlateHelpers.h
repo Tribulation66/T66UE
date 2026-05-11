@@ -12,15 +12,21 @@ class UT66UIManager;
 
 namespace T66ScreenSlateHelpers
 {
+	enum class ET66ReferenceChromePreset : uint8
+	{
+		SquareVariant,
+		BloodyRetro
+	};
+
 	struct FFrontendChromeMetrics
 	{
 		int32 TitleFontSize = 54;
-		int32 TabFontSize = 28;
-		float TabMinWidth = 224.0f;
-		float TabHeight = 62.0f;
-		float TopBarOverlapPx = 8.0f;
+		int32 TabFontSize = 30;
+		float TabMinWidth = 380.0f;
+		float TabHeight = 72.0f;
+		float TopBarOverlapPx = 18.0f;
 		FMargin HeaderPadding = FMargin(0.0f, 0.0f, 0.0f, 8.0f);
-		FMargin TabPadding = FMargin(18.0f, 8.0f, 18.0f, 6.0f);
+		FMargin TabPadding = FMargin(26.0f, 10.0f, 26.0f, 9.0f);
 	};
 
 	struct FResponsiveGridModalMetrics
@@ -33,8 +39,27 @@ namespace T66ScreenSlateHelpers
 		float GridWidth = 64.0f, GridHeight = 64.0f;
 	};
 
+	struct FTopBarScreenLayoutMetrics
+	{
+		FVector2D ViewportSize = FVector2D::ZeroVector;
+		FVector2D ContentSize = FVector2D::ZeroVector;
+		FMargin Padding = FMargin(0.0f);
+		float TopBarReservedHeight = 0.0f;
+		bool bCompact = false;
+		bool bStacked = false;
+	};
+
 	const FFrontendChromeMetrics& GetFrontendChromeMetrics();
 	float GetFrontendChromeTopInset(const UT66UIManager* UIManager);
+	FTopBarScreenLayoutMetrics MakeTopBarScreenLayoutMetrics(
+		const UT66UIManager* UIManager,
+		const FMargin& ExtraPadding = FMargin(0.0f));
+	TSharedRef<SWidget> MakeTopBarScreenRoot(
+		const UT66UIManager* UIManager,
+		const TSharedRef<SWidget>& Content,
+		const TSharedRef<SWidget>& BackgroundContent,
+		const FLinearColor& OverlayTint = FLinearColor::Transparent,
+		const FMargin& ExtraPadding = FMargin(0.0f));
 	FSlateFontInfo MakeFrontendChromeTitleFont();
 	FSlateFontInfo MakeFrontendChromeTabFont();
 	TSharedPtr<FSlateBrush> MakeSlateBrush(const FVector2D& ImageSize = FVector2D::ZeroVector, ESlateBrushDrawType::Type DrawAs = ESlateBrushDrawType::Image);
@@ -50,6 +75,13 @@ namespace T66ScreenSlateHelpers
 		const FVector2D& DesiredSize = FVector2D(1.0f, 1.0f),
 		float SourceCapFraction = 0.105f);
 	float NormalizeReferenceSlicedButtonMinWidth(float RequestedMinWidth, float Height);
+	T66_API ET66ReferenceChromePreset GetReferenceChromePreset();
+	T66_API const TCHAR* GetReferenceChromePresetName();
+	T66_API void SetReferenceChromePresetForSession(ET66ReferenceChromePreset Preset);
+	T66_API FString MakeReferenceMainMenuElementAssetPath(const TCHAR* FileName);
+	T66_API FString MakeReferenceChromeElementAssetPath(const TCHAR* FileName);
+	T66_API FString MakeReferenceLongPanelAssetPath(const TCHAR* State = TEXT("normal"));
+	T66_API FString MakeReferenceRedSquareButtonAssetPath(const TCHAR* State);
 	T66_API FString MakeReferenceChromeButtonAssetPath(
 		const TCHAR* Family,
 		const TCHAR* State);

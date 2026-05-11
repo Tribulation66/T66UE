@@ -170,11 +170,14 @@ namespace
 		const TCHAR* DebugLabel)
 	{
 		(void)Prefix;
+		const FString StateName(State ? State : TEXT("normal"));
+		const FString ButtonState = StateName.Equals(TEXT("selected"), ESearchCase::IgnoreCase)
+			? FString(TEXT("normal"))
+			: StateName.ToLower();
+		const FString FileName = FString::Printf(TEXT("cta_new_game_button_%s_red_square_variant.png"), *ButtonState);
 		return ResolveLanguageReferenceBrush(
 			Entry,
-			FString::Printf(
-				TEXT("SourceAssets/UI/Reference/Screens/LanguageSelect/Buttons/languageselect_buttons_pill_%s.png"),
-				State ? State : TEXT("normal")),
+			FString(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant")) / FileName,
 			FMargin(0.f),
 			DebugLabel,
 			TextureFilter::TF_Nearest);
@@ -228,20 +231,9 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveLanguageReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/LanguageSelect/Panels/languageselect_panels_reference_scroll_paper_frame.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FMargin(0.080f, 0.120f, 0.080f, 0.120f),
 			TEXT("LanguageContentShellParchment"),
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetLanguageBackdropBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveLanguageReferenceBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/LanguageSelect/Panels/languageselect_panels_fullscreen_fullscreen_panel_wide.png"),
-			FMargin(0.060f, 0.115f, 0.060f, 0.115f),
-			TEXT("LanguageBackdropWoodFrame"),
 			TextureFilter::TF_Nearest);
 	}
 
@@ -250,7 +242,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveLanguageReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/LanguageSelect/Panels/languageselect_panels_fullscreen_row_shell_quiet.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/player_row_panel_normal_square_variant.png"),
 			FMargin(0.070f, 0.155f, 0.070f, 0.155f),
 			TEXT("LanguageRowShellV16"),
 			TextureFilter::TF_Nearest);
@@ -312,16 +304,6 @@ namespace
 		}
 
 		return &Style;
-	}
-
-	const FSlateBrush* GetLanguageSceneBackgroundBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveLanguageReferenceBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/LanguageSelect/ScreenArt/languageselect_screen_art_mainmenu_main_menu_scene_plate_v1.png"),
-			FMargin(0.f),
-			TEXT("LanguageSceneBackground"));
 	}
 
 	TSharedRef<SWidget> MakeLanguageButton(const FT66ButtonParams& Params)
@@ -556,11 +538,6 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 
 	const float ScreenPadding = 60.0f;
 	const bool bModalPresentation = (UIManager && UIManager->GetCurrentModalType() == ScreenType) || (!UIManager && GetOwningPlayer() && GetOwningPlayer()->IsPaused());
-	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
-	const float TopBarOverlapPx = 18.f;
-	const float TopInset = bModalPresentation
-		? 0.f
-		: FMath::Max(0.f, ((UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f) - TopBarOverlapPx) / ResponsiveScale);
 
 	const TSharedRef<SWidget> LanguageList =
 		SNew(SBox)
@@ -638,56 +615,36 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 	}
 
 	const TSharedRef<SWidget> LanguageSurface =
-		SNew(SBox)
-		.Padding(FMargin(ScreenPadding, TopInset + 12.f, ScreenPadding, ScreenPadding))
+		SNew(SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
 		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::Both)
 			[
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				.StretchDirection(EStretchDirection::Both)
+				SNew(SBox)
+				.WidthOverride(1018.f)
+				.HeightOverride(604.f)
 				[
-					SNew(SBox)
-					.WidthOverride(1018.f)
-					.HeightOverride(604.f)
-					[
-						MakeLanguagePanel(
-							PageContent,
-							ET66PanelType::Panel,
-							T66LanguageShellFill(),
-							FMargin(0.f))
-					]
+					MakeLanguagePanel(
+						PageContent,
+						ET66PanelType::Panel,
+						T66LanguageShellFill(),
+						FMargin(0.f))
 				]
 			]
 		];
 
-	if (const FSlateBrush* SceneBackgroundBrush = GetLanguageSceneBackgroundBrush())
-	{
-		const FSlateBrush* BackdropBrush = GetLanguageBackdropBrush();
-		const FSlateBrush* BackgroundBrush = BackdropBrush ? BackdropBrush : SceneBackgroundBrush;
-		return SNew(SOverlay)
-			+ SOverlay::Slot()
-			[
-				SNew(SBorder)
-				.BorderImage(BackgroundBrush)
-				.BorderBackgroundColor(FLinearColor::White)
-			]
-			+ SOverlay::Slot()
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.030f, 0.018f, 0.010f, BackdropBrush ? 0.18f : 0.82f))
-			]
-			+ SOverlay::Slot()
-			[
-				LanguageSurface
-			];
-	}
-
-	return LanguageSurface;
+	return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
+		UIManager,
+		LanguageSurface,
+		SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor::Black),
+		FLinearColor::Transparent,
+		FMargin(0.f));
 }
 
 void UT66LanguageSelectScreen::OnScreenActivated_Implementation()

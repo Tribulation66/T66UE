@@ -188,16 +188,16 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	int32 RunSeed = 0;
 
-	/** Most recently fetched backend-authored Daily Climb challenge. */
-	UPROPERTY(BlueprintReadWrite, Category = "Daily Climb")
+	/** Most recently fetched backend-authored Daily Descent challenge. */
+	UPROPERTY(BlueprintReadWrite, Category = "Daily Descent")
 	FT66DailyClimbChallengeData CachedDailyClimbChallenge;
 
-	/** Active Daily Climb run context for the current gameplay session. */
-	UPROPERTY(BlueprintReadWrite, Category = "Daily Climb")
+	/** Active Daily Descent run context for the current gameplay session. */
+	UPROPERTY(BlueprintReadWrite, Category = "Daily Descent")
 	FT66DailyClimbChallengeData ActiveDailyClimbChallenge;
 
-	/** True while the current gameplay session is an active Daily Climb run. */
-	UPROPERTY(BlueprintReadWrite, Category = "Daily Climb")
+	/** True while the current gameplay session is an active Daily Descent run. */
+	UPROPERTY(BlueprintReadWrite, Category = "Daily Descent")
 	bool bIsDailyClimbRunActive = false;
 
 	/** Active main gameplay terrain layout for the current run. */
@@ -438,6 +438,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	TArray<FName> GetAllHeroIDs();
 
+	/** Get hero IDs currently playable for this release variant. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	TArray<FName> GetPlayableHeroIDs();
+
+	/** Returns true when the hero is playable for this release variant. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	bool IsHeroPlayable(FName HeroID) const;
+
+	/** Resolve to the requested hero if playable, otherwise the first playable hero. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	FName ResolvePlayableHeroID(FName HeroID);
+
+	/** Get difficulty choices currently playable for this release variant. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	TArray<ET66Difficulty> GetPlayableDifficulties() const;
+
+	/** Returns true when the difficulty is playable for this release variant. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	bool IsDifficultyPlayable(ET66Difficulty Difficulty) const;
+
+	/** Resolve to the requested difficulty if playable, otherwise the first playable difficulty. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	ET66Difficulty ResolvePlayableDifficulty(ET66Difficulty Difficulty) const;
+
 	/** Get all companion IDs from the DataTable */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	TArray<FName> GetAllCompanionIDs();
@@ -474,22 +498,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Selection")
 	void ClearSelections();
 
-	UFUNCTION(BlueprintCallable, Category = "Daily Climb")
+	UFUNCTION(BlueprintCallable, Category = "Daily Descent")
 	void CacheDailyClimbChallenge(const FT66DailyClimbChallengeData& Challenge) { CachedDailyClimbChallenge = Challenge; }
 
-	UFUNCTION(BlueprintCallable, Category = "Daily Climb")
+	UFUNCTION(BlueprintCallable, Category = "Daily Descent")
 	void BeginDailyClimbRun(const FT66DailyClimbChallengeData& Challenge);
 
-	UFUNCTION(BlueprintCallable, Category = "Daily Climb")
+	UFUNCTION(BlueprintCallable, Category = "Daily Descent")
 	void ClearActiveDailyClimbRun();
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Climb")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Descent")
 	bool IsDailyClimbRunActive() const { return bIsDailyClimbRunActive && ActiveDailyClimbChallenge.IsValid(); }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Climb")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Descent")
 	int32 GetDailyClimbIntRuleValue(ET66DailyClimbRuleType RuleType, int32 DefaultValue = 0) const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Climb")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Descent")
 	float GetDailyClimbFloatRuleValue(ET66DailyClimbRuleType RuleType, float DefaultValue = 0.0f) const;
 
 	/** Check if a hero is selected */

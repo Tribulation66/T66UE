@@ -221,7 +221,7 @@ void UT66Button::ExecuteAction()
 	case ET66ButtonAction::SelectHero:
 		if (GameInstance && !HeroID.IsNone())
 		{
-			GameInstance->SelectedHeroID = HeroID;
+			GameInstance->SelectedHeroID = GameInstance->ResolvePlayableHeroID(HeroID);
 			GameInstance->PersistRememberedSelectionDefaults();
 		}
 		break;

@@ -24,6 +24,7 @@ This folder keeps audit material organized by action status.
 ## Reference Entry Points
 
 - `Reference/T66_UI_AUDIT.md`: detailed UI framework audit and related findings.
+- `Reference/T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md`: comprehensive technical handoff explaining how T66 builds UI with Unreal C++/Slate, screen routing, style helpers, runtime assets, and verification.
 - `Reference/Historical/2026-04-16-optimization/`: superseded optimization drafts and review passes.
 - `Reference/Historical/2026-04-17-optimization-wave/T66_OPTIMIZATION_AGENT_ASSIGNMENTS.md`: old operational handoff kept as historical reference only.
 

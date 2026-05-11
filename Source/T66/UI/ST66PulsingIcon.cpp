@@ -4,6 +4,7 @@
 
 #include "Math/TransformCalculus2D.h"
 #include "Rendering/SlateRenderTransform.h"
+#include "UI/Style/T66Style.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/SOverlay.h"
 
@@ -58,9 +59,10 @@ void ST66PulsingIcon::Construct(const FArguments& InArgs)
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
 		[
-			SAssignNew(IconImageWidget, SImage)
-			.Image(InArgs._IconBrush)
-			.DesiredSizeOverride(IconSize)
+			FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+				SAssignNew(IconImageWidget, SImage)
+				.Image(InArgs._IconBrush)
+				.DesiredSizeOverride(IconSize)))
 		]
 	];
 

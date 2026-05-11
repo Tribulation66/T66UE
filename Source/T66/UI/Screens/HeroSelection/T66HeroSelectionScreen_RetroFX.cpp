@@ -306,6 +306,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildInlineRetroFXPanel()
 
 	AddRow(Rows, MakeInlineRetroFXSectionHeader(NSLOCTEXT("T66.Settings", "RetroFXSectionCharacterGeometry", "Character Geometry")), 6.f);
 	AddRow(Rows, MakeToggleRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterGeometryEnableLabel", "Character Geometry Enable"), NSLOCTEXT("T66.Settings", "RetroFXCharacterGeometryEnableBody", "Turns the safe runtime retro-geometry swap on or off for character-facing materials that inherit from T66's shared unlit masters."), MakeBoolGetter(&FT66RetroFXSettings::bEnableCharacterGeometry), MakeBoolSetter(&FT66RetroFXSettings::bEnableCharacterGeometry)));
+	AddRow(Rows, MakeNumericRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterPixelationLabel", "Character Pixelation"), NSLOCTEXT("T66.Settings", "RetroFXCharacterPixelationBody", "Pixelation strength for character-facing scene pixels."), MakeFloatGetter(&FT66RetroFXSettings::CharacterPixelationPercent), MakeFloatSetter(&FT66RetroFXSettings::CharacterPixelationPercent)));
 	AddRow(Rows, MakeNumericRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexSnapLabel", "Character Vertex Snap Strength"), NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexSnapBody", "Strength for geometry snapping on character-facing unlit materials."), MakeFloatGetter(&FT66RetroFXSettings::CharacterVertexSnapPercent), MakeFloatSetter(&FT66RetroFXSettings::CharacterVertexSnapPercent)));
 	AddRow(Rows, MakeNumericRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexSnapResLabel", "Character Vertex Snap Resolution"), NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexSnapResBody", "Higher values lower the target snap resolution, making hero and enemy geometry wobble more aggressively."), MakeFloatGetter(&FT66RetroFXSettings::CharacterVertexSnapResolutionPercent), MakeFloatSetter(&FT66RetroFXSettings::CharacterVertexSnapResolutionPercent)));
 	AddRow(Rows, MakeNumericRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexNoiseLabel", "Character Vertex Noise"), NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexNoiseBody", "Adds extra character-space noise on top of snapping. Keep it lower if you want readable combat silhouettes."), MakeFloatGetter(&FT66RetroFXSettings::CharacterVertexNoisePercent), MakeFloatSetter(&FT66RetroFXSettings::CharacterVertexNoisePercent)));
@@ -324,7 +325,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildInlineRetroFXPanel()
 	AddRow(Rows, MakeNumericRow(NSLOCTEXT("T66.Settings", "RetroFXChromaticStrengthLabel", "Chromatic Aberration Strength"), NSLOCTEXT("T66.Settings", "RetroFXChromaticStrengthBody", "Controls the radial RGB split strength for the custom chromatic-aberration post-process pass."), MakeFloatGetter(&FT66RetroFXSettings::ChromaticAberrationPercent), MakeFloatSetter(&FT66RetroFXSettings::ChromaticAberrationPercent)));
 	AddRow(Rows, MakeNumericRow(NSLOCTEXT("T66.Settings", "RetroFXChromaticDistortionLabel", "Distortion Strength"), NSLOCTEXT("T66.Settings", "RetroFXChromaticDistortionBody", "Controls the radial screen distortion strength used by the chromatic-aberration pass."), MakeFloatGetter(&FT66RetroFXSettings::ChromaticDistortionPercent), MakeFloatSetter(&FT66RetroFXSettings::ChromaticDistortionPercent)));
 	AddRow(Rows, MakeToggleRow(NSLOCTEXT("T66.Settings", "RetroFXChromaticInvertLabel", "Invert Distortion"), NSLOCTEXT("T66.Settings", "RetroFXChromaticInvertBody", "Flips the radial distortion direction used by the chromatic-aberration pass."), MakeBoolGetter(&FT66RetroFXSettings::bInvertChromaticDistortion), MakeBoolSetter(&FT66RetroFXSettings::bInvertChromaticDistortion)));
-	AddRow(Rows, MakeNumericRow(NSLOCTEXT("T66.Settings", "RetroFXPixelationLabel", "T66 Pixelation"), NSLOCTEXT("T66.Settings", "RetroFXPixelationBody", "Drives the existing T66 pixelation subsystem from Off to full strength."), MakeFloatGetter(&FT66RetroFXSettings::T66PixelationPercent), MakeFloatSetter(&FT66RetroFXSettings::T66PixelationPercent)), 12.f);
+	AddRow(Rows, MakeNumericRow(NSLOCTEXT("T66.Settings", "RetroFXPixelationLabel", "World Pixelation"), NSLOCTEXT("T66.Settings", "RetroFXPixelationBody", "Pixelation strength for the world scene pass."), MakeFloatGetter(&FT66RetroFXSettings::WorldPixelationPercent), MakeFloatSetter(&FT66RetroFXSettings::WorldPixelationPercent)), 12.f);
 
 	AddRow(Rows, MakeInlineRetroFXSectionHeader(NSLOCTEXT("T66.Settings", "RetroFXSectionResolution", "Shared Resolution")), 6.f);
 	AddRow(Rows, MakeToggleRow(NSLOCTEXT("T66.Settings", "RetroFXRealLowResLabel", "Real Low Resolution"), NSLOCTEXT("T66.Settings", "RetroFXRealLowResBody", "Lowers the actual runtime screen percentage for a stronger low-resolution look. This is the most aggressive shared-resolution mode."), MakeBoolGetter(&FT66RetroFXSettings::bUseRealLowResolution), MakeBoolSetter(&FT66RetroFXSettings::bUseRealLowResolution)));
@@ -406,12 +407,13 @@ void UT66HeroSelectionScreen::ApplyPendingInlineRetroFX()
 	InitializeInlineRetroFXFromUserSettingsIfNeeded();
 
 	UE_LOG(LogT66HeroSelectionRetroFX, Log,
-		TEXT("ApplyPendingInlineRetroFX: dirty=%s world=%s MasterEnabled=%s PS1Blend=%.2f Pixelation=%.2f"),
+		TEXT("ApplyPendingInlineRetroFX: dirty=%s world=%s MasterEnabled=%s PS1Blend=%.2f WorldPixelation=%.2f CharacterPixelation=%.2f"),
 		bInlineRetroFXDirty ? TEXT("true") : TEXT("false"),
 		*GetNameSafe(GetWorld()),
 		PendingInlineRetroFXSettings.bEnableRetroFXMaster ? TEXT("true") : TEXT("false"),
 		PendingInlineRetroFXSettings.PS1BlendPercent,
-		PendingInlineRetroFXSettings.T66PixelationPercent);
+		PendingInlineRetroFXSettings.WorldPixelationPercent,
+		PendingInlineRetroFXSettings.CharacterPixelationPercent);
 
 	UGameInstance* GI = GetGameInstance();
 	if (UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr)
@@ -440,6 +442,17 @@ void UT66HeroSelectionScreen::ApplyPendingInlineRetroFX()
 	{
 		UE_LOG(LogT66HeroSelectionRetroFX, Warning, TEXT("ApplyPendingInlineRetroFX: Player settings subsystem was null"));
 	}
+}
+
+void UT66HeroSelectionScreen::CommitPendingInlineRetroFXOnClose()
+{
+	if (!bInlineRetroFXInitialized || !bInlineRetroFXDirty)
+	{
+		return;
+	}
+
+	UE_LOG(LogT66HeroSelectionRetroFX, Log, TEXT("CommitPendingInlineRetroFXOnClose: applying unsaved Retro FX changes before leaving inline panel"));
+	ApplyPendingInlineRetroFX();
 }
 
 void UT66HeroSelectionScreen::ResetPendingInlineRetroFXToDefaults()

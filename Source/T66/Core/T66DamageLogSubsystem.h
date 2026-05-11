@@ -15,8 +15,8 @@ struct FDamageLogEntry
 };
 
 /**
- * Run-scoped damage log: tracks how much damage was dealt by which source during the run.
- * Used by Run Summary to display "Damage by source" (e.g. Auto Attack, Ultimate).
+ * Run-scoped damage log: tracks dealt and received damage by source during the run.
+ * Used by Run Summary to display damage source breakdowns.
  * Reset when a new run starts (same time as RunState).
  */
 UCLASS()
@@ -28,15 +28,24 @@ public:
 	/** Canonical source IDs for damage (use these when recording). */
 	static const FName SourceID_AutoAttack;
 	static const FName SourceID_Ultimate;
+	static const FName SourceID_Environment;
 	static constexpr double RollingDPSWindowSeconds = 5.0;
 
 	/** Record damage dealt from a given source this run. */
 	UFUNCTION(BlueprintCallable, Category = "DamageLog")
 	void RecordDamageDealt(FName SourceID, int32 Amount);
 
-	/** Get all sources and their total damage, sorted by total descending (highest first). */
+	/** Record damage received from a given source this run. */
+	UFUNCTION(BlueprintCallable, Category = "DamageLog")
+	void RecordDamageReceived(FName SourceID, int32 Amount);
+
+	/** Get all dealt sources and their total damage, sorted by total descending. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DamageLog")
 	TArray<FDamageLogEntry> GetDamageBySourceSorted() const;
+
+	/** Get all received sources and their total damage, sorted by total descending. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DamageLog")
+	TArray<FDamageLogEntry> GetDamageReceivedBySourceSorted() const;
 
 	/** Rolling DPS over the last few seconds (used by the gameplay HUD meter). */
 	UFUNCTION(BlueprintCallable, Category = "DamageLog")
@@ -57,6 +66,7 @@ private:
 	void TrimRecentDamageSamples(double NowSeconds);
 
 	TMap<FName, int32> DamageBySource;
+	TMap<FName, int32> DamageReceivedBySource;
 	TArray<FRecentDamageSample> RecentDamageSamples;
 	int32 RecentDamageSampleHeadIndex = 0;
 	int32 RecentDamageInWindow = 0;

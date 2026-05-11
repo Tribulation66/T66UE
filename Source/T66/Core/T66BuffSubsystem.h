@@ -145,6 +145,15 @@ public:
 	int32 GetSelectedSingleUseBuffEditSlotIndex() const;
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
+	void BeginHeroSelectionSingleUseBuffEdit(int32 SlotIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "PowerUp")
+	void EndHeroSelectionSingleUseBuffEdit();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
+	bool IsHeroSelectionSingleUseBuffEditActive() const { return bHeroSelectionSingleUseBuffEditActive; }
+
+	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool SetSingleUseBuffSelected(ET66SecondaryStatType StatType, bool bSelected);
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
@@ -174,6 +183,7 @@ private:
 	TObjectPtr<UT66BuffSaveGame> SaveData;
 
 	int32 ActiveSelectedSingleUseBuffEditSlotIndex = 0;
+	bool bHeroSelectionSingleUseBuffEditActive = false;
 
 	void LoadOrCreateSave();
 	void MigrateV1ToV2WedgeTiers();
@@ -185,6 +195,7 @@ private:
 	void MigrateV7ToV8TemporaryBuffPresets();
 	void MigrateV8ToV9PrimaryAccuracy();
 	void MigrateV9ToV10SingleLoadoutSlots();
+	void MigrateV10ToV11PrimarySpeed();
 	void Save();
 	TArray<uint8>* GetFillStepStatesForStat(ET66HeroStatType StatType);
 	const TArray<uint8>* GetFillStepStatesForStat(ET66HeroStatType StatType) const;

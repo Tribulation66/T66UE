@@ -50,7 +50,7 @@ int32 UT66RunStateSubsystem::GetPermanentPrimaryBuffTenths(const ET66HeroStatTyp
 	case ET66HeroStatType::Armor:       return WholeStatToTenths(FMath::Max(0, PermanentBuffStatBonuses.Armor));
 	case ET66HeroStatType::Evasion:     return WholeStatToTenths(FMath::Max(0, PermanentBuffStatBonuses.Evasion));
 	case ET66HeroStatType::Luck:        return WholeStatToTenths(FMath::Max(0, PermanentBuffStatBonuses.Luck));
-	case ET66HeroStatType::Speed:       return 0;
+	case ET66HeroStatType::Speed:       return WholeStatToTenths(FMath::Max(0, PermanentBuffStatBonuses.Speed));
 	default:                            return 0;
 	}
 }
@@ -435,30 +435,6 @@ void UT66RunStateSubsystem::InitializeHeroStatsForNewRun()
 	for (int32 L = 2; L <= TargetLevel; ++L)
 	{
 		ApplyOneHeroLevelUp();
-	}
-
-	if (T66GI && T66GI->SelectedHeroID == T66ArthurHeroID)
-	{
-		const int32 ArthurBoostTenths = WholeStatToTenths(T66ArthurTestStatBoost);
-		HeroPreciseStats.DamageTenths = ClampHeroStatTenths(HeroPreciseStats.DamageTenths + ArthurBoostTenths);
-		HeroPreciseStats.AttackSpeedTenths = ClampHeroStatTenths(HeroPreciseStats.AttackSpeedTenths + ArthurBoostTenths);
-		HeroPreciseStats.AttackScaleTenths = ClampHeroStatTenths(HeroPreciseStats.AttackScaleTenths + ArthurBoostTenths);
-		HeroPreciseStats.AccuracyTenths = ClampHeroStatTenths(HeroPreciseStats.AccuracyTenths + ArthurBoostTenths);
-		HeroPreciseStats.ArmorTenths = ClampHeroStatTenths(HeroPreciseStats.ArmorTenths + ArthurBoostTenths);
-		HeroPreciseStats.EvasionTenths = ClampHeroStatTenths(HeroPreciseStats.EvasionTenths + ArthurBoostTenths);
-		HeroPreciseStats.LuckTenths = ClampHeroStatTenths(HeroPreciseStats.LuckTenths + ArthurBoostTenths);
-		HeroPreciseStats.SpeedTenths = ClampHeroStatTenths(HeroPreciseStats.SpeedTenths + ArthurBoostTenths);
-
-		for (uint8 RawStatType = static_cast<uint8>(ET66SecondaryStatType::None) + 1;
-			RawStatType <= static_cast<uint8>(ET66SecondaryStatType::Accuracy);
-			++RawStatType)
-		{
-			const ET66SecondaryStatType StatType = static_cast<ET66SecondaryStatType>(RawStatType);
-			if (T66IsLiveSecondaryStatType(StatType))
-			{
-				AddPersistentSecondaryStatBonusTenths(StatType, ArthurBoostTenths);
-			}
-		}
 	}
 
 	SyncLegacyHeroStatsFromPrecise();

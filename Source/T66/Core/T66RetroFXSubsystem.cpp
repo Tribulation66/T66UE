@@ -36,12 +36,12 @@ namespace
 	static const TCHAR* EnvironmentRetroGeometryMaterialPath = TEXT("/Game/Materials/Retro/M_Environment_Unlit_RetroGeometry.M_Environment_Unlit_RetroGeometry");
 	static const TCHAR* FbxRetroGeometryMaterialPath = TEXT("/Game/Materials/Retro/M_FBX_Unlit_RetroGeometry.M_FBX_Unlit_RetroGeometry");
 	static const TCHAR* GlbRetroGeometryMaterialPath = TEXT("/Game/Materials/Retro/M_GLB_Unlit_RetroGeometry.M_GLB_Unlit_RetroGeometry");
+	static constexpr int32 WorldPixelationCustomStencilValue = 1;
+	static constexpr int32 CharacterPixelationCustomStencilValue = 2;
 
 	static const TCHAR* Ps1CandidatePaths[] = {
 		TEXT("/Game/UE5RFX/Materials/PostProcess/UE5RFX_PPM_PS1_Sample_Instance.UE5RFX_PPM_PS1_Sample_Instance"),
-		TEXT("/Game/UE5RFX/Materials/PostProcess/UE5RFX_PPM_PS1_SampleInstance.UE5RFX_PPM_PS1_SampleInstance"),
-		TEXT("/Game/UE5RFX/Materials/PostProcess/UE5RFX_PPM_PS1_BaseMaterial_Inst.UE5RFX_PPM_PS1_BaseMaterial_Inst"),
-		TEXT("/Game/UE5RFX/Materials/PostProcess/UE5RFX_PPM_PS1_BaseMaterial.UE5RFX_PPM_PS1_BaseMaterial")
+		TEXT("/Game/UE5RFX/Materials/PostProcess/BaseMaterials/UE5RFX_PPM_PS1_BaseMaterial.UE5RFX_PPM_PS1_BaseMaterial")
 	};
 
 	static const TCHAR* N64BlurPath = TEXT("/Game/UE5RFX/Materials/PostProcess/UE5RFX_PPM_N64_Blur.UE5RFX_PPM_N64_Blur");
@@ -347,6 +347,29 @@ namespace
 		DisabledSettings.ChromaticDistortionPercent = 0.0f;
 		DisabledSettings.bInvertChromaticDistortion = false;
 		DisabledSettings.T66PixelationPercent = 0.0f;
+		DisabledSettings.WorldPixelationPercent = 0.0f;
+		DisabledSettings.CharacterPixelationPercent = 0.0f;
+		DisabledSettings.UIChromeTreatmentPercent = 0.0f;
+		DisabledSettings.UITextTreatmentPercent = 0.0f;
+		DisabledSettings.UIChromePixelationPercent = 0.0f;
+		DisabledSettings.UIChromeDitheringPercent = 0.0f;
+		DisabledSettings.UIChromeVertexSnapPercent = 0.0f;
+		DisabledSettings.UIChromeVertexSnapResolutionPercent = 0.0f;
+		DisabledSettings.UIChromeScanlinePercent = 0.0f;
+		DisabledSettings.UIChromeChromaticAberrationPercent = 0.0f;
+		DisabledSettings.UITextPixelationPercent = 0.0f;
+		DisabledSettings.UITextDitheringPercent = 0.0f;
+		DisabledSettings.UITextVertexSnapPercent = 0.0f;
+		DisabledSettings.UITextVertexSnapResolutionPercent = 0.0f;
+		DisabledSettings.UITextScanlinePercent = 0.0f;
+		DisabledSettings.UITextChromaticAberrationPercent = 0.0f;
+		DisabledSettings.UIBackgroundImageTreatmentPercent = 0.0f;
+		DisabledSettings.UIBackgroundImagePixelationPercent = 0.0f;
+		DisabledSettings.UIBackgroundImageDitheringPercent = 0.0f;
+		DisabledSettings.UIBackgroundImageVertexSnapPercent = 0.0f;
+		DisabledSettings.UIBackgroundImageVertexSnapResolutionPercent = 0.0f;
+		DisabledSettings.UIBackgroundImageScanlinePercent = 0.0f;
+		DisabledSettings.UIBackgroundImageChromaticAberrationPercent = 0.0f;
 		DisabledSettings.bEnableWorldGeometry = false;
 		DisabledSettings.WorldVertexSnapPercent = 0.0f;
 		DisabledSettings.WorldVertexSnapResolutionPercent = 0.0f;
@@ -382,18 +405,34 @@ namespace
 		return Material->GetPathName();
 	}
 
-	static bool UsesMainMapTerrain(const UWorld* World)
+	static bool ResolveRetroGeometryGroupFromBasePath(const FString& BasePath, ET66RetroGeometryGroup& OutGroup)
 	{
-		if (!World)
+		if (BasePath.Equals(CharacterBaseMaterialPath)
+			|| BasePath.Equals(FbxBaseMaterialPath)
+			|| BasePath.Equals(CharacterRetroGeometryMaterialPath)
+			|| BasePath.Equals(FbxRetroGeometryMaterialPath))
 		{
-			return false;
+			OutGroup = ET66RetroGeometryGroup::Character;
+			return true;
 		}
 
-		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
-		return !MapName.Contains(TEXT("Coliseum"))
-			&& !MapName.Contains(TEXT("Tutorial"))
-			&& !MapName.Contains(TEXT("Lab"));
+		if (BasePath.Equals(EnvironmentBaseMaterialPath)
+			|| BasePath.Equals(GlbBaseMaterialPath)
+			|| BasePath.Equals(EnvironmentRetroGeometryMaterialPath)
+			|| BasePath.Equals(GlbRetroGeometryMaterialPath))
+		{
+			OutGroup = ET66RetroGeometryGroup::World;
+			return true;
+		}
+
+		return false;
 	}
+
+	static bool ResolveRetroGeometryGroup(UMaterialInterface* SourceMaterial, ET66RetroGeometryGroup& OutGroup)
+	{
+		return SourceMaterial && ResolveRetroGeometryGroupFromBasePath(GetMaterialBasePath(SourceMaterial), OutGroup);
+	}
+
 }
 
 void UT66RetroFXSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -406,12 +445,17 @@ void UT66RetroFXSubsystem::Deinitialize()
 {
 	UpdateGeometrySpawnBinding(nullptr, false);
 	RestoreManagedMaterials(true, true);
+	RestorePixelationStencilMasks(true, true);
 	RestoreResolutionRuntimeDefaults();
 	ManagedGeometrySlots.Reset();
+	PixelationStencilSlots.Reset();
 	ManagedGeometryWorld = nullptr;
 	bWorldGeometryActive = false;
 	bCharacterGeometryActive = false;
+	bWorldPixelationStencilActive = false;
+	bCharacterPixelationStencilActive = false;
 	bManagedGeometryFullScanComplete = false;
+	bPixelationStencilFullScanComplete = false;
 	bResolutionRuntimeActive = false;
 
 	ActiveVolume = nullptr;
@@ -556,14 +600,20 @@ void UT66RetroFXSubsystem::ApplySettings(const FT66RetroFXSettings& Settings, UW
 	ApplyResolutionCollection(EffectiveSettings, TargetWorld);
 	ApplyResolutionRuntime(EffectiveSettings, TargetWorld);
 	ApplyGeometryCollection(EffectiveSettings, TargetWorld);
+	ApplyPixelationStencilMasks(EffectiveSettings, TargetWorld);
 	ApplyGeometryMaterials(EffectiveSettings, TargetWorld);
 
 	if (UGameInstance* GI = TargetWorld->GetGameInstance())
 	{
 		if (UT66PixelationSubsystem* Pixelation = GI->GetSubsystem<UT66PixelationSubsystem>())
 		{
-			const int32 PixelationLevel = FMath::RoundToInt(PercentToRange(EffectiveSettings.T66PixelationPercent, 0.0f, 10.0f));
-			Pixelation->SetPixelationLevel(PixelationLevel);
+			const float LegacyWorldPixelationPercent = ClampPercent(EffectiveSettings.T66PixelationPercent);
+			const float WorldPixelationPercent = ClampPercent(EffectiveSettings.WorldPixelationPercent) > KINDA_SMALL_NUMBER
+				? EffectiveSettings.WorldPixelationPercent
+				: LegacyWorldPixelationPercent;
+			const int32 WorldPixelationLevel = FMath::RoundToInt(PercentToRange(WorldPixelationPercent, 0.0f, 10.0f));
+			const int32 CharacterPixelationLevel = FMath::RoundToInt(PercentToRange(EffectiveSettings.CharacterPixelationPercent, 0.0f, 10.0f));
+			Pixelation->SetPixelationLevels(WorldPixelationLevel, CharacterPixelationLevel);
 		}
 	}
 }
@@ -630,7 +680,8 @@ void UT66RetroFXSubsystem::EnsurePs1PostProcessDMI(const FT66RetroFXSettings& Se
 
 void UT66RetroFXSubsystem::ApplyBlendableWeights(const FT66RetroFXSettings& Settings)
 {
-	const float Ps1Weight = PercentToUnit(Settings.PS1BlendPercent);
+	const float FogWeight = PercentToSwitch(Settings.PS1FogPercent) * PercentToUnit(Settings.PS1FogDensityPercent);
+	const float Ps1Weight = FMath::Max(PercentToUnit(Settings.PS1BlendPercent), FogWeight);
 	const float ChromaticWeight = (ClampPercent(Settings.ChromaticAberrationPercent) > KINDA_SMALL_NUMBER
 		|| ClampPercent(Settings.ChromaticDistortionPercent) > KINDA_SMALL_NUMBER)
 		? 1.0f
@@ -650,8 +701,9 @@ void UT66RetroFXSubsystem::ApplyBlendableWeights(const FT66RetroFXSettings& Sett
 		SetBlendableWeight(N64BlurReplaceTonemapperDMI, 0.0f);
 	}
 
-	UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyBlendableWeights: PS1Weight=%.3f N64Weight=%.3f ChromaticWeight=%.3f ReplaceTonemapper=%s"),
+	UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyBlendableWeights: PS1Weight=%.3f FogWeight=%.3f N64Weight=%.3f ChromaticWeight=%.3f ReplaceTonemapper=%s"),
 		Ps1Weight,
+		FogWeight,
 		N64Weight,
 		ChromaticWeight,
 		Settings.bUseUE5RFXN64BlurReplaceTonemapper ? TEXT("true") : TEXT("false"));
@@ -675,6 +727,7 @@ void UT66RetroFXSubsystem::ApplyPs1Parameters(const FT66RetroFXSettings& Setting
 	SetScalarParameter(Ps1PostProcessDMI, TEXT("Dithering Strength"), DitheringStrength);
 	SetScalarParameter(Ps1PostProcessDMI, TEXT("LUT Color Boost"), ColorBoost);
 	SetScalarParameter(Ps1PostProcessDMI, TEXT("FogDesnsity"), FogDensity);
+	SetScalarParameter(Ps1PostProcessDMI, TEXT("FogDensity"), FogDensity);
 	SetScalarParameter(Ps1PostProcessDMI, TEXT("FogStartDistance"), FogStartDistance);
 	SetScalarParameter(Ps1PostProcessDMI, TEXT("FogFallOffDistance"), FogFallOffDistance);
 
@@ -894,9 +947,58 @@ void UT66RetroFXSubsystem::ApplyGeometryCollection(const FT66RetroFXSettings& Se
 		CharacterAffineBlend);
 }
 
+void UT66RetroFXSubsystem::ApplyPixelationStencilMasks(const FT66RetroFXSettings& Settings, UWorld* World)
+{
+	const float LegacyWorldPixelationPercent = ClampPercent(Settings.T66PixelationPercent);
+	const float WorldPixelationPercent = ClampPercent(Settings.WorldPixelationPercent) > KINDA_SMALL_NUMBER
+		? Settings.WorldPixelationPercent
+		: LegacyWorldPixelationPercent;
+	const bool bEnableWorldPixelation = ClampPercent(WorldPixelationPercent) > KINDA_SMALL_NUMBER;
+	const bool bEnableCharacterPixelation = ClampPercent(Settings.CharacterPixelationPercent) > KINDA_SMALL_NUMBER;
+	const bool bSameManagedWorld = ManagedGeometryWorld == World;
+	const bool bPixelationEnablementChanged =
+		bWorldPixelationStencilActive != bEnableWorldPixelation
+		|| bCharacterPixelationStencilActive != bEnableCharacterPixelation;
+
+	bWorldPixelationStencilActive = bEnableWorldPixelation;
+	bCharacterPixelationStencilActive = bEnableCharacterPixelation;
+	UpdateGeometrySpawnBinding(World, bEnableWorldPixelation || bEnableCharacterPixelation || HasWorldGeometryEnabled(Settings) || HasCharacterGeometryEnabled(Settings));
+
+	if (!bEnableWorldPixelation && !bEnableCharacterPixelation)
+	{
+		RestorePixelationStencilMasks(true, true);
+		CleanupPixelationStencilSlots();
+		bPixelationStencilFullScanComplete = false;
+		return;
+	}
+
+	if (World)
+	{
+		ExecuteConsoleCommand(World, TEXT("r.CustomDepth 3"));
+	}
+
+	const bool bNeedsFullWorldScan =
+		!bSameManagedWorld
+		|| bPixelationEnablementChanged
+		|| !bPixelationStencilFullScanComplete;
+	if (bNeedsFullWorldScan)
+	{
+		RefreshWorldPixelationStencilMasks(World, bEnableWorldPixelation, bEnableCharacterPixelation);
+		bPixelationStencilFullScanComplete = true;
+	}
+	RestorePixelationStencilMasks(!bEnableWorldPixelation, !bEnableCharacterPixelation);
+	CleanupPixelationStencilSlots();
+
+	UE_LOG(LogT66RetroFXRuntime, Verbose,
+		TEXT("ApplyPixelationStencilMasks: World=%s Character=%s Slots=%d"),
+		bEnableWorldPixelation ? TEXT("true") : TEXT("false"),
+		bEnableCharacterPixelation ? TEXT("true") : TEXT("false"),
+		PixelationStencilSlots.Num());
+}
+
 void UT66RetroFXSubsystem::ApplyGeometryMaterials(const FT66RetroFXSettings& Settings, UWorld* World)
 {
-	const bool bEnableWorldGeometry = HasWorldGeometryEnabled(Settings) && !UsesMainMapTerrain(World);
+	const bool bEnableWorldGeometry = HasWorldGeometryEnabled(Settings);
 	const bool bEnableCharacterGeometry = HasCharacterGeometryEnabled(Settings);
 	const bool bSameManagedWorld = ManagedGeometryWorld == World;
 	const bool bGeometryEnablementChanged =
@@ -905,7 +1007,7 @@ void UT66RetroFXSubsystem::ApplyGeometryMaterials(const FT66RetroFXSettings& Set
 
 	bWorldGeometryActive = bEnableWorldGeometry;
 	bCharacterGeometryActive = bEnableCharacterGeometry;
-	UpdateGeometrySpawnBinding(World, bEnableWorldGeometry || bEnableCharacterGeometry);
+	UpdateGeometrySpawnBinding(World, bEnableWorldGeometry || bEnableCharacterGeometry || bWorldPixelationStencilActive || bCharacterPixelationStencilActive);
 
 	if (!bEnableWorldGeometry && !bEnableCharacterGeometry)
 	{
@@ -1027,6 +1129,74 @@ void UT66RetroFXSubsystem::RefreshMeshComponentGeometryMaterials(UMeshComponent*
 	}
 }
 
+void UT66RetroFXSubsystem::RefreshWorldPixelationStencilMasks(UWorld* World, bool bEnableWorldPixelation, bool bEnableCharacterPixelation)
+{
+	if (!World)
+	{
+		return;
+	}
+
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		RefreshActorPixelationStencilMasks(*It, bEnableWorldPixelation, bEnableCharacterPixelation);
+	}
+}
+
+void UT66RetroFXSubsystem::RefreshActorPixelationStencilMasks(AActor* Actor, bool bEnableWorldPixelation, bool bEnableCharacterPixelation)
+{
+	if (!Actor)
+	{
+		return;
+	}
+
+	TArray<UMeshComponent*> MeshComponents;
+	Actor->GetComponents<UMeshComponent>(MeshComponents);
+	for (UMeshComponent* MeshComponent : MeshComponents)
+	{
+		RefreshMeshComponentPixelationStencilMask(MeshComponent, bEnableWorldPixelation, bEnableCharacterPixelation);
+	}
+}
+
+void UT66RetroFXSubsystem::RefreshMeshComponentPixelationStencilMask(UMeshComponent* MeshComponent, bool bEnableWorldPixelation, bool bEnableCharacterPixelation)
+{
+	if (!MeshComponent)
+	{
+		return;
+	}
+
+	ET66RetroGeometryGroup Group = ET66RetroGeometryGroup::World;
+	const bool bHasGroup = ResolveMeshComponentGeometryGroup(MeshComponent, Group);
+	const bool bGroupEnabled = bHasGroup && IsGroupEnabled(Group, bEnableWorldPixelation, bEnableCharacterPixelation);
+	const int32 SlotIndex = FindPixelationStencilSlotIndex(MeshComponent);
+	if (!bGroupEnabled)
+	{
+		if (SlotIndex != INDEX_NONE)
+		{
+			RestorePixelationStencilSlot(SlotIndex);
+		}
+		return;
+	}
+
+	if (SlotIndex == INDEX_NONE)
+	{
+		FT66RetroPixelationStencilSlot& Slot = PixelationStencilSlots.AddDefaulted_GetRef();
+		Slot.MeshComponent = MeshComponent;
+		Slot.bOriginalRenderCustomDepth = MeshComponent->bRenderCustomDepth;
+		Slot.OriginalCustomDepthStencilValue = MeshComponent->CustomDepthStencilValue;
+		Slot.Group = Group;
+	}
+	else
+	{
+		PixelationStencilSlots[SlotIndex].Group = Group;
+	}
+
+	const int32 StencilValue = Group == ET66RetroGeometryGroup::World
+		? WorldPixelationCustomStencilValue
+		: CharacterPixelationCustomStencilValue;
+	MeshComponent->SetRenderCustomDepth(true);
+	MeshComponent->SetCustomDepthStencilValue(StencilValue);
+}
+
 void UT66RetroFXSubsystem::RestoreManagedMaterials(bool bRestoreWorldGeometry, bool bRestoreCharacterGeometry)
 {
 	if (!bRestoreWorldGeometry && !bRestoreCharacterGeometry)
@@ -1079,6 +1249,52 @@ void UT66RetroFXSubsystem::CleanupManagedSlots()
 	}
 }
 
+void UT66RetroFXSubsystem::RestorePixelationStencilMasks(bool bRestoreWorldPixelation, bool bRestoreCharacterPixelation)
+{
+	if (!bRestoreWorldPixelation && !bRestoreCharacterPixelation)
+	{
+		return;
+	}
+
+	for (int32 Index = PixelationStencilSlots.Num() - 1; Index >= 0; --Index)
+	{
+		const ET66RetroGeometryGroup Group = PixelationStencilSlots[Index].Group;
+		if ((Group == ET66RetroGeometryGroup::World && bRestoreWorldPixelation)
+			|| (Group == ET66RetroGeometryGroup::Character && bRestoreCharacterPixelation))
+		{
+			RestorePixelationStencilSlot(Index);
+		}
+	}
+}
+
+void UT66RetroFXSubsystem::RestorePixelationStencilSlot(int32 SlotIndex)
+{
+	if (!PixelationStencilSlots.IsValidIndex(SlotIndex))
+	{
+		return;
+	}
+
+	const FT66RetroPixelationStencilSlot Slot = PixelationStencilSlots[SlotIndex];
+	if (UMeshComponent* MeshComponent = Slot.MeshComponent.Get())
+	{
+		MeshComponent->SetCustomDepthStencilValue(Slot.OriginalCustomDepthStencilValue);
+		MeshComponent->SetRenderCustomDepth(Slot.bOriginalRenderCustomDepth);
+	}
+
+	PixelationStencilSlots.RemoveAtSwap(SlotIndex);
+}
+
+void UT66RetroFXSubsystem::CleanupPixelationStencilSlots()
+{
+	for (int32 Index = PixelationStencilSlots.Num() - 1; Index >= 0; --Index)
+	{
+		if (!PixelationStencilSlots[Index].MeshComponent.IsValid())
+		{
+			PixelationStencilSlots.RemoveAtSwap(Index);
+		}
+	}
+}
+
 int32 UT66RetroFXSubsystem::FindManagedSlotIndex(const UMeshComponent* MeshComponent, int32 MaterialIndex) const
 {
 	for (int32 Index = 0; Index < ManagedGeometrySlots.Num(); ++Index)
@@ -1092,6 +1308,74 @@ int32 UT66RetroFXSubsystem::FindManagedSlotIndex(const UMeshComponent* MeshCompo
 	return INDEX_NONE;
 }
 
+int32 UT66RetroFXSubsystem::FindPixelationStencilSlotIndex(const UMeshComponent* MeshComponent) const
+{
+	for (int32 Index = 0; Index < PixelationStencilSlots.Num(); ++Index)
+	{
+		if (PixelationStencilSlots[Index].MeshComponent.Get() == MeshComponent)
+		{
+			return Index;
+		}
+	}
+	return INDEX_NONE;
+}
+
+bool UT66RetroFXSubsystem::ResolveMeshComponentGeometryGroup(const UMeshComponent* MeshComponent, ET66RetroGeometryGroup& OutGroup) const
+{
+	if (!MeshComponent)
+	{
+		return false;
+	}
+
+	bool bFoundWorld = false;
+	for (const FT66RetroManagedMaterialSlot& Slot : ManagedGeometrySlots)
+	{
+		if (Slot.MeshComponent.Get() != MeshComponent)
+		{
+			continue;
+		}
+
+		if (Slot.Group == ET66RetroGeometryGroup::Character)
+		{
+			OutGroup = ET66RetroGeometryGroup::Character;
+			return true;
+		}
+
+		bFoundWorld = true;
+	}
+
+	if (bFoundWorld)
+	{
+		OutGroup = ET66RetroGeometryGroup::World;
+		return true;
+	}
+
+	for (int32 MaterialIndex = 0; MaterialIndex < MeshComponent->GetNumMaterials(); ++MaterialIndex)
+	{
+		ET66RetroGeometryGroup MaterialGroup = ET66RetroGeometryGroup::World;
+		if (!ResolveRetroGeometryGroup(MeshComponent->GetMaterial(MaterialIndex), MaterialGroup))
+		{
+			continue;
+		}
+
+		if (MaterialGroup == ET66RetroGeometryGroup::Character)
+		{
+			OutGroup = ET66RetroGeometryGroup::Character;
+			return true;
+		}
+
+		bFoundWorld = true;
+	}
+
+	if (bFoundWorld)
+	{
+		OutGroup = ET66RetroGeometryGroup::World;
+		return true;
+	}
+
+	return false;
+}
+
 void UT66RetroFXSubsystem::UpdateGeometrySpawnBinding(UWorld* World, bool bShouldListen)
 {
 	if (ManagedGeometryWorld && ManagedGeometryWorld != World)
@@ -1103,9 +1387,12 @@ void UT66RetroFXSubsystem::UpdateGeometrySpawnBinding(UWorld* World, bool bShoul
 		}
 
 		RestoreManagedMaterials(true, true);
+		RestorePixelationStencilMasks(true, true);
 		ManagedGeometrySlots.Reset();
+		PixelationStencilSlots.Reset();
 		ManagedGeometryWorld = nullptr;
 		bManagedGeometryFullScanComplete = false;
+		bPixelationStencilFullScanComplete = false;
 	}
 
 	if (!bShouldListen)
@@ -1117,6 +1404,7 @@ void UT66RetroFXSubsystem::UpdateGeometrySpawnBinding(UWorld* World, bool bShoul
 		}
 		ManagedGeometryWorld = nullptr;
 		bManagedGeometryFullScanComplete = false;
+		bPixelationStencilFullScanComplete = false;
 		return;
 	}
 
@@ -1144,6 +1432,7 @@ void UT66RetroFXSubsystem::HandleActorSpawned(AActor* Actor)
 	}
 
 	RefreshActorGeometryMaterials(Actor, bWorldGeometryActive, bCharacterGeometryActive);
+	RefreshActorPixelationStencilMasks(Actor, bWorldPixelationStencilActive, bCharacterPixelationStencilActive);
 }
 
 UMaterialInterface* UT66RetroFXSubsystem::LoadPs1PostProcessMaterial()
@@ -1245,24 +1534,25 @@ UMaterialInterface* UT66RetroFXSubsystem::ResolveRetroGeometryMaterial(UMaterial
 	}
 
 	const FString BasePath = GetMaterialBasePath(SourceMaterial);
-	if (BasePath.Equals(CharacterBaseMaterialPath))
+	if (!ResolveRetroGeometryGroupFromBasePath(BasePath, OutGroup))
 	{
-		OutGroup = ET66RetroGeometryGroup::Character;
+		return nullptr;
+	}
+
+	if (BasePath.Equals(CharacterBaseMaterialPath) || BasePath.Equals(CharacterRetroGeometryMaterialPath))
+	{
 		return LoadCharacterRetroGeometryMaterial();
 	}
-	if (BasePath.Equals(FbxBaseMaterialPath))
+	if (BasePath.Equals(FbxBaseMaterialPath) || BasePath.Equals(FbxRetroGeometryMaterialPath))
 	{
-		OutGroup = ET66RetroGeometryGroup::Character;
 		return LoadFbxRetroGeometryMaterial();
 	}
-	if (BasePath.Equals(EnvironmentBaseMaterialPath))
+	if (BasePath.Equals(EnvironmentBaseMaterialPath) || BasePath.Equals(EnvironmentRetroGeometryMaterialPath))
 	{
-		OutGroup = ET66RetroGeometryGroup::World;
 		return LoadEnvironmentRetroGeometryMaterial();
 	}
-	if (BasePath.Equals(GlbBaseMaterialPath))
+	if (BasePath.Equals(GlbBaseMaterialPath) || BasePath.Equals(GlbRetroGeometryMaterialPath))
 	{
-		OutGroup = ET66RetroGeometryGroup::World;
 		return LoadGlbRetroGeometryMaterial();
 	}
 

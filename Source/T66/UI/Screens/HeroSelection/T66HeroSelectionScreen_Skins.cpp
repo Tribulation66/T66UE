@@ -55,34 +55,17 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 	const float EquippedMinWidth = 108.f;
 	const float BuyButtonMinWidth = 92.f;
 	const float BuyButtonHeight = 34.f;
-	const int32 SkinActionFontSize = 14;
-	const int32 SkinPriceFontSize = 14;
-	const int32 SkinTitleFontSize = 15;
+	const int32 SkinActionFontSize = 15;
+	const int32 SkinPriceFontSize = 15;
+	const int32 SkinTitleFontSize = 30;
 
 	auto MakeSkinListRow = [](const TSharedRef<SWidget>& Content, const FMargin& RowPadding) -> TSharedRef<SWidget>
 	{
-		return SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
+		return SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+			.Padding(RowPadding)
 			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-				.Padding(RowPadding)
-				[
-					Content
-				]
-			]
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(4.f, 0.f)
-			[
-				SNew(SBox)
-				.HeightOverride(1.f)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.45f, 0.27f, 0.07f, 0.65f))
-				]
+				Content
 			];
 	};
 
@@ -332,7 +315,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 							ET66ButtonType::Primary)
 							.SetMinWidth(BuyButtonMinWidth)
 							.SetHeight(BuyButtonHeight)
-							.SetColor(FT66Style::Tokens::Accent)
+							.SetColor(HeroSelectionChromeTokenAccent())
 							.SetPadding(FMargin(7.f, 3.f, 7.f, 2.f))
 							.SetContent(
 								SNew(SHorizontalBox)
@@ -355,17 +338,18 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 									.WidthOverride(20.f)
 									.HeightOverride(14.f)
 									[
-										SNew(SOverlay)
-										+ SOverlay::Slot()
-										[
+									SNew(SOverlay)
+									+ SOverlay::Slot()
+									[
+										FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
 											SNew(SImage)
 											.Image_Lambda([this]() -> const FSlateBrush*
 											{
 												return ACBalanceIconBrush.IsValid() && ::IsValid(ACBalanceIconBrush->GetResourceObject())
 													? ACBalanceIconBrush.Get()
 													: nullptr;
-											})
-										]
+											})))
+									]
 										+ SOverlay::Slot()
 										.HAlign(HAlign_Center)
 										.VAlign(VAlign_Center)
@@ -408,38 +392,12 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 				MakeSkinListRow(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					.Padding(0.f, 0.f, 7.f, 0.f)
-					[
-						SNew(SBox)
-						.WidthOverride(30.f)
-						.HeightOverride(30.f)
-						[
-							SNew(SOverlay)
-							+ SOverlay::Slot()
-							[
-								SNew(SImage)
-								.Image(GetHeroSelectionPartySlotBrush())
-							]
-							+ SOverlay::Slot()
-							.Padding(8.f)
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(bIsBeachgoer
-									? FLinearColor(0.02f, 0.42f, 0.58f, 1.0f)
-									: FLinearColor(0.16f, 0.08f, 0.015f, 1.0f))
-							]
-						]
-					]
-					+ SHorizontalBox::Slot()
 					.FillWidth(1.0f)
 					.VAlign(VAlign_Center)
 					[
 						SNew(STextBlock)
 						.Text(SkinDisplayName)
-						.Font(FT66Style::Tokens::FontRegular(SkinTitleFontSize))
+						.Font(FT66Style::Tokens::FontBold(SkinTitleFontSize))
 						.ColorAndOpacity(GetHeroSelectionParchmentText())
 						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					]
@@ -450,7 +408,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 					[
 						ButtonRow
 					],
-					FMargin(10.f, 7.f))
+					FMargin(12.f, 10.f))
 			];
 	}
 }

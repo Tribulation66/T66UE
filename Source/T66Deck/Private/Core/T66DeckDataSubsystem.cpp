@@ -142,7 +142,7 @@ void UT66DeckDataSubsystem::LoadCards()
 		Definition.Damage = T66DeckToInt(T66DeckGetValue(Row, TEXT("Damage")), 0);
 		Definition.Block = T66DeckToInt(T66DeckGetValue(Row, TEXT("Block")), 0);
 		Definition.RarityID = T66DeckToName(Row, TEXT("RarityID"));
-		Definition.AccentColor = T66DeckToColor(T66DeckGetValue(Row, TEXT("AccentColor")), FLinearColor(0.45f, 0.25f, 0.86f, 1.0f));
+		Definition.AccentColor = T66DeckToColor(T66DeckGetValue(Row, TEXT("AccentColor")), FLinearColor(0.78f, 0.18f, 0.22f, 1.0f));
 		if (Definition.CardID != NAME_None)
 		{
 			Cards.Add(MoveTemp(Definition));

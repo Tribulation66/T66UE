@@ -21,19 +21,19 @@ struct T66_API FT66DailyClimbRule
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	ET66DailyClimbRuleType Type = ET66DailyClimbRuleType::Unknown;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	FString Label;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	FString Description;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	int32 IntValue = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	float FloatValue = 0.0f;
 };
 
@@ -42,37 +42,37 @@ struct T66_API FT66DailyClimbChallengeData
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	FString ChallengeId;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	FString ChallengeDateUtc;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	FString Title;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	FName HeroID = NAME_None;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	ET66Difficulty Difficulty = ET66Difficulty::Easy;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	int32 RunSeed = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	int32 CouponReward = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	FString LeaderboardKey;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	FString AttemptId;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	FString AttemptState;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Climb")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	TArray<FT66DailyClimbRule> Rules;
 
 	bool IsValid() const

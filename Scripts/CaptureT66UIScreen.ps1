@@ -16,6 +16,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$script:WindowedSettingsBackup = $null
 
 function Get-DisplayBounds {
     param([int]$Number)
@@ -36,6 +37,47 @@ function Get-DisplayBounds {
     return $screen.Bounds
 }
 
+function Get-StagedGameUserSettingsPath {
+    param([string]$ExecutablePath)
+
+    $exeDir = Split-Path -Parent ([System.IO.Path]::GetFullPath($ExecutablePath))
+    $gameRoot = Resolve-Path -LiteralPath (Join-Path $exeDir "..\..")
+    return Join-Path $gameRoot "Saved\Config\Windows\GameUserSettings.ini"
+}
+
+function Backup-GameUserSettingsForRestore {
+    param([string]$SettingsPath)
+
+    if ($script:WindowedSettingsBackup) {
+        return
+    }
+
+    $script:WindowedSettingsBackup = [pscustomobject]@{
+        Path = $SettingsPath
+        Existed = Test-Path -LiteralPath $SettingsPath
+        Content = if (Test-Path -LiteralPath $SettingsPath) { Get-Content -LiteralPath $SettingsPath -Raw } else { $null }
+    }
+}
+
+function Restore-GameUserSettings {
+    if (-not $script:WindowedSettingsBackup) {
+        return
+    }
+
+    $settingsPath = $script:WindowedSettingsBackup.Path
+    if ($script:WindowedSettingsBackup.Existed) {
+        $settingsDir = Split-Path -Parent $settingsPath
+        New-Item -ItemType Directory -Force -Path $settingsDir | Out-Null
+        Set-Content -LiteralPath $settingsPath -Value $script:WindowedSettingsBackup.Content -Encoding UTF8
+        Write-Host "Restored GameUserSettings: $settingsPath"
+    } elseif (Test-Path -LiteralPath $settingsPath) {
+        Remove-Item -LiteralPath $settingsPath -Force
+        Write-Host "Removed temporary GameUserSettings: $settingsPath"
+    }
+
+    $script:WindowedSettingsBackup = $null
+}
+
 function Set-WindowedGameUserSettings {
     param(
         [string]$ExecutablePath,
@@ -43,9 +85,8 @@ function Set-WindowedGameUserSettings {
         [int]$Height
     )
 
-    $exeDir = Split-Path -Parent ([System.IO.Path]::GetFullPath($ExecutablePath))
-    $gameRoot = Resolve-Path -LiteralPath (Join-Path $exeDir "..\..")
-    $settingsPath = Join-Path $gameRoot "Saved\Config\Windows\GameUserSettings.ini"
+    $settingsPath = Get-StagedGameUserSettingsPath -ExecutablePath $ExecutablePath
+    Backup-GameUserSettingsForRestore -SettingsPath $settingsPath
     $settingsDir = Split-Path -Parent $settingsPath
     New-Item -ItemType Directory -Force -Path $settingsDir | Out-Null
 
@@ -95,102 +136,106 @@ function Set-WindowedGameUserSettings {
     Write-Host "Prepared windowed GameUserSettings: $settingsPath ($Width x $Height, FullscreenMode=2)"
 }
 
-if (-not (Test-Path -LiteralPath $Exe)) {
-    throw "Missing executable: $Exe"
-}
-
-if (-not $NoPrepareWindowedSettings) {
-    Set-WindowedGameUserSettings -ExecutablePath $Exe -Width $ResX -Height $ResY
-}
-
-$bounds = Get-DisplayBounds -Number $DisplayNumber
-$winX = [int]$bounds.X + $WindowOffsetX
-$winY = [int]$bounds.Y + $WindowOffsetY
-
-$argsList = @(
-    "-windowed",
-    "-ResX=$ResX",
-    "-ResY=$ResY",
-    "-WinX=$winX",
-    "-WinY=$winY",
-    "-T66AutomationResX=$ResX",
-    "-T66AutomationResY=$ResY",
-    "-T66AutomationWindowed"
-)
-
-if ($Screen) {
-    $argsList += "-T66FrontendScreen=$Screen"
-}
-
-if ($Output) {
-    $outputPath = [System.IO.Path]::GetFullPath($Output)
-    $outputDir = Split-Path -Parent $outputPath
-    if ($outputDir) {
-        New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
-    }
-    if (Test-Path -LiteralPath $outputPath) {
-        Remove-Item -LiteralPath $outputPath -Force
-    }
-    $argsList += "-T66AutoScreenshot=$outputPath"
-    $argsList += "-T66AutoScreenshotDelay=$DelaySeconds"
-} else {
-    $outputPath = $null
-}
-
-$argsList += $ExtraArgs
-
-Write-Host "Launching on display $DisplayNumber at WinX=$winX WinY=$winY"
-Write-Host "$Exe $($argsList -join ' ')"
-
-if ($PrintOnly) {
-    return
-}
-
-$process = Start-Process -FilePath $Exe -ArgumentList $argsList -PassThru
-
-if ($NoAutoClose) {
-    Write-Host "Started PID $($process.Id). NoAutoClose was set."
-    return
-}
-
-if ($outputPath) {
-    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
-    while ((Get-Date) -lt $deadline -and -not (Test-Path -LiteralPath $outputPath)) {
-        Start-Sleep -Milliseconds 500
+try {
+    if (-not (Test-Path -LiteralPath $Exe)) {
+        throw "Missing executable: $Exe"
     }
 
-    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+    if (-not $NoPrepareWindowedSettings) {
+        Set-WindowedGameUserSettings -ExecutablePath $Exe -Width $ResX -Height $ResY
+    }
 
-    if (-not (Test-Path -LiteralPath $outputPath)) {
-        $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..")).TrimEnd('\')
-        $outputFull = [System.IO.Path]::GetFullPath($outputPath)
-        if ($outputFull.StartsWith($projectRoot + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
-            $relativeOutput = $outputFull.Substring($projectRoot.Length + 1)
-            $cookedSandboxOutput = Join-Path $projectRoot (Join-Path "Saved\Cooked\Windows\T66" $relativeOutput)
-            if (Test-Path -LiteralPath $cookedSandboxOutput) {
-                Copy-Item -LiteralPath $cookedSandboxOutput -Destination $outputPath -Force
-                Write-Host "Recovered screenshot from cooked sandbox: $cookedSandboxOutput -> $outputPath"
+    $bounds = Get-DisplayBounds -Number $DisplayNumber
+    $winX = [int]$bounds.X + $WindowOffsetX
+    $winY = [int]$bounds.Y + $WindowOffsetY
+
+    $argsList = @(
+        "-windowed",
+        "-ResX=$ResX",
+        "-ResY=$ResY",
+        "-WinX=$winX",
+        "-WinY=$winY",
+        "-T66AutomationResX=$ResX",
+        "-T66AutomationResY=$ResY",
+        "-T66AutomationWindowed"
+    )
+
+    if ($Screen) {
+        $argsList += "-T66FrontendScreen=$Screen"
+    }
+
+    if ($Output) {
+        $outputPath = [System.IO.Path]::GetFullPath($Output)
+        $outputDir = Split-Path -Parent $outputPath
+        if ($outputDir) {
+            New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+        }
+        if (Test-Path -LiteralPath $outputPath) {
+            Remove-Item -LiteralPath $outputPath -Force
+        }
+        $argsList += "-T66AutoScreenshot=$outputPath"
+        $argsList += "-T66AutoScreenshotDelay=$DelaySeconds"
+    } else {
+        $outputPath = $null
+    }
+
+    $argsList += $ExtraArgs
+
+    Write-Host "Launching on display $DisplayNumber at WinX=$winX WinY=$winY"
+    Write-Host "$Exe $($argsList -join ' ')"
+
+    if ($PrintOnly) {
+        return
+    }
+
+    $process = Start-Process -FilePath $Exe -ArgumentList $argsList -PassThru
+
+    if ($NoAutoClose) {
+        Write-Host "Started PID $($process.Id). NoAutoClose was set."
+        return
+    }
+
+    if ($outputPath) {
+        $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+        while ((Get-Date) -lt $deadline -and -not (Test-Path -LiteralPath $outputPath)) {
+            Start-Sleep -Milliseconds 500
+        }
+
+        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+
+        if (-not (Test-Path -LiteralPath $outputPath)) {
+            $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..")).TrimEnd('\')
+            $outputFull = [System.IO.Path]::GetFullPath($outputPath)
+            if ($outputFull.StartsWith($projectRoot + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
+                $relativeOutput = $outputFull.Substring($projectRoot.Length + 1)
+                $cookedSandboxOutput = Join-Path $projectRoot (Join-Path "Saved\Cooked\Windows\T66" $relativeOutput)
+                if (Test-Path -LiteralPath $cookedSandboxOutput) {
+                    Copy-Item -LiteralPath $cookedSandboxOutput -Destination $outputPath -Force
+                    Write-Host "Recovered screenshot from cooked sandbox: $cookedSandboxOutput -> $outputPath"
+                }
             }
         }
-    }
 
-    if (-not (Test-Path -LiteralPath $outputPath)) {
-        throw "Screenshot was not created before timeout: $outputPath"
-    }
-
-    Add-Type -AssemblyName System.Drawing
-    $image = [System.Drawing.Image]::FromFile($outputPath)
-    try {
-        if ($image.Width -ne $ResX -or $image.Height -ne $ResY) {
-            throw "Screenshot dimensions were $($image.Width)x$($image.Height), expected $ResX x $ResY`: $outputPath"
+        if (-not (Test-Path -LiteralPath $outputPath)) {
+            throw "Screenshot was not created before timeout: $outputPath"
         }
-    }
-    finally {
-        $image.Dispose()
+
+        Add-Type -AssemblyName System.Drawing
+        $image = [System.Drawing.Image]::FromFile($outputPath)
+        try {
+            if ($image.Width -ne $ResX -or $image.Height -ne $ResY) {
+                throw "Screenshot dimensions were $($image.Width)x$($image.Height), expected $ResX x $ResY`: $outputPath"
+            }
+        }
+        finally {
+            $image.Dispose()
+        }
+
+        Write-Host "Captured $outputPath"
+        return
     }
 
-    Write-Host "Captured $outputPath"
-    return
+    Write-Host "Started PID $($process.Id)."
+} finally {
+    Restore-GameUserSettings
 }
-
-Write-Host "Started PID $($process.Id)."

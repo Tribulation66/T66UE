@@ -106,6 +106,9 @@ public:
 	void OnChallengesClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
+	void OnModsClicked();
+
+	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
 	void OnBackClicked();
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Hero Selection")
@@ -116,6 +119,8 @@ protected:
 	virtual void OnScreenDeactivated_Implementation() override;
 	virtual void RefreshScreen_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
+	virtual bool HandleBackAction() override;
+	virtual void NativeDestruct() override;
 	TSharedRef<SWidget> BuildInlineRetroFXPanel();
 
 private:
@@ -130,8 +135,6 @@ private:
 	TSharedPtr<STextBlock> HeroLoreWidget;        // Lore text when Lore panel is open
 	TSharedPtr<SBox> HeroSummaryStatsHost;        // Shared summary stats panel in right panel
 	TSharedPtr<SBox> HeroFullStatsHost;           // Shared full stats panel in left panel
-	TSharedPtr<SImage> HeroRecordMedalImageWidget;
-	TSharedPtr<STextBlock> HeroRecordMedalWidget;
 	TSharedPtr<STextBlock> HeroRecordUnityWidget;
 	TSharedPtr<SImage> HeroRecordRankImageWidget;
 	TSharedPtr<STextBlock> HeroRecordRankWidget;
@@ -145,13 +148,13 @@ private:
 	TSharedPtr<class SWidgetSwitcher> RightFooterWidgetSwitcher;
 	TSharedPtr<SProgressBar> CompanionUnityProgressBar;
 
-	/** Brushes for the 5-slot hero carousel portraits (prev2..next2). */
+	/** Brushes for the visible hero carousel portraits around the centered selection. */
 	TArray<TSharedPtr<struct FSlateBrush>> HeroCarouselPortraitBrushes;
 	TArray<FLinearColor> HeroCarouselSlotColors;
 	TArray<EVisibility> HeroCarouselSlotVisibility;
 	TArray<TSharedPtr<class SImage>> HeroCarouselImageWidgets;
 
-	/** Brushes for the 5-slot companion carousel portraits (prev2..next2). */
+	/** Brushes for the visible companion carousel portraits around the centered selection. */
 	TArray<TSharedPtr<struct FSlateBrush>> CompanionCarouselPortraitBrushes;
 	TArray<FLinearColor> CompanionCarouselSlotColors;
 	TArray<EVisibility> CompanionCarouselSlotVisibility;
@@ -165,16 +168,12 @@ private:
 	/** AC balance text in skins panel; updated dynamically when purchasing skins. */
 	TSharedPtr<STextBlock> ACBalanceTextBlock;
 	TSharedPtr<FSlateBrush> ACBalanceIconBrush;
-	TSharedPtr<FSlateBrush> ChallengesButtonIconBrush;
 	TSharedPtr<FSlateBrush> ChadCompanionIconBrush;
 	TSharedPtr<FSlateBrush> StacyCompanionIconBrush;
 	TStrongObjectPtr<UTexture2D> ACBalanceIconTexture;
-	TStrongObjectPtr<UTexture2D> ChallengesButtonIconTexture;
 	TStrongObjectPtr<UTexture2D> ChadCompanionIconTexture;
 	TStrongObjectPtr<UTexture2D> StacyCompanionIconTexture;
-	TStrongObjectPtr<UTexture2D> HeroRecordMedalTexture;
 	TStrongObjectPtr<UTexture2D> HeroRecordRankTexture;
-	TSharedPtr<FSlateBrush> HeroRecordMedalBrush;
 	TSharedPtr<FSlateBrush> HeroRecordRankBrush;
 	TArray<TSharedPtr<FSlateBrush>> PartyAvatarBrushes;
 	TArray<TSharedPtr<FSlateBrush>> PartyHeroPortraitBrushes;
@@ -252,6 +251,7 @@ private:
 
 	void InitializeInlineRetroFXFromUserSettingsIfNeeded();
 	void ApplyPendingInlineRetroFX();
+	void CommitPendingInlineRetroFXOnClose();
 	void ResetPendingInlineRetroFXToDefaults();
 
 	// Handle language change to rebuild UI
@@ -283,6 +283,7 @@ private:
 	FReply HandleStacyBodyClicked();
 	FReply HandleEnterClicked();
 	FReply HandleChallengesClicked();
+	FReply HandleModsClicked();
 	FReply HandleRetroFXSettingsClicked();
 	FReply HandleApplyInlineRetroFXClicked();
 	FReply HandleResetInlineRetroFXClicked();
@@ -293,6 +294,7 @@ private:
 	void OnDifficultyChanged(TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo);
 	void OnSkinTargetChanged(TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo);
 	void OnInfoTargetChanged(TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo);
+	void OpenCommunityContent(bool bOpenMods);
 
 	FDelegateHandle PartyStateChangedHandle;
 	FDelegateHandle SessionStateChangedHandle;

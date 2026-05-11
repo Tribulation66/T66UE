@@ -1,0 +1,502 @@
+{
+  "method": "built-in imagegen reference-derived component sheet; deterministic chroma-key slicing and resizing only",
+  "source_reference": "SourceAssets\\New References\\Main Menu.png",
+  "accepted_sheet": "Saved\\Codex\\UI\\MainMenu\\BloodyRetro_20260509\\Working\\Pass_01\\Candidates\\bloody_retro_component_sheet_pass01.png",
+  "variant_folder": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant",
+  "asset_count": 31,
+  "component_boxes": {
+    "cta": [
+      42,
+      37,
+      677,
+      241
+    ],
+    "tab": [
+      716,
+      62,
+      1148,
+      238
+    ],
+    "topbar_icon": [
+      1186,
+      62,
+      1352,
+      239
+    ],
+    "main_panel": [
+      88,
+      271,
+      629,
+      923
+    ],
+    "right_panel_unused": [
+      750,
+      306,
+      1247,
+      868
+    ],
+    "profile_slot": [
+      847,
+      925,
+      997,
+      1078
+    ],
+    "selected_red_tab": [
+      1033,
+      936,
+      1358,
+      1082
+    ],
+    "dropdown_field": [
+      31,
+      963,
+      439,
+      1054
+    ],
+    "player_row": [
+      467,
+      963,
+      818,
+      1074
+    ]
+  },
+  "assets": [
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\cta_new_game_button_disabled_red_square_variant.png",
+      "component": "cta",
+      "source_bbox": [
+        42,
+        37,
+        677,
+        241
+      ],
+      "size": [
+        522,
+        184
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\cta_new_game_button_disabled_square_variant.png",
+      "component": "cta",
+      "source_bbox": [
+        42,
+        37,
+        677,
+        241
+      ],
+      "size": [
+        522,
+        184
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\cta_new_game_button_hover_red_square_variant.png",
+      "component": "cta",
+      "source_bbox": [
+        42,
+        37,
+        677,
+        241
+      ],
+      "size": [
+        522,
+        184
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\cta_new_game_button_hover_square_variant.png",
+      "component": "cta",
+      "source_bbox": [
+        42,
+        37,
+        677,
+        241
+      ],
+      "size": [
+        522,
+        184
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\cta_new_game_button_normal_red_square_variant.png",
+      "component": "cta",
+      "source_bbox": [
+        42,
+        37,
+        677,
+        241
+      ],
+      "size": [
+        522,
+        184
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\cta_new_game_button_normal_square_variant.png",
+      "component": "cta",
+      "source_bbox": [
+        42,
+        37,
+        677,
+        241
+      ],
+      "size": [
+        522,
+        184
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\cta_new_game_button_pressed_red_square_variant.png",
+      "component": "cta",
+      "source_bbox": [
+        42,
+        37,
+        677,
+        241
+      ],
+      "size": [
+        522,
+        184
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\cta_new_game_button_pressed_square_variant.png",
+      "component": "cta",
+      "source_bbox": [
+        42,
+        37,
+        677,
+        241
+      ],
+      "size": [
+        522,
+        184
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\dropdown_field_disabled_square_variant.png",
+      "component": "dropdown_field",
+      "source_bbox": [
+        31,
+        963,
+        439,
+        1054
+      ],
+      "size": [
+        476,
+        150
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\dropdown_field_hover_square_variant.png",
+      "component": "dropdown_field",
+      "source_bbox": [
+        31,
+        963,
+        439,
+        1054
+      ],
+      "size": [
+        476,
+        150
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\dropdown_field_normal_square_variant.png",
+      "component": "dropdown_field",
+      "source_bbox": [
+        31,
+        963,
+        439,
+        1054
+      ],
+      "size": [
+        476,
+        150
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\dropdown_field_pressed_square_variant.png",
+      "component": "dropdown_field",
+      "source_bbox": [
+        31,
+        963,
+        439,
+        1054
+      ],
+      "size": [
+        476,
+        150
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\leaderboard_tab_button_disabled_square_variant.png",
+      "component": "tab",
+      "source_bbox": [
+        716,
+        62,
+        1148,
+        238
+      ],
+      "size": [
+        355,
+        155
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\leaderboard_tab_button_hover_square_variant.png",
+      "component": "tab",
+      "source_bbox": [
+        716,
+        62,
+        1148,
+        238
+      ],
+      "size": [
+        355,
+        155
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\leaderboard_tab_button_normal_square_variant.png",
+      "component": "tab",
+      "source_bbox": [
+        716,
+        62,
+        1148,
+        238
+      ],
+      "size": [
+        355,
+        155
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\leaderboard_tab_button_pressed_square_variant.png",
+      "component": "tab",
+      "source_bbox": [
+        716,
+        62,
+        1148,
+        238
+      ],
+      "size": [
+        355,
+        155
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\leaderboard_tab_button_selected_red_square_variant.png",
+      "component": "tab",
+      "source_bbox": [
+        716,
+        62,
+        1148,
+        238
+      ],
+      "size": [
+        355,
+        155
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\leaderboard_tab_button_selected_square_variant.png",
+      "component": "tab",
+      "source_bbox": [
+        716,
+        62,
+        1148,
+        238
+      ],
+      "size": [
+        355,
+        155
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\main_panel_normal_square_variant.png",
+      "component": "main_panel",
+      "source_bbox": [
+        88,
+        271,
+        629,
+        923
+      ],
+      "size": [
+        426,
+        807
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\player_row_panel_hover_square_variant.png",
+      "component": "player_row",
+      "source_bbox": [
+        467,
+        963,
+        818,
+        1074
+      ],
+      "size": [
+        476,
+        150
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\player_row_panel_normal_square_variant.png",
+      "component": "player_row",
+      "source_bbox": [
+        467,
+        963,
+        818,
+        1074
+      ],
+      "size": [
+        476,
+        150
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\profile_slot_disabled_square_variant.png",
+      "component": "profile_slot",
+      "source_bbox": [
+        847,
+        925,
+        997,
+        1078
+      ],
+      "size": [
+        173,
+        171
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\profile_slot_hover_square_variant.png",
+      "component": "profile_slot",
+      "source_bbox": [
+        847,
+        925,
+        997,
+        1078
+      ],
+      "size": [
+        173,
+        171
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\profile_slot_normal_square_variant.png",
+      "component": "profile_slot",
+      "source_bbox": [
+        847,
+        925,
+        997,
+        1078
+      ],
+      "size": [
+        173,
+        171
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\profile_slot_selected_red_square_variant.png",
+      "component": "profile_slot",
+      "source_bbox": [
+        847,
+        925,
+        997,
+        1078
+      ],
+      "size": [
+        173,
+        171
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\profile_slot_selected_square_variant.png",
+      "component": "profile_slot",
+      "source_bbox": [
+        847,
+        925,
+        997,
+        1078
+      ],
+      "size": [
+        173,
+        171
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\topbar_icon_button_disabled_square_variant.png",
+      "component": "topbar_icon",
+      "source_bbox": [
+        1186,
+        62,
+        1352,
+        239
+      ],
+      "size": [
+        91,
+        72
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\topbar_icon_button_hover_square_variant.png",
+      "component": "topbar_icon",
+      "source_bbox": [
+        1186,
+        62,
+        1352,
+        239
+      ],
+      "size": [
+        91,
+        72
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\topbar_icon_button_normal_square_variant.png",
+      "component": "topbar_icon",
+      "source_bbox": [
+        1186,
+        62,
+        1352,
+        239
+      ],
+      "size": [
+        91,
+        72
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\topbar_icon_button_pressed_square_variant.png",
+      "component": "topbar_icon",
+      "source_bbox": [
+        1186,
+        62,
+        1352,
+        239
+      ],
+      "size": [
+        91,
+        72
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements\\SquareVariant\\topbar_icon_button_selected_square_variant.png",
+      "component": "topbar_icon",
+      "source_bbox": [
+        1186,
+        62,
+        1352,
+        239
+      ],
+      "size": [
+        91,
+        72
+      ]
+    }
+  ],
+  "runtime_overrides": {
+    "leaderboard_tab_button_selected_red_square_variant.png": "uses tab component instead of generated selected_red_tab crop; the generated red-fill crop was rejected because the main menu reference keeps selected tabs mostly black with blood-stained off-white chrome."
+  }
+}

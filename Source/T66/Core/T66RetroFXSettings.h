@@ -85,6 +85,75 @@ struct T66_API FT66RetroFXSettings
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
 	float T66PixelationPercent = 0.0f;
 
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|World")
+	float WorldPixelationPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Characters")
+	float CharacterPixelationPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI")
+	float UIChromeTreatmentPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI")
+	float UITextTreatmentPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Chrome")
+	float UIChromePixelationPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Chrome")
+	float UIChromeDitheringPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Chrome")
+	float UIChromeVertexSnapPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Chrome")
+	float UIChromeVertexSnapResolutionPercent = 50.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Chrome")
+	float UIChromeScanlinePercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Chrome")
+	float UIChromeChromaticAberrationPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Text")
+	float UITextPixelationPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Text")
+	float UITextDitheringPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Text")
+	float UITextVertexSnapPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Text")
+	float UITextVertexSnapResolutionPercent = 50.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Text")
+	float UITextScanlinePercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Text")
+	float UITextChromaticAberrationPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Background Image")
+	float UIBackgroundImageTreatmentPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Background Image")
+	float UIBackgroundImagePixelationPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Background Image")
+	float UIBackgroundImageDitheringPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Background Image")
+	float UIBackgroundImageVertexSnapPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Background Image")
+	float UIBackgroundImageVertexSnapResolutionPercent = 50.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Background Image")
+	float UIBackgroundImageScanlinePercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Background Image")
+	float UIBackgroundImageChromaticAberrationPercent = 0.0f;
+
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
 	bool bEnableWorldGeometry = false;
 

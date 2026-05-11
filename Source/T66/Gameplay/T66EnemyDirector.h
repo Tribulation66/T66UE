@@ -136,6 +136,8 @@ protected:
 	/** Spawns 1-2 from PendingSpawns, then re-arms timer if more remain. */
 	void SpawnNextStaggeredBatch();
 
+	void ScheduleNextTowerRuntimeWave(float DelaySeconds);
+
 	UFUNCTION()
 	void HandleStageTimerChanged();
 
@@ -145,6 +147,9 @@ protected:
 	bool bSpawningArmed = false;
 
 	TArray<FPendingEnemySpawn> PendingSpawns;
+	float ActiveStaggeredSpawnIntervalSeconds = 0.05f;
+	float ActiveRuntimeWaveCooldownSeconds = 0.05f;
+	int32 ActiveMaxSpawnsPerStaggeredBatch = 1;
 
 	TSet<int32> TowerFloorsWithInitialPopulation;
 

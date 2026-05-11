@@ -28,9 +28,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "T66|Pixelation")
 	void SetPixelationLevel(int32 Level);
 
+	/** Set independent world/character pixelation levels: 0 = off, 1 = least, 10 = most. */
+	UFUNCTION(BlueprintCallable, Category = "T66|Pixelation")
+	void SetPixelationLevels(int32 WorldLevel, int32 CharacterLevel);
+
 	/** Current level (0 = off). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Pixelation")
 	int32 GetPixelationLevel() const { return CurrentLevel; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Pixelation")
+	int32 GetWorldPixelationLevel() const { return CurrentWorldLevel; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Pixelation")
+	int32 GetCharacterPixelationLevel() const { return CurrentCharacterLevel; }
 
 	/** Get or create the pixelation post-process material (loads asset or creates in editor). */
 	static UMaterialInterface* GetOrCreatePixelationMaterial();
@@ -50,6 +60,8 @@ private:
 	TSharedPtr<FStreamableHandle> PixelationMaterialLoadHandle;
 
 	int32 CurrentLevel = 0;
+	int32 CurrentWorldLevel = 0;
+	int32 CurrentCharacterLevel = 0;
 
 	/** Level 1 = high grid (subtle), 10 = low grid (strong). */
 	static int32 LevelToPixelGridSize(int32 Level);

@@ -24,7 +24,7 @@ void UT66FloatingCombatTextWidget::SetDamageNumber(int32 Amount, FName EventType
 	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_DoT)
 	{
 		Size = 16;
-		Color = FLinearColor(0.85f, 0.5f, 1.f, 1.f); // purple for DoT
+		Color = FLinearColor(0.95f, 0.18f, 0.22f, 1.f); // red for DoT
 	}
 	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_DamageTaken)
 	{
@@ -50,7 +50,7 @@ void UT66FloatingCombatTextWidget::SetStatusEvent(FName EventType)
 	{
 		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_DoT", "DoT");
 		Size = 18;
-		Color = FLinearColor(0.85f, 0.5f, 1.f, 1.f);
+		Color = FLinearColor(0.95f, 0.18f, 0.22f, 1.f);
 	}
 	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_LevelUp)
 	{
@@ -68,7 +68,7 @@ void UT66FloatingCombatTextWidget::SetStatusEvent(FName EventType)
 	{
 		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_Confusion", "CONFUSED!");
 		Size = 20;
-		Color = FLinearColor(0.7f, 0.4f, 1.f, 1.f);
+		Color = FLinearColor(0.9f, 0.22f, 0.26f, 1.f);
 	}
 	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Invisibility)
 	{

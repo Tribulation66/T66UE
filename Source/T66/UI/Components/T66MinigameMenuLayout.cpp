@@ -348,7 +348,7 @@ TSharedRef<SWidget> ST66MinigameMenuLayout::MakeScopeButton(const FText& Text, c
 		Text,
 		FOnClicked::CreateSP(this, &ST66MinigameMenuLayout::HandleScopeClicked, Scope),
 		true,
-		42.f,
+		57.f,
 		bSelected ? ET66ButtonType::Success : ET66ButtonType::Neutral,
 		bSelected);
 }

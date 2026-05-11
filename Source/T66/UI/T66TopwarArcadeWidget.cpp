@@ -657,7 +657,7 @@ FLinearColor UT66TopwarArcadeWidget::GetStatColor(const ET66HeroStatType StatTyp
 	case ET66HeroStatType::AttackSpeed:
 		return FLinearColor(0.82f, 0.44f, 0.08f, 1.f);
 	case ET66HeroStatType::AttackScale:
-		return FLinearColor(0.52f, 0.20f, 0.82f, 1.f);
+		return FLinearColor(0.82f, 0.16f, 0.22f, 1.f);
 	case ET66HeroStatType::Armor:
 		return FLinearColor(0.10f, 0.36f, 0.78f, 1.f);
 	case ET66HeroStatType::Evasion:

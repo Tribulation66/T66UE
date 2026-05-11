@@ -312,7 +312,7 @@ void UT66BackendSubsystem::StartDailyClimbAttempt()
 	if (!HasSteamTicket())
 	{
 		LastDailyClimbStatus = TEXT("missing_auth");
-		LastDailyClimbMessage = TEXT("Steam authentication is required for Daily Climb.");
+		LastDailyClimbMessage = TEXT("Steam authentication is required for Daily Descent.");
 		OnDailyClimbChallengeReady.Broadcast(TEXT("start"));
 		return;
 	}
@@ -536,7 +536,7 @@ void UT66BackendSubsystem::OnDailyClimbStatusResponseReceived(
 	if (!bConnectedSuccessfully || !Response.IsValid())
 	{
 		LastDailyClimbStatus = TEXT("connection_error");
-		LastDailyClimbMessage = TEXT("Daily Climb request failed.");
+		LastDailyClimbMessage = TEXT("Daily Descent request failed.");
 		OnDailyClimbChallengeReady.Broadcast(RequestTag);
 		return;
 	}
@@ -546,7 +546,7 @@ void UT66BackendSubsystem::OnDailyClimbStatusResponseReceived(
 	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
 	{
 		LastDailyClimbStatus = TEXT("parse_error");
-		LastDailyClimbMessage = TEXT("Daily Climb response was invalid JSON.");
+		LastDailyClimbMessage = TEXT("Daily Descent response was invalid JSON.");
 		OnDailyClimbChallengeReady.Broadcast(RequestTag);
 		return;
 	}
@@ -575,7 +575,7 @@ void UT66BackendSubsystem::OnDailyClimbSubmitResponseReceived(
 	if (!bConnectedSuccessfully || !Response.IsValid())
 	{
 		LastDailyClimbStatus = TEXT("connection_error");
-		LastDailyClimbMessage = TEXT("Daily Climb submit failed.");
+		LastDailyClimbMessage = TEXT("Daily Descent submit failed.");
 		OnDailyClimbSubmitDataReady.Broadcast(RequestKey, false, LastDailyClimbStatus, 0, 0);
 		return;
 	}
@@ -585,7 +585,7 @@ void UT66BackendSubsystem::OnDailyClimbSubmitResponseReceived(
 	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
 	{
 		LastDailyClimbStatus = TEXT("parse_error");
-		LastDailyClimbMessage = TEXT("Daily Climb submit returned invalid JSON.");
+		LastDailyClimbMessage = TEXT("Daily Descent submit returned invalid JSON.");
 		OnDailyClimbSubmitDataReady.Broadcast(RequestKey, false, LastDailyClimbStatus, 0, 0);
 		return;
 	}

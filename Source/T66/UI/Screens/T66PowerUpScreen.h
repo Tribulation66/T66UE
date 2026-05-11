@@ -43,4 +43,5 @@ private:
 	FReply HandleShowSingleUseClicked();
 	FReply HandleUnlockClicked(ET66HeroStatType StatType);
 	FReply HandlePurchaseSingleUseClicked(ET66SecondaryStatType StatType);
+	FReply HandleHeroSelectionSingleUseClicked(ET66SecondaryStatType StatType);
 };

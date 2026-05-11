@@ -3,9 +3,11 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "UI/T66FrontendBackButtonWidget.h"
+#include "UI/Screens/T66SettingsScreen.h"
 #include "UI/T66FrontendTopBarWidget.h"
 #include "UI/T66ScreenBase.h"
 #include "UI/Style/T66Style.h"
+#include "Core/T66BuffSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Blueprint/UserWidget.h"
 
@@ -31,6 +33,7 @@ UT66UIManager::UT66UIManager()
 	CurrentModal = nullptr;
 	FrontendTopBar = nullptr;
 	FrontendBackButton = nullptr;
+	RetroFXPreviewPopup = nullptr;
 }
 
 void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
@@ -48,6 +51,11 @@ void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
 		FrontendBackButton->RemoveFromParent();
 	}
 	FrontendBackButton = nullptr;
+	if (RetroFXPreviewPopup && RetroFXPreviewPopup->IsInViewport())
+	{
+		RetroFXPreviewPopup->RemoveFromParent();
+	}
+	RetroFXPreviewPopup = nullptr;
 }
 
 void UT66UIManager::RegisterScreenClass(ET66ScreenType ScreenType, TSubclassOf<UT66ScreenBase> WidgetClass)
@@ -147,7 +155,7 @@ bool UT66UIManager::SwitchToScreen(ET66ScreenType ScreenType, const bool bAddCur
 	CurrentScreen = NewScreen;
 	CurrentScreenType = ScreenType;
 	CurrentScreen->bIsModal = false;
-	// Force Hero Selection to rebuild so co-op (Lab + Back to Lobby only) vs solo (difficulty + Enter) layout is correct on first paint. Otherwise cached tree from a previous show can display.
+	// Force Hero Selection to rebuild so party-ready vs solo layout is correct on first paint. Otherwise cached tree from a previous show can display.
 	if (ScreenType == ET66ScreenType::HeroSelection)
 	{
 		FT66Style::DeferRebuild(CurrentScreen);
@@ -207,7 +215,7 @@ void UT66UIManager::ShowModal(ET66ScreenType ModalType)
 	const FString PerfLabel = FString::Printf(TEXT("UIManager::ShowModal[%s][%s]"), *T66ScreenTypeToDebugName(ModalType), bWarmShow ? TEXT("warm") : TEXT("cold"));
 	FLagScopedScope LagScope(World, *PerfLabel);
 
-	if (ModalType == ET66ScreenType::Challenges || ModalType == ET66ScreenType::DailyClimb)
+	if (ModalType == ET66ScreenType::Challenges || ModalType == ET66ScreenType::DailyDescent)
 	{
 		ShowScreen(ModalType);
 		return;
@@ -283,6 +291,16 @@ void UT66UIManager::GoBack()
 	}
 }
 
+bool UT66UIManager::HandleBackAction()
+{
+	if (CurrentModal)
+	{
+		return CurrentModal->HandleBackAction();
+	}
+
+	return CurrentScreen ? CurrentScreen->HandleBackAction() : false;
+}
+
 void UT66UIManager::RebuildAllVisibleUI()
 {
 	// Always defer rebuilds so theme switches cannot tear down Slate trees mid-input event.
@@ -305,10 +323,66 @@ void UT66UIManager::RebuildAllVisibleUI()
 	{
 		FT66Style::DeferRebuild(FrontendBackButton, 40);
 	}
+
+	if (RetroFXPreviewPopup && RetroFXPreviewPopup->IsInViewport())
+	{
+		FT66Style::DeferRebuild(RetroFXPreviewPopup, 175);
+	}
+}
+
+void UT66UIManager::ShowRetroFXPreviewPopup()
+{
+	if (!OwningPlayer)
+	{
+		UE_LOG(LogT66UIManager, Warning, TEXT("ShowRetroFXPreviewPopup: no owning player"));
+		return;
+	}
+
+	if (!RetroFXPreviewPopup)
+	{
+		RetroFXPreviewPopup = CreateWidget<UT66SettingsScreen>(OwningPlayer, UT66SettingsScreen::StaticClass());
+		if (!RetroFXPreviewPopup)
+		{
+			UE_LOG(LogT66UIManager, Warning, TEXT("ShowRetroFXPreviewPopup: failed to create settings preview widget"));
+			return;
+		}
+	}
+
+	RetroFXPreviewPopup->ConfigureAsRetroFXPreviewPopup(this);
+	if (!RetroFXPreviewPopup->IsInViewport())
+	{
+		RetroFXPreviewPopup->AddToViewport(175);
+		RetroFXPreviewPopup->OnScreenActivated();
+	}
+	else
+	{
+		FT66Style::DeferRebuild(RetroFXPreviewPopup, 175);
+	}
+}
+
+void UT66UIManager::HideRetroFXPreviewPopup()
+{
+	if (!RetroFXPreviewPopup)
+	{
+		return;
+	}
+
+	if (RetroFXPreviewPopup->IsInViewport())
+	{
+		RetroFXPreviewPopup->OnScreenDeactivated();
+		RetroFXPreviewPopup->RemoveFromParent();
+	}
+}
+
+bool UT66UIManager::IsRetroFXPreviewPopupVisible() const
+{
+	return RetroFXPreviewPopup && RetroFXPreviewPopup->IsInViewport();
 }
 
 void UT66UIManager::HideAllUI()
 {
+	HideRetroFXPreviewPopup();
+
 	// Close modal if active
 	if (CurrentModal)
 	{
@@ -352,6 +426,23 @@ float UT66UIManager::GetFrontendTopBarContentHeight() const
 
 bool UT66UIManager::ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const
 {
+	if (ScreenType == ET66ScreenType::PowerUp)
+	{
+		if (const UWorld* World = OwningPlayer ? OwningPlayer->GetWorld() : nullptr)
+		{
+			if (const UGameInstance* GI = World->GetGameInstance())
+			{
+				if (const UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
+				{
+					if (Buffs->IsHeroSelectionSingleUseBuffEditActive())
+					{
+						return false;
+					}
+				}
+			}
+		}
+	}
+
 	switch (ScreenType)
 	{
 	case ET66ScreenType::MainMenu:
@@ -361,8 +452,7 @@ bool UT66UIManager::ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const
 	case ET66ScreenType::PowerUp:
 	case ET66ScreenType::Achievements:
 	case ET66ScreenType::Minigames:
-	case ET66ScreenType::Challenges:
-	case ET66ScreenType::DailyClimb:
+	case ET66ScreenType::DailyDescent:
 		return true;
 	default:
 		return false;
@@ -380,7 +470,7 @@ bool UT66UIManager::ShouldShowFrontendBackButton() const
 	case ET66ScreenType::Achievements:
 	case ET66ScreenType::Minigames:
 	case ET66ScreenType::Challenges:
-	case ET66ScreenType::DailyClimb:
+	case ET66ScreenType::DailyDescent:
 		return false;
 	default:
 		break;

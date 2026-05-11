@@ -174,7 +174,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolvePartyInviteReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
 			FMargin(0.035f, 0.12f, 0.035f, 0.12f),
 			TEXT("PartyInviteShell"));
 	}
@@ -184,7 +184,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolvePartyInviteReferenceBrush(
 			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/player_row_panel_normal.png"),
+			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/player_row_panel_normal_square_variant.png"),
 			FMargin(0.055f, 0.32f, 0.055f, 0.32f),
 			TEXT("PartyInviteRowShell"));
 	}

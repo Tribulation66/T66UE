@@ -462,7 +462,8 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		}
 
 		ET66Difficulty NextDifficulty = SelectedDifficulty;
-		const bool bHasNextDifficulty = T66TryGetNextDifficulty(SelectedDifficulty, NextDifficulty);
+		bool bHasNextDifficulty = T66TryGetNextDifficulty(SelectedDifficulty, NextDifficulty);
+		bHasNextDifficulty = bHasNextDifficulty && (!T66GI || T66GI->IsDifficultyPlayable(NextDifficulty));
 		if (RunState)
 		{
 			RunState->SetPendingDifficultyClearSummary(bHasNextDifficulty);

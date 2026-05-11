@@ -2,6 +2,105 @@
 
 #include "UI/HUD/T66GameplayHUDWidget_Private.h"
 
+namespace
+{
+	static constexpr const TCHAR* T66HudSquareMainPanelPath = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png");
+	static constexpr const TCHAR* T66HudSquareSlotPath = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_normal_square_variant.png");
+	static constexpr const TCHAR* T66HudSquareRedSlotPath = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_selected_red_square_variant.png");
+	static const FLinearColor T66HudBorderRed(0.92f, 0.035f, 0.08f, 0.98f);
+	static const FLinearColor T66HudDeepRed(0.060f, 0.008f, 0.014f, 0.94f);
+	static const FLinearColor T66HudPanelRed(0.105f, 0.018f, 0.030f, 0.96f);
+	static const FLinearColor T66HudDividerRed(0.78f, 0.08f, 0.12f, 0.62f);
+	static const FLinearColor T66HudTextRed(1.0f, 0.24f, 0.30f, 1.f);
+
+	static const FSlateBrush* GetGameplayHudSquareBrush(const TCHAR* RelativePath, const FVector2D& ImageSize, const FMargin& Margin)
+	{
+		static TMap<FString, TSharedPtr<FSlateBrush>> Brushes;
+		const FString Key(RelativePath);
+		if (TSharedPtr<FSlateBrush>* ExistingBrush = Brushes.Find(Key))
+		{
+			return ExistingBrush->IsValid() && (*ExistingBrush)->GetResourceObject() ? ExistingBrush->Get() : nullptr;
+		}
+
+		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+		Brush->DrawAs = ESlateBrushDrawType::Box;
+		Brush->Margin = Margin;
+		Brush->ImageSize = ImageSize;
+		Brush->Tiling = ESlateBrushTileType::NoTile;
+		Brush->TintColor = FSlateColor(FLinearColor::White);
+		Brush->SetResourceObject(LoadRuntimeHudFileTexture(Key, TextureFilter::TF_Nearest));
+		Brushes.Add(Key, Brush);
+
+		return Brush->GetResourceObject() ? Brush.Get() : nullptr;
+	}
+
+	static const FSlateBrush* GetGameplayHudPanelBrush()
+	{
+		return GetGameplayHudSquareBrush(T66HudSquareMainPanelPath, FVector2D(512.f, 512.f), FMargin(0.10f));
+	}
+
+	static const FSlateBrush* GetGameplayHudSlotBrush(const bool bRed)
+	{
+		return GetGameplayHudSquareBrush(bRed ? T66HudSquareRedSlotPath : T66HudSquareSlotPath, FVector2D(160.f, 160.f), FMargin(0.18f));
+	}
+
+	static TSharedRef<SWidget> MakeGameplayHudSquarePanel(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+	{
+		if (const FSlateBrush* PanelBrush = GetGameplayHudPanelBrush())
+		{
+			return SNew(SBorder)
+				.BorderImage(PanelBrush)
+				.BorderBackgroundColor(FLinearColor::White)
+				.Padding(Padding)
+				[
+					Content
+				];
+		}
+
+		return SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(T66HudBorderRed)
+			.Padding(3.f)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(T66HudPanelRed)
+				.Padding(Padding)
+				[
+					Content
+				]
+			];
+	}
+
+	static TSharedRef<SWidget> MakeGameplayHudSquareSlot(const TSharedRef<SWidget>& Content, const FMargin& Padding, const bool bRed = false)
+	{
+		if (const FSlateBrush* SlotBrush = GetGameplayHudSlotBrush(bRed))
+		{
+			return SNew(SBorder)
+				.BorderImage(SlotBrush)
+				.BorderBackgroundColor(FLinearColor::White)
+				.Padding(Padding)
+				[
+					Content
+				];
+		}
+
+		return SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(T66HudBorderRed)
+			.Padding(2.f)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(T66HudDeepRed)
+				.Padding(Padding)
+				[
+					Content
+				]
+			];
+	}
+}
+
 TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
@@ -33,14 +132,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	DifficultyRowBox.Reset();
 	CowardiceRowBox.Reset();
 	BossPartBarRows.Reset();
-	const bool bDotaTheme = FT66Style::IsDotaTheme();
-	const FLinearColor SlotOuterColor = bDotaTheme ? FLinearColor(0.018f, 0.014f, 0.012f, 0.98f) : FLinearColor(0.f, 0.f, 0.f, 0.25f);
-	const FLinearColor SlotFrameColor = bDotaTheme ? FLinearColor(0.56f, 0.42f, 0.23f, 0.88f) : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
-	const FLinearColor SlotFillColor = bDotaTheme ? FLinearColor(0.025f, 0.026f, 0.032f, 0.96f) : FLinearColor(0.f, 0.f, 0.f, 0.f);
+	const bool bDotaTheme = false;
+	const FLinearColor SlotOuterColor = bDotaTheme ? FLinearColor(0.018f, 0.014f, 0.012f, 0.98f) : T66HudBorderRed;
+	const FLinearColor SlotFrameColor = bDotaTheme ? FLinearColor(0.56f, 0.42f, 0.23f, 0.88f) : T66HudBorderRed;
+	const FLinearColor SlotFillColor = bDotaTheme ? FLinearColor(0.025f, 0.026f, 0.032f, 0.96f) : T66HudDeepRed;
 	const FLinearColor BossBarBackgroundColor = bDotaTheme ? FT66Style::BossBarBackground() : FLinearColor(0.08f, 0.08f, 0.08f, 0.9f);
 	const FLinearColor BossBarFillColor = bDotaTheme ? FT66Style::BossBarFill() : FLinearColor(0.9f, 0.1f, 0.1f, 0.95f);
-	const FLinearColor PromptBackgroundColor = bDotaTheme ? FLinearColor(0.026f, 0.022f, 0.020f, 0.90f) : FLinearColor(0.02f, 0.02f, 0.03f, 0.65f);
-	const FLinearColor DialogueBackgroundColor = bDotaTheme ? FLinearColor(0.030f, 0.026f, 0.024f, 0.94f) : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f);
+	const FLinearColor PromptBackgroundColor = bDotaTheme ? FLinearColor(0.026f, 0.022f, 0.020f, 0.90f) : T66HudDeepRed;
+	const FLinearColor DialogueBackgroundColor = bDotaTheme ? FLinearColor(0.030f, 0.026f, 0.024f, 0.94f) : T66HudPanelRed;
 	const int32 InventorySlotWidgetCount = UT66RunStateSubsystem::MaxInventorySlots;
 
 	HeartBorders.SetNum(GT66DisplayedHeartCount);
@@ -401,9 +500,10 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.WidthOverride(GT66BottomLeftAbilityBoxSize)
 		.HeightOverride(GT66BottomLeftAbilityBoxSize)
 		[
-			SAssignNew(QuickReviveIconImage, SImage)
-			.Image(QuickReviveBrush.Get())
-			.ColorAndOpacity(FLinearColor::White)
+			FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+				SAssignNew(QuickReviveIconImage, SImage)
+				.Image(QuickReviveBrush.Get())
+				.ColorAndOpacity(FLinearColor::White)))
 		];
 
 	// Status effect dots row (above hearts): burn / chill / curse
@@ -446,16 +546,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const float AbilityInputBadgeHeight = 18.f;
 	const float AbilityIconInset = 6.f;
 	const float BottomLeftColumnGap = 0.f;
-	const FLinearColor BottomLeftPanelOuterColor(0.018f, 0.014f, 0.012f, 0.96f);
-	const FLinearColor BottomLeftPanelInnerColor(0.036f, 0.029f, 0.024f, 0.98f);
-	const FLinearColor BottomLeftPanelTitleColor(0.88f, 0.70f, 0.38f, 1.f);
-	const FLinearColor BottomLeftPanelDividerColor(0.70f, 0.52f, 0.26f, 0.66f);
-	const FLinearColor IdolSectionBorderColor(0.48f, 0.58f, 0.76f, 0.95f);
-	const FLinearColor PortraitSectionBorderColor(0.78f, 0.59f, 0.30f, 0.98f);
-	const FLinearColor AbilitySectionBorderColor(0.44f, 0.58f, 0.82f, 0.96f);
-	const FLinearColor PrimaryStatsSectionBorderColor(0.62f, 0.48f, 0.74f, 0.96f);
-	const FLinearColor SharedSectionFillColor(0.028f, 0.026f, 0.031f, 0.98f);
-	const FLinearColor LevelTextColor = bDotaTheme ? FT66Style::Accent2() : FLinearColor(0.90f, 0.75f, 0.20f, 1.f);
+	const FLinearColor BottomLeftPanelOuterColor = bDotaTheme ? FLinearColor(0.018f, 0.014f, 0.012f, 0.96f) : T66HudBorderRed;
+	const FLinearColor BottomLeftPanelInnerColor = bDotaTheme ? FLinearColor(0.036f, 0.029f, 0.024f, 0.98f) : T66HudPanelRed;
+	const FLinearColor BottomLeftPanelTitleColor = bDotaTheme ? FLinearColor(0.88f, 0.70f, 0.38f, 1.f) : T66HudTextRed;
+	const FLinearColor BottomLeftPanelDividerColor = bDotaTheme ? FLinearColor(0.70f, 0.52f, 0.26f, 0.66f) : T66HudDividerRed;
+	const FLinearColor IdolSectionBorderColor = bDotaTheme ? FLinearColor(0.48f, 0.58f, 0.76f, 0.95f) : T66HudBorderRed;
+	const FLinearColor PortraitSectionBorderColor = bDotaTheme ? FLinearColor(0.78f, 0.59f, 0.30f, 0.98f) : T66HudBorderRed;
+	const FLinearColor AbilitySectionBorderColor = bDotaTheme ? FLinearColor(0.44f, 0.58f, 0.82f, 0.96f) : T66HudBorderRed;
+	const FLinearColor PrimaryStatsSectionBorderColor = bDotaTheme ? FLinearColor(0.62f, 0.48f, 0.74f, 0.96f) : T66HudBorderRed;
+	const FLinearColor SharedSectionFillColor = bDotaTheme ? FLinearColor(0.028f, 0.026f, 0.031f, 0.98f) : T66HudDeepRed;
+	const FLinearColor LevelTextColor = bDotaTheme ? FT66Style::Accent2() : T66HudTextRed;
 	TSharedRef<SWidget> LevelBadgeRef =
 		SNew(SBox)
 		.WidthOverride(GT66BottomLeftLevelBadgeSize)
@@ -479,9 +579,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		];
 	auto MakeBottomLeftBlackPanel = [&](const FText& Title, const TSharedRef<SWidget>& Content, const FMargin& InnerPadding) -> TSharedRef<SWidget>
 	{
-		return SNew(SOverlay)
-			+ SOverlay::Slot()
-			[
+		return bDotaTheme
+			? StaticCastSharedRef<SWidget>(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 				.BorderBackgroundColor(BottomLeftPanelOuterColor)
@@ -516,14 +615,37 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							Content
 						]
 					]
+				])
+			: MakeGameplayHudSquarePanel(
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 2.f)
+				[
+					SNew(STextBlock)
+					.Text(Title)
+					.Font(FT66Style::Tokens::FontBold(13))
+					.ColorAndOpacity(BottomLeftPanelTitleColor)
+					.Justification(ETextJustify::Center)
 				]
-			];
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill).Padding(4.f, 0.f, 4.f, 3.f)
+				[
+					SNew(SBox)
+					.HeightOverride(1.f)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(BottomLeftPanelDividerColor)
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					Content
+				],
+				InnerPadding);
 	};
 	auto MakeBottomLeftBlackPanelNoTitle = [&](const TSharedRef<SWidget>& Content, const FMargin& InnerPadding) -> TSharedRef<SWidget>
 	{
-		return SNew(SOverlay)
-			+ SOverlay::Slot()
-			[
+		return bDotaTheme
+			? StaticCastSharedRef<SWidget>(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 				.BorderBackgroundColor(BottomLeftPanelOuterColor)
@@ -536,24 +658,28 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					[
 						Content
 					]
-				]
-			];
+				])
+			: MakeGameplayHudSquarePanel(Content, InnerPadding);
 	};
 	auto MakeBottomLeftSectionPanel = [&](const TSharedRef<SWidget>& Content, const FMargin& InnerPadding, const FLinearColor& BorderColor) -> TSharedRef<SWidget>
 	{
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(BorderColor)
-			.Padding(2.f)
-			[
+		const bool bUseRedSlot = BorderColor.R > BorderColor.B;
+		return bDotaTheme
+			? StaticCastSharedRef<SWidget>(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(SharedSectionFillColor)
-				.Padding(InnerPadding)
+				.BorderBackgroundColor(BorderColor)
+				.Padding(2.f)
 				[
-					Content
-				]
-			];
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(SharedSectionFillColor)
+					.Padding(InnerPadding)
+					[
+						Content
+					]
+				])
+			: MakeGameplayHudSquareSlot(Content, InnerPadding, bUseRedSlot);
 	};
 	auto MakePrimaryStatLine = [&](TSharedPtr<STextBlock>& OutText) -> TSharedRef<SWidget>
 	{
@@ -598,7 +724,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					+ SOverlay::Slot()
 					[
 					SAssignNew(IdolBorder, SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderImage(bDotaTheme ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(false))
 					.BorderBackgroundColor(SlotOuterColor)
 					.Padding(1.f)
 					[
@@ -606,7 +732,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						+ SOverlay::Slot()
 						[
 							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderImage(bDotaTheme ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(true))
 							.BorderBackgroundColor(SlotFrameColor)
 							.Padding(1.f)
 							[
@@ -693,7 +819,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						+ SOverlay::Slot()
 						[
 							SAssignNew(SlotBorder, SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderImage(bDotaTheme ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(false))
 							.BorderBackgroundColor(SlotOuterColor)
 							.Padding(1.f)
 							[
@@ -701,7 +827,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								+ SOverlay::Slot()
 								[
 									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderImage(bDotaTheme ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(true))
 									.BorderBackgroundColor(InvSlotBorderColor)
 									.Padding(1.f)
 									[
@@ -1019,10 +1145,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.WidthOverride(28.f)
 						.HeightOverride(28.f)
 						[
-							SAssignNew(LootPromptIconImage, SImage)
-							.Image(LootPromptIconBrush.Get())
-							.ColorAndOpacity(FLinearColor::White)
-							.Visibility(EVisibility::Collapsed)
+							FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+								SAssignNew(LootPromptIconImage, SImage)
+								.Image(LootPromptIconBrush.Get())
+								.ColorAndOpacity(FLinearColor::White)
+								.Visibility(EVisibility::Collapsed)))
 						]
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
@@ -1045,7 +1172,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.Visibility(EVisibility::Collapsed)
 			.RenderTransform(FSlateRenderTransform(FVector2D(0.f, 0.f)))
 			[
-				FT66Style::MakePanel(
+				MakeGameplayHudSquarePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -1087,7 +1214,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						]
 					]
 				,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(12.f)
+				FMargin(12.f)
 			)
 			]
 		]
@@ -1119,7 +1246,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.WidthOverride(GT66MediaPanelW)
 			.HeightOverride(GT66MediaPanelH)
 			[
-				FT66Style::MakePanel(
+				MakeGameplayHudSquarePanel(
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 					.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.55f))
@@ -1136,8 +1263,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						]
 					]
 				,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(6.f)
-				)
+				FMargin(6.f)
+			)
 			]
 		]
 		// Top-left stats (score + speedrun time) - themed panel and text
@@ -1208,7 +1335,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.Visibility(EVisibility::Collapsed)
 					],
 					FMargin(6.f, 4.f))
-				: FT66Style::MakePanel(
+				: MakeGameplayHudSquarePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -1268,7 +1395,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::TextMuted))
 						.Visibility(EVisibility::Collapsed)
 					],
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(6.f)
+					FMargin(8.f, 6.f)
 				)
 		]
 
@@ -1362,8 +1489,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 														.Padding(1.f)
 														[
 															SAssignNew(PortraitBorder, SBorder)
-															.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-															.BorderBackgroundColor(FT66Style::PanelInner())
+															.BorderImage(bDotaTheme ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(true))
+															.BorderBackgroundColor(bDotaTheme ? FT66Style::PanelInner() : T66HudPanelRed)
 														]
 													]
 												]
@@ -1398,8 +1525,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 												+ SOverlay::Slot()
 												[
 													SAssignNew(PortraitBorder, SBorder)
-													.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-													.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.14f, 1.f))
+													.BorderImage(bDotaTheme ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(true))
+													.BorderBackgroundColor(bDotaTheme ? FLinearColor(0.12f, 0.12f, 0.14f, 1.f) : T66HudPanelRed)
 												]
 												+ SOverlay::Slot()
 												[
@@ -1467,8 +1594,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 													.HeightOverride(AbilityIconSize)
 													[
 														SAssignNew(UltimateBorder, SBorder)
-														.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-														.BorderBackgroundColor(FLinearColor(0.03f, 0.03f, 0.05f, 1.f))
+														.BorderImage(bDotaTheme ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(false))
+														.BorderBackgroundColor(bDotaTheme ? FLinearColor(0.03f, 0.03f, 0.05f, 1.f) : T66HudBorderRed)
 														.Padding(0.f)
 														[
 															SNew(SOverlay)
@@ -1534,8 +1661,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 														+ SOverlay::Slot()
 														[
 															SAssignNew(PassiveBorder, SBorder)
-															.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-															.BorderBackgroundColor(FLinearColor(0.03f, 0.03f, 0.05f, 1.f))
+															.BorderImage(bDotaTheme ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(false))
+															.BorderBackgroundColor(bDotaTheme ? FLinearColor(0.03f, 0.03f, 0.05f, 1.f) : T66HudBorderRed)
 															.Padding(0.f)
 															[
 																SNew(SOverlay)
@@ -1654,11 +1781,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								SNew(SOverlay)
 								+ SOverlay::Slot()
 								[
-									FT66Style::MakePanel(
+									MakeGameplayHudSquarePanel(
 										SAssignNew(MinimapWidget, ST66WorldMapWidget)
 										.bMinimap(true)
 										.bShowLabels(false),
-										FT66PanelParams(ET66PanelType::Panel2).SetPadding(8.f)
+										FMargin(8.f)
 									)
 								])
 					]
@@ -1736,7 +1863,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									&PowerButton)
 							],
 							FMargin(6.f, 4.f))
-							: FT66Style::MakePanel(
+							: MakeGameplayHudSquarePanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 							[
@@ -1803,7 +1930,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									.SetVisibility(EVisibility::Collapsed),
 									&PowerButton)
 							],
-							FT66PanelParams(ET66PanelType::Panel).SetPadding(6.f))
+							FMargin(8.f, 6.f))
 					]
 				]
 			]
@@ -1828,63 +1955,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								FT66Style::Danger(),
 								WithAlpha(FT66Style::Border(), 0.65f)),
 							FMargin(6.f, 5.f))
-						: StaticCastSharedRef<SWidget>(
-							SNew(SOverlay)
-							+ SOverlay::Slot()
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.30f, 0.38f, 0.35f, 0.85f))
-								.Padding(3.f)
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.08f, 0.14f, 0.12f, 0.92f))
-									.Padding(FMargin(6.f, 5.f))
-									[
-										MakeInventoryEconomySection(
-											FLinearColor(0.85f, 0.75f, 0.20f, 1.f),
-											FT66Style::Tokens::Danger,
-											FLinearColor(0.55f, 0.65f, 0.58f, 0.55f))
-									]
-								]
-							]
-							+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top)
-							[
-								SNew(SBox).WidthOverride(10.f).HeightOverride(10.f)
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.55f, 0.65f, 0.58f, 0.9f))
-								]
-							]
-							+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top)
-							[
-								SNew(SBox).WidthOverride(10.f).HeightOverride(10.f)
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.55f, 0.65f, 0.58f, 0.9f))
-								]
-							]
-							+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom)
-							[
-								SNew(SBox).WidthOverride(10.f).HeightOverride(10.f)
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.55f, 0.65f, 0.58f, 0.9f))
-								]
-							]
-							+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Bottom)
-							[
-								SNew(SBox).WidthOverride(10.f).HeightOverride(10.f)
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.55f, 0.65f, 0.58f, 0.9f))
-								]
-							])
+						: MakeGameplayHudSquarePanel(
+							MakeInventoryEconomySection(
+								FLinearColor(1.0f, 0.82f, 0.24f, 1.f),
+								T66HudTextRed,
+								T66HudDividerRed),
+							FMargin(8.f, 6.f))
 				]
 			]
 		]
@@ -1908,25 +1984,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.Justification(ETextJustify::Center)
 						.AutoWrapText(false),
 						FMargin(14.f, 10.f))
-					: StaticCastSharedRef<SWidget>(
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(0.30f, 0.38f, 0.35f, 0.86f))
-						.Padding(3.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(PromptBackgroundColor)
-							.Padding(FMargin(14.f, 10.f))
-							[
-								SAssignNew(InteractionPromptTargetText, STextBlock)
-								.Text(FText::GetEmpty())
-								.Font(FT66Style::Tokens::FontBold(18))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
-								.Justification(ETextJustify::Center)
-								.AutoWrapText(false)
-							]
-						])
+					: MakeGameplayHudSquarePanel(
+						SAssignNew(InteractionPromptTargetText, STextBlock)
+						.Text(FText::GetEmpty())
+						.Font(FT66Style::Tokens::FontBold(18))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Justification(ETextJustify::Center)
+						.AutoWrapText(false),
+						FMargin(14.f, 10.f))
 			]
 		]
 		// Achievement unlock notification (lower-center lane, clear of inventory and idol panels)
@@ -2084,10 +2149,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									.Stretch(EStretch::ScaleToFit)
 									.StretchDirection(EStretchDirection::Both)
 									[
-										SAssignNew(PickupCardIconImage, SImage)
-										.Image(PickupCardIconBrush.Get())
-										.ColorAndOpacity(FLinearColor::White)
-										.Visibility(EVisibility::Collapsed)
+										FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+											SAssignNew(PickupCardIconImage, SImage)
+											.Image(PickupCardIconBrush.Get())
+											.ColorAndOpacity(FLinearColor::White)
+											.Visibility(EVisibility::Collapsed)))
 									]
 								]
 							]
@@ -2242,24 +2308,24 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				.VAlign(VAlign_Top)
 				.Padding(0.f, 24.f, 0.f, 0.f)
 				[
-					FT66Style::MakePanel(
+					MakeGameplayHudSquarePanel(
 						SAssignNew(ScopedUltTimerText, STextBlock)
 						.Text(FText::GetEmpty())
 						.Font(FT66Style::Tokens::FontBold(20))
 						.ColorAndOpacity(FT66Style::Tokens::Text),
-						FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(12.f, 8.f)))
+						FMargin(12.f, 8.f))
 				]
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Bottom)
 				.Padding(0.f, 0.f, 0.f, 42.f)
 				[
-					FT66Style::MakePanel(
+					MakeGameplayHudSquarePanel(
 						SAssignNew(ScopedShotCooldownText, STextBlock)
 						.Text(FText::GetEmpty())
 						.Font(FT66Style::Tokens::FontBold(18))
 						.ColorAndOpacity(FT66Style::Tokens::Text),
-						FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(14.f, 8.f)))
+						FMargin(14.f, 8.f))
 				]
 			]
 		]
@@ -2307,7 +2373,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Center)
 				[
-					FT66Style::MakePanel(
+					MakeGameplayHudSquarePanel(
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 						[
@@ -2333,16 +2399,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							.WidthOverride(FullMapWidthAttr)
 							.HeightOverride(FullMapHeightAttr)
 							[
-								FT66Style::MakePanel(
+								MakeGameplayHudSquarePanel(
 									SAssignNew(FullMapWidget, ST66WorldMapWidget)
 									.bMinimap(false)
 									.bShowLabels(true),
-									FT66PanelParams(ET66PanelType::Panel2).SetPadding(10.f)
+									FMargin(10.f)
 								)
 							]
 						]
 					,
-					FT66PanelParams(ET66PanelType::Panel)
+					FMargin(18.f, 14.f)
 				)
 				]
 			]
@@ -2363,8 +2429,8 @@ static void T66_ApplyWorldDialogueSelection(
 		if (OptionBorders[i].IsValid())
 		{
 			OptionBorders[i]->SetBorderBackgroundColor(bSelected
-				? (FT66Style::IsDotaTheme() ? FLinearColor(0.34f, 0.25f, 0.13f, 0.98f) : FLinearColor(0.18f, 0.18f, 0.26f, 0.95f))
-				: (FT66Style::IsDotaTheme() ? FLinearColor(0.030f, 0.026f, 0.024f, 0.94f) : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f)));
+				? FLinearColor(0.72f, 0.02f, 0.02f, 0.95f)
+				: FLinearColor(0.07f, 0.012f, 0.10f, 0.90f));
 		}
 		if (OptionTexts.IsValidIndex(i) && OptionTexts[i].IsValid())
 		{

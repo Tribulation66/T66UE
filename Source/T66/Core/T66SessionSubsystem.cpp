@@ -293,11 +293,6 @@ void UT66SessionSubsystem::HandlePartyHubScreenActivated()
 	UpdateSteamRichPresence();
 }
 
-void UT66SessionSubsystem::HandleLobbyScreenActivated()
-{
-	HandlePartyHubScreenActivated();
-}
-
 bool UT66SessionSubsystem::SendInviteToFriend(const FString& FriendPlayerId, const FString& FriendDisplayName)
 {
 	if (FriendPlayerId.IsEmpty())
@@ -982,8 +977,11 @@ bool UT66SessionSubsystem::SaveCurrentRunAndReturnToFrontend()
 	PendingFoundLobbyId.Reset();
 	PendingDirectJoinConnectString.Reset();
 	PendingJoinFriendLookupAttempts = 0;
-	LocalFrontendScreen = ET66ScreenType::MainMenu;
-	GI->PendingFrontendScreen = ET66ScreenType::MainMenu;
+	const ET66ScreenType ReturnFrontendScreen = GI->IsDailyClimbRunActive()
+		? ET66ScreenType::DailyDescent
+		: ET66ScreenType::MainMenu;
+	LocalFrontendScreen = ReturnFrontendScreen;
+	GI->PendingFrontendScreen = ReturnFrontendScreen;
 	ClearSteamRichPresence();
 
 	if (AT66PlayerController* PlayerController = GetPrimaryPlayerController())
@@ -1528,12 +1526,16 @@ ET66Difficulty UT66SessionSubsystem::GetSharedLobbyDifficulty() const
 	FT66LobbyPlayerInfo HostLobbyInfo;
 	if (GetHostLobbyProfile(HostLobbyInfo))
 	{
+		if (const UT66GameInstance* GI = GetT66GameInstance())
+		{
+			return GI->ResolvePlayableDifficulty(HostLobbyInfo.LobbyDifficulty);
+		}
 		return HostLobbyInfo.LobbyDifficulty;
 	}
 
 	if (const UT66GameInstance* GI = GetT66GameInstance())
 	{
-		return GI->SelectedDifficulty;
+		return GI->ResolvePlayableDifficulty(GI->SelectedDifficulty);
 	}
 
 	return ET66Difficulty::Easy;
@@ -1993,12 +1995,13 @@ FT66LobbyPlayerInfo UT66SessionSubsystem::BuildLocalLobbyProfile() const
 
 	if (const UT66GameInstance* GI = GetT66GameInstance())
 	{
-		LobbyInfo.SelectedHeroID = GI->SelectedHeroID;
+		UT66GameInstance* MutableGI = GetT66GameInstance();
+		LobbyInfo.SelectedHeroID = MutableGI ? MutableGI->ResolvePlayableHeroID(GI->SelectedHeroID) : GI->SelectedHeroID;
 		LobbyInfo.SelectedCompanionID = GI->SelectedCompanionID;
 		LobbyInfo.SelectedHeroBodyType = GI->SelectedHeroBodyType;
 		LobbyInfo.SelectedCompanionBodyType = GI->SelectedCompanionBodyType;
 		LobbyInfo.SelectedHeroSkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
-		LobbyInfo.LobbyDifficulty = GI->SelectedDifficulty;
+		LobbyInfo.LobbyDifficulty = GI->ResolvePlayableDifficulty(GI->SelectedDifficulty);
 		LobbyInfo.RunSeed = GI->RunSeed;
 		LobbyInfo.MainMapLayoutVariant = GI->CurrentMainMapLayoutVariant;
 		LobbyInfo.bMiniFlowActive = T66IsMiniFrontendScreen(LocalFrontendScreen);
@@ -2032,10 +2035,10 @@ void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* L
 		return;
 	}
 
-	GI->SelectedHeroID = LoadedSave->HeroID;
+	GI->SelectedHeroID = GI->ResolvePlayableHeroID(LoadedSave->HeroID);
 	GI->SelectedHeroBodyType = LoadedSave->HeroBodyType;
 	GI->SelectedCompanionID = LoadedSave->CompanionID;
-	GI->SelectedDifficulty = LoadedSave->Difficulty;
+	GI->SelectedDifficulty = GI->ResolvePlayableDifficulty(LoadedSave->Difficulty);
 	GI->SelectedPartySize = LoadedSave->PartySize;
 	GI->RunSeed = LoadedSave->RunSeed;
 	if (LoadedSave->bIsDailyClimbRun && LoadedSave->DailyClimbChallenge.IsValid())
@@ -2115,7 +2118,14 @@ void UT66SessionSubsystem::ApplySavedPartyProfilesToCurrentSession(const UT66Run
 		FT66LobbyPlayerInfo LobbyInfo = SessionPlayerState->GetLobbyInfo();
 		LobbyInfo.SteamId = SavedPlayer->PlayerId;
 		LobbyInfo.DisplayName = SavedPlayer->DisplayName;
-		LobbyInfo.SelectedHeroID = SavedPlayer->HeroID;
+		if (UT66GameInstance* GI = GetT66GameInstance())
+		{
+			LobbyInfo.SelectedHeroID = GI->ResolvePlayableHeroID(SavedPlayer->HeroID);
+		}
+		else
+		{
+			LobbyInfo.SelectedHeroID = SavedPlayer->HeroID;
+		}
 		LobbyInfo.SelectedHeroBodyType = SavedPlayer->HeroBodyType;
 		LobbyInfo.SelectedHeroSkinID = SavedPlayer->HeroSkinID.IsNone() ? FName(TEXT("Default")) : SavedPlayer->HeroSkinID;
 		LobbyInfo.SelectedCompanionID = SavedPlayer->CompanionID;

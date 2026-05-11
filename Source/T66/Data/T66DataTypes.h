@@ -613,6 +613,9 @@ struct T66_API FT66HeroStatBonuses
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	int32 Luck = 0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Speed = 0;
+
 	// Category-specific stat bonuses (from items)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Pierce")
 	int32 PierceDmg = 0;

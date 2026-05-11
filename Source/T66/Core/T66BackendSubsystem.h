@@ -305,7 +305,7 @@ public:
 
 	FOnT66MyRankDataReady OnMyRankDataReady;
 
-	// ── API: Daily Climb ─────────────────────────────────────
+	// ── API: Daily Descent ───────────────────────────────────
 
 	void FetchCurrentDailyClimb();
 	void StartDailyClimbAttempt();

@@ -63,6 +63,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
+#include "InputCoreTypes.h"
 #include "InputMappingContext.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66StageGate.h"
@@ -637,6 +638,17 @@ void AT66PlayerController::HandleZoom(float Value)
 {
 	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
 
+	const bool bAdjustPitch =
+		IsInputKeyDown(EKeys::LeftControl) ||
+		IsInputKeyDown(EKeys::RightControl) ||
+		IsInputKeyDown(EKeys::LeftCommand) ||
+		IsInputKeyDown(EKeys::RightCommand);
+	if (bAdjustPitch)
+	{
+		AdjustGameplayCameraPitchFromScroll(Value);
+		return;
+	}
+
 	if (bHeroOneScopedUltActive && bHeroOneScopeViewEnabled)
 	{
 		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
@@ -660,13 +672,13 @@ void AT66PlayerController::HandleZoom(float Value)
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(MyPawn);
 	if (Hero && Hero->CameraBoom)
 	{
-		const float ZoomSpeed = 25.f;
-		const float MinLength = 1200.f;  // Keep the current default gameplay view as the closest zoom.
-		const float MaxLength = 2400.f;  // Start at the fully zoomed-out view and do not allow any farther zoom.
+		const float ZoomSpeed = 120.f;
+		const float MinLength = 350.f;
+		const float MaxLength = 2800.f;
 		const float CurrentDesiredLength = DesiredGameplayCameraArmLength > KINDA_SMALL_NUMBER
 			? DesiredGameplayCameraArmLength
 			: Hero->CameraBoom->TargetArmLength;
 		DesiredGameplayCameraArmLength = FMath::Clamp(CurrentDesiredLength - (Value * ZoomSpeed), MinLength, MaxLength);
-		Hero->CameraBoom->TargetArmLength = FMath::Min(Hero->CameraBoom->TargetArmLength, DesiredGameplayCameraArmLength);
+		Hero->CameraBoom->TargetArmLength = DesiredGameplayCameraArmLength;
 	}
 }

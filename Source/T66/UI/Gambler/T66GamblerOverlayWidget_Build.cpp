@@ -529,9 +529,10 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								.WidthOverride(GameCardIconSize)
 								.HeightOverride(GameCardIconSize)
 								[
-									SNew(SImage)
-									.Image(IconBrush)
-									.ColorAndOpacity(FLinearColor::White)
+									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+										SNew(SImage)
+										.Image(IconBrush)
+										.ColorAndOpacity(FLinearColor::White)))
 								],
 								ET66OverlayChromeBrush::SlotNormal,
 								FMargin(0.f))
@@ -1322,9 +1323,10 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								.WidthOverride(BuybackIconSize)
 								.HeightOverride(BuybackIconSize)
 								[
-									SAssignNew(BuybackIconImages[i], SImage)
-									.Image(BuybackIconBrushes[i].Get())
-									.ColorAndOpacity(FLinearColor::White)
+									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+										SAssignNew(BuybackIconImages[i], SImage)
+										.Image(BuybackIconBrushes[i].Get())
+										.ColorAndOpacity(FLinearColor::White)))
 								],
 								ET66OverlayChromeBrush::SlotNormal,
 								FMargin(0.f),
@@ -1521,9 +1523,10 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							SAssignNew(InventorySlotIconImages[i], SImage)
-							.Image(InventorySlotIconBrushes[i].Get())
-							.ColorAndOpacity(FLinearColor::White)
+							FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+								SAssignNew(InventorySlotIconImages[i], SImage)
+								.Image(InventorySlotIconBrushes[i].Get())
+								.ColorAndOpacity(FLinearColor::White)))
 						]
 						+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0.f, 6.f, 8.f, 0.f)
 						[

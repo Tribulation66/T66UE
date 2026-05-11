@@ -4,6 +4,7 @@
 #include "Gameplay/T66VisualUtil.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66HeroSpeedSubsystem.h"
 #include "Components/StaticMeshComponent.h"
@@ -102,10 +103,55 @@ float AT66CompanionBase::GetHealingPerSecondForUnionStages(const int32 UnionStag
 	return 5.f;
 }
 
+float AT66CompanionBase::GetHealingAmountForDifficulty(const ET66Difficulty Difficulty)
+{
+	switch (Difficulty)
+	{
+	case ET66Difficulty::Easy:
+		return 5.f;
+	case ET66Difficulty::Medium:
+		return 6.f;
+	case ET66Difficulty::Hard:
+		return 6.f;
+	case ET66Difficulty::VeryHard:
+		return 5.f;
+	case ET66Difficulty::Impossible:
+		return 4.f;
+	default:
+		return 5.f;
+	}
+}
+
+float AT66CompanionBase::GetHealingIntervalSecondsForDifficulty(const ET66Difficulty Difficulty)
+{
+	switch (Difficulty)
+	{
+	case ET66Difficulty::Easy:
+		return 1.0f;
+	case ET66Difficulty::Medium:
+		return 1.5f;
+	case ET66Difficulty::Hard:
+		return 2.0f;
+	case ET66Difficulty::VeryHard:
+		return 2.5f;
+	case ET66Difficulty::Impossible:
+		return 3.0f;
+	default:
+		return 1.0f;
+	}
+}
+
+float AT66CompanionBase::GetHealingPerSecondForDifficulty(const ET66Difficulty Difficulty)
+{
+	const float Interval = GetHealingIntervalSecondsForDifficulty(Difficulty);
+	return Interval > 0.f ? GetHealingAmountForDifficulty(Difficulty) / Interval : 0.f;
+}
+
 void AT66CompanionBase::BeginPlay()
 {
 	Super::BeginPlay();
 	ApplyCompanionScale();
+	CompanionHealAccumulatorSeconds = 0.f;
 	bHasCachedGroundZ = false;
 	CachedGroundZ = GetActorLocation().Z;
 
@@ -152,6 +198,7 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 	CompanionID = InData.CompanionID;
 	CompanionData = InData;
 	ApplyCompanionScale();
+	CompanionHealAccumulatorSeconds = 0.f;
 	bHasCachedGroundZ = false;
 	GroundTraceTickCounter = 0;
 	if (CachedAchievementsSubsystem)
@@ -348,13 +395,29 @@ void AT66CompanionBase::Tick(float DeltaTime)
 		SetActorRotation(NewRot);
 	}
 
-	// Heal the hero over time (numerical HP/s by Union tier: 5/10/20/20).
-	const float HealHPPerSecond = GetHealingPerSecondForUnionStages(CachedUnionStagesCleared);
+	// Heal the hero in fixed difficulty bands. Unity is progression only.
+	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
+	if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+	{
+		SelectedDifficulty = T66GI->SelectedDifficulty;
+	}
+	const float HealAmount = GetHealingAmountForDifficulty(SelectedDifficulty);
+	const float HealIntervalSeconds = GetHealingIntervalSecondsForDifficulty(SelectedDifficulty);
 	if (CachedRunStateSubsystem)
 	{
-		if (CachedRunStateSubsystem->GetCurrentHP() < CachedRunStateSubsystem->GetMaxHP() && HealHPPerSecond > 0.f)
+		if (CachedRunStateSubsystem->GetCurrentHP() >= CachedRunStateSubsystem->GetMaxHP())
 		{
-			CachedRunStateSubsystem->HealHPFromCompanion(HealHPPerSecond * DeltaTime);
+			CompanionHealAccumulatorSeconds = 0.f;
+			return;
+		}
+
+		CompanionHealAccumulatorSeconds += DeltaTime;
+		if (HealAmount > 0.f
+			&& HealIntervalSeconds > 0.f
+			&& CompanionHealAccumulatorSeconds >= HealIntervalSeconds)
+		{
+			CompanionHealAccumulatorSeconds = FMath::Fmod(CompanionHealAccumulatorSeconds, HealIntervalSeconds);
+			CachedRunStateSubsystem->HealHPFromCompanion(HealAmount);
 		}
 	}
 }

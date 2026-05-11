@@ -13,8 +13,27 @@
 #include "UI/Style/T66RuntimeUIHelpers.h"
 #include "UObject/UObjectGlobals.h"
 
+namespace T66ScreenSlateHelpers
+{
+	FString MakeReferenceChromeElementAssetPath(const TCHAR* FileName);
+	FString MakeReferenceMainMenuElementAssetPath(const TCHAR* FileName);
+	FString MakeReferenceRedSquareButtonAssetPath(const TCHAR* State);
+}
+
 namespace
 {
+	const FString& MainMenuReferenceElementPrefix()
+	{
+		static const FString Prefix(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/"));
+		return Prefix;
+	}
+
+	const FString& MainMenuReferenceSquareElementPrefix()
+	{
+		static const FString Prefix(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/"));
+		return Prefix;
+	}
+
 	void AddUniqueAbsolutePath(TArray<FString>& Paths, const FString& Path)
 	{
 		if (Path.IsEmpty())
@@ -28,6 +47,43 @@ namespace
 	bool IsRuntimeDependencyRelativePath(const FString& RelativePath)
 	{
 		return RelativePath.StartsWith(TEXT("RuntimeDependencies/"), ESearchCase::CaseSensitive);
+	}
+
+	FString MapMainMenuReferencePathToActivePreset(const FString& RelativePath)
+	{
+		FString NormalizedPath = RelativePath;
+		NormalizedPath.ReplaceInline(TEXT("\\"), TEXT("/"));
+
+		if (NormalizedPath.StartsWith(MainMenuReferenceSquareElementPrefix(), ESearchCase::IgnoreCase))
+		{
+			const FString FileName = FPaths::GetCleanFilename(NormalizedPath);
+			if (FileName.Contains(TEXT("_red_square_variant"), ESearchCase::IgnoreCase))
+			{
+				return NormalizedPath;
+			}
+			const FString BaseName = FPaths::GetBaseFilename(FileName).ToLower();
+			if (BaseName.StartsWith(TEXT("dropdown_field_"), ESearchCase::IgnoreCase)
+				|| BaseName.StartsWith(TEXT("leaderboard_tab_button_"), ESearchCase::IgnoreCase))
+			{
+				FString State = BaseName;
+				State.RemoveFromStart(BaseName.StartsWith(TEXT("dropdown_field_"), ESearchCase::IgnoreCase)
+					? TEXT("dropdown_field_")
+					: TEXT("leaderboard_tab_button_"),
+					ESearchCase::IgnoreCase);
+				return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*State);
+			}
+
+			return T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(
+				*NormalizedPath.RightChop(MainMenuReferenceSquareElementPrefix().Len()));
+		}
+
+		if (NormalizedPath.StartsWith(MainMenuReferenceElementPrefix(), ESearchCase::IgnoreCase))
+		{
+			return T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(
+				*NormalizedPath.RightChop(MainMenuReferenceElementPrefix().Len()));
+		}
+
+		return FString();
 	}
 
 	void ConfigureUITexture(UTexture2D* Texture, const TextureFilter Filter, const bool bClamp)
@@ -191,6 +247,12 @@ namespace T66RuntimeUITextureAccess
 	{
 		if (!RelativePath.IsEmpty() && FPaths::IsRelative(RelativePath))
 		{
+			if (const FString PresetRelativePath = MapMainMenuReferencePathToActivePreset(RelativePath);
+				!PresetRelativePath.IsEmpty())
+			{
+				return FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / PresetRelativePath);
+			}
+
 			if (const FString RuntimeDependencyRelativePath = MapSourceRelativePathToRuntimeDependencyRelativePath(RelativePath);
 				!RuntimeDependencyRelativePath.IsEmpty())
 			{
@@ -261,6 +323,16 @@ namespace T66RuntimeUITextureAccess
 
 		if (FPaths::IsRelative(RelativePath))
 		{
+			if (const FString PresetRelativePath = MapMainMenuReferencePathToActivePreset(RelativePath);
+				!PresetRelativePath.IsEmpty())
+			{
+				AddUniqueAbsolutePath(CandidatePaths, FPaths::ProjectContentDir() / PresetRelativePath);
+				AddUniqueAbsolutePath(CandidatePaths, FPaths::ProjectDir() / PresetRelativePath);
+				AddUniqueAbsolutePath(CandidatePaths, FPaths::ProjectContentDir() / RelativePath);
+				AddUniqueAbsolutePath(CandidatePaths, FPaths::ProjectDir() / RelativePath);
+				return CandidatePaths;
+			}
+
 			if (IsRuntimeDependencyRelativePath(RelativePath))
 			{
 				AddUniqueAbsolutePath(CandidatePaths, MakeProjectRuntimeDependencyPath(RelativePath));

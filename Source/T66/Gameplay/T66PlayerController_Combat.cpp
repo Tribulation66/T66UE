@@ -150,7 +150,7 @@ namespace
 		}
 	}
 
-	static TArray<FKey> GetKeyboardMouseActionKeys(const FName ActionName)
+	static TArray<FKey> GetGameplayActionKeys(const FName ActionName)
 	{
 		TArray<FKey> OutKeys;
 		if (const UInputSettings* Settings = UInputSettings::GetInputSettings())
@@ -159,7 +159,7 @@ namespace
 			{
 				if (Mapping.ActionName != ActionName) continue;
 				if (!Mapping.Key.IsValid()) continue;
-				if (!Mapping.Key.IsMouseButton() && (Mapping.Key.IsGamepadKey() || Mapping.Key.IsTouch())) continue;
+				if (Mapping.Key.IsTouch()) continue;
 				OutKeys.AddUnique(Mapping.Key);
 			}
 		}
@@ -638,7 +638,7 @@ void AT66PlayerController::RefreshGameplayMouseMappings()
 				auto MapActionKeys = [this](UInputAction* Action, const FName ActionName, const FKey& FallbackKey)
 				{
 					if (!IMC_GameplayMouse || !Action) return;
-					TArray<FKey> Keys = GetKeyboardMouseActionKeys(ActionName);
+					TArray<FKey> Keys = GetGameplayActionKeys(ActionName);
 					if (Keys.Num() == 0)
 					{
 						Keys.Add(FallbackKey);

@@ -180,13 +180,13 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildSharedMainMenuUI()
 
 	return SAssignNew(SharedMenuLayout, ST66MinigameMenuLayout)
 		.GameID(FName(TEXT("deck")))
-		.Title(NSLOCTEXT("T66Deck.MainMenu", "DeckSharedTitle", "CHADPOCALYPSE DECKBUILDER"))
+		.Title(NSLOCTEXT("T66Deck.MainMenu", "DeckSharedTitle", "CHADPOCALYPSE DECK BUILDER"))
 		.Subtitle(NSLOCTEXT("T66Deck.MainMenu", "DeckSharedSubtitle", "Single-player dungeon descent"))
 		.DailyTitle(NSLOCTEXT("T66Deck.MainMenu", "DeckDailyTitle", "TODAY'S DUNGEON"))
 		.DailyBody(NSLOCTEXT("T66Deck.MainMenu", "DeckDailyBody", "One seeded descent per day. Choose a difficulty, draft through the dungeon, and post the best clear score."))
 		.DailyRules(NSLOCTEXT("T66Deck.MainMenu", "DeckDailyRules", "Single player only.\nDaily score uses today's map and reward seed.\nLeaderboard ranks by score.\nDifficulty is the only rules toggle."))
-		.AccentColor(FLinearColor(0.78f, 0.58f, 0.96f, 1.0f))
-		.BackgroundColor(FLinearColor(0.018f, 0.016f, 0.026f, 1.0f))
+		.AccentColor(FLinearColor(0.86f, 0.22f, 0.24f, 1.0f))
+		.BackgroundColor(FLinearColor(0.026f, 0.014f, 0.016f, 1.0f))
 		.DifficultyOptions(BuildDifficultyOptions())
 		.LoadGameEnabled(bHasAnySave)
 		.BackendSubsystem(GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66BackendSubsystem>() : nullptr)
@@ -292,7 +292,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildMainMenuUI()
 					+ SVerticalBox::Slot().AutoHeight()
 					[
 						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66Deck.MainMenu", "Title", "CHADPOCALYPSE DECKBUILDER"))
+						.Text(NSLOCTEXT("T66Deck.MainMenu", "Title", "CHADPOCALYPSE DECK BUILDER"))
 						.Font(FT66Style::MakeFont(TEXT("Black"), 30))
 						.ColorAndOpacity(FLinearColor(0.94f, 0.72f, 0.36f, 1.0f))
 					]
@@ -300,7 +300,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildMainMenuUI()
 					[
 						SNew(STextBlock)
 						.Text(FText::Format(
-							NSLOCTEXT("T66Deck.MainMenu", "Summary", "Prototype registry: {0} cards, {1} relics, {2} encounters."),
+							NSLOCTEXT("T66Deck.MainMenu", "Summary", "Run registry: {0} cards, {1} relics, {2} encounters."),
 							FText::AsNumber(CardCount),
 							FText::AsNumber(RelicCount),
 							FText::AsNumber(EncounterCount)))
@@ -325,7 +325,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildMainMenuUI()
 						MakeDeckButton(NSLOCTEXT("T66Deck.MainMenu", "Back", "BACK TO MINIGAMES"), FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleBackClicked), 430.f, 48.f)
 					],
 					FMargin(28.f),
-					FLinearColor(0.48f, 0.34f, 0.74f, 0.88f))
+					FLinearColor(0.50f, 0.16f, 0.18f, 0.88f))
 			]
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.f)
@@ -420,7 +420,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildHeroSelectUI()
 					]
 				],
 				FMargin(24.f),
-				FLinearColor(0.46f, 0.32f, 0.72f, 0.88f))
+				FLinearColor(0.50f, 0.14f, 0.18f, 0.88f))
 		];
 }
 
@@ -508,7 +508,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildGameplayUI()
 							SNew(STextBlock)
 							.Text(MakeDeckTextAttribute(this, &UT66DeckMainMenuScreen::GetPlayerText))
 							.Font(FT66Style::MakeFont(TEXT("Bold"), 19))
-							.ColorAndOpacity(FLinearColor(0.92f, 0.84f, 0.98f, 1.0f))
+							.ColorAndOpacity(FLinearColor(0.98f, 0.84f, 0.82f, 1.0f))
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 						[
@@ -517,10 +517,10 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildGameplayUI()
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 						[
-							MakeMeterPanel(NSLOCTEXT("T66Deck.Gameplay", "EnergyLabel", "ENERGY"), MakeDeckTextAttribute(this, &UT66DeckMainMenuScreen::GetEnergyText), FLinearColor(0.58f, 0.36f, 0.95f, 0.92f))
+							MakeMeterPanel(NSLOCTEXT("T66Deck.Gameplay", "EnergyLabel", "ENERGY"), MakeDeckTextAttribute(this, &UT66DeckMainMenuScreen::GetEnergyText), FLinearColor(0.86f, 0.20f, 0.24f, 0.92f))
 						],
 						FMargin(20.f),
-						FLinearColor(0.42f, 0.28f, 0.72f, 0.88f))
+						FLinearColor(0.50f, 0.14f, 0.18f, 0.88f))
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.40f)
 				[
@@ -554,7 +554,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildGameplayUI()
 					.Font(FT66Style::MakeFont(TEXT("Regular"), 14))
 					.ColorAndOpacity(FLinearColor(0.90f, 0.86f, 0.76f, 1.0f)),
 					FMargin(18.f, 12.f),
-					FLinearColor(0.34f, 0.26f, 0.42f, 0.88f))
+					FLinearColor(0.42f, 0.16f, 0.18f, 0.88f))
 			]
 			+ SVerticalBox::Slot().AutoHeight()
 			[
@@ -593,7 +593,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildGameplayUI()
 						]
 					],
 					FMargin(18.f),
-					FLinearColor(0.32f, 0.22f, 0.42f, 0.88f))
+					FLinearColor(0.42f, 0.14f, 0.16f, 0.88f))
 			]
 		];
 }

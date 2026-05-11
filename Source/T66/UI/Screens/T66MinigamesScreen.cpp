@@ -393,18 +393,18 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 	const FText ActiveSliceTitle = NSLOCTEXT("T66.MiniGames", "SliceActiveTitle", "CHADPOCALYPSE MINI");
 	const FText ActiveSliceBody = NSLOCTEXT("T66.MiniGames", "SliceActiveBody", "A 2D survivor minigame with its own saves, heroes, idols, enemies, and progression.");
 	const FText ActiveSliceTag = NSLOCTEXT("T66.MiniGames", "SliceActiveTag", "PLAY");
-	const FText TDTitle = NSLOCTEXT("T66.MiniGames", "SliceTDTitle", "CHADPOCALYPSE TD");
+	const FText TDTitle = NSLOCTEXT("T66.MiniGames", "SliceTDTitle", "CHADPOCALYPSE TOWER DEFENSE");
 	const FText TDBody = NSLOCTEXT("T66.MiniGames", "SliceTDBody", "A tower defense minigame with hero placement, enemy waves, upgrades, and rotating maps.");
 	const FText TDTag = NSLOCTEXT("T66.MiniGames", "SliceTDTag", "PLAY");
-	const FText IdleTitle = NSLOCTEXT("T66.MiniGames", "SliceIdleTitle", "IDLE CHADPOCALYPSE");
+	const FText IdleTitle = NSLOCTEXT("T66.MiniGames", "SliceIdleTitle", "CHADPOCALYPSE IDLE");
 	const FText IdleBody = NSLOCTEXT("T66.MiniGames", "SliceIdleBody", "An offline-progress idle minigame with heroes, upgrades, stage pushing, and comeback rewards.");
-	const FText IdleTag = NSLOCTEXT("T66.MiniGames", "SliceIdleTag", "PROTOTYPE");
-	const FText DeckTitle = NSLOCTEXT("T66.MiniGames", "SliceDeckTitle", "CHADPOCALYPSE DECKBUILDER");
+	const FText IdleTag = NSLOCTEXT("T66.MiniGames", "SliceIdleTag", "PLAY");
+	const FText DeckTitle = NSLOCTEXT("T66.MiniGames", "SliceDeckTitle", "CHADPOCALYPSE DECK BUILDER");
 	const FText DeckBody = NSLOCTEXT("T66.MiniGames", "SliceDeckBody", "A dungeon-descent deckbuilder with card combat, route choices, relics, and reward drafts.");
-	const FText DeckTag = NSLOCTEXT("T66.MiniGames", "SliceDeckTag", "PROTOTYPE");
+	const FText DeckTag = NSLOCTEXT("T66.MiniGames", "SliceDeckTag", "PLAY");
 	const FText VersusTitle = NSLOCTEXT("T66.MiniGames", "SliceVersusTitle", "VERSUS");
 	const FText VersusBody = NSLOCTEXT("T66.MiniGames", "SliceVersusBody", "A 1v1 arcade gauntlet where friends compete across cabinet games like Whack-a-Mole.");
-	const FText VersusTag = NSLOCTEXT("T66.MiniGames", "SliceVersusTag", "SETUP");
+	const FText VersusTag = NSLOCTEXT("T66.MiniGames", "SliceVersusTag", "PLAY");
 
 	const auto MakeSlicePanel = [&](const FText& Title, const FText& Body, const FText& Tag, const FLinearColor& Accent, const bool bClickable, FOnClicked ClickDelegate = FOnClicked()) -> TSharedRef<SWidget>
 	{
@@ -543,11 +543,11 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 							]
 							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 8.f)
 							[
-								MakeSlicePanel(IdleTitle, IdleBody, IdleTag, T66MinigamesAccentCrimson(), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked))
+								MakeSlicePanel(DeckTitle, DeckBody, DeckTag, FLinearColor(0.26f, 0.64f, 0.78f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked))
 							]
 							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 8.f)
 							[
-								MakeSlicePanel(DeckTitle, DeckBody, DeckTag, FLinearColor(0.26f, 0.64f, 0.78f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked))
+								MakeSlicePanel(IdleTitle, IdleBody, IdleTag, T66MinigamesAccentCrimson(), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked))
 							]
 							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 0.f)
 							[

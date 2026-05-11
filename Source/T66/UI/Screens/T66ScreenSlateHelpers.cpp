@@ -3,6 +3,7 @@
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 
 #include "Engine/Texture2D.h"
+#include "HAL/IConsoleManager.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
 #include "UI/T66UIManager.h"
@@ -25,8 +26,47 @@ namespace T66ScreenSlateHelpers
 	{
 		const TCHAR* ReferenceProgressSheetPath = TEXT("SourceAssets/UI/Reference/Shared/Progress/reference_progress_meter_sheet.png");
 		const TCHAR* ReferenceUltrakillElementDir = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements");
+		const TCHAR* ReferenceUltrakillSquareElementDir = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant");
+		const TCHAR* ReferenceBloodyRetroElementDir = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/BloodyRetro/Elements");
+		const TCHAR* ReferenceBloodyRetroSquareElementDir = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/BloodyRetro/Elements/SquareVariant");
 		const FBox2f ReferenceProgressTrackUV(FVector2f(0.0530f, 0.2950f), FVector2f(0.9550f, 0.4440f));
 		const FBox2f ReferenceProgressFillUV(FVector2f(0.0670f, 0.6320f), FVector2f(0.9320f, 0.6960f));
+
+		TAutoConsoleVariable<int32> CVarT66UIChromePreset(
+			TEXT("T66.UI.ChromePreset"),
+			0,
+			TEXT("UI chrome preset. 0=SquareVariant, 1=BloodyRetro."));
+
+		ET66ReferenceChromePreset ClampReferenceChromePreset(const int32 Value)
+		{
+			return Value == 1
+				? ET66ReferenceChromePreset::BloodyRetro
+				: ET66ReferenceChromePreset::SquareVariant;
+		}
+
+		const TCHAR* GetReferenceChromeSquareElementDir(const ET66ReferenceChromePreset Preset)
+		{
+			switch (Preset)
+			{
+			case ET66ReferenceChromePreset::BloodyRetro:
+				return ReferenceBloodyRetroSquareElementDir;
+			case ET66ReferenceChromePreset::SquareVariant:
+			default:
+				return ReferenceUltrakillSquareElementDir;
+			}
+		}
+
+		const TCHAR* GetReferenceMainMenuElementDir(const ET66ReferenceChromePreset Preset)
+		{
+			switch (Preset)
+			{
+			case ET66ReferenceChromePreset::BloodyRetro:
+				return ReferenceBloodyRetroElementDir;
+			case ET66ReferenceChromePreset::SquareVariant:
+			default:
+				return ReferenceUltrakillElementDir;
+			}
+		}
 
 		class ST66ReferenceHorizontalSlicedImage : public SLeafWidget
 		{
@@ -527,6 +567,80 @@ namespace T66ScreenSlateHelpers
 			: 0.0f;
 	}
 
+	FTopBarScreenLayoutMetrics MakeTopBarScreenLayoutMetrics(
+		const UT66UIManager* UIManager,
+		const FMargin& ExtraPadding)
+	{
+		FTopBarScreenLayoutMetrics Metrics;
+		Metrics.ViewportSize = FT66Style::GetViewportLogicalSize();
+
+		const float GlobalScale = FMath::Max(FT66Style::GetGlobalUIScale(), KINDA_SMALL_NUMBER);
+		Metrics.TopBarReservedHeight = UIManager && UIManager->IsFrontendTopBarVisible()
+			? FMath::Max(0.0f, (UIManager->GetFrontendTopBarReservedHeight() - GetFrontendChromeMetrics().TopBarOverlapPx) / GlobalScale)
+			: 0.0f;
+
+		const float TopGap = FMath::Clamp(Metrics.ViewportSize.Y * 0.002f, 0.0f, 4.0f);
+		const float BottomPadding = FMath::Clamp(Metrics.ViewportSize.Y * 0.008f, 6.0f, 14.0f);
+
+		Metrics.Padding = FMargin(
+			ExtraPadding.Left,
+			Metrics.TopBarReservedHeight + TopGap + ExtraPadding.Top,
+			ExtraPadding.Right,
+			BottomPadding + ExtraPadding.Bottom);
+
+		Metrics.ContentSize = FVector2D(
+			FMath::Max(1.0f, Metrics.ViewportSize.X - Metrics.Padding.Left - Metrics.Padding.Right),
+			FMath::Max(1.0f, Metrics.ViewportSize.Y - Metrics.Padding.Top - Metrics.Padding.Bottom));
+		Metrics.bCompact = Metrics.ContentSize.X < 1600.0f || Metrics.ContentSize.Y < 760.0f;
+		Metrics.bStacked = Metrics.ContentSize.X < 1420.0f || Metrics.ContentSize.Y < 700.0f;
+		return Metrics;
+	}
+
+	TSharedRef<SWidget> MakeTopBarScreenRoot(
+		const UT66UIManager* UIManager,
+		const TSharedRef<SWidget>& Content,
+		const TSharedRef<SWidget>& BackgroundContent,
+		const FLinearColor& OverlayTint,
+		const FMargin& ExtraPadding)
+	{
+		const TAttribute<FMargin> PaddingAttr = TAttribute<FMargin>::CreateLambda([UIManager, ExtraPadding]() -> FMargin
+		{
+			return MakeTopBarScreenLayoutMetrics(UIManager, ExtraPadding).Padding;
+		});
+
+		const EVisibility OverlayVisibility = OverlayTint.A > 0.0f
+			? EVisibility::SelfHitTestInvisible
+			: EVisibility::Collapsed;
+
+		return SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				BackgroundContent
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SBorder)
+				.Visibility(OverlayVisibility)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(OverlayTint)
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(PaddingAttr)
+				[
+					Content
+				]
+			];
+	}
+
 	FSlateFontInfo MakeFrontendChromeTitleFont()
 	{
 		return FT66Style::Tokens::FontBold(GetFrontendChromeMetrics().TitleFontSize);
@@ -630,25 +744,27 @@ namespace T66ScreenSlateHelpers
 			? TAttribute<FLinearColor>(Params.NormalStateTextShadowColor)
 			: DefaultShadowColor;
 
-		return SNew(SBox)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				.StretchDirection(EStretchDirection::DownOnly)
+		return FT66Style::MakeRetroUIText(
+			StaticCastSharedRef<SWidget>(
+				SNew(SBox)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
 				[
-					SNew(STextBlock)
-					.Text(Text)
-					.Font(Font)
-					.ColorAndOpacity(TextColor)
-					.ShadowOffset(ShadowOffset)
-					.ShadowColorAndOpacity(ShadowColor)
-					.Justification(ETextJustify::Center)
-					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-					.Clipping(EWidgetClipping::ClipToBounds)
-				]
-			];
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFit)
+					.StretchDirection(EStretchDirection::DownOnly)
+					[
+						SNew(STextBlock)
+						.Text(Text)
+						.Font(Font)
+						.ColorAndOpacity(TextColor)
+						.ShadowOffset(ShadowOffset)
+						.ShadowColorAndOpacity(ShadowColor)
+						.Justification(ETextJustify::Center)
+						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+						.Clipping(EWidgetClipping::ClipToBounds)
+					]
+				]));
 	}
 
 	TSharedRef<SWidget> MakeReferenceHorizontalSlicedImage(
@@ -656,10 +772,12 @@ namespace T66ScreenSlateHelpers
 		const FVector2D& DesiredSize,
 		const float SourceCapFraction)
 	{
-		return SNew(ST66ReferenceHorizontalSlicedImage)
-			.Brush(MoveTemp(Brush))
-			.DesiredSize(DesiredSize)
-			.SourceCapFraction(SourceCapFraction);
+		return FT66Style::MakeRetroUIChromeSurface(
+			StaticCastSharedRef<SWidget>(
+				SNew(ST66ReferenceHorizontalSlicedImage)
+				.Brush(MoveTemp(Brush))
+				.DesiredSize(DesiredSize)
+				.SourceCapFraction(SourceCapFraction)));
 	}
 
 	float NormalizeReferenceSlicedButtonMinWidth(const float RequestedMinWidth, const float Height)
@@ -667,6 +785,100 @@ namespace T66ScreenSlateHelpers
 		const float EffectiveHeight = Height > 0.f ? Height : 44.f;
 		const float ContractMinWidth = FMath::Clamp(EffectiveHeight * 2.0f, 84.f, 132.f);
 		return FMath::Max(RequestedMinWidth, ContractMinWidth);
+	}
+
+	ET66ReferenceChromePreset GetReferenceChromePreset()
+	{
+		return ClampReferenceChromePreset(CVarT66UIChromePreset.GetValueOnGameThread());
+	}
+
+	const TCHAR* GetReferenceChromePresetName()
+	{
+		switch (GetReferenceChromePreset())
+		{
+		case ET66ReferenceChromePreset::BloodyRetro:
+			return TEXT("BloodyRetro");
+		case ET66ReferenceChromePreset::SquareVariant:
+		default:
+			return TEXT("SquareVariant");
+		}
+	}
+
+	void SetReferenceChromePresetForSession(const ET66ReferenceChromePreset Preset)
+	{
+		CVarT66UIChromePreset.AsVariable()->Set(
+			Preset == ET66ReferenceChromePreset::BloodyRetro ? 1 : 0,
+			ECVF_SetByCode);
+	}
+
+	FString MakeReferenceMainMenuElementAssetPath(const TCHAR* FileName)
+	{
+		return FString::Printf(
+			TEXT("%s/%s"),
+			GetReferenceMainMenuElementDir(GetReferenceChromePreset()),
+			FileName ? FileName : TEXT(""));
+	}
+
+	FString MakeReferenceChromeElementAssetPath(const TCHAR* FileName)
+	{
+		return FString::Printf(
+			TEXT("%s/%s"),
+			GetReferenceChromeSquareElementDir(GetReferenceChromePreset()),
+			FileName ? FileName : TEXT(""));
+	}
+
+	FString MakeReferenceLongPanelAssetPath(const TCHAR* State)
+	{
+		FString NormalizedState(State ? State : TEXT("normal"));
+		NormalizedState.ToLowerInline();
+		if (NormalizedState.Equals(TEXT("hovered"), ESearchCase::IgnoreCase)
+			|| NormalizedState.Equals(TEXT("pressed"), ESearchCase::IgnoreCase)
+			|| NormalizedState.Equals(TEXT("selected"), ESearchCase::IgnoreCase)
+			|| NormalizedState.Equals(TEXT("focused"), ESearchCase::IgnoreCase))
+		{
+			NormalizedState = TEXT("hover");
+		}
+		else if (!NormalizedState.Equals(TEXT("disabled"), ESearchCase::IgnoreCase))
+		{
+			NormalizedState = TEXT("normal");
+		}
+
+		if (GetReferenceChromePreset() == ET66ReferenceChromePreset::BloodyRetro)
+		{
+			return MakeReferenceMainMenuElementAssetPath(*FString::Printf(TEXT("long_panel_%s.png"), *NormalizedState));
+		}
+
+		const TCHAR* SquareState = NormalizedState.Equals(TEXT("hover"), ESearchCase::IgnoreCase)
+			? TEXT("hover")
+			: TEXT("normal");
+		return MakeReferenceChromeElementAssetPath(*FString::Printf(TEXT("player_row_panel_%s_square_variant.png"), SquareState));
+	}
+
+	FString MakeReferenceRedSquareButtonAssetPath(const TCHAR* State)
+	{
+		FString NormalizedState(State ? State : TEXT("normal"));
+		NormalizedState.ToLowerInline();
+		if (NormalizedState.Equals(TEXT("hovered"), ESearchCase::IgnoreCase)
+			|| NormalizedState.Equals(TEXT("focused"), ESearchCase::IgnoreCase))
+		{
+			NormalizedState = TEXT("hover");
+		}
+		else if (NormalizedState.Equals(TEXT("selected"), ESearchCase::IgnoreCase)
+			|| NormalizedState.Equals(TEXT("active"), ESearchCase::IgnoreCase))
+		{
+			NormalizedState = TEXT("normal");
+		}
+		else if (!NormalizedState.Equals(TEXT("hover"), ESearchCase::IgnoreCase)
+			&& !NormalizedState.Equals(TEXT("pressed"), ESearchCase::IgnoreCase)
+			&& !NormalizedState.Equals(TEXT("disabled"), ESearchCase::IgnoreCase))
+		{
+			NormalizedState = TEXT("normal");
+		}
+
+		return FString::Printf(
+			TEXT("%s/cta_new_game_button_%s_red_square_variant.png"),
+			ReferenceUltrakillSquareElementDir,
+			*NormalizedState);
 	}
 
 	namespace
@@ -705,26 +917,26 @@ namespace T66ScreenSlateHelpers
 		const TCHAR* FamilyFileStem = TEXT("leaderboard_tab_button");
 		if (FCString::Stricmp(SafeFamily, TEXT("CTA")) == 0)
 		{
-			FamilyFileStem = TEXT("cta_new_game_button");
-			if (NormalizedState.Equals(TEXT("selected"), ESearchCase::IgnoreCase))
-			{
-				return FString::Printf(TEXT("%s/%s_normal.png"), ReferenceUltrakillElementDir, FamilyFileStem);
-			}
+			return MakeReferenceRedSquareButtonAssetPath(*NormalizedState);
 		}
 		else if (FCString::Stricmp(SafeFamily, TEXT("SquareIcon")) == 0)
 		{
 			FamilyFileStem = TEXT("topbar_icon_button");
 			if (NormalizedState.Equals(TEXT("selected"), ESearchCase::IgnoreCase))
 			{
-				return FString::Printf(TEXT("%s/%s_normal.png"), ReferenceUltrakillElementDir, FamilyFileStem);
+				return MakeReferenceChromeElementAssetPath(*FString::Printf(TEXT("%s_selected_square_variant.png"), FamilyFileStem));
 			}
 		}
 
-		return FString::Printf(
-			TEXT("%s/%s_%s.png"),
-			ReferenceUltrakillElementDir,
+		if (FCString::Stricmp(SafeFamily, TEXT("Pill")) == 0)
+		{
+			return MakeReferenceRedSquareButtonAssetPath(*NormalizedState);
+		}
+
+		return MakeReferenceChromeElementAssetPath(*FString::Printf(
+			TEXT("%s_%s_square_variant.png"),
 			FamilyFileStem,
-			*NormalizedState);
+			*NormalizedState));
 	}
 
 	FString MakeReferenceButtonAssetPath(
@@ -738,40 +950,41 @@ namespace T66ScreenSlateHelpers
 	{
 		const TCHAR* SafeRelativeAssetPath = RelativeAssetPath ? RelativeAssetPath : TEXT("");
 		const FString Relative(SafeRelativeAssetPath);
+		const FString LowerRelative = Relative.ToLower();
 		if (Relative.StartsWith(TEXT("Panels/Modal/"), ESearchCase::IgnoreCase)
 			|| Relative.StartsWith(TEXT("Panels/"), ESearchCase::IgnoreCase))
 		{
-			return FString::Printf(TEXT("%s/main_panel_normal.png"), ReferenceUltrakillElementDir);
+			if (LowerRelative.Contains(TEXT("row"))
+				|| LowerRelative.Contains(TEXT("strip"))
+				|| LowerRelative.Contains(TEXT("table")))
+			{
+				return MakeReferenceLongPanelAssetPath(TEXT("normal"));
+			}
+			return MakeReferenceChromeElementAssetPath(TEXT("main_panel_normal_square_variant.png"));
 		}
 		if (Relative.StartsWith(TEXT("Buttons/DangerCTA/"), ESearchCase::IgnoreCase))
 		{
 			const FString State = FPaths::GetBaseFilename(Relative).ToLower();
-			return FString::Printf(
-				TEXT("%s/cta_load_game_button_%s.png"),
-				ReferenceUltrakillElementDir,
-				State.Equals(TEXT("selected"), ESearchCase::IgnoreCase) ? TEXT("normal") : *State);
+			return MakeReferenceRedSquareButtonAssetPath(*State);
 		}
 		if (Relative.StartsWith(TEXT("Buttons/CTA/"), ESearchCase::IgnoreCase))
 		{
 			const FString State = FPaths::GetBaseFilename(Relative).ToLower();
-			return FString::Printf(
-				TEXT("%s/cta_new_game_button_%s.png"),
-				ReferenceUltrakillElementDir,
-				State.Equals(TEXT("selected"), ESearchCase::IgnoreCase) ? TEXT("normal") : *State);
+			return MakeReferenceRedSquareButtonAssetPath(*State);
 		}
 		if (Relative.StartsWith(TEXT("Buttons/SquareIcon/"), ESearchCase::IgnoreCase))
 		{
 			const FString State = FPaths::GetBaseFilename(Relative).ToLower();
-			return FString::Printf(
-				TEXT("%s/topbar_icon_button_%s.png"),
-				ReferenceUltrakillElementDir,
-				State.Equals(TEXT("selected"), ESearchCase::IgnoreCase) ? TEXT("normal") : *State);
+			const TCHAR* ResolvedState = State.Equals(TEXT("selected"), ESearchCase::IgnoreCase) ? TEXT("selected") : *State;
+			return MakeReferenceChromeElementAssetPath(*FString::Printf(
+				TEXT("topbar_icon_button_%s_square_variant.png"),
+				ResolvedState));
 		}
 		if (Relative.StartsWith(TEXT("Buttons/basic_button/"), ESearchCase::IgnoreCase)
 			|| Relative.StartsWith(TEXT("Buttons/Pill/"), ESearchCase::IgnoreCase))
 		{
 			const FString State = FPaths::GetBaseFilename(Relative).ToLower();
-			return FString::Printf(TEXT("%s/leaderboard_tab_button_%s.png"), ReferenceUltrakillElementDir, *State);
+			return MakeReferenceRedSquareButtonAssetPath(*State);
 		}
 		if (Relative.StartsWith(TEXT("Slots/"), ESearchCase::IgnoreCase))
 		{
@@ -789,7 +1002,7 @@ namespace T66ScreenSlateHelpers
 			{
 				SlotState = TEXT("hover");
 			}
-			return FString::Printf(TEXT("%s/profile_slot_%s.png"), ReferenceUltrakillElementDir, SlotState);
+			return MakeReferenceChromeElementAssetPath(*FString::Printf(TEXT("profile_slot_%s_square_variant.png"), SlotState));
 		}
 		if (Relative.StartsWith(TEXT("Controls/dropdown_field"), ESearchCase::IgnoreCase)
 			|| Relative.StartsWith(TEXT("Controls/dropdown_field_"), ESearchCase::IgnoreCase))
@@ -808,7 +1021,7 @@ namespace T66ScreenSlateHelpers
 			{
 				State = TEXT("hover");
 			}
-			return FString::Printf(TEXT("%s/dropdown_field_%s.png"), ReferenceUltrakillElementDir, *State);
+			return MakeReferenceRedSquareButtonAssetPath(*State);
 		}
 
 		return FString::Printf(
@@ -866,25 +1079,48 @@ namespace T66ScreenSlateHelpers
 		const TCHAR* DebugLabel,
 		const FLinearColor& FallbackColor)
 	{
-		if (const FSlateBrush* Brush = GetReferenceSharedBrush(RelativeAssetPath, BrushMargin, DebugLabel))
+		auto MakeLayeredReferenceBorder =
+			[&Content, Padding](const FSlateBrush* BorderBrush, const FLinearColor& BorderColor) -> TSharedRef<SWidget>
 		{
-			return SNew(SBorder)
-				.BorderImage(Brush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
+			TSharedRef<SBorder> ChromeBorder =
+				SNew(SBorder)
+				.BorderImage(BorderBrush)
+				.BorderBackgroundColor(BorderColor)
+				.Padding(FMargin(0.0f))
+				.Visibility(EVisibility::HitTestInvisible)
 				.Clipping(EWidgetClipping::ClipToBounds)
 				[
-					Content
+					SNew(SBox)
 				];
+
+			return SNew(SOverlay)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					FT66Style::MakeRetroUIChromeSurface(StaticCastSharedRef<SWidget>(ChromeBorder))
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+					.Padding(Padding)
+					.Clipping(EWidgetClipping::ClipToBounds)
+					[
+						Content
+					]
+				];
+		};
+
+		if (const FSlateBrush* Brush = GetReferenceSharedBrush(RelativeAssetPath, BrushMargin, DebugLabel))
+		{
+			return MakeLayeredReferenceBorder(Brush, FLinearColor::White);
 		}
 
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FallbackColor)
-			.Padding(Padding)
-			[
-				Content
-			];
+		return MakeLayeredReferenceBorder(FCoreStyle::Get().GetBrush("WhiteBrush"), FallbackColor);
 	}
 
 	TSharedRef<SWidget> MakeReferenceSlicedPlateButton(
@@ -926,11 +1162,13 @@ namespace T66ScreenSlateHelpers
 		const FLinearColor& FallbackFill,
 		const FMargin& Padding)
 	{
-		return SNew(ST66ReferenceProgressBar)
-			.Percent(Percent)
-			.DesiredSize(DesiredSize)
-			.FallbackFill(FallbackFill)
-			.Padding(Padding);
+		return FT66Style::MakeRetroUIChromeSurface(
+			StaticCastSharedRef<SWidget>(
+				SNew(ST66ReferenceProgressBar)
+				.Percent(Percent)
+				.DesiredSize(DesiredSize)
+				.FallbackFill(FallbackFill)
+				.Padding(Padding)));
 	}
 
 	TSharedRef<SWidget> MakeReferenceProgressBar(

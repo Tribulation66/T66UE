@@ -9,12 +9,13 @@ The active prompt is `C:\UE\T66\UI\MASTER_REFERENCE_UI_GENERATION_PROMPT.md`. Tr
 5. Generate a reference-derived text-free sprite/component sheet with built-in imagegen only. API keys, SDK fallback scripts, and inline-preview excuses are not part of this workflow.
 6. Run the sprite sheet quality gate before slicing or assembly. If the sheet does not match the reference art family, reject it and generate another sheet.
 7. Build a 1920x1080 hierarchy and containment map from the reference before assembly. Every card, panel, row, button, slot, and child control must fit inside its intended parent. If a child overflows, fix the hierarchy size or placement instead of accepting the overflow.
-8. Store accepted runtime assets under the target folder in `C:\UE\T66\SourceAssets\UI\Reference\Screens` or `C:\UE\T66\SourceAssets\UI\Reference\Modals`.
-9. Implement each component with an explicit resize contract: fixed image, horizontal 3-slice, vertical 3-slice, 9-slice, or intentional tiled fill.
-10. Preserve the anti-squish button path: sliced plate renderer, nearest filtering, live text, and minimum width clamp.
-11. Keep labels, names, values, scores, avatars, selections, and runtime state live.
-12. Use a normal Unreal build only when C++ changes require it. Do not run UAT/full stage/cook/package for individual target iteration.
-13. Capture the working screen from the staged standalone executable, compare against the reference, write the difference list, fix the highest-impact difference, and repeat until the owned UI matches.
+8. Apply `C:\UE\T66\UI\Processes\LAYOUT_AND_SIZING.md`: top-bar screens fill the viewport below the shared top bar, parent panels grow or switch layout when children do not fit, and fixed 1920x1080 shells are not acceptable runtime roots.
+9. Store accepted runtime assets under the target folder in `C:\UE\T66\SourceAssets\UI\Reference\Screens` or `C:\UE\T66\SourceAssets\UI\Reference\Modals`.
+10. Implement each component with an explicit resize contract: fixed image, horizontal 3-slice, vertical 3-slice, 9-slice, or intentional tiled fill.
+11. Preserve the anti-squish button path: sliced plate renderer, nearest filtering, live text, and minimum width clamp.
+12. Keep labels, names, values, scores, avatars, selections, and runtime state live.
+13. Use a normal Unreal build only when C++ changes require it. Do not run UAT/full stage/cook/package for individual target iteration.
+14. Capture the working screen from the staged standalone executable, compare against the reference, write the difference list, fix the highest-impact difference, and repeat until the owned UI matches.
 
 Working capture command pattern:
 

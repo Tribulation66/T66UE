@@ -133,7 +133,7 @@ protected:
 
 	/** Orbit camera pitch (degrees). Positive looks slightly down. */
 	UPROPERTY(Transient)
-	float OrbitPitchDegrees = 15.f;
+	float OrbitPitchDegrees = 10.f;
 
 	/** Cached orbit framing so the platform doesn't "swim" as you rotate. */
 	UPROPERTY(Transient)
@@ -169,7 +169,7 @@ protected:
 
 	/** Multiplier on the auto-framed camera distance (smaller = character appears bigger, more zoomed in). */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
-	float CameraDistanceMultiplier = 2.0f;
+	float CameraDistanceMultiplier = 1.95f;
 
 	/** User zoom factor applied on top of CameraDistanceMultiplier (<= 1.0 means zoom-in). */
 	UPROPERTY(Transient)

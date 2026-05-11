@@ -39,7 +39,7 @@ private:
 		int32 Cost = 1;
 		int32 Damage = 0;
 		int32 Block = 0;
-		FLinearColor Accent = FLinearColor(0.45f, 0.25f, 0.86f, 1.f);
+		FLinearColor Accent = FLinearColor(0.78f, 0.18f, 0.22f, 1.f);
 	};
 
 	TSharedRef<SWidget> BuildMainMenuUI();
