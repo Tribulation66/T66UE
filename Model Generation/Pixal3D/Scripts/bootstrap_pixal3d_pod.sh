@@ -25,7 +25,9 @@ if ! conda env list | awk '{print $1}' | grep -qx "${ENV_NAME}"; then
   conda create -y -n "${ENV_NAME}" python=3.10 pip
 fi
 
+set +u
 conda activate "${ENV_NAME}"
+set -u
 
 python -m pip install --upgrade pip
 
@@ -74,7 +76,9 @@ if [[ -n "${NATTEN_SOURCE_ARCH}" && "${PIXAL3D_SKIP_NATTEN_SOURCE_BUILD:-0}" != 
     cuda-cudart_linux-64=12.4.127 \
     cuda-crt=12.4.131 \
     cuda-crt-dev_linux-64=12.4.131 \
-    cuda-nvcc=12.4.131
+    cuda-nvcc=12.4.131 \
+    cuda-libraries-dev=12.4.1 \
+    libcurand-dev=10.3.5.147
   set -u
   python -m pip install --upgrade cmake==4.1.0
   export CUDA_HOME="${CONDA_PREFIX}"
