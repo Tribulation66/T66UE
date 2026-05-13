@@ -404,8 +404,8 @@ static void T66_ApplyWorldDialogueSelectionOverlay(
 		if (OptionBorders[i].IsValid())
 		{
 			OptionBorders[i]->SetBorderBackgroundColor(bSelected
-				? FLinearColor(0.72f, 0.02f, 0.02f, 0.95f)
-				: FLinearColor(0.07f, 0.012f, 0.10f, 0.90f));
+				? WithAlpha(FT66FlatStyle::SelectedBorder(), 0.95f)
+				: WithAlpha(FT66FlatStyle::DefaultFill(), 0.90f));
 		}
 		if (OptionTexts.IsValidIndex(i) && OptionTexts[i].IsValid())
 		{

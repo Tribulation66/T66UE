@@ -445,16 +445,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const float AbilityInputBadgeHeight = 18.f;
 	const float AbilityIconInset = 6.f;
 	const float BottomLeftColumnGap = 0.f;
-	const FLinearColor BottomLeftPanelOuterColor = bUseAlternateHudChrome ? FLinearColor(0.018f, 0.014f, 0.012f, 0.96f) : T66HudBorderRed;
-	const FLinearColor BottomLeftPanelInnerColor = bUseAlternateHudChrome ? FLinearColor(0.036f, 0.029f, 0.024f, 0.98f) : T66HudPanelRed;
-	const FLinearColor BottomLeftPanelTitleColor = bUseAlternateHudChrome ? FLinearColor(0.88f, 0.70f, 0.38f, 1.f) : T66HudTextRed;
-	const FLinearColor BottomLeftPanelDividerColor = bUseAlternateHudChrome ? FLinearColor(0.70f, 0.52f, 0.26f, 0.66f) : T66HudDividerRed;
-	const FLinearColor IdolSectionBorderColor = bUseAlternateHudChrome ? FLinearColor(0.48f, 0.58f, 0.76f, 0.95f) : T66HudBorderRed;
-	const FLinearColor PortraitSectionBorderColor = bUseAlternateHudChrome ? FLinearColor(0.78f, 0.59f, 0.30f, 0.98f) : T66HudBorderRed;
-	const FLinearColor AbilitySectionBorderColor = bUseAlternateHudChrome ? FLinearColor(0.44f, 0.58f, 0.82f, 0.96f) : T66HudBorderRed;
-	const FLinearColor PrimaryStatsSectionBorderColor = bUseAlternateHudChrome ? FLinearColor(0.62f, 0.48f, 0.74f, 0.96f) : T66HudBorderRed;
-	const FLinearColor SharedSectionFillColor = bUseAlternateHudChrome ? FLinearColor(0.028f, 0.026f, 0.031f, 0.98f) : T66HudDeepRed;
-	const FLinearColor LevelTextColor = bUseAlternateHudChrome ? FT66Style::Accent2() : T66HudTextRed;
+	const FLinearColor BottomLeftPanelOuterColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultBorder(), 0.96f) : T66HudBorderRed;
+	const FLinearColor BottomLeftPanelInnerColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultFill(), 0.98f) : T66HudPanelRed;
+	const FLinearColor BottomLeftPanelTitleColor = bUseAlternateHudChrome ? FT66FlatStyle::PrimaryText() : T66HudTextRed;
+	const FLinearColor BottomLeftPanelDividerColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DisabledBorder(), 0.66f) : T66HudDividerRed;
+	const FLinearColor IdolSectionBorderColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultBorder(), 0.95f) : T66HudBorderRed;
+	const FLinearColor PortraitSectionBorderColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultBorder(), 0.98f) : T66HudBorderRed;
+	const FLinearColor AbilitySectionBorderColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultBorder(), 0.96f) : T66HudBorderRed;
+	const FLinearColor PrimaryStatsSectionBorderColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultBorder(), 0.96f) : T66HudBorderRed;
+	const FLinearColor SharedSectionFillColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultFill(), 0.98f) : T66HudDeepRed;
+	const FLinearColor LevelTextColor = bUseAlternateHudChrome ? FT66FlatStyle::PrimaryText() : T66HudTextRed;
 	TSharedRef<SWidget> LevelBadgeRef =
 		SNew(SBox)
 		.WidthOverride(GT66BottomLeftLevelBadgeSize)
@@ -627,49 +627,53 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					SNew(SOverlay)
 					+ SOverlay::Slot()
 					[
-					SAssignNew(IdolBorder, SBorder)
-					.BorderImage(bUseAlternateHudChrome ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(false))
-					.BorderBackgroundColor(SlotOuterColor)
-					.Padding(1.f)
-					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
+					FT66FlatStyle::AttachMetadata(
+						SAssignNew(IdolBorder, SBorder)
+						.BorderImage(bUseAlternateHudChrome ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(false))
+						.BorderBackgroundColor(SlotOuterColor)
+						.Padding(1.f)
 						[
-							SNew(SBorder)
-							.BorderImage(bUseAlternateHudChrome ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(true))
-							.BorderBackgroundColor(SlotFrameColor)
-							.Padding(1.f)
+							SNew(SOverlay)
+							+ SOverlay::Slot()
 							[
 								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(SlotFillColor)
+								.BorderImage(bUseAlternateHudChrome ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(true))
+								.BorderBackgroundColor(SlotFrameColor)
+								.Padding(1.f)
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(SlotFillColor)
+								]
 							]
-						]
-						+ SOverlay::Slot()
-						.VAlign(VAlign_Top)
-						.Padding(1.f, 1.f, 1.f, 0.f)
-						[
-							SNew(SBox)
-							.HeightOverride(2.f)
+							+ SOverlay::Slot()
+							.VAlign(VAlign_Top)
+							.Padding(1.f, 1.f, 1.f, 0.f)
 							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.97f, 1.0f, bUseAlternateHudChrome ? 0.12f : 0.08f))
+								SNew(SBox)
+								.HeightOverride(2.f)
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.95f, 0.97f, 1.0f, bUseAlternateHudChrome ? 0.12f : 0.08f))
+								]
 							]
-						]
-						+ SOverlay::Slot()
-						.VAlign(VAlign_Bottom)
-						.Padding(1.f, 0.f, 1.f, 1.f)
-						[
-							SNew(SBox)
-							.HeightOverride(2.f)
+							+ SOverlay::Slot()
+							.VAlign(VAlign_Bottom)
+							.Padding(1.f, 0.f, 1.f, 1.f)
 							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.42f))
+								SNew(SBox)
+								.HeightOverride(2.f)
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.42f))
+								]
 							]
-						]
-					]
+						],
+						FName(*FString::Printf(TEXT("GameplayHUD.IdolSlot.%02d.Border"), i + 1)),
+						TEXT("HUDChromeSlot"),
+						ET66FlatState::Default)
 					]
 					+ SOverlay::Slot()
 					[
@@ -722,49 +726,53 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						// Transparent slot bg with thin border outline
 						+ SOverlay::Slot()
 						[
-							SAssignNew(SlotBorder, SBorder)
-							.BorderImage(bUseAlternateHudChrome ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(false))
-							.BorderBackgroundColor(SlotOuterColor)
-							.Padding(1.f)
-							[
-								SNew(SOverlay)
-								+ SOverlay::Slot()
+							FT66FlatStyle::AttachMetadata(
+								SAssignNew(SlotBorder, SBorder)
+								.BorderImage(bUseAlternateHudChrome ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(false))
+								.BorderBackgroundColor(SlotOuterColor)
+								.Padding(1.f)
 								[
-									SNew(SBorder)
-									.BorderImage(bUseAlternateHudChrome ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(true))
-									.BorderBackgroundColor(InvSlotBorderColor)
-									.Padding(1.f)
+									SNew(SOverlay)
+									+ SOverlay::Slot()
 									[
 										SNew(SBorder)
-										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-										.BorderBackgroundColor(SlotFillColor)
+										.BorderImage(bUseAlternateHudChrome ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(true))
+										.BorderBackgroundColor(InvSlotBorderColor)
+										.Padding(1.f)
+										[
+											SNew(SBorder)
+											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+											.BorderBackgroundColor(SlotFillColor)
+										]
 									]
-								]
-								+ SOverlay::Slot()
-								.VAlign(VAlign_Top)
-								.Padding(1.f, 1.f, 1.f, 0.f)
-								[
-									SNew(SBox)
-									.HeightOverride(2.f)
+									+ SOverlay::Slot()
+									.VAlign(VAlign_Top)
+									.Padding(1.f, 1.f, 1.f, 0.f)
 									[
-										SNew(SBorder)
-										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-										.BorderBackgroundColor(FLinearColor(0.95f, 0.97f, 1.0f, bUseAlternateHudChrome ? 0.12f : 0.08f))
+										SNew(SBox)
+										.HeightOverride(2.f)
+										[
+											SNew(SBorder)
+											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+											.BorderBackgroundColor(FLinearColor(0.95f, 0.97f, 1.0f, bUseAlternateHudChrome ? 0.12f : 0.08f))
+										]
 									]
-								]
-								+ SOverlay::Slot()
-								.VAlign(VAlign_Bottom)
-								.Padding(1.f, 0.f, 1.f, 1.f)
-								[
-									SNew(SBox)
-									.HeightOverride(2.f)
+									+ SOverlay::Slot()
+									.VAlign(VAlign_Bottom)
+									.Padding(1.f, 0.f, 1.f, 1.f)
 									[
-										SNew(SBorder)
-										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-										.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.42f))
+										SNew(SBox)
+										.HeightOverride(2.f)
+										[
+											SNew(SBorder)
+											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+											.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.42f))
+										]
 									]
-								]
-							]
+								],
+								FName(*FString::Printf(TEXT("GameplayHUD.InventorySlot.%02d.Border"), ThisSlotIndex + 1)),
+								TEXT("HUDChromeSlot"),
+								ET66FlatState::Default)
 						]
 						// Item icon on top
 						+ SOverlay::Slot()
@@ -2261,7 +2269,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			SAssignNew(CurseOverlayBorder, SBorder)
 			.Visibility(EVisibility::Collapsed)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.05f, 0.0f, 0.08f, 0.40f))
+			.BorderBackgroundColor(WithAlpha(FT66FlatStyle::BackgroundColor(), 0.40f))
 		]
 		// Full-screen map overlay (OpenFullMap / M)
 		+ SOverlay::Slot()
@@ -2342,8 +2350,8 @@ static void T66_ApplyWorldDialogueSelection(
 		if (OptionBorders[i].IsValid())
 		{
 			OptionBorders[i]->SetBorderBackgroundColor(bSelected
-				? FLinearColor(0.72f, 0.02f, 0.02f, 0.95f)
-				: FLinearColor(0.07f, 0.012f, 0.10f, 0.90f));
+				? WithAlpha(FT66FlatStyle::SelectedBorder(), 0.95f)
+				: WithAlpha(FT66FlatStyle::DefaultFill(), 0.90f));
 		}
 		if (OptionTexts.IsValidIndex(i) && OptionTexts[i].IsValid())
 		{

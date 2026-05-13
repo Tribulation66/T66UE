@@ -68,7 +68,7 @@ static void AddItemIconPath(
 
 namespace
 {
-	void AddVendorCanvasSlot(
+	void AddVendorShopCanvasSlot(
 		const TSharedRef<SConstraintCanvas>& Canvas,
 		const float X,
 		const float Y,
@@ -1183,12 +1183,12 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 				FName(TEXT("Vendor.SellPanel")));
 
 		TSharedRef<SConstraintCanvas> VendorCanvas = SNew(SConstraintCanvas);
-		AddVendorCanvasSlot(VendorCanvas, 17.f, 182.f, 270.f, 651.f,
+		AddVendorShopCanvasSlot(VendorCanvas, 17.f, 182.f, 270.f, 651.f,
 			MakeVendorReferenceStatsPanel(RunState));
-		AddVendorCanvasSlot(VendorCanvas, 312.f, 185.f, 318.f, 57.f, ShopButtonWidget);
-		AddVendorCanvasSlot(VendorCanvas, 653.f, 185.f, 318.f, 57.f, ShopModeToggleButton);
-		AddVendorCanvasSlot(VendorCanvas, 986.f, 185.f, 306.f, 57.f, ContextRerollButton);
-		AddVendorCanvasSlot(VendorCanvas, 310.f, 262.f, 1226.f, 568.f,
+		AddVendorShopCanvasSlot(VendorCanvas, 312.f, 185.f, 318.f, 57.f, ShopButtonWidget);
+		AddVendorShopCanvasSlot(VendorCanvas, 653.f, 185.f, 318.f, 57.f, ShopModeToggleButton);
+		AddVendorShopCanvasSlot(VendorCanvas, 986.f, 185.f, 306.f, 57.f, ContextRerollButton);
+		AddVendorShopCanvasSlot(VendorCanvas, 310.f, 262.f, 1226.f, 568.f,
 			FT66FlatStyle::MakeFlatPanel(
 				ET66FlatState::Default,
 				FMargin(18.f),
@@ -1203,7 +1203,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 				],
 				nullptr,
 				FName(TEXT("Vendor.ShopCardsPanel"))));
-		AddVendorCanvasSlot(VendorCanvas, 1564.f, 183.f, 355.f, 319.f,
+		AddVendorShopCanvasSlot(VendorCanvas, 1564.f, 183.f, 355.f, 319.f,
 			FT66FlatStyle::MakeFlatPanel(
 				ET66FlatState::Default,
 				FMargin(14.f),
@@ -1216,9 +1216,9 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 				],
 				nullptr,
 				FName(TEXT("Vendor.PortraitPanel"))));
-		AddVendorCanvasSlot(VendorCanvas, 1564.f, 526.f, 355.f, 309.f, BankPanel);
-		AddVendorCanvasSlot(VendorCanvas, 17.f, 854.f, 1520.f, 210.f, InventoryPanel);
-		AddVendorCanvasSlot(VendorCanvas, 1564.f, 854.f, 355.f, 215.f, SellPanel);
+		AddVendorShopCanvasSlot(VendorCanvas, 1564.f, 526.f, 355.f, 309.f, BankPanel);
+		AddVendorShopCanvasSlot(VendorCanvas, 17.f, 854.f, 1520.f, 210.f, InventoryPanel);
+		AddVendorShopCanvasSlot(VendorCanvas, 1564.f, 854.f, 355.f, 215.f, SellPanel);
 
 		SetPage(EShopPage::Shop);
 		RefreshAll();
