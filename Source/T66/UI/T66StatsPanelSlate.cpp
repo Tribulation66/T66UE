@@ -6,7 +6,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Data/T66DataTypes.h"
-#include "UI/Style/T66Style.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -23,51 +23,43 @@ static int32 AdjustStatsPanelFontSize(int32 BaseSize, int32 FontSizeAdjustment)
 
 static FSlateFontInfo MakeStatsPanelHeadingFont(int32 FontSizeAdjustment)
 {
-	FSlateFontInfo Font = FT66Style::Tokens::FontHeading();
-	Font.Size = AdjustStatsPanelFontSize(Font.Size, FontSizeAdjustment);
-	return Font;
+	return FT66FlatStyle::MakeBoldFont(AdjustStatsPanelFontSize(26, FontSizeAdjustment));
 }
 
 static FSlateFontInfo MakeStatsPanelBodyFont(int32 FontSizeAdjustment)
 {
-	FSlateFontInfo Font = FT66Style::Tokens::FontBody();
-	Font.Size = AdjustStatsPanelFontSize(Font.Size, FontSizeAdjustment);
-	return Font;
+	return FT66FlatStyle::MakeFont(AdjustStatsPanelFontSize(15, FontSizeAdjustment));
 }
 
 static FSlateFontInfo MakeStatsPanelBoldFont(int32 BaseSize, int32 FontSizeAdjustment)
 {
-	return FT66Style::Tokens::FontBold(AdjustStatsPanelFontSize(BaseSize, FontSizeAdjustment));
+	return FT66FlatStyle::MakeBoldFont(AdjustStatsPanelFontSize(BaseSize, FontSizeAdjustment));
 }
 
 static TSharedRef<SToolTip> MakeT66Tooltip(const FText& Title, const FText& Description, int32 FontSizeAdjustment = 0)
 {
 	return SNew(SToolTip)
 	[
-		SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
-		.BorderBackgroundColor(FT66Style::Tokens::Bg)
-		.Padding(FMargin(10.f, 8.f))
-		[
+		FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(10.f, 8.f),
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 			[
 				SNew(STextBlock)
 				.Text(Title)
 				.Font(MakeStatsPanelBoldFont(14, FontSizeAdjustment))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 			]
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
 				.Text(Description)
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
 				.Font(MakeStatsPanelBodyFont(FontSizeAdjustment))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.ColorAndOpacity(FT66FlatStyle::SecondaryText())
 				.AutoWrapText(true)
 				.WrapTextAt(280.f)
-			]
-		]
+			])
 	];
 }
 
@@ -404,14 +396,12 @@ static FText FormatDisplayedDerivedStatValue(EDerivedStatLine DerivedLine, float
 
 static TSharedRef<SWidget> MakeStatsPanelLineContent(
 	const FText& LineText,
-	const FTextBlockStyle& TextStyle,
 	const FSlateFontInfo& Font)
 {
 	return SNew(STextBlock)
 		.Text(LineText)
-		.TextStyle(&TextStyle)
 		.Font(Font)
-		.ColorAndOpacity(FT66Style::Tokens::Text);
+		.ColorAndOpacity(FT66FlatStyle::PrimaryText());
 }
 
 static FText FormatDisplayedPrimaryStatValue(int32 Index, int32 Value)
@@ -581,7 +571,6 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 {
 	const FText HeaderText = NSLOCTEXT("T66.StatsPanel", "Header", "STATS");
 	const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
-	const FTextBlockStyle& BodyStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 	const FSlateFontInfo HeadingFont = MakeStatsPanelHeadingFont(FontSizeAdjustment + HeadingFontSizeAdjustment);
 	const FSlateFontInfo BodyFont = MakeStatsPanelBodyFont(FontSizeAdjustment);
 
@@ -616,7 +605,6 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 				[
 					MakeStatsPanelLineContent(
 						LineText,
-						BodyStyle,
 						BodyFont)
 				]
 			];
@@ -633,7 +621,6 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 				[
 					MakeStatsPanelLineContent(
 						FText::Format(StatFmt, Label, ValueText),
-						BodyStyle,
 						BodyFont)
 				]
 			];
@@ -652,21 +639,11 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 		if (bExtended)
 		{
 			// Secondary stats by category: line, bold header, stat lines, line (Shop/Gambler)
-			const FSlateBrush* WhiteBrush = FCoreStyle::Get().GetBrush("WhiteBrush");
-			const FLinearColor LineColor(0.35f, 0.38f, 0.42f, 0.9f);
-			const FTextBlockStyle& HeadingStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
-
 			auto AddHorizontalLine = [&]()
 			{
 				StatsBox->AddSlot().AutoHeight().Padding(0.f, 8.f, 0.f, 8.f)
 				[
-					SNew(SBox)
-					.HeightOverride(1.f)
-					[
-						SNew(SBorder)
-						.BorderImage(WhiteBrush)
-						.BorderBackgroundColor(LineColor)
-					]
+					FT66FlatStyle::MakeFlatDivider(Orient_Horizontal)
 				];
 			};
 
@@ -676,9 +653,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 				[
 					SNew(STextBlock)
 					.Text(FormatCategoryHeaderText(Loc, RunState, Category))
-					.TextStyle(&HeadingStyle)
 					.Font(HeadingFont)
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 				];
 			};
 
@@ -718,7 +694,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 
 	TSharedRef<SWidget> StatsContent = bExtended
 		? TSharedRef<SWidget>(SNew(SBox)
-			.HeightOverride(FT66Style::Tokens::NPCStatsPanelContentHeight)
+			.HeightOverride(400.f)
 			[
 				SNew(SScrollBox)
 				.ScrollBarVisibility(EVisibility::Visible)
@@ -734,8 +710,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 		[
 			SNew(STextBlock)
 			.Text(HeaderText)
-			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
 			.Font(HeadingFont)
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 		]
 		+ SVerticalBox::Slot().AutoHeight()
 		[
@@ -745,9 +721,10 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 	return SNew(SBox)
 		.WidthOverride(WidthOverride)
 		[
-			FT66Style::MakePanel(
-				Content,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4))
+			FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(16.f),
+				Content)
 		];
 }
 
@@ -780,9 +757,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 			[
 				SAssignNew(LivePanel->PrimaryLines[Index], STextBlock)
 				.Text(FText::GetEmpty())
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
 				.Font(BodyFont)
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 			]
 		];
 	};
@@ -794,21 +770,11 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 
 	if (bExtended)
 	{
-		const FSlateBrush* WhiteBrush = FCoreStyle::Get().GetBrush("WhiteBrush");
-		const FLinearColor LineColor(0.35f, 0.38f, 0.42f, 0.9f);
-		const FTextBlockStyle& HeadingStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
-
 		auto AddHorizontalLine = [&]()
 		{
 			StatsBox->AddSlot().AutoHeight().Padding(0.f, 8.f, 0.f, 8.f)
 			[
-				SNew(SBox)
-				.HeightOverride(1.f)
-				[
-					SNew(SBorder)
-					.BorderImage(WhiteBrush)
-					.BorderBackgroundColor(LineColor)
-				]
+				FT66FlatStyle::MakeFlatDivider(Orient_Horizontal)
 			];
 		};
 
@@ -818,9 +784,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 			[
 				SAssignNew(LivePanel->CategoryHeaderLines[CategoryIndex], STextBlock)
 				.Text(FText::GetEmpty())
-				.TextStyle(&HeadingStyle)
 				.Font(HeadingFont)
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 			];
 		};
 
@@ -845,9 +810,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 					[
 						SAssignNew(DerivedLineText, STextBlock)
 						.Text(FText::GetEmpty())
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
 						.Font(BodyFont)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 					]
 				];
 
@@ -877,9 +841,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 					[
 						SAssignNew(LineText, STextBlock)
 						.Text(FText::GetEmpty())
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
 						.Font(BodyFont)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 					]
 				];
 
@@ -904,8 +867,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 	[
 		SNew(STextBlock)
 		.Text(HeaderText)
-		.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
 		.Font(HeadingFont)
+		.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 	];
 
 	if (bExtended)
@@ -928,9 +891,10 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 	return SNew(SBox)
 		.WidthOverride(WidthOverride)
 		[
-			FT66Style::MakePanel(
-				Content,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4))
+			FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(16.f),
+				Content)
 		];
 }
 
@@ -954,8 +918,6 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 {
 	const FText HeaderText = NSLOCTEXT("T66.StatsPanel", "Header", "STATS");
 	const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
-	const FTextBlockStyle& BodyStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
-	const FTextBlockStyle& HeadingStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
 	const FSlateFontInfo HeadingFont = MakeStatsPanelHeadingFont(Options.FontSizeAdjustment + Options.HeadingFontSizeAdjustment);
 	const FSlateFontInfo BodyFont = MakeStatsPanelBodyFont(Options.FontSizeAdjustment);
 	const bool bExtended = Options.bExtended;
@@ -1006,7 +968,6 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 				[
 					MakeStatsPanelLineContent(
 						FText::Format(StatFmt, Label, FormatDisplayedPrimaryStatValue(Index, Value)),
-						BodyStyle,
 						BodyFont)
 				]
 			];
@@ -1023,7 +984,6 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 				[
 					MakeStatsPanelLineContent(
 						FText::Format(StatFmt, Label, ValueText),
-						BodyStyle,
 						BodyFont)
 				]
 			];
@@ -1036,20 +996,11 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 
 		if (bExtended)
 		{
-			const FSlateBrush* WhiteBrush = FCoreStyle::Get().GetBrush("WhiteBrush");
-			const FLinearColor LineColor(0.35f, 0.38f, 0.42f, 0.9f);
-
 			auto AddHorizontalLine = [&]()
 			{
 				StatsBox->AddSlot().AutoHeight().Padding(0.f, 8.f, 0.f, 8.f)
 				[
-					SNew(SBox)
-					.HeightOverride(1.f)
-					[
-						SNew(SBorder)
-						.BorderImage(WhiteBrush)
-						.BorderBackgroundColor(LineColor)
-					]
+					FT66FlatStyle::MakeFlatDivider(Orient_Horizontal)
 				];
 			};
 
@@ -1068,9 +1019,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 				[
 					SNew(STextBlock)
 					.Text(Text)
-					.TextStyle(&HeadingStyle)
 					.Font(HeadingFont)
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 				];
 			};
 
@@ -1141,8 +1091,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 		[
 			SNew(STextBlock)
 			.Text(HeaderText)
-			.TextStyle(&HeadingStyle)
 			.Font(HeadingFont)
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 		];
 	}
 
@@ -1161,9 +1111,10 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 		];
 	}
 
-	TSharedRef<SWidget> Panel = FT66Style::MakePanel(
-		Content,
-		FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4));
+	TSharedRef<SWidget> Panel = FT66FlatStyle::MakeFlatPanel(
+		ET66FlatState::Default,
+		FMargin(16.f),
+		Content);
 
 	if (Options.WidthOverride > 0.f)
 	{

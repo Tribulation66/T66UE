@@ -764,12 +764,6 @@ void UT66GameplayHUDWidget::RefreshQuickReviveState()
 	}
 }
 
-
-void UT66GameplayHUDWidget::RefreshStatusEffects()
-{
-}
-
-
 void UT66GameplayHUDWidget::RefreshHUD()
 {
 	FLagScopedScope LagScope(GetWorld(), TEXT("GameplayHUD::RefreshHUD"));

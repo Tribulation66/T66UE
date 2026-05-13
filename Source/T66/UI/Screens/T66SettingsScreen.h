@@ -83,6 +83,7 @@ protected:
 private:
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	UT66PlayerSettingsSubsystem* GetPlayerSettings() const;
+	void ApplyCommandLineTabOverride();
 
 	// Widget switcher for tab content
 	TSharedPtr<SWidgetSwitcher> ContentSwitcher;
@@ -92,6 +93,11 @@ private:
 
 	// Tab content builders
 	TSharedRef<SWidget> BuildGameplayTab();
+	TSharedRef<SWidget> BuildFlatGameplaySettingsUI();
+	TSharedRef<SWidget> BuildFlatGraphicsSettingsUI();
+	TSharedRef<SWidget> BuildFlatControlsSettingsUI();
+	TSharedRef<SWidget> BuildFlatMediaViewerSettingsUI();
+	TSharedRef<SWidget> BuildFlatAudioSettingsUI();
 	TSharedRef<SWidget> BuildGraphicsTab();
 	TSharedRef<SWidget> BuildControlsTab();
 	TSharedRef<SWidget> BuildHUDTab();

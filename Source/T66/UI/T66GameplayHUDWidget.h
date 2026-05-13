@@ -27,7 +27,6 @@ class ST66CrosshairWidget;
 class UTexture2D;
 struct FSlateBrush;
 class ST66RingWidget;
-class ST66DotWidget;
 class ST66WorldMapWidget;
 class AActor;
 class AT66LootBagPickup;
@@ -101,9 +100,6 @@ public:
 
 	UFUNCTION()
 	void RefreshQuickReviveState();
-
-	UFUNCTION()
-	void RefreshStatusEffects();
 
 	UFUNCTION()
 	void RefreshLootPrompt();
@@ -276,8 +272,6 @@ protected:
 	TSharedPtr<STextBlock> UltimateInputHintText;
 	TSharedPtr<SImage> UltimateImage;
 	TSharedPtr<FSlateBrush> UltimateBrush;
-	TArray<TSharedPtr<ST66DotWidget>> StatusEffectDots;
-	TArray<TSharedPtr<SBox>> StatusEffectDotBoxes;
 	TSharedPtr<SBorder> CurseOverlayBorder;
 	TSharedPtr<SBorder> FullMapOverlayBorder;
 	TSharedPtr<SBorder> PauseBackdropBorder;

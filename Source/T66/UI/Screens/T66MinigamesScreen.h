@@ -34,7 +34,12 @@ private:
 	FReply HandleOpenIdleChadpocalypseClicked();
 	FReply HandleOpenChadpocalypseDeckbuilderClicked();
 	FReply HandleOpenVersusClicked();
+	FReply HandlePrevMinigamePageClicked();
+	FReply HandleNextMinigamePageClicked();
+	FReply HandleSelectMinigamePageClicked(int32 PageIndex);
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);
+
+	int32 MinigamesPageIndex = 0;
 };

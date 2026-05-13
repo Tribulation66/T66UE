@@ -51,4 +51,5 @@ private:
 
 	bool bStartRequestInFlight = false;
 	int32 ContinueSaveSlotIndex = INDEX_NONE;
+	int32 DailyFlatLeaderboardFilterIndex = 0;
 };

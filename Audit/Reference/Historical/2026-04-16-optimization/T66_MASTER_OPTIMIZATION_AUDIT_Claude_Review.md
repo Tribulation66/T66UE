@@ -101,7 +101,7 @@ Now here's the full V2 plan. I'll give you exactly what I'd add or change, struc
 
 This is the single most relevant article to your codebase because:
 1. You have 4-player coop and Mini arenas with lots of enemies
-2. Dota's "feels instant" invite/party benchmark you cited
+2. MOBA-style "feels instant" invite/party benchmark you cited
 3. Your current replication strategy for enemies in `T66Mini` isn't documented — if enemies replicate positions every frame, you will hit the wall described in the Jettelly piece
 
 New subsection under Area 3:

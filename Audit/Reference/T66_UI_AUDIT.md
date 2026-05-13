@@ -127,7 +127,7 @@ What it owns:
 - Design tokens (`FT66Style::Tokens`)
 - Theme palette bridge
 - Font selection and font cycling helpers
-- Optional Dota plate / inventory-slot runtime texture loading
+- Optional DeletedTheme plate / inventory-slot runtime texture loading
 - Custom responsive wrapper (`SDPIScaler`)
 - Deferred widget rebuild helper (`FT66Style::DeferRebuild`)
 
@@ -135,7 +135,7 @@ Important parameter structs:
 
 - `FT66ButtonParams`
   - Defaults: `MinWidth = 120`, `Height = 0`, `FontSize = 0`, `FontWeight = "Bold"`, `Padding = FMargin(-1)`.
-  - Supports per-state text colors, dual-tone text, shadow colors, explicit shadow offset, glow enable/disable, Dota plate overlay, custom child content.
+  - Supports per-state text colors, dual-tone text, shadow colors, explicit shadow offset, glow enable/disable, DeletedTheme plate overlay, custom child content.
 - `FT66PanelParams`
   - Defaults: `Type = Panel`, `Padding = FMargin(16)`, optional border/background visual override and color override.
 - `FT66DropdownParams`
@@ -148,26 +148,26 @@ Important token fields that already exist but are only partially respected by ca
 - Button padding: `ButtonPadding = FMargin(12,4)`, `ButtonPaddingPressed = FMargin(12,5,12,3)`.
 - Button glow tokens: padding `6`, hover intensity `0.75`, pressed intensity `1.10`, fallback opacity `0.28`.
 - NPC/shop overlay tokens: inventory slot `160`, item panel icon `200`, game card min width `260`, NPC center width `920`, right panel width `380`, main row height `600`, inventory strip heights `180` / `252`, stats panel width `300`, stats content height `400`, shop card `248x500`, anger circle `170`, bank spinbox `110x44`, overlay padding `24`.
-- Font token defaults in active Dota theme: title `56`, heading `26`, body `15`, small `12`, chip `12`, button `18`.
+- Font token defaults in active DeletedTheme theme: title `56`, heading `26`, body `15`, small `12`, chip `12`, button `18`.
 
 High-value audit findings inside `FT66Style` itself:
 
-- The active theme is effectively hard-locked to Dota.
-  - `FT66Style::SetActiveTheme()` resolves every request to `ET66UITheme::Dota`.
-  - `FT66Style::GetActiveTheme()` returns `ET66UITheme::Dota`.
-  - `FT66Style::IsDotaTheme()` always returns `true`.
+- The active theme is effectively hard-locked to DeletedTheme.
+  - `FT66Style::SetActiveTheme()` resolves every request to `ET66UITheme::DeletedTheme`.
+  - `FT66Style::GetActiveTheme()` returns `ET66UITheme::DeletedTheme`.
+  - `FT66Style::IsDeletedThemeTheme()` always returns `true`.
 - `FT66Style::CornerRadius()` and `FT66Style::CornerRadiusSmall()` both currently return `0.0f`, so the non-zero token corner constants are not the live values under the active theme.
 - `FT66Style::MakeResponsiveRoot()` wraps content in `SDPIScaler` with a default reference resolution of `1920x1080` and custom scale clamp logic (`0.70 .. 1.35`, snap to `1.0` above `1600x900`). This is **not** the same as using UE's project DPI curve.
 - `FT66Style::MakeButton()` centralizes buttons, but it still allows callers to force fixed heights / widths and uses `SScaleBox` for text instead of a content-first text safety policy.
 
-### 2.2 `FT66DotaTheme` (full API inventory)
+### 2.2 `FT66DeletedThemeTheme` (full API inventory)
 
 Primary file set:
 
-- `Source/T66/UI/Dota/T66DotaTheme.h`
-- `Source/T66/UI/Dota/T66DotaTheme.cpp`
+- `Source/T66/UI/DeletedTheme/T66DeletedThemeTheme.h`
+- `Source/T66/UI/DeletedTheme/T66DeletedThemeTheme.cpp`
 
-Important note: `FT66DotaTheme` has **no data members / fields**. It is a pure static API that returns the live Dota palette and fonts. The full inventory is therefore the set of static functions below.
+Important note: `FT66DeletedThemeTheme` has **no data members / fields**. It is a pure static API that returns the live DeletedTheme palette and fonts. The full inventory is therefore the set of static functions below.
 
 | API | Controls |
 |---|---|
@@ -219,20 +219,20 @@ Important note: `FT66DotaTheme` has **no data members / fields**. It is a pure s
 | `ToggleButtonPressed()` | Toggle-active pressed fill. |
 | `CornerRadius()` | Currently `0.0f`. |
 | `CornerRadiusSmall()` | Currently `0.0f`. |
-| `MakeFont(weight, size)` | Dota font resolver. Bold prefers `Reaver-Bold`; regular falls back to `radiance.ttf`. |
+| `MakeFont(weight, size)` | DeletedTheme font resolver. Bold prefers `Reaver-Bold`; regular falls back to `radiance.ttf`. |
 
-### 2.3 `FT66DotaSlate`
+### 2.3 `FT66DeletedThemeSlate`
 
 Primary file set:
 
-- `Source/T66/UI/Dota/T66DotaSlate.h`
-- `Source/T66/UI/Dota/T66DotaSlate.cpp`
+- `Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.h`
+- `Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp`
 
 What it does:
 
-- Wraps content in layered Dota-style surfaces using nested `SBorder` / `SOverlay` shells.
+- Wraps content in layered DeletedTheme-style surfaces using nested `SBorder` / `SOverlay` shells.
 - Provides `MakeScreenSurface`, `MakeViewportFrame`, `MakeViewportCutoutFrame`, `MakeSlotFrame`, `MakeHudPanel`, `MakeDivider`, `MakeMinimapFrame`.
-- Loads optional button plate and inventory slot frame textures from either imported assets or runtime PNG fallbacks under `SourceAssets/UI/Dota/Generated`.
+- Loads optional button plate and inventory slot frame textures from either imported assets or runtime PNG fallbacks under `SourceAssets/UI/DeletedTheme/Generated`.
 
 Notable hardcoded layout values inside the helper layer itself:
 
@@ -262,12 +262,12 @@ Key details:
 
 ### 2.5 Fonts
 
-Active font loading path in the live Dota theme:
+Active font loading path in the live DeletedTheme theme:
 
 - Regular text: `SourceAssets/radiance.ttf`, fallback `Content/Slate/Fonts/radiance.ttf`
 - Bold text: prefers `SourceAssets/Reaver-Bold.woff`, then `Content/Slate/Fonts/Reaver-Bold.woff`, then `Content/Slate/Fonts/Reaver-Bold.ttf`
 
-Dormant non-Dota font cycling system still exists in `FT66Style.cpp`:
+Dormant non-DeletedTheme font cycling system still exists in `FT66Style.cpp`:
 
 - Caesar Dressing
 - Cinzel
@@ -277,7 +277,7 @@ Dormant non-Dota font cycling system still exists in `FT66Style.cpp`:
 - Alagard
 - Ransom
 
-That system is currently mostly inert because the runtime theme is forced to Dota.
+That system is currently mostly inert because the runtime theme is forced to DeletedTheme.
 
 ### 2.6 Runtime texture / icon loading
 
@@ -298,8 +298,8 @@ Runtime PNG / file-texture caches found in the repo:
 |---|---|---|
 | `Source/T66/UI/T66FrontendTopBarWidget.cpp` | `TMap<FString, TStrongObjectPtr<UTexture2D>> GTopBarFileTextureCache` | Top bar generated PNGs and icons. |
 | `Source/T66/UI/Screens/T66PowerUpScreen.cpp` | `TMap<FString, TStrongObjectPtr<UTexture2D>> GPowerUpFileTextureCache` | Power-up statue / screen PNGs. |
-| `Source/T66/UI/Style/T66Style.cpp` | `FT66OptionalTextureBrush` caches | Dota button plates and inventory slot frame fallback PNGs. |
-| `Source/T66/UI/Dota/T66DotaSlate.cpp` | `FT66OptionalTextureBrush` caches | Same Dota-style fallback plates / slot frame. |
+| `Source/T66/UI/Style/T66Style.cpp` | `FT66OptionalTextureBrush` caches | DeletedTheme button plates and inventory slot frame fallback PNGs. |
+| `Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp` | `FT66OptionalTextureBrush` caches | Same DeletedTheme-style fallback plates / slot frame. |
 | `Source/T66/UI/Style/T66ButtonVisuals.cpp` | many static `TStrongObjectPtr<UTexture2D>` fallback handles | Main menu trim/fill and retro trim textures. |
 | `Source/T66/UI/T66GameplayHUDWidget.cpp` | rooted atlas texture + brush map | Runtime minimap symbol atlas and icon sub-UV brushes. |
 
@@ -527,34 +527,34 @@ Important caveat:
 | Source/T66/UI/Components/T66LeaderboardPanel.cpp | 1000 | SButton | ContentPadding | FMargin(0.f | .ContentPadding(FMargin(0.f)) |
 | Source/T66/UI/Components/T66LeaderboardPanel.cpp | 1016 | ST66LeaderboardRowWheelProxy | Padding | 0.0f, 1.0f | .Padding(0.0f, 1.0f) |
 | Source/T66/UI/Components/T66LeaderboardPanel.cpp | 1656 | ST66LeaderboardRowWheelProxy | ImageSize | 32.0f, 32.0f | Brush->ImageSize = FVector2D(32.0f, 32.0f); |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 45 | Unknown | ImageSize | 1.f, 1.f | Brush.ImageSize = FVector2D(1.f, 1.f); |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 175 | SBorder | Padding | 1.f | .Padding(1.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 180 | SBorder | Padding | 1.f | .Padding(1.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 195 | SBorder | Padding | 1.f, 1.f, 1.f, 0.f | .Padding(1.f, 1.f, 1.f, 0.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 198 | SBox | HeightOverride | 2.f | .HeightOverride(2.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 207 | SBorder | Padding | 1.f, 0.f, 1.f, 1.f | .Padding(1.f, 0.f, 1.f, 1.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 210 | SBox | HeightOverride | 2.f | .HeightOverride(2.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 262 | SBorder | Padding | 1.f | .Padding(1.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 267 | SBorder | Padding | 1.f | .Padding(1.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 293 | SImage | Padding | 1.f, 1.f, 1.f, 0.f | .Padding(1.f, 1.f, 1.f, 0.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 296 | SBox | HeightOverride | 2.f | .HeightOverride(2.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 305 | SBorder | Padding | 1.f, 0.f, 1.f, 1.f | .Padding(1.f, 0.f, 1.f, 1.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 308 | SBox | HeightOverride | 2.f | .HeightOverride(2.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 339 | STextBlock | Padding | 0.f, 6.f, 0.f, 8.f | + SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 8.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 383 | SOverlay | Padding | 5.f | .Padding(5.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 385 | SBox | HeightOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 385 | SBox | WidthOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 395 | SBorder | Padding | 5.f | .Padding(5.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 397 | SBox | HeightOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 397 | SBox | WidthOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 407 | SBorder | Padding | 5.f | .Padding(5.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 409 | SBox | HeightOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 409 | SBox | WidthOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 419 | SBorder | Padding | 5.f | .Padding(5.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 421 | SBox | HeightOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
-| Source/T66/UI/Dota/T66DotaSlate.cpp | 421 | SBox | WidthOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
-| Source/T66/UI/Dota/T66DotaTheme.cpp | 315 | Unknown | FontSize | 32 | FSlateFontInfo FT66DotaTheme::MakeFont(const TCHAR* Weight, int32 Size) |
-| Source/T66/UI/Dota/T66DotaTheme.h | 63 | Unknown | FontSize | 32 | static FSlateFontInfo MakeFont(const TCHAR* Weight, int32 Size); |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 45 | Unknown | ImageSize | 1.f, 1.f | Brush.ImageSize = FVector2D(1.f, 1.f); |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 175 | SBorder | Padding | 1.f | .Padding(1.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 180 | SBorder | Padding | 1.f | .Padding(1.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 195 | SBorder | Padding | 1.f, 1.f, 1.f, 0.f | .Padding(1.f, 1.f, 1.f, 0.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 198 | SBox | HeightOverride | 2.f | .HeightOverride(2.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 207 | SBorder | Padding | 1.f, 0.f, 1.f, 1.f | .Padding(1.f, 0.f, 1.f, 1.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 210 | SBox | HeightOverride | 2.f | .HeightOverride(2.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 262 | SBorder | Padding | 1.f | .Padding(1.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 267 | SBorder | Padding | 1.f | .Padding(1.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 293 | SImage | Padding | 1.f, 1.f, 1.f, 0.f | .Padding(1.f, 1.f, 1.f, 0.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 296 | SBox | HeightOverride | 2.f | .HeightOverride(2.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 305 | SBorder | Padding | 1.f, 0.f, 1.f, 1.f | .Padding(1.f, 0.f, 1.f, 1.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 308 | SBox | HeightOverride | 2.f | .HeightOverride(2.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 339 | STextBlock | Padding | 0.f, 6.f, 0.f, 8.f | + SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 8.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 383 | SOverlay | Padding | 5.f | .Padding(5.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 385 | SBox | HeightOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 385 | SBox | WidthOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 395 | SBorder | Padding | 5.f | .Padding(5.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 397 | SBox | HeightOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 397 | SBox | WidthOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 407 | SBorder | Padding | 5.f | .Padding(5.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 409 | SBox | HeightOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 409 | SBox | WidthOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 419 | SBorder | Padding | 5.f | .Padding(5.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 421 | SBox | HeightOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp | 421 | SBox | WidthOverride | 10.f | SNew(SBox).WidthOverride(10.f).HeightOverride(10.f) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeTheme.cpp | 315 | Unknown | FontSize | 32 | FSlateFontInfo FT66DeletedThemeTheme::MakeFont(const TCHAR* Weight, int32 Size) |
+| Source/T66/UI/DeletedTheme/T66DeletedThemeTheme.h | 63 | Unknown | FontSize | 32 | static FSlateFontInfo MakeFont(const TCHAR* Weight, int32 Size); |
 | Source/T66/UI/Screens/T66AccountStatusScreen.cpp | 101 | Constant | TopInset | bModalPresentation ? 0.f : (UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f) | const float TopInset = bModalPresentation ? 0.f : (UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f); |
 | Source/T66/UI/Screens/T66AccountStatusScreen.cpp | 106 | SVerticalBox | Padding | 0.f, 0.f, 0.f, 16.f | + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 16.f) |
 | Source/T66/UI/Screens/T66AccountStatusScreen.cpp | 110 | STextBlock | FontSize | 42 | .Font(FT66Style::Tokens::FontBold(42)) |
@@ -941,11 +941,11 @@ Important caveat:
 | Source/T66/UI/Screens/T66MainMenuScreen.cpp | 952 | SBorder | Padding | 0.f | .Padding(0.f) |
 | Source/T66/UI/Screens/T66MainMenuScreen.cpp | 973 | SBorder | Padding | 0.f, TopInset, 0.f, 0.f | .Padding(0.f, TopInset, 0.f, 0.f) |
 | Source/T66/UI/Screens/T66MainMenuScreen.cpp | 993 | SInvalidationPanel | Padding | 0.f, 0.f, 0.f, BottomFramePadding + CenterButtonLift | .Padding(0.f, 0.f, 0.f, BottomFramePadding + CenterButtonLift) |
-| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 178 | SBox | Padding | FMargin(0.f, bDotaTheme ? 5.f : 6.f | .Padding(FMargin(0.f, bDotaTheme ? 5.f : 6.f)) |
-| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 182 | SBox | SetFontSize | bDotaTheme ? 28 : 44 | .SetFontSize(bDotaTheme ? 28 : 44) |
-| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 183 | SBox | SetPadding | bDotaTheme ? FMargin(22.f, 14.f, 22.f, 12.f | .SetPadding(bDotaTheme ? FMargin(22.f, 14.f, 22.f, 12.f) : FMargin(18.f)) |
-| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 184 | SBox | SetMinWidth | bDotaTheme ? 360.f : 340.f | .SetMinWidth(bDotaTheme ? 360.f : 340.f) |
-| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 185 | SBox | SetHeight | bDotaTheme ? 76.f : 0.f | .SetHeight(bDotaTheme ? 76.f : 0.f)) |
+| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 178 | SBox | Padding | FMargin(0.f, bDeletedThemeTheme ? 5.f : 6.f | .Padding(FMargin(0.f, bDeletedThemeTheme ? 5.f : 6.f)) |
+| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 182 | SBox | SetFontSize | bDeletedThemeTheme ? 28 : 44 | .SetFontSize(bDeletedThemeTheme ? 28 : 44) |
+| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 183 | SBox | SetPadding | bDeletedThemeTheme ? FMargin(22.f, 14.f, 22.f, 12.f | .SetPadding(bDeletedThemeTheme ? FMargin(22.f, 14.f, 22.f, 12.f) : FMargin(18.f)) |
+| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 184 | SBox | SetMinWidth | bDeletedThemeTheme ? 360.f : 340.f | .SetMinWidth(bDeletedThemeTheme ? 360.f : 340.f) |
+| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 185 | SBox | SetHeight | bDeletedThemeTheme ? 76.f : 0.f | .SetHeight(bDeletedThemeTheme ? 76.f : 0.f)) |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 220 | SBorder | Padding | 1.f | .Padding(1.f) |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 225 | SBorder | Padding | 0.f | .Padding(0.f) |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 234 | SBorder | Padding | 2.f | .Padding(2.f) |
@@ -987,7 +987,7 @@ Important caveat:
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 600 | STextBlock | SetPadding | FMargin(16.f, 12.f | FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(16.f, 12.f))); |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 607 | STextBlock | FontSize | 14 | .Font(FT66Style::Tokens::FontRegular(14)) |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 609 | STextBlock | SetPadding | FMargin(16.f | FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(16.f))); |
-| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 611 | STextBlock | FontSize | 56 | FSlateFontInfo PauseTitleFont = FT66Style::Tokens::FontBold(bDotaTheme ? 56 : 48); |
+| Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 611 | STextBlock | FontSize | 56 | FSlateFontInfo PauseTitleFont = FT66Style::Tokens::FontBold(bDeletedThemeTheme ? 56 : 48); |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 614 | STextBlock | LetterSpacing | 160 | PauseTitleFont.LetterSpacing = 160; |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 619 | SVerticalBox | Padding | 0.f, 0.f, 0.f, 24.f | + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 24.f) |
 | Source/T66/UI/Screens/T66PauseMenuScreen.cpp | 638 | STextBlock | SetPadding | FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6 | FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6))); |
@@ -1585,11 +1585,11 @@ Important caveat:
 | Source/T66/UI/Style/T66Style.cpp | 744 | SBorder | LetterSpacing | 90 | Font.LetterSpacing = 90; |
 | Source/T66/UI/Style/T66Style.cpp | 753 | SBorder | LetterSpacing | 110 | Font.LetterSpacing = 110; |
 | Source/T66/UI/Style/T66Style.cpp | 808 | SBorder | FontSize | 32 | FSlateFontInfo FT66Style::MakeFont(const TCHAR* Weight, int32 Size) |
-| Source/T66/UI/Style/T66Style.cpp | 924 | Constant | PanelCornerRadius | IsDotaTheme() ? FT66Style::CornerRadius() : Tokens::CornerRadius | const float PanelCornerRadius = IsDotaTheme() ? FT66Style::CornerRadius() : Tokens::CornerRadius; |
-| Source/T66/UI/Style/T66Style.cpp | 925 | Constant | PanelCornerRadiusSmall | IsDotaTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall | const float PanelCornerRadiusSmall = IsDotaTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall; |
+| Source/T66/UI/Style/T66Style.cpp | 924 | Constant | PanelCornerRadius | IsDeletedThemeTheme() ? FT66Style::CornerRadius() : Tokens::CornerRadius | const float PanelCornerRadius = IsDeletedThemeTheme() ? FT66Style::CornerRadius() : Tokens::CornerRadius; |
+| Source/T66/UI/Style/T66Style.cpp | 925 | Constant | PanelCornerRadiusSmall | IsDeletedThemeTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall | const float PanelCornerRadiusSmall = IsDeletedThemeTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall; |
 | Source/T66/UI/Style/T66Style.cpp | 956 | SBorder | ShadowOffset | 1.f, 1.f | .SetShadowOffset(FVector2D(1.f, 1.f)) |
 | Source/T66/UI/Style/T66Style.cpp | 963 | SBorder | ShadowOffset | 1.f, 1.f | .SetShadowOffset(FVector2D(1.f, 1.f)) |
-| Source/T66/UI/Style/T66Style.cpp | 985 | Constant | ButtonCornerRadius | IsDotaTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall | const float ButtonCornerRadius = IsDotaTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall; |
+| Source/T66/UI/Style/T66Style.cpp | 985 | Constant | ButtonCornerRadius | IsDeletedThemeTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall | const float ButtonCornerRadius = IsDeletedThemeTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall; |
 | Source/T66/UI/Style/T66Style.cpp | 1074 | Constant | RowBorderW | 0.5f | constexpr float RowBorderW = 0.5f; |
 | Source/T66/UI/Style/T66Style.cpp | 1335 | Constant | ResolvedFontSize | Params.FontSize > 0 ? Params.FontSize : TextFont.Size | const int32 ResolvedFontSize = Params.FontSize > 0 ? Params.FontSize : TextFont.Size; |
 | Source/T66/UI/Style/T66Style.cpp | 1457 | Constant | PrimaryClipHeight | FMath::Max(1.f, FMath::RoundToFloat(static_cast<float>(TextFont.Size) * Params.TextDualToneSplit)) | const float PrimaryClipHeight = FMath::Max(1.f, FMath::RoundToFloat(static_cast<float>(TextFont.Size) * Params.TextDualToneSplit)); |

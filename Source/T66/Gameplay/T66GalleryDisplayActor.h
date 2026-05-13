@@ -11,6 +11,7 @@ class USkeletalMeshComponent;
 class USphereComponent;
 class UStaticMeshComponent;
 class UPrimitiveComponent;
+class APlayerController;
 struct FHitResult;
 
 /** Lightweight inert actor used by the start-gallery wings to display character visual rows without gameplay AI. */
@@ -24,6 +25,8 @@ public:
 
 	void ConfigureDisplayVisual(FName InVisualID, float InActorScale = 1.0f);
 	void ConfigureInteractionPromptTarget(const FText& InPromptTargetName);
+	UPrimitiveComponent* GetInteractionPromptPrimitive() const;
+	bool Interact(APlayerController* PC);
 
 protected:
 	virtual void BeginPlay() override;

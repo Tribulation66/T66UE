@@ -13,6 +13,7 @@
 #include "Save/T66MiniSaveSubsystem.h"
 #include "UI/T66MiniUIStyle.h"
 #include "UI/T66UITypes.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/Texture2D.h"
 #include "Widgets/Images/SImage.h"
@@ -89,6 +90,36 @@ namespace
 		Result.RemoveFromStart(TEXT("Item_"));
 		Result.ReplaceInline(TEXT("_"), TEXT(" "));
 		return Result;
+	}
+
+	FString T66MiniShopTagSegment(const FText& Label)
+	{
+		FString Segment = Label.ToString();
+		const TCHAR* Removals[] = { TEXT(" "), TEXT("'"), TEXT("\""), TEXT("-"), TEXT(":"), TEXT("/"), TEXT("."), TEXT(",") };
+		for (const TCHAR* Removal : Removals)
+		{
+			Segment.ReplaceInline(Removal, TEXT(""));
+		}
+		return Segment.IsEmpty() ? FString(TEXT("Unnamed")) : Segment;
+	}
+
+	ET66FlatState T66MiniShopFlatState(const ET66ButtonType Type, const bool bEnabled)
+	{
+		if (!bEnabled)
+		{
+			return ET66FlatState::Disabled;
+		}
+		switch (Type)
+		{
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::Success:
+		case ET66ButtonType::Danger:
+		case ET66ButtonType::ToggleActive:
+			return ET66FlatState::Selected;
+		case ET66ButtonType::Neutral:
+		default:
+			return ET66FlatState::Default;
+		}
 	}
 
 	float T66MiniShopTuning(const UT66MiniDataSubsystem* DataSubsystem, const TCHAR* Key)
@@ -274,7 +305,18 @@ namespace
 		const float Height = 0.f,
 		const bool bEnabled = true)
 	{
-		return FT66Style::MakeButton(T66MiniMakeShopButtonParams(Label, OnClicked, Type, FontSize, Padding, MinWidth, Height, bEnabled));
+		return FT66FlatStyle::MakeFlatButton(
+			T66MiniShopFlatState(Type, bEnabled),
+			Label,
+			OnClicked,
+			nullptr,
+			nullptr,
+			Padding,
+			MinWidth,
+			Height,
+			bEnabled,
+			FontSize,
+			FName(*FString::Printf(TEXT("MiniShop.Button.%s"), *T66MiniShopTagSegment(Label))));
 	}
 
 	TSharedRef<SWidget> T66MiniMakeInfoRow(const FText& Label, const FText& Value)

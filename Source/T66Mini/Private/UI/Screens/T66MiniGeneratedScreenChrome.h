@@ -5,8 +5,7 @@
 #include "CoreMinimal.h"
 #include "Styling/CoreStyle.h"
 #include "UI/T66MiniUIStyle.h"
-#include "UI/Style/T66RuntimeUIBrushAccess.h"
-#include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -40,88 +39,50 @@ namespace T66MiniGeneratedChrome
 		Count
 	};
 
-	inline const TCHAR* SliceRelativePath(const ESlice Slice)
+	inline ET66FlatState StateForSlice(const ESlice Slice)
 	{
 		switch (Slice)
 		{
-		case ESlice::TitlePlaque:
-		case ESlice::PanelLarge:
-		case ESlice::PanelMedium:
-			return T66MiniUI::MasterBasicPanelPath();
-		case ESlice::PanelSmall:
-		case ESlice::RowLong:
-		case ESlice::StatChip:
-		case ESlice::IdolOfferRow:
-		case ESlice::IdolOfferRowAction:
-		case ESlice::SummaryRow:
-			return T66MiniUI::MasterInnerPanelPath();
-		case ESlice::CardNormal:
-		case ESlice::PortraitFrame:
-		case ESlice::BadgeFrame:
-			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_normal.png");
 		case ESlice::CardSelected:
-			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_selected.png");
-		case ESlice::CardDisabled:
-			return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/profile_slot_disabled.png");
 		case ESlice::ButtonGreenNormal:
-			return T66MiniUI::MasterSelectedButtonPath();
-		case ESlice::ButtonBlueNormal:
-		case ESlice::ButtonPurpleNormal:
-			return T66MiniUI::MasterBasicButtonPath();
+			return ET66FlatState::Selected;
+		case ESlice::CardDisabled:
+			return ET66FlatState::Disabled;
 		case ESlice::Count:
 		default:
-			return T66MiniUI::MasterBasicPanelPath();
+			return ET66FlatState::Default;
 		}
 	}
 
-	inline FMargin SliceMargin(const ESlice Slice)
+	inline ET66FlatState StateForButtonType(const ET66ButtonType Type)
 	{
-		switch (Slice)
+		switch (Type)
 		{
-		case ESlice::CardNormal:
-		case ESlice::CardSelected:
-		case ESlice::CardDisabled:
-		case ESlice::PortraitFrame:
-		case ESlice::BadgeFrame:
-			return FMargin(0.167f, 0.160f, 0.167f, 0.160f);
-		case ESlice::ButtonGreenNormal:
-		case ESlice::ButtonBlueNormal:
-		case ESlice::ButtonPurpleNormal:
-			return T66MiniUI::MasterButtonMargin();
-		case ESlice::TitlePlaque:
-		case ESlice::RowLong:
-		case ESlice::IdolOfferRow:
-		case ESlice::IdolOfferRowAction:
-		case ESlice::SummaryRow:
-		case ESlice::StatChip:
-		case ESlice::PanelSmall:
-		case ESlice::PanelLarge:
-		case ESlice::PanelMedium:
+		case ET66ButtonType::Success:
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::ToggleActive:
+			return ET66FlatState::Selected;
+		case ET66ButtonType::Danger:
+			return ET66FlatState::Selected;
+		case ET66ButtonType::Neutral:
 		default:
-			return T66MiniUI::MasterPanelMargin();
+			return ET66FlatState::Default;
 		}
 	}
 
-	inline const FSlateBrush* SliceBrush(const ESlice Slice)
+	inline FString SanitizeTagSegment(const FText& Label)
 	{
-		static TSharedPtr<T66RuntimeUIBrushAccess::FOptionalTextureBrush> Entries[static_cast<int32>(ESlice::Count)];
-		const int32 Index = static_cast<int32>(Slice);
-		if (Index < 0 || Index >= static_cast<int32>(ESlice::Count))
+		FString Segment = Label.ToString();
+		const TCHAR* Removals[] = { TEXT(" "), TEXT("'"), TEXT("\""), TEXT("-"), TEXT(":"), TEXT("/"), TEXT("."), TEXT(",") };
+		for (const TCHAR* Removal : Removals)
 		{
-			return nullptr;
+			Segment.ReplaceInline(Removal, TEXT(""));
 		}
-
-		if (!Entries[Index].IsValid())
+		if (Segment.IsEmpty())
 		{
-			Entries[Index] = MakeShared<T66RuntimeUIBrushAccess::FOptionalTextureBrush>();
+			Segment = TEXT("Unnamed");
 		}
-
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			*Entries[Index],
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(SliceRelativePath(Slice)),
-			SliceMargin(Slice),
-			TEXT("MiniGeneratedChrome"));
+		return Segment;
 	}
 
 	inline FMargin ContentSafePadding(const ESlice Slice, const FMargin& Padding)
@@ -146,21 +107,36 @@ namespace T66MiniGeneratedChrome
 	inline TSharedRef<SWidget> MakePanel(
 		const TSharedRef<SWidget>& Content,
 		const FMargin& Padding,
-		const ESlice Slice = ESlice::PanelLarge)
+		const ESlice Slice = ESlice::PanelLarge,
+		const FName Tag = NAME_None)
 	{
-		const FSlateBrush* Brush = SliceBrush(Slice);
-		return SNew(SBorder)
-			.BorderImage(Brush ? Brush : T66MiniUI::WhiteBrush())
-			.BorderBackgroundColor(Brush ? FLinearColor::White : T66MiniUI::PanelFill())
-			.Padding(ContentSafePadding(Slice, Padding))
-			[
-				Content
-			];
+		const ET66FlatState State = StateForSlice(Slice);
+		const FMargin ResolvedPadding = ContentSafePadding(Slice, Padding);
+		switch (Slice)
+		{
+		case ESlice::PanelSmall:
+		case ESlice::RowLong:
+		case ESlice::StatChip:
+		case ESlice::CardNormal:
+		case ESlice::CardSelected:
+		case ESlice::CardDisabled:
+		case ESlice::PortraitFrame:
+		case ESlice::IdolOfferRow:
+		case ESlice::IdolOfferRowAction:
+		case ESlice::SummaryRow:
+		case ESlice::BadgeFrame:
+			return FT66FlatStyle::MakeFlatSubPanel(State, ResolvedPadding, Content, nullptr, Tag);
+		case ESlice::TitlePlaque:
+		case ESlice::PanelLarge:
+		case ESlice::PanelMedium:
+		default:
+			return FT66FlatStyle::MakeFlatPanel(State, ResolvedPadding, Content, nullptr, Tag);
+		}
 	}
 
-	inline TSharedRef<SWidget> MakeRowPanel(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+	inline TSharedRef<SWidget> MakeRowPanel(const TSharedRef<SWidget>& Content, const FMargin& Padding, const FName Tag = NAME_None)
 	{
-		return MakePanel(Content, Padding, ESlice::RowLong);
+		return MakePanel(Content, Padding, ESlice::RowLong, Tag);
 	}
 
 	inline TSharedRef<SWidget> MakeTitlePlaque(
@@ -168,8 +144,12 @@ namespace T66MiniGeneratedChrome
 		const int32 FontSize,
 		const float Width,
 		const float Height,
-		const FLinearColor& Color = FLinearColor::White)
+		const FLinearColor& Color = FLinearColor::White,
+		const FName Tag = NAME_None)
 	{
+		const FName ResolvedTag = Tag.IsNone()
+			? FName(*FString::Printf(TEXT("MiniGenerated.Title.%s"), *SanitizeTagSegment(Label)))
+			: Tag;
 		return SNew(SBox)
 			.WidthOverride(Width)
 			.HeightOverride(Height)
@@ -181,30 +161,14 @@ namespace T66MiniGeneratedChrome
 					[
 						SNew(STextBlock)
 						.Text(Label)
-						.Font(T66MiniUI::TitleFont(FontSize))
+						.Font(FT66FlatStyle::MakeBoldFont(FontSize))
 						.ColorAndOpacity(Color)
 						.Justification(ETextJustify::Center)
-						.ShadowOffset(FVector2D(2.f, 2.f))
-						.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.95f))
 					],
 					FMargin(58.f, 12.f, 58.f, 10.f),
-					ESlice::TitlePlaque)
+					ESlice::TitlePlaque,
+					ResolvedTag)
 			];
-	}
-
-	inline const FSlateBrush* ButtonPlateBrush(const ET66ButtonType Type)
-	{
-		if (Type == ET66ButtonType::Success || Type == ET66ButtonType::ToggleActive)
-		{
-			return SliceBrush(ESlice::ButtonGreenNormal);
-		}
-
-		if (Type == ET66ButtonType::Primary || Type == ET66ButtonType::Danger)
-		{
-			return SliceBrush(ESlice::ButtonPurpleNormal);
-		}
-
-		return SliceBrush(ESlice::ButtonBlueNormal);
 	}
 
 	inline FT66ButtonParams MakeButtonParams(
@@ -216,16 +180,28 @@ namespace T66MiniGeneratedChrome
 		const int32 FontSize)
 	{
 		FT66ButtonParams Params = T66MiniUI::MakeButtonParams(Label, OnClicked, Type, MinWidth, Height, FontSize);
-		Params.SetDotaPlateOverrideBrush(ButtonPlateBrush(Type));
 		return Params;
 	}
 
 	inline TSharedRef<SWidget> MakeButton(
-		const FT66ButtonParams& Params)
+		const FT66ButtonParams& Params,
+		const FName Tag = NAME_None,
+		const FName ToggleGroup = NAME_None)
 	{
-		FT66ButtonParams ResolvedParams = Params;
-		ResolvedParams.SetUseDotaPlateOverlay(true);
-		return FT66Style::MakeButton(ResolvedParams);
+		FT66FlatButtonParams FlatParams;
+		FlatParams.State = StateForButtonType(Params.Type);
+		FlatParams.Label = Params.DynamicLabel.IsSet() ? Params.DynamicLabel : TAttribute<FText>(Params.Label);
+		FlatParams.OnClicked = Params.OnClicked;
+		FlatParams.Padding = Params.Padding.Left < 0.f ? FMargin(14.f, 8.f) : Params.Padding;
+		FlatParams.MinWidth = Params.MinWidth;
+		FlatParams.Height = Params.Height;
+		FlatParams.IsEnabled = Params.IsEnabled;
+		FlatParams.FontSize = Params.FontSize > 0 ? Params.FontSize : 18;
+		FlatParams.Tag = Tag.IsNone()
+			? FName(*FString::Printf(TEXT("MiniGenerated.Button.%s"), *SanitizeTagSegment(Params.Label)))
+			: Tag;
+		FlatParams.ToggleGroup = ToggleGroup;
+		return FT66FlatStyle::MakeFlatButton(FlatParams);
 	}
 
 	inline TSharedRef<SWidget> MakeButton(
@@ -234,8 +210,10 @@ namespace T66MiniGeneratedChrome
 		const ET66ButtonType Type,
 		const float MinWidth,
 		const float Height,
-		const int32 FontSize)
+		const int32 FontSize,
+		const FName Tag = NAME_None,
+		const FName ToggleGroup = NAME_None)
 	{
-		return MakeButton(MakeButtonParams(Label, OnClicked, Type, MinWidth, Height, FontSize));
+		return MakeButton(MakeButtonParams(Label, OnClicked, Type, MinWidth, Height, FontSize), Tag, ToggleGroup);
 	}
 }

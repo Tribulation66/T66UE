@@ -11,7 +11,7 @@
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/T66SlateTextureHelpers.h"
-#include "UI/Style/T66OverlayChromeStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
@@ -71,8 +71,8 @@ namespace
 	FTextBlockStyle BuildIdolCardBodyStyle()
 	{
 		FTextBlockStyle Style = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
-		Style.SetFont(FT66Style::Tokens::FontRegular(15));
-		Style.SetColorAndOpacity(FT66Style::Tokens::TextMuted);
+		Style.SetFont(FT66FlatStyle::MakeFont(15));
+		Style.SetColorAndOpacity(FT66FlatStyle::SecondaryText());
 		return Style;
 	}
 
@@ -91,8 +91,8 @@ namespace
 
 			const FTextBlockStyle BodyStyle = BuildIdolCardBodyStyle();
 			FTextBlockStyle StrongStyle = BodyStyle;
-			StrongStyle.SetFont(FT66Style::Tokens::FontBold(15));
-			StrongStyle.SetColorAndOpacity(FT66Style::Tokens::Text);
+			StrongStyle.SetFont(FT66FlatStyle::MakeBoldFont(15));
+			StrongStyle.SetColorAndOpacity(FT66FlatStyle::PrimaryText());
 
 			StyleInstance->Set("strong", StrongStyle);
 		}
@@ -153,21 +153,24 @@ namespace
 		TSharedPtr<SWidget>& OutButton,
 		TSharedPtr<SBorder>& OutBackground,
 		TSharedPtr<STextBlock>& OutText,
-		float MinWidth = 150.f)
+		float MinWidth = 150.f,
+		FName Tag = NAME_None)
 	{
 		OutBackground.Reset();
 		TSharedPtr<STextBlock> TextWidget;
-		TSharedRef<SWidget> Button = T66OverlayChromeStyle::MakeButton(
-			T66OverlayChromeStyle::MakeButtonParams(Label, OnClicked, ET66OverlayChromeButtonFamily::Primary)
-			.SetMinWidth(MinWidth)
-			.SetMinHeight(46.f)
-			.SetPadding(FMargin(16.f, 10.f))
-			.SetContent(
+		TSharedRef<SWidget> Button = FT66FlatStyle::MakeFlatToggleGroupButton(
+			ET66FlatState::Default,
 				SAssignNew(TextWidget, STextBlock)
 				.Text(Label)
-				.Font(FT66Style::Tokens::FontBold(16))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-				.Justification(ETextJustify::Center)));
+				.Font(FT66FlatStyle::MakeBoldFont(16))
+				.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+				.Justification(ETextJustify::Center),
+			OnClicked,
+			FMargin(16.f, 10.f),
+			MinWidth,
+			46.f,
+			true,
+			Tag);
 
 		OutButton = Button;
 		OutText = TextWidget;
@@ -190,13 +193,13 @@ namespace
 		{
 			Background->SetBorderBackgroundColor(
 				bEnabled
-					? (bDanger ? FT66Style::Tokens::Danger : FT66Style::Tokens::Success)
-					: FT66Style::ButtonPressed());
+					? (bDanger ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::DefaultBorder())
+					: FT66FlatStyle::DisabledBorder());
 		}
 
 		if (Text.IsValid())
 		{
-			Text->SetColorAndOpacity(bEnabled ? (bDanger ? FT66Style::Tokens::Danger : FT66Style::Tokens::Text) : FT66Style::Tokens::TextMuted);
+			Text->SetColorAndOpacity(bEnabled ? (bDanger ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText()) : FT66FlatStyle::DisabledText());
 		}
 	}
 }
@@ -418,7 +421,8 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 			OfferButtons[SlotIndex],
 			OfferButtonBorders[SlotIndex],
 			OfferButtonTexts[SlotIndex],
-			220.f);
+			220.f,
+			FName(*FString::Printf(TEXT("IdolAltar.TakeButton.%d"), SlotIndex)));
 
 		CardRow->AddSlot()
 		.AutoWidth()
@@ -428,14 +432,12 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 			.WidthOverride(IdolCardWidth)
 			.HeightOverride(IdolCardHeight)
 			[
-				SAssignNew(OfferTileBorders[SlotIndex], SBorder)
-				.BorderImage(T66OverlayChromeStyle::GetBrush(ET66OverlayChromeBrush::OfferCardNormal))
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(FMargin(IdolCardPadding))
-				[
+				FT66FlatStyle::MakeFlatPanel(
+					ET66FlatState::Default,
+					FMargin(IdolCardPadding),
 					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-					.BorderBackgroundColor(FT66Style::Tokens::Panel2)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FT66FlatStyle::DefaultFill())
 					.Padding(FMargin(0.f))
 					[
 						SNew(SVerticalBox)
@@ -445,30 +447,42 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 							.HeightOverride(IdolNameHeight)
 							.VAlign(VAlign_Center)
 							[
-								SAssignNew(OfferNameTexts[SlotIndex], STextBlock)
+								FT66FlatStyle::AttachMetadata(
+									SAssignNew(OfferNameTexts[SlotIndex], STextBlock)
 								.Text(FText::GetEmpty())
-								.Font(FT66Style::Tokens::FontBold(18))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+									.Font(FT66FlatStyle::MakeBoldFont(18))
+									.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 								.Justification(ETextJustify::Center)
-								.AutoWrapText(true)
+									.AutoWrapText(true),
+									FName(*FString::Printf(TEXT("IdolAltar.CardTitle.%d"), SlotIndex)),
+									TEXT("Label.Header"),
+									ET66FlatState::Default,
+									TOptional<FLinearColor>(),
+									false,
+									NAME_None,
+									true)
 							]
 						]
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 0.f)
 						[
 							SAssignNew(OfferIconBorders[SlotIndex], SBorder)
-							.BorderImage(T66OverlayChromeStyle::GetBrush(ET66OverlayChromeBrush::SlotNormal))
-							.BorderBackgroundColor(FLinearColor::White)
+							.BorderImage(GetIdolAltarWhiteBrush())
+							.BorderBackgroundColor(FT66FlatStyle::DefaultBorder())
 							.Padding(4.f)
 							[
-								SNew(SBox)
-								.WidthOverride(IdolIconSize)
-								.HeightOverride(IdolIconSize)
-								[
-									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
-										SAssignNew(OfferIconImages[SlotIndex], SImage)
-										.Image(OfferIconBrushes[SlotIndex].Get())
-										.ColorAndOpacity(FLinearColor::White)))
-								]
+								FT66FlatStyle::AttachMetadata(
+									SNew(SBox)
+									.WidthOverride(IdolIconSize)
+									.HeightOverride(IdolIconSize)
+									[
+										FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+											SAssignNew(OfferIconImages[SlotIndex], SImage)
+											.Image(OfferIconBrushes[SlotIndex].Get())
+											.ColorAndOpacity(FLinearColor::White)))
+									],
+									FName(*FString::Printf(TEXT("IdolAltar.CardIcon.%d"), SlotIndex)),
+									TEXT("Icon"),
+									ET66FlatState::Default)
 							]
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
@@ -477,12 +491,20 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 							.HeightOverride(IdolDescriptionHeight)
 							.VAlign(VAlign_Center)
 							[
-								SAssignNew(OfferDescriptionTexts[SlotIndex], SRichTextBlock)
+								FT66FlatStyle::AttachMetadata(
+									SAssignNew(OfferDescriptionTexts[SlotIndex], SRichTextBlock)
 								.Text(FText::GetEmpty())
 								.TextStyle(&GetIdolCardBodyStyle())
 								.DecoratorStyleSet(&GetIdolCardRichTextStyle())
 								.AutoWrapText(true)
-								.Justification(ETextJustify::Center)
+									.Justification(ETextJustify::Center),
+									FName(*FString::Printf(TEXT("IdolAltar.CardDescription.%d"), SlotIndex)),
+									TEXT("Label.Body"),
+									ET66FlatState::Default,
+									TOptional<FLinearColor>(),
+									false,
+									NAME_None,
+									true)
 							]
 						]
 						+ SVerticalBox::Slot().FillHeight(1.f)
@@ -493,8 +515,9 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						[
 							ActionButton
 						]
-					]
-				]
+					],
+					&OfferTileBorders[SlotIndex],
+					FName(*FString::Printf(TEXT("IdolAltar.Card.%d"), SlotIndex)))
 			]
 		];
 	}
@@ -515,12 +538,21 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 	});
 
 	TSharedRef<SWidget> Root =
+		FT66FlatStyle::AttachMetadata(
 		SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
+			FT66FlatStyle::AttachMetadata(
 			SNew(SBorder)
 			.BorderImage(GetIdolAltarWhiteBrush())
-			.BorderBackgroundColor(FLinearColor(0.008f, 0.010f, 0.017f, 0.97f))
+				.BorderBackgroundColor(FLinearColor(
+					FT66FlatStyle::BackgroundColor().R,
+					FT66FlatStyle::BackgroundColor().G,
+					FT66FlatStyle::BackgroundColor().B,
+					0.97f)),
+				FName(TEXT("IdolAltar.Backdrop")),
+				TEXT("Panel"),
+				ET66FlatState::Default)
 		]
 		+ SOverlay::Slot()
 		[
@@ -532,7 +564,9 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 				SNew(SBox)
 				.WidthOverride(SurfaceWidthAttr)
 				[
-					T66OverlayChromeStyle::MakePanel(
+					FT66FlatStyle::MakeFlatPanel(
+					ET66FlatState::Default,
+					FMargin(28.f),
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -545,14 +579,23 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 								BackButton,
 								BackButtonBorder,
 								BackButtonText,
-								110.f)
+								110.f,
+								FName(TEXT("IdolAltar.BackButton")))
 						]
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
 						[
-							SNew(STextBlock)
-							.Text(AltarTitle)
-							.Font(FT66Style::Tokens::FontBold(42))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							FT66FlatStyle::AttachMetadata(
+								SNew(STextBlock)
+								.Text(AltarTitle)
+								.Font(FT66FlatStyle::MakeBoldFont(42))
+								.ColorAndOpacity(FT66FlatStyle::PrimaryText()),
+								FName(TEXT("IdolAltar.Title")),
+								TEXT("Label.Title"),
+								ET66FlatState::Default,
+								TOptional<FLinearColor>(),
+								false,
+								NAME_None,
+								true)
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
@@ -562,10 +605,18 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 					[
-						SAssignNew(StatusText, STextBlock)
-						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontRegular(15))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						FT66FlatStyle::AttachMetadata(
+							SAssignNew(StatusText, STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66FlatStyle::MakeFont(15))
+							.ColorAndOpacity(FT66FlatStyle::SecondaryText()),
+							FName(TEXT("IdolAltar.StatusText")),
+							TEXT("Label.Caption"),
+							ET66FlatState::Default,
+							TOptional<FLinearColor>(),
+							false,
+							NAME_None,
+							true)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f).HAlign(HAlign_Center)
 					[
@@ -579,18 +630,22 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 							RerollButton,
 							RerollButtonBorder,
 							RerollButtonText,
-							180.f)
+							180.f,
+							FName(TEXT("IdolAltar.RerollButton")))
 					]
 					+ SVerticalBox::Slot().FillHeight(1.f)
 					[
 						SNew(SSpacer)
 					]
 					,
-					ET66OverlayChromeBrush::CasinoShellPanel,
-					FMargin(28.f))
+					nullptr,
+					FName(TEXT("IdolAltar.Panel")))
 				]
 			]
-		];
+		],
+		FName(TEXT("IdolAltar.Root")),
+		TEXT("Overlay"),
+		ET66FlatState::Default);
 
 	SetActionButtonState(BackButton, BackButtonBorder, BackButtonText, true, false);
 	SetActionButtonState(RerollButton, RerollButtonBorder, RerollButtonText, !IsTutorialSingleOfferMode() && !IsWeaponOfferMode(), false);
@@ -652,7 +707,7 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 			}
 			if (OfferTileBorders.IsValidIndex(VisibleSlotIndex) && OfferTileBorders[VisibleSlotIndex].IsValid())
 			{
-				OfferTileBorders[VisibleSlotIndex]->SetBorderBackgroundColor(bSelected ? FLinearColor(1.f, 0.94f, 0.78f, 1.f) : FLinearColor::White);
+				OfferTileBorders[VisibleSlotIndex]->SetBorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::DefaultBorder());
 				OfferTileBorders[VisibleSlotIndex]->SetToolTip(nullptr);
 			}
 			if (OfferIconBorders.IsValidIndex(VisibleSlotIndex) && OfferIconBorders[VisibleSlotIndex].IsValid())
@@ -766,7 +821,7 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 
 		if (OfferTileBorders.IsValidIndex(VisibleSlotIndex) && OfferTileBorders[VisibleSlotIndex].IsValid())
 		{
-			OfferTileBorders[VisibleSlotIndex]->SetBorderBackgroundColor(bSelected ? FLinearColor(1.f, 0.94f, 0.78f, 1.f) : FLinearColor::White);
+			OfferTileBorders[VisibleSlotIndex]->SetBorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::DefaultBorder());
 			OfferTileBorders[VisibleSlotIndex]->SetToolTip(nullptr);
 		}
 

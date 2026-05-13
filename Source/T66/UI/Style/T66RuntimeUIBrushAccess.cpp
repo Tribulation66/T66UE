@@ -38,46 +38,7 @@ namespace
 		return Brush;
 	}
 
-	T66RuntimeUIBrushAccess::FOptionalTextureBrush& GetDotaButtonPlateEntry(T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind Kind)
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Neutral;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Primary;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Danger;
-
-		switch (Kind)
-		{
-		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Primary:
-			return Primary;
-		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Danger:
-			return Danger;
-		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Neutral:
-		default:
-			return Neutral;
-		}
-	}
-
 	FString MakeUltrakillElementFallbackPath(const TCHAR* FileName);
-
-	FString GetDotaButtonPlateFallbackPath(T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind Kind)
-	{
-		switch (Kind)
-		{
-		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Primary:
-			return MakeUltrakillElementFallbackPath(TEXT("cta_new_game_button_normal_red.png"));
-		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Danger:
-			return MakeUltrakillElementFallbackPath(TEXT("cta_new_game_button_pressed_red.png"));
-		case T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Neutral:
-		default:
-			return MakeUltrakillElementFallbackPath(TEXT("cta_new_game_button_normal_red.png"));
-		}
-	}
-
-	FMargin GetDotaButtonPlateMargin(T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind Kind)
-	{
-		return (Kind == T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Primary)
-			? FMargin(0.f)
-			: FMargin(0.22f, 0.32f, 0.22f, 0.32f);
-	}
 
 	FString NormalizeReferenceFallbackPath(FString Path)
 	{
@@ -322,16 +283,6 @@ namespace T66RuntimeUIBrushAccess
 		}
 
 		return FileTexture.IsValid() ? FileTexture.Get() : nullptr;
-	}
-
-	const FSlateBrush* ResolveDotaButtonPlateBrush(const ET66DotaPlateBrushKind Kind)
-	{
-		return ResolveOptionalTextureBrush(
-			GetDotaButtonPlateEntry(Kind),
-			nullptr,
-			GetDotaButtonPlateFallbackPath(Kind),
-			GetDotaButtonPlateMargin(Kind),
-			TEXT("T66ButtonPlate"));
 	}
 
 	bool ShouldUseSimpleReferenceFallback(const FString& SourcePath)

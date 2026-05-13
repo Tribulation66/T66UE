@@ -76,27 +76,30 @@ This section is the canonical specification of the visual language. Every helper
 
 ### 3.1 Palette
 
-All structural chrome and text uses these exact values. Define them as `FLinearColor` constants in `FT66FlatStyle` (or a shared palette header it includes).
+All structural chrome and text uses these exact values. Define them as `FLinearColor` constants in `FT66FlatStyle` (or a shared palette header it includes). UI fidelity checklists should use the symbol column instead of literal hex; `Scripts/VerifyUIFidelity.py` resolves those symbols from the `FT66FlatStyle.cpp` palette functions.
 
-| Role | Hex | RGB | Notes |
-|---|---|---|---|
-| Background | `#08080C` | (8, 8, 12) | Near-black with a barely-perceptible cool tint. Screen base color. |
-| Disabled fill | `#14141C` | (20, 20, 28) | Used inside disabled controls. |
-| Disabled border | `#322D41` | (50, 45, 65) | Dim purple-gray for disabled outlines. |
-| Disabled text | `#5A5569` | (90, 85, 105) | |
-| Default fill | `#0F0C16` | (15, 12, 22) | Inside default-state controls and panels. |
-| Default border (structural) | `#5E1F8C` | (94, 31, 140) | Dark purple. Used for every structural panel border in default state. |
-| Default text on default fill | `#DCD7EB` | (220, 215, 235) | Soft white with a purple tint. |
-| Purple text accent | `#A040D0` | (160, 64, 208) | Label-style purple text only (column headers, filter labels, sub-headers, status text, accent markers). Never used for panel borders. |
-| Selected fill | `#14080C` | (20, 8, 12) | Inside selected-state controls. |
-| Selected border | `#E1232D` | (225, 35, 45) | Red. Used for every interactive element in selected state. |
-| Selected text | `#FF505F` | (255, 80, 95) | |
-| Progress bar fill | `#E1232D` | (225, 35, 45) | Solid red flat fill. Same red as selected border. |
-| Ready / good standing text | `#1FB358` | (31, 179, 88) | Green. Used for positive status text ("GOOD STANDING", "READY" badge on local player Steam slot). |
-| Primary text | `#F0F0F5` | (240, 240, 245) | Near-white. Default text color on dark backgrounds. |
-| Secondary text | `#A59BB9` | (165, 155, 185) | Muted purple-gray. Used for descriptions, captions, and secondary content. |
-| Data accent (cyan) | `#3CDCF0` | (60, 220, 240) | Reserved for data-viz contexts (stat bars in hero detail panels). Not used for chrome. |
-| Yellow accent (tickets) | preserve existing | — | Yellow ticket icon color. Preserve current value. |
+| Role | Symbol | Hex | RGB | Notes |
+|---|---|---|---|---|
+| Background | `BackgroundColor` | `#08080C` | (8, 8, 12) | Near-black with a barely-perceptible cool tint. Screen base color. |
+| Disabled fill | `DisabledFill` | `#14141C` | (20, 20, 28) | Used inside disabled controls. |
+| Disabled border | `DisabledBorder` | `#34343C` | (52, 52, 60) | Dim neutral gray for disabled outlines. |
+| Disabled text | `DisabledText` | `#5A5569` | (90, 85, 105) | |
+| Default fill | `DefaultFill` | `#0F0C16` | (15, 12, 22) | Inside default-state controls and panels. |
+| Default border (structural) | `DefaultBorder` | `#4A4A55` | (74, 74, 85) | Neutral gray. Used for every structural panel border in default state. |
+| Default text on default fill | `DefaultText` | `#DCD7EB` | (220, 215, 235) | Soft white with a purple tint. |
+| Purple text accent | `PurpleAccent` | `#8A8A95` | (138, 138, 149) | Legacy API name for label-style accent text (column headers, filter labels, sub-headers, status text, accent markers). Never used for panel borders. |
+| Selected fill | `SelectedFill` | `#14080C` | (20, 8, 12) | Inside selected-state controls. |
+| Selected border | `SelectedBorder` | `#E1232D` | (225, 35, 45) | Red. Used for every interactive element in selected state. |
+| Selected text | `SelectedText` | `#FF505F` | (255, 80, 95) | |
+| Progress bar fill | `ProgressFill` | `#E1232D` | (225, 35, 45) | Solid red flat fill. Same red as selected border. |
+| Ready / good standing text | `GoodStandingGreen` / `ReadyBorder` | `#1FB358` | (31, 179, 88) | Green. Used for positive status text ("GOOD STANDING", "READY" badge on local player Steam slot). |
+| Hover border | `HoverBorder` | `#1FB358` | (31, 179, 88) | Transient hover alias. Same hue as ready/good standing, applied only while enabled interactive helpers are hovered. |
+| Hover text | `HoverText` | `#4FD088` | (79, 208, 136) | Transient hover text for enabled interactive helpers. |
+| Hover fill | `HoverFill` | `#0A1410` | (10, 20, 16) | Transient hover fill for enabled interactive helpers. |
+| Primary text | `PrimaryText` | `#F0F0F5` | (240, 240, 245) | Near-white. Default text color on dark backgrounds. |
+| Secondary text | `SecondaryText` | `#A7A7B0` | (167, 167, 176) | Muted neutral gray. Used for descriptions, captions, and secondary content. |
+| Data accent (cyan) | `DataAccent` | `#3CDCF0` | (60, 220, 240) | Reserved for data-viz contexts (stat bars in hero detail panels). Not used for chrome. |
+| Yellow accent (tickets) | preserve existing | preserve existing | - | Yellow ticket icon color. Preserve current value. |
 
 ### 3.2 Stroke
 
@@ -140,6 +143,8 @@ Every interactive element is in exactly one of these states:
 - **Selected** — dark-with-red-tint fill, red border, red text. No glow. Used for currently active tabs, active filter dropdowns, primary action buttons (CTAs).
 - **Ready** (specialized; green) — green border. Used for the local player's Steam party slot in Hero Selection and equivalent "positive ready" indicators. Not a general-purpose state.
 
+Enabled interactive elements also have a transient hover overlay: `HoverBorder #1FB358`, `HoverText #4FD088`, and `HoverFill #0A1410`. Hover must never write or reinterpret the element's semantic state; Default, Selected, and Ready return to their authored state immediately on unhover. Disabled controls ignore hover and report `hover_capable=false` in UI dumps.
+
 Some elements are always rendered in Selected state regardless of interaction (e.g., the filter dropdowns on Overview and History — they're always-active inputs). Per-screen specs note these.
 
 ### 3.6 Typography (Jersey10)
@@ -150,8 +155,8 @@ Role conventions (all using Jersey10 at different sizes; the visual hierarchy co
 
 - **Screen titles** (e.g., "MINIGAMES", "CHALLENGES", "RUN SUMMARY", "LOAD GAME") — large size, primary white. Float above content with no panel.
 - **Section headers within panels** (e.g., "RUN OUTCOME", "STATS", "INVENTORY", "ACCOUNT STATUS") — medium-large size, primary white, ALL CAPS where shown that way.
-- **Sub-headers and label-style accents** (e.g., "MODIFIERS", "WEAPON", "ULTIMATE", "DIFFICULTY", "DATE") — small-medium size, purple text accent (`#A040D0`), ALL CAPS.
-- **Body text and descriptions** — regular size, primary white or secondary text (`#A59BB9`) depending on prominence, sentence case.
+- **Sub-headers and label-style accents** (e.g., "MODIFIERS", "WEAPON", "ULTIMATE", "DIFFICULTY", "DATE") — small-medium size, `PurpleAccent`, ALL CAPS. The symbol name is retained for compatibility even though the current value is neutral grey.
+- **Body text and descriptions** — regular size, primary white or `SecondaryText` depending on prominence, sentence case.
 - **Stat values, scores, dates, times** — primary white, monospaced/tabular alignment. Right-align in columns where it improves readability.
 - **Button labels** — primary white (default state), red (selected state), dim (disabled state). Match button border state.
 
@@ -245,6 +250,7 @@ A new namespace/file (`FT66FlatStyle` in `Source/T66/UI/Style/T66FlatStyle.h` an
 
 **Panel builders:**
 - `MakeFlatPanel(state, padding, content)` — basic axis-aligned rectangle with solid colored border + dark fill. The fundamental building block.
+- `MakeFlatInteractivePanel(state, padding, content, is_enabled, tag, intended_role)` — hover-capable panel shell for editable text boxes and custom input surfaces whose child widget owns focus/input instead of an `SButton` click handler.
 - `MakeFlatOuterContainer(state, gap, children)` — auto-stacks child widgets with `FlatGap` separation and wraps the result in a flat panel.
 - `MakeFlatSubPanel(state, padding, content)` — semantic alias of `MakeFlatPanel`, used inside outer containers for clarity.
 - `MakeFlatHeaderedPanel(state, header_text, body_content, optional_icon, optional_header_accent)` — flat panel with a header row + body section. Used for "RUN OUTCOME", "STATS", "ACCOUNT PROGRESS"–style panels.
@@ -299,11 +305,11 @@ Brand / partner glyphs (preserve, do not redesign): Steam logo, gender male/fema
 For each icon, Codex categorizes as:
 - **Present** — an existing UTexture/PNG asset matches the spec. Note the asset path.
 - **Partial** — a similar icon exists but does not match the V3 spec (wrong shape, wrong content). Note the existing asset path and what differs.
-- **Missing** — no matching asset. Generate via Codex's image generation pipeline. Produce a single-glyph PNG asset, monochrome (purple text accent `#A040D0` for default, or as a white/grayscale glyph that can be tinted at runtime), no background, no decorative chrome, sized for icon use (suggested 64×64 to 256×256 PNG with transparency).
+- **Missing** — no matching asset. Generate via Codex's image generation pipeline. Produce a single-glyph PNG asset, monochrome (`PurpleAccent` for default tint, or as a white/grayscale glyph that can be tinted at runtime), no background, no decorative chrome, sized for icon use (suggested 64×64 to 256×256 PNG with transparency).
 
 Output: a manifest file at `C:\UE\T66\UI\icon_manifest.md` listing every icon, its category, and either its existing path or the generated file path.
 
-Missing icons should be generated and saved under `SourceAssets/UI/Icons/Flat/<icon_name>.png`. The icon manifest must reference these paths. The runtime icon access path (`T66RuntimeUITextureAccess` or equivalent) should resolve these files. If new runtime helper code is needed to load from `SourceAssets/UI/Icons/Flat/`, add it as part of Stage 1.
+Missing icons should be generated and saved under `RuntimeDependencies/T66/UI/Icons/Flat/<icon_name>.png`. The icon manifest must reference these paths. The runtime icon access path (`T66RuntimeUITextureAccess` or equivalent) should resolve these files. During migration, legacy `SourceAssets/UI/Icons/Flat/` requests should remap to the runtime dependency path rather than making ignored source-art folders a required runtime dependency.
 
 ### 4.4 Deliverable: Hero Selection pilot
 
@@ -323,7 +329,7 @@ All of the following must be true to consider Stage 1 complete:
 1. `FT66FlatStyle.h` and `FT66FlatStyle.cpp` exist under `Source/T66/UI/Style/` with the helper surface specified in Section 4.2.
 2. Palette constants and the `ET66FlatState` enum are defined and accessible.
 3. The chrome retainer bypass and `bUseGlow = false` defaults are wired so no flat widget renders with glow or retainer chrome effects.
-4. Icon manifest exists at `C:\UE\T66\UI\icon_manifest.md` covering every icon referenced in the V3 specs. Missing icons are generated and saved under `SourceAssets/UI/Icons/Flat/`. Runtime path resolution for these icons works.
+4. Icon manifest exists at `C:\UE\T66\UI\icon_manifest.md` covering every icon referenced in the V3 specs. Missing icons are generated and saved under `RuntimeDependencies/T66/UI/Icons/Flat/`. Runtime path resolution for these icons works.
 5. The Hero Selection screen renders in flat style matching its V3 reference (modulo content differences, which are logged for Stage 2 follow-up).
 6. The project compiles cleanly:
    `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex`
@@ -544,6 +550,13 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
   - RIGHT: outer purple container with subtitle "A KING. A CRUSADE. AN APOCALYPSE.", RANK sub-panel (info icon + label + lock + "--" value), MASTERY sub-panel (info icon + label + red progress bar + "LV 1" + "0 / 100 XP"), STATS sub-panel (two-column stat grid with 8 stats — Damage 4/99, ATT Speed 2/99, ATT Scale 2/99, Accuracy 2/99 / Armor 7/99, Evasion 1/99, Luck 2/99, Speed 2/99), WEAPON / ULTIMATE sub-panel (two columns, weapon icon + ultimate icon).
 - Bottom row (compact — see size guidance): Steam party panel (4 small slots, slot 1 Ready green, slots 2-4 Default purple with Steam logo + character silhouette); CHAD (Selected) / STACY (Default) toggle + CHOOSE COMPANION (Default) button stacked; DIFFICULTY label + dropdown ("Easy") + ENTER button (Selected, standard height, with skull icon); CHALLENGES MODS button (Default, compact) far right.
 - Size guidance: ARTHUR name like screen titles; skin portraits small thumbnails; Steam party compact; ENTER standard height; carousel portraits same size as reference or slightly smaller.
+- Interactivity:
+  - Toggle group `GenderToggle`: members `HeroSelection.BottomRow.CompanionPanel.ChadButton`, `HeroSelection.BottomRow.CompanionPanel.StacyButton`; mutually exclusive `true`; initial selection `HeroSelection.BottomRow.CompanionPanel.ChadButton`; drives `GenderSelection` / `SelectedBodyType`.
+  - Toggle group `SkinSelection`: members `HeroSelection.LeftColumn.SkinsPanel.SkinRow.Default`, `HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer`, `HeroSelection.LeftColumn.SkinsPanel.SkinRow.Crusader`, `HeroSelection.LeftColumn.SkinsPanel.SkinRow.GoldenPaladin`; mutually exclusive `true`; initial selection `HeroSelection.LeftColumn.SkinsPanel.SkinRow.Default`; drives `EquippedSkin` / `SelectedHeroSkinID`. PREVIEW on non-equipped rows is a separate action, not part of the toggle.
+  - Toggle group `HeroCarousel`: members `HeroSelection.TopRow.HeroCarousel.Portrait01` through `HeroSelection.TopRow.HeroCarousel.Portrait07`; mutually exclusive `true`; initial selection `HeroSelection.TopRow.HeroCarousel.Portrait04`; drives `PreviewedHeroID`. `HeroSelection.TopRow.HeroCarousel.LeftArrow` and `HeroSelection.TopRow.HeroCarousel.RightArrow` scroll the carousel and are not toggle members.
+  - Single-action buttons: `HeroSelection.TopRow.BackButton` -> `NavigateBack`; `HeroSelection.RightColumn.HeaderRow.LabButton` -> `OpenLab` placeholder until backend exists; `HeroSelection.BottomRow.DifficultyPanel.EnterButton` -> `StartRun`; `HeroSelection.BottomRow.CompanionPanel.ChooseCompanionButton` -> `OpenCompanionPicker`; `HeroSelection.LeftColumn.DrugsPanel.BuyButton` -> `BuyCurrentSelectedDrugOrSkin`; `HeroSelection.LeftColumn.DrugsPanel.ClearButton` -> `ClearDrugSlots`; `HeroSelection.BottomRow.ChallengesButton` -> `OpenChallenges`; `HeroSelection.BottomRow.ModsButton` -> `OpenMods`; `HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer.PreviewButton` -> `PreviewSkin` placeholder until backend exists.
+  - Dropdowns: `HeroSelection.BottomRow.DifficultyPanel.Dropdown`; options source `ET66Difficulty` playable difficulty list; drives `SelectedDifficulty`.
+  - Any V3-listed single-action element without backend infrastructure must still bind a placeholder logging handler so the control is visibly responsive and reports `has_click_handler=true`.
 
 **Overview** (most refined V3, 5 rounds of iteration)
 - Top bar (outer container, loose buttons): settings, globe, ACCOUNT (selected purple — same color because it's a category indicator), profile, POWER UP, ACHIEVEMENTS, MINIGAMES, ticket badge (10), power button.
@@ -560,6 +573,18 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
     - HIGHEST SCORE sub-panel (trophy icon + header + 5-row table: Easy/Medium/Hard/Very Hard/Impossible × columns Difficulty/Hero/Date/Global Rank/Score).
     - BEST SPEED RUN sub-panel (stopwatch icon + header + 5-row table with same difficulties × Difficulty/Hero/Date/Global Rank/Time).
 - No CHADPOCALYPSE branding strip. No scrollbar.
+- Interactivity:
+  - Top bar single-actions: settings cog -> `OpenSettings`; globe -> `OpenLanguageSelect`; ACCOUNT category button -> no-op/current section; profile -> `OpenPlayerSummary`; POWER UP -> `NavigatePowerUp`; ACHIEVEMENTS -> `NavigateAchievements`; MINIGAMES -> `NavigateMinigames`; ticket badge -> `OpenCouponInfo` or placeholder; power -> `OpenQuitConfirmation`.
+  - Sub-tab toggle group `AccountTabs`: OVERVIEW Selected, HISTORY Default; mutually exclusive; drives `ActiveAccountTab`. Info icons on each sub-tab open/hover the tooltip and must have handler or tooltip metadata.
+  - Dropdowns: PERSONAL BEST and SOLO; options from leaderboard/account filters; both render forced Selected because they are active controls.
+  - Body panels are informational; table rows are non-interactive unless the implementation has an existing details action, in which case bind and document it during migration.
+- Label vs button:
+  - Labels: player name, LEVEL value, EXPERIENCE label/value, ACCOUNT STATUS header/value, warning paragraph, ACCOUNT PROGRESS header, progress row names/counts, HIGHEST SCORE/BEST SPEED RUN headers, table headers, difficulty/date/rank/score/time values.
+  - Buttons/dropdowns: top bar controls, OVERVIEW/HISTORY sub-tabs, sub-tab info tooltip controls, PERSONAL BEST dropdown, SOLO dropdown.
+- Icon manifest:
+  - Existing flat icons: `gear.png`, `globe`/language icon if present or generate via M1, `ticket.png`, `shield.png`, `bar_chart.png`, `trophy_laurel.png`, `stopwatch.png`, `power` icon if present or generate via M1.
+  - Needs M1 reference crop if exact style is missing: account/profile glyph, POWER UP icon, ACHIEVEMENTS icon, MINIGAMES icon, sub-tab info icon.
+  - Content art: player avatar is content; use live profile avatar if available, otherwise stub under `SourceAssets\UI\ContentStubs\Overview\`.
 
 **History**
 - Top bar same as Overview, ACCOUNT button Default.
@@ -567,6 +592,17 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
 - No description band.
 - Filter row outer container: 4 dropdowns (HERO, DIFFICULTY, PARTY SIZE, STATUS) showing "ALL" each + DAILY DESCENT checkbox (Default purple square). All dropdowns forced Selected.
 - Run history panel (no section header): column header row with 6 columns (HERO PLAYED, DATE, STATUS, SCORE, DURATION, RANK), each sortable column with small sort-arrow indicator; RANK column header is a dropdown selector (not sortable). Empty state row: "No runs have been recorded yet." in secondary text.
+- Interactivity:
+  - Top bar single-actions same as Overview; ACCOUNT remains current section.
+  - Sub-tab toggle group `AccountTabs`: OVERVIEW Default, HISTORY Selected; mutually exclusive; drives `ActiveAccountTab`.
+  - Filter controls: HERO, DIFFICULTY, PARTY SIZE, STATUS dropdowns; DAILY DESCENT checkbox drives `bHistoryDailyDescentOnly`.
+  - Sortable column headers: HERO PLAYED, DATE, STATUS, SCORE, DURATION are buttons/toggles that drive sort column/direction. RANK is a dropdown selector.
+- Label vs button:
+  - Labels: empty state text, row values, table captions, non-clickable descriptive copy.
+  - Buttons/dropdowns/checkboxes: top bar controls, account sub-tabs, info tooltip controls, four filter dropdowns, DAILY DESCENT checkbox, sortable column headers, RANK selector.
+- Icon manifest:
+  - Reuse Overview top bar icons.
+  - Existing or M1-needed icons: info icon, sort arrows, checkbox check/empty mark, rank selector chevron/dropdown.
 
 **Diplomas** (Power Up → Diplomas)
 - Top bar with POWER UP Selected (red).
@@ -575,6 +611,19 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
 - Main content outer purple container with: left navigation arrow button + 4 diploma cards horizontally + right navigation arrow button + pagination indicator at bottom.
 - Each diploma card: diploma artwork preserved at top (each card's distinct parchment imagery) + stat upgrade text in purple accent (+0 DAMAGE, +1 ATTACK SPEED, +2 ATTACK SCALE, +3 ACCURACY) + GRADUATE button (Selected red, full-width, "GRADUATE" label + 10-ticket cost).
 - Pagination: 4 visible diplomas of many; current position red, others dim purple. No "SCROLL FOR MORE DIPLOMAS" text.
+- Interactivity:
+  - Top bar single-actions as standard; POWER UP is current/selected.
+  - Sub-tab toggle group `PowerUpTabs`: DIPLOMAS Selected, DRUGS Default; mutually exclusive; drives `bShowingSingleUse=false`.
+  - Left/right navigation arrows page the diploma carousel.
+  - Pagination dots reflect current page; if clickable, each dot drives page index.
+  - Each GRADUATE button purchases/upgrades the card's primary stat and refreshes counts.
+- Label vs button:
+  - Labels: card stat names, upgrade values, ticket cost text if not independently clickable, pagination status text if any.
+  - Buttons: top bar controls, DIPLOMAS/DRUGS tabs, nav arrows, pagination dots if clickable, GRADUATE controls.
+- Icon manifest:
+  - Existing flat icons: `ticket.png`, `pagination_left.png`, `pagination_right.png`.
+  - Needs M1 reference crop if absent: sub-tab info icons and any diploma-specific stat glyphs.
+  - Diploma parchment/card artwork is content art and remains PNG-driven; stub only if production diploma art is missing.
 
 **Drugs** (Power Up → Drugs)
 - Top bar with POWER UP Selected.
@@ -584,6 +633,17 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
 - Category 1 Damage Drugs (target icon): OXYMETHOLONE, METHANDROSTENOLONE, FLUOXYMESTERONE, NANDROLONE DECANOATE with respective drug artwork preserved + "+10% AOE/Bounce/Pierce/DOT Damage" stat text + BUY button (Selected red, 1-ticket cost).
 - Category 2 Attack Speed Drugs (speedometer icon): CAFFEINE CITRATE, MODAFINIL, EPHEDRINE HCL, SALBUTAMOL SULFATE + analogous stat text + BUY buttons.
 - No scrollbar; additional categories exist in implementation but mockup shows only these two.
+- Interactivity:
+  - Top bar single-actions as standard; POWER UP is current/selected.
+  - Sub-tab toggle group `PowerUpTabs`: DIPLOMAS Default, DRUGS Selected; mutually exclusive; drives `bShowingSingleUse=true`.
+  - Each BUY button purchases the drug/secondary buff represented by that card.
+  - Drug cards themselves are informational unless the existing implementation treats the whole card as clickable; if so, bind the card to the same buy/select action and document it in the checklist.
+- Label vs button:
+  - Labels: category names, drug names, stat effect text, ticket cost text if not separately clickable.
+  - Buttons: top bar controls, DIPLOMAS/DRUGS tabs, BUY controls.
+- Icon manifest:
+  - Existing flat icons: `target_crosshair.png`, `gauge_speedometer.png`, `ticket.png`.
+  - Drug bottle/card artwork is content art and remains PNG-driven; generate content stubs via Section 9 only for missing production art.
 
 **Steam Achievements** (Achievements → Steam)
 - Top bar with ACHIEVEMENTS Selected.
@@ -591,6 +651,17 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
 - No description band.
 - Steam summary panel (wide horizontal, purple-bordered): Steam logo left + "STEAM ACHIEVEMENTS 0/100" header (0 in red, /100 in secondary) + red progress bar.
 - Achievement list panel (no section header): rows with row number + name + bracketed description (in secondary text) + progress value (0/1) + reward value (5 CC) + outlined star icon (favorite indicator). Three rows visible: Collector 1, Field Notes 1, Token Rank 1. Thin dividers between rows.
+- Interactivity:
+  - Top bar single-actions as standard; ACHIEVEMENTS is current/selected.
+  - Sub-tab toggle group `AchievementTabs`: STEAM Selected, SECRET Default; mutually exclusive; drives `ActiveAchievementTab`.
+  - Favorite star per row toggles favorite/pinned state if backend supports it; otherwise bind a placeholder logging handler.
+  - Achievement rows are informational unless current implementation opens details; if so, row click opens details.
+- Label vs button:
+  - Labels: summary header, count values, row number/name/description/progress/reward text, progress bar labels.
+  - Buttons: top bar controls, STEAM/SECRET tabs, sub-tab info controls, favorite star toggles, row detail actions if present.
+- Icon manifest:
+  - Brand asset placeholder: Steam logo requires approved Steam brand asset or live platform asset; do not invent a production logo.
+  - Existing flat icons: `starburst.png` or generate favorite outline via M1 if the reference star style is distinct; `ticket.png` for CC if shown as icon.
 
 **Minigames**
 - Top bar with MINIGAMES Selected.
@@ -599,6 +670,18 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
 - **Description band kept** (this is the locked exception): "Earn Chad Coupons and compete with friends and the world in the minigames." in primary white, regular sans-serif, sentence case, centered.
 - Main content outer purple container with: left nav arrow + 4 minigame cards + right nav arrow + pagination at bottom.
 - Each minigame card: screenshot preserved + card title (CHADPOCALYPSE MINI / TOWER DEFENSE / DECKBUILDER / IDLE) + description + PLAY GAME button (Selected red, full-width).
+- Interactivity:
+  - Top bar single-actions as standard; MINIGAMES is current/selected.
+  - Left/right nav arrows page the minigame carousel if more than four entries exist.
+  - Pagination dots reflect the current page; if clickable, each dot drives page index.
+  - Each PLAY GAME button navigates to that minigame's main menu.
+  - Cards themselves are informational unless implementation already treats card click as play/select; if so, bind to the same route and document.
+- Label vs button:
+  - Labels: MINIGAMES screen title, description band text, card titles, card descriptions.
+  - Buttons: top bar controls, nav arrows, pagination dots if clickable, PLAY GAME buttons.
+- Icon manifest:
+  - Existing flat icons: `pagination_left.png`, `pagination_right.png`, top bar icons.
+  - Minigame screenshots are content art and remain PNG-driven; generate stubs only for missing screenshots.
 
 **Daily Descent**
 - Slim top bar (outer container, 4 loose buttons): settings cog + globe + BACK TO MAIN MENU (centered, wider) + power button (Selected red).
@@ -606,6 +689,17 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
   - LEFT (outer purple container): "RULES OF THE DAY" header + intro row sub-panel (i icon + intro text) + 4 stat row sub-panels (Hero Selected → Hero_14, Companion Selected → None, Difficulty → Hard, Continue Save → "No saved Daily run") + "MODIFIERS" sub-header with /// marker + 3 modifier row sub-panels (Pocket Draft + dice icon + description, Iron Parade + shield icon + description, Double Drop + bag icon + description).
   - MIDDLE (outer purple container): hero artwork (gold idol on pyramid with fiery halo, preserved) + "DAILY DESCENT" title (standard cyber typography, not pixel art) + subtitle "One seed. One attempt. Same puzzle for everyone." in purple accent + START DESCENT (Selected red, large primary CTA with chevron decorations) + CONTINUE DESCENT (Default purple, secondary with chevrons).
   - RIGHT: 3 small icon-only tabs at top (globe Selected, people Default, broadcast Default) + Daily Global Chad Rankings panel (purple-bordered) with header + 9-row leaderboard + red separator + player's row (#42 DOPRA 118700).
+- Interactivity:
+  - Slim top bar single-actions: settings -> `OpenSettings`; globe -> `OpenLanguageSelect`; BACK TO MAIN MENU -> `NavigateMainMenu`; power -> `OpenQuitConfirmation`.
+  - Leaderboard scope toggle group `DailyLeaderboardTabs`: globe Selected, people Default, broadcast Default; mutually exclusive; drives leaderboard source/scope.
+  - START DESCENT starts the daily run. CONTINUE DESCENT resumes saved daily run if available; disabled or placeholder if no save.
+  - Rules/stat/modifier rows are informational.
+- Label vs button:
+  - Labels: RULES OF THE DAY header, intro text, stat labels/values, MODIFIERS header, modifier names/descriptions, DAILY DESCENT title/subtitle, leaderboard header, leaderboard row text.
+  - Buttons: slim top bar controls, leaderboard scope icon tabs, START DESCENT, CONTINUE DESCENT.
+- Icon manifest:
+  - Existing flat icons: `gear.png`, globe/language icon, power icon if present or M1, `info.png`, `dice.png`, `shield.png`, `loot_bag.png`, `people.png`, `broadcast_antenna.png`.
+  - Hero artwork is content art and remains PNG-driven.
 
 **Challenges**
 - **No top bar.**
@@ -616,6 +710,18 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
   - LEFT (outer purple container): GLASS ROUTE challenge card (Selected red, with starburst icon, OFFICIAL badge, 40 CHAD COUPONS, TRIBULATION 66 author) + PRESSURE RUN challenge card (Default, gauge icon, 30 CHAD COUPONS) + pagination indicator (4 dots, first red) at bottom.
   - RIGHT (outer purple container): "GLASS ROUTE" title block + "Official by Tribulation 66" subtitle (no + decorations) + description sub-panel ("Clear the run without taking a single hit.") + "RULES AND REQUIREMENTS" sub-header (no + decorations) + rules sub-panel with diamond bullets (◆ Challenge only completes on a full clear. ◆ Take no damage for the run.).
 - Bottom row: BACK (Default, left arrow, far-left) + CONFIRM (Selected, right arrow, far-right). No central skull decoration.
+- Interactivity:
+  - Sub-tab toggle group `ChallengeTabs`: OFFICIAL Selected, COMMUNITY Default, CREATE CHALLENGE Default; mutually exclusive; drives challenge catalog mode/editor route.
+  - Challenge card selection toggle group `ChallengeSelection`: GLASS ROUTE Selected, PRESSURE RUN Default; drives selected challenge details.
+  - Pagination dots/page controls update visible challenge page.
+  - BACK navigates back; CONFIRM starts/accepts selected challenge.
+  - Status notification panel is informational.
+- Label vs button:
+  - Labels: CHALLENGES screen title, status notification text, challenge card titles/badges/rewards/authors, detail title/subtitle/description, rules header, rules text.
+  - Buttons: OFFICIAL/COMMUNITY/CREATE CHALLENGE tabs, challenge cards if selectable, pagination controls, BACK, CONFIRM.
+- Icon manifest:
+  - Existing flat icons: `target_crosshair.png`, `people.png`, `pencil_edit.png`, `starburst.png`, `gauge_speedometer.png`, `back_chevron.png`, `forward_chevron.png`.
+  - Needs M1 if exact reference style is absent: diamond bullet glyph for rules.
 
 **Settings (Retro FX tab)**
 - Top bar with settings cog Selected (this is the only screen where the cog is the selected indicator).
@@ -626,6 +732,19 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
   - UI (purple-bordered): text-only panel with header + multi-sentence description.
   - UI CHROME (purple-bordered outer): header + 2 slider sub-panels (CHROME PIXELATION + CHROME DITHERING, each with left label/description + right slider with handle at 0 + value display + caption).
 - **No bottom warning notification** (locked removal). No decorative arrow flourishes.
+- Interactivity:
+  - Top bar single-actions as standard; settings cog is current/selected.
+  - Theme toggle group `ThemeMode`: Sun Default, Moon Selected; mutually exclusive; drives light/dark UI mode if supported, otherwise placeholder.
+  - Settings tab group: GAMEPLAY, GRAPHICS, CONTROLS, MEDIA VIEWER, AUDIO, RETRO FX Selected; mutually exclusive; drives `CurrentTab`.
+  - RETRO FX MASTER ENABLE toggle group: ON Selected, OFF Default; drives master enable setting.
+  - APPLY commits Retro FX changes.
+  - CHROME PIXELATION and CHROME DITHERING sliders drive numeric Retro FX settings and update value labels.
+- Label vs button:
+  - Labels: panel headers, descriptions, status note, slider labels/descriptions/value captions.
+  - Buttons/toggles/sliders: top bar controls, Sun/Moon toggles, settings tabs, ON/OFF toggles, APPLY, slider handles/tracks.
+- Icon manifest:
+  - Existing flat icons: `gear.png`, `sun` if present or generate via M1, `moon.png`.
+  - Needs M1 if exact reference style is absent: any tab icons, slider handle glyph if not pure Slate.
 
 **Load Game**
 - **No top bar.**
@@ -637,6 +756,18 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
   - Bottom action row: PREVIEW (Default) + LOAD (Selected) + DELETE (Selected, with trash icon).
 - Save data: Slot 1 VIOLENT difficulty 1,234,560 score; Slot 2 STANDARD 876,430; Slot 3 BRUTAL 654,210; Slot 4 HARMLESS 245,980 — with full date/stage/time data per V3.
 - Bottom row: PREV (Default, far-left) + NEXT (Default, far-right) pagination buttons. No central skull.
+- Interactivity:
+  - BACK navigates back.
+  - Solo dropdown filters save slots by party/mode source and drives `SaveModeFilter`.
+  - Each save slot panel may be selectable; PREVIEW opens the save preview modal, LOAD loads the save, DELETE opens/executes delete confirmation.
+  - PREV/NEXT page the save slot grid.
+- Label vs button:
+  - Labels: LOAD GAME title, status text, Page indicator, SAVE SLOT headers, metadata labels/values, role captions if any.
+  - Buttons/dropdowns: BACK, Solo dropdown, PREVIEW, LOAD, DELETE, PREV, NEXT, clickable portrait/slot controls only if implementation supports them.
+- Icon manifest:
+  - Existing flat icons: `back_chevron.png`, `trash.png`, `pagination_left.png`, `pagination_right.png`.
+  - Needs M1 if exact reference style is absent: role icons inside portrait silhouettes and dropdown chevrons.
+  - Save character portraits/silhouettes are content art; use stubs if live save data lacks portraits.
 
 **Run Summary**
 - **No top bar.**
@@ -645,6 +776,19 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
   - LEFT: stacked panels — RUN OUTCOME (flag icon + 3 stat rows: Stage Reached 1 / Score 0 / Time 00:00) + skull progression row (5 skull squares) + WEEKLY RANK / ALL TIME RANK split panel (Score N/A, Speed Run N/A in each column) + SEED LUCK (clover icon + "65 / 100 (Fortunate)") + 2×2 action button grid (GO AGAIN! Selected with refresh icon / CONTINUE Default with play icon / MAIN MENU Default with home icon / SAVE AND QUIT Default with save icon).
   - MIDDLE: character preview panel (3D character render preserved) + IDOLS panel (4 idol icons row) + INVENTORY panel (header with cube icon + GOLD 1,275 / DEBT 320 / NET WORTH 955 right side + 2×7 empty inventory slot grid).
   - RIGHT: stat-view tab row (STATS Selected / DAMAGE DEALT Default / DAMAGE RECEIVED Default) + Stats panel (9 stat rows: LEVEL 1 / Damage 1 / Attack Speed 1 / Attack Scale 1 / Accuracy 1 / Armor 1 / Evasion 1 / Luck 1 / Speed 1) + PROOF OF RUN panel (chain icon + "youtube.com/watch?v=run-proof-001" URL field + copy button) + SUBMIT SUSPICION OF CHEATING button (Default, with warning triangle icon).
+- Interactivity:
+  - EVENT LOG opens/toggles event log view.
+  - Action button grid: GO AGAIN starts a new run; CONTINUE resumes/continues when allowed; MAIN MENU navigates to Main Menu; SAVE AND QUIT saves then exits to appropriate frontend state.
+  - Stat-view toggle group `RunSummaryStatTabs`: STATS Selected, DAMAGE DEALT Default, DAMAGE RECEIVED Default; mutually exclusive; drives right-panel table.
+  - Copy button copies proof URL. SUBMIT SUSPICION OF CHEATING opens report/submission flow.
+  - Inventory/idol slots are informational unless the implementation exposes tooltips/details; if so, bind and document those handlers.
+- Label vs button:
+  - Labels: RUN SUMMARY title, mini-stat names/values, RUN OUTCOME header/stat labels/values, rank labels/values, SEED LUCK text, IDOLS/INVENTORY headers, currency labels/values, right-panel stat labels/values, proof URL field text when read-only.
+  - Buttons/toggles: EVENT LOG, GO AGAIN, CONTINUE, MAIN MENU, SAVE AND QUIT, STATS/DAMAGE DEALT/DAMAGE RECEIVED tabs, proof copy button, SUBMIT SUSPICION OF CHEATING.
+- Icon manifest:
+  - Existing flat icons: `log_clipboard.png`, `refresh.png`, `play_triangle.png`, `home.png`, `save_floppy.png`, `cube_box.png`, `clover.png`, `link_chain.png`, `copy_clipboard.png`, `warning_triangle.png`.
+  - Needs M1 if exact reference style is absent: coupons/achievement/secret-achievement mini-stat icons, skull progression squares.
+  - Character render, idol icons, and inventory item art are content art and remain PNG-driven.
 
 ### 7.3 Icon manifest format
 
@@ -666,9 +810,9 @@ Output of Stage 1 icon audit at `C:\UE\T66\UI\icon_manifest.md`. Format suggeste
 
 | Icon | Status | Path / Generation Notes |
 |---|---|---|
-| trophy / laurel wreath | missing → generated | SourceAssets\UI\Icons\Flat\trophy_laurel.png |
-| stopwatch / timer | missing → generated | SourceAssets\UI\Icons\Flat\stopwatch.png |
-| helmet | partial | Existing helmet icon at <path>; differs in <how>; replaced by generated SourceAssets\UI\Icons\Flat\helmet.png |
+| trophy / laurel wreath | missing → generated | RuntimeDependencies\T66\UI\Icons\Flat\trophy_laurel.png |
+| stopwatch / timer | missing → generated | RuntimeDependencies\T66\UI\Icons\Flat\stopwatch.png |
+| helmet | partial | Existing helmet icon at <path>; differs in <how>; replaced by generated RuntimeDependencies\T66\UI\Icons\Flat\helmet.png |
 | ... | ... | ... |
 ```
 
@@ -682,7 +826,7 @@ The full helper list is specified in Section 4.2. Reproduce as a quick-reference
 - Technical audit: `C:\UE\T66\UI\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md`
 - V3 reference images: `C:\UE\T66\UI\Screen References\*.png`
 - Icon manifest (Stage 1 output): `C:\UE\T66\UI\icon_manifest.md`
-- Generated icons (Stage 1 output): `C:\UE\T66\SourceAssets\UI\Icons\Flat\*.png`
+- Generated icons (Stage 1 output): `C:\UE\T66\RuntimeDependencies\T66\UI\Icons\Flat\*.png`
 - New flat style code: `C:\UE\T66\Source\T66\UI\Style\T66FlatStyle.h` and `T66FlatStyle.cpp`
 - Existing audit-referenced process docs: `C:\UE\T66\UI\Processes\*.md` and `C:\UE\T66\UI\SCREEN_WORKFLOW.md`
 
@@ -735,3 +879,4 @@ These are not blockers for the staged work but should be tracked.
 ---
 
 End of master plan.
+

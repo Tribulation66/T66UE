@@ -16,6 +16,7 @@ if SCRIPT_DIR not in sys.path:
     sys.path.append(SCRIPT_DIR)
 
 import MakeCharacterMaterialsUnlit
+import QuadRetroCharacterPipelineDefaults as CharacterDefaults
 
 CLEANUP_DIRS = []
 FILTER_SOURCE = os.environ.get("T66_IMPORT_SKELETAL_SOURCE", "").strip().replace("\\", "/")
@@ -108,6 +109,10 @@ def main():
         for p in imported:
             obj = unreal.EditorAssetLibrary.load_asset(p)
             cls = type(obj).__name__ if obj else "?"
+            if obj and isinstance(obj, unreal.Texture2D) and str(p).startswith("/Game/Characters/"):
+                texture_result = CharacterDefaults.apply_character_texture_defaults(obj)
+                if texture_result.get("changed"):
+                    CharacterDefaults.safe_save(obj, p)
             extra = ""
             try:
                 skel = obj.get_editor_property("skeleton")

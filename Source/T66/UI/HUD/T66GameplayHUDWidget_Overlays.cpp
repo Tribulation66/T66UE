@@ -163,11 +163,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
 					.AutoHeight()
 					.Padding(0.f, 6.f, 0.f, 0.f)
 					[
-						T66ScreenSlateHelpers::MakeReferenceProgressBar(
-							Progress01,
-							FVector2D(240.f, 13.f),
-							FLinearColor(0.78f, 0.43f, 0.13f, 1.0f),
-							FMargin(4.f, 3.f))
+						SNew(SBox)
+						.WidthOverride(240.f)
+						.HeightOverride(13.f)
+						[
+							FT66FlatStyle::MakeFlatProgressBar(
+								TAttribute<float>(Progress01),
+								TOptional<FLinearColor>(ProgressColor))
+						]
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()

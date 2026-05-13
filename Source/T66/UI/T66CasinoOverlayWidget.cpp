@@ -14,6 +14,7 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66CasinoShopTabWidget.h"
 #include "UI/Style/T66OverlayChromeStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Input/DragAndDrop.h"
 #include "Styling/CoreStyle.h"
@@ -23,12 +24,77 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/SNullWidget.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace SharedOverlay = T66CasinoOverlayShared;
+
+namespace
+{
+	const FName CasinoTabToggleGroup(TEXT("CasinoOverlay.TabSelection"));
+
+	void AddVendorCanvasSlot(
+		const TSharedRef<SConstraintCanvas>& Canvas,
+		const float X,
+		const float Y,
+		const float W,
+		const float H,
+		const TSharedRef<SWidget>& Widget)
+	{
+		const float UiScale = FMath::Max(0.1f, FT66Style::GetGlobalUIScale());
+		Canvas->AddSlot()
+			.Anchors(FAnchors(0.f, 0.f))
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X / UiScale, Y / UiScale, W / UiScale, H / UiScale))
+		[
+			Widget
+		];
+	}
+
+	TSharedRef<SWidget> MakeVendorHeaderButton(
+		const ET66FlatState State,
+		const FText& Label,
+		FOnClicked OnClicked,
+		const FName Tag)
+	{
+		return FT66FlatStyle::MakeFlatButton(
+			State,
+			Label,
+			MoveTemp(OnClicked),
+			nullptr,
+			nullptr,
+			FMargin(12.f, 8.f),
+			0.f,
+			0.f,
+			true,
+			28,
+			Tag,
+			CasinoTabToggleGroup);
+	}
+
+	TSharedRef<SWidget> MakeTaggedCasinoText(
+		const FText& Text,
+		const int32 FontSize,
+		const FName Tag,
+		const FLinearColor Color = FT66FlatStyle::PrimaryText())
+	{
+		return FT66FlatStyle::AttachMetadata(
+			SNew(STextBlock)
+				.Text(Text)
+				.Font(FT66FlatStyle::MakeBoldFont(FontSize))
+				.ColorAndOpacity(Color),
+			Tag,
+			TEXT("Label.Body"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true);
+	}
+}
 
 TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 {
@@ -60,174 +126,167 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 	const FText GamblingTabText = NSLOCTEXT("T66.Casino", "TabGambling", "GAMBLING");
 	const FText ShopTabText = NSLOCTEXT("T66.Casino", "TabVendor", "VENDOR");
 	const FText CloseText = NSLOCTEXT("T66.Casino", "Close", "CLOSE");
-	const float HeaderPanelPaddingX = 8.f;
-	const float HeaderPanelPaddingY = 6.f;
-	const float HeaderLabelFontSize = 9.f;
-	const float HeaderValueFontSize = 11.f;
-	const float ShellTopPadding = 16.f;
-	const float ShellSectionGap = 10.f;
-	const float ShellOuterPadding = 16.f;
-	const float ShellButtonFontSize = 14.f;
-	const FMargin ShellButtonPadding(10.f, 6.f);
-	const FMargin ShellTopBarPadding(10.f, 8.f);
+	const FText StatusText = ActiveTab == ECasinoTab::Gambling
+		? NSLOCTEXT("T66.Casino", "GamblerStatus", "WELCOME TO THE GAMBLER. FORTUNE FAVORS THE BOLD. CHOOSE YOUR GAME.")
+		: NSLOCTEXT("T66.Casino", "VendorStatus", "VENDOR IS OPEN. BROWSE GOODS, BUY UPGRADES, OR MANAGE DEBT.");
 
 	TSharedRef<SWidget> ShopPage = ShopTabWidget ? ShopTabWidget->TakeWidget() : SNullWidget::NullWidget;
 	TSharedRef<SWidget> GamblingPage = GamblerTabWidget ? GamblerTabWidget->TakeWidget() : SNullWidget::NullWidget;
-	TSharedRef<SWidget> HeaderSummaryPanel =
-		T66OverlayChromeStyle::MakePanel(
+
+	TSharedRef<SConstraintCanvas> RootCanvas = SNew(SConstraintCanvas);
+	AddVendorCanvasSlot(
+		RootCanvas,
+		0.f,
+		0.f,
+		1920.f,
+		1080.f,
+		FT66FlatStyle::AttachMetadata(
+			SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FT66FlatStyle::BackgroundColor()),
+			FName(TEXT("CasinoOverlay.Backdrop")),
+			TEXT("Panel"),
+			ET66FlatState::Default));
+
+	AddVendorCanvasSlot(
+		RootCanvas,
+		0.f,
+		0.f,
+		1920.f,
+		1080.f,
+		SAssignNew(TabSwitcher, SWidgetSwitcher)
+		+ SWidgetSwitcher::Slot()
+		[
+			ShopPage
+		]
+		+ SWidgetSwitcher::Slot()
+		[
+			GamblingPage
+		]);
+
+	AddVendorCanvasSlot(
+		RootCanvas,
+		17.f,
+		18.f,
+		219.f,
+		81.f,
+		FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(18.f, 7.f),
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.Casino", "HeaderScoreLabel", "SCORE"))
-					.Font(FT66Style::Tokens::FontBold(HeaderLabelFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					MakeTaggedCasinoText(NSLOCTEXT("T66.Casino", "HeaderScoreLabel", "SCORE"), 19, FName(TEXT("CasinoOverlay.ScoreLabel")))
 				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(14.f, 0.f, 0.f, 0.f)
 				[
-					SAssignNew(HeaderScoreText, STextBlock)
-					.Text(FText::GetEmpty())
-					.Font(FT66Style::Tokens::FontBold(HeaderValueFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
-				]
+					FT66FlatStyle::AttachMetadata(
+						SAssignNew(HeaderScoreText, STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66FlatStyle::MakeBoldFont(19))
+							.ColorAndOpacity(FT66FlatStyle::PrimaryText()),
+						FName(TEXT("CasinoOverlay.ScoreValue")),
+						TEXT("Label.Body"),
+						ET66FlatState::Default,
+						TOptional<FLinearColor>(),
+						false,
+						NAME_None,
+						true)
+					]
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
 			[
 				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.Casino", "HeaderTimeLabel", "TIME"))
-					.Font(FT66Style::Tokens::FontBold(HeaderLabelFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					MakeTaggedCasinoText(NSLOCTEXT("T66.Casino", "HeaderTimeLabel", "TIME"), 19, FName(TEXT("CasinoOverlay.TimeLabel")))
 				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(22.f, 0.f, 0.f, 0.f)
 				[
-					SAssignNew(HeaderTimerText, STextBlock)
-					.Text(FText::GetEmpty())
-					.Font(FT66Style::Tokens::FontBold(HeaderValueFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					FT66FlatStyle::AttachMetadata(
+						SAssignNew(HeaderTimerText, STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66FlatStyle::MakeBoldFont(19))
+							.ColorAndOpacity(FT66FlatStyle::PrimaryText()),
+						FName(TEXT("CasinoOverlay.TimeValue")),
+						TEXT("Label.Body"),
+						ET66FlatState::Default,
+						TOptional<FLinearColor>(),
+						false,
+						NAME_None,
+						true)
 				]
 			],
-			ET66OverlayChromeBrush::HeaderSummaryBar,
-			FMargin(HeaderPanelPaddingX, HeaderPanelPaddingY)
-		);
+			nullptr,
+			FName(TEXT("CasinoOverlay.ScorePanel"))));
 
-	const TAttribute<FMargin> VerticalSafeInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
-	{
-		const FMargin SafeInsets = FT66Style::GetSafeFrameInsets();
-		return FMargin(0.f, SafeInsets.Top, 0.f, SafeInsets.Bottom);
-	});
+	AddVendorCanvasSlot(
+		RootCanvas,
+		372.f,
+		20.f,
+		518.f,
+		79.f,
+		MakeVendorHeaderButton(
+			ActiveTab == ECasinoTab::Shop ? ET66FlatState::Selected : ET66FlatState::Default,
+			ShopTabText,
+			FOnClicked::CreateLambda([this]() { OpenShopTab(); return FReply::Handled(); }),
+			FName(TEXT("CasinoOverlay.VendorTabButton"))));
 
-	const TAttribute<FOptionalSize> SurfaceWidthAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
-	{
-		return FOptionalSize(FMath::Max(1.f, FT66Style::GetViewportLogicalSize().X));
-	});
+	AddVendorCanvasSlot(
+		RootCanvas,
+		912.f,
+		20.f,
+		477.f,
+		79.f,
+		MakeVendorHeaderButton(
+			ActiveTab == ECasinoTab::Gambling ? ET66FlatState::Selected : ET66FlatState::Default,
+			GamblingTabText,
+			FOnClicked::CreateLambda([this]() { OpenGamblingTab(); return FReply::Handled(); }),
+			FName(TEXT("CasinoOverlay.GamblingTabButton"))));
 
-	TSharedRef<SWidget> ShellLayout =
-		SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-			.Padding(VerticalSafeInsets)
+	AddVendorCanvasSlot(
+		RootCanvas,
+		1658.f,
+		20.f,
+		261.f,
+		79.f,
+		FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Selected,
+			CloseText,
+			FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }),
+			nullptr,
+			nullptr,
+			FMargin(12.f, 8.f),
+			0.f,
+			0.f,
+			true,
+			28,
+			FName(TEXT("CasinoOverlay.CloseButton"))));
+
+	AddVendorCanvasSlot(
+		RootCanvas,
+		16.f,
+		116.f,
+		1902.f,
+		48.f,
+		FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(12.f, 8.f),
+			SNew(SBox)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
 			[
-				SNew(SBox)
-				.WidthOverride(SurfaceWidthAttr)
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()
-					.Padding(ShellOuterPadding, ShellTopPadding, ShellOuterPadding, 0.f)
-					[
-						T66OverlayChromeStyle::MakePanel(
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-							[
-								HeaderSummaryPanel
-							]
-							+ SHorizontalBox::Slot().FillWidth(1.f)
-							[
-								SNew(SSpacer)
-							]
-							+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Center).VAlign(VAlign_Center)
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
-								[
-									T66OverlayChromeStyle::MakeButton(
-										T66OverlayChromeStyle::MakeButtonParams(
-											ShopTabText,
-											FOnClicked::CreateLambda([this]() { OpenShopTab(); return FReply::Handled(); }),
-											ET66OverlayChromeButtonFamily::Tab)
-										.SetPadding(ShellButtonPadding)
-										.SetFontSize(ShellButtonFontSize)
-										.SetSelected(TAttribute<bool>::CreateLambda([this]() { return ActiveTab == ECasinoTab::Shop; }))
-								)
-								]
-								+ SHorizontalBox::Slot().AutoWidth()
-								[
-									T66OverlayChromeStyle::MakeButton(
-										T66OverlayChromeStyle::MakeButtonParams(
-											GamblingTabText,
-											FOnClicked::CreateLambda([this]() { OpenGamblingTab(); return FReply::Handled(); }),
-											ET66OverlayChromeButtonFamily::Tab)
-										.SetPadding(ShellButtonPadding)
-										.SetFontSize(ShellButtonFontSize)
-										.SetSelected(TAttribute<bool>::CreateLambda([this]() { return ActiveTab == ECasinoTab::Gambling; }))
-								)
-								]
-							]
-							+ SHorizontalBox::Slot().FillWidth(1.f)
-							[
-								SNew(SSpacer)
-							]
-							+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Right).VAlign(VAlign_Center)
-							[
-								T66OverlayChromeStyle::MakeButton(
-									T66OverlayChromeStyle::MakeButtonParams(
-										CloseText,
-										FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }),
-										ET66OverlayChromeButtonFamily::Danger)
-									.SetPadding(ShellButtonPadding)
-									.SetFontSize(ShellButtonFontSize)
-							)
-							],
-							ET66OverlayChromeBrush::HeaderSummaryBar,
-							ShellTopBarPadding
-						)
-					]
-					+ SVerticalBox::Slot().FillHeight(1.f)
-					.Padding(ShellOuterPadding, ShellSectionGap, ShellOuterPadding, ShellOuterPadding)
-					[
-						SAssignNew(TabSwitcher, SWidgetSwitcher)
-						+ SWidgetSwitcher::Slot()
-						[
-							ShopPage
-						]
-						+ SWidgetSwitcher::Slot()
-						[
-							GamblingPage
-						]
-					]
-				]
-			];
-
-	TSharedRef<SWidget> Root =
-		SNew(SOverlay)
-		+ SOverlay::Slot()
-		[
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.010f, 0.013f, 0.022f, 0.97f))
-		]
-		+ SOverlay::Slot()
-		[
-			ShellLayout
-		];
+				MakeTaggedCasinoText(StatusText, 22, FName(TEXT("CasinoOverlay.StatusText")), FT66FlatStyle::SecondaryText())
+			],
+			nullptr,
+			FName(TEXT("CasinoOverlay.StatusBar"))));
 
 	RefreshHeaderSummary();
-	OpenShopTab();
-	return FT66Style::MakeResponsiveRoot(Root);
+	SetActiveTab(ActiveTab);
+	return FT66FlatStyle::AttachMetadata(RootCanvas, FName(TEXT("CasinoOverlay.Root")), TEXT("Overlay"), ET66FlatState::Default);
 }
 
 void UT66CasinoOverlayWidget::NativeDestruct()
@@ -252,11 +311,19 @@ void UT66CasinoOverlayWidget::CloseOverlay()
 void UT66CasinoOverlayWidget::OpenGamblingTab()
 {
 	SharedOverlay::OpenGamblingTab(GamblerTabWidget, [this]() { SetActiveTab(ECasinoTab::Gambling); });
+	if (IsInViewport())
+	{
+		FT66Style::DeferRebuild(this, 100);
+	}
 }
 
 void UT66CasinoOverlayWidget::OpenShopTab()
 {
 	SharedOverlay::OpenShopTab(ShopTabWidget, [this]() { SetActiveTab(ECasinoTab::Shop); });
+	if (IsInViewport())
+	{
+		FT66Style::DeferRebuild(this, 100);
+	}
 }
 
 void UT66CasinoOverlayWidget::OpenAlchemyTab()

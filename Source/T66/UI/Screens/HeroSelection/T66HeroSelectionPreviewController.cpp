@@ -50,7 +50,7 @@ TSharedRef<SWidget> UT66HeroSelectionPreviewController::CreateHeroPreviewWidget(
 	const TSharedRef<SBorder> PreviewColorBoxWidgetRef =
 		SAssignNew(PreviewColorBoxWidget, SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::IsDotaTheme() ? FLinearColor::Transparent : FallbackColor)
+		.BorderBackgroundColor(FallbackColor)
 		[
 			SNew(SBox)
 		];
@@ -181,6 +181,11 @@ void UT66HeroSelectionPreviewController::ApplyHeroPreviewStage(
 {
 	if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
 	{
+		if (TSharedPtr<SBorder> PreviewColorBox = HeroPreviewColorBox.Pin())
+		{
+			PreviewColorBox->SetBorderBackgroundColor(FLinearColor::Transparent);
+		}
+
 		FName EffectiveSkinID = ResolveEffectiveHeroSkinID(GameInstance);
 		if (EffectiveSkinID.IsNone())
 		{
@@ -257,7 +262,7 @@ void UT66HeroSelectionPreviewController::ApplyHeroPreviewStage(
 
 	if (TSharedPtr<SBorder> PreviewColorBox = HeroPreviewColorBox.Pin())
 	{
-		PreviewColorBox->SetBorderBackgroundColor(FT66Style::IsDotaTheme() ? FLinearColor::Transparent : FallbackColor);
+		PreviewColorBox->SetBorderBackgroundColor(FallbackColor);
 	}
 }
 

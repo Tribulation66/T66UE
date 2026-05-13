@@ -43,7 +43,7 @@ Scope:
 - Do not broaden into other screens, modals, gameplay systems, shared top-bar systems, or unrelated UI assets.
 - If this is a split-state screen, use state-specific folders for state-specific assets and the same-screen Common folder only for truly shared pieces.
 - Do not touch sibling state runtime folders.
-- Do not touch C:\UE\T66\SourceAssets\UI\Reference\Screens\MainMenu or C:\UE\T66\SourceAssets\UI\Reference\Shared unless the target explicitly is MainMenu/shared chrome.
+- Do not touch C:\UE\T66\RuntimeDependencies\T66\UI\Reference\Screens\MainMenu or C:\UE\T66\RuntimeDependencies\T66\UI\Reference\Shared unless the target explicitly is MainMenu/shared chrome.
 - Before implementation, write the owned-area/protected-area boundary in Workspace\MANIFEST_MASTER.md. Owned areas are the only areas you may change. Protected/shared areas must be ignored in the difference list unless this exact target explicitly owns them.
 
 Fresh-start rule:
@@ -113,6 +113,7 @@ Art direction restraint:
 - Simple dark slots must stay simple dark slots. Plain brown buttons must stay plain brown buttons. Quiet panels must stay quiet panels.
 - If imagegen creates a fancier but less accurate result, reject it and regenerate with stronger restraint.
 - Geometry beats decoration: width, height, spacing, anchoring, panel proportions, card containment, and button sizes must match before polish is accepted.
+- If the reference shows a button, skin, card, slot, row, or content state with no current backend/gameplay infrastructure, create it as a visually accurate stub and mark it for later wiring. Backend readiness must not block frontend reference fidelity.
 
 Shared top bar freeze:
 - If this screen has a shared top bar/header/nav/currency/avatar/back/settings component, do not edit it and do not generate per-screen replacements for it.
@@ -120,7 +121,7 @@ Shared top bar freeze:
 
 Build policy:
 - Do not run C:\UE\T66\Scripts\StageStandaloneBuild.ps1, RunUAT, BuildCookRun, cook, stage, pak, or package for this individual target.
-- Individual target work uses WORKING_VISUAL_PROOF from the local development executable and loose SourceAssets. Final packaged proof is a coordinator pass after the batch.
+- Individual target work uses WORKING_VISUAL_PROOF from the local development executable and loose RuntimeDependencies. Compare captures with C:\UE\T66\Scripts\CompareUIScreen.ps1. Final packaged proof is a coordinator pass after the batch.
 - If Coordinator worker mode is yes, do not run any build or capture command. Stop at READY_FOR_COORDINATOR_SPRITE_REVIEW after generating the atomic sheet, then wait for coordinator approval. After coordinator approval and implementation, stop at READY_FOR_CENTRAL_BUILD_AND_CAPTURE with exact changed files, accepted assets, rect map, and capture command.
 - If you changed only PNG/SVG/runtime asset files, skip build and capture directly with the working visual capture command.
 - If you changed C++ layout/routing/source, run the normal Unreal build, not UAT:

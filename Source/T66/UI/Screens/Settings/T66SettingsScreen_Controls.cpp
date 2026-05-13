@@ -3,8 +3,389 @@
 #include "UI/Screens/Settings/T66SettingsScreen_Private.h"
 
 #include "TimerManager.h"
+#include "UI/Style/T66FlatStyle.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
+#include "Widgets/Layout/SScaleBox.h"
 
 using namespace T66SettingsScreenPrivate;
+
+TSharedRef<SWidget> UT66SettingsScreen::BuildFlatControlsSettingsUI()
+{
+	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	constexpr float CanvasW = 1920.f;
+	constexpr float CanvasH = 1080.f;
+	const FName SettingsTabsGroup(TEXT("SettingsTabs"));
+	const FName ControlDeviceTabsGroup(TEXT("SettingsControls.DeviceTabs"));
+
+	auto DTag = [](const TCHAR* Text) -> FName
+	{
+		return FName(Text);
+	};
+
+	auto ChildTag = [](const FName& BaseTag, const TCHAR* Suffix) -> FName
+	{
+		return FName(*(BaseTag.ToString() + FString(TEXT(".")) + Suffix));
+	};
+
+	auto MakeLabel = [](const FName Tag, const TAttribute<FText>& Text, const int32 FontSize, const FLinearColor& Color, const bool bBold = false, const ETextJustify::Type Justify = ETextJustify::Left, const bool bAutoWrap = true) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::AttachMetadata(
+			SNew(STextBlock)
+			.Text(Text)
+			.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+			.ColorAndOpacity(Color)
+			.Justification(Justify)
+			.AutoWrapText(bAutoWrap)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
+			Tag,
+			TEXT("Label"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true);
+	};
+
+	auto MakeMetadataRegion = [](const FName Tag, const FString& Role) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::AttachMetadata(SNew(SBox), Tag, Role, ET66FlatState::Default);
+	};
+
+	auto MakeFlatTab = [this, &MakeLabel, &ChildTag, SettingsTabsGroup](const FName Tag, const ET66SettingsTab Tab, const ET66FlatState State, const FText& Text, const float Width, const int32 FontSize = 22) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatToggleGroupButton(
+			State,
+			SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)
+			[
+				MakeLabel(ChildTag(Tag, TEXT("Label")), Text, FontSize, State == ET66FlatState::Selected ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText(), true, ETextJustify::Center, false)
+			],
+			FOnClicked::CreateLambda([this, Tab]()
+			{
+				SwitchToTab(Tab);
+				ForceRebuildSlate();
+				return FReply::Handled();
+			}),
+			FMargin(0.f),
+			Width,
+			0.079f * CanvasH,
+			true,
+			Tag,
+			SettingsTabsGroup);
+	};
+
+	auto MakeDeviceButton = [this, Loc, &MakeLabel, &ChildTag, ControlDeviceTabsGroup](const FName Tag, const ET66ControlsDeviceTab Tab, const FText& Text, const float Width, const int32 FontSize = 21) -> TSharedRef<SWidget>
+	{
+		const ET66FlatState State = CurrentControlsDeviceTab == Tab ? ET66FlatState::Selected : ET66FlatState::Default;
+		return FT66FlatStyle::MakeFlatToggleGroupButton(
+			State,
+			SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)
+			[
+				MakeLabel(ChildTag(Tag, TEXT("Label")), Text, FontSize, State == ET66FlatState::Selected ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText(), true, ETextJustify::Center, false)
+			],
+			FOnClicked::CreateLambda([this, Tab]()
+			{
+				CurrentControlsDeviceTab = Tab;
+				RefreshControlsKeyTexts();
+				ForceRebuildSlate();
+				return FReply::Handled();
+			}),
+			FMargin(0.f),
+			Width,
+			64.f,
+			true,
+			Tag,
+			ControlDeviceTabsGroup);
+	};
+
+	auto MakeFlatControlButton = [&MakeLabel, &ChildTag](const FName Tag, const ET66FlatState State, const FText& Text, FOnClicked OnClicked) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatButton(
+			State,
+			Text,
+			MoveTemp(OnClicked),
+			nullptr,
+			nullptr,
+			FMargin(12.f, 6.f),
+			128.f,
+			58.f,
+			true,
+			20,
+			Tag);
+	};
+
+	auto MakeBindingCell = [this, Loc, &MakeLabel, &ChildTag, &MakeFlatControlButton](const FName RowTag, const TCHAR* SlotName, bool bAxis, FName Name, float Scale, bool bIsController, int32 SlotIndex) -> TSharedRef<SWidget>
+	{
+		TArray<FKey> Keys;
+		if (bAxis)
+		{
+			FindAxisKeysForDevice(Name, Scale, bIsController, Keys);
+		}
+		else
+		{
+			FindActionKeysForDevice(Name, bIsController, Keys);
+		}
+		const FKey OldKey = Keys.IsValidIndex(SlotIndex) ? Keys[SlotIndex] : FKey();
+
+		TSharedPtr<STextBlock> KeyText;
+		FControlRowKey ControlRowKey;
+		ControlRowKey.bIsAxis = bAxis;
+		ControlRowKey.Name = Name;
+		ControlRowKey.Scale = Scale;
+		ControlRowKey.bIsController = bIsController;
+		ControlRowKey.SlotIndex = SlotIndex;
+
+		const FName SlotTag = ChildTag(RowTag, SlotName);
+		const FText RebindText = Loc ? Loc->GetText_Rebind() : NSLOCTEXT("T66.Settings.Fallback", "REBIND Flat", "REBIND");
+		const FText ClearText = Loc ? Loc->GetText_Clear() : NSLOCTEXT("T66.Settings.Fallback", "CLEAR Flat", "CLEAR");
+
+		TSharedRef<SWidget> KeyWidget = FT66FlatStyle::AttachMetadata(
+			SAssignNew(KeyText, STextBlock)
+			.Text(KeyToText(OldKey))
+			.Font(FT66FlatStyle::MakeBoldFont(22))
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
+			ChildTag(SlotTag, TEXT("Key")),
+			TEXT("Label"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true);
+
+		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				MakeLabel(ChildTag(SlotTag, TEXT("SlotLabel")), SlotIndex == 0
+					? (Loc ? Loc->GetText_Primary() : NSLOCTEXT("T66.Settings.Fallback", "PRIMARY Flat", "PRIMARY"))
+					: (Loc ? Loc->GetText_Secondary() : NSLOCTEXT("T66.Settings.Fallback", "SECONDARY Flat", "SECONDARY")),
+					22,
+					FT66FlatStyle::SecondaryText(),
+					true,
+					ETextJustify::Left,
+					false)
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center).Padding(24.f, 0.f, 12.f, 0.f)
+			[
+				FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(12.f, 8.f), KeyWidget, nullptr, ChildTag(SlotTag, TEXT("KeyPanel")))
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+			[
+				MakeFlatControlButton(
+					ChildTag(SlotTag, TEXT("RebindButton")),
+					ET66FlatState::Selected,
+					RebindText,
+					FOnClicked::CreateLambda([this, bAxis, Name, Scale, bIsController, SlotIndex, OldKey, KeyText]()
+					{
+						return bAxis ? BeginRebindAxis(Name, Scale, bIsController, SlotIndex, OldKey, KeyText)
+							: BeginRebindAction(Name, bIsController, SlotIndex, OldKey, KeyText);
+					}))
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				MakeFlatControlButton(
+					ChildTag(SlotTag, TEXT("ClearButton")),
+					ET66FlatState::Selected,
+					ClearText,
+					FOnClicked::CreateLambda([this, bAxis, Name, Scale, bIsController, SlotIndex, OldKey, KeyText]()
+					{
+						Pending = {};
+						Pending.bIsAxis = bAxis;
+						Pending.Name = Name;
+						Pending.Scale = Scale;
+						Pending.bIsController = bIsController;
+						Pending.SlotIndex = SlotIndex;
+						Pending.OldKey = OldKey;
+						Pending.KeyText = KeyText;
+						ClearBindingInInputSettings();
+						return FReply::Handled();
+					}))
+			];
+
+		ControlKeyTextMap.Add(ControlRowKey, KeyText);
+		return Row;
+	};
+
+	auto MakeControlRow = [&MakeLabel, &MakeBindingCell, &ChildTag](const FName RowTag, const FText& Label, bool bAxis, FName Name, bool bIsController, float Scale) -> TSharedRef<SWidget>
+	{
+		TSharedRef<SVerticalBox> RowContent = SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			[
+				MakeLabel(ChildTag(RowTag, TEXT("Label")), Label, 24, FT66FlatStyle::SecondaryText(), true, ETextJustify::Left, false)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+			[
+				MakeBindingCell(RowTag, TEXT("Primary"), bAxis, Name, Scale, bIsController, 0)
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				MakeBindingCell(RowTag, TEXT("Secondary"), bAxis, Name, Scale, bIsController, 1)
+			];
+
+		return FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Disabled, FMargin(16.f, 12.f), RowContent, nullptr, RowTag);
+	};
+
+	struct FControlDefinition
+	{
+		const TCHAR* TagSuffix = TEXT("");
+		FText Label;
+		bool bIsAxis = false;
+		FName Name = NAME_None;
+		float Scale = 1.f;
+		bool bShowOnKeyboard = true;
+		bool bShowOnController = true;
+	};
+
+	bool bShowMediaViewerControls = true;
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (const UT66RuntimePlatformSubsystem* RuntimePlatform = GI->GetSubsystem<UT66RuntimePlatformSubsystem>())
+		{
+			bShowMediaViewerControls = RuntimePlatform->ShouldShowMediaViewer();
+		}
+	}
+
+	TArray<FControlDefinition> ControlDefinitions = {
+		{ TEXT("MoveForward"), Loc ? Loc->GetText_ControlMoveForward() : NSLOCTEXT("T66.Settings.Fallback", "Move Forward Flat", "Move Forward"), true, FName(TEXT("MoveForward")), 1.f, true, true },
+		{ TEXT("MoveBack"), Loc ? Loc->GetText_ControlMoveBack() : NSLOCTEXT("T66.Settings.Fallback", "Move Back Flat", "Move Back"), true, FName(TEXT("MoveForward")), -1.f, true, true },
+		{ TEXT("MoveLeft"), Loc ? Loc->GetText_ControlMoveLeft() : NSLOCTEXT("T66.Settings.Fallback", "Move Left Flat", "Move Left"), true, FName(TEXT("MoveRight")), -1.f, true, true },
+		{ TEXT("MoveRight"), Loc ? Loc->GetText_ControlMoveRight() : NSLOCTEXT("T66.Settings.Fallback", "Move Right Flat", "Move Right"), true, FName(TEXT("MoveRight")), 1.f, true, true },
+		{ TEXT("Jump"), Loc ? Loc->GetText_ControlJump() : NSLOCTEXT("T66.Settings.Fallback", "Jump Flat", "Jump"), false, FName(TEXT("Jump")), 1.f, true, true },
+		{ TEXT("Interact"), Loc ? Loc->GetText_ControlInteract() : NSLOCTEXT("T66.Settings.Fallback", "Interact Flat", "Interact"), false, FName(TEXT("Interact")), 1.f, true, true },
+		{ TEXT("PausePrimary"), Loc ? Loc->GetText_ControlPauseMenuPrimary() : NSLOCTEXT("T66.Settings.Fallback", "Pause Menu Primary Flat", "Pause Menu (primary)"), false, FName(TEXT("Escape")), 1.f, true, true },
+		{ TEXT("PauseSecondary"), Loc ? Loc->GetText_ControlPauseMenuSecondary() : NSLOCTEXT("T66.Settings.Fallback", "Pause Menu Secondary Flat", "Pause Menu (secondary)"), false, FName(TEXT("Pause")), 1.f, true, true },
+		{ TEXT("ToggleHUD"), Loc ? Loc->GetText_ControlToggleHUD() : NSLOCTEXT("T66.Settings.Fallback", "Toggle HUD Flat", "Toggle HUD"), false, FName(TEXT("ToggleHUD")), 1.f, true, true },
+		{ TEXT("OpenFullMap"), Loc ? Loc->GetText_ControlOpenFullMap() : NSLOCTEXT("T66.Settings.Fallback", "Open Full Map Flat", "Open Full Map"), false, FName(TEXT("OpenFullMap")), 1.f, true, true },
+		{ TEXT("InspectInventory"), Loc ? Loc->GetText_ControlInspectInventory() : NSLOCTEXT("T66.Settings.Fallback", "Inspect Inventory Flat", "Inspect Inventory"), false, FName(TEXT("InspectInventory")), 1.f, true, true },
+		{ TEXT("ToggleGamerMode"), Loc ? Loc->GetText_ControlToggleGamerMode() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Gamer Mode Flat", "Toggle Gamer Mode (Hitboxes)"), false, FName(TEXT("ToggleGamerMode")), 1.f, true, false },
+		{ TEXT("RestartRun"), Loc ? Loc->GetText_ControlRestartRun() : NSLOCTEXT("T66.Settings.Fallback", "Restart Run Flat", "Restart Run"), false, FName(TEXT("RestartRun")), 1.f, true, false },
+		{ TEXT("Dash"), Loc ? Loc->GetText_ControlDash() : NSLOCTEXT("T66.Settings.Fallback", "Dash Flat", "Dash"), false, FName(TEXT("Dash")), 1.f, true, true },
+		{ TEXT("Ultimate"), Loc ? Loc->GetText_ControlUltimate() : NSLOCTEXT("T66.Settings.Fallback", "Ultimate Flat", "Ultimate"), false, FName(TEXT("Ultimate")), 1.f, true, true },
+		{ TEXT("AttackLock"), Loc ? Loc->GetText_ControlAttackLock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Lock Flat", "Attack Lock"), false, FName(TEXT("AttackLock")), 1.f, true, true },
+		{ TEXT("AttackUnlock"), Loc ? Loc->GetText_ControlAttackUnlock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Unlock Flat", "Attack Unlock"), false, FName(TEXT("AttackUnlock")), 1.f, true, true },
+		{ TEXT("ToggleMouseLock"), Loc ? Loc->GetText_ControlToggleMouseLock() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Mouse Lock Flat", "Toggle Mouse Lock"), false, FName(TEXT("ToggleMouseLock")), 1.f, true, true }
+	};
+	if (bShowMediaViewerControls)
+	{
+		ControlDefinitions.Add({ TEXT("ToggleTikTok"), Loc ? Loc->GetText_ControlToggleTikTok() : NSLOCTEXT("T66.Settings.Fallback", "Toggle TikTok Flat", "Toggle TikTok"), false, FName(TEXT("ToggleTikTok")), 1.f, true, false });
+		ControlDefinitions.Add({ TEXT("ToggleMediaViewer"), Loc ? Loc->GetText_ControlToggleMediaViewer() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Media Viewer Flat", "Toggle Media Viewer"), false, FName(TEXT("ToggleMediaViewer")), 1.f, true, true });
+	}
+
+	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
+	ControlKeyTextMap.Empty();
+	for (const FControlDefinition& ControlDefinition : ControlDefinitions)
+	{
+		const bool bIsController = CurrentControlsDeviceTab == ET66ControlsDeviceTab::Controller;
+		const bool bShowRow = bIsController ? ControlDefinition.bShowOnController : ControlDefinition.bShowOnKeyboard;
+		if (!bShowRow)
+		{
+			continue;
+		}
+
+		Rows->AddSlot().AutoHeight().Padding(0.f, 0.f, 16.f, 6.f)
+		[
+			SNew(SBox)
+			.HeightOverride(208.f)
+			[
+				MakeControlRow(
+					FName(*FString::Printf(TEXT("SettingsControls.Rows.%s"), ControlDefinition.TagSuffix)),
+					ControlDefinition.Label,
+					ControlDefinition.bIsAxis,
+					ControlDefinition.Name,
+					bIsController,
+					ControlDefinition.Scale)
+			]
+		];
+	}
+
+	TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
+	auto AddN = [&Canvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+	{
+		Canvas->AddSlot()
+		.Anchors(FAnchors(X, Y, X, Y))
+		.Alignment(FVector2D::ZeroVector)
+		.Offset(FMargin(0.f, 0.f, W * CanvasW, H * CanvasH))
+		[
+			Widget
+		];
+	};
+
+	AddN(0.000f, 0.000f, 1.000f, 1.000f,
+		FT66FlatStyle::AttachMetadata(
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor::Black),
+			DTag(TEXT("SettingsControls.Background")),
+			TEXT("Background"),
+			ET66FlatState::Default));
+
+	AddN(0.000f, 0.095f, 1.000f, 0.905f, MakeMetadataRegion(DTag(TEXT("SettingsControls.Root")), TEXT("Root")));
+	AddN(0.003f, 0.094f, 0.994f, 0.079f, MakeMetadataRegion(DTag(TEXT("SettingsControls.SettingsTabs")), TEXT("ToggleGroup.SettingsTabs")));
+
+	AddN(0.003f, 0.094f, 0.119f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.GameplayButton")), ET66SettingsTab::Gameplay, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGameplayFlatControls", "GAMEPLAY"), 0.119f * CanvasW));
+	AddN(0.129f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.GraphicsButton")), ET66SettingsTab::Graphics, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGraphicsFlatControls", "GRAPHICS"), 0.118f * CanvasW));
+	AddN(0.253f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.ControlsButton")), ET66SettingsTab::Controls, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabControlsFlatControls", "CONTROLS"), 0.118f * CanvasW));
+	AddN(0.379f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.HUDButton")), ET66SettingsTab::HUD, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabHUDFlatControls", "HUD"), 0.118f * CanvasW));
+	AddN(0.503f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatControls", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
+	AddN(0.628f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatControls", "AUDIO"), 0.118f * CanvasW));
+	AddN(0.754f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatControls", "CRASHING"), 0.118f * CanvasW, 20));
+	AddN(0.879f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatControls", "RETRO FX"), 0.118f * CanvasW, 20));
+
+	AddN(0.004f, 0.195f, 0.134f, 0.059f, MakeDeviceButton(DTag(TEXT("SettingsControls.DeviceTabs.KeyboardMouseButton")), ET66ControlsDeviceTab::KeyboardMouse, Loc ? Loc->GetText_KeyboardAndMouse() : NSLOCTEXT("T66.Settings.Fallback", "Keyboard Mouse Flat", "KEYBOARD & MOUSE"), 0.134f * CanvasW));
+	AddN(0.144f, 0.195f, 0.086f, 0.059f, MakeDeviceButton(DTag(TEXT("SettingsControls.DeviceTabs.ControllerButton")), ET66ControlsDeviceTab::Controller, Loc ? Loc->GetText_Controller() : NSLOCTEXT("T66.Settings.Fallback", "Controller Flat", "CONTROLLER"), 0.086f * CanvasW, 19));
+	AddN(0.002f, 0.268f, 0.620f, 0.034f,
+		FT66FlatStyle::AttachMetadata(
+			SAssignNew(RebindStatusText, STextBlock)
+			.Text(Loc ? Loc->GetText_RebindInstructions() : NSLOCTEXT("T66.Settings.Fallback", "RebindInstructions Flat", "Click REBIND, then press a key/button (Esc cancels)."))
+			.Font(FT66FlatStyle::MakeFont(21))
+			.ColorAndOpacity(FT66FlatStyle::SecondaryText())
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
+			DTag(TEXT("SettingsControls.RebindInstructions")),
+			TEXT("Label"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true));
+
+	AddN(0.002f, 0.312f, 0.978f, 0.553f,
+		FT66FlatStyle::AttachMetadata(
+			SNew(SScrollBox)
+			.ScrollBarVisibility(EVisibility::Visible)
+			+ SScrollBox::Slot()
+			[
+				Rows
+			],
+			DTag(TEXT("SettingsControls.BindingList")),
+			TEXT("ScrollBox"),
+			ET66FlatState::Default));
+
+	AddN(0.871f, 0.886f, 0.126f, 0.060f,
+		FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Selected,
+			Loc ? Loc->GetText_RestoreDefaults() : NSLOCTEXT("T66.Settings.Fallback", "Restore Defaults Flat", "RESTORE DEFAULTS"),
+			FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleRestoreDefaultsClicked),
+			nullptr,
+			nullptr,
+			FMargin(12.f, 6.f),
+			0.126f * CanvasW,
+			0.060f * CanvasH,
+			true,
+			20,
+			DTag(TEXT("SettingsControls.RestoreDefaultsButton"))));
+
+	return SNew(SScaleBox)
+		.Stretch(EStretch::ScaleToFit)
+		.StretchDirection(EStretchDirection::Both)
+		[
+			SNew(SBox)
+			.WidthOverride(CanvasW)
+			.HeightOverride(CanvasH)
+			[
+				Canvas
+			]
+		];
+}
+
 TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();

@@ -1703,6 +1703,10 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<UStaticMesh> StaticMesh;
 
+	/** Pixelated texture used by QuadRetro static meshes at runtime. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UTexture2D> PixelatedTextureAssetPath;
+
 	/** Walk animation (looping). Used when moving below run threshold. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<UAnimationAsset> LoopingAnimation;

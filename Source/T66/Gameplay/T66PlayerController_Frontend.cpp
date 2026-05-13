@@ -11,6 +11,7 @@
 #include "NiagaraSystem.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "UI/T66UIManager.h"
+#include "UI/T66WidgetDumpTargets.h"
 #include "UI/T66ScreenBase.h"
 #include "UI/Screens/T66MainMenuScreen.h"
 #include "UI/Screens/T66HeroSelectionScreen.h"
@@ -102,9 +103,14 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Dom/JsonObject.h"
 #include "TimerManager.h"
 #include "UnrealClient.h"
 #include "HAL/PlatformMisc.h"
+#include "Misc/FileHelper.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 #include "Camera/CameraActor.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SWeakWidget.h"
@@ -369,6 +375,21 @@ namespace
 
 namespace
 {
+	FString GetAcceptedFrontendScreenNamesForLog()
+	{
+		return TEXT(
+			"MainMenu, HeroSelection, HeroSelect, SaveSlots, SaveSlot, CompanionSelection, CompanionSelect, "
+			"Settings, SettingsScreen, LanguageSelect, Language, Achievements, Minigames, PauseMenu, Pause, "
+			"ReportBug, RunSummary, PowerUp, HeroGrid, CompanionGrid, QuitConfirmation, Quit, PartyInvite, "
+			"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, MiniMainMenu, "
+			"MiniCharacterSelect, MiniCompanionSelect, MiniDifficultySelect, MiniIdolSelect, MiniSaveSlots, "
+			"MiniShop, MiniRunSummary, TDMainMenu, TDDifficultySelect, TDBattle, IdleMainMenu, "
+			"IdleChadpocalypse, DeckMainMenu, Deckbuilder, ChadpocalypseDeckbuilder, VersusMainMenu, "
+			"Versus, ChadpocalypseVersus, Challenges, DailyDescent, Overview, History, Diplomas, "
+			"Drugs, SteamAchievements, Steam, SettingsRetroFX, RetroFX, SettingsGameplay, SettingsGraphics, "
+			"SettingsControls, SettingsMediaViewer, SettingsMedia, SettingsAudio, LoadGame");
+	}
+
 	bool TryResolveFrontendScreenName(const FString& ScreenName, ET66ScreenType& OutScreenType)
 	{
 		const FString Normalized = ScreenName.TrimStartAndEnd();
@@ -384,7 +405,8 @@ namespace
 			return true;
 		}
 		if (Normalized.Equals(TEXT("SaveSlots"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("SaveSlot"), ESearchCase::IgnoreCase))
+			|| Normalized.Equals(TEXT("SaveSlot"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("LoadGame"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::SaveSlots;
 			return true;
@@ -396,7 +418,15 @@ namespace
 			return true;
 		}
 		if (Normalized.Equals(TEXT("Settings"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("SettingsScreen"), ESearchCase::IgnoreCase))
+			|| Normalized.Equals(TEXT("SettingsScreen"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("SettingsRetroFX"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("RetroFX"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("SettingsGameplay"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("SettingsGraphics"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("SettingsControls"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("SettingsMediaViewer"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("SettingsMedia"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("SettingsAudio"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::Settings;
 			return true;
@@ -407,7 +437,9 @@ namespace
 			OutScreenType = ET66ScreenType::LanguageSelect;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("Achievements"), ESearchCase::IgnoreCase))
+		if (Normalized.Equals(TEXT("Achievements"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("SteamAchievements"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Steam"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::Achievements;
 			return true;
@@ -433,7 +465,9 @@ namespace
 			OutScreenType = ET66ScreenType::RunSummary;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("PowerUp"), ESearchCase::IgnoreCase))
+		if (Normalized.Equals(TEXT("PowerUp"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Diplomas"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Drugs"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::PowerUp;
 			return true;
@@ -460,7 +494,9 @@ namespace
 			return true;
 		}
 		if (Normalized.Equals(TEXT("AccountStatus"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("Account"), ESearchCase::IgnoreCase))
+			|| Normalized.Equals(TEXT("Account"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Overview"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("History"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::AccountStatus;
 			return true;
@@ -564,21 +600,59 @@ namespace
 
 		return false;
 	}
+
+	bool AppendTopBarDumpToScreenDump(const FString& ScreenDumpPath, const FString& TopBarDumpPath, FString& OutError)
+	{
+		FString ScreenJson;
+		FString TopBarJson;
+		if (!FFileHelper::LoadFileToString(ScreenJson, *ScreenDumpPath))
+		{
+			OutError = FString::Printf(TEXT("Could not load screen dump '%s'."), *ScreenDumpPath);
+			return false;
+		}
+		if (!FFileHelper::LoadFileToString(TopBarJson, *TopBarDumpPath))
+		{
+			OutError = FString::Printf(TEXT("Could not load top bar dump '%s'."), *TopBarDumpPath);
+			return false;
+		}
+
+		TSharedPtr<FJsonObject> ScreenObject;
+		TSharedPtr<FJsonObject> TopBarObject;
+		const TSharedRef<TJsonReader<>> ScreenReader = TJsonReaderFactory<>::Create(ScreenJson);
+		const TSharedRef<TJsonReader<>> TopBarReader = TJsonReaderFactory<>::Create(TopBarJson);
+		if (!FJsonSerializer::Deserialize(ScreenReader, ScreenObject) || !ScreenObject.IsValid())
+		{
+			OutError = TEXT("Could not parse screen dump JSON.");
+			return false;
+		}
+		if (!FJsonSerializer::Deserialize(TopBarReader, TopBarObject) || !TopBarObject.IsValid())
+		{
+			OutError = TEXT("Could not parse top bar dump JSON.");
+			return false;
+		}
+
+		ScreenObject->SetObjectField(TEXT("top_bar"), TopBarObject.ToSharedRef());
+
+		FString MergedJson;
+		const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&MergedJson);
+		if (!FJsonSerializer::Serialize(ScreenObject.ToSharedRef(), Writer))
+		{
+			OutError = TEXT("Could not serialize merged top bar dump JSON.");
+			return false;
+		}
+
+		if (!FFileHelper::SaveStringToFile(MergedJson, *ScreenDumpPath))
+		{
+			OutError = FString::Printf(TEXT("Could not write merged screen dump '%s'."), *ScreenDumpPath);
+			return false;
+		}
+
+		return true;
+	}
 }
 
 TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenType ScreenType) const
 {
-	if (FT66Style::IsDotaTheme())
-	{
-		if (const TSubclassOf<UT66ScreenBase>* DotaClass = DotaScreenClasses.Find(ScreenType))
-		{
-			if (*DotaClass)
-			{
-				return *DotaClass;
-			}
-		}
-	}
-
 	if (ScreenType == ET66ScreenType::HeroSelection)
 	{
 		return UT66HeroSelectionScreen::StaticClass();
@@ -666,51 +740,26 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 
 TSubclassOf<UT66GameplayHUDWidget> AT66PlayerController::ResolveGameplayHUDClass() const
 {
-	if (FT66Style::IsDotaTheme() && DotaGameplayHUDClass)
-	{
-		return DotaGameplayHUDClass;
-	}
-
 	return UT66GameplayHUDWidget::StaticClass();
 }
 
 TSubclassOf<UT66CasinoOverlayWidget> AT66PlayerController::ResolveCasinoOverlayClass() const
 {
-	if (FT66Style::IsDotaTheme() && DotaCasinoOverlayClass)
-	{
-		return DotaCasinoOverlayClass;
-	}
-
 	return UT66CasinoOverlayWidget::StaticClass();
 }
 
 TSubclassOf<UT66CollectorOverlayWidget> AT66PlayerController::ResolveCollectorOverlayClass() const
 {
-	if (FT66Style::IsDotaTheme() && DotaCollectorOverlayClass)
-	{
-		return DotaCollectorOverlayClass;
-	}
-
 	return UT66CollectorOverlayWidget::StaticClass();
 }
 
 TSubclassOf<UT66CowardicePromptWidget> AT66PlayerController::ResolveCowardicePromptClass() const
 {
-	if (FT66Style::IsDotaTheme() && DotaCowardicePromptClass)
-	{
-		return DotaCowardicePromptClass;
-	}
-
 	return UT66CowardicePromptWidget::StaticClass();
 }
 
 TSubclassOf<UT66IdolAltarOverlayWidget> AT66PlayerController::ResolveIdolAltarOverlayClass() const
 {
-	if (FT66Style::IsDotaTheme() && DotaIdolAltarOverlayClass)
-	{
-		return DotaIdolAltarOverlayClass;
-	}
-
 	return UT66IdolAltarOverlayWidget::StaticClass();
 }
 
@@ -853,6 +902,11 @@ void AT66PlayerController::ApplyFrontendCommandLineOverrides(ET66ScreenType& Scr
 	FrontendAutomationScreenshotPath.Reset();
 	FrontendAutomationScreenshotDelaySeconds = 0.f;
 	bFrontendAutomationKeepAliveAfterScreenshot = false;
+	FrontendAutomationDumpPath.Reset();
+	FrontendAutomationDumpDelaySeconds = 0.f;
+	FrontendAutomationWidgetDumpTarget.Reset();
+	FrontendAutomationWidgetDumpPath.Reset();
+	FrontendAutomationWidgetDumpDelaySeconds = 0.f;
 	FrontendAutomationModalToShow = ET66ScreenType::None;
 
 	FString RequestedScreenName;
@@ -866,7 +920,14 @@ void AT66PlayerController::ApplyFrontendCommandLineOverrides(ET66ScreenType& Scr
 		}
 		else
 		{
-			UE_LOG(LogT66Frontend, Warning, TEXT("Frontend automation: unknown screen override '%s'"), *RequestedScreenName);
+			UE_LOG(
+				LogT66Frontend,
+				Error,
+				TEXT("Frontend automation: unknown screen override '%s'. Accepted screen names: %s"),
+				*RequestedScreenName,
+				*GetAcceptedFrontendScreenNamesForLog());
+			FPlatformMisc::RequestExitWithStatus(false, 66, TEXT("T66FrontendScreenUnknown"));
+			return;
 		}
 	}
 
@@ -896,6 +957,32 @@ void AT66PlayerController::ApplyFrontendCommandLineOverrides(ET66ScreenType& Scr
 		FrontendAutomationScreenshotDelaySeconds = 2.0f;
 		FParse::Value(FCommandLine::Get(), TEXT("T66AutoScreenshotDelay="), FrontendAutomationScreenshotDelaySeconds);
 		bFrontendAutomationKeepAliveAfterScreenshot = FParse::Param(FCommandLine::Get(), TEXT("T66KeepAliveAfterScreenshot"));
+	}
+
+	FString RequestedDumpPath;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpScreen="), RequestedDumpPath))
+	{
+		FrontendAutomationDumpPath = FPaths::ConvertRelativePathToFull(RequestedDumpPath);
+		FrontendAutomationDumpDelaySeconds = FrontendAutomationScreenshotDelaySeconds > 0.f ? FrontendAutomationScreenshotDelaySeconds : 2.0f;
+		FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpScreenDelay="), FrontendAutomationDumpDelaySeconds);
+	}
+
+	FString RequestedWidgetDumpSpec;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpWidget="), RequestedWidgetDumpSpec))
+	{
+		FString ParseError;
+		FString WidgetDumpPath;
+		if (FT66WidgetDumpTargets::ParseAutomationSpec(RequestedWidgetDumpSpec, FrontendAutomationWidgetDumpTarget, WidgetDumpPath, ParseError))
+		{
+			FrontendAutomationWidgetDumpPath = FPaths::ConvertRelativePathToFull(WidgetDumpPath);
+			FrontendAutomationWidgetDumpDelaySeconds = FrontendAutomationScreenshotDelaySeconds > 0.f ? FrontendAutomationScreenshotDelaySeconds : 2.0f;
+			FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpWidgetDelay="), FrontendAutomationWidgetDumpDelaySeconds);
+		}
+		else
+		{
+			UE_LOG(LogT66Frontend, Error, TEXT("Frontend automation: invalid widget dump spec: %s"), *ParseError);
+			FPlatformMisc::RequestExitWithStatus(false, 67, TEXT("T66AutoDumpWidgetInvalid"));
+		}
 	}
 }
 
@@ -935,6 +1022,53 @@ void AT66PlayerController::QueueFrontendAutomationScreenshotIfRequested()
 		FrontendAutomationScreenshotDelaySeconds);
 }
 
+void AT66PlayerController::QueueFrontendAutomationDumpIfRequested()
+{
+	if (!GetWorld() || FrontendAutomationDumpPath.IsEmpty())
+	{
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(FrontendAutomationDumpTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		FrontendAutomationDumpTimerHandle,
+		this,
+		&AT66PlayerController::HandleFrontendAutomationDump,
+		FMath::Max(0.1f, FrontendAutomationDumpDelaySeconds),
+		false);
+
+	UE_LOG(
+		LogT66Frontend,
+		Log,
+		TEXT("Frontend automation: queued widget dump '%s' in %.2f seconds"),
+		*FrontendAutomationDumpPath,
+		FrontendAutomationDumpDelaySeconds);
+}
+
+void AT66PlayerController::QueueFrontendAutomationWidgetDumpIfRequested()
+{
+	if (!GetWorld() || FrontendAutomationWidgetDumpTarget.IsEmpty() || FrontendAutomationWidgetDumpPath.IsEmpty())
+	{
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(FrontendAutomationWidgetDumpTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		FrontendAutomationWidgetDumpTimerHandle,
+		this,
+		&AT66PlayerController::HandleFrontendAutomationWidgetDump,
+		FMath::Max(0.1f, FrontendAutomationWidgetDumpDelaySeconds),
+		false);
+
+	UE_LOG(
+		LogT66Frontend,
+		Log,
+		TEXT("Frontend automation: queued widget dump Target=%s Path=%s in %.2f seconds"),
+		*FrontendAutomationWidgetDumpTarget,
+		*FrontendAutomationWidgetDumpPath,
+		FrontendAutomationWidgetDumpDelaySeconds);
+}
+
 void AT66PlayerController::HandleFrontendAutomationScreenshot()
 {
 	if (FrontendAutomationScreenshotPath.IsEmpty())
@@ -955,6 +1089,79 @@ void AT66PlayerController::HandleFrontendAutomationScreenshot()
 			&AT66PlayerController::HandleFrontendAutomationQuit,
 			1.5f,
 			false);
+	}
+}
+
+void AT66PlayerController::HandleFrontendAutomationDump()
+{
+	if (FrontendAutomationDumpPath.IsEmpty() || !UIManager)
+	{
+		return;
+	}
+
+	UT66ScreenBase* ScreenToDump = UIManager->IsModalActive()
+		? UIManager->GetCurrentModal()
+		: UIManager->GetCurrentScreen();
+	if (!ScreenToDump)
+	{
+		UE_LOG(LogT66Frontend, Warning, TEXT("Frontend automation: no active screen to dump."));
+		return;
+	}
+
+	const bool bDumped = ScreenToDump->DumpToJson(FrontendAutomationDumpPath);
+	if (bDumped && UIManager->IsFrontendTopBarVisible())
+	{
+		if (UT66ScreenBase* TopBarToDump = UIManager->GetFrontendTopBarScreen())
+		{
+			const FString TopBarDumpPath = FrontendAutomationDumpPath + TEXT(".top_bar.tmp.json");
+			FString MergeError;
+			const bool bTopBarDumped = TopBarToDump->DumpToJson(TopBarDumpPath);
+			if (bTopBarDumped && AppendTopBarDumpToScreenDump(FrontendAutomationDumpPath, TopBarDumpPath, MergeError))
+			{
+				UE_LOG(LogT66Frontend, Log, TEXT("Frontend automation: appended top bar dump to '%s'"), *FrontendAutomationDumpPath);
+			}
+			else
+			{
+				UE_LOG(LogT66Frontend, Warning, TEXT("Frontend automation: failed to append top bar dump: %s"), MergeError.IsEmpty() ? TEXT("top bar dump failed") : *MergeError);
+			}
+			IFileManager::Get().Delete(*TopBarDumpPath, false, true);
+		}
+	}
+	UE_LOG(LogT66Frontend, Log, TEXT("Frontend automation: widget dump %s '%s'"), bDumped ? TEXT("wrote") : TEXT("failed"), *FrontendAutomationDumpPath);
+}
+
+void AT66PlayerController::HandleFrontendAutomationWidgetDump()
+{
+	if (FrontendAutomationWidgetDumpTarget.IsEmpty() || FrontendAutomationWidgetDumpPath.IsEmpty())
+	{
+		return;
+	}
+
+	FString Error;
+	const bool bDumped = FT66WidgetDumpTargets::DumpTargetToJson(
+		GetWorld(),
+		FrontendAutomationWidgetDumpTarget,
+		FrontendAutomationWidgetDumpPath,
+		Error);
+
+	if (bDumped)
+	{
+		UE_LOG(
+			LogT66Frontend,
+			Log,
+			TEXT("Frontend automation: widget target dump wrote Target=%s Path=%s"),
+			*FrontendAutomationWidgetDumpTarget,
+			*FrontendAutomationWidgetDumpPath);
+	}
+	else
+	{
+		UE_LOG(
+			LogT66Frontend,
+			Warning,
+			TEXT("Frontend automation: widget target dump failed Target=%s Path=%s Error=%s"),
+			*FrontendAutomationWidgetDumpTarget,
+			*FrontendAutomationWidgetDumpPath,
+			*Error);
 	}
 }
 
@@ -1317,6 +1524,8 @@ void AT66PlayerController::InitializeUI()
 		{
 			UIManager->ShowModal(FrontendAutomationModalToShow);
 		}
+		QueueFrontendAutomationDumpIfRequested();
+		QueueFrontendAutomationWidgetDumpIfRequested();
 		QueueFrontendAutomationScreenshotIfRequested();
 	}
 

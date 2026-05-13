@@ -9,6 +9,7 @@
 #include "UI/ST66PulsingIcon.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66ReferenceLayout.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
@@ -242,8 +243,8 @@ namespace
 			const float Radius = MinDim * 0.36f;
 			const float OuterThickness = FMath::Max(5.f, MinDim * 0.12f);
 			const float InnerThickness = FMath::Max(2.f, MinDim * 0.05f);
-			const float StartAngle = -1.10f * PI;
-			const float EndAngle = 0.10f * PI;
+			const float StartAngle = -0.35f * PI;
+			const float EndAngle = 1.35f * PI;
 			const TArray<FVector2D> ArcPoints = MakeCirclePoints(Center, Radius, 44, StartAngle, EndAngle);
 			const TArray<FVector2D> StemPoints = {
 				FVector2D(Center.X, MinDim * 0.12f),
@@ -256,7 +257,7 @@ namespace
 				AllottedGeometry.ToPaintGeometry(),
 				ArcPoints,
 				ESlateDrawEffect::None,
-				FLinearColor(0.22f, 0.12f, 0.08f, 1.f),
+				FLinearColor(0.28f, 0.02f, 0.035f, 1.f),
 				true,
 				OuterThickness);
 
@@ -266,7 +267,7 @@ namespace
 				AllottedGeometry.ToPaintGeometry(),
 				ArcPoints,
 				ESlateDrawEffect::None,
-				FLinearColor(0.96f, 0.57f, 0.22f, 1.f),
+				FLinearColor(1.0f, 0.17f, 0.22f, 1.f),
 				true,
 				FMath::Max(3.f, OuterThickness - 3.f));
 
@@ -276,7 +277,7 @@ namespace
 				AllottedGeometry.ToPaintGeometry(),
 				ArcPoints,
 				ESlateDrawEffect::None,
-				FLinearColor(1.f, 0.92f, 0.74f, 1.f),
+				FLinearColor(1.f, 0.55f, 0.58f, 1.f),
 				true,
 				InnerThickness);
 
@@ -286,7 +287,7 @@ namespace
 				AllottedGeometry.ToPaintGeometry(),
 				StemPoints,
 				ESlateDrawEffect::None,
-				FLinearColor(0.22f, 0.12f, 0.08f, 1.f),
+				FLinearColor(0.28f, 0.02f, 0.035f, 1.f),
 				true,
 				FMath::Max(8.f, MinDim * 0.18f));
 
@@ -296,11 +297,117 @@ namespace
 				AllottedGeometry.ToPaintGeometry(),
 				StemPoints,
 				ESlateDrawEffect::None,
-				FLinearColor(1.f, 0.92f, 0.74f, 1.f),
+				FLinearColor(1.0f, 0.17f, 0.22f, 1.f),
 				true,
 				FMath::Max(4.f, MinDim * 0.09f));
 
 			return LayerId + 5;
+		}
+
+	private:
+		FVector2D DesiredSize = FVector2D(48.f, 48.f);
+	};
+
+	class ST66TopBarGlobeGlyph : public SLeafWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66TopBarGlobeGlyph) {}
+			SLATE_ARGUMENT(FVector2D, DesiredSize)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			DesiredSize = InArgs._DesiredSize.IsNearlyZero() ? FVector2D(48.f, 48.f) : InArgs._DesiredSize;
+		}
+
+		virtual FVector2D ComputeDesiredSize(float) const override
+		{
+			return DesiredSize;
+		}
+
+		virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+			FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
+		{
+			const FVector2D Size = AllottedGeometry.GetLocalSize();
+			const FVector2D Center(Size * 0.5f);
+			const float MinDim = FMath::Max(1.f, FMath::Min(Size.X, Size.Y));
+			const float Radius = MinDim * 0.40f;
+			const float Thickness = FMath::Max(2.f, MinDim * 0.055f);
+			const FLinearColor MainColor(0.90f, 0.92f, 0.95f, 1.f);
+
+			auto MakeEllipsePoints = [](const FVector2D& InCenter, const float RadiusX, const float RadiusY, const int32 Segments)
+			{
+				TArray<FVector2D> Points;
+				Points.Reserve(Segments + 1);
+				for (int32 Index = 0; Index <= Segments; ++Index)
+				{
+					const float Angle = 2.f * PI * (static_cast<float>(Index) / static_cast<float>(Segments));
+					Points.Add(InCenter + FVector2D(FMath::Cos(Angle) * RadiusX, FMath::Sin(Angle) * RadiusY));
+				}
+				return Points;
+			};
+
+			FSlateDrawElement::MakeLines(OutDrawElements, LayerId, AllottedGeometry.ToPaintGeometry(), MakeCirclePoints(Center, Radius, 48), ESlateDrawEffect::None, MainColor, true, Thickness);
+			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 1, AllottedGeometry.ToPaintGeometry(), MakeEllipsePoints(Center, Radius * 0.42f, Radius, 48), ESlateDrawEffect::None, MainColor, true, Thickness * 0.75f);
+			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), MakeEllipsePoints(Center, Radius, Radius * 0.42f, 48), ESlateDrawEffect::None, MainColor, true, Thickness * 0.75f);
+
+			const TArray<FVector2D> Equator = {
+				FVector2D(Center.X - Radius, Center.Y),
+				FVector2D(Center.X + Radius, Center.Y)
+			};
+			const TArray<FVector2D> Meridian = {
+				FVector2D(Center.X, Center.Y - Radius),
+				FVector2D(Center.X, Center.Y + Radius)
+			};
+			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 3, AllottedGeometry.ToPaintGeometry(), Equator, ESlateDrawEffect::None, MainColor, true, Thickness * 0.75f);
+			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 4, AllottedGeometry.ToPaintGeometry(), Meridian, ESlateDrawEffect::None, MainColor, true, Thickness * 0.75f);
+			return LayerId + 5;
+		}
+
+	private:
+		FVector2D DesiredSize = FVector2D(48.f, 48.f);
+	};
+
+	class ST66TopBarProfileGlyph : public SLeafWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66TopBarProfileGlyph) {}
+			SLATE_ARGUMENT(FVector2D, DesiredSize)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			DesiredSize = InArgs._DesiredSize.IsNearlyZero() ? FVector2D(48.f, 48.f) : InArgs._DesiredSize;
+		}
+
+		virtual FVector2D ComputeDesiredSize(float) const override
+		{
+			return DesiredSize;
+		}
+
+		virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+			FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
+		{
+			const FVector2D Size = AllottedGeometry.GetLocalSize();
+			const FVector2D Center(Size * 0.5f);
+			const float MinDim = FMath::Max(1.f, FMath::Min(Size.X, Size.Y));
+			const float Thickness = FMath::Max(4.f, MinDim * 0.11f);
+			const FLinearColor MainColor(0.90f, 0.92f, 0.95f, 1.f);
+			const FVector2D HeadCenter(Center.X, MinDim * 0.31f);
+			const float HeadRadius = MinDim * 0.17f;
+			const FVector2D ShoulderCenter(Center.X, MinDim * 0.85f);
+			const float ShoulderRadius = MinDim * 0.34f;
+
+			FSlateDrawElement::MakeLines(OutDrawElements, LayerId, AllottedGeometry.ToPaintGeometry(), MakeCirclePoints(HeadCenter, HeadRadius, 36), ESlateDrawEffect::None, MainColor, true, Thickness);
+			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 1, AllottedGeometry.ToPaintGeometry(), MakeCirclePoints(ShoulderCenter, ShoulderRadius, 36, PI * 1.15f, PI * 1.85f), ESlateDrawEffect::None, MainColor, true, Thickness);
+			const TArray<FVector2D> BodyLines = {
+				FVector2D(Center.X - MinDim * 0.17f, MinDim * 0.54f),
+				FVector2D(Center.X - MinDim * 0.25f, MinDim * 0.76f),
+				FVector2D(Center.X + MinDim * 0.25f, MinDim * 0.76f),
+				FVector2D(Center.X + MinDim * 0.17f, MinDim * 0.54f)
+			};
+			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), BodyLines, ESlateDrawEffect::None, MainColor, true, Thickness);
+			return LayerId + 3;
 		}
 
 	private:
@@ -579,7 +686,7 @@ namespace
 						.HAlign(HAlign_Fill)
 						.VAlign(VAlign_Fill)
 						[
-							FT66Style::MakeRetroUIChromeSurface(BuildPlateWidget())
+							BuildPlateWidget()
 						]
 						+ SOverlay::Slot()
 						.HAlign(HAlign_Fill)
@@ -1083,6 +1190,64 @@ float UT66FrontendTopBarWidget::GetVisibleContentHeight()
 	return GetTopBarReferenceSurfaceHeight() * GetTopBarWidthResponsiveScale();
 }
 
+UT66FrontendTopBarWidget::EFrontendSection UT66FrontendTopBarWidget::ResolveFrontendSectionForScreen(const ET66ScreenType ScreenType)
+{
+	switch (ScreenType)
+	{
+	case ET66ScreenType::AccountStatus:
+		return EFrontendSection::AccountStatus;
+	case ET66ScreenType::Settings:
+		return EFrontendSection::Settings;
+	case ET66ScreenType::LanguageSelect:
+		return EFrontendSection::Language;
+	case ET66ScreenType::PowerUp:
+		return EFrontendSection::PowerUp;
+	case ET66ScreenType::Achievements:
+		return EFrontendSection::Achievements;
+	case ET66ScreenType::Minigames:
+		return EFrontendSection::MiniGames;
+	case ET66ScreenType::MainMenu:
+		return EFrontendSection::Home;
+	default:
+		return EFrontendSection::None;
+	}
+}
+
+void UT66FrontendTopBarWidget::SetActiveSection(const EFrontendSection InActiveSection)
+{
+	if (bHasActiveSectionOverride && ActiveSectionOverride == InActiveSection)
+	{
+		return;
+	}
+
+	ActiveSectionOverride = InActiveSection;
+	bHasActiveSectionOverride = true;
+	if (GetCachedWidget().IsValid())
+	{
+		FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
+	}
+}
+
+void UT66FrontendTopBarWidget::ClearActiveSectionOverride()
+{
+	if (!bHasActiveSectionOverride)
+	{
+		return;
+	}
+
+	bHasActiveSectionOverride = false;
+	ActiveSectionOverride = EFrontendSection::None;
+	if (GetCachedWidget().IsValid())
+	{
+		FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
+	}
+}
+
+UT66FrontendTopBarWidget::EFrontendSection UT66FrontendTopBarWidget::GetRenderedActiveSection() const
+{
+	return GetActiveSection();
+}
+
 TSharedRef<SWidget> UT66FrontendTopBarWidget::RebuildWidget()
 {
 	// The top bar already sizes itself against the live safe-frame width.
@@ -1101,9 +1266,14 @@ UT66LocalizationSubsystem* UT66FrontendTopBarWidget::GetLocSubsystem() const
 
 UT66FrontendTopBarWidget::ETopBarSection UT66FrontendTopBarWidget::GetActiveSection() const
 {
+	if (bHasActiveSectionOverride)
+	{
+		return ActiveSectionOverride;
+	}
+
 	if (!UIManager)
 	{
-		return ETopBarSection::Home;
+		return EFrontendSection::Home;
 	}
 
 	ET66ScreenType FocusedScreenType = UIManager->GetCurrentScreenType();
@@ -1115,20 +1285,20 @@ UT66FrontendTopBarWidget::ETopBarSection UT66FrontendTopBarWidget::GetActiveSect
 	switch (FocusedScreenType)
 	{
 	case ET66ScreenType::AccountStatus:
-		return ETopBarSection::AccountStatus;
+		return EFrontendSection::AccountStatus;
 	case ET66ScreenType::Settings:
-		return ETopBarSection::Settings;
+		return EFrontendSection::Settings;
 	case ET66ScreenType::LanguageSelect:
-		return ETopBarSection::Language;
+		return EFrontendSection::Language;
 	case ET66ScreenType::PowerUp:
-		return ETopBarSection::PowerUp;
+		return EFrontendSection::PowerUp;
 	case ET66ScreenType::Achievements:
-		return ETopBarSection::Achievements;
+		return EFrontendSection::Achievements;
 	case ET66ScreenType::Minigames:
-		return ETopBarSection::MiniGames;
+		return EFrontendSection::MiniGames;
 	case ET66ScreenType::MainMenu:
 	default:
-		return ETopBarSection::Home;
+		return EFrontendSection::Home;
 	}
 }
 
@@ -1174,167 +1344,31 @@ void UT66FrontendTopBarWidget::NavigateWithTopBar(const ET66ScreenType TargetScr
 
 void UT66FrontendTopBarWidget::RequestTopBarAssets()
 {
-	const FString IconButtonNormalPath = T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(TEXT("topbar_icon_button_normal_square_variant.png"));
-	const FString IconButtonHoverPath = T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(TEXT("topbar_icon_button_hover_square_variant.png"));
-	const FString IconButtonPressedPath = T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(TEXT("topbar_icon_button_pressed_square_variant.png"));
-	const FString IconButtonDisabledPath = T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(TEXT("topbar_icon_button_disabled_square_variant.png"));
-	const FString IconButtonSelectedPath = T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(TEXT("topbar_icon_button_selected_square_variant.png"));
-	const FString TextButtonNormalPath = T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(TEXT("cta_new_game_button_normal_square_variant.png"));
-	const FString TextButtonHoverPath = T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(TEXT("cta_new_game_button_hover_square_variant.png"));
-	const FString TextButtonPressedPath = T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(TEXT("cta_new_game_button_pressed_square_variant.png"));
-	const FString TextButtonDisabledPath = T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(TEXT("cta_new_game_button_disabled_square_variant.png"));
-	const FString TextButtonSelectedPath = TextButtonHoverPath;
-	const FString CurrencyButtonNormalPath = TextButtonNormalPath;
-	const FString CurrencyButtonHoverPath = TextButtonHoverPath;
-	const FString CurrencyButtonPressedPath = TextButtonPressedPath;
-	const FString CurrencyButtonDisabledPath = TextButtonDisabledPath;
-
 	LoadLooseBrushFromCandidatePaths(
-		{
-			T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(TEXT("main_panel_normal_square_variant.png"))
-		},
-		TopBarBackdropBrush,
-		FVector2D(T66MainMenuReferenceLayout::TopBar::TopbarStripFull.Width, T66MainMenuReferenceLayout::TopBar::TopbarStripFull.Height));
-
-	LoadButtonStateSetFromPaths(
-		{ IconButtonNormalPath },
-		{ IconButtonSelectedPath, IconButtonHoverPath },
-		{ IconButtonPressedPath },
-		{ IconButtonDisabledPath },
-		{ IconButtonSelectedPath, IconButtonHoverPath },
-		SettingsButtonBrushes);
-
-	LoadButtonStateSetFromPaths(
-		{ IconButtonNormalPath },
-		{ IconButtonSelectedPath, IconButtonHoverPath },
-		{ IconButtonPressedPath },
-		{ IconButtonDisabledPath },
-		{ IconButtonSelectedPath, IconButtonHoverPath },
-		LanguageButtonBrushes);
-
-	LoadButtonStateSetFromPaths(
-		{ TextButtonNormalPath },
-		{ TextButtonHoverPath },
-		{ TextButtonPressedPath },
-		{ TextButtonDisabledPath },
-		{ TextButtonSelectedPath, TextButtonPressedPath },
-		AccountButtonBrushes);
-
-	LoadButtonStateSetFromPaths(
-		{ IconButtonNormalPath },
-		{ IconButtonHoverPath },
-		{ IconButtonPressedPath },
-		{ IconButtonDisabledPath },
-		{ IconButtonHoverPath },
-		HomeButtonBrushes);
-
-	LoadButtonStateSetFromPaths(
-		{ TextButtonNormalPath },
-		{ TextButtonHoverPath },
-		{ TextButtonPressedPath },
-		{ TextButtonDisabledPath },
-		{ TextButtonSelectedPath, TextButtonPressedPath },
-		NavButtonBrushes);
-
-	LoadButtonStateSetFromPaths(
-		{ TextButtonNormalPath },
-		{ TextButtonHoverPath },
-		{ TextButtonPressedPath },
-		{ TextButtonDisabledPath },
-		{ TextButtonSelectedPath, TextButtonPressedPath },
-		PowerUpButtonBrushes);
-
-	LoadButtonStateSetFromPaths(
-		{ TextButtonNormalPath },
-		{ TextButtonHoverPath },
-		{ TextButtonPressedPath },
-		{ TextButtonDisabledPath },
-		{ TextButtonSelectedPath, TextButtonPressedPath },
-		AchievementsButtonBrushes);
-
-	LoadButtonStateSetFromPaths(
-		{ TextButtonNormalPath },
-		{ TextButtonHoverPath },
-		{ TextButtonPressedPath },
-		{ TextButtonDisabledPath },
-		{ TextButtonSelectedPath, TextButtonPressedPath },
-		MiniGamesButtonBrushes);
-
-	LoadButtonStateSetFromPaths(
-		{ IconButtonNormalPath },
-		{ IconButtonHoverPath },
-		{ IconButtonPressedPath },
-		{ IconButtonDisabledPath },
-		{ IconButtonHoverPath },
-		PortraitButtonBrushes);
-
-	LoadButtonStateSetFromPaths(
-		{ CurrencyButtonNormalPath },
-		{ CurrencyButtonHoverPath },
-		{ TextButtonSelectedPath, CurrencyButtonPressedPath },
-		{ CurrencyButtonDisabledPath },
-		{ CurrencyButtonPressedPath },
-		CouponButtonBrushes);
-
-	LoadButtonStateSetFromPaths(
-		{ IconButtonNormalPath },
-		{ IconButtonSelectedPath, IconButtonHoverPath },
-		{ IconButtonPressedPath },
-		{ IconButtonDisabledPath },
-		{ IconButtonHoverPath },
-		QuitButtonBrushes);
-
-	const FMargin SquareMargin(0.105f, 0.105f, 0.105f, 0.105f);
-	const FMargin NavMargin(0.060f, 0.155f, 0.060f, 0.155f);
-	const FMargin CurrencyMargin(0.075f, 0.155f, 0.075f, 0.155f);
-	const FMargin IconMargin(0.105f, 0.105f, 0.105f, 0.105f);
-	ConfigureBoxBrushSet(SettingsButtonBrushes, IconMargin);
-	ConfigureBoxBrushSet(LanguageButtonBrushes, IconMargin);
-	ConfigureBoxBrushSet(AccountButtonBrushes, NavMargin);
-	ConfigureBoxBrushSet(HomeButtonBrushes, SquareMargin);
-	ConfigureBoxBrushSet(NavButtonBrushes, NavMargin);
-	ConfigureBoxBrushSet(PowerUpButtonBrushes, NavMargin);
-	ConfigureBoxBrushSet(AchievementsButtonBrushes, NavMargin);
-	ConfigureBoxBrushSet(MiniGamesButtonBrushes, NavMargin);
-	ConfigureBoxBrushSet(PortraitButtonBrushes, SquareMargin);
-	ConfigureBoxBrushSet(CouponButtonBrushes, CurrencyMargin);
-	ConfigureBoxBrushSet(QuitButtonBrushes, IconMargin);
-	ConfigureBoxBrush(TopBarBackdropBrush, FMargin(0.f));
-	ResetBrushSet(SettingsButtonBrushes);
-	ResetBrushSet(LanguageButtonBrushes);
-	ResetBrushSet(CouponButtonBrushes);
-	ResetBrushSet(QuitButtonBrushes);
-
-	LoadLooseBrushFromCandidatePaths(
-			{
-			T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(TEXT("home_profile_icon.png"))
-		},
+		{ TEXT("RuntimeDependencies/T66/UI/Icons/Flat/people.png") },
 		HomeIconBrush,
-		FVector2D(88.f, 88.f));
+		FVector2D(58.f, 58.f),
+		TextureFilter::TF_Nearest);
 	LoadLooseBrushFromCandidatePaths(
-			{
-			T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(TEXT("settings_gear_icon.png"))
-		},
+		{ TEXT("RuntimeDependencies/T66/UI/Icons/Flat/gear.png") },
 		SettingsIconBrush,
-		FVector2D(64.f, 64.f));
+		FVector2D(54.f, 54.f),
+		TextureFilter::TF_Nearest);
 	LoadLooseBrushFromCandidatePaths(
-			{
-			T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(TEXT("language_globe_icon.png"))
-		},
+		{ TEXT("RuntimeDependencies/T66/UI/Icons/Flat/broadcast_antenna.png") },
 		SocialIconBrush,
-		FVector2D(64.f, 64.f));
+		FVector2D(54.f, 54.f),
+		TextureFilter::TF_Nearest);
 	LoadLooseBrushFromCandidatePaths(
-			{
-			T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(TEXT("coupon_ticket_icon.png"))
-		},
+		{ TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png") },
 		CurrencyIconBrush,
-		FVector2D(58.f, 58.f));
+		FVector2D(46.f, 46.f),
+		TextureFilter::TF_Nearest);
 	LoadLooseBrushFromCandidatePaths(
-			{
-			T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(TEXT("power_off_icon.png"))
-		},
+		{ TEXT("RuntimeDependencies/T66/UI/Icons/Flat/x_mark.png") },
 		QuitIconBrush,
-		FVector2D(64.f, 64.f));
+		FVector2D(54.f, 54.f),
+		TextureFilter::TF_Nearest);
 }
 
 void UT66FrontendTopBarWidget::ReleaseTopBarBrushes()
@@ -1402,6 +1436,407 @@ void UT66FrontendTopBarWidget::RefreshScreen_Implementation()
 
 TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 {
+	{
+		CachedViewportSize = GetEffectiveFrontendViewportSize();
+		bViewportResponsiveRebuildQueued = false;
+		RequestTopBarAssets();
+
+		UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+		const EFrontendSection ActiveSection = GetActiveSection();
+		const FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.MainMenu", "Settings", "SETTINGS");
+		const FText LanguageText = Loc ? Loc->GetText_LangButton() : NSLOCTEXT("T66.LanguageSelect", "LangButton", "LANG");
+		const FText AccountText = Loc ? Loc->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT");
+		const FText PowerUpText = NSLOCTEXT("T66.MainMenu", "PowerUp", "POWER UP");
+		const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
+		const FText MiniGamesText = NSLOCTEXT("T66.MainMenu", "MiniGames", "MINIGAMES");
+		const FText BackToMainMenuText = NSLOCTEXT("T66.MainMenu", "BackToMainMenu", "BACK TO MAIN MENU");
+		const FText QuitTooltipText = Loc ? Loc->GetText_Quit() : NSLOCTEXT("T66.MainMenu", "Quit", "QUIT");
+
+		struct FNormalizedTopBarRect
+		{
+			float X;
+			float Y;
+			float W;
+			float H;
+
+			FMargin ToReferenceOffset() const
+			{
+				return FMargin(X * T66MainMenuReferenceLayout::CanvasWidth, Y * T66MainMenuReferenceLayout::CanvasHeight, W * T66MainMenuReferenceLayout::CanvasWidth, H * T66MainMenuReferenceLayout::CanvasHeight);
+			}
+
+			float ReferenceWidth() const
+			{
+				return W * T66MainMenuReferenceLayout::CanvasWidth;
+			}
+
+			float ReferenceHeight() const
+			{
+				return H * T66MainMenuReferenceLayout::CanvasHeight;
+			}
+		};
+
+		const FNormalizedTopBarRect OuterRect{ 0.012f, 0.006f, 0.976f, 0.077f };
+		const FNormalizedTopBarRect SettingsRect{ 0.013f, 0.006f, 0.046f, 0.077f };
+		const FNormalizedTopBarRect LanguageRect{ 0.073f, 0.006f, 0.046f, 0.077f };
+		const FNormalizedTopBarRect AccountRect{ 0.133f, 0.006f, 0.156f, 0.077f };
+		const FNormalizedTopBarRect ProfileRect{ 0.302f, 0.006f, 0.043f, 0.077f };
+		const FNormalizedTopBarRect PowerUpRect{ 0.359f, 0.006f, 0.142f, 0.077f };
+		const FNormalizedTopBarRect AchievementsRect{ 0.513f, 0.006f, 0.153f, 0.077f };
+		const FNormalizedTopBarRect MiniGamesRect{ 0.679f, 0.006f, 0.126f, 0.077f };
+		const FNormalizedTopBarRect TicketRect{ 0.819f, 0.006f, 0.087f, 0.077f };
+		const FNormalizedTopBarRect QuitRect{ 0.923f, 0.006f, 0.063f, 0.077f };
+
+		const float IconSize = 46.f;
+		auto MakeTaggedIconWidget = [](const TSharedRef<SWidget>& IconContent, const FVector2D& Size, const FName Tag) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(
+				SNew(SBox)
+				.WidthOverride(Size.X)
+				.HeightOverride(Size.Y)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					IconContent
+				],
+				Tag,
+				TEXT("Icon"),
+				ET66FlatState::Default);
+		};
+
+		auto MakeTaggedIcon = [&MakeTaggedIconWidget](const TSharedPtr<FSlateBrush>& Brush, const FText& FallbackText, const FVector2D& Size, const FName Tag) -> TSharedRef<SWidget>
+		{
+			const TSharedRef<SWidget> IconContent = Brush.IsValid()
+				? StaticCastSharedRef<SWidget>(SNew(SImage).Image(Brush.Get()).ColorAndOpacity(FLinearColor::White))
+				: StaticCastSharedRef<SWidget>(SNew(STextBlock)
+					.Text(FallbackText)
+					.Font(FT66FlatStyle::MakeBoldFont(24))
+					.ColorAndOpacity(FT66FlatStyle::DefaultText())
+					.Justification(ETextJustify::Center));
+
+			return MakeTaggedIconWidget(IconContent, Size, Tag);
+		};
+
+		auto MakeIconActionButton = [this](const ET66FlatState State, const TSharedRef<SWidget>& Icon, FReply (UT66FrontendTopBarWidget::*ClickFunc)(), const FName Tag, const FNormalizedTopBarRect& Rect) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::MakeFlatToggleGroupButton(
+				State,
+				Icon,
+				FOnClicked::CreateUObject(this, ClickFunc),
+				FMargin(8.f),
+				Rect.ReferenceWidth(),
+				Rect.ReferenceHeight(),
+				true,
+				Tag);
+		};
+
+		const bool bDailyDescentTopBar = UIManager && UIManager->GetCurrentScreenType() == ET66ScreenType::DailyDescent;
+		if (bDailyDescentTopBar)
+		{
+			const FNormalizedTopBarRect DailyOuterRect{ 0.010f, 0.001f, 0.981f, 0.104f };
+			const FNormalizedTopBarRect DailySettingsRect{ 0.023f, 0.016f, 0.044f, 0.073f };
+			const FNormalizedTopBarRect DailyLanguageRect{ 0.083f, 0.016f, 0.045f, 0.074f };
+			const FNormalizedTopBarRect DailyBackRect{ 0.322f, 0.016f, 0.347f, 0.076f };
+			const FNormalizedTopBarRect DailyQuitRect{ 0.919f, 0.016f, 0.050f, 0.076f };
+
+			const TSharedRef<SWidget> SettingsButtonWidget = MakeIconActionButton(
+				ET66FlatState::Default,
+				MakeTaggedIconWidget(SNew(ST66TopBarGearGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.SettingsButton.Icon")),
+				&UT66FrontendTopBarWidget::HandleSettingsClicked,
+				TEXT("FrontendTopBar.SettingsButton"),
+				DailySettingsRect);
+			const TSharedRef<SWidget> LanguageButtonWidget = MakeIconActionButton(
+				ET66FlatState::Default,
+				MakeTaggedIconWidget(SNew(ST66TopBarGlobeGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.GlobeButton.Icon")),
+				&UT66FrontendTopBarWidget::HandleLanguageClicked,
+				TEXT("FrontendTopBar.GlobeButton"),
+				DailyLanguageRect);
+			const TSharedRef<SWidget> BackToMainMenuButtonWidget = FT66FlatStyle::MakeFlatToggleGroupButton(
+				ET66FlatState::Default,
+				FT66FlatStyle::MakeFlatLabel(BackToMainMenuText, ET66FlatLabelRole::Button, ETextJustify::Center, TEXT("FrontendTopBar.BackToMainMenuButton.Label")),
+				FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleHomeClicked),
+				FMargin(12.f, 8.f),
+				DailyBackRect.ReferenceWidth(),
+				DailyBackRect.ReferenceHeight(),
+				true,
+				TEXT("FrontendTopBar.BackToMainMenuButton"));
+			const TSharedRef<SWidget> PowerButtonWidget = MakeIconActionButton(
+				ET66FlatState::Selected,
+				MakeTaggedIconWidget(SNew(ST66TopBarPowerGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.PowerButton.Icon")),
+				&UT66FrontendTopBarWidget::HandleQuitClicked,
+				TEXT("FrontendTopBar.PowerButton"),
+				DailyQuitRect);
+			PowerButtonWidget->SetToolTipText(QuitTooltipText);
+
+			const TSharedRef<SConstraintCanvas> DailyTopBarCanvas = SNew(SConstraintCanvas);
+			DailyTopBarCanvas->AddSlot()
+				.Alignment(FVector2D(0.f, 0.f))
+				.Offset(DailyOuterRect.ToReferenceOffset())
+				[
+					FT66FlatStyle::AttachMetadata(
+						SNew(SBox),
+						TEXT("FrontendTopBar.OuterContainer"),
+						TEXT("TransparentRegion"),
+						ET66FlatState::Default)
+				];
+
+			auto AddDailyControl = [&DailyTopBarCanvas](const FNormalizedTopBarRect& Rect, const TSharedRef<SWidget>& Widget)
+			{
+				DailyTopBarCanvas->AddSlot()
+					.Alignment(FVector2D(0.f, 0.f))
+					.Offset(Rect.ToReferenceOffset())
+					[
+						Widget
+					];
+			};
+
+			AddDailyControl(DailySettingsRect, SettingsButtonWidget);
+			AddDailyControl(DailyLanguageRect, LanguageButtonWidget);
+			AddDailyControl(DailyBackRect, BackToMainMenuButtonWidget);
+			AddDailyControl(DailyQuitRect, PowerButtonWidget);
+
+			const TSharedRef<SWidget> ReservedReferenceCanvas =
+				SNew(SBox)
+				.WidthOverride(T66MainMenuReferenceLayout::CanvasWidth)
+				.HeightOverride(GetTopBarReferenceReservedHeight())
+				[
+					DailyTopBarCanvas
+				];
+
+			const float ReservedHeight = GetReservedHeight();
+			const FVector2D ViewportSize = GetEffectiveFrontendViewportSize();
+			const TSharedRef<SWidget> Root =
+				SNew(SBox)
+				.WidthOverride(FMath::Max(1.f, ViewportSize.X))
+				.HeightOverride(FMath::Max(1.f, ViewportSize.Y))
+				[
+					SNew(SVerticalBox)
+					.Visibility(EVisibility::SelfHitTestInvisible)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(SBox)
+						.HeightOverride(ReservedHeight)
+						[
+							SNew(SDPIScaler)
+							.DPIScale(TAttribute<float>::CreateLambda([]() -> float
+							{
+								return 1.f / FMath::Max(0.01f, FT66Style::GetEngineDPIScale());
+							}))
+							[
+								SNew(SScaleBox)
+								.Stretch(EStretch::ScaleToFitX)
+								.StretchDirection(EStretchDirection::Both)
+								[
+									ReservedReferenceCanvas
+								]
+							]
+						]
+					]
+					+ SVerticalBox::Slot()
+					.FillHeight(1.f)
+					[
+						SNullWidget::NullWidget
+					]
+				];
+
+			return FT66FlatStyle::AttachMetadata(
+				Root,
+				TEXT("FrontendTopBar.Root"),
+				TEXT("TopBarRoot"),
+				ET66FlatState::Default);
+		}
+
+		FT66FlatToggleGroupParams CategoryGroup;
+		CategoryGroup.GroupName = TEXT("FrontendCategorySelection");
+		CategoryGroup.bMutuallyExclusive = true;
+
+		auto MakeCategoryItem = [this](const FText& Label, FReply (UT66FrontendTopBarWidget::*ClickFunc)(), const FName Tag, const FNormalizedTopBarRect& Rect, const bool bSelected) -> FT66FlatToggleGroupItem
+		{
+			FT66FlatToggleGroupItem Item;
+			Item.State = ET66FlatState::Default;
+			Item.bIsSelected = bSelected;
+			Item.Label = Label;
+			Item.OnClicked = FOnClicked::CreateUObject(this, ClickFunc);
+			Item.Padding = FMargin(12.f, 8.f);
+			Item.MinWidth = Rect.ReferenceWidth();
+			Item.Height = Rect.ReferenceHeight();
+			Item.FontSize = 30;
+			Item.Tag = Tag;
+			return Item;
+		};
+
+		CategoryGroup.Items.Add(MakeCategoryItem(
+			AccountText,
+			&UT66FrontendTopBarWidget::HandleAccountStatusClicked,
+			TEXT("FrontendTopBar.AccountButton"),
+			AccountRect,
+			false));
+		CategoryGroup.Items.Add(MakeCategoryItem(
+			PowerUpText,
+			&UT66FrontendTopBarWidget::HandlePowerUpClicked,
+			TEXT("FrontendTopBar.PowerUpButton"),
+			PowerUpRect,
+			ActiveSection == EFrontendSection::PowerUp));
+		CategoryGroup.Items.Add(MakeCategoryItem(
+			AchievementsText,
+			&UT66FrontendTopBarWidget::HandleAchievementsClicked,
+			TEXT("FrontendTopBar.AchievementsButton"),
+			AchievementsRect,
+			ActiveSection == EFrontendSection::Achievements));
+		CategoryGroup.Items.Add(MakeCategoryItem(
+			MiniGamesText,
+			&UT66FrontendTopBarWidget::HandleMiniGamesClicked,
+			TEXT("FrontendTopBar.MinigamesButton"),
+			MiniGamesRect,
+			ActiveSection == EFrontendSection::MiniGames));
+		const TArray<TSharedRef<SWidget>> CategoryButtons = FT66FlatStyle::MakeFlatToggleGroup(CategoryGroup);
+
+		const TSharedRef<SWidget> SettingsButtonWidget = MakeIconActionButton(
+			ActiveSection == EFrontendSection::Settings ? ET66FlatState::Selected : ET66FlatState::Default,
+			MakeTaggedIconWidget(SNew(ST66TopBarGearGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.SettingsButton.Icon")),
+			&UT66FrontendTopBarWidget::HandleSettingsClicked,
+			TEXT("FrontendTopBar.SettingsButton"),
+			SettingsRect);
+		const TSharedRef<SWidget> LanguageButtonWidget = MakeIconActionButton(
+			ActiveSection == EFrontendSection::Language ? ET66FlatState::Selected : ET66FlatState::Default,
+			MakeTaggedIconWidget(SNew(ST66TopBarGlobeGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.GlobeButton.Icon")),
+			&UT66FrontendTopBarWidget::HandleLanguageClicked,
+			TEXT("FrontendTopBar.GlobeButton"),
+			LanguageRect);
+		const TSharedRef<SWidget> ProfileButtonWidget = MakeIconActionButton(
+			ActiveSection == EFrontendSection::Home ? ET66FlatState::Selected : ET66FlatState::Default,
+			MakeTaggedIconWidget(SNew(ST66TopBarProfileGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.ProfileButton.Icon")),
+			&UT66FrontendTopBarWidget::HandleHomeClicked,
+			TEXT("FrontendTopBar.ProfileButton"),
+			ProfileRect);
+		const TSharedRef<SWidget> PowerButtonWidget = MakeIconActionButton(
+			ET66FlatState::Selected,
+			MakeTaggedIconWidget(SNew(ST66TopBarPowerGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.PowerButton.Icon")),
+			&UT66FrontendTopBarWidget::HandleQuitClicked,
+			TEXT("FrontendTopBar.PowerButton"),
+			QuitRect);
+		PowerButtonWidget->SetToolTipText(QuitTooltipText);
+
+		const TSharedRef<SWidget> TicketIcon = MakeTaggedIcon(CurrencyIconBrush, FText::FromString(TEXT("T")), FVector2D(40.f, 40.f), TEXT("FrontendTopBar.TicketBadge.Icon"));
+		const TSharedRef<SWidget> TicketValue = FT66FlatStyle::MakeFlatLabel(
+			TAttribute<FText>::Create(TAttribute<FText>::FGetter::CreateUObject(this, &UT66FrontendTopBarWidget::GetChadCouponsValueText)),
+			ET66FlatLabelRole::Button,
+			ETextJustify::Center,
+			TEXT("FrontendTopBar.TicketBadge.Value"));
+		const TSharedRef<SConstraintCanvas> TicketCanvas = SNew(SConstraintCanvas);
+		TicketCanvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(36.f, 15.f, 40.f, 40.f))
+			[
+				TicketIcon
+			];
+		TicketCanvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(96.f, 18.f, 52.f, 30.f))
+			[
+				TicketValue
+			];
+		const TSharedRef<SWidget> TicketContent =
+			SNew(SBox)
+			.WidthOverride(FMath::Max(1.f, TicketRect.ReferenceWidth() - 16.f))
+			.HeightOverride(FMath::Max(1.f, TicketRect.ReferenceHeight() - 12.f))
+			[
+				TicketCanvas
+			];
+		const TSharedRef<SWidget> TicketBadgeWidget = FT66FlatStyle::MakeFlatToggleGroupButton(
+			ET66FlatState::Default,
+			TicketContent,
+			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandlePowerUpClicked),
+			FMargin(8.f, 6.f),
+			TicketRect.ReferenceWidth(),
+			TicketRect.ReferenceHeight(),
+			true,
+			TEXT("FrontendTopBar.TicketBadge"));
+
+		const TSharedRef<SConstraintCanvas> TopBarCanvas = SNew(SConstraintCanvas);
+		TopBarCanvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(OuterRect.ToReferenceOffset())
+			[
+				FT66FlatStyle::AttachMetadata(
+					SNew(SBox),
+					TEXT("FrontendTopBar.OuterContainer"),
+					TEXT("TransparentRegion"),
+					ET66FlatState::Default)
+			];
+
+		auto AddControl = [&TopBarCanvas](const FNormalizedTopBarRect& Rect, const TSharedRef<SWidget>& Widget)
+		{
+			TopBarCanvas->AddSlot()
+				.Alignment(FVector2D(0.f, 0.f))
+				.Offset(Rect.ToReferenceOffset())
+				[
+					Widget
+				];
+		};
+
+		AddControl(SettingsRect, SettingsButtonWidget);
+		AddControl(LanguageRect, LanguageButtonWidget);
+		AddControl(AccountRect, CategoryButtons[0]);
+		AddControl(ProfileRect, ProfileButtonWidget);
+		AddControl(PowerUpRect, CategoryButtons[1]);
+		AddControl(AchievementsRect, CategoryButtons[2]);
+		AddControl(MiniGamesRect, CategoryButtons[3]);
+		AddControl(TicketRect, TicketBadgeWidget);
+		AddControl(QuitRect, PowerButtonWidget);
+
+		const TSharedRef<SWidget> ReservedReferenceCanvas =
+			SNew(SBox)
+			.WidthOverride(T66MainMenuReferenceLayout::CanvasWidth)
+			.HeightOverride(GetTopBarReferenceReservedHeight())
+			[
+				TopBarCanvas
+			];
+
+		const float ReservedHeight = GetReservedHeight();
+		const FVector2D ViewportSize = GetEffectiveFrontendViewportSize();
+		const TSharedRef<SWidget> Root =
+			SNew(SBox)
+			.WidthOverride(FMath::Max(1.f, ViewportSize.X))
+			.HeightOverride(FMath::Max(1.f, ViewportSize.Y))
+			[
+				SNew(SVerticalBox)
+				.Visibility(EVisibility::SelfHitTestInvisible)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					SNew(SBox)
+					.HeightOverride(ReservedHeight)
+					[
+						SNew(SDPIScaler)
+						.DPIScale(TAttribute<float>::CreateLambda([]() -> float
+						{
+							return 1.f / FMath::Max(0.01f, FT66Style::GetEngineDPIScale());
+						}))
+						[
+							SNew(SScaleBox)
+							.Stretch(EStretch::ScaleToFitX)
+							.StretchDirection(EStretchDirection::Both)
+							[
+								ReservedReferenceCanvas
+							]
+						]
+					]
+				]
+				+ SVerticalBox::Slot()
+				.FillHeight(1.f)
+				[
+					SNullWidget::NullWidget
+				]
+			];
+
+		return FT66FlatStyle::AttachMetadata(
+			Root,
+			TEXT("FrontendTopBar.Root"),
+			TEXT("TopBarRoot"),
+			ET66FlatState::Default);
+	}
+
 	CachedViewportSize = GetEffectiveFrontendViewportSize();
 	bViewportResponsiveRebuildQueued = false;
 	RequestTopBarAssets();

@@ -16,6 +16,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/Texture2D.h"
 #include "Engine/Engine.h"
@@ -637,8 +638,732 @@ TSharedRef<SWidget> UT66MainMenuScreen::RebuildWidget()
 	return BuildSlateUI();
 }
 
+TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
+{
+	CachedViewportSize = GetEffectiveFrontendViewportSize();
+	LastBuiltViewportSize = CachedViewportSize;
+	PendingViewportSize = CachedViewportSize;
+	PendingViewportStableTime = 0.f;
+	bViewportResponsiveRebuildQueued = false;
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66PlayerSettingsSubsystem* PlayerSettings = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	UT66SteamHelper* SteamHelper = GI ? GI->GetSubsystem<UT66SteamHelper>() : nullptr;
+	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	LastBuiltLanguage = Loc ? Loc->GetCurrentLanguage() : ET66Language::English;
+	LastBuiltMenuStateHash = CaptureMenuStateHash();
+	FriendGroupWidgetRefs.Reset();
+	FriendRowWidgetRefs.Reset();
+	FriendGroupsDividerBox.Reset();
+	NoMatchingFriendsBox.Reset();
+
+	FString AutomationDumpPath;
+	const bool bAutomationDump = FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpScreen="), AutomationDumpPath);
+
+	const FString LocalSteamName = SteamHelper ? SteamHelper->GetLocalDisplayName() : FString();
+	const FText ProfileNameText = (!bAutomationDump && !LocalSteamName.IsEmpty())
+		? FText::FromString(LocalSteamName)
+		: NSLOCTEXT("T66.MainMenu", "ProfileNameFallback", "Local Player");
+	const int32 ProfileLevel = bAutomationDump ? 1 : (Achievements ? Achievements->GetAccountLevel() : 1);
+	const int32 ProfileMaxLevel = Achievements ? Achievements->GetAccountMaxLevel() : UT66AchievementsSubsystem::AccountMaxLevel;
+	const int32 ProfileNextLevel = bAutomationDump ? 2 : (Achievements ? Achievements->GetAccountNextLevel() : 2);
+	const float ProfileLevelProgress = bAutomationDump ? 0.58f : (Achievements ? Achievements->GetAccountLevelProgress01() : 0.58f);
+	const FText ProfileLevelText = FText::Format(
+		NSLOCTEXT("T66.MainMenu", "ProfileLevelFormat", "Level {0}/{1}"),
+		FText::AsNumber(ProfileLevel),
+		FText::AsNumber(ProfileMaxLevel));
+	const FText ProfileNextLevelText = FText::Format(
+		NSLOCTEXT("T66.MainMenu", "ProfileNextLevelFormat", "Level {0}"),
+		FText::AsNumber(ProfileNextLevel));
+
+	const int32 OnlineFriendCount = bAutomationDump || !PartySubsystem ? 0 : Algo::CountIf(PartySubsystem->GetFriends(), [](const FT66PartyFriendEntry& Friend)
+	{
+		return Friend.bOnline;
+	});
+	const int32 OfflineFriendCount = bAutomationDump || !PartySubsystem ? 0 : Algo::CountIf(PartySubsystem->GetFriends(), [](const FT66PartyFriendEntry& Friend)
+	{
+		return !Friend.bOnline;
+	});
+
+	const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
+	const FName LeaderboardFilterGroup(TEXT("MainMenuLeaderboardFilter"));
+	const FName LeaderboardScopeGroup(TEXT("MainMenuLeaderboardScope"));
+
+	auto Tag = [](const TCHAR* Name) -> FName
+	{
+		return FName(Name);
+	};
+
+	auto MakeSized = [](const float Width, const float Height, const TSharedRef<SWidget>& Child) -> TSharedRef<SWidget>
+	{
+		return SNew(SBox)
+			.WidthOverride(Width)
+			.HeightOverride(Height)
+			[
+				Child
+			];
+	};
+
+	auto MakeSpacerPanel = [](const FName InTag, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatPanel(
+			State,
+			FMargin(0.f),
+			SNew(SSpacer),
+			nullptr,
+			InTag);
+	};
+
+	auto MakeLabelBox = [MakeSized](const FText& Text, const ET66FlatLabelRole Role, const FName InTag, const float Width, const float Height, const ETextJustify::Type Justification = ETextJustify::Left) -> TSharedRef<SWidget>
+	{
+		return MakeSized(
+			Width,
+			Height,
+			SNew(SBox)
+			.HAlign(Justification == ETextJustify::Right ? HAlign_Right : (Justification == ETextJustify::Center ? HAlign_Center : HAlign_Left))
+			.VAlign(VAlign_Center)
+			[
+				FT66FlatStyle::MakeFlatLabel(Text, Role, Justification, InTag)
+			]);
+	};
+
+	auto MakeTitleRegion = [&]() -> TSharedRef<SWidget>
+	{
+		TSharedRef<SVerticalBox> Column = SNew(SVerticalBox);
+		Column->AddSlot()
+			.AutoHeight()
+			[
+				SNew(SBox)
+				.HeightOverride(172.f)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Bottom)
+				[
+					FT66FlatStyle::MakeFlatLabel(
+						NSLOCTEXT("T66.MainMenu", "FlatTitle", "TRIBULATION 66"),
+						ET66FlatLabelRole::Title,
+						ETextJustify::Center,
+						Tag(TEXT("MainMenu.Center.Title")))
+				]
+			];
+		Column->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 14.f, 0.f, 0.f)
+			[
+				SNew(SBox)
+				.HeightOverride(58.f)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					FT66FlatStyle::MakeFlatLabel(
+						NSLOCTEXT("T66.MainMenu", "BloodyRetroSubtitle", "If you're not Chad it's over"),
+						ET66FlatLabelRole::Header,
+						ETextJustify::Center,
+						Tag(TEXT("MainMenu.Center.Subtitle")))
+				]
+			];
+
+		return FT66FlatStyle::AttachMetadata(
+			MakeSized(760.f, 265.f, Column),
+			Tag(TEXT("MainMenu.Center.TitleRegion")),
+			TEXT("TitleRegion"),
+			ET66FlatState::Default);
+	};
+
+	auto MakeCtaButton = [&](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const ET66FlatState State, const float Width, const float Height, const FName InTag) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatButton(
+			State,
+			Text,
+			FOnClicked::CreateUObject(this, ClickFunc),
+			nullptr,
+			nullptr,
+			FMargin(18.f, 8.f),
+			Width,
+			Height,
+			true,
+			Height > 110.f ? 32 : 26,
+			InTag);
+	};
+
+	auto MakeProfileButton = [&]() -> TSharedRef<SWidget>
+	{
+		TSharedRef<SVerticalBox> ProfileInfo = SNew(SVerticalBox);
+		ProfileInfo->AddSlot()
+			.AutoHeight()
+			[
+				MakeLabelBox(ProfileNameText, ET66FlatLabelRole::Header, Tag(TEXT("MainMenu.Left.ProfileName")), 314.f, 38.f)
+			];
+		ProfileInfo->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 4.f, 0.f, 0.f)
+			[
+				MakeLabelBox(ProfileLevelText, ET66FlatLabelRole::Body, Tag(TEXT("MainMenu.Left.ProfileLevel")), 314.f, 26.f)
+			];
+		ProfileInfo->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 8.f, 0.f, 0.f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				.VAlign(VAlign_Center)
+				[
+					FT66FlatStyle::MakeFlatProgressBar(
+						TAttribute<float>(FMath::Clamp(ProfileLevelProgress, 0.f, 1.f)),
+						TOptional<FLinearColor>(),
+						Tag(TEXT("MainMenu.Left.ProfileProgress")))
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(10.f, 0.f, 0.f, 0.f)
+				.VAlign(VAlign_Center)
+				[
+					MakeLabelBox(ProfileNextLevelText, ET66FlatLabelRole::Caption, Tag(TEXT("MainMenu.Left.ProfileNextLevel")), 72.f, 24.f, ETextJustify::Right)
+				]
+			];
+
+		TSharedRef<SWidget> Content = SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				FT66FlatStyle::MakeFlatPortraitSlot(
+					ET66FlatState::Selected,
+					nullptr,
+					nullptr,
+					FVector2D(76.f, 76.f),
+					Tag(TEXT("MainMenu.Left.ProfileAvatar")))
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.f)
+			.Padding(14.f, 0.f, 0.f, 0.f)
+			.VAlign(VAlign_Center)
+			[
+				ProfileInfo
+			];
+
+		return FT66FlatStyle::MakeFlatToggleGroupButton(
+			ET66FlatState::Default,
+			Content,
+			FOnClicked::CreateLambda([this]()
+			{
+				OnAccountStatusClicked();
+				return FReply::Handled();
+			}),
+			FMargin(12.f),
+			424.f,
+			108.f,
+			true,
+			Tag(TEXT("MainMenu.Left.ProfileButton")));
+	};
+
+	auto MakeSearchField = [&]() -> TSharedRef<SWidget>
+	{
+		TSharedRef<SWidget> SearchContent = SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				FT66FlatStyle::MakeFlatLabel(
+					FText::FromString(TEXT("?")),
+					ET66FlatLabelRole::PurpleAccent,
+					ETextJustify::Center,
+					Tag(TEXT("MainMenu.Left.SearchIcon")))
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.f)
+			.Padding(14.f, 0.f, 0.f, 0.f)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SEditableTextBox)
+				.Text(FText::FromString(FriendSearchQuery))
+				.OnTextChanged_UObject(this, &UT66MainMenuScreen::HandleFriendSearchTextChanged)
+				.HintText(NSLOCTEXT("T66.MainMenu", "FriendSearchHint", "Search friends..."))
+				.Font(FT66FlatStyle::MakeFont(18))
+				.ForegroundColor(FT66FlatStyle::PrimaryText())
+				.BackgroundColor(FLinearColor::Transparent)
+			];
+
+		return FT66FlatStyle::MakeFlatInteractivePanel(
+			ET66FlatState::Default,
+			FMargin(14.f, 8.f),
+			SearchContent,
+			true,
+			Tag(TEXT("MainMenu.Left.SearchField")),
+			TEXT("SearchField"));
+	};
+
+	auto MakeFriendGroupToggle = [&](const bool bOnlineGroup, const FText& LabelText, const int32 Count, const FName ToggleTag, const FName LabelTag, const FName CountTag) -> TSharedRef<SWidget>
+	{
+		TSharedRef<SWidget> Content = SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				FT66FlatStyle::MakeFlatLabel(
+					FText::FromString(bOnlineGroup ? TEXT("v") : TEXT(">")),
+					ET66FlatLabelRole::PurpleAccent,
+					ETextJustify::Center)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(10.f, 0.f, 0.f, 0.f)
+			.VAlign(VAlign_Center)
+			[
+				FT66FlatStyle::MakeFlatLabel(LabelText, ET66FlatLabelRole::Header, ETextJustify::Left, LabelTag)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(8.f, 0.f, 0.f, 0.f)
+			.VAlign(VAlign_Center)
+			[
+				FT66FlatStyle::MakeFlatLabel(
+					FText::Format(NSLOCTEXT("T66.MainMenu", "FriendsGroupCount", "({0})"), FText::AsNumber(Count)),
+					ET66FlatLabelRole::Header,
+					ETextJustify::Left,
+					CountTag)
+			];
+
+		return FT66FlatStyle::MakeFlatToggleGroupButton(
+			ET66FlatState::Default,
+			Content,
+			FOnClicked::CreateLambda([this, bOnlineGroup]()
+			{
+				if (bOnlineGroup)
+				{
+					bShowOnlineFriends = !bShowOnlineFriends;
+				}
+				else
+				{
+					bShowOfflineFriends = !bShowOfflineFriends;
+				}
+				RequestDeferredSlateRebuild();
+				return FReply::Handled();
+			}),
+			FMargin(8.f, 2.f),
+			424.f,
+			32.f,
+			true,
+			ToggleTag);
+	};
+
+	auto MakePartySlots = [&]() -> TSharedRef<SWidget>
+	{
+		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox);
+		for (int32 SlotIndex = 0; SlotIndex < 4; ++SlotIndex)
+		{
+			const FString TagName = FString::Printf(TEXT("MainMenu.Left.PartySlot%02d"), SlotIndex + 1);
+			Row->AddSlot()
+				.AutoWidth()
+				.Padding(SlotIndex == 0 ? FMargin(0.f) : FMargin(10.f, 0.f, 0.f, 0.f))
+				[
+					FT66FlatStyle::MakeFlatPortraitSlot(
+						SlotIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default,
+						nullptr,
+						nullptr,
+						FVector2D(78.f, 78.f),
+						FName(*TagName))
+				];
+		}
+		return Row;
+	};
+
+	auto MakeLeftPanel = [&]() -> TSharedRef<SWidget>
+	{
+		TSharedRef<SConstraintCanvas> LeftCanvas = SNew(SConstraintCanvas);
+		LeftCanvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(0.f, 16.f, 424.f, 108.f))
+			[
+				MakeProfileButton()
+			];
+		LeftCanvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(0.f, 136.f, 424.f, 60.f))
+			[
+				MakeSearchField()
+			];
+		LeftCanvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(0.f, 207.f, 424.f, 463.f))
+			[
+				FT66FlatStyle::AttachMetadata(
+					MakeSized(424.f, 463.f,
+						SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						MakeFriendGroupToggle(
+							true,
+							NSLOCTEXT("T66.MainMenu", "OnlineFriendsHeader", "ONLINE"),
+							OnlineFriendCount,
+							Tag(TEXT("MainMenu.Left.OnlineToggle")),
+							Tag(TEXT("MainMenu.Left.OnlineLabel")),
+							Tag(TEXT("MainMenu.Left.OnlineCount")))
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 18.f, 0.f, 0.f)
+					[
+						MakeFriendGroupToggle(
+							false,
+							NSLOCTEXT("T66.MainMenu", "OfflineFriendsHeader", "OFFLINE"),
+							OfflineFriendCount,
+							Tag(TEXT("MainMenu.Left.OfflineToggle")),
+							Tag(TEXT("MainMenu.Left.OfflineLabel")),
+							Tag(TEXT("MainMenu.Left.OfflineCount")))
+					]),
+					Tag(TEXT("MainMenu.Left.FriendsPanel")),
+					TEXT("FriendsPanel"),
+					ET66FlatState::Default)
+			];
+		LeftCanvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(0.f, 678.f, 424.f, 164.f))
+			[
+				FT66FlatStyle::AttachMetadata(
+					MakeSized(424.f, 164.f,
+						SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						MakeLabelBox(
+							NSLOCTEXT("T66.MainMenu", "PartySection", "PARTY"),
+							ET66FlatLabelRole::Header,
+							Tag(TEXT("MainMenu.Left.PartyLabel")),
+							424.f,
+							32.f)
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 14.f, 0.f, 0.f)
+					[
+						MakePartySlots()
+					]),
+					Tag(TEXT("MainMenu.Left.PartyPanel")),
+					TEXT("PartyPanel"),
+					ET66FlatState::Default)
+			];
+
+		return FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(20.f),
+			LeftCanvas,
+			nullptr,
+			Tag(TEXT("MainMenu.Left.Panel")));
+	};
+
+	auto MakeCtaStack = [&]() -> TSharedRef<SWidget>
+	{
+		TSharedRef<SConstraintCanvas> CtaCanvas = SNew(SConstraintCanvas);
+		CtaCanvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(0.f, 0.f, 720.f, 132.f))
+			[
+				MakeCtaButton(
+					NSLOCTEXT("T66.MainMenu", "EnterTribulation", "ENTER TRIBULATION"),
+					&UT66MainMenuScreen::HandleNewGameClicked,
+					ET66FlatState::Selected,
+					720.f,
+					132.f,
+					Tag(TEXT("MainMenu.Center.EnterTribulationButton")))
+			];
+		CtaCanvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(117.f, 148.f, 486.f, 92.f))
+			[
+				MakeCtaButton(
+					NSLOCTEXT("T66.MainMenu", "Continue", "LOAD GAME"),
+					&UT66MainMenuScreen::HandleLoadGameClicked,
+					ET66FlatState::Default,
+					486.f,
+					92.f,
+					Tag(TEXT("MainMenu.Center.LoadGameButton")))
+			];
+		CtaCanvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(117.f, 254.f, 486.f, 92.f))
+			[
+				MakeCtaButton(
+					NSLOCTEXT("T66.MainMenu", "DailyDescent", "DAILY DESCENT"),
+					&UT66MainMenuScreen::HandleDailyDescentClicked,
+					ET66FlatState::Default,
+					486.f,
+					92.f,
+					Tag(TEXT("MainMenu.Center.DailyDescentButton")))
+			];
+
+		return FT66FlatStyle::AttachMetadata(
+			MakeSized(720.f, 346.f, CtaCanvas),
+			Tag(TEXT("MainMenu.Center.CtaStack")),
+			TEXT("CtaStack"),
+			ET66FlatState::Default);
+	};
+
+	auto MakeFilterButton = [&](const int32 FilterIndex, const FText& Label, const FName InTag) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatButton(
+			FlatMainMenuLeaderboardFilterIndex == FilterIndex ? ET66FlatState::Selected : ET66FlatState::Default,
+			Label,
+			FOnClicked::CreateLambda([this, FilterIndex]()
+			{
+				FlatMainMenuLeaderboardFilterIndex = FilterIndex;
+				RequestDeferredSlateRebuild();
+				return FReply::Handled();
+			}),
+			nullptr,
+			nullptr,
+			FMargin(8.f),
+			136.f,
+			72.f,
+			true,
+			18,
+			InTag,
+			LeaderboardFilterGroup);
+	};
+
+	auto MakeScopeButton = [&](const int32 ScopeIndex, const FText& Label, const FName InTag) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatButton(
+			FlatMainMenuLeaderboardScopeIndex == ScopeIndex ? ET66FlatState::Selected : ET66FlatState::Default,
+			Label,
+			FOnClicked::CreateLambda([this, ScopeIndex]()
+			{
+				FlatMainMenuLeaderboardScopeIndex = ScopeIndex;
+				RequestDeferredSlateRebuild();
+				return FReply::Handled();
+			}),
+			nullptr,
+			nullptr,
+			FMargin(10.f, 6.f),
+			215.f,
+			57.f,
+			true,
+			18,
+			InTag,
+			LeaderboardScopeGroup);
+	};
+
+	auto MakeFlatDropdown = [&](const FText& Label, const FName InTag) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatDropdown(
+			ET66FlatState::Default,
+			TAttribute<FText>(Label),
+			[]()
+			{
+				return StaticCastSharedRef<SWidget>(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						FT66FlatStyle::MakeFlatLabel(FText::FromString(TEXT("GLOBAL")), ET66FlatLabelRole::Body)
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						FT66FlatStyle::MakeFlatLabel(FText::FromString(TEXT("FRIENDS")), ET66FlatLabelRole::Body)
+					]);
+			},
+			false,
+			215.f,
+			57.f,
+			18,
+			InTag);
+	};
+
+	auto MakeRankingRow = [&](const FString& Rank, const FString& Name, const FString& Score, const FName InTag) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Default,
+			FText::FromString(FString::Printf(TEXT("%s %s %s"), *Rank, *Name, *Score)),
+			FOnClicked::CreateLambda([]()
+			{
+				return FReply::Handled();
+			}),
+			nullptr,
+			nullptr,
+			FMargin(10.f, 4.f),
+			426.f,
+			40.f,
+			true,
+			18,
+			InTag);
+	};
+
+	auto MakeRightPanel = [&]() -> TSharedRef<SWidget>
+	{
+		TSharedRef<SVerticalBox> Column = SNew(SVerticalBox);
+		Column->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 30.f, 0.f, 0.f)
+			[
+				FT66FlatStyle::MakeFlatLabel(
+					NSLOCTEXT("T66.Leaderboard", "GlobalChadRanking", "GLOBAL CHAD RANKING"),
+					ET66FlatLabelRole::Header,
+					ETextJustify::Center,
+					Tag(TEXT("MainMenu.Right.LeaderboardHeader")))
+			];
+		Column->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 18.f, 0.f, 0.f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				[
+					MakeScopeButton(0, FText::FromString(TEXT("SCORE")), Tag(TEXT("MainMenu.Right.ScoreScopeButton")))
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(10.f, 0.f, 0.f, 0.f)
+				[
+					MakeScopeButton(1, FText::FromString(TEXT("SPEED RUN")), Tag(TEXT("MainMenu.Right.SpeedrunScopeButton")))
+				]
+			];
+		Column->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 8.f, 0.f, 0.f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				[
+					MakeFlatDropdown(FText::FromString(TEXT("GLOBAL")), Tag(TEXT("MainMenu.Right.TypeDropdown")))
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(10.f, 0.f, 0.f, 0.f)
+				[
+					MakeFlatDropdown(FText::FromString(TEXT("SOLO")), Tag(TEXT("MainMenu.Right.ModeDropdown")))
+				]
+			];
+		Column->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 25.f, 0.f, 0.f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				[
+					MakeLabelBox(FText::FromString(TEXT("RANK")), ET66FlatLabelRole::SubHeader, Tag(TEXT("MainMenu.Right.RankHeader")), 82.f, 26.f)
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				[
+					MakeLabelBox(FText::FromString(TEXT("NAME")), ET66FlatLabelRole::SubHeader, Tag(TEXT("MainMenu.Right.NameHeader")), 270.f, 26.f)
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				[
+					MakeLabelBox(FText::FromString(TEXT("SCORE")), ET66FlatLabelRole::SubHeader, Tag(TEXT("MainMenu.Right.ScoreHeader")), 80.f, 26.f, ETextJustify::Right)
+				]
+			];
+
+		const TArray<TTuple<FString, FString, FString, FName>> Rows = {
+			MakeTuple(FString(TEXT("#1")), FString(TEXT("CROWNED CHAD")), FString(TEXT("184250")), Tag(TEXT("MainMenu.Right.RankingRow01"))),
+			MakeTuple(FString(TEXT("#2")), FString(TEXT("PIXEL WIZARD")), FString(TEXT("171900")), Tag(TEXT("MainMenu.Right.RankingRow02"))),
+			MakeTuple(FString(TEXT("#3")), FString(TEXT("BOSS DELETE")), FString(TEXT("165420")), Tag(TEXT("MainMenu.Right.RankingRow03"))),
+			MakeTuple(FString(TEXT("#4")), FString(TEXT("RUN GOD")), FString(TEXT("158760")), Tag(TEXT("MainMenu.Right.RankingRow04"))),
+			MakeTuple(FString(TEXT("#5")), FString(TEXT("NO HIT NATE")), FString(TEXT("151300")), Tag(TEXT("MainMenu.Right.RankingRow05"))),
+			MakeTuple(FString(TEXT("#6")), FString(TEXT("CRIT QUEEN")), FString(TEXT("146880")), Tag(TEXT("MainMenu.Right.RankingRow06"))),
+			MakeTuple(FString(TEXT("#7")), FString(TEXT("LOOT LARRY")), FString(TEXT("139440")), Tag(TEXT("MainMenu.Right.RankingRow07"))),
+			MakeTuple(FString(TEXT("#8")), FString(TEXT("STAGE SKIP")), FString(TEXT("133910")), Tag(TEXT("MainMenu.Right.RankingRow08"))),
+			MakeTuple(FString(TEXT("#9")), FString(TEXT("MAGE MAIN")), FString(TEXT("128650")), Tag(TEXT("MainMenu.Right.RankingRow09"))),
+			MakeTuple(FString(TEXT("#42")), FString(TEXT("DOPRA")), FString(TEXT("118700")), Tag(TEXT("MainMenu.Right.RankingRowLocal")))
+		};
+
+		for (int32 RowIndex = 0; RowIndex < Rows.Num(); ++RowIndex)
+		{
+			Column->AddSlot()
+				.AutoHeight()
+				.Padding(0.f, RowIndex == 0 ? 12.f : 9.f, 0.f, 0.f)
+				[
+					MakeRankingRow(
+						Rows[RowIndex].Get<0>(),
+						Rows[RowIndex].Get<1>(),
+						Rows[RowIndex].Get<2>(),
+						Rows[RowIndex].Get<3>())
+				];
+		}
+
+		return FT66FlatStyle::AttachMetadata(
+			MakeSized(440.f, 764.f, Column),
+			Tag(TEXT("MainMenu.Right.LeaderboardPanel")),
+			TEXT("LeaderboardPanel"),
+			ET66FlatState::Default);
+	};
+
+	TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
+	auto AddCanvasSlot = [Canvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+	{
+		Canvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X, Y, W, H))
+			[
+				Widget
+			];
+	};
+
+	AddCanvasSlot(0.f, 0.f, 1920.f, 1080.f, MakeSpacerPanel(Tag(TEXT("MainMenu.BackgroundRegion"))));
+	AddCanvasSlot(16.f, 148.f, 464.f, 884.f, MakeLeftPanel());
+	AddCanvasSlot(558.f, 350.f, 760.f, 265.f, MakeTitleRegion());
+	AddCanvasSlot(600.f, 650.f, 720.f, 346.f, MakeCtaStack());
+	AddCanvasSlot(1424.f, 148.f, 476.f, 884.f, MakeSpacerPanel(Tag(TEXT("MainMenu.Right.Panel"))));
+	AddCanvasSlot(1435.f, 149.f, 136.f, 72.f, MakeFilterButton(0, FText::FromString(TEXT("WORLD")), Tag(TEXT("MainMenu.Right.FilterWorldButton"))));
+	AddCanvasSlot(1585.f, 149.f, 136.f, 72.f, MakeFilterButton(1, FText::FromString(TEXT("FRIENDS")), Tag(TEXT("MainMenu.Right.FilterFriendsButton"))));
+	AddCanvasSlot(1735.f, 149.f, 136.f, 72.f, MakeFilterButton(2, FText::FromString(TEXT("STREAM")), Tag(TEXT("MainMenu.Right.FilterStreamersButton"))));
+	AddCanvasSlot(1442.f, 250.f, 440.f, 764.f, MakeRightPanel());
+
+	const FVector2D MainMenuViewportSize = GetEffectiveFrontendViewportSize();
+	TSharedRef<SWidget> RootContent =
+		SNew(SBox)
+		.WidthOverride(1920.f)
+		.HeightOverride(1080.f)
+		[
+			Canvas
+		];
+
+	TSharedRef<SWidget> Root =
+		FT66FlatStyle::AttachMetadata(
+			SNew(SBox)
+			.WidthOverride(FMath::Max(1.f, MainMenuViewportSize.X))
+			.HeightOverride(FMath::Max(1.f, MainMenuViewportSize.Y))
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FT66FlatStyle::BackgroundColor())
+				.Padding(0.f)
+				[
+					SNew(SDPIScaler)
+					.DPIScale(TAttribute<float>::CreateLambda([]() -> float
+					{
+						return 1.f / FMath::Max(0.01f, FT66Style::GetEngineDPIScale());
+					}))
+					[
+						SNew(SScaleBox)
+						.Stretch(EStretch::ScaleToFit)
+						.StretchDirection(EStretchDirection::Both)
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							RootContent
+						]
+					]
+				]
+			],
+			Tag(TEXT("MainMenu.Root")),
+			TEXT("Root"),
+			ET66FlatState::Default);
+
+	return Root;
+}
+
 TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 {
+	return BuildFlatMainMenuUI();
 	RequestBackgroundTexture();
 	RequestMainMenuChromeBrushes();
 	RequestCTAButtonBrushes();
@@ -2281,7 +3006,7 @@ void UT66MainMenuScreen::OnScreenActivated_Implementation()
 	UE_LOG(LogT66MainMenu, Verbose, TEXT("MainMenuScreen activated."));
 
 	// Important: Screen UI can be built before UIManager is assigned by UT66UIManager.
-	// Inject it here so the leaderboard panel can open modals on row click.
+	// Inject it here so the deferred legacy leaderboard panel can open modals if that branch is ever restored.
 	if (LeaderboardPanel.IsValid())
 	{
 		LeaderboardPanel->SetUIManager(UIManager);

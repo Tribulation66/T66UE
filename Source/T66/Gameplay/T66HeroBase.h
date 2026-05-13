@@ -16,7 +16,6 @@ class UMaterial;
 class UMaterialInstanceDynamic;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
-class UWidgetComponent;
 class UAnimationAsset;
 class AT66PilotableTractor;
 class UT66HeroMovementComponent;
@@ -122,10 +121,6 @@ public:
 	/** Inner ring at 90%% of attack range (long range damage zone). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
 	TObjectPtr<UInstancedStaticMeshComponent> LongRangeRingISM;
-
-	/** Auto-attack cooldown bar below the hero's feet. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
-	TObjectPtr<UWidgetComponent> CooldownBarWidgetComponent;
 
 	// ========== Future FBX Support ==========
 	// When ready for production models:
@@ -283,10 +278,6 @@ private:
 	static constexpr float TerrainRecoveryMissingGroundDistance = 2500.f;
 	static constexpr float GroundTraceIntervalGrounded = 0.075f;
 	static constexpr float GroundTraceIntervalFalling = 0.066f;
-
-	/** When cooldown bar shows full (1), keep it at full for this long (seconds). */
-	float CooldownDisplayHoldUntil = -1.f;
-	static constexpr float CooldownBarHoldFullDuration = 0.01f;
 
 	// Enemy touch damage + bounce (hero-side proximity check when collision is Block)
 	float LastEnemyTouchDamageTime = -9999.f;

@@ -8,8 +8,8 @@
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
 #include "UI/T66TDUIStyle.h"
-#include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
 #include "Widgets/Images/SImage.h"
@@ -53,76 +53,31 @@ namespace
 			];
 	}
 
-	const FSlateBrush* ResolveScreenBrush(
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
-		const TCHAR* RelativePath,
-		const FMargin& Margin,
-		const TCHAR* DebugLabel)
-	{
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
-			Margin,
-			DebugLabel);
-	}
-
 	const FSlateBrush* TDDifficultyLeftPanelBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveScreenBrush(
-			Entry,
-			T66TDUI::MasterBasicPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			TEXT("TDDifficultyMasterLeftPanel"));
+		return T66TDUI::WhiteBrush();
 	}
 
 	const FSlateBrush* TDDifficultyCenterPanelBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveScreenBrush(
-			Entry,
-			T66TDUI::MasterBasicPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			TEXT("TDDifficultyMasterCenterPanel"));
+		return T66TDUI::WhiteBrush();
 	}
 
 	const FSlateBrush* TDDifficultyRightPanelBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveScreenBrush(
-			Entry,
-			T66TDUI::MasterBasicPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			TEXT("TDDifficultyMasterRightPanel"));
+		return T66TDUI::WhiteBrush();
 	}
 
 	const FSlateBrush* TDDifficultyItemBrush(const bool bIsSelected)
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush NormalEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush SelectedEntry;
-		return ResolveScreenBrush(
-			bIsSelected ? SelectedEntry : NormalEntry,
-			T66TDUI::MasterInnerPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			bIsSelected ? TEXT("TDDifficultyMasterItemSelected") : TEXT("TDDifficultyMasterItem"));
+		return T66TDUI::WhiteBrush();
 	}
 
 	const FSlateBrush* TDDifficultyMapCardBrush(const bool bIsSelected)
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush NormalEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush SelectedEntry;
-		return ResolveScreenBrush(
-			bIsSelected ? SelectedEntry : NormalEntry,
-			T66TDUI::MasterInnerPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			bIsSelected ? TEXT("TDMasterMapCardSelected") : TEXT("TDMasterMapCard"));
+		return T66TDUI::WhiteBrush();
 	}
 
-	const FSlateBrush* TDDifficultyButtonBrush(const ET66ButtonType Type)
-	{
-		return T66TDUI::ButtonPlateBrush(Type);
-	}
 }
 
 UT66TDDifficultySelectScreen::UT66TDDifficultySelectScreen(const FObjectInitializer& ObjectInitializer)
@@ -291,14 +246,6 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 	}
 
 	const TSharedPtr<FSlateBrush> SelectedMapBackgroundBrush = SelectedMap ? FindOrLoadMapBrush(SelectedMap->BackgroundRelativePath) : nullptr;
-	FT66ButtonParams StartButtonParams = T66TDUI::MakePrimaryButtonParams(
-		NSLOCTEXT("T66TD.Difficulty", "StartMatch", "START MATCH"),
-		FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleStartMatchClicked),
-		308.f,
-		48.f,
-		14);
-	StartButtonParams.SetDotaPlateOverrideBrush(TDDifficultyButtonBrush(ET66ButtonType::Success));
-
 	const TSharedRef<SWidget> SummaryPanel =
 		T66TDUI::MakeGeneratedPanel(
 			SNew(SVerticalBox)
@@ -366,20 +313,23 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 			[
-				FT66Style::MakeButton(StartButtonParams)
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Selected,
+					NSLOCTEXT("T66TD.Difficulty", "StartMatch", "START MATCH"),
+					FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleStartMatchClicked),
+					nullptr,
+					nullptr,
+					FMargin(14.f, 8.f, 14.f, 6.f),
+					308.f,
+					48.f,
+					true,
+					14,
+					TEXT("TDDifficulty.Button.StartMatch"))
 			]
 			,
 			TDDifficultyRightPanelBrush(),
 			ShellFill,
 			FMargin(24.f, 22.f));
-
-	FT66ButtonParams BackButtonParams = T66TDUI::MakeUtilityButtonParams(
-		NSLOCTEXT("T66TD.Difficulty", "BackToTDMenu", "BACK TO TD"),
-		FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleBackClicked),
-		304.f,
-		44.f,
-		10);
-	BackButtonParams.SetDotaPlateOverrideBrush(TDDifficultyButtonBrush(ET66ButtonType::Neutral));
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -402,7 +352,18 @@ TSharedRef<SWidget> UT66TDDifficultySelectScreen::BuildSlateUI()
 				.WidthOverride(304.f)
 				.HeightOverride(44.f)
 				[
-					FT66Style::MakeButton(BackButtonParams)
+					FT66FlatStyle::MakeFlatButton(
+						ET66FlatState::Default,
+						NSLOCTEXT("T66TD.Difficulty", "BackToTDMenu", "BACK TO TD"),
+						FOnClicked::CreateUObject(this, &UT66TDDifficultySelectScreen::HandleBackClicked),
+						nullptr,
+						nullptr,
+						FMargin(12.f, 4.f, 12.f, 3.f),
+						304.f,
+						44.f,
+						true,
+						10,
+						TEXT("TDDifficulty.Button.Back"))
 				]
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Top).Padding(430.f, 46.f, 120.f, 0.f)

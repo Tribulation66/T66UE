@@ -12,6 +12,12 @@ Read in order:
 6. [05_UNREAL_IMPORT_AND_VALIDATION.md](05_UNREAL_IMPORT_AND_VALIDATION.md)
 7. [06_RUN_HISTORY_AND_KNOWN_ISSUES.md](06_RUN_HISTORY_AND_KNOWN_ISSUES.md)
 
+Candidate pipelines:
+
+- [../Pixal3D/README.md](../Pixal3D/README.md)
+- [07_PIXAL3D_RUNPOD_SETUP.md](07_PIXAL3D_RUNPOD_SETUP.md)
+- [08_PIXAL3D_TROUBLESHOOTING.md](08_PIXAL3D_TROUBLESHOOTING.md)
+
 ## Retention Rule
 
 Keep reusable decisions here. Do not keep full generated runs, Blender scenes, logs, screenshots, local access files, or one-off handoff prompts after the task is complete.

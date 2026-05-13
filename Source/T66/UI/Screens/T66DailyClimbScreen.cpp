@@ -12,6 +12,7 @@
 #include "Misc/Paths.h"
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66ReferenceLayout.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
@@ -23,6 +24,7 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SSpacer.h"
@@ -709,6 +711,190 @@ void UT66DailyClimbScreen::RefreshContinueAvailability()
 
 TSharedRef<SWidget> UT66DailyClimbScreen::BuildSlateUI()
 {
+	{
+		constexpr float CanvasW = 1920.f;
+		constexpr float CanvasH = 1080.f;
+
+		auto DTag = [](const TCHAR* Name) -> FName
+		{
+			return FName(Name ? Name : TEXT(""));
+		};
+
+		auto MakeLabel = [DTag](
+			const FName Tag,
+			const FText& Text,
+			const int32 FontSize,
+			const FLinearColor& Color,
+			const ETextJustify::Type Justification = ETextJustify::Left) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(
+				SNew(STextBlock)
+				.Text(Text)
+				.Font(FontSize >= 20 ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+				.ColorAndOpacity(Color)
+				.Justification(Justification)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds),
+				Tag,
+				TEXT("Label"),
+				ET66FlatState::Default,
+				TOptional<FLinearColor>(),
+				false,
+				NAME_None,
+				true);
+		};
+
+		auto MakePanel = [](const ET66FlatState State, const FName Tag) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::MakeFlatPanel(State, FMargin(0.f), SNew(SBox), nullptr, Tag);
+		};
+
+		auto MakeColorRect = [DTag](const FLinearColor& Color, const FName Tag) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(Color),
+				Tag,
+				TEXT("Divider"),
+				ET66FlatState::Selected,
+				Color,
+				false,
+				NAME_None,
+				false);
+		};
+
+		auto MakeInfoRow = [DTag, MakeLabel](const TCHAR* BaseTag, const FText& Label, const FText& Value) -> TSharedRef<SWidget>
+		{
+			const FString Base(BaseTag ? BaseTag : TEXT(""));
+			return FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(12.f, 8.f),
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+				[
+					MakeLabel(FName(*(Base + TEXT(".Icon"))), FText::FromString(TEXT("i")), 18, FT66FlatStyle::PurpleAccent(), ETextJustify::Center)
+				]
+				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+				[
+					MakeLabel(FName(*(Base + TEXT(".Label"))), Label, 16, FT66FlatStyle::PurpleAccent())
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					MakeLabel(FName(*(Base + TEXT(".Value"))), Value, 18, FT66FlatStyle::PrimaryText(), ETextJustify::Right)
+				],
+				nullptr,
+				FName(*Base));
+		};
+
+		auto MakeModifierRow = [DTag, MakeLabel](const TCHAR* BaseTag, const FText& Name, const FText& Description) -> TSharedRef<SWidget>
+		{
+			const FString Base(BaseTag ? BaseTag : TEXT(""));
+			return FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(14.f, 8.f),
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					MakeLabel(FName(*(Base + TEXT(".Name"))), Name, 17, FT66FlatStyle::PrimaryText())
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+				[
+					MakeLabel(FName(*(Base + TEXT(".Description"))), Description, 14, FT66FlatStyle::SecondaryText())
+				],
+				nullptr,
+				FName(*Base));
+		};
+
+		auto MakeRankRow = [DTag, MakeLabel](const TCHAR* BaseTag, const FText& Rank, const FText& Name, const FText& Score) -> TSharedRef<SWidget>
+		{
+			const FString Base(BaseTag ? BaseTag : TEXT(""));
+			return FT66FlatStyle::AttachMetadata(
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().FillWidth(0.18f).VAlign(VAlign_Center)
+				[
+					MakeLabel(FName(*(Base + TEXT(".Rank"))), Rank, 18, FT66FlatStyle::PurpleAccent())
+				]
+				+ SHorizontalBox::Slot().FillWidth(0.58f).VAlign(VAlign_Center)
+				[
+					MakeLabel(FName(*(Base + TEXT(".Name"))), Name, 18, FT66FlatStyle::PrimaryText())
+				]
+				+ SHorizontalBox::Slot().FillWidth(0.24f).VAlign(VAlign_Center)
+				[
+					MakeLabel(FName(*(Base + TEXT(".Score"))), Score, 18, FT66FlatStyle::PrimaryText(), ETextJustify::Right)
+				],
+				FName(*Base),
+				TEXT("RankingRow"),
+				ET66FlatState::Default);
+		};
+
+		TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
+		auto AddN = [Canvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+		{
+			Canvas->AddSlot()
+				.Alignment(FVector2D(0.f, 0.f))
+				.Offset(FMargin(X * CanvasW, Y * CanvasH, W * CanvasW, H * CanvasH))
+				[
+					Widget
+				];
+		};
+
+		AddN(0.000f, 0.000f, 1.000f, 1.000f, MakePanel(ET66FlatState::Default, DTag(TEXT("DailyDescent.Background"))));
+		AddN(0.013f, 0.153f, 0.279f, 0.774f, MakePanel(ET66FlatState::Selected, DTag(TEXT("DailyDescent.LeftPanel"))));
+		AddN(0.075f, 0.183f, 0.144f, 0.043f, MakeLabel(DTag(TEXT("DailyDescent.LeftPanel.Header")), NSLOCTEXT("T66.DailyClimb", "FlatRulesHeader", "RULES OF THE DAY"), 24, FT66FlatStyle::PrimaryText(), ETextJustify::Center));
+		AddN(0.022f, 0.235f, 0.261f, 0.091f, MakePanel(ET66FlatState::Default, DTag(TEXT("DailyDescent.LeftPanel.IntroPanel"))));
+		AddN(0.032f, 0.254f, 0.027f, 0.054f, MakeLabel(DTag(TEXT("DailyDescent.LeftPanel.IntroIcon")), FText::FromString(TEXT("i")), 22, FT66FlatStyle::PurpleAccent(), ETextJustify::Center));
+		AddN(0.073f, 0.252f, 0.172f, 0.056f, MakeLabel(DTag(TEXT("DailyDescent.LeftPanel.IntroText")), NSLOCTEXT("T66.DailyClimb", "FlatIntro", "Everyone gets the same seed, hero, and rules. One attempt only."), 14, FT66FlatStyle::SecondaryText()));
+		AddN(0.023f, 0.356f, 0.257f, 0.073f, MakeInfoRow(TEXT("DailyDescent.LeftPanel.HeroRow"), NSLOCTEXT("T66.DailyClimb", "FlatHeroLabel", "Hero Selected"), FText::FromString(TEXT("Hero_14"))));
+		AddN(0.023f, 0.450f, 0.257f, 0.070f, MakeInfoRow(TEXT("DailyDescent.LeftPanel.DifficultyRow"), NSLOCTEXT("T66.DailyClimb", "FlatDifficultyLabel", "Difficulty"), FText::FromString(TEXT("Hard"))));
+		AddN(0.029f, 0.551f, 0.126f, 0.036f, MakeLabel(DTag(TEXT("DailyDescent.LeftPanel.ModifiersHeader")), NSLOCTEXT("T66.DailyClimb", "FlatModifiersHeader", "MODIFIERS"), 20, FT66FlatStyle::PrimaryText()));
+		AddN(0.023f, 0.594f, 0.257f, 0.096f, MakeModifierRow(TEXT("DailyDescent.LeftPanel.PocketDraftRow"), FText::FromString(TEXT("Pocket Draft")), FText::FromString(TEXT("Begin with 2 random items."))));
+		AddN(0.023f, 0.690f, 0.257f, 0.101f, MakeModifierRow(TEXT("DailyDescent.LeftPanel.IronParadeRow"), FText::FromString(TEXT("Iron Parade")), FText::FromString(TEXT("All enemies have 50% more HP."))));
+		AddN(0.023f, 0.791f, 0.257f, 0.118f, MakeModifierRow(TEXT("DailyDescent.LeftPanel.DoubleDropRow"), FText::FromString(TEXT("Double Drop")), FText::FromString(TEXT("Enemies that drop loot bags drop twice as many."))));
+
+		AddN(0.305f, 0.130f, 0.365f, 0.465f, MakePanel(ET66FlatState::Default, DTag(TEXT("DailyDescent.CenterArt"))));
+		AddN(0.386f, 0.344f, 0.207f, 0.053f, MakeLabel(DTag(TEXT("DailyDescent.Title")), NSLOCTEXT("T66.DailyClimb", "FlatTitle", "DAILY DESCENT"), 36, FT66FlatStyle::PrimaryText(), ETextJustify::Center));
+		AddN(0.384f, 0.404f, 0.211f, 0.035f, MakeLabel(DTag(TEXT("DailyDescent.Subtitle")), NSLOCTEXT("T66.DailyClimb", "FlatSubtitle", "One seed. One attempt."), 18, FT66FlatStyle::SecondaryText(), ETextJustify::Center));
+		AddN(0.373f, 0.642f, 0.240f, 0.085f, FT66FlatStyle::MakeFlatButton(ET66FlatState::Selected, NSLOCTEXT("T66.DailyClimb", "FlatStart", "START DESCENT"), FOnClicked::CreateUObject(this, &UT66DailyClimbScreen::HandleStartClicked), nullptr, nullptr, FMargin(14.f, 8.f), 200.f, 72.f, true, 22, DTag(TEXT("DailyDescent.StartButton"))));
+		AddN(0.373f, 0.756f, 0.240f, 0.085f, FT66FlatStyle::MakeFlatButton(ET66FlatState::Default, NSLOCTEXT("T66.DailyClimb", "FlatContinue", "CONTINUE DESCENT"), FOnClicked::CreateUObject(this, &UT66DailyClimbScreen::HandleContinueClicked), nullptr, nullptr, FMargin(14.f, 8.f), 200.f, 72.f, true, 22, DTag(TEXT("DailyDescent.ContinueButton"))));
+
+		AddN(0.690f, 0.233f, 0.291f, 0.707f, MakePanel(ET66FlatState::Default, DTag(TEXT("DailyDescent.RightLeaderboardPanel"))));
+		AddN(0.701f, 0.160f, 0.071f, 0.067f, FT66FlatStyle::MakeFlatButton(DailyFlatLeaderboardFilterIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default, FText::FromString(TEXT("WORLD")), FOnClicked::CreateLambda([this]() { DailyFlatLeaderboardFilterIndex = 0; return FReply::Handled(); }), nullptr, nullptr, FMargin(8.f), 96.f, 52.f, true, 16, DTag(TEXT("DailyDescent.LeaderboardTabs.GlobalButton")), FName(TEXT("DailyLeaderboardTabs"))));
+		AddN(0.778f, 0.160f, 0.071f, 0.067f, FT66FlatStyle::MakeFlatButton(DailyFlatLeaderboardFilterIndex == 1 ? ET66FlatState::Selected : ET66FlatState::Default, FText::FromString(TEXT("FRIENDS")), FOnClicked::CreateLambda([this]() { DailyFlatLeaderboardFilterIndex = 1; return FReply::Handled(); }), nullptr, nullptr, FMargin(8.f), 96.f, 52.f, true, 16, DTag(TEXT("DailyDescent.LeaderboardTabs.FriendsButton")), FName(TEXT("DailyLeaderboardTabs"))));
+		AddN(0.855f, 0.160f, 0.071f, 0.067f, FT66FlatStyle::MakeFlatButton(DailyFlatLeaderboardFilterIndex == 2 ? ET66FlatState::Selected : ET66FlatState::Default, FText::FromString(TEXT("CAST")), FOnClicked::CreateLambda([this]() { DailyFlatLeaderboardFilterIndex = 2; return FReply::Handled(); }), nullptr, nullptr, FMargin(8.f), 96.f, 52.f, true, 16, DTag(TEXT("DailyDescent.LeaderboardTabs.BroadcastButton")), FName(TEXT("DailyLeaderboardTabs"))));
+		AddN(0.731f, 0.258f, 0.208f, 0.038f, MakeLabel(DTag(TEXT("DailyDescent.RightLeaderboardPanel.Header")), NSLOCTEXT("T66.DailyClimb", "FlatLeaderboardHeader", "DAILY GLOBAL CHAD RANKINGS"), 22, FT66FlatStyle::PrimaryText(), ETextJustify::Center));
+		AddN(0.704f, 0.334f, 0.264f, 0.048f, MakeRankRow(TEXT("DailyDescent.RightLeaderboardPanel.Row01"), FText::FromString(TEXT("#1")), FText::FromString(TEXT("CROWNED CHAD")), FText::FromString(TEXT("184250"))));
+		AddN(0.704f, 0.525f, 0.264f, 0.048f, MakeRankRow(TEXT("DailyDescent.RightLeaderboardPanel.Row05"), FText::FromString(TEXT("#5")), FText::FromString(TEXT("NO HIT NATE")), FText::FromString(TEXT("151300"))));
+		AddN(0.704f, 0.764f, 0.264f, 0.048f, MakeRankRow(TEXT("DailyDescent.RightLeaderboardPanel.Row10"), FText::FromString(TEXT("#10")), FText::FromString(TEXT("SKULL FARMER")), FText::FromString(TEXT("122400"))));
+		AddN(0.701f, 0.837f, 0.268f, 0.004f, MakeColorRect(FT66FlatStyle::SelectedBorder(), DTag(TEXT("DailyDescent.RightLeaderboardPanel.PlayerSeparator"))));
+		AddN(0.704f, 0.864f, 0.264f, 0.062f, MakeRankRow(TEXT("DailyDescent.RightLeaderboardPanel.PlayerRow"), FText::FromString(TEXT("#42")), FText::FromString(TEXT("DOPRA")), FText::FromString(TEXT("118700"))));
+
+		const TSharedRef<SWidget> ReferenceCanvas =
+			SNew(SBox)
+			.WidthOverride(CanvasW)
+			.HeightOverride(CanvasH)
+			[
+				Canvas
+			];
+
+		return FT66FlatStyle::AttachMetadata(
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::Both)
+				[
+					ReferenceCanvas
+				]
+			],
+			DTag(TEXT("DailyDescent.Root")),
+			TEXT("ScreenRoot"),
+			ET66FlatState::Default);
+	}
+
 	UGameInstance* GI = GetGameInstance();
 	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);

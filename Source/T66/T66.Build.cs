@@ -71,15 +71,9 @@ public class T66 : ModuleRules
 
 		// Canonical non-UFS runtime fallbacks used by T66RuntimeUI* helpers. Generated UI
 		// art stays here until the remaining screens move to cooked UTexture assets.
+		AddLooseRuntimeDependency("RuntimeDependencies/T66/Arcade/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/Fonts/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/...");
-
-		// Source-art exceptions that still have live runtime callers. Keep these explicit and
-		// mirrored in UT66GameContentSettings so guardrails catch policy/staging drift.
-		AddLooseRuntimeDependency("SourceAssets/Arcade/...");
-		AddLooseRuntimeDependency("SourceAssets/UI/HeroSelection/...");
-		AddLooseRuntimeDependency("SourceAssets/UI/Reference/...");
-		AddLooseRuntimeDependency("SourceAssets/UI/PowerUp/Diplomas/...");
 
 		// Add all subdirectories as include paths
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory));

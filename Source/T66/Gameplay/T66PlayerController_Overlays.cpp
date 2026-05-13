@@ -8,6 +8,7 @@
 #include "NiagaraSystem.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "UI/T66UIManager.h"
+#include "UI/T66WidgetDumpTargets.h"
 #include "UI/T66ScreenBase.h"
 #include "UI/Screens/T66HeroGridScreen.h"
 #include "UI/Screens/T66CompanionGridScreen.h"
@@ -29,6 +30,7 @@
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
+#include "UI/T66LoadingScreenWidget.h"
 #include "UI/T66ArcadePopupWidget.h"
 #include "UI/T66ArcadeSelectionWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
@@ -50,6 +52,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
@@ -186,14 +189,40 @@ void AT66PlayerController::QueueGameplayAutomationScreenshotIfRequested()
 	}
 
 	FString RequestedScreenshotPath;
-	if (!FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoScreenshot="), RequestedScreenshotPath))
+	const bool bScreenshotRequested = FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoScreenshot="), RequestedScreenshotPath);
+
+	FString RequestedWidgetDumpSpec;
+	const bool bWidgetDumpRequested = FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpWidget="), RequestedWidgetDumpSpec);
+	if (!bScreenshotRequested && !bWidgetDumpRequested)
 	{
 		return;
 	}
 
-	GameplayAutomationScreenshotPath = FPaths::ConvertRelativePathToFull(RequestedScreenshotPath);
+	GameplayAutomationScreenshotPath.Reset();
+	GameplayAutomationWidgetDumpTarget.Reset();
+	GameplayAutomationWidgetDumpPath.Reset();
 	GameplayAutomationScreenshotDelaySeconds = 4.0f;
-	FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoScreenshotDelay="), GameplayAutomationScreenshotDelaySeconds);
+	GameplayAutomationWidgetDumpDelaySeconds = 4.0f;
+	if (bScreenshotRequested)
+	{
+		GameplayAutomationScreenshotPath = FPaths::ConvertRelativePathToFull(RequestedScreenshotPath);
+		FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoScreenshotDelay="), GameplayAutomationScreenshotDelaySeconds);
+	}
+	if (bWidgetDumpRequested)
+	{
+		FString WidgetDumpPath;
+		FString ParseError;
+		if (!FT66WidgetDumpTargets::ParseAutomationSpec(RequestedWidgetDumpSpec, GameplayAutomationWidgetDumpTarget, WidgetDumpPath, ParseError))
+		{
+			UE_LOG(LogTemp, Error, TEXT("Gameplay automation: invalid widget dump spec: %s"), *ParseError);
+			FPlatformMisc::RequestExitWithStatus(false, 67, TEXT("T66AutoDumpWidgetInvalid"));
+			return;
+		}
+
+		GameplayAutomationWidgetDumpPath = FPaths::ConvertRelativePathToFull(WidgetDumpPath);
+		GameplayAutomationWidgetDumpDelaySeconds = GameplayAutomationScreenshotDelaySeconds;
+		FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpWidgetDelay="), GameplayAutomationWidgetDumpDelaySeconds);
+	}
 
 	GameplayAutomationCaptureMode = TEXT("HUD");
 	FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoCapture="), GameplayAutomationCaptureMode);
@@ -217,13 +246,15 @@ void AT66PlayerController::QueueGameplayAutomationScreenshotIfRequested()
 		GameplayAutomationPrepareTimerHandle,
 		this,
 		&AT66PlayerController::HandleGameplayAutomationPrepare,
-		FMath::Max(0.1f, GameplayAutomationScreenshotDelaySeconds),
+		FMath::Max(0.1f, FMath::Min(
+			bScreenshotRequested ? GameplayAutomationScreenshotDelaySeconds : GameplayAutomationWidgetDumpDelaySeconds,
+			bWidgetDumpRequested ? GameplayAutomationWidgetDumpDelaySeconds : GameplayAutomationScreenshotDelaySeconds)),
 		false);
 }
 
 void AT66PlayerController::HandleGameplayAutomationPrepare()
 {
-	if (GameplayAutomationScreenshotPath.IsEmpty())
+	if (GameplayAutomationScreenshotPath.IsEmpty() && GameplayAutomationWidgetDumpPath.IsEmpty())
 	{
 		return;
 	}
@@ -239,6 +270,17 @@ void AT66PlayerController::HandleGameplayAutomationPrepare()
 			&AT66PlayerController::HandleGameplayAutomationScreenshot,
 			0.5f,
 			false);
+
+		if (!GameplayAutomationWidgetDumpPath.IsEmpty())
+		{
+			GetWorldTimerManager().ClearTimer(GameplayAutomationWidgetDumpTimerHandle);
+			GetWorldTimerManager().SetTimer(
+				GameplayAutomationWidgetDumpTimerHandle,
+				this,
+				&AT66PlayerController::HandleGameplayAutomationWidgetDump,
+				0.75f,
+				false);
+		}
 	}
 }
 
@@ -362,6 +404,176 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		if (GameplayHUDWidget)
 		{
 			GameplayHUDWidget->SetFullMapOpen(true);
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}
+		return;
+	}
+
+	if (Mode == TEXT("worldprompt") || Mode == TEXT("interactable") || Mode == TEXT("interactionprompt"))
+	{
+		AT66ChestInteractable* AutomationPromptActor = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Name = FName(TEXT("T66WidgetDump_WorldInteractablePrompt"));
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AutomationPromptActor = World->SpawnActor<AT66ChestInteractable>(
+				AT66ChestInteractable::StaticClass(),
+				GetPawn() ? GetPawn()->GetActorLocation() + FVector(260.f, 0.f, 0.f) : FVector::ZeroVector,
+				FRotator::ZeroRotator,
+				SpawnParams);
+			if (AutomationPromptActor)
+			{
+				AutomationPromptActor->SetActorHiddenInGame(true);
+				AutomationPromptActor->SetActorEnableCollision(false);
+				AutomationPromptActor->SetShowcaseReusable(true);
+			}
+		}
+
+		if (GameplayHUDWidget)
+		{
+			AActor* PromptSourceActor = AutomationPromptActor ? static_cast<AActor*>(AutomationPromptActor) : static_cast<AActor*>(this);
+			GameplayHUDWidget->SetFullMapOpen(false);
+			GameplayHUDWidget->ShowInteractionPrompt(
+				PromptSourceActor,
+				NSLOCTEXT("T66.GameplayHUD", "WidgetDumpWorldPromptTarget", "Chest"));
+			GameplayHUDWidget->RefreshHUD();
+		}
+		return;
+	}
+
+	if (Mode == TEXT("enemylock") || Mode == TEXT("lockindicator") || Mode == TEXT("enemylockwidget"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetFullMapOpen(false);
+			GameplayHUDWidget->RefreshHUD();
+		}
+
+		if (UWorld* World = GetWorld())
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Name = FName(TEXT("T66WidgetDump_EnemyLockTarget"));
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AT66EnemyBase* Enemy = World->SpawnActor<AT66EnemyBase>(
+				AT66EnemyBase::StaticClass(),
+				GetPawn() ? GetPawn()->GetActorLocation() + FVector(420.f, 0.f, 0.f) : FVector(420.f, 0.f, 0.f),
+				FRotator::ZeroRotator,
+				SpawnParams);
+			if (Enemy)
+			{
+				Enemy->SetActorEnableCollision(false);
+				Enemy->SetLockedIndicator(true);
+			}
+		}
+		return;
+	}
+
+	if (Mode == TEXT("floatingcombattext") || Mode == TEXT("combattext") || Mode == TEXT("damagetext"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetFullMapOpen(false);
+			GameplayHUDWidget->RefreshHUD();
+		}
+
+		AActor* TextTarget = GetPawn();
+		if (UWorld* World = GetWorld())
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Name = FName(TEXT("T66WidgetDump_FloatingCombatTextTarget"));
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AT66EnemyBase* Enemy = World->SpawnActor<AT66EnemyBase>(
+				AT66EnemyBase::StaticClass(),
+				GetPawn() ? GetPawn()->GetActorLocation() + FVector(420.f, 0.f, 0.f) : FVector(420.f, 0.f, 0.f),
+				FRotator::ZeroRotator,
+				SpawnParams);
+			if (Enemy)
+			{
+				Enemy->SetActorEnableCollision(false);
+				TextTarget = Enemy;
+			}
+		}
+
+		if (UT66FloatingCombatTextSubsystem* FloatingText = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
+		{
+			FloatingText->ShowDamageNumber(TextTarget, 666, UT66FloatingCombatTextSubsystem::EventType_Crit);
+		}
+		return;
+	}
+
+	if (Mode == TEXT("scopedsniper") || Mode == TEXT("sniperscope") || Mode == TEXT("scopeoverlay"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetFullMapOpen(false);
+			GameplayHUDWidget->RefreshHUD();
+		}
+
+		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
+		{
+			if (UT66CombatComponent* Combat = Hero->FindComponentByClass<UT66CombatComponent>())
+			{
+				ActivateHeroOneScopedUlt(Hero, Combat);
+				SetHeroOneScopeViewEnabled(true);
+			}
+		}
+		return;
+	}
+
+	if (Mode == TEXT("cowardiceprompt") || Mode == TEXT("cowardice") || Mode == TEXT("cowardicegate"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
+		AT66CowardiceGate* AutomationGate = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Name = FName(TEXT("T66WidgetDump_CowardiceGate"));
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AutomationGate = World->SpawnActor<AT66CowardiceGate>(
+				AT66CowardiceGate::StaticClass(),
+				GetPawn() ? GetPawn()->GetActorLocation() + FVector(360.f, 0.f, 0.f) : FVector(360.f, 0.f, 0.f),
+				FRotator::ZeroRotator,
+				SpawnParams);
+			if (AutomationGate)
+			{
+				AutomationGate->SetActorHiddenInGame(true);
+				AutomationGate->SetActorEnableCollision(false);
+			}
+		}
+
+		OpenCowardicePrompt(AutomationGate);
+		return;
+	}
+
+	if (Mode == TEXT("loading") || Mode == TEXT("loadingscreen") || Mode == TEXT("transitionloading"))
+	{
+		if (UT66LoadingScreenWidget* LoadingOverlay = CreateWidget<UT66LoadingScreenWidget>(this, UT66LoadingScreenWidget::StaticClass()))
+		{
+			LoadingOverlay->SetLoadingText(NSLOCTEXT("T66.Loading", "WidgetDumpLoadingText", "Loading"));
+			LoadingOverlay->AddToViewport(10000);
 			FInputModeGameAndUI InputMode;
 			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			SetInputMode(InputMode);
@@ -528,6 +740,54 @@ void AT66PlayerController::HandleGameplayAutomationScreenshot()
 	FScreenshotRequest::RequestScreenshot(GameplayAutomationScreenshotPath, true, false, false);
 
 	if (!bGameplayAutomationKeepAliveAfterScreenshot && GetWorld())
+	{
+		GetWorldTimerManager().ClearTimer(GameplayAutomationQuitTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			GameplayAutomationQuitTimerHandle,
+			this,
+			&AT66PlayerController::HandleGameplayAutomationQuit,
+			1.5f,
+			false);
+	}
+}
+
+void AT66PlayerController::HandleGameplayAutomationWidgetDump()
+{
+	if (GameplayAutomationWidgetDumpTarget.IsEmpty() || GameplayAutomationWidgetDumpPath.IsEmpty())
+	{
+		return;
+	}
+
+	FString Error;
+	const bool bDumped = FT66WidgetDumpTargets::DumpTargetToJson(
+		GetWorld(),
+		GameplayAutomationWidgetDumpTarget,
+		GameplayAutomationWidgetDumpPath,
+		Error);
+
+	if (bDumped)
+	{
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("Gameplay automation: widget target dump wrote Target=%s Path=%s"),
+			*GameplayAutomationWidgetDumpTarget,
+			*GameplayAutomationWidgetDumpPath);
+	}
+	else
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("Gameplay automation: widget target dump failed Target=%s Path=%s Error=%s"),
+			*GameplayAutomationWidgetDumpTarget,
+			*GameplayAutomationWidgetDumpPath,
+			*Error);
+	}
+
+	if (GameplayAutomationScreenshotPath.IsEmpty()
+		&& !bGameplayAutomationKeepAliveAfterScreenshot
+		&& GetWorld())
 	{
 		GetWorldTimerManager().ClearTimer(GameplayAutomationQuitTimerHandle);
 		GetWorldTimerManager().SetTimer(

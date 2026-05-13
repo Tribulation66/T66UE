@@ -211,6 +211,10 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildInlineRetroFXPanel()
 			InitializeInlineRetroFXFromUserSettingsIfNeeded();
 			PendingInlineRetroFXSettings.*Field = bValue;
 			bInlineRetroFXDirty = true;
+			if (Field == &FT66RetroFXSettings::bEnableRetroFXMaster)
+			{
+				ApplyPendingInlineRetroFX();
+			}
 		};
 	};
 
@@ -359,7 +363,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildInlineRetroFXPanel()
 		0.f);
 
 	return SNew(SScrollBox)
-		.ScrollBarStyle(GetHeroSelectionReferenceScrollBarStyle())
+		.ScrollBarStyle(GetHeroSelectionFlatScrollBarStyle())
 		.ScrollBarThickness(FVector2D(14.f, 14.f))
 		.ScrollBarPadding(FMargin(8.f, 0.f, 0.f, 0.f))
 		+ SScrollBox::Slot()

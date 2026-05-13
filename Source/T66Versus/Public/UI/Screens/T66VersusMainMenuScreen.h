@@ -27,7 +27,7 @@ private:
 	FReply HandleBackClicked();
 	void HandleSessionStateChanged();
 	FText GetStatusText() const;
-	TSharedRef<SWidget> MakeVersusPanel(const TSharedRef<SWidget>& Content, const FMargin& ContentPadding, const FLinearColor& Accent) const;
+	TSharedRef<SWidget> MakeVersusPanel(const TSharedRef<SWidget>& Content, const FMargin& ContentPadding, const FLinearColor& Accent, FName Tag = NAME_None) const;
 	TSharedRef<SWidget> MakeVersusButton(const FText& Text, const FOnClicked& Handler, ET66ButtonType Type, bool bEnabled = true) const;
 	TSharedRef<SWidget> MakeInfoRow(const FText& Label, const FText& Body) const;
 

@@ -5,8 +5,8 @@ The images in this workspace exist to make each T66 frontend screen or modal vis
 ## What These Images Are For
 
 - Text-free UI chrome: panels, rows, buttons, tabs, dropdowns, fields, slots, scrollbars, icons, dividers, meters, and modal shells.
-- Screen-owned runtime assets under `C:\UE\T66\SourceAssets\UI\Reference\Screens\<ScreenName>\`.
-- Modal-owned runtime assets under `C:\UE\T66\SourceAssets\UI\Reference\Modals\<ModalName>\`.
+- Screen-owned runtime assets under `C:\UE\T66\RuntimeDependencies\T66\UI\Reference\Screens\<ScreenName>\`.
+- Modal-owned runtime assets under `C:\UE\T66\RuntimeDependencies\T66\UI\Reference\Modals\<ModalName>\`.
 - Iterative proof work where each target can be handled in a separate Codex chat without changing another target's asset folder.
 
 ## What These Images Are Not For
@@ -15,6 +15,7 @@ The images in this workspace exist to make each T66 frontend screen or modal vis
 - They are not replacements for live Slate/UMG controls.
 - They must not bake player names, stats, balances, dates, scores, save metadata, labels, selection state, portraits, or localized text.
 - They must not be shared as mutable source art across screens. If a target needs an asset from another target or from `Shared`, duplicate it into the target folder and rename it for that target.
+- Reference-visible elements without backend/gameplay infrastructure should still be built as visual stubs and marked for later wiring, so frontend fidelity is not blocked by data readiness.
 
 ## Required Runtime Contract
 
@@ -35,6 +36,7 @@ Non-square buttons must preserve the anti-squish technique: sliced plate rendere
 3. Open `C:\UE\T66\UI\MASTER_REFERENCE_UI_GENERATION_PROMPT.md`.
 4. Start one new Codex chat per screen or modal.
 5. Fill in the target fields in the master prompt. It begins with the target name for chat-title visibility.
-6. Generate missing component art with imagegen, save accepted assets into that target's runtime folder, implement the resize contract, stage, capture, compare, and repeat.
+6. Generate missing component art with imagegen, save accepted assets into that target's runtime folder, implement the resize contract, stage, capture, compare with `C:\UE\T66\Scripts\CompareUIScreen.ps1`, and repeat.
 
 Generated image outputs should be reported as local file links/paths, not embedded in chat, unless the user explicitly asks for inline previews.
+

@@ -2,7 +2,10 @@
 
 #include "UI/T66ScreenBase.h"
 #include "UI/T66UIManager.h"
+#include "UI/T66WidgetTreeWalker.h"
 #include "UI/Style/T66Style.h"
+#include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -150,6 +153,45 @@ void UT66ScreenBase::RequestDeferredSlateRebuild()
 	}
 
 	FT66Style::DeferRebuild(this, bIsModal ? 100 : 0);
+}
+
+bool UT66ScreenBase::DumpToJson(const FString& OutputPath)
+{
+	TSharedPtr<SWidget> RootWidget = GetCachedWidget();
+	if (!RootWidget.IsValid())
+	{
+		RootWidget = TakeWidget();
+	}
+
+	if (!RootWidget.IsValid())
+	{
+		return false;
+	}
+
+	FVector2D ViewportSize(1920.f, 1080.f);
+	if (GEngine && GEngine->GameViewport && GEngine->GameViewport->Viewport)
+	{
+		const FIntPoint SizeXY = GEngine->GameViewport->Viewport->GetSizeXY();
+		if (SizeXY.X > 0 && SizeXY.Y > 0)
+		{
+			ViewportSize = FVector2D(static_cast<float>(SizeXY.X), static_cast<float>(SizeXY.Y));
+		}
+	}
+
+	FString ScreenName = FString::Printf(TEXT("Screen_%d"), static_cast<int32>(ScreenType));
+	if (const UEnum* ScreenEnum = StaticEnum<ET66ScreenType>())
+	{
+		ScreenName = ScreenEnum->GetNameStringByValue(static_cast<int64>(ScreenType));
+	}
+
+	FString Error;
+	const bool bDumped = FT66WidgetTreeWalker::DumpWidgetTreeToJson(RootWidget.ToSharedRef(), ScreenName, ViewportSize, OutputPath, Error);
+	if (!bDumped)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("T66.UI.DumpScreen failed for %s: %s"), *ScreenName, *Error);
+	}
+
+	return bDumped;
 }
 
 // ========== Slate UI Building Helpers ==========

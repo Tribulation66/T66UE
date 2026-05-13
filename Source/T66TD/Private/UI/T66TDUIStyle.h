@@ -3,8 +3,7 @@
 #pragma once
 
 #include "Styling/CoreStyle.h"
-#include "UI/Style/T66RuntimeUIBrushAccess.h"
-#include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/SWidget.h"
@@ -18,27 +17,27 @@ namespace T66TDUI
 
 	inline FLinearColor ShellFill()
 	{
-		return FLinearColor(0.020f, 0.024f, 0.018f, 0.965f);
+		return FT66FlatStyle::BackgroundColor();
 	}
 
 	inline FLinearColor PanelFill()
 	{
-		return FLinearColor(0.050f, 0.045f, 0.034f, 0.975f);
+		return FT66FlatStyle::DefaultFill();
 	}
 
 	inline FLinearColor CardFill()
 	{
-		return FLinearColor(0.086f, 0.072f, 0.048f, 1.0f);
+		return FT66FlatStyle::DefaultFill();
 	}
 
 	inline FLinearColor RaisedFill()
 	{
-		return FLinearColor(0.120f, 0.104f, 0.064f, 1.0f);
+		return FT66FlatStyle::SelectedFill();
 	}
 
 	inline FLinearColor InnerFill()
 	{
-		return FLinearColor(0.031f, 0.034f, 0.028f, 0.955f);
+		return FT66FlatStyle::DisabledFill();
 	}
 
 	inline FLinearColor StoneShadow()
@@ -48,52 +47,52 @@ namespace T66TDUI
 
 	inline FLinearColor StrokeGold()
 	{
-		return FLinearColor(0.74f, 0.58f, 0.27f, 1.0f);
+		return FT66FlatStyle::DefaultBorder();
 	}
 
 	inline FLinearColor StrokeGreen()
 	{
-		return FLinearColor(0.24f, 0.48f, 0.26f, 1.0f);
+		return FT66FlatStyle::ReadyBorder();
 	}
 
 	inline FLinearColor StrokeRed()
 	{
-		return FLinearColor(0.50f, 0.12f, 0.14f, 1.0f);
+		return FT66FlatStyle::SelectedBorder();
 	}
 
 	inline FLinearColor BrightText()
 	{
-		return FLinearColor(0.97f, 0.94f, 0.84f, 1.0f);
+		return FT66FlatStyle::PrimaryText();
 	}
 
 	inline FLinearColor MutedText()
 	{
-		return FLinearColor(0.78f, 0.74f, 0.66f, 1.0f);
+		return FT66FlatStyle::SecondaryText();
 	}
 
 	inline FLinearColor AccentCrimson()
 	{
-		return FLinearColor(0.64f, 0.17f, 0.18f, 1.0f);
+		return FT66FlatStyle::SelectedBorder();
 	}
 
 	inline FLinearColor AccentGold()
 	{
-		return FLinearColor(0.92f, 0.72f, 0.30f, 1.0f);
+		return FT66FlatStyle::SelectedText();
 	}
 
 	inline FLinearColor AccentGreen()
 	{
-		return FLinearColor(0.32f, 0.70f, 0.36f, 1.0f);
+		return FT66FlatStyle::GoodStandingGreen();
 	}
 
 	inline FLinearColor AccentRed()
 	{
-		return FLinearColor(0.78f, 0.18f, 0.22f, 1.0f);
+		return FT66FlatStyle::SelectedBorder();
 	}
 
 	inline FLinearColor AccentAsh()
 	{
-		return FLinearColor(0.38f, 0.40f, 0.34f, 1.0f);
+		return FT66FlatStyle::DisabledBorder();
 	}
 
 	inline FLinearColor SelectionStroke(const bool bIsSelected)
@@ -105,22 +104,22 @@ namespace T66TDUI
 
 	inline const TCHAR* MasterBasicPanelPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png");
+		return TEXT("");
 	}
 
 	inline const TCHAR* MasterInnerPanelPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png");
+		return TEXT("");
 	}
 
 	inline const TCHAR* MasterBasicButtonPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_normal.png");
+		return TEXT("");
 	}
 
 	inline const TCHAR* MasterSelectedButtonPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_selected.png");
+		return TEXT("");
 	}
 
 	inline const FMargin& MasterPanelMargin()
@@ -137,64 +136,27 @@ namespace T66TDUI
 
 	inline const FSlateBrush* ButtonPlateBrush(const ET66ButtonType Type)
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush BasicEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush SelectedEntry;
-
-		const bool bUseSelectedPlate = Type == ET66ButtonType::Success
-			|| Type == ET66ButtonType::Primary
-			|| Type == ET66ButtonType::ToggleActive;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry = bUseSelectedPlate ? SelectedEntry : BasicEntry;
-
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(bUseSelectedPlate ? MasterSelectedButtonPath() : MasterBasicButtonPath()),
-			MasterButtonMargin(),
-			bUseSelectedPlate ? TEXT("TDMasterSelectedButton") : TEXT("TDMasterBasicButton"));
+		return WhiteBrush();
 	}
 
 	inline const FSlateBrush* LeftPanelShellBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterBasicPanelPath()),
-			MasterPanelMargin(),
-			TEXT("TDMasterLeftPanel"));
+		return WhiteBrush();
 	}
 
 	inline const FSlateBrush* RightPanelShellBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterBasicPanelPath()),
-			MasterPanelMargin(),
-			TEXT("TDMasterRightPanel"));
+		return WhiteBrush();
 	}
 
 	inline const FSlateBrush* ContentPanelBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterInnerPanelPath()),
-			MasterPanelMargin(),
-			TEXT("TDMasterContentPanel"));
+		return WhiteBrush();
 	}
 
 	inline const FSlateBrush* CenterFrameBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterBasicPanelPath()),
-			MasterPanelMargin(),
-			TEXT("TDMasterCenterPanel"));
+		return WhiteBrush();
 	}
 
 	inline TSharedRef<SWidget> MakeGeneratedPanel(
@@ -203,14 +165,7 @@ namespace T66TDUI
 		const FLinearColor& FallbackColor,
 		const FMargin& Padding)
 	{
-		const FMargin SafePadding = Brush ? Padding + FMargin(8.f, 4.f, 10.f, 4.f) : Padding;
-		return SNew(SBorder)
-			.BorderImage(Brush ? Brush : WhiteBrush())
-			.BorderBackgroundColor(Brush ? FLinearColor::White : FallbackColor)
-			.Padding(SafePadding)
-			[
-				Content
-			];
+		return FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, Padding, Content);
 	}
 
 	inline TSharedRef<SWidget> MakeLeftPanel(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(18.f))
@@ -242,8 +197,6 @@ namespace T66TDUI
 			.SetFontSize(FontSize)
 			.SetPadding(FMargin(14.f, 8.f, 14.f, 6.f))
 			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(true)
-			.SetDotaPlateOverrideBrush(ButtonPlateBrush(ET66ButtonType::Success))
 			.SetTextColor(BrightText())
 			.SetStateTextShadowColors(
 				FLinearColor(0.f, 0.f, 0.f, 0.40f),
@@ -262,9 +215,47 @@ namespace T66TDUI
 			.SetFontSize(FontSize)
 			.SetPadding(FMargin(12.f, 4.f, 12.f, 3.f))
 			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(true)
-			.SetDotaPlateOverrideBrush(ButtonPlateBrush(ET66ButtonType::Neutral))
 			.SetTextColor(BrightText());
 		return Params;
+	}
+
+	inline ET66FlatState StateForButtonType(const ET66ButtonType Type)
+	{
+		switch (Type)
+		{
+		case ET66ButtonType::Success:
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::ToggleActive:
+			return ET66FlatState::Selected;
+		case ET66ButtonType::Danger:
+			return ET66FlatState::Ready;
+		case ET66ButtonType::Neutral:
+		default:
+			return ET66FlatState::Default;
+		}
+	}
+
+	inline TSharedRef<SWidget> MakeFlatButton(
+		const FText& Label,
+		const FOnClicked& OnClicked,
+		const ET66ButtonType Type,
+		const float MinWidth,
+		const float Height,
+		const int32 FontSize,
+		const FName Tag = NAME_None,
+		const TAttribute<bool> IsEnabled = true)
+	{
+		return FT66FlatStyle::MakeFlatButton(
+			StateForButtonType(Type),
+			Label,
+			OnClicked,
+			nullptr,
+			nullptr,
+			FMargin(14.f, 8.f, 14.f, 6.f),
+			MinWidth,
+			Height,
+			IsEnabled,
+			FontSize,
+			Tag);
 	}
 }

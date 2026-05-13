@@ -265,6 +265,8 @@ private:
 	FReply HandleNextClicked();
 	FReply HandleCompanionPrevClicked();
 	FReply HandleCompanionNextClicked();
+	FReply HandleHeroCarouselPortraitClicked(int32 VisibleSlotIndex);
+	FReply HandleFlatSkinRowClicked(FName SkinID);
 	FReply HandleHeroGridClicked();
 	FReply HandleCompanionGridClicked();
 	FReply HandleCompanionClicked();
@@ -273,6 +275,7 @@ private:
 	FReply HandleTemporaryBuffBuyClicked(ET66SecondaryStatType StatType);
 	FReply HandleTemporaryBuffEquipClicked(ET66SecondaryStatType StatType);
 	FReply HandleClearTemporaryBuffsClicked();
+	FReply HandleLabClicked();
 	FReply HandleLoreClicked();
 	FReply HandleStatsClicked();
 	FReply HandleOpenStatsPanelClicked();

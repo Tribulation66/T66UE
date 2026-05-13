@@ -12,10 +12,12 @@
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66OverlayChromeStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SSpinBox.h"
@@ -61,6 +63,161 @@ static void AddItemIconPath(
 	if (!IconSoft.IsNull())
 	{
 		OutPaths.AddUnique(IconSoft.ToSoftObjectPath());
+	}
+}
+
+namespace
+{
+	void AddVendorCanvasSlot(
+		const TSharedRef<SConstraintCanvas>& Canvas,
+		const float X,
+		const float Y,
+		const float W,
+		const float H,
+		const TSharedRef<SWidget>& Widget)
+	{
+		const float UiScale = FMath::Max(0.1f, FT66Style::GetGlobalUIScale());
+		Canvas->AddSlot()
+			.Anchors(FAnchors(0.f, 0.f))
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X / UiScale, Y / UiScale, W / UiScale, H / UiScale))
+		[
+			Widget
+		];
+	}
+
+	TSharedRef<SWidget> MakeVendorFlatButton(
+		const ET66FlatState State,
+		const FText& Label,
+		FOnClicked OnClicked,
+		const FMargin& Padding,
+		const int32 FontSize,
+		const FName Tag,
+		const FName ToggleGroup = NAME_None)
+	{
+		return FT66FlatStyle::MakeFlatButton(
+			State,
+			Label,
+			MoveTemp(OnClicked),
+			nullptr,
+			nullptr,
+			Padding,
+			0.f,
+			0.f,
+			true,
+			FontSize,
+			Tag,
+			ToggleGroup);
+	}
+
+	TSharedRef<SWidget> MakeVendorLabel(
+		const FText& Text,
+		const int32 FontSize,
+		const FName Tag,
+		const FLinearColor Color = FT66FlatStyle::PrimaryText())
+	{
+		return FT66FlatStyle::AttachMetadata(
+			SNew(STextBlock)
+				.Text(Text)
+				.Font(FT66FlatStyle::MakeBoldFont(FontSize))
+				.ColorAndOpacity(Color),
+			Tag,
+			TEXT("Label.Body"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true);
+	}
+
+	FText MakeVendorStatValue(const int32 Value)
+	{
+		return FText::FromString(FString::Printf(TEXT("%d/99"), FMath::Clamp(Value, 0, UT66RunStateSubsystem::MaxHeroStatValue)));
+	}
+
+	FText MakeVendorSecondaryStatValue(const UT66RunStateSubsystem* RunState, const ET66SecondaryStatType StatType)
+	{
+		const int32 Value = RunState ? FMath::RoundToInt(RunState->GetSecondaryStatValue(StatType)) : 0;
+		return MakeVendorStatValue(Value);
+	}
+
+	void AddVendorStatsTextLine(
+		const TSharedRef<SVerticalBox>& Box,
+		const FText& Text,
+		const int32 FontSize,
+		const FLinearColor Color = FT66FlatStyle::PrimaryText())
+	{
+		Box->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)
+		[
+			SNew(STextBlock)
+			.Text(Text)
+			.Font(FT66FlatStyle::MakeFont(FontSize))
+			.ColorAndOpacity(Color)
+		];
+	}
+
+	void AddVendorStatsSection(
+		const TSharedRef<SVerticalBox>& Box,
+		const FText& Header,
+		const int32 HeaderSize)
+	{
+		Box->AddSlot().AutoHeight().Padding(0.f, 8.f, 0.f, 4.f)
+		[
+			SNew(STextBlock)
+			.Text(Header)
+			.Font(FT66FlatStyle::MakeBoldFont(HeaderSize))
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+		];
+	}
+
+	TSharedRef<SWidget> MakeVendorReferenceStatsPanel(UT66RunStateSubsystem* RunState)
+	{
+		const int32 BodyFontSize = 14;
+		const int32 HeaderFontSize = 18;
+		const FText StatLineFormat = NSLOCTEXT("T66.Vendor", "VendorStatLineFormat", "{0} {1}");
+
+		TSharedRef<SVerticalBox> Content = SNew(SVerticalBox);
+		Content->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+		[
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("T66.StatsPanel", "Header", "STATS"))
+			.Font(FT66FlatStyle::MakeBoldFont(26))
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+		];
+
+		AddVendorStatsTextLine(
+			Content,
+			FText::Format(
+				StatLineFormat,
+				NSLOCTEXT("T66.StatsPanel", "VendorLevel", "LEVEL"),
+				MakeVendorStatValue(RunState ? RunState->GetHeroLevel() : 1)),
+			BodyFontSize);
+
+		AddVendorStatsSection(Content, NSLOCTEXT("T66.StatsPanel", "VendorDamageHeader", "DAMAGE:"), HeaderFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorDamage", "Damage"), MakeVendorStatValue(RunState ? RunState->GetDamageStat() : 0)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorAoeDamage", "AOE Damage"), MakeVendorSecondaryStatValue(RunState, ET66SecondaryStatType::AoeDamage)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorBounceDamage", "Bounce Damage"), MakeVendorSecondaryStatValue(RunState, ET66SecondaryStatType::BounceDamage)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorPierceDamage", "Pierce Damage"), MakeVendorSecondaryStatValue(RunState, ET66SecondaryStatType::PierceDamage)), BodyFontSize);
+
+		AddVendorStatsSection(Content, NSLOCTEXT("T66.StatsPanel", "VendorAttackSpeedHeader", "ATTACK SPEED:"), HeaderFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorAttackSpeed", "Attack Speed"), MakeVendorStatValue(RunState ? RunState->GetAttackSpeedStat() : 0)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorAttackScale", "Attack Scale"), MakeVendorStatValue(RunState ? RunState->GetScaleStat() : 0)), BodyFontSize);
+
+		AddVendorStatsSection(Content, NSLOCTEXT("T66.StatsPanel", "VendorDefenseHeader", "DEFENSE:"), HeaderFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorAccuracy", "Accuracy"), MakeVendorStatValue(RunState ? RunState->GetAccuracyStat() : 0)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorArmor", "Armor"), MakeVendorStatValue(RunState ? RunState->GetArmorStat() : 0)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorEvasion", "Evasion"), MakeVendorStatValue(RunState ? RunState->GetEvasionStat() : 0)), BodyFontSize);
+
+		AddVendorStatsSection(Content, NSLOCTEXT("T66.StatsPanel", "VendorUtilityHeader", "UTILITY:"), HeaderFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorLuck", "Luck"), MakeVendorStatValue(RunState ? RunState->GetLuckStat() : 0)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorSpeed", "Speed"), MakeVendorStatValue(RunState ? RunState->GetSpeedStat() : 0)), BodyFontSize);
+
+		return FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(16.f, 12.f),
+			Content,
+			nullptr,
+			FName(TEXT("Vendor.StatsPanel")));
 	}
 }
 
@@ -229,35 +386,40 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 	const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 	const bool bCompactCasinoLayout = bEmbeddedInCasinoShell;
-	const float OverlayPadding = bCompactCasinoLayout ? 12.f : FT66Style::Tokens::NPCOverlayPadding;
-	const float AngerFaceSize = bCompactCasinoLayout ? 85.f : FT66Style::Tokens::NPCAngerCircleSize;
-	const float StatsPanelWidth = bCompactCasinoLayout ? 150.f : FT66Style::Tokens::NPCShopStatsPanelWidth;
-	const float RightPanelWidth = bCompactCasinoLayout ? 200.f : FT66Style::Tokens::NPCRightPanelWidth;
-	const float MainRowHeight = bCompactCasinoLayout ? 320.f : FT66Style::Tokens::NPCMainRowHeight;
-	const float ShopCardSize = bCompactCasinoLayout ? FT66Style::Tokens::NPCCompactShopCardWidth : FT66Style::Tokens::NPCShopCardWidth;
-	const float ShopCardHeight = bCompactCasinoLayout ? FT66Style::Tokens::NPCCompactShopCardHeight : FT66Style::Tokens::NPCShopCardHeight;
-	const float ShopCardGap = bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4;
-	const float ShopCardPadding = bCompactCasinoLayout ? 5.f : FT66Style::Tokens::Space4;
-	const float ShopNameBoxHeight = bCompactCasinoLayout ? 28.f : 60.f;
+	const float CompactUiScale = bCompactCasinoLayout ? FMath::Max(0.1f, FT66Style::GetGlobalUIScale()) : 1.f;
+	auto CompactPx = [bCompactCasinoLayout, CompactUiScale](const float Value)
+	{
+		return bCompactCasinoLayout ? (Value / CompactUiScale) : Value;
+	};
+	const float OverlayPadding = bCompactCasinoLayout ? 0.f : FT66Style::Tokens::NPCOverlayPadding;
+	const float AngerFaceSize = bCompactCasinoLayout ? CompactPx(288.f) : FT66Style::Tokens::NPCAngerCircleSize;
+	const float StatsPanelWidth = bCompactCasinoLayout ? 270.f : FT66Style::Tokens::NPCShopStatsPanelWidth;
+	const float RightPanelWidth = bCompactCasinoLayout ? 355.f : FT66Style::Tokens::NPCRightPanelWidth;
+	const float MainRowHeight = bCompactCasinoLayout ? 651.f : FT66Style::Tokens::NPCMainRowHeight;
+	const float ShopCardSize = bCompactCasinoLayout ? CompactPx(226.f) : FT66Style::Tokens::NPCShopCardWidth;
+	const float ShopCardHeight = bCompactCasinoLayout ? CompactPx(527.f) : FT66Style::Tokens::NPCShopCardHeight;
+	const float ShopCardGap = bCompactCasinoLayout ? CompactPx(13.f) : FT66Style::Tokens::Space4;
+	const float ShopCardPadding = bCompactCasinoLayout ? CompactPx(12.f) : FT66Style::Tokens::Space4;
+	const float ShopNameBoxHeight = bCompactCasinoLayout ? CompactPx(50.f) : 60.f;
 	const float ShopIconSize = ShopCardSize - ShopCardPadding * 2.f;
-	const float InventorySlotSize = bCompactCasinoLayout ? 80.f : FT66Style::Tokens::InventorySlotSize;
-	const float AngerImageSize = bCompactCasinoLayout ? 136.f : 260.f;
-	const float SellPanelSize = bCompactCasinoLayout ? 128.f : 160.f;
-	const float BankSpinBoxWidth = bCompactCasinoLayout ? 68.f : FT66Style::Tokens::NPCBankSpinBoxWidth;
-	const float BankSpinBoxHeight = bCompactCasinoLayout ? 28.f : FT66Style::Tokens::NPCBankSpinBoxHeight;
+	const float InventorySlotSize = bCompactCasinoLayout ? CompactPx(75.f) : FT66Style::Tokens::InventorySlotSize;
+	const float AngerImageSize = bCompactCasinoLayout ? CompactPx(288.f) : 260.f;
+	const float SellPanelSize = bCompactCasinoLayout ? CompactPx(92.f) : 160.f;
+	const float BankSpinBoxWidth = bCompactCasinoLayout ? CompactPx(140.f) : FT66Style::Tokens::NPCBankSpinBoxWidth;
+	const float BankSpinBoxHeight = bCompactCasinoLayout ? CompactPx(48.f) : FT66Style::Tokens::NPCBankSpinBoxHeight;
 	const float CardButtonMinWidth = bCompactCasinoLayout ? 0.f : 100.f;
-	const FMargin ShopButtonPadding = bCompactCasinoLayout ? FMargin(5.f, 3.f) : FMargin(8.f, 6.f);
-	const FMargin ActionButtonPadding = bCompactCasinoLayout ? FMargin(8.f, 5.f) : FMargin(16.f, 10.f);
-	const int32 StatsPanelFontAdjustment = bCompactCasinoLayout ? -5 : 0;
-	const int32 CardHeadingFontSize = bCompactCasinoLayout ? 9 : 16;
-	const int32 CardBodyFontSize = bCompactCasinoLayout ? 7 : 12;
-	const int32 CardButtonFontSize = bCompactCasinoLayout ? 9 : 14;
-	const int32 InventoryCountFontSize = bCompactCasinoLayout ? 8 : 14;
-	const int32 InventoryDashFontSize = bCompactCasinoLayout ? 10 : 16;
-	const int32 SectionHeadingFontSize = bCompactCasinoLayout ? 10 : 16;
+	const FMargin ShopButtonPadding = bCompactCasinoLayout ? FMargin(CompactPx(10.f), CompactPx(7.f)) : FMargin(8.f, 6.f);
+	const FMargin ActionButtonPadding = bCompactCasinoLayout ? FMargin(CompactPx(14.f), CompactPx(10.f)) : FMargin(16.f, 10.f);
+	const int32 StatsPanelFontAdjustment = bCompactCasinoLayout ? 0 : 0;
+	const int32 CardHeadingFontSize = bCompactCasinoLayout ? 17 : 16;
+	const int32 CardBodyFontSize = bCompactCasinoLayout ? 13 : 12;
+	const int32 CardButtonFontSize = bCompactCasinoLayout ? 15 : 14;
+	const int32 InventoryCountFontSize = bCompactCasinoLayout ? 11 : 14;
+	const int32 InventoryDashFontSize = bCompactCasinoLayout ? 15 : 16;
+	const int32 SectionHeadingFontSize = bCompactCasinoLayout ? 24 : 16;
 	const int32 PageTitleFontSize = bCompactCasinoLayout ? 32 : 64;
-	const int32 StatusFontSize = bCompactCasinoLayout ? 8 : 12;
-	const int32 SpinBoxFontSize = bCompactCasinoLayout ? 10 : 16;
+	const int32 StatusFontSize = bCompactCasinoLayout ? 18 : 12;
+	const int32 SpinBoxFontSize = bCompactCasinoLayout ? 16 : 16;
 
 	// --- NPC anger face sprites ---
 	auto InitFaceBrush = [AngerFaceSize](FSlateBrush& B) {
@@ -325,34 +487,32 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
-		TSharedRef<SWidget> BuyBtnWidget = T66OverlayChromeStyle::MakeButton(
-			T66OverlayChromeStyle::MakeButtonParams(
-				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
-				FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnBuySlot, i),
-				ET66OverlayChromeButtonFamily::Primary)
-			.SetMinWidth(CardButtonMinWidth)
-			.SetMinHeight(36.f)
-			.SetPadding(ShopButtonPadding)
-			.SetFontSize(CardButtonFontSize)
-			.SetContent(
+		TSharedRef<SWidget> BuyBtnWidget = FT66FlatStyle::MakeFlatToggleGroupButton(
+			ET66FlatState::Selected,
 				SAssignNew(BuyButtonTexts[i], STextBlock)
 				.Text(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"))
-				.Font(FT66Style::Tokens::FontBold(CardButtonFontSize))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-			)
-		);
+				.Font(FT66FlatStyle::MakeBoldFont(CardButtonFontSize))
+				.ColorAndOpacity(FT66FlatStyle::SelectedText()),
+			FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnBuySlot, i),
+			ShopButtonPadding,
+			CardButtonMinWidth,
+			CompactPx(36.f),
+			true,
+			FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.BuyButton"), i + 1)));
 		BuyButtons[i] = BuyBtnWidget;
 
-		TSharedRef<SWidget> StealBtnWidget = T66OverlayChromeStyle::MakeButton(
-			T66OverlayChromeStyle::MakeButtonParams(
-				Loc ? Loc->GetText_Steal() : NSLOCTEXT("T66.Shop", "Steal", "STEAL"),
-				FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnStealSlot, i),
-				ET66OverlayChromeButtonFamily::Danger)
-			.SetMinWidth(CardButtonMinWidth)
-			.SetMinHeight(36.f)
-			.SetPadding(ShopButtonPadding)
-			.SetFontSize(CardButtonFontSize)
-		);
+		TSharedRef<SWidget> StealBtnWidget = FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Default,
+			Loc ? Loc->GetText_Steal() : NSLOCTEXT("T66.Shop", "Steal", "STEAL"),
+			FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnStealSlot, i),
+			nullptr,
+			nullptr,
+			ShopButtonPadding,
+			CardButtonMinWidth,
+			CompactPx(36.f),
+			true,
+			CardButtonFontSize,
+			FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.StealButton"), i + 1)));
 		StealButtons[i] = StealBtnWidget;
 
 		ShopRow->AddSlot()
@@ -363,7 +523,9 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 			.WidthOverride(ShopCardSize)
 			.HeightOverride(ShopCardHeight)
 			[
-				T66OverlayChromeStyle::MakePanel(
+				FT66FlatStyle::MakeFlatPanel(
+					ET66FlatState::Default,
+					FMargin(ShopCardPadding),
 					SNew(SVerticalBox)
 					// 1. Name at top
 					+ SVerticalBox::Slot().AutoHeight()
@@ -386,7 +548,9 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							T66OverlayChromeStyle::MakePanel(
+							FT66FlatStyle::MakeFlatPanel(
+								ET66FlatState::Default,
+								FMargin(0.f),
 								SNew(SBox)
 								.WidthOverride(ShopIconSize)
 								.HeightOverride(ShopIconSize)
@@ -396,9 +560,8 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 										.Image(ItemIconBrushes[i].Get())
 										.ColorAndOpacity(FLinearColor::White)))
 								],
-								ET66OverlayChromeBrush::SlotNormal,
-								FMargin(0.f),
-								&ItemIconBorders[i])
+								&ItemIconBorders[i],
+								FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.IconPanel"), i + 1)))
 						]
 					]
 					// 3. Two stat lines stacked
@@ -424,10 +587,9 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 							.FillWidth(1.f)
 						[ StealBtnWidget ]
 					]
-				,
-					ET66OverlayChromeBrush::OfferCardNormal,
-					FMargin(ShopCardPadding),
-					&ItemTileBorders[i])
+					,
+					&ItemTileBorders[i],
+					FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.Panel"), i + 1)))
 			]
 		];
 	}
@@ -452,22 +614,18 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 	TSharedRef<SHorizontalBox> BuybackRow = SNew(SHorizontalBox);
 	for (int32 i = 0; i < BuybackSlotCount; ++i)
 	{
-		TSharedRef<SWidget> BuybackBtnWidget = T66OverlayChromeStyle::MakeButton(
-			T66OverlayChromeStyle::MakeButtonParams(
-				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
-				FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnBuybackSlot, i),
-				ET66OverlayChromeButtonFamily::Primary)
-			.SetMinWidth(CardButtonMinWidth)
-			.SetMinHeight(36.f)
-			.SetPadding(ShopButtonPadding)
-			.SetFontSize(CardButtonFontSize)
-			.SetContent(
+		TSharedRef<SWidget> BuybackBtnWidget = FT66FlatStyle::MakeFlatToggleGroupButton(
+			ET66FlatState::Selected,
 				SAssignNew(BuybackPriceTexts[i], STextBlock)
 				.Text(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"))
-				.Font(FT66Style::Tokens::FontBold(CardButtonFontSize))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-			)
-		);
+				.Font(FT66FlatStyle::MakeBoldFont(CardButtonFontSize))
+				.ColorAndOpacity(FT66FlatStyle::SelectedText()),
+			FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnBuybackSlot, i),
+			ShopButtonPadding,
+			CardButtonMinWidth,
+			CompactPx(36.f),
+			true,
+			FName(*FString::Printf(TEXT("Vendor.BuybackCard.%02d.BuyButton"), i + 1)));
 		BuybackBuyButtons[i] = BuybackBtnWidget;
 		BuybackRow->AddSlot()
 			.AutoWidth()
@@ -477,7 +635,9 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 			.WidthOverride(ShopCardSize)
 			.HeightOverride(ShopCardHeight)
 			[
-				T66OverlayChromeStyle::MakePanel(
+				FT66FlatStyle::MakeFlatPanel(
+					ET66FlatState::Default,
+					FMargin(ShopCardPadding),
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -498,7 +658,9 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							T66OverlayChromeStyle::MakePanel(
+							FT66FlatStyle::MakeFlatPanel(
+								ET66FlatState::Default,
+								FMargin(0.f),
 								SNew(SBox)
 								.WidthOverride(ShopIconSize)
 								.HeightOverride(ShopIconSize)
@@ -508,9 +670,8 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 										.Image(BuybackIconBrushes[i].Get())
 										.ColorAndOpacity(FLinearColor::White)))
 								],
-								ET66OverlayChromeBrush::SlotNormal,
-								FMargin(0.f),
-								&BuybackIconBorders[i])
+								&BuybackIconBorders[i],
+								FName(*FString::Printf(TEXT("Vendor.BuybackCard.%02d.IconPanel"), i + 1)))
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
@@ -527,10 +688,9 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 					[
 						BuybackBtnWidget
 					]
-				,
-					ET66OverlayChromeBrush::OfferCardNormal,
-					FMargin(ShopCardPadding),
-					&BuybackTileBorders[i])
+					,
+					&BuybackTileBorders[i],
+					FName(*FString::Printf(TEXT("Vendor.BuybackCard.%02d.Panel"), i + 1)))
 			]
 		];
 	}
@@ -622,15 +782,11 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 
 	for (int32 Inv = 0; Inv < UT66RunStateSubsystem::MaxInventorySlots; ++Inv)
 	{
-		TSharedRef<SWidget> SlotBtn = FT66Style::MakeButton(
-			FT66ButtonParams(
-				FText::GetEmpty(),
-				FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnSelectInventorySlot, Inv),
-				ET66ButtonType::Neutral)
-			.SetMinWidth(InventorySlotSize).SetHeight(InventorySlotSize)
-			.SetPadding(FMargin(0.f))
-			.SetContent(
-				T66OverlayChromeStyle::MakePanel(
+		TSharedRef<SWidget> SlotBtn = FT66FlatStyle::MakeFlatToggleGroupButton(
+			ET66FlatState::Default,
+				FT66FlatStyle::MakeFlatPanel(
+					ET66FlatState::Default,
+					FMargin(0.f),
 					SNew(SOverlay)
 					+ SOverlay::Slot()
 					[
@@ -657,11 +813,17 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 						.Font(FT66Style::Tokens::FontBold(InventoryDashFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
-				,
-					ET66OverlayChromeBrush::SlotNormal,
-					FMargin(0.f),
-					&InventorySlotBorders[Inv])
-			)
+					,
+					&InventorySlotBorders[Inv],
+					FName(*FString::Printf(TEXT("Vendor.InventorySlot.%02d.Panel"), Inv + 1)))
+			,
+			FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnSelectInventorySlot, Inv),
+			FMargin(0.f),
+			InventorySlotSize,
+			InventorySlotSize,
+			true,
+			FName(*FString::Printf(TEXT("Vendor.InventorySlot.%02d"), Inv + 1)),
+			FName(TEXT("Vendor.InventorySelection"))
 		);
 		InventorySlotButtons[Inv] = SlotBtn;
 		InventoryGrid->AddSlot(Inv, 0)
@@ -676,21 +838,24 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 	}
 
 	// Pre-create sell button (needs member reference for later SetEnabled).
-	TSharedRef<SWidget> SellBtnWidget = T66OverlayChromeStyle::MakeButton(
-		T66OverlayChromeStyle::MakeButtonParams(
-			Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL"),
-			FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnSellSelectedClicked),
-			ET66OverlayChromeButtonFamily::Primary)
-		.SetMinWidth(0.f)
-		.SetPadding(ActionButtonPadding)
-		.SetFontSize(CardButtonFontSize)
-	);
+	TSharedRef<SWidget> SellBtnWidget = FT66FlatStyle::MakeFlatButton(
+		ET66FlatState::Selected,
+		Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL"),
+		FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnSellSelectedClicked),
+		nullptr,
+		nullptr,
+		ActionButtonPadding,
+		0.f,
+		0.f,
+		true,
+		CardButtonFontSize,
+		FName(TEXT("Vendor.SellButton")));
 	SellItemButton = SellBtnWidget;
 
 	TSharedRef<SWidget> ShopCardsScroller =
 		SNew(SScrollBox)
 		.Orientation(Orient_Horizontal)
-		.ScrollBarVisibility(EVisibility::Visible)
+		.ScrollBarVisibility(bCompactCasinoLayout ? EVisibility::Collapsed : EVisibility::Visible)
 		+ SScrollBox::Slot()
 		[
 			ShopRow
@@ -699,16 +864,19 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 	TSharedRef<SWidget> BuybackCardsScroller =
 		SNew(SScrollBox)
 		.Orientation(Orient_Horizontal)
-		.ScrollBarVisibility(EVisibility::Visible)
+		.ScrollBarVisibility(bCompactCasinoLayout ? EVisibility::Collapsed : EVisibility::Visible)
 		+ SScrollBox::Slot()
 		[
 			BuybackRow
 		];
 
-	TSharedRef<SWidget> ShopModeToggleButton = T66OverlayChromeStyle::MakeButton(
-		T66OverlayChromeStyle::MakeButtonParams(
-			BuybackTitle,
-			FOnClicked::CreateLambda([this]()
+	TSharedRef<SWidget> ShopModeToggleButton = FT66FlatStyle::MakeFlatToggleGroupButton(
+		ET66FlatState::Default,
+		SAssignNew(ShopModeToggleButtonText, STextBlock)
+			.Text(BuybackTitle)
+			.Font(FT66FlatStyle::MakeBoldFont(bCompactCasinoLayout ? 22 : 16))
+			.ColorAndOpacity(FT66FlatStyle::DefaultText()),
+		FOnClicked::CreateLambda([this]()
 			{
 				const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
 				if (ShopBuybackSwitcher.IsValid())
@@ -731,27 +899,332 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 				RefreshShopChrome();
 				return FReply::Handled();
 			}),
-			ET66OverlayChromeButtonFamily::Tab)
-		.SetMinWidth(0.f)
-		.SetPadding(bCompactCasinoLayout ? FMargin(8.f, 5.f) : FMargin(12.f, 8.f))
-		.SetFontSize(bCompactCasinoLayout ? 11 : 16)
-		.SetContent(
-			SAssignNew(ShopModeToggleButtonText, STextBlock)
-			.Text(BuybackTitle)
-			.Font(FT66Style::Tokens::FontBold(bCompactCasinoLayout ? 11 : 16))
-			.ColorAndOpacity(FT66Style::Tokens::Text))
-	);
+		bCompactCasinoLayout ? FMargin(12.f, 8.f) : FMargin(12.f, 8.f),
+		0.f,
+		0.f,
+		true,
+		FName(TEXT("Vendor.ShopMode.BuybackButton")),
+		FName(TEXT("Vendor.ShopMode")));
 
-	TSharedRef<SWidget> ContextRerollButton = T66OverlayChromeStyle::MakeButton(
-		T66OverlayChromeStyle::MakeButtonParams(
+	TSharedRef<SWidget> ContextRerollButton = FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Default,
 			RerollText,
 			FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnReroll),
-			ET66OverlayChromeButtonFamily::Neutral)
-		.SetMinWidth(0.f)
-		.SetPadding(ActionButtonPadding)
-		.SetFontSize(bCompactCasinoLayout ? 11 : 16)
-	);
+			nullptr,
+			nullptr,
+			ActionButtonPadding,
+			0.f,
+			0.f,
+			true,
+			bCompactCasinoLayout ? 22 : 16,
+			FName(TEXT("Vendor.ShopMode.RerollButton")));
 	ContextRerollButtonWidget = ContextRerollButton;
+
+	if (bCompactCasinoLayout)
+	{
+		const FName ShopModeToggleGroup(TEXT("Vendor.ShopMode"));
+		TSharedRef<SWidget> ShopButtonWidget = MakeVendorFlatButton(
+			ET66FlatState::Selected,
+			ShopTitle,
+			FOnClicked::CreateLambda([this]()
+			{
+				if (ShopBuybackSwitcher.IsValid())
+				{
+					ShopBuybackSwitcher->SetActiveWidgetIndex(0);
+				}
+				RefreshStock();
+				RefreshShopChrome();
+				return FReply::Handled();
+			}),
+			FMargin(12.f, 8.f),
+			22,
+			FName(TEXT("Vendor.ShopMode.ShopButton")),
+			ShopModeToggleGroup);
+
+		TSharedRef<SWidget> BankPanel =
+			FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(CompactPx(22.f), CompactPx(18.f)),
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, CompactPx(18.f))
+				[
+					MakeVendorLabel(BankTitle, 24, FName(TEXT("Vendor.Bank.Title")))
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, CompactPx(12.f))
+				[
+					MakeVendorLabel(NSLOCTEXT("T66.Shop", "BorrowAmountLabel", "Borrow amount"), 16, FName(TEXT("Vendor.Bank.BorrowLabel")), FT66FlatStyle::SecondaryText())
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, CompactPx(22.f))
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, CompactPx(22.f), 0.f)
+					[
+						SNew(SBox)
+						.WidthOverride(BankSpinBoxWidth)
+						.HeightOverride(BankSpinBoxHeight)
+						[
+							SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
+							.MinValue(0).MaxValue(999999).Delta(10)
+							.Font(FT66FlatStyle::MakeBoldFont(SpinBoxFontSize))
+							.Value(BorrowAmount)
+							.OnValueChanged_Lambda([this](int32 V)
+							{
+								int32 MaxBorrow = TNumericLimits<int32>::Max();
+								if (UT66RunStateSubsystem* RunState = GetRunStateFromWorld(GetWorld()))
+								{
+									MaxBorrow = RunState->GetRemainingBorrowCapacity();
+								}
+								BorrowAmount = FMath::Clamp(V, 0, FMath::Max(0, MaxBorrow));
+							})
+						]
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+					[
+						FT66FlatStyle::MakeFlatButton(
+							ET66FlatState::Default,
+							Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Shop", "Borrow_Button", "BORROW"),
+							FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnBorrowClicked),
+							nullptr,
+							nullptr,
+							FMargin(12.f, 8.f),
+							0.f,
+							CompactPx(52.f),
+							true,
+							16,
+							FName(TEXT("Vendor.Bank.BorrowButton")))
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, CompactPx(12.f))
+				[
+					MakeVendorLabel(NSLOCTEXT("T66.Shop", "PaybackAmountLabel", "Payback amount"), 16, FName(TEXT("Vendor.Bank.PaybackLabel")), FT66FlatStyle::SecondaryText())
+				]
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, CompactPx(22.f), 0.f)
+					[
+						SNew(SBox)
+						.WidthOverride(BankSpinBoxWidth)
+						.HeightOverride(BankSpinBoxHeight)
+						[
+							SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
+							.MinValue(0).MaxValue(999999).Delta(10)
+							.Font(FT66FlatStyle::MakeBoldFont(SpinBoxFontSize))
+							.Value(PaybackAmount)
+							.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
+						]
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+					[
+						FT66FlatStyle::MakeFlatButton(
+							ET66FlatState::Default,
+							Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Shop", "Payback_Button", "PAYBACK"),
+							FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnPaybackClicked),
+							nullptr,
+							nullptr,
+							FMargin(12.f, 8.f),
+							0.f,
+							CompactPx(52.f),
+							true,
+							16,
+							FName(TEXT("Vendor.Bank.PaybackButton")))
+					]
+				],
+				nullptr,
+				FName(TEXT("Vendor.BankPanel")));
+
+		TSharedRef<SWidget> InventoryPanel =
+			FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(18.f, 18.f),
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						MakeVendorLabel(InventoryTitle, 28, FName(TEXT("Vendor.Inventory.Title")))
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(34.f, 0.f, 32.f, 0.f)
+					[
+						FT66FlatStyle::AttachMetadata(
+							SAssignNew(NetWorthText, STextBlock)
+								.Text(FText::Format(
+									Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}"),
+									FText::AsNumber(0)))
+								.Font(FT66FlatStyle::MakeBoldFont(18))
+								.ColorAndOpacity(FT66FlatStyle::GoodStandingGreen()),
+							FName(TEXT("Vendor.Inventory.NetWorth")),
+							TEXT("Label.Body"),
+							ET66FlatState::Default,
+							TOptional<FLinearColor>(),
+							false,
+							NAME_None,
+							true)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 32.f, 0.f)
+					[
+						FT66FlatStyle::AttachMetadata(
+							SAssignNew(GoldText, STextBlock)
+								.Text(FText::Format(
+									Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}"),
+									FText::AsNumber(0)))
+								.Font(FT66FlatStyle::MakeBoldFont(18))
+								.ColorAndOpacity(FT66FlatStyle::PrimaryText()),
+							FName(TEXT("Vendor.Inventory.Gold")),
+							TEXT("Label.Body"),
+							ET66FlatState::Default,
+							TOptional<FLinearColor>(),
+							false,
+							NAME_None,
+							true)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						FT66FlatStyle::AttachMetadata(
+							SAssignNew(DebtText, STextBlock)
+								.Text(FText::Format(
+									Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}"),
+									FText::AsNumber(0)))
+								.Font(FT66FlatStyle::MakeBoldFont(18))
+								.ColorAndOpacity(FT66FlatStyle::SelectedText()),
+							FName(TEXT("Vendor.Inventory.Debt")),
+							TEXT("Label.Body"),
+							ET66FlatState::Default,
+							TOptional<FLinearColor>(),
+							false,
+							NAME_None,
+							true)
+					]
+				]
+				+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 22.f, 0.f, 0.f)
+				[
+					SNew(SScrollBox)
+					.Orientation(Orient_Horizontal)
+					.ScrollBarVisibility(EVisibility::Collapsed)
+					+ SScrollBox::Slot()
+					[
+						InventoryGrid
+					]
+				],
+				nullptr,
+				FName(TEXT("Vendor.InventoryPanel")));
+
+		TSharedRef<SWidget> SellPanel =
+			FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(CompactPx(30.f), CompactPx(16.f)),
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, CompactPx(16.f))
+				[
+					MakeVendorLabel(NSLOCTEXT("T66.Common", "Sell", "SELL"), 24, FName(TEXT("Vendor.Sell.Title")))
+				]
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, CompactPx(30.f), 0.f)
+					[
+						SNew(SBox)
+						.WidthOverride(SellPanelSize)
+						.HeightOverride(SellPanelSize)
+						[
+							FT66FlatStyle::MakeFlatPanel(
+								ET66FlatState::Default,
+								FMargin(4.f),
+								SNullWidget::NullWidget,
+								nullptr,
+								FName(TEXT("Vendor.Sell.ItemSlot")))
+						]
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+					[
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							FT66FlatStyle::AttachMetadata(
+								SAssignNew(SellItemNameText, STextBlock)
+									.Text(NSLOCTEXT("T66.Shop", "NoItemSelected", "No item selected"))
+									.Font(FT66FlatStyle::MakeFont(15))
+									.ColorAndOpacity(FT66FlatStyle::SecondaryText()),
+								FName(TEXT("Vendor.Sell.ItemName")),
+								TEXT("Label.Body"),
+								ET66FlatState::Default,
+								TOptional<FLinearColor>(),
+								false,
+								NAME_None,
+								true)
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, CompactPx(10.f), 0.f, 0.f)
+						[
+							FT66FlatStyle::AttachMetadata(
+								SAssignNew(SellItemPriceText, STextBlock)
+									.Text(NSLOCTEXT("T66.Shop", "SellForZero", "Sell for: 0g"))
+									.Font(FT66FlatStyle::MakeFont(15))
+									.ColorAndOpacity(FT66FlatStyle::SecondaryText()),
+								FName(TEXT("Vendor.Sell.Price")),
+								TEXT("Label.Body"),
+								ET66FlatState::Default,
+								TOptional<FLinearColor>(),
+								false,
+								NAME_None,
+								true)
+						]
+					]
+				]
+				+ SVerticalBox::Slot().FillHeight(1.f)
+				[
+					SNew(SSpacer)
+				]
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SellBtnWidget
+				],
+				nullptr,
+				FName(TEXT("Vendor.SellPanel")));
+
+		TSharedRef<SConstraintCanvas> VendorCanvas = SNew(SConstraintCanvas);
+		AddVendorCanvasSlot(VendorCanvas, 17.f, 182.f, 270.f, 651.f,
+			MakeVendorReferenceStatsPanel(RunState));
+		AddVendorCanvasSlot(VendorCanvas, 312.f, 185.f, 318.f, 57.f, ShopButtonWidget);
+		AddVendorCanvasSlot(VendorCanvas, 653.f, 185.f, 318.f, 57.f, ShopModeToggleButton);
+		AddVendorCanvasSlot(VendorCanvas, 986.f, 185.f, 306.f, 57.f, ContextRerollButton);
+		AddVendorCanvasSlot(VendorCanvas, 310.f, 262.f, 1226.f, 568.f,
+			FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(18.f),
+				SAssignNew(ShopBuybackSwitcher, SWidgetSwitcher)
+				+ SWidgetSwitcher::Slot()
+				[
+					ShopCardsScroller
+				]
+				+ SWidgetSwitcher::Slot()
+				[
+					BuybackCardsScroller
+				],
+				nullptr,
+				FName(TEXT("Vendor.ShopCardsPanel"))));
+		AddVendorCanvasSlot(VendorCanvas, 1564.f, 183.f, 355.f, 319.f,
+			FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(14.f),
+				SNew(SBox)
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+				[
+					SAssignNew(AngerCircleImage, SImage)
+					.Image(&AngerFace_Happy)
+				],
+				nullptr,
+				FName(TEXT("Vendor.PortraitPanel"))));
+		AddVendorCanvasSlot(VendorCanvas, 1564.f, 526.f, 355.f, 309.f, BankPanel);
+		AddVendorCanvasSlot(VendorCanvas, 17.f, 854.f, 1520.f, 210.f, InventoryPanel);
+		AddVendorCanvasSlot(VendorCanvas, 1564.f, 854.f, 355.f, 215.f, SellPanel);
+
+		SetPage(EShopPage::Shop);
+		RefreshAll();
+		RefreshShopChrome();
+		return FT66FlatStyle::AttachMetadata(VendorCanvas, FName(TEXT("Vendor.Root")), TEXT("Overlay"), ET66FlatState::Default);
+	}
 
 	// Build main 3-column row (Stats | Shop | Bank) as a separate widget to avoid Slate parser issues with SBox::FArguments.
 	TSharedRef<SWidget> MainRowContent = SNew(SHorizontalBox)

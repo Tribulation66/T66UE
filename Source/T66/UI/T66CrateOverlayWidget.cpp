@@ -9,7 +9,7 @@
 #include "Gameplay/T66PlayerController.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66SlateTextureHelpers.h"
-#include "UI/Style/T66OverlayChromeStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 
 #include "Widgets/Images/SImage.h"
@@ -204,7 +204,9 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 				.WidthOverride(ItemTileWidth)
 				.HeightOverride(ItemTileHeight)
 				[
-					T66OverlayChromeStyle::MakeSlotPanel(
+					FT66FlatStyle::MakeFlatPanel(
+						i == WinnerPosition ? ET66FlatState::Selected : ET66FlatState::Default,
+						FMargin(6.f),
 						SNew(SBorder)
 						.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 						.BorderBackgroundColor(FrameColor)
@@ -244,14 +246,14 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 								]
 							]
 						],
-						i == WinnerPosition,
-						true,
-						FMargin(6.f))
+						nullptr,
+						FName(*FString::Printf(TEXT("CrateOverlay.ItemSlot.%02d"), i + 1)))
 				]
 			];
 	}
 
-	TSharedRef<SWidget> Root = SNew(SOverlay)
+	TSharedRef<SWidget> Root = FT66FlatStyle::AttachMetadata(
+		SNew(SOverlay)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
 		.VAlign(VAlign_Bottom)
@@ -268,11 +270,15 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 			.WidthOverride(CratePanelWidth)
 			.HeightOverride(CratePanelHeight)
 			[
-				T66OverlayChromeStyle::MakePanel(
+				FT66FlatStyle::MakeFlatPanel(
+					ET66FlatState::Default,
+					FMargin(6.f),
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).VAlign(VAlign_Center)
 					[
-						T66OverlayChromeStyle::MakePanel(
+						FT66FlatStyle::MakeFlatPanel(
+							ET66FlatState::Default,
+							FMargin(5.f),
 							SNew(SOverlay)
 							+ SOverlay::Slot()
 							[
@@ -281,12 +287,16 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 								.HeightOverride(ItemTileHeight + 4.f)
 								.Clipping(EWidgetClipping::ClipToBounds)
 								[
-									SAssignNew(StripContainer, SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-									.Padding(0.f)
-									[
-										StripRow.ToSharedRef()
-									]
+									FT66FlatStyle::AttachMetadata(
+										SAssignNew(StripContainer, SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+										.Padding(0.f)
+										[
+											StripRow.ToSharedRef()
+										],
+										FName(TEXT("CrateOverlay.StripContainer")),
+										TEXT("ScrollingStrip"),
+										ET66FlatState::Default)
 								]
 							]
 							+ SOverlay::Slot()
@@ -297,10 +307,12 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 								.WidthOverride(ItemTileWidth + 8.f)
 								.HeightOverride(ItemTileHeight + 8.f)
 								[
-									T66OverlayChromeStyle::MakePanel(
+									FT66FlatStyle::MakeFlatPanel(
+										ET66FlatState::Selected,
+										FMargin(0.f),
 										SNew(SSpacer),
-										ET66OverlayChromeBrush::CrateWinnerMarker,
-										FMargin(0.f))
+										nullptr,
+										FName(TEXT("CrateOverlay.WinnerMarker")))
 								]
 							]
 							+ SOverlay::Slot()
@@ -311,30 +323,48 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 								.WidthOverride(3.f)
 								.HeightOverride(ItemTileHeight + 8.f)
 								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.98f, 0.76f, 0.30f, 0.94f))
+									FT66FlatStyle::AttachMetadata(
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+										.BorderBackgroundColor(FT66FlatStyle::SelectedBorder()),
+										FName(TEXT("CrateOverlay.WinnerNeedle")),
+										TEXT("SelectionNeedle"),
+										ET66FlatState::Selected,
+										FT66FlatStyle::SelectedBorder())
 								]
 							],
-							ET66OverlayChromeBrush::CrateStripFrame,
-							FMargin(5.f))
+							nullptr,
+							FName(TEXT("CrateOverlay.StripFrame")))
 					]
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 0.f)
 					[
-						T66OverlayChromeStyle::MakePanel(
-							SAssignNew(SkipText, STextBlock)
-							.Text(BuildSkipCountdownText(ScrollDuration))
-							.Font(FT66Style::Tokens::FontRegular(8))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-							.Justification(ETextJustify::Center),
-							ET66OverlayChromeBrush::HeaderSummaryBar,
-							FMargin(6.f, 3.f))
+						FT66FlatStyle::MakeFlatPanel(
+							ET66FlatState::Default,
+							FMargin(6.f, 3.f),
+							FT66FlatStyle::AttachMetadata(
+								SAssignNew(SkipText, STextBlock)
+								.Text(BuildSkipCountdownText(ScrollDuration))
+								.Font(FT66FlatStyle::MakeFont(8))
+								.ColorAndOpacity(FT66FlatStyle::SecondaryText())
+								.Justification(ETextJustify::Center),
+								FName(TEXT("CrateOverlay.SkipText")),
+								TEXT("Label.Caption"),
+								ET66FlatState::Default,
+								TOptional<FLinearColor>(),
+								false,
+								NAME_None,
+								true),
+							nullptr,
+							FName(TEXT("CrateOverlay.SkipBar")))
 					],
-					ET66OverlayChromeBrush::ContentPanelWide,
-					FMargin(6.f)
+					nullptr,
+					FName(TEXT("CrateOverlay.Panel"))
 				)
 			]
-		];
+		],
+		FName(TEXT("CrateOverlay.Root")),
+		TEXT("Overlay"),
+		ET66FlatState::Default);
 
 	if (SkipText.IsValid())
 	{

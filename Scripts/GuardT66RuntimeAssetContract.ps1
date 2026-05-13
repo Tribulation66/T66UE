@@ -199,8 +199,8 @@ try {
 
     if ($errors.Count -gt 0) {
         Write-Host "Runtime asset contract guard failures:"
-        foreach ($error in $errors) {
-            Write-Host "  $error"
+        foreach ($guardError in $errors) {
+            Write-Host "  $guardError"
         }
         exit 1
     }

@@ -1,0 +1,302 @@
+{
+  "method": "built-in imagegen auxiliary sheet; deterministic chroma-key extraction/resizing only",
+  "source_reference": "SourceAssets\\New References\\Main Menu.png",
+  "accepted_sheet": "C:\\UE\\T66\\Saved\\Codex\\UI\\MainMenu\\BloodyRetro_20260509\\Working\\Pass_02\\Candidates\\bloody_retro_auxiliary_sheet_pass02.png",
+  "variant_folder": "C:\\UE\\T66\\SourceAssets\\UI\\Reference\\Screens\\MainMenu\\BloodyRetro\\Elements",
+  "component_boxes": {
+    "title": [
+      73,
+      57,
+      1717,
+      302
+    ],
+    "global_button": [
+      165,
+      339,
+      413,
+      594
+    ],
+    "friends_button": [
+      486,
+      339,
+      739,
+      594
+    ],
+    "streamers_button": [
+      805,
+      339,
+      1049,
+      594
+    ],
+    "check_empty": [
+      1155,
+      396,
+      1298,
+      543
+    ],
+    "check_selected": [
+      1379,
+      396,
+      1524,
+      554
+    ],
+    "progress_track": [
+      154,
+      651,
+      1361,
+      744
+    ],
+    "progress_fill": [
+      154,
+      764,
+      1361,
+      866
+    ]
+  },
+  "assets": [
+    {
+      "file": "main_menu_title_lockup.png",
+      "component": "title",
+      "source_bbox": [
+        73,
+        57,
+        1717,
+        302
+      ],
+      "size": [
+        1512,
+        526
+      ],
+      "runtime_note": "generated but not routed over the current baked background title"
+    },
+    {
+      "file": "leaderboard_filter_global_icon.png",
+      "component": "global_button",
+      "source_bbox": [
+        165,
+        339,
+        413,
+        594
+      ],
+      "inner_crop": [
+        36,
+        48,
+        212,
+        224
+      ],
+      "size": [
+        58,
+        58
+      ]
+    },
+    {
+      "file": "leaderboard_filter_friends_icon.png",
+      "component": "friends_button",
+      "source_bbox": [
+        486,
+        339,
+        739,
+        594
+      ],
+      "inner_crop": [
+        38,
+        45,
+        218,
+        225
+      ],
+      "size": [
+        58,
+        58
+      ]
+    },
+    {
+      "file": "leaderboard_filter_streamers_icon.png",
+      "component": "streamers_button",
+      "source_bbox": [
+        805,
+        339,
+        1049,
+        594
+      ],
+      "inner_crop": [
+        50,
+        44,
+        196,
+        225
+      ],
+      "size": [
+        58,
+        58
+      ]
+    },
+    {
+      "file": "check_square_normal.png",
+      "component": "check_empty",
+      "source_bbox": [
+        1155,
+        396,
+        1298,
+        543
+      ],
+      "size": [
+        180,
+        129
+      ]
+    },
+    {
+      "file": "check_square_disabled.png",
+      "component": "check_empty",
+      "source_bbox": [
+        1155,
+        396,
+        1298,
+        543
+      ],
+      "size": [
+        180,
+        129
+      ]
+    },
+    {
+      "file": "check_square_hover.png",
+      "component": "check_empty",
+      "source_bbox": [
+        1155,
+        396,
+        1298,
+        543
+      ],
+      "size": [
+        180,
+        129
+      ]
+    },
+    {
+      "file": "check_square_pressed.png",
+      "component": "check_empty",
+      "source_bbox": [
+        1155,
+        396,
+        1298,
+        543
+      ],
+      "size": [
+        180,
+        129
+      ]
+    },
+    {
+      "file": "check_square_selected.png",
+      "component": "check_selected",
+      "source_bbox": [
+        1379,
+        396,
+        1524,
+        554
+      ],
+      "size": [
+        180,
+        129
+      ]
+    },
+    {
+      "file": "check_square_selected_red.png",
+      "component": "check_selected",
+      "source_bbox": [
+        1379,
+        396,
+        1524,
+        554
+      ],
+      "size": [
+        180,
+        129
+      ]
+    },
+    {
+      "file": "progress_bar_track.png",
+      "component": "progress_track",
+      "source_bbox": [
+        154,
+        651,
+        1361,
+        744
+      ],
+      "size": [
+        256,
+        24
+      ]
+    },
+    {
+      "file": "progress_bar_fill_red.png",
+      "component": "progress_fill",
+      "source_bbox": [
+        154,
+        764,
+        1361,
+        866
+      ],
+      "size": [
+        210,
+        18
+      ]
+    },
+    {
+      "file": "search_magnifier_icon.png",
+      "component": "parity_copy_from_current_library",
+      "size": [
+        668,
+        670
+      ]
+    },
+    {
+      "file": "party_plus_icon.png",
+      "component": "parity_copy_from_current_library",
+      "size": [
+        634,
+        613
+      ]
+    },
+    {
+      "file": "power_off_icon.png",
+      "component": "parity_copy_from_current_library",
+      "size": [
+        730,
+        776
+      ]
+    },
+    {
+      "file": "home_profile_icon.png",
+      "component": "parity_copy_from_current_library",
+      "size": [
+        649,
+        800
+      ]
+    },
+    {
+      "file": "settings_gear_icon.png",
+      "component": "parity_copy_from_current_library",
+      "size": [
+        831,
+        851
+      ]
+    },
+    {
+      "file": "language_globe_icon.png",
+      "component": "parity_copy_from_current_library",
+      "size": [
+        767,
+        762
+      ]
+    },
+    {
+      "file": "coupon_ticket_icon.png",
+      "component": "parity_copy_from_current_library",
+      "size": [
+        726,
+        539
+      ]
+    }
+  ],
+  "extraction_revision": "pass02c progress fill keeps only red generated pixels for live profile visibility"
+}

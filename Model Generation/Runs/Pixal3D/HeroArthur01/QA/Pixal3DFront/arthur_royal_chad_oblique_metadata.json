@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroArthur01\\Raw\\Pixal3D\\arthur_royal_chad\\arthur_royal_chad_Pixal3D_R1024_S1337_D80000.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroArthur01\\QA\\Pixal3DFront\\arthur_royal_chad_oblique.png",
+  "export": null,
+  "raw_triangles": 79617,
+  "triangles_before_decimate": 79617,
+  "triangles_after_decimate": 79617,
+  "bounds": {
+    "min": [
+      -0.338873028755188,
+      -0.4968791604042053,
+      -0.4375092387199402
+    ],
+    "max": [
+      0.30567309260368347,
+      0.4673001170158386,
+      0.43152278661727905
+    ],
+    "size": [
+      0.6445461511611938,
+      0.964179277420044,
+      0.8690320253372192
+    ]
+  }
+}

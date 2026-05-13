@@ -188,6 +188,8 @@ private:
 	FVector2D PendingViewportSize = FVector2D::ZeroVector;
 	float PendingViewportStableTime = 0.f;
 	bool bViewportResponsiveRebuildQueued = false;
+	int32 FlatMainMenuLeaderboardFilterIndex = 0;
+	int32 FlatMainMenuLeaderboardScopeIndex = 0;
 	ET66Language LastBuiltLanguage = ET66Language::English;
 	uint32 LastBuiltMenuStateHash = 0;
 
@@ -209,6 +211,7 @@ private:
 	/** Load or bind the main menu scene plate brushes. */
 	void RequestBackgroundTexture();
 	TSharedRef<SWidget> BuildMainMenuBackgroundWidget() const;
+	TSharedRef<SWidget> BuildFlatMainMenuUI();
 	void RequestMainMenuChromeBrushes();
 	void RequestCTAButtonBrushes();
 	void HandlePartyStateChanged();

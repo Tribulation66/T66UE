@@ -638,8 +638,8 @@ Reference evidence:
 - `Content/__Debug` is only text-referenced by `Scripts/DebugGLBRawImport.py`, which writes scratch imports under `/Game/__Debug/GLBRaw`.
 - `Content/Collections` and `Content/Developers/DoPra/Collections` are empty; current logs only show Unreal scanning them.
 - `Content/Movies/ArthurPreview.mp4` has no exact live text reference found. Current code references `KnightClip.mp4`, not `ArthurPreview.mp4`.
-- `Content/SourceAssets/UI/Dota/Generated` is still text-referenced by `Source/T66/UI/Style/T66RuntimeUIBrushAccess.cpp` as a runtime PNG fallback directory, so the parent folder is live.
-- `Content/SourceAssets/UI/Dota/Generated/debug_downscaled` has no live text references found and appears to contain debug/small/test variants.
+- `Content/SourceAssets/UI/DeletedTheme/Generated` is still text-referenced by `Source/T66/UI/Style/T66RuntimeUIBrushAccess.cpp` as a runtime PNG fallback directory, so the parent folder is live.
+- `Content/SourceAssets/UI/DeletedTheme/Generated/debug_downscaled` has no live text references found and appears to contain debug/small/test variants.
 - `Content/T66MapAssets` has existing tree asset deletions in the working tree and a README updated on 2026-05-07. It still contains landscape and rock assets, and old captured logs show maps previously loading `T66MapAssets` rocks/trees. Treat this as its own asset-registry sub-pass, not a raw delete.
 
 Recommendation:
@@ -650,8 +650,8 @@ Recommendation:
   - delete empty `Content/Developers`;
   - delete `Content/__Debug` after confirming no current debug import work is in progress;
   - delete `Content/Movies/ArthurPreview.mp4` unless the user wants to keep old Arthur video preview media.
-- Mark `Content/SourceAssets/UI/Dota/Generated/debug_downscaled` as a delete candidate after a small asset-registry check confirms no cooked assets reference the debug variants.
-- Keep `Content/SourceAssets/UI/Dota/Generated` parent for now because runtime code still uses it.
+- Mark `Content/SourceAssets/UI/DeletedTheme/Generated/debug_downscaled` as a delete candidate after a small asset-registry check confirms no cooked assets reference the debug variants.
+- Keep `Content/SourceAssets/UI/DeletedTheme/Generated` parent for now because runtime code still uses it.
 - Split the rest of `Content` into sub-passes later: `Characters`, `World`, `UI`, `SourceAssets`, VFX packs, maps/external actors, and minigame folders.
 
 Tweaks required before deletion/consolidation:
@@ -659,7 +659,7 @@ Tweaks required before deletion/consolidation:
 - For `Content/Developers`: none.
 - For `Content/__Debug`: keep `Scripts/DebugGLBRawImport.py` if the debug import workflow is still useful; the script can recreate scratch imports. Delete only the generated `/Game/__Debug/GLBRaw` assets.
 - For `Content/Movies/ArthurPreview.mp4`: none found by text search; if deleting, verify no MediaPlayer/MediaSource asset references it in the Unreal asset registry.
-- For `Content/SourceAssets/UI/Dota/Generated/debug_downscaled`: run a small Unreal asset-registry referencer check before deleting the 28 debug/small/test files.
+- For `Content/SourceAssets/UI/DeletedTheme/Generated/debug_downscaled`: run a small Unreal asset-registry referencer check before deleting the 28 debug/small/test files.
 - For any `Content/World`, `Characters`, `UI`, `T66MapAssets`, or pack-level deletion: run Unreal asset-registry referencer audit and source/config/data text search first.
 
 Good-to-delete candidates:
@@ -667,7 +667,7 @@ Good-to-delete candidates:
 - Delete empty `Content/Developers/DoPra/Collections`, then empty `Content/Developers/DoPra`, then empty `Content/Developers`.
 - Delete `Content/__Debug/GLBRaw` and the root `Content/__Debug` folder after confirming no debug import pass is active.
 - Delete `Content/Movies/ArthurPreview.mp4` after confirming no media asset uses it.
-- Delete `Content/SourceAssets/UI/Dota/Generated/debug_downscaled` after asset-registry confirmation.
+- Delete `Content/SourceAssets/UI/DeletedTheme/Generated/debug_downscaled` after asset-registry confirmation.
 
 Risk:
 - High for broad raw deletion anywhere in `Content`.
@@ -681,11 +681,11 @@ Decision:
 - Proposed keep: root `Content` folder and live asset subfolders.
 - Proposed delete now: empty `Content/Collections` and `Content/Developers`.
 - Proposed delete after quick confirmation: `Content/__Debug` and `Content/Movies/ArthurPreview.mp4`.
-- Proposed delete after asset-registry check: `Content/SourceAssets/UI/Dota/Generated/debug_downscaled`.
+- Proposed delete after asset-registry check: `Content/SourceAssets/UI/DeletedTheme/Generated/debug_downscaled`.
 - Proposed follow-up: handle the rest of `Content` as dedicated subfolder-level cleanup passes, not as one top-level delete.
 
 Implementation update:
-- Superseded by the Alpha 0.1 implementation notes below. The later cleanup pass removed the Dota UI fallback path, audited the full old UI target set, and deleted all of `Content/SourceAssets/UI`, not just `debug_downscaled`.
+- Superseded by the Alpha 0.1 implementation notes below. The later cleanup pass removed the DeletedTheme UI fallback path, audited the full old UI target set, and deleted all of `Content/SourceAssets/UI`, not just `debug_downscaled`.
 
 ### Deeper `Content` follow-up: stale maps, external actors, characters, props, and UI
 
@@ -698,7 +698,7 @@ Additional user-raised cleanup targets:
 - `Content/Maps/Gameplay_Coliseum.umap`
 - `Content/SourceAssets/UI`
 - `Content/T66MapAssets`
-- old `Content/UI` Dota/retro wood assets
+- old `Content/UI` DeletedTheme/retro wood assets
 
 External actor/object evidence:
 - `git ls-files Content/__ExternalActors__ Content/__ExternalObjects__` shows both folders are only under `ThirdPerson/Maps/ThirdPersonMap`.
@@ -808,25 +808,25 @@ Props recommendation:
 - Required tweak: update stale project catalogue/docs. If an editor-only procedural hills/map-assets setup tool still exists, retire it or point it at the current `Content/World/Terrain` kit before deleting this folder.
 
 `Content/SourceAssets/UI` evidence:
-- This folder is entirely Dota-generated loose fallback art plus an empty `MainMenu` folder.
+- This folder is entirely DeletedTheme-generated loose fallback art plus an empty `MainMenu` folder.
 - Current live runtime UI code now loads most shared chrome from `SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements`.
-- However `T66RuntimeUIBrushAccess.cpp` still has `GetDotaGeneratedSourceDir()` pointing at `Content/SourceAssets/UI/Dota/Generated`, and `ResolveDotaButtonPlateBrush()` still tries cooked `T_UI_Dota*` assets and Dota loose PNG fallbacks.
-- `Scripts/GenerateChestRewardAssets.py` still points at `SourceAssets/UI/Dota/Generated/frontend_topbar_achievement_coins_icon.png`.
+- However `T66RuntimeUIBrushAccess.cpp` still has `GetDeletedThemeGeneratedSourceDir()` pointing at `Content/SourceAssets/UI/DeletedTheme/Generated`, and `ResolveDeletedThemeButtonPlateBrush()` still tries cooked `T_UI_DeletedTheme*` assets and DeletedTheme loose PNG fallbacks.
+- `Scripts/GenerateChestRewardAssets.py` still points at `SourceAssets/UI/DeletedTheme/Generated/frontend_topbar_achievement_coins_icon.png`.
 
 `Content/SourceAssets/UI` recommendation:
 - Mark all of `Content/SourceAssets/UI` for deletion after UI brush cleanup.
 - Required tweak:
-  - remove the Dota fallback directory and Dota plate helper paths from `T66RuntimeUIBrushAccess`;
+  - remove the DeletedTheme fallback directory and DeletedTheme plate helper paths from `T66RuntimeUIBrushAccess`;
   - route any remaining no-override button-plate calls to the Ultrakill/reference element paths or simple color fallback;
   - update/remove `Scripts/GenerateChestRewardAssets.py` if it still needs an icon source;
   - confirm `Config/DefaultGame.ini` does not need to cook `/Game/SourceAssets` after other `Content/SourceAssets` users are reviewed.
 
 `Content/UI` evidence:
 - `Content/UI` contains 258 files, about 178.23 MB.
-- `Content/UI/Assets` contains cooked Dota plates, topbar icons, medals, `ButtonLight_*`, `PanelLight`, and retro wood trim textures.
+- `Content/UI/Assets` contains cooked DeletedTheme plates, topbar icons, medals, `ButtonLight_*`, `PanelLight`, and retro wood trim textures.
 - `Content/UI/Materials` contains `M_UI_Glow` plus old `M_UI_RetroSkyBorder*`, `M_UI_RetroWoodTrim*`, and their material instances.
-- `T66ButtonVisuals.cpp` directly loads the old retro sky/wood assets, but `FT66Style::IsDotaTheme()` currently always returns true, so default shared buttons/panels do not route through retro wood unless call sites explicitly request that visual.
-- `T66RuntimeUIBrushAccess.cpp` directly loads cooked Dota plate assets under `/Game/UI/Assets/T_UI_Dota*`.
+- `T66ButtonVisuals.cpp` directly loads the old retro sky/wood assets, but `FT66Style::IsDeletedThemeTheme()` currently always returns true, so default shared buttons/panels do not route through retro wood unless call sites explicitly request that visual.
+- `T66RuntimeUIBrushAccess.cpp` directly loads cooked DeletedTheme plate assets under `/Game/UI/Assets/T_UI_DeletedTheme*`.
 - Current runtime code directly uses some `Content/UI` assets:
   - `Content/UI/M_PixelationPostProcess.uasset` via `UT66PixelationSubsystem`;
   - `Content/UI/Preview/*` via preview material code;
@@ -851,10 +851,10 @@ Props recommendation:
   - `Content/UI/Sprites/UI`
   - active hero portrait folders needed by `Heroes.csv`
 - Mark for delete after UI style cleanup:
-  - `Content/UI/Assets/T_UI_DotaDangerButtonPlate.uasset`
-  - `Content/UI/Assets/T_UI_DotaInventorySlotFrame.uasset`
-  - `Content/UI/Assets/T_UI_DotaNeutralButtonPlate.uasset`
-  - `Content/UI/Assets/T_UI_DotaPrimaryButtonPlate.uasset`
+  - `Content/UI/Assets/T_UI_DeletedThemeDangerButtonPlate.uasset`
+  - `Content/UI/Assets/T_UI_DeletedThemeInventorySlotFrame.uasset`
+  - `Content/UI/Assets/T_UI_DeletedThemeNeutralButtonPlate.uasset`
+  - `Content/UI/Assets/T_UI_DeletedThemePrimaryButtonPlate.uasset`
   - `Content/UI/Assets/T_UI_RetroWoodTrim*_V2_*.uasset`
   - old `Content/UI/Materials/M_UI_Retro*` and `MI_UI_Retro*`
   - `Content/UI/Sprites/Heroes/Hero_13`, `Hero_14`, `Hero_15` after active hero portrait paths are redirected
@@ -866,8 +866,8 @@ Props recommendation:
   - `Content/UI/Assets/PanelLight.uasset`
   - `Content/UI/Obsidian.uasset`
 - Required tweak:
-  - rename/generalize the Dota-named UI APIs to neutral T66/Ultrakill naming or keep compatibility wrappers that no longer load Dota assets;
-  - remove Dota cooked asset paths from `T66RuntimeUIBrushAccess`;
+  - rename/generalize the DeletedTheme-named UI APIs to neutral T66/Ultrakill naming or keep compatibility wrappers that no longer load DeletedTheme assets;
+  - remove DeletedTheme cooked asset paths from `T66RuntimeUIBrushAccess`;
   - remove or no-op retro wood/retro sky branches in `T66ButtonVisuals` and `ET66ButtonBorderVisual` if the old visual families are fully retired;
   - remove old main menu/preload soft paths from `T66GameInstance.cpp` after confirming the current main menu uses `SourceAssets/UI/Reference` assets.
 
@@ -875,10 +875,10 @@ Accepted Content cleanup direction:
 - Accepted later data/code cleanup: redirect active data so `Content/Characters/Heroes/Hero_13`, `Hero_14`, `Hero_15` and matching UI portrait folders can be deleted.
 - Accepted later Arthur cleanup: retire old Hero_1 Arthur skeletal import folders and `ArthurPreview` media after script/reference cleanup; keep live sword VFX until renamed/replaced.
 - Accepted later props cleanup: remove `UT66PropSubsystem` and its main-map call sites so `Props.csv`, `DT_Props`, and remaining old prop validation/import scripts can be deleted.
-- Accepted later UI cleanup: delete Dota, retro wood, retro sky, old main-menu, old topbar, and stale hero portrait assets from `Content/UI` once the style/preload code no longer points at them.
+- Accepted later UI cleanup: delete DeletedTheme, retro wood, retro sky, old main-menu, old topbar, and stale hero portrait assets from `Content/UI` once the style/preload code no longer points at them.
 
 Implementation update:
-- Superseded by the Alpha 0.1 implementation notes below. Hero 13-15 data ownership, props removal, stale enemies, `T66MapAssets`, old Dota/retro/main-menu/topbar UI, and the accepted script retirements were implemented and verified in later passes.
+- Superseded by the Alpha 0.1 implementation notes below. Hero 13-15 data ownership, props removal, stale enemies, `T66MapAssets`, old DeletedTheme/retro/main-menu/topbar UI, and the accepted script retirements were implemented and verified in later passes.
 
 ## 12. `DerivedDataCache`
 
@@ -1672,7 +1672,7 @@ Reference evidence:
 - `Source/T66/T66.Build.cs` stages WebView2, Steam app id, loose runtime UI/font roots, and source-art exceptions; this directly ties `Source` cleanup to the accepted `RuntimeDependencies` and `SourceAssets/UI` migration plans.
 - `Source/T66/Core/T66PropSubsystem.cpp`, `Source/T66/Core/T66PropSubsystem.h`, `FT66PropRow` in `T66DataTypes.h`, and `T66GameMode_MainMap.cpp` still reference the old props pipeline.
 - `T66RunStateSubsystem_Private.h`, `T66RunStateSubsystem_Stats.cpp`, `T66LocalizationSubsystem.cpp`, and multiple gameplay VFX files still contain Arthur-specific special cases/names.
-- `Source/T66/UI/Dota` exists and `ET66UITheme::Dota` is still the forced theme from `UT66PlayerSettingsSubsystem::GetUITheme()`.
+- `Source/T66/UI/DeletedTheme` exists and `ET66UITheme::DeletedTheme` is still the forced theme from `UT66PlayerSettingsSubsystem::GetUITheme()`.
 - `T66VisualUtil.cpp` points at a missing `Scripts/ReparentToFBXUnlit.py`, and `T66LeaderboardPanel.cpp` comments point at missing `Scripts/ImportLeaderboardIcons.py`.
 - `Source/T66/Core/T66LegacyRuntimeTextureAccess.cpp/.h` appear to have no references outside themselves.
 
@@ -1693,10 +1693,10 @@ Tweaks required before deletion/consolidation:
   - Remove or rename Arthur-specific stat boost code; do not leave a hardcoded hidden Hero_1 test boost.
   - Rename or replace Arthur-specific VFX helper names if Hero_1 still uses the sword-style VFX; delete them only if the effect is no longer used.
   - Update localization so `Hero_1` is no longer named Arthur if Arthur is being removed.
-- UI/Dota cleanup:
-  - Replace `ET66UITheme::Dota` and `Source/T66/UI/Dota` with the current canonical UI theme naming.
-  - Remove `DotaScreenClasses`, `DotaGameplayHUDClass`, Dota overlay class properties, and `SetUseDotaPlateOverlay`/`SetDotaPlateOverrideBrush` naming once equivalent current-theme code exists.
-  - Replace Dota/old loose UI asset paths with the accepted Ultrakill-inspired canonical UI asset library.
+- UI/DeletedTheme cleanup:
+  - Replace `ET66UITheme::DeletedTheme` and `Source/T66/UI/DeletedTheme` with the current canonical UI theme naming.
+  - Remove `DeletedThemeScreenClasses`, `DeletedThemeGameplayHUDClass`, DeletedTheme overlay class properties, and `SetUseDeletedThemePlateOverlay`/`SetDeletedThemePlateOverrideBrush` naming once equivalent current-theme code exists.
+  - Replace DeletedTheme/old loose UI asset paths with the accepted Ultrakill-inspired canonical UI asset library.
 - Runtime UI migration:
   - After `RuntimeDependencies` and `SourceAssets/UI` are migrated into cooked UI assets, remove or shrink `T66RuntimeUITextureAccess`, `T66RuntimeUIBrushAccess`, and `T66RuntimeUIFontAccess`.
   - Delete `T66LegacyRuntimeTextureAccess.cpp/.h` if still unreferenced.
@@ -1724,10 +1724,10 @@ Good-to-delete candidates:
   - `Source/T66/Gameplay/T66VendorNPC.cpp/.h`
   - `Source/T66/Gameplay/T66WheelSpinInteractable.cpp/.h`
   - `Source/T66/UI/T66VendorOverlayWidget.cpp/.h`
-- Dota/old theme code after current theme migration:
-  - `Source/T66/UI/Dota/T66DotaTheme.cpp`
-  - `Source/T66/UI/Dota/T66DotaTheme.h`
-  - Dota enum values/properties/method names that remain only for the old theme.
+- DeletedTheme/old theme code after current theme migration:
+  - `Source/T66/UI/DeletedTheme/T66DeletedThemeTheme.cpp`
+  - `Source/T66/UI/DeletedTheme/T66DeletedThemeTheme.h`
+  - DeletedTheme enum values/properties/method names that remain only for the old theme.
 - Arthur-specific code after current hero/VFX decisions are made:
   - `Source/T66/Gameplay/T66ArthurSwordVisuals.cpp/.h`
   - `Source/T66/Gameplay/T66ArthurUltimateSword.cpp/.h`
@@ -2526,7 +2526,7 @@ Enemy cleanup implemented:
 
 UI cleanup implemented:
 
-- Replaced old Dota button-plate cooked-asset loading with the current `SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements` runtime fallback path.
+- Replaced old DeletedTheme button-plate cooked-asset loading with the current `SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements` runtime fallback path.
 - Removed retro sky and retro wood button-border paths from the style code.
 - Removed old main-menu preload paths for `MMRed`, `sky_bg`, `fire_moon`, and `pyramid_chad`.
 - Removed stale `MainMenu` and `PartyPicker` scan roots from the UI texture-quality helper.
@@ -2538,7 +2538,7 @@ UI cleanup implemented:
   - `Content/UI/Assets/TopBar`
   - `Content/UI/Assets/Medals`
   - `Content/UI/Obsidian.uasset`
-  - old Dota plate textures under `Content/UI/Assets`
+  - old DeletedTheme plate textures under `Content/UI/Assets`
   - old retro wood trim textures under `Content/UI/Assets`
   - old `ButtonLight_*` and `PanelLight` assets
   - old retro sky and retro wood materials/material instances under `Content/UI/Materials`
@@ -2549,7 +2549,7 @@ UI cleanup implemented:
   - `Preview`
   - `Sprites`
   - `M_PixelationPostProcess.uasset`
-- A post-delete source/config/data/script search found no remaining old Dota, retro wood/sky, old main-menu, old party-picker, old topbar, or old content-medal path references. Remaining `medal_*` references are the current hero-selection runtime fallback image names under `SourceAssets/UI/Reference`, not the deleted `Content/UI/Assets/Medals` folder.
+- A post-delete source/config/data/script search found no remaining old DeletedTheme, retro wood/sky, old main-menu, old party-picker, old topbar, or old content-medal path references. Remaining `medal_*` references are the current hero-selection runtime fallback image names under `SourceAssets/UI/Reference`, not the deleted `Content/UI/Assets/Medals` folder.
 
 Script lifecycle cleanup implemented:
 

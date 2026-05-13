@@ -21,26 +21,8 @@
 
 namespace
 {
-	const FSlateBrush* T66MiniRunSummarySceneBackgroundBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(TEXT("SourceAssets/UI/Reference/Shared/ScreenArt/MainMenu/main_menu_scene_plate.png")),
-			FMargin(0.f),
-			TEXT("MiniSceneBackground"));
-	}
-
 	TSharedRef<SWidget> T66MiniMakeRunSummarySceneBackground(const FLinearColor& FallbackColor)
 	{
-		if (const FSlateBrush* Brush = T66MiniRunSummarySceneBackgroundBrush())
-		{
-			return SNew(SImage)
-				.Image(Brush)
-				.ColorAndOpacity(FLinearColor(0.82f, 0.82f, 0.88f, 1.0f));
-		}
-
 		return SNew(SBorder)
 			.BorderImage(T66MiniUI::WhiteBrush())
 			.BorderBackgroundColor(FallbackColor);

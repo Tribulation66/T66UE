@@ -137,14 +137,21 @@
       },
       "Modifiers": {
         "FloatValues": {
-          "ArcadeRoundSeconds": 10.0,
-          "ArcadeStartInterval": 0.7,
-          "ArcadeEndInterval": 0.24
+          "ArcadeRoundSeconds": 30.0,
+          "ArcadeStartInterval": 1.0,
+          "ArcadeEndInterval": 0.35,
+          "WhackVisibleStartSeconds": 1.2,
+          "WhackVisibleEndSeconds": 0.45,
+          "WhackGoldenChance": 0.05,
+          "WhackBombChanceStart": 0.05,
+          "WhackBombChanceEnd": 0.12
         },
         "IntValues": {
-          "ArcadeTargetScore": 100,
-          "ArcadeScorePerHit": 10,
-          "ArcadeMissPenalty": 2
+          "ArcadeTargetScore": 2500,
+          "ArcadeScorePerHit": 100,
+          "WhackStartingLives": 3,
+          "WhackGoldenScore": 500,
+          "WhackBombPenalty": 250
         }
       },
       "DisplayMesh": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Arcade_WhackAMole_QuadRetro.Arcade_WhackAMole_QuadRetro"

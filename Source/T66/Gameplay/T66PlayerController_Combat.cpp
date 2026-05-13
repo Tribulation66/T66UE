@@ -65,6 +65,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
+#include "Gameplay/T66GalleryDisplayActor.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66CowardiceGate.h"
@@ -1129,6 +1130,10 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			InteractionPrimitive = LootBag->SphereComponent.Get();
 		}
+		else if (const AT66GalleryDisplayActor* GalleryDisplay = Cast<AT66GalleryDisplayActor>(Actor))
+		{
+			InteractionPrimitive = GalleryDisplay->GetInteractionPromptPrimitive();
+		}
 		else
 		{
 			InteractionPrimitive = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
@@ -1165,6 +1170,7 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66ChestInteractable* ClosestChest = nullptr;
 	AT66CrateInteractable* ClosestCrate = nullptr;
 	AT66StageCatchUpGate* ClosestCatchUpGate = nullptr;
+	AT66GalleryDisplayActor* ClosestGalleryDisplay = nullptr;
 	AT66WorldInteractableBase* ClosestWorldInteractable = nullptr;
 	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
 	float ClosestCowardiceGateDistSq = InteractRadius * InteractRadius;
@@ -1179,6 +1185,7 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestChestDistSq = InteractRadius * InteractRadius;
 	float ClosestCrateDistSq = InteractRadius * InteractRadius;
 	float ClosestCatchUpGateDistSq = InteractRadius * InteractRadius;
+	float ClosestGalleryDisplayDistSq = InteractRadius * InteractRadius;
 	float ClosestWorldInteractableDistSq = InteractRadius * InteractRadius;
 
 	for (const FOverlapResult& R : Overlaps)
@@ -1237,6 +1244,10 @@ void AT66PlayerController::HandleInteractPressed()
 		else if (AT66StageCatchUpGate* CUG = Cast<AT66StageCatchUpGate>(A))
 		{
 			if (DistSq < ClosestCatchUpGateDistSq) { ClosestCatchUpGateDistSq = DistSq; ClosestCatchUpGate = CUG; }
+		}
+		else if (AT66GalleryDisplayActor* GalleryDisplay = Cast<AT66GalleryDisplayActor>(A))
+		{
+			if (DistSq < ClosestGalleryDisplayDistSq) { ClosestGalleryDisplayDistSq = DistSq; ClosestGalleryDisplay = GalleryDisplay; }
 		}
 		else if (AT66WorldInteractableBase* WorldInteractable = Cast<AT66WorldInteractableBase>(A))
 		{
@@ -1302,6 +1313,12 @@ void AT66PlayerController::HandleInteractPressed()
 	if (ClosestNPC && ClosestNPC->Interact(this))
 	{
 		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestNPC);
+		return;
+	}
+
+	if (ClosestGalleryDisplay && ClosestGalleryDisplay->Interact(this))
+	{
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestGalleryDisplay);
 		return;
 	}
 

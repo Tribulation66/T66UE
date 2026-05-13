@@ -24,6 +24,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66HeroPreview, Log, All);
 namespace
 {
 	constexpr float HeroPreviewLookUpFraction = 0.18f;
+	constexpr float HeroSelectionPreviewLookUpFraction = -0.08f;
+	constexpr float HeroSelectionPreviewDistanceScale = 1.06f;
 	constexpr float MinHeroPreviewRadius = 160.f;
 	constexpr float SoloPreviewRadiusScale = 1.0f;
 	constexpr float CompanionFrameShiftAlpha = 0.32f;
@@ -233,7 +235,10 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 		}
 
 		const float HeroFeetZ = HeroLoc.Z - HeroHalfHeight;
-		OrbitCenter = HeroLoc + FVector(0.f, 0.f, HeroHalfHeight * HeroPreviewLookUpFraction);
+		const float LookUpFraction = PreviewStageMode == ET66PreviewStageMode::Selection
+			? HeroSelectionPreviewLookUpFraction
+			: HeroPreviewLookUpFraction;
+		OrbitCenter = HeroLoc + FVector(0.f, 0.f, HeroHalfHeight * LookUpFraction);
 		OrbitRadius = FMath::Max(MinHeroPreviewRadius, B.SphereRadius);
 		OrbitBottomZ = HeroFeetZ;
 
@@ -272,7 +277,10 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 
 	// Fit the whole bounds sphere in view.
 	const float HalfFovRad = FMath::DegreesToRadians(CameraFOV * 0.5f);
-	const float BaseMult = FMath::Clamp(CameraDistanceMultiplier, 0.60f, 8.0f);
+	const float ModeDistanceScale = PreviewStageMode == ET66PreviewStageMode::Selection
+		? HeroSelectionPreviewDistanceScale
+		: 1.0f;
+	const float BaseMult = FMath::Clamp(CameraDistanceMultiplier * ModeDistanceScale, 0.60f, 8.0f);
 	const float ZoomMult = FMath::Clamp(PreviewZoomMultiplier, FMath::Clamp(MinPreviewZoomMultiplier, 0.25f, 1.0f), 1.0f);
 	const float EffectiveMult = FMath::Clamp(BaseMult * ZoomMult, 0.25f, BaseMult);
 	float ViewportFrameMult = 1.0f;

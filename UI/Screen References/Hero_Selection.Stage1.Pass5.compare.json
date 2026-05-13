@@ -1,0 +1,33 @@
+{
+  "reference": "C:\\UE\\T66\\UI\\Screen References\\Hero Selection.png",
+  "actual": "C:\\UE\\T66\\UI\\Screen References\\Hero Selection.Stage1.Pass5.png",
+  "reference_size": [
+    1672,
+    941
+  ],
+  "actual_size": [
+    1920,
+    1080
+  ],
+  "comparison_size": [
+    1920,
+    1080
+  ],
+  "threshold": 24,
+  "diff_pixels": 2027711,
+  "total_pixels": 2073600,
+  "mismatch_ratio": 0.9778698881172839,
+  "mean_delta": 91.87033323688271,
+  "rms_delta": 9.584901315969962,
+  "max_delta": 255,
+  "diff_bounds": [
+    0,
+    0,
+    1919,
+    1079
+  ],
+  "side_by_side": "C:\\UE\\T66\\UI\\Screen References\\Hero_Selection.Stage1.Pass5.side_by_side.png",
+  "diff": "C:\\UE\\T66\\UI\\Screen References\\Hero_Selection.Stage1.Pass5.diff.png",
+  "json": "C:\\UE\\T66\\UI\\Screen References\\Hero_Selection.Stage1.Pass5.compare.json",
+  "markdown": "C:\\UE\\T66\\UI\\Screen References\\Hero_Selection.Stage1.Pass5.compare.md"
+}

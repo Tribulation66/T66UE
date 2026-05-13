@@ -49,7 +49,7 @@ private:
 	TSharedRef<SWidget> BuildGameplayUI();
 	TSharedRef<SWidget> BuildRewardUI();
 	TSharedRef<SWidget> BuildMockupBackdrop(const FString& SourceRelativePath, const FLinearColor& FallbackColor) const;
-	TSharedRef<SWidget> MakeDeckButton(const FText& Text, const FOnClicked& OnClicked, float Width = 340.f, float Height = 54.f) const;
+	TSharedRef<SWidget> MakeDeckButton(const FText& Text, const FOnClicked& OnClicked, float Width = 340.f, float Height = 54.f, FName Tag = NAME_None) const;
 	TSharedRef<SWidget> MakeChoiceButton(const FText& Title, const FText& Body, const FLinearColor& Accent, const FOnClicked& OnClicked) const;
 	TSharedRef<SWidget> MakeCardWidget(int32 CardIndex);
 	TSharedRef<SWidget> MakeMeterPanel(const FText& Label, const TAttribute<FText>& Value, const FLinearColor& Accent) const;

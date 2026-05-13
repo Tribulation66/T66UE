@@ -6,18 +6,15 @@
 #include "Core/T66DeckDataSubsystem.h"
 #include "Core/T66DeckFrontendStateSubsystem.h"
 #include "Core/T66SteamHelper.h"
-#include "Engine/Texture2D.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Save/T66DeckSaveSubsystem.h"
 #include "Save/T66DeckRunSaveGame.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Components/T66MinigameMenuLayout.h"
-#include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
-#include "UObject/StrongObjectPtr.h"
-#include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SOverlay.h"
@@ -27,8 +24,6 @@
 
 namespace
 {
-	constexpr float DeckMockupBackdropOpacity = 0.62f;
-
 	const TCHAR* DeckMainMenuMockupPath()
 	{
 		return TEXT("/Game/UI/Minigames/Deck/Mockups/T_Deck_MainMenu_Mockup.T_Deck_MainMenu_Mockup");
@@ -38,9 +33,6 @@ namespace
 	{
 		return TEXT("/Game/UI/Minigames/Deck/Mockups/T_Deck_Gameplay_Mockup.T_Deck_Gameplay_Mockup");
 	}
-
-	TMap<FString, TStrongObjectPtr<UTexture2D>> GDeckMockupTextureCache;
-	TMap<FString, TSharedPtr<FSlateBrush>> GDeckMockupBrushCache;
 
 	TAttribute<FText> MakeDeckTextAttribute(UT66DeckMainMenuScreen* Screen, FText (UT66DeckMainMenuScreen::*Getter)() const)
 	{
@@ -52,71 +44,29 @@ namespace
 		return TAttribute<TOptional<float>>::Create(TAttribute<TOptional<float>>::FGetter::CreateUObject(Screen, Getter));
 	}
 
-	UTexture2D* LoadDeckMockupTexture(const FString& AssetPath)
+	FName MakeDeckTag(const TCHAR* Prefix, const FText& Label)
 	{
-		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GDeckMockupTextureCache.Find(AssetPath))
+		FString Token = Label.ToString().ToUpper();
+		for (int32 Index = Token.Len() - 1; Index >= 0; --Index)
 		{
-			return CachedTexture->Get();
+			if (!FChar::IsAlnum(Token[Index]))
+			{
+				Token.RemoveAt(Index, 1, EAllowShrinking::No);
+			}
 		}
 
-		UTexture2D* Texture = T66RuntimeUITextureAccess::LoadAssetTexture(
-			*AssetPath,
-			TextureFilter::TF_Nearest,
-			TEXT("ChadpocalypseDeckbuilderMockup"));
-		if (Texture)
+		if (Token.IsEmpty())
 		{
-			GDeckMockupTextureCache.Add(AssetPath, TStrongObjectPtr<UTexture2D>(Texture));
-			return Texture;
+			Token = TEXT("ITEM");
 		}
 
-		return nullptr;
-	}
-
-	const FSlateBrush* ResolveDeckMockupBrush(const FString& SourceRelativePath)
-	{
-		if (const TSharedPtr<FSlateBrush>* CachedBrush = GDeckMockupBrushCache.Find(SourceRelativePath))
-		{
-			return CachedBrush->Get();
-		}
-
-		UTexture2D* Texture = LoadDeckMockupTexture(SourceRelativePath);
-		if (!Texture)
-		{
-			return nullptr;
-		}
-
-		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
-		Brush->DrawAs = ESlateBrushDrawType::Image;
-		Brush->Tiling = ESlateBrushTileType::NoTile;
-		Brush->ImageSize = FVector2D(static_cast<float>(Texture->GetSizeX()), static_cast<float>(Texture->GetSizeY()));
-		Brush->TintColor = FSlateColor(FLinearColor::White);
-		Brush->SetResourceObject(Texture);
-
-		GDeckMockupBrushCache.Add(SourceRelativePath, Brush);
-		return Brush.Get();
+		return FName(*(FString(Prefix) + TEXT(".") + Token));
 	}
 
 	TSharedRef<SWidget> MakeDeckChromePanel(const TSharedRef<SWidget>& Content, const FMargin& Padding, const FLinearColor& Accent)
 	{
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.018f, 0.016f, 0.024f, 0.88f))
-			.Padding(1.f)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(Accent)
-				.Padding(1.f)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.030f, 0.026f, 0.038f, 0.93f))
-					.Padding(Padding)
-					[
-						Content
-					]
-				]
-			];
+		const ET66FlatState PanelState = Accent.R > 0.45f ? ET66FlatState::Selected : ET66FlatState::Default;
+		return FT66FlatStyle::MakeFlatPanel(PanelState, Padding, Content);
 	}
 }
 
@@ -668,59 +618,63 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildRewardUI()
 		];
 }
 
-TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildMockupBackdrop(const FString& SourceRelativePath, const FLinearColor& FallbackColor) const
+TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildMockupBackdrop(const FString&, const FLinearColor& FallbackColor) const
 {
-	if (const FSlateBrush* Brush = ResolveDeckMockupBrush(SourceRelativePath))
-	{
-		return SNew(SImage)
-			.Image(Brush)
-			.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, DeckMockupBackdropOpacity));
-	}
-
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FallbackColor);
 }
 
-TSharedRef<SWidget> UT66DeckMainMenuScreen::MakeDeckButton(const FText& Text, const FOnClicked& OnClicked, const float Width, const float Height) const
+TSharedRef<SWidget> UT66DeckMainMenuScreen::MakeDeckButton(const FText& Text, const FOnClicked& OnClicked, const float Width, const float Height, const FName Tag) const
 {
+	const FName EffectiveTag = Tag != NAME_None ? Tag : MakeDeckTag(TEXT("Deck.Button"), Text);
 	return SNew(SBox)
 		.WidthOverride(Width)
 		.HeightOverride(Height)
 		[
-			FT66Style::MakeButton(FT66ButtonParams(Text, OnClicked)
-				.SetMinWidth(Width)
-				.SetHeight(Height)
-				.SetFontSize(14))
+			FT66FlatStyle::MakeFlatButton(
+				ET66FlatState::Default,
+				Text,
+				OnClicked,
+				nullptr,
+				nullptr,
+				FMargin(14.f, 8.f),
+				Width,
+				Height,
+				true,
+				14,
+				EffectiveTag)
 		];
 }
 
 TSharedRef<SWidget> UT66DeckMainMenuScreen::MakeChoiceButton(const FText& Title, const FText& Body, const FLinearColor& Accent, const FOnClicked& OnClicked) const
 {
-	return FT66Style::MakeBareButton(
-		FT66BareButtonParams(
-			OnClicked,
-			MakeDeckChromePanel(
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
-				[
-					SNew(STextBlock)
-					.Text(Title)
-					.Font(FT66Style::MakeFont(TEXT("Bold"), 16))
-					.ColorAndOpacity(FLinearColor(0.96f, 0.90f, 0.82f, 1.0f))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-				[
-					SNew(STextBlock)
-					.Text(Body)
-					.Font(FT66Style::MakeFont(TEXT("Regular"), 12))
-					.ColorAndOpacity(FLinearColor(0.84f, 0.82f, 0.76f, 1.0f))
-					.AutoWrapText(true)
-				],
-				FMargin(14.f),
-				Accent))
-		.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-		.SetPadding(FMargin(0.f)));
+	const ET66FlatState State = Accent.R > 0.70f || Accent.G > 0.70f ? ET66FlatState::Selected : ET66FlatState::Default;
+	return FT66FlatStyle::MakeFlatToggleGroupButton(
+		State,
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(Title)
+			.Font(FT66Style::MakeFont(TEXT("Bold"), 16))
+			.ColorAndOpacity(FLinearColor(0.96f, 0.90f, 0.82f, 1.0f))
+		]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+		[
+			SNew(STextBlock)
+			.Text(Body)
+			.Font(FT66Style::MakeFont(TEXT("Regular"), 12))
+			.ColorAndOpacity(FLinearColor(0.84f, 0.82f, 0.76f, 1.0f))
+			.AutoWrapText(true)
+		],
+		OnClicked,
+		FMargin(14.f),
+		0.f,
+		0.f,
+		true,
+		MakeDeckTag(TEXT("Deck.Choice"), Title),
+		FName(TEXT("DeckChoiceSelection")));
 }
 
 TSharedRef<SWidget> UT66DeckMainMenuScreen::MakeCardWidget(const int32 CardIndex)
@@ -734,47 +688,47 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::MakeCardWidget(const int32 CardIndex
 		.WidthOverride(210.f)
 		.HeightOverride(250.f)
 		[
-			FT66Style::MakeBareButton(
-				FT66BareButtonParams(
-					FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleCardClicked, CardIndex),
-					MakeDeckChromePanel(
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight()
-						[
-							SNew(STextBlock)
-							.Text(bHasCard ? Card.Name : NSLOCTEXT("T66Deck.Gameplay", "EmptyCard", "EMPTY"))
-							.Font(FT66Style::MakeFont(TEXT("Bold"), 16))
-							.ColorAndOpacity(FLinearColor(0.96f, 0.90f, 0.82f, 1.0f))
-							.Justification(ETextJustify::Center)
-						]
-						+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 12.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.78f, 0.72f, 0.64f, 0.82f))
-						]
-						+ SVerticalBox::Slot().AutoHeight()
-						[
-							SNew(STextBlock)
-							.Text(bHasCard ? Card.Rules : FText::GetEmpty())
-							.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
-							.ColorAndOpacity(FLinearColor(0.84f, 0.80f, 0.78f, 1.0f))
-							.AutoWrapText(true)
-							.Justification(ETextJustify::Center)
-						]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
-						[
-							SNew(STextBlock)
-							.Text(bHasCard ? FText::Format(NSLOCTEXT("T66Deck.Gameplay", "CardCost", "{0} energy"), FText::AsNumber(Card.Cost)) : FText::GetEmpty())
-							.Font(FT66Style::MakeFont(TEXT("Regular"), 10))
-							.ColorAndOpacity(FLinearColor(0.68f, 0.56f, 0.96f, 1.0f))
-							.Justification(ETextJustify::Center)
-						],
-						FMargin(12.f),
-						Accent))
-				.SetEnabled(bCanPlay)
-				.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-				.SetPadding(FMargin(0.f)))
+			FT66FlatStyle::MakeFlatToggleGroupButton(
+				bCanPlay ? ET66FlatState::Default : ET66FlatState::Disabled,
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(STextBlock)
+					.Text(bHasCard ? Card.Name : NSLOCTEXT("T66Deck.Gameplay", "EmptyCard", "EMPTY"))
+					.Font(FT66Style::MakeFont(TEXT("Bold"), 16))
+					.ColorAndOpacity(FLinearColor(0.96f, 0.90f, 0.82f, 1.0f))
+					.Justification(ETextJustify::Center)
+				]
+				+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 12.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(bCanPlay ? Accent : FLinearColor(0.30f, 0.28f, 0.32f, 0.82f))
+				]
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(STextBlock)
+					.Text(bHasCard ? Card.Rules : FText::GetEmpty())
+					.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
+					.ColorAndOpacity(FLinearColor(0.84f, 0.80f, 0.78f, 1.0f))
+					.AutoWrapText(true)
+					.Justification(ETextJustify::Center)
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
+				[
+					SNew(STextBlock)
+					.Text(bHasCard ? FText::Format(NSLOCTEXT("T66Deck.Gameplay", "CardCost", "{0} energy"), FText::AsNumber(Card.Cost)) : FText::GetEmpty())
+					.Font(FT66Style::MakeFont(TEXT("Regular"), 10))
+					.ColorAndOpacity(FLinearColor(0.68f, 0.56f, 0.96f, 1.0f))
+					.Justification(ETextJustify::Center)
+				],
+				FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleCardClicked, CardIndex),
+				FMargin(12.f),
+				210.f,
+				250.f,
+				bCanPlay,
+				FName(*FString::Printf(TEXT("Deck.Card.%d"), CardIndex)),
+				FName(TEXT("DeckHandSelection")))
 		];
 }
 

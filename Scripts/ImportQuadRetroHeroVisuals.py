@@ -11,7 +11,7 @@ if SCRIPT_DIR not in sys.path:
     sys.path.append(SCRIPT_DIR)
 
 import ImportStaticMeshes
-import MakeGLBImportsUnlit
+import QuadRetroCharacterPipelineDefaults as CharacterDefaults
 
 
 RUN_ROOT_RELATIVE = os.path.join(
@@ -94,27 +94,14 @@ def _bind_imported_texture_to_materials(dest_dir, dest_name, source_glb):
     texture = _find_imported_pixelated_texture(dest_dir, source_glb)
     if not texture:
         unreal.log_warning(f"[QuadRetroHeroes] No imported pixelated texture found for {dest_name}")
-        return False
+        return ""
 
-    materials = ImportStaticMeshes._find_candidate_materials(dest_dir, dest_name)
-    if not materials:
-        unreal.log_warning(f"[QuadRetroHeroes] No materials found for {dest_name}")
-        return False
+    texture_result = CharacterDefaults.apply_character_texture_defaults(texture)
+    if texture_result.get("changed"):
+        CharacterDefaults.safe_save(texture, texture.get_path_name().split(".", 1)[0])
 
-    for material in materials:
-        for parameter_name in ("BaseColorTexture", "DiffuseColorMap"):
-            try:
-                unreal.MaterialEditingLibrary.set_material_instance_texture_parameter_value(
-                    material,
-                    parameter_name,
-                    texture,
-                )
-            except Exception:
-                pass
-        unreal.EditorAssetLibrary.save_loaded_asset(material)
-
-    unreal.log(f"[QuadRetroHeroes] Bound {dest_name} materials to {texture.get_path_name()}")
-    return True
+    unreal.log(f"[QuadRetroHeroes] Registered {dest_name} texture {texture.get_path_name()}")
+    return texture.get_path_name()
 
 
 def _asset_size_cm(asset):
@@ -148,12 +135,11 @@ def _import_one(source_glb, hero_id, body_suffix):
     if not final_path:
         raise RuntimeError(f"Could not locate flattened StaticMesh for {asset_name}")
 
-    scan_roots = ImportStaticMeshes._existing_scan_roots(dest_dir, asset_name)
-    unlit_results = MakeGLBImportsUnlit.convert_glb_imports_unlit(scan_roots)
-    _bind_imported_texture_to_materials(dest_dir, asset_name, source_glb)
+    texture_path = _bind_imported_texture_to_materials(dest_dir, asset_name, source_glb)
     ImportStaticMeshes._apply_static_mesh_build_settings(final_path, {})
     ImportStaticMeshes._bind_materials_to_flattened_mesh(final_path, dest_dir, asset_name)
-    ImportStaticMeshes._apply_material_overrides(dest_dir, asset_name, {})
+    lod_result = CharacterDefaults.apply_lod_ladder_to_mesh_path(final_path)
+    material_result = CharacterDefaults.assign_shared_material_to_mesh_path(final_path)
 
     asset = unreal.EditorAssetLibrary.load_asset(final_path)
     if not asset or not isinstance(asset, unreal.StaticMesh):
@@ -169,9 +155,11 @@ def _import_one(source_glb, hero_id, body_suffix):
         "destination": _object_path(dest_dir, asset_name),
         "imported_paths": list(imported_paths or []),
         "final_path": final_path,
+        "pixelated_texture": texture_path,
         "size_cm": size_cm,
         "visual_scale": visual_scale,
-        "unlit": unlit_results,
+        "lod": lod_result,
+        "shared_material": material_result,
     }
 
 
@@ -185,6 +173,9 @@ def _read_visual_rows(csv_path):
     if "StaticMesh" not in fieldnames:
         insert_at = fieldnames.index("SkeletalMesh") + 1 if "SkeletalMesh" in fieldnames else 1
         fieldnames.insert(insert_at, "StaticMesh")
+    if "PixelatedTextureAssetPath" not in fieldnames:
+        insert_at = fieldnames.index("StaticMesh") + 1 if "StaticMesh" in fieldnames else len(fieldnames)
+        fieldnames.insert(insert_at, "PixelatedTextureAssetPath")
     return fieldnames, rows
 
 
@@ -215,6 +206,7 @@ def _upsert_visual_rows(csv_path, import_reports):
         scale = float(report["visual_scale"])
         row["SkeletalMesh"] = ""
         row["StaticMesh"] = report["destination"]
+        row["PixelatedTextureAssetPath"] = report.get("pixelated_texture", "")
         row["LoopingAnimation"] = ""
         row["AlertAnimation"] = ""
         row["RunAnimation"] = ""

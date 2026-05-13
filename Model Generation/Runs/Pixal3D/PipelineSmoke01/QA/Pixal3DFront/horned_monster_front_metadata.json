@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\PipelineSmoke01\\Raw\\Pixal3D\\horned_monster\\horned_monster_Pixal3D_R1024_S1337_D80000.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\PipelineSmoke01\\QA\\Pixal3DFront\\horned_monster_front.png",
+  "export": null,
+  "raw_triangles": 79261,
+  "triangles_before_decimate": 79261,
+  "triangles_after_decimate": 79261,
+  "bounds": {
+    "min": [
+      -0.3391743302345276,
+      -0.189174085855484,
+      -0.44264984130859375
+    ],
+    "max": [
+      0.3365671634674072,
+      0.09682115912437439,
+      0.4920830726623535
+    ],
+    "size": [
+      0.6757414937019348,
+      0.2859952449798584,
+      0.9347329139709473
+    ]
+  }
+}

@@ -47,6 +47,8 @@ private:
 	FReply HandleRestartClicked();
 	FReply HandleMainMenuClicked();
 	FReply HandleViewLogClicked();
+	FReply HandleFlatRunSummaryStatTabClicked(int32 TabIndex);
+	FReply HandleProofCopyClicked();
 	FReply HandleProofConfirmClicked();
 	FReply HandleProofEditClicked();
 	FReply HandleReportCheatingClicked();
@@ -130,6 +132,7 @@ private:
 	int32 SummarySecretAchievementsUnlocked = 0;
 
 	bool bStatsExpanded = false;
+	int32 FlatRunSummaryStatTabIndex = 0;
 
 	/** Brush for Power Coupons sprite (Content/UI/Sprites/PowerUp). */
 	TSharedPtr<struct FSlateBrush> PowerCouponSpriteBrush;

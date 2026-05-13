@@ -189,7 +189,6 @@ TSharedRef<SWidget> UT66TDMainMenuScreen::BuildSlateUI()
 		FT66ButtonParams Params = T66TDUI::MakePrimaryButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc), 520.f, 82.f, 20);
 		Params
 			.SetPadding(FMargin(16.f, 10.f, 16.f, 8.f))
-			.SetDotaPlateOverrideBrush(PrimaryCTAFillBrush.Get())
 			.SetStateTextSecondaryColors(T66TDUI::AccentGold(), T66TDUI::AccentGold(), T66TDUI::AccentGold())
 			.SetTextDualToneSplit(0.62f);
 		return SNew(SBox).WidthOverride(520.f)[FT66Style::MakeButton(Params)];
@@ -461,7 +460,8 @@ void UT66TDMainMenuScreen::RequestMenuTextures()
 {
 	SetupLooseBrush(BackdropBrush, BackdropTexture, TEXT("SourceAssets/TD/UI/td_main_menu/Scene/scene_plate.png"), TDBgSize, true, TEXT("TDMenuBackdrop"));
 	SetupLooseBrush(ForegroundBrush, ForegroundTexture, TEXT("SourceAssets/TD/Maps/Backgrounds/TD_Menu_Backdrop_01.png"), TDBgSize, true, TEXT("TDMenuForeground"));
-	SetupLooseBrush(PrimaryCTAFillBrush, PrimaryCTAFillTexture, TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/cta_new_game_button_normal.png"), FVector2D(360.f, 104.f), false, TEXT("TDMenuCTA"));
+	PrimaryCTAFillBrush.Reset();
+	PrimaryCTAFillTexture.Reset();
 }
 
 void UT66TDMainMenuScreen::ReleaseRetainedSlateState()

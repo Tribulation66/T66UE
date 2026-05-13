@@ -38,11 +38,59 @@ function Get-DisplayBounds {
 }
 
 function Get-StagedGameUserSettingsPath {
-    param([string]$ExecutablePath)
+	param([string]$ExecutablePath)
 
-    $exeDir = Split-Path -Parent ([System.IO.Path]::GetFullPath($ExecutablePath))
-    $gameRoot = Resolve-Path -LiteralPath (Join-Path $exeDir "..\..")
-    return Join-Path $gameRoot "Saved\Config\Windows\GameUserSettings.ini"
+	$exeDir = Split-Path -Parent ([System.IO.Path]::GetFullPath($ExecutablePath))
+	$gameRoot = Resolve-Path -LiteralPath (Join-Path $exeDir "..\..")
+	return Join-Path $gameRoot "Saved\Config\Windows\GameUserSettings.ini"
+}
+
+function Get-StagedLogDirectory {
+	param([string]$ExecutablePath)
+
+	$exeDir = Split-Path -Parent ([System.IO.Path]::GetFullPath($ExecutablePath))
+	$gameRoot = Resolve-Path -LiteralPath (Join-Path $exeDir "..\..")
+	return Join-Path $gameRoot "Saved\Logs"
+}
+
+function Get-LatestStagedLog {
+	param(
+		[string]$LogDirectory,
+		[datetime]$Since
+	)
+
+	if (-not $LogDirectory -or -not (Test-Path -LiteralPath $LogDirectory)) {
+		return $null
+	}
+
+	return Get-ChildItem -LiteralPath $LogDirectory -Filter "*.log" -File |
+		Where-Object { $_.LastWriteTime -ge $Since.AddSeconds(-5) } |
+		Sort-Object LastWriteTime -Descending |
+		Select-Object -First 1
+}
+
+function Assert-NoFrontendScreenOverrideFailure {
+	param(
+		[System.IO.FileInfo]$LogFile,
+		[string]$RequestedScreen
+	)
+
+	if (-not $LogFile -or -not (Test-Path -LiteralPath $LogFile.FullName)) {
+		return
+	}
+
+	$failurePattern = if ($RequestedScreen) {
+		"Frontend automation: unknown screen override '$RequestedScreen'"
+	} else {
+		"Frontend automation: unknown screen override"
+	}
+	$overrideFailure = Select-String -LiteralPath $LogFile.FullName -Pattern $failurePattern -SimpleMatch | Select-Object -First 1
+	if ($overrideFailure) {
+		if ($outputPath -and (Test-Path -LiteralPath $outputPath)) {
+			Remove-Item -LiteralPath $outputPath -Force
+		}
+		throw "Frontend screen override failed; refusing misleading capture. $($overrideFailure.Line.Trim()) Log: $($LogFile.FullName)"
+	}
 }
 
 function Backup-GameUserSettingsForRestore {
@@ -173,7 +221,8 @@ try {
         if (Test-Path -LiteralPath $outputPath) {
             Remove-Item -LiteralPath $outputPath -Force
         }
-        $argsList += "-T66AutoScreenshot=$outputPath"
+        $escapedOutputPath = $outputPath.Replace('"', '\"')
+        $argsList += "-T66AutoScreenshot=`"$escapedOutputPath`""
         $argsList += "-T66AutoScreenshotDelay=$DelaySeconds"
     } else {
         $outputPath = $null
@@ -188,22 +237,36 @@ try {
         return
     }
 
-    $process = Start-Process -FilePath $Exe -ArgumentList $argsList -PassThru
+	$launchTime = Get-Date
+	$logDirectory = Get-StagedLogDirectory -ExecutablePath $Exe
+	$process = Start-Process -FilePath $Exe -ArgumentList $argsList -PassThru
 
     if ($NoAutoClose) {
         Write-Host "Started PID $($process.Id). NoAutoClose was set."
         return
     }
 
-    if ($outputPath) {
-        $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
-        while ((Get-Date) -lt $deadline -and -not (Test-Path -LiteralPath $outputPath)) {
-            Start-Sleep -Milliseconds 500
-        }
+	if ($outputPath) {
+		$deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+		while ((Get-Date) -lt $deadline -and -not (Test-Path -LiteralPath $outputPath)) {
+			if ($process.HasExited) {
+				break
+			}
+			Start-Sleep -Milliseconds 500
+		}
 
-        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+		if ($process.HasExited) {
+			Start-Sleep -Milliseconds 500
+		}
+		$latestLog = Get-LatestStagedLog -LogDirectory $logDirectory -Since $launchTime
+		Assert-NoFrontendScreenOverrideFailure -LogFile $latestLog -RequestedScreen $Screen
+		if ($process.HasExited -and $process.ExitCode -ne 0 -and -not (Test-Path -LiteralPath $outputPath)) {
+			throw "Game exited before screenshot was created. ExitCode=$($process.ExitCode). Log: $($latestLog.FullName)"
+		}
 
-        if (-not (Test-Path -LiteralPath $outputPath)) {
+		Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+
+		if (-not (Test-Path -LiteralPath $outputPath)) {
             $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..")).TrimEnd('\')
             $outputFull = [System.IO.Path]::GetFullPath($outputPath)
             if ($outputFull.StartsWith($projectRoot + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -216,11 +279,14 @@ try {
             }
         }
 
-        if (-not (Test-Path -LiteralPath $outputPath)) {
-            throw "Screenshot was not created before timeout: $outputPath"
-        }
+		if (-not (Test-Path -LiteralPath $outputPath)) {
+			throw "Screenshot was not created before timeout: $outputPath"
+		}
 
-        Add-Type -AssemblyName System.Drawing
+		$latestLog = Get-LatestStagedLog -LogDirectory $logDirectory -Since $launchTime
+		Assert-NoFrontendScreenOverrideFailure -LogFile $latestLog -RequestedScreen $Screen
+
+		Add-Type -AssemblyName System.Drawing
         $image = [System.Drawing.Image]::FromFile($outputPath)
         try {
             if ($image.Width -ne $ResX -or $image.Height -ne $ResY) {

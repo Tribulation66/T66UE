@@ -1,0 +1,135 @@
+{
+  "method": "built-in image_gen square-variant sheets, chroma-key removed, resized to current T66 UI chrome dimensions",
+  "imagegen_reference": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\square_variant_imagegen_reference.png",
+  "variant_folder": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant",
+  "asset_count": 9,
+  "assets": [
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\cta_new_game_button_normal_red_square_variant.png",
+      "label": "wide red CTA square variant",
+      "source_bbox": [
+        39,
+        119,
+        831,
+        447
+      ],
+      "size": [
+        522,
+        184
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\leaderboard_tab_button_normal_square_variant.png",
+      "label": "wide purple tab square variant",
+      "source_bbox": [
+        879,
+        146,
+        1493,
+        439
+      ],
+      "size": [
+        355,
+        155
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\topbar_icon_button_normal_square_variant.png",
+      "label": "small purple icon square variant",
+      "source_bbox": [
+        170,
+        590,
+        423,
+        854
+      ],
+      "size": [
+        91,
+        72
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\leaderboard_tab_button_selected_red_square_variant.png",
+      "label": "wide red tab square variant",
+      "source_bbox": [
+        579,
+        589,
+        1435,
+        889
+      ],
+      "size": [
+        355,
+        155
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\cta_new_game_button_normal_square_variant.png",
+      "label": "wide purple CTA-size square variant",
+      "source_bbox": [
+        879,
+        146,
+        1493,
+        439
+      ],
+      "size": [
+        522,
+        184
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\main_panel_normal_square_variant.png",
+      "label": "tall main/right panel square variant",
+      "source_bbox": [
+        58,
+        33,
+        552,
+        976
+      ],
+      "size": [
+        426,
+        807
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\player_row_panel_normal_square_variant.png",
+      "label": "wide row panel square variant",
+      "source_bbox": [
+        645,
+        741,
+        1375,
+        975
+      ],
+      "size": [
+        476,
+        150
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\profile_slot_normal_square_variant.png",
+      "label": "profile slot square variant",
+      "source_bbox": [
+        645,
+        329,
+        1017,
+        700
+      ],
+      "size": [
+        173,
+        171
+      ]
+    },
+    {
+      "file": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\dropdown_field_normal_square_variant.png",
+      "label": "compact/dropdown panel square variant",
+      "source_bbox": [
+        645,
+        54,
+        1477,
+        291
+      ],
+      "size": [
+        476,
+        150
+      ]
+    }
+  ],
+  "panel_imagegen_reference": "SourceAssets\\UI\\Reference\\Screens\\MainMenu\\Ultrakill\\Elements\\SquareVariant\\square_variant_panels_imagegen_reference.png"
+}

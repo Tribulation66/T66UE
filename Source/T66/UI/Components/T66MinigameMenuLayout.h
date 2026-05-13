@@ -81,7 +81,8 @@ private:
 		bool bEnabled,
 		float Height,
 		ET66ButtonType Type,
-		bool bSelected = false) const;
+		bool bSelected = false,
+		FName InTag = NAME_None) const;
 	TSharedRef<SWidget> MakeScopeButton(const FText& Text, ET66MinigameLeaderboardScope Scope);
 	TSharedRef<SWidget> MakeDifficultyDropdown();
 	TSharedRef<SWidget> MakeLeaderboardRows() const;

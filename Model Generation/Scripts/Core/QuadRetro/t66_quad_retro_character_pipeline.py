@@ -22,6 +22,7 @@ Unreal assets, or DataTables.
 from __future__ import annotations
 
 import argparse
+import colorsys
 import json
 import math
 import os
@@ -34,8 +35,14 @@ import traceback
 from pathlib import Path
 from typing import Iterable
 
-import bpy
-from mathutils import Vector
+import numpy as np
+
+try:
+    import bpy
+    from mathutils import Vector
+except ImportError:
+    bpy = None
+    Vector = None
 
 
 BAYER_4X4 = (
@@ -103,6 +110,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cage-extrusion", type=float, default=0.035)
     parser.add_argument("--max-ray-distance", type=float, default=0.12)
     parser.add_argument("--dilate-pixels", type=int, default=20)
+
+    parser.add_argument("--normalize-luminance", type=str_bool, default=True)
+    parser.add_argument("--target-luminance", type=float, default=0.50)
+    parser.add_argument("--max-scaling-factor", type=float, default=4.0)
+    parser.add_argument("--saturation-boost", type=float, default=1.0)
 
     parser.add_argument("--texture-size", type=int, default=256)
     parser.add_argument("--palette-mode", choices=("none", "kmeans", "per-channel"), default="kmeans")
@@ -673,6 +685,213 @@ def image_pixels(image: bpy.types.Image) -> tuple[int, int, list[float]]:
     return width, height, list(image.pixels[:])
 
 
+def _srgb_to_linear_array(rgb: np.ndarray) -> np.ndarray:
+    rgb = np.clip(rgb.astype(np.float32), 0.0, 1.0)
+    return np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+
+
+def _linear_to_srgb_array(rgb: np.ndarray) -> np.ndarray:
+    rgb = np.clip(rgb.astype(np.float32), 0.0, 1.0)
+    return np.where(rgb <= 0.0031308, rgb * 12.92, 1.055 * (rgb ** (1.0 / 2.4)) - 0.055)
+
+
+def _linear_luminance(rgb_linear: np.ndarray) -> np.ndarray:
+    return (
+        rgb_linear[..., 0] * 0.2126
+        + rgb_linear[..., 1] * 0.7152
+        + rgb_linear[..., 2] * 0.0722
+    )
+
+
+def _edge_function(ax: float, ay: float, bx: float, by: float, px: np.ndarray, py: np.ndarray) -> np.ndarray:
+    return (px - ax) * (by - ay) - (py - ay) * (bx - ax)
+
+
+def rasterize_uv_triangles_to_mask(
+    uv_triangles: Iterable[Iterable[Iterable[float]]],
+    width: int,
+    height: int,
+    *,
+    image_origin: str = "top",
+) -> np.ndarray:
+    """Rasterize UV0 triangles into a binary texture-space mask."""
+    mask = np.zeros((height, width), dtype=bool)
+    if width <= 0 or height <= 0:
+        return mask
+
+    origin = image_origin.lower().strip()
+    flip_v = origin != "bottom"
+
+    for tri in uv_triangles or []:
+        coords = []
+        for uv in tri:
+            if len(uv) < 2:
+                continue
+            u = max(0.0, min(1.0, float(uv[0])))
+            v = max(0.0, min(1.0, float(uv[1])))
+            x = u * (width - 1)
+            y = (1.0 - v) * (height - 1) if flip_v else v * (height - 1)
+            coords.append((x, y))
+        if len(coords) != 3:
+            continue
+
+        (x0, y0), (x1, y1), (x2, y2) = coords
+        min_x = max(0, int(math.floor(min(x0, x1, x2))))
+        max_x = min(width - 1, int(math.ceil(max(x0, x1, x2))))
+        min_y = max(0, int(math.floor(min(y0, y1, y2))))
+        max_y = min(height - 1, int(math.ceil(max(y0, y1, y2))))
+        if min_x > max_x or min_y > max_y:
+            continue
+
+        xs = np.arange(min_x, max_x + 1, dtype=np.float32) + 0.5
+        ys = np.arange(min_y, max_y + 1, dtype=np.float32) + 0.5
+        px, py = np.meshgrid(xs, ys)
+        e0 = _edge_function(x0, y0, x1, y1, px, py)
+        e1 = _edge_function(x1, y1, x2, y2, px, py)
+        e2 = _edge_function(x2, y2, x0, y0, px, py)
+        inside = ((e0 >= 0) & (e1 >= 0) & (e2 >= 0)) | ((e0 <= 0) & (e1 <= 0) & (e2 <= 0))
+        mask[min_y : max_y + 1, min_x : max_x + 1] |= inside
+
+    return mask
+
+
+def extract_uv0_triangles(obj: bpy.types.Object) -> list[list[list[float]]]:
+    if not obj or obj.type != "MESH" or not obj.data.uv_layers:
+        return []
+    mesh = obj.data
+    mesh.calc_loop_triangles()
+    uv_layer = mesh.uv_layers.active
+    if uv_layer is None:
+        return []
+    triangles: list[list[list[float]]] = []
+    for tri in mesh.loop_triangles:
+        uv_tri = []
+        for loop_index in tri.loops:
+            uv = uv_layer.data[loop_index].uv
+            uv_tri.append([float(uv.x), float(uv.y)])
+        if len(uv_tri) == 3:
+            triangles.append(uv_tri)
+    return triangles
+
+
+def _pil_image_to_array(image):
+    rgba = image.convert("RGBA")
+    data = np.asarray(rgba, dtype=np.float32) / 255.0
+    return rgba, data.copy()
+
+
+def _array_to_pil_image(array: np.ndarray):
+    from PIL import Image
+
+    out = np.clip(array * 255.0 + 0.5, 0, 255).astype(np.uint8)
+    return Image.fromarray(out, mode="RGBA")
+
+
+def _blender_image_to_array(image: bpy.types.Image) -> tuple[int, int, np.ndarray]:
+    image.update()
+    width, height = [int(v) for v in image.size]
+    data = np.asarray(list(image.pixels[:]), dtype=np.float32).reshape((height, width, 4))
+    return width, height, data
+
+
+def _array_to_blender_image(image: bpy.types.Image, array: np.ndarray) -> bpy.types.Image:
+    image.pixels.foreach_set(np.asarray(array, dtype=np.float32).reshape(-1).tolist())
+    image.update()
+    try:
+        image.pack()
+    except Exception:
+        pass
+    return image
+
+
+def _apply_saturation_boost(rgb_srgb: np.ndarray, mask: np.ndarray, boost: float) -> np.ndarray:
+    if abs(float(boost) - 1.0) < 0.000001:
+        return rgb_srgb
+
+    out = rgb_srgb.copy()
+    ys, xs = np.nonzero(mask)
+    for y, x in zip(ys.tolist(), xs.tolist()):
+        r, g, b = [float(v) for v in out[y, x, :3]]
+        h, s, value = colorsys.rgb_to_hsv(r, g, b)
+        s = clamp01(s * float(boost))
+        out[y, x, :3] = colorsys.hsv_to_rgb(h, s, value)
+    return out
+
+
+def normalize_texture_luminance(
+    baked_image,
+    uv0_triangles: Iterable[Iterable[Iterable[float]]],
+    target_luminance: float = 0.50,
+    max_scaling_factor: float = 4.0,
+    saturation_boost: float = 1.0,
+):
+    """Lift mapped texture pixels to a target mean luminance, preserving padding."""
+    is_blender_image = bpy is not None and isinstance(baked_image, bpy.types.Image)
+
+    if is_blender_image:
+        width, height, rgba = _blender_image_to_array(baked_image)
+        mask_origin = "bottom"
+    else:
+        _, rgba = _pil_image_to_array(baked_image)
+        height, width = rgba.shape[:2]
+        mask_origin = "top"
+
+    alpha_mask = rgba[..., 3] > 0.01
+    uv_mask = rasterize_uv_triangles_to_mask(uv0_triangles, width, height, image_origin=mask_origin)
+    mapped_mask = uv_mask & alpha_mask
+    mask_source = "uv0"
+    if not np.any(mapped_mask):
+        mapped_mask = alpha_mask
+        mask_source = "alpha"
+    if not np.any(mapped_mask):
+        report = {
+            "before_luminance": 0.0,
+            "after_luminance": 0.0,
+            "scaling_factor": 1.0,
+            "saturation_applied": False,
+            "saturation_boost_applied": 1.0,
+            "mapped_pixel_count": 0,
+            "mask_source": "empty",
+        }
+        return baked_image, report
+
+    srgb_rgb = np.clip(rgba[..., :3], 0.0, 1.0)
+    linear_rgb = _srgb_to_linear_array(srgb_rgb)
+    before = float(np.mean(_linear_luminance(linear_rgb)[mapped_mask]))
+
+    if before <= 0.000001:
+        scaling = float(max_scaling_factor)
+    else:
+        scaling = float(target_luminance) / before
+        scaling = max(0.1, min(float(max_scaling_factor), scaling))
+
+    normalized_linear = linear_rgb.copy()
+    normalized_linear[mapped_mask] = np.clip(normalized_linear[mapped_mask] * scaling, 0.0, 1.0)
+    normalized_srgb = _linear_to_srgb_array(normalized_linear)
+    normalized_srgb = _apply_saturation_boost(normalized_srgb, mapped_mask, saturation_boost)
+
+    out_rgba = rgba.copy()
+    out_rgba[mapped_mask, :3] = normalized_srgb[mapped_mask, :3]
+    out_linear = _srgb_to_linear_array(out_rgba[..., :3])
+    after = float(np.mean(_linear_luminance(out_linear)[mapped_mask]))
+
+    report = {
+        "before_luminance": before,
+        "after_luminance": after,
+        "scaling_factor": scaling,
+        "saturation_applied": abs(float(saturation_boost) - 1.0) >= 0.000001,
+        "saturation_boost_applied": float(saturation_boost),
+        "mapped_pixel_count": int(np.count_nonzero(mapped_mask)),
+        "mask_source": mask_source,
+        "target_luminance": float(target_luminance),
+        "max_scaling_factor": float(max_scaling_factor),
+    }
+
+    if is_blender_image:
+        return _array_to_blender_image(baked_image, out_rgba), report
+    return _array_to_pil_image(out_rgba), report
+
+
 def sample_pixel(pixels: list[float], width: int, height: int, x: int, y: int) -> tuple[float, float, float, float]:
     x = max(0, min(width - 1, x))
     y = max(0, min(height - 1, y))
@@ -969,6 +1188,27 @@ def main() -> None:
 
     bake_image = bake_diffuse(source, retopo, args)
     dilate_transparent_pixels(bake_image, args.dilate_pixels)
+    raw_bake_path = ""
+    texture_luminance_report = {
+        "enabled": bool(args.normalize_luminance),
+        "before_luminance": None,
+        "after_luminance": None,
+        "scaling_factor": 1.0,
+        "saturation_applied": False,
+        "saturation_boost_applied": float(args.saturation_boost),
+    }
+    if args.normalize_luminance:
+        raw_bake_path = str(texture_dir / f"{output_base}_Bake{args.bake_size}_Raw.png")
+        save_image(bake_image, Path(raw_bake_path))
+        uv0_triangles = extract_uv0_triangles(retopo)
+        bake_image, texture_luminance_report = normalize_texture_luminance(
+            bake_image,
+            uv0_triangles,
+            args.target_luminance,
+            args.max_scaling_factor,
+            args.saturation_boost,
+        )
+        texture_luminance_report["enabled"] = True
     bake_path = texture_dir / f"{output_base}_Bake{args.bake_size}.png"
     save_image(bake_image, bake_path)
 
@@ -998,6 +1238,7 @@ def main() -> None:
         "input": str(input_path),
         "output_glb": str(output_glb),
         "output_blend": blend_path,
+        "raw_baked_texture": raw_bake_path,
         "baked_texture": str(bake_path),
         "pixelated_texture": str(pixel_path),
         "qa_renders": render_outputs,
@@ -1027,6 +1268,10 @@ def main() -> None:
             "cage_extrusion": args.cage_extrusion,
             "max_ray_distance": args.max_ray_distance,
             "dilate_pixels": args.dilate_pixels,
+            "normalize_luminance": args.normalize_luminance,
+            "target_luminance": args.target_luminance,
+            "max_scaling_factor": args.max_scaling_factor,
+            "saturation_boost": args.saturation_boost,
             "texture_size": args.texture_size,
             "palette_mode": args.palette_mode,
             "palette_size": args.palette_size,
@@ -1038,6 +1283,11 @@ def main() -> None:
             "unlit_emission_material": args.unlit_emission_material,
         },
         "normalize_report": normalize_report,
+        "texture_luminance_report": texture_luminance_report,
+        "normalize_before_luminance": texture_luminance_report.get("before_luminance"),
+        "normalize_after_luminance": texture_luminance_report.get("after_luminance"),
+        "normalize_scaling_factor": texture_luminance_report.get("scaling_factor"),
+        "saturation_boost_applied": texture_luminance_report.get("saturation_boost_applied"),
         "qremesh_source_report": qremesh_source_report,
         "qremesh_report": qremesh_report,
         "pixel_report": pixel_report,

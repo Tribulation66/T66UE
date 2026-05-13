@@ -7,228 +7,34 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Styling/CoreStyle.h"
-#include "UI/Style/T66RuntimeUIBrushAccess.h"
-#include "UI/Style/T66RuntimeUITextureAccess.h"
-#include "UI/Style/T66Style.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/T66UIManager.h"
-#include "Widgets/Input/SButton.h"
-#include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/SNullWidget.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace
 {
-	constexpr float T66SavePreviewButtonHeight = 58.f;
-
-	FLinearColor T66SavePreviewBrightText()
+	FName SavePreviewTag(const TCHAR* Tag)
 	{
-		return FLinearColor(0.97f, 0.94f, 0.86f, 1.0f);
+		return FName(Tag);
 	}
 
-	FLinearColor T66SavePreviewGoldText()
+	TSharedRef<SWidget> MakeSavePreviewRect(const FLinearColor& Color, const FName Tag, const FString& Role)
 	{
-		return FLinearColor(0.94f, 0.76f, 0.34f, 1.0f);
-	}
-
-	FLinearColor T66SavePreviewMutedText()
-	{
-		return FLinearColor(0.72f, 0.67f, 0.56f, 1.0f);
-	}
-
-	const FSlateBrush* ResolveSavePreviewBrush(
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
-		const FString& RelativePath,
-		const FMargin& Margin,
-		const TCHAR* DebugLabel,
-		const TextureFilter Filter = TextureFilter::TF_Trilinear)
-	{
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
-			Margin,
-			DebugLabel,
-			Filter);
-	}
-
-	struct FSavePreviewReferenceButtonBrushSet
-	{
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Normal;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Hovered;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Pressed;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Disabled;
-	};
-
-	struct FSavePreviewReferenceButtonStyleEntry
-	{
-		FButtonStyle Style;
-		bool bInitialized = false;
-	};
-
-	const TCHAR* GetSavePreviewButtonFamily(const ET66ButtonType Type)
-	{
-		switch (Type)
-		{
-		case ET66ButtonType::Primary:
-		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
-			return TEXT("CTA");
-		default:
-			return TEXT("Pill");
-		}
-	}
-
-	FSavePreviewReferenceButtonBrushSet& GetSavePreviewButtonBrushSet(const ET66ButtonType Type)
-	{
-		static FSavePreviewReferenceButtonBrushSet Neutral;
-		static FSavePreviewReferenceButtonBrushSet Primary;
-		static FSavePreviewReferenceButtonBrushSet Danger;
-
-		switch (Type)
-		{
-		case ET66ButtonType::Primary:
-		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
-			return Primary;
-		case ET66ButtonType::Danger:
-			return Danger;
-		default:
-			return Neutral;
-		}
-	}
-
-	FSavePreviewReferenceButtonStyleEntry& GetSavePreviewButtonStyleEntry(const ET66ButtonType Type)
-	{
-		static FSavePreviewReferenceButtonStyleEntry Neutral;
-		static FSavePreviewReferenceButtonStyleEntry Primary;
-		static FSavePreviewReferenceButtonStyleEntry Danger;
-
-		switch (Type)
-		{
-		case ET66ButtonType::Primary:
-		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
-			return Primary;
-		case ET66ButtonType::Danger:
-			return Danger;
-		default:
-			return Neutral;
-		}
-	}
-
-	const FSlateBrush* ResolveSavePreviewButtonBrush(
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
-		const TCHAR* Family,
-		const TCHAR* State,
-		const TCHAR* DebugLabel)
-	{
-		const FString AssetState = FCString::Strcmp(State, TEXT("disabled")) == 0
-			? TEXT("disabled")
-			: State;
-		return ResolveSavePreviewBrush(
-			Entry,
-			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(Family, *AssetState),
-			FMargin(0.f),
-			DebugLabel,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FButtonStyle& GetSavePreviewButtonStyle(const ET66ButtonType Type)
-	{
-		FSavePreviewReferenceButtonStyleEntry& StyleEntry = GetSavePreviewButtonStyleEntry(Type);
-		if (!StyleEntry.bInitialized)
-		{
-			StyleEntry.bInitialized = true;
-			StyleEntry.Style = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
-			StyleEntry.Style.SetNormalPadding(FMargin(0.f));
-			StyleEntry.Style.SetPressedPadding(FMargin(0.f));
-
-			FSavePreviewReferenceButtonBrushSet& BrushSet = GetSavePreviewButtonBrushSet(Type);
-			const TCHAR* Family = GetSavePreviewButtonFamily(Type);
-			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Normal, Family, TEXT("normal"), TEXT("SavePreviewButtonNormal")))
-			{
-				StyleEntry.Style.SetNormal(*Brush);
-			}
-			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Hovered, Family, TEXT("hover"), TEXT("SavePreviewButtonHover")))
-			{
-				StyleEntry.Style.SetHovered(*Brush);
-			}
-			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Pressed, Family, TEXT("pressed"), TEXT("SavePreviewButtonPressed")))
-			{
-				StyleEntry.Style.SetPressed(*Brush);
-			}
-			if (const FSlateBrush* Brush = ResolveSavePreviewButtonBrush(BrushSet.Disabled, Family, TEXT("disabled"), TEXT("SavePreviewButtonDisabled")))
-			{
-				StyleEntry.Style.SetDisabled(*Brush);
-			}
-		}
-
-		return StyleEntry.Style;
-	}
-
-	const FSlateBrush* GetSavePreviewShellBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveSavePreviewBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
-			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
-			TEXT("SavePreviewShell"),
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetSavePreviewSceneBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveSavePreviewBrush(
-			Entry,
-			T66ScreenSlateHelpers::MakeReferenceSharedAssetPath(TEXT("ScreenArt/MainMenu/main_menu_scene_plate.png")),
-			FMargin(0.f),
-			TEXT("SavePreviewScene"),
-			TextureFilter::TF_Nearest);
-	}
-
-	TSharedRef<SWidget> MakeSavePreviewShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
-	{
-		return SNew(SBorder)
-			.BorderImage(GetSavePreviewShellBrush() ? GetSavePreviewShellBrush() : FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(GetSavePreviewShellBrush() ? FLinearColor::White : FLinearColor(0.f, 0.f, 0.f, 0.92f))
-			.Padding(Padding)
-			.Clipping(EWidgetClipping::ClipToBounds)
-			[
-				Content
-			];
-	}
-
-	TSharedRef<SWidget> MakeSavePreviewButton(FT66ButtonParams Params)
-	{
-		const float ButtonHeight = Params.Height > 0.f ? Params.Height : T66SavePreviewButtonHeight;
-		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(6.f, 2.f);
-
-		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
-			? Params.CustomContent.ToSharedRef()
-			: T66ScreenSlateHelpers::MakeFilledButtonText(
-				Params,
-				ButtonHeight,
-				TAttribute<FSlateColor>(FSlateColor(T66SavePreviewBrightText())),
-				TAttribute<FLinearColor>(FLinearColor(0.f, 0.f, 0.f, 0.78f)));
-
-		const FButtonStyle& ButtonStyle = GetSavePreviewButtonStyle(Params.Type);
-		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
-			Params.OnClicked,
-			Content,
-			&ButtonStyle.Normal,
-			&ButtonStyle.Hovered,
-			&ButtonStyle.Pressed,
-			&ButtonStyle.Disabled,
-			Params.MinWidth,
-			ButtonHeight,
-			ContentPadding,
-			Params.IsEnabled,
-			Params.Visibility);
+		return FT66FlatStyle::AttachMetadata(
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+			.BorderBackgroundColor(Color)
+			.Visibility(EVisibility::HitTestInvisible),
+			Tag,
+			Role,
+			ET66FlatState::Default);
 	}
 }
 
@@ -256,83 +62,129 @@ TSharedRef<SWidget> UT66SavePreviewScreen::BuildSlateUI()
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const FText LoadText = NSLOCTEXT("T66.SavePreview", "Load", "LOAD");
 	const FText SubtitleText = NSLOCTEXT("T66.SavePreview", "Subtitle", "The run is paused for inspection. Back returns to Save Slots, Load resumes normally.");
-	const TSharedRef<SWidget> BackButton =
-		MakeSavePreviewButton(
-			FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleBackClicked), ET66ButtonType::Neutral)
-			.SetMinWidth(210.f)
-			.SetHeight(T66SavePreviewButtonHeight)
-			.SetFontSize(22)
-			.SetPadding(FMargin(20.f, 8.f)));
-	const TSharedRef<SWidget> LoadButton =
-		MakeSavePreviewButton(
-			FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleLoadClicked), ET66ButtonType::Primary)
-			.SetMinWidth(210.f)
-			.SetHeight(T66SavePreviewButtonHeight)
-			.SetFontSize(22)
-			.SetPadding(FMargin(20.f, 8.f)));
 
-	return SNew(SOverlay)
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
-			SNew(SImage)
-			.Image(GetSavePreviewSceneBrush())
-			.ColorAndOpacity(FLinearColor(0.88f, 0.88f, 0.88f, 1.0f))
-		]
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.58f))
-		]
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Bottom)
-		.Padding(FMargin(32.f, 32.f, 32.f, 28.f))
-		[
-			SNew(SBox)
-			.WidthOverride(760.f)
+	constexpr float CanvasW = 1920.f;
+	constexpr float CanvasH = 1080.f;
+	const TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
+	auto AddSlot = [&Canvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+	{
+		Canvas->AddSlot()
+			.Anchors(FAnchors(0.f, 0.f))
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X, Y, W, H))
 			[
-				MakeSavePreviewShell(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					[
-						SNew(STextBlock)
-						.Text(PreviewTitle)
-						.Font(FT66Style::Tokens::FontBold(30))
-						.ColorAndOpacity(T66SavePreviewGoldText())
-						.Justification(ETextJustify::Center)
-						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(0.f, 6.f, 0.f, 18.f)
-					[
-						SNew(STextBlock)
-						.Text(SubtitleText)
-						.Font(FT66Style::Tokens::FontRegular(17))
-						.ColorAndOpacity(T66SavePreviewMutedText())
-						.AutoWrapText(true)
-						.WrapTextAt(650.f)
-						.Justification(ETextJustify::Center)
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					[
-						T66ScreenSlateHelpers::MakeTwoButtonRow(
-							BackButton,
-							LoadButton,
-							FMargin(0.f, 0.f, 12.f, 0.f),
-							FMargin(0.f))
-					],
-					FMargin(42.f, 30.f, 42.f, 34.f))
-			]
+				Widget
+			];
+	};
+	auto MakeLabel = [](
+		const FName Tag,
+		const FText& Text,
+		const int32 FontSize,
+		const FLinearColor& Color,
+		const bool bBold,
+		const ETextJustify::Type Justification = ETextJustify::Center) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::AttachMetadata(
+			SNew(STextBlock)
+			.Text(Text)
+			.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+			.ColorAndOpacity(Color)
+			.Justification(Justification)
+			.AutoWrapText(true)
+			.WrapTextAt(650.f)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			.Visibility(EVisibility::HitTestInvisible),
+			Tag,
+			TEXT("Label"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true);
+	};
+
+	AddSlot(0.f, 0.f, CanvasW, CanvasH,
+		MakeSavePreviewRect(FT66FlatStyle::BackgroundColor(), SavePreviewTag(TEXT("SavePreview.Background")), TEXT("Background")));
+	AddSlot(0.f, 0.f, CanvasW, CanvasH,
+		MakeSavePreviewRect(FLinearColor(0.f, 0.f, 0.f, 0.58f), SavePreviewTag(TEXT("SavePreview.Scrim")), TEXT("Scrim")));
+	AddSlot(412.8f, 697.5f, 1094.4f, 342.3f,
+		FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(0.f),
+			SNullWidget::NullWidget,
+			nullptr,
+			SavePreviewTag(TEXT("SavePreview.ModalPanel"))));
+	AddSlot(473.3f, 740.7f, 973.4f, 250.1f,
+		FT66FlatStyle::AttachMetadata(SNew(SBox), SavePreviewTag(TEXT("SavePreview.Content")), TEXT("Content"), ET66FlatState::Default));
+	AddSlot(473.3f, 740.7f, 973.4f, 62.f,
+		MakeLabel(
+			SavePreviewTag(TEXT("SavePreview.Title")),
+			PreviewTitle,
+			30,
+			FT66FlatStyle::SelectedText(),
+			true));
+	AddSlot(473.3f, 811.3f, 973.4f, 70.f,
+		MakeLabel(
+			SavePreviewTag(TEXT("SavePreview.Subtitle")),
+			SubtitleText,
+			17,
+			FT66FlatStyle::SecondaryText(),
+			false));
+	AddSlot(649.f, 907.2f, 622.1f, 83.5f,
+		FT66FlatStyle::AttachMetadata(SNew(SBox), SavePreviewTag(TEXT("SavePreview.ButtonRow")), TEXT("ActionRow"), ET66FlatState::Default));
+	AddSlot(649.f, 907.2f, 302.4f, 83.5f,
+		FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Default,
+			BackText,
+			FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleBackClicked),
+			nullptr,
+			nullptr,
+			FMargin(20.f, 8.f),
+			0.f,
+			0.f,
+			true,
+			22,
+			SavePreviewTag(TEXT("SavePreview.BackButton"))));
+	AddSlot(968.6f, 907.2f, 302.4f, 83.5f,
+		FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Selected,
+			LoadText,
+			FOnClicked::CreateUObject(this, &UT66SavePreviewScreen::HandleLoadClicked),
+			nullptr,
+			nullptr,
+			FMargin(20.f, 8.f),
+			0.f,
+			0.f,
+			true,
+			22,
+			SavePreviewTag(TEXT("SavePreview.LoadButton"))));
+
+	const TSharedRef<SWidget> RootContent = SNew(SBox)
+		.WidthOverride(CanvasW)
+		.HeightOverride(CanvasH)
+		[
+			Canvas
 		];
+
+	return FT66FlatStyle::AttachMetadata(
+		SNew(SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::Both)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				RootContent
+			]
+		],
+		SavePreviewTag(TEXT("SavePreview.Root")),
+		TEXT("Root"),
+		ET66FlatState::Default);
 }
 
 FReply UT66SavePreviewScreen::HandleBackClicked()

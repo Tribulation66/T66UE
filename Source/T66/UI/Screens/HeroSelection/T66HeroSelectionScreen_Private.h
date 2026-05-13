@@ -21,6 +21,7 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/T66TemporaryBuffUIUtils.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "Gameplay/T66CompanionBase.h"
@@ -75,37 +76,35 @@ namespace T66HeroSelectionPrivate
 
 	inline FLinearColor HeroSelectionChromeAccent(float Alpha = 1.0f)
 	{
-		return IsBloodyRetroSelectionPreset()
-			? FLinearColor(0.64f, 0.035f, 0.030f, Alpha)
-			: FLinearColor(0.92f, 0.05f, 0.12f, Alpha);
+		FLinearColor Color = FT66FlatStyle::SelectedBorder();
+		Color.A = Alpha;
+		return Color;
 	}
 
 	inline FLinearColor HeroSelectionChromeAccentInactive(float Alpha = 0.75f)
 	{
-		return IsBloodyRetroSelectionPreset()
-			? FLinearColor(0.18f, 0.040f, 0.035f, Alpha)
-			: FLinearColor(0.20f, 0.055f, 0.065f, Alpha);
+		FLinearColor Color = FT66FlatStyle::DefaultBorder();
+		Color.A = Alpha;
+		return Color;
 	}
 
 	inline FLinearColor HeroSelectionChromeInnerFill(float Alpha = 0.96f)
 	{
-		return IsBloodyRetroSelectionPreset()
-			? FLinearColor(0.026f, 0.012f, 0.014f, Alpha)
-			: FLinearColor(0.035f, 0.014f, 0.016f, Alpha);
+		FLinearColor Color = FT66FlatStyle::DefaultFill();
+		Color.A = Alpha;
+		return Color;
 	}
 
 	inline FLinearColor HeroSelectionChromeInnerFillAlt(float Alpha = 0.96f)
 	{
-		return IsBloodyRetroSelectionPreset()
-			? FLinearColor(0.040f, 0.014f, 0.016f, Alpha)
-			: FLinearColor(0.050f, 0.018f, 0.020f, Alpha);
+		FLinearColor Color = FT66FlatStyle::SelectedFill();
+		Color.A = Alpha;
+		return Color;
 	}
 
 	inline FLinearColor HeroSelectionChromeTokenAccent()
 	{
-		return IsBloodyRetroSelectionPreset()
-			? FLinearColor(0.74f, 0.05f, 0.040f, 1.0f)
-			: FT66Style::Tokens::Accent;
+		return FT66FlatStyle::PurpleAccent();
 	}
 
 	struct FHeroSelectionSharedLayoutMetrics
@@ -114,35 +113,35 @@ namespace T66HeroSelectionPrivate
 		bool bShortViewport = false;
 		float ReferenceLayoutWidth = 1920.f;
 		float ReferenceLayoutHeight = 1080.f;
-		float PanelTouchOverlap = 12.f;
-		float LeftPanelWidth = 588.f;
-		float RightPanelWidth = 493.f;
-		float CenterPanelX = 576.f;
-		float CenterPreviewWidth = 863.f;
-		float PartyFooterWidth = 720.f;
-		float CompanionFooterWidth = 506.f;
+		float PanelTouchOverlap = 0.f;
+		float LeftPanelWidth = 548.f;
+		float RightPanelWidth = 592.f;
+		float CenterPanelX = 580.f;
+		float CenterPreviewWidth = 714.f;
+		float PartyFooterWidth = 664.f;
+		float CompanionFooterWidth = 508.f;
 		float CompanionFooterX = 708.f;
-		float RunFooterX = 1202.f;
-		float RunFooterWidth = 718.f;
+		float RunFooterX = 1252.f;
+		float RunFooterWidth = 652.f;
 		float CompanionFooterContentWidth = 486.f;
 		float RunFooterContentWidth = 694.f;
-		float UpperPanelY = 0.f;
-		float FooterPanelMinHeight = 186.f;
-		float FooterPanelY = 894.f;
-		float UpperSidePanelHeight = 894.f;
+		float UpperPanelY = 16.f;
+		float FooterPanelMinHeight = 218.f;
+		float FooterPanelY = 804.f;
+		float UpperSidePanelHeight = 752.f;
 		float RightStatsCardHeight = 200.f;
 		float RightUltRowHeight = 136.f;
-		float PanelGap = 0.f;
-		float OuterPanelBleed = 8.f;
+		float PanelGap = FT66FlatStyle::FlatGap;
+		float OuterPanelBleed = 0.f;
 		float TopBarBottomGap = 8.f;
 		float LayoutCompactScale = 1.f;
 		float FooterToggleWidth = 239.f;
 		float FooterToggleHeight = 76.f;
-		float FooterActionHeight = 126.f;
+		float FooterActionHeight = 136.f;
 		float BalanceBadgeIconWidth = 56.f;
 		float BalanceBadgeIconHeight = 34.f;
-		float LeftSkinsCardHeight = 184.f;
-		float RightPreviewPanelHeight = 280.f;
+		float LeftSkinsCardHeight = 428.f;
+		float RightPreviewPanelHeight = 72.f;
 		float RightAbilityIconButtonSize = 90.f;
 		float RightAbilityIconSize = 70.f;
 		int32 ScreenHeaderFontSize = 21;
@@ -181,7 +180,7 @@ namespace T66HeroSelectionPrivate
 		return LayoutViewportSize;
 	}
 
-	inline FHeroSelectionSharedLayoutMetrics MakeHeroSelectionSharedLayoutMetrics(const bool bDotaTheme = FT66Style::IsDotaTheme())
+	inline FHeroSelectionSharedLayoutMetrics MakeHeroSelectionSharedLayoutMetrics()
 	{
 		FHeroSelectionSharedLayoutMetrics Metrics;
 		Metrics.LayoutViewportSize = GetHeroSelectionLayoutViewportSize();
@@ -191,35 +190,35 @@ namespace T66HeroSelectionPrivate
 		Metrics.ReferenceLayoutHeight = FMath::Max(
 			ReferenceLayoutBaselineHeight,
 			FMath::CeilToFloat(Metrics.ReferenceLayoutWidth * Metrics.LayoutViewportSize.Y / Metrics.LayoutViewportSize.X));
-		Metrics.PanelTouchOverlap = 12.f;
-		Metrics.LeftPanelWidth = 588.f;
-		Metrics.RightPanelWidth = 493.f;
-		Metrics.CenterPanelX = Metrics.LeftPanelWidth - Metrics.PanelTouchOverlap;
-		Metrics.CenterPreviewWidth = Metrics.ReferenceLayoutWidth - Metrics.RightPanelWidth + Metrics.PanelTouchOverlap - Metrics.CenterPanelX;
-		Metrics.PartyFooterWidth = 720.f;
-		Metrics.CompanionFooterWidth = 506.f;
-		Metrics.CompanionFooterX = Metrics.PartyFooterWidth - Metrics.PanelTouchOverlap;
-		Metrics.RunFooterX = Metrics.CompanionFooterX + Metrics.CompanionFooterWidth - Metrics.PanelTouchOverlap;
-		Metrics.RunFooterWidth = Metrics.ReferenceLayoutWidth - Metrics.RunFooterX;
+		Metrics.PanelTouchOverlap = 0.f;
+		Metrics.LeftPanelWidth = 548.f;
+		Metrics.RightPanelWidth = 592.f;
+		Metrics.CenterPanelX = 580.f;
+		Metrics.CenterPreviewWidth = 714.f;
+		Metrics.PartyFooterWidth = 664.f;
+		Metrics.CompanionFooterWidth = 508.f;
+		Metrics.CompanionFooterX = 708.f;
+		Metrics.RunFooterX = 1252.f;
+		Metrics.RunFooterWidth = Metrics.ReferenceLayoutWidth - Metrics.RunFooterX - 16.f;
 		Metrics.CompanionFooterContentWidth = Metrics.CompanionFooterWidth - 20.f;
 		Metrics.RunFooterContentWidth = Metrics.RunFooterWidth - 24.f;
-		Metrics.UpperPanelY = 0.f;
-		Metrics.FooterPanelMinHeight = 186.f;
-		Metrics.FooterPanelY = Metrics.ReferenceLayoutHeight - Metrics.FooterPanelMinHeight;
-		Metrics.UpperSidePanelHeight = Metrics.FooterPanelY - Metrics.UpperPanelY;
+		Metrics.UpperPanelY = 16.f;
+		Metrics.FooterPanelMinHeight = 218.f;
+		Metrics.FooterPanelY = Metrics.ReferenceLayoutHeight - Metrics.FooterPanelMinHeight - 58.f;
+		Metrics.UpperSidePanelHeight = Metrics.FooterPanelY - Metrics.UpperPanelY - 36.f;
 		Metrics.RightStatsCardHeight = 200.f;
 		Metrics.RightUltRowHeight = 136.f;
-		Metrics.PanelGap = 0.f;
-		Metrics.OuterPanelBleed = 8.f;
+		Metrics.PanelGap = FT66FlatStyle::FlatGap;
+		Metrics.OuterPanelBleed = 0.f;
 		Metrics.TopBarBottomGap = 8.f;
 		Metrics.LayoutCompactScale = 1.f;
 		Metrics.FooterToggleWidth = FMath::RoundToFloat((Metrics.CompanionFooterContentWidth - 8.f) * 0.5f);
 		Metrics.FooterToggleHeight = Metrics.bShortViewport ? 68.f : 76.f;
-		Metrics.FooterActionHeight = 126.f;
+		Metrics.FooterActionHeight = Metrics.bShortViewport ? 112.f : 136.f;
 		Metrics.BalanceBadgeIconWidth = FMath::RoundToFloat(56.f * Metrics.LayoutCompactScale);
 		Metrics.BalanceBadgeIconHeight = FMath::RoundToFloat(34.f * Metrics.LayoutCompactScale);
-		Metrics.LeftSkinsCardHeight = 184.f;
-		Metrics.RightPreviewPanelHeight = 280.f;
+		Metrics.LeftSkinsCardHeight = Metrics.bShortViewport ? 340.f : 428.f;
+		Metrics.RightPreviewPanelHeight = 72.f;
 		Metrics.RightAbilityIconButtonSize = Metrics.bShortViewport ? 78.f : 90.f;
 		Metrics.RightAbilityIconSize = Metrics.bShortViewport ? 58.f : 70.f;
 		Metrics.ScreenHeaderFontSize = FMath::RoundToInt(21.f * Metrics.LayoutCompactScale);
@@ -232,7 +231,7 @@ namespace T66HeroSelectionPrivate
 		Metrics.EntityDropdownFontSize = FMath::RoundToInt(20.f * Metrics.LayoutCompactScale);
 		Metrics.BodyTextFontSize = FMath::RoundToInt(16.f * Metrics.LayoutCompactScale);
 		Metrics.DifficultyMenuFontSize = FMath::RoundToInt(23.f * Metrics.LayoutCompactScale);
-		Metrics.HeroArrowButtonWidth = bDotaTheme ? 68.f : 64.f;
+		Metrics.HeroArrowButtonWidth = 64.f;
 		Metrics.HeroArrowButtonHeight = Metrics.bShortViewport ? 42.f : 48.f;
 		Metrics.TopStripBackButtonWidth = FMath::RoundToFloat(112.f * Metrics.LayoutCompactScale);
 		Metrics.TopStripBackButtonHeight = Metrics.bShortViewport ? 32.f : 34.f;
@@ -341,38 +340,38 @@ namespace T66HeroSelectionPrivate
 
 	inline FString GetHeroSelectionBalanceIconPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/coupon_ticket_icon.png");
+		return TEXT("RuntimeDependencies/T66/UI/Icons/Flat/chalice_grail.png");
 	}
 
 	inline FString MakeHeroSelectionReferenceAssetPath(const TCHAR* RelativePath)
 	{
 		return FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/HeroSelection/%s"),
+			TEXT("SourceAssets/UI/ContentStubs/HeroSelection/%s"),
 			RelativePath ? RelativePath : TEXT(""));
 	}
 
 	inline FString MakeHeroSelectionUltrakillElementPath(const TCHAR* FileName)
 	{
 		return FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/%s"),
+			TEXT("RuntimeDependencies/T66/UI/Icons/Flat/%s"),
 			FileName ? FileName : TEXT(""));
 	}
 
 	inline FString MakeHeroSelectionSquareVariantElementPath(const TCHAR* FileName)
 	{
 		return FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/%s"),
+			TEXT("RuntimeDependencies/T66/UI/Icons/Flat/%s"),
 			FileName ? FileName : TEXT(""));
 	}
 
 	inline FSlateColor GetHeroSelectionParchmentText()
 	{
-		return FSlateColor(FLinearColor(0.96f, 0.94f, 0.88f, 1.0f));
+		return FSlateColor(FT66FlatStyle::PrimaryText());
 	}
 
 	inline FSlateColor GetHeroSelectionParchmentMutedText()
 	{
-		return FSlateColor(FLinearColor(0.98f, 0.48f, 0.34f, 1.0f));
+		return FSlateColor(FT66FlatStyle::PurpleAccent());
 	}
 
 	inline FString GetHeroSelectionRankImagePath()
@@ -858,7 +857,7 @@ namespace T66HeroSelectionPrivate
 		return ResolveHeroSelectionSpriteBrush(
 			bSelected ? SelectedEntry : NormalEntry,
 			FString::Printf(
-				TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/profile_slot_%s_square_variant.png"),
+				TEXT("RuntimeDependencies/T66/UI/Icons/Flat/portrait_slot_%s.png"),
 				bSelected ? TEXT("selected") : TEXT("normal")),
 			bSelected ? FVector2D(111.f, 79.f) : FVector2D(100.f, 75.f),
 			FMargin(0.f),
@@ -901,47 +900,10 @@ namespace T66HeroSelectionPrivate
 			TextureFilter::TF_Nearest);
 	}
 
-	inline const FScrollBarStyle* GetHeroSelectionReferenceScrollBarStyle()
+	inline const FScrollBarStyle* GetHeroSelectionFlatScrollBarStyle()
 	{
 		static FScrollBarStyle Style = FCoreStyle::Get().GetWidgetStyle<FScrollBarStyle>("ScrollBar");
-		static FHeroSelectionSpriteBrushEntry TrackEntry;
-		static FHeroSelectionSpriteBrushEntry ThumbEntry;
-		static FHeroSelectionSpriteBrushEntry HoverEntry;
-
-		const FSlateBrush* TrackBrush = ResolveHeroSelectionSpriteBrush(
-			TrackEntry,
-			MakeHeroSelectionUltrakillElementPath(TEXT("progress_bar_track.png")),
-			FVector2D(1460.f, 104.f),
-			FMargin(0.065f, 0.300f, 0.065f, 0.300f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-		const FSlateBrush* ThumbBrush = ResolveHeroSelectionSpriteBrush(
-			ThumbEntry,
-			MakeHeroSelectionUltrakillElementPath(TEXT("progress_bar_fill_cyan.png")),
-			FVector2D(1347.f, 108.f),
-			FMargin(0.030f, 0.080f, 0.030f, 0.080f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-		const FSlateBrush* HoverBrush = ResolveHeroSelectionSpriteBrush(
-			HoverEntry,
-			MakeHeroSelectionUltrakillElementPath(TEXT("progress_bar_fill_cyan.png")),
-			FVector2D(1347.f, 108.f),
-			FMargin(0.030f, 0.080f, 0.030f, 0.080f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-
-		if (TrackBrush && ThumbBrush && HoverBrush)
-		{
-			Style
-				.SetVerticalBackgroundImage(*TrackBrush)
-				.SetVerticalTopSlotImage(*TrackBrush)
-				.SetVerticalBottomSlotImage(*TrackBrush)
-				.SetNormalThumbImage(*ThumbBrush)
-				.SetHoveredThumbImage(*HoverBrush)
-				.SetDraggedThumbImage(*HoverBrush)
-				.SetThickness(14.f);
-		}
-
+		Style.SetThickness(10.f);
 		return &Style;
 	}
 
@@ -1005,13 +967,35 @@ namespace T66HeroSelectionPrivate
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							T66ScreenSlateHelpers::MakeReferenceHorizontalSlicedImage(
-								TAttribute<const FSlateBrush*>::CreateLambda([this]() -> const FSlateBrush*
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor_Lambda([this]()
+							{
+								if (!Button.IsValid() || !Button->IsEnabled())
 								{
-									return GetCurrentBrush();
-								}),
-								FVector2D(1.f, 1.f),
-								0.105f)
+									return FT66FlatStyle::DisabledBorder();
+								}
+								if (Button->IsPressed() || Button->IsHovered())
+								{
+									return FT66FlatStyle::SelectedBorder();
+								}
+								return FT66FlatStyle::DefaultBorder();
+							})
+							.Padding(FT66FlatStyle::FlatStroke)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor_Lambda([this]()
+								{
+									if (!Button.IsValid() || !Button->IsEnabled())
+									{
+										return FT66FlatStyle::DisabledFill();
+									}
+									return Button->IsPressed() || Button->IsHovered()
+										? FT66FlatStyle::SelectedFill()
+										: FT66FlatStyle::DefaultFill();
+								})
+							]
 						]
 						+ SOverlay::Slot()
 						.HAlign(HAlign_Fill)
@@ -1076,89 +1060,95 @@ namespace T66HeroSelectionPrivate
 		const FMargin& Padding,
 		const bool bRightShell = false)
 	{
-		return SNew(SBorder)
-			.BorderImage(bRightShell ? GetHeroSelectionRightShellBrush() : GetHeroSelectionLargeShellBrush())
-			.BorderBackgroundColor(FLinearColor::White)
-			.Padding(Padding)
-			.Clipping(EWidgetClipping::ClipToBounds)
-			[
-				Content
-			];
+		static_cast<void>(bRightShell);
+		return FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			Padding,
+			Content);
 	}
 
 	inline TSharedRef<SWidget> MakeHeroSelectionContentShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		return SNew(SBorder)
-			.BorderImage(GetHeroSelectionContentShellBrush())
-			.BorderBackgroundColor(FLinearColor::White)
-			.Padding(Padding)
-			.Clipping(EWidgetClipping::ClipToBounds)
-			[
-				Content
-			];
+		return FT66FlatStyle::MakeFlatSubPanel(
+			ET66FlatState::Default,
+			Padding,
+			Content);
 	}
 
 	inline TSharedRef<SWidget> MakeHeroSelectionParchmentPanelShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		return SNew(SBorder)
-			.BorderImage(GetHeroSelectionParchmentPanelBrush())
-			.BorderBackgroundColor(FLinearColor::White)
-			.Padding(Padding)
-			.Clipping(EWidgetClipping::ClipToBounds)
-			[
-				Content
-			];
+		return FT66FlatStyle::MakeFlatSubPanel(
+			ET66FlatState::Default,
+			Padding,
+			Content);
 	}
 
 	inline TSharedRef<SWidget> MakeHeroSelectionParchmentRowShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
 	{
-		return SNew(SBorder)
-			.BorderImage(GetHeroSelectionParchmentRowBrush())
-			.BorderBackgroundColor(FLinearColor::White)
-			.Padding(Padding)
-			.Clipping(EWidgetClipping::ClipToBounds)
-			[
-				Content
-			];
+		return FT66FlatStyle::MakeFlatSubPanel(
+			ET66FlatState::Default,
+			Padding,
+			Content);
 	}
 
 	inline TSharedRef<SWidget> MakeHeroSelectionRowShell(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(12.f, 8.f))
 	{
-		return SNew(SBorder)
-			.BorderImage(GetHeroSelectionRowShellBrush())
-			.BorderBackgroundColor(FLinearColor::White)
-			.Padding(Padding)
-			[
-				Content
-			];
+		return FT66FlatStyle::MakeFlatSubPanel(
+			ET66FlatState::Default,
+			Padding,
+			Content);
 	}
 
 	inline TSharedRef<SWidget> MakeHeroSelectionSpriteButton(
 		const FT66ButtonParams& Params,
 		TAttribute<ET66HeroSpriteFamily> SpriteFamily)
 	{
+		static_cast<void>(SpriteFamily);
+		const ET66FlatState FlatState = !Params.IsEnabled.Get(true)
+			? ET66FlatState::Disabled
+			: ((Params.Type == ET66ButtonType::Primary
+				|| Params.Type == ET66ButtonType::Danger
+				|| Params.Type == ET66ButtonType::Success
+				|| Params.Type == ET66ButtonType::ToggleActive)
+				? ET66FlatState::Selected
+				: ET66FlatState::Default);
 		const float ButtonHeight = Params.Height > 0.f ? Params.Height : 44.f;
 		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(6.f, 2.f);
+		const int32 ButtonFontSize = Params.FontSize > 0 ? Params.FontSize : 20;
 
-		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
-			? Params.CustomContent.ToSharedRef()
-			: T66ScreenSlateHelpers::MakeFilledButtonText(
-				Params,
+		if (!Params.CustomContent.IsValid())
+		{
+			const TAttribute<FText> LabelAttribute = Params.DynamicLabel.IsSet()
+				? Params.DynamicLabel
+				: TAttribute<FText>(Params.Label);
+			return FT66FlatStyle::MakeFlatButton(
+				FlatState,
+				LabelAttribute,
+				Params.OnClicked,
+				nullptr,
+				nullptr,
+				ContentPadding,
+				Params.MinWidth,
 				ButtonHeight,
-				TAttribute<FSlateColor>(FSlateColor(FT66Style::Text())),
-				TAttribute<FLinearColor>(FLinearColor(0.f, 0.f, 0.f, 0.70f)));
+				Params.IsEnabled,
+				ButtonFontSize);
+		}
 
-		return SNew(ST66HeroSelectionSpriteButton)
-			.SpriteFamily(SpriteFamily)
-			.MinWidth(Params.MinWidth)
-			.Height(ButtonHeight)
-			.ContentPadding(ContentPadding)
-			.IsEnabled(Params.IsEnabled)
-			.Visibility(Params.Visibility)
-			.OnClicked(Params.OnClicked)
-			[
-				Content
-			];
+		return FT66Style::MakeBareButton(
+			FT66BareButtonParams(
+				Params.OnClicked,
+				SNew(SBox)
+				.MinDesiredWidth(Params.MinWidth > 0.f ? FOptionalSize(Params.MinWidth) : FOptionalSize())
+				.HeightOverride(ButtonHeight > 0.f ? FOptionalSize(ButtonHeight) : FOptionalSize())
+				[
+					FT66FlatStyle::MakeFlatPanel(FlatState, ContentPadding, Params.CustomContent.ToSharedRef())
+				])
+			.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+			.SetPadding(FMargin(0.f))
+			.SetEnabled(Params.IsEnabled)
+			.SetVisibility(Params.Visibility)
+			.SetMinWidth(Params.MinWidth)
+			.SetHeight(ButtonHeight));
 	}
 
 	inline TSharedRef<SWidget> MakeHeroSelectionButton(const FT66ButtonParams& Params)
@@ -1231,27 +1221,11 @@ namespace T66HeroSelectionPrivate
 			];
 
 		return SNew(SBox)
-			.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
-			.HeightOverride(Params.Height > 0.f ? Params.Height : FOptionalSize())
+			.MinDesiredWidth(Params.MinWidth > 0.f ? FOptionalSize(Params.MinWidth) : FOptionalSize())
+			.HeightOverride(Params.Height > 0.f ? FOptionalSize(Params.Height) : FOptionalSize())
 			.Visibility(Params.Visibility)
 			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					T66ScreenSlateHelpers::MakeReferenceHorizontalSlicedImage(
-						TAttribute<const FSlateBrush*>(GetHeroSelectionDropdownFieldBrush()),
-						FVector2D(1.f, 1.f),
-						0.120f)
-				]
-				+ SOverlay::Slot()
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-					.Padding(FMargin(4.f, 0.f))
-					[
-						Combo
-					]
-				]
+				FT66FlatStyle::MakeFlatPanel(ET66FlatState::Selected, FMargin(4.f, 0.f), Combo)
 			];
 	}
 
@@ -1259,7 +1233,9 @@ namespace T66HeroSelectionPrivate
 	{
 		return SNew(SToolTip)
 			[
-				FT66Style::MakePanel(
+				FT66FlatStyle::MakeFlatPanel(
+					ET66FlatState::Default,
+					FMargin(12.f, 10.f),
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -1279,10 +1255,7 @@ namespace T66HeroSelectionPrivate
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						.AutoWrapText(true)
 						.WrapTextAt(280.f)
-					],
-					FT66PanelParams(ET66PanelType::Panel)
-						.SetColor(FT66Style::Tokens::Panel2)
-						.SetPadding(FMargin(12.f, 10.f)))
+					])
 			];
 	}
 

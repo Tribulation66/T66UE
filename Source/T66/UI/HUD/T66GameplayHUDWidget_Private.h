@@ -41,6 +41,7 @@
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66CrateOverlayWidget.h"
@@ -1013,7 +1014,7 @@ public:
 				AllottedGeometry.ToPaintGeometry(),
 				FillPts,
 				ESlateDrawEffect::None,
-				FLinearColor(0.02f, 0.02f, 0.02f, 1.f),
+				FT66FlatStyle::DefaultFill(),
 				true,
 				Radius
 			);
@@ -1028,7 +1029,7 @@ public:
 				AllottedGeometry.ToPaintGeometry(),
 				Pts,
 				ESlateDrawEffect::None,
-				FLinearColor(0.05f, 0.05f, 0.05f, 1.f),
+				FT66FlatStyle::DefaultBorder(),
 				true,
 				Thickness
 			);
@@ -1066,65 +1067,6 @@ private:
 	float Thickness = 3.f;
 };
 
-class ST66DotWidget : public SLeafWidget
-{
-public:
-	SLATE_BEGIN_ARGS(ST66DotWidget) {}
-	SLATE_END_ARGS()
-
-	void Construct(const FArguments& InArgs)
-	{
-		DotColor = FLinearColor::White;
-	}
-
-	void SetDotColor(const FLinearColor& InColor)
-	{
-		DotColor = InColor;
-		Invalidate(EInvalidateWidgetReason::Paint);
-	}
-
-	virtual FVector2D ComputeDesiredSize(float) const override
-	{
-		return FVector2D(12.f, 12.f);
-	}
-
-	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
-		FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
-	{
-		const FVector2D Size = AllottedGeometry.GetLocalSize();
-		const float MinDim = FMath::Max(1.f, FMath::Min(Size.X, Size.Y));
-		const FVector2D Center(Size.X * 0.5f, Size.Y * 0.5f);
-		const float Radius = (MinDim * 0.5f) - 0.5f;
-
-		static constexpr int32 NumSeg = 24;
-		TArray<FVector2D> Pts;
-		Pts.Reserve(NumSeg + 1);
-		for (int32 i = 0; i <= NumSeg; ++i)
-		{
-			const float T = static_cast<float>(i) / static_cast<float>(NumSeg);
-			const float A = 2.f * PI * T;
-			Pts.Add(Center + FVector2D(FMath::Cos(A) * Radius, FMath::Sin(A) * Radius));
-		}
-
-		// UE5.7 Slate doesn't expose a convex fill helper, so we draw an extremely thick stroked circle.
-		FSlateDrawElement::MakeLines(
-			OutDrawElements,
-			LayerId,
-			AllottedGeometry.ToPaintGeometry(),
-			Pts,
-			ESlateDrawEffect::None,
-			DotColor,
-			true,
-			MinDim
-		);
-
-		return LayerId + 1;
-	}
-
-private:
-	FLinearColor DotColor = FLinearColor::White;
-};
-
 class ST66CrosshairWidget : public SLeafWidget
 {
 public:
@@ -1159,8 +1101,8 @@ public:
 		const FVector2D Size = AllottedGeometry.GetLocalSize();
 		const FVector2D Center(Size.X * 0.5f, Size.Y * 0.5f);
 		const FLinearColor CrosshairColor = bLocked
-			? FLinearColor(1.f, 0.28f, 0.18f, 0.98f)
-			: FLinearColor(0.95f, 0.95f, 1.f, 0.85f);
+			? FT66FlatStyle::SelectedBorder()
+			: FT66FlatStyle::PrimaryText();
 
 		const float Gap = 4.f;
 		const float Len = 8.f;
@@ -1336,15 +1278,15 @@ public:
 				AllottedGeometry.ToPaintGeometry(),
 				RingPoints,
 				ESlateDrawEffect::None,
-				FLinearColor(0.95f, 0.95f, 1.f, 0.95f),
+				FT66FlatStyle::PrimaryText(),
 				true,
 				2.f);
 		}
 
 		// Thin reticle lines like a CS sniper scope.
 		const float LineExtent = ScopeRadius - 18.f;
-		DrawLine(Center + FVector2D(-LineExtent, 0.f), Center + FVector2D(LineExtent, 0.f), FLinearColor(0.95f, 0.95f, 1.f, 0.95f), 1.5f);
-		DrawLine(Center + FVector2D(0.f, -LineExtent), Center + FVector2D(0.f, LineExtent), FLinearColor(0.95f, 0.95f, 1.f, 0.95f), 1.5f);
+		DrawLine(Center + FVector2D(-LineExtent, 0.f), Center + FVector2D(LineExtent, 0.f), FT66FlatStyle::PrimaryText(), 1.5f);
+		DrawLine(Center + FVector2D(0.f, -LineExtent), Center + FVector2D(0.f, LineExtent), FT66FlatStyle::PrimaryText(), 1.5f);
 
 		return LayerId + 2;
 	}
@@ -1538,7 +1480,7 @@ public:
 		const FLinearColor GridColor = bUseRevealMask
 			? WithAlpha(FT66Style::MinimapGrid(), bMinimap ? 0.18f : 0.12f)
 			: FT66Style::MinimapGrid();
-		const FLinearColor OutlineColor = WithAlpha(FT66Style::Border(), 0.88f);
+		const FLinearColor OutlineColor = WithAlpha(FT66FlatStyle::DefaultBorder(), 0.88f);
 
 		// Solid dark background fill.
 		FSlateDrawElement::MakeBox(
@@ -2187,7 +2129,7 @@ public:
 					AllottedGeometry.ToPaintGeometry(),
 					ArrowOutline,
 					ESlateDrawEffect::None,
-					FT66Style::PanelOuter(),
+					FT66FlatStyle::DefaultBorder(),
 					true,
 					4.0f);
 
@@ -2214,7 +2156,7 @@ public:
 					ToPaintGeo(TL - FVector2D(1.f, 1.f), FVector2D(MarkerSize + 2.f, MarkerSize + 2.f)),
 					FCoreStyle::Get().GetBrush("WhiteBrush"),
 					ESlateDrawEffect::None,
-					FT66Style::PanelOuter());
+					FT66FlatStyle::DefaultBorder());
 
 				FSlateDrawElement::MakeBox(
 					OutDrawElements,
@@ -2277,7 +2219,7 @@ public:
 					ToPaintGeo(TL - FVector2D(1.f, 1.f), IconSize + FVector2D(2.f, 2.f)),
 					FCoreStyle::Get().GetBrush("WhiteBrush"),
 					ESlateDrawEffect::None,
-					FT66Style::PanelOuter());
+					FT66FlatStyle::DefaultBorder());
 
 				FSlateDrawElement::MakeBox(
 					OutDrawElements,
@@ -2296,7 +2238,7 @@ public:
 					ToPaintGeo(P - FVector2D(R + 1.f, R + 1.f), FVector2D((R + 1.f) * 2.f, (R + 1.f) * 2.f)),
 					FCoreStyle::Get().GetBrush("WhiteBrush"),
 					ESlateDrawEffect::None,
-					FT66Style::PanelOuter()
+					FT66FlatStyle::DefaultBorder()
 				);
 
 				FSlateDrawElement::MakeBox(
@@ -2318,7 +2260,7 @@ public:
 					M.Label,
 					FT66Style::Tokens::FontBold(bMinimap ? 10 : 12),
 					ESlateDrawEffect::None,
-					WithAlpha(FT66Style::Text(), bMinimap ? 0.70f : 0.92f)
+					WithAlpha(FT66FlatStyle::PrimaryText(), bMinimap ? 0.70f : 0.92f)
 				);
 			}
 		}

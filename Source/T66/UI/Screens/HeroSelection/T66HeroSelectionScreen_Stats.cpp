@@ -82,11 +82,7 @@ namespace
 			.AutoHeight()
 			.Padding(0.f, 0.f, 0.f, 6.f)
 			[
-				T66ScreenSlateHelpers::MakeReferenceProgressBar(
-					0.f,
-					FVector2D(300.f, 12.f),
-					FLinearColor(0.92f, 0.05f, 0.12f, 1.0f),
-					FMargin(4.f, 2.f))
+				FT66FlatStyle::MakeFlatProgressBar(TAttribute<float>(0.f))
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()

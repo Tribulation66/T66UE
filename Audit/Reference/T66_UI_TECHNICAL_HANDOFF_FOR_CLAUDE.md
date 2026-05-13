@@ -465,7 +465,7 @@ Important functions include:
 - `ImportFileTexture(...)`
 - `ImportFileTextureWithGeneratedMips(...)`
 - `ResolveOptionalTextureBrush(...)`
-- `ResolveDotaButtonPlateBrush(...)`
+- `ResolveDeletedThemeButtonPlateBrush(...)`
 - `ConfigureSimpleReferenceFallbackBrush(...)`
 
 These helpers let the runtime find reference art from source/dependency paths and create Slate brushes for it. Screens should use these shared helpers or higher-level style/screen helpers instead of inventing ad hoc image import logic.

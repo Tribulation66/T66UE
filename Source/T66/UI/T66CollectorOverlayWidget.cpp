@@ -6,7 +6,7 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
-#include "UI/Style/T66OverlayChromeStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "Gameplay/T66GameMode.h"
@@ -134,18 +134,39 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 
 	ItemIconBrushes.Empty();
 
+	auto MakeCollectorLabel = [](const FText& Text, int32 FontSize, bool bBold, FSlateColor Color, FName Tag, const FString& Role) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::AttachMetadata(
+			SNew(STextBlock)
+			.Text(Text)
+			.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+			.ColorAndOpacity(Color)
+			.AutoWrapText(true),
+			Tag,
+			Role,
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true);
+	};
+
 	// Tab row
 	auto MakeTab = [&](const FText& Label, int32 Index) -> TSharedRef<SWidget>
 	{
-		return T66OverlayChromeStyle::MakeButton(
-			T66OverlayChromeStyle::MakeButtonParams(
-				Label,
-				FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }),
-				ET66OverlayChromeButtonFamily::Tab)
-			.SetMinWidth(0.f)
-			.SetFontSize(11)
-			.SetPadding(FMargin(12.f, 6.f))
-			.SetSelected(TAttribute<bool>::CreateLambda([this, Index]() { return CollectorTabIndex == Index; })));
+		return FT66FlatStyle::MakeFlatButton(
+			CollectorTabIndex == Index ? ET66FlatState::Selected : ET66FlatState::Default,
+			Label,
+			FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }),
+			nullptr,
+			nullptr,
+			FMargin(12.f, 6.f),
+			0.f,
+			34.f,
+			true,
+			11,
+			FName(*FString::Printf(TEXT("CollectorOverlay.Tab.%d"), Index)),
+			FName(TEXT("CollectorOverlayTabs")));
 	};
 
 	TSharedRef<SHorizontalBox> TabRow = SNew(SHorizontalBox)
@@ -156,10 +177,14 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 
 	// Content: scroll of cards (sprite, description, ADD/Spawn)
 	TSharedRef<SScrollBox> Scroll = SNew(SScrollBox);
+	int32 ItemCardIndex = 0;
+	int32 SpawnCardIndex = 0;
 
 	auto AddItemCard = [&](FName ItemID, const FText& NameText, const FText& DescText)
 	{
 		FName CapturedID = ItemID;
+		++ItemCardIndex;
+		const int32 CapturedCardIndex = ItemCardIndex;
 		TSharedPtr<FSlateBrush> IconBrush = MakeShared<FSlateBrush>();
 		IconBrush->DrawAs = ESlateBrushDrawType::Image;
 		IconBrush->ImageSize = FVector2D(64.f, 64.f);
@@ -173,61 +198,123 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		}
 		Scroll->AddSlot().Padding(6.f)
 			[
-				T66OverlayChromeStyle::MakePanel(
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f)
-					[
-						SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
+				SNew(SBox)
+				.HeightOverride(128.f)
+				[
+					FT66FlatStyle::MakeFlatPanel(
+						ET66FlatState::Default,
+						FMargin(8.f),
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f)
 						[
-							FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
-								SNew(SImage)
-								.Image(IconBrush.Get())
-								.ColorAndOpacity(FLinearColor::White)))
+							FT66FlatStyle::AttachMetadata(
+								SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
+								[
+									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+										SNew(SImage)
+										.Image(IconBrush.Get())
+										.ColorAndOpacity(FLinearColor::White)))
+								],
+								FName(*FString::Printf(TEXT("CollectorOverlay.ItemIcon.%02d"), CapturedCardIndex)),
+								TEXT("Icon"),
+								ET66FlatState::Default)
 						]
-					]
-					+ SHorizontalBox::Slot().FillWidth(1.f)
-					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NameText).Font(FT66Style::Tokens::FontBold(12)).ColorAndOpacity(FT66Style::Tokens::Text)]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)[SNew(STextBlock).Text(DescText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true)]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
+						+ SHorizontalBox::Slot().FillWidth(1.f)
 						[
-							T66OverlayChromeStyle::MakeButton(
-								T66OverlayChromeStyle::MakeButtonParams(
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().AutoHeight()
+							[
+								MakeCollectorLabel(
+									NameText,
+									12,
+									true,
+									FSlateColor(FT66FlatStyle::PrimaryText()),
+									FName(*FString::Printf(TEXT("CollectorOverlay.ItemTitle.%02d"), CapturedCardIndex)),
+									TEXT("Label.Body"))
+							]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)
+							[
+								MakeCollectorLabel(
+									DescText,
+									10,
+									false,
+									FSlateColor(FT66FlatStyle::SecondaryText()),
+									FName(*FString::Printf(TEXT("CollectorOverlay.ItemDescription.%02d"), CapturedCardIndex)),
+									TEXT("Label.Caption"))
+							]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
+							[
+								FT66FlatStyle::MakeFlatButton(
+									ET66FlatState::Default,
 									AddBtn,
 									FOnClicked::CreateLambda([this, CapturedID]() { OnAddItem(CapturedID); return FReply::Handled(); }),
-									ET66OverlayChromeButtonFamily::Primary))
-						]
-					],
-					ET66OverlayChromeBrush::OfferCardNormal,
-					FMargin(8.f)
-				)
+									nullptr,
+									nullptr,
+									FMargin(10.f, 4.f),
+									76.f,
+									30.f,
+									true,
+									10,
+									FName(*FString::Printf(TEXT("CollectorOverlay.ItemAddButton.%02d"), CapturedCardIndex)))
+							]
+						],
+						nullptr,
+						FName(*FString::Printf(TEXT("CollectorOverlay.ItemCard.%02d"), CapturedCardIndex)))
+				]
 			];
 	};
 
 	auto AddSpawnCard = [&](const FText& NameText, const FText& DescText, TFunction<void()> OnSpawn)
 	{
+		++SpawnCardIndex;
+		const int32 CapturedCardIndex = SpawnCardIndex;
 		Scroll->AddSlot().Padding(6.f)
 			[
-				T66OverlayChromeStyle::MakePanel(
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(1.f)
-					[
+				SNew(SBox)
+				.HeightOverride(104.f)
+				[
+					FT66FlatStyle::MakeFlatPanel(
+						ET66FlatState::Default,
+						FMargin(8.f),
 						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(NameText).Font(FT66Style::Tokens::FontBold(12)).ColorAndOpacity(FT66Style::Tokens::Text)]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)[SNew(STextBlock).Text(DescText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true)]
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							MakeCollectorLabel(
+								NameText,
+								12,
+								true,
+								FSlateColor(FT66FlatStyle::PrimaryText()),
+								FName(*FString::Printf(TEXT("CollectorOverlay.SpawnTitle.%02d"), CapturedCardIndex)),
+								TEXT("Label.Body"))
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)
+						[
+							MakeCollectorLabel(
+								DescText,
+								10,
+								false,
+								FSlateColor(FT66FlatStyle::SecondaryText()),
+								FName(*FString::Printf(TEXT("CollectorOverlay.SpawnDescription.%02d"), CapturedCardIndex)),
+								TEXT("Label.Caption"))
+						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
 						[
-							T66OverlayChromeStyle::MakeButton(
-								T66OverlayChromeStyle::MakeButtonParams(
-									SpawnBtn,
-									FOnClicked::CreateLambda([OnSpawn]() { OnSpawn(); return FReply::Handled(); }),
-									ET66OverlayChromeButtonFamily::Neutral))
-						]
-					],
-					ET66OverlayChromeBrush::OfferCardNormal,
-					FMargin(8.f)
-				)
+							FT66FlatStyle::MakeFlatButton(
+								ET66FlatState::Default,
+								SpawnBtn,
+								FOnClicked::CreateLambda([OnSpawn]() { OnSpawn(); return FReply::Handled(); }),
+								nullptr,
+								nullptr,
+								FMargin(10.f, 4.f),
+								86.f,
+								30.f,
+								true,
+								10,
+								FName(*FString::Printf(TEXT("CollectorOverlay.SpawnButton.%02d"), CapturedCardIndex)))
+						],
+						nullptr,
+						FName(*FString::Printf(TEXT("CollectorOverlay.SpawnCard.%02d"), CapturedCardIndex)))
+				]
 			];
 	};
 
@@ -286,7 +373,15 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 
 	TSharedRef<SVerticalBox> MainPanel = SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-		[SNew(STextBlock).Text(TitleCollector).Font(FT66Style::Tokens::FontBold(20)).ColorAndOpacity(FT66Style::Tokens::Text)]
+		[
+			MakeCollectorLabel(
+				TitleCollector,
+				20,
+				true,
+				FSlateColor(FT66FlatStyle::PrimaryText()),
+				FName(TEXT("CollectorOverlay.Title")),
+				TEXT("Label.Header"))
+		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[TabRow]
 		+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SBox).HeightOverride(360.f)[Scroll]]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
@@ -294,19 +389,33 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
 			[
-				T66OverlayChromeStyle::MakeButton(
-					T66OverlayChromeStyle::MakeButtonParams(
-						CloseText,
-						FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }),
-						ET66OverlayChromeButtonFamily::Neutral))
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Default,
+					CloseText,
+					FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }),
+					nullptr,
+					nullptr,
+					FMargin(12.f, 6.f),
+					92.f,
+					34.f,
+					true,
+					11,
+					FName(TEXT("CollectorOverlay.CloseButton")))
 			]
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
-				T66OverlayChromeStyle::MakeButton(
-					T66OverlayChromeStyle::MakeButtonParams(
-						ExitLab,
-						FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }),
-						ET66OverlayChromeButtonFamily::Danger))
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Selected,
+					ExitLab,
+					FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }),
+					nullptr,
+					nullptr,
+					FMargin(12.f, 6.f),
+					128.f,
+					34.f,
+					true,
+					11,
+					FName(TEXT("CollectorOverlay.ExitButton")))
 			]
 		];
 
@@ -315,26 +424,42 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		return FT66Style::GetSafePadding(FMargin(40.f, 126.f, 40.f, 40.f));
 	});
 
-	TSharedRef<SWidget> Root = SNew(SBox).HAlign(HAlign_Fill).VAlign(VAlign_Fill)
+	const FLinearColor BackdropColor = FLinearColor(
+		FT66FlatStyle::BackgroundColor().R,
+		FT66FlatStyle::BackgroundColor().G,
+		FT66FlatStyle::BackgroundColor().B,
+		0.86f);
+
+	TSharedRef<SWidget> Root = FT66FlatStyle::AttachMetadata(
+		SNew(SBox).HAlign(HAlign_Fill).VAlign(VAlign_Fill)
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.010f, 0.008f, 0.008f, 0.86f))
+				FT66FlatStyle::AttachMetadata(
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(BackdropColor),
+					FName(TEXT("CollectorOverlay.Backdrop")),
+					TEXT("Panel"),
+					ET66FlatState::Default)
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(SafePanelPadding)
 			[
-				SNew(SBox).WidthOverride(564.f)
+				SNew(SBox).WidthOverride(564.f).HeightOverride(568.5f)
 				[
-					T66OverlayChromeStyle::MakePanel(
+					FT66FlatStyle::MakeFlatPanel(
+						ET66FlatState::Default,
+						FMargin(24.f),
 						MainPanel,
-						ET66OverlayChromeBrush::OverlayModalPanel,
-						FMargin(24.f))
+						nullptr,
+						FName(TEXT("CollectorOverlay.Panel")))
 				]
 			]
-		];
+		],
+		FName(TEXT("CollectorOverlay.Root")),
+		TEXT("Overlay"),
+		ET66FlatState::Default);
 
 	return FT66Style::MakeResponsiveRoot(Root);
 }

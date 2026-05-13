@@ -12,13 +12,6 @@ DECLARE_LOG_CATEGORY_EXTERN(LogT66RuntimeUI, Log, All);
 
 namespace T66RuntimeUIBrushAccess
 {
-	enum class ET66DotaPlateBrushKind : uint8
-	{
-		Neutral,
-		Primary,
-		Danger,
-	};
-
 	struct T66_API FOptionalTextureBrush
 	{
 		TStrongObjectPtr<UTexture2D> ImportedTexture;
@@ -29,8 +22,6 @@ namespace T66RuntimeUIBrushAccess
 
 		UTexture2D* GetTexture() const;
 	};
-
-	T66_API const FSlateBrush* ResolveDotaButtonPlateBrush(ET66DotaPlateBrushKind Kind);
 
 	T66_API bool ShouldUseSimpleReferenceFallback(const FString& SourcePath);
 

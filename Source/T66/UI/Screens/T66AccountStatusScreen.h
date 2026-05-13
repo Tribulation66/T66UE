@@ -47,6 +47,15 @@ private:
 		HighestRank,
 	};
 
+	enum class EHistorySortColumn : uint8
+	{
+		HeroPlayed,
+		Date,
+		Status,
+		Score,
+		Duration,
+	};
+
 	EAccountTab ActiveTab = EAccountTab::Overview;
 	ET66PartySize ActivePBPartySize = ET66PartySize::Solo;
 	EPersonalBestViewMode ActivePBViewMode = EPersonalBestViewMode::PersonalBest;
@@ -54,6 +63,10 @@ private:
 	TOptional<ET66Difficulty> HistoryDifficultyFilter;
 	TOptional<ET66PartySize> HistoryPartySizeFilter;
 	EHistoryCompletionFilter HistoryCompletionFilter = EHistoryCompletionFilter::All;
+	EHistorySortColumn HistorySortColumn = EHistorySortColumn::Date;
+	bool bHistorySortAscending = false;
+	bool bHistoryDailyDescentOnly = false;
+	bool bHistoryRankSelectorDaily = false;
 	TMap<FName, TSharedPtr<FSlateBrush>> HeroPortraitBrushes;
 	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
 	FDelegateHandle BackendMyRankReadyHandle;

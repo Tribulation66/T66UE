@@ -6,7 +6,7 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Data/T66DataTypes.h"
-#include "UI/Style/T66OverlayChromeStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66PlayerController.h"
@@ -25,6 +25,7 @@
 // Right-side strip: match inventory panel width (10 slots * 42 + 9*4 pad + 24 border = 480); top offset so panel sits between Power and inventory.
 static constexpr float LabPanelWidth = 480.f;
 static constexpr float LabPanelTopOffset = 300.f;
+static constexpr float LabPanelExpandedHeight = 444.f;
 static constexpr float LabPanelMaxHeight = 220.f;
 
 TArray<FName> UT66LabOverlayWidget::GetUnlockedItemIDs() const
@@ -193,28 +194,38 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 
 	// Items tab content
 	TSharedRef<SScrollBox> ItemsScroll = SNew(SScrollBox);
+	int32 ItemButtonIndex = 0;
 	for (const FName& ItemID : ItemIDs)
 	{
 		FName CapturedID = ItemID;
+		++ItemButtonIndex;
 		ItemsScroll->AddSlot()
 			.Padding(2.f)
 			[
-				T66OverlayChromeStyle::MakeButton(
-					T66OverlayChromeStyle::MakeButtonParams(
-						FText::FromName(ItemID),
-						FOnClicked::CreateLambda([this, CapturedID]() { OnGrantItem(CapturedID); return FReply::Handled(); }),
-						ET66OverlayChromeButtonFamily::Neutral)
-				)
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Default,
+					FText::FromName(ItemID),
+					FOnClicked::CreateLambda([this, CapturedID]() { OnGrantItem(CapturedID); return FReply::Handled(); }),
+					nullptr,
+					nullptr,
+					FMargin(8.f, 3.f),
+					0.f,
+					34.f,
+					true,
+					10,
+					FName(*FString::Printf(TEXT("LabOverlay.ItemButton.%02d"), ItemButtonIndex)))
 			];
 	}
 
 	auto BuildEnemyList = [&](const TArray<FName>& List, int32 TabIdx) -> TSharedRef<SWidget>
 	{
 		TSharedRef<SScrollBox> Box = SNew(SScrollBox);
+		int32 EnemyButtonIndex = 0;
 		for (const FName& EID : List)
 		{
 			FName CapturedEID = EID;
 			int32 CapturedTab = TabIdx;
+			++EnemyButtonIndex;
 			const FText EntryLabel = (EID == FName(TEXT("Fountain")))
 				? LOCTEXT("LabFountainName", "Fountain")
 				: FText::FromName(EID);
@@ -224,17 +235,26 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
-						SNew(STextBlock).Text(EntryLabel).Font(FT66Style::Tokens::FontRegular(11)).ColorAndOpacity(FT66Style::Tokens::Text)
+						FT66FlatStyle::MakeFlatLabel(
+							EntryLabel,
+							ET66FlatLabelRole::Body,
+							ETextJustify::Left,
+							FName(*FString::Printf(TEXT("LabOverlay.EnemyLabel.%d.%02d"), TabIdx, EnemyButtonIndex)))
 					]
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						T66OverlayChromeStyle::MakeButton(
-							T66OverlayChromeStyle::MakeButtonParams(
-								Spawn,
-								FOnClicked::CreateLambda([this, CapturedEID, CapturedTab]() { OnSpawnEnemy(CapturedEID, CapturedTab); return FReply::Handled(); }),
-								ET66OverlayChromeButtonFamily::Neutral)
-							.SetMinWidth(80.f)
-						)
+						FT66FlatStyle::MakeFlatButton(
+							ET66FlatState::Default,
+							Spawn,
+							FOnClicked::CreateLambda([this, CapturedEID, CapturedTab]() { OnSpawnEnemy(CapturedEID, CapturedTab); return FReply::Handled(); }),
+							nullptr,
+							nullptr,
+							FMargin(8.f, 3.f),
+							80.f,
+							34.f,
+							true,
+							10,
+							FName(*FString::Printf(TEXT("LabOverlay.SpawnButton.%d.%02d"), TabIdx, EnemyButtonIndex)))
 					]
 				];
 		}
@@ -254,15 +274,19 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	{
 		TabRow->AddSlot().AutoWidth().Padding(2.f)
 			[
-			T66OverlayChromeStyle::MakeButton(
-				T66OverlayChromeStyle::MakeButtonParams(
+				FT66FlatStyle::MakeFlatButton(
+					LabTabIndex == Index ? ET66FlatState::Selected : ET66FlatState::Default,
 					Label,
 					FOnClicked::CreateLambda([this, Index]() { LabTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }),
-					ET66OverlayChromeButtonFamily::Tab)
-				.SetMinWidth(0.f)
-				.SetFontSize(9)
-				.SetPadding(FMargin(6.f, 2.f))
-				.SetSelected(TAttribute<bool>::CreateLambda([this, Index]() { return LabTabIndex == Index; })))
+					nullptr,
+					nullptr,
+					FMargin(6.f, 2.f),
+					0.f,
+					28.f,
+					true,
+					9,
+					FName(*FString::Printf(TEXT("LabOverlay.Tab.%d"), Index)),
+					FName(TEXT("LabOverlayTabs")))
 			];
 	};
 	AddTab(TabItems, 0);
@@ -271,11 +295,18 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	AddTab(TabBosses, 3);
 
 	// Toggle button (like minimap): show "Lab" and expand/collapse state
-	TSharedRef<SWidget> ToggleButton = T66OverlayChromeStyle::MakeButton(
-		T66OverlayChromeStyle::MakeButtonParams(bLabPanelExpanded ? LOCTEXT("LabHide", "Lab \u25BC") : LOCTEXT("LabShow", "Lab \u25B6"),
-			FOnClicked::CreateLambda([this]() { OnToggleLabPanel(); return FReply::Handled(); }),
-			ET66OverlayChromeButtonFamily::Tab)
-		.SetMinWidth(0.f).SetFontSize(10).SetPadding(FMargin(8.f, 4.f)));
+	TSharedRef<SWidget> ToggleButton = FT66FlatStyle::MakeFlatButton(
+		bLabPanelExpanded ? ET66FlatState::Selected : ET66FlatState::Default,
+		bLabPanelExpanded ? LOCTEXT("LabHide", "Lab v") : LOCTEXT("LabShow", "Lab >"),
+		FOnClicked::CreateLambda([this]() { OnToggleLabPanel(); return FReply::Handled(); }),
+		nullptr,
+		nullptr,
+		FMargin(8.f, 4.f),
+		0.f,
+		36.f,
+		true,
+		10,
+		FName(TEXT("LabOverlay.ToggleButton")));
 
 	// Single right-side panel: toggle + (when expanded) tabs + content + Reset + Exit
 	TSharedRef<SVerticalBox> LabPanel = SNew(SVerticalBox)
@@ -298,24 +329,37 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 		const bool bIsItemsTab = (LabTabIndex == 0);
 		LabPanel->AddSlot().AutoHeight().Padding(0.f, 4.f)
 			[
-				T66OverlayChromeStyle::MakeButton(
-					T66OverlayChromeStyle::MakeButtonParams(
-						ResetLabel,
-						FOnClicked::CreateLambda([this, bIsItemsTab]() {
+				FT66FlatStyle::MakeFlatButton(
+					bIsItemsTab ? ET66FlatState::Default : ET66FlatState::Selected,
+					ResetLabel,
+					FOnClicked::CreateLambda([this, bIsItemsTab]() {
 						if (bIsItemsTab) OnResetItems();
 						else OnResetEnemies();
 						return FReply::Handled();
 					}),
-					bIsItemsTab ? ET66OverlayChromeButtonFamily::Neutral : ET66OverlayChromeButtonFamily::Danger)
-				)
+					nullptr,
+					nullptr,
+					FMargin(8.f, 3.f),
+					0.f,
+					34.f,
+					true,
+					10,
+					FName(TEXT("LabOverlay.ResetButton")))
 			];
 		LabPanel->AddSlot().AutoHeight().Padding(0.f, 4.f)
 			[
-				T66OverlayChromeStyle::MakeButton(
-					T66OverlayChromeStyle::MakeButtonParams(
-						ExitLab,
-						FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }),
-						ET66OverlayChromeButtonFamily::Danger))
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Selected,
+					ExitLab,
+					FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }),
+					nullptr,
+					nullptr,
+					FMargin(8.f, 3.f),
+					0.f,
+					34.f,
+					true,
+					10,
+					FName(TEXT("LabOverlay.ExitButton")))
 			];
 	}
 
@@ -325,7 +369,8 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	});
 
 	// Full-screen overlay: transparent, only the right-side panel has content (between Power and inventory)
-	TSharedRef<SWidget> Root = SNew(SBox)
+	TSharedRef<SWidget> Root = FT66FlatStyle::AttachMetadata(
+		SNew(SBox)
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
 		[
@@ -337,14 +382,20 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 			[
 				SNew(SBox)
 				.WidthOverride(LabPanelWidth)
+				.HeightOverride(bLabPanelExpanded ? LabPanelExpandedHeight : 52.f)
 				[
-					T66OverlayChromeStyle::MakePanel(
+					FT66FlatStyle::MakeFlatPanel(
+						ET66FlatState::Default,
+						FMargin(8.f),
 						LabPanel,
-						ET66OverlayChromeBrush::ContentPanelTall,
-						FMargin(8.f))
+						nullptr,
+						FName(TEXT("LabOverlay.Panel")))
 				]
 			]
-		];
+		],
+		FName(TEXT("LabOverlay.Root")),
+		TEXT("Overlay"),
+		ET66FlatState::Default);
 
 	return FT66Style::MakeResponsiveRoot(Root);
 }

@@ -1,0 +1,102 @@
+{
+  "experiment": "Pixal3D_Goblin_Characterization",
+  "pod": {
+    "ip": "69.30.85.50",
+    "ssh_port": 22134,
+    "gpu": "NVIDIA A40",
+    "server_url_remote": "http://127.0.0.1:18001"
+  },
+  "final_controlled_configuration": {
+    "Content-Type": "image/png",
+    "X-Seed": 1337,
+    "X-Resolution": 1024,
+    "X-Texture-Size": 2048,
+    "X-Decimation": 30000,
+    "X-Remesh": 1
+  },
+  "server_defaults_used_for_unspecified_headers": {
+    "X-Remesh-Band": 1.0,
+    "X-Remesh-Project": 0.0,
+    "X-Extend-Pixel": 0,
+    "X-Image-Resolution": 512,
+    "X-Max-Num-Tokens": 49152,
+    "X-SS-Steps": 12,
+    "X-SS-Guidance": 7.5,
+    "X-SS-Guidance-Rescale": 0.7,
+    "X-SS-Rescale-T": 5.0,
+    "X-Shape-Steps": 12,
+    "X-Shape-Guidance": 7.5,
+    "X-Shape-Guidance-Rescale": 0.5,
+    "X-Shape-Rescale-T": 3.0,
+    "X-Tex-Steps": 12,
+    "X-Tex-Guidance": 1.0,
+    "X-Tex-Guidance-Rescale": 0.0,
+    "X-Tex-Rescale-T": 3.0,
+    "X-Mesh-Scale": 1.0
+  },
+  "successful_final_outputs": [
+    {
+      "variant": "A",
+      "started_local": "2026-05-12T16:34:53.4912047-03:00",
+      "ended_local": "2026-05-12T16:35:28.5186663-03:00",
+      "duration_seconds": 35.03,
+      "bytes": 1621796,
+      "output": "Model Generation/Experiments/Pixal3D_Goblin_Characterization/Outputs/Variant_A.glb"
+    },
+    {
+      "variant": "B",
+      "started_local": "2026-05-12T16:33:40.4716027-03:00",
+      "ended_local": "2026-05-12T16:34:15.3872947-03:00",
+      "duration_seconds": 34.92,
+      "bytes": 1825224,
+      "output": "Model Generation/Experiments/Pixal3D_Goblin_Characterization/Outputs/Variant_B.glb"
+    },
+    {
+      "variant": "C",
+      "started_local": "2026-05-12T16:35:32.8869948-03:00",
+      "ended_local": "2026-05-12T16:36:10.6875816-03:00",
+      "duration_seconds": 37.8,
+      "bytes": 2687908,
+      "output": "Model Generation/Experiments/Pixal3D_Goblin_Characterization/Outputs/Variant_C.glb"
+    }
+  ],
+  "failed_or_superseded_trials": [
+    {
+      "variant": "A",
+      "configuration": {
+        "X-Seed": 1337,
+        "X-Resolution": 1024,
+        "X-Texture-Size": 2048,
+        "X-Decimation": 80000,
+        "X-Remesh": 0
+      },
+      "result": "failed",
+      "failure": "HTTP empty reply; server process crashed in CuMesh repair_non_manifold_edges, clean_up.cu line 728, illegal memory access"
+    },
+    {
+      "variant": "A",
+      "configuration": {
+        "X-Seed": 1337,
+        "X-Resolution": 1024,
+        "X-Texture-Size": 2048,
+        "X-Decimation": 80000,
+        "X-Remesh": 1
+      },
+      "result": "superseded_success",
+      "bytes": 3487720,
+      "reason": "Succeeded, but final controlled run switched to X-Decimation 30000 after Variant B failed at 80000"
+    },
+    {
+      "variant": "B",
+      "configuration": {
+        "X-Seed": 1337,
+        "X-Resolution": 1024,
+        "X-Texture-Size": 2048,
+        "X-Decimation": 80000,
+        "X-Remesh": 1
+      },
+      "result": "failed",
+      "failure": "HTTP empty reply; server process crashed in CuMesh uv_unwrap compute_charts, atlas.cu line 503, illegal memory access"
+    }
+  ]
+}

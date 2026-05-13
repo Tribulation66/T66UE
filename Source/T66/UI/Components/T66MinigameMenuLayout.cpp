@@ -5,7 +5,7 @@
 #include "Core/T66BackendSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Styling/CoreStyle.h"
-#include "UI/Screens/T66ScreenSlateHelpers.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Widgets/Input/SComboBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -22,9 +22,23 @@ namespace
 	const FLinearColor MinigameText(0.94f, 0.92f, 0.86f, 1.0f);
 	const FLinearColor MinigameMuted(0.66f, 0.66f, 0.68f, 1.0f);
 
+	FString MakeMinigameTagSegment(const FText& Label)
+	{
+		FString Segment = Label.ToString();
+		const TCHAR* Removals[] = { TEXT(" "), TEXT("'"), TEXT("\""), TEXT("-"), TEXT(":"), TEXT("/"), TEXT("."), TEXT(",") };
+		for (const TCHAR* Removal : Removals)
+		{
+			Segment.ReplaceInline(Removal, TEXT(""));
+		}
+		return Segment.IsEmpty() ? FString(TEXT("Unnamed")) : Segment;
+	}
+
 	FSlateFontInfo MakeMenuFont(const TCHAR* Weight, const int32 Size)
 	{
-		FSlateFontInfo Font = FT66Style::MakeFont(Weight, Size);
+		const bool bBold = FCString::Stricmp(Weight, TEXT("Regular")) != 0;
+		FSlateFontInfo Font = bBold
+			? FT66FlatStyle::MakeBoldFont(Size)
+			: FT66FlatStyle::MakeFont(Size);
 		Font.LetterSpacing = 0;
 		return Font;
 	}
@@ -125,7 +139,7 @@ void ST66MinigameMenuLayout::Construct(const FArguments& InArgs)
 				.WidthOverride(210.f)
 				.HeightOverride(44.f)
 				[
-					MakeMenuButton(NSLOCTEXT("T66.Minigames", "Back", "BACK"), OnBackClicked, true, 44.f, ET66ButtonType::Neutral)
+					MakeMenuButton(NSLOCTEXT("T66.Minigames", "Back", "BACK"), OnBackClicked, true, 44.f, ET66ButtonType::Neutral, false, FName(TEXT("MinigameMenu.Button.Back")))
 				]
 			]
 			+ SOverlay::Slot().Padding(FMargin(20.f, 150.f, 20.f, 34.f))
@@ -210,15 +224,15 @@ TSharedRef<SWidget> ST66MinigameMenuLayout::BuildCenterPanel() const
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight()
 		[
-			MakeMenuButton(NSLOCTEXT("T66.Minigames", "NewGame", "NEW GAME"), OnNewGameClicked, true, 72.f, ET66ButtonType::Primary, true)
+			MakeMenuButton(NSLOCTEXT("T66.Minigames", "NewGame", "NEW GAME"), OnNewGameClicked, true, 72.f, ET66ButtonType::Primary, true, FName(TEXT("MinigameMenu.Button.NewGame")))
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 		[
-			MakeMenuButton(NSLOCTEXT("T66.Minigames", "LoadGame", "LOAD GAME"), OnLoadGameClicked, bLoadGameEnabled, 72.f, ET66ButtonType::Neutral)
+			MakeMenuButton(NSLOCTEXT("T66.Minigames", "LoadGame", "LOAD GAME"), OnLoadGameClicked, bLoadGameEnabled, 72.f, ET66ButtonType::Neutral, false, FName(TEXT("MinigameMenu.Button.LoadGame")))
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 		[
-			MakeMenuButton(NSLOCTEXT("T66.Minigames", "Daily", "DAILY"), OnDailyClicked, true, 72.f, ET66ButtonType::Primary)
+			MakeMenuButton(NSLOCTEXT("T66.Minigames", "Daily", "DAILY"), OnDailyClicked, true, 72.f, ET66ButtonType::Primary, false, FName(TEXT("MinigameMenu.Button.DailyRun")))
 		],
 		FMargin(22.f, 20.f));
 }
@@ -273,13 +287,7 @@ TSharedRef<SWidget> ST66MinigameMenuLayout::MakePanel(const TSharedRef<SWidget>&
 		Padding.Top + 28.f,
 		Padding.Right,
 		Padding.Bottom + 8.f);
-	return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
-		TEXT("Panels/Panel/normal.png"),
-		Content,
-		FMargin(0.070f, 0.120f, 0.070f, 0.120f),
-		ResolvedPadding,
-		TEXT("MinigameMenuPanel"),
-		MinigamePanelInner);
+	return FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, ResolvedPadding, Content, nullptr, FName(TEXT("MinigameMenu.Panel")));
 }
 
 TSharedRef<SWidget> ST66MinigameMenuLayout::MakeMenuButton(
@@ -288,57 +296,26 @@ TSharedRef<SWidget> ST66MinigameMenuLayout::MakeMenuButton(
 	const bool bEnabled,
 	const float Height,
 	const ET66ButtonType Type,
-	const bool bSelected) const
+	const bool bSelected,
+	const FName InTag) const
 {
-	FT66ButtonParams ButtonParams(Text, Handler, bEnabled ? Type : ET66ButtonType::Neutral);
-	ButtonParams
-		.SetHeight(Height)
-		.SetFontSize(20)
-		.SetPadding(FMargin(16.f, 10.f))
-		.SetEnabled(bEnabled);
-
-	const FSlateBrush* NormalBrush = T66ScreenSlateHelpers::GetReferenceSharedBrush(
-		bSelected ? TEXT("Buttons/Pill/selected.png") : TEXT("Buttons/Pill/normal.png"),
-		FMargin(0.104f, 0.250f, 0.104f, 0.250f),
-		TEXT("MinigameMenuButtonNormal"));
-	const FSlateBrush* HoverBrush = T66ScreenSlateHelpers::GetReferenceSharedBrush(
-		TEXT("Buttons/Pill/hover.png"),
-		FMargin(0.104f, 0.250f, 0.104f, 0.250f),
-		TEXT("MinigameMenuButtonHover"));
-	const FSlateBrush* PressedBrush = T66ScreenSlateHelpers::GetReferenceSharedBrush(
-		TEXT("Buttons/Pill/pressed.png"),
-		FMargin(0.104f, 0.250f, 0.104f, 0.250f),
-		TEXT("MinigameMenuButtonPressed"));
-	const FSlateBrush* DisabledBrush = T66ScreenSlateHelpers::GetReferenceSharedBrush(
-		TEXT("Buttons/Pill/disabled.png"),
-		FMargin(0.104f, 0.250f, 0.104f, 0.250f),
-		TEXT("MinigameMenuButtonDisabled"));
-
-	if (NormalBrush && HoverBrush && PressedBrush)
-	{
-		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
-			Handler,
-			T66ScreenSlateHelpers::MakeFilledButtonText(
-				ButtonParams,
-				Height,
-				FSlateColor(MinigameText),
-				TAttribute<FLinearColor>(FLinearColor(0.f, 0.f, 0.f, 0.75f))),
-			NormalBrush,
-			HoverBrush,
-			PressedBrush,
-			DisabledBrush,
-			0.f,
-			Height,
-			FMargin(16.f, 10.f),
-			TAttribute<bool>(bEnabled));
-	}
-
-	return SNew(SBox)
-		.HeightOverride(Height)
-		[
-			FT66Style::MakeButton(
-				ButtonParams)
-		];
+	const ET66FlatState State = !bEnabled
+		? ET66FlatState::Disabled
+		: (bSelected || Type == ET66ButtonType::Primary || Type == ET66ButtonType::Success || Type == ET66ButtonType::ToggleActive
+			? ET66FlatState::Selected
+			: ET66FlatState::Default);
+	return FT66FlatStyle::MakeFlatButton(
+		State,
+		Text,
+		Handler,
+		nullptr,
+		nullptr,
+		FMargin(16.f, 10.f),
+		0.f,
+		Height,
+		bEnabled,
+		20,
+		InTag.IsNone() ? FName(*FString::Printf(TEXT("MinigameMenu.Button.%s"), *MakeMinigameTagSegment(Text))) : InTag);
 }
 
 TSharedRef<SWidget> ST66MinigameMenuLayout::MakeScopeButton(const FText& Text, const ET66MinigameLeaderboardScope Scope)
@@ -350,37 +327,57 @@ TSharedRef<SWidget> ST66MinigameMenuLayout::MakeScopeButton(const FText& Text, c
 		true,
 		57.f,
 		bSelected ? ET66ButtonType::Success : ET66ButtonType::Neutral,
-		bSelected);
+		bSelected,
+		Scope == ET66MinigameLeaderboardScope::Daily ? FName(TEXT("MinigameMenu.Button.ScopeDaily")) : FName(TEXT("MinigameMenu.Button.ScopeAllTime")));
 }
 
 TSharedRef<SWidget> ST66MinigameMenuLayout::MakeDifficultyDropdown()
 {
-	return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
-		TEXT("Controls/dropdown_field_normal.png"),
-		SNew(SComboBox<TSharedPtr<FT66MinigameDifficultyOption>>)
-		.OptionsSource(&DifficultyOptions)
-		.InitiallySelectedItem(SelectedDifficulty)
-		.OnSelectionChanged(SComboBox<TSharedPtr<FT66MinigameDifficultyOption>>::FOnSelectionChanged::CreateSP(this, &ST66MinigameMenuLayout::OnDifficultyChanged))
-		.OnGenerateWidget_Lambda([](TSharedPtr<FT66MinigameDifficultyOption> Item)
+	return FT66FlatStyle::MakeFlatDropdown(
+		ET66FlatState::Selected,
+		TAttribute<FText>::CreateLambda([this]()
 		{
-			return SNew(STextBlock)
-				.Text(Item.IsValid() ? Item->DisplayName : FText::GetEmpty())
-				.Font(MakeMenuFont(TEXT("Regular"), 13))
-				.ColorAndOpacity(MinigameText);
-		})
-		[
-			SNew(STextBlock)
-			.Text_Lambda([this]()
+			return SelectedDifficulty.IsValid() ? SelectedDifficulty->DisplayName : FText::GetEmpty();
+		}),
+		[this]()
+		{
+			TSharedRef<SVerticalBox> Options = SNew(SVerticalBox);
+			for (const TSharedPtr<FT66MinigameDifficultyOption>& Option : DifficultyOptions)
 			{
-				return SelectedDifficulty.IsValid() ? SelectedDifficulty->DisplayName : FText::GetEmpty();
-			})
-			.Font(MakeMenuFont(TEXT("Regular"), 14))
-			.ColorAndOpacity(MinigameText)
-		],
-		FMargin(0.055f, 0.34f, 0.055f, 0.34f),
-		FMargin(8.f, 4.f),
-		TEXT("MinigameDifficultyDropdown"),
-		FLinearColor(0.08f, 0.08f, 0.10f, 0.96f));
+				if (!Option.IsValid())
+				{
+					continue;
+				}
+				Options->AddSlot()
+					.AutoHeight()
+					.Padding(0.f, 0.f, 0.f, 4.f)
+					[
+						FT66FlatStyle::MakeFlatButton(
+							Option == SelectedDifficulty ? ET66FlatState::Selected : ET66FlatState::Default,
+							Option->DisplayName,
+							FOnClicked::CreateLambda([this, Option]()
+							{
+								OnDifficultyChanged(Option, ESelectInfo::OnMouseClick);
+								return FReply::Handled();
+							}),
+							nullptr,
+							nullptr,
+							FMargin(10.f, 6.f),
+							210.f,
+							34.f,
+							true,
+							13,
+							FName(*FString::Printf(TEXT("MinigameMenu.DifficultyOption.%s"), *MakeMinigameTagSegment(Option->DisplayName))),
+							FName(TEXT("MinigameDifficulty")))
+					];
+			}
+			return StaticCastSharedRef<SWidget>(Options);
+		},
+		true,
+		0.f,
+		42.f,
+		14,
+		FName(TEXT("MinigameMenu.DifficultyDropdown")));
 }
 
 TSharedRef<SWidget> ST66MinigameMenuLayout::MakeLeaderboardRows() const

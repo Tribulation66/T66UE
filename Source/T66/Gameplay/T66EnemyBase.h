@@ -96,10 +96,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Visuals")
 	FName CharacterVisualID = FName(TEXT("RegularEnemy"));
 
-	/** Health bar widget above head */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
-	TObjectPtr<UWidgetComponent> HealthBarWidget;
-
 	/** Dedicated bullseye widget shown when this enemy is manually locked. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UWidgetComponent> LockIndicatorWidget;
@@ -160,10 +156,6 @@ public:
 	/** Distance beyond LeashMaxDistance over which the far-chase speed ramps up. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI", meta = (ClampMin = "1.0"))
 	float FarChaseRampDistance = 2000.f;
-
-	/** Refresh health bar display (call when HP changes) */
-	UFUNCTION(BlueprintCallable, Category = "UI")
-	void UpdateHealthBar();
 
 	/** Show/hide the lock indicator on this enemy's health bar. */
 	void SetLockedIndicator(bool bLocked);

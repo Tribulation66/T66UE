@@ -25,8 +25,7 @@ class STextBlock;
 #include "Core/T66SteamHelper.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
-#include "UI/Style/T66RuntimeUIBrushAccess.h"
-#include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66CompanionBase.h"
 #include "Gameplay/T66PlayerController.h"
@@ -47,6 +46,7 @@ class STextBlock;
 #include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
+#include "Widgets/SNullWidget.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Notifications/SProgressBar.h"
@@ -136,567 +136,62 @@ namespace
 		}
 	}
 
-	enum class ET66CompanionReferenceButtonFamily : uint8
+	FName CompanionSelectionTag(const TCHAR* Tag)
 	{
-		CompactNeutral,
-		ToggleOn,
-		ToggleOff,
-		CtaPrimary
-	};
-
-	enum class ET66CompanionReferenceButtonState : uint8
-	{
-		Normal,
-		Hovered,
-		Pressed,
-		Disabled
-	};
-
-	struct FCompanionReferenceButtonBrushSet
-	{
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Normal;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Hovered;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Pressed;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Disabled;
-	};
-
-	FString MakeCompanionUltrakillElementPath(const TCHAR* FileName)
-	{
-		return FString::Printf(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/%s"), FileName);
+		return FName(Tag);
 	}
 
-	const FSlateBrush* ResolveCompanionReferenceBrush(
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
-		const FString& RelativePath,
-		const FMargin& Margin,
-		const TCHAR* DebugLabel,
-		const TextureFilter Filter = TextureFilter::TF_Trilinear)
+	FName CompanionSelectionIndexedTag(const TCHAR* Prefix, const int32 Index)
 	{
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
+		return FName(*FString::Printf(TEXT("%s%02d"), Prefix, Index + 1));
+	}
+
+	TSharedRef<SWidget> MakeCompanionSelectionLabel(
+		const FText& Text,
+		const ET66FlatLabelRole Role,
+		const FName Tag,
+		const ETextJustify::Type Justification = ETextJustify::Left,
+		const float WrapAt = 0.f)
+	{
+		TSharedRef<STextBlock> Label = SNew(STextBlock)
+			.Text(Text)
+			.Font(Role == ET66FlatLabelRole::Body || Role == ET66FlatLabelRole::Caption
+				? FT66FlatStyle::MakeFont(Role == ET66FlatLabelRole::Caption ? 14 : 18)
+				: FT66FlatStyle::MakeBoldFont(Role == ET66FlatLabelRole::Title ? 30 : 20))
+			.ColorAndOpacity(Role == ET66FlatLabelRole::PurpleAccent
+				? FT66FlatStyle::PurpleAccent()
+				: (Role == ET66FlatLabelRole::Caption || Role == ET66FlatLabelRole::Body ? FT66FlatStyle::SecondaryText() : FT66FlatStyle::PrimaryText()))
+			.Justification(Justification)
+			.AutoWrapText(WrapAt > 0.f)
+			.WrapTextAt(WrapAt)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			.Visibility(EVisibility::HitTestInvisible);
+		return FT66FlatStyle::AttachMetadata(Label, Tag, TEXT("Label"), ET66FlatState::Default, TOptional<FLinearColor>(), false, NAME_None, true);
+	}
+
+	TSharedRef<SWidget> MakeCompanionSelectionColorRect(const FLinearColor& Color, const FName Tag, const FString& Role)
+	{
+		return FT66FlatStyle::AttachMetadata(
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+			.BorderBackgroundColor(Color)
+			.Clipping(EWidgetClipping::ClipToBounds),
+			Tag,
+			Role,
+			ET66FlatState::Default);
+	}
+
+	TSharedRef<SWidget> MakeCompanionSelectionSwatch(const FLinearColor& Color, const FName Tag)
+	{
+		return FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(3.f),
+			MakeCompanionSelectionColorRect(Color, NAME_None, TEXT("SwatchFill")),
 			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
-			Margin,
-			DebugLabel,
-			Filter);
+			Tag);
 	}
 
-	const FSlateBrush* ResolveCompanionReferenceRegionBrush(
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
-		const FString& RelativePath,
-		const FVector2D& ImageSize,
-		const FMargin& Margin,
-		const FBox2f& UVRegion,
-		const FLinearColor& Tint,
-		const TCHAR* DebugLabel,
-		const TextureFilter Filter = TextureFilter::TF_Trilinear)
-	{
-		const FSlateBrush* Brush = ResolveCompanionReferenceBrush(Entry, RelativePath, Margin, DebugLabel, Filter);
-		if (Brush && Entry.Brush.IsValid())
-		{
-			Entry.Brush->DrawAs = ESlateBrushDrawType::Box;
-			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
-			Entry.Brush->TintColor = FSlateColor(Tint);
-			Entry.Brush->ImageSize = ImageSize;
-			Entry.Brush->Margin = Margin;
-			Entry.Brush->SetUVRegion(UVRegion);
-			return Entry.Brush.Get();
-		}
-		return nullptr;
-	}
-
-	FCompanionReferenceButtonBrushSet& GetCompanionReferenceButtonBrushSet(const ET66CompanionReferenceButtonFamily Family)
-	{
-		static FCompanionReferenceButtonBrushSet CompactNeutral;
-		static FCompanionReferenceButtonBrushSet ToggleOn;
-		static FCompanionReferenceButtonBrushSet ToggleOff;
-		static FCompanionReferenceButtonBrushSet CtaPrimary;
-
-		switch (Family)
-		{
-		case ET66CompanionReferenceButtonFamily::ToggleOn:
-			return ToggleOn;
-		case ET66CompanionReferenceButtonFamily::ToggleOff:
-			return ToggleOff;
-		case ET66CompanionReferenceButtonFamily::CtaPrimary:
-			return CtaPrimary;
-		case ET66CompanionReferenceButtonFamily::CompactNeutral:
-		default:
-			return CompactNeutral;
-		}
-	}
-
-	FString GetCompanionReferenceButtonPath(
-		const ET66CompanionReferenceButtonFamily Family,
-		const ET66CompanionReferenceButtonState State)
-	{
-		const TCHAR* StateSuffix = TEXT("normal");
-		switch (State)
-		{
-		case ET66CompanionReferenceButtonState::Hovered:
-			StateSuffix = TEXT("hover");
-			break;
-		case ET66CompanionReferenceButtonState::Pressed:
-			StateSuffix = TEXT("pressed");
-			break;
-		case ET66CompanionReferenceButtonState::Disabled:
-			StateSuffix = TEXT("disabled");
-			break;
-		case ET66CompanionReferenceButtonState::Normal:
-		default:
-			break;
-		}
-
-		if (Family == ET66CompanionReferenceButtonFamily::ToggleOn && State == ET66CompanionReferenceButtonState::Normal)
-		{
-			StateSuffix = TEXT("selected");
-		}
-
-		if (Family == ET66CompanionReferenceButtonFamily::CtaPrimary)
-		{
-			const FString CtaState = FString(StateSuffix).Equals(TEXT("selected"), ESearchCase::IgnoreCase)
-				? FString(TEXT("normal"))
-				: FString(StateSuffix);
-			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*CtaState);
-		}
-
-		return MakeCompanionUltrakillElementPath(*FString::Printf(TEXT("SquareVariant/leaderboard_tab_button_%s_square_variant.png"), StateSuffix));
-	}
-
-	FMargin GetCompanionReferenceButtonMargin(const ET66CompanionReferenceButtonFamily /*Family*/)
-	{
-		return FMargin(0.f);
-	}
-
-	const FSlateBrush* ResolveCompanionReferenceButtonBrush(
-		const ET66CompanionReferenceButtonFamily Family,
-		const ET66CompanionReferenceButtonState State)
-	{
-		FCompanionReferenceButtonBrushSet& Set = GetCompanionReferenceButtonBrushSet(Family);
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush* Entry = &Set.Normal;
-		if (State == ET66CompanionReferenceButtonState::Hovered)
-		{
-			Entry = &Set.Hovered;
-		}
-		else if (State == ET66CompanionReferenceButtonState::Pressed)
-		{
-			Entry = &Set.Pressed;
-		}
-		else if (State == ET66CompanionReferenceButtonState::Disabled)
-		{
-			Entry = &Set.Disabled;
-		}
-
-		return ResolveCompanionReferenceBrush(
-			*Entry,
-			GetCompanionReferenceButtonPath(Family, State),
-			GetCompanionReferenceButtonMargin(Family),
-			TEXT("CompanionReferenceButton"),
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetCompanionLeftPanelShellBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveCompanionReferenceBrush(
-			Entry,
-			MakeCompanionUltrakillElementPath(TEXT("SquareVariant/main_panel_normal_square_variant.png")),
-			FMargin(0.035f, 0.105f, 0.035f, 0.105f),
-			TEXT("CompanionLeftShellReference12"),
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetCompanionRightPanelShellBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveCompanionReferenceBrush(
-			Entry,
-			MakeCompanionUltrakillElementPath(TEXT("SquareVariant/main_panel_normal_square_variant.png")),
-			FMargin(0.035f, 0.105f, 0.035f, 0.105f),
-			TEXT("CompanionRightShellReference12"),
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetCompanionPaperFrameBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveCompanionReferenceBrush(
-			Entry,
-			MakeCompanionUltrakillElementPath(TEXT("SquareVariant/main_panel_normal_square_variant.png")),
-			FMargin(0.095f, 0.13f, 0.095f, 0.13f),
-			TEXT("CompanionPaperFrameReference12"),
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetCompanionRowShellBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveCompanionReferenceBrush(
-			Entry,
-			MakeCompanionUltrakillElementPath(TEXT("SquareVariant/player_row_panel_normal_square_variant.png")),
-			FMargin(0.070f, 0.155f, 0.070f, 0.155f),
-			TEXT("CompanionRowShellV16"),
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetCompanionFieldShellBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveCompanionReferenceBrush(
-			Entry,
-			MakeCompanionUltrakillElementPath(TEXT("SquareVariant/dropdown_field_normal_square_variant.png")),
-			FMargin(0.06f, 0.34f, 0.06f, 0.34f),
-			TEXT("CompanionFieldShell"));
-	}
-
-	const FSlateBrush* GetCompanionAvatarFrameBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveCompanionReferenceBrush(
-			Entry,
-			MakeCompanionUltrakillElementPath(TEXT("SquareVariant/profile_slot_normal_square_variant.png")),
-			FMargin(0.20f, 0.20f, 0.20f, 0.20f),
-			TEXT("CompanionAvatarFrame"));
-	}
-
-	const FSlateBrush* GetCompanionSceneBackgroundBrush()
-	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveCompanionReferenceBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/ScreenArt/companionselection_screen_art_center_scene_v1.png"),
-			FMargin(0.f),
-			TEXT("CompanionSceneBackground"));
-	}
-
-	const FScrollBarStyle* GetCompanionReferenceScrollBarStyle()
-	{
-		static FScrollBarStyle Style = FCoreStyle::Get().GetWidgetStyle<FScrollBarStyle>("ScrollBar");
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush TrackEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush ThumbEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush HoverEntry;
-
-		const FString ControlsPath = TEXT("SourceAssets/UI/Reference/Screens/CompanionSelection/Controls/companionselection_controls_controls_sheet.png");
-		const FBox2f VerticalBarUV(
-			FVector2f(4.f / 1350.f, 4.f / 926.f),
-			FVector2f(90.f / 1350.f, 644.f / 926.f));
-
-		const FSlateBrush* TrackBrush = ResolveCompanionReferenceRegionBrush(
-			TrackEntry,
-			ControlsPath,
-			FVector2D(14.f, 120.f),
-			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
-			VerticalBarUV,
-			FLinearColor(0.35f, 0.34f, 0.30f, 0.70f),
-			TEXT("CompanionScrollbarTrackV16"),
-			TextureFilter::TF_Nearest);
-		const FSlateBrush* ThumbBrush = ResolveCompanionReferenceRegionBrush(
-			ThumbEntry,
-			ControlsPath,
-			FVector2D(16.f, 96.f),
-			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
-			FLinearColor(0.93f, 0.82f, 0.52f, 1.0f),
-			TEXT("CompanionScrollbarThumbV16"),
-			TextureFilter::TF_Nearest);
-		const FSlateBrush* HoverBrush = ResolveCompanionReferenceRegionBrush(
-			HoverEntry,
-			ControlsPath,
-			FVector2D(16.f, 96.f),
-			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			VerticalBarUV,
-			FLinearColor(1.0f, 0.90f, 0.62f, 1.0f),
-			TEXT("CompanionScrollbarHoverV16"),
-			TextureFilter::TF_Nearest);
-
-		if (TrackBrush && ThumbBrush && HoverBrush)
-		{
-			Style
-				.SetVerticalBackgroundImage(*TrackBrush)
-				.SetVerticalTopSlotImage(*TrackBrush)
-				.SetVerticalBottomSlotImage(*TrackBrush)
-				.SetNormalThumbImage(*ThumbBrush)
-				.SetHoveredThumbImage(*HoverBrush)
-				.SetDraggedThumbImage(*HoverBrush)
-				.SetThickness(14.f);
-		}
-
-		return &Style;
-	}
-
-	TSharedRef<SWidget> MakeCompanionReferencePanel(
-		const TSharedRef<SWidget>& Content,
-		const FSlateBrush* Brush,
-		const FMargin& Padding,
-		const FSlateColor& FallbackFill)
-	{
-		if (Brush)
-		{
-			return SNew(SBorder)
-				.BorderImage(Brush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(
-			Content,
-			FT66PanelParams(ET66PanelType::Panel)
-				.SetColor(FallbackFill)
-				.SetPadding(Padding));
-	}
-
-	TSharedRef<SWidget> MakeCompanionReferencePaperPanel(
-		const TSharedRef<SWidget>& Content,
-		const FMargin& Padding,
-		const FSlateColor& FallbackFill)
-	{
-		if (const FSlateBrush* Brush = GetCompanionPaperFrameBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(Brush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(
-			Content,
-			FT66PanelParams(ET66PanelType::Panel)
-				.SetColor(FallbackFill)
-				.SetPadding(Padding));
-	}
-
-	TSharedRef<SWidget> MakeCompanionReferenceRow(
-		const TSharedRef<SWidget>& Content,
-		const FMargin& Padding,
-		const FSlateColor& FallbackFill)
-	{
-		if (const FSlateBrush* Brush = GetCompanionRowShellBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(Brush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(
-			Content,
-			FT66PanelParams(ET66PanelType::Panel2)
-				.SetColor(FallbackFill)
-				.SetPadding(Padding));
-	}
-
-	TSharedRef<SWidget> MakeCompanionReferenceField(
-		const TSharedRef<SWidget>& Content,
-		const FMargin& Padding,
-		const FSlateColor& FallbackFill)
-	{
-		if (const FSlateBrush* Brush = GetCompanionFieldShellBrush())
-		{
-			return SNew(SBorder)
-				.BorderImage(Brush)
-				.BorderBackgroundColor(FLinearColor::White)
-				.Padding(Padding)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(
-			Content,
-			FT66PanelParams(ET66PanelType::Panel)
-				.SetColor(FallbackFill)
-				.SetPadding(Padding));
-	}
-
-	TSharedRef<SWidget> MakeCompanionAvatarSocket(
-		const TSharedRef<SWidget>& Content,
-		const FLinearColor& FallbackFill,
-		const float Opacity,
-		const bool bSelected)
-	{
-		if (const FSlateBrush* FrameBrush = GetCompanionAvatarFrameBrush())
-		{
-			const FMargin ContentInset = bSelected ? FMargin(5.f) : FMargin(4.f);
-			return SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FallbackFill * FMath::Clamp(Opacity, 0.0f, 1.0f))
-				]
-				+ SOverlay::Slot()
-				.Padding(ContentInset)
-				[
-					Content
-				]
-				+ SOverlay::Slot()
-				[
-					SNew(SImage)
-					.Image(FrameBrush)
-					.ColorAndOpacity(bSelected
-						? FLinearColor(1.12f, 1.04f, 0.82f, 1.0f)
-						: FLinearColor(0.78f, 0.88f, 0.78f, 0.88f))
-				];
-		}
-
-		return FT66Style::MakeSlotFrame(Content, FallbackFill * Opacity, FMargin(2.f));
-	}
-
-	class ST66CompanionReferenceButton : public SCompoundWidget
-	{
-	public:
-		SLATE_BEGIN_ARGS(ST66CompanionReferenceButton)
-			: _ButtonFamily(ET66CompanionReferenceButtonFamily::CompactNeutral)
-			, _MinWidth(0.f)
-			, _Height(0.f)
-			, _ContentPadding(FMargin(0.f))
-			, _IsEnabled(true)
-			, _Visibility(EVisibility::Visible)
-		{
-		}
-			SLATE_ATTRIBUTE(ET66CompanionReferenceButtonFamily, ButtonFamily)
-			SLATE_ARGUMENT(float, MinWidth)
-			SLATE_ARGUMENT(float, Height)
-			SLATE_ARGUMENT(FMargin, ContentPadding)
-			SLATE_ARGUMENT(TAttribute<bool>, IsEnabled)
-			SLATE_ARGUMENT(TAttribute<EVisibility>, Visibility)
-			SLATE_EVENT(FOnClicked, OnClicked)
-			SLATE_DEFAULT_SLOT(FArguments, Content)
-		SLATE_END_ARGS()
-
-		void Construct(const FArguments& InArgs)
-		{
-			ButtonFamily = InArgs._ButtonFamily;
-			ContentPadding = InArgs._ContentPadding;
-			OwnedButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
-			OwnedButtonStyle.SetNormalPadding(FMargin(0.f));
-			OwnedButtonStyle.SetPressedPadding(FMargin(0.f));
-
-			ChildSlot
-			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(
-						InArgs._OnClicked,
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							T66ScreenSlateHelpers::MakeReferenceHorizontalSlicedImage(
-								TAttribute<const FSlateBrush*>::Create(TAttribute<const FSlateBrush*>::FGetter::CreateSP(this, &ST66CompanionReferenceButton::GetCurrentBrush)),
-								FVector2D(1.0f, 1.0f),
-								0.105f)
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Fill)
-						.VAlign(VAlign_Fill)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							.Padding(this, &ST66CompanionReferenceButton::GetContentPadding)
-							[
-								InArgs._Content.Widget
-							]
-						])
-					.SetButtonStyle(&OwnedButtonStyle)
-					.SetPadding(FMargin(0.f))
-					.SetEnabled(InArgs._IsEnabled)
-					.SetMinWidth(T66ScreenSlateHelpers::NormalizeReferenceSlicedButtonMinWidth(InArgs._MinWidth, InArgs._Height))
-					.SetHeight(InArgs._Height)
-					.SetVisibility(InArgs._Visibility),
-					&Button)
-			];
-		}
-
-	private:
-		const FSlateBrush* GetCurrentBrush() const
-		{
-			const ET66CompanionReferenceButtonFamily Family = ButtonFamily.Get(ET66CompanionReferenceButtonFamily::CompactNeutral);
-			if (!Button.IsValid() || !Button->IsEnabled())
-			{
-				return ResolveCompanionReferenceButtonBrush(Family, ET66CompanionReferenceButtonState::Disabled);
-			}
-			if (Button->IsPressed())
-			{
-				return ResolveCompanionReferenceButtonBrush(Family, ET66CompanionReferenceButtonState::Pressed);
-			}
-			if (Button->IsHovered())
-			{
-				return ResolveCompanionReferenceButtonBrush(Family, ET66CompanionReferenceButtonState::Hovered);
-			}
-			return ResolveCompanionReferenceButtonBrush(Family, ET66CompanionReferenceButtonState::Normal);
-		}
-
-		FMargin GetContentPadding() const
-		{
-			if (Button.IsValid() && Button->IsPressed())
-			{
-				return FMargin(
-					ContentPadding.Left,
-					ContentPadding.Top + 1.f,
-					ContentPadding.Right,
-					FMath::Max(0.f, ContentPadding.Bottom - 1.f));
-			}
-			return ContentPadding;
-		}
-
-		TAttribute<ET66CompanionReferenceButtonFamily> ButtonFamily;
-		FMargin ContentPadding = FMargin(0.f);
-		FButtonStyle OwnedButtonStyle;
-		TSharedPtr<SButton> Button;
-	};
-
-	TSharedRef<SWidget> MakeCompanionReferenceButton(
-		const FT66ButtonParams& Params,
-		TAttribute<ET66CompanionReferenceButtonFamily> ButtonFamily)
-	{
-		const ET66CompanionReferenceButtonFamily InitialFamily = ButtonFamily.Get(ET66CompanionReferenceButtonFamily::CompactNeutral);
-		if (!ResolveCompanionReferenceButtonBrush(InitialFamily, ET66CompanionReferenceButtonState::Normal))
-		{
-			return FT66Style::MakeButton(Params);
-		}
-
-		const float ButtonHeight = Params.Height > 0.f ? Params.Height : 44.f;
-		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(6.f, 2.f);
-
-		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
-			? Params.CustomContent.ToSharedRef()
-			: T66ScreenSlateHelpers::MakeFilledButtonText(
-				Params,
-				ButtonHeight,
-				TAttribute<FSlateColor>(FSlateColor(FT66Style::Tokens::Text)),
-				TAttribute<FLinearColor>(FLinearColor(0.f, 0.f, 0.f, 0.68f)));
-
-		return SNew(ST66CompanionReferenceButton)
-			.ButtonFamily(ButtonFamily)
-			.MinWidth(Params.MinWidth)
-			.Height(ButtonHeight)
-			.ContentPadding(ContentPadding)
-			.IsEnabled(Params.IsEnabled)
-			.Visibility(Params.Visibility)
-			.OnClicked(Params.OnClicked)
-			[
-				Content
-			];
-	}
-
-	TSharedRef<SWidget> MakeCompanionReferenceButton(
-		const FT66ButtonParams& Params,
-		const ET66CompanionReferenceButtonFamily ButtonFamily)
-	{
-		return MakeCompanionReferenceButton(Params, TAttribute<ET66CompanionReferenceButtonFamily>(ButtonFamily));
-	}
 }
 
 UT66CompanionSelectionScreen::UT66CompanionSelectionScreen(const FObjectInitializer& ObjectInitializer)
@@ -774,18 +269,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 	const FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 	const FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	static constexpr int32 BeachgoerPriceAC = UT66SkinSubsystem::DefaultSkinPriceAC;
-	const float ActionMinHeight = 36.f;
-	const float ActionMinWidth = 96.f;
-	const float EquippedMinWidth = 104.f;
-	const float BuyButtonMinWidth = 108.f;
-	const float BuyButtonHeight = 44.f;
 	const FText BeachgoerPriceText = T66SelectionScreenUtils::FormatAchievementCoinBalance(Loc, BeachgoerPriceAC);
-	const FSlateColor SkinRowFill = FT66Style::IsDotaTheme()
-		? FSlateColor(FLinearColor(0.028f, 0.028f, 0.031f, 1.0f))
-		: FT66Style::Tokens::Panel2;
-	const FSlateColor SkinFieldFill = FT66Style::IsDotaTheme()
-		? FSlateColor(FLinearColor(0.075f, 0.075f, 0.08f, 1.0f))
-		: FT66Style::Tokens::Accent2;
 
 	for (const FSkinData& Skin : PlaceholderSkins)
 	{
@@ -794,52 +278,54 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 		bool bIsOwned = Skin.bIsOwned;
 		bool bIsEquipped = Skin.bIsEquipped;
 		FName CID = PreviewedCompanionID.IsNone() && AllCompanionIDs.Num() > 0 ? AllCompanionIDs[0] : PreviewedCompanionID;
+		const FName RowTag = bIsDefault
+			? CompanionSelectionTag(TEXT("CompanionSelection.Skins.DefaultRow"))
+			: CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerRow"));
 
 		const FLinearColor SkinSwatchFill = bIsDefault
-			? FLinearColor(0.11f, 0.065f, 0.035f, 1.0f)
-			: FLinearColor(0.025f, 0.21f, 0.28f, 1.0f);
+			? FLinearColor(0.13f, 0.08f, 0.04f, 1.0f)
+			: FLinearColor(0.02f, 0.20f, 0.28f, 1.0f);
 
 		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			.VAlign(VAlign_Center)
-			.Padding(0.0f, 0.0f, 14.0f, 0.0f)
+			.Padding(0.f, 0.f, 12.f, 0.f)
 			[
 				SNew(SBox)
 				.WidthOverride(42.f)
 				.HeightOverride(42.f)
 				[
-					MakeCompanionAvatarSocket(
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(SkinSwatchFill)
-						[
-							SNew(SBox)
-						],
+					MakeCompanionSelectionSwatch(
 						SkinSwatchFill,
-						1.0f,
-						bIsEquipped)
+						bIsDefault ? CompanionSelectionTag(TEXT("CompanionSelection.Skins.DefaultSwatch")) : CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerSwatch")))
 				]
 			]
-			+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			.VAlign(VAlign_Center)
 			[
-				SNew(STextBlock)
-				.Text(Loc ? Loc->GetText_SkinName(SkinIDCopy) : FText::FromName(SkinIDCopy))
-				.Font(FT66Style::Tokens::FontRegular(16))
-				.ColorAndOpacity(FLinearColor(0.075f, 0.055f, 0.025f, 1.0f))
+				MakeCompanionSelectionLabel(
+					Loc ? Loc->GetText_SkinName(SkinIDCopy) : FText::FromName(SkinIDCopy),
+					ET66FlatLabelRole::Body,
+					bIsDefault ? CompanionSelectionTag(TEXT("CompanionSelection.Skins.DefaultName")) : CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerName")))
 			];
 
 		if (bIsDefault)
 		{
-			Row->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(5.0f, 0.0f)
+			Row->AddSlot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
 				[
-					SNew(SBox).MinDesiredWidth(EquippedMinWidth).MinDesiredHeight(ActionMinHeight)
-					[
-						SNew(SWidgetSwitcher)
-						.WidgetIndex(bIsEquipped ? 1 : 0)
-						+ SWidgetSwitcher::Slot()
-						[
-						MakeCompanionReferenceButton(FT66ButtonParams(EquipText,
+					bIsEquipped
+					? MakeCompanionSelectionLabel(
+						EquippedText,
+						ET66FlatLabelRole::StatValue,
+						CompanionSelectionTag(TEXT("CompanionSelection.Skins.DefaultEquipped")),
+						ETextJustify::Center)
+					: FT66FlatStyle::MakeFlatButton(
+						ET66FlatState::Default,
+						EquipText,
 							FOnClicked::CreateLambda([this, CID]()
 							{
 								if (CID.IsNone()) return FReply::Handled();
@@ -851,50 +337,68 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 								}
 								return FReply::Handled();
 							}),
-							ET66ButtonType::Primary).SetMinWidth(ActionMinWidth).SetHeight(ActionMinHeight).SetFontSize(16),
-							ET66CompanionReferenceButtonFamily::ToggleOn)
-						]
-						+ SWidgetSwitcher::Slot()
-						[
-							SNew(SBox).MinDesiredWidth(EquippedMinWidth).HeightOverride(ActionMinHeight)
-							[
-								MakeCompanionReferenceField(
-									SNew(STextBlock)
-									.Text(EquippedText)
-									.Font(FT66Style::Tokens::FontBold(16))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-									.Justification(ETextJustify::Center),
-									FMargin(10.0f, 4.0f),
-									SkinFieldFill)
-							]
-						]
-					]
+						nullptr,
+						nullptr,
+						FMargin(10.f, 5.f),
+						96.f,
+						36.f,
+						true,
+						15,
+						CompanionSelectionTag(TEXT("CompanionSelection.Skins.DefaultEquipButton")))
 				];
 		}
 		else
 		{
-			Row->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(5.0f, 0.0f)
+			Row->AddSlot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(6.f, 0.f)
 				[
-					MakeCompanionReferenceButton(FT66ButtonParams(PreviewText,
+					FT66FlatStyle::MakeFlatButton(
+					PreviewedCompanionSkinIDOverride == SkinIDCopy ? ET66FlatState::Selected : ET66FlatState::Default,
+					PreviewText,
 					FOnClicked::CreateLambda([this, SkinIDCopy]()
 					{
 						PreviewedCompanionSkinIDOverride = (PreviewedCompanionSkinIDOverride == SkinIDCopy) ? NAME_None : SkinIDCopy;
 						UpdateCompanionDisplay();
 						return FReply::Handled();
 					}),
-					ET66ButtonType::Neutral).SetMinWidth(ActionMinWidth).SetHeight(ActionMinHeight).SetFontSize(16),
-					ET66CompanionReferenceButtonFamily::CompactNeutral)
+					nullptr,
+					nullptr,
+					FMargin(10.f, 5.f),
+					96.f,
+					36.f,
+					true,
+					15,
+					CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerPreviewButton")))
 				];
-			Row->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(4.0f, 0.0f)
+			const FText ActionText = !bIsOwned
+				? FText::Format(NSLOCTEXT("T66.CompanionSelection", "BuyWithPrice", "{0} {1}"), BuyText, BeachgoerPriceText)
+				: (bIsEquipped ? EquippedText : EquipText);
+			if (bIsEquipped)
+			{
+				Row->AddSlot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
 				[
-					SNew(SBox).MinDesiredWidth(EquippedMinWidth).MinDesiredHeight(BuyButtonHeight)
-					[
-						SNew(SWidgetSwitcher)
-						.WidgetIndex(!bIsOwned ? 0 : (bIsEquipped ? 2 : 1))
-						+ SWidgetSwitcher::Slot()
-						[
-						MakeCompanionReferenceButton(FT66ButtonParams(BuyText,
-							FOnClicked::CreateLambda([this, CID, SkinIDCopy]()
+					MakeCompanionSelectionLabel(
+						ActionText,
+						ET66FlatLabelRole::StatValue,
+						CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerEquipped")),
+						ETextJustify::Center)
+				];
+			}
+			else
+			{
+				Row->AddSlot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					FT66FlatStyle::MakeFlatButton(
+						!bIsOwned ? ET66FlatState::Selected : ET66FlatState::Default,
+						ActionText,
+						!bIsOwned
+						? FOnClicked::CreateLambda([this, CID, SkinIDCopy]()
 							{
 								if (CID.IsNone()) return FReply::Handled();
 								UT66SkinSubsystem* SkinSub = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UT66SkinSubsystem>();
@@ -903,23 +407,8 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 								PreviewedCompanionSkinIDOverride = NAME_None;
 								RefreshSkinsList();
 								return FReply::Handled();
-							}),
-							ET66ButtonType::Primary)
-							.SetMinWidth(BuyButtonMinWidth)
-							.SetHeight(BuyButtonHeight)
-							.SetColor(HeroSelectionChromeTokenAccent())
-							.SetPadding(FMargin(6.f, 3.f))
-							.SetContent(
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(BuyText).Font(FT66Style::Tokens::FontBold(15)).ColorAndOpacity(FT66Style::Tokens::Text) ]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(BeachgoerPriceText).Font(FT66Style::Tokens::FontRegular(13)).ColorAndOpacity(FT66Style::Tokens::Text) ]
-							),
-							ET66CompanionReferenceButtonFamily::ToggleOn)
-						]
-						+ SWidgetSwitcher::Slot()
-						[
-						MakeCompanionReferenceButton(FT66ButtonParams(EquipText,
-							FOnClicked::CreateLambda([this, CID, SkinIDCopy]()
+							})
+						: FOnClicked::CreateLambda([this, CID, SkinIDCopy]()
 							{
 								if (CID.IsNone()) return FReply::Handled();
 								if (UT66SkinSubsystem* SkinSub = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UT66SkinSubsystem>())
@@ -930,37 +419,30 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 								}
 								return FReply::Handled();
 							}),
-							ET66ButtonType::Primary).SetMinWidth(ActionMinWidth).SetHeight(ActionMinHeight).SetFontSize(16),
-							ET66CompanionReferenceButtonFamily::ToggleOn)
-						]
-						+ SWidgetSwitcher::Slot()
-						[
-							SNew(SBox).MinDesiredWidth(EquippedMinWidth).HeightOverride(ActionMinHeight)
-							[
-								MakeCompanionReferenceField(
-									SNew(STextBlock)
-									.Text(EquippedText)
-									.Font(FT66Style::Tokens::FontBold(16))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-									.Justification(ETextJustify::Center),
-									FMargin(10.0f, 4.0f),
-									SkinFieldFill)
-							]
-						]
-					]
+						nullptr,
+						nullptr,
+						FMargin(10.f, 5.f),
+						132.f,
+						36.f,
+						true,
+						14,
+						CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerBuyButton")))
 				];
+			}
 		}
 		Box->AddSlot()
 			.AutoHeight()
-			.Padding(0.0f, 5.0f)
+			.Padding(0.f, 5.f)
 			[
 				SNew(SBox)
-				.HeightOverride(86.f)
+				.HeightOverride(72.f)
 				[
-					MakeCompanionReferencePaperPanel(
+					FT66FlatStyle::MakeFlatSubPanel(
+						bIsEquipped ? ET66FlatState::Selected : ET66FlatState::Default,
+						FMargin(14.f, 9.f),
 						Row,
-						FMargin(18.f, 10.f),
-						SkinRowFill)
+						nullptr,
+						RowTag)
 				]
 			];
 	}
@@ -1010,7 +492,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	const FText ReadyText = NSLOCTEXT("T66.CompanionSelection", "Ready", "READY");
 	const FText UnreadyText = NSLOCTEXT("T66.CompanionSelection", "Unready", "UNREADY");
 	const FText WaitingForPartyText = NSLOCTEXT("T66.CompanionSelection", "WaitingForParty", "WAITING FOR PARTY");
-	const FText ACBalanceText = FText::AsNumber(T66SelectionScreenUtils::GetAchievementCoinBalance(this));
+	const FText ACBalanceText = T66SelectionScreenUtils::FormatAchievementCoinBalance(Loc, T66SelectionScreenUtils::GetAchievementCoinBalance(this));
 
 	DifficultyOptions.Empty();
 	const TArray<ET66Difficulty> Difficulties = T66GI ? T66GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
@@ -1032,7 +514,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	}
 
 	FText CurrentCompanionName = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionSelection", "NoCompanion", "NO COMPANION");
-	FText CurrentCompanionLore = NSLOCTEXT("T66.CompanionSelection", "NoCompanionLore", "Select a companion to learn their story.");
+	FText CurrentCompanionLore = NSLOCTEXT("T66.CompanionSelection", "NoCompanionLore", "Selecting no companion means you face the tribulation alone.");
 	FLinearColor PreviewColor = FLinearColor(0.3f, 0.3f, 0.4f, 1.0f);
 	if (!PreviewedCompanionID.IsNone())
 	{
@@ -1061,102 +543,9 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	}
 	RefreshCompanionCarouselPortraits();
 
-	TSharedRef<SHorizontalBox> CompanionCarousel = SNew(SHorizontalBox);
-	for (int32 Offset = -HeroSelectionCarouselCenterIndex; Offset <= HeroSelectionCarouselCenterIndex; ++Offset)
-	{
-		if (AllCompanionIDs.Num() == 0)
-		{
-			break;
-		}
-		const int32 SlotIdx = Offset + HeroSelectionCarouselCenterIndex;
-		const int32 Idx = (CurrentCompanionIndex + Offset + AllCompanionIDs.Num() * 2) % AllCompanionIDs.Num();
-		const FName CompanionID = AllCompanionIDs.IsValidIndex(Idx) ? AllCompanionIDs[Idx] : NAME_None;
-		const bool bCenterSlot = Offset == 0;
-		const bool bUnlocked = IsCompanionUnlocked(CompanionID);
-		const float BoxSize = GetHeroSelectionCarouselBoxSize(Offset);
-		const float Opacity = GetHeroSelectionCarouselOpacity(Offset) * (bUnlocked ? 1.0f : 0.45f);
-
-		CompanionCarousel->AddSlot()
-			.AutoWidth()
-			.Padding(3.0f, 0.0f)
-			.VAlign(VAlign_Center)
-			[
-				SNew(SBox)
-				.WidthOverride(BoxSize)
-				.HeightOverride(BoxSize)
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-						SNew(SImage)
-						.Image(GetHeroSelectionCarouselSlotBrush(bCenterSlot))
-					]
-					+ SOverlay::Slot()
-					.Padding(FMargin(bCenterSlot ? 5.f : 6.f))
-					[
-						SNew(SImage)
-						.Image_Lambda([this, SlotIdx]() -> const FSlateBrush*
-						{
-							return CompanionCarouselPortraitBrushes.IsValidIndex(SlotIdx) && CompanionCarouselPortraitBrushes[SlotIdx].IsValid()
-								? CompanionCarouselPortraitBrushes[SlotIdx].Get()
-								: nullptr;
-						})
-						.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, Opacity))
-					]
-				]
-			];
-	}
-
-	const FHeroSelectionSharedLayoutMetrics Layout = MakeHeroSelectionSharedLayoutMetrics();
-	const FVector2D LayoutViewportSize = Layout.LayoutViewportSize;
-	const bool bShortViewport = Layout.bShortViewport;
-	const float ReferenceLayoutWidth = Layout.ReferenceLayoutWidth;
-	const float ReferenceLayoutHeight = Layout.ReferenceLayoutHeight;
-	const float LeftPanelWidth = Layout.LeftPanelWidth;
-	const float RightPanelWidth = Layout.RightPanelWidth;
-	const float CenterPanelX = Layout.CenterPanelX;
-	const float CenterPreviewWidth = Layout.CenterPreviewWidth;
-	const float PartyFooterWidth = Layout.PartyFooterWidth;
-	const float CompanionFooterWidth = Layout.CompanionFooterWidth;
-	const float CompanionFooterX = Layout.CompanionFooterX;
-	const float RunFooterX = Layout.RunFooterX;
-	const float RunFooterWidth = Layout.RunFooterWidth;
-	const float CompanionFooterContentWidth = Layout.CompanionFooterContentWidth;
-	const float RunFooterContentWidth = Layout.RunFooterContentWidth;
-	const float UpperPanelY = Layout.UpperPanelY;
-	const float FooterPanelMinHeight = Layout.FooterPanelMinHeight;
-	const float FooterPanelY = Layout.FooterPanelY;
-	const float UpperSidePanelHeight = Layout.UpperSidePanelHeight;
-	const float OuterPanelBleed = Layout.OuterPanelBleed;
-	const float LayoutCompactScale = Layout.LayoutCompactScale;
-	const float FooterActionHeight = Layout.FooterActionHeight;
-	const float BalanceBadgeIconWidth = Layout.BalanceBadgeIconWidth;
-	const float BalanceBadgeIconHeight = Layout.BalanceBadgeIconHeight;
-	const float RightPreviewPanelHeight = Layout.RightPreviewPanelHeight;
-	const int32 ScreenHeaderFontSize = Layout.ScreenHeaderFontSize;
-	const int32 SecondaryButtonFontSize = Layout.SecondaryButtonFontSize;
-	const int32 BodyTextFontSize = Layout.BodyTextFontSize;
-	const int32 PrimaryCtaFontSize = Layout.PrimaryCtaFontSize;
-	const int32 DifficultyMenuFontSize = Layout.DifficultyMenuFontSize;
-	const int32 HeroArrowFontSize = Layout.HeroArrowFontSize;
-	const int32 ACBalanceFontSize = Layout.ACBalanceFontSize;
-	const float HeroArrowButtonWidth = Layout.HeroArrowButtonWidth;
-	const float HeroArrowButtonHeight = Layout.HeroArrowButtonHeight;
-	const float TopStripBackButtonWidth = Layout.TopStripBackButtonWidth;
-	const float TopStripBackButtonHeight = Layout.TopStripBackButtonHeight;
-	ResolveHeroSelectionLooseIconBrush(
-		GetHeroSelectionBalanceIconPath(),
-		FVector2D(BalanceBadgeIconWidth, BalanceBadgeIconHeight),
-		ACBalanceIconBrush,
-		ACBalanceIconTexture,
-		TEXT("CompanionSelectionBalanceIcon"));
-
 	const bool bIsLocalPartyHost = !SessionSubsystem || SessionSubsystem->IsLocalPlayerPartyHost();
 	const bool bPartyLobbyContextActive = SessionSubsystem && SessionSubsystem->IsPartyLobbyContextActive();
 	const int32 LobbyPlayerCount = SessionSubsystem ? SessionSubsystem->GetCurrentLobbyPlayerCount() : 0;
-	const int32 ActivePartySlots = bPartyLobbyContextActive
-		? FMath::Clamp(LobbyPlayerCount, 1, 4)
-		: (PartySubsystem ? FMath::Clamp(PartySubsystem->GetPartyMemberCount(), 1, 4) : 1);
 	const bool bHasRemotePartyMembers = bPartyLobbyContextActive
 		? LobbyPlayerCount > 1
 		: (PartySubsystem && PartySubsystem->HasRemotePartyMembers());
@@ -1167,974 +556,290 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	const FText PrimaryActionText = bUsePartyReadyFlow && !bIsLocalPartyHost
 		? (bLocalReady ? UnreadyText : ReadyText)
 		: (bCanStartPartyRun ? EnterText : WaitingForPartyText);
-	auto MakePreviewFocusMask = []() -> TSharedRef<SWidget>
-	{
-		return SNew(SBox).Visibility(EVisibility::Collapsed);
-	};
 
-	auto MakeWorldScrim = []() -> TSharedRef<SWidget>
+	TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
+	auto AddSlot = [Canvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
 	{
-		return SNew(SBox).Visibility(EVisibility::Collapsed);
-	};
-	auto MakeSelectionBar = [](TSharedRef<SWidget> Content) -> TSharedRef<SWidget>
-	{
-		return MakeHeroSelectionContentShell(Content, FMargin(0.f));
-	};
-
-	auto MakeBalanceBadge = [this,
-		BalanceBadgeIconWidth,
-		BalanceBadgeIconHeight,
-		ACBalanceText,
-		ACBalanceFontSize,
-		SecondaryButtonFontSize]() -> TSharedRef<SWidget>
-	{
-		return SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Center)
+		Canvas->AddSlot()
+			.Anchors(FAnchors(0.f, 0.f))
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X, Y, W, H))
 			[
-				SNew(SBox)
-				.WidthOverride(BalanceBadgeIconWidth)
-				.HeightOverride(BalanceBadgeIconHeight)
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-					SNew(SScaleBox)
-					.Stretch(EStretch::ScaleToFit)
-					[
-						FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
-							SNew(SImage)
-							.Image_Lambda([this]() -> const FSlateBrush*
-							{
-								return ACBalanceIconBrush.IsValid() && ::IsValid(ACBalanceIconBrush->GetResourceObject())
-									? ACBalanceIconBrush.Get()
-									: nullptr;
-							})))
-					]
-				]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.HeroSelection", "CurrencyBadgeFallback", "CC"))
-						.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-						.Visibility_Lambda([this]() -> EVisibility
-						{
-							return ACBalanceIconBrush.IsValid() && ::IsValid(ACBalanceIconBrush->GetResourceObject())
-								? EVisibility::Collapsed
-								: EVisibility::Visible;
-						})
-					]
-				]
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Center)
-			.Padding(8.f, 0.f, 0.f, 0.f)
-			[
-				SAssignNew(ACBalanceTextBlock, STextBlock)
-				.Text(ACBalanceText)
-				.Font(FT66Style::Tokens::FontBold(ACBalanceFontSize))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				Widget
 			];
 	};
-
-	auto MakeTopStripBackButton = [this, BackText, SecondaryButtonFontSize, TopStripBackButtonWidth, TopStripBackButtonHeight]() -> TSharedRef<SWidget>
+	auto MakeTrackedLabel = [](TSharedPtr<STextBlock>& Target, const FText& Text, const int32 FontSize, const bool bBold, const FLinearColor& Color, const FName Tag, const ETextJustify::Type Justification = ETextJustify::Left, const float WrapAt = 0.f) -> TSharedRef<SWidget>
 	{
-		return MakeHeroSelectionButton(
-			FT66ButtonParams(
-				BackText,
-				FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleBackClicked),
-				ET66ButtonType::Neutral)
-			.SetMinWidth(TopStripBackButtonWidth)
-			.SetHeight(TopStripBackButtonHeight)
-			.SetFontSize(SecondaryButtonFontSize)
-			.SetPadding(FMargin(12.f, 6.f, 12.f, 4.f)));
+		TSharedRef<STextBlock> TextWidget = SAssignNew(Target, STextBlock)
+			.Text(Text)
+			.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+			.ColorAndOpacity(Color)
+			.Justification(Justification)
+			.AutoWrapText(WrapAt > 0.f)
+			.WrapTextAt(WrapAt)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			.Visibility(EVisibility::HitTestInvisible);
+		return FT66FlatStyle::AttachMetadata(TextWidget, Tag, TEXT("Label"), ET66FlatState::Default, TOptional<FLinearColor>(), false, NAME_None, true);
+	};
+	auto MakeStaticLabel = [](const FText& Text, const int32 FontSize, const bool bBold, const FLinearColor& Color, const FName Tag, const ETextJustify::Type Justification = ETextJustify::Left, const float WrapAt = 0.f) -> TSharedRef<SWidget>
+	{
+		TSharedRef<STextBlock> TextWidget = SNew(STextBlock)
+			.Text(Text)
+			.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+			.ColorAndOpacity(Color)
+			.Justification(Justification)
+			.AutoWrapText(WrapAt > 0.f)
+			.WrapTextAt(WrapAt)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			.Visibility(EVisibility::HitTestInvisible);
+		return FT66FlatStyle::AttachMetadata(TextWidget, Tag, TEXT("Label"), ET66FlatState::Default, TOptional<FLinearColor>(), false, NAME_None, true);
 	};
 
-	auto MakeRecordInfoButton = [SecondaryButtonFontSize](const FText& Title, const FText& Body) -> TSharedRef<SWidget>
-	{
-		static FButtonStyle ButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
-		return SNew(SBox)
-			.WidthOverride(24.f)
-			.HeightOverride(24.f)
-			.ToolTip(MakeHeroSelectionAbilityTooltip(Title, Body, -1))
-			[
-				SNew(SButton)
-				.ButtonStyle(&ButtonStyle)
-				.ContentPadding(0.f)
-				.OnClicked(FOnClicked::CreateLambda([]() -> FReply { return FReply::Handled(); }))
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(HeroSelectionChromeAccent())
-					.Padding(1.f)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(HeroSelectionChromeInnerFillAlt())
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionRecordInfoButton", "?"))
-							.Font(FT66Style::Tokens::FontBold(FMath::Max(SecondaryButtonFontSize - 5, 12)))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-						]
-					]
-				]
-			];
-	};
-
-	const TSharedRef<SWidget> TopBarWidget = MakeSelectionBar(
-		SNew(SBox)
-		.WidthOverride(FMath::Max(1.f, CenterPreviewWidth))
-		[
+	AddSlot(0.f, 0.f, 1920.f, 1080.f,
+		MakeCompanionSelectionColorRect(FLinearColor(0.01f, 0.01f, 0.014f, 0.38f), CompanionSelectionTag(TEXT("CompanionSelection.Background")), TEXT("Background")));
+	AddSlot(0.f, 17.f, 548.f, 750.f,
+		FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, FMargin(0.f), SNullWidget::NullWidget, nullptr, CompanionSelectionTag(TEXT("CompanionSelection.LeftPanel"))));
+	AddSlot(15.f, 31.f, 112.f, 31.f,
+		FT66FlatStyle::MakeFlatButton(ET66FlatState::Default, BackText, FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleBackClicked), nullptr, nullptr, FMargin(10.f, 4.f), 0.f, 0.f, true, 15, CompanionSelectionTag(TEXT("CompanionSelection.BackButton"))));
+	AddSlot(364.f, 31.f, 166.f, 31.f,
+		FT66FlatStyle::AttachMetadata(
 			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.Padding(0.0f, 0.0f, 6.0f, 0.0f)
+			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 			[
-				MakeHeroSelectionButton(
-					FT66ButtonParams(
-						NSLOCTEXT("T66.Common", "Prev", "<"),
-						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandlePrevClicked),
-						ET66ButtonType::Neutral)
-					.SetMinWidth(HeroArrowButtonWidth)
-					.SetHeight(HeroArrowButtonHeight)
-					.SetFontSize(HeroArrowFontSize))
+				MakeStaticLabel(NSLOCTEXT("T66.CompanionSelection", "BalanceLabel", "CC"), 14, true, FT66FlatStyle::SecondaryText(), CompanionSelectionTag(TEXT("CompanionSelection.BalanceIcon")), ETextJustify::Center)
 			]
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.f)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			+ SHorizontalBox::Slot().FillWidth(2.f).VAlign(VAlign_Center)
 			[
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFitX)
-				.StretchDirection(EStretchDirection::DownOnly)
-				[
-					CompanionCarousel
-				]
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.Padding(6.0f, 0.0f, 0.0f, 0.0f)
-			[
-				MakeHeroSelectionButton(
-					FT66ButtonParams(
-						NSLOCTEXT("T66.Common", "Next", ">"),
-						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNextClicked),
-						ET66ButtonType::Neutral)
-					.SetMinWidth(HeroArrowButtonWidth)
-					.SetHeight(HeroArrowButtonHeight)
-					.SetFontSize(HeroArrowFontSize))
-			]
-		]);
-
-	const TSharedRef<SWidget> LeftPanelWidget = MakeHeroSelectionPanelShell(
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Left)
-			.VAlign(VAlign_Center)
-			[
-				MakeTopStripBackButton()
-			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Right)
-			.VAlign(VAlign_Center)
-			[
-				MakeBalanceBadge()
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 12.0f)
-		[
-			SNew(SBox)
-			.HeightOverride(36.f)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(SkinsText)
-				.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize + 2))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-				.Justification(ETextJustify::Center)
-			]
-		]
-		+ SVerticalBox::Slot()
-		.FillHeight(1.0f)
-		[
+				MakeTrackedLabel(ACBalanceTextBlock, ACBalanceText, 14, true, FT66FlatStyle::PrimaryText(), CompanionSelectionTag(TEXT("CompanionSelection.BalanceValue")), ETextJustify::Center)
+			],
+			CompanionSelectionTag(TEXT("CompanionSelection.BalanceBadge")), TEXT("Badge"), ET66FlatState::Default));
+	AddSlot(206.f, 76.f, 136.f, 38.f,
+		MakeStaticLabel(SkinsText, 24, true, FT66FlatStyle::SelectedText(), CompanionSelectionTag(TEXT("CompanionSelection.SkinsTitle")), ETextJustify::Center));
+	AddSlot(19.f, 126.f, 510.f, 600.f,
+		FT66FlatStyle::MakeFlatTransparentRegion(
+			ET66FlatState::Default,
+			FMargin(0.f),
 			SNew(SScrollBox)
-			.ScrollBarStyle(GetCompanionReferenceScrollBarStyle())
-			.ScrollBarThickness(FVector2D(14.f, 14.f))
-			.ScrollBarPadding(FMargin(8.f, 0.f, 0.f, 0.f))
-			+ SScrollBox::Slot()
-			[
-				SkinsListBoxWidget.ToSharedRef()
-			]
-		],
-		FMargin(FT66Style::Tokens::Space3 + OuterPanelBleed, FT66Style::Tokens::Space3 + OuterPanelBleed, FT66Style::Tokens::Space3, FT66Style::Tokens::Space3));
+			+ SScrollBox::Slot()[SkinsListBoxWidget.ToSharedRef()],
+			CompanionSelectionTag(TEXT("CompanionSelection.SkinsList"))));
 
-	const TSharedRef<SWidget> RightPanelWidget = MakeHeroSelectionPanelShell(
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 10.0f)
-		[
-			SNew(SBox)
-			.HeightOverride(48.f)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SAssignNew(CompanionNameWidget, STextBlock)
-				.Text(CurrentCompanionName)
-				.Font(FT66Style::Tokens::FontBold(31))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-				.Justification(ETextJustify::Center)
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds)
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 6.0f)
-		[
-			MakeHeroSelectionParchmentPanelShell(
-				SNew(SBox)
-				.HeightOverride(RightPreviewPanelHeight)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor::Black)
-				],
-				FMargin(5.0f))
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 6.0f)
-		[
-			MakeHeroSelectionParchmentRowShell(
-				SNew(SBox)
-				.MinDesiredHeight(56.f)
-				.VAlign(VAlign_Center)
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					.Padding(0.f, 0.f, 6.f, 0.f)
-					[
-						MakeRecordInfoButton(
-							NSLOCTEXT("T66.CompanionSelection", "CompanionRankTooltipTitle", "Rank"),
-							NSLOCTEXT("T66.CompanionSelection", "CompanionRankTooltipBody", "All-time score placement for the selected difficulty, party size, and companion. N/A means no eligible score has been submitted yet."))
-					]
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionRecordRankLabel", "RANK"))
-						.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 3))
-						.ColorAndOpacity(GetHeroSelectionParchmentMutedText())
-					]
-					+ SHorizontalBox::Slot()
-					.FillWidth(1.f)
-					.HAlign(HAlign_Right)
-					.VAlign(VAlign_Center)
-					[
-						SAssignNew(CompanionRecordRankWidget, STextBlock)
-						.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionRecordRankDefault", "..."))
-						.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 3))
-						.ColorAndOpacity(GetHeroSelectionParchmentText())
-					]
-				],
-				FMargin(20.f, 9.f))
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 10.0f)
-		[
-			SAssignNew(CompanionUnionBox, SBox)
-			[
-				MakeHeroSelectionParchmentRowShell(
-					SNew(SBox)
-					.MinDesiredHeight(62.f)
-					.VAlign(VAlign_Center)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.VAlign(VAlign_Center)
-						.Padding(0.f, 0.f, 6.f, 0.f)
-						[
-							MakeRecordInfoButton(
-								NSLOCTEXT("T66.CompanionSelection", "CompanionUnityTooltipTitle", "Unity"),
-								NSLOCTEXT("T66.CompanionSelection", "CompanionUnityTooltipBody", "Companion progression earned by clearing stages with this companion. Healing is now fixed by difficulty."))
-						]
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.VAlign(VAlign_Center)
-						.Padding(0.f, 0.f, 12.f, 0.f)
-						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionUnityLabel", "UNITY"))
-							.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize + 3))
-							.ColorAndOpacity(GetHeroSelectionParchmentMutedText())
-						]
-						+ SHorizontalBox::Slot()
-						.FillWidth(1.f)
-						.VAlign(VAlign_Center)
-						.Padding(0.f, 0.f, 12.f, 0.f)
-						[
-							SNew(SBox)
-							.HeightOverride(16.f)
-							[
-								T66ScreenSlateHelpers::MakeReferenceProgressBar(
-									TAttribute<TOptional<float>>::Create(TAttribute<TOptional<float>>::FGetter::CreateLambda([this]() -> TOptional<float>
-									{
-										return FMath::Clamp(CompanionUnionProgress01, 0.f, 1.f);
-									})),
-									FVector2D(240.f, 16.f),
-									FLinearColor(0.92f, 0.05f, 0.12f, 1.0f),
-									FMargin(4.f, 2.f))
-							]
-						]
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.VAlign(VAlign_Center)
-						[
-							SAssignNew(CompanionUnionText, STextBlock)
-							.Text(FText::GetEmpty())
-							.Font(FT66Style::Tokens::FontBold(FMath::Max(SecondaryButtonFontSize, 14)))
-							.ColorAndOpacity(GetHeroSelectionParchmentText())
-						]
-					],
-					FMargin(20.f, 9.f))
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-		[
-			SNew(SBox)
-			.HeightOverride(36.f)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(LoreText)
-				.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize + 6))
-				.ColorAndOpacity(GetHeroSelectionParchmentMutedText())
-				.Justification(ETextJustify::Center)
-			]
-		]
-		+ SVerticalBox::Slot()
-		.FillHeight(1.f)
-		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-		[
-			MakeHeroSelectionParchmentPanelShell(
-				SNew(SScrollBox)
-				.ScrollBarStyle(GetCompanionReferenceScrollBarStyle())
-				.ScrollBarThickness(FVector2D(14.f, 14.f))
-				.ScrollBarPadding(FMargin(8.f, 0.f, 0.f, 0.f))
-				+ SScrollBox::Slot()
-				[
-					SAssignNew(CompanionLoreWidget, STextBlock)
-					.Text(CurrentCompanionLore)
-					.Font(FT66Style::Tokens::FontRegular(BodyTextFontSize + 2))
-					.ColorAndOpacity(GetHeroSelectionParchmentText())
-					.AutoWrapText(true)
-				],
-				FMargin(18.f, 14.f))
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		[
-			MakeHeroSelectionParchmentRowShell(
-				SAssignNew(CompanionUnionHealingText, STextBlock)
-				.Text(FormatCompanionPassiveHealText(SelectedDifficulty))
-				.Font(FT66Style::Tokens::FontBold(BodyTextFontSize + 2))
-				.ColorAndOpacity(GetHeroSelectionParchmentText())
-				.AutoWrapText(true),
-				FMargin(18.f, 12.f))
-		],
-		FMargin(FT66Style::Tokens::Space4, FT66Style::Tokens::Space4 + OuterPanelBleed, FT66Style::Tokens::Space4, FT66Style::Tokens::Space4),
-		true);
-
-	const TSharedRef<SWidget> PreviewWidget =
-		SNew(SBox)
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
-			CreateCompanionPreviewWidget(PreviewColor)
-		];
-
-	auto MakePartyBox = [this, ActivePartySlots, PartySubsystem, T66GI, bUsePartyReadyFlow, LayoutCompactScale, PartyFooterWidth, FooterPanelMinHeight, OuterPanelBleed]() -> TSharedRef<SWidget>
+	TSharedRef<SHorizontalBox> CarouselRow = SNew(SHorizontalBox);
+	CarouselRow->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
+	[
+		FT66FlatStyle::MakeFlatButton(ET66FlatState::Default, FText::FromString(TEXT("<")), FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandlePrevClicked), nullptr, nullptr, FMargin(6.f), 54.f, 54.f, AllCompanionIDs.Num() > 1, 24, CompanionSelectionTag(TEXT("CompanionSelection.Carousel.PrevButton")))
+	];
+	for (int32 SlotIdx = 0; SlotIdx < HeroSelectionCarouselVisibleSlots; ++SlotIdx)
 	{
-		const float PartyScale = FMath::Clamp(LayoutCompactScale, 0.82f, 1.12f);
-		const float PartyTileSide = FMath::RoundToFloat(84.f * PartyScale);
-		const float PartyMemberGap = FMath::RoundToFloat(10.f * PartyScale);
-		const FVector2D PartyProfileSize(PartyTileSide, PartyTileSide);
-		const FVector2D PartyAvatarImageSize(FMath::RoundToFloat(68.f * PartyScale), FMath::RoundToFloat(68.f * PartyScale));
-		const FVector2D PartyHeroSize(PartyTileSide, PartyTileSide);
-		const FVector2D PartyHeroImageSize(FMath::RoundToFloat(68.f * PartyScale), FMath::RoundToFloat(68.f * PartyScale));
-		const float PartyReadyHeight = FMath::RoundToFloat(22.f * PartyScale);
-		const float PartyMemberWidth = PartyProfileSize.X + PartyHeroSize.X;
-		const float PartyMemberHeight = PartyReadyHeight + PartyProfileSize.Y;
-		TArray<FT66PartyMemberEntry> PartyMembers = PartySubsystem ? PartySubsystem->GetPartyMembers() : TArray<FT66PartyMemberEntry>();
-		UT66SteamHelper* SteamHelper = T66GI ? T66GI->GetSubsystem<UT66SteamHelper>() : nullptr;
-		UT66UITexturePoolSubsystem* TexPool = T66GI ? T66GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
-		if (PartyMembers.Num() == 0)
-		{
-			FT66PartyMemberEntry& LocalMember = PartyMembers.AddDefaulted_GetRef();
-			LocalMember.DisplayName = SteamHelper ? SteamHelper->GetLocalDisplayName() : FString(TEXT("Player"));
-			LocalMember.bIsLocal = true;
-			LocalMember.bOnline = true;
-			LocalMember.bReady = true;
-			LocalMember.bIsPartyHost = true;
-		}
-		PartyAvatarBrushes.SetNum(4);
-		PartyHeroPortraitBrushes.SetNum(4);
-		PartyAvatarImageWidgets.SetNum(4);
-		PartyHeroPortraitImageWidgets.SetNum(4);
-		const bool bTreatPartyAsReadyByDefault = !bUsePartyReadyFlow || PartyMembers.Num() <= 1;
-
-		auto MakeReadyBanner = [&](const bool bReady, const bool bOccupied) -> TSharedRef<SWidget>
-		{
-			return SNew(SBox)
-				.WidthOverride(PartyProfileSize.X)
-				.HeightOverride(PartyReadyHeight)
-				.Visibility(bOccupied ? EVisibility::Visible : EVisibility::Hidden)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(bReady ? FLinearColor(0.55f, 0.84f, 0.60f, 1.0f) : FLinearColor(0.92f, 0.48f, 0.48f, 1.0f))
-					.Padding(1.f)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(bReady ? FLinearColor(0.16f, 0.44f, 0.21f, 1.0f) : FLinearColor(0.48f, 0.14f, 0.14f, 1.0f))
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						[
-							SNew(STextBlock)
-							.Text(bReady ? NSLOCTEXT("T66.CompanionSelection", "PartyReadySmall", "READY") : NSLOCTEXT("T66.CompanionSelection", "PartyWaitingSmall", "WAIT"))
-							.Font(FT66Style::Tokens::FontBold(bReady ? 10 : 9))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-						]
-					]
-				];
-		};
-
-		TSharedRef<SHorizontalBox> PartySlots = SNew(SHorizontalBox);
-		for (int32 SlotIndex = 0; SlotIndex < 4; ++SlotIndex)
-		{
-			const FT66PartyMemberEntry* PartyMember = PartyMembers.IsValidIndex(SlotIndex) ? &PartyMembers[SlotIndex] : nullptr;
-			UTexture2D* AvatarTexture = nullptr;
-			if (PartyMember && SteamHelper)
-			{
-				AvatarTexture = SteamHelper->GetAvatarTextureForSteamId(PartyMember->PlayerId);
-				if (!AvatarTexture && PartyMember->bIsLocal)
+		const int32 Offset = SlotIdx - HeroSelectionCarouselCenterIndex;
+		const int32 Idx = AllCompanionIDs.Num() > 0 ? (CurrentCompanionIndex + Offset + AllCompanionIDs.Num() * 2) % AllCompanionIDs.Num() : INDEX_NONE;
+		const FName CompanionID = AllCompanionIDs.IsValidIndex(Idx) ? AllCompanionIDs[Idx] : NAME_None;
+		const bool bCenterSlot = Offset == 0;
+		const bool bUnlocked = CompanionID.IsNone() || IsCompanionUnlocked(CompanionID);
+		FName CompanionIDCopy = CompanionID;
+		const TSharedRef<SWidget> Portrait = CompanionCarouselPortraitBrushes.IsValidIndex(SlotIdx) && CompanionCarouselPortraitBrushes[SlotIdx].IsValid()
+			? StaticCastSharedRef<SWidget>(SNew(SImage).Image(CompanionCarouselPortraitBrushes[SlotIdx].Get()).ColorAndOpacity(bUnlocked ? FLinearColor::White : FLinearColor(1.f, 1.f, 1.f, 0.35f)))
+			: SNullWidget::NullWidget;
+		CarouselRow->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 8.f, 0.f)
+		[
+			FT66FlatStyle::MakeFlatToggleGroupButton(
+				bCenterSlot ? ET66FlatState::Selected : (bUnlocked ? ET66FlatState::Default : ET66FlatState::Disabled),
+				SNew(SBox).Padding(6.f)[Portrait],
+				FOnClicked::CreateLambda([this, CompanionIDCopy]()
 				{
-					AvatarTexture = SteamHelper->GetLocalAvatarTexture();
-				}
-			}
-			if (!PartyAvatarBrushes[SlotIndex].IsValid())
-			{
-				PartyAvatarBrushes[SlotIndex] = MakeShared<FSlateBrush>();
-				PartyAvatarBrushes[SlotIndex]->DrawAs = ESlateBrushDrawType::Image;
-			}
-			PartyAvatarBrushes[SlotIndex]->ImageSize = PartyAvatarImageSize;
-			PartyAvatarBrushes[SlotIndex]->SetResourceObject(AvatarTexture);
-			if (!PartyHeroPortraitBrushes[SlotIndex].IsValid())
-			{
-				PartyHeroPortraitBrushes[SlotIndex] = MakeShared<FSlateBrush>();
-				PartyHeroPortraitBrushes[SlotIndex]->DrawAs = ESlateBrushDrawType::Image;
-			}
-			PartyHeroPortraitBrushes[SlotIndex]->ImageSize = PartyHeroImageSize;
-			PartyHeroPortraitBrushes[SlotIndex]->SetResourceObject(nullptr);
-
-			const bool bOccupiedSlot = PartyMember != nullptr;
-			const bool bPartyEnabledSlot = SlotIndex < ActivePartySlots;
-			const FName SlotHeroID = bOccupiedSlot && PartyMember->bIsLocal && T66GI ? T66GI->SelectedHeroID : NAME_None;
-			if (!SlotHeroID.IsNone() && T66GI && TexPool)
-			{
-				FHeroData SlotHeroData;
-				if (T66GI->GetHeroData(SlotHeroID, SlotHeroData))
-				{
-					const TSoftObjectPtr<UTexture2D> PortraitSoft = T66GI->ResolveHeroPortrait(SlotHeroData, T66GI->SelectedHeroBodyType, ET66HeroPortraitVariant::Half);
-					if (!PortraitSoft.IsNull())
+					if (!CompanionIDCopy.IsNone())
 					{
-						T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, PartyHeroPortraitBrushes[SlotIndex], FName(TEXT("CompanionSelectionPartyHero"), SlotIndex + 1), true);
+						PreviewCompanion(CompanionIDCopy);
 					}
-				}
-			}
+					return FReply::Handled();
+				}),
+				FMargin(0.f),
+				88.f,
+				88.f,
+				bUnlocked && !CompanionIDCopy.IsNone(),
+				CompanionSelectionIndexedTag(TEXT("CompanionSelection.Carousel.Slot"), SlotIdx),
+				CompanionSelectionTag(TEXT("CompanionSelectionCarousel")))
+		];
+	}
+	CarouselRow->AddSlot().AutoWidth().VAlign(VAlign_Center)
+	[
+		FT66FlatStyle::MakeFlatButton(ET66FlatState::Default, FText::FromString(TEXT(">")), FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNextClicked), nullptr, nullptr, FMargin(6.f), 54.f, 54.f, AllCompanionIDs.Num() > 1, 24, CompanionSelectionTag(TEXT("CompanionSelection.Carousel.NextButton")))
+	];
+	AddSlot(576.f, 11.f, 710.f, 130.f,
+		FT66FlatStyle::MakeFlatTransparentRegion(ET66FlatState::Default, FMargin(10.f), CarouselRow, CompanionSelectionTag(TEXT("CompanionSelection.Carousel"))));
 
-			const float PlaceholderOpacity = bPartyEnabledSlot ? 0.55f : 0.28f;
-			const TSharedRef<SWidget> ProfileSlot =
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					SNew(SImage)
-					.Image(GetHeroSelectionPartySlotBrush())
-					.ColorAndOpacity(bOccupiedSlot ? FLinearColor::White : FLinearColor(0.08f, 0.09f, 0.10f, 1.0f))
+	AddSlot(576.f, 151.f, 710.f, 626.f,
+		FT66FlatStyle::AttachMetadata(
+			SNew(SOverlay)
+			+ SOverlay::Slot()[MakeCompanionSelectionColorRect(FLinearColor(0.03f, 0.035f, 0.05f, 0.20f), NAME_None, TEXT("PreviewFill"))]
+			+ SOverlay::Slot()[CreateCompanionPreviewWidget(PreviewColor)],
+			CompanionSelectionTag(TEXT("CompanionSelection.PreviewPanel")), TEXT("PreviewPanel"), ET66FlatState::Default));
+
+	AddSlot(1325.f, 11.f, 595.f, 756.f,
+		FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, FMargin(0.f), SNullWidget::NullWidget, nullptr, CompanionSelectionTag(TEXT("CompanionSelection.RightPanel"))));
+	AddSlot(1392.f, 51.f, 462.f, 46.f,
+		MakeTrackedLabel(CompanionNameWidget, CurrentCompanionName, 30, true, FT66FlatStyle::SelectedText(), CompanionSelectionTag(TEXT("CompanionSelection.CompanionName")), ETextJustify::Center));
+	AddSlot(1372.f, 118.f, 502.f, 118.f,
+		FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(10.f), MakeStaticLabel(NSLOCTEXT("T66.CompanionSelection", "PortraitStrip", "COMPANION PORTRAIT"), 16, true, FT66FlatStyle::SecondaryText(), CompanionSelectionTag(TEXT("CompanionSelection.PortraitLabel")), ETextJustify::Center), nullptr, CompanionSelectionTag(TEXT("CompanionSelection.PortraitPanel"))));
+	AddSlot(1372.f, 261.f, 502.f, 64.f,
+		FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(12.f),
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(0.4f).VAlign(VAlign_Center)[MakeStaticLabel(NSLOCTEXT("T66.CompanionSelection", "CompanionRecordRankLabel", "RANK"), 18, true, FT66FlatStyle::SecondaryText(), CompanionSelectionTag(TEXT("CompanionSelection.RankLabel")))]
+			+ SHorizontalBox::Slot().FillWidth(0.6f).VAlign(VAlign_Center)[MakeTrackedLabel(CompanionRecordRankWidget, NSLOCTEXT("T66.CompanionSelection", "CompanionRecordRankDefault", "..."), 18, true, FT66FlatStyle::PrimaryText(), CompanionSelectionTag(TEXT("CompanionSelection.RankValue")), ETextJustify::Right)],
+			nullptr,
+			CompanionSelectionTag(TEXT("CompanionSelection.RankRow"))));
+	AddSlot(1372.f, 343.f, 502.f, 96.f,
+		SAssignNew(CompanionUnionBox, SBox)
+		[
+			FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Ready, FMargin(12.f),
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(0.45f).VAlign(VAlign_Center)[MakeStaticLabel(NSLOCTEXT("T66.CompanionSelection", "CompanionUnityLabel", "UNITY"), 18, true, FT66FlatStyle::SecondaryText(), CompanionSelectionTag(TEXT("CompanionSelection.UnityLabel")))]
+					+ SHorizontalBox::Slot().FillWidth(0.55f).VAlign(VAlign_Center)[MakeTrackedLabel(CompanionUnionText, NSLOCTEXT("T66.CompanionSelection", "UnityStagesDefault", "0 / 50"), 16, true, FT66FlatStyle::PrimaryText(), CompanionSelectionTag(TEXT("CompanionSelection.UnityValue")), ETextJustify::Right)]
 				]
-				+ SOverlay::Slot()
-				.Padding(FMargin(9.f))
-				[
-					AvatarTexture
-					? StaticCastSharedRef<SWidget>(SNew(SScaleBox).Stretch(EStretch::ScaleToFit)[SAssignNew(PartyAvatarImageWidgets[SlotIndex], SImage).Image(PartyAvatarBrushes[SlotIndex].Get())])
-					: StaticCastSharedRef<SWidget>(
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Top)
-						.Padding(0.f, 10.f, 0.f, 0.f)
-						[
-							SNew(SBox).WidthOverride(12.f).HeightOverride(12.f)
-							[
-								SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0.20f, 0.22f, 0.24f, PlaceholderOpacity))
-							]
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Bottom)
-						.Padding(0.f, 0.f, 0.f, 10.f)
-						[
-							SNew(SBox).WidthOverride(20.f).HeightOverride(14.f)
-							[
-								SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0.20f, 0.22f, 0.24f, PlaceholderOpacity))
-							]
-						])
-				];
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)[FT66FlatStyle::MakeFlatProgressBar(TAttribute<float>::CreateLambda([this]() { return FMath::Clamp(CompanionUnionProgress01, 0.f, 1.f); }), TOptional<FLinearColor>(FT66FlatStyle::GoodStandingGreen()), CompanionSelectionTag(TEXT("CompanionSelection.UnityProgress")))],
+				nullptr,
+				CompanionSelectionTag(TEXT("CompanionSelection.UnityRow")) )
+		]);
+	AddSlot(1372.f, 458.f, 502.f, 46.f,
+		FT66FlatStyle::MakeFlatButton(ET66FlatState::Default, LoreText, FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleLoreClicked), nullptr, nullptr, FMargin(12.f, 5.f), 0.f, 0.f, true, 18, CompanionSelectionTag(TEXT("CompanionSelection.LoreHeader"))));
+	AddSlot(1372.f, 514.f, 502.f, 132.f,
+		FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(12.f), MakeTrackedLabel(CompanionLoreWidget, CurrentCompanionLore, 16, false, FT66FlatStyle::SecondaryText(), CompanionSelectionTag(TEXT("CompanionSelection.LoreText")), ETextJustify::Left, 478.f), nullptr, CompanionSelectionTag(TEXT("CompanionSelection.LorePanel"))));
+	AddSlot(1372.f, 664.f, 502.f, 70.f,
+		FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(12.f), MakeTrackedLabel(CompanionUnionHealingText, FormatCompanionPassiveHealText(SelectedDifficulty), 15, false, FT66FlatStyle::PrimaryText(), CompanionSelectionTag(TEXT("CompanionSelection.PassiveText")), ETextJustify::Left, 478.f), nullptr, CompanionSelectionTag(TEXT("CompanionSelection.PassivePanel"))));
 
-			const TSharedRef<SWidget> HeroSlot =
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(bOccupiedSlot ? HeroSelectionChromeAccent(0.95f) : HeroSelectionChromeAccentInactive(0.75f))
-				.Padding(1.f)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(HeroSelectionChromeInnerFill())
-					.Padding(3.f)
-					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SScaleBox)
-							.Stretch(EStretch::ScaleToFit)
-							[
-								SAssignNew(PartyHeroPortraitImageWidgets[SlotIndex], SImage)
-								.Image(PartyHeroPortraitBrushes[SlotIndex].Get())
-								.Visibility(SlotHeroID.IsNone() ? EVisibility::Collapsed : EVisibility::Visible)
-							]
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						[
-							SNew(STextBlock)
-							.Visibility(SlotHeroID.IsNone() ? EVisibility::Visible : EVisibility::Collapsed)
-							.Text(bOccupiedSlot ? NSLOCTEXT("T66.CompanionSelection", "PartyHeroUnknown", "?") : NSLOCTEXT("T66.CompanionSelection", "PartyHeroEmpty", "+"))
-							.Font(FT66Style::Tokens::FontBold(20))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-						]
-					]
-				];
+	TSharedRef<SHorizontalBox> PartyRow = SNew(SHorizontalBox);
+	for (int32 SlotIdx = 0; SlotIdx < 4; ++SlotIdx)
+	{
+		PartyRow->AddSlot().FillWidth(1.f).Padding(SlotIdx > 0 ? FMargin(8.f, 0.f, 0.f, 0.f) : FMargin(0.f))
+		[
+			FT66FlatStyle::MakeFlatSubPanel(
+				SlotIdx == 0 ? ET66FlatState::Ready : ET66FlatState::Default,
+				FMargin(6.f),
+				MakeStaticLabel(FText::Format(NSLOCTEXT("T66.CompanionSelection", "PartySlotFormat", "P{0}"), FText::AsNumber(SlotIdx + 1)), 18, true, SlotIdx == 0 ? FT66FlatStyle::GoodStandingGreen() : FT66FlatStyle::SecondaryText(), CompanionSelectionIndexedTag(TEXT("CompanionSelection.PartySlotLabel"), SlotIdx), ETextJustify::Center),
+				nullptr,
+				CompanionSelectionIndexedTag(TEXT("CompanionSelection.PartySlot"), SlotIdx))
+		];
+	}
+	AddSlot(0.f, 799.f, 672.f, 216.f,
+		FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, FMargin(18.f), PartyRow, nullptr, CompanionSelectionTag(TEXT("CompanionSelection.PartyPanel"))));
+	AddSlot(710.f, 799.f, 499.f, 216.f,
+		FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, FMargin(26.f),
+			FT66FlatStyle::MakeFlatButton(
+				ET66FlatState::Selected,
+				ConfirmText,
+				FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked),
+				nullptr,
+				nullptr,
+				FMargin(20.f, 12.f),
+				0.f,
+				126.f,
+				TAttribute<bool>::CreateLambda([this]() { return !PreviewedCompanionID.IsNone() && IsCompanionUnlocked(PreviewedCompanionID); }),
+				24,
+				CompanionSelectionTag(TEXT("CompanionSelection.ConfirmButton"))),
+			nullptr,
+			CompanionSelectionTag(TEXT("CompanionSelection.ConfirmPanel"))));
 
-			PartySlots->AddSlot()
-				.AutoWidth()
-				.Padding(SlotIndex > 0 ? FMargin(PartyMemberGap, 0.f, 0.f, 0.f) : FMargin(0.f))
-				[
-					SNew(SBox)
-					.WidthOverride(PartyMemberWidth)
-					.HeightOverride(PartyMemberHeight)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight()[MakeReadyBanner(bOccupiedSlot && (bTreatPartyAsReadyByDefault || PartyMember->bReady), bOccupiedSlot)]
-							+ SVerticalBox::Slot().AutoHeight()
-							[
-								SNew(SBox).WidthOverride(PartyProfileSize.X).HeightOverride(PartyProfileSize.Y)[ProfileSlot]
-							]
-						]
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.VAlign(VAlign_Bottom)
-						[
-							SNew(SBox).WidthOverride(PartyHeroSize.X).HeightOverride(PartyHeroSize.Y)[HeroSlot]
-						]
-					]
-				];
-		}
-
-		return SNew(SBox)
-			.WidthOverride(PartyFooterWidth)
-			.HeightOverride(FooterPanelMinHeight)
-			.Clipping(EWidgetClipping::ClipToBounds)
+	TSharedRef<SHorizontalBox> RunControls = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+		[
+			SNew(SBox).WidthOverride(230.f).HeightOverride(70.f).IsEnabled(bCanEditDifficulty)
 			[
-				MakeHeroSelectionContentShell(
-					SNew(SBox)
-					.WidthOverride(FMath::Max(1.f, PartyFooterWidth - 20.f))
-					.HeightOverride(FMath::Max(1.f, FooterPanelMinHeight - 20.f))
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Fill)
-					.Clipping(EWidgetClipping::ClipToBounds)
-					[
-						SNew(SScaleBox)
-						.Stretch(EStretch::ScaleToFitX)
-						.StretchDirection(EStretchDirection::DownOnly)
-						[
-							PartySlots
-						]
-					],
-					FMargin(10.f + OuterPanelBleed, 10.f, 10.f, 10.f))
-			];
-	};
+				FT66FlatStyle::MakeFlatDropdown(
+					ET66FlatState::Selected,
+					TAttribute<FText>::CreateLambda([this, Loc]()
+					{
+						return CurrentDifficultyOption.IsValid()
+							? FText::FromString(*CurrentDifficultyOption)
+							: (Loc ? Loc->GetText_Easy() : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"));
+					}),
+					[this]()
+					{
+						TSharedRef<SVerticalBox> OptionsBox = SNew(SVerticalBox);
+						for (const TSharedPtr<FString>& Opt : DifficultyOptions)
+						{
+							if (!Opt.IsValid())
+							{
+								continue;
+							}
+							TSharedPtr<FString> Captured = Opt;
+							OptionsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+							[
+								FT66FlatStyle::MakeFlatButton(
+									CurrentDifficultyOption.IsValid() && *CurrentDifficultyOption == *Opt ? ET66FlatState::Selected : ET66FlatState::Default,
+									FText::FromString(*Opt),
+									FOnClicked::CreateLambda([this, Captured]()
+									{
+										OnDifficultyChanged(Captured, ESelectInfo::Direct);
+										FSlateApplication::Get().DismissAllMenus();
+										return FReply::Handled();
+									}),
+									nullptr,
+									nullptr,
+									FMargin(10.f, 6.f),
+									210.f,
+									42.f,
+									true,
+									16,
+									NAME_None)
+							];
+						}
+						return OptionsBox;
+					},
+					true,
+					230.f,
+					70.f,
+					18,
+					CompanionSelectionTag(TEXT("CompanionSelection.DifficultyDropdown")))
+			]
+		]
+		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+		[
+			SNew(SBox).WidthOverride(170.f).HeightOverride(70.f).IsEnabled(bCanStartPartyRun)
+			[
+				FT66FlatStyle::MakeFlatButton(bCanStartPartyRun ? ET66FlatState::Selected : ET66FlatState::Disabled, PrimaryActionText, FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleEnterClicked), nullptr, nullptr, FMargin(12.f, 8.f), 170.f, 70.f, bCanStartPartyRun, 22, CompanionSelectionTag(TEXT("CompanionSelection.EnterButton")))
+			]
+		]
+		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+		[
+			FT66FlatStyle::MakeFlatButton(ET66FlatState::Default, NSLOCTEXT("T66.CompanionSelection", "ChallengesButtonText", "CHALLENGES"), FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleChallengesClicked), nullptr, nullptr, FMargin(10.f, 8.f), 112.f, 70.f, true, 15, CompanionSelectionTag(TEXT("CompanionSelection.ChallengesButton")) )
+		]
+		+ SHorizontalBox::Slot().AutoWidth()
+		[
+			FT66FlatStyle::MakeFlatButton(ET66FlatState::Default, NSLOCTEXT("T66.CompanionSelection", "ModsButtonText", "MODS"), FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleModsClicked), nullptr, nullptr, FMargin(10.f, 8.f), 88.f, 70.f, true, 15, CompanionSelectionTag(TEXT("CompanionSelection.ModsButton")) )
+		];
+	AddSlot(1248.f, 799.f, 653.f, 216.f,
+		FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, FMargin(26.f, 72.f, 26.f, 26.f), RunControls, nullptr, CompanionSelectionTag(TEXT("CompanionSelection.RunPanel"))));
 
-	const TSharedRef<SWidget> ConfirmFooterPanel =
-		SNew(SBox)
-		.WidthOverride(CompanionFooterWidth)
-		.HeightOverride(FooterPanelMinHeight)
+	const TSharedRef<SWidget> RootContent = SNew(SBox)
+		.WidthOverride(1920.f)
+		.HeightOverride(1080.f)
+		[
+			Canvas
+		];
+
+	TSharedRef<SWidget> Root = FT66FlatStyle::AttachMetadata(
+		SNew(SOverlay)
+		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
-		.Clipping(EWidgetClipping::ClipToBounds)
 		[
-			MakeHeroSelectionContentShell(
-				SNew(SBox)
-				.WidthOverride(FMath::Max(1.f, CompanionFooterContentWidth))
-				.HeightOverride(FMath::Max(1.f, FooterPanelMinHeight - 24.f))
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Center)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					MakeHeroSelectionButton(
-						FT66ButtonParams(
-							ConfirmText,
-							FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked),
-							ET66ButtonType::Primary)
-						.SetMinWidth(CompanionFooterContentWidth)
-						.SetHeight(126.f)
-						.SetFontSize(PrimaryCtaFontSize)
-						.SetPadding(FMargin(12.f, 12.f))
-						.SetEnabled(TAttribute<bool>::CreateLambda([this]() -> bool
-						{
-							return !PreviewedCompanionID.IsNone() && IsCompanionUnlocked(PreviewedCompanionID);
-						})))
-				],
-				FMargin(12.f))
-		];
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::Both)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				RootContent
+			]
+		],
+		CompanionSelectionTag(TEXT("CompanionSelection.Root")),
+		TEXT("Root"),
+		ET66FlatState::Default);
 
-	auto MakeRunControls = [this, bUsePartyReadyFlow, bIsLocalPartyHost, bCanEditDifficulty, bCanStartPartyRun, PrimaryActionText, PrimaryCtaFontSize, DifficultyMenuFontSize, SecondaryButtonFontSize, FooterActionHeight, Loc, RunFooterContentWidth, FooterPanelMinHeight]() -> TSharedRef<SWidget>
-	{
-		auto WrapRunControls = [RunFooterContentWidth, FooterPanelMinHeight](const TSharedRef<SWidget>& Content) -> TSharedRef<SWidget>
-		{
-			return SNew(SBox)
-				.HeightOverride(FooterPanelMinHeight)
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Fill)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				[
-					MakeHeroSelectionContentShell(
-						SNew(SBox)
-						.WidthOverride(FMath::Max(1.f, RunFooterContentWidth))
-						.HeightOverride(FMath::Max(1.f, FooterPanelMinHeight - 24.f))
-						.HAlign(HAlign_Fill)
-						.VAlign(VAlign_Center)
-						.Clipping(EWidgetClipping::ClipToBounds)
-						[
-							SNew(SScaleBox)
-							.Stretch(EStretch::ScaleToFitX)
-							.StretchDirection(EStretchDirection::DownOnly)
-							[
-								Content
-							]
-						],
-						FMargin(12.f))
-				];
-		};
-		auto MakeCommunityContentButtons = [this, FooterActionHeight, SecondaryButtonFontSize]() -> TSharedRef<SWidget>
-		{
-			const float TextButtonWidth = 108.f;
-			const float ButtonGap = 8.f;
-			const int32 TextFontSize = FMath::Max(SecondaryButtonFontSize - 5, 12);
-			return SNew(SBox)
-				.WidthOverride((TextButtonWidth * 2.f) + ButtonGap)
-				.HeightOverride(FooterActionHeight)
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot()
-					.FillWidth(1.f)
-					[
-						MakeHeroSelectionButton(
-							FT66ButtonParams(
-								NSLOCTEXT("T66.CompanionSelection", "ChallengesButtonText", "CHALLENGES"),
-								FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleChallengesClicked),
-								ET66ButtonType::Neutral)
-							.SetMinWidth(TextButtonWidth)
-							.SetHeight(FooterActionHeight)
-							.SetPadding(FMargin(4.f, 8.f))
-							.SetFontSize(TextFontSize))
-					]
-					+ SHorizontalBox::Slot()
-					.FillWidth(1.f)
-					.Padding(ButtonGap, 0.f, 0.f, 0.f)
-					[
-						MakeHeroSelectionButton(
-							FT66ButtonParams(
-								NSLOCTEXT("T66.CompanionSelection", "ModsButtonText", "MODS"),
-								FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleModsClicked),
-								ET66ButtonType::Neutral)
-							.SetMinWidth(TextButtonWidth)
-							.SetHeight(FooterActionHeight)
-							.SetPadding(FMargin(4.f, 8.f))
-							.SetFontSize(TextFontSize))
-					]
-				];
-		};
-
-		if (bUsePartyReadyFlow && !bIsLocalPartyHost)
-		{
-			return WrapRunControls(
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				[
-					MakeHeroSelectionButton(
-						FT66ButtonParams(
-							PrimaryActionText,
-							FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleEnterClicked),
-							ET66ButtonType::Primary)
-						.SetMinWidth(0.f)
-						.SetHeight(FooterActionHeight)
-						.SetPadding(FMargin(12.f, 8.f))
-						.SetFontSize(PrimaryCtaFontSize))
-				]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)[MakeCommunityContentButtons()]);
-		}
-
-		return WrapRunControls(
-			SNew(SHorizontalBox)
-			.Clipping(EWidgetClipping::ClipToBounds)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Fill)
-			.Padding(0.0f, 0.0f, 8.0f, 0.0f)
-			[
-				SNew(SBox)
-				.WidthOverride(230.f)
-				.HeightOverride(FooterActionHeight)
-				.IsEnabled(bCanEditDifficulty)
-				[
-					MakeHeroSelectionDropdown(
-						FT66DropdownParams(
-							SAssignNew(DifficultyDropdownText, STextBlock)
-							.Text(CurrentDifficultyOption.IsValid()
-								? FText::FromString(*CurrentDifficultyOption)
-								: (Loc ? Loc->GetText_Easy() : NSLOCTEXT("T66.Difficulty", "Easy", "Easy")))
-							.Font(FT66Style::Tokens::FontBold(DifficultyMenuFontSize))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-							.Justification(ETextJustify::Center)
-							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-							.Clipping(EWidgetClipping::ClipToBounds),
-							[this, FooterActionHeight, DifficultyMenuFontSize]()
-							{
-								TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
-								for (const TSharedPtr<FString>& Opt : DifficultyOptions)
-								{
-									if (!Opt.IsValid())
-									{
-										continue;
-									}
-									TSharedPtr<FString> Captured = Opt;
-									Box->AddSlot().AutoHeight()
-									[
-										FT66Style::MakeDropdownOptionButton(
-											FText::FromString(*Opt),
-											FOnClicked::CreateLambda([this, Captured]()
-											{
-												OnDifficultyChanged(Captured, ESelectInfo::Direct);
-												FSlateApplication::Get().DismissAllMenus();
-												return FReply::Handled();
-											}),
-											CurrentDifficultyOption.IsValid() && *CurrentDifficultyOption == *Opt,
-											0.f,
-											FooterActionHeight,
-											DifficultyMenuFontSize,
-											FMargin(10.f, 8.f, 10.f, 6.f))
-									];
-								}
-								return Box;
-							})
-						.SetMinWidth(230.f)
-						.SetHeight(FooterActionHeight)
-						.SetPadding(FMargin(10.f, 8.f)))
-				]
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Fill)
-			[
-				SNew(SBox)
-				.WidthOverride(250.f)
-				.HeightOverride(FooterActionHeight)
-				.IsEnabled(bCanStartPartyRun)
-				[
-					MakeHeroSelectionSpriteButton(
-						FT66ButtonParams(
-							PrimaryActionText,
-							FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleEnterClicked),
-							bCanStartPartyRun ? ET66ButtonType::Primary : ET66ButtonType::Neutral)
-						.SetMinWidth(250.f)
-						.SetHeight(FooterActionHeight)
-						.SetPadding(FMargin(12.f, 8.f))
-						.SetFontSize(PrimaryCtaFontSize),
-						TAttribute<ET66HeroSpriteFamily>(bCanStartPartyRun ? ET66HeroSpriteFamily::ToggleOn : ET66HeroSpriteFamily::CompactNeutral))
-				]
-			]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)[MakeCommunityContentButtons()]);
-	};
-
-	const TSharedRef<SWidget> LeftFooterPanel =
-		SNew(SBox)
-		.WidthOverride(PartyFooterWidth)
-		.HeightOverride(FooterPanelMinHeight)
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Center)
-		.Clipping(EWidgetClipping::ClipToBounds)
-		[
-			MakePartyBox()
-		];
-
-	const TSharedRef<SWidget> RightFooterPanel =
-		SNew(SBox)
-		.WidthOverride(RunFooterWidth)
-		.HeightOverride(FooterPanelMinHeight)
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Center)
-		.Clipping(EWidgetClipping::ClipToBounds)
-		[
-			MakeRunControls()
-		];
-
-	const TSharedRef<SWidget> CenterColumnWidget =
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		[
-			TopBarWidget
-		]
-		+ SVerticalBox::Slot()
-		.FillHeight(1.0f)
-		[
-			PreviewWidget
-		];
-
-	const TSharedRef<SWidget> ReferenceCanvas = SNew(SBox)
-		.WidthOverride(ReferenceLayoutWidth)
-		.HeightOverride(ReferenceLayoutHeight)
-		[
-			SNew(SConstraintCanvas)
-			+ SConstraintCanvas::Slot()
-			.Offset(FMargin(-OuterPanelBleed, UpperPanelY - OuterPanelBleed, LeftPanelWidth + OuterPanelBleed, UpperSidePanelHeight + OuterPanelBleed))
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			[
-				LeftPanelWidget
-			]
-			+ SConstraintCanvas::Slot()
-			.Offset(FMargin(CenterPanelX, UpperPanelY, CenterPreviewWidth, UpperSidePanelHeight))
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			[
-				CenterColumnWidget
-			]
-			+ SConstraintCanvas::Slot()
-			.Offset(FMargin(ReferenceLayoutWidth - RightPanelWidth, UpperPanelY - OuterPanelBleed, RightPanelWidth + OuterPanelBleed, UpperSidePanelHeight + OuterPanelBleed))
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			[
-				RightPanelWidget
-			]
-			+ SConstraintCanvas::Slot()
-			.Offset(FMargin(-OuterPanelBleed, FooterPanelY, PartyFooterWidth + OuterPanelBleed, FooterPanelMinHeight + OuterPanelBleed))
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			[
-				LeftFooterPanel
-			]
-			+ SConstraintCanvas::Slot()
-			.Offset(FMargin(CompanionFooterX, FooterPanelY, CompanionFooterWidth, FooterPanelMinHeight + OuterPanelBleed))
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			[
-				ConfirmFooterPanel
-			]
-			+ SConstraintCanvas::Slot()
-			.Offset(FMargin(RunFooterX, FooterPanelY, RunFooterWidth + OuterPanelBleed, FooterPanelMinHeight + OuterPanelBleed))
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D::ZeroVector)
-			[
-				RightFooterPanel
-			]
-		];
-
-	const TSharedRef<SWidget> Root = SNew(SBox)
-		.WidthOverride(LayoutViewportSize.X)
-		.HeightOverride(LayoutViewportSize.Y)
-		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()[MakePreviewFocusMask()]
-			+ SOverlay::Slot()[MakeWorldScrim()]
-			+ SOverlay::Slot()
-			[
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				.StretchDirection(EStretchDirection::Both)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					ReferenceCanvas
-				]
-			]
-		];
-	if (const FSlateBrush* SceneBackgroundBrush = GetCompanionSceneBackgroundBrush())
-	{
-		return SNew(SOverlay)
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			[
-				SNew(SImage)
-				.Image(SceneBackgroundBrush)
-				.ColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
-			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.02f, 0.025f, 0.035f, 0.08f))
-			]
-			+ SOverlay::Slot()
-			[
-				Root
-			];
-	}
+	UpdateCompanionDisplay();
 	return Root;
 }
 FReply UT66CompanionSelectionScreen::HandlePrevClicked() { PreviewPreviousCompanion(); return FReply::Handled(); }
@@ -2418,7 +1123,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::CreateCompanionPreviewWidget(c
 	}
 	return SAssignNew(CompanionPreviewColorBox, SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::IsDotaTheme() ? FLinearColor::Transparent : FallbackColor)
+		.BorderBackgroundColor(FallbackColor)
 		[
 			SNew(SBox)
 		];
@@ -2451,26 +1156,19 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 	}
 	else if (CompanionPreviewColorBox.IsValid())
 	{
-		if (FT66Style::IsDotaTheme())
+		FCompanionData Data;
+		if (GetPreviewedCompanionData(Data))
 		{
-			CompanionPreviewColorBox->SetBorderBackgroundColor(FLinearColor::Transparent);
+			CompanionPreviewColorBox->SetBorderBackgroundColor(Data.PlaceholderColor);
 		}
 		else
 		{
-			FCompanionData Data;
-			if (GetPreviewedCompanionData(Data))
-			{
-				CompanionPreviewColorBox->SetBorderBackgroundColor(Data.PlaceholderColor);
-			}
-			else
-			{
-				CompanionPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.3f, 0.3f, 0.4f, 1.0f));
-			}
+			CompanionPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.3f, 0.3f, 0.4f, 1.0f));
+		}
 
-			if (!PreviewedCompanionID.IsNone() && !IsCompanionUnlocked(PreviewedCompanionID))
-			{
-				CompanionPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.02f, 1.0f));
-			}
+		if (!PreviewedCompanionID.IsNone() && !IsCompanionUnlocked(PreviewedCompanionID))
+		{
+			CompanionPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.02f, 1.0f));
 		}
 	}
 

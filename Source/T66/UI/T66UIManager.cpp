@@ -2,7 +2,6 @@
 
 #include "UI/T66UIManager.h"
 #include "Core/T66LagTrackerSubsystem.h"
-#include "UI/T66FrontendBackButtonWidget.h"
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/T66FrontendTopBarWidget.h"
 #include "UI/T66ScreenBase.h"
@@ -32,7 +31,6 @@ UT66UIManager::UT66UIManager()
 	CurrentScreen = nullptr;
 	CurrentModal = nullptr;
 	FrontendTopBar = nullptr;
-	FrontendBackButton = nullptr;
 	RetroFXPreviewPopup = nullptr;
 }
 
@@ -46,11 +44,6 @@ void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
 		FrontendTopBar->RemoveFromParent();
 	}
 	FrontendTopBar = nullptr;
-	if (FrontendBackButton && FrontendBackButton->IsInViewport())
-	{
-		FrontendBackButton->RemoveFromParent();
-	}
-	FrontendBackButton = nullptr;
 	if (RetroFXPreviewPopup && RetroFXPreviewPopup->IsInViewport())
 	{
 		RetroFXPreviewPopup->RemoveFromParent();
@@ -119,7 +112,6 @@ bool UT66UIManager::SwitchToScreen(ET66ScreenType ScreenType, const bool bAddCur
 	{
 		CurrentScreen->RefreshScreen();
 		UpdateFrontendTopBar();
-		UpdateFrontendBackButton();
 		return true;
 	}
 
@@ -163,7 +155,6 @@ bool UT66UIManager::SwitchToScreen(ET66ScreenType ScreenType, const bool bAddCur
 	CurrentScreen->AddToViewport(0);
 	CurrentScreen->OnScreenActivated();
 	UpdateFrontendTopBar();
-	UpdateFrontendBackButton();
 
 	OnScreenChanged.Broadcast(OldScreenType, ScreenType);
 	return true;
@@ -240,7 +231,6 @@ void UT66UIManager::ShowModal(ET66ScreenType ModalType)
 		CurrentModal->AddToViewport(100); // Higher Z-order than main screen
 		CurrentModal->OnScreenActivated();
 		UpdateFrontendTopBar();
-		UpdateFrontendBackButton();
 	}
 }
 
@@ -268,7 +258,6 @@ void UT66UIManager::CloseModal()
 		}
 
 		UpdateFrontendTopBar();
-		UpdateFrontendBackButton();
 	}
 }
 
@@ -317,11 +306,6 @@ void UT66UIManager::RebuildAllVisibleUI()
 	if (FrontendTopBar && FrontendTopBar->IsInViewport())
 	{
 		FT66Style::DeferRebuild(FrontendTopBar, 50);
-	}
-
-	if (FrontendBackButton && FrontendBackButton->IsInViewport())
-	{
-		FT66Style::DeferRebuild(FrontendBackButton, 40);
 	}
 
 	if (RetroFXPreviewPopup && RetroFXPreviewPopup->IsInViewport())
@@ -402,7 +386,6 @@ void UT66UIManager::HideAllUI()
 	ET66ScreenType OldScreenType = CurrentScreenType;
 	CurrentScreenType = ET66ScreenType::None;
 	UpdateFrontendTopBar();
-	UpdateFrontendBackButton();
 
 	OnScreenChanged.Broadcast(OldScreenType, ET66ScreenType::None);
 }
@@ -412,6 +395,11 @@ bool UT66UIManager::IsFrontendTopBarVisible() const
 	return FrontendTopBar
 		&& FrontendTopBar->IsInViewport()
 		&& FrontendTopBar->GetCachedWidget().IsValid();
+}
+
+UT66ScreenBase* UT66UIManager::GetFrontendTopBarScreen() const
+{
+	return FrontendTopBar;
 }
 
 float UT66UIManager::GetFrontendTopBarReservedHeight() const
@@ -459,29 +447,6 @@ bool UT66UIManager::ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const
 	}
 }
 
-bool UT66UIManager::ShouldShowFrontendBackButton() const
-{
-	switch (CurrentScreenType)
-	{
-	case ET66ScreenType::Settings:
-	case ET66ScreenType::LanguageSelect:
-	case ET66ScreenType::AccountStatus:
-	case ET66ScreenType::PowerUp:
-	case ET66ScreenType::Achievements:
-	case ET66ScreenType::Minigames:
-	case ET66ScreenType::Challenges:
-	case ET66ScreenType::DailyDescent:
-		return false;
-	default:
-		break;
-	}
-
-	return !CurrentModal
-		&& CurrentScreenType != ET66ScreenType::None
-		&& CurrentScreenType != ET66ScreenType::MainMenu
-		&& ShouldShowFrontendTopBar(CurrentScreenType);
-}
-
 void UT66UIManager::UpdateFrontendTopBar()
 {
 	const bool bShouldShow = ShouldShowFrontendTopBar(CurrentScreenType);
@@ -527,42 +492,6 @@ void UT66UIManager::UpdateFrontendTopBar()
 		FrontendTopBar->AddToViewport(50);
 	}
 
+	FrontendTopBar->SetActiveSection(UT66FrontendTopBarWidget::ResolveFrontendSectionForScreen(CurrentScreenType));
 	FrontendTopBar->RefreshScreen();
-}
-
-void UT66UIManager::UpdateFrontendBackButton()
-{
-	const bool bShouldShow = ShouldShowFrontendBackButton();
-	if (!bShouldShow)
-	{
-		if (FrontendBackButton && FrontendBackButton->IsInViewport())
-		{
-			FrontendBackButton->RemoveFromParent();
-		}
-		return;
-	}
-
-	if (!OwningPlayer)
-	{
-		return;
-	}
-
-	if (!FrontendBackButton)
-	{
-		FrontendBackButton = CreateWidget<UT66FrontendBackButtonWidget>(OwningPlayer, UT66FrontendBackButtonWidget::StaticClass());
-		if (!FrontendBackButton)
-		{
-			return;
-		}
-
-		FrontendBackButton->UIManager = this;
-	}
-
-	FrontendBackButton->UIManager = this;
-	if (!FrontendBackButton->IsInViewport())
-	{
-		FrontendBackButton->AddToViewport(40);
-	}
-
-	FrontendBackButton->RefreshScreen();
 }

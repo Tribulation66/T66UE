@@ -91,6 +91,9 @@ struct T66_API FT66RetroFXSettings
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Characters")
 	float CharacterPixelationPercent = 0.0f;
 
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Characters")
+	bool bEnableCharacterOutline = true;
+
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI")
 	float UIChromeTreatmentPercent = 0.0f;
 

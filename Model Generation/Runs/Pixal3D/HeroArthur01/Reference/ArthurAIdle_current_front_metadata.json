@@ -1,0 +1,25 @@
+{
+  "input": "C:\\UE\\T66\\SourceAssets\\Archive\\Import\\Heros\\_Canonicalized\\Exports\\ArthurAIdle.glb",
+  "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroArthur01\\Reference\\ArthurAIdle_current_front.png",
+  "export": null,
+  "raw_triangles": 581995,
+  "triangles_before_decimate": 581995,
+  "triangles_after_decimate": 581995,
+  "bounds": {
+    "min": [
+      -1.11847984790802,
+      -0.9999999403953552,
+      -1.0
+    ],
+    "max": [
+      1.1184766292572021,
+      0.9999999403953552,
+      1.9999923706054688
+    ],
+    "size": [
+      2.2369565963745117,
+      1.9999998807907104,
+      2.9999923706054688
+    ]
+  }
+}

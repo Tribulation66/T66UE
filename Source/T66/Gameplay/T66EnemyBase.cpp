@@ -24,7 +24,6 @@
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
-#include "UI/T66EnemyHealthBarWidget.h"
 #include "UI/T66EnemyLockWidget.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/CapsuleComponent.h"
@@ -252,15 +251,6 @@ AT66EnemyBase::AT66EnemyBase()
 		VisualMesh->SetRelativeScale3D(FVector(0.85f, 0.85f, 0.85f));
 		FT66VisualUtil::ApplyT66Color(VisualMesh, this, FLinearColor(0.90f, 0.25f, 0.20f, 1.f)); // regular enemy default
 	}
-
-	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
-	HealthBarWidget->SetupAttachment(RootComponent);
-	HealthBarWidget->SetRelativeLocation(FVector(0.f, 0.f, 155.f));
-	HealthBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
-	HealthBarWidget->SetDrawAtDesiredSize(true);
-	// Height includes space for lock indicator above the bar.
-	HealthBarWidget->SetDrawSize(FVector2D(120.f, 28.f));
-	HealthBarWidget->SetWidgetClass(UT66EnemyHealthBarWidget::StaticClass());
 
 	LockIndicatorWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("LockIndicatorWidget"));
 	LockIndicatorWidget->SetupAttachment(RootComponent);
@@ -500,12 +490,6 @@ void AT66EnemyBase::BeginPlay()
 	CurrentHP = FMath::Clamp(CurrentHP, 1, MaxHP);
 	ResetFamilyState();
 
-	if (HealthBarWidget)
-	{
-		HealthBarWidget->InitWidget();
-		HealthBarWidget->SetHiddenInGame(true, true);
-		HealthBarWidget->SetVisibility(false, true);
-	}
 	if (LockIndicatorWidget)
 	{
 		LockIndicatorWidget->InitWidget();
@@ -676,7 +660,6 @@ void AT66EnemyBase::RebuildScaledCombatStats(const bool bResetCurrentHPToMax)
 		CurrentHP = 0;
 	}
 
-	UpdateHealthBar();
 }
 
 void AT66EnemyBase::ApplyStageScaling(int32 Stage)
@@ -812,7 +795,6 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	}
 
 	ResetFamilyState();
-	UpdateHealthBar();
 }
 
 void AT66EnemyBase::StartRiseFromGround(float TargetGroundZ)
@@ -1197,7 +1179,6 @@ bool AT66EnemyBase::ApplyResolvedDamage(int32 Damage, const bool bCreditHeroKill
 	}
 
 	CurrentHP = FMath::Max(0, CurrentHP - ReducedDamage);
-	UpdateHealthBar();
 	if (CurrentHP <= 0)
 	{
 		if (UWorld* World = GetWorld())
@@ -1391,15 +1372,6 @@ void AT66EnemyBase::ApplyPushAwayFrom(const FVector& PushOrigin, float Distance)
 	T66ApplyCharacterDisplacement(this, PushOrigin, Distance, false);
 }
 
-void AT66EnemyBase::UpdateHealthBar()
-{
-	if (!HealthBarWidget) return;
-	UT66EnemyHealthBarWidget* W = Cast<UT66EnemyHealthBarWidget>(HealthBarWidget->GetUserWidgetObject());
-	if (!W) return;
-	const float Pct = (MaxHP <= 0) ? 0.f : (static_cast<float>(FMath::Clamp(CurrentHP, 0, MaxHP)) / static_cast<float>(MaxHP));
-	W->SetHealthPercent(Pct);
-}
-
 void AT66EnemyBase::SetLockedIndicator(bool bLocked)
 {
 	if (LockIndicatorWidget)
@@ -1412,10 +1384,6 @@ void AT66EnemyBase::SetLockedIndicator(bool bLocked)
 		LockIndicatorWidget->SetVisibility(bLocked, true);
 	}
 
-	if (!HealthBarWidget) return;
-	UT66EnemyHealthBarWidget* W = Cast<UT66EnemyHealthBarWidget>(HealthBarWidget->GetUserWidgetObject());
-	if (!W) return;
-	W->SetLocked(bLocked);
 }
 
 void AT66EnemyBase::OnDeath()

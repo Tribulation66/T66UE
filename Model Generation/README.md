@@ -4,13 +4,14 @@ This folder is the durable home for T66 model-generation process docs, reusable 
 
 ## Start Here
 
-Read [Instructions/README.md](Instructions/README.md) first. It is the canonical instruction index for TRELLIS, Quad Retro, Blender processing, Unreal import, and cleanup policy.
+Read [Instructions/README.md](Instructions/README.md) first. It is the canonical instruction index for TRELLIS, Pixal3D, Quad Retro, Blender processing, Unreal import, and cleanup policy.
 
 ## Workspace Shape
 
 - `Instructions/`: current process docs only.
 - `Scripts/`: reusable core helpers, named batch drivers, and clearly marked legacy scripts.
 - `Tools/`: TRELLIS server files, Blender MCP helpers, and local tool launchers.
+- `Pixal3D/`: separate Pixal3D research pipeline, server, bootstrap, and smoke-test tooling.
 
 Generated runs, Blender scenes, archives, local access files, and preview outputs do not belong here long-term. Once an asset is imported, verified, or rejected, keep only the durable rule or summary in `Instructions/` or `Scripts/README.md`; delete the generated output folder.
 

@@ -1,0 +1,22 @@
+[
+  {
+    "variant": "D",
+    "started": "2026-05-12T18:41:28.7841715-03:00",
+    "ended": "2026-05-12T18:42:06.3899819-03:00",
+    "duration_seconds": 37.61,
+    "bytes": 1675192,
+    "remesh": 1,
+    "decimation": 30000,
+    "output": "Model Generation/Experiments/Pixal3D_Experiment2/Outputs/Variant_D.glb"
+  },
+  {
+    "variant": "E",
+    "started": "2026-05-12T18:42:15.4722544-03:00",
+    "ended": "2026-05-12T18:43:11.9952554-03:00",
+    "duration_seconds": 56.52,
+    "bytes": 1938112,
+    "remesh": 1,
+    "decimation": 30000,
+    "output": "Model Generation/Experiments/Pixal3D_Experiment2/Outputs/Variant_E.glb"
+  }
+]

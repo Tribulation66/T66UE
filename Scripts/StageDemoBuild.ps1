@@ -8,7 +8,8 @@ param(
 
     [switch]$SkipBuild,
     [switch]$SkipCook,
-    [switch]$SkipShortcutRefresh
+    [switch]$SkipShortcutRefresh,
+    [switch]$ResetSavedGames
 )
 
 $ErrorActionPreference = "Stop"
@@ -62,6 +63,7 @@ $StageArgs = @{
 }
 if ($SkipBuild) { $StageArgs.SkipBuild = $true }
 if ($SkipCook) { $StageArgs.SkipCook = $true }
+if ($ResetSavedGames) { $StageArgs.ResetSavedGames = $true }
 
 & $StageStandaloneScript @StageArgs
 if ($LASTEXITCODE -ne 0) {

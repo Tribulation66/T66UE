@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/T66FloatingCombatTextWidget.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
@@ -147,5 +148,14 @@ TSharedRef<SWidget> UT66FloatingCombatTextWidget::RebuildWidget()
 		.Font(FT66Style::Tokens::FontBold(CachedFontSize))
 		.ColorAndOpacity(FSlateColor(CachedColor));
 
-	return TextBlock.ToSharedRef();
+	return FT66FlatStyle::AttachMetadata(
+		TextBlock.ToSharedRef(),
+		TEXT("GameplayHUD.FloatingCombatText.Text"),
+		TEXT("GameplayStateText"),
+		ET66FlatState::Default,
+		TOptional<FLinearColor>(),
+		false,
+		NAME_None,
+		true,
+		false);
 }

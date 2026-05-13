@@ -17,6 +17,7 @@ if SCRIPT_DIR not in sys.path:
     sys.path.append(SCRIPT_DIR)
 
 import MakeGLBImportsUnlit
+import QuadRetroCharacterPipelineDefaults as CharacterDefaults
 
 # ======================================================================
 # IMPORT MANIFEST — edit this before each import run.
@@ -542,6 +543,29 @@ def _apply_texture_parameter_overrides(dest_dir, dest_name, texture_parameter_ov
     return applied
 
 
+def _apply_character_texture_defaults(dest_dir):
+    if not str(dest_dir).startswith("/Game/Characters/"):
+        return {"checked": 0, "updated": 0, "errors": []}
+    checked = 0
+    updated = 0
+    errors = []
+    for asset_path in unreal.EditorAssetLibrary.list_assets(dest_dir, recursive=True, include_folder=False) or []:
+        asset = unreal.EditorAssetLibrary.load_asset(asset_path)
+        if not asset or not isinstance(asset, unreal.Texture2D):
+            continue
+        checked += 1
+        try:
+            result = CharacterDefaults.apply_character_texture_defaults(asset)
+            if result.get("changed"):
+                updated += 1
+                CharacterDefaults.safe_save(asset, asset_path)
+        except Exception as exc:
+            errors.append({"asset": asset_path, "error": str(exc)})
+    if checked:
+        unreal.log(f"    [TEXTURE] Character defaults checked={checked} updated={updated} errors={len(errors)}")
+    return {"checked": checked, "updated": updated, "errors": errors}
+
+
 def _get_lod_build_settings_accessors():
     try:
         subsystem = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
@@ -692,6 +716,7 @@ def main():
                     _apply_material_overrides(dest_dir, dest_name, material_overrides)
                     _apply_texture_parameter_overrides(
                         dest_dir, dest_name, texture_parameter_overrides)
+                _apply_character_texture_defaults(dest_dir)
 
             success_count += 1
         except Exception as e:

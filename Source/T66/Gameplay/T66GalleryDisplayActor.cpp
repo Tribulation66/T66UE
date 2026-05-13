@@ -58,6 +58,29 @@ void AT66GalleryDisplayActor::ConfigureInteractionPromptTarget(const FText& InPr
 	RefreshInteractionPrompt();
 }
 
+UPrimitiveComponent* AT66GalleryDisplayActor::GetInteractionPromptPrimitive() const
+{
+	return PromptSphere;
+}
+
+bool AT66GalleryDisplayActor::Interact(APlayerController* PC)
+{
+	if (VisualID != FName(TEXT("Gambler")))
+	{
+		return false;
+	}
+
+	AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC);
+	if (!T66PC)
+	{
+		return false;
+	}
+
+	T66PC->OpenCasinoOverlay();
+	T66PC->SwitchCasinoOverlayToGambling();
+	return true;
+}
+
 void AT66GalleryDisplayActor::BeginPlay()
 {
 	Super::BeginPlay();

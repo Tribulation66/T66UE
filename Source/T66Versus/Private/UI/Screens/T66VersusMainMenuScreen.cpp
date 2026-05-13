@@ -5,9 +5,7 @@
 #include "Core/T66SessionSubsystem.h"
 #include "Styling/CoreStyle.h"
 #include "Engine/World.h"
-#include "UI/Screens/T66ScreenSlateHelpers.h"
-#include "UI/Style/T66RuntimeUIBrushAccess.h"
-#include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
 #include "Widgets/Layout/SBorder.h"
@@ -19,24 +17,26 @@
 namespace
 {
 	const FLinearColor VersusBackground(0.010f, 0.012f, 0.018f, 1.0f);
-	const FLinearColor VersusPanelInner(0.044f, 0.047f, 0.060f, 0.96f);
 	const FLinearColor VersusAccent(0.32f, 0.78f, 0.94f, 1.0f);
 	const FLinearColor VersusAccentWarm(0.98f, 0.64f, 0.30f, 1.0f);
 	const FLinearColor VersusText(0.94f, 0.93f, 0.88f, 1.0f);
 	const FLinearColor VersusMuted(0.66f, 0.68f, 0.72f, 1.0f);
 
-	const FSlateBrush* ResolveVersusChromeButtonBrush(const TCHAR* Family, const TCHAR* State)
+	FName MakeVersusTag(const TCHAR* Prefix, const FText& Label)
 	{
-		static TMap<FString, T66RuntimeUIBrushAccess::FOptionalTextureBrush> BrushEntries;
-
-		const FString SourcePath = T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(Family, State);
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			BrushEntries.FindOrAdd(SourcePath),
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(SourcePath),
-			FMargin(0.f),
-			*FString::Printf(TEXT("VersusChromeButton.%s.%s"), Family ? Family : TEXT("Pill"), State ? State : TEXT("normal")),
-			TextureFilter::TF_Nearest);
+		FString Token = Label.ToString().ToUpper();
+		for (int32 Index = Token.Len() - 1; Index >= 0; --Index)
+		{
+			if (!FChar::IsAlnum(Token[Index]))
+			{
+				Token.RemoveAt(Index, 1, EAllowShrinking::No);
+			}
+		}
+		if (Token.IsEmpty())
+		{
+			Token = TEXT("ACTION");
+		}
+		return FName(*(FString(Prefix) + TEXT(".") + Token));
 	}
 
 	FSlateFontInfo MakeVersusFont(const TCHAR* Weight, const int32 Size)
@@ -154,7 +154,8 @@ TSharedRef<SWidget> UT66VersusMainMenuScreen::BuildSlateUI()
 									NSLOCTEXT("T66Versus.MainMenu", "RulePartyBody", "The first wiring uses the existing duo lobby/session path so invite flow can be layered in next."))
 							],
 							FMargin(26.f, 24.f),
-							VersusAccentWarm)
+							VersusAccentWarm,
+							FName(TEXT("Versus.Panel.Format")))
 					]
 					+ SHorizontalBox::Slot().FillWidth(0.56f)
 					[
@@ -211,7 +212,8 @@ TSharedRef<SWidget> UT66VersusMainMenuScreen::BuildSlateUI()
 								]
 							],
 							FMargin(26.f, 24.f),
-							VersusAccent)
+							VersusAccent,
+							FName(TEXT("Versus.Panel.Setup")))
 					]
 				]
 			]
@@ -280,54 +282,37 @@ FText UT66VersusMainMenuScreen::GetStatusText() const
 	return StatusText;
 }
 
-TSharedRef<SWidget> UT66VersusMainMenuScreen::MakeVersusPanel(const TSharedRef<SWidget>& Content, const FMargin& ContentPadding, const FLinearColor& Accent) const
+TSharedRef<SWidget> UT66VersusMainMenuScreen::MakeVersusPanel(const TSharedRef<SWidget>& Content, const FMargin& ContentPadding, const FLinearColor& Accent, const FName Tag) const
 {
 	const FMargin ResolvedPadding(
 		ContentPadding.Left + 58.f,
 		ContentPadding.Top + 42.f,
 		ContentPadding.Right + 34.f,
 		ContentPadding.Bottom + 24.f);
-	return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
-		TEXT("Panels/Modal/modal_shell_medium.png"),
-		Content,
-		FMargin(0.075f, 0.105f, 0.075f, 0.105f),
-		ResolvedPadding,
-		TEXT("VersusMainMenuPanel"),
-		FLinearColor(
-			FMath::Lerp(VersusPanelInner.R, Accent.R, 0.16f),
-			FMath::Lerp(VersusPanelInner.G, Accent.G, 0.16f),
-			FMath::Lerp(VersusPanelInner.B, Accent.B, 0.16f),
-			VersusPanelInner.A));
+	const ET66FlatState PanelState = Accent.R > 0.90f ? ET66FlatState::Selected : ET66FlatState::Default;
+	return FT66FlatStyle::MakeFlatPanel(PanelState, ResolvedPadding, Content, nullptr, Tag);
 }
 
 TSharedRef<SWidget> UT66VersusMainMenuScreen::MakeVersusButton(const FText& Text, const FOnClicked& Handler, const ET66ButtonType Type, const bool bEnabled) const
 {
 	const bool bPrimary = Type == ET66ButtonType::Primary;
-	const TCHAR* ButtonFamily = bPrimary ? TEXT("CTA") : TEXT("Pill");
-	FSlateFontInfo ButtonFont = MakeVersusFont(TEXT("Bold"), 18);
-	const TSharedRef<SWidget> ButtonContent = SNew(STextBlock)
-		.Text(Text)
-		.Font(ButtonFont)
-		.ColorAndOpacity(bPrimary ? FLinearColor(1.0f, 0.98f, 0.88f, 1.0f) : VersusText)
-		.Justification(ETextJustify::Center)
-		.ShadowOffset(FVector2D(0.f, 1.f))
-		.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
-		.OverflowPolicy(ETextOverflowPolicy::Ellipsis);
+	const ET66FlatState State = !bEnabled ? ET66FlatState::Disabled : (bPrimary ? ET66FlatState::Selected : ET66FlatState::Default);
 
 	return SNew(SBox)
 		.HeightOverride(58.f)
 		[
-			T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+			FT66FlatStyle::MakeFlatButton(
+				State,
+				Text,
 				Handler,
-				ButtonContent,
-				ResolveVersusChromeButtonBrush(ButtonFamily, TEXT("normal")),
-				ResolveVersusChromeButtonBrush(ButtonFamily, TEXT("hover")),
-				ResolveVersusChromeButtonBrush(ButtonFamily, TEXT("pressed")),
-				ResolveVersusChromeButtonBrush(ButtonFamily, TEXT("disabled")),
+				nullptr,
+				nullptr,
+				FMargin(18.f, 10.f),
 				220.f,
 				58.f,
-				FMargin(18.f, 10.f),
-				TAttribute<bool>(bEnabled))
+				bEnabled,
+				18,
+				MakeVersusTag(TEXT("Versus.Button"), Text))
 		];
 }
 

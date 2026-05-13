@@ -1,0 +1,199 @@
+# UT66GamblerOverlayWidget Fidelity Checklist
+
+Reference geometry: `C:\UE\T66\UI\Geometry\ut66_gambler_overlay_widget_reference_geometry.md`
+Reference image: `C:\UE\T66\UI\Screen References\GAMBLER.png`
+Capture target: `T66.UI.DumpWidget Class=UT66CasinoOverlayWidget`
+
+## Structure
+
+- [ ] Widget.Class.UT66CasinoOverlayWidget.Root | exists=true
+- [ ] Widget.Class.UT66CasinoOverlayWidget.Root | type=SObjectWidget
+- [ ] CasinoOverlay.Root | exists=true
+- [ ] CasinoOverlay.Backdrop | exists=true
+- [ ] CasinoOverlay.ScorePanel | exists=true
+- [ ] CasinoOverlay.VendorTabButton | exists=true
+- [ ] CasinoOverlay.GamblingTabButton | exists=true
+- [ ] CasinoOverlay.CloseButton | exists=true
+- [ ] CasinoOverlay.StatusBar | exists=true
+- [ ] Gambler.Root | exists=true
+- [ ] Gambler.StatsPanel | exists=true
+- [ ] Gambler.GamesPanel | exists=true
+- [ ] Gambler.Mode.BuybackButton | exists=true
+- [ ] Gambler.Mode.GamesButton | exists=true
+- [ ] Gambler.Mode.RerollButton | exists=true
+- [ ] Gambler.GameCard.01.Panel | exists=true
+- [ ] Gambler.GameCard.02.Panel | exists=true
+- [ ] Gambler.GameCard.03.Panel | exists=true
+- [ ] Gambler.GameCard.04.Panel | exists=true
+- [ ] Gambler.GameCard.05.Panel | exists=true
+- [ ] Gambler.MoreGamesButton | exists=true
+- [ ] Gambler.RightPanel | exists=true
+- [ ] Gambler.PortraitPanel | exists=true
+- [ ] Gambler.BankPanel | exists=true
+- [ ] Gambler.InventoryPanel | exists=true
+- [ ] Gambler.InventorySlot.01 | exists=true
+- [ ] Gambler.SellPanel | exists=true
+- [ ] Gambler.SellButton | exists=true
+
+## Geometry
+
+- [ ] CasinoOverlay.ScorePanel | x=0.009 | 0.010
+- [ ] CasinoOverlay.ScorePanel | y=0.018 | 0.010
+- [ ] CasinoOverlay.ScorePanel | w=0.114 | 0.010
+- [ ] CasinoOverlay.ScorePanel | h=0.075 | 0.010
+- [ ] CasinoOverlay.VendorTabButton | x=0.194 | 0.010
+- [ ] CasinoOverlay.VendorTabButton | y=0.018 | 0.010
+- [ ] CasinoOverlay.VendorTabButton | w=0.270 | 0.010
+- [ ] CasinoOverlay.VendorTabButton | h=0.073 | 0.010
+- [ ] CasinoOverlay.GamblingTabButton | x=0.475 | 0.010
+- [ ] CasinoOverlay.GamblingTabButton | y=0.018 | 0.010
+- [ ] CasinoOverlay.GamblingTabButton | w=0.248 | 0.010
+- [ ] CasinoOverlay.GamblingTabButton | h=0.073 | 0.010
+- [ ] CasinoOverlay.CloseButton | x=0.864 | 0.010
+- [ ] CasinoOverlay.CloseButton | y=0.018 | 0.010
+- [ ] CasinoOverlay.CloseButton | w=0.136 | 0.010
+- [ ] CasinoOverlay.CloseButton | h=0.073 | 0.010
+- [ ] CasinoOverlay.StatusBar | x=0.008 | 0.010
+- [ ] CasinoOverlay.StatusBar | y=0.107 | 0.010
+- [ ] CasinoOverlay.StatusBar | w=0.991 | 0.010
+- [ ] CasinoOverlay.StatusBar | h=0.044 | 0.010
+- [ ] Gambler.StatsPanel | x=0.009 | 0.020
+- [ ] Gambler.StatsPanel | y=0.169 | 0.020
+- [ ] Gambler.StatsPanel | w=0.150 | 0.020
+- [ ] Gambler.StatsPanel | h=0.548 | 0.020
+- [ ] Gambler.GamesPanel | x=0.167 | 0.020
+- [ ] Gambler.GamesPanel | y=0.169 | 0.020
+- [ ] Gambler.GamesPanel | w=0.652 | 0.020
+- [ ] Gambler.GamesPanel | h=0.548 | 0.020
+- [ ] Gambler.Mode.BuybackButton | x=0.424 | 0.015
+- [ ] Gambler.Mode.GamesButton | x=0.480 | 0.015
+- [ ] Gambler.Mode.RerollButton | x=0.529 | 0.015
+- [ ] Gambler.GameCard.01.Panel | x=0.202 | 0.020
+- [ ] Gambler.GameCard.02.Panel | x=0.305 | 0.020
+- [ ] Gambler.GameCard.03.Panel | x=0.407 | 0.020
+- [ ] Gambler.GameCard.04.Panel | x=0.510 | 0.020
+- [ ] Gambler.GameCard.05.Panel | x=0.612 | 0.020
+- [ ] Gambler.GameCard.01.PlayButton | y=0.517 | 0.020
+- [ ] Gambler.GameCard.05.PlayButton | y=0.517 | 0.020
+- [ ] Gambler.MoreGamesButton | x=0.427 | 0.020
+- [ ] Gambler.MoreGamesButton | y=0.620 | 0.020
+- [ ] Gambler.RightPanel | x=0.828 | 0.020
+- [ ] Gambler.RightPanel | y=0.169 | 0.020
+- [ ] Gambler.RightPanel | w=0.168 | 0.020
+- [ ] Gambler.RightPanel | h=0.548 | 0.020
+- [ ] Gambler.PortraitPanel | x=0.870 | 0.025
+- [ ] Gambler.PortraitPanel | y=0.192 | 0.025
+- [ ] Gambler.BankPanel | x=0.836 | 0.025
+- [ ] Gambler.BankPanel | y=0.478 | 0.025
+- [ ] Gambler.InventoryPanel | x=0.009 | 0.020
+- [ ] Gambler.InventoryPanel | y=0.735 | 0.020
+- [ ] Gambler.InventoryPanel | w=0.990 | 0.020
+- [ ] Gambler.InventoryPanel | h=0.162 | 0.020
+- [ ] Gambler.InventorySlot.01 | x=0.023 | 0.020
+- [ ] Gambler.InventorySlot.01 | y=0.781 | 0.020
+- [ ] Gambler.SellPanel | x=0.941 | 0.025
+- [ ] Gambler.SellPanel | y=0.781 | 0.025
+- [ ] Gambler.SellButton | x=0.950 | 0.025
+- [ ] Gambler.SellButton | y=0.865 | 0.025
+
+## Colors
+
+- [ ] CasinoOverlay.ScorePanel | border_color=DefaultBorder
+- [ ] CasinoOverlay.VendorTabButton | border_color=DefaultBorder
+- [ ] CasinoOverlay.VendorTabButton | text_color=DefaultText
+- [ ] CasinoOverlay.GamblingTabButton | border_color=SelectedBorder
+- [ ] CasinoOverlay.GamblingTabButton | text_color=SelectedText
+- [ ] CasinoOverlay.CloseButton | border_color=SelectedBorder
+- [ ] CasinoOverlay.CloseButton | text_color=SelectedText
+- [ ] CasinoOverlay.StatusBar | border_color=DefaultBorder
+- [ ] Gambler.StatsPanel | border_color=DefaultBorder
+- [ ] Gambler.GamesPanel | border_color=DefaultBorder
+- [ ] Gambler.Mode.BuybackButton | border_color=DefaultBorder
+- [ ] Gambler.Mode.GamesButton | border_color=SelectedBorder
+- [ ] Gambler.Mode.GamesButton | text_color=SelectedText
+- [ ] Gambler.Mode.RerollButton | border_color=DefaultBorder
+- [ ] Gambler.GameCard.01.Panel | border_color=DefaultBorder
+- [ ] Gambler.GameCard.01.IconWell | border_color=DefaultBorder
+- [ ] Gambler.GameCard.01.PlayButton | border_color=SelectedBorder
+- [ ] Gambler.GameCard.01.PlayButton | text_color=SelectedText
+- [ ] Gambler.GameCard.05.PlayButton | border_color=SelectedBorder
+- [ ] Gambler.MoreGamesButton | border_color=DefaultBorder
+- [ ] Gambler.RightPanel | border_color=DefaultBorder
+- [ ] Gambler.PortraitPanel | border_color=DefaultBorder
+- [ ] Gambler.BankPanel | border_color=DefaultBorder
+- [ ] Gambler.InventoryPanel | border_color=DefaultBorder
+- [ ] Gambler.InventorySlot.01 | border_color=DefaultBorder
+- [ ] Gambler.SellPanel | border_color=DefaultBorder
+- [ ] Gambler.SellButton | border_color=SelectedBorder
+- [ ] Gambler.SellButton | text_color=SelectedText
+
+## Content
+
+- [ ] CasinoOverlay.ScoreLabel | text=SCORE
+- [ ] CasinoOverlay.TimeLabel | text=TIME
+- [ ] CasinoOverlay.ScoreValue | text=present
+- [ ] CasinoOverlay.TimeValue | text=present
+- [ ] CasinoOverlay.VendorTabButton | text=VENDOR
+- [ ] CasinoOverlay.GamblingTabButton | text=GAMBLING
+- [ ] CasinoOverlay.CloseButton | text=CLOSE
+- [ ] CasinoOverlay.StatusText | text=WELCOME TO THE GAMBLER. FORTUNE FAVORS THE BOLD. CHOOSE YOUR GAME.
+- [ ] Gambler.Mode.BuybackButton | text=BUYBACK
+- [ ] Gambler.Mode.GamesButton | text=GAMES
+- [ ] Gambler.Mode.RerollButton | text=REROLL
+- [ ] Gambler.GameCard.01.Title | text=ROCK PAPER SCISSORS
+- [ ] Gambler.GameCard.02.Title | text=BLACK JACK
+- [ ] Gambler.GameCard.03.Title | text=COIN FLIP
+- [ ] Gambler.GameCard.01.PlayButton | text=PLAY
+- [ ] Gambler.GameCard.05.PlayButton | text=PLAY
+- [ ] Gambler.MoreGamesButton | text=MORE GAMES
+- [ ] Gambler.Bank.Title | text=BANK
+- [ ] Gambler.Bank.BorrowLabel | text=BORROW AMOUNT
+- [ ] Gambler.Bank.PaybackLabel | text=PAYBACK AMOUNT
+- [ ] Gambler.Inventory.Title | text=INVENTORY
+- [ ] Gambler.Inventory.NetWorth | text=present
+- [ ] Gambler.Inventory.Gold | text=present
+- [ ] Gambler.Inventory.Debt | text=present
+- [ ] CasinoOverlay.ScoreLabel | is_label=true
+- [ ] CasinoOverlay.TimeLabel | is_label=true
+- [ ] CasinoOverlay.StatusText | is_label=true
+- [ ] Gambler.Bank.Title | is_label=true
+- [ ] Gambler.Bank.BorrowLabel | is_label=true
+- [ ] Gambler.Bank.PaybackLabel | is_label=true
+- [ ] Gambler.Inventory.Title | is_label=true
+- [ ] Gambler.Inventory.NetWorth | is_label=true
+
+## Interactivity
+
+- [ ] CasinoOverlay.VendorTabButton | has_click_handler=true
+- [ ] CasinoOverlay.VendorTabButton | hover_capable=true
+- [ ] CasinoOverlay.VendorTabButton | toggle_group=CasinoOverlay.TabSelection
+- [ ] CasinoOverlay.GamblingTabButton | has_click_handler=true
+- [ ] CasinoOverlay.GamblingTabButton | hover_capable=true
+- [ ] CasinoOverlay.GamblingTabButton | toggle_group=CasinoOverlay.TabSelection
+- [ ] CasinoOverlay.CloseButton | has_click_handler=true
+- [ ] CasinoOverlay.CloseButton | hover_capable=true
+- [ ] Gambler.Mode.BuybackButton | has_click_handler=true
+- [ ] Gambler.Mode.BuybackButton | hover_capable=true
+- [ ] Gambler.Mode.BuybackButton | toggle_group=Gambler.ModeSelection
+- [ ] Gambler.Mode.GamesButton | has_click_handler=true
+- [ ] Gambler.Mode.GamesButton | hover_capable=true
+- [ ] Gambler.Mode.GamesButton | toggle_group=Gambler.ModeSelection
+- [ ] Gambler.Mode.RerollButton | has_click_handler=true
+- [ ] Gambler.Mode.RerollButton | hover_capable=true
+- [ ] Gambler.Mode.RerollButton | toggle_group=empty
+- [ ] Gambler.GameCard.01.PlayButton | has_click_handler=true
+- [ ] Gambler.GameCard.01.PlayButton | hover_capable=true
+- [ ] Gambler.GameCard.05.PlayButton | has_click_handler=true
+- [ ] Gambler.GameCard.05.PlayButton | hover_capable=true
+- [ ] Gambler.MoreGamesButton | has_click_handler=true
+- [ ] Gambler.MoreGamesButton | hover_capable=true
+- [ ] Gambler.Bank.BorrowButton | has_click_handler=true
+- [ ] Gambler.Bank.BorrowButton | hover_capable=true
+- [ ] Gambler.Bank.PaybackButton | has_click_handler=true
+- [ ] Gambler.Bank.PaybackButton | hover_capable=true
+- [ ] Gambler.InventorySlot.01 | has_click_handler=true
+- [ ] Gambler.InventorySlot.01 | enabled=false
+- [ ] Gambler.InventorySlot.01 | hover_capable=false
+- [ ] Gambler.InventorySlot.01 | toggle_group=Gambler.InventorySelection
+- [ ] Gambler.SellButton | has_click_handler=true
+- [ ] Gambler.SellButton | hover_capable=false

@@ -508,6 +508,7 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 
 		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
 		AddPath(VisualRow->StaticMesh.ToSoftObjectPath());
+		AddPath(VisualRow->PixelatedTextureAssetPath.ToSoftObjectPath());
 		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
@@ -642,6 +643,7 @@ void UT66GameInstance::PrimeHeroSelectionPreviewVisualsAsync()
 
 		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
 		AddPath(VisualRow->StaticMesh.ToSoftObjectPath());
+		AddPath(VisualRow->PixelatedTextureAssetPath.ToSoftObjectPath());
 		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());

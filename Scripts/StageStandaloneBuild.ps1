@@ -8,7 +8,8 @@ param(
 
     [switch]$SkipBuild,
     [switch]$SkipCook,
-    [switch]$SkipShortcutRefresh
+    [switch]$SkipShortcutRefresh,
+    [switch]$ResetSavedGames
 )
 
 $ErrorActionPreference = "Stop"
@@ -190,6 +191,103 @@ function Copy-LooseRuntimeContentRoot {
     }
 }
 
+function Backup-StagedSaveGames {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SaveGamesPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$BackupRoot,
+
+        [Parameter(Mandatory = $true)]
+        [string]$StageRootPath
+    )
+
+    if ($ResetSavedGames) {
+        Write-Host "ResetSavedGames requested; staged SaveGames will not be preserved."
+        return $null
+    }
+
+    if (-not (Test-Path -LiteralPath $SaveGamesPath)) {
+        Write-Host "No staged SaveGames found to preserve at '$SaveGamesPath'."
+        return $null
+    }
+
+    $SaveGamesFull = (Resolve-Path -LiteralPath $SaveGamesPath).Path
+    $StageRootFull = [System.IO.Path]::GetFullPath($StageRootPath).TrimEnd("\") + "\"
+    if (-not $SaveGamesFull.StartsWith($StageRootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to back up SaveGames outside stage root. SaveGames='$SaveGamesFull' StageRoot='$StageRootFull'."
+    }
+
+    $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $BackupPath = Join-Path $BackupRoot "StandaloneSaveGames_$Timestamp"
+    New-Item -ItemType Directory -Force -Path $BackupPath | Out-Null
+
+    foreach ($ChildItem in Get-ChildItem -LiteralPath $SaveGamesFull -Force) {
+        Copy-Item -LiteralPath $ChildItem.FullName -Destination $BackupPath -Recurse -Force
+    }
+
+    $FileCount = @(Get-ChildItem -LiteralPath $BackupPath -File -Recurse -Force).Count
+    Write-Host "Preserved staged SaveGames from '$SaveGamesFull' -> '$BackupPath' ($FileCount files)."
+    return $BackupPath
+}
+
+function Restore-StagedSaveGames {
+    param(
+        [string]$BackupPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$SaveGamesPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$StageRootPath
+    )
+
+    if ([string]::IsNullOrWhiteSpace($BackupPath)) {
+        return
+    }
+
+    if (-not (Test-Path -LiteralPath $BackupPath)) {
+        throw "Expected staged SaveGames backup was not found at '$BackupPath'."
+    }
+
+    $StageRootFull = [System.IO.Path]::GetFullPath($StageRootPath).TrimEnd("\") + "\"
+    $SaveGamesFull = [System.IO.Path]::GetFullPath($SaveGamesPath)
+    if (-not $SaveGamesFull.StartsWith($StageRootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to restore SaveGames outside stage root. SaveGames='$SaveGamesFull' StageRoot='$StageRootFull'."
+    }
+
+    New-Item -ItemType Directory -Force -Path $SaveGamesFull | Out-Null
+    foreach ($ChildItem in Get-ChildItem -LiteralPath $BackupPath -Force) {
+        Copy-Item -LiteralPath $ChildItem.FullName -Destination $SaveGamesFull -Recurse -Force
+    }
+
+    $FileCount = @(Get-ChildItem -LiteralPath $SaveGamesFull -File -Recurse -Force).Count
+    Write-Host "Restored staged SaveGames to '$SaveGamesFull' ($FileCount files)."
+}
+
+function Remove-StagedSaveGamesBackup {
+    param(
+        [string]$BackupPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$BackupRoot
+    )
+
+    if ([string]::IsNullOrWhiteSpace($BackupPath) -or -not (Test-Path -LiteralPath $BackupPath)) {
+        return
+    }
+
+    $BackupFull = (Resolve-Path -LiteralPath $BackupPath).Path
+    $BackupRootFull = [System.IO.Path]::GetFullPath($BackupRoot).TrimEnd("\") + "\"
+    if (-not $BackupFull.StartsWith($BackupRootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to remove SaveGames backup outside backup root. Backup='$BackupFull' BackupRoot='$BackupRootFull'."
+    }
+
+    Remove-Item -LiteralPath $BackupFull -Recurse -Force
+    Write-Host "Removed temporary staged SaveGames backup '$BackupFull'."
+}
+
 if (-not (Test-Path $RunUATPath)) {
     throw "RunUAT.bat not found at '$RunUATPath'. Pass -EngineRoot with the correct Unreal installation root."
 }
@@ -219,15 +317,23 @@ if ($SkipCook) {
     $UatArgs += "-cook"
 }
 
+$StagedProjectRoot = Join-Path $StageRoot "Windows\T66"
+$StagedSaveGamesPath = Join-Path $StagedProjectRoot "Saved\SaveGames"
+$SaveGamesBackupRoot = Join-Path $ProjectRoot "Saved\StageBackups"
+$SaveGamesBackupPath = Backup-StagedSaveGames -SaveGamesPath $StagedSaveGamesPath -BackupRoot $SaveGamesBackupRoot -StageRootPath $StageRoot
+
 Write-Host "Staging standalone build to '$StageRoot\Windows\T66'..."
 Write-Host "& `"$RunUATPath`" $($UatArgs -join ' ')"
 
 & $RunUATPath @UatArgs
 if ($LASTEXITCODE -ne 0) {
+    Restore-StagedSaveGames -BackupPath $SaveGamesBackupPath -SaveGamesPath $StagedSaveGamesPath -StageRootPath $StageRoot
     exit $LASTEXITCODE
 }
 
-$StagedProjectRoot = Join-Path $StageRoot "Windows\T66"
+Restore-StagedSaveGames -BackupPath $SaveGamesBackupPath -SaveGamesPath $StagedSaveGamesPath -StageRootPath $StageRoot
+Remove-StagedSaveGamesBackup -BackupPath $SaveGamesBackupPath -BackupRoot $SaveGamesBackupRoot
+
 $LooseRuntimeConfig = Join-Path $ProjectRoot "Config\DefaultGame.ini"
 foreach ($LooseRuntimeRoot in Get-LooseRuntimeContentRoots -ConfigPath $LooseRuntimeConfig) {
     Copy-LooseRuntimeContentRoot -RelativePath $LooseRuntimeRoot -DestinationProjectRoot $StagedProjectRoot

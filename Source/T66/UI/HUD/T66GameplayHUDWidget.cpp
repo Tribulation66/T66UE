@@ -258,7 +258,6 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->SurvivalChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->QuickReviveChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshQuickReviveState);
-	RunState->StatusEffectsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
 	RunState->TutorialHintChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
 	RunState->TutorialSubtitleChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialSubtitle);
 	RunState->DevCheatsChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
@@ -336,7 +335,6 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RefreshLootPrompt();
 	RefreshHearts();
 	RefreshQuickReviveState();
-	RefreshStatusEffects();
 }
 
 
@@ -386,7 +384,6 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->TutorialHintChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
 		RunState->TutorialSubtitleChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialSubtitle);
 		RunState->DevCheatsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
-		RunState->StatusEffectsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
 	}
 	if (UGameInstance* GI = GetGameInstance())
 	{

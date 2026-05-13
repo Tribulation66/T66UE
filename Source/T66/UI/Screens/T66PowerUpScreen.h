@@ -35,6 +35,7 @@ private:
 
 	bool bShowingSingleUse = false;
 	bool bNeedsWarmActivationRefresh = false;
+	int32 DiplomaPageIndex = 0;
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
 	TMap<FString, TSharedPtr<FSlateBrush>> OwnedBrushes;
 

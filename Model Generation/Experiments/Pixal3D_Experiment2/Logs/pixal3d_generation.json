@@ -1,0 +1,29 @@
+{
+  "experiment": "Pixal3D_Experiment2",
+  "configuration_source": "C:\\UE\\T66\\Model Generation\\Experiments\\Pixal3D_Goblin_Characterization\\Report.md",
+  "configuration_identical_to_experiment1": true,
+  "configuration_block": "model_path: TencentARC/Pixal3D\npod_gpu: NVIDIA A40\nserver_remote_url: http://127.0.0.1:18001\nattention_backend: flash_attn_3\nsparse_attention_backend: flash_attn_3\nsparse_conv_backend: flex_gemm\nlow_vram: false\nrequest_method: POST /generate\nrequest_content_type: image/png\nX-Seed: 1337\nX-Resolution: 1024\nX-Texture-Size: 2048\nX-Decimation: 30000\nX-Remesh: 1\nX-Remesh-Band: 1.0\nX-Remesh-Project: 0.0\nX-Extend-Pixel: 0\nX-Image-Resolution: 512\nX-Max-Num-Tokens: 49152\nX-Mesh-Scale: 1.0\nX-SS-Steps: 12\nX-SS-Guidance: 7.5\nX-SS-Guidance-Rescale: 0.7\nX-SS-Rescale-T: 5.0\nX-Shape-Steps: 12\nX-Shape-Guidance: 7.5\nX-Shape-Guidance-Rescale: 0.5\nX-Shape-Rescale-T: 3.0\nX-Tex-Steps: 12\nX-Tex-Guidance: 1.0\nX-Tex-Guidance-Rescale: 0.0\nX-Tex-Rescale-T: 3.0",
+  "successful_outputs": [
+    {
+      "variant": "D",
+      "started": "2026-05-12T18:41:28.7841715-03:00",
+      "ended": "2026-05-12T18:42:06.3899819-03:00",
+      "duration_seconds": 37.61,
+      "bytes": 1675192,
+      "remesh": 1,
+      "decimation": 30000,
+      "output": "Model Generation/Experiments/Pixal3D_Experiment2/Outputs/Variant_D.glb"
+    },
+    {
+      "variant": "E",
+      "started": "2026-05-12T18:42:15.4722544-03:00",
+      "ended": "2026-05-12T18:43:11.9952554-03:00",
+      "duration_seconds": 56.52,
+      "bytes": 1938112,
+      "remesh": 1,
+      "decimation": 30000,
+      "output": "Model Generation/Experiments/Pixal3D_Experiment2/Outputs/Variant_E.glb"
+    }
+  ],
+  "analysis_metric_file": "C:\\UE\\T66\\Model Generation\\Experiments\\Pixal3D_Experiment2\\Analysis\\analysis_metrics.json"
+}

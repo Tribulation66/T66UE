@@ -16,8 +16,6 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Components/WidgetComponent.h"
-#include "UI/T66HeroCooldownBarWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -155,14 +153,6 @@ AT66HeroBase::AT66HeroBase()
 	if (RingMat) LongRangeRingISM->SetMaterial(0, RingMat);
 	LongRangeRingISM->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 
-	// ========== Auto-attack cooldown bar (below feet) ==========
-	CooldownBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("CooldownBarWidget"));
-	CooldownBarWidgetComponent->SetupAttachment(RootComponent);
-	CooldownBarWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
-	CooldownBarWidgetComponent->SetDrawSize(FVector2D(120.f, 36.f));
-	CooldownBarWidgetComponent->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
-	CooldownBarWidgetComponent->SetWidgetClass(UT66HeroCooldownBarWidget::StaticClass());
-
 	// Don't rotate pawn with controller (controller only rotates camera)
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -207,10 +197,6 @@ void AT66HeroBase::UpdateGroundAttachmentOffsets()
 	if (LongRangeRingISM)
 	{
 		LongRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -CapsuleHalfHeight + 2.f));
-	}
-	if (CooldownBarWidgetComponent)
-	{
-		CooldownBarWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, -CapsuleHalfHeight - 24.f));
 	}
 
 	QuickReviveDownedVisualOffset.Z = -(GetDesiredHeroHeightUU() * 0.33f);
@@ -346,11 +332,6 @@ void AT66HeroBase::BeginPlay()
 
 	HandleHeroDerivedStatsChanged();
 	HandleHUDPanelVisibilityChanged();
-
-	if (CooldownBarWidgetComponent)
-	{
-		CooldownBarWidgetComponent->InitWidget();
-	}
 
 	// Ensure ring updates after components (CombatComponent) finish BeginPlay.
 	if (UWorld* World = GetWorld())
@@ -757,31 +738,6 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 		}
 	}
 
-	// Update auto-attack cooldown bar and range text (only when playing, not preview).
-	if (!bIsPreviewMode && CooldownBarWidgetComponent && CombatComponent)
-	{
-		if (UT66HeroCooldownBarWidget* Bar = Cast<UT66HeroCooldownBarWidget>(CooldownBarWidgetComponent->GetWidget()))
-		{
-			float p = CombatComponent->GetAutoAttackCooldownProgress();
-			const float Now = GetWorld() ? static_cast<float>(GetWorld()->GetTimeSeconds()) : 0.f;
-			if (p >= 1.f)
-			{
-				if (CooldownDisplayHoldUntil < 0.f) CooldownDisplayHoldUntil = Now + CooldownBarHoldFullDuration;
-				p = 1.f;
-			}
-			else
-			{
-				CooldownDisplayHoldUntil = -1.f;
-			}
-			if (CooldownDisplayHoldUntil > 0.f && Now < CooldownDisplayHoldUntil)
-				p = 1.f;
-			else if (CooldownDisplayHoldUntil > 0.f && Now >= CooldownDisplayHoldUntil)
-				CooldownDisplayHoldUntil = -1.f;
-			Bar->SetProgress(p);
-			Bar->SetRangeUnits(FMath::RoundToInt(CombatComponent->AttackRange));
-		}
-	}
-
 	// Enemy touch damage + bounce: proximity check (enemies block so no overlap events; we query range and apply damage + launch).
 	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
 	{
@@ -919,7 +875,6 @@ void AT66HeroBase::UpdateAttackRangeRing()
 		AttackRangeRingISM->SetVisibility(false, true);
 		if (CloseRangeRingISM) { CloseRangeRingISM->SetHiddenInGame(true, true); CloseRangeRingISM->SetVisibility(false, true); }
 		if (LongRangeRingISM)  { LongRangeRingISM->SetHiddenInGame(true, true);  LongRangeRingISM->SetVisibility(false, true); }
-		if (CooldownBarWidgetComponent) CooldownBarWidgetComponent->SetVisibility(false);
 	};
 
 	// Hide in preview mode.
@@ -935,9 +890,6 @@ void AT66HeroBase::UpdateAttackRangeRing()
 		HideAllRings();
 		return;
 	}
-
-	// Cooldown bar is now in the HUD (above hearts); never show the world-space one.
-	if (CooldownBarWidgetComponent) CooldownBarWidgetComponent->SetVisibility(false);
 
 	const float Range = (CombatComponent ? CombatComponent->AttackRange : 0.f);
 	const float ClampedRange = FMath::Clamp(Range, 200.f, 50000.f);

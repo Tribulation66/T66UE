@@ -93,8 +93,7 @@ struct FT66ButtonParams
 	bool bHasTextShadowOffset = false;
 	FVector2D TextShadowOffset = FVector2D::ZeroVector;
 	bool bUseGlow = true;
-	bool bUseDotaPlateOverlay = false;
-	const FSlateBrush* DotaPlateOverrideBrush = nullptr;
+	bool bUseGlowExplicitlySet = false;
 
 	// === Custom Content ===
 	TSharedPtr<SWidget> CustomContent;               // If set, replaces text block entirely
@@ -142,9 +141,7 @@ struct FT66ButtonParams
 		return *this;
 	}
 	FT66ButtonParams& SetTextShadowOffset(const FVector2D& Offset)       { TextShadowOffset = Offset; bHasTextShadowOffset = true; return *this; }
-	FT66ButtonParams& SetUseGlow(bool bInUseGlow)                         { bUseGlow = bInUseGlow; return *this; }
-	FT66ButtonParams& SetUseDotaPlateOverlay(bool bInUseDotaPlateOverlay) { bUseDotaPlateOverlay = bInUseDotaPlateOverlay; return *this; }
-	FT66ButtonParams& SetDotaPlateOverrideBrush(const FSlateBrush* InDotaPlateOverrideBrush) { DotaPlateOverrideBrush = InDotaPlateOverrideBrush; return *this; }
+	FT66ButtonParams& SetUseGlow(bool bInUseGlow)                         { bUseGlow = bInUseGlow; bUseGlowExplicitlySet = true; return *this; }
 	FT66ButtonParams& SetEnabled(const TAttribute<bool>& E)               { IsEnabled = E; return *this; }
 	FT66ButtonParams& SetVisibility(const TAttribute<EVisibility>& V)     { Visibility = V; return *this; }
 	FT66ButtonParams& SetDynamicLabel(const TAttribute<FText>& L)         { DynamicLabel = L; return *this; }
@@ -302,7 +299,6 @@ public:
 	static void Initialize();
 	static void Shutdown();
 
-	static bool IsDotaTheme();
 	static FSlateFontInfo MakeFont(const TCHAR* Weight, int32 Size);
 	static FLinearColor Background();
 	static FLinearColor PanelOuter();

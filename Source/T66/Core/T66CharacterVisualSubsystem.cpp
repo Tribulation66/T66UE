@@ -28,6 +28,7 @@ static const FName T66_AnimSkeletonTag(TEXT("Skeleton"));
 static const FName T66_CharactersRootPath(TEXT("/Game/Characters"));
 static const TCHAR* T66_CharacterBaseMaterialPath = TEXT("/Game/Materials/M_Character_Unlit.M_Character_Unlit");
 static const TCHAR* T66_FbxBaseMaterialPath = TEXT("/Game/Materials/M_FBX_Unlit.M_FBX_Unlit");
+static const TCHAR* T66_QuadRetroSharedMaterialPath = TEXT("/Game/Materials/MI_GLB_Unlit_Character_Shared.MI_GLB_Unlit_Character_Shared");
 
 struct FT66ResolvedImportedTextureSet
 {
@@ -124,6 +125,7 @@ static void T66AppendCharacterVisualAssetPaths(const FT66CharacterVisualRow& Row
 {
 	T66AddUniqueCharacterVisualPath(Row.SkeletalMesh.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.StaticMesh.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.PixelatedTextureAssetPath.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.LoopingAnimation.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.AlertAnimation.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.RunAnimation.ToSoftObjectPath(), OutPaths);
@@ -491,6 +493,73 @@ static void T66ApplySafeCharacterMaterialOverrides(USkeletalMeshComponent* Targe
 				*SourceMaterialPath,
 				DiffuseTexture ? *DiffuseTexture->GetPathName() : TEXT("(fallback white)"),
 				TextureSet.NormalTexture.IsValid() ? *TextureSet.NormalTexture->GetPathName() : TEXT("(fallback white)"));
+		}
+	}
+}
+
+static bool T66IsQuadRetroStaticVisual(const FT66ResolvedCharacterVisual& Res)
+{
+	return Res.StaticMesh && Res.StaticMesh->GetName().EndsWith(TEXT("_QuadRetro"));
+}
+
+static UMaterialInterface* T66LoadQuadRetroSharedMaterial()
+{
+	static TWeakObjectPtr<UMaterialInterface> CachedSharedMaterial;
+	if (CachedSharedMaterial.IsValid())
+	{
+		return CachedSharedMaterial.Get();
+	}
+
+	UMaterialInterface* SharedMaterial = LoadObject<UMaterialInterface>(nullptr, T66_QuadRetroSharedMaterialPath);
+	if (SharedMaterial)
+	{
+		CachedSharedMaterial = SharedMaterial;
+	}
+	return SharedMaterial;
+}
+
+static void T66ApplyQuadRetroStaticMaterialOverrides(
+	UStaticMeshComponent* TargetStaticMesh,
+	UMaterialInterface* SharedMaterial,
+	UTexture* PixelatedTexture,
+	FName VisualID)
+{
+	if (!TargetStaticMesh || !SharedMaterial || !PixelatedTexture)
+	{
+		return;
+	}
+
+	static TSet<FString> LoggedStaticMaterialRebuilds;
+	const int32 NumMaterials = FMath::Max(1, TargetStaticMesh->GetNumMaterials());
+	for (int32 MaterialIndex = 0; MaterialIndex < NumMaterials; ++MaterialIndex)
+	{
+		UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(SharedMaterial, TargetStaticMesh);
+		if (!DynamicMaterial)
+		{
+			continue;
+		}
+
+		DynamicMaterial->SetTextureParameterValue(TEXT("EmissiveTexture"), PixelatedTexture);
+		DynamicMaterial->SetTextureParameterValue(TEXT("BaseColorTexture"), PixelatedTexture);
+		DynamicMaterial->SetTextureParameterValue(TEXT("DiffuseColorMap"), PixelatedTexture);
+		DynamicMaterial->SetScalarParameterValue(TEXT("Brightness"), 1.0f);
+		DynamicMaterial->SetVectorParameterValue(TEXT("EmissiveFactor"), FLinearColor::White);
+		DynamicMaterial->SetVectorParameterValue(TEXT("BaseColorFactor"), FLinearColor::Black);
+		DynamicMaterial->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
+		TargetStaticMesh->SetMaterial(MaterialIndex, DynamicMaterial);
+
+		const FString LogKey = FString::Printf(TEXT("%s:%d:%s"), *VisualID.ToString(), MaterialIndex, *PixelatedTexture->GetPathName());
+		if (!LoggedStaticMaterialRebuilds.Contains(LogKey))
+		{
+			LoggedStaticMaterialRebuilds.Add(LogKey);
+			UE_LOG(
+				LogT66CharacterVisuals,
+				Verbose,
+				TEXT("[MATERIAL] Applied QuadRetro static DMI for VisualID=%s Slot=%d Shared=%s Texture=%s"),
+				*VisualID.ToString(),
+				MaterialIndex,
+				*SharedMaterial->GetPathName(),
+				*PixelatedTexture->GetPathName());
 		}
 	}
 }
@@ -1139,6 +1208,34 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 		TargetStaticMesh->SetRelativeLocation(RelLoc);
 		TargetStaticMesh->SetHiddenInGame(false, true);
 		TargetStaticMesh->SetVisibility(true, true);
+		if (T66IsQuadRetroStaticVisual(Res))
+		{
+			UMaterialInterface* SharedMaterial = T66LoadQuadRetroSharedMaterial();
+			UTexture2D* PixelatedTexture = nullptr;
+			if (!Res.Row.PixelatedTextureAssetPath.IsNull())
+			{
+				PixelatedTexture = Res.Row.PixelatedTextureAssetPath.Get();
+				if (!PixelatedTexture)
+				{
+					PixelatedTexture = Res.Row.PixelatedTextureAssetPath.LoadSynchronous();
+				}
+			}
+
+			if (SharedMaterial && PixelatedTexture)
+			{
+				T66ApplyQuadRetroStaticMaterialOverrides(TargetStaticMesh, SharedMaterial, PixelatedTexture, VisualID);
+			}
+			else
+			{
+				UE_LOG(
+					LogT66CharacterVisuals,
+					Warning,
+					TEXT("[MATERIAL] QuadRetro static visual %s missing shared material or pixelated texture. Shared=%s Texture=%s"),
+					*VisualID.ToString(),
+					SharedMaterial ? *SharedMaterial->GetPathName() : TEXT("(null)"),
+					PixelatedTexture ? *PixelatedTexture->GetPathName() : TEXT("(null)"));
+			}
+		}
 
 		if (TargetMesh)
 		{

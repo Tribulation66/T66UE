@@ -18,8 +18,26 @@ class T66_API UT66FrontendTopBarWidget : public UT66ScreenBase
 public:
 	UT66FrontendTopBarWidget(const FObjectInitializer& ObjectInitializer);
 
+	enum class EFrontendSection : uint8
+	{
+		AccountStatus,
+		Settings,
+		Language,
+		Home,
+		PowerUp,
+		MiniGames,
+		Achievements,
+		None,
+	};
+	using ETopBarSection = EFrontendSection;
+
 	static float GetReservedHeight();
 	static float GetVisibleContentHeight();
+	static EFrontendSection ResolveFrontendSectionForScreen(ET66ScreenType ScreenType);
+
+	void SetActiveSection(EFrontendSection InActiveSection);
+	void ClearActiveSectionOverride();
+	EFrontendSection GetRenderedActiveSection() const;
 
 	struct FPlateBrushSet
 	{
@@ -39,18 +57,6 @@ protected:
 	virtual void RefreshScreen_Implementation() override;
 
 private:
-	enum class ETopBarSection : uint8
-	{
-		AccountStatus,
-		Settings,
-		Language,
-		Home,
-		PowerUp,
-		MiniGames,
-		Achievements,
-		None,
-	};
-
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	ETopBarSection GetActiveSection() const;
 	FText GetChadCouponsValueText() const;
@@ -94,6 +100,8 @@ private:
 	TSharedPtr<FSlateBrush> SocialIconBrush;
 	TSharedPtr<FSlateBrush> CurrencyIconBrush;
 	TSharedPtr<FSlateBrush> QuitIconBrush;
+	EFrontendSection ActiveSectionOverride = EFrontendSection::None;
 	FVector2D CachedViewportSize = FVector2D::ZeroVector;
+	bool bHasActiveSectionOverride = false;
 	bool bViewportResponsiveRebuildQueued = false;
 };

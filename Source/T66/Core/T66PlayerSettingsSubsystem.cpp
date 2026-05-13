@@ -228,6 +228,15 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		bNeedsSave = true;
 	}
 
+	if (SettingsObj->SchemaVersion < 21)
+	{
+		SettingsObj->SchemaVersion = 21;
+		SettingsObj->bRetroFXMasterEnabled = SettingsObj->RetroFXSettings.bEnableRetroFXMaster;
+		bNeedsSave = true;
+	}
+
+	SettingsObj->RetroFXSettings.bEnableRetroFXMaster = SettingsObj->bRetroFXMasterEnabled;
+
 	const float SanitizedLockedChaseTurnSensitivityPercent = FMath::Clamp(SettingsObj->LockedChaseTurnSensitivityPercent, 0.0f, 100.0f);
 	if (!FMath::IsNearlyEqual(SettingsObj->LockedChaseTurnSensitivityPercent, SanitizedLockedChaseTurnSensitivityPercent, 0.01f))
 	{
@@ -285,7 +294,11 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 void UT66PlayerSettingsSubsystem::Save()
 {
 	if (!SettingsObj) return;
-	UGameplayStatics::SaveGameToSlot(SettingsObj, SlotName, 0);
+	const bool bSaved = UGameplayStatics::SaveGameToSlot(SettingsObj, SlotName, 0);
+	if (!bSaved)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerSettings: failed to save slot '%s'"), *SlotName);
+	}
 	OnSettingsChanged.Broadcast();
 }
 
@@ -930,19 +943,28 @@ void UT66PlayerSettingsSubsystem::SetRetroFXSettings(const FT66RetroFXSettings& 
 {
 	if (!SettingsObj) return;
 	SettingsObj->RetroFXSettings = NewSettings;
+	SettingsObj->bRetroFXMasterEnabled = NewSettings.bEnableRetroFXMaster;
 	Save();
 }
 
 FT66RetroFXSettings UT66PlayerSettingsSubsystem::GetRetroFXSettings() const
 {
 	static const FT66RetroFXSettings DefaultSettings;
-	return SettingsObj ? SettingsObj->RetroFXSettings : DefaultSettings;
+	if (!SettingsObj)
+	{
+		return DefaultSettings;
+	}
+
+	FT66RetroFXSettings Result = SettingsObj->RetroFXSettings;
+	Result.bEnableRetroFXMaster = SettingsObj->bRetroFXMasterEnabled;
+	return Result;
 }
 
 void UT66PlayerSettingsSubsystem::ResetRetroFXSettingsToDefaults()
 {
 	if (!SettingsObj) return;
 	SettingsObj->RetroFXSettings = FT66RetroFXSettings();
+	SettingsObj->bRetroFXMasterEnabled = SettingsObj->RetroFXSettings.bEnableRetroFXMaster;
 	Save();
 }
 
@@ -1008,6 +1030,7 @@ void UT66PlayerSettingsSubsystem::ApplySafeModeSettings()
 	// Gameplay-side stability toggles.
 	SettingsObj->bIntenseVisuals = false;
 	SettingsObj->RetroFXSettings = FT66RetroFXSettings();
+	SettingsObj->bRetroFXMasterEnabled = SettingsObj->RetroFXSettings.bEnableRetroFXMaster;
 
 	// Audio: keep user master, but enforce mute-unfocused off for stability/debug.
 	SettingsObj->bMuteWhenUnfocused = false;

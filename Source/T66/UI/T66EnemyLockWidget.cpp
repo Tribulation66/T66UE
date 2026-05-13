@@ -3,6 +3,7 @@
 #include "UI/T66EnemyLockWidget.h"
 
 #include "Rendering/DrawElements.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "Widgets/SLeafWidget.h"
 #include "Widgets/Layout/SBox.h"
 
@@ -92,10 +93,20 @@ namespace
 
 TSharedRef<SWidget> UT66EnemyLockWidget::RebuildWidget()
 {
-	return SNew(SBox)
+	const TSharedRef<SWidget> Root = SNew(SBox)
 		.WidthOverride(44.f)
 		.HeightOverride(44.f)
 		[
-			SNew(ST66EnemyBullseyeWidget)
+			FT66FlatStyle::AttachMetadata(
+				SNew(ST66EnemyBullseyeWidget),
+				TEXT("GameplayHUD.EnemyLock.Bullseye"),
+				TEXT("GameplayStateIndicator"),
+				ET66FlatState::Default)
 		];
+
+	return FT66FlatStyle::AttachMetadata(
+		Root,
+		TEXT("GameplayHUD.EnemyLock.Root"),
+		TEXT("GameplayStateIndicatorRoot"),
+		ET66FlatState::Default);
 }

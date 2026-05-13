@@ -12,10 +12,9 @@
 #include "Save/T66IdleSaveSubsystem.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Components/T66MinigameMenuLayout.h"
-#include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
-#include "UObject/StrongObjectPtr.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -26,8 +25,6 @@
 
 namespace
 {
-	constexpr float IdleMockupBackdropOpacity = 0.62f;
-
 	const TCHAR* IdleMainMenuMockupPath()
 	{
 		return TEXT("/Game/UI/Minigames/Idle/Mockups/T_Idle_MainMenu_Mockup.T_Idle_MainMenu_Mockup");
@@ -37,9 +34,6 @@ namespace
 	{
 		return TEXT("/Game/UI/Minigames/Idle/Mockups/T_Idle_Gameplay_Mockup.T_Idle_Gameplay_Mockup");
 	}
-
-	TMap<FString, TStrongObjectPtr<UTexture2D>> GIdleMockupTextureCache;
-	TMap<FString, TSharedPtr<FSlateBrush>> GIdleMockupBrushCache;
 
 	TAttribute<FText> MakeIdleTextAttribute(UT66IdleMainMenuScreen* Screen, FText (UT66IdleMainMenuScreen::*Getter)() const)
 	{
@@ -51,71 +45,23 @@ namespace
 		return TAttribute<TOptional<float>>::Create(TAttribute<TOptional<float>>::FGetter::CreateUObject(Screen, Getter));
 	}
 
-	UTexture2D* LoadIdleMockupTexture(const FString& AssetPath)
+	FString MakeIdleTagSegment(const FText& Text)
 	{
-		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GIdleMockupTextureCache.Find(AssetPath))
+		FString Raw = Text.ToString();
+		FString Segment;
+		for (const TCHAR Char : Raw)
 		{
-			return CachedTexture->Get();
+			if (FChar::IsAlnum(Char))
+			{
+				Segment.AppendChar(Char);
+			}
 		}
-
-		UTexture2D* Texture = T66RuntimeUITextureAccess::LoadAssetTexture(
-			*AssetPath,
-			TextureFilter::TF_Nearest,
-			TEXT("IdleChadpocalypseMockup"));
-		if (Texture)
-		{
-			GIdleMockupTextureCache.Add(AssetPath, TStrongObjectPtr<UTexture2D>(Texture));
-			return Texture;
-		}
-
-		return nullptr;
-	}
-
-	const FSlateBrush* ResolveIdleMockupBrush(const FString& SourceRelativePath)
-	{
-		if (const TSharedPtr<FSlateBrush>* CachedBrush = GIdleMockupBrushCache.Find(SourceRelativePath))
-		{
-			return CachedBrush->Get();
-		}
-
-		UTexture2D* Texture = LoadIdleMockupTexture(SourceRelativePath);
-		if (!Texture)
-		{
-			return nullptr;
-		}
-
-		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
-		Brush->DrawAs = ESlateBrushDrawType::Image;
-		Brush->Tiling = ESlateBrushTileType::NoTile;
-		Brush->ImageSize = FVector2D(static_cast<float>(Texture->GetSizeX()), static_cast<float>(Texture->GetSizeY()));
-		Brush->TintColor = FSlateColor(FLinearColor::White);
-		Brush->SetResourceObject(Texture);
-
-		GIdleMockupBrushCache.Add(SourceRelativePath, Brush);
-		return Brush.Get();
+		return Segment.IsEmpty() ? FString(TEXT("Unnamed")) : Segment;
 	}
 
 	TSharedRef<SWidget> MakeIdleChromePanel(const TSharedRef<SWidget>& Content, const FMargin& Padding, const FLinearColor& Accent)
 	{
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.018f, 0.016f, 0.020f, 0.86f))
-			.Padding(1.f)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(Accent)
-				.Padding(1.f)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.030f, 0.028f, 0.032f, 0.92f))
-					.Padding(Padding)
-					[
-						Content
-					]
-				]
-			];
+		return FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, Padding, Content);
 	}
 }
 
@@ -445,29 +391,25 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildGameplayUI()
 
 TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildMockupBackdrop(const FString& SourceRelativePath, const FLinearColor& FallbackColor) const
 {
-	if (const FSlateBrush* Brush = ResolveIdleMockupBrush(SourceRelativePath))
-	{
-		return SNew(SImage)
-			.Image(Brush)
-			.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, IdleMockupBackdropOpacity));
-	}
-
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FallbackColor);
+		.BorderBackgroundColor(FT66FlatStyle::BackgroundColor());
 }
 
 TSharedRef<SWidget> UT66IdleMainMenuScreen::MakeIdleButton(const FText& Text, const FOnClicked& OnClicked, const float Width, const float Height) const
 {
-	return SNew(SBox)
-		.WidthOverride(Width)
-		.HeightOverride(Height)
-		[
-			FT66Style::MakeButton(FT66ButtonParams(Text, OnClicked)
-				.SetMinWidth(Width)
-				.SetHeight(Height)
-				.SetFontSize(14))
-		];
+	return FT66FlatStyle::MakeFlatButton(
+		ET66FlatState::Default,
+		Text,
+		OnClicked,
+		nullptr,
+		nullptr,
+		FMargin(14.f, 8.f, 14.f, 6.f),
+		Width,
+		Height,
+		true,
+		14,
+		FName(*FString::Printf(TEXT("Idle.Button.%s"), *MakeIdleTagSegment(Text))));
 }
 
 TSharedRef<SWidget> UT66IdleMainMenuScreen::MakeStatPanel(const FText& Label, const TAttribute<FText>& Value, const FLinearColor& Accent) const
@@ -560,30 +502,30 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::MakePurchasePanel()
 
 TSharedRef<SWidget> UT66IdleMainMenuScreen::MakePurchaseButton(const FText& Label, const FText& Body, const FLinearColor& Accent, const FOnClicked& OnClicked) const
 {
-	return FT66Style::MakeBareButton(
-		FT66BareButtonParams(
-			OnClicked,
-			MakeIdleChromePanel(
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
-				[
-					SNew(STextBlock)
-					.Text(Label)
-					.Font(FT66Style::MakeFont(TEXT("Bold"), 12))
-					.ColorAndOpacity(Accent)
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
-				[
-					SNew(STextBlock)
-					.Text(Body)
-					.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
-					.ColorAndOpacity(FLinearColor(0.90f, 0.86f, 0.78f, 1.0f))
-					.AutoWrapText(true)
-				],
-				FMargin(10.f),
-				Accent * 0.64f))
-		.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-		.SetPadding(FMargin(0.f)));
+	return FT66FlatStyle::MakeFlatToggleGroupButton(
+		ET66FlatState::Default,
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(Label)
+			.Font(FT66FlatStyle::MakeBoldFont(12))
+			.ColorAndOpacity(FT66FlatStyle::SelectedText())
+		]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+		[
+			SNew(STextBlock)
+			.Text(Body)
+			.Font(FT66FlatStyle::MakeFont(11))
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+			.AutoWrapText(true)
+		],
+		OnClicked,
+		FMargin(10.f),
+		0.f,
+		0.f,
+		true,
+		FName(*FString::Printf(TEXT("Idle.Purchase.%s"), *MakeIdleTagSegment(Label))));
 }
 
 void UT66IdleMainMenuScreen::EnsureProfileLoaded()

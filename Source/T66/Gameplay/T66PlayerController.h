@@ -79,10 +79,6 @@ public:
 	UPROPERTY(Transient)
 	TMap<ET66ScreenType, TSubclassOf<UT66ScreenBase>> RuntimeScreenClasses;
 
-	/** Optional theme-specific screen overrides used when the Dota theme is active. */
-	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
-	TMap<ET66ScreenType, TSubclassOf<UT66ScreenBase>> DotaScreenClasses;
-
 	/** The initial screen to show (usually MainMenu) */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	ET66ScreenType InitialScreen = ET66ScreenType::MainMenu;
@@ -385,11 +381,16 @@ private:
 	bool ApplyHostPartyRunSettingsToGameInstance() const;
 	void ApplyFrontendCommandLineOverrides(ET66ScreenType& ScreenToShow);
 	void QueueFrontendAutomationScreenshotIfRequested();
+	void QueueFrontendAutomationDumpIfRequested();
+	void QueueFrontendAutomationWidgetDumpIfRequested();
 	void HandleFrontendAutomationScreenshot();
+	void HandleFrontendAutomationDump();
+	void HandleFrontendAutomationWidgetDump();
 	void HandleFrontendAutomationQuit();
 	void QueueGameplayAutomationScreenshotIfRequested();
 	void HandleGameplayAutomationPrepare();
 	void HandleGameplayAutomationScreenshot();
+	void HandleGameplayAutomationWidgetDump();
 	void HandleGameplayAutomationQuit();
 	void ApplyGameplayAutomationCaptureMode();
 	void BindPartyInviteEvents();
@@ -400,15 +401,26 @@ private:
 	FString FrontendAutomationScreenshotPath;
 	float FrontendAutomationScreenshotDelaySeconds = 0.f;
 	bool bFrontendAutomationKeepAliveAfterScreenshot = false;
+	FString FrontendAutomationDumpPath;
+	float FrontendAutomationDumpDelaySeconds = 0.f;
+	FString FrontendAutomationWidgetDumpTarget;
+	FString FrontendAutomationWidgetDumpPath;
+	float FrontendAutomationWidgetDumpDelaySeconds = 0.f;
 	ET66ScreenType FrontendAutomationModalToShow = ET66ScreenType::None;
 	FTimerHandle FrontendAutomationScreenshotTimerHandle;
+	FTimerHandle FrontendAutomationDumpTimerHandle;
+	FTimerHandle FrontendAutomationWidgetDumpTimerHandle;
 	FTimerHandle FrontendAutomationQuitTimerHandle;
 	FString GameplayAutomationScreenshotPath;
+	FString GameplayAutomationWidgetDumpTarget;
+	FString GameplayAutomationWidgetDumpPath;
 	FString GameplayAutomationCaptureMode;
 	float GameplayAutomationScreenshotDelaySeconds = 0.f;
+	float GameplayAutomationWidgetDumpDelaySeconds = 0.f;
 	bool bGameplayAutomationKeepAliveAfterScreenshot = false;
 	FTimerHandle GameplayAutomationPrepareTimerHandle;
 	FTimerHandle GameplayAutomationScreenshotTimerHandle;
+	FTimerHandle GameplayAutomationWidgetDumpTimerHandle;
 	FTimerHandle GameplayAutomationQuitTimerHandle;
 	FTimerHandle FrontendLaunchPolicyTimeoutTimerHandle;
 	FTimerHandle GameplayViewTargetRetryTimerHandle;
@@ -472,21 +484,6 @@ private:
 	TObjectPtr<UInputAction> IA_ToggleMouseLock = nullptr;
 	UPROPERTY(Transient)
 	TObjectPtr<UInputMappingContext> IMC_GameplayMouse = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
-	TSubclassOf<UT66GameplayHUDWidget> DotaGameplayHUDClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
-	TSubclassOf<UT66CasinoOverlayWidget> DotaCasinoOverlayClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
-	TSubclassOf<UT66CollectorOverlayWidget> DotaCollectorOverlayClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
-	TSubclassOf<UT66CowardicePromptWidget> DotaCowardicePromptClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
-	TSubclassOf<UT66IdolAltarOverlayWidget> DotaIdolAltarOverlayClass;
 
 	TWeakObjectPtr<AActor> LockedCombatActor;
 	TWeakObjectPtr<UT66CombatHitZoneComponent> LockedCombatZoneComponent;

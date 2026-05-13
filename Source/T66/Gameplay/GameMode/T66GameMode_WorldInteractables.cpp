@@ -2273,7 +2273,6 @@ void AT66GameMode::SpawnIdolVFXTestTargets()
 		}
 
 		TargetEnemy->CurrentHP = TargetEnemy->MaxHP;
-		TargetEnemy->UpdateHealthBar();
 		TargetEnemy->Tags.AddUnique(FName(TEXT("IdolVFXTestTarget")));
 		UE_LOG(LogT66GameMode, Log, TEXT("Spawned idol VFX test target %s at %s"), *TargetIds[Index].ToString(), *TargetEnemy->GetActorLocation().ToCompactString());
 		IdolVFXTestTargets.Add(TargetEnemy);

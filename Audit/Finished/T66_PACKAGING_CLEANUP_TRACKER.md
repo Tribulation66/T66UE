@@ -9,7 +9,7 @@ This tracker is finished from the automated packaging/runtime asset-contract sid
 Resolved in the current source tree:
 
 - Runtime data determinism for the named leaderboard target path is mostly closed: `ScoreTargetsDTPath` now points at `/Game/Data/Leaderboard_ScoreTargets.Leaderboard_ScoreTargets`, and `Initialize()` loads cooked DataTables first instead of CSV-first.
-- The old `T66DotaSlate.*` files are gone.
+- The old `T66DeletedThemeSlate.*` files are gone.
 - `RuntimeDependencies/T66/...` exists and is staged through `Source/T66/T66.Build.cs`; duplicate child entries were removed in favor of broader owned roots.
 - The runtime UI texture helper is now `T66RuntimeUITextureAccess`, not the older `T66LegacyUITextureAccess` name used by earlier pass notes.
 - The original `SourceAssets/Archive` dependency is no longer live; the archive asset cleanup ledger says `SourceAssets/Archive` was fully removed.
@@ -124,8 +124,8 @@ The following runtime files contain `ProjectDir`, `ProjectContentDir`, `ImportFi
 
 #### UI
 
-- `Source/T66/UI/Dota/T66DotaSlate.cpp`
-- `Source/T66/UI/Dota/T66DotaTheme.cpp`
+- `Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp`
+- `Source/T66/UI/DeletedTheme/T66DeletedThemeTheme.cpp`
 - `Source/T66/UI/Screens/T66MainMenuScreen.cpp`
 - `Source/T66/UI/Screens/T66PowerUpScreen.cpp`
 - `Source/T66/UI/Style/T66ButtonVisuals.cpp`
@@ -291,7 +291,7 @@ The user opted to use logs instead of screenshots/video for the cleanup baseline
 
 Observed from `Saved/Logs/T66.log` during the current frontend run:
 
-- `LogT66FrontendTopBar` confirms the frontend top bar is still loading generated visuals from loose files under `Content/SourceAssets/UI/Dota/Generated`, with repeated `LoadedFrom=file` results.
+- `LogT66FrontendTopBar` confirms the frontend top bar is still loading generated visuals from loose files under `Content/SourceAssets/UI/DeletedTheme/Generated`, with repeated `LoadedFrom=file` results.
 - `LogSlate` confirms runtime fonts are still being loaded from raw source files:
   - `SourceAssets/Reaver-Bold.woff`
   - `SourceAssets/radiance.ttf`
@@ -370,7 +370,7 @@ Completed sanitation in this slice:
 - Added `Source/T66/UI/Style/T66LegacyUIFontAccess.cpp`
 - Moved duplicated legacy Slate font path resolution out of:
   - `Source/T66/UI/Style/T66Style.cpp`
-  - `Source/T66/UI/Dota/T66DotaTheme.cpp`
+  - `Source/T66/UI/DeletedTheme/T66DeletedThemeTheme.cpp`
 - Centralized the shared fallback chain for:
   - `SourceAssets/radiance.ttf`
   - `SourceAssets/Reaver-Bold.woff`
@@ -400,8 +400,8 @@ Additional sanitation completed in later slices:
 - Added `Source/T66/UI/Style/T66LegacyUIBrushAccess.cpp`
 - Moved the duplicated optional imported-texture / loose-file-fallback / nine-slice brush logic out of:
   - `Source/T66/UI/Style/T66Style.cpp`
-  - `Source/T66/UI/Dota/T66DotaSlate.cpp`
-- Centralized the shared Dota generated-source directory ownership and optional brush logging under `LogT66RuntimeUI`
+  - `Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp`
+- Centralized the shared DeletedTheme generated-source directory ownership and optional brush logging under `LogT66RuntimeUI`
 - Added `Source/T66/UI/Style/T66LegacyUITextureAccess.h`
 - Added `Source/T66/UI/Style/T66LegacyUITextureAccess.cpp`
 - Moved loose UI texture import/configuration into a shared helper and rewired:
@@ -778,7 +778,7 @@ Next verification target:
 - confirm frontend and tribulation lighting still behave identically after the subsystem extraction
 - verify no new lighting-specific warnings appear in `Saved/Logs/T66.log`
 
-## Cleanup Pass: Combat VFX Extraction + Shared Dota Plate Brushes
+## Cleanup Pass: Combat VFX Extraction + Shared DeletedTheme Plate Brushes
 
 Two architecture cleanup concerns were addressed in this pass to keep packaging work moving toward cleaner ownership boundaries instead of adding more logic to god files.
 
@@ -801,20 +801,20 @@ Packaging / cleanup benefit:
 - future VFX work can be isolated without re-bloating `UT66CombatComponent`
 - packaged-asset audit for combat visuals now has one dedicated implementation file
 
-Shared Dota plate brush dedup:
+Shared DeletedTheme plate brush dedup:
 
-- Added `T66LegacyUIBrushAccess::ET66DotaPlateBrushKind`
-- Added `T66LegacyUIBrushAccess::ResolveDotaButtonPlateBrush(...)`
-- Removed the duplicated Dota button plate asset/fallback/brush state logic from:
+- Added `T66LegacyUIBrushAccess::ET66DeletedThemePlateBrushKind`
+- Added `T66LegacyUIBrushAccess::ResolveDeletedThemeButtonPlateBrush(...)`
+- Removed the duplicated DeletedTheme button plate asset/fallback/brush state logic from:
   - `Source/T66/UI/Style/T66Style.cpp`
-  - `Source/T66/UI/Dota/T66DotaSlate.cpp`
-- Both style layers now resolve Dota button plates through the single shared helper in:
+  - `Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp`
+- Both style layers now resolve DeletedTheme button plates through the single shared helper in:
   - `Source/T66/UI/Style/T66LegacyUIBrushAccess.h`
   - `Source/T66/UI/Style/T66LegacyUIBrushAccess.cpp`
 
 Packaging / cleanup benefit:
 
-- the cooked asset path and loose fallback filename for Dota plates now live in one place
+- the cooked asset path and loose fallback filename for DeletedTheme plates now live in one place
 - frontend/shared UI no longer risk drifting because of copy-pasted brush ownership logic
 
 Build gate:
@@ -825,7 +825,7 @@ Build gate:
 Next verification target:
 
 - confirm combat attack VFX still fire normally after the translation-unit split
-- confirm no new combat-VFX or Dota button-plate warnings appear in `Saved/Logs/T66.log`
+- confirm no new combat-VFX or DeletedTheme button-plate warnings appear in `Saved/Logs/T66.log`
 
 ## Cleanup Pass: Save/Load Resume Repair + Preview Removal
 
@@ -858,10 +858,10 @@ Preview removal:
 
 Disk-cleanup follow-up:
 
-- Verified `Source/T66/UI/Dota/T66DotaSlate.*` had no remaining references.
+- Verified `Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.*` had no remaining references.
 - Deleted:
-  - `Source/T66/UI/Dota/T66DotaSlate.h`
-  - `Source/T66/UI/Dota/T66DotaSlate.cpp`
+  - `Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.h`
+  - `Source/T66/UI/DeletedTheme/T66DeletedThemeSlate.cpp`
 
 Log cleanup folded into the pass:
 

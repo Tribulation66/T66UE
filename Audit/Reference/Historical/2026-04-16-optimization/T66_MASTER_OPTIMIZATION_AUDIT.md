@@ -291,7 +291,7 @@ The main problem is not that the backend routes are heavy. It is that the guest-
 - Accept flow rebuilds modal state before and during backend/session work.
 - Join flow may destroy an existing session before completing the new join path.
 - Healthy-path joins can still fall into retry machinery meant for fallback cases.
-- A fixed `1.0 s` retry is fatal to the user's "why doesn't this feel instant like Dota?" complaint.
+- A fixed `1.0 s` retry is fatal to the user's "why doesn't this feel instant like DeletedTheme?" complaint.
 
 ### Structural / Gold-Standard Risks
 

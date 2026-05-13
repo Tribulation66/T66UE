@@ -3,8 +3,7 @@
 #pragma once
 
 #include "Styling/CoreStyle.h"
-#include "UI/Style/T66RuntimeUIBrushAccess.h"
-#include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -33,82 +32,82 @@ namespace T66MiniUI
 
 	inline FLinearColor ShellFill()
 	{
-		return FLinearColor(0.025f, 0.021f, 0.024f, 0.985f);
+		return FT66FlatStyle::BackgroundColor();
 	}
 
 	inline FLinearColor PanelFill()
 	{
-		return FLinearColor(0.058f, 0.052f, 0.044f, 0.980f);
+		return FT66FlatStyle::DefaultFill();
 	}
 
 	inline FLinearColor CardFill()
 	{
-		return FLinearColor(0.085f, 0.075f, 0.055f, 1.0f);
+		return FT66FlatStyle::DefaultFill();
 	}
 
 	inline FLinearColor RaisedFill()
 	{
-		return FLinearColor(0.130f, 0.105f, 0.070f, 1.0f);
+		return FT66FlatStyle::SelectedFill();
 	}
 
 	inline FLinearColor MutedText()
 	{
-		return FLinearColor(0.765f, 0.735f, 0.655f, 1.0f);
+		return FT66FlatStyle::SecondaryText();
 	}
 
 	inline FLinearColor Text()
 	{
-		return FLinearColor(0.955f, 0.925f, 0.835f, 1.0f);
+		return FT66FlatStyle::PrimaryText();
 	}
 
 	inline FLinearColor ScreenBackground()
 	{
-		return FLinearColor(0.050f, 0.043f, 0.050f, 1.0f);
+		return FT66FlatStyle::BackgroundColor();
 	}
 
 	inline FLinearColor ScreenTint()
 	{
-		return FLinearColor(0.055f, 0.025f, 0.075f, 0.24f);
+		return FLinearColor(0.020f, 0.010f, 0.020f, 0.28f);
 	}
 
 	inline FLinearColor PanelOutline()
 	{
-		return FLinearColor(0.510f, 0.405f, 0.205f, 0.94f);
+		return FT66FlatStyle::DefaultBorder();
 	}
 
 	inline FLinearColor SelectedFill()
 	{
-		return FLinearColor(0.245f, 0.220f, 0.105f, 0.96f);
+		return FT66FlatStyle::SelectedFill();
 	}
 
 	inline FLinearColor SelectedBorder()
 	{
-		return FLinearColor(0.860f, 0.670f, 0.247f, 1.0f);
+		return FT66FlatStyle::SelectedBorder();
 	}
 
 	inline FLinearColor AccentGreen()
 	{
-		return FLinearColor(0.475f, 0.700f, 0.245f, 1.0f);
+		return FT66FlatStyle::GoodStandingGreen();
 	}
 
 	inline FLinearColor AccentBlue()
 	{
-		return FLinearColor(0.250f, 0.185f, 0.365f, 1.0f);
+		return FT66FlatStyle::DataAccent();
 	}
 
 	inline FLinearColor AccentGold()
 	{
-		return FLinearColor(0.860f, 0.670f, 0.247f, 1.0f);
+		return FT66FlatStyle::SelectedText();
 	}
 
 	inline FLinearColor AccentPurple()
 	{
-		return FLinearColor(0.490f, 0.315f, 0.650f, 1.0f);
+		return FT66FlatStyle::PurpleAccent();
 	}
 
 	inline FLinearColor Danger()
 	{
-		return FLinearColor(0.600f, 0.185f, 0.205f, 1.0f);
+		return FT66FlatStyle::SelectedBorder();
 	}
 
 	inline FLinearColor ButtonTextDark()
@@ -118,22 +117,22 @@ namespace T66MiniUI
 
 	inline const TCHAR* MasterBasicPanelPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png");
+		return TEXT("");
 	}
 
 	inline const TCHAR* MasterInnerPanelPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/main_panel_normal.png");
+		return TEXT("");
 	}
 
 	inline const TCHAR* MasterBasicButtonPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_normal.png");
+		return TEXT("");
 	}
 
 	inline const TCHAR* MasterSelectedButtonPath()
 	{
-		return TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/leaderboard_tab_button_selected.png");
+		return TEXT("");
 	}
 
 	inline const FMargin& MasterPanelMargin()
@@ -150,54 +149,24 @@ namespace T66MiniUI
 
 	inline const FSlateBrush* ContentShellBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterBasicPanelPath()),
-			MasterPanelMargin(),
-			TEXT("MiniMasterContentShell"));
+		return WhiteBrush();
 	}
 
 	inline const FSlateBrush* RowShellBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(MasterInnerPanelPath()),
-			MasterPanelMargin(),
-			TEXT("MiniMasterRowShell"));
+		return WhiteBrush();
 	}
 
 	inline const FSlateBrush* ButtonPlateBrush(const ET66ButtonType Type)
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush BasicEntry;
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush SelectedEntry;
-
-		const bool bUseSelectedPlate = Type == ET66ButtonType::Success
-			|| Type == ET66ButtonType::Primary
-			|| Type == ET66ButtonType::ToggleActive;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry = bUseSelectedPlate ? SelectedEntry : BasicEntry;
-
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(bUseSelectedPlate ? MasterSelectedButtonPath() : MasterBasicButtonPath()),
-			MasterButtonMargin(),
-			bUseSelectedPlate ? TEXT("MiniMasterSelectedButton") : TEXT("MiniMasterBasicButton"));
+		return WhiteBrush();
 	}
 
 	inline TSharedRef<SWidget> MakeSpritePanel(const TSharedRef<SWidget>& Content, const FMargin& Padding, const bool bRow = false)
 	{
-		const FSlateBrush* Brush = bRow ? RowShellBrush() : ContentShellBrush();
-		return SNew(SBorder)
-			.BorderImage(Brush ? Brush : WhiteBrush())
-			.BorderBackgroundColor(Brush ? FLinearColor::White : PanelFill())
-			.Padding(Padding)
-			[
-				Content
-			];
+		return bRow
+			? FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, Padding, Content)
+			: FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, Padding, Content);
 	}
 
 	inline FT66ButtonParams MakeButtonParams(
@@ -215,12 +184,10 @@ namespace T66MiniUI
 			.SetFontSize(FontSize)
 			.SetPadding(FMargin(14.f, 8.f, 14.f, 6.f))
 			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(true)
-			.SetDotaPlateOverrideBrush(ButtonPlateBrush(Type))
 			.SetStateTextShadowColors(
-				FLinearColor(0.f, 0.f, 0.f, 0.44f),
-				FLinearColor(0.f, 0.f, 0.f, 0.50f),
-				FLinearColor(0.f, 0.f, 0.f, 0.34f))
+				FLinearColor::Transparent,
+				FLinearColor::Transparent,
+				FLinearColor::Transparent)
 			.SetTextShadowOffset(FVector2D(0.f, 1.f))
 			.SetTextColor(Text());
 		return Params;

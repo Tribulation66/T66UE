@@ -18,11 +18,14 @@
 #include "Engine/TextureDefines.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 
 #include "Data/T66DataTypes.h"
 #include "Engine/Texture2D.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "HAL/FileManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
@@ -59,6 +62,46 @@ namespace
 	FSlateFontInfo AccountRegularFont(int32 BaseSize)
 	{
 		return FT66Style::Tokens::FontRegular(AdjustAccountFontSize(BaseSize));
+	}
+
+	const FSlateBrush* AccountFlatIconBrush(const TCHAR* RelativePath, const FVector2D& ImageSize, const TCHAR* DebugLabel)
+	{
+		struct FCache
+		{
+			TSharedPtr<FSlateBrush> Brush;
+			TStrongObjectPtr<UTexture2D> Texture;
+		};
+
+		static TMap<FString, FCache> Cache;
+		const FString Key = FString::Printf(TEXT("%s|%.0fx%.0f"), RelativePath, ImageSize.X, ImageSize.Y);
+		FCache& Entry = Cache.FindOrAdd(Key);
+		if (!Entry.Brush.IsValid())
+		{
+			Entry.Brush = MakeShared<FSlateBrush>();
+			Entry.Brush->DrawAs = ESlateBrushDrawType::Image;
+			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
+			Entry.Brush->TintColor = FSlateColor(FLinearColor::White);
+			Entry.Brush->ImageSize = ImageSize;
+		}
+
+		if (!Entry.Texture.IsValid())
+		{
+			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+			{
+				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
+					CandidatePath,
+					TextureFilter::TF_Trilinear,
+					DebugLabel))
+				{
+					Entry.Texture.Reset(Texture);
+					break;
+				}
+			}
+		}
+
+		Entry.Brush->ImageSize = ImageSize;
+		Entry.Brush->SetResourceObject(Entry.Texture.IsValid() ? Entry.Texture.Get() : nullptr);
+		return Entry.Texture.IsValid() ? Entry.Brush.Get() : nullptr;
 	}
 
 	float AccountPreviewProgress01(const int32 Index)
@@ -1141,7 +1184,14 @@ void UT66AccountStatusScreen::ApplyAutomationAccountTabOverride()
 	FString RequestedAccountTab;
 	if (!FParse::Value(FCommandLine::Get(), TEXT("T66AccountTab="), RequestedAccountTab))
 	{
-		return;
+		FString RequestedFrontendScreen;
+		if (!FParse::Value(FCommandLine::Get(), TEXT("T66FrontendScreen="), RequestedFrontendScreen)
+			|| (!RequestedFrontendScreen.Equals(TEXT("Overview"), ESearchCase::IgnoreCase)
+				&& !RequestedFrontendScreen.Equals(TEXT("History"), ESearchCase::IgnoreCase)))
+		{
+			return;
+		}
+		RequestedAccountTab = RequestedFrontendScreen;
 	}
 
 	if (RequestedAccountTab.Equals(TEXT("History"), ESearchCase::IgnoreCase))
@@ -1687,6 +1737,2133 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 		return FText::FromName(HeroID);
 	};
+
+	if (ActiveTab == EAccountTab::Overview)
+	{
+		{
+			auto OTag = [](const TCHAR* Tag) -> FName
+			{
+				return FName(Tag);
+			};
+
+			auto UpperText = [](const FText& Text) -> FText
+			{
+				FString Value = Text.ToString();
+				Value.ToUpperInline();
+				return FText::FromString(Value);
+			};
+
+			constexpr float OverviewCanvasW = 1920.f;
+			constexpr float OverviewCanvasH = 1080.f;
+			const TSharedRef<SConstraintCanvas> OverviewCanvas = SNew(SConstraintCanvas);
+
+			auto AddCanvas = [OverviewCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+			{
+				OverviewCanvas->AddSlot()
+				.Anchors(FAnchors(0.f, 0.f))
+				.Alignment(FVector2D(0.f, 0.f))
+				.Offset(FMargin(X, Y, W, H))
+				[
+					Widget
+				];
+			};
+
+			auto AddN = [&AddCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+			{
+				AddCanvas(X * OverviewCanvasW, Y * OverviewCanvasH, W * OverviewCanvasW, H * OverviewCanvasH, Widget);
+			};
+
+			auto MakeMetadataRegion = [](const FName Tag, const FString& Role, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
+			{
+				return FT66FlatStyle::AttachMetadata(
+					SNew(SSpacer),
+					Tag,
+					Role,
+					State);
+			};
+
+			auto MakePanelSurface = [](const FName Tag, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
+			{
+				return FT66FlatStyle::MakeFlatPanel(
+					State,
+					FMargin(0.f),
+					SNew(SSpacer),
+					nullptr,
+					Tag);
+			};
+
+			auto TaggedText = [](
+				const FName Tag,
+				const FText& Text,
+				const int32 FontSize,
+				const FLinearColor& Color,
+				const bool bBold = true,
+				const ETextJustify::Type Justification = ETextJustify::Left,
+				const bool bWrap = false) -> TSharedRef<SWidget>
+			{
+				return FT66FlatStyle::AttachMetadata(
+					SNew(STextBlock)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Text(Text)
+					.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+					.ColorAndOpacity(Color)
+					.Justification(Justification)
+					.AutoWrapText(bWrap)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds),
+					Tag,
+					TEXT("Label"),
+					ET66FlatState::Default,
+					TOptional<FLinearColor>(),
+					false,
+					NAME_None,
+					true);
+			};
+
+			auto PlainText = [](
+				const FText& Text,
+				const int32 FontSize,
+				const FLinearColor& Color,
+				const bool bBold = false,
+				const ETextJustify::Type Justification = ETextJustify::Left) -> TSharedRef<SWidget>
+			{
+				return SNew(STextBlock)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Text(Text)
+					.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+					.ColorAndOpacity(Color)
+					.Justification(Justification)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds);
+			};
+
+			auto MakeIcon = [](const FName Tag, const FSlateBrush* Brush, const FText& FallbackText) -> TSharedRef<SWidget>
+			{
+				const TSharedRef<SWidget> IconContent = Brush
+					? StaticCastSharedRef<SWidget>(SNew(SImage).Visibility(EVisibility::HitTestInvisible).Image(Brush).ColorAndOpacity(FLinearColor::White))
+					: StaticCastSharedRef<SWidget>(
+						SNew(STextBlock)
+						.Visibility(EVisibility::HitTestInvisible)
+						.Text(FallbackText)
+						.Font(FT66FlatStyle::MakeBoldFont(18))
+						.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+						.Justification(ETextJustify::Center));
+
+				return FT66FlatStyle::AttachMetadata(
+					SNew(SBox)
+					.Visibility(EVisibility::HitTestInvisible)
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
+					[
+						IconContent
+					],
+					Tag,
+					TEXT("Icon"),
+					ET66FlatState::Default);
+			};
+
+			auto MakeProgressVisual = [](const FName Tag, const float Percent, const float WidthNorm) -> TSharedRef<SWidget>
+			{
+				const float ClampedPercent = FMath::Clamp(Percent, 0.f, 1.f);
+				const float FillWidth = FMath::Max(0.f, WidthNorm * OverviewCanvasW * ClampedPercent);
+				const TSharedRef<SWidget> Track = SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FT66FlatStyle::BorderForState(ET66FlatState::Default))
+						.Padding(2.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FT66FlatStyle::FillForState(ET66FlatState::Default))
+						]
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Left)
+					[
+						SNew(SBox)
+						.WidthOverride(FillWidth)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FT66FlatStyle::SelectedBorder())
+						]
+					];
+
+				return FT66FlatStyle::AttachMetadata(
+					Track,
+					Tag,
+					TEXT("ProgressBar"),
+					ET66FlatState::Ready);
+			};
+
+			const FSlateBrush* InfoBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(24.f, 24.f), TEXT("OverviewInfoIcon"));
+			const FSlateBrush* ShieldBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/shield.png"), FVector2D(72.f, 72.f), TEXT("OverviewShieldIcon"));
+			const FSlateBrush* ChartBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/bar_chart.png"), FVector2D(58.f, 58.f), TEXT("OverviewBarChartIcon"));
+			const FSlateBrush* TrophyBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/trophy_laurel.png"), FVector2D(48.f, 48.f), TEXT("OverviewTrophyIcon"));
+			const FSlateBrush* StopwatchBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/stopwatch.png"), FVector2D(50.f, 50.f), TEXT("OverviewStopwatchIcon"));
+
+			AddN(0.013f, 0.123f, 0.974f, 0.838f, MakeMetadataRegion(OTag(TEXT("Overview.Root")), TEXT("Root")));
+			AddN(0.013f, 0.201f, 0.974f, 0.760f, MakeMetadataRegion(OTag(TEXT("Overview.MainBody")), TEXT("Body")));
+			AddN(0.013f, 0.207f, 0.393f, 0.754f, MakeMetadataRegion(OTag(TEXT("Overview.LeftColumn")), TEXT("Column")));
+			AddN(0.420f, 0.201f, 0.566f, 0.760f, MakeMetadataRegion(OTag(TEXT("Overview.RightColumn")), TEXT("Column")));
+			AddN(0.441f, 0.230f, 0.526f, 0.056f, MakeMetadataRegion(OTag(TEXT("Overview.FilterRow")), TEXT("FilterRow")));
+
+			AddN(0.013f, 0.207f, 0.393f, 0.221f, MakePanelSurface(OTag(TEXT("Overview.PlayerBlock"))));
+			AddN(0.013f, 0.454f, 0.393f, 0.182f, MakePanelSurface(OTag(TEXT("Overview.AccountStatusPanel"))));
+			AddN(0.013f, 0.654f, 0.393f, 0.307f, MakePanelSurface(OTag(TEXT("Overview.AccountProgressPanel"))));
+			AddN(0.420f, 0.201f, 0.566f, 0.760f, MakePanelSurface(OTag(TEXT("Overview.RightColumn.OuterPanel"))));
+			AddN(0.440f, 0.308f, 0.527f, 0.278f, MakePanelSurface(OTag(TEXT("Overview.HighestScorePanel"))));
+			AddN(0.440f, 0.616f, 0.527f, 0.296f, MakePanelSurface(OTag(TEXT("Overview.BestSpeedRunPanel"))));
+
+			const TSharedRef<SWidget> OverviewButtonContent = SNew(SBox)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					PlainText(NSLOCTEXT("T66.Account", "OverviewTabFlatFixed", "OVERVIEW"), 24, FT66FlatStyle::SelectedText(), true, ETextJustify::Center)
+				];
+			const TSharedRef<SWidget> HistoryButtonContent = SNew(SBox)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					PlainText(NSLOCTEXT("T66.Account", "HistoryTabFlatFixed", "HISTORY"), 24, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center)
+				];
+
+			AddN(0.148f, 0.123f, 0.690f, 0.060f, MakeMetadataRegion(OTag(TEXT("Overview.SubTabs")), TEXT("ToggleGroup.AccountTabs")));
+			AddN(
+				0.148f,
+				0.123f,
+				0.320f,
+				0.060f,
+				FT66FlatStyle::MakeFlatToggleGroupButton(
+					ET66FlatState::Selected,
+					OverviewButtonContent,
+					FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOverviewTabClicked),
+					FMargin(0.f),
+					0.320f * OverviewCanvasW,
+					0.060f * OverviewCanvasH,
+					true,
+					OTag(TEXT("Overview.SubTabs.OverviewButton")),
+					OTag(TEXT("AccountTabs"))));
+			AddN(
+				0.498f,
+				0.123f,
+				0.340f,
+				0.060f,
+				FT66FlatStyle::MakeFlatToggleGroupButton(
+					ET66FlatState::Default,
+					HistoryButtonContent,
+					FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleHistoryTabClicked),
+					FMargin(0.f),
+					0.340f * OverviewCanvasW,
+					0.060f * OverviewCanvasH,
+					true,
+					OTag(TEXT("Overview.SubTabs.HistoryButton")),
+					OTag(TEXT("AccountTabs"))));
+
+			TSharedRef<SWidget> OverviewInfoIcon = MakeIcon(OTag(TEXT("Overview.SubTabs.OverviewInfoIcon")), InfoBrush, FText::FromString(TEXT("i")));
+			OverviewInfoIcon->SetToolTipText(NSLOCTEXT("T66.Account", "OverviewTabInfoTooltipFixed", "Account overview"));
+			TSharedRef<SWidget> HistoryInfoIcon = MakeIcon(OTag(TEXT("Overview.SubTabs.HistoryInfoIcon")), InfoBrush, FText::FromString(TEXT("i")));
+			HistoryInfoIcon->SetToolTipText(NSLOCTEXT("T66.Account", "HistoryTabInfoTooltipFixed", "Run history"));
+			AddN(0.438f, 0.140f, 0.016f, 0.030f, OverviewInfoIcon);
+			AddN(0.806f, 0.140f, 0.016f, 0.030f, HistoryInfoIcon);
+
+			const FText OverviewProfileNameText = !LocalSteamName.IsEmpty()
+				? FText::FromString(LocalSteamName)
+				: NSLOCTEXT("T66.Account", "ProfileNameRandomChadFixed", "RandomChad");
+			const float ExperiencePct = ProfileExperienceToNextLevel > 0
+				? FMath::Clamp(static_cast<float>(ProfileExperienceIntoLevel) / static_cast<float>(ProfileExperienceToNextLevel), 0.f, 1.f)
+				: 0.f;
+			const FSlateBrush* ProfileBrush = ProfileAvatarBrush.IsValid() && ProfileAvatarBrush->GetResourceObject()
+				? ProfileAvatarBrush.Get()
+				: nullptr;
+			AddN(0.026f, 0.230f, 0.102f, 0.173f, FT66FlatStyle::MakeFlatPortraitSlot(ET66FlatState::Default, ProfileBrush, nullptr, FVector2D(0.102f * OverviewCanvasW, 0.173f * OverviewCanvasH), OTag(TEXT("Overview.PlayerBlock.Avatar"))));
+			AddN(0.145f, 0.238f, 0.106f, 0.033f, TaggedText(OTag(TEXT("Overview.PlayerBlock.Name")), OverviewProfileNameText, 26, FT66FlatStyle::PrimaryText()));
+			AddN(0.145f, 0.291f, 0.077f, 0.027f, TaggedText(OTag(TEXT("Overview.PlayerBlock.Level")), UpperText(ProfileLevelText), 18, FT66FlatStyle::SelectedText()));
+			AddN(0.145f, 0.346f, 0.065f, 0.026f, TaggedText(OTag(TEXT("Overview.PlayerBlock.ExperienceLabel")), NSLOCTEXT("T66.Account", "ExperienceLabelFlatFixed", "EXPERIENCE"), 17, FT66FlatStyle::PrimaryText()));
+			AddN(0.298f, 0.346f, 0.095f, 0.026f, TaggedText(OTag(TEXT("Overview.PlayerBlock.ExperienceValue")), UpperText(ProfileNextLevelText), 15, FT66FlatStyle::SecondaryText(), false, ETextJustify::Right));
+			AddN(0.145f, 0.379f, 0.247f, 0.026f, MakeProgressVisual(OTag(TEXT("Overview.PlayerBlock.ExperienceProgress")), ExperiencePct, 0.247f));
+
+			const FText StatusValue = bAccountEligible
+				? NSLOCTEXT("T66.Account", "GoodStandingFlatFixed", "GOOD STANDING")
+				: UpperText(RestrictionText(Restriction.Restriction));
+			AddN(0.029f, 0.488f, 0.053f, 0.084f, MakeIcon(OTag(TEXT("Overview.AccountStatusPanel.Icon")), ShieldBrush, FText::FromString(TEXT("S"))));
+			AddN(0.090f, 0.483f, 0.131f, 0.030f, TaggedText(OTag(TEXT("Overview.AccountStatusPanel.Header")), NSLOCTEXT("T66.Account", "StatusHeaderFlatFixed", "ACCOUNT STATUS"), 22, FT66FlatStyle::PrimaryText()));
+			AddN(0.228f, 0.483f, 0.135f, 0.030f, TaggedText(OTag(TEXT("Overview.AccountStatusPanel.Status")), StatusValue, 22, bAccountEligible ? FT66FlatStyle::GoodStandingGreen() : FT66FlatStyle::SelectedText()));
+			AddN(
+				0.090f,
+				0.525f,
+				0.299f,
+				0.080f,
+				TaggedText(
+					OTag(TEXT("Overview.AccountStatusPanel.Warning")),
+					NSLOCTEXT("T66.Account", "OverviewWarningFlatFixed", "Your account is eligible for the leaderboard. If you cheat or manipulate runs or submissions, your account will be flagged and eternally removed from the leaderboard."),
+					17,
+					FT66FlatStyle::SecondaryText(),
+					false,
+					ETextJustify::Left,
+					true));
+
+			AddN(0.029f, 0.678f, 0.042f, 0.061f, MakeIcon(OTag(TEXT("Overview.AccountProgressPanel.Icon")), ChartBrush, FText::FromString(TEXT("#"))));
+			AddN(0.090f, 0.683f, 0.144f, 0.032f, TaggedText(OTag(TEXT("Overview.AccountProgressPanel.Header")), NSLOCTEXT("T66.Account", "ProgressHeaderFlatFixed", "ACCOUNT PROGRESS"), 22, FT66FlatStyle::PrimaryText()));
+
+			int32 OverviewProgressIndex = 0;
+			auto AddProgressRow = [&](const TCHAR* RowTag, const FText& Label, const int32 Current, const int32 Total, const float X, const float Y, const float W, const float H, const float LabelW)
+			{
+				const FString BaseTag(RowTag);
+				const float Percent = AccountPreviewProgress01(OverviewProgressIndex++);
+				AddN(X, Y, W, H, MakeMetadataRegion(OTag(RowTag), TEXT("ProgressRow")));
+				AddN(X, Y, LabelW, H * 0.90f, TaggedText(OTag(*FString::Printf(TEXT("%s.Label"), *BaseTag)), Label, 16, FT66FlatStyle::PrimaryText(), false));
+				AddN(0.231f, Y, 0.115f, 0.025f, MakeProgressVisual(OTag(*FString::Printf(TEXT("%s.ProgressBar"), *BaseTag)), Percent, 0.115f));
+				AddN(0.359f, Y, 0.026f, H * 0.90f, TaggedText(
+					OTag(*FString::Printf(TEXT("%s.Value"), *BaseTag)),
+					FText::Format(NSLOCTEXT("T66.Account", "CountFmtFlatFixed", "{0}/{1}"), FText::AsNumber(Current), FText::AsNumber(Total)),
+					16,
+					FT66FlatStyle::SelectedText(),
+					true,
+					ETextJustify::Right));
+			};
+
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.Achievements"), NSLOCTEXT("T66.Account", "AchProgFlatFixed", "Achievements Unlocked"), UnlockedAchievements, AchievementDefs.Num(), 0.090f, 0.729f, 0.294f, 0.029f, 0.135f);
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.PowerUps"), NSLOCTEXT("T66.Account", "PowerProgFlatFixed", "Permanent Buffs Unlocked"), UnlockedPowerUps, PowerStats.Num() * UT66BuffSubsystem::MaxFillStepsPerStat, 0.090f, 0.775f, 0.294f, 0.029f, 0.151f);
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.Heroes"), NSLOCTEXT("T66.Account", "HeroProgFlatFixed", "Heroes Unlocked"), HeroIDs.Num(), HeroIDs.Num(), 0.090f, 0.819f, 0.294f, 0.029f, 0.108f);
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.Companions"), NSLOCTEXT("T66.Account", "CompProgFlatFixed", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num(), 0.090f, 0.864f, 0.294f, 0.029f, 0.139f);
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.Challenges"), NSLOCTEXT("T66.Account", "ChallengeProgFlatFixed", "Challenges Completed"), DisplayChallengesCompleted, TotalChallengeCount, 0.090f, 0.912f, 0.294f, 0.029f, 0.136f);
+
+			auto MakePBMenuEntry = [&OTag, &UpperText](
+				const TCHAR* Tag,
+				const FText& Label,
+				const bool bActive,
+				TFunction<void()> OnSelected) -> TSharedRef<SWidget>
+			{
+				return FT66FlatStyle::MakeFlatButton(
+					bActive ? ET66FlatState::Selected : ET66FlatState::Default,
+					UpperText(Label),
+					FOnClicked::CreateLambda([OnSelected = MoveTemp(OnSelected)]()
+					{
+						OnSelected();
+						FSlateApplication::Get().DismissAllMenus();
+						return FReply::Handled();
+					}),
+					nullptr,
+					nullptr,
+					FMargin(10.f, 7.f),
+					220.f,
+					38.f,
+					true,
+					16,
+					OTag(Tag),
+					TEXT("OverviewFilterSelection"));
+			};
+
+			auto MakePBViewModeMenuFlat = [&]() -> TSharedRef<SWidget>
+			{
+				TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+				Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[
+					MakePBMenuEntry(
+						TEXT("Overview.FilterRow.PersonalBestDropdown.Option.PersonalBest"),
+						NSLOCTEXT("T66.Account", "PBViewPersonalBestFlatFixed", "Personal Best"),
+						ActivePBViewMode == EPersonalBestViewMode::PersonalBest,
+						[this]() { ActivePBViewMode = EPersonalBestViewMode::PersonalBest; RequestDeferredSlateRebuild(); })
+				];
+				Menu->AddSlot().AutoHeight()
+				[
+					MakePBMenuEntry(
+						TEXT("Overview.FilterRow.PersonalBestDropdown.Option.HighestRank"),
+						NSLOCTEXT("T66.Account", "PBViewHighestRankFlatFixed", "Highest Rank"),
+						ActivePBViewMode == EPersonalBestViewMode::HighestRank,
+						[this]() { ActivePBViewMode = EPersonalBestViewMode::HighestRank; RequestDeferredSlateRebuild(); })
+				];
+				return Menu;
+			};
+
+			auto MakePBPartySizeMenuFlat = [&]() -> TSharedRef<SWidget>
+			{
+				TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+				for (ET66PartySize PartySize : { ET66PartySize::Solo, ET66PartySize::Duo, ET66PartySize::Trio, ET66PartySize::Quad })
+				{
+					const FString Tag = FString::Printf(TEXT("Overview.FilterRow.SoloDropdown.Option.%s"), *PartySizeToApiString(PartySize));
+					Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[
+						MakePBMenuEntry(
+							*Tag,
+							PartySizeText(Loc, PartySize),
+							ActivePBPartySize == PartySize,
+							[this, PartySize]() { ActivePBPartySize = PartySize; RequestDeferredSlateRebuild(); })
+					];
+				}
+				return Menu;
+			};
+
+			auto GetPBViewModeTextFlat = [this, &UpperText]() -> FText
+			{
+				return UpperText(ActivePBViewMode == EPersonalBestViewMode::HighestRank
+					? NSLOCTEXT("T66.Account", "PBViewHighestRankFlatValueFixed", "Highest Rank")
+					: NSLOCTEXT("T66.Account", "PBViewPersonalBestFlatValueFixed", "Personal Best"));
+			};
+
+			AddN(0.441f, 0.230f, 0.252f, 0.056f, FT66FlatStyle::MakeFlatDropdown(
+				ET66FlatState::Selected,
+				TAttribute<FText>::CreateLambda([GetPBViewModeTextFlat]() { return GetPBViewModeTextFlat(); }),
+				MakePBViewModeMenuFlat,
+				true,
+				0.252f * OverviewCanvasW,
+				0.056f * OverviewCanvasH,
+				20,
+				OTag(TEXT("Overview.FilterRow.PersonalBestDropdown"))));
+			AddN(0.713f, 0.230f, 0.254f, 0.056f, FT66FlatStyle::MakeFlatDropdown(
+				ET66FlatState::Selected,
+				TAttribute<FText>::CreateLambda([this, Loc, UpperText]() { return UpperText(PartySizeText(Loc, ActivePBPartySize)); }),
+				MakePBPartySizeMenuFlat,
+				true,
+				0.254f * OverviewCanvasW,
+				0.056f * OverviewCanvasH,
+				20,
+				OTag(TEXT("Overview.FilterRow.SoloDropdown"))));
+
+			struct FOverviewPBCellData
+			{
+				FText Difficulty;
+				FText Hero;
+				FText Date;
+				FText Primary;
+				FText Secondary;
+				bool bCanOpen = false;
+				FString SlotName;
+			};
+
+			auto MakePBCellData = [&](const bool bTime, const ET66Difficulty Difficulty) -> FOverviewPBCellData
+			{
+				const FPersonalBestDisplay PB = bTime ? MakePBTime(Difficulty) : MakePBScore(Difficulty);
+				const bool bCanOpen = PB.bHasRecord && !PB.RunSummarySlotName.IsEmpty();
+				const FName PBHeroID = PB.bHasRecord ? ResolvePBHeroID(PB.RunSummarySlotName) : NAME_None;
+				const FText HeroName = PB.bHasRecord
+					? (PBHeroID.IsNone() ? NSLOCTEXT("T66.Account", "PBUnknownHeroFlatFixed", "Unknown") : HeroText(PBHeroID))
+					: FText::GetEmpty();
+				const FText Value = PB.bHasRecord ? (bTime ? FormatDurationText(PB.Seconds) : FText::AsNumber(PB.Score)) : NSLOCTEXT("T66.Account", "NoRecordFlatFixed", "--");
+				const FText Date = PB.bHasRecord && PB.AchievedAtUtc.GetTicks() > 0 ? FText::FromString(PB.AchievedAtUtc.ToString(TEXT("%m/%d/%Y"))) : FText::GetEmpty();
+				FText RankText = FText::GetEmpty();
+				if (PB.bHasRecord)
+				{
+					if (!Backend || !Backend->IsBackendConfigured() || !Backend->HasSteamTicket())
+					{
+						RankText = NSLOCTEXT("T66.Account", "RankUnavailableFlatFixed", "N/A");
+					}
+					else if (!PB.bHasRankState)
+					{
+						RankText = NSLOCTEXT("T66.Account", "RankPendingFlatFixed", "...");
+					}
+					else if (!PB.bRankRequestSucceeded)
+					{
+						RankText = NSLOCTEXT("T66.Account", "RankFailedFlatFixed", "N/A");
+					}
+					else if (PB.GlobalRank > 0)
+					{
+						RankText = FText::Format(NSLOCTEXT("T66.Account", "RankFmtFlatFixed", "#{0}"), FText::AsNumber(PB.GlobalRank));
+					}
+					else
+					{
+						RankText = NSLOCTEXT("T66.Account", "RankUnrankedFlatFixed", "Unranked");
+					}
+				}
+
+				const bool bRankInThirdColumn = ActivePBViewMode == EPersonalBestViewMode::PersonalBest;
+				FOverviewPBCellData Data;
+				Data.Difficulty = UpperText(DifficultyText(Difficulty));
+				Data.Hero = HeroName;
+				Data.Date = Date;
+				Data.Primary = bRankInThirdColumn ? RankText : Value;
+				Data.Secondary = bRankInThirdColumn ? Value : RankText;
+				Data.bCanOpen = bCanOpen;
+				Data.SlotName = PB.RunSummarySlotName;
+				return Data;
+			};
+
+			auto AddPBTable = [&](
+				const TCHAR* PanelTag,
+				const TCHAR* TableTag,
+				const TCHAR* IconTag,
+				const TCHAR* HeaderTag,
+				const FText& Title,
+				const FSlateBrush* IconBrush,
+				const bool bTime,
+				const float PanelY,
+				const float TableY,
+				const float TableH,
+				const float HeaderY,
+				const float IconH,
+				const TArray<float>& RowYs,
+				const TArray<float>& RowHs)
+			{
+				AddN(0.451f, HeaderY - 0.003f, 0.029f, IconH, MakeIcon(OTag(IconTag), IconBrush, bTime ? FText::FromString(TEXT("T")) : FText::FromString(TEXT("#"))));
+				AddN(0.492f, HeaderY, bTime ? 0.141f : 0.145f, 0.034f, TaggedText(OTag(HeaderTag), Title, 22, FT66FlatStyle::PrimaryText()));
+				AddN(0.440f, TableY, 0.527f, TableH, MakeMetadataRegion(OTag(TableTag), TEXT("Table")));
+				AddN(0.440f, TableY, 0.527f, bTime ? 0.033f : 0.030f, MakeMetadataRegion(OTag(*FString::Printf(TEXT("%s.TableHeader"), PanelTag)), TEXT("TableHeader")));
+
+				const bool bRankInThirdColumn = ActivePBViewMode == EPersonalBestViewMode::PersonalBest;
+				const FText ValueHeaderText = bTime ? NSLOCTEXT("T66.Account", "PBColTimeFlatFixed", "TIME") : NSLOCTEXT("T66.Account", "PBColScoreFlatFixed", "SCORE");
+				const FText RankHeaderText = NSLOCTEXT("T66.Account", "PBColRankFlatFixed", "GLOBAL RANK");
+				const float HeaderTextY = TableY + 0.004f;
+				AddN(0.449f, HeaderTextY, 0.118f, 0.024f, PlainText(NSLOCTEXT("T66.Account", "PBColDifficultyFlatFixed", "DIFFICULTY"), 13, FT66FlatStyle::SelectedText(), true));
+				AddN(0.586f, HeaderTextY, 0.082f, 0.024f, PlainText(NSLOCTEXT("T66.Account", "PBColHeroFlatFixed", "HERO"), 13, FT66FlatStyle::SelectedText(), true));
+				AddN(0.682f, HeaderTextY, 0.082f, 0.024f, PlainText(NSLOCTEXT("T66.Account", "PBColDateFlatFixed", "DATE"), 13, FT66FlatStyle::SelectedText(), true));
+				AddN(0.779f, HeaderTextY, 0.100f, 0.024f, PlainText(bRankInThirdColumn ? RankHeaderText : ValueHeaderText, 13, FT66FlatStyle::SelectedText(), true));
+				AddN(0.895f, HeaderTextY, 0.062f, 0.024f, PlainText(bRankInThirdColumn ? ValueHeaderText : RankHeaderText, 13, FT66FlatStyle::SelectedText(), true, ETextJustify::Right));
+
+				const ET66Difficulty Difficulties[] = {
+					ET66Difficulty::Easy,
+					ET66Difficulty::Medium,
+					ET66Difficulty::Hard,
+					ET66Difficulty::VeryHard,
+					ET66Difficulty::Impossible
+				};
+
+				for (int32 RowIndex = 0; RowIndex < 5; ++RowIndex)
+				{
+					const FString RowTag = FString::Printf(TEXT("%s.Row%02d"), PanelTag, RowIndex + 1);
+					const FOverviewPBCellData RowData = MakePBCellData(bTime, Difficulties[RowIndex]);
+					const ET66FlatState RowState = RowIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default;
+					const TSharedRef<SWidget> RowSurface = RowData.bCanOpen
+						? FT66FlatStyle::MakeFlatToggleGroupButton(
+							RowState,
+							SNew(SSpacer),
+							FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOpenRunSummaryClicked, RowData.SlotName),
+							FMargin(0.f),
+							0.527f * OverviewCanvasW,
+							RowHs[RowIndex] * OverviewCanvasH,
+							true,
+							OTag(*RowTag))
+						: FT66FlatStyle::MakeFlatSubPanel(
+							RowState,
+							FMargin(0.f),
+							SNew(SSpacer),
+							nullptr,
+							OTag(*RowTag));
+
+					AddN(0.440f, RowYs[RowIndex], 0.527f, RowHs[RowIndex], RowSurface);
+					const float TextY = RowYs[RowIndex] + 0.006f;
+					AddN(0.449f, TextY, 0.118f, 0.024f, PlainText(RowData.Difficulty, 13, FT66FlatStyle::PrimaryText(), true));
+					AddN(0.586f, TextY, 0.082f, 0.024f, PlainText(RowData.Hero, 13, RowData.Hero.IsEmpty() ? FT66FlatStyle::SecondaryText() : FT66FlatStyle::PrimaryText()));
+					AddN(0.682f, TextY, 0.082f, 0.024f, PlainText(RowData.Date, 13, FT66FlatStyle::SecondaryText()));
+					AddN(0.779f, TextY, 0.100f, 0.024f, PlainText(RowData.Primary, 13, bRankInThirdColumn ? FT66FlatStyle::PrimaryText() : FT66FlatStyle::SelectedText(), true));
+					AddN(0.895f, TextY, 0.062f, 0.024f, PlainText(RowData.Secondary, 13, bRankInThirdColumn ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText(), true, ETextJustify::Right));
+				}
+			};
+
+			AddPBTable(
+				TEXT("Overview.HighestScorePanel"),
+				TEXT("Overview.HighestScorePanel.Table"),
+				TEXT("Overview.HighestScorePanel.Icon"),
+				TEXT("Overview.HighestScorePanel.Header"),
+				NSLOCTEXT("T66.Account", "TopScoreFlatFixed", "HIGHEST SCORE"),
+				TrophyBrush,
+				false,
+				0.308f,
+				0.373f,
+				0.214f,
+				0.332f,
+				0.047f,
+				TArray<float>{ 0.403f, 0.440f, 0.476f, 0.513f, 0.550f },
+				TArray<float>{ 0.036f, 0.036f, 0.036f, 0.036f, 0.037f });
+			AddPBTable(
+				TEXT("Overview.BestSpeedRunPanel"),
+				TEXT("Overview.BestSpeedRunPanel.Table"),
+				TEXT("Overview.BestSpeedRunPanel.Icon"),
+				TEXT("Overview.BestSpeedRunPanel.Header"),
+				NSLOCTEXT("T66.Account", "TopTimeFlatFixed", "BEST SPEED RUN"),
+				StopwatchBrush,
+				true,
+				0.616f,
+				0.681f,
+				0.231f,
+				0.642f,
+				0.052f,
+				TArray<float>{ 0.714f, 0.751f, 0.789f, 0.832f, 0.874f },
+				TArray<float>{ 0.037f, 0.037f, 0.037f, 0.037f, 0.038f });
+
+			TSharedRef<SWidget> OverviewContent = SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FT66FlatStyle::BackgroundColor())
+				]
+				+ SOverlay::Slot()
+				[
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFit)
+					[
+						SNew(SBox)
+						.WidthOverride(OverviewCanvasW)
+						.HeightOverride(OverviewCanvasH)
+						[
+							OverviewCanvas
+						]
+					]
+				];
+
+			return OverviewContent;
+		}
+
+		auto OTag = [](const TCHAR* Tag) -> FName
+		{
+			return FName(Tag);
+		};
+
+		auto UpperText = [](const FText& Text) -> FText
+		{
+			FString Value = Text.ToString();
+			Value.ToUpperInline();
+			return FText::FromString(Value);
+		};
+
+		auto TaggedText = [&OTag](
+			const TCHAR* Tag,
+			const FText& Text,
+			const int32 FontSize,
+			const FLinearColor& Color,
+			const bool bBold = true,
+			const ETextJustify::Type Justification = ETextJustify::Left,
+			const bool bWrap = false) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(
+				SNew(STextBlock)
+				.Text(Text)
+				.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+				.ColorAndOpacity(Color)
+				.Justification(Justification)
+				.AutoWrapText(bWrap)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds),
+				OTag(Tag),
+				TEXT("Label"),
+				ET66FlatState::Default,
+				TOptional<FLinearColor>(),
+				false,
+				NAME_None,
+				true);
+		};
+
+		auto TaggedBox = [&OTag](const TCHAR* Tag, const TSharedRef<SWidget>& Content, const FString& Role = TEXT("Region")) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(
+				SNew(SBox)
+				[
+					Content
+				],
+				OTag(Tag),
+				Role,
+				ET66FlatState::Default);
+		};
+
+		auto MakeIcon = [&OTag, &TaggedText](
+			const TCHAR* Tag,
+			const FSlateBrush* Brush,
+			const FVector2D& Size,
+			const FText& FallbackText) -> TSharedRef<SWidget>
+		{
+			const TSharedRef<SWidget> IconContent = Brush
+				? StaticCastSharedRef<SWidget>(SNew(SImage).Image(Brush).ColorAndOpacity(FLinearColor::White))
+				: TaggedText(TEXT("Overview.Internal.IconFallback"), FallbackText, 16, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center);
+
+			return FT66FlatStyle::AttachMetadata(
+				SNew(SBox)
+				.WidthOverride(Size.X)
+				.HeightOverride(Size.Y)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					IconContent
+				],
+				OTag(Tag),
+				TEXT("Icon"),
+				ET66FlatState::Default);
+		};
+
+		const FSlateBrush* InfoBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(24.f, 24.f), TEXT("OverviewInfoIcon"));
+		const FSlateBrush* ShieldBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/shield.png"), FVector2D(40.f, 40.f), TEXT("OverviewShieldIcon"));
+		const FSlateBrush* ChartBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/bar_chart.png"), FVector2D(40.f, 40.f), TEXT("OverviewBarChartIcon"));
+		const FSlateBrush* TrophyBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/trophy_laurel.png"), FVector2D(40.f, 40.f), TEXT("OverviewTrophyIcon"));
+		const FSlateBrush* StopwatchBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/stopwatch.png"), FVector2D(40.f, 40.f), TEXT("OverviewStopwatchIcon"));
+
+		auto MakeInfoIcon = [&MakeIcon, InfoBrush](const TCHAR* Tag, const FText& TooltipText) -> TSharedPtr<SWidget>
+		{
+			TSharedRef<SWidget> Icon = MakeIcon(Tag, InfoBrush, FVector2D(22.f, 22.f), FText::FromString(TEXT("i")));
+			Icon->SetToolTipText(TooltipText);
+			return Icon;
+		};
+
+		FT66FlatToggleGroupParams AccountTabs;
+		AccountTabs.GroupName = TEXT("AccountTabs");
+		AccountTabs.bMutuallyExclusive = true;
+
+		FT66FlatToggleGroupItem OverviewTab;
+		OverviewTab.State = ET66FlatState::Default;
+		OverviewTab.bIsSelected = true;
+		OverviewTab.Label = NSLOCTEXT("T66.Account", "OverviewTabFlat", "OVERVIEW");
+		OverviewTab.OnClicked = FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOverviewTabClicked);
+		OverviewTab.OptionalRightIcon = MakeInfoIcon(TEXT("Overview.SubTabs.OverviewInfoIcon"), NSLOCTEXT("T66.Account", "OverviewTabInfoTooltip", "Account overview"));
+		OverviewTab.MinWidth = 268.f;
+		OverviewTab.Height = 54.f;
+		OverviewTab.FontSize = 24;
+		OverviewTab.Tag = TEXT("Overview.SubTabs.OverviewButton");
+		AccountTabs.Items.Add(OverviewTab);
+
+		FT66FlatToggleGroupItem HistoryTab;
+		HistoryTab.State = ET66FlatState::Default;
+		HistoryTab.bIsSelected = false;
+		HistoryTab.Label = NSLOCTEXT("T66.Account", "HistoryTabFlat", "HISTORY");
+		HistoryTab.OnClicked = FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleHistoryTabClicked);
+		HistoryTab.OptionalRightIcon = MakeInfoIcon(TEXT("Overview.SubTabs.HistoryInfoIcon"), NSLOCTEXT("T66.Account", "HistoryTabInfoTooltip", "Run history"));
+		HistoryTab.MinWidth = 268.f;
+		HistoryTab.Height = 54.f;
+		HistoryTab.FontSize = 24;
+		HistoryTab.Tag = TEXT("Overview.SubTabs.HistoryButton");
+		AccountTabs.Items.Add(HistoryTab);
+
+		const TArray<TSharedRef<SWidget>> AccountTabButtons = FT66FlatStyle::MakeFlatToggleGroup(AccountTabs);
+		const TSharedRef<SWidget> SubTabs = TaggedBox(
+			TEXT("Overview.SubTabs"),
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
+			[
+				AccountTabButtons[0]
+			]
+			+ SHorizontalBox::Slot().AutoWidth()
+			[
+				AccountTabButtons[1]
+			],
+			TEXT("ToggleGroup.AccountTabs"));
+
+		const FText OverviewProfileNameText = !LocalSteamName.IsEmpty()
+			? FText::FromString(LocalSteamName)
+			: NSLOCTEXT("T66.Account", "ProfileNameRandomChad", "RandomChad");
+		const float ExperiencePct = ProfileExperienceToNextLevel > 0
+			? FMath::Clamp(static_cast<float>(ProfileExperienceIntoLevel) / static_cast<float>(ProfileExperienceToNextLevel), 0.f, 1.f)
+			: 0.f;
+		const FSlateBrush* ProfileBrush = ProfileAvatarBrush.IsValid() && ProfileAvatarBrush->GetResourceObject()
+			? ProfileAvatarBrush.Get()
+			: nullptr;
+
+		const TSharedRef<SWidget> PlayerBlock = FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(18.f, 16.f),
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				FT66FlatStyle::MakeFlatPortraitSlot(ET66FlatState::Default, ProfileBrush, nullptr, FVector2D(92.f, 92.f), OTag(TEXT("Overview.PlayerBlock.Avatar")))
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(18.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					TaggedText(TEXT("Overview.PlayerBlock.Name"), OverviewProfileNameText, 26, FT66FlatStyle::PrimaryText())
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 5.f, 0.f, 0.f)
+				[
+					TaggedText(TEXT("Overview.PlayerBlock.Level"), UpperText(ProfileLevelText), 18, FT66FlatStyle::SelectedText())
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f)
+					[
+						TaggedText(TEXT("Overview.PlayerBlock.ExperienceLabel"), NSLOCTEXT("T66.Account", "ExperienceLabelFlat", "EXPERIENCE"), 17, FT66FlatStyle::PrimaryText())
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						TaggedText(TEXT("Overview.PlayerBlock.ExperienceValue"), UpperText(ProfileNextLevelText), 15, FT66FlatStyle::SecondaryText(), false, ETextJustify::Right)
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 7.f, 0.f, 0.f)
+				[
+					FT66FlatStyle::MakeFlatProgressBar(TAttribute<float>(ExperiencePct), TOptional<FLinearColor>(FT66FlatStyle::SelectedBorder()), OTag(TEXT("Overview.PlayerBlock.ExperienceProgress")))
+				]
+			],
+			nullptr,
+			OTag(TEXT("Overview.PlayerBlock")));
+
+		const FText StatusValue = bAccountEligible
+			? NSLOCTEXT("T66.Account", "GoodStandingFlat", "GOOD STANDING")
+			: UpperText(RestrictionText(Restriction.Restriction));
+		const TSharedRef<SWidget> StatusPanel = FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(18.f, 16.f),
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f).VAlign(VAlign_Top)
+			[
+				MakeIcon(TEXT("Overview.AccountStatusPanel.Icon"), ShieldBrush, FVector2D(42.f, 42.f), FText::FromString(TEXT("S")))
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						TaggedText(TEXT("Overview.AccountStatusPanel.Header"), NSLOCTEXT("T66.Account", "StatusHeaderFlat", "ACCOUNT STATUS"), 22, FT66FlatStyle::PrimaryText())
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f, 10.f, 0.f)
+					[
+						TaggedText(TEXT("Overview.AccountStatusPanel.Separator"), FText::FromString(TEXT("-")), 22, FT66FlatStyle::SecondaryText())
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						TaggedText(TEXT("Overview.AccountStatusPanel.Status"), StatusValue, 22, bAccountEligible ? FT66FlatStyle::GoodStandingGreen() : FT66FlatStyle::SelectedText())
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 13.f, 0.f, 0.f)
+				[
+					TaggedText(
+						TEXT("Overview.AccountStatusPanel.Warning"),
+						NSLOCTEXT("T66.Account", "OverviewWarningFlat", "Your account is eligible for the leaderboard. If you cheat or manipulate runs or submissions, your account will be flagged and eternally removed from the leaderboard."),
+						17,
+						FT66FlatStyle::SecondaryText(),
+						false,
+						ETextJustify::Left,
+						true)
+				]
+			],
+			nullptr,
+			OTag(TEXT("Overview.AccountStatusPanel")));
+
+		int32 OverviewProgressIndex = 0;
+		auto MakeOverviewProgressRow = [&](
+			const TCHAR* RowTag,
+			const FText& Label,
+			const int32 Current,
+			const int32 Total) -> TSharedRef<SWidget>
+		{
+			const float Percent = AccountPreviewProgress01(OverviewProgressIndex++);
+			const FString BaseTag(RowTag);
+			return FT66FlatStyle::AttachMetadata(
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f)
+					[
+						TaggedText(*FString::Printf(TEXT("%s.Label"), *BaseTag), Label, 16, FT66FlatStyle::PrimaryText(), false)
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						TaggedText(
+							*FString::Printf(TEXT("%s.Value"), *BaseTag),
+							FText::Format(NSLOCTEXT("T66.Account", "CountFmtFlat", "{0}/{1}"), FText::AsNumber(Current), FText::AsNumber(Total)),
+							16,
+							FT66FlatStyle::SelectedText(),
+							true,
+							ETextJustify::Right)
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+				[
+					FT66FlatStyle::MakeFlatProgressBar(
+						TAttribute<float>(Percent),
+						TOptional<FLinearColor>(FT66FlatStyle::SelectedBorder()),
+						OTag(*FString::Printf(TEXT("%s.ProgressBar"), *BaseTag)))
+				],
+				OTag(RowTag),
+				TEXT("ProgressRow"),
+				ET66FlatState::Default);
+		};
+
+		const TSharedRef<SWidget> ProgressPanel = FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(18.f, 16.f),
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 13.f, 0.f).VAlign(VAlign_Center)
+				[
+					MakeIcon(TEXT("Overview.AccountProgressPanel.Icon"), ChartBrush, FVector2D(38.f, 38.f), FText::FromString(TEXT("#")))
+				]
+				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+				[
+					TaggedText(TEXT("Overview.AccountProgressPanel.Header"), NSLOCTEXT("T66.Account", "ProgressHeaderFlat", "ACCOUNT PROGRESS"), 22, FT66FlatStyle::PrimaryText())
+				]
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+			[
+				MakeOverviewProgressRow(TEXT("Overview.AccountProgressPanel.Achievements"), NSLOCTEXT("T66.Account", "AchProgFlat", "Achievements Unlocked"), UnlockedAchievements, AchievementDefs.Num())
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+			[
+				MakeOverviewProgressRow(TEXT("Overview.AccountProgressPanel.PowerUps"), NSLOCTEXT("T66.Account", "PowerProgFlat", "Permanent Buffs Unlocked"), UnlockedPowerUps, PowerStats.Num() * UT66BuffSubsystem::MaxFillStepsPerStat)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+			[
+				MakeOverviewProgressRow(TEXT("Overview.AccountProgressPanel.Heroes"), NSLOCTEXT("T66.Account", "HeroProgFlat", "Heroes Unlocked"), HeroIDs.Num(), HeroIDs.Num())
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+			[
+				MakeOverviewProgressRow(TEXT("Overview.AccountProgressPanel.Companions"), NSLOCTEXT("T66.Account", "CompProgFlat", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num())
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+			[
+				MakeOverviewProgressRow(TEXT("Overview.AccountProgressPanel.Challenges"), NSLOCTEXT("T66.Account", "ChallengeProgFlat", "Challenges Completed"), DisplayChallengesCompleted, TotalChallengeCount)
+			],
+			nullptr,
+			OTag(TEXT("Overview.AccountProgressPanel")));
+
+		auto MakePBMenuEntry = [&OTag, &UpperText](
+			const TCHAR* Tag,
+			const FText& Label,
+			const bool bActive,
+			TFunction<void()> OnSelected) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::MakeFlatButton(
+				bActive ? ET66FlatState::Selected : ET66FlatState::Default,
+				UpperText(Label),
+				FOnClicked::CreateLambda([OnSelected = MoveTemp(OnSelected)]()
+				{
+					OnSelected();
+					FSlateApplication::Get().DismissAllMenus();
+					return FReply::Handled();
+				}),
+				nullptr,
+				nullptr,
+				FMargin(10.f, 7.f),
+				220.f,
+				38.f,
+				true,
+				16,
+				OTag(Tag),
+				TEXT("OverviewFilterSelection"));
+		};
+
+		auto MakePBViewModeMenuFlat = [&]() -> TSharedRef<SWidget>
+		{
+			TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+			Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				MakePBMenuEntry(
+					TEXT("Overview.FilterRow.PersonalBestDropdown.Option.PersonalBest"),
+					NSLOCTEXT("T66.Account", "PBViewPersonalBestFlat", "Personal Best"),
+					ActivePBViewMode == EPersonalBestViewMode::PersonalBest,
+					[this]() { ActivePBViewMode = EPersonalBestViewMode::PersonalBest; RequestDeferredSlateRebuild(); })
+			];
+			Menu->AddSlot().AutoHeight()
+			[
+				MakePBMenuEntry(
+					TEXT("Overview.FilterRow.PersonalBestDropdown.Option.HighestRank"),
+					NSLOCTEXT("T66.Account", "PBViewHighestRankFlat", "Highest Rank"),
+					ActivePBViewMode == EPersonalBestViewMode::HighestRank,
+					[this]() { ActivePBViewMode = EPersonalBestViewMode::HighestRank; RequestDeferredSlateRebuild(); })
+			];
+			return Menu;
+		};
+
+		auto MakePBPartySizeMenuFlat = [&]() -> TSharedRef<SWidget>
+		{
+			TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+			for (ET66PartySize PartySize : { ET66PartySize::Solo, ET66PartySize::Duo, ET66PartySize::Trio, ET66PartySize::Quad })
+			{
+				const FString Tag = FString::Printf(TEXT("Overview.FilterRow.SoloDropdown.Option.%s"), *PartySizeToApiString(PartySize));
+				Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[
+					MakePBMenuEntry(
+						*Tag,
+						PartySizeText(Loc, PartySize),
+						ActivePBPartySize == PartySize,
+						[this, PartySize]() { ActivePBPartySize = PartySize; RequestDeferredSlateRebuild(); })
+				];
+			}
+			return Menu;
+		};
+
+		auto GetPBViewModeTextFlat = [this, &UpperText]() -> FText
+		{
+			return UpperText(ActivePBViewMode == EPersonalBestViewMode::HighestRank
+				? NSLOCTEXT("T66.Account", "PBViewHighestRankFlatValue", "Highest Rank")
+				: NSLOCTEXT("T66.Account", "PBViewPersonalBestFlatValue", "Personal Best"));
+		};
+
+		const TSharedRef<SWidget> FilterRow = TaggedBox(
+			TEXT("Overview.FilterRow"),
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 14.f, 0.f)
+			[
+				FT66FlatStyle::MakeFlatDropdown(
+					ET66FlatState::Selected,
+					TAttribute<FText>::CreateLambda([GetPBViewModeTextFlat]() { return GetPBViewModeTextFlat(); }),
+					MakePBViewModeMenuFlat,
+					true,
+					260.f,
+					50.f,
+					20,
+					OTag(TEXT("Overview.FilterRow.PersonalBestDropdown")))
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f)
+			[
+				FT66FlatStyle::MakeFlatDropdown(
+					ET66FlatState::Selected,
+					TAttribute<FText>::CreateLambda([this, Loc, UpperText]() { return UpperText(PartySizeText(Loc, ActivePBPartySize)); }),
+					MakePBPartySizeMenuFlat,
+					true,
+					220.f,
+					50.f,
+					20,
+					OTag(TEXT("Overview.FilterRow.SoloDropdown")))
+			],
+			TEXT("FilterRow"));
+
+		auto MakeTableText = [&TaggedText](const TCHAR* Tag, const FText& Text, const int32 Size, const FLinearColor& Color, const bool bBold = false, const ETextJustify::Type Justification = ETextJustify::Left) -> TSharedRef<SWidget>
+		{
+			return TaggedText(Tag, Text, Size, Color, bBold, Justification);
+		};
+
+		auto MakePBTableRowFlat = [&](
+			const TCHAR* RowTag,
+			const bool bTime,
+			const ET66Difficulty Difficulty,
+			const int32 RowIndex) -> TSharedRef<SWidget>
+		{
+			const FPersonalBestDisplay PB = bTime ? MakePBTime(Difficulty) : MakePBScore(Difficulty);
+			const bool bCanOpen = PB.bHasRecord && !PB.RunSummarySlotName.IsEmpty();
+			const FName PBHeroID = PB.bHasRecord ? ResolvePBHeroID(PB.RunSummarySlotName) : NAME_None;
+			const FText HeroName = PB.bHasRecord
+				? (PBHeroID.IsNone() ? NSLOCTEXT("T66.Account", "PBUnknownHeroFlat", "Unknown") : HeroText(PBHeroID))
+				: FText::GetEmpty();
+			const FText Value = PB.bHasRecord ? (bTime ? FormatDurationText(PB.Seconds) : FText::AsNumber(PB.Score)) : NSLOCTEXT("T66.Account", "NoRecordFlat", "--");
+			const FText Date = PB.bHasRecord && PB.AchievedAtUtc.GetTicks() > 0 ? FText::FromString(PB.AchievedAtUtc.ToString(TEXT("%m/%d/%Y"))) : FText::GetEmpty();
+			FText RankText = FText::GetEmpty();
+			if (PB.bHasRecord)
+			{
+				if (!Backend || !Backend->IsBackendConfigured() || !Backend->HasSteamTicket())
+				{
+					RankText = NSLOCTEXT("T66.Account", "RankUnavailableFlat", "N/A");
+				}
+				else if (!PB.bHasRankState)
+				{
+					RankText = NSLOCTEXT("T66.Account", "RankPendingFlat", "...");
+				}
+				else if (!PB.bRankRequestSucceeded)
+				{
+					RankText = NSLOCTEXT("T66.Account", "RankFailedFlat", "N/A");
+				}
+				else if (PB.GlobalRank > 0)
+				{
+					RankText = FText::Format(NSLOCTEXT("T66.Account", "RankFmtFlat", "#{0}"), FText::AsNumber(PB.GlobalRank));
+				}
+				else
+				{
+					RankText = NSLOCTEXT("T66.Account", "RankUnrankedFlat", "Unranked");
+				}
+			}
+
+			const bool bRankInThirdColumn = ActivePBViewMode == EPersonalBestViewMode::PersonalBest;
+			const FText ThirdColumnText = bRankInThirdColumn ? RankText : Value;
+			const FText FourthColumnText = bRankInThirdColumn ? Value : RankText;
+			const FString BaseTag(RowTag);
+			TSharedRef<SWidget> RowContent = SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().FillWidth(0.90f).VAlign(VAlign_Center)
+				[
+					MakeTableText(*FString::Printf(TEXT("%s.Difficulty"), *BaseTag), UpperText(DifficultyText(Difficulty)), 14, FT66FlatStyle::PrimaryText(), true)
+				]
+				+ SHorizontalBox::Slot().FillWidth(1.00f).VAlign(VAlign_Center)
+				[
+					MakeTableText(*FString::Printf(TEXT("%s.Hero"), *BaseTag), HeroName, 13, PB.bHasRecord ? FT66FlatStyle::PrimaryText() : FT66FlatStyle::SecondaryText())
+				]
+				+ SHorizontalBox::Slot().FillWidth(0.95f).VAlign(VAlign_Center)
+				[
+					MakeTableText(*FString::Printf(TEXT("%s.Date"), *BaseTag), Date, 13, FT66FlatStyle::SecondaryText())
+				]
+				+ SHorizontalBox::Slot().FillWidth(0.95f).VAlign(VAlign_Center)
+				[
+					MakeTableText(*FString::Printf(TEXT("%s.PrimaryValue"), *BaseTag), ThirdColumnText, 14, bRankInThirdColumn ? FT66FlatStyle::PrimaryText() : FT66FlatStyle::SelectedText(), true)
+				]
+				+ SHorizontalBox::Slot().FillWidth(1.00f).VAlign(VAlign_Center)
+				[
+					MakeTableText(*FString::Printf(TEXT("%s.SecondaryValue"), *BaseTag), FourthColumnText, 14, bRankInThirdColumn ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText(), true)
+				];
+
+			if (bCanOpen)
+			{
+				return FT66FlatStyle::MakeFlatToggleGroupButton(
+					RowIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default,
+					RowContent,
+					FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOpenRunSummaryClicked, PB.RunSummarySlotName),
+					FMargin(9.f, 5.f),
+					0.f,
+					40.f,
+					true,
+					OTag(RowTag));
+			}
+
+			return FT66FlatStyle::MakeFlatSubPanel(
+				RowIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default,
+				FMargin(9.f, 5.f),
+				RowContent,
+				nullptr,
+				OTag(RowTag));
+		};
+
+		auto MakePBBlockFlat = [&](
+			const TCHAR* PanelTag,
+			const TCHAR* IconTag,
+			const TCHAR* HeaderTag,
+			const FText& Title,
+			const FSlateBrush* IconBrush,
+			const bool bTime) -> TSharedRef<SWidget>
+		{
+			const bool bRankInThirdColumn = ActivePBViewMode == EPersonalBestViewMode::PersonalBest;
+			const FText ValueHeaderText = bTime ? NSLOCTEXT("T66.Account", "PBColTimeFlat", "TIME") : NSLOCTEXT("T66.Account", "PBColScoreFlat", "SCORE");
+			const FText RankHeaderText = NSLOCTEXT("T66.Account", "PBColRankFlat", "GLOBAL RANK");
+			TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
+			int32 RowIndex = 0;
+			for (ET66Difficulty Difficulty : { ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible })
+			{
+				const FString RowTag = FString::Printf(TEXT("%s.Row%02d"), PanelTag, RowIndex + 1);
+				Rows->AddSlot().AutoHeight().Padding(0.f, RowIndex > 0 ? 4.f : 0.f, 0.f, 0.f)
+				[
+					MakePBTableRowFlat(*RowTag, bTime, Difficulty, RowIndex)
+				];
+				++RowIndex;
+			}
+
+			const FString HeaderRowTag = FString::Printf(TEXT("%s.TableHeader"), PanelTag);
+			return FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(14.f, 13.f),
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f).VAlign(VAlign_Center)
+					[
+						MakeIcon(IconTag, IconBrush, FVector2D(36.f, 36.f), bTime ? FText::FromString(TEXT("T")) : FText::FromString(TEXT("#")))
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+					[
+						TaggedText(HeaderTag, Title, 22, FT66FlatStyle::PrimaryText())
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 6.f)
+				[
+					FT66FlatStyle::AttachMetadata(
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().FillWidth(0.90f)[MakeTableText(*FString::Printf(TEXT("%s.Difficulty"), *HeaderRowTag), NSLOCTEXT("T66.Account", "PBColDifficultyFlat", "DIFFICULTY"), 13, FT66FlatStyle::SelectedText(), true)]
+						+ SHorizontalBox::Slot().FillWidth(1.00f)[MakeTableText(*FString::Printf(TEXT("%s.Hero"), *HeaderRowTag), NSLOCTEXT("T66.Account", "PBColHeroFlat", "HERO"), 13, FT66FlatStyle::SelectedText(), true)]
+						+ SHorizontalBox::Slot().FillWidth(0.95f)[MakeTableText(*FString::Printf(TEXT("%s.Date"), *HeaderRowTag), NSLOCTEXT("T66.Account", "PBColDateFlat", "DATE"), 13, FT66FlatStyle::SelectedText(), true)]
+						+ SHorizontalBox::Slot().FillWidth(0.95f)[MakeTableText(*FString::Printf(TEXT("%s.Primary"), *HeaderRowTag), bRankInThirdColumn ? RankHeaderText : ValueHeaderText, 13, FT66FlatStyle::SelectedText(), true)]
+						+ SHorizontalBox::Slot().FillWidth(1.00f)[MakeTableText(*FString::Printf(TEXT("%s.Secondary"), *HeaderRowTag), bRankInThirdColumn ? ValueHeaderText : RankHeaderText, 13, FT66FlatStyle::SelectedText(), true)],
+						OTag(*HeaderRowTag),
+						TEXT("TableHeader"),
+						ET66FlatState::Default)
+				]
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					Rows
+				],
+				nullptr,
+				OTag(PanelTag));
+		};
+
+		const TSharedRef<SWidget> RightColumn = FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(14.f),
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				FilterRow
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+			[
+				MakePBBlockFlat(
+					TEXT("Overview.HighestScorePanel"),
+					TEXT("Overview.HighestScorePanel.Icon"),
+					TEXT("Overview.HighestScorePanel.Header"),
+					NSLOCTEXT("T66.Account", "TopScoreFlat", "HIGHEST SCORE"),
+					TrophyBrush,
+					false)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+			[
+				MakePBBlockFlat(
+					TEXT("Overview.BestSpeedRunPanel"),
+					TEXT("Overview.BestSpeedRunPanel.Icon"),
+					TEXT("Overview.BestSpeedRunPanel.Header"),
+					NSLOCTEXT("T66.Account", "TopTimeFlat", "BEST SPEED RUN"),
+					StopwatchBrush,
+					true)
+			],
+			nullptr,
+			OTag(TEXT("Overview.RightColumn")));
+
+		const TSharedRef<SWidget> LeftColumn = TaggedBox(
+			TEXT("Overview.LeftColumn"),
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				PlayerBlock
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+			[
+				StatusPanel
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+			[
+				ProgressPanel
+			],
+			TEXT("Column"));
+
+		const TSharedRef<SWidget> Body = TaggedBox(
+			TEXT("Overview.MainBody"),
+			bUseStackedOverviewLayout
+				? StaticCastSharedRef<SWidget>(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						LeftColumn
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+					[
+						RightColumn
+					])
+				: StaticCastSharedRef<SWidget>(
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(0.42f).Padding(0.f, 0.f, 18.f, 0.f)
+					[
+						LeftColumn
+					]
+					+ SHorizontalBox::Slot().FillWidth(0.58f)
+					[
+						RightColumn
+					]),
+			TEXT("Body"));
+
+		const TSharedRef<SWidget> OverviewContent = FT66FlatStyle::AttachMetadata(
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FT66FlatStyle::BackgroundColor())
+			.Padding(FMargin(20.f, ScreenLayout.bCompact ? 8.f : 10.f, 20.f, ScreenLayout.bCompact ? 8.f : 10.f))
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+				[
+					SubTabs
+				]
+				+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 16.f, 0.f, 0.f)
+				[
+					Body
+				]
+			],
+			OTag(TEXT("Overview.Root")),
+			TEXT("Root"),
+			ET66FlatState::Default);
+
+		TSharedRef<SWidget> BackgroundContent = SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor::Black);
+
+		return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
+			UIManager,
+			OverviewContent,
+			BackgroundContent);
+	}
+
+	if (ActiveTab == EAccountTab::History)
+	{
+		auto HTag = [](const TCHAR* Tag) -> FName
+		{
+			return FName(Tag);
+		};
+
+		auto UpperText = [](const FText& Text) -> FText
+		{
+			FString Value = Text.ToString();
+			Value.ToUpperInline();
+			return FText::FromString(Value);
+		};
+
+		constexpr float HistoryCanvasW = 1920.f;
+		constexpr float HistoryCanvasH = 1080.f;
+		const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder"));
+		const TSharedRef<SConstraintCanvas> HistoryCanvas = SNew(SConstraintCanvas);
+
+		auto AddCanvas = [HistoryCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+		{
+			HistoryCanvas->AddSlot()
+			.Anchors(FAnchors(0.f, 0.f))
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X, Y, W, H))
+			[
+				Widget
+			];
+		};
+
+		auto AddN = [&AddCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+		{
+			AddCanvas(X * HistoryCanvasW, Y * HistoryCanvasH, W * HistoryCanvasW, H * HistoryCanvasH, Widget);
+		};
+
+		auto MakeMetadataRegion = [](const FName Tag, const FString& Role, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(SNew(SSpacer), Tag, Role, State);
+		};
+
+		auto MakePanelSurface = [](const FName Tag, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::MakeFlatPanel(
+				State,
+				FMargin(0.f),
+				SNew(SSpacer),
+				nullptr,
+				Tag);
+		};
+
+		auto TaggedText = [](
+			const FName Tag,
+			const FText& Text,
+			const int32 FontSize,
+			const FLinearColor& Color,
+			const bool bBold = true,
+			const ETextJustify::Type Justification = ETextJustify::Left,
+			const bool bWrap = false) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(
+				SNew(STextBlock)
+				.Visibility(EVisibility::HitTestInvisible)
+				.Text(Text)
+				.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+				.ColorAndOpacity(Color)
+				.Justification(Justification)
+				.AutoWrapText(bWrap)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds),
+				Tag,
+				TEXT("Label"),
+				ET66FlatState::Default,
+				TOptional<FLinearColor>(),
+				false,
+				NAME_None,
+				true);
+		};
+
+		auto PlainText = [](
+			const FText& Text,
+			const int32 FontSize,
+			const FLinearColor& Color,
+			const bool bBold = true,
+			const ETextJustify::Type Justification = ETextJustify::Left) -> TSharedRef<SWidget>
+		{
+			return SNew(STextBlock)
+				.Visibility(EVisibility::HitTestInvisible)
+				.Text(Text)
+				.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+				.ColorAndOpacity(Color)
+				.Justification(Justification)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds);
+		};
+
+		auto MakeIcon = [](const FName Tag, const FSlateBrush* Brush, const FText& FallbackText) -> TSharedRef<SWidget>
+		{
+			const TSharedRef<SWidget> IconContent = Brush
+				? StaticCastSharedRef<SWidget>(SNew(SImage).Visibility(EVisibility::HitTestInvisible).Image(Brush).ColorAndOpacity(FLinearColor::White))
+				: StaticCastSharedRef<SWidget>(
+					SNew(STextBlock)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Text(FallbackText)
+					.Font(FT66FlatStyle::MakeBoldFont(18))
+					.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+					.Justification(ETextJustify::Center));
+
+			return FT66FlatStyle::AttachMetadata(
+				SNew(SBox)
+				.Visibility(EVisibility::HitTestInvisible)
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					IconContent
+				],
+				Tag,
+				TEXT("Icon"),
+				ET66FlatState::Default);
+		};
+
+		auto MakeBareInteractive = [&NoBorderButtonStyle](
+			const FName Tag,
+			const FString& Role,
+			const TSharedRef<SWidget>& Content,
+			FOnClicked OnClicked,
+			const ET66FlatState State = ET66FlatState::Default,
+			const FName ToggleGroup = NAME_None) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(
+				FT66Style::MakeBareButton(
+					FT66BareButtonParams(MoveTemp(OnClicked), Content)
+					.SetButtonStyle(&NoBorderButtonStyle)
+					.SetPadding(FMargin(0.f))
+					.SetDebounceClick(false)),
+				Tag,
+				Role,
+				State,
+				TOptional<FLinearColor>(),
+				true,
+				ToggleGroup);
+		};
+
+		const FSlateBrush* InfoBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(24.f, 24.f), TEXT("HistoryInfoIcon"));
+
+		AddN(0.011f, 0.165f, 0.977f, 0.812f, MakeMetadataRegion(HTag(TEXT("History.Root")), TEXT("Root")));
+		AddN(0.011f, 0.271f, 0.977f, 0.706f, MakeMetadataRegion(HTag(TEXT("History.MainBody")), TEXT("Body")));
+		AddN(0.153f, 0.165f, 0.691f, 0.084f, MakeMetadataRegion(HTag(TEXT("History.SubTabs")), TEXT("ToggleGroup.AccountTabs")));
+		AddN(0.011f, 0.271f, 0.977f, 0.168f, MakePanelSurface(HTag(TEXT("History.FilterPanel"))));
+		AddN(0.011f, 0.463f, 0.977f, 0.514f, MakePanelSurface(HTag(TEXT("History.RunHistoryPanel"))));
+
+		AddN(
+			0.153f,
+			0.165f,
+			0.340f,
+			0.084f,
+			FT66FlatStyle::MakeFlatToggleGroupButton(
+				ET66FlatState::Default,
+				SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)
+				[
+					PlainText(NSLOCTEXT("T66.Account", "HistoryOverviewTabFlat", "OVERVIEW"), 24, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center)
+				],
+				FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOverviewTabClicked),
+				FMargin(0.f),
+				0.340f * HistoryCanvasW,
+				0.084f * HistoryCanvasH,
+				true,
+				HTag(TEXT("History.SubTabs.OverviewButton")),
+				HTag(TEXT("AccountTabs"))));
+		AddN(
+			0.506f,
+			0.165f,
+			0.338f,
+			0.084f,
+			FT66FlatStyle::MakeFlatToggleGroupButton(
+				ET66FlatState::Selected,
+				SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)
+				[
+					PlainText(NSLOCTEXT("T66.Account", "HistoryHistoryTabFlat", "HISTORY"), 24, FT66FlatStyle::SelectedText(), true, ETextJustify::Center)
+				],
+				FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleHistoryTabClicked),
+				FMargin(0.f),
+				0.338f * HistoryCanvasW,
+				0.084f * HistoryCanvasH,
+				true,
+				HTag(TEXT("History.SubTabs.HistoryButton")),
+				HTag(TEXT("AccountTabs"))));
+
+		TSharedRef<SWidget> OverviewInfoIcon = MakeIcon(HTag(TEXT("History.SubTabs.OverviewInfoIcon")), InfoBrush, FText::FromString(TEXT("i")));
+		OverviewInfoIcon->SetToolTipText(NSLOCTEXT("T66.Account", "HistoryOverviewInfoTooltip", "Account overview"));
+		TSharedRef<SWidget> HistoryInfoIcon = MakeIcon(HTag(TEXT("History.SubTabs.HistoryInfoIcon")), InfoBrush, FText::FromString(TEXT("i")));
+		HistoryInfoIcon->SetToolTipText(NSLOCTEXT("T66.Account", "HistoryHistoryInfoTooltip", "Run history"));
+		AddN(0.457f, 0.193f, 0.018f, 0.033f, OverviewInfoIcon);
+		AddN(0.808f, 0.193f, 0.018f, 0.033f, HistoryInfoIcon);
+
+		auto MakeMenuEntry = [&HTag, &UpperText](
+			const TCHAR* Tag,
+			const FText& Label,
+			const bool bActive,
+			TFunction<void()> OnSelected) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::MakeFlatButton(
+				bActive ? ET66FlatState::Selected : ET66FlatState::Default,
+				UpperText(Label),
+				FOnClicked::CreateLambda([OnSelected = MoveTemp(OnSelected)]()
+				{
+					OnSelected();
+					FSlateApplication::Get().DismissAllMenus();
+					return FReply::Handled();
+				}),
+				nullptr,
+				nullptr,
+				FMargin(10.f, 7.f),
+				220.f,
+				38.f,
+				true,
+				16,
+				HTag(Tag),
+				TEXT("HistoryFilterSelection"));
+		};
+
+		auto MakeHeroMenu = [&]() -> TSharedRef<SWidget>
+		{
+			TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+			Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				MakeMenuEntry(TEXT("History.FilterPanel.HeroDropdown.Option.All"), NSLOCTEXT("T66.Account", "HistoryHeroAllFlat", "All"), HistoryHeroFilter.IsNone(), [this]() { HistoryHeroFilter = NAME_None; RequestDeferredSlateRebuild(); })
+			];
+			for (const FAccountNamedEntry& Entry : HistoryHeroFilterEntries)
+			{
+				const FString Tag = FString::Printf(TEXT("History.FilterPanel.HeroDropdown.Option.%s"), *Entry.ID.ToString());
+				Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[
+					MakeMenuEntry(*Tag, Entry.DisplayName, HistoryHeroFilter == Entry.ID, [this, HeroID = Entry.ID]() { HistoryHeroFilter = HeroID; RequestDeferredSlateRebuild(); })
+				];
+			}
+			return Menu;
+		};
+
+		auto MakeDifficultyMenu = [&]() -> TSharedRef<SWidget>
+		{
+			TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+			Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				MakeMenuEntry(TEXT("History.FilterPanel.DifficultyDropdown.Option.All"), NSLOCTEXT("T66.Account", "HistoryDifficultyAllFlat", "All"), !HistoryDifficultyFilter.IsSet(), [this]() { HistoryDifficultyFilter.Reset(); RequestDeferredSlateRebuild(); })
+			];
+			for (ET66Difficulty Difficulty : { ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible })
+			{
+				const FString Tag = FString::Printf(TEXT("History.FilterPanel.DifficultyDropdown.Option.%d"), static_cast<int32>(Difficulty));
+				Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[
+					MakeMenuEntry(*Tag, DifficultyText(Difficulty), HistoryDifficultyFilter.IsSet() && HistoryDifficultyFilter.GetValue() == Difficulty, [this, Difficulty]() { HistoryDifficultyFilter = Difficulty; RequestDeferredSlateRebuild(); })
+				];
+			}
+			return Menu;
+		};
+
+		auto MakePartySizeMenu = [&]() -> TSharedRef<SWidget>
+		{
+			TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+			Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				MakeMenuEntry(TEXT("History.FilterPanel.PartySizeDropdown.Option.All"), NSLOCTEXT("T66.Account", "HistoryPartyAllFlat", "All"), !HistoryPartySizeFilter.IsSet(), [this]() { HistoryPartySizeFilter.Reset(); RequestDeferredSlateRebuild(); })
+			];
+			for (ET66PartySize PartySize : { ET66PartySize::Solo, ET66PartySize::Duo, ET66PartySize::Trio, ET66PartySize::Quad })
+			{
+				const FString Tag = FString::Printf(TEXT("History.FilterPanel.PartySizeDropdown.Option.%s"), *PartySizeToApiString(PartySize));
+				Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[
+					MakeMenuEntry(*Tag, PartySizeText(Loc, PartySize), HistoryPartySizeFilter.IsSet() && HistoryPartySizeFilter.GetValue() == PartySize, [this, PartySize]() { HistoryPartySizeFilter = PartySize; RequestDeferredSlateRebuild(); })
+				];
+			}
+			return Menu;
+		};
+
+		auto MakeStatusMenu = [&]() -> TSharedRef<SWidget>
+		{
+			TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+			for (EHistoryCompletionFilter Filter : { EHistoryCompletionFilter::All, EHistoryCompletionFilter::Completed, EHistoryCompletionFilter::NotCompleted })
+			{
+				const FString Tag = FString::Printf(TEXT("History.FilterPanel.StatusDropdown.Option.%d"), static_cast<int32>(Filter));
+				Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[
+					MakeMenuEntry(*Tag, Filter == EHistoryCompletionFilter::All ? NSLOCTEXT("T66.Account", "HistoryStatusAllFlat", "All") : CompletionFilterText(Filter), HistoryCompletionFilter == Filter, [this, Filter]() { HistoryCompletionFilter = Filter; RequestDeferredSlateRebuild(); })
+				];
+			}
+			return Menu;
+		};
+
+		auto FilterValueText = [&UpperText](const bool bUnset, const FText& Value) -> FText
+		{
+			return bUnset ? NSLOCTEXT("T66.Account", "HistoryFilterAllValue", "ALL") : UpperText(Value);
+		};
+
+		AddN(0.031f, 0.303f, 0.056f, 0.030f, TaggedText(HTag(TEXT("History.FilterPanel.HeroLabel")), NSLOCTEXT("T66.Account", "HistoryHeroLabelFlat", "HERO"), 20, FT66FlatStyle::PurpleAccent()));
+		AddN(0.251f, 0.303f, 0.107f, 0.030f, TaggedText(HTag(TEXT("History.FilterPanel.DifficultyLabel")), NSLOCTEXT("T66.Account", "HistoryDifficultyLabelFlat", "DIFFICULTY"), 20, FT66FlatStyle::PurpleAccent()));
+		AddN(0.467f, 0.303f, 0.099f, 0.030f, TaggedText(HTag(TEXT("History.FilterPanel.PartySizeLabel")), NSLOCTEXT("T66.Account", "HistoryPartySizeLabelFlat", "PARTY SIZE"), 20, FT66FlatStyle::PurpleAccent()));
+		AddN(0.672f, 0.303f, 0.070f, 0.030f, TaggedText(HTag(TEXT("History.FilterPanel.StatusLabel")), NSLOCTEXT("T66.Account", "HistoryStatusLabelFlat", "STATUS"), 20, FT66FlatStyle::PurpleAccent()));
+		AddN(0.876f, 0.303f, 0.097f, 0.030f, TaggedText(HTag(TEXT("History.FilterPanel.DailyDescentLabel")), NSLOCTEXT("T66.Account", "HistoryDailyLabelFlat", "DAILY DESCENT"), 20, FT66FlatStyle::PurpleAccent()));
+
+		AddN(0.031f, 0.343f, 0.200f, 0.072f, FT66FlatStyle::MakeFlatDropdown(
+			ET66FlatState::Selected,
+			TAttribute<FText>::CreateLambda([this, WeakT66GI, WeakLoc, FilterValueText]()
+			{
+				if (HistoryHeroFilter.IsNone())
+				{
+					return NSLOCTEXT("T66.Account", "HistoryHeroValueAllFlat", "ALL");
+				}
+				UT66GameInstance* RuntimeGI = WeakT66GI.Get();
+				UT66LocalizationSubsystem* RuntimeLoc = WeakLoc.Get();
+				FHeroData HeroData;
+				return FilterValueText(false, RuntimeGI && RuntimeGI->GetHeroData(HistoryHeroFilter, HeroData)
+					? (RuntimeLoc ? RuntimeLoc->GetText_HeroName(HistoryHeroFilter) : HeroData.DisplayName)
+					: FText::FromName(HistoryHeroFilter));
+			}),
+			MakeHeroMenu,
+			true,
+			0.200f * HistoryCanvasW,
+			0.072f * HistoryCanvasH,
+			20,
+			HTag(TEXT("History.FilterPanel.HeroDropdown"))));
+		AddN(0.251f, 0.343f, 0.193f, 0.072f, FT66FlatStyle::MakeFlatDropdown(
+			ET66FlatState::Selected,
+			TAttribute<FText>::CreateLambda([this, DifficultyText, FilterValueText]() { return FilterValueText(!HistoryDifficultyFilter.IsSet(), HistoryDifficultyFilter.IsSet() ? DifficultyText(HistoryDifficultyFilter.GetValue()) : FText::GetEmpty()); }),
+			MakeDifficultyMenu,
+			true,
+			0.193f * HistoryCanvasW,
+			0.072f * HistoryCanvasH,
+			20,
+			HTag(TEXT("History.FilterPanel.DifficultyDropdown"))));
+		AddN(0.467f, 0.343f, 0.184f, 0.072f, FT66FlatStyle::MakeFlatDropdown(
+			ET66FlatState::Selected,
+			TAttribute<FText>::CreateLambda([this, Loc, FilterValueText]() { return FilterValueText(!HistoryPartySizeFilter.IsSet(), HistoryPartySizeFilter.IsSet() ? PartySizeText(Loc, HistoryPartySizeFilter.GetValue()) : FText::GetEmpty()); }),
+			MakePartySizeMenu,
+			true,
+			0.184f * HistoryCanvasW,
+			0.072f * HistoryCanvasH,
+			20,
+			HTag(TEXT("History.FilterPanel.PartySizeDropdown"))));
+		AddN(0.672f, 0.343f, 0.178f, 0.072f, FT66FlatStyle::MakeFlatDropdown(
+			ET66FlatState::Selected,
+			TAttribute<FText>::CreateLambda([this, CompletionFilterText, FilterValueText]() { return FilterValueText(HistoryCompletionFilter == EHistoryCompletionFilter::All, HistoryCompletionFilter == EHistoryCompletionFilter::All ? FText::GetEmpty() : CompletionFilterText(HistoryCompletionFilter)); }),
+			MakeStatusMenu,
+			true,
+			0.178f * HistoryCanvasW,
+			0.072f * HistoryCanvasH,
+			20,
+			HTag(TEXT("History.FilterPanel.StatusDropdown"))));
+		AddN(0.882f, 0.356f, 0.024f, 0.044f, FT66FlatStyle::MakeFlatCheckbox(
+			ET66FlatState::Default,
+			TAttribute<ECheckBoxState>::CreateLambda([this]() { return bHistoryDailyDescentOnly ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; }),
+			FOnCheckStateChanged::CreateLambda([this](const ECheckBoxState NewState)
+			{
+				bHistoryDailyDescentOnly = NewState == ECheckBoxState::Checked;
+				RequestDeferredSlateRebuild();
+			}),
+			TAttribute<FText>(),
+			HTag(TEXT("History.FilterPanel.DailyDescentCheckbox"))));
+
+		TArray<FT66RecentRunRecord> FilteredRuns;
+		for (const FT66RecentRunRecord& Run : RecentRuns)
+		{
+			if (!HistoryHeroFilter.IsNone() && Run.HeroID != HistoryHeroFilter)
+			{
+				continue;
+			}
+			if (HistoryDifficultyFilter.IsSet() && Run.Difficulty != HistoryDifficultyFilter.GetValue())
+			{
+				continue;
+			}
+			if (HistoryPartySizeFilter.IsSet() && Run.PartySize != HistoryPartySizeFilter.GetValue())
+			{
+				continue;
+			}
+			if (HistoryCompletionFilter == EHistoryCompletionFilter::Completed && !Run.bWasFullClear)
+			{
+				continue;
+			}
+			if (HistoryCompletionFilter == EHistoryCompletionFilter::NotCompleted && Run.bWasFullClear)
+			{
+				continue;
+			}
+			if (bHistoryDailyDescentOnly)
+			{
+				continue;
+			}
+			FilteredRuns.Add(Run);
+		}
+
+		auto HeroNameForRun = [T66GI, Loc](const FT66RecentRunRecord& Run) -> FText
+		{
+			FHeroData HeroData;
+			if (T66GI && T66GI->GetHeroData(Run.HeroID, HeroData))
+			{
+				return Loc ? Loc->GetText_HeroName(Run.HeroID) : HeroData.DisplayName;
+			}
+			return Run.HeroID.IsNone() ? FText::FromString(TEXT("--")) : FText::FromName(Run.HeroID);
+		};
+
+		FilteredRuns.Sort([&](const FT66RecentRunRecord& A, const FT66RecentRunRecord& B)
+		{
+			int32 Compare = 0;
+			switch (HistorySortColumn)
+			{
+			case EHistorySortColumn::HeroPlayed:
+				Compare = HeroNameForRun(A).ToString().Compare(HeroNameForRun(B).ToString());
+				break;
+			case EHistorySortColumn::Status:
+				Compare = static_cast<int32>(A.bWasFullClear) - static_cast<int32>(B.bWasFullClear);
+				break;
+			case EHistorySortColumn::Score:
+				Compare = A.Score == B.Score ? 0 : (A.Score < B.Score ? -1 : 1);
+				break;
+			case EHistorySortColumn::Duration:
+				Compare = FMath::IsNearlyEqual(A.DurationSeconds, B.DurationSeconds) ? 0 : (A.DurationSeconds < B.DurationSeconds ? -1 : 1);
+				break;
+			case EHistorySortColumn::Date:
+			default:
+				Compare = A.EndedAtUtc == B.EndedAtUtc ? 0 : (A.EndedAtUtc < B.EndedAtUtc ? -1 : 1);
+				break;
+			}
+			return bHistorySortAscending ? Compare < 0 : Compare > 0;
+		});
+
+		auto SortClicked = [this](const EHistorySortColumn Column)
+		{
+			if (HistorySortColumn == Column)
+			{
+				bHistorySortAscending = !bHistorySortAscending;
+			}
+			else
+			{
+				HistorySortColumn = Column;
+				bHistorySortAscending = false;
+			}
+			RequestDeferredSlateRebuild();
+			return FReply::Handled();
+		};
+
+		auto MakeSortButton = [&MakeBareInteractive, &PlainText, &HTag, &SortClicked](const TCHAR* Tag, const FText& Label, const EHistorySortColumn Column) -> TSharedRef<SWidget>
+		{
+			TSharedRef<SWidget> Content = SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					PlainText(Label, 18, FT66FlatStyle::PurpleAccent(), true)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
+				[
+					PlainText(FText::FromString(TEXT("^")), 18, FT66FlatStyle::PurpleAccent(), true)
+				];
+
+			return MakeBareInteractive(
+				HTag(Tag),
+				TEXT("Button"),
+				Content,
+				FOnClicked::CreateLambda([SortClicked, Column]() { return SortClicked(Column); }));
+		};
+
+		AddN(0.027f, 0.503f, 0.945f, 0.057f, MakeMetadataRegion(HTag(TEXT("History.TableHeader")), TEXT("TableHeader")));
+		AddN(
+			0.027f,
+			0.559f,
+			0.945f,
+			0.004f,
+			FT66FlatStyle::AttachMetadata(
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+				.BorderBackgroundColor(FT66FlatStyle::BorderForState(ET66FlatState::Default)),
+				HTag(TEXT("History.TableDivider")),
+				TEXT("Divider"),
+				ET66FlatState::Default,
+				TOptional<FLinearColor>(FT66FlatStyle::BorderForState(ET66FlatState::Default))));
+		AddN(0.033f, 0.504f, 0.110f, 0.037f, MakeSortButton(TEXT("History.TableHeader.HeroPlayedButton"), NSLOCTEXT("T66.Account", "HistoryHeroPlayedHeaderFlat", "HERO PLAYED"), EHistorySortColumn::HeroPlayed));
+		AddN(0.245f, 0.504f, 0.072f, 0.037f, MakeSortButton(TEXT("History.TableHeader.DateButton"), NSLOCTEXT("T66.Account", "HistoryDateHeaderFlat", "DATE"), EHistorySortColumn::Date));
+		AddN(0.407f, 0.504f, 0.090f, 0.037f, MakeSortButton(TEXT("History.TableHeader.StatusButton"), NSLOCTEXT("T66.Account", "HistoryStatusHeaderFlat", "STATUS"), EHistorySortColumn::Status));
+		AddN(0.566f, 0.504f, 0.085f, 0.037f, MakeSortButton(TEXT("History.TableHeader.ScoreButton"), NSLOCTEXT("T66.Account", "HistoryScoreHeaderFlat", "SCORE"), EHistorySortColumn::Score));
+		AddN(0.715f, 0.504f, 0.112f, 0.037f, MakeSortButton(TEXT("History.TableHeader.DurationButton"), NSLOCTEXT("T66.Account", "HistoryDurationHeaderFlat", "DURATION"), EHistorySortColumn::Duration));
+		AddN(
+			0.876f,
+			0.504f,
+			0.080f,
+			0.037f,
+			MakeBareInteractive(
+				HTag(TEXT("History.TableHeader.RankDropdown")),
+				TEXT("Dropdown"),
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					PlainText(NSLOCTEXT("T66.Account", "HistoryRankHeaderFlat", "RANK"), 18, FT66FlatStyle::PurpleAccent(), true)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(12.f, 0.f, 0.f, 0.f)
+				[
+					PlainText(FText::FromString(TEXT("v")), 22, FT66FlatStyle::PurpleAccent(), true)
+				],
+				FOnClicked::CreateLambda([this]()
+				{
+					bHistoryRankSelectorDaily = !bHistoryRankSelectorDaily;
+					RequestDeferredSlateRebuild();
+					return FReply::Handled();
+				})));
+
+		if (FilteredRuns.Num() == 0)
+		{
+			AddN(0.036f, 0.591f, 0.220f, 0.033f, TaggedText(
+				HTag(TEXT("History.EmptyState")),
+				RecentRuns.Num() == 0
+					? NSLOCTEXT("T66.Account", "HistoryNoRunsFlat", "No runs have been recorded yet.")
+					: NSLOCTEXT("T66.Account", "HistoryNoFilteredRunsFlat", "No runs have been recorded yet."),
+				18,
+				FT66FlatStyle::SecondaryText(),
+				false));
+		}
+		else
+		{
+			const float RowX = 0.027f;
+			const float RowW = 0.945f;
+			const float RowH = 0.046f;
+			const int32 MaxRows = FMath::Min(8, FilteredRuns.Num());
+			for (int32 RowIndex = 0; RowIndex < MaxRows; ++RowIndex)
+			{
+				const FT66RecentRunRecord& Run = FilteredRuns[RowIndex];
+				const float RowY = 0.585f + RowIndex * 0.050f;
+				const FString RowTag = FString::Printf(TEXT("History.RunRow.%02d"), RowIndex + 1);
+				const bool bCanOpen = !Run.RunSummarySlotName.IsEmpty();
+				const TSharedRef<SWidget> RowSurface = bCanOpen
+					? FT66FlatStyle::MakeFlatToggleGroupButton(
+						RowIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default,
+						SNew(SSpacer),
+						FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOpenRunSummaryClicked, Run.RunSummarySlotName),
+						FMargin(0.f),
+						RowW * HistoryCanvasW,
+						RowH * HistoryCanvasH,
+						true,
+						HTag(*RowTag))
+					: FT66FlatStyle::MakeFlatSubPanel(RowIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default, FMargin(0.f), SNew(SSpacer), nullptr, HTag(*RowTag));
+				AddN(RowX, RowY, RowW, RowH, RowSurface);
+				AddN(0.035f, RowY + 0.010f, 0.170f, 0.026f, TaggedText(HTag(*FString::Printf(TEXT("%s.Hero"), *RowTag)), UpperText(HeroNameForRun(Run)), 14, FT66FlatStyle::PrimaryText()));
+				AddN(0.245f, RowY + 0.010f, 0.115f, 0.026f, TaggedText(HTag(*FString::Printf(TEXT("%s.Date"), *RowTag)), FText::FromString(Run.EndedAtUtc.ToString(TEXT("%m/%d/%Y"))), 14, FT66FlatStyle::SecondaryText()));
+				AddN(0.407f, RowY + 0.010f, 0.110f, 0.026f, TaggedText(HTag(*FString::Printf(TEXT("%s.Status"), *RowTag)), Run.bWasFullClear ? NSLOCTEXT("T66.Account", "HistoryCompletedFlat", "Completed") : NSLOCTEXT("T66.Account", "HistoryNotCompletedFlat", "Not Completed"), 14, Run.bWasFullClear ? FT66FlatStyle::GoodStandingGreen() : FT66FlatStyle::SelectedText()));
+				AddN(0.566f, RowY + 0.010f, 0.090f, 0.026f, TaggedText(HTag(*FString::Printf(TEXT("%s.Score"), *RowTag)), FText::AsNumber(Run.Score), 14, FT66FlatStyle::PrimaryText()));
+				AddN(0.715f, RowY + 0.010f, 0.120f, 0.026f, TaggedText(HTag(*FString::Printf(TEXT("%s.Duration"), *RowTag)), FormatDurationText(Run.DurationSeconds), 14, FT66FlatStyle::PrimaryText()));
+				AddN(0.876f, RowY + 0.010f, 0.080f, 0.026f, TaggedText(HTag(*FString::Printf(TEXT("%s.Rank"), *RowTag)), NSLOCTEXT("T66.Account", "HistoryRankPendingFlat", "--"), 14, FT66FlatStyle::SecondaryText(), true, ETextJustify::Right));
+			}
+		}
+
+		TSharedRef<SWidget> HistoryContent = SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+				.BorderBackgroundColor(FT66FlatStyle::BackgroundColor())
+			]
+			+ SOverlay::Slot()
+			[
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				[
+					SNew(SBox)
+					.WidthOverride(HistoryCanvasW)
+					.HeightOverride(HistoryCanvasH)
+					[
+						HistoryCanvas
+					]
+				]
+			];
+
+		return HistoryContent;
+	}
+
+	if (ActiveTab == EAccountTab::Suspension)
+	{
+		auto MTag = [](const TCHAR* Tag) -> FName
+		{
+			return FName(Tag);
+		};
+
+		constexpr float ModalCanvasW = 1920.f;
+		constexpr float ModalCanvasH = 1080.f;
+		const TSharedRef<SConstraintCanvas> ModalCanvas = SNew(SConstraintCanvas);
+
+		auto AddCanvas = [ModalCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+		{
+			ModalCanvas->AddSlot()
+			.Anchors(FAnchors(0.f, 0.f))
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X, Y, W, H))
+			[
+				Widget
+			];
+		};
+
+		auto AddN = [&AddCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+		{
+			constexpr float TopBarContentX = 0.0693f;
+			constexpr float TopBarContentY = 0.1291f;
+			constexpr float TopBarContentScale = 0.8613f;
+			AddCanvas(
+				((X - TopBarContentX) / TopBarContentScale) * ModalCanvasW,
+				((Y - TopBarContentY) / TopBarContentScale) * ModalCanvasH,
+				(W / TopBarContentScale) * ModalCanvasW,
+				(H / TopBarContentScale) * ModalCanvasH,
+				Widget);
+		};
+
+		auto MakeMetadataRegion = [](const FName Tag, const FString& Role, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(SNew(SSpacer), Tag, Role, State);
+		};
+
+		auto MakePanelSurface = [](const FName Tag, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::MakeFlatPanel(
+				State,
+				FMargin(0.f),
+				SNew(SSpacer),
+				nullptr,
+				Tag);
+		};
+
+		auto TaggedText = [](
+			const FName Tag,
+			const FText& Text,
+			const int32 FontSize,
+			const FLinearColor& Color,
+			const bool bBold = true,
+			const ETextJustify::Type Justification = ETextJustify::Left,
+			const bool bWrap = false) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(
+				SNew(STextBlock)
+				.Visibility(EVisibility::HitTestInvisible)
+				.Text(Text)
+				.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+				.ColorAndOpacity(Color)
+				.Justification(Justification)
+				.AutoWrapText(bWrap)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds),
+				Tag,
+				TEXT("Label"),
+				ET66FlatState::Default,
+				TOptional<FLinearColor>(),
+				false,
+				NAME_None,
+				true);
+		};
+
+		auto PlainText = [](
+			const FText& Text,
+			const int32 FontSize,
+			const FLinearColor& Color,
+			const bool bBold = true,
+			const ETextJustify::Type Justification = ETextJustify::Center) -> TSharedRef<SWidget>
+		{
+			return SNew(STextBlock)
+				.Visibility(EVisibility::HitTestInvisible)
+				.Text(Text)
+				.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+				.ColorAndOpacity(Color)
+				.Justification(Justification)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds);
+		};
+
+		auto MakeModalTabButton = [&PlainText, &MTag, this](
+			const FName Tag,
+			const FText& Label,
+			const ET66FlatState State,
+			FReply (UT66AccountStatusScreen::*Handler)()) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::MakeFlatToggleGroupButton(
+				State,
+				SNew(SBox)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					PlainText(
+						Label,
+						30,
+						State == ET66FlatState::Selected ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText(),
+						true,
+						ETextJustify::Center)
+				],
+				FOnClicked::CreateUObject(this, Handler),
+				FMargin(0.f),
+				0.285f * ModalCanvasW,
+				0.096f * ModalCanvasH,
+				true,
+				Tag,
+				MTag(TEXT("AccountStatusModalTabs")));
+		};
+
+		const FText ModalSuspensionHeadline =
+			Restriction.Restriction == ET66AccountRestrictionKind::CheatingCertainty
+			? NSLOCTEXT("T66.Account", "SuspensionRestrictedHeadlineFlat", "ACCOUNT RESTRICTED")
+			: NSLOCTEXT("T66.Account", "SuspensionHeadlineFlat", "ACCOUNT SUSPENDED");
+		const FText ModalSuspensionBody =
+			Restriction.Restriction == ET66AccountRestrictionKind::CheatingCertainty
+			? NSLOCTEXT("T66.Account", "SuspensionRestrictedBodyFlat", "This account is blocked from leaderboard submissions until the restriction is cleared.")
+			: NSLOCTEXT("T66.Account", "SuspensionBodyFlat", "This account cannot submit leaderboard scores while the suspension is active.");
+		const bool bModalCanSubmitAppeal = LB && LB->CanSubmitAccountAppeal();
+		const FText ModalSubmitAppealButtonText = bAppealSubmitInFlight
+			? NSLOCTEXT("T66.Account", "SubmitAppealInFlightFlat", "SUBMITTING...")
+			: (Loc ? Loc->GetText_AccountStatus_SubmitAppeal() : NSLOCTEXT("T66.Account", "SubmitAppealFlat", "SUBMIT APPEAL"));
+		const TAttribute<bool> ModalCanSubmitAppealMessage = TAttribute<bool>::CreateLambda([this]()
+		{
+			FString TrimmedMessage = AppealDraftMessage;
+			TrimmedMessage.TrimStartAndEndInline();
+			return !bAppealSubmitInFlight && !TrimmedMessage.IsEmpty();
+		});
+		const FText ReasonText = Restriction.RestrictionReason.IsEmpty()
+			? NSLOCTEXT("T66.Account", "NoSuspensionReasonFlat", "No reason recorded.")
+			: FText::FromString(Restriction.RestrictionReason);
+
+		AddN(
+			0.f,
+			0.f,
+			1.f,
+			1.f,
+			FT66FlatStyle::AttachMetadata(
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+				.BorderBackgroundColor(FT66FlatStyle::BackgroundColor()),
+				MTag(TEXT("AccountStatusModal.Background")),
+				TEXT("Background"),
+				ET66FlatState::Default));
+		AddN(0.f, 0.f, 1.f, 1.f, MakeMetadataRegion(MTag(TEXT("AccountStatusModal.Root")), TEXT("Root")));
+
+		AddN(0.0575f, 0.1424f, 0.8850f, 0.0960f, MakeMetadataRegion(MTag(TEXT("AccountStatusModal.SubTabs")), TEXT("ToggleGroup.AccountStatusModalTabs"), ET66FlatState::Selected));
+		AddN(0.0575f, 0.1424f, 0.2850f, 0.0960f, MakeModalTabButton(MTag(TEXT("AccountStatusModal.SubTabs.SuspensionButton")), NSLOCTEXT("T66.Account", "SuspensionTabFlat", "SUSPENSION"), ET66FlatState::Selected, &UT66AccountStatusScreen::HandleSuspensionTabClicked));
+		AddN(0.3575f, 0.1424f, 0.2850f, 0.0960f, MakeModalTabButton(MTag(TEXT("AccountStatusModal.SubTabs.OverviewButton")), NSLOCTEXT("T66.Account", "OverviewTabFlatSuspension", "OVERVIEW"), ET66FlatState::Default, &UT66AccountStatusScreen::HandleOverviewTabClicked));
+		AddN(0.6575f, 0.1424f, 0.2850f, 0.0960f, MakeModalTabButton(MTag(TEXT("AccountStatusModal.SubTabs.HistoryButton")), NSLOCTEXT("T66.Account", "HistoryTabFlatSuspension", "HISTORY"), ET66FlatState::Default, &UT66AccountStatusScreen::HandleHistoryTabClicked));
+
+		AddN(
+			0.0015f,
+			0.2517f,
+			0.9970f,
+			0.0720f,
+			FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Selected,
+				FMargin(18.f, 7.f),
+				SNew(SBox)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					TaggedText(
+						MTag(TEXT("AccountStatusModal.InfoStrip.Text")),
+						NSLOCTEXT("T66.Account", "SuspensionTabInfoFlat", "Review moderation status, appeal state, and flagged run details."),
+						16,
+						FT66FlatStyle::PrimaryText(),
+						false,
+						ETextJustify::Center,
+						true)
+				],
+				nullptr,
+				MTag(TEXT("AccountStatusModal.InfoStrip"))));
+
+		AddN(0.0015f, 0.3371f, 0.9970f, 0.6400f, MakePanelSurface(MTag(TEXT("AccountStatusModal.ContentPanel"))));
+		AddN(0.0180f, 0.3691f, 0.9640f, 0.5787f, MakeMetadataRegion(MTag(TEXT("AccountStatusModal.Content")), TEXT("Content")));
+		AddN(0.0180f, 0.3691f, 0.9640f, 0.0306f, TaggedText(MTag(TEXT("AccountStatusModal.SectionLabel")), NSLOCTEXT("T66.Account", "SuspensionHdrFlat", "SUSPENSION"), 18, FT66FlatStyle::PrimaryText(), true));
+		AddN(0.0180f, 0.4130f, 0.9640f, 0.0380f, TaggedText(MTag(TEXT("AccountStatusModal.Headline")), ModalSuspensionHeadline, 24, FT66FlatStyle::SelectedText(), true));
+		AddN(0.0180f, 0.4589f, 0.9640f, 0.0185f, TaggedText(MTag(TEXT("AccountStatusModal.Description")), ModalSuspensionBody, 14, FT66FlatStyle::PrimaryText(), false, ETextJustify::Left, true));
+		AddN(0.0180f, 0.4908f, 0.9640f, 0.0992f, FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(0.f), SNew(SSpacer), nullptr, MTag(TEXT("AccountStatusModal.ReasonPanel"))));
+		AddN(0.0330f, 0.5201f, 0.9340f, 0.0167f, TaggedText(MTag(TEXT("AccountStatusModal.ReasonLabel")), NSLOCTEXT("T66.Account", "SuspensionReasonLabelFlat", "REASON"), 13, FT66FlatStyle::SelectedText(), true));
+		AddN(0.0330f, 0.5448f, 0.9340f, 0.0185f, TaggedText(MTag(TEXT("AccountStatusModal.ReasonValue")), ReasonText, 14, FT66FlatStyle::PrimaryText(), false, ETextJustify::Left, true));
+		AddN(0.0180f, 0.6033f, 0.9640f, 0.0167f, TaggedText(MTag(TEXT("AccountStatusModal.AppealStatus")), AppealStatusText(Restriction.AppealStatus), 13, FT66FlatStyle::SecondaryText(), true));
+
+		if (!AppealSubmitStatusMessage.IsEmpty())
+		{
+			AddN(
+				0.0180f,
+				0.6240f,
+				0.9640f,
+				0.0200f,
+				TaggedText(
+					MTag(TEXT("AccountStatusModal.AppealSubmitStatus")),
+					FText::FromString(AppealSubmitStatusMessage),
+					13,
+					bAppealSubmitStatusIsError ? FT66FlatStyle::SelectedText() : FT66FlatStyle::GoodStandingGreen(),
+					false,
+					ETextJustify::Left,
+					true));
+		}
+
+		if (bModalCanSubmitAppeal && !bAppealEditorOpen)
+		{
+			AddN(
+				0.0180f,
+				0.6360f,
+				0.9640f,
+				0.0427f,
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Selected,
+					NSLOCTEXT("T66.Account", "OpenAppealFlat", "APPEAL"),
+					FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOpenAppealClicked),
+					nullptr,
+					nullptr,
+					FMargin(12.f, 6.f),
+					0.964f * ModalCanvasW,
+					0.0427f * ModalCanvasH,
+					true,
+					16,
+					MTag(TEXT("AccountStatusModal.AppealButton"))));
+		}
+		else if (bModalCanSubmitAppeal && bAppealEditorOpen)
+		{
+			AddN(0.0180f, 0.6360f, 0.9640f, 0.2150f, FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(0.f), SNew(SSpacer), nullptr, MTag(TEXT("AccountStatusModal.AppealEditor"))));
+			AddN(0.0330f, 0.6560f, 0.9340f, 0.0200f, TaggedText(MTag(TEXT("AccountStatusModal.AppealEditor.Title")), Loc ? Loc->GetText_AccountStatus_AppealTitle() : NSLOCTEXT("T66.Account", "AppealTitleFlat", "APPEAL"), 15, FT66FlatStyle::SelectedText(), true));
+			AddN(
+				0.0330f,
+				0.6880f,
+				0.9340f,
+				0.0950f,
+				FT66FlatStyle::AttachMetadata(
+					FT66FlatStyle::MakeFlatSubPanel(
+						ET66FlatState::Default,
+						FMargin(12.f, 10.f),
+						SAssignNew(AppealMessageTextBox, SMultiLineEditableTextBox)
+						.AutoWrapText(true)
+						.Text(FText::FromString(AppealDraftMessage))
+						.HintText(Loc ? Loc->GetText_AccountStatus_AppealHint() : NSLOCTEXT("T66.Account", "AppealHintFlat", "Write your appeal message here..."))
+						.ForegroundColor(FT66FlatStyle::PrimaryText())
+						.OnTextChanged_Lambda([this](const FText& NewText)
+						{
+							AppealDraftMessage = NewText.ToString();
+						})),
+					MTag(TEXT("AccountStatusModal.AppealEditor.MessageInput")),
+					TEXT("TextInput"),
+					ET66FlatState::Default,
+					TOptional<FLinearColor>(),
+					true));
+			AddN(
+				0.6730f,
+				0.8020f,
+				0.1580f,
+				0.0430f,
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Selected,
+					ModalSubmitAppealButtonText,
+					FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleSubmitAppealClicked),
+					nullptr,
+					nullptr,
+					FMargin(12.f, 6.f),
+					0.158f * ModalCanvasW,
+					0.043f * ModalCanvasH,
+					ModalCanSubmitAppealMessage,
+					15,
+					MTag(TEXT("AccountStatusModal.AppealEditor.SubmitButton"))));
+			AddN(
+				0.8460f,
+				0.8020f,
+				0.1210f,
+				0.0430f,
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Default,
+					NSLOCTEXT("T66.Account", "CancelAppealFlat", "CANCEL"),
+					FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleCancelAppealClicked),
+					nullptr,
+					nullptr,
+					FMargin(12.f, 6.f),
+					0.121f * ModalCanvasW,
+					0.043f * ModalCanvasH,
+					TAttribute<bool>::CreateLambda([this]() { return !bAppealSubmitInFlight; }),
+					15,
+					MTag(TEXT("AccountStatusModal.AppealEditor.CancelButton"))));
+		}
+		else
+		{
+			AddN(0.0180f, 0.6360f, 0.9640f, 0.0427f, TaggedText(MTag(TEXT("AccountStatusModal.NoAppealAvailable")), NSLOCTEXT("T66.Account", "NoAppealAvailableFlat", "NO APPEAL AVAILABLE"), 14, FT66FlatStyle::SecondaryText(), true, ETextJustify::Center));
+		}
+
+		TSharedRef<SWidget> SuspensionScreenContent = SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				[
+					SNew(SBox)
+					.WidthOverride(ModalCanvasW)
+					.HeightOverride(ModalCanvasH)
+					[
+						ModalCanvas
+					]
+				]
+			];
+
+		TSharedRef<SWidget> BackgroundContent = SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+			.BorderBackgroundColor(FLinearColor::Black);
+
+		return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
+			UIManager,
+			SuspensionScreenContent,
+			BackgroundContent,
+			FLinearColor::Transparent,
+			FMargin(0.f));
+	}
 
 	auto GetHeroHistoryFilterText = [this, WeakT66GI, WeakLoc]() -> FText
 	{

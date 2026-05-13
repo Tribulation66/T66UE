@@ -1,0 +1,216 @@
+# Diplomas UI Fidelity Checklist
+
+Source geometry: `C:\UE\T66\UI\Geometry\diplomas_reference_geometry.md`
+
+Top bar dependency: `C:\UE\T66\UI\Checklists\frontend_topbar_checklist.md`
+
+## Structure
+
+- [ ] FrontendTopBar.Root | exists=true
+- [ ] FrontendTopBar.PowerUpButton | exists=true
+- [ ] FrontendTopBar.TicketBadge.Value | exists=true
+- [ ] Diplomas.Root | exists=true
+- [ ] Diplomas.SubTabs | exists=true
+- [ ] Diplomas.SubTabs.DiplomasButton | exists=true
+- [ ] Diplomas.SubTabs.DiplomasInfoIcon | exists=true
+- [ ] Diplomas.SubTabs.DrugsButton | exists=true
+- [ ] Diplomas.SubTabs.DrugsInfoIcon | exists=true
+- [ ] Diplomas.MainOuterContainer | exists=true
+- [ ] Diplomas.Carousel.LeftNavButton | exists=true
+- [ ] Diplomas.Carousel.RightNavButton | exists=true
+- [ ] Diplomas.CardsRow | exists=true
+- [ ] Diplomas.Card01 | exists=true
+- [ ] Diplomas.Card01.Artwork | exists=true
+- [ ] Diplomas.Card01.StatText | exists=true
+- [ ] Diplomas.Card01.GraduateButton | exists=true
+- [ ] Diplomas.Card01.GraduateButton.Cost | exists=true
+- [ ] Diplomas.Card02 | exists=true
+- [ ] Diplomas.Card02.Artwork | exists=true
+- [ ] Diplomas.Card02.StatText | exists=true
+- [ ] Diplomas.Card02.GraduateButton | exists=true
+- [ ] Diplomas.Card02.GraduateButton.Cost | exists=true
+- [ ] Diplomas.Card03 | exists=true
+- [ ] Diplomas.Card03.Artwork | exists=true
+- [ ] Diplomas.Card03.StatText | exists=true
+- [ ] Diplomas.Card03.GraduateButton | exists=true
+- [ ] Diplomas.Card03.GraduateButton.Cost | exists=true
+- [ ] Diplomas.Card04 | exists=true
+- [ ] Diplomas.Card04.Artwork | exists=true
+- [ ] Diplomas.Card04.StatText | exists=true
+- [ ] Diplomas.Card04.GraduateButton | exists=true
+- [ ] Diplomas.Card04.GraduateButton.Cost | exists=true
+- [ ] Diplomas.Pagination | exists=true
+
+## Geometry
+
+- [ ] Diplomas.Root | x=0.031 | 0.012
+- [ ] Diplomas.Root | y=0.158 | 0.012
+- [ ] Diplomas.Root | w=0.936 | 0.012
+- [ ] Diplomas.Root | h=0.749 | 0.012
+- [ ] Diplomas.SubTabs | x=0.181 | 0.008
+- [ ] Diplomas.SubTabs | y=0.158 | 0.008
+- [ ] Diplomas.SubTabs | w=0.611 | 0.008
+- [ ] Diplomas.SubTabs | h=0.068 | 0.008
+- [ ] Diplomas.SubTabs.DiplomasButton | x=0.181 | 0.005
+- [ ] Diplomas.SubTabs.DiplomasButton | y=0.158 | 0.005
+- [ ] Diplomas.SubTabs.DiplomasButton | w=0.297 | 0.005
+- [ ] Diplomas.SubTabs.DiplomasButton | h=0.068 | 0.005
+- [ ] Diplomas.SubTabs.DiplomasInfoIcon | x=0.418 | 0.005
+- [ ] Diplomas.SubTabs.DiplomasInfoIcon | y=0.176 | 0.005
+- [ ] Diplomas.SubTabs.DiplomasInfoIcon | w=0.018 | 0.005
+- [ ] Diplomas.SubTabs.DiplomasInfoIcon | h=0.033 | 0.005
+- [ ] Diplomas.SubTabs.DrugsButton | x=0.496 | 0.005
+- [ ] Diplomas.SubTabs.DrugsButton | y=0.158 | 0.005
+- [ ] Diplomas.SubTabs.DrugsButton | w=0.296 | 0.005
+- [ ] Diplomas.SubTabs.DrugsButton | h=0.068 | 0.005
+- [ ] Diplomas.SubTabs.DrugsInfoIcon | x=0.719 | 0.005
+- [ ] Diplomas.SubTabs.DrugsInfoIcon | y=0.176 | 0.005
+- [ ] Diplomas.SubTabs.DrugsInfoIcon | w=0.017 | 0.005
+- [ ] Diplomas.SubTabs.DrugsInfoIcon | h=0.033 | 0.005
+- [ ] Diplomas.MainOuterContainer | x=0.031 | 0.012
+- [ ] Diplomas.MainOuterContainer | y=0.260 | 0.012
+- [ ] Diplomas.MainOuterContainer | w=0.936 | 0.012
+- [ ] Diplomas.MainOuterContainer | h=0.647 | 0.012
+- [ ] Diplomas.Carousel.LeftNavButton | x=0.032 | 0.006
+- [ ] Diplomas.Carousel.LeftNavButton | y=0.532 | 0.006
+- [ ] Diplomas.Carousel.LeftNavButton | w=0.017 | 0.006
+- [ ] Diplomas.Carousel.LeftNavButton | h=0.046 | 0.006
+- [ ] Diplomas.Carousel.RightNavButton | x=0.950 | 0.006
+- [ ] Diplomas.Carousel.RightNavButton | y=0.532 | 0.006
+- [ ] Diplomas.Carousel.RightNavButton | w=0.017 | 0.006
+- [ ] Diplomas.Carousel.RightNavButton | h=0.046 | 0.006
+- [ ] Diplomas.CardsRow | x=0.072 | 0.010
+- [ ] Diplomas.CardsRow | y=0.260 | 0.010
+- [ ] Diplomas.CardsRow | w=0.851 | 0.010
+- [ ] Diplomas.CardsRow | h=0.610 | 0.010
+- [ ] Diplomas.Card01 | x=0.072 | 0.010
+- [ ] Diplomas.Card01 | y=0.260 | 0.010
+- [ ] Diplomas.Card01 | w=0.205 | 0.010
+- [ ] Diplomas.Card01 | h=0.610 | 0.010
+- [ ] Diplomas.Card01.Artwork | x=0.086 | 0.012
+- [ ] Diplomas.Card01.Artwork | y=0.278 | 0.012
+- [ ] Diplomas.Card01.Artwork | w=0.178 | 0.012
+- [ ] Diplomas.Card01.Artwork | h=0.446 | 0.012
+- [ ] Diplomas.Card01.StatText | x=0.135 | 0.008
+- [ ] Diplomas.Card01.StatText | y=0.740 | 0.008
+- [ ] Diplomas.Card01.GraduateButton | x=0.081 | 0.006
+- [ ] Diplomas.Card01.GraduateButton | y=0.781 | 0.006
+- [ ] Diplomas.Card01.GraduateButton | w=0.185 | 0.006
+- [ ] Diplomas.Card01.GraduateButton | h=0.072 | 0.006
+- [ ] Diplomas.Card02 | x=0.292 | 0.010
+- [ ] Diplomas.Card02 | y=0.261 | 0.010
+- [ ] Diplomas.Card02 | w=0.199 | 0.010
+- [ ] Diplomas.Card02 | h=0.608 | 0.010
+- [ ] Diplomas.Card02.Artwork | x=0.303 | 0.012
+- [ ] Diplomas.Card02.Artwork | y=0.279 | 0.012
+- [ ] Diplomas.Card02.Artwork | w=0.178 | 0.012
+- [ ] Diplomas.Card02.Artwork | h=0.445 | 0.012
+- [ ] Diplomas.Card02.StatText | x=0.340 | 0.008
+- [ ] Diplomas.Card02.StatText | y=0.740 | 0.008
+- [ ] Diplomas.Card02.GraduateButton | x=0.300 | 0.006
+- [ ] Diplomas.Card02.GraduateButton | y=0.781 | 0.006
+- [ ] Diplomas.Card02.GraduateButton | w=0.181 | 0.006
+- [ ] Diplomas.Card02.GraduateButton | h=0.072 | 0.006
+- [ ] Diplomas.Card03 | x=0.508 | 0.010
+- [ ] Diplomas.Card03 | y=0.261 | 0.010
+- [ ] Diplomas.Card03 | w=0.201 | 0.010
+- [ ] Diplomas.Card03 | h=0.608 | 0.010
+- [ ] Diplomas.Card03.Artwork | x=0.519 | 0.012
+- [ ] Diplomas.Card03.Artwork | y=0.279 | 0.012
+- [ ] Diplomas.Card03.Artwork | w=0.178 | 0.012
+- [ ] Diplomas.Card03.Artwork | h=0.445 | 0.012
+- [ ] Diplomas.Card03.StatText | x=0.550 | 0.008
+- [ ] Diplomas.Card03.StatText | y=0.740 | 0.008
+- [ ] Diplomas.Card03.GraduateButton | x=0.517 | 0.006
+- [ ] Diplomas.Card03.GraduateButton | y=0.781 | 0.006
+- [ ] Diplomas.Card03.GraduateButton | w=0.181 | 0.006
+- [ ] Diplomas.Card03.GraduateButton | h=0.072 | 0.006
+- [ ] Diplomas.Card04 | x=0.722 | 0.010
+- [ ] Diplomas.Card04 | y=0.261 | 0.010
+- [ ] Diplomas.Card04 | w=0.201 | 0.010
+- [ ] Diplomas.Card04 | h=0.608 | 0.010
+- [ ] Diplomas.Card04.Artwork | x=0.733 | 0.012
+- [ ] Diplomas.Card04.Artwork | y=0.278 | 0.012
+- [ ] Diplomas.Card04.Artwork | w=0.178 | 0.012
+- [ ] Diplomas.Card04.Artwork | h=0.446 | 0.012
+- [ ] Diplomas.Card04.StatText | x=0.778 | 0.008
+- [ ] Diplomas.Card04.StatText | y=0.740 | 0.008
+- [ ] Diplomas.Card04.GraduateButton | x=0.731 | 0.006
+- [ ] Diplomas.Card04.GraduateButton | y=0.781 | 0.006
+- [ ] Diplomas.Card04.GraduateButton | w=0.182 | 0.006
+- [ ] Diplomas.Card04.GraduateButton | h=0.072 | 0.006
+- [ ] Diplomas.Pagination | x=0.455 | 0.012
+- [ ] Diplomas.Pagination | y=0.891 | 0.012
+- [ ] Diplomas.Pagination | w=0.091 | 0.012
+- [ ] Diplomas.Pagination | h=0.021 | 0.012
+
+## Colors
+
+- [ ] Diplomas.SubTabs.DiplomasButton | button_state=Selected
+- [ ] Diplomas.SubTabs.DrugsButton | button_state=Default
+- [ ] Diplomas.SubTabs.DiplomasButton | border_color=SelectedBorder
+- [ ] Diplomas.SubTabs.DrugsButton | border_color=DefaultBorder
+- [ ] Diplomas.Card01 | border_color=DefaultBorder
+- [ ] Diplomas.Card02 | border_color=DefaultBorder
+- [ ] Diplomas.Card03 | border_color=DefaultBorder
+- [ ] Diplomas.Card04 | border_color=DefaultBorder
+- [ ] Diplomas.Card01.GraduateButton | button_state=Selected
+- [ ] Diplomas.Card02.GraduateButton | button_state=Selected
+- [ ] Diplomas.Card03.GraduateButton | button_state=Selected
+- [ ] Diplomas.Card04.GraduateButton | button_state=Selected
+- [ ] FrontendTopBar.PowerUpButton | button_state=Selected
+
+## Content
+
+- [ ] FrontendTopBar.PowerUpButton | text=POWER UP
+- [ ] FrontendTopBar.TicketBadge.Value | text=any | # Dynamic ticket balance.
+- [ ] FrontendTopBar.TicketBadge.Value | is_label=true
+- [ ] Diplomas.SubTabs.DiplomasButton | text=DIPLOMAS (PERMANENT)
+- [ ] Diplomas.SubTabs.DrugsButton | text=DRUGS (ONE TIME USE)
+- [ ] Diplomas.Card01.StatText | text=+0 DAMAGE
+- [ ] Diplomas.Card02.StatText | text=+1 ATTACK SPEED
+- [ ] Diplomas.Card03.StatText | text=+2 ATTACK SCALE
+- [ ] Diplomas.Card04.StatText | text=+3 ACCURACY
+- [ ] Diplomas.Card01.StatText | is_label=true
+- [ ] Diplomas.Card02.StatText | is_label=true
+- [ ] Diplomas.Card03.StatText | is_label=true
+- [ ] Diplomas.Card04.StatText | is_label=true
+- [ ] Diplomas.Card01.GraduateButton | text=GRADUATE
+- [ ] Diplomas.Card02.GraduateButton | text=GRADUATE
+- [ ] Diplomas.Card03.GraduateButton | text=GRADUATE
+- [ ] Diplomas.Card04.GraduateButton | text=GRADUATE
+- [ ] Diplomas.Card01.GraduateButton.Cost | text=10
+- [ ] Diplomas.Card02.GraduateButton.Cost | text=10
+- [ ] Diplomas.Card03.GraduateButton.Cost | text=10
+- [ ] Diplomas.Card04.GraduateButton.Cost | text=10
+- [ ] Diplomas.Card01.GraduateButton.Cost | is_label=true
+- [ ] Diplomas.Card02.GraduateButton.Cost | is_label=true
+- [ ] Diplomas.Card03.GraduateButton.Cost | is_label=true
+- [ ] Diplomas.Card04.GraduateButton.Cost | is_label=true
+
+## Interactivity
+
+- [ ] Diplomas.SubTabs.DiplomasButton | has_click_handler=true
+- [ ] Diplomas.SubTabs.DiplomasButton | hover_capable=true
+- [ ] Diplomas.SubTabs.DrugsButton | has_click_handler=true
+- [ ] Diplomas.SubTabs.DrugsButton | hover_capable=true
+- [ ] Diplomas.SubTabs.DiplomasButton | toggle_group=PowerUpTabs
+- [ ] Diplomas.SubTabs.DrugsButton | toggle_group=PowerUpTabs
+- [ ] Diplomas.Carousel.LeftNavButton | has_click_handler=true
+- [ ] Diplomas.Carousel.LeftNavButton | hover_capable=true
+- [ ] Diplomas.Carousel.RightNavButton | has_click_handler=true
+- [ ] Diplomas.Carousel.RightNavButton | hover_capable=true
+- [ ] Diplomas.Pagination | has_click_handler=true
+- [ ] Diplomas.Pagination | hover_capable=true
+- [ ] Diplomas.Card01.GraduateButton | has_click_handler=true
+- [ ] Diplomas.Card01.GraduateButton | hover_capable=true
+- [ ] Diplomas.Card02.GraduateButton | has_click_handler=true
+- [ ] Diplomas.Card02.GraduateButton | hover_capable=true
+- [ ] Diplomas.Card03.GraduateButton | has_click_handler=true
+- [ ] Diplomas.Card03.GraduateButton | hover_capable=true
+- [ ] Diplomas.Card04.GraduateButton | has_click_handler=true
+- [ ] Diplomas.Card04.GraduateButton | hover_capable=true
+- [ ] Diplomas.Card01.GraduateButton.Cost | is_label=true
+- [ ] Diplomas.Card02.GraduateButton.Cost | is_label=true
+- [ ] Diplomas.Card03.GraduateButton.Cost | is_label=true
+- [ ] Diplomas.Card04.GraduateButton.Cost | is_label=true

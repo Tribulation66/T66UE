@@ -57,6 +57,42 @@ namespace T66ScreenSlateHelpers
 namespace
 {
 	TSet<TWeakObjectPtr<UUserWidget>> GDeferredRebuildWidgets;
+
+#if !UE_BUILD_SHIPPING
+	TSet<FString> GImplicitLegacyGlowWarningKeys;
+
+	void WarnImplicitLegacyGlowIfNeeded(const FT66ButtonParams& Params)
+	{
+		if (!Params.bUseGlow || Params.bUseGlowExplicitlySet)
+		{
+			return;
+		}
+
+		FString Label = Params.Label.ToString();
+		if (Label.IsEmpty())
+		{
+			Label = Params.CustomContent.IsValid() ? TEXT("<custom-content>") : TEXT("<empty>");
+		}
+
+		const FString WarningKey = FString::Printf(
+			TEXT("%s|%d|%d|%d"),
+			*Label,
+			static_cast<int32>(Params.Type),
+			static_cast<int32>(Params.BorderVisual),
+			static_cast<int32>(Params.BackgroundVisual));
+		if (GImplicitLegacyGlowWarningKeys.Contains(WarningKey))
+		{
+			return;
+		}
+
+		GImplicitLegacyGlowWarningKeys.Add(WarningKey);
+		UE_LOG(
+			LogT66Style,
+			Warning,
+			TEXT("[UI Flat Migration Guard] FT66ButtonParams for '%s' is using implicit bUseGlow=true. Legacy screens should opt in explicitly with SetUseGlow(true) when glow is intentional; flat migrations must use FT66FlatButtonParams or SetUseGlow(false)."),
+			*Label);
+	}
+#endif
 }
 
 TSharedPtr<FSlateStyleSet> FT66Style::StyleInstance;
@@ -1203,11 +1239,6 @@ FSlateFontInfo FT66Style::Tokens::FontButton()
 	return Font;
 }
 
-bool FT66Style::IsDotaTheme()
-{
-	return false;
-}
-
 FSlateFontInfo FT66Style::MakeFont(const TCHAR* Weight, int32 Size)
 {
 	return MakeCurrentUIFont(Weight, Size);
@@ -1300,22 +1331,14 @@ void FT66Style::Initialize()
 	bool bUsePanelTextures = GPanelTexturesAvailable();
 	UTexture2D* PanelTex = bUsePanelTextures ? GetPanelTexture() : nullptr;
 	UTexture2D* Panel2Tex = bUsePanelTextures ? GetPanel2Texture() : nullptr;
-	if (IsDotaTheme())
-	{
-		bUseButtonTextures = false;
-		bUsePanelTextures = false;
-		PanelTex = nullptr;
-		Panel2Tex = nullptr;
-	}
-
 	UE_LOG(LogT66Style, Verbose, TEXT("[T66Style] Resources: ButtonTex=%d  PanelTex=%d"),
 		bUseButtonTextures ? 1 : 0, bUsePanelTextures ? 1 : 0);
 
 	// Panel brushes: prefer texture (9-slice with baked border/bevel), fallback to rounded box
 	const float BorderW = Tokens::BorderWidth;
 	const FLinearColor BorderColor = Tokens::Border;
-	const float PanelCornerRadius = IsDotaTheme() ? FT66Style::CornerRadius() : Tokens::CornerRadius;
-	const float PanelCornerRadiusSmall = IsDotaTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall;
+	const float PanelCornerRadius = Tokens::CornerRadius;
+	const float PanelCornerRadiusSmall = Tokens::CornerRadiusSmall;
 
 	if (bUsePanelTextures && PanelTex && Panel2Tex)
 	{
@@ -1374,7 +1397,7 @@ void FT66Style::Initialize()
 
 	// Button styles: prefer 6-texture set (with effects baked in), else solid rounded box fallback
 	{
-		const float ButtonCornerRadius = IsDotaTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall;
+		const float ButtonCornerRadius = Tokens::CornerRadiusSmall;
 
 		if (bUseButtonTextures
 			&& ButtonTextures.BasicNormal
@@ -1420,9 +1443,9 @@ void FT66Style::Initialize()
 		}
 		else
 		{
-			const FLinearColor NeutralN = IsDotaTheme() ? FT66Style::ButtonNeutral() : Tokens::Panel2;
-			const FLinearColor NeutralH = IsDotaTheme() ? FT66Style::ButtonHovered() : (Tokens::Panel2 + FLinearColor(0.05f, 0.05f, 0.07f, 0.f));
-			const FLinearColor NeutralP = IsDotaTheme() ? FT66Style::ButtonPressed() : (Tokens::Panel2 + FLinearColor(0.08f, 0.08f, 0.10f, 0.f));
+			const FLinearColor NeutralN = Tokens::Panel2;
+			const FLinearColor NeutralH = Tokens::Panel2 + FLinearColor(0.05f, 0.05f, 0.07f, 0.f);
+			const FLinearColor NeutralP = Tokens::Panel2 + FLinearColor(0.08f, 0.08f, 0.10f, 0.f);
 
 			auto MakeBoxStyle = [&](const FLinearColor& N, const FLinearColor& H, const FLinearColor& P) {
 				return FButtonStyle()
@@ -1433,15 +1456,15 @@ void FT66Style::Initialize()
 					.SetPressedPadding(Tokens::ButtonPaddingPressed);
 			};
 
-			const FLinearColor PrimaryN = IsDotaTheme() ? FT66Style::ButtonPrimary() : NeutralN;
-			const FLinearColor PrimaryH = IsDotaTheme() ? FT66Style::ButtonPrimaryHovered() : NeutralH;
-			const FLinearColor PrimaryP = IsDotaTheme() ? FT66Style::ButtonPrimaryPressed() : NeutralP;
-			const FLinearColor DangerN = IsDotaTheme() ? FT66Style::DangerButton() : NeutralN;
-			const FLinearColor DangerH = IsDotaTheme() ? FT66Style::DangerButtonHovered() : NeutralH;
-			const FLinearColor DangerP = IsDotaTheme() ? FT66Style::DangerButtonPressed() : NeutralP;
-			const FLinearColor SuccessN = IsDotaTheme() ? FT66Style::SuccessButton() : NeutralN;
-			const FLinearColor SuccessH = IsDotaTheme() ? FT66Style::SuccessButtonHovered() : NeutralH;
-			const FLinearColor SuccessP = IsDotaTheme() ? FT66Style::SuccessButtonPressed() : NeutralP;
+			const FLinearColor PrimaryN = NeutralN;
+			const FLinearColor PrimaryH = NeutralH;
+			const FLinearColor PrimaryP = NeutralP;
+			const FLinearColor DangerN = NeutralN;
+			const FLinearColor DangerH = NeutralH;
+			const FLinearColor DangerP = NeutralP;
+			const FLinearColor SuccessN = NeutralN;
+			const FLinearColor SuccessH = NeutralH;
+			const FLinearColor SuccessP = NeutralP;
 
 			StyleInstance->Set("T66.Button.Primary",      MakeBoxStyle(PrimaryN, PrimaryH, PrimaryP));
 			StyleInstance->Set("T66.Button.Neutral",      MakeBoxStyle(NeutralN, NeutralH, NeutralP));
@@ -1449,9 +1472,9 @@ void FT66Style::Initialize()
 			StyleInstance->Set("T66.Button.Success",      MakeBoxStyle(SuccessN, SuccessH, SuccessP));
 			// ToggleActive: selected/pressed look — brighter fill + visible border so ON/OFF selection is obvious.
 			{
-				const FLinearColor ToggleN = IsDotaTheme() ? FT66Style::ToggleButton() : Tokens::Text;
-				const FLinearColor ToggleH = IsDotaTheme() ? FT66Style::ToggleButtonHovered() : (Tokens::Text * 0.90f + FLinearColor(0,0,0,0.10f));
-				const FLinearColor ToggleP = IsDotaTheme() ? FT66Style::ToggleButtonPressed() : (Tokens::Text * 0.75f + FLinearColor(0,0,0,0.25f));
+				const FLinearColor ToggleN = Tokens::Text;
+				const FLinearColor ToggleH = Tokens::Text * 0.90f + FLinearColor(0,0,0,0.10f);
+				const FLinearColor ToggleP = Tokens::Text * 0.75f + FLinearColor(0,0,0,0.25f);
 				const float ToggleBorderW = 2.f;
 				const FLinearColor ToggleBorder = Tokens::Accent2.A > 0.01f ? Tokens::Accent2 : Tokens::Stroke;
 				StyleInstance->Set("T66.Button.ToggleActive", FButtonStyle()
@@ -1567,11 +1590,6 @@ ET66ButtonBackgroundVisual FT66Style::ResolveButtonBackgroundVisual(const FT66Bu
 		return ET66ButtonBackgroundVisual::None;
 	}
 
-	if (IsDotaTheme())
-	{
-		return ET66ButtonBackgroundVisual::None;
-	}
-
 	return ET66ButtonBackgroundVisual::None;
 }
 
@@ -1590,11 +1608,6 @@ ET66ButtonBackgroundVisual FT66Style::ResolvePanelBackgroundVisual(const FT66Pan
 	if (Params.BackgroundVisual != ET66ButtonBackgroundVisual::Default)
 	{
 		return Params.BackgroundVisual;
-	}
-
-	if (IsDotaTheme())
-	{
-		return ET66ButtonBackgroundVisual::None;
 	}
 
 	return ET66ButtonBackgroundVisual::None;
@@ -1664,9 +1677,7 @@ const FSlateBrush* FT66Style::GetInRunTabPlateBrush(const bool bSelected)
 FT66ButtonParams FT66Style::MakeInRunButtonParams(const FText& Label, FOnClicked OnClicked, const ET66ButtonType Type)
 {
 	FT66ButtonParams Params(Label, MoveTemp(OnClicked), Type);
-	Params.SetUseDotaPlateOverlay(true)
-		.SetDotaPlateOverrideBrush(GetInRunButtonPlateBrush(Type))
-		.SetTextColor(FT66Style::Text())
+	Params.SetTextColor(FT66Style::Text())
 		.SetStateTextShadowColors(
 			FLinearColor(0.f, 0.f, 0.f, 0.92f),
 			FLinearColor(0.f, 0.f, 0.f, 0.96f),
@@ -1680,6 +1691,10 @@ FT66ButtonParams FT66Style::MakeInRunButtonParams(const FText& Label, FOnClicked
 // ---------------------------------------------------------------------------
 TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 {
+#if !UE_BUILD_SHIPPING
+	WarnImplicitLegacyGlowIfNeeded(Params);
+#endif
+
 	// 1. Resolve ButtonStyle name and default background color from Type.
 	FName StyleName;
 	FLinearColor DefaultBtnColor;
@@ -1716,8 +1731,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	//    selected button is visually distinct. Otherwise with textures use white so the
 	//    baked-in border/gloss passes through; with fallback use the style default.
 	const bool bUsesTextureChrome =
-		!IsDotaTheme()
-		&& HasButtonTextures()
+		HasButtonTextures()
 		&& ResolvedBorderVisual != ET66ButtonBorderVisual::None;
 	TAttribute<FSlateColor> BtnColor;
 	if (bHasCustomFill)
@@ -1755,22 +1769,6 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 		const int32 ResolvedFontSize = Params.FontSize > 0 ? Params.FontSize : TextFont.Size;
 		TextFont = FT66Style::MakeFont(*Params.FontWeight, ResolvedFontSize);
 	}
-	if (IsDotaTheme() && Params.Type != ET66ButtonType::Row)
-	{
-		if (bUseBoldButtonText && (Params.Type == ET66ButtonType::Primary || Params.Type == ET66ButtonType::Success))
-		{
-			TextFont.LetterSpacing = FMath::Max(TextFont.LetterSpacing, FMath::RoundToInt(FMath::Clamp(static_cast<float>(TextFont.Size) * 2.0f, 72.f, 118.f)));
-		}
-		else if (bUseBoldButtonText)
-		{
-			TextFont.LetterSpacing = FMath::Max(TextFont.LetterSpacing, FMath::RoundToInt(FMath::Clamp(static_cast<float>(TextFont.Size) * 1.45f, 42.f, 86.f)));
-		}
-		else
-		{
-			TextFont.LetterSpacing = FMath::Max(TextFont.LetterSpacing, FMath::RoundToInt(FMath::Clamp(static_cast<float>(TextFont.Size) * 0.35f, 6.f, 18.f)));
-		}
-	}
-
 	TAttribute<FSlateColor> TextColor;
 	if (Params.bHasStateTextColors)
 	{
@@ -1918,7 +1916,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	//    Row buttons use HAlign_Fill so custom content (e.g. column layouts) stretches to full width.
 	const EHorizontalAlignment BtnHAlign = (Params.Type == ET66ButtonType::Row) ? HAlign_Fill : HAlign_Center;
 	const EVerticalAlignment BtnVAlign = (Params.Type == ET66ButtonType::Row) ? VAlign_Fill : VAlign_Center;
-	const bool bEnableButtonGlow = Params.bUseGlow && !IsDotaTheme();
+	const bool bEnableButtonGlow = Params.bUseGlow;
 	const TSharedPtr<FT66ButtonGlowState> GlowState = bEnableButtonGlow ? CreateButtonGlowState(Params.Type) : nullptr;
 	const TSharedPtr<FT66ButtonBorderBrushSet> BorderBrushSet = FT66ButtonVisuals::CreateBorderBrushSet(ResolvedBorderVisual);
 	const int32 EffectiveFontSize = (Params.FontSize > 0) ? Params.FontSize : TextFont.Size;
@@ -2065,10 +2063,8 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 			.Visibility(EVisibility::Collapsed));
 
 	const bool bUseFlatBodyOnly =
-		!IsDotaTheme() &&
 		ResolvedBorderVisual == ET66ButtonBorderVisual::None &&
-		ResolvedBackgroundVisual == ET66ButtonBackgroundVisual::None &&
-		!Params.bUseDotaPlateOverlay;
+		ResolvedBackgroundVisual == ET66ButtonBackgroundVisual::None;
 
 	if (bUseFlatBodyOnly && Params.Type != ET66ButtonType::Row)
 	{
@@ -2109,305 +2105,6 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 				+ SOverlay::Slot()
 				[
 					MakeRetroUIChromeOverlay()
-				]
-			];
-	}
-
-	if (IsDotaTheme() && Params.Type != ET66ButtonType::Row)
-	{
-		const FButtonStyle& HitStyle = Get().GetWidgetStyle<FButtonStyle>("T66.Button.FlatTransparent");
-		const FMargin DotaContentPad = (Params.Padding.Left >= 0.f)
-			? Params.Padding
-			: ((Params.FontSize >= 24) ? FMargin(20.f, 12.f, 20.f, 10.f) : FMargin(14.f, 8.f, 14.f, 6.f));
-
-		FLinearColor BodyNormal = FT66Style::ButtonNeutral();
-		FLinearColor BodyHovered = FT66Style::ButtonHovered();
-		FLinearColor BodyPressed = FT66Style::ButtonPressed();
-
-		switch (Params.Type)
-		{
-		case ET66ButtonType::Primary:
-			BodyNormal = FT66Style::ButtonPrimary();
-			BodyHovered = FT66Style::ButtonPrimaryHovered();
-			BodyPressed = FT66Style::ButtonPrimaryPressed();
-			break;
-		case ET66ButtonType::Danger:
-			BodyNormal = FT66Style::DangerButton();
-			BodyHovered = FT66Style::DangerButtonHovered();
-			BodyPressed = FT66Style::DangerButtonPressed();
-			break;
-		case ET66ButtonType::Success:
-			BodyNormal = FT66Style::SuccessButton();
-			BodyHovered = FT66Style::SuccessButtonHovered();
-			BodyPressed = FT66Style::SuccessButtonPressed();
-			break;
-		case ET66ButtonType::ToggleActive:
-			BodyNormal = FT66Style::ToggleButton();
-			BodyHovered = FT66Style::ToggleButtonHovered();
-			BodyPressed = FT66Style::ToggleButtonPressed();
-			break;
-		default:
-			break;
-		}
-
-		if (Params.bHasColorOverride)
-		{
-			const FLinearColor OverrideBase = Params.ColorOverride.Get().GetSpecifiedColor();
-			BodyNormal = OverrideBase;
-			BodyHovered = MixColor(OverrideBase, FT66Style::Text(), 0.10f);
-			BodyPressed = MixColor(OverrideBase, FT66Style::Background(), 0.30f);
-		}
-
-		const TAttribute<FSlateColor> BodyColor = TAttribute<FSlateColor>::CreateLambda([BorderState, BodyNormal, BodyHovered, BodyPressed]() -> FSlateColor
-		{
-			if (!BorderState.IsValid())
-			{
-				return FSlateColor(BodyNormal);
-			}
-
-			switch (*BorderState)
-			{
-			case ET66ButtonBorderState::Hovered:
-				return FSlateColor(BodyHovered);
-			case ET66ButtonBorderState::Pressed:
-				return FSlateColor(BodyPressed);
-			case ET66ButtonBorderState::Normal:
-			default:
-				return FSlateColor(BodyNormal);
-			}
-		});
-
-		const FLinearColor OutlineBaseColor =
-			(Params.Type == ET66ButtonType::Primary || Params.Type == ET66ButtonType::Success)
-				? FT66Style::Success()
-				: (Params.Type == ET66ButtonType::Danger
-					? FT66Style::Danger()
-					: (Params.Type == ET66ButtonType::ToggleActive ? FT66Style::Success() : FT66Style::Border()));
-		const bool bPrimaryLikeButton =
-			Params.Type == ET66ButtonType::Primary ||
-			Params.Type == ET66ButtonType::Success ||
-			Params.Type == ET66ButtonType::ToggleActive;
-
-		const TAttribute<FSlateColor> MidBorderColor = TAttribute<FSlateColor>::CreateLambda([BorderState, BodyNormal, BodyHovered, BodyPressed, OutlineBaseColor, bPrimaryLikeButton]() -> FSlateColor
-		{
-			const auto ResolveMid = [OutlineBaseColor, bPrimaryLikeButton](const FLinearColor& InColor) -> FLinearColor
-			{
-				return MixColor(OutlineBaseColor, InColor, bPrimaryLikeButton ? 0.12f : 0.18f);
-			};
-
-			if (!BorderState.IsValid())
-			{
-				return FSlateColor(ResolveMid(BodyNormal));
-			}
-
-			switch (*BorderState)
-			{
-			case ET66ButtonBorderState::Hovered:
-				return FSlateColor(ResolveMid(BodyHovered));
-			case ET66ButtonBorderState::Pressed:
-				return FSlateColor(ResolveMid(BodyPressed));
-			case ET66ButtonBorderState::Normal:
-			default:
-				return FSlateColor(ResolveMid(BodyNormal));
-			}
-		});
-
-		const TAttribute<FSlateColor> HighlightColor = TAttribute<FSlateColor>::CreateLambda([BorderState, BodyNormal, BodyHovered, BodyPressed, bPrimaryLikeButton]() -> FSlateColor
-		{
-			const auto ResolveHighlight = [bPrimaryLikeButton](const FLinearColor& InColor) -> FLinearColor
-			{
-				const float BlendAmount = bPrimaryLikeButton ? 0.10f : 0.24f;
-				const float Alpha = bPrimaryLikeButton ? 0.10f : 0.22f;
-				return WithAlpha(MixColor(InColor, FT66Style::Text(), BlendAmount), Alpha);
-			};
-
-			if (!BorderState.IsValid())
-			{
-				return FSlateColor(ResolveHighlight(BodyNormal));
-			}
-
-			switch (*BorderState)
-			{
-			case ET66ButtonBorderState::Hovered:
-				return FSlateColor(ResolveHighlight(BodyHovered));
-			case ET66ButtonBorderState::Pressed:
-				return FSlateColor(ResolveHighlight(BodyPressed));
-			case ET66ButtonBorderState::Normal:
-			default:
-				return FSlateColor(ResolveHighlight(BodyNormal));
-			}
-		});
-
-		T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind PlateType = T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Neutral;
-		if (Params.Type == ET66ButtonType::Primary || Params.Type == ET66ButtonType::Success || Params.Type == ET66ButtonType::ToggleActive)
-		{
-			PlateType = T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Primary;
-		}
-		else if (Params.Type == ET66ButtonType::Danger)
-		{
-			PlateType = T66RuntimeUIBrushAccess::ET66DotaPlateBrushKind::Danger;
-		}
-
-		const bool bUseButtonPlateOverlay = Params.bUseDotaPlateOverlay;
-		const FSlateBrush* PlateBrush = nullptr;
-		if (bUseButtonPlateOverlay)
-		{
-			PlateBrush = Params.DotaPlateOverrideBrush ? Params.DotaPlateOverrideBrush : T66RuntimeUIBrushAccess::ResolveDotaButtonPlateBrush(PlateType);
-		}
-		const FLinearColor PlateNormalTint(1.00f, 1.00f, 1.00f, 1.0f);
-		const FLinearColor PlateHoverTint(1.05f, 1.05f, 1.05f, 1.0f);
-		const FLinearColor PlatePressedTint(0.92f, 0.92f, 0.92f, 1.0f);
-		const TAttribute<FSlateColor> PlateTint = TAttribute<FSlateColor>::CreateLambda([BorderState, PlateNormalTint, PlateHoverTint, PlatePressedTint]() -> FSlateColor
-		{
-			if (!BorderState.IsValid())
-			{
-				return FSlateColor(PlateNormalTint);
-			}
-
-			switch (*BorderState)
-			{
-			case ET66ButtonBorderState::Hovered:
-				return FSlateColor(PlateHoverTint);
-			case ET66ButtonBorderState::Pressed:
-				return FSlateColor(PlatePressedTint);
-			case ET66ButtonBorderState::Normal:
-			default:
-				return FSlateColor(PlateNormalTint);
-			}
-		});
-
-		const bool bUseMinimalPlateButton = bUseButtonPlateOverlay && PlateBrush;
-
-		if (bUseMinimalPlateButton)
-		{
-			return SNew(SBox)
-				.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
-				.HeightOverride(Params.Height > 0.f ? Params.Height : FOptionalSize())
-				.Visibility(Params.Visibility)
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-						GlowWidget
-					]
-					+ SOverlay::Slot()
-					[
-						SNew(SImage)
-						.Visibility(EVisibility::HitTestInvisible)
-						.Image(PlateBrush)
-						.ColorAndOpacity(PlateTint)
-					]
-					+ SOverlay::Slot()
-					[
-						SNew(SButton)
-						.Cursor(EMouseCursor::Hand)
-						.HAlign(BtnHAlign)
-						.VAlign(BtnVAlign)
-						.OnClicked(SafeClick)
-						.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); RefreshMouseCursorQuery(); }))
-						.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); RefreshMouseCursorQuery(); }))
-						.OnPressed(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonPressedGlowIntensity); SetBorderState(ET66ButtonBorderState::Pressed); }))
-						.OnReleased(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
-						.ButtonStyle(&HitStyle)
-						.ButtonColorAndOpacity(FSlateColor(FLinearColor::White))
-						.ContentPadding(DotaContentPad)
-						.IsEnabled(Params.IsEnabled)
-						[
-							Content
-						]
-					]
-					+ SOverlay::Slot()
-					[
-						MakeRetroUIChromeOverlay()
-					]
-				];
-		}
-
-		return SNew(SBox)
-			.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
-			.HeightOverride(Params.Height > 0.f ? Params.Height : FOptionalSize())
-			.Visibility(Params.Visibility)
-			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					GlowWidget
-				]
-				+ SOverlay::Slot()
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FT66Style::PanelOuter())
-					.Padding(1.f)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(MidBorderColor)
-						.Padding(1.f)
-						[
-							SNew(SOverlay)
-							+ SOverlay::Slot()
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(BodyColor)
-							]
-							+ SOverlay::Slot()
-							[
-								SNew(SImage)
-								.Visibility(PlateBrush ? EVisibility::HitTestInvisible : EVisibility::Collapsed)
-								.Image(PlateBrush)
-								.ColorAndOpacity(PlateTint)
-							]
-							+ SOverlay::Slot()
-							.VAlign(VAlign_Top)
-							.Padding(1.f, 1.f, 1.f, 0.f)
-							[
-								SNew(SBox)
-								.HeightOverride(3.f)
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(HighlightColor)
-								]
-							]
-							+ SOverlay::Slot()
-							.VAlign(VAlign_Bottom)
-							.Padding(1.f, 0.f, 1.f, 1.f)
-							[
-								SNew(SBox)
-								.HeightOverride(2.f)
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.45f))
-								]
-							]
-							+ SOverlay::Slot()
-							[
-								SNew(SButton)
-								.Cursor(EMouseCursor::Hand)
-								.HAlign(BtnHAlign)
-								.VAlign(BtnVAlign)
-								.OnClicked(SafeClick)
-								.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); RefreshMouseCursorQuery(); }))
-								.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); RefreshMouseCursorQuery(); }))
-								.OnPressed(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonPressedGlowIntensity); SetBorderState(ET66ButtonBorderState::Pressed); }))
-								.OnReleased(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
-								.ButtonStyle(&HitStyle)
-								.ButtonColorAndOpacity(FSlateColor(FLinearColor::White))
-								.ContentPadding(DotaContentPad)
-								.IsEnabled(Params.IsEnabled)
-								[
-									Content
-								]
-							]
-							+ SOverlay::Slot()
-							[
-								MakeRetroUIChromeOverlay()
-							]
-						]
-					]
 				]
 			];
 	}
@@ -2801,120 +2498,6 @@ TSharedRef<SWidget> FT66Style::MakePanel(
 		ResolvedBackgroundVisual == ET66ButtonBackgroundVisual::None &&
 		!bHasCustomFill &&
 		!bHasDecorativeBorder;
-
-	if (IsDotaTheme())
-	{
-		if (bUseFlatPanelBody)
-		{
-			FLinearColor FlatFill = Params.bHasColorOverride
-				? Params.ColorOverride.Get().GetSpecifiedColor()
-				: (Params.Type == ET66PanelType::Panel2 ? FT66Style::PanelInner() : FT66Style::PanelOuter());
-
-			if (Params.Type == ET66PanelType::Bg)
-			{
-				FlatFill = Params.bHasColorOverride
-					? Params.ColorOverride.Get().GetSpecifiedColor()
-					: FT66Style::Background();
-			}
-
-			TSharedRef<SBorder> FlatBorder = SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FlatFill)
-				.Padding(Params.Padding)
-				.Visibility(Params.Visibility)
-				[
-					Content
-				];
-
-			if (OutBorder)
-			{
-				*OutBorder = FlatBorder;
-			}
-			return FlatBorder;
-		}
-
-		const FLinearColor FillColorValue = Params.bHasColorOverride
-			? Params.ColorOverride.Get().GetSpecifiedColor()
-			: (Params.Type == ET66PanelType::Panel2 ? FT66Style::PanelInner() : FT66Style::Panel());
-
-		if (Params.Type == ET66PanelType::Bg)
-		{
-			const TAttribute<FSlateColor> BackgroundColor = Params.bHasColorOverride
-				? Params.ColorOverride
-				: TAttribute<FSlateColor>(FSlateColor(FT66Style::Background()));
-
-			TSharedRef<SBorder> BackgroundBorder = SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(BackgroundColor)
-				.Padding(Params.Padding)
-				.Visibility(Params.Visibility)
-				[
-					Content
-				];
-
-			if (OutBorder)
-			{
-				*OutBorder = BackgroundBorder;
-			}
-			return BackgroundBorder;
-		}
-
-		TSharedPtr<SBorder> FillBorder;
-		TSharedRef<SBorder> RootBorder = SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FT66Style::PanelOuter())
-			.Padding(1.f)
-			.Visibility(Params.Visibility)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(Params.Type == ET66PanelType::Panel2 ? FT66Style::Border() : MixColor(FT66Style::Border(), FT66Style::Stroke(), 0.18f))
-				.Padding(1.f)
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-						SAssignNew(FillBorder, SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FillColorValue)
-						.Padding(Params.Padding)
-						[
-							Content
-						]
-					]
-					+ SOverlay::Slot()
-					.VAlign(VAlign_Top)
-					.Padding(1.f, 1.f, 1.f, 0.f)
-					[
-						SNew(SBox)
-						.HeightOverride(2.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(WithAlpha(MixColor(FillColorValue, FT66Style::Text(), 0.16f), 0.16f))
-						]
-					]
-					+ SOverlay::Slot()
-					.VAlign(VAlign_Bottom)
-					.Padding(1.f, 0.f, 1.f, 1.f)
-					[
-						SNew(SBox)
-						.HeightOverride(2.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.28f))
-						]
-					]
-				]
-			];
-
-		if (OutBorder)
-		{
-			*OutBorder = FillBorder.IsValid() ? FillBorder : RootBorder;
-		}
-		return RootBorder;
-	}
 
 	// 3. Build the chrome as a separate background layer so Retro UI treatment
 	// can affect panel chrome without passing over the child text/content.

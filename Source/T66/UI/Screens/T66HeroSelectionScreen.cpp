@@ -40,6 +40,42 @@ FReply UT66HeroSelectionScreen::HandleCompanionNextClicked()
 	return FReply::Handled();
 }
 
+FReply UT66HeroSelectionScreen::HandleHeroCarouselPortraitClicked(const int32 VisibleSlotIndex)
+{
+	if (AllHeroIDs.Num() == 0)
+	{
+		return FReply::Handled();
+	}
+
+	const int32 OffsetFromCenter = VisibleSlotIndex - 3;
+	const int32 TargetIndex = (CurrentHeroIndex + OffsetFromCenter + AllHeroIDs.Num()) % AllHeroIDs.Num();
+	PreviewHero(AllHeroIDs[TargetIndex]);
+	FT66Style::DeferRebuild(this);
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandleFlatSkinRowClicked(const FName SkinID)
+{
+	const FName ResolvedSkinID = SkinID.IsNone() ? FName(TEXT("Default")) : SkinID;
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		GI->SelectedHeroSkinID = ResolvedSkinID;
+		if (UT66SkinSubsystem* SkinSubsystem = GI->GetSubsystem<UT66SkinSubsystem>())
+		{
+			const bool bCanEquip = ResolvedSkinID == FName(TEXT("Default")) || SkinSubsystem->IsHeroSkinOwned(PreviewedHeroID, ResolvedSkinID);
+			if (bCanEquip)
+			{
+				SkinSubsystem->SetEquippedHeroSkinID(PreviewedHeroID, ResolvedSkinID);
+			}
+		}
+	}
+
+	CommitLocalSelectionsToLobby(true);
+	UpdateHeroDisplay();
+	FT66Style::DeferRebuild(this);
+	return FReply::Handled();
+}
+
 FReply UT66HeroSelectionScreen::HandleHeroGridClicked() { OnHeroGridClicked(); return FReply::Handled(); }
 
 FReply UT66HeroSelectionScreen::HandleCompanionGridClicked() { OnCompanionGridClicked(); return FReply::Handled(); }
@@ -136,6 +172,12 @@ FReply UT66HeroSelectionScreen::HandleClearTemporaryBuffsClicked()
 	return FReply::Handled();
 }
 
+FReply UT66HeroSelectionScreen::HandleLabClicked()
+{
+	UE_LOG(LogT66HeroSelection, Warning, TEXT("Action OpenLab clicked - backend not yet implemented"));
+	return FReply::Handled();
+}
+
 FReply UT66HeroSelectionScreen::HandleLoreClicked()
 {
 	bShowingLore = !bShowingLore;
@@ -189,6 +231,7 @@ FReply UT66HeroSelectionScreen::HandleChadBodyClicked()
 	}
 	CommitLocalSelectionsToLobby(true);
 	UpdateHeroDisplay(); // Update 3D preview immediately for this hero
+	FT66Style::DeferRebuild(this);
 	return FReply::Handled();
 }
 
@@ -201,6 +244,7 @@ FReply UT66HeroSelectionScreen::HandleStacyBodyClicked()
 	}
 	CommitLocalSelectionsToLobby(true);
 	UpdateHeroDisplay(); // Update 3D preview immediately for this hero
+	FT66Style::DeferRebuild(this);
 	return FReply::Handled();
 }
 
@@ -247,8 +291,8 @@ void UT66HeroSelectionScreen::RefreshTargetDropdownTexts()
 	{
 		InfoTargetDropdownText->SetText(
 			CurrentInfoTargetOption.IsValid()
-				? FText::FromString(*CurrentInfoTargetOption)
-				: NSLOCTEXT("T66.HeroSelection", "InfoTargetHeroFallback", "Hero"));
+				? FText::FromString(CurrentInfoTargetOption->ToUpper())
+				: NSLOCTEXT("T66.HeroSelection", "InfoTargetHeroFallback", "HERO"));
 	}
 }
 

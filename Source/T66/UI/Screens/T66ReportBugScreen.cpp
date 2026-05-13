@@ -2,17 +2,13 @@
 
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/T66UIManager.h"
-#include "UI/Style/T66Style.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Engine/GameInstance.h"
-#include "Engine/Texture2D.h"
-#include "UI/Screens/T66ScreenSlateHelpers.h"
-#include "UI/Style/T66RuntimeUIBrushAccess.h"
-#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/DateTime.h"
 #include "Misc/ConfigCacheIni.h"
@@ -26,169 +22,19 @@
 #include "Styling/SlateTypes.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SScaleBox.h"
-#include "Widgets/SBoxPanel.h"
-#include "Widgets/Text/STextBlock.h"
-#include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SMultiLineEditableTextBox.h"
+#include "Widgets/SNullWidget.h"
 #include "Widgets/SOverlay.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66ReportBug, Log, All);
 
 namespace
 {
-	constexpr float ReportBugButtonHeight = 76.f;
-
-	struct FReportBugReferenceButtonBrushSet
+	FName ReportBugTag(const TCHAR* Name)
 	{
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Normal;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Hovered;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Pressed;
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush Disabled;
-	};
-
-	struct FReportBugReferenceButtonStyleEntry
-	{
-		FButtonStyle Style;
-		bool bInitialized = false;
-	};
-
-	const FSlateBrush* ResolveReportBugReferenceBrush(
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
-		const FString& RelativePath,
-		const FMargin& Margin,
-		const TCHAR* DebugLabel,
-		const TextureFilter Filter = TextureFilter::TF_Trilinear)
-	{
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
-			Margin,
-			DebugLabel,
-			Filter);
-	}
-
-	const TCHAR* GetReportBugButtonPrefix(ET66ButtonType Type)
-	{
-		switch (Type)
-		{
-		case ET66ButtonType::Primary:
-		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
-			return TEXT("select_button");
-		case ET66ButtonType::Danger:
-			return TEXT("basic_button");
-		default:
-			return TEXT("basic_button");
-		}
-	}
-
-	FReportBugReferenceButtonBrushSet& GetReportBugButtonBrushSet(ET66ButtonType Type)
-	{
-		static FReportBugReferenceButtonBrushSet Neutral;
-		static FReportBugReferenceButtonBrushSet Success;
-		static FReportBugReferenceButtonBrushSet Danger;
-
-		switch (Type)
-		{
-		case ET66ButtonType::Primary:
-		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
-			return Success;
-		case ET66ButtonType::Danger:
-			return Danger;
-		default:
-			return Neutral;
-		}
-	}
-
-	FReportBugReferenceButtonStyleEntry& GetReportBugButtonStyleEntry(ET66ButtonType Type)
-	{
-		static FReportBugReferenceButtonStyleEntry Neutral;
-		static FReportBugReferenceButtonStyleEntry Success;
-		static FReportBugReferenceButtonStyleEntry Danger;
-
-		switch (Type)
-		{
-		case ET66ButtonType::Primary:
-		case ET66ButtonType::Success:
-		case ET66ButtonType::ToggleActive:
-			return Success;
-		case ET66ButtonType::Danger:
-			return Danger;
-		default:
-			return Neutral;
-		}
-	}
-
-	const FSlateBrush* ResolveReportBugButtonBrush(
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
-		const TCHAR* Prefix,
-		const TCHAR* State,
-		const TCHAR* DebugLabel)
-	{
-		return ResolveReportBugReferenceBrush(
-			Entry,
-			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), State),
-			FMargin(0.f),
-			DebugLabel,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FButtonStyle& GetReportBugButtonStyle(ET66ButtonType Type)
-	{
-		FReportBugReferenceButtonStyleEntry& StyleEntry = GetReportBugButtonStyleEntry(Type);
-		if (!StyleEntry.bInitialized)
-		{
-			StyleEntry.bInitialized = true;
-			StyleEntry.Style = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
-			StyleEntry.Style.SetNormalPadding(FMargin(0.f));
-			StyleEntry.Style.SetPressedPadding(FMargin(0.f));
-
-			FReportBugReferenceButtonBrushSet& BrushSet = GetReportBugButtonBrushSet(Type);
-			const TCHAR* Prefix = GetReportBugButtonPrefix(Type);
-			if (const FSlateBrush* Brush = ResolveReportBugButtonBrush(BrushSet.Normal, Prefix, TEXT("normal"), TEXT("ReportBugButtonNormal")))
-			{
-				StyleEntry.Style.SetNormal(*Brush);
-			}
-			if (const FSlateBrush* Brush = ResolveReportBugButtonBrush(BrushSet.Hovered, Prefix, TEXT("hover"), TEXT("ReportBugButtonHover")))
-			{
-				StyleEntry.Style.SetHovered(*Brush);
-			}
-			if (const FSlateBrush* Brush = ResolveReportBugButtonBrush(BrushSet.Pressed, Prefix, TEXT("pressed"), TEXT("ReportBugButtonPressed")))
-			{
-				StyleEntry.Style.SetPressed(*Brush);
-			}
-			if (const FSlateBrush* Brush = ResolveReportBugButtonBrush(BrushSet.Disabled, TEXT("basic_button"), TEXT("disabled"), TEXT("ReportBugButtonDisabled")))
-			{
-				StyleEntry.Style.SetDisabled(*Brush);
-			}
-		}
-
-		return StyleEntry.Style;
-	}
-
-	TSharedRef<SWidget> MakeReportBugShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
-	{
-		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
-			TEXT("Panels/Modal/modal_shell_medium.png"),
-			Content,
-			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
-			Padding,
-			TEXT("ReportBugShellV14"),
-			FLinearColor(0.010f, 0.012f, 0.018f, 0.98f));
-	}
-
-	TSharedRef<SWidget> MakeReportBugField(const TSharedRef<SWidget>& Content, const FMargin& Padding)
-	{
-		return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
-			TEXT("Panels/Modal/modal_shell_medium.png"),
-			Content,
-			FMargin(0.075f, 0.105f, 0.075f, 0.105f),
-			Padding,
-			TEXT("ReportBugFieldV14"),
-			FLinearColor(0.012f, 0.014f, 0.020f, 0.96f));
+		return FName(Name);
 	}
 
 	const FEditableTextBoxStyle& GetReportBugTextBoxStyle()
@@ -209,55 +55,36 @@ namespace
 		return Style;
 	}
 
-	TSharedRef<SWidget> MakeReportBugButton(const FT66ButtonParams& Params)
+	TSharedRef<SWidget> MakeReportBugScrim(const FName Tag)
 	{
-		const int32 FontSize = Params.FontSize > 0 ? Params.FontSize : 18;
-		const TAttribute<FText> ButtonText = Params.DynamicLabel.IsBound()
-			? Params.DynamicLabel
-			: TAttribute<FText>(Params.Label);
-		const TAttribute<bool> IsEnabled = Params.IsEnabled;
-		const TAttribute<FSlateColor> TextColor = Params.bHasTextColorOverride
-			? Params.TextColorOverride
-			: TAttribute<FSlateColor>::CreateLambda([IsEnabled]()
-			{
-				return FSlateColor(IsEnabled.Get(true) ? FT66Style::Tokens::Text : FT66Style::Tokens::TextMuted);
-			});
-		const FMargin ContentPadding = Params.Padding.Left >= 0.f ? Params.Padding : FMargin(20.f, 9.f);
+		return FT66FlatStyle::AttachMetadata(
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.56f))
+			.Padding(0.f),
+			Tag,
+			TEXT("Scrim"),
+			ET66FlatState::Default);
+	}
 
-		FSlateFontInfo ButtonFont = FT66Style::MakeFont(*Params.FontWeight, FontSize);
-		ButtonFont.LetterSpacing = 0;
-
-		const TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
-			? Params.CustomContent.ToSharedRef()
-			: StaticCastSharedRef<SWidget>(
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				.StretchDirection(EStretchDirection::DownOnly)
-				[
-					SNew(STextBlock)
-					.Text(ButtonText)
-					.Font(ButtonFont)
-					.ColorAndOpacity(TextColor)
-					.Justification(ETextJustify::Center)
-					.ShadowOffset(FVector2D(0.f, 1.f))
-					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
-					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-					.Clipping(EWidgetClipping::ClipToBounds)
-				]);
-
-		const FButtonStyle& ButtonStyle = GetReportBugButtonStyle(Params.Type);
-		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
-			Params.OnClicked,
-			Content,
-			&ButtonStyle.Normal,
-			&ButtonStyle.Hovered,
-			&ButtonStyle.Pressed,
-			&ButtonStyle.Disabled,
-			Params.MinWidth,
-			Params.Height > 0.f ? Params.Height : ReportBugButtonHeight,
-			ContentPadding,
-			Params.IsEnabled,
-			Params.Visibility);
+	TSharedRef<SWidget> MakeReportBugButton(
+		const FText& Text,
+		FOnClicked OnClicked,
+		TAttribute<bool> IsEnabled,
+		const FName Tag)
+	{
+		return FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Default,
+			Text,
+			MoveTemp(OnClicked),
+			nullptr,
+			nullptr,
+			FMargin(20.f, 10.f),
+			403.f,
+			109.f,
+			MoveTemp(IsEnabled),
+			26,
+			Tag);
 	}
 }
 
@@ -293,86 +120,89 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 		return !TrimmedText.IsEmpty();
 	});
 
-	return SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::Scrim())
+	const TSharedRef<SWidget> TextInput =
+		FT66FlatStyle::AttachMetadata(
+			SNew(SMultiLineEditableTextBox)
+			.Style(&GetReportBugTextBoxStyle())
+			.Font(FT66FlatStyle::MakeFont(22))
+			.Text(FText::FromString(BugReportText))
+			.OnTextChanged_Lambda([this](const FText& T) { BugReportText = T.ToString(); })
+			.ForegroundColor(FSlateColor(FT66FlatStyle::PrimaryText()))
+			.HintText(HintText),
+			ReportBugTag(TEXT("ReportBug.TextInput")),
+			TEXT("MultilineTextInput"),
+			ET66FlatState::Default);
+
+	const TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
+	auto AddSlot = [Canvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+	{
+		Canvas->AddSlot()
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X, Y, W, H))
+			[
+				Widget
+			];
+	};
+
+	AddSlot(0.f, 0.f, 1920.f, 1080.f, MakeReportBugScrim(ReportBugTag(TEXT("ReportBug.Scrim"))));
+	AddSlot(452.f, 145.f, 1015.f, 749.f,
+		FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(0.f),
+			SNullWidget::NullWidget,
+			nullptr,
+			ReportBugTag(TEXT("ReportBug.ModalPanel"))));
+	AddSlot(799.f, 217.f, 322.f, 87.f,
+		FT66FlatStyle::MakeFlatLabel(
+			TitleText,
+			ET66FlatLabelRole::Title,
+			ETextJustify::Center,
+			ReportBugTag(TEXT("ReportBug.Title"))));
+	AddSlot(532.f, 304.f, 857.f, 400.f,
+		FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(43.f, 35.f),
+			TextInput,
+			nullptr,
+			ReportBugTag(TEXT("ReportBug.TextFieldPanel"))));
+	AddSlot(546.f, 704.f, 403.f, 109.f,
+		MakeReportBugButton(
+			SubmitText,
+			FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleSubmitClicked),
+			CanSubmitReport,
+			ReportBugTag(TEXT("ReportBug.SubmitButton"))));
+	AddSlot(978.f, 704.f, 403.f, 109.f,
+		MakeReportBugButton(
+			CancelText,
+			FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleCancelClicked),
+			true,
+			ReportBugTag(TEXT("ReportBug.CancelButton"))));
+
+	const TSharedRef<SWidget> RootContent = SNew(SBox)
+		.WidthOverride(1920.f)
+		.HeightOverride(1080.f)
+		[
+			Canvas
+		];
+
+	return FT66FlatStyle::AttachMetadata(
+		SNew(SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
 		[
 			SNew(SScaleBox)
 			.Stretch(EStretch::ScaleToFit)
-			.StretchDirection(EStretchDirection::DownOnly)
+			.StretchDirection(EStretchDirection::Both)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				SNew(SBox)
-				.WidthOverride(705.0f)
-				.Padding(0.0f, 0.0f, 0.0f, 28.0f)
-				[
-				MakeReportBugShell(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.0f)
-					[
-						SNew(STextBlock)
-						.Text(TitleText)
-						.Font(FT66Style::Tokens::FontBold(42))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-						.Justification(ETextJustify::Center)
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(0.0f)
-					[
-							SNew(SBox)
-							.WidthOverride(570.0f)
-							.HeightOverride(278.0f)
-							[
-								MakeReportBugField(
-									SNew(SMultiLineEditableTextBox)
-									.Style(&GetReportBugTextBoxStyle())
-									.Font(FT66Style::Tokens::FontRegular(22))
-									.Text(FText::FromString(BugReportText))
-									.OnTextChanged_Lambda([this](const FText& T) { BugReportText = T.ToString(); })
-									.ForegroundColor(FT66Style::Tokens::Text)
-									.HintText(HintText),
-									FMargin(30.f, 24.f))
-						]
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(10.0f, 0.0f)
-						[
-							MakeReportBugButton(
-								FT66ButtonParams(SubmitText, FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleSubmitClicked), ET66ButtonType::Success)
-								.SetMinWidth(280.f)
-								.SetHeight(ReportBugButtonHeight)
-								.SetFontSize(26)
-								.SetPadding(FMargin(28.f, 12.f, 28.f, 11.f))
-								.SetEnabled(CanSubmitReport))
-						]
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(10.0f, 0.0f)
-						[
-							MakeReportBugButton(
-								FT66ButtonParams(CancelText, FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleCancelClicked), ET66ButtonType::Neutral)
-								.SetMinWidth(280.f)
-								.SetHeight(ReportBugButtonHeight)
-								.SetFontSize(26)
-								.SetPadding(FMargin(28.f, 12.f, 28.f, 11.f)))
-						]
-					]
-				,
-				FMargin(55.0f, 50.0f, 55.0f, 56.0f))
-				]
+				RootContent
 			]
-		];
+		],
+		ReportBugTag(TEXT("ReportBug.Root")),
+		TEXT("Root"),
+		ET66FlatState::Default);
 }
 
 FReply UT66ReportBugScreen::HandleSubmitClicked() { OnSubmitClicked(); return FReply::Handled(); }

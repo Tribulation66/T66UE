@@ -8,7 +8,7 @@
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
-#include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UIManager.h"
@@ -17,16 +17,18 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SScaleBox.h"
+#include "Widgets/Layout/SSpacer.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace
 {
-	TMap<FString, TStrongObjectPtr<UTexture2D>> GMinigamesGeneratedTextureCache;
-	TMap<FString, TSharedPtr<FSlateBrush>> GMinigamesGeneratedBrushCache;
-	TMap<FString, TSharedPtr<FButtonStyle>> GMinigamesGeneratedButtonStyleCache;
+	TMap<FString, TStrongObjectPtr<UTexture2D>> GMinigamesFlatTextureCache;
+	TMap<FString, TSharedPtr<FSlateBrush>> GMinigamesFlatBrushCache;
 
 	bool T66IsMinigamesPausedGameplayWidget(const UUserWidget* Widget)
 	{
@@ -34,140 +36,9 @@ namespace
 		return PC && PC->IsPaused();
 	}
 
-	FLinearColor T66MinigamesInsetFill()
+	UTexture2D* LoadMinigamesFlatTexture(const FString& SourceRelativePath)
 	{
-		return FLinearColor(0.046f, 0.018f, 0.020f, 0.98f);
-	}
-
-	FLinearColor T66MinigamesRowFill()
-	{
-		return FLinearColor(0.018f, 0.020f, 0.030f, 0.98f);
-	}
-
-	FLinearColor T66MinigamesAccentRed()
-	{
-		return FLinearColor(0.92f, 0.05f, 0.12f, 1.0f);
-	}
-
-	FLinearColor T66MinigamesAccentCrimson()
-	{
-		return FLinearColor(0.92f, 0.05f, 0.12f, 1.0f);
-	}
-
-	FLinearColor T66MinigamesBrightText()
-	{
-		return FLinearColor(1.0f, 0.88f, 0.84f, 1.0f);
-	}
-
-	FString MakeMinigamesUltrakillElementPath(const TCHAR* FileName)
-	{
-		return FString(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements")) / FString(FileName ? FileName : TEXT(""));
-	}
-
-	FString MakeMinigamesUltrakillSquareElementPath(const TCHAR* FileName)
-	{
-		return FString(TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant")) / FString(FileName ? FileName : TEXT(""));
-	}
-
-	FString MakeMinigamesSettingsAssetPath(const TCHAR* FileName)
-	{
-		const FString Name(FileName);
-		const auto BasicButtonPath = [](const TCHAR* State) -> FString
-		{
-			const FString StateName(State ? State : TEXT("normal"));
-			if (StateName.Equals(TEXT("disabled"), ESearchCase::IgnoreCase))
-			{
-				return MakeMinigamesUltrakillSquareElementPath(TEXT("cta_new_game_button_disabled_red_square_variant.png"));
-			}
-			const FString CTAState = StateName.Equals(TEXT("selected"), ESearchCase::IgnoreCase)
-				? FString(TEXT("normal"))
-				: StateName.ToLower();
-			return MakeMinigamesUltrakillSquareElementPath(*FString::Printf(TEXT("cta_new_game_button_%s_red_square_variant.png"), *CTAState));
-		};
-		const auto SelectButtonPath = [](const TCHAR* State) -> FString
-		{
-			const FString StateName(State ? State : TEXT("normal"));
-			const FString PillState = StateName.Equals(TEXT("selected"), ESearchCase::IgnoreCase)
-				? FString(TEXT("normal"))
-				: StateName.ToLower();
-			return MakeMinigamesUltrakillSquareElementPath(*FString::Printf(TEXT("cta_new_game_button_%s_red_square_variant.png"), *PillState));
-		};
-
-		if (Name.StartsWith(TEXT("settings_toggle_on_")))
-		{
-			return SelectButtonPath(TEXT("selected"));
-		}
-		if (Name.StartsWith(TEXT("settings_compact_neutral_")) || Name.StartsWith(TEXT("settings_toggle_off_")))
-		{
-			if (Name.Contains(TEXT("_hover"))) return SelectButtonPath(TEXT("hover"));
-			if (Name.Contains(TEXT("_pressed"))) return SelectButtonPath(TEXT("pressed"));
-			return SelectButtonPath(TEXT("normal"));
-		}
-		if (Name.StartsWith(TEXT("settings_toggle_inactive_")))
-		{
-			return BasicButtonPath(TEXT("disabled"));
-		}
-		if (Name == TEXT("settings_content_shell_frame.png"))
-		{
-			return MakeMinigamesUltrakillSquareElementPath(TEXT("main_panel_normal_square_variant.png"));
-		}
-		if (Name == TEXT("settings_row_shell_full.png") || Name == TEXT("settings_row_shell_split.png"))
-		{
-			return MakeMinigamesUltrakillSquareElementPath(TEXT("player_row_panel_normal_square_variant.png"));
-		}
-		if (Name == TEXT("settings_dropdown_field.png"))
-		{
-			return MakeMinigamesUltrakillSquareElementPath(TEXT("dropdown_field_normal_square_variant.png"));
-		}
-
-		return FString(TEXT("SourceAssets/UI/Reference/Shared")) / Name;
-	}
-
-	FMargin GetMinigamesGeneratedBrushMargin(const FString& SourceRelativePath)
-	{
-		if (SourceRelativePath.Contains(TEXT("inner_panel_normal.png")))
-		{
-			return FMargin(0.067f, 0.043f, 0.067f, 0.043f);
-		}
-		if (SourceRelativePath.Contains(TEXT("main_panel_normal.png")) || SourceRelativePath.Contains(TEXT("main_panel_normal_square_variant.png")))
-		{
-			return FMargin(0.070f, 0.120f, 0.070f, 0.120f);
-		}
-		if (SourceRelativePath.Contains(TEXT("player_row_panel_")))
-		{
-			return FMargin(0.070f, 0.280f, 0.070f, 0.280f);
-		}
-		if (SourceRelativePath.Contains(TEXT("dropdown_field_normal.png")) || SourceRelativePath.Contains(TEXT("dropdown_field_normal_square_variant.png")))
-		{
-			return FMargin(0.06f, 0.34f, 0.06f, 0.34f);
-		}
-		if (T66ScreenSlateHelpers::IsReferenceChromePillButtonAssetPath(SourceRelativePath))
-		{
-			return FMargin(0.093f, 0.213f, 0.093f, 0.213f);
-		}
-		if (T66ScreenSlateHelpers::IsReferenceChromeCTAButtonAssetPath(SourceRelativePath))
-		{
-			return FMargin(0.083f, 0.231f, 0.083f, 0.231f);
-		}
-		return FMargin(0.f);
-	}
-
-	bool IsZeroMinigamesMargin(const FMargin& Margin)
-	{
-		return FMath::IsNearlyZero(Margin.Left)
-			&& FMath::IsNearlyZero(Margin.Top)
-			&& FMath::IsNearlyZero(Margin.Right)
-			&& FMath::IsNearlyZero(Margin.Bottom);
-	}
-
-	bool IsMinigamesSlicedButtonPath(const FString& SourceRelativePath)
-	{
-		return T66ScreenSlateHelpers::IsReferenceChromeButtonAssetPath(SourceRelativePath);
-	}
-
-	UTexture2D* LoadMinigamesGeneratedTexture(const FString& SourceRelativePath)
-	{
-		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GMinigamesGeneratedTextureCache.Find(SourceRelativePath))
+		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GMinigamesFlatTextureCache.Find(SourceRelativePath))
 		{
 			return CachedTexture->Get();
 		}
@@ -179,26 +50,22 @@ namespace
 				continue;
 			}
 
-			const TextureFilter Filter = IsMinigamesSlicedButtonPath(SourceRelativePath)
-				? TextureFilter::TF_Nearest
-				: TextureFilter::TF_Trilinear;
-
 			UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 				CandidatePath,
-				Filter,
+				TextureFilter::TF_Trilinear,
 				true,
-				TEXT("MinigamesGeneratedUI"));
+				TEXT("MinigamesFlatUI"));
 			if (!Texture)
 			{
 				Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
 					CandidatePath,
-					Filter,
-					TEXT("MinigamesGeneratedUI"));
+					TextureFilter::TF_Trilinear,
+					TEXT("MinigamesFlatUI"));
 			}
 
 			if (Texture)
 			{
-				GMinigamesGeneratedTextureCache.Add(SourceRelativePath, TStrongObjectPtr<UTexture2D>(Texture));
+				GMinigamesFlatTextureCache.Add(SourceRelativePath, TStrongObjectPtr<UTexture2D>(Texture));
 				return Texture;
 			}
 		}
@@ -206,34 +73,18 @@ namespace
 		return nullptr;
 	}
 
-	const FSlateBrush* ResolveMinigamesGeneratedBrush(const FString& SourceRelativePath, const FVector2D& ImageSize = FVector2D::ZeroVector)
+	const FSlateBrush* ResolveMinigamesFlatBrush(const FString& SourceRelativePath, const FVector2D& ImageSize = FVector2D::ZeroVector)
 	{
 		const FString BrushKey = FString::Printf(TEXT("%s::%.0fx%.0f"), *SourceRelativePath, ImageSize.X, ImageSize.Y);
-		if (const TSharedPtr<FSlateBrush>* CachedBrush = GMinigamesGeneratedBrushCache.Find(BrushKey))
+		if (const TSharedPtr<FSlateBrush>* CachedBrush = GMinigamesFlatBrushCache.Find(BrushKey))
 		{
 			return CachedBrush->Get();
 		}
 
-		UTexture2D* Texture = LoadMinigamesGeneratedTexture(SourceRelativePath);
+		UTexture2D* Texture = LoadMinigamesFlatTexture(SourceRelativePath);
 		if (!Texture)
 		{
-			if (!T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(SourceRelativePath))
-			{
-				return nullptr;
-			}
-
-			TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
-			const FMargin BrushMargin = GetMinigamesGeneratedBrushMargin(SourceRelativePath);
-			const bool bSlicedButton = IsMinigamesSlicedButtonPath(SourceRelativePath);
-			const FVector2D ResolvedSize = ImageSize.X > 0.f && ImageSize.Y > 0.f ? ImageSize : FVector2D(1.f, 1.f);
-			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
-				*Brush,
-				SourceRelativePath,
-				ResolvedSize,
-				bSlicedButton ? FMargin(0.f) : BrushMargin,
-				bSlicedButton || IsZeroMinigamesMargin(BrushMargin) ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box);
-			GMinigamesGeneratedBrushCache.Add(BrushKey, Brush);
-			return Brush.Get();
+			return nullptr;
 		}
 
 		const FVector2D ResolvedSize = ImageSize.X > 0.f && ImageSize.Y > 0.f
@@ -241,132 +92,15 @@ namespace
 			: FVector2D(static_cast<float>(Texture->GetSizeX()), static_cast<float>(Texture->GetSizeY()));
 
 		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
-		const FMargin BrushMargin = GetMinigamesGeneratedBrushMargin(SourceRelativePath);
-		const bool bSlicedButton = IsMinigamesSlicedButtonPath(SourceRelativePath);
-		Brush->DrawAs = bSlicedButton || IsZeroMinigamesMargin(BrushMargin) ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
+		Brush->DrawAs = ESlateBrushDrawType::Image;
 		Brush->Tiling = ESlateBrushTileType::NoTile;
 		Brush->ImageSize = ResolvedSize;
-		Brush->Margin = bSlicedButton ? FMargin(0.f) : BrushMargin;
+		Brush->Margin = FMargin(0.f);
 		Brush->TintColor = FSlateColor(FLinearColor::White);
 		Brush->SetResourceObject(Texture);
 
-		GMinigamesGeneratedBrushCache.Add(BrushKey, Brush);
+		GMinigamesFlatBrushCache.Add(BrushKey, Brush);
 		return Brush.Get();
-	}
-
-	const FButtonStyle* ResolveMinigamesGeneratedButtonStyle(
-		const FString& Key,
-		const FString& NormalPath,
-		const FString& HoverPath,
-		const FString& PressedPath,
-		const FString& DisabledPath)
-	{
-		if (const TSharedPtr<FButtonStyle>* CachedStyle = GMinigamesGeneratedButtonStyleCache.Find(Key))
-		{
-			return CachedStyle->Get();
-		}
-
-		const FButtonStyle& NoBorderStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
-		TSharedPtr<FButtonStyle> Style = MakeShared<FButtonStyle>(NoBorderStyle);
-		if (const FSlateBrush* NormalBrush = ResolveMinigamesGeneratedBrush(NormalPath))
-		{
-			Style->SetNormal(*NormalBrush);
-		}
-		if (const FSlateBrush* HoverBrush = ResolveMinigamesGeneratedBrush(HoverPath))
-		{
-			Style->SetHovered(*HoverBrush);
-		}
-		if (const FSlateBrush* PressedBrush = ResolveMinigamesGeneratedBrush(PressedPath))
-		{
-			Style->SetPressed(*PressedBrush);
-		}
-		if (const FSlateBrush* DisabledBrush = ResolveMinigamesGeneratedBrush(DisabledPath))
-		{
-			Style->SetDisabled(*DisabledBrush);
-		}
-		Style->SetNormalPadding(FMargin(0.f));
-		Style->SetPressedPadding(FMargin(0.f));
-
-		GMinigamesGeneratedButtonStyleCache.Add(Key, Style);
-		return Style.Get();
-	}
-
-	const FButtonStyle* ResolveMinigamesCompactButtonStyle()
-	{
-		return ResolveMinigamesGeneratedButtonStyle(
-			TEXT("Minigames.CompactButton"),
-			MakeMinigamesSettingsAssetPath(TEXT("settings_compact_neutral_normal.png")),
-			MakeMinigamesSettingsAssetPath(TEXT("settings_compact_neutral_hover.png")),
-			MakeMinigamesSettingsAssetPath(TEXT("settings_compact_neutral_pressed.png")),
-			MakeMinigamesSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")));
-	}
-
-	TSharedRef<SWidget> MakeMinigamesGeneratedPanel(
-		const FString& SourceRelativePath,
-		const TSharedRef<SWidget>& Content,
-		const FMargin& Padding,
-		const FLinearColor& Tint = FLinearColor::White,
-		const FLinearColor& FallbackFill = T66MinigamesInsetFill())
-	{
-		if (const FSlateBrush* Brush = ResolveMinigamesGeneratedBrush(SourceRelativePath))
-		{
-			return SNew(SBorder)
-				.BorderImage(Brush)
-				.BorderBackgroundColor(Tint)
-				.Padding(Padding)
-				[
-					Content
-				];
-		}
-
-		return FT66Style::MakePanel(
-			Content,
-			FT66PanelParams(ET66PanelType::Panel)
-				.SetColor(FallbackFill)
-				.SetPadding(Padding));
-	}
-
-	TSharedRef<SWidget> MakeMinigamesGeneratedButton(
-		const FT66ButtonParams& Params,
-		const FButtonStyle* ButtonStyle,
-		const FSlateFontInfo& Font,
-		const FLinearColor& TextColor,
-		const FMargin& ContentPadding)
-	{
-		if (!ButtonStyle)
-		{
-			return FT66Style::MakeBareButton(
-				FT66BareButtonParams(
-					Params.OnClicked,
-					SNew(STextBlock)
-					.Text(Params.Label)
-					.Font(Font)
-					.ColorAndOpacity(TextColor)
-					.Justification(ETextJustify::Center))
-				.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-				.SetPadding(ContentPadding)
-				.SetEnabled(Params.IsEnabled)
-				.SetMinWidth(Params.MinWidth)
-				.SetHeight(Params.Height)
-				.SetVisibility(Params.Visibility));
-		}
-
-		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
-			Params.OnClicked,
-			SNew(STextBlock)
-			.Text(Params.Label)
-			.Font(Font)
-			.ColorAndOpacity(TextColor)
-			.Justification(ETextJustify::Center),
-			&ButtonStyle->Normal,
-			&ButtonStyle->Hovered,
-			&ButtonStyle->Pressed,
-			&ButtonStyle->Disabled,
-			Params.MinWidth,
-			Params.Height,
-			ContentPadding,
-			Params.IsEnabled,
-			Params.Visibility);
 	}
 }
 
@@ -388,174 +122,307 @@ UT66LocalizationSubsystem* UT66MinigamesScreen::GetLocSubsystem() const
 
 TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 {
-	const FText MinigamesText = NSLOCTEXT("T66.MiniGames", "Title", "MINIGAMES");
-	const FText MinigamesDescriptionText = NSLOCTEXT("T66.MiniGames", "Description", "Relax or play minigames with friends to earn ChadCoupons you can redeem in the main game.");
-	const FText ActiveSliceTitle = NSLOCTEXT("T66.MiniGames", "SliceActiveTitle", "CHADPOCALYPSE MINI");
-	const FText ActiveSliceBody = NSLOCTEXT("T66.MiniGames", "SliceActiveBody", "A 2D survivor minigame with its own saves, heroes, idols, enemies, and progression.");
-	const FText ActiveSliceTag = NSLOCTEXT("T66.MiniGames", "SliceActiveTag", "PLAY");
-	const FText TDTitle = NSLOCTEXT("T66.MiniGames", "SliceTDTitle", "CHADPOCALYPSE TOWER DEFENSE");
-	const FText TDBody = NSLOCTEXT("T66.MiniGames", "SliceTDBody", "A tower defense minigame with hero placement, enemy waves, upgrades, and rotating maps.");
-	const FText TDTag = NSLOCTEXT("T66.MiniGames", "SliceTDTag", "PLAY");
-	const FText IdleTitle = NSLOCTEXT("T66.MiniGames", "SliceIdleTitle", "CHADPOCALYPSE IDLE");
-	const FText IdleBody = NSLOCTEXT("T66.MiniGames", "SliceIdleBody", "An offline-progress idle minigame with heroes, upgrades, stage pushing, and comeback rewards.");
-	const FText IdleTag = NSLOCTEXT("T66.MiniGames", "SliceIdleTag", "PLAY");
-	const FText DeckTitle = NSLOCTEXT("T66.MiniGames", "SliceDeckTitle", "CHADPOCALYPSE DECK BUILDER");
-	const FText DeckBody = NSLOCTEXT("T66.MiniGames", "SliceDeckBody", "A dungeon-descent deckbuilder with card combat, route choices, relics, and reward drafts.");
-	const FText DeckTag = NSLOCTEXT("T66.MiniGames", "SliceDeckTag", "PLAY");
-	const FText VersusTitle = NSLOCTEXT("T66.MiniGames", "SliceVersusTitle", "VERSUS");
-	const FText VersusBody = NSLOCTEXT("T66.MiniGames", "SliceVersusBody", "A 1v1 arcade gauntlet where friends compete across cabinet games like Whack-a-Mole.");
-	const FText VersusTag = NSLOCTEXT("T66.MiniGames", "SliceVersusTag", "PLAY");
+	constexpr float CanvasW = 1920.f;
+	constexpr float CanvasH = 1080.f;
+	constexpr int32 CardsPerPage = 4;
+	TSharedRef<SConstraintCanvas> MinigamesCanvas = SNew(SConstraintCanvas);
+	const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder"));
 
-	const auto MakeSlicePanel = [&](const FText& Title, const FText& Body, const FText& Tag, const FLinearColor& Accent, const bool bClickable, FOnClicked ClickDelegate = FOnClicked()) -> TSharedRef<SWidget>
+	auto DTag = [](const TCHAR* Tag) -> FName
 	{
-		TSharedRef<SWidget> SliceContent =
-			SNew(SBox)
-			.HeightOverride(96.f)
-			.Clipping(EWidgetClipping::ClipToBounds)
-			[
-				MakeMinigamesGeneratedPanel(
-					MakeMinigamesSettingsAssetPath(TEXT("settings_row_shell_split.png")),
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot()
-					.FillWidth(1.f)
-					.VAlign(VAlign_Center)
-					.Padding(0.f, 0.f, 14.f, 0.f)
-					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						[
-							SNew(STextBlock)
-							.Text(Title)
-							.Font(FT66Style::Tokens::FontBold(22))
-							.ColorAndOpacity(T66MinigamesBrightText())
-							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-							.Clipping(EWidgetClipping::ClipToBounds)
-						]
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						.Padding(0.f, 4.f, 0.f, 0.f)
-						[
-							SNew(STextBlock)
-							.Text(Body)
-							.Font(FT66Style::Tokens::FontRegular(12))
-							.ColorAndOpacity(FLinearColor(0.84f, 0.62f, 0.58f, 1.0f))
-							.AutoWrapText(true)
-							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-							.Clipping(EWidgetClipping::ClipToBounds)
-						]
-					]
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					.HAlign(HAlign_Right)
-					[
-						SNew(SBox)
-						.WidthOverride(238.f)
-						.HeightOverride(36.f)
-						.Clipping(EWidgetClipping::ClipToBounds)
-						[
-							MakeMinigamesGeneratedPanel(
-								MakeMinigamesSettingsAssetPath(bClickable ? TEXT("settings_toggle_on_normal.png") : TEXT("settings_toggle_inactive_normal.png")),
-								SNew(STextBlock)
-								.Text(Tag)
-								.Font(FT66Style::Tokens::FontBold(bClickable ? 18 : 12))
-								.ColorAndOpacity(bClickable ? FLinearColor(1.0f, 0.96f, 0.88f, 1.f) : FLinearColor(0.84f, 0.62f, 0.58f, 1.0f))
-								.Justification(ETextJustify::Center)
-								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-								.Clipping(EWidgetClipping::ClipToBounds),
-								FMargin(14.f, 6.f),
-								FLinearColor::White,
-								bClickable ? Accent : FLinearColor(0.18f, 0.20f, 0.24f, 1.f))
-						]
-					],
-					FMargin(24.f, 7.f),
-					bClickable ? FLinearColor::White : FLinearColor(0.72f, 0.76f, 0.82f, 1.f),
-					T66MinigamesRowFill())
-			];
+		return FName(Tag);
+	};
 
-		if (!bClickable)
+	auto AddCanvas = [&MinigamesCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+	{
+		MinigamesCanvas->AddSlot()
+		.Anchors(FAnchors(0.f, 0.f))
+		.Alignment(FVector2D(0.f, 0.f))
+		.Offset(FMargin(X, Y, W, H))
+		[
+			Widget
+		];
+	};
+
+	auto AddN = [&AddCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+	{
+		AddCanvas(X * CanvasW, Y * CanvasH, W * CanvasW, H * CanvasH, Widget);
+	};
+
+	auto MakeMetadataRegion = [](const FName Tag, const FString& Role, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::AttachMetadata(SNew(SSpacer), Tag, Role, State);
+	};
+
+	auto TaggedText = [](
+		const FName Tag,
+		const FText& Text,
+		const int32 FontSize,
+		const FLinearColor& Color,
+		const bool bBold = true,
+		const ETextJustify::Type Justification = ETextJustify::Center,
+		const bool bAutoWrap = false) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::AttachMetadata(
+			SNew(STextBlock)
+			.Visibility(EVisibility::HitTestInvisible)
+			.Text(Text)
+			.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+			.ColorAndOpacity(Color)
+			.Justification(Justification)
+			.AutoWrapText(bAutoWrap)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds),
+			Tag,
+			TEXT("Label"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true);
+	};
+
+	auto MakePanelSurface = [](const FName Tag, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatPanel(
+			State,
+			FMargin(0.f),
+			SNew(SSpacer),
+			nullptr,
+			Tag);
+	};
+
+	auto MakeArtwork = [&TaggedText](const FName Tag, const FString& RelativePath, const FVector2D& SizeHint) -> TSharedRef<SWidget>
+	{
+		const FSlateBrush* Brush = ResolveMinigamesFlatBrush(RelativePath, SizeHint);
+		const TSharedRef<SWidget> Content = Brush
+			? StaticCastSharedRef<SWidget>(
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFill)
+				[
+					SNew(SImage)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Image(Brush)
+				])
+			: StaticCastSharedRef<SWidget>(
+				SNew(SBox)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					TaggedText(NAME_None, NSLOCTEXT("T66.MiniGames", "MissingFlatMinigameArt", "MINIGAME"), 18, FT66FlatStyle::SecondaryText(), true, ETextJustify::Center)
+				]);
+
+		return FT66FlatStyle::AttachMetadata(
+			SNew(SBox)
+			.Visibility(EVisibility::HitTestInvisible)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				Content
+			],
+			Tag,
+			TEXT("Artwork"),
+			ET66FlatState::Default);
+	};
+
+	auto MakeBareInteractive = [&NoBorderButtonStyle](
+		const FName Tag,
+		const FString& Role,
+		const TSharedRef<SWidget>& Content,
+		FOnClicked OnClicked,
+		const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::AttachMetadata(
+			FT66Style::MakeBareButton(
+				FT66BareButtonParams(MoveTemp(OnClicked), Content)
+				.SetButtonStyle(&NoBorderButtonStyle)
+				.SetPadding(FMargin(0.f))
+				.SetDebounceClick(false)),
+			Tag,
+			Role,
+			State,
+			TOptional<FLinearColor>(),
+			true);
+	};
+
+	auto MakeIcon = [&TaggedText](const FSlateBrush* Brush, const FText& FallbackText, const FLinearColor& Tint = FLinearColor::White) -> TSharedRef<SWidget>
+	{
+		return Brush
+			? StaticCastSharedRef<SWidget>(
+				SNew(SImage)
+				.Visibility(EVisibility::HitTestInvisible)
+				.Image(Brush)
+				.ColorAndOpacity(Tint))
+			: StaticCastSharedRef<SWidget>(TaggedText(NAME_None, FallbackText, 28, Tint, true, ETextJustify::Center));
+	};
+
+	auto MakePlayButton = [&TaggedText](const FName ButtonTag, const FName LabelTag, FOnClicked OnClicked, const float Width, const float Height) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatToggleGroupButton(
+			ET66FlatState::Selected,
+			SNew(SBox)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				TaggedText(LabelTag, NSLOCTEXT("T66.MiniGames", "FlatPlay", "PLAY"), 27, FT66FlatStyle::SelectedText(), true, ETextJustify::Center)
+			],
+			MoveTemp(OnClicked),
+			FMargin(0.f),
+			Width,
+			Height,
+			true,
+			ButtonTag);
+	};
+
+	auto MakePaginationDot = [&NoBorderButtonStyle](const FName Tag, const int32 PageIndex, const bool bSelected, TWeakObjectPtr<UT66MinigamesScreen> WeakThis) -> TSharedRef<SWidget>
+	{
+		const FLinearColor DotColor = bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::PurpleAccent();
+		return FT66FlatStyle::AttachMetadata(
+			FT66Style::MakeBareButton(
+				FT66BareButtonParams(
+					FOnClicked::CreateLambda([WeakThis, PageIndex]()
+					{
+						if (UT66MinigamesScreen* Screen = WeakThis.Get())
+						{
+							return Screen->HandleSelectMinigamePageClicked(PageIndex);
+						}
+						return FReply::Handled();
+					}),
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+					.BorderBackgroundColor(DotColor))
+				.SetButtonStyle(&NoBorderButtonStyle)
+				.SetPadding(FMargin(0.f))
+				.SetDebounceClick(false)),
+			Tag,
+			TEXT("Button"),
+			bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
+			DotColor,
+			true);
+	};
+
+	struct FFlatMinigameCard
+	{
+		FText Title;
+		FText Body;
+		FString ArtPath;
+		FOnClicked OnClicked;
+	};
+
+	TArray<FFlatMinigameCard> Cards;
+	Cards.Reserve(5);
+	Cards.Add({
+		NSLOCTEXT("T66.MiniGames", "FlatMiniTitle", "CHADPOCALYPSE MINI"),
+		NSLOCTEXT("T66.MiniGames", "FlatMiniBody", "A 2D survivor minigame with its own saves, heroes, idols, enemies, and progression."),
+		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card01_art.png"),
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked)
+	});
+	Cards.Add({
+		NSLOCTEXT("T66.MiniGames", "FlatTDTitle", "CHADPOCALYPSE TOWER DEFENSE"),
+		NSLOCTEXT("T66.MiniGames", "FlatTDBody", "A tower defense minigame with hero placement, enemy waves, upgrades, and rotating maps."),
+		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card02_art.png"),
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked)
+	});
+	Cards.Add({
+		NSLOCTEXT("T66.MiniGames", "FlatDeckTitle", "CHADPOCALYPSE DECKBUILDER"),
+		NSLOCTEXT("T66.MiniGames", "FlatDeckBody", "A dungeon-descent deckbuilder with card combat, route choices, relics, and reward drafts."),
+		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card03_art.png"),
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked)
+	});
+	Cards.Add({
+		NSLOCTEXT("T66.MiniGames", "FlatIdleTitle", "CHADPOCALYPSE IDLE"),
+		NSLOCTEXT("T66.MiniGames", "FlatIdleBody", "An offline-progress idle minigame with heroes, upgrades, stage pushing, and comeback rewards."),
+		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card04_art.png"),
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked)
+	});
+	Cards.Add({
+		NSLOCTEXT("T66.MiniGames", "FlatVersusTitle", "VERSUS"),
+		NSLOCTEXT("T66.MiniGames", "FlatVersusBody", "A 1v1 arcade gauntlet where friends compete across cabinet games like Whack-a-Mole."),
+		TEXT("RuntimeDependencies/T66/Arcade/Selector/arcade_selector_front_cabinet.png"),
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenVersusClicked)
+	});
+
+	const int32 TotalPages = FMath::Max(1, FMath::DivideAndRoundUp(Cards.Num(), CardsPerPage));
+	MinigamesPageIndex = FMath::Clamp(MinigamesPageIndex, 0, TotalPages - 1);
+
+	const FSlateBrush* LeftArrowBrush = ResolveMinigamesFlatBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/pagination_left.png"), FVector2D(30.f, 42.f));
+	const FSlateBrush* RightArrowBrush = ResolveMinigamesFlatBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/pagination_right.png"), FVector2D(30.f, 42.f));
+
+	AddN(0.031f, 0.141f, 0.936f, 0.790f, MakeMetadataRegion(DTag(TEXT("Minigames.Root")), TEXT("Root")));
+	AddN(0.381f, 0.141f, 0.237f, 0.071f, TaggedText(DTag(TEXT("Minigames.Title")), NSLOCTEXT("T66.MiniGames", "Title", "MINIGAMES"), 72, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
+	AddN(0.277f, 0.253f, 0.447f, 0.032f, TaggedText(
+		DTag(TEXT("Minigames.DescriptionBand")),
+		NSLOCTEXT("T66.MiniGames", "FlatDescription", "Earn Chad Coupons and compete with friends and the world in the minigames."),
+		24,
+		FT66FlatStyle::PrimaryText(),
+		false,
+		ETextJustify::Center));
+	AddN(0.031f, 0.307f, 0.936f, 0.624f, MakeMetadataRegion(DTag(TEXT("Minigames.MainOuterContainer")), TEXT("OuterContainer")));
+	AddN(0.033f, 0.307f, 0.934f, 0.624f, MakeMetadataRegion(DTag(TEXT("Minigames.CardsRow")), TEXT("CardRow")));
+
+	AddN(0.010f, 0.570f, 0.018f, 0.045f, MakeBareInteractive(
+		DTag(TEXT("Minigames.Carousel.LeftNavButton")),
+		TEXT("Button"),
+		MakeIcon(LeftArrowBrush, FText::FromString(TEXT("<")), FT66FlatStyle::PurpleAccent()),
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandlePrevMinigamePageClicked)));
+	AddN(0.972f, 0.570f, 0.018f, 0.045f, MakeBareInteractive(
+		DTag(TEXT("Minigames.Carousel.RightNavButton")),
+		TEXT("Button"),
+		MakeIcon(RightArrowBrush, FText::FromString(TEXT(">")), FT66FlatStyle::PurpleAccent()),
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleNextMinigamePageClicked)));
+
+	constexpr float CardX[4] = { 0.033f, 0.271f, 0.506f, 0.742f };
+	constexpr float CardW[4] = { 0.225f, 0.224f, 0.224f, 0.225f };
+	constexpr float ArtX[4] = { 0.040f, 0.278f, 0.513f, 0.749f };
+	constexpr float ArtW[4] = { 0.211f, 0.210f, 0.210f, 0.211f };
+	constexpr float TitleX[4] = { 0.068f, 0.288f, 0.522f, 0.774f };
+	constexpr float TitleW[4] = { 0.155f, 0.190f, 0.190f, 0.160f };
+	constexpr float ButtonX[4] = { 0.043f, 0.281f, 0.516f, 0.752f };
+	constexpr float ButtonW[4] = { 0.202f, 0.202f, 0.202f, 0.202f };
+
+	for (int32 VisibleIndex = 0; VisibleIndex < CardsPerPage; ++VisibleIndex)
+	{
+		const int32 CardIndex = MinigamesPageIndex * CardsPerPage + VisibleIndex;
+		if (!Cards.IsValidIndex(CardIndex))
 		{
-			return SliceContent;
+			continue;
 		}
 
-		return FT66Style::MakeBareButton(
-			FT66BareButtonParams(ClickDelegate, SliceContent)
-			.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder")));
-	};
+		const FFlatMinigameCard& Card = Cards[CardIndex];
+		const FString Prefix = FString::Printf(TEXT("Minigames.Card%02d"), VisibleIndex + 1);
+
+		AddN(CardX[VisibleIndex], 0.307f, CardW[VisibleIndex], 0.624f, MakePanelSurface(FName(*Prefix), ET66FlatState::Default));
+		AddN(ArtX[VisibleIndex], 0.321f, ArtW[VisibleIndex], 0.304f, MakeArtwork(FName(*(Prefix + TEXT(".Artwork"))), Card.ArtPath, FVector2D(405.f, 328.f)));
+		AddN(TitleX[VisibleIndex], 0.662f, TitleW[VisibleIndex], 0.043f, TaggedText(FName(*(Prefix + TEXT(".Title"))), Card.Title, 28, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
+		AddN(CardX[VisibleIndex] + 0.020f, 0.713f, CardW[VisibleIndex] - 0.040f, 0.094f, TaggedText(FName(*(Prefix + TEXT(".Description"))), Card.Body, 23, FT66FlatStyle::PrimaryText(), false, ETextJustify::Center, true));
+		AddN(ButtonX[VisibleIndex], 0.839f, ButtonW[VisibleIndex], 0.069f, MakePlayButton(
+			FName(*(Prefix + TEXT(".PlayButton"))),
+			FName(*(Prefix + TEXT(".PlayButton.Label"))),
+			Card.OnClicked,
+			ButtonW[VisibleIndex] * CanvasW,
+			0.069f * CanvasH));
+	}
+
+	AddN(0.471f, 0.948f, 0.020f, 0.018f, MakePaginationDot(DTag(TEXT("Minigames.Pagination.Dot01")), 0, MinigamesPageIndex == 0, this));
+	AddN(0.509f, 0.948f, 0.020f, 0.018f, MakePaginationDot(DTag(TEXT("Minigames.Pagination.Dot02")), 1, MinigamesPageIndex == 1, this));
+	AddN(0.471f, 0.948f, 0.058f, 0.018f, MakeMetadataRegion(DTag(TEXT("Minigames.Pagination")), TEXT("Pagination")));
 
 	const TSharedRef<SWidget> Content = SNew(SBox)
 		[
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-			.BorderBackgroundColor(FLinearColor::Transparent)
-			.Padding(FMargin(-14.f, 0.f, -14.f, 4.f))
+			SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.StretchDirection(EStretchDirection::Both)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Top)
 			[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						.HAlign(HAlign_Center)
-						.Padding(0.f, 0.f, 0.f, 4.f)
-						[
-							SNew(STextBlock)
-							.Text(MinigamesText)
-							.Font(T66ScreenSlateHelpers::MakeFrontendChromeTitleFont())
-							.ColorAndOpacity(T66MinigamesBrightText())
-							.Justification(ETextJustify::Center)
-							.ShadowOffset(FVector2D(0.f, 3.f))
-							.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
-							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-							.Clipping(EWidgetClipping::ClipToBounds)
-						]
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						.Padding(0.f, 0.f, 0.f, 8.f)
-						[
-							MakeMinigamesGeneratedPanel(
-								T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal")),
-								SNew(STextBlock)
-								.Text(MinigamesDescriptionText)
-								.Font(FT66Style::Tokens::FontRegular(17))
-								.ColorAndOpacity(T66MinigamesBrightText())
-								.Justification(ETextJustify::Center)
-								.AutoWrapText(true)
-								.Clipping(EWidgetClipping::ClipToBounds),
-								FMargin(18.f, 7.f),
-								FLinearColor::White,
-								T66MinigamesInsetFill())
-						]
-						+ SVerticalBox::Slot()
-						.FillHeight(1.f)
-						.Padding(0.f)
-						[
-							SNew(SScrollBox)
-							.ScrollBarVisibility(EVisibility::Visible)
-							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 8.f)
-							[
-								MakeSlicePanel(ActiveSliceTitle, ActiveSliceBody, ActiveSliceTag, T66MinigamesAccentRed(), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked))
-							]
-							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 8.f)
-							[
-								MakeSlicePanel(TDTitle, TDBody, TDTag, FLinearColor(0.88f, 0.34f, 0.22f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked))
-							]
-							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 8.f)
-							[
-								MakeSlicePanel(DeckTitle, DeckBody, DeckTag, FLinearColor(0.26f, 0.64f, 0.78f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked))
-							]
-							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 8.f)
-							[
-								MakeSlicePanel(IdleTitle, IdleBody, IdleTag, T66MinigamesAccentCrimson(), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked))
-							]
-							+ SScrollBox::Slot().Padding(0.f, 0.f, 8.f, 0.f)
-							[
-								MakeSlicePanel(VersusTitle, VersusBody, VersusTag, FLinearColor(0.30f, 0.76f, 0.94f, 1.0f), true, FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenVersusClicked))
-							]
-						]
-					]
+				SNew(SBox)
+				.WidthOverride(CanvasW)
+				.HeightOverride(CanvasH)
+				[
+					MinigamesCanvas
 				]
+			]
 		];
 
 	return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
@@ -564,7 +431,8 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 		SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FLinearColor::Black),
-		FLinearColor::Transparent);
+		FLinearColor::Transparent,
+		FMargin(0.f, -96.f, 0.f, -20.f));
 }
 
 void UT66MinigamesScreen::OnScreenActivated_Implementation()
@@ -631,6 +499,30 @@ FReply UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked()
 FReply UT66MinigamesScreen::HandleOpenVersusClicked()
 {
 	NavigateTo(ET66ScreenType::VersusMainMenu);
+	return FReply::Handled();
+}
+
+FReply UT66MinigamesScreen::HandlePrevMinigamePageClicked()
+{
+	constexpr int32 TotalPages = 2;
+	MinigamesPageIndex = (MinigamesPageIndex + TotalPages - 1) % TotalPages;
+	RequestDeferredSlateRebuild();
+	return FReply::Handled();
+}
+
+FReply UT66MinigamesScreen::HandleNextMinigamePageClicked()
+{
+	constexpr int32 TotalPages = 2;
+	MinigamesPageIndex = (MinigamesPageIndex + 1) % TotalPages;
+	RequestDeferredSlateRebuild();
+	return FReply::Handled();
+}
+
+FReply UT66MinigamesScreen::HandleSelectMinigamePageClicked(const int32 PageIndex)
+{
+	constexpr int32 TotalPages = 2;
+	MinigamesPageIndex = FMath::Clamp(PageIndex, 0, TotalPages - 1);
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 

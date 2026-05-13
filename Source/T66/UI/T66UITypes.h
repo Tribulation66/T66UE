@@ -65,6 +65,5 @@ enum class ET66ScreenType : uint8
 UENUM(BlueprintType)
 enum class ET66UITheme : uint8
 {
-	Classic UMETA(DisplayName = "Classic"),
-	Dota UMETA(DisplayName = "Dota")
+	Classic UMETA(DisplayName = "Classic")
 };

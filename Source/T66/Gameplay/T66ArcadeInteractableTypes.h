@@ -191,6 +191,14 @@ namespace T66ArcadeModifierKeys
 	inline const FName ArcadeTargetScore(TEXT("ArcadeTargetScore"));
 	inline const FName ArcadeScorePerHit(TEXT("ArcadeScorePerHit"));
 	inline const FName ArcadeMissPenalty(TEXT("ArcadeMissPenalty"));
+	inline const FName WhackVisibleStartSeconds(TEXT("WhackVisibleStartSeconds"));
+	inline const FName WhackVisibleEndSeconds(TEXT("WhackVisibleEndSeconds"));
+	inline const FName WhackGoldenChance(TEXT("WhackGoldenChance"));
+	inline const FName WhackBombChanceStart(TEXT("WhackBombChanceStart"));
+	inline const FName WhackBombChanceEnd(TEXT("WhackBombChanceEnd"));
+	inline const FName WhackStartingLives(TEXT("WhackStartingLives"));
+	inline const FName WhackGoldenScore(TEXT("WhackGoldenScore"));
+	inline const FName WhackBombPenalty(TEXT("WhackBombPenalty"));
 	inline const FName TopwarStartingSquad(TEXT("TopwarStartingSquad"));
 	inline const FName TopwarChoiceScore(TEXT("TopwarChoiceScore"));
 	inline const FName TopwarSquadGain(TEXT("TopwarSquadGain"));

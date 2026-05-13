@@ -250,6 +250,12 @@ namespace T66RuntimeUITextureAccess
 			if (const FString PresetRelativePath = MapMainMenuReferencePathToActivePreset(RelativePath);
 				!PresetRelativePath.IsEmpty())
 			{
+				if (const FString RuntimeDependencyRelativePath = MapSourceRelativePathToRuntimeDependencyRelativePath(PresetRelativePath);
+					!RuntimeDependencyRelativePath.IsEmpty())
+				{
+					return MakeProjectRuntimeDependencyPath(RuntimeDependencyRelativePath);
+				}
+
 				return FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / PresetRelativePath);
 			}
 
@@ -300,7 +306,27 @@ namespace T66RuntimeUITextureAccess
 		{
 			return Remapped;
 		}
+		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/UI/HeroSelection/"), TEXT("RuntimeDependencies/T66/UI/HeroSelection/")); !Remapped.IsEmpty())
+		{
+			return Remapped;
+		}
+		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/UI/Icons/Flat/"), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/")); !Remapped.IsEmpty())
+		{
+			return Remapped;
+		}
+		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/UI/Reference/"), TEXT("RuntimeDependencies/T66/UI/Reference/")); !Remapped.IsEmpty())
+		{
+			return Remapped;
+		}
+		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/UI/PowerUp/Diplomas/"), TEXT("RuntimeDependencies/T66/UI/PowerUp/Diplomas/")); !Remapped.IsEmpty())
+		{
+			return Remapped;
+		}
 		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/UI/PowerUp/Statues/Generated/"), TEXT("RuntimeDependencies/T66/UI/PowerUp/Statues/")); !Remapped.IsEmpty())
+		{
+			return Remapped;
+		}
+		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/Arcade/"), TEXT("RuntimeDependencies/T66/Arcade/")); !Remapped.IsEmpty())
 		{
 			return Remapped;
 		}
@@ -326,6 +352,11 @@ namespace T66RuntimeUITextureAccess
 			if (const FString PresetRelativePath = MapMainMenuReferencePathToActivePreset(RelativePath);
 				!PresetRelativePath.IsEmpty())
 			{
+				if (const FString RuntimeDependencyRelativePath = MapSourceRelativePathToRuntimeDependencyRelativePath(PresetRelativePath);
+					!RuntimeDependencyRelativePath.IsEmpty())
+				{
+					AddUniqueAbsolutePath(CandidatePaths, MakeProjectRuntimeDependencyPath(RuntimeDependencyRelativePath));
+				}
 				AddUniqueAbsolutePath(CandidatePaths, FPaths::ProjectContentDir() / PresetRelativePath);
 				AddUniqueAbsolutePath(CandidatePaths, FPaths::ProjectDir() / PresetRelativePath);
 				AddUniqueAbsolutePath(CandidatePaths, FPaths::ProjectContentDir() / RelativePath);

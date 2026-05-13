@@ -88,6 +88,7 @@ private:
 	void EnsurePs1PostProcessDMI(const FT66RetroFXSettings& Settings);
 	void ApplyBlendableWeights(const FT66RetroFXSettings& Settings);
 	void ApplyPs1Parameters(const FT66RetroFXSettings& Settings);
+	void ApplyOutlineParameters();
 	void ApplyChromaticAberrationParameters(const FT66RetroFXSettings& Settings);
 	void ApplyN64Parameters(const FT66RetroFXSettings& Settings);
 	void ApplyResolutionCollection(const FT66RetroFXSettings& Settings, UWorld* World);
@@ -115,6 +116,7 @@ private:
 
 	UMaterialInterface* LoadPs1PostProcessMaterial();
 	UMaterialInterface* LoadPs1PostProcessMaterialVariant(const FT66RetroFXSettings& Settings);
+	UMaterialInterface* LoadOutlinePostProcessMaterial();
 	UMaterialInterface* LoadChromaticAberrationMaterial();
 	UMaterialInterface* LoadN64BlurMaterial(bool bReplaceTonemapper);
 	UMaterialParameterCollection* LoadResolutionCollection();
@@ -143,6 +145,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> Ps1PostProcessDMI;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> OutlinePostProcessDMI;
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> N64BlurDMI;

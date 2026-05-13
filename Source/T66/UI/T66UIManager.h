@@ -9,7 +9,6 @@
 
 class UT66ScreenBase;
 class UT66SettingsScreen;
-class UT66FrontendBackButtonWidget;
 class UT66FrontendTopBarWidget;
 class UUserWidget;
 
@@ -105,6 +104,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	bool IsFrontendTopBarVisible() const;
 
+	UT66ScreenBase* GetFrontendTopBarScreen() const;
+
 	float GetFrontendTopBarReservedHeight() const;
 	float GetFrontendTopBarContentHeight() const;
 
@@ -159,10 +160,6 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UT66FrontendTopBarWidget> FrontendTopBar;
 
-	/** Persistent frontend back button shown on non-home frontend screens. */
-	UPROPERTY()
-	TObjectPtr<UT66FrontendBackButtonWidget> FrontendBackButton;
-
 	UPROPERTY()
 	TObjectPtr<UT66SettingsScreen> RetroFXPreviewPopup;
 
@@ -175,8 +172,6 @@ protected:
 
 	bool SwitchToScreen(ET66ScreenType ScreenType, bool bAddCurrentToHistory);
 	bool ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const;
-	bool ShouldShowFrontendBackButton() const;
 	void UpdateFrontendTopBar();
-	void UpdateFrontendBackButton();
 
 };

@@ -105,6 +105,10 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildRetroFXTab()
 			InitializeRetroFXFromUserSettingsIfNeeded();
 			PendingRetroFXSettings.*Field = bValue;
 			MarkRetroFXEdited();
+			if (Field == &FT66RetroFXSettings::bEnableRetroFXMaster && bRetroFXDirty)
+			{
+				ApplyPendingRetroFX();
+			}
 		};
 	};
 

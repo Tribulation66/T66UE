@@ -3,6 +3,8 @@
 #include "Core/T66RetroFXSubsystem.h"
 
 #include "Components/MeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Core/T66PixelationSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Engine/AssetManager.h"
@@ -46,6 +48,7 @@ namespace
 
 	static const TCHAR* N64BlurPath = TEXT("/Game/UE5RFX/Materials/PostProcess/UE5RFX_PPM_N64_Blur.UE5RFX_PPM_N64_Blur");
 	static const TCHAR* N64BlurReplaceTonemapperPath = TEXT("/Game/UE5RFX/Materials/PostProcess/UE5RFX_PPM_N64_Blur_ReplaceTonemapper.UE5RFX_PPM_N64_Blur_ReplaceTonemapper");
+	static const TCHAR* OutlinePostProcessMaterialPath = TEXT("/Game/Materials/Retro/M_T66_OutlinePostProcess.M_T66_OutlinePostProcess");
 	static const TCHAR* ChromaticAberrationMaterialPath = TEXT("/Game/Materials/Retro/M_RetroChromaticAberrationPostProcess.M_RetroChromaticAberrationPostProcess");
 	static const TCHAR* ResolutionCollectionPath = TEXT("/Game/UE5RFX/Materials/UE5RFX_MaterialParameterCollection.UE5RFX_MaterialParameterCollection");
 	static const TCHAR* GeometryCollectionPath = TEXT("/Game/Materials/Retro/MPC_T66_RetroGeometry.MPC_T66_RetroGeometry");
@@ -349,6 +352,7 @@ namespace
 		DisabledSettings.T66PixelationPercent = 0.0f;
 		DisabledSettings.WorldPixelationPercent = 0.0f;
 		DisabledSettings.CharacterPixelationPercent = 0.0f;
+		DisabledSettings.bEnableCharacterOutline = false;
 		DisabledSettings.UIChromeTreatmentPercent = 0.0f;
 		DisabledSettings.UITextTreatmentPercent = 0.0f;
 		DisabledSettings.UIChromePixelationPercent = 0.0f;
@@ -433,6 +437,27 @@ namespace
 		return SourceMaterial && ResolveRetroGeometryGroupFromBasePath(GetMaterialBasePath(SourceMaterial), OutGroup);
 	}
 
+	static bool IsCharacterMeshComponent(const UMeshComponent* MeshComponent)
+	{
+		if (const UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(MeshComponent))
+		{
+			if (const UStaticMesh* StaticMesh = StaticMeshComponent->GetStaticMesh())
+			{
+				return StaticMesh->GetPathName().StartsWith(TEXT("/Game/Characters/"));
+			}
+		}
+
+		if (const USkeletalMeshComponent* SkeletalMeshComponent = Cast<USkeletalMeshComponent>(MeshComponent))
+		{
+			if (const USkeletalMesh* SkeletalMesh = SkeletalMeshComponent->GetSkeletalMeshAsset())
+			{
+				return SkeletalMesh->GetPathName().StartsWith(TEXT("/Game/Characters/"));
+			}
+		}
+
+		return false;
+	}
+
 }
 
 void UT66RetroFXSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -460,6 +485,7 @@ void UT66RetroFXSubsystem::Deinitialize()
 
 	ActiveVolume = nullptr;
 	Ps1PostProcessDMI = nullptr;
+	OutlinePostProcessDMI = nullptr;
 	N64BlurDMI = nullptr;
 	N64BlurReplaceTonemapperDMI = nullptr;
 	ChromaticAberrationDMI = nullptr;
@@ -500,6 +526,7 @@ void UT66RetroFXSubsystem::QueueRetroAssetPreloads()
 	}
 	AddPath(N64BlurPath);
 	AddPath(N64BlurReplaceTonemapperPath);
+	AddPath(OutlinePostProcessMaterialPath);
 	AddPath(ChromaticAberrationMaterialPath);
 	AddPath(ResolutionCollectionPath);
 	AddPath(GeometryCollectionPath);
@@ -592,9 +619,11 @@ void UT66RetroFXSubsystem::ApplySettings(const FT66RetroFXSettings& Settings, UW
 
 	EnsureBlendablesInWorld(TargetWorld);
 	EnsurePs1PostProcessDMI(EffectiveSettings);
+	EnsureBlendableEntry(OutlinePostProcessDMI);
 	EnsureBlendableEntry(ChromaticAberrationDMI);
 	ApplyBlendableWeights(EffectiveSettings);
 	ApplyPs1Parameters(EffectiveSettings);
+	ApplyOutlineParameters();
 	ApplyChromaticAberrationParameters(EffectiveSettings);
 	ApplyN64Parameters(EffectiveSettings);
 	ApplyResolutionCollection(EffectiveSettings, TargetWorld);
@@ -648,8 +677,10 @@ void UT66RetroFXSubsystem::EnsureBlendablesInWorld(UWorld* World)
 
 	GetOrCreateDMI(LoadN64BlurMaterial(false), N64BlurDMI);
 	GetOrCreateDMI(LoadN64BlurMaterial(true), N64BlurReplaceTonemapperDMI);
+	GetOrCreateDMI(LoadOutlinePostProcessMaterial(), OutlinePostProcessDMI);
 	GetOrCreateDMI(LoadChromaticAberrationMaterial(), ChromaticAberrationDMI);
 
+	EnsureBlendableEntry(OutlinePostProcessDMI);
 	EnsureBlendableEntry(N64BlurDMI);
 	EnsureBlendableEntry(N64BlurReplaceTonemapperDMI);
 }
@@ -686,7 +717,9 @@ void UT66RetroFXSubsystem::ApplyBlendableWeights(const FT66RetroFXSettings& Sett
 		|| ClampPercent(Settings.ChromaticDistortionPercent) > KINDA_SMALL_NUMBER)
 		? 1.0f
 		: 0.0f;
+	const float OutlineWeight = Settings.bEnableCharacterOutline ? 1.0f : 0.0f;
 	SetBlendableWeight(Ps1PostProcessDMI, Ps1Weight);
+	SetBlendableWeight(OutlinePostProcessDMI, OutlineWeight);
 	SetBlendableWeight(ChromaticAberrationDMI, ChromaticWeight);
 
 	const float N64Weight = PercentToUnit(Settings.N64BlurBlendPercent);
@@ -701,9 +734,10 @@ void UT66RetroFXSubsystem::ApplyBlendableWeights(const FT66RetroFXSettings& Sett
 		SetBlendableWeight(N64BlurReplaceTonemapperDMI, 0.0f);
 	}
 
-	UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyBlendableWeights: PS1Weight=%.3f FogWeight=%.3f N64Weight=%.3f ChromaticWeight=%.3f ReplaceTonemapper=%s"),
+	UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyBlendableWeights: PS1Weight=%.3f FogWeight=%.3f OutlineWeight=%.3f N64Weight=%.3f ChromaticWeight=%.3f ReplaceTonemapper=%s"),
 		Ps1Weight,
 		FogWeight,
+		OutlineWeight,
 		N64Weight,
 		ChromaticWeight,
 		Settings.bUseUE5RFXN64BlurReplaceTonemapper ? TEXT("true") : TEXT("false"));
@@ -742,6 +776,19 @@ void UT66RetroFXSubsystem::ApplyPs1Parameters(const FT66RetroFXSettings& Setting
 		FogDensity,
 		FogStartDistance,
 		FogFallOffDistance);
+}
+
+void UT66RetroFXSubsystem::ApplyOutlineParameters()
+{
+	if (!OutlinePostProcessDMI)
+	{
+		return;
+	}
+
+	OutlinePostProcessDMI->SetVectorParameterValue(TEXT("OutlineColor"), FLinearColor::Black);
+	SetScalarParameter(OutlinePostProcessDMI, TEXT("OutlineThickness"), 1.5f);
+	SetScalarParameter(OutlinePostProcessDMI, TEXT("OutlineOpacity"), 1.0f);
+	SetScalarParameter(OutlinePostProcessDMI, TEXT("CharacterStencilValue"), static_cast<float>(CharacterPixelationCustomStencilValue));
 }
 
 void UT66RetroFXSubsystem::ApplyChromaticAberrationParameters(const FT66RetroFXSettings& Settings)
@@ -955,16 +1002,17 @@ void UT66RetroFXSubsystem::ApplyPixelationStencilMasks(const FT66RetroFXSettings
 		: LegacyWorldPixelationPercent;
 	const bool bEnableWorldPixelation = ClampPercent(WorldPixelationPercent) > KINDA_SMALL_NUMBER;
 	const bool bEnableCharacterPixelation = ClampPercent(Settings.CharacterPixelationPercent) > KINDA_SMALL_NUMBER;
+	const bool bEnableCharacterStencil = bEnableCharacterPixelation || Settings.bEnableCharacterOutline;
 	const bool bSameManagedWorld = ManagedGeometryWorld == World;
 	const bool bPixelationEnablementChanged =
 		bWorldPixelationStencilActive != bEnableWorldPixelation
-		|| bCharacterPixelationStencilActive != bEnableCharacterPixelation;
+		|| bCharacterPixelationStencilActive != bEnableCharacterStencil;
 
 	bWorldPixelationStencilActive = bEnableWorldPixelation;
-	bCharacterPixelationStencilActive = bEnableCharacterPixelation;
-	UpdateGeometrySpawnBinding(World, bEnableWorldPixelation || bEnableCharacterPixelation || HasWorldGeometryEnabled(Settings) || HasCharacterGeometryEnabled(Settings));
+	bCharacterPixelationStencilActive = bEnableCharacterStencil;
+	UpdateGeometrySpawnBinding(World, bEnableWorldPixelation || bEnableCharacterStencil || HasWorldGeometryEnabled(Settings) || HasCharacterGeometryEnabled(Settings));
 
-	if (!bEnableWorldPixelation && !bEnableCharacterPixelation)
+	if (!bEnableWorldPixelation && !bEnableCharacterStencil)
 	{
 		RestorePixelationStencilMasks(true, true);
 		CleanupPixelationStencilSlots();
@@ -983,16 +1031,18 @@ void UT66RetroFXSubsystem::ApplyPixelationStencilMasks(const FT66RetroFXSettings
 		|| !bPixelationStencilFullScanComplete;
 	if (bNeedsFullWorldScan)
 	{
-		RefreshWorldPixelationStencilMasks(World, bEnableWorldPixelation, bEnableCharacterPixelation);
+		RefreshWorldPixelationStencilMasks(World, bEnableWorldPixelation, bEnableCharacterStencil);
 		bPixelationStencilFullScanComplete = true;
 	}
-	RestorePixelationStencilMasks(!bEnableWorldPixelation, !bEnableCharacterPixelation);
+	RestorePixelationStencilMasks(!bEnableWorldPixelation, !bEnableCharacterStencil);
 	CleanupPixelationStencilSlots();
 
 	UE_LOG(LogT66RetroFXRuntime, Verbose,
-		TEXT("ApplyPixelationStencilMasks: World=%s Character=%s Slots=%d"),
+		TEXT("ApplyPixelationStencilMasks: World=%s CharacterStencil=%s CharacterPixelation=%s CharacterOutline=%s Slots=%d"),
 		bEnableWorldPixelation ? TEXT("true") : TEXT("false"),
+		bEnableCharacterStencil ? TEXT("true") : TEXT("false"),
 		bEnableCharacterPixelation ? TEXT("true") : TEXT("false"),
+		Settings.bEnableCharacterOutline ? TEXT("true") : TEXT("false"),
 		PixelationStencilSlots.Num());
 }
 
@@ -1350,6 +1400,12 @@ bool UT66RetroFXSubsystem::ResolveMeshComponentGeometryGroup(const UMeshComponen
 		return true;
 	}
 
+	if (IsCharacterMeshComponent(MeshComponent))
+	{
+		OutGroup = ET66RetroGeometryGroup::Character;
+		return true;
+	}
+
 	for (int32 MaterialIndex = 0; MaterialIndex < MeshComponent->GetNumMaterials(); ++MaterialIndex)
 	{
 		ET66RetroGeometryGroup MaterialGroup = ET66RetroGeometryGroup::World;
@@ -1457,6 +1513,12 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadN64BlurMaterial(bool bReplaceTonem
 {
 	QueueRetroAssetPreloads();
 	return ResolveLoadedRetroObject<UMaterialInterface>(bReplaceTonemapper ? N64BlurReplaceTonemapperPath : N64BlurPath);
+}
+
+UMaterialInterface* UT66RetroFXSubsystem::LoadOutlinePostProcessMaterial()
+{
+	QueueRetroAssetPreloads();
+	return ResolveLoadedRetroObject<UMaterialInterface>(OutlinePostProcessMaterialPath);
 }
 
 UMaterialInterface* UT66RetroFXSubsystem::LoadCharacterRetroGeometryMaterial()

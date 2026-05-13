@@ -23,19 +23,19 @@ This is intentionally not a DRY asset-library approach. Each screen/modal gets i
 Screen-owned runtime assets:
 
 ```text
-C:\UE\T66\SourceAssets\UI\Reference\Screens\<ScreenName>\
+C:\UE\T66\RuntimeDependencies\T66\UI\Reference\Screens\<ScreenName>\
 ```
 
 Modal-owned runtime assets:
 
 ```text
-C:\UE\T66\SourceAssets\UI\Reference\Modals\<ModalName>\
+C:\UE\T66\RuntimeDependencies\T66\UI\Reference\Modals\<ModalName>\
 ```
 
 Compatibility/bootstrap assets:
 
 ```text
-C:\UE\T66\SourceAssets\UI\Reference\Shared\
+C:\UE\T66\RuntimeDependencies\T66\UI\Reference\Shared\
 ```
 
 Active prompt:
@@ -93,9 +93,10 @@ For each target:
 5. Build a hierarchy and containment map from the reference so each child control fits inside its intended parent panel, card, row, or shell.
 6. Save accepted runtime PNGs under the target runtime asset folder.
 7. Implement the assets with explicit resize contracts.
-8. Run a normal Unreal build only if source changed.
-9. Capture the working screen from `C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe`.
-10. Compare against the reference and repeat.
+8. Stub any visible reference element that does not have backend/gameplay infrastructure yet, and mark it for later wiring.
+9. Run a normal Unreal build only if source changed.
+10. Capture the working screen from `C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe`.
+11. Compare against the reference with `C:\UE\T66\Scripts\CompareUIScreen.ps1` and repeat.
 
 Do not use Pillow/PIL or local pixel repair for generated UI art. Bad generated art goes back to imagegen. Bad runtime proportions go to the resize contract.
 
@@ -131,7 +132,7 @@ Do not embed generated imagegen outputs directly in chat unless the user explici
 
 ## Verification Requirement
 
-Compile success is not enough. Each implementation pass must produce an existing working screenshot or a true blocker status, then compare the working screenshot to the reference.
+Compile success is not enough. Each implementation pass must produce an existing working screenshot or a true blocker status, then compare the working screenshot to the reference with `C:\UE\T66\Scripts\CompareUIScreen.ps1`.
 
 Individual target chats should not run UAT, BuildCookRun, cook, stage, pak, or package. Final packaged verification belongs to the coordinating pass after target work is complete.
 
@@ -167,3 +168,4 @@ Modals:
 - CompanionGrid
 
 Start from `C:\UE\T66\UI\MASTER_REFERENCE_UI_GENERATION_PROMPT.md`, fill in the target fields, and paste the full prompt into a new chat.
+

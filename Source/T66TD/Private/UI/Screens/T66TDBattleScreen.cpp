@@ -19,7 +19,7 @@
 #include "Save/T66TDSaveSubsystem.h"
 #include "Styling/CoreStyle.h"
 #include "UI/T66TDUIStyle.h"
-#include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
@@ -79,93 +79,39 @@ namespace
 			];
 	}
 
-	const FSlateBrush* ResolveBattleBrush(
-		T66RuntimeUIBrushAccess::FOptionalTextureBrush& Entry,
-		const TCHAR* RelativePath,
-		const FMargin& Margin,
-		const TCHAR* DebugLabel)
-	{
-		return T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
-			Entry,
-			nullptr,
-			T66RuntimeUITextureAccess::MakeProjectDirPath(RelativePath),
-			Margin,
-			DebugLabel);
-	}
-
 	const FSlateBrush* TDBattleRosterPanelBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveBattleBrush(
-			Entry,
-			T66TDUI::MasterBasicPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			TEXT("TDBattleMasterRosterPanel"));
+		return T66TDUI::WhiteBrush();
 	}
 
 	const FSlateBrush* TDBattleRosterRowBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveBattleBrush(
-			Entry,
-			T66TDUI::MasterInnerPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			TEXT("TDBattleMasterRosterRow"));
+		return T66TDUI::WhiteBrush();
 	}
 
 	const FSlateBrush* TDBattleStatsBarBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveBattleBrush(
-			Entry,
-			T66TDUI::MasterInnerPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			TEXT("TDBattleMasterStatsBar"));
+		return T66TDUI::WhiteBrush();
 	}
 
 	const FSlateBrush* TDBattleBoardFrameBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveBattleBrush(
-			Entry,
-			T66TDUI::MasterBasicPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			TEXT("TDBattleMasterBoardFrame"));
+		return T66TDUI::WhiteBrush();
 	}
 
 	const FSlateBrush* TDBattleStatusBarBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveBattleBrush(
-			Entry,
-			T66TDUI::MasterInnerPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			TEXT("TDBattleMasterStatusBar"));
+		return T66TDUI::WhiteBrush();
 	}
 
 	const FSlateBrush* TDBattleMatchPanelBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveBattleBrush(
-			Entry,
-			T66TDUI::MasterBasicPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			TEXT("TDBattleMasterMatchPanel"));
+		return T66TDUI::WhiteBrush();
 	}
 
 	const FSlateBrush* TDBattleUpgradePanelBrush()
 	{
-		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
-		return ResolveBattleBrush(
-			Entry,
-			T66TDUI::MasterBasicPanelPath(),
-			T66TDUI::MasterPanelMargin(),
-			TEXT("TDBattleMasterUpgradePanel"));
-	}
-
-	const FSlateBrush* TDBattleButtonBrush(const ET66ButtonType Type)
-	{
-		return T66TDUI::ButtonPlateBrush(Type);
+		return T66TDUI::WhiteBrush();
 	}
 
 	TSharedRef<SWidget> MakeSpriteWidget(const TSharedPtr<FSlateBrush>& Brush, const FString& FallbackText, const FLinearColor& PlaceholderColor, const FVector2D& Size, const int32 FontSize)
@@ -2769,12 +2715,18 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(24.f, 0.f, 24.f, 24.f)
 				[
-					FT66Style::MakeButton(T66TDUI::MakeUtilityButtonParams(
+					FT66FlatStyle::MakeFlatButton(
+						ET66FlatState::Default,
 						NSLOCTEXT("T66TD.Battle", "Back", "BACK"),
 						FOnClicked::CreateUObject(this, &UT66TDBattleScreen::HandleBackClicked),
+						nullptr,
+						nullptr,
+						FMargin(12.f, 4.f, 12.f, 3.f),
 						180.f,
 						42.f,
-						14))
+						true,
+						14,
+						TEXT("TDBattle.Button.BackUnavailable"))
 				]
 			];
 	}
@@ -2928,44 +2880,37 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 
 	const FLinearColor BrightText = T66TDUI::BrightText();
 	const FLinearColor MutedText = T66TDUI::MutedText();
-	const auto MakeDynamicActionButton = [&](const TAttribute<FText>& Label, const FOnClicked& OnClicked, const ET66ButtonType ButtonType, const FVector2D& Size, const int32 FontSize) -> TSharedRef<SWidget>
+	const auto MakeDynamicActionButton = [&](const TAttribute<FText>& Label, const FOnClicked& OnClicked, const ET66ButtonType ButtonType, const FVector2D& Size, const int32 FontSize, const FName Tag) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakeButton(
-			FT66ButtonParams(FText::GetEmpty(), OnClicked, ButtonType)
-			.SetDynamicLabel(Label)
-			.SetMinWidth(Size.X)
-			.SetHeight(Size.Y)
-			.SetFontSize(FontSize)
-			.SetPadding(FMargin(12.f, 8.f, 12.f, 6.f))
-			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(true)
-			.SetDotaPlateOverrideBrush(TDBattleButtonBrush(ButtonType))
-			.SetTextColor(T66TDUI::BrightText()));
+		return FT66FlatStyle::MakeFlatButton(
+			T66TDUI::StateForButtonType(ButtonType),
+			Label,
+			OnClicked,
+			nullptr,
+			nullptr,
+			FMargin(12.f, 8.f, 12.f, 6.f),
+			Size.X,
+			Size.Y,
+			true,
+			FontSize,
+			Tag);
 	};
 
-	const auto MakeUpgradeButton = [&](const TAttribute<FText>& Label, const TAttribute<bool>& bEnabled, const FOnClicked& OnClicked, const ET66ButtonType ButtonType) -> TSharedRef<SWidget>
+	const auto MakeUpgradeButton = [&](const TAttribute<FText>& Label, const TAttribute<bool>& bEnabled, const FOnClicked& OnClicked, const ET66ButtonType ButtonType, const FName Tag) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakeButton(
-			FT66ButtonParams(FText::GetEmpty(), OnClicked, ButtonType)
-			.SetDynamicLabel(Label)
-			.SetEnabled(bEnabled)
-			.SetMinWidth(320.f)
-			.SetHeight(38.f)
-			.SetFontSize(11)
-			.SetPadding(FMargin(12.f, 7.f, 12.f, 5.f))
-			.SetUseGlow(false)
-			.SetUseDotaPlateOverlay(true)
-			.SetDotaPlateOverrideBrush(TDBattleButtonBrush(ButtonType))
-			.SetTextColor(T66TDUI::BrightText()));
+		return FT66FlatStyle::MakeFlatButton(
+			T66TDUI::StateForButtonType(ButtonType),
+			Label,
+			OnClicked,
+			nullptr,
+			nullptr,
+			FMargin(12.f, 7.f, 12.f, 5.f),
+			320.f,
+			38.f,
+			bEnabled,
+			11,
+			Tag);
 	};
-
-	FT66ButtonParams BackButtonParams = T66TDUI::MakeUtilityButtonParams(
-		NSLOCTEXT("T66TD.Battle", "BackToMaps", "BACK TO MAPS"),
-		FOnClicked::CreateUObject(this, &UT66TDBattleScreen::HandleBackClicked),
-		260.f,
-		44.f,
-		10);
-	BackButtonParams.SetDotaPlateOverrideBrush(TDBattleButtonBrush(ET66ButtonType::Neutral));
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -2988,7 +2933,18 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 				.WidthOverride(260.f)
 				.HeightOverride(44.f)
 				[
-					FT66Style::MakeButton(BackButtonParams)
+					FT66FlatStyle::MakeFlatButton(
+						ET66FlatState::Default,
+						NSLOCTEXT("T66TD.Battle", "BackToMaps", "BACK TO MAPS"),
+						FOnClicked::CreateUObject(this, &UT66TDBattleScreen::HandleBackClicked),
+						nullptr,
+						nullptr,
+						FMargin(12.f, 4.f, 12.f, 3.f),
+						260.f,
+						44.f,
+						true,
+						10,
+						TEXT("TDBattle.Button.BackToMaps"))
 				]
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, 24.f, 0.f, 0.f)
@@ -3139,7 +3095,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 										FOnClicked::CreateSP(BattleBoard.ToSharedRef(), &ST66TDBattleBoardWidget::HandlePrimaryActionClicked),
 										ET66ButtonType::Success,
 										FVector2D(320.f, 54.f),
-										15)
+										15,
+										TEXT("TDBattle.Button.PrimaryAction"))
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 								[
@@ -3148,7 +3105,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 										FOnClicked::CreateSP(BattleBoard.ToSharedRef(), &ST66TDBattleBoardWidget::HandleSpeedClicked),
 										ET66ButtonType::Neutral,
 										FVector2D(320.f, 42.f),
-										13)
+										13,
+										TEXT("TDBattle.Button.Speed"))
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
 								[
@@ -3196,7 +3154,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 										DamageUpgradeText,
 										CanUpgradeDamage,
 										FOnClicked::CreateSP(BattleBoard.ToSharedRef(), &ST66TDBattleBoardWidget::HandleDamageUpgradeClicked),
-										ET66ButtonType::Primary)
+										ET66ButtonType::Primary,
+										TEXT("TDBattle.Button.UpgradeDamage"))
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
 								[
@@ -3204,7 +3163,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 										RangeUpgradeText,
 										CanUpgradeRange,
 										FOnClicked::CreateSP(BattleBoard.ToSharedRef(), &ST66TDBattleBoardWidget::HandleRangeUpgradeClicked),
-										ET66ButtonType::Neutral)
+										ET66ButtonType::Neutral,
+										TEXT("TDBattle.Button.UpgradeRange"))
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
 								[
@@ -3212,7 +3172,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 										TempoUpgradeText,
 										CanUpgradeTempo,
 										FOnClicked::CreateSP(BattleBoard.ToSharedRef(), &ST66TDBattleBoardWidget::HandleTempoUpgradeClicked),
-										ET66ButtonType::Success)
+										ET66ButtonType::Success,
+										TEXT("TDBattle.Button.UpgradeTempo"))
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
 								[
@@ -3220,7 +3181,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 										SellSelectedTowerText,
 										CanSellSelectedTower,
 										FOnClicked::CreateSP(BattleBoard.ToSharedRef(), &ST66TDBattleBoardWidget::HandleSellSelectedTowerClicked),
-										ET66ButtonType::Danger)
+										ET66ButtonType::Danger,
+										TEXT("TDBattle.Button.SellTower"))
 								]
 								,
 								TDBattleUpgradePanelBrush(),

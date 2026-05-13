@@ -18,6 +18,7 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SSpinBox.h"
 #include "Widgets/Text/STextBlock.h"
@@ -27,7 +28,7 @@
 #include "Widgets/Images/SImage.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
-#include "UI/Style/T66OverlayChromeStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
@@ -91,6 +92,184 @@ static bool HasRegisteredGamblerBuildBoss(UWorld* World)
 
 namespace
 {
+	void AddGamblerCanvasSlot(
+		const TSharedRef<SConstraintCanvas>& Canvas,
+		const float X,
+		const float Y,
+		const float W,
+		const float H,
+		const TSharedRef<SWidget>& Widget)
+	{
+		const float UiScale = FMath::Max(0.1f, FT66Style::GetGlobalUIScale());
+		Canvas->AddSlot()
+			.Anchors(FAnchors(0.f, 0.f))
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X / UiScale, Y / UiScale, W / UiScale, H / UiScale))
+		[
+			Widget
+		];
+	}
+
+	enum class EGamblerFlatPanel : uint8
+	{
+		OverlayModalPanel,
+		CasinoShellPanel,
+		ContentPanelWide,
+		ContentPanelTall,
+		InnerPanel,
+		HeaderSummaryBar,
+		CrateStripFrame,
+		SlotNormal,
+		SlotHover,
+		SlotSelected,
+		SlotDisabled,
+		OfferCardNormal,
+		OfferCardHover,
+		OfferCardSelected,
+		OfferCardDisabled,
+		CrateWinnerMarker,
+	};
+
+	enum class EGamblerFlatButton : uint8
+	{
+		Neutral,
+		Primary,
+		Danger,
+		Tab,
+		Select,
+		DuoLeft,
+		DuoRight,
+		Central,
+		DropdownOption,
+		BorderlessIcon,
+	};
+
+	struct FGamblerFlatButtonParams
+	{
+		FText Label;
+		FOnClicked OnClicked;
+		EGamblerFlatButton Family = EGamblerFlatButton::Neutral;
+		float MinWidth = 120.f;
+		float MinHeight = 44.f;
+		int32 FontSize = 14;
+		FMargin Padding = FMargin(12.f, 5.f);
+		TAttribute<bool> IsEnabled = true;
+		TAttribute<bool> IsSelected = false;
+		TSharedPtr<SWidget> CustomContent;
+		FName Tag = NAME_None;
+		FName ToggleGroup = NAME_None;
+
+		FGamblerFlatButtonParams() = default;
+		FGamblerFlatButtonParams(const FText& InLabel, FOnClicked InOnClicked, const EGamblerFlatButton InFamily = EGamblerFlatButton::Neutral)
+			: Label(InLabel)
+			, OnClicked(MoveTemp(InOnClicked))
+			, Family(InFamily)
+		{
+		}
+
+		FGamblerFlatButtonParams& SetMinWidth(const float InMinWidth) { MinWidth = InMinWidth; return *this; }
+		FGamblerFlatButtonParams& SetMinHeight(const float InMinHeight) { MinHeight = InMinHeight; return *this; }
+		FGamblerFlatButtonParams& SetFontSize(const int32 InFontSize) { FontSize = InFontSize; return *this; }
+		FGamblerFlatButtonParams& SetPadding(const FMargin& InPadding) { Padding = InPadding; return *this; }
+		FGamblerFlatButtonParams& SetEnabled(const TAttribute<bool>& InIsEnabled) { IsEnabled = InIsEnabled; return *this; }
+		FGamblerFlatButtonParams& SetSelected(const TAttribute<bool>& InIsSelected) { IsSelected = InIsSelected; return *this; }
+		FGamblerFlatButtonParams& SetContent(const TSharedRef<SWidget>& InContent) { CustomContent = InContent; return *this; }
+		FGamblerFlatButtonParams& SetTag(const FName InTag) { Tag = InTag; return *this; }
+		FGamblerFlatButtonParams& SetToggleGroup(const FName InToggleGroup) { ToggleGroup = InToggleGroup; return *this; }
+	};
+
+	static ET66FlatState StateForGamblerPanel(const EGamblerFlatPanel Panel)
+	{
+		switch (Panel)
+		{
+		case EGamblerFlatPanel::SlotSelected:
+		case EGamblerFlatPanel::OfferCardSelected:
+		case EGamblerFlatPanel::CrateWinnerMarker:
+			return ET66FlatState::Selected;
+		case EGamblerFlatPanel::SlotDisabled:
+		case EGamblerFlatPanel::OfferCardDisabled:
+			return ET66FlatState::Disabled;
+		case EGamblerFlatPanel::SlotHover:
+		case EGamblerFlatPanel::OfferCardHover:
+			return ET66FlatState::Ready;
+		default:
+			return ET66FlatState::Default;
+		}
+	}
+
+	static ET66FlatState StateForGamblerButton(const EGamblerFlatButton Family, const bool bSelected, const bool bEnabled)
+	{
+		if (!bEnabled)
+		{
+			return ET66FlatState::Disabled;
+		}
+		if (bSelected || Family == EGamblerFlatButton::Danger)
+		{
+			return ET66FlatState::Selected;
+		}
+		if (Family == EGamblerFlatButton::Primary
+			|| Family == EGamblerFlatButton::Central
+			|| Family == EGamblerFlatButton::Select)
+		{
+			return ET66FlatState::Ready;
+		}
+		return ET66FlatState::Default;
+	}
+
+	static FGamblerFlatButtonParams MakeGamblerFlatButtonParams(
+		const FText& Label,
+		FOnClicked OnClicked,
+		const EGamblerFlatButton Family = EGamblerFlatButton::Neutral)
+	{
+		return FGamblerFlatButtonParams(Label, MoveTemp(OnClicked), Family);
+	}
+
+	static TSharedRef<SWidget> MakeGamblerFlatPanel(
+		const TSharedRef<SWidget>& Content,
+		const EGamblerFlatPanel Panel = EGamblerFlatPanel::ContentPanelWide,
+		const FMargin& Padding = FMargin(16.f),
+		TSharedPtr<SBorder>* OutBorder = nullptr,
+		const FName Tag = NAME_None)
+	{
+		return FT66FlatStyle::MakeFlatPanel(StateForGamblerPanel(Panel), Padding, Content, OutBorder, Tag);
+	}
+
+	static TSharedRef<SWidget> MakeGamblerFlatButton(const FGamblerFlatButtonParams& Params)
+	{
+		const ET66FlatState State = StateForGamblerButton(
+			Params.Family,
+			Params.IsSelected.Get(false),
+			Params.IsEnabled.Get(true));
+
+		if (Params.CustomContent.IsValid())
+		{
+			return FT66FlatStyle::MakeFlatToggleGroupButton(
+				State,
+				Params.CustomContent.ToSharedRef(),
+				Params.OnClicked,
+				Params.Padding,
+				Params.MinWidth,
+				Params.MinHeight,
+				Params.IsEnabled,
+				Params.Tag,
+				Params.ToggleGroup);
+		}
+
+		return FT66FlatStyle::MakeFlatButton(
+			State,
+			Params.Label,
+			Params.OnClicked,
+			nullptr,
+			nullptr,
+			Params.Padding,
+			Params.MinWidth,
+			Params.MinHeight,
+			Params.IsEnabled,
+			Params.FontSize,
+			Params.Tag,
+			Params.ToggleGroup);
+	}
+
 	static int32 T66BuildGamblerBuildNumberMask(const TSet<int32>& Numbers)
 	{
 		int32 Mask = 0;
@@ -182,9 +361,10 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 	const bool bCompactCasinoLayout = bEmbeddedInCasinoShell;
-	const float StatsPanelWidth = bCompactCasinoLayout ? 150.f : FT66Style::Tokens::NPCGamblerStatsPanelWidth;
-	const float RightPanelWidth = bCompactCasinoLayout ? 200.f : FT66Style::Tokens::NPCRightPanelWidth;
-	const float MainRowHeight = bCompactCasinoLayout ? 320.f : FT66Style::Tokens::NPCMainRowHeight;
+	const float StatsPanelWidth = bCompactCasinoLayout ? 240.f : FT66Style::Tokens::NPCGamblerStatsPanelWidth;
+	const float RightPanelWidth = bCompactCasinoLayout ? 275.f : FT66Style::Tokens::NPCRightPanelWidth;
+	const float MainRowHeight = bCompactCasinoLayout ? 380.f : FT66Style::Tokens::NPCMainRowHeight;
+	const float CenterPanelWidth = bCompactCasinoLayout ? 812.f : 0.f;
 	const float InventorySlotSize = bCompactCasinoLayout ? 80.f : FT66Style::Tokens::InventorySlotSize;
 	const float GameCardSize = bCompactCasinoLayout ? FT66Style::Tokens::NPCCompactShopCardWidth : FT66Style::Tokens::NPCShopCardWidth;
 	const float GameCardPadding = bCompactCasinoLayout ? 5.f : FT66Style::Tokens::Space4;
@@ -377,10 +557,10 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
-			T66OverlayChromeStyle::MakeButton(T66OverlayChromeStyle::MakeButtonParams(
+			MakeGamblerFlatButton(MakeGamblerFlatButtonParams(
 				Loc ? Loc->GetText_LetMeGamble() : FText::GetEmpty(),
 				FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnDialogueGamble),
-				ET66OverlayChromeButtonFamily::Primary)
+				EGamblerFlatButton::Primary)
 				.SetMinWidth(420.f)
 				.SetPadding(FMargin(18.f, 10.f)))
 		];
@@ -393,20 +573,27 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	const FText InventoryTitle = Loc ? Loc->GetText_YourItems() : NSLOCTEXT("T66.Shop", "InventoryTitle", "INVENTORY");
 	const FText GamesTitle = NSLOCTEXT("T66.Gambler", "Games", "GAMES");
 
+	const FName GamblerModeToggleGroup(TEXT("Gambler.ModeSelection"));
+
 	// Right panel: gambler portrait + bank. Embedded casino layout uses the smaller shop footprint.
 	TSharedRef<SWidget> RightPanel =
-		T66OverlayChromeStyle::MakePanel(
+		MakeGamblerFlatPanel(
 			SNew(SVerticalBox)
 			// Gambler portrait (top) — larger than Shop for prominence
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
 			[
-				SNew(SBox)
-				.WidthOverride(GamblerAngerCircleSize)
-				.HeightOverride(GamblerAngerCircleSize)
-				[
-					SAssignNew(AngerCircleImage, SImage)
-					.Image(&AngerFace_Happy)
-				]
+				MakeGamblerFlatPanel(
+					SNew(SBox)
+					.WidthOverride(GamblerAngerCircleSize)
+					.HeightOverride(GamblerAngerCircleSize)
+					[
+						SAssignNew(AngerCircleImage, SImage)
+						.Image(&AngerFace_Happy)
+					],
+					EGamblerFlatPanel::InnerPanel,
+					FMargin(0.f),
+					nullptr,
+					FName(TEXT("Gambler.PortraitPanel")))
 			]
 			// Spacer to push Bank to bottom of panel
 			+ SVerticalBox::Slot().FillHeight(1.f)
@@ -416,15 +603,37 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			// Bank (bottom, separate panel) - same wrapper as Shop
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
 			[
-				T66OverlayChromeStyle::MakePanel(
+				MakeGamblerFlatPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
 					[
-						SNew(STextBlock)
+						FT66FlatStyle::AttachMetadata(SNew(STextBlock)
 						.Text(BankTitle)
 						.TextStyle(&TextHeading)
 						.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.ColorAndOpacity(FT66Style::Tokens::Text),
+						FName(TEXT("Gambler.Bank.Title")),
+						TEXT("Label.Section"),
+						ET66FlatState::Default,
+						TOptional<FLinearColor>(),
+						false,
+						NAME_None,
+						true)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+					[
+						FT66FlatStyle::AttachMetadata(SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.Gambler", "BorrowAmountLabel", "BORROW AMOUNT"))
+						.TextStyle(&TextChip)
+						.Font(FT66Style::Tokens::FontBold(FMath::Max(8, CardButtonFontSize - 1)))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted),
+						FName(TEXT("Gambler.Bank.BorrowLabel")),
+						TEXT("Label.Caption"),
+						ET66FlatState::Default,
+						TOptional<FLinearColor>(),
+						false,
+						NAME_None,
+						true)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 					[
@@ -458,14 +667,30 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
-							T66OverlayChromeStyle::MakeButton(T66OverlayChromeStyle::MakeButtonParams(
-								Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Shop", "Borrow_Button", "BORROW"),
+							MakeGamblerFlatButton(MakeGamblerFlatButtonParams(
+								NSLOCTEXT("T66.Gambler", "Borrow_Button_Upper", "BORROW"),
 								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBorrowClicked),
-								ET66OverlayChromeButtonFamily::Neutral)
+								EGamblerFlatButton::Neutral)
 								.SetMinWidth(0.f)
 								.SetPadding(ActionButtonPadding)
-								.SetFontSize(CardButtonFontSize))
+								.SetFontSize(CardButtonFontSize)
+								.SetTag(FName(TEXT("Gambler.Bank.BorrowButton"))))
 						]
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+					[
+						FT66FlatStyle::AttachMetadata(SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.Gambler", "PaybackAmountLabel", "PAYBACK AMOUNT"))
+						.TextStyle(&TextChip)
+						.Font(FT66Style::Tokens::FontBold(FMath::Max(8, CardButtonFontSize - 1)))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted),
+						FName(TEXT("Gambler.Bank.PaybackLabel")),
+						TEXT("Label.Caption"),
+						ET66FlatState::Default,
+						TOptional<FLinearColor>(),
+						false,
+						NAME_None,
+						true)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 					[
@@ -485,46 +710,73 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
-							T66OverlayChromeStyle::MakeButton(T66OverlayChromeStyle::MakeButtonParams(
-								Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Shop", "Payback_Button", "PAYBACK"),
+							MakeGamblerFlatButton(MakeGamblerFlatButtonParams(
+								NSLOCTEXT("T66.Gambler", "Payback_Button_Upper", "PAYBACK"),
 								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackClicked),
-								ET66OverlayChromeButtonFamily::Neutral)
+								EGamblerFlatButton::Neutral)
 								.SetMinWidth(0.f)
 								.SetPadding(ActionButtonPadding)
-								.SetFontSize(CardButtonFontSize))
+								.SetFontSize(CardButtonFontSize)
+								.SetTag(FName(TEXT("Gambler.Bank.PaybackButton"))))
 						]
 					]
 				,
-					ET66OverlayChromeBrush::InnerPanel,
-					FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space5))
+					EGamblerFlatPanel::InnerPanel,
+					FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space5),
+					nullptr,
+					FName(TEXT("Gambler.BankPanel")))
 			]
 		,
-			ET66OverlayChromeBrush::ContentPanelTall,
-			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6));
+			EGamblerFlatPanel::ContentPanelTall,
+			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6),
+			nullptr,
+			FName(TEXT("Gambler.RightPanel")));
 
-	// Game card: icon + game name above Play button; compact embedded layout mirrors shop card sizing.
-	auto MakeGameCard = [&](const FText& TitleText, const FOnClicked& OnClicked, const FSlateBrush* IconBrush) -> TSharedRef<SWidget>
+	// Game card: title, content well, and red Play action; compact embedded layout mirrors the reference.
+	auto MakeGameCard = [&](const int32 CardIndex, const FText& TitleText, const FOnClicked& OnClicked, const FSlateBrush* IconBrush) -> TSharedRef<SWidget>
 	{
-		const FText PlayText = NSLOCTEXT("T66.Gambler", "Play", "Play");
-		TSharedRef<SWidget> PlayBtn = T66OverlayChromeStyle::MakeButton(
-			T66OverlayChromeStyle::MakeButtonParams(PlayText, OnClicked, ET66OverlayChromeButtonFamily::Primary)
+		const FString CardPrefix = FString::Printf(TEXT("Gambler.GameCard.%02d"), CardIndex);
+		const FName CardPanelTag(*FString::Printf(TEXT("%s.Panel"), *CardPrefix));
+		const FName CardTitleTag(*FString::Printf(TEXT("%s.Title"), *CardPrefix));
+		const FName CardIconTag(*FString::Printf(TEXT("%s.IconWell"), *CardPrefix));
+		const FName CardPlayTag(*FString::Printf(TEXT("%s.PlayButton"), *CardPrefix));
+		const FText PlayText = NSLOCTEXT("T66.Gambler", "Play", "PLAY");
+		TSharedRef<SWidget> PlayBtn = MakeGamblerFlatButton(
+			MakeGamblerFlatButtonParams(PlayText, OnClicked, EGamblerFlatButton::Danger)
 			.SetMinWidth(bCompactCasinoLayout ? 0.f : 100.f)
 			.SetPadding(CardButtonPadding)
-			.SetFontSize(CardButtonFontSize));
+			.SetFontSize(CardButtonFontSize)
+			.SetTag(CardPlayTag));
 		return SNew(SBox)
 			.WidthOverride(GameCardSize)
 			.HeightOverride(GameCardTotalHeight)
 			.Padding(FMargin(GameCardPadding, 0.f))
 			[
-				T66OverlayChromeStyle::MakePanel(
+				MakeGamblerFlatPanel(
 					SNew(SVerticalBox)
-					// 1. Large image (texture size)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space3)
+					[
+						FT66FlatStyle::AttachMetadata(SNew(STextBlock)
+						.Text(TitleText)
+						.TextStyle(&TextHeading)
+						.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.AutoWrapText(true)
+						.WrapTextAt(GameCardSize - GameCardPadding * 2.f),
+						CardTitleTag,
+						TEXT("Label.CardTitle"),
+						ET66FlatState::Default,
+						TOptional<FLinearColor>(),
+						false,
+						NAME_None,
+						true)
+					]
 					+ SVerticalBox::Slot().AutoHeight()
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							T66OverlayChromeStyle::MakePanel(
+							MakeGamblerFlatPanel(
 								SNew(SBox)
 								.WidthOverride(GameCardIconSize)
 								.HeightOverride(GameCardIconSize)
@@ -534,33 +786,25 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 										.Image(IconBrush)
 										.ColorAndOpacity(FLinearColor::White)))
 								],
-								ET66OverlayChromeBrush::SlotNormal,
-								FMargin(0.f))
+								EGamblerFlatPanel::SlotNormal,
+								FMargin(0.f),
+								nullptr,
+								CardIconTag)
 						]
 					]
-					// 2. Game name above Play button
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
-					[
-						SNew(STextBlock)
-						.Text(TitleText)
-						.TextStyle(&TextHeading)
-						.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-						.AutoWrapText(true)
-						.WrapTextAt(GameCardSize - GameCardPadding * 2.f)
-					]
-					// 3. Play button
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 					[
 						PlayBtn
 					]
 				,
-					ET66OverlayChromeBrush::OfferCardNormal,
-					FMargin(GameCardPadding))
+					EGamblerFlatPanel::OfferCardNormal,
+					FMargin(GameCardPadding),
+					nullptr,
+					CardPanelTag)
 			];
 	};
 
-	const FText MoreGamesText = NSLOCTEXT("T66.Gambler", "MoreGames", "More Games");
+	const FText MoreGamesText = NSLOCTEXT("T66.Gambler", "MoreGames", "MORE GAMES");
 	const FText BackToGamesText = NSLOCTEXT("T66.Gambler", "BackToGames", "Back to Games");
 	const FText LotteryText = NSLOCTEXT("T66.Gambler", "Lottery", "Lottery");
 	const FText PlinkoText = NSLOCTEXT("T66.Gambler", "Plinko", "Plinko");
@@ -576,20 +820,21 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SNew(SUniformGridPanel)
 				.SlotPadding(bCompactCasinoLayout ? FMargin(8.f, 6.f) : FMargin(16.f, 8.f))
-				+ SUniformGridPanel::Slot(0, 0) [ MakeGameCard(Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), &GameIcon_Rps) ]
-				+ SUniformGridPanel::Slot(1, 0) [ MakeGameCard(Loc ? Loc->GetText_BlackJack() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBlackJack), &GameIcon_BlackJack) ]
-				+ SUniformGridPanel::Slot(2, 0) [ MakeGameCard(Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), &GameIcon_CoinFlip) ]
-				+ SUniformGridPanel::Slot(3, 0) [ bCompactCasinoLayout ? MakeGameCard(LotteryText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenLottery), &GameIcon_Lottery) : SNullWidget::NullWidget ]
-				+ SUniformGridPanel::Slot(4, 0) [ bCompactCasinoLayout ? MakeGameCard(PlinkoText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenPlinko), &GameIcon_Plinko) : SNullWidget::NullWidget ]
+				+ SUniformGridPanel::Slot(0, 0) [ MakeGameCard(1, Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), &GameIcon_Rps) ]
+				+ SUniformGridPanel::Slot(1, 0) [ MakeGameCard(2, Loc ? Loc->GetText_BlackJack() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBlackJack), &GameIcon_BlackJack) ]
+				+ SUniformGridPanel::Slot(2, 0) [ MakeGameCard(3, Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), &GameIcon_CoinFlip) ]
+				+ SUniformGridPanel::Slot(3, 0) [ bCompactCasinoLayout ? MakeGameCard(4, LotteryText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenLottery), &GameIcon_Lottery) : SNullWidget::NullWidget ]
+				+ SUniformGridPanel::Slot(4, 0) [ bCompactCasinoLayout ? MakeGameCard(5, PlinkoText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenPlinko), &GameIcon_Plinko) : SNullWidget::NullWidget ]
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, bCompactCasinoLayout ? 10.f : 28.f, 0.f, 0.f)
 		[
-			T66OverlayChromeStyle::MakeButton(
-				T66OverlayChromeStyle::MakeButtonParams(MoreGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnMoreGamesClicked), ET66OverlayChromeButtonFamily::Neutral)
+				MakeGamblerFlatButton(
+				MakeGamblerFlatButtonParams(MoreGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnMoreGamesClicked), EGamblerFlatButton::Neutral)
 				.SetMinWidth(0.f)
 				.SetPadding(bCompactCasinoLayout ? FMargin(10.f, 6.f) : FMargin(20.f, 12.f))
-				.SetFontSize(bCompactCasinoLayout ? CardButtonFontSize : 16))
+				.SetFontSize(bCompactCasinoLayout ? CardButtonFontSize : 16)
+				.SetTag(FName(TEXT("Gambler.MoreGamesButton"))))
 		];
 
 	TSharedRef<SWidget> MoreGamesView =
@@ -602,15 +847,15 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SNew(SUniformGridPanel)
 				.SlotPadding(bCompactCasinoLayout ? FMargin(8.f, 6.f) : FMargin(16.f, 8.f))
-				+ SUniformGridPanel::Slot(0, 0) [ MakeGameCard(BoxOpeningText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBoxOpening), &GameIcon_BoxOpening) ]
-				+ SUniformGridPanel::Slot(1, 0) [ bCompactCasinoLayout ? SNullWidget::NullWidget : MakeGameCard(LotteryText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenLottery), &GameIcon_Lottery) ]
-				+ SUniformGridPanel::Slot(2, 0) [ bCompactCasinoLayout ? SNullWidget::NullWidget : MakeGameCard(PlinkoText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenPlinko), &GameIcon_Plinko) ]
+				+ SUniformGridPanel::Slot(0, 0) [ MakeGameCard(6, BoxOpeningText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBoxOpening), &GameIcon_BoxOpening) ]
+				+ SUniformGridPanel::Slot(1, 0) [ bCompactCasinoLayout ? SNullWidget::NullWidget : MakeGameCard(7, LotteryText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenLottery), &GameIcon_Lottery) ]
+				+ SUniformGridPanel::Slot(2, 0) [ bCompactCasinoLayout ? SNullWidget::NullWidget : MakeGameCard(8, PlinkoText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenPlinko), &GameIcon_Plinko) ]
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f, 0.f)
 		[
-			T66OverlayChromeStyle::MakeButton(
-				T66OverlayChromeStyle::MakeButtonParams(BackToGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBackToMainGames), ET66OverlayChromeButtonFamily::Neutral)
+			MakeGamblerFlatButton(
+				MakeGamblerFlatButtonParams(BackToGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBackToMainGames), EGamblerFlatButton::Neutral)
 				.SetMinWidth(0.f)
 				.SetPadding(bCompactCasinoLayout ? FMargin(10.f, 6.f) : FMargin(20.f, 12.f))
 				.SetFontSize(bCompactCasinoLayout ? CardButtonFontSize : 16))
@@ -1220,16 +1465,16 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		]
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 		[
-			T66OverlayChromeStyle::MakeButton(T66OverlayChromeStyle::MakeButtonParams(
+			MakeGamblerFlatButton(MakeGamblerFlatButtonParams(
 				Loc ? Loc->GetText_Bet() : NSLOCTEXT("T66.Gambler", "Bet", "Bet"),
 				FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBetClicked),
-				ET66OverlayChromeButtonFamily::Neutral)
+				EGamblerFlatButton::Neutral)
 				.SetMinWidth(0.f)
 				.SetPadding(FMargin(14.f, 8.f)))
 		];
 
 	TSharedRef<SWidget> CasinoCenterContent =
-		T66OverlayChromeStyle::MakePanel(
+		MakeGamblerFlatPanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
@@ -1251,7 +1496,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				]
 			]
 		,
-			ET66OverlayChromeBrush::ContentPanelWide,
+			EGamblerFlatPanel::ContentPanelWide,
 			FMargin(FT66Style::Tokens::Space6));
 
 	// Buyback row (shared slot count with shop buyback)
@@ -1273,11 +1518,11 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	TSharedRef<SHorizontalBox> BuybackRow = SNew(SHorizontalBox);
 	for (int32 i = 0; i < BuybackSlotCount; ++i)
 	{
-		TSharedRef<SWidget> BuybackBtnWidget = T66OverlayChromeStyle::MakeButton(
-			T66OverlayChromeStyle::MakeButtonParams(
+		TSharedRef<SWidget> BuybackBtnWidget = MakeGamblerFlatButton(
+			MakeGamblerFlatButtonParams(
 				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
 				FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBuybackSlot, i),
-				ET66OverlayChromeButtonFamily::Primary)
+				EGamblerFlatButton::Primary)
 			.SetMinWidth(bCompactCasinoLayout ? 0.f : 100.f)
 			.SetPadding(CardButtonPadding)
 			.SetFontSize(CardButtonFontSize)
@@ -1297,7 +1542,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			.WidthOverride(BuybackCardSize)
 			.HeightOverride(BuybackCardHeight)
 			[
-				T66OverlayChromeStyle::MakePanel(
+				MakeGamblerFlatPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -1318,7 +1563,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							T66OverlayChromeStyle::MakePanel(
+							MakeGamblerFlatPanel(
 								SNew(SBox)
 								.WidthOverride(BuybackIconSize)
 								.HeightOverride(BuybackIconSize)
@@ -1328,7 +1573,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 										.Image(BuybackIconBrushes[i].Get())
 										.ColorAndOpacity(FLinearColor::White)))
 								],
-								ET66OverlayChromeBrush::SlotNormal,
+								EGamblerFlatPanel::SlotNormal,
 								FMargin(0.f),
 								&BuybackIconBorders[i])
 						]
@@ -1348,7 +1593,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						BuybackBtnWidget
 					]
 				,
-					ET66OverlayChromeBrush::OfferCardNormal,
+					EGamblerFlatPanel::OfferCardNormal,
 					FMargin(GameCardPadding),
 					&BuybackTileBorders[i])
 			]
@@ -1360,54 +1605,70 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
 			[
-				T66OverlayChromeStyle::MakeButton(
-					T66OverlayChromeStyle::MakeButtonParams(
+				MakeGamblerFlatButton(
+					MakeGamblerFlatButtonParams(
 						BuybackTitle,
 						FOnClicked::CreateLambda([this]()
 						{
-							const bool bShowingBuyback = CasinoBuybackSwitcher.IsValid() && CasinoBuybackSwitcher->GetActiveWidgetIndex() == 1;
 							if (CasinoBuybackSwitcher.IsValid())
 							{
-								CasinoBuybackSwitcher->SetActiveWidgetIndex(bShowingBuyback ? 0 : 1);
+								CasinoBuybackSwitcher->SetActiveWidgetIndex(1);
 							}
-							if (bShowingBuyback)
+							if (UT66RunStateSubsystem* RS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 							{
-								if (GameSelectionSwitcher.IsValid())
-								{
-									GameSelectionSwitcher->SetActiveWidgetIndex(0);
-								}
-								if (CasinoSwitcher.IsValid())
-								{
-									CasinoSwitcher->SetActiveWidgetIndex(0);
-								}
+								RS->GenerateBuybackDisplay();
 							}
-							else
+							RefreshBuyback();
+							RefreshCasinoGameChrome();
+							return FReply::Handled();
+						}),
+						EGamblerFlatButton::Tab)
+					.SetMinWidth(0.f)
+					.SetPadding(FMargin(12.f, 7.f))
+					.SetFontSize(11)
+					.SetTag(FName(TEXT("Gambler.Mode.BuybackButton")))
+					.SetToggleGroup(GamblerModeToggleGroup))
+			]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
+			[
+				MakeGamblerFlatButton(
+					MakeGamblerFlatButtonParams(
+						GamesTitle,
+						FOnClicked::CreateLambda([this]()
+						{
+							if (CasinoBuybackSwitcher.IsValid())
 							{
-								if (UT66RunStateSubsystem* RS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
-								{
-									RS->GenerateBuybackDisplay();
-								}
-								RefreshBuyback();
+								CasinoBuybackSwitcher->SetActiveWidgetIndex(0);
+							}
+							if (GameSelectionSwitcher.IsValid())
+							{
+								GameSelectionSwitcher->SetActiveWidgetIndex(0);
+							}
+							if (CasinoSwitcher.IsValid())
+							{
+								CasinoSwitcher->SetActiveWidgetIndex(0);
 							}
 							RefreshCasinoGameChrome();
 							return FReply::Handled();
 						}),
-						ET66OverlayChromeButtonFamily::Tab)
+						EGamblerFlatButton::Tab)
+					.SetSelected(true)
 					.SetMinWidth(0.f)
-					.SetPadding(FMargin(8.f, 5.f))
+					.SetPadding(FMargin(12.f, 7.f))
 					.SetFontSize(11)
-					.SetContent(
-						SAssignNew(CasinoModeToggleText, STextBlock)
-						.Text(BuybackTitle)
-						.Font(FT66Style::Tokens::FontBold(11))
-						.ColorAndOpacity(FT66Style::Tokens::Text)))
+					.SetTag(FName(TEXT("Gambler.Mode.GamesButton")))
+					.SetToggleGroup(GamblerModeToggleGroup))
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f)
+			[
+				SNew(SSpacer)
 			]
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
 				SAssignNew(CasinoRerollButtonWidget, SBox)
 				[
-					T66OverlayChromeStyle::MakeButton(
-					T66OverlayChromeStyle::MakeButtonParams(
+					MakeGamblerFlatButton(
+					MakeGamblerFlatButtonParams(
 						RerollText,
 						FOnClicked::CreateLambda([this]()
 						{
@@ -1419,41 +1680,42 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							RefreshCasinoGameChrome();
 							return FReply::Handled();
 						}),
-						ET66OverlayChromeButtonFamily::Neutral)
+						EGamblerFlatButton::Neutral)
 					.SetMinWidth(0.f)
 					.SetPadding(ActionButtonPadding)
-					.SetFontSize(11))
+					.SetFontSize(11)
+					.SetTag(FName(TEXT("Gambler.Mode.RerollButton"))))
 				]
 			])
 		: StaticCastSharedRef<SWidget>(
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
 			[
-				T66OverlayChromeStyle::MakeButton(
-					T66OverlayChromeStyle::MakeButtonParams(CasinoTitle, FOnClicked::CreateLambda([this]() {
+				MakeGamblerFlatButton(
+					MakeGamblerFlatButtonParams(CasinoTitle, FOnClicked::CreateLambda([this]() {
 						if (CasinoBuybackSwitcher.IsValid()) { CasinoBuybackSwitcher->SetActiveWidgetIndex(0); }
 						RefreshCasinoGameChrome();
 						return FReply::Handled();
-					}), ET66OverlayChromeButtonFamily::Tab)
+					}), EGamblerFlatButton::Tab)
 					.SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f))
 				)
 			]
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
-				T66OverlayChromeStyle::MakeButton(
-					T66OverlayChromeStyle::MakeButtonParams(BuybackTitle, FOnClicked::CreateLambda([this]() {
+				MakeGamblerFlatButton(
+					MakeGamblerFlatButtonParams(BuybackTitle, FOnClicked::CreateLambda([this]() {
 						if (CasinoBuybackSwitcher.IsValid()) { CasinoBuybackSwitcher->SetActiveWidgetIndex(1); }
 						if (UT66RunStateSubsystem* RS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr) { if (RS) RS->GenerateBuybackDisplay(); }
 						RefreshBuyback();
 						RefreshCasinoGameChrome();
 						return FReply::Handled();
-					}), ET66OverlayChromeButtonFamily::Tab)
+					}), EGamblerFlatButton::Tab)
 					.SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f))
 				)
 			]);
 
 	TSharedRef<SWidget> CenterPanel =
-		T66OverlayChromeStyle::MakePanel(
+		MakeGamblerFlatPanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
 			[
@@ -1489,15 +1751,15 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					[
 						SAssignNew(CasinoRerollButtonWidget, SBox)
 						[
-							T66OverlayChromeStyle::MakeButton(
-							T66OverlayChromeStyle::MakeButtonParams(RerollText,
+							MakeGamblerFlatButton(
+							MakeGamblerFlatButtonParams(RerollText,
 								FOnClicked::CreateLambda([this]() {
 									if (UT66RunStateSubsystem* RS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr) { if (RS) RS->RerollBuybackDisplay(); }
 									RefreshBuyback();
 									RefreshCasinoGameChrome();
 									return FReply::Handled();
 								}),
-								ET66OverlayChromeButtonFamily::Neutral)
+								EGamblerFlatButton::Neutral)
 							.SetMinWidth(0.f)
 							.SetPadding(FMargin(16.f, 10.f)))
 						]
@@ -1505,21 +1767,27 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				]
 			]
 		,
-			ET66OverlayChromeBrush::ContentPanelWide,
-			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6));
+			EGamblerFlatPanel::ContentPanelWide,
+			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6),
+			nullptr,
+			FName(TEXT("Gambler.GamesPanel")));
 
 	// Inventory slot buttons: same structure as shop (single panel, overlay image + dash, no inner box)
+	const FName GamblerInventoryToggleGroup(TEXT("Gambler.InventorySelection"));
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxInventorySlots; ++i)
 	{
-		InventorySlotButtons[i] = FT66Style::MakeButton(
-			FT66ButtonParams(FText::GetEmpty(),
+		const FName SlotTag(*FString::Printf(TEXT("Gambler.InventorySlot.%02d"), i + 1));
+		InventorySlotButtons[i] = MakeGamblerFlatButton(
+			MakeGamblerFlatButtonParams(FText::GetEmpty(),
 				FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnSelectInventorySlot, i),
-				ET66ButtonType::Neutral)
+				EGamblerFlatButton::Neutral)
 				.SetMinWidth(InventorySlotSize)
-				.SetHeight(InventorySlotSize)
+				.SetMinHeight(InventorySlotSize)
 				.SetPadding(FMargin(0.f))
+				.SetTag(SlotTag)
+				.SetToggleGroup(GamblerInventoryToggleGroup)
 				.SetContent(
-					T66OverlayChromeStyle::MakePanel(
+					MakeGamblerFlatPanel(
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
@@ -1547,21 +1815,22 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							.ColorAndOpacity(FT66Style::Tokens::Text)
 						]
 					,
-						ET66OverlayChromeBrush::SlotNormal,
+						EGamblerFlatPanel::SlotNormal,
 						FMargin(0.f),
 						&InventorySlotBorders[i])
 				));
 	}
 
 	// Pre-create sell button for centralized styling
-	SellItemButton = T66OverlayChromeStyle::MakeButton(
-		T66OverlayChromeStyle::MakeButtonParams(
+	SellItemButton = MakeGamblerFlatButton(
+		MakeGamblerFlatButtonParams(
 			Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL"),
 			FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnSellSelectedClicked),
-			ET66OverlayChromeButtonFamily::Primary)
+			EGamblerFlatButton::Danger)
 			.SetMinWidth(0.f)
 			.SetPadding(ActionButtonPadding)
-			.SetFontSize(CardButtonFontSize));
+			.SetFontSize(CardButtonFontSize)
+			.SetTag(FName(TEXT("Gambler.SellButton"))));
 
 	// Inventory grid: same as Shop — 20 slots in horizontal scroll, each 160×160
 	TSharedRef<SUniformGridPanel> GamblerInventoryGrid = SNew(SUniformGridPanel)
@@ -1580,42 +1849,70 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	}
 
 	TSharedRef<SWidget> InventoryPanel =
-		T66OverlayChromeStyle::MakePanel(
+		MakeGamblerFlatPanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
-					SNew(STextBlock)
+					FT66FlatStyle::AttachMetadata(SNew(STextBlock)
 					.Text(InventoryTitle)
 					.TextStyle(&TextHeading)
 					.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.ColorAndOpacity(FT66Style::Tokens::Text),
+					FName(TEXT("Gambler.Inventory.Title")),
+					TEXT("Label.Section"),
+					ET66FlatState::Default,
+					TOptional<FLinearColor>(),
+					false,
+					NAME_None,
+					true)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(18.f, 0.f, 16.f, 0.f)
 				[
-					SAssignNew(NetWorthText, STextBlock)
+					FT66FlatStyle::AttachMetadata(SAssignNew(NetWorthText, STextBlock)
 					.Text(FText::GetEmpty())
 					.TextStyle(&TextHeading)
 					.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.ColorAndOpacity(FT66Style::Tokens::Text),
+					FName(TEXT("Gambler.Inventory.NetWorth")),
+					TEXT("Label.Stat"),
+					ET66FlatState::Default,
+					TOptional<FLinearColor>(),
+					false,
+					NAME_None,
+					true)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 16.f, 0.f)
 				[
-					SAssignNew(GoldText, STextBlock)
+					FT66FlatStyle::AttachMetadata(SAssignNew(GoldText, STextBlock)
 					.Text(FText::GetEmpty())
 					.TextStyle(&TextHeading)
 					.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.ColorAndOpacity(FT66Style::Tokens::Text),
+					FName(TEXT("Gambler.Inventory.Gold")),
+					TEXT("Label.Stat"),
+					ET66FlatState::Default,
+					TOptional<FLinearColor>(),
+					false,
+					NAME_None,
+					true)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
-					SAssignNew(DebtText, STextBlock)
+					FT66FlatStyle::AttachMetadata(SAssignNew(DebtText, STextBlock)
 					.Text(FText::GetEmpty())
 					.TextStyle(&TextHeading)
 					.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Danger)
+					.ColorAndOpacity(FT66Style::Tokens::Danger),
+					FName(TEXT("Gambler.Inventory.Debt")),
+					TEXT("Label.Stat"),
+					ET66FlatState::Default,
+					TOptional<FLinearColor>(),
+					false,
+					NAME_None,
+					true)
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f)
 				[
@@ -1642,7 +1939,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					.HeightOverride(InventorySlotSize)
 					.Visibility(EVisibility::Visible)
 					[
-						T66OverlayChromeStyle::MakePanel(
+						MakeGamblerFlatPanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight()
 							[
@@ -1674,14 +1971,18 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							SellItemButton.ToSharedRef()
 						]
 						,
-							ET66OverlayChromeBrush::InnerPanel,
-							FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4))
+							EGamblerFlatPanel::InnerPanel,
+							FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4),
+							nullptr,
+							FName(TEXT("Gambler.SellPanel")))
 					]
 				]
 			]
 		,
-			ET66OverlayChromeBrush::ContentPanelWide,
-			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4));
+			EGamblerFlatPanel::ContentPanelWide,
+			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4),
+			nullptr,
+			FName(TEXT("Gambler.InventoryPanel")));
 
 	TSharedRef<SWidget> CasinoPageBody =
 		SNew(SVerticalBox)
@@ -1702,12 +2003,17 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				.WidthOverride(StatsPanelWidth)
 				.HeightOverride(MainRowHeight)
 				[
-					T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), StatsPanelWidth, true, StatsPanelFontAdjustment)
+					FT66FlatStyle::AttachMetadata(
+						T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), StatsPanelWidth, true, StatsPanelFontAdjustment),
+						FName(TEXT("Gambler.StatsPanel")),
+						TEXT("Panel"),
+						ET66FlatState::Default)
 				]
 			]
 			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
 			[
 				SNew(SBox)
+				.WidthOverride(CenterPanelWidth > 0.f ? FOptionalSize(CenterPanelWidth) : FOptionalSize())
 				.MinDesiredHeight(MainRowHeight)
 				[
 					CenterPanel
@@ -1727,6 +2033,18 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		[
 			InventoryPanel
 		];
+
+	if (bEmbeddedInCasinoShell)
+	{
+		TSharedRef<SConstraintCanvas> GamblerCanvas = SNew(SConstraintCanvas);
+		AddGamblerCanvasSlot(GamblerCanvas, 17.f, 182.f, 1902.f, 887.f, CasinoPageBody);
+
+		RefreshTopBar();
+		RefreshInventory();
+		RefreshSellPanel();
+		RefreshCasinoGameChrome();
+		return FT66FlatStyle::AttachMetadata(GamblerCanvas, FName(TEXT("Gambler.Root")), TEXT("Overlay"), ET66FlatState::Default);
+	}
 
 	TSharedRef<SWidget> CasinoPage =
 		SNew(SScrollBox)
@@ -1757,7 +2075,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	});
 
 	TSharedRef<SWidget> Root =
-		T66OverlayChromeStyle::MakePanel(
+		MakeGamblerFlatPanel(
 			SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
@@ -1795,10 +2113,10 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SAssignNew(CloseButtonBox, SBox)
 				[
-					T66OverlayChromeStyle::MakeButton(T66OverlayChromeStyle::MakeButtonParams(
+					MakeGamblerFlatButton(MakeGamblerFlatButtonParams(
 						NSLOCTEXT("T66.Common", "Close", "CLOSE"),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBack),
-						ET66OverlayChromeButtonFamily::Danger)
+						EGamblerFlatButton::Danger)
 						.SetMinWidth(0.f)
 						.SetPadding(FMargin(18.f, 10.f)))
 				]
@@ -1810,7 +2128,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(CheatPromptContainer, SBox)
 				.Visibility(EVisibility::Collapsed)
 				[
-					T66OverlayChromeStyle::MakePanel(
+					MakeGamblerFlatPanel(
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 						[
@@ -1831,34 +2149,34 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
-							T66OverlayChromeStyle::MakeButton(T66OverlayChromeStyle::MakeButtonParams(
+							MakeGamblerFlatButton(MakeGamblerFlatButtonParams(
 								Loc ? Loc->GetText_Yes() : FText::GetEmpty(),
 								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCheatYes),
-								ET66OverlayChromeButtonFamily::Danger)
+								EGamblerFlatButton::Danger)
 								.SetMinWidth(140.f)
 								.SetPadding(FMargin(18.f, 10.f)))
 						]
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
-							T66OverlayChromeStyle::MakeButton(T66OverlayChromeStyle::MakeButtonParams(
+							MakeGamblerFlatButton(MakeGamblerFlatButtonParams(
 								Loc ? Loc->GetText_No() : FText::GetEmpty(),
 								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCheatNo),
-								ET66OverlayChromeButtonFamily::Neutral)
+								EGamblerFlatButton::Neutral)
 								.SetMinWidth(140.f)
 								.SetPadding(FMargin(18.f, 10.f)))
 						]
 					]
 					,
-						ET66OverlayChromeBrush::OverlayModalPanel,
+						EGamblerFlatPanel::OverlayModalPanel,
 						FMargin(FT66Style::Tokens::Space6))
 				]
 			]
 		,
-			ET66OverlayChromeBrush::ContentPanelWide,
+			EGamblerFlatPanel::ContentPanelWide,
 			FMargin(0.f));
 
-	// Ensure initial page + gold display are correct even when re-opening the same widget instance.
-	SetPage(EGamblerPage::Dialogue);
+	// Embedded casino tabs enter directly into the casino page; standalone use keeps the dialogue gate.
+	SetPage(bEmbeddedInCasinoShell ? EGamblerPage::Casino : EGamblerPage::Dialogue);
 	RefreshTopBar();
 	RefreshInventory();
 	RefreshSellPanel();

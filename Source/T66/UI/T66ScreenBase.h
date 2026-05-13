@@ -105,6 +105,8 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Screen")
 	bool IsSlateRebuildQueued() const { return bSlateRebuildQueued; }
 
+	virtual bool DumpToJson(const FString& OutputPath);
+
 	virtual bool ShouldRefreshUnderlyingScreenOnModalClose() const { return true; }
 
 protected:
