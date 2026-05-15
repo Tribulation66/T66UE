@@ -50,8 +50,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Style, Log, All);
 
 namespace T66ScreenSlateHelpers
 {
-	FString MakeReferenceChromeElementAssetPath(const TCHAR* FileName);
-	FString MakeReferenceRedSquareButtonAssetPath(const TCHAR* State);
+	T66_API FString MakeReferenceChromeElementAssetPath(const TCHAR* FileName);
+	T66_API FString MakeReferenceRedSquareButtonAssetPath(const TCHAR* State);
 }
 
 namespace

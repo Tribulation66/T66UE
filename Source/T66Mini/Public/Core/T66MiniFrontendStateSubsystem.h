@@ -68,7 +68,7 @@ public:
 	bool HasSelectedDifficulty() const { return SelectedDifficultyID != NAME_None; }
 	bool HasCompleteIdolLoadout() const { return SelectedIdolIDs.Num() >= MaxIdolSlots; }
 
-	static constexpr int32 MaxIdolSlots = 4;
+	static constexpr int32 MaxIdolSlots = 1;
 
 private:
 	void GenerateIdolOffers(const UT66MiniDataSubsystem* DataSubsystem, bool bCountAsReroll);

@@ -47,10 +47,10 @@ FReply UT66HeroSelectionScreen::HandleHeroCarouselPortraitClicked(const int32 Vi
 		return FReply::Handled();
 	}
 
-	const int32 OffsetFromCenter = VisibleSlotIndex - 3;
+	const int32 OffsetFromCenter = VisibleSlotIndex - HeroSelectionHeroCarouselCenterIndex;
 	const int32 TargetIndex = (CurrentHeroIndex + OffsetFromCenter + AllHeroIDs.Num()) % AllHeroIDs.Num();
 	PreviewHero(AllHeroIDs[TargetIndex]);
-	FT66Style::DeferRebuild(this);
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
@@ -72,7 +72,7 @@ FReply UT66HeroSelectionScreen::HandleFlatSkinRowClicked(const FName SkinID)
 
 	CommitLocalSelectionsToLobby(true);
 	UpdateHeroDisplay();
-	FT66Style::DeferRebuild(this);
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
@@ -231,7 +231,7 @@ FReply UT66HeroSelectionScreen::HandleChadBodyClicked()
 	}
 	CommitLocalSelectionsToLobby(true);
 	UpdateHeroDisplay(); // Update 3D preview immediately for this hero
-	FT66Style::DeferRebuild(this);
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
@@ -244,7 +244,7 @@ FReply UT66HeroSelectionScreen::HandleStacyBodyClicked()
 	}
 	CommitLocalSelectionsToLobby(true);
 	UpdateHeroDisplay(); // Update 3D preview immediately for this hero
-	FT66Style::DeferRebuild(this);
+	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }
 
@@ -318,6 +318,49 @@ bool UT66HeroSelectionScreen::GetPreviewedHeroData(FHeroData& OutHeroData)
 		return GI->GetHeroData(PreviewedHeroID, OutHeroData);
 	}
 	return false;
+}
+
+FText UT66HeroSelectionScreen::GetPreviewedHeroTitleText() const
+{
+	FHeroData HeroData;
+	FText DisplayName = NSLOCTEXT("T66.HeroSelection", "FlatHeroArthur", "ARTHUR");
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	if (GI && !PreviewedHeroID.IsNone() && GI->GetHeroData(PreviewedHeroID, HeroData))
+	{
+		if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
+		{
+			DisplayName = Loc->GetHeroDisplayName(HeroData);
+		}
+		else
+		{
+			DisplayName = HeroData.DisplayName;
+		}
+	}
+
+	FString Value = DisplayName.ToString();
+	Value.ToUpperInline();
+	if (Value.IsEmpty() || Value.Contains(TEXT("HERO_")) || Value.Equals(TEXT("HERO")) || Value.Equals(TEXT("HERO 1")))
+	{
+		Value = TEXT("ARTHUR");
+	}
+	return FText::FromString(Value);
+}
+
+FText UT66HeroSelectionScreen::GetPreviewedHeroSubtitleText() const
+{
+	FHeroData HeroData;
+	FText Description = NSLOCTEXT("T66.HeroSelection", "FlatArthurSubtitle", "A KING. A CRUSADE. AN APOCALYPSE.");
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	if (GI && !PreviewedHeroID.IsNone() && GI->GetHeroData(PreviewedHeroID, HeroData) && !HeroData.Description.IsEmpty())
+	{
+		Description = HeroData.Description;
+	}
+
+	FString Value = Description.ToString();
+	Value.ToUpperInline();
+	return Value.IsEmpty()
+		? NSLOCTEXT("T66.HeroSelection", "FlatHeroSubtitleFallback", "READY FOR TRIBULATION.")
+		: FText::FromString(Value);
 }
 
 bool UT66HeroSelectionScreen::GetSelectedCompanionData(FCompanionData& OutCompanionData)

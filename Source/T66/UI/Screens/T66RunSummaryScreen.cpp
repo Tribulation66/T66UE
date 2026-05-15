@@ -25,6 +25,8 @@
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66TemporaryBuffUIUtils.h"
+#include "UI/T66FrontendVideoCatalog.h"
+#include "UI/T66FrontendVideoPlayer.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "Engine/TextureDefines.h"
@@ -33,14 +35,9 @@
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Data/T66DataTypes.h"
-#include "Gameplay/T66HeroPreviewStage.h"
 #include "Kismet/GameplayStatics.h"
-#include "Engine/TextureRenderTarget2D.h"
 #include "Engine/Texture2D.h"
 #include "UObject/SoftObjectPath.h"
-#include "Engine/SceneCapture2D.h"
-#include "Components/SceneCaptureComponent2D.h"
-#include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Images/SThrobber.h"
@@ -182,12 +179,12 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 		bShowPowerCouponsPopup = false;
 	}
 
-	EnsurePreviewCaptures();
+	OpenRunSummaryPreviewVideo();
 }
 
 void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 {
-	DestroyPreviewCaptures();
+	CloseRunSummaryPreviewVideo();
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
@@ -888,18 +885,6 @@ namespace
 		return Params;
 	}
 
-	template <typename TStage>
-	static TStage* FindStage(UWorld* World)
-	{
-		if (!World) return nullptr;
-		// One-time preview-stage lookup. UT66RunSummaryScreen caches the result
-		// after first activation, so this does not run during normal summary refreshes.
-		for (TActorIterator<TStage> It(World); It; ++It)
-		{
-			return *It;
-		}
-		return nullptr;
-	}
 }
 
 bool UT66RunSummaryScreen::HasValidLiveRunSummaryContext() const
@@ -1284,128 +1269,63 @@ void UT66RunSummaryScreen::ProcessLiveRunFinalAccounting()
 	RefreshRunAchievementSummaryCounters();
 }
 
-void UT66RunSummaryScreen::EnsurePreviewCaptures()
+void UT66RunSummaryScreen::OpenRunSummaryPreviewVideo()
 {
 	UWorld* World = GetWorld();
-	if (!World) return;
-
-	UT66GameInstance* GI = Cast<UT66GameInstance>(World->GetGameInstance());
-	if (!GI) return;
-
-	// Reuse the same preview stages used in the frontend screens (spawn them far away so players never see them).
-	if (!HeroPreviewStage)
+	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
+	if (!GI)
 	{
-		HeroPreviewStage = FindStage<AT66HeroPreviewStage>(World);
-		if (!HeroPreviewStage)
-		{
-			FActorSpawnParameters P;
-			P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			HeroPreviewStage = World->SpawnActor<AT66HeroPreviewStage>(AT66HeroPreviewStage::StaticClass(), FVector(1200000.f, 0.f, 200.f), FRotator::ZeroRotator, P);
-		}
+		CloseRunSummaryPreviewVideo();
+		return;
 	}
 
-	// Drive them from the saved selection so it matches the hero/companion selection UI.
-	if (HeroPreviewStage)
+	const FName HeroID =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroID :
+		(!GI->SelectedHeroID.IsNone() ? GI->SelectedHeroID :
+			(GI->GetAllHeroIDs().Num() > 0 ? GI->GetAllHeroIDs()[0] : NAME_None));
+	if (HeroID.IsNone())
 	{
-		if (!bStoredHeroPreviewStageVisibility)
-		{
-			bHeroPreviewStageWasVisible = HeroPreviewStage->IsStageVisible();
-			bStoredHeroPreviewStageVisibility = true;
-		}
+		CloseRunSummaryPreviewVideo();
+		return;
+	}
 
-		HeroPreviewStage->SetStageVisible(true);
-		HeroPreviewStage->SetPreviewStageMode(ET66PreviewStageMode::RunSummary);
+	const ET66BodyType BodyType =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroBodyType : GI->SelectedHeroBodyType;
+	const FName SkinID =
+		(!bViewingSavedLeaderboardRunSummary && !GI->SelectedHeroSkinID.IsNone()) ? GI->SelectedHeroSkinID : FName(TEXT("Default"));
 
-		const ET66Difficulty PreviewDifficulty =
-			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Difficulty : GI->SelectedDifficulty;
-		const FName HeroID =
-			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroID :
-			(!GI->SelectedHeroID.IsNone() ? GI->SelectedHeroID :
-				(GI->GetAllHeroIDs().Num() > 0 ? GI->GetAllHeroIDs()[0] : NAME_None));
+	FT66FrontendVideoAsset VideoAsset;
+	if (!T66FrontendVideoCatalog::ResolveHeroSelection(HeroID, SkinID, BodyType, VideoAsset))
+	{
+		CloseRunSummaryPreviewVideo();
+		return;
+	}
 
-		const ET66BodyType BodyType =
-			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroBodyType : GI->SelectedHeroBodyType;
-		const FName CompanionID =
-			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->CompanionID : GI->SelectedCompanionID;
-		FName SkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
-		if (!HeroID.IsNone())
-		{
-			HeroPreviewStage->SetPreviewDifficulty(PreviewDifficulty);
-			HeroPreviewStage->SetPreviewHero(HeroID, BodyType, SkinID, CompanionID);
-		}
-
-		// Capture hero preview to a render target for the Run Summary panel.
-		if (!HeroPreviewRT)
-		{
-			HeroPreviewRT = NewObject<UTextureRenderTarget2D>(this, NAME_None, RF_Transient);
-			if (HeroPreviewRT)
-			{
-				HeroPreviewRT->RenderTargetFormat = RTF_RGBA8;
-				HeroPreviewRT->SizeX = 512;
-				HeroPreviewRT->SizeY = 512;
-				HeroPreviewRT->UpdateResource();
-			}
-		}
-		if (HeroPreviewRT && !HeroCaptureActor)
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			HeroCaptureActor = World->SpawnActor<ASceneCapture2D>(HeroPreviewStage->GetIdealCameraLocation(), HeroPreviewStage->GetIdealCameraRotation(), SpawnParams);
-			if (HeroCaptureActor)
-			{
-				USceneCaptureComponent2D* CaptureComp = HeroCaptureActor->GetCaptureComponent2D();
-				if (CaptureComp)
-				{
-					CaptureComp->TextureTarget = HeroPreviewRT;
-					CaptureComp->bCaptureEveryFrame = false;
-					CaptureComp->CaptureSource = SCS_FinalColorLDR;
-					CaptureComp->CaptureScene();
-				}
-			}
-		}
-		if (HeroCaptureActor && HeroPreviewRT)
-		{
-			USceneCaptureComponent2D* CaptureComp = HeroCaptureActor->GetCaptureComponent2D();
-			if (CaptureComp && CaptureComp->TextureTarget == HeroPreviewRT)
-			{
-				HeroCaptureActor->SetActorLocation(HeroPreviewStage->GetIdealCameraLocation());
-				HeroCaptureActor->SetActorRotation(HeroPreviewStage->GetIdealCameraRotation());
-				CaptureComp->CaptureScene();
-			}
-		}
-		if (HeroPreviewRT)
-		{
-			if (!HeroPreviewBrush.IsValid())
-			{
-				HeroPreviewBrush = MakeShared<FSlateBrush>();
-				HeroPreviewBrush->DrawAs = ESlateBrushDrawType::Image;
-				HeroPreviewBrush->ImageSize = FVector2D(520.f, 520.f);
-			}
-			HeroPreviewBrush->SetResourceObject(HeroPreviewRT);
-		}
+	if (!RunSummaryPreviewVideoPlayer)
+	{
+		RunSummaryPreviewVideoPlayer = NewObject<UT66FrontendVideoPlayer>(this);
+	}
+	if (!RunSummaryPreviewVideoPlayer
+		|| !RunSummaryPreviewVideoPlayer->OpenVideo(VideoAsset, FVector2D(520.f, 520.f), FName(TEXT("RunSummaryHeroPreview"))))
+	{
+		CloseRunSummaryPreviewVideo();
 	}
 }
 
-void UT66RunSummaryScreen::DestroyPreviewCaptures()
+void UT66RunSummaryScreen::CloseRunSummaryPreviewVideo()
 {
-	if (HeroPreviewStage)
+	if (RunSummaryPreviewVideoPlayer)
 	{
-		HeroPreviewStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		if (bStoredHeroPreviewStageVisibility)
-		{
-			HeroPreviewStage->SetStageVisible(bHeroPreviewStageWasVisible);
-		}
+		RunSummaryPreviewVideoPlayer->CloseVideo();
 	}
-	bStoredHeroPreviewStageVisibility = false;
-	bHeroPreviewStageWasVisible = true;
+}
 
-	HeroPreviewBrush.Reset();
-	if (HeroCaptureActor)
-	{
-		HeroCaptureActor->Destroy();
-		HeroCaptureActor = nullptr;
-	}
-	HeroPreviewRT = nullptr;
+const FSlateBrush* UT66RunSummaryScreen::GetRunSummaryPreviewVideoBrush() const
+{
+	return RunSummaryPreviewVideoPlayer
+		? RunSummaryPreviewVideoPlayer->GetVideoBrush()
+		: nullptr;
 }
 
 void UT66RunSummaryScreen::ResetSavedRunSummaryViewerState()
@@ -1619,7 +1539,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
 	UT66UITexturePoolSubsystem* TexPool = GIBase ? GIBase->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 
-	EnsurePreviewCaptures();
+	OpenRunSummaryPreviewVideo();
 	InventoryItemIconBrushes.Reset();
 	IdolIconBrushes.Reset();
 
@@ -1913,8 +1833,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 		AddN(0.319f, 0.113f, 0.338f, 0.368f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Middle.CharacterPreviewPanel"))));
 		AddN(0.335f, 0.140f, 0.306f, 0.320f,
-			HeroPreviewBrush.IsValid()
-				? FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(SNew(SImage).Image(HeroPreviewBrush.Get())), DTag(TEXT("RunSummary.Middle.CharacterPreviewPanel.Preview")), TEXT("ContentArt"), ET66FlatState::Default)
+			GetRunSummaryPreviewVideoBrush()
+				? FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(SNew(SImage).Image_UObject(this, &UT66RunSummaryScreen::GetRunSummaryPreviewVideoBrush)), DTag(TEXT("RunSummary.Middle.CharacterPreviewPanel.Preview")), TEXT("ContentArt"), ET66FlatState::Default)
 				: MakeLabel(DTag(TEXT("RunSummary.Middle.CharacterPreviewPanel.Preview")), NSLOCTEXT("T66.RunSummary", "NoPreview", "No Preview"), 22, White, false, ETextJustify::Center));
 
 		AddN(0.319f, 0.498f, 0.338f, 0.176f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Middle.IdolsPanel"))));
@@ -2427,16 +2347,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		NSLOCTEXT("T66.RunSummary", "RunOutcomeHeader", "RUN OUTCOME"),
 		OutcomeRows);
 
-	auto MakeHeroPreview = [](const TSharedPtr<FSlateBrush>& Brush) -> TSharedRef<SWidget>
+	auto MakeHeroPreview = [this]() -> TSharedRef<SWidget>
 	{
 		constexpr float PreviewWidth = 462.f;
 		constexpr float PreviewHeight = 380.f;
-		TSharedRef<SWidget> PreviewContent = Brush.IsValid()
+		const FSlateBrush* PreviewBrush = GetRunSummaryPreviewVideoBrush();
+		TSharedRef<SWidget> PreviewContent = PreviewBrush
 			? StaticCastSharedRef<SWidget>(SNew(SBox)
 				.WidthOverride(PreviewWidth)
 				.HeightOverride(PreviewHeight)
 				[
-					SNew(SImage).Image(Brush.Get())
+					SNew(SImage).Image_UObject(this, &UT66RunSummaryScreen::GetRunSummaryPreviewVideoBrush)
 				])
 			: StaticCastSharedRef<SWidget>(SNew(SBox)
 				.WidthOverride(PreviewWidth)
@@ -2793,7 +2714,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CrushChance", "Crush Chance"), FormatPercent(RunState->GetCrushChance01()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "AssassinateChance", "Assassinate Chance"), FormatPercent(RunState->GetAssassinateChance01()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "MoveSpeedMultiplier", "Move Speed Mult"), FormatMultiplier(RunState->GetMovementSpeedSecondaryMultiplier()));
-				AddStatLineText(NSLOCTEXT("T66.RunSummary", "DashCooldown", "Dash Cooldown"), FormatMultiplier(RunState->GetDashCooldownMultiplier()));
+				AddStatLineText(NSLOCTEXT("T66.RunSummary", "RollCooldown", "Roll Cooldown"), FormatMultiplier(RunState->GetDashCooldownMultiplier()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "AttackRange", "Attack Range"), FormatFloat(RunState->GetHeroBaseAttackRange(), 0));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CloseRange", "Close Range"), FormatFloat(RunState->GetCloseRangeThreshold(), 0));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "LongRange", "Long Range"), FormatFloat(RunState->GetLongRangeThreshold(), 0));
@@ -3517,7 +3438,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							]
 							+ SCanvas::Slot().Position(FVector2D(DossierMidX + 190.f, DossierTopY)).Size(FVector2D(498.f, 452.f))
 							[
-								MakeHeroPreview(HeroPreviewBrush)
+								MakeHeroPreview()
 							]
 							+ SCanvas::Slot().Position(FVector2D(DossierMidX + 90.f, 600.f)).Size(FVector2D(720.f, 106.f))
 							[
@@ -3915,7 +3836,7 @@ bool UT66RunSummaryScreen::SaveCurrentRunToSlot(const bool bFromDifficultyClearS
 
 FReply UT66RunSummaryScreen::HandleContinueDifficultyClicked()
 {
-	DestroyPreviewCaptures();
+	CloseRunSummaryPreviewVideo();
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
@@ -3987,7 +3908,7 @@ FReply UT66RunSummaryScreen::HandleSaveAndQuitClicked()
 
 FReply UT66RunSummaryScreen::HandleQuitToMainMenuClicked()
 {
-	DestroyPreviewCaptures();
+	CloseRunSummaryPreviewVideo();
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!GI || !RunState)
@@ -4124,7 +4045,7 @@ void UT66RunSummaryScreen::HandleBackendDailyClimbSubmitDataReadyForSummary(
 
 void UT66RunSummaryScreen::OnRestartClicked()
 {
-	DestroyPreviewCaptures();
+	CloseRunSummaryPreviewVideo();
 	if (bViewingSavedLeaderboardRunSummary)
 	{
 		// Viewer-mode (opened from leaderboard): just close the modal.
@@ -4180,7 +4101,7 @@ void UT66RunSummaryScreen::OnRestartClicked()
 
 void UT66RunSummaryScreen::OnMainMenuClicked()
 {
-	DestroyPreviewCaptures();
+	CloseRunSummaryPreviewVideo();
 	if (bViewingSavedLeaderboardRunSummary)
 	{
 		// Viewer-mode (opened from leaderboard): the main menu is already underneath.

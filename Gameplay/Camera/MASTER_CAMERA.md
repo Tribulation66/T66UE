@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-04-17  
 **Scope:** Single-source handoff for gameplay camera ownership, zoom behavior, scoped-camera overrides, occluder fading, frontend preview cameras, and the orthographic `T66Mini` camera path.  
-**Companion docs:** `Release/Project Guidelines.md`, `Gameplay/Movement/MASTER_MOVEMENT.md`, `Gameplay/Combat/MASTER_COMBAT.md`  
+**Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Movement/MASTER_MOVEMENT.md`, `Gameplay/Combat/MASTER_COMBAT.md`
 **Maintenance rule:** Update this file after every material camera change to gameplay framing, boom collision behavior, zoom/FOV tuning, camera-driven aiming, frontend preview framing, or mini-camera rules.
 
 ## 1. Executive Summary

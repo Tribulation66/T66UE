@@ -24,11 +24,13 @@
 DEFINE_LOG_CATEGORY_STATIC(LogT66CharacterVisuals, Log, All);
 
 static const TCHAR* T66_DefaultCharacterVisualsDTPath = TEXT("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals");
+static const TCHAR* T66_DefaultMobVertexAnimationsDTPath = TEXT("/Game/Data/DT_MobVertexAnimations.DT_MobVertexAnimations");
 static const FName T66_AnimSkeletonTag(TEXT("Skeleton"));
 static const FName T66_CharactersRootPath(TEXT("/Game/Characters"));
 static const TCHAR* T66_CharacterBaseMaterialPath = TEXT("/Game/Materials/M_Character_Unlit.M_Character_Unlit");
 static const TCHAR* T66_FbxBaseMaterialPath = TEXT("/Game/Materials/M_FBX_Unlit.M_FBX_Unlit");
 static const TCHAR* T66_QuadRetroSharedMaterialPath = TEXT("/Game/Materials/MI_GLB_Unlit_Character_Shared.MI_GLB_Unlit_Character_Shared");
+static constexpr float T66_CharacterVisualBrightness = 0.8f;
 
 struct FT66ResolvedImportedTextureSet
 {
@@ -129,9 +131,11 @@ static void T66AppendCharacterVisualAssetPaths(const FT66CharacterVisualRow& Row
 	T66AddUniqueCharacterVisualPath(Row.LoopingAnimation.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.AlertAnimation.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.RunAnimation.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.RollAnimation.ToSoftObjectPath(), OutPaths);
 	T66AppendAnimationFallbackPreloadPaths(Row.LoopingAnimation, OutPaths);
 	T66AppendAnimationFallbackPreloadPaths(Row.AlertAnimation, OutPaths);
 	T66AppendAnimationFallbackPreloadPaths(Row.RunAnimation, OutPaths);
+	T66AppendAnimationFallbackPreloadPaths(Row.RollAnimation, OutPaths);
 }
 
 static bool T66IsUsableImportedTexture(const UTexture* Texture)
@@ -470,7 +474,7 @@ static void T66ApplySafeCharacterMaterialOverrides(USkeletalMeshComponent* Targe
 		SafeMaterial->SetScalarParameterValue(TEXT("Opacity"), 1.0f);
 		SafeMaterial->SetScalarParameterValue(TEXT("OpacityMapWeight"), 0.0f);
 		SafeMaterial->SetScalarParameterValue(TEXT("OpacityMaskMapWeight"), 0.0f);
-		SafeMaterial->SetScalarParameterValue(TEXT("Brightness"), 1.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("Brightness"), T66_CharacterVisualBrightness);
 		SafeMaterial->SetScalarParameterValue(TEXT("Shininess"), 0.5f);
 		SafeMaterial->SetVectorParameterValue(TEXT("AmbientColor"), FLinearColor::White);
 		SafeMaterial->SetVectorParameterValue(TEXT("SpecularColor"), FLinearColor::White);
@@ -487,19 +491,26 @@ static void T66ApplySafeCharacterMaterialOverrides(USkeletalMeshComponent* Targe
 			UE_LOG(
 				LogT66CharacterVisuals,
 				Verbose,
-				TEXT("[MATERIAL] Rebuilt imported material for VisualID=%s Slot=%d Source=%s Diffuse=%s Normal=%s"),
+				TEXT("[MATERIAL] Rebuilt imported material for VisualID=%s Slot=%d Source=%s Diffuse=%s Normal=%s Brightness=%.2f"),
 				*VisualID.ToString(),
 				MaterialIndex,
 				*SourceMaterialPath,
 				DiffuseTexture ? *DiffuseTexture->GetPathName() : TEXT("(fallback white)"),
-				TextureSet.NormalTexture.IsValid() ? *TextureSet.NormalTexture->GetPathName() : TEXT("(fallback white)"));
+				TextureSet.NormalTexture.IsValid() ? *TextureSet.NormalTexture->GetPathName() : TEXT("(fallback white)"),
+				T66_CharacterVisualBrightness);
 		}
 	}
 }
 
 static bool T66IsQuadRetroStaticVisual(const FT66ResolvedCharacterVisual& Res)
 {
-	return Res.StaticMesh && Res.StaticMesh->GetName().EndsWith(TEXT("_QuadRetro"));
+	if (!Res.StaticMesh)
+	{
+		return false;
+	}
+	const FString MeshPath = Res.StaticMesh->GetPathName();
+	return Res.StaticMesh->GetName().EndsWith(TEXT("_QuadRetro"))
+		|| MeshPath.StartsWith(TEXT("/Game/Characters/Mobs/"));
 }
 
 static UMaterialInterface* T66LoadQuadRetroSharedMaterial()
@@ -542,7 +553,7 @@ static void T66ApplyQuadRetroStaticMaterialOverrides(
 		DynamicMaterial->SetTextureParameterValue(TEXT("EmissiveTexture"), PixelatedTexture);
 		DynamicMaterial->SetTextureParameterValue(TEXT("BaseColorTexture"), PixelatedTexture);
 		DynamicMaterial->SetTextureParameterValue(TEXT("DiffuseColorMap"), PixelatedTexture);
-		DynamicMaterial->SetScalarParameterValue(TEXT("Brightness"), 1.0f);
+		DynamicMaterial->SetScalarParameterValue(TEXT("Brightness"), T66_CharacterVisualBrightness);
 		DynamicMaterial->SetVectorParameterValue(TEXT("EmissiveFactor"), FLinearColor::White);
 		DynamicMaterial->SetVectorParameterValue(TEXT("BaseColorFactor"), FLinearColor::Black);
 		DynamicMaterial->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
@@ -555,11 +566,12 @@ static void T66ApplyQuadRetroStaticMaterialOverrides(
 			UE_LOG(
 				LogT66CharacterVisuals,
 				Verbose,
-				TEXT("[MATERIAL] Applied QuadRetro static DMI for VisualID=%s Slot=%d Shared=%s Texture=%s"),
+				TEXT("[MATERIAL] Applied QuadRetro static DMI for VisualID=%s Slot=%d Shared=%s Texture=%s Brightness=%.2f"),
 				*VisualID.ToString(),
 				MaterialIndex,
 				*SharedMaterial->GetPathName(),
-				*PixelatedTexture->GetPathName());
+				*PixelatedTexture->GetPathName(),
+				T66_CharacterVisualBrightness);
 		}
 	}
 }
@@ -816,6 +828,172 @@ UDataTable* UT66CharacterVisualSubsystem::GetVisualsDataTable() const
 	return CachedVisualsDataTable;
 }
 
+UDataTable* UT66CharacterVisualSubsystem::GetMobVertexAnimationsDataTable() const
+{
+	if (CachedMobVertexAnimationsDataTable)
+	{
+		return CachedMobVertexAnimationsDataTable;
+	}
+
+	CachedMobVertexAnimationsDataTable = FindObject<UDataTable>(nullptr, T66_DefaultMobVertexAnimationsDTPath);
+	if (!CachedMobVertexAnimationsDataTable)
+	{
+		CachedMobVertexAnimationsDataTable = LoadObject<UDataTable>(nullptr, T66_DefaultMobVertexAnimationsDTPath);
+	}
+
+	if (!CachedMobVertexAnimationsDataTable)
+	{
+		static bool bLoggedMissingMobVertexTable = false;
+		if (!bLoggedMissingMobVertexTable)
+		{
+			bLoggedMissingMobVertexTable = true;
+			UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MOB_VAT] Missing DT_MobVertexAnimations at %s. Mob visuals will use CharacterVisuals fallback."), T66_DefaultMobVertexAnimationsDTPath);
+		}
+	}
+
+	return CachedMobVertexAnimationsDataTable;
+}
+
+bool UT66CharacterVisualSubsystem::TryGetMobVertexAnimationRow(FName VisualID, FT66MobVertexAnimationRow& OutRow) const
+{
+	UDataTable* DT = GetMobVertexAnimationsDataTable();
+	if (!DT || VisualID.IsNone())
+	{
+		return false;
+	}
+
+	const FT66MobVertexAnimationRow* Row = DT->FindRow<FT66MobVertexAnimationRow>(VisualID, TEXT("TryGetMobVertexAnimationRow"), false);
+	if (!Row || !Row->bEnabled)
+	{
+		return false;
+	}
+
+	OutRow = *Row;
+	return true;
+}
+
+bool UT66CharacterVisualSubsystem::ApplyMobVertexAnimationVisual(
+	FName VisualID,
+	UStaticMeshComponent* TargetStaticMesh,
+	UMaterialInstanceDynamic*& OutMID,
+	FT66MobVertexAnimationRow& OutRow)
+{
+	OutMID = nullptr;
+	if (!TargetStaticMesh || !TryGetMobVertexAnimationRow(VisualID, OutRow))
+	{
+		return false;
+	}
+
+	UStaticMesh* StaticMesh = OutRow.StaticMesh.Get();
+	if (!StaticMesh && !OutRow.StaticMesh.IsNull())
+	{
+		StaticMesh = OutRow.StaticMesh.LoadSynchronous();
+	}
+
+	UMaterialInterface* Material = OutRow.Material.Get();
+	if (!Material && !OutRow.Material.IsNull())
+	{
+		Material = OutRow.Material.LoadSynchronous();
+	}
+
+	UTexture2D* PixelatedTexture = OutRow.PixelatedTextureAssetPath.Get();
+	if (!PixelatedTexture && !OutRow.PixelatedTextureAssetPath.IsNull())
+	{
+		PixelatedTexture = OutRow.PixelatedTextureAssetPath.LoadSynchronous();
+	}
+
+	UTexture2D* PositionTexture = OutRow.PositionTexture.Get();
+	if (!PositionTexture && !OutRow.PositionTexture.IsNull())
+	{
+		PositionTexture = OutRow.PositionTexture.LoadSynchronous();
+	}
+
+	UTexture2D* NormalTexture = OutRow.NormalTexture.Get();
+	if (!NormalTexture && !OutRow.NormalTexture.IsNull())
+	{
+		NormalTexture = OutRow.NormalTexture.LoadSynchronous();
+	}
+
+	if (!StaticMesh || !Material || !PixelatedTexture || !PositionTexture)
+	{
+		UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MOB_VAT] Could not apply VisualID=%s. Mesh=%s Material=%s PixelTexture=%s PositionTexture=%s"),
+			*VisualID.ToString(),
+			StaticMesh ? *StaticMesh->GetPathName() : TEXT("(null)"),
+			Material ? *Material->GetPathName() : TEXT("(null)"),
+			PixelatedTexture ? *PixelatedTexture->GetPathName() : TEXT("(null)"),
+			PositionTexture ? *PositionTexture->GetPathName() : TEXT("(null)"));
+		return false;
+	}
+
+	TargetStaticMesh->EmptyOverrideMaterials();
+	TargetStaticMesh->SetStaticMesh(StaticMesh);
+	TargetStaticMesh->SetRelativeRotation(OutRow.MeshRelativeRotation);
+
+	const FVector Scale = OutRow.MeshRelativeScale.IsNearlyZero() ? FVector::OneVector : OutRow.MeshRelativeScale;
+	TargetStaticMesh->SetRelativeScale3D(Scale);
+
+	FVector RelLoc = OutRow.MeshRelativeLocation;
+	if (const ACharacter* OwnerChar = Cast<ACharacter>(TargetStaticMesh->GetOwner()))
+	{
+		if (const UCapsuleComponent* Cap = OwnerChar->GetCapsuleComponent())
+		{
+			const FBoxSphereBounds Bounds = StaticMesh->GetBounds();
+			const float BottomZ = (Bounds.Origin.Z - Bounds.BoxExtent.Z) * Scale.Z;
+			RelLoc.Z += -Cap->GetScaledCapsuleHalfHeight() - BottomZ;
+		}
+	}
+	TargetStaticMesh->SetRelativeLocation(RelLoc);
+	TargetStaticMesh->SetHiddenInGame(false, true);
+	TargetStaticMesh->SetVisibility(true, true);
+
+	const int32 NumMaterials = FMath::Max(1, TargetStaticMesh->GetNumMaterials());
+	for (int32 MaterialIndex = 0; MaterialIndex < NumMaterials; ++MaterialIndex)
+	{
+		UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(Material, TargetStaticMesh);
+		if (!DynamicMaterial)
+		{
+			continue;
+		}
+
+		DynamicMaterial->SetTextureParameterValue(TEXT("EmissiveTexture"), PixelatedTexture);
+		DynamicMaterial->SetTextureParameterValue(TEXT("BaseColorTexture"), PixelatedTexture);
+		DynamicMaterial->SetTextureParameterValue(TEXT("DiffuseColorMap"), PixelatedTexture);
+		DynamicMaterial->SetTextureParameterValue(TEXT("PositionTexture"), PositionTexture);
+		if (NormalTexture)
+		{
+			DynamicMaterial->SetTextureParameterValue(TEXT("NormalTexture"), NormalTexture);
+		}
+		DynamicMaterial->SetScalarParameterValue(TEXT("Brightness"), T66_CharacterVisualBrightness);
+		DynamicMaterial->SetScalarParameterValue(TEXT("Frame"), static_cast<float>(OutRow.IdleStartFrame));
+		DynamicMaterial->SetScalarParameterValue(TEXT("SampleRate"), OutRow.SampleRate);
+		DynamicMaterial->SetScalarParameterValue(TEXT("NumFrames"), static_cast<float>(OutRow.NumFrames));
+		DynamicMaterial->SetScalarParameterValue(TEXT("RowsPerFrame"), static_cast<float>(OutRow.RowsPerFrame));
+		DynamicMaterial->SetVectorParameterValue(TEXT("MinBBox"), FLinearColor(OutRow.MinBBox.X, OutRow.MinBBox.Y, OutRow.MinBBox.Z, 0.f));
+		DynamicMaterial->SetVectorParameterValue(TEXT("SizeBBox"), FLinearColor(OutRow.SizeBBox.X, OutRow.SizeBBox.Y, OutRow.SizeBBox.Z, 0.f));
+		DynamicMaterial->SetVectorParameterValue(TEXT("EmissiveFactor"), FLinearColor::White);
+		DynamicMaterial->SetVectorParameterValue(TEXT("BaseColorFactor"), FLinearColor::Black);
+		DynamicMaterial->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
+		TargetStaticMesh->SetMaterial(MaterialIndex, DynamicMaterial);
+		if (!OutMID)
+		{
+			OutMID = DynamicMaterial;
+		}
+	}
+
+	if (!OutMID)
+	{
+		return false;
+	}
+
+	UE_LOG(LogT66CharacterVisuals, Verbose, TEXT("[MOB_VAT] Applied VisualID=%s Mesh=%s PositionTexture=%s RowsPerFrame=%d NumFrames=%d"),
+		*VisualID.ToString(),
+		*StaticMesh->GetPathName(),
+		*PositionTexture->GetPathName(),
+		OutRow.RowsPerFrame,
+		OutRow.NumFrames);
+	return true;
+}
+
 const FT66CharacterVisualRow* UT66CharacterVisualSubsystem::FindVisualRow(FName VisualID, FName* OutResolvedVisualID) const
 {
 	UDataTable* DT = GetVisualsDataTable();
@@ -990,6 +1168,14 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 			if (!Res.RunAnim)
 				Res.RunAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.RunAnimation);
 		}
+		if (!Res.Row.RollAnimation.IsNull())
+		{
+			Res.RollAnim = ResolveSoftObjectIfPackageExists(Res.Row.RollAnimation);
+			if (!Res.RollAnim)
+				Res.RollAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.RollAnimation);
+			if (!Res.RollAnim)
+				Res.RollAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.RollAnimation);
+		}
 		if (bMissingRequiredLoadedAsset)
 		{
 			UE_LOG(
@@ -1135,16 +1321,18 @@ FName UT66CharacterVisualSubsystem::GetCompanionVisualID(FName CompanionID, FNam
 	return FName(*(CompanionID.ToString() + TEXT("_") + SkinID.ToString()));
 }
 
-void UT66CharacterVisualSubsystem::GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutRun, UAnimationAsset*& OutAlert)
+void UT66CharacterVisualSubsystem::GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutRun, UAnimationAsset*& OutAlert, UAnimationAsset*& OutRoll)
 {
 	OutWalk = nullptr;
 	OutRun = nullptr;
 	OutAlert = nullptr;
+	OutRoll = nullptr;
 	const FT66ResolvedCharacterVisual Res = ResolveVisual(VisualID);
 	if (!Res.bHasRow) return;
 	OutWalk = Res.LoopingAnim;
 	OutRun = Res.RunAnim;
 	OutAlert = Res.AlertAnim;
+	OutRoll = Res.RollAnim;
 }
 
 bool UT66CharacterVisualSubsystem::HasCharacterVisual(FName VisualID) const

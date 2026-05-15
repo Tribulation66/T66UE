@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-04-18  
 **Scope:** Single-source handoff for combat runtime flow, targeting, damage routing, hit feedback, and the implementation plan for spatial headshots, accuracy-driven aiming, and boss body-part combat.  
-**Companion docs:** `Release/Project Guidelines.md`, `Backend/Anti Cheat/MASTER_ANTI_CHEAT.md`  
+**Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`
 **Maintenance rule:** Update this file after every material combat, targeting, damage-model, hitbox, projectile, boss-health, or combat-UI change.
 
 ## 1. Executive Summary

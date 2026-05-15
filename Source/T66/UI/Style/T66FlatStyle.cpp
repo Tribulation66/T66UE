@@ -17,6 +17,7 @@
 #include "Widgets/Notifications/SProgressBar.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/SToolTip.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace
@@ -356,7 +357,7 @@ FLinearColor FT66FlatStyle::DisabledText()
 
 FLinearColor FT66FlatStyle::DefaultFill()
 {
-	return HexColor(15, 12, 22);
+	return HexColor(23, 23, 30);
 }
 
 FLinearColor FT66FlatStyle::DefaultBorder()
@@ -376,7 +377,7 @@ FLinearColor FT66FlatStyle::PurpleAccent()
 
 FLinearColor FT66FlatStyle::SelectedFill()
 {
-	return HexColor(20, 8, 12);
+	return HexColor(28, 14, 16);
 }
 
 FLinearColor FT66FlatStyle::SelectedBorder()
@@ -416,7 +417,7 @@ FLinearColor FT66FlatStyle::HoverText()
 
 FLinearColor FT66FlatStyle::HoverFill()
 {
-	return HexColor(10, 20, 16);
+	return HexColor(14, 20, 14);
 }
 
 FLinearColor FT66FlatStyle::PrimaryText()
@@ -533,7 +534,17 @@ TSharedRef<SWidget> FT66FlatStyle::MakeFlatPanel(
 	TSharedPtr<SBorder>* OutBorder,
 	const FName Tag)
 {
-	return AttachMetadata(MakeFlatPanelSurface(State, Padding, Content, OutBorder), Tag, TEXT("Panel"), State);
+	TSharedPtr<SBorder> PanelBorder;
+	TSharedRef<SWidget> Surface = MakeFlatPanelSurface(State, Padding, Content, &PanelBorder);
+	if (OutBorder)
+	{
+		*OutBorder = PanelBorder;
+	}
+	if (!Tag.IsNone() && PanelBorder.IsValid())
+	{
+		AttachMetadata(PanelBorder.ToSharedRef(), Tag, TEXT("Panel"), State);
+	}
+	return Surface;
 }
 
 TSharedRef<SWidget> FT66FlatStyle::MakeFlatInteractivePanel(
@@ -990,6 +1001,60 @@ TSharedRef<SWidget> FT66FlatStyle::MakeFlatIconButton(
 		NAME_None,
 		TEXT("IconButton"),
 		ButtonHoverProbe);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeFlatTooltipContent(
+	const FText& Text,
+	const float Width,
+	const FName Tag)
+{
+	const TSharedRef<SWidget> Body = SNew(SBox)
+		.WidthOverride(Width)
+		[
+			SNew(STextBlock)
+			.Visibility(EVisibility::HitTestInvisible)
+			.Text(Text)
+			.Font(MakeFont(16))
+			.ColorAndOpacity(PrimaryText())
+			.AutoWrapText(true)
+			.WrapTextAt(Width - 24.f)
+			.Justification(ETextJustify::Left)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+		];
+
+	return AttachMetadata(
+		MakeFlatPanel(ET66FlatState::Default, FMargin(12.f, 9.f), Body, nullptr, NAME_None),
+		Tag,
+		TEXT("Tooltip"),
+		ET66FlatState::Default);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeFlatTooltipIcon(
+	const ET66FlatState State,
+	const FSlateBrush* Icon,
+	const FText& TooltipText,
+	const FVector2D& SizeHint,
+	const FName Tag)
+{
+	TSharedRef<SWidget> IconButton = MakeFlatIconButton(
+		State,
+		Icon,
+		FOnClicked::CreateLambda([]()
+		{
+			return FReply::Handled();
+		}),
+		SizeHint,
+		Tag);
+
+	IconButton->SetToolTip(SNew(SToolTip)
+	[
+		MakeFlatTooltipContent(
+			TooltipText,
+			360.f,
+			Tag.IsNone() ? NAME_None : FName(*(Tag.ToString() + TEXT(".Tooltip"))))
+	]);
+
+	return IconButton;
 }
 
 TSharedRef<SWidget> FT66FlatStyle::MakeFlatTabButton(

@@ -3,8 +3,6 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66FrontendGameMode.h"
-#include "Gameplay/T66HeroPreviewStage.h"
-#include "Gameplay/T66CompanionPreviewStage.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -383,7 +381,7 @@ namespace
 			"ReportBug, RunSummary, PowerUp, HeroGrid, CompanionGrid, QuitConfirmation, Quit, PartyInvite, "
 			"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, MiniMainMenu, "
 			"MiniCharacterSelect, MiniCompanionSelect, MiniDifficultySelect, MiniIdolSelect, MiniSaveSlots, "
-			"MiniShop, MiniRunSummary, TDMainMenu, TDDifficultySelect, TDBattle, IdleMainMenu, "
+			"MiniShop, MiniRunSummary, MiniBattle, TDMainMenu, TDDifficultySelect, TDBattle, IdleMainMenu, "
 			"IdleChadpocalypse, DeckMainMenu, Deckbuilder, ChadpocalypseDeckbuilder, VersusMainMenu, "
 			"Versus, ChadpocalypseVersus, Challenges, DailyDescent, Overview, History, Diplomas, "
 			"Drugs, SteamAchievements, Steam, SettingsRetroFX, RetroFX, SettingsGameplay, SettingsGraphics, "
@@ -552,6 +550,11 @@ namespace
 			OutScreenType = ET66ScreenType::MiniRunSummary;
 			return true;
 		}
+		if (Normalized.Equals(TEXT("MiniBattle"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::MiniBattle;
+			return true;
+		}
 		if (Normalized.Equals(TEXT("TDMainMenu"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::TDMainMenu;
@@ -699,6 +702,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniShopScreen"));
 	case ET66ScreenType::MiniRunSummary:
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniRunSummaryScreen"));
+	case ET66ScreenType::MiniBattle:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniBattleScreen"));
 	case ET66ScreenType::TDMainMenu:
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66TD.T66TDMainMenuScreen"));
 	case ET66ScreenType::TDDifficultySelect:
@@ -1428,6 +1433,10 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::MiniRunSummary, MiniRunSummaryClass);
 	}
+	if (TSubclassOf<UT66ScreenBase> MiniBattleClass = ResolveScreenClass(ET66ScreenType::MiniBattle))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::MiniBattle, MiniBattleClass);
+	}
 	if (TSubclassOf<UT66ScreenBase> TDMainMenuClass = ResolveScreenClass(ET66ScreenType::TDMainMenu))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::TDMainMenu, TDMainMenuClass);
@@ -1471,11 +1480,6 @@ void AT66PlayerController::InitializeUI()
 	}
 
 	bUIInitialized = true;
-
-	if (IsFrontendLevel())
-	{
-		EnsureLocalFrontendPreviewScene();
-	}
 
 	// Show the initial screen
 	ET66ScreenType ScreenToShow = InitialScreen;
@@ -1531,153 +1535,6 @@ void AT66PlayerController::InitializeUI()
 
 	HideFrontendStartupOverlay();
 }
-
-void AT66PlayerController::EnsureLocalFrontendPreviewScene()
-{
-	if (!IsLocalController() || !IsFrontendLevel())
-	{
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	if (Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
-	{
-		return;
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	const FVector PreviewOrigin(100000.f, 0.f, 0.f);
-
-	if (!LocalFrontendHeroPreviewStage.IsValid())
-	{
-		LocalFrontendHeroPreviewStage = World->SpawnActor<AT66HeroPreviewStage>(
-			AT66HeroPreviewStage::StaticClass(),
-			PreviewOrigin,
-			FRotator::ZeroRotator,
-			SpawnParams);
-	}
-	if (LocalFrontendHeroPreviewStage.IsValid())
-	{
-		LocalFrontendHeroPreviewStage.Get()->SetActorLocation(PreviewOrigin);
-		LocalFrontendHeroPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		LocalFrontendHeroPreviewStage.Get()->SetStageVisible(true);
-		LocalFrontendHeroPreviewStage.Get()->ResetFramingCache();
-	}
-
-	if (!LocalFrontendCompanionPreviewStage.IsValid())
-	{
-		LocalFrontendCompanionPreviewStage = World->SpawnActor<AT66CompanionPreviewStage>(
-			AT66CompanionPreviewStage::StaticClass(),
-			PreviewOrigin,
-			FRotator::ZeroRotator,
-			SpawnParams);
-	}
-	if (LocalFrontendCompanionPreviewStage.IsValid())
-	{
-		LocalFrontendCompanionPreviewStage.Get()->SetActorLocation(PreviewOrigin);
-		LocalFrontendCompanionPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		LocalFrontendCompanionPreviewStage.Get()->SetStageVisible(false);
-		LocalFrontendCompanionPreviewStage.Get()->ResetFramingCache();
-	}
-
-	if (!LocalFrontendPreviewCamera.IsValid())
-	{
-		LocalFrontendPreviewCamera = World->SpawnActor<ACameraActor>(
-			ACameraActor::StaticClass(),
-			FVector(-400.f, 0.f, 350.f),
-			FRotator(-15.f, 0.f, 0.f),
-			SpawnParams);
-		if (LocalFrontendPreviewCamera.IsValid())
-		{
-			if (UCameraComponent* CameraComponent = LocalFrontendPreviewCamera.Get()->GetCameraComponent())
-			{
-				CameraComponent->SetFieldOfView(90.f);
-				CameraComponent->bConstrainAspectRatio = false;
-			}
-		}
-	}
-}
-
-void AT66PlayerController::PositionLocalFrontendCameraForHeroPreview()
-{
-	EnsureLocalFrontendPreviewScene();
-	if (!LocalFrontendPreviewCamera.IsValid())
-	{
-		return;
-	}
-
-	if (LocalFrontendHeroPreviewStage.IsValid())
-	{
-		LocalFrontendHeroPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		LocalFrontendHeroPreviewStage.Get()->SetStageVisible(true);
-	}
-	if (LocalFrontendCompanionPreviewStage.IsValid())
-	{
-		LocalFrontendCompanionPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		LocalFrontendCompanionPreviewStage.Get()->SetStageVisible(false);
-	}
-
-	if (LocalFrontendHeroPreviewStage.IsValid())
-	{
-		const FVector CameraLocation = LocalFrontendHeroPreviewStage.Get()->GetIdealCameraLocation();
-		const FRotator CameraRotation = LocalFrontendHeroPreviewStage.Get()->GetIdealCameraRotation();
-		if (!CameraLocation.IsNearlyZero())
-		{
-			LocalFrontendPreviewCamera.Get()->SetActorLocation(CameraLocation);
-			LocalFrontendPreviewCamera.Get()->SetActorRotation(CameraRotation);
-		}
-	}
-
-	if (GetViewTarget() != LocalFrontendPreviewCamera.Get())
-	{
-		SetViewTarget(LocalFrontendPreviewCamera.Get());
-	}
-}
-
-void AT66PlayerController::PositionLocalFrontendCameraForCompanionPreview()
-{
-	EnsureLocalFrontendPreviewScene();
-	if (!LocalFrontendPreviewCamera.IsValid())
-	{
-		return;
-	}
-
-	if (LocalFrontendCompanionPreviewStage.IsValid())
-	{
-		LocalFrontendCompanionPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		LocalFrontendCompanionPreviewStage.Get()->SetStageVisible(true);
-	}
-	if (LocalFrontendHeroPreviewStage.IsValid())
-	{
-		LocalFrontendHeroPreviewStage.Get()->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		LocalFrontendHeroPreviewStage.Get()->SetStageVisible(false);
-	}
-
-	if (LocalFrontendCompanionPreviewStage.IsValid())
-	{
-		const FVector CameraLocation = LocalFrontendCompanionPreviewStage.Get()->GetIdealCameraLocation();
-		const FRotator CameraRotation = LocalFrontendCompanionPreviewStage.Get()->GetIdealCameraRotation();
-		if (!CameraLocation.IsNearlyZero())
-		{
-			LocalFrontendPreviewCamera.Get()->SetActorLocation(CameraLocation);
-			LocalFrontendPreviewCamera.Get()->SetActorRotation(CameraRotation);
-		}
-	}
-
-	if (GetViewTarget() != LocalFrontendPreviewCamera.Get())
-	{
-		SetViewTarget(LocalFrontendPreviewCamera.Get());
-	}
-}
-
 
 void AT66PlayerController::ShowScreen(ET66ScreenType ScreenType)
 {

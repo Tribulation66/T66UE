@@ -55,6 +55,53 @@ namespace
 		return 1.0f;
 	}
 
+	bool T66MiniTryPrimeAutomationBattleRun(UGameInstance* GameInstance)
+	{
+		if (!GameInstance || !FParse::Param(FCommandLine::Get(), TEXT("T66MiniAutoBattle")))
+		{
+			return false;
+		}
+
+		UT66MiniRunStateSubsystem* RunState = GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>();
+		if (!RunState || RunState->GetActiveRun())
+		{
+			return false;
+		}
+
+		UT66MiniFrontendStateSubsystem* FrontendState = GameInstance->GetSubsystem<UT66MiniFrontendStateSubsystem>();
+		UT66MiniSaveSubsystem* SaveSubsystem = GameInstance->GetSubsystem<UT66MiniSaveSubsystem>();
+		const UT66MiniDataSubsystem* DataSubsystem = GameInstance->GetSubsystem<UT66MiniDataSubsystem>();
+		if (!FrontendState || !SaveSubsystem || !DataSubsystem)
+		{
+			return false;
+		}
+
+		FrontendState->BeginNewRun();
+		if (DataSubsystem->GetHeroes().Num() > 0)
+		{
+			FrontendState->SelectHero(DataSubsystem->GetHeroes()[0].HeroID);
+		}
+		if (DataSubsystem->GetCompanions().Num() > 0)
+		{
+			FrontendState->SelectCompanion(DataSubsystem->GetCompanions()[0].CompanionID);
+		}
+		if (DataSubsystem->GetDifficulties().Num() > 0)
+		{
+			FrontendState->SelectDifficulty(DataSubsystem->GetDifficulties()[0].DifficultyID);
+		}
+		FrontendState->PrimeIdolOffers(DataSubsystem);
+		if (FrontendState->GetCurrentIdolOfferIDs().Num() > 0)
+		{
+			FrontendState->AddIdolToLoadout(FrontendState->GetCurrentIdolOfferIDs()[0]);
+		}
+		else if (DataSubsystem->GetIdols().Num() > 0)
+		{
+			FrontendState->AddIdolToLoadout(DataSubsystem->GetIdols()[0].IdolID);
+		}
+
+		return RunState->BootstrapTransientRunFromFrontend(FrontendState, SaveSubsystem);
+	}
+
 	USoundBase* T66MiniLoadBattleMusic()
 	{
 		static TWeakObjectPtr<USoundBase> Cached;
@@ -294,6 +341,7 @@ void AT66MiniGameMode::BeginPlay()
 
 		if (UT66MiniRunStateSubsystem* RunState = GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>())
 		{
+			T66MiniTryPrimeAutomationBattleRun(GameInstance);
 			ActiveRun = RunState->GetActiveRun();
 			if (AT66MiniGameState* MiniGameState = GetGameState<AT66MiniGameState>())
 			{
@@ -601,8 +649,8 @@ void AT66MiniGameMode::HandlePlayerDefeated()
 FVector AT66MiniGameMode::ClampPointToArena(const FVector& WorldLocation) const
 {
 	return FVector(
-		FMath::Clamp(WorldLocation.X, ArenaOrigin.X - ArenaHalfExtent + 100.f, ArenaOrigin.X + ArenaHalfExtent - 100.f),
-		FMath::Clamp(WorldLocation.Y, ArenaOrigin.Y - ArenaHalfExtent + 100.f, ArenaOrigin.Y + ArenaHalfExtent - 100.f),
+		FMath::Clamp(WorldLocation.X, ArenaOrigin.X - ArenaHalfExtentX + 100.f, ArenaOrigin.X + ArenaHalfExtentX - 100.f),
+		FMath::Clamp(WorldLocation.Y, ArenaOrigin.Y - ArenaHalfExtentY + 100.f, ArenaOrigin.Y + ArenaHalfExtentY - 100.f),
 		ArenaOrigin.Z + 20.f);
 }
 
@@ -659,7 +707,8 @@ void AT66MiniGameMode::SpawnArenaAndPositionPlayer()
 	{
 		MiniArenaActor->InitializeArena(
 			ArenaOrigin,
-			ArenaHalfExtent,
+			ArenaHalfExtentX,
+			ArenaHalfExtentY,
 			VisualSubsystem ? VisualSubsystem->LoadBackgroundTexture() : nullptr);
 	}
 }
@@ -888,9 +937,17 @@ void AT66MiniGameMode::BeginBossSpawnTelegraph()
 	{
 		PendingBossID = WaveDefinition->BossID;
 	}
-	PendingBossSpawnLocation = ClampPointToArena(PlayerPawn->GetActorLocation() + FVector(ArenaHalfExtent * GetRuntimeTuningValue(TEXT("BossSpawnOffsetScalar")), 0.f, 0.f));
+	PendingBossSpawnLocation = ClampPointToArena(PlayerPawn->GetActorLocation() + FVector(ArenaHalfExtentX * GetRuntimeTuningValue(TEXT("BossSpawnOffsetScalar")), 0.f, 0.f));
 
 	const FT66MiniBossDefinition* BossDefinition = DataSubsystem->FindBoss(PendingBossID);
+	if (!BossDefinition)
+	{
+		PendingBossID = NAME_None;
+		bBossSpawnedForWave = true;
+		PostBossDelayRemaining = GetRuntimeTuningValue(TEXT("PostBossDelaySeconds"));
+		return;
+	}
+
 	BossTelegraphRemaining = BossDefinition ? BossDefinition->TelegraphSeconds : GetRuntimeTuningValue(TEXT("BossTelegraphFallbackSeconds"));
 	if (ActiveBossTelegraphActor)
 	{
@@ -929,7 +986,7 @@ void AT66MiniGameMode::SpawnBossEnemy()
 	}
 
 	const FVector SpawnLocation = PendingBossSpawnLocation.IsNearlyZero()
-		? ClampPointToArena(ArenaOrigin + FVector(ArenaHalfExtent * GetRuntimeTuningValue(TEXT("BossFallbackOffsetScalar")), 0.f, 0.f))
+		? ClampPointToArena(ArenaOrigin + FVector(ArenaHalfExtentX * GetRuntimeTuningValue(TEXT("BossFallbackOffsetScalar")), 0.f, 0.f))
 		: PendingBossSpawnLocation;
 	const float DifficultyScalar = DifficultyDefinition ? DifficultyDefinition->BossScalar : 1.0f;
 	const float WaveScalar = GetRuntimeTuningValue(TEXT("BossWaveScalarBase"))
@@ -1004,8 +1061,8 @@ void AT66MiniGameMode::SpawnRandomInteractable()
 	}
 
 	const FVector SpawnLocation(
-		FMath::FRandRange(ArenaOrigin.X - (ArenaHalfExtent * 0.65f), ArenaOrigin.X + (ArenaHalfExtent * 0.65f)),
-		FMath::FRandRange(ArenaOrigin.Y - (ArenaHalfExtent * 0.65f), ArenaOrigin.Y + (ArenaHalfExtent * 0.65f)),
+		FMath::FRandRange(ArenaOrigin.X - (ArenaHalfExtentX * 0.65f), ArenaOrigin.X + (ArenaHalfExtentX * 0.65f)),
+		FMath::FRandRange(ArenaOrigin.Y - (ArenaHalfExtentY * 0.65f), ArenaOrigin.Y + (ArenaHalfExtentY * 0.65f)),
 		ArenaOrigin.Z + 20.f);
 
 	FActorSpawnParameters SpawnParams;

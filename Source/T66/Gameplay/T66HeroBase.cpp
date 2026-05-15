@@ -21,9 +21,12 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Animation/AnimationAsset.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Net/UnrealNetwork.h"
 #include "UObject/ConstructorHelpers.h"
 #include "TimerManager.h"
@@ -39,6 +42,22 @@ namespace
 	static constexpr float T66HeroHeightChadUU = 200.0f;
 	static constexpr float T66HeroHeightStacyUU = 200.0f;
 	static constexpr float T66HeroDefaultCameraArmLengthUU = 1440.0f;
+
+	FName T66GetHeroVisualOverrideFromCommandLine()
+	{
+#if !UE_BUILD_SHIPPING
+		FString RequestedVisualID;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66HeroVisualOverride="), RequestedVisualID))
+		{
+			RequestedVisualID.TrimStartAndEndInline();
+			if (!RequestedVisualID.IsEmpty())
+			{
+				return FName(*RequestedVisualID);
+			}
+		}
+#endif
+		return NAME_None;
+	}
 }
 
 AT66HeroBase::AT66HeroBase()
@@ -683,7 +702,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 		}
 	}
 
-	// Hero animation: idle while still, walk while moving, jump while airborne.
+	// Hero animation: roll while its one-shot clip is active, jump while airborne, idle/walk otherwise.
 	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
 	{
 		const bool bHasMovementInput = HeroMovementComponent
@@ -701,10 +720,17 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 		}
 		LastAnimSampleLocation = GetActorLocation();
 		bHasLastAnimSampleLocation = true;
-		if (GetMesh() && GetMesh()->IsVisible() && (CachedIdleAnim || CachedJumpAnim || CachedWalkAnim))
+		const bool bRollAnimationActive = CachedRollAnim
+			&& GetWorld()
+			&& static_cast<float>(GetWorld()->GetTimeSeconds()) < RollAnimLockEndTimeSeconds;
+		if (GetMesh() && GetMesh()->IsVisible() && (CachedIdleAnim || CachedJumpAnim || CachedWalkAnim || CachedRollAnim))
 		{
 			EMovementAnimState NewState = EMovementAnimState::Idle;
-			if (UCharacterMovementComponent* Movement = GetCharacterMovement(); Movement && Movement->IsFalling())
+			if (bRollAnimationActive)
+			{
+				NewState = EMovementAnimState::Roll;
+			}
+			else if (UCharacterMovementComponent* Movement = GetCharacterMovement(); Movement && Movement->IsFalling())
 			{
 				NewState = EMovementAnimState::Jump;
 			}
@@ -717,6 +743,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 			{
 				LastMovementAnimState = NewState;
 				UAnimationAsset* ToPlay = nullptr;
+				bool bLoopAnimation = true;
 				switch (NewState)
 				{
 				case EMovementAnimState::Idle:
@@ -725,6 +752,10 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 				case EMovementAnimState::Jump:
 					ToPlay = CachedJumpAnim ? CachedJumpAnim : CachedWalkAnim;
 					break;
+				case EMovementAnimState::Roll:
+					ToPlay = CachedRollAnim;
+					bLoopAnimation = false;
+					break;
 				case EMovementAnimState::Walk:
 				default:
 					ToPlay = CachedWalkAnim ? CachedWalkAnim : CachedIdleAnim;
@@ -732,7 +763,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 				}
 				if (ToPlay)
 				{
-					GetMesh()->PlayAnimation(ToPlay, true);
+					GetMesh()->PlayAnimation(ToPlay, bLoopAnimation);
 				}
 			}
 		}
@@ -832,7 +863,7 @@ void AT66HeroBase::TryApplyLobbyDrivenVisuals()
 	}
 
 	const bool bMeshVisible = GetMesh() && GetMesh()->IsVisible();
-	const bool bAnimationsCached = CachedIdleAnim || CachedWalkAnim || CachedJumpAnim;
+	const bool bAnimationsCached = CachedIdleAnim || CachedWalkAnim || CachedJumpAnim || CachedRollAnim;
 	const bool bNeedsRefresh =
 		!bLobbyDrivenVisualsApplied
 		|| HeroID != DesiredHeroData.HeroID
@@ -973,7 +1004,25 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 	{
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
-			const FName VisualID = UT66CharacterVisualSubsystem::GetHeroVisualID(HeroID, InBodyType, SkinID);
+			FName VisualID = UT66CharacterVisualSubsystem::GetHeroVisualID(HeroID, InBodyType, SkinID);
+			if (!bPreviewMode)
+			{
+				const FName OverrideVisualID = T66GetHeroVisualOverrideFromCommandLine();
+				if (!OverrideVisualID.IsNone())
+				{
+					if (Visuals->HasCharacterVisual(OverrideVisualID))
+					{
+						UE_LOG(LogT66Hero, Log, TEXT("[ANIM] HeroBase::InitializeHero using command-line visual override %s instead of %s"),
+							*OverrideVisualID.ToString(), *VisualID.ToString());
+						VisualID = OverrideVisualID;
+					}
+					else
+					{
+						UE_LOG(LogT66Hero, Warning, TEXT("[ANIM] Ignoring unknown T66HeroVisualOverride=%s; using %s"),
+							*OverrideVisualID.ToString(), *VisualID.ToString());
+					}
+				}
+			}
 			// Hero selection preview uses the idle animation so the character is non-static in the showcase.
 			const bool bUseIdleAnimation = bPreviewMode;
 			UE_LOG(LogT66Hero, Log, TEXT("[ANIM] HeroBase::InitializeHero HeroID=%s BodyStyle=%s SkinID=%s bPreviewMode=%d bUseIdleAnimation=%d VisualID=%s"),
@@ -1006,19 +1055,17 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 			}
 			if (bApplied && !bPreviewMode && GetMesh() && GetMesh()->GetSkeletalMeshAsset())
 			{
-				// Cache idle/walk/jump anims and init hero speed params.
+				// Cache idle/walk/jump/roll anims and init hero speed params.
 				UAnimationAsset* WalkRaw = nullptr;
 				UAnimationAsset* JumpRaw = nullptr;
 				UAnimationAsset* IdleRaw = nullptr;
-				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, JumpRaw, IdleRaw);
+				UAnimationAsset* RollRaw = nullptr;
+				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, JumpRaw, IdleRaw, RollRaw);
 				CachedWalkAnim = WalkRaw;
 				CachedJumpAnim = JumpRaw;
 				CachedIdleAnim = IdleRaw;
-				// Arthur (Hero_1): no jump animation -- walk anim plays while airborne.
-				if (InHeroData.HeroID == FName(TEXT("Hero_1")))
-				{
-					CachedJumpAnim = nullptr;
-				}
+				CachedRollAnim = RollRaw;
+				RollAnimLockEndTimeSeconds = -1.f;
 				// Force first Tick to play idle (speed 0); if we left Idle we wouldn't call PlayAnimation.
 				LastMovementAnimState = EMovementAnimState::Walk;
 				if (HeroMovementComponent)
@@ -1118,10 +1165,31 @@ void AT66HeroBase::SetPreviewMode(bool bPreview)
 
 }
 
+bool AT66HeroBase::RollForward()
+{
+	if (HeroMovementComponent && HeroMovementComponent->TryRollForward())
+	{
+		PlayRollAnimation();
+		return true;
+	}
+
+	return false;
+}
+
 void AT66HeroBase::DashForward()
 {
-	if (HeroMovementComponent)
+	RollForward();
+}
+
+void AT66HeroBase::PlayRollAnimation()
+{
+	if (!CachedRollAnim || !GetWorld() || !GetMesh() || !GetMesh()->IsVisible())
 	{
-		HeroMovementComponent->TryDashInWorldDirection(GetActorForwardVector());
+		return;
 	}
+
+	const float DurationSeconds = FMath::Max(CachedRollAnim->GetPlayLength(), 0.1f);
+	RollAnimLockEndTimeSeconds = static_cast<float>(GetWorld()->GetTimeSeconds()) + DurationSeconds;
+	LastMovementAnimState = EMovementAnimState::Roll;
+	GetMesh()->PlayAnimation(CachedRollAnim, false);
 }

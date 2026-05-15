@@ -512,6 +512,7 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->RollAnimation.ToSoftObjectPath());
 	};
 
 	TArray<FHeroData*> HeroRows;
@@ -647,6 +648,7 @@ void UT66GameInstance::PrimeHeroSelectionPreviewVisualsAsync()
 		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->RollAnimation.ToSoftObjectPath());
 	}
 
 	bHeroSelectionPreviewVisualsLoadRequested = true;
@@ -1514,6 +1516,11 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 			AddVisualAssets(StageData.EnemyC);
 			AddVisualAssets(StageData.EnemyD);
 			AddVisualAssets(StageData.EnemyE);
+			AddVisualAssets(StageData.EnemyF);
+			AddVisualAssets(StageData.EnemyG);
+			AddVisualAssets(StageData.EnemyH);
+			AddVisualAssets(StageData.EnemyI);
+			AddVisualAssets(StageData.EnemyJ);
 			AddVisualAssets(StageData.BossID);
 
 			TArray<FT66BossEncounterMemberData> EncounterMembers;

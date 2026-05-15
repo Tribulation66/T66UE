@@ -15,8 +15,8 @@ DEFINE_LOG_CATEGORY(LogT66RuntimeUI);
 
 namespace T66ScreenSlateHelpers
 {
-	FString MakeReferenceChromeElementAssetPath(const TCHAR* FileName);
-	FString MakeReferenceMainMenuElementAssetPath(const TCHAR* FileName);
+	T66_API FString MakeReferenceChromeElementAssetPath(const TCHAR* FileName);
+	T66_API FString MakeReferenceMainMenuElementAssetPath(const TCHAR* FileName);
 }
 
 namespace

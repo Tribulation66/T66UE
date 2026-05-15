@@ -10,8 +10,8 @@ HeroMinBaseDamage,HeroMinBaseDamage,2
 HeroMinBaseAttackSpeed,HeroMinBaseAttackSpeed,1
 HeroAttackRangeBase,HeroAttackRangeBase,1100
 HeroSpeedRangeScalar,HeroSpeedRangeScalar,120
-HeroMoveSpeedBase,HeroMoveSpeedBase,700
-HeroMoveSpeedScalar,HeroMoveSpeedScalar,120
+HeroMoveSpeedBase,HeroMoveSpeedBase,900
+HeroMoveSpeedScalar,HeroMoveSpeedScalar,160
 HeroMaxHealthBase,HeroMaxHealthBase,90
 HeroArmorHealthScalar,HeroArmorHealthScalar,6
 UltimateCooldownBase,UltimateCooldownBase,16
@@ -50,7 +50,7 @@ PickupMagnetLuckRadiusScalar,PickupMagnetLuckRadiusScalar,18
 PickupMagnetBasePullSpeed,PickupMagnetBasePullSpeed,620
 PickupMagnetLuckPullSpeedScalar,PickupMagnetLuckPullSpeedScalar,24
 PostBossDelaySeconds,PostBossDelaySeconds,2
-MaxWavesPerDifficulty,MaxWavesPerDifficulty,5
+MaxWavesPerDifficulty,MaxWavesPerDifficulty,10
 AutosaveInterval,AutosaveInterval,1
 SpawnIntervalFallback,SpawnIntervalFallback,1.2
 SpawnRateScalarMin,SpawnRateScalarMin,0.65

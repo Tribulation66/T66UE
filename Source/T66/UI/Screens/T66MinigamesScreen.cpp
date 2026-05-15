@@ -528,5 +528,5 @@ FReply UT66MinigamesScreen::HandleSelectMinigamePageClicked(const int32 PageInde
 
 void UT66MinigamesScreen::HandleLanguageChanged(ET66Language NewLanguage)
 {
-	FT66Style::DeferRebuild(this);
+	RequestDeferredSlateRebuild();
 }

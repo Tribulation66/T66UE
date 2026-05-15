@@ -28,7 +28,8 @@ private:
 		HeroSelect,
 		Map,
 		Gameplay,
-		Reward
+		Reward,
+		Summary
 	};
 
 	struct FRuntimeCard
@@ -39,6 +40,8 @@ private:
 		int32 Cost = 1;
 		int32 Damage = 0;
 		int32 Block = 0;
+		ET66DeckCardType CardType = ET66DeckCardType::Attack;
+		FName RarityID = NAME_None;
 		FLinearColor Accent = FLinearColor(0.78f, 0.18f, 0.22f, 1.f);
 	};
 
@@ -48,10 +51,13 @@ private:
 	TSharedRef<SWidget> BuildMapUI();
 	TSharedRef<SWidget> BuildGameplayUI();
 	TSharedRef<SWidget> BuildRewardUI();
+	TSharedRef<SWidget> BuildSummaryUI();
 	TSharedRef<SWidget> BuildMockupBackdrop(const FString& SourceRelativePath, const FLinearColor& FallbackColor) const;
 	TSharedRef<SWidget> MakeDeckButton(const FText& Text, const FOnClicked& OnClicked, float Width = 340.f, float Height = 54.f, FName Tag = NAME_None) const;
 	TSharedRef<SWidget> MakeChoiceButton(const FText& Title, const FText& Body, const FLinearColor& Accent, const FOnClicked& OnClicked) const;
 	TSharedRef<SWidget> MakeCardWidget(int32 CardIndex);
+	TSharedRef<SWidget> MakeCardPreviewWidget(FName CardID, const FText& Name, const FText& Rules, ET66DeckCardType CardType, int32 EnergyCost, int32 Damage, int32 Block, FName RarityID, const FLinearColor& Accent, const FOnClicked& OnClicked, bool bCanUse, FName Tag) const;
+	TSharedRef<SWidget> MakeRewardCardWidget(const struct FT66DeckCardDefinition& CardDefinition);
 	TSharedRef<SWidget> MakeMeterPanel(const FText& Label, const TAttribute<FText>& Value, const FLinearColor& Accent) const;
 	TArray<FT66MinigameDifficultyOption> BuildDifficultyOptions() const;
 	TArray<FT66MinigameLeaderboardEntry> BuildDailyLeaderboardEntries(FName DifficultyID) const;
@@ -63,7 +69,9 @@ private:
 	void BuildHandFromDeck();
 	void EnterMap();
 	void EnterEncounter(FName EncounterID);
+	void EnterFirstAvailableEncounterForAutomation();
 	void CompleteEnemy();
+	void FinishRun(bool bWasVictory);
 	void RefreshCurrentStageFromFloor();
 	void SaveCurrentRunState();
 	bool RestoreRunFromSave(const class UT66DeckRunSaveGame* RunSave);

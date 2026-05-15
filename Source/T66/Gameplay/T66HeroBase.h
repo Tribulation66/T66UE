@@ -164,8 +164,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Hero")
 	void SetPreviewMode(bool bPreview);
 
-	/** Dash forward in the direction the hero is facing. */
+	/** Roll forward in the direction the hero is facing. */
 	UFUNCTION(BlueprintCallable, Category = "Movement")
+	bool RollForward();
+
+	/** Deprecated compatibility wrapper; use RollForward. */
+	UFUNCTION(BlueprintCallable, Category = "Movement", meta = (DeprecatedFunction, DeprecationMessage = "Use RollForward."))
 	void DashForward();
 
 	/** Stage effect helper: reduce friction so the hero slides for a short time. */
@@ -226,7 +230,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
 
-	/** Cached idle/walk/jump anims for the current hero visual. */
+	/** Cached idle/walk/jump/roll anims for the current hero visual. */
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CachedIdleAnim = nullptr;
 
@@ -236,12 +240,18 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CachedJumpAnim = nullptr;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> CachedRollAnim = nullptr;
+
 	/** Last animation state so we only call PlayAnimation on change. */
-	enum class EMovementAnimState : uint8 { Idle, Walk, Jump };
+	enum class EMovementAnimState : uint8 { Idle, Walk, Jump, Roll };
 	EMovementAnimState LastMovementAnimState = EMovementAnimState::Idle;
+	float RollAnimLockEndTimeSeconds = -1.f;
 	FVector LastAnimSampleLocation = FVector::ZeroVector;
 	bool bHasLastAnimSampleLocation = false;
 	bool bLobbyDrivenVisualsApplied = false;
+
+	void PlayRollAnimation();
 
 	bool bVehicleMounted = false;
 	bool bQuickReviveDowned = false;

@@ -13,10 +13,10 @@ This plan intentionally splits the work into four parallel passes. Agent 1 is th
 
 Before implementing any part, every agent must treat these files as the source of truth:
 
-- `Release/Project Guidelines.md`
-- `Gameplay/World/MASTER_MAP_DESIGN.md`
+- `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`
+- `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md`
 - `Gameplay/Traps/MASTER_TRAPS.md`
-- `UI/Processes/UI_GENERATION.md`
+- `UI/Instructions/UI_GENERATION_INSTRUCTIONS.md`
 - `Scripts/StageStandaloneBuild.ps1`
 
 Relevant project rules pulled forward from the master docs:
@@ -323,7 +323,7 @@ Refactor the tower from `1 + 4 + 1` floors into `1 + 5 + 1`, establish the new n
 After Agents 2-4 are merged or rebased in:
 
 1. Update master docs:
-- `Gameplay/World/MASTER_MAP_DESIGN.md`
+- `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md`
 - `Gameplay/Traps/MASTER_TRAPS.md`
 - any other master doc affected by the final integrated result
 

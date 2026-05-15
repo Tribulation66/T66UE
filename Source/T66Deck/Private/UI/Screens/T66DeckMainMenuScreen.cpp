@@ -6,17 +6,24 @@
 #include "Core/T66DeckDataSubsystem.h"
 #include "Core/T66DeckFrontendStateSubsystem.h"
 #include "Core/T66SteamHelper.h"
+#include "Engine/Texture2D.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+#include "Misc/Paths.h"
 #include "Save/T66DeckSaveSubsystem.h"
 #include "Save/T66DeckRunSaveGame.h"
 #include "Styling/CoreStyle.h"
+#include "Styling/SlateBrush.h"
 #include "UI/Components/T66MinigameMenuLayout.h"
 #include "UI/Style/T66FlatStyle.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
+#include "UObject/StrongObjectPtr.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Notifications/SProgressBar.h"
 #include "Widgets/SBoxPanel.h"
@@ -26,12 +33,12 @@ namespace
 {
 	const TCHAR* DeckMainMenuMockupPath()
 	{
-		return TEXT("/Game/UI/Minigames/Deck/Mockups/T_Deck_MainMenu_Mockup.T_Deck_MainMenu_Mockup");
+		return TEXT("SourceAssets/Deck/Backgrounds/Deck_MainMenu_Backdrop.png");
 	}
 
 	const TCHAR* DeckGameplayMockupPath()
 	{
-		return TEXT("/Game/UI/Minigames/Deck/Mockups/T_Deck_Gameplay_Mockup.T_Deck_Gameplay_Mockup");
+		return TEXT("SourceAssets/Deck/Backgrounds/Deck_Gameplay_Backdrop.png");
 	}
 
 	TAttribute<FText> MakeDeckTextAttribute(UT66DeckMainMenuScreen* Screen, FText (UT66DeckMainMenuScreen::*Getter)() const)
@@ -68,6 +75,159 @@ namespace
 		const ET66FlatState PanelState = Accent.R > 0.45f ? ET66FlatState::Selected : ET66FlatState::Default;
 		return FT66FlatStyle::MakeFlatPanel(PanelState, Padding, Content);
 	}
+
+	TSharedPtr<FSlateBrush> FindOrLoadDeckLooseBrush(const FString& RelativePath)
+	{
+		static TMap<FString, TSharedPtr<FSlateBrush>> Brushes;
+		static TArray<TStrongObjectPtr<UTexture2D>> RetainedTextures;
+
+		if (RelativePath.IsEmpty())
+		{
+			return nullptr;
+		}
+
+		if (const TSharedPtr<FSlateBrush>* ExistingBrush = Brushes.Find(RelativePath))
+		{
+			return *ExistingBrush;
+		}
+
+		for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+		{
+			if (!FPaths::FileExists(CandidatePath))
+			{
+				continue;
+			}
+
+			if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(CandidatePath, TextureFilter::TF_Nearest, TEXT("DeckLooseTexture")))
+			{
+				RetainedTextures.Emplace(Texture);
+				TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+				Brush->SetResourceObject(Texture);
+				Brush->DrawAs = ESlateBrushDrawType::Image;
+				Brush->Tiling = ESlateBrushTileType::NoTile;
+				Brush->ImageSize = FVector2D(FMath::Max(1, Texture->GetSizeX()), FMath::Max(1, Texture->GetSizeY()));
+				Brushes.Add(RelativePath, Brush);
+				return Brush;
+			}
+		}
+
+		Brushes.Add(RelativePath, nullptr);
+		return nullptr;
+	}
+
+	TSharedRef<SWidget> MakeDeckLooseSprite(const FString& RelativePath, const FVector2D& Size, const FLinearColor& FallbackTint)
+	{
+		TSharedRef<SWidget> SpriteContent = SNew(SSpacer);
+		if (const TSharedPtr<FSlateBrush> Brush = FindOrLoadDeckLooseBrush(RelativePath))
+		{
+			SpriteContent = SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				[
+					SNew(SImage)
+					.Image(Brush.Get())
+					.ColorAndOpacity(FLinearColor::White)
+				];
+		}
+
+		return SNew(SBox)
+			.WidthOverride(Size.X)
+			.HeightOverride(Size.Y)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FallbackTint)
+				.Padding(FMargin(0.f))
+				[
+					SpriteContent
+				]
+			];
+	}
+
+	FString MakeDeckCardIconPath(const FName CardID)
+	{
+		return FString::Printf(TEXT("SourceAssets/Deck/Cards/Singles/Deck_Card_%s.png"), *CardID.ToString());
+	}
+
+	FText MakeDeckCardTypeText(const ET66DeckCardType CardType)
+	{
+		switch (CardType)
+		{
+		case ET66DeckCardType::Skill:
+			return NSLOCTEXT("T66Deck.Gameplay", "CardTypeSkill", "SKILL");
+		case ET66DeckCardType::Power:
+			return NSLOCTEXT("T66Deck.Gameplay", "CardTypePower", "POWER");
+		case ET66DeckCardType::Curse:
+			return NSLOCTEXT("T66Deck.Gameplay", "CardTypeCurse", "CURSE");
+		case ET66DeckCardType::Attack:
+		default:
+			return NSLOCTEXT("T66Deck.Gameplay", "CardTypeAttack", "ATTACK");
+		}
+	}
+
+	FLinearColor MakeDeckCardTypeColor(const ET66DeckCardType CardType)
+	{
+		switch (CardType)
+		{
+		case ET66DeckCardType::Skill:
+			return FLinearColor(0.22f, 0.48f, 0.90f, 1.0f);
+		case ET66DeckCardType::Power:
+			return FLinearColor(0.76f, 0.38f, 0.90f, 1.0f);
+		case ET66DeckCardType::Curse:
+			return FLinearColor(0.34f, 0.24f, 0.44f, 1.0f);
+		case ET66DeckCardType::Attack:
+		default:
+			return FLinearColor(0.90f, 0.26f, 0.22f, 1.0f);
+		}
+	}
+
+	FText MakeDeckRuntimeRulesText(const FString& FallbackRules, const int32 Damage, const int32 Block)
+	{
+		if (Damage > 0 && Block > 0)
+		{
+			return FText::Format(
+				NSLOCTEXT("T66Deck.Gameplay", "CardRulesDamageAndBlock", "Deal {0} damage.\nGain {1} block."),
+				FText::AsNumber(Damage),
+				FText::AsNumber(Block));
+		}
+		if (Damage > 0)
+		{
+			return FText::Format(
+				NSLOCTEXT("T66Deck.Gameplay", "CardRulesDamage", "Deal {0} damage."),
+				FText::AsNumber(Damage));
+		}
+		if (Block > 0)
+		{
+			return FText::Format(
+				NSLOCTEXT("T66Deck.Gameplay", "CardRulesBlock", "Gain {0} block."),
+				FText::AsNumber(Block));
+		}
+		return FText::FromString(FallbackRules);
+	}
+
+	TSharedRef<SWidget> MakeDeckCardBadge(const FText& Label, const FText& Value, const FLinearColor& Accent)
+	{
+		return SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.06f, 0.92f))
+			.Padding(FMargin(6.f, 4.f))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 5.f, 0.f)
+				[
+					SNew(STextBlock)
+					.Text(Label)
+					.Font(FT66Style::MakeFont(TEXT("Bold"), 9))
+					.ColorAndOpacity(Accent)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(Value)
+					.Font(FT66Style::MakeFont(TEXT("Bold"), 12))
+					.ColorAndOpacity(FLinearColor(0.96f, 0.92f, 0.84f, 1.0f))
+				]
+			];
+	}
 }
 
 UT66DeckMainMenuScreen::UT66DeckMainMenuScreen(const FObjectInitializer& ObjectInitializer)
@@ -81,10 +241,15 @@ UT66DeckMainMenuScreen::UT66DeckMainMenuScreen(const FObjectInitializer& ObjectI
 void UT66DeckMainMenuScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
-	if (!bAppliedAutomationStart && FParse::Param(FCommandLine::Get(), TEXT("T66DeckStartGameplay")))
+	const bool bStartGameplay = FParse::Param(FCommandLine::Get(), TEXT("T66DeckStartGameplay")) || FParse::Param(FCommandLine::Get(), TEXT("T66DeckStartCombat"));
+	if (!bAppliedAutomationStart && bStartGameplay)
 	{
 		bAppliedAutomationStart = true;
 		StartPlayableRun();
+		if (FParse::Param(FCommandLine::Get(), TEXT("T66DeckStartCombat")))
+		{
+			EnterFirstAvailableEncounterForAutomation();
+		}
 		ForceRebuildSlate();
 	}
 }
@@ -106,6 +271,8 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildSlateUI()
 		return BuildGameplayUI();
 	case EDeckViewMode::Reward:
 		return BuildRewardUI();
+	case EDeckViewMode::Summary:
+		return BuildSummaryUI();
 	case EDeckViewMode::MainMenu:
 	default:
 		return BuildMainMenuUI();
@@ -431,6 +598,11 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildMapUI()
 
 TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildGameplayUI()
 {
+	const FString HeroSpritePath = FString::Printf(TEXT("SourceAssets/Deck/Heroes/Singles/Deck_%s.png"), *SelectedHeroID.ToString());
+	const FString EnemySpritePath = FString::Printf(
+		TEXT("SourceAssets/Deck/Enemies/Singles/Deck_%s.png"),
+		*(CurrentEnemyID != NAME_None ? CurrentEnemyID.ToString() : FString(TEXT("Dungeon_Fiend"))));
+
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
@@ -473,8 +645,25 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildGameplayUI()
 						FLinearColor(0.50f, 0.14f, 0.18f, 0.88f))
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.40f)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
 				[
-					SNew(SSpacer)
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						MakeDeckLooseSprite(HeroSpritePath, FVector2D(128.f, 128.f), FLinearColor(0.30f, 0.16f, 0.18f, 0.72f))
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(22.f, 0.f)
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66Deck.Gameplay", "BattleDivider", "VS"))
+						.Font(FT66Style::MakeFont(TEXT("Black"), 22))
+						.ColorAndOpacity(FLinearColor(0.94f, 0.78f, 0.48f, 1.0f))
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						MakeDeckLooseSprite(EnemySpritePath, FVector2D(144.f, 144.f), FLinearColor(0.36f, 0.10f, 0.10f, 0.72f))
+					]
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.30f).VAlign(VAlign_Top).Padding(24.f, 0.f, 0.f, 0.f)
 				[
@@ -552,27 +741,34 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildRewardUI()
 {
 	const UT66DeckDataSubsystem* DataSubsystem = GetDeckDataSubsystem();
 	TSharedRef<SVerticalBox> RewardList = SNew(SVerticalBox);
+	TSharedRef<SHorizontalBox> RewardCardRow = SNew(SHorizontalBox);
+	bool bHasRewardCards = false;
 
 	for (const FName CardID : RewardCardIDs)
 	{
 		if (const FT66DeckCardDefinition* Card = DataSubsystem ? DataSubsystem->FindCard(CardID) : nullptr)
 		{
-			RewardList->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			bHasRewardCards = true;
+			RewardCardRow->AddSlot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
 			[
-				MakeChoiceButton(
-					FText::FromString(Card->DisplayName),
-					FText::FromString(Card->RulesText),
-					Card->AccentColor,
-					FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleRewardCardClicked, Card->CardID))
+				MakeRewardCardWidget(*Card)
 			];
 		}
+	}
+
+	if (bHasRewardCards)
+	{
+		RewardList->AddSlot().AutoHeight()
+		[
+			RewardCardRow
+		];
 	}
 
 	for (const FName ItemID : RewardItemIDs)
 	{
 		if (const FT66DeckItemDefinition* Item = DataSubsystem ? DataSubsystem->FindItem(ItemID) : nullptr)
 		{
-			RewardList->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			RewardList->AddSlot().AutoHeight().Padding(0.f, bHasRewardCards ? 18.f : 0.f, 0.f, 10.f)
 			[
 				MakeChoiceButton(
 					FText::FromString(Item->DisplayName),
@@ -618,8 +814,100 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildRewardUI()
 		];
 }
 
-TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildMockupBackdrop(const FString&, const FLinearColor& FallbackColor) const
+TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildSummaryUI()
 {
+	const UT66DeckDataSubsystem* DataSubsystem = GetDeckDataSubsystem();
+	const FT66DeckStageDefinition* StageDefinition = DataSubsystem ? DataSubsystem->FindStageForFloor(FloorIndex) : nullptr;
+	const int32 FinalFloor = StageDefinition ? FMath::Max(StageDefinition->BossFloor, FloorIndex) : 10;
+	const int32 FloorReached = FMath::Clamp(FloorIndex, 1, FMath::Max(1, FinalFloor));
+	const bool bVictory = !bRunDefeated && StageDefinition && StageDefinition->NextStageID.IsNone() && FloorIndex >= StageDefinition->BossFloor;
+	const FText ResultTitle = bVictory
+		? NSLOCTEXT("T66Deck.Summary", "VictoryTitle", "DESCENT CLEARED")
+		: NSLOCTEXT("T66Deck.Summary", "DefeatTitle", "RUN ENDED");
+	const FText ResultBody = bVictory
+		? NSLOCTEXT("T66Deck.Summary", "VictoryBody", "Floor 10 boss defeated. The run is closed and ready for a new descent.")
+		: NSLOCTEXT("T66Deck.Summary", "DefeatBody", "The descent ended early. Start a new run from the deck menu when ready.");
+
+	return SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			BuildMockupBackdrop(DeckGameplayMockupPath(), FLinearColor(0.012f, 0.012f, 0.018f, 1.0f))
+		]
+		+ SOverlay::Slot()
+		[
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.42f))
+		]
+		+ SOverlay::Slot().Padding(FMargin(170.f, 88.f, 170.f, 82.f))
+		[
+			MakeDeckChromePanel(
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(STextBlock)
+					.Text(ResultTitle)
+					.Font(FT66Style::MakeFont(TEXT("Black"), 30))
+					.ColorAndOpacity(bVictory ? FLinearColor(0.92f, 0.82f, 0.42f, 1.0f) : FLinearColor(0.92f, 0.34f, 0.30f, 1.0f))
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 24.f)
+				[
+					SNew(STextBlock)
+					.Text(ResultBody)
+					.Font(FT66Style::MakeFont(TEXT("Regular"), 15))
+					.ColorAndOpacity(FLinearColor(0.86f, 0.82f, 0.76f, 1.0f))
+					.AutoWrapText(true)
+				]
+				+ SVerticalBox::Slot().FillHeight(1.f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 14.f, 0.f)
+					[
+						MakeMeterPanel(NSLOCTEXT("T66Deck.Summary", "FloorLabel", "FLOOR"), FText::Format(NSLOCTEXT("T66Deck.Summary", "FloorValue", "{0}/{1}"), FText::AsNumber(FloorReached), FText::AsNumber(FinalFloor)), FLinearColor(0.80f, 0.58f, 0.26f, 1.0f))
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 14.f, 0.f)
+					[
+						MakeMeterPanel(NSLOCTEXT("T66Deck.Summary", "GoldLabel", "GOLD"), FText::AsNumber(Gold), FLinearColor(0.92f, 0.76f, 0.28f, 1.0f))
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 14.f, 0.f)
+					[
+						MakeMeterPanel(NSLOCTEXT("T66Deck.Summary", "DeckLabel", "DECK"), FText::Format(NSLOCTEXT("T66Deck.Summary", "DeckValue", "{0} cards"), FText::AsNumber(DeckCardIDs.Num())), FLinearColor(0.50f, 0.78f, 0.90f, 1.0f))
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f)
+					[
+						MakeMeterPanel(NSLOCTEXT("T66Deck.Summary", "StagesLabel", "BOSS"), FText::AsNumber(HighestStageIndexCleared), FLinearColor(0.72f, 0.86f, 0.40f, 1.0f))
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 26.f, 0.f, 0.f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 14.f, 0.f)
+					[
+						MakeDeckButton(NSLOCTEXT("T66Deck.Summary", "NewRun", "NEW RUN"), FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleNewRunClicked), 220.f, 56.f)
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						MakeDeckButton(NSLOCTEXT("T66Deck.Summary", "DeckMenu", "DECK MENU"), FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleGameplayBackClicked), 220.f, 56.f)
+					]
+				],
+				FMargin(28.f),
+				bVictory ? FLinearColor(0.34f, 0.28f, 0.14f, 0.92f) : FLinearColor(0.40f, 0.14f, 0.16f, 0.92f))
+		];
+}
+
+TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildMockupBackdrop(const FString& SourceRelativePath, const FLinearColor& FallbackColor) const
+{
+	if (const TSharedPtr<FSlateBrush> Brush = FindOrLoadDeckLooseBrush(SourceRelativePath))
+	{
+		return SNew(SScaleBox)
+			.Stretch(EStretch::Fill)
+			[
+				SNew(SImage)
+				.Image(Brush.Get())
+				.ColorAndOpacity(FLinearColor::White)
+			];
+	}
+
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FallbackColor);
@@ -682,52 +970,203 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::MakeCardWidget(const int32 CardIndex
 	const bool bHasCard = Hand.IsValidIndex(CardIndex);
 	const FRuntimeCard Card = bHasCard ? Hand[CardIndex] : FRuntimeCard();
 	const bool bCanPlay = bHasCard && !bRunDefeated && Card.Cost <= Energy;
-	const FLinearColor Accent = bCanPlay ? Card.Accent : FLinearColor(0.24f, 0.22f, 0.26f, 0.92f);
+
+	return MakeCardPreviewWidget(
+		bHasCard ? Card.CardID : NAME_None,
+		bHasCard ? Card.Name : NSLOCTEXT("T66Deck.Gameplay", "EmptyCard", "EMPTY"),
+		bHasCard ? Card.Rules : FText::GetEmpty(),
+		bHasCard ? Card.CardType : ET66DeckCardType::Curse,
+		bHasCard ? Card.Cost : 0,
+		bHasCard ? Card.Damage : 0,
+		bHasCard ? Card.Block : 0,
+		bHasCard ? Card.RarityID : NAME_None,
+		bHasCard ? Card.Accent : FLinearColor(0.24f, 0.22f, 0.26f, 0.92f),
+		FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleCardClicked, CardIndex),
+		bCanPlay,
+		FName(*FString::Printf(TEXT("Deck.Card.%d"), CardIndex)));
+}
+
+TSharedRef<SWidget> UT66DeckMainMenuScreen::MakeRewardCardWidget(const FT66DeckCardDefinition& CardDefinition)
+{
+	return MakeCardPreviewWidget(
+		CardDefinition.CardID,
+		FText::FromString(CardDefinition.DisplayName),
+		MakeDeckRuntimeRulesText(CardDefinition.RulesText, CardDefinition.Damage, CardDefinition.Block),
+		CardDefinition.CardType,
+		CardDefinition.EnergyCost,
+		CardDefinition.Damage,
+		CardDefinition.Block,
+		CardDefinition.RarityID,
+		CardDefinition.AccentColor,
+		FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleRewardCardClicked, CardDefinition.CardID),
+		true,
+		FName(*FString::Printf(TEXT("Deck.RewardCard.%s"), *CardDefinition.CardID.ToString())));
+}
+
+TSharedRef<SWidget> UT66DeckMainMenuScreen::MakeCardPreviewWidget(
+	const FName CardID,
+	const FText& Name,
+	const FText& Rules,
+	const ET66DeckCardType CardType,
+	const int32 EnergyCost,
+	const int32 Damage,
+	const int32 Block,
+	const FName RarityID,
+	const FLinearColor& Accent,
+	const FOnClicked& OnClicked,
+	const bool bCanUse,
+	const FName Tag) const
+{
+	const FLinearColor TypeColor = MakeDeckCardTypeColor(CardType);
+	const FLinearColor FrameColor = bCanUse ? Accent : FLinearColor(0.20f, 0.20f, 0.24f, 0.90f);
+	const FLinearColor ArtTint = bCanUse ? FLinearColor::White : FLinearColor(0.42f, 0.42f, 0.46f, 1.0f);
+	const FText RarityText = RarityID.IsNone() ? NSLOCTEXT("T66Deck.Gameplay", "CardRarityCommonFallback", "COMMON") : FText::FromName(RarityID);
+	const bool bHasArt = CardID != NAME_None;
+
+	TSharedRef<SHorizontalBox> BadgeRow = SNew(SHorizontalBox);
+	if (Damage > 0)
+	{
+		BadgeRow->AddSlot().AutoWidth().Padding(0.f, 0.f, 6.f, 0.f)
+		[
+			MakeDeckCardBadge(NSLOCTEXT("T66Deck.Gameplay", "DamageBadge", "DMG"), FText::AsNumber(Damage), FLinearColor(0.96f, 0.32f, 0.24f, 1.0f))
+		];
+	}
+	if (Block > 0)
+	{
+		BadgeRow->AddSlot().AutoWidth()
+		[
+			MakeDeckCardBadge(NSLOCTEXT("T66Deck.Gameplay", "BlockBadge", "BLK"), FText::AsNumber(Block), FLinearColor(0.34f, 0.62f, 1.0f, 1.0f))
+		];
+	}
+	if (Damage <= 0 && Block <= 0)
+	{
+		BadgeRow->AddSlot().FillWidth(1.f)
+		[
+			SNew(SSpacer)
+		];
+	}
 
 	return SNew(SBox)
 		.WidthOverride(210.f)
-		.HeightOverride(250.f)
+		.HeightOverride(304.f)
 		[
 			FT66FlatStyle::MakeFlatToggleGroupButton(
-				bCanPlay ? ET66FlatState::Default : ET66FlatState::Disabled,
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
-				[
-					SNew(STextBlock)
-					.Text(bHasCard ? Card.Name : NSLOCTEXT("T66Deck.Gameplay", "EmptyCard", "EMPTY"))
-					.Font(FT66Style::MakeFont(TEXT("Bold"), 16))
-					.ColorAndOpacity(FLinearColor(0.96f, 0.90f, 0.82f, 1.0f))
-					.Justification(ETextJustify::Center)
-				]
-				+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 12.f)
+				bCanUse ? ET66FlatState::Default : ET66FlatState::Disabled,
+				SNew(SOverlay)
+				+ SOverlay::Slot()
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(bCanPlay ? Accent : FLinearColor(0.30f, 0.28f, 0.32f, 0.82f))
+					.BorderBackgroundColor(FrameColor)
+					.Padding(FMargin(5.f))
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.045f, 0.042f, 0.052f, 0.98f))
+						.Padding(FMargin(9.f, 8.f, 9.f, 9.f))
+						[
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().AutoHeight().Padding(28.f, 0.f, 0.f, 6.f)
+							[
+								SNew(STextBlock)
+								.Text(Name)
+								.Font(FT66Style::MakeFont(TEXT("Black"), 16))
+								.ColorAndOpacity(bCanUse ? FLinearColor(0.96f, 0.90f, 0.82f, 1.0f) : FLinearColor(0.58f, 0.58f, 0.62f, 1.0f))
+								.Justification(ETextJustify::Center)
+							]
+							+ SVerticalBox::Slot().AutoHeight()
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.025f, 0.024f, 0.030f, 1.0f))
+								.Padding(FMargin(3.f))
+								[
+									SNew(SBox)
+									.HeightOverride(112.f)
+									[
+										bHasArt
+											? static_cast<TSharedRef<SWidget>>(SNew(SScaleBox)
+												.Stretch(EStretch::ScaleToFit)
+												[
+													SNew(SImage)
+													.Image(FindOrLoadDeckLooseBrush(MakeDeckCardIconPath(CardID)).Get())
+													.ColorAndOpacity(ArtTint)
+												])
+											: static_cast<TSharedRef<SWidget>>(SNew(SSpacer))
+									]
+								]
+							]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 7.f, 0.f, 7.f)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(TypeColor * (bCanUse ? 0.88f : 0.42f))
+								.Padding(FMargin(8.f, 3.f))
+								[
+									SNew(SHorizontalBox)
+									+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+									[
+										SNew(STextBlock)
+										.Text(MakeDeckCardTypeText(CardType))
+										.Font(FT66Style::MakeFont(TEXT("Bold"), 10))
+										.ColorAndOpacity(FLinearColor(0.98f, 0.96f, 0.90f, 1.0f))
+									]
+									+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+									[
+										SNew(STextBlock)
+										.Text(RarityText)
+										.Font(FT66Style::MakeFont(TEXT("Bold"), 9))
+										.ColorAndOpacity(FLinearColor(0.98f, 0.92f, 0.62f, 1.0f))
+									]
+								]
+							]
+							+ SVerticalBox::Slot().FillHeight(1.f)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.075f, 0.070f, 0.082f, 0.96f))
+								.Padding(FMargin(8.f, 6.f))
+								[
+									SNew(STextBlock)
+									.Text(Rules)
+									.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
+									.ColorAndOpacity(bCanUse ? FLinearColor(0.88f, 0.84f, 0.78f, 1.0f) : FLinearColor(0.54f, 0.54f, 0.58f, 1.0f))
+									.AutoWrapText(true)
+									.Justification(ETextJustify::Center)
+								]
+							]
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 7.f, 0.f, 0.f)
+							[
+								BadgeRow
+							]
+						]
+					]
 				]
-				+ SVerticalBox::Slot().AutoHeight()
+				+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(0.f)
 				[
-					SNew(STextBlock)
-					.Text(bHasCard ? Card.Rules : FText::GetEmpty())
-					.Font(FT66Style::MakeFont(TEXT("Regular"), 11))
-					.ColorAndOpacity(FLinearColor(0.84f, 0.80f, 0.78f, 1.0f))
-					.AutoWrapText(true)
-					.Justification(ETextJustify::Center)
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
-				[
-					SNew(STextBlock)
-					.Text(bHasCard ? FText::Format(NSLOCTEXT("T66Deck.Gameplay", "CardCost", "{0} energy"), FText::AsNumber(Card.Cost)) : FText::GetEmpty())
-					.Font(FT66Style::MakeFont(TEXT("Regular"), 10))
-					.ColorAndOpacity(FLinearColor(0.68f, 0.56f, 0.96f, 1.0f))
-					.Justification(ETextJustify::Center)
+					SNew(SBox)
+					.WidthOverride(38.f)
+					.HeightOverride(38.f)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(bCanUse ? FLinearColor(0.16f, 0.36f, 0.92f, 1.0f) : FLinearColor(0.16f, 0.16f, 0.20f, 1.0f))
+						.Padding(FMargin(0.f))
+						[
+							SNew(STextBlock)
+							.Text(FText::AsNumber(EnergyCost))
+							.Font(FT66Style::MakeFont(TEXT("Black"), 19))
+							.ColorAndOpacity(FLinearColor::White)
+							.Justification(ETextJustify::Center)
+						]
+					]
 				],
-				FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleCardClicked, CardIndex),
-				FMargin(12.f),
+				OnClicked,
+				FMargin(0.f),
 				210.f,
-				250.f,
-				bCanPlay,
-				FName(*FString::Printf(TEXT("Deck.Card.%d"), CardIndex)),
+				304.f,
+				bCanUse,
+				Tag,
 				FName(TEXT("DeckHandSelection")))
 		];
 }
@@ -832,10 +1271,12 @@ void UT66DeckMainMenuScreen::BuildHandFromDeck()
 		FRuntimeCard Card;
 		Card.CardID = Definition->CardID;
 		Card.Name = FText::FromString(Definition->DisplayName);
-		Card.Rules = FText::FromString(Definition->RulesText);
 		Card.Cost = Definition->EnergyCost;
 		Card.Damage = Definition->Damage > 0 ? Definition->Damage + BonusDamage : 0;
 		Card.Block = Definition->Block;
+		Card.Rules = MakeDeckRuntimeRulesText(Definition->RulesText, Card.Damage, Card.Block);
+		Card.CardType = Definition->CardType;
+		Card.RarityID = Definition->RarityID;
 		Card.Accent = Definition->AccentColor;
 		Hand.Add(MoveTemp(Card));
 	}
@@ -875,6 +1316,18 @@ void UT66DeckMainMenuScreen::EnterEncounter(const FName EncounterID)
 	SaveCurrentRunState();
 }
 
+void UT66DeckMainMenuScreen::EnterFirstAvailableEncounterForAutomation()
+{
+	const UT66DeckDataSubsystem* DataSubsystem = GetDeckDataSubsystem();
+	const TArray<const FT66DeckEncounterDefinition*> Encounters = DataSubsystem
+		? DataSubsystem->GetEncountersForFloor(FloorIndex)
+		: TArray<const FT66DeckEncounterDefinition*>();
+	if (Encounters.Num() > 0 && Encounters[0])
+	{
+		EnterEncounter(Encounters[0]->EncounterID);
+	}
+}
+
 void UT66DeckMainMenuScreen::CompleteEnemy()
 {
 	const UT66DeckDataSubsystem* DataSubsystem = GetDeckDataSubsystem();
@@ -894,12 +1347,33 @@ void UT66DeckMainMenuScreen::CompleteEnemy()
 	RewardCardIDs = Encounter ? Encounter->RewardCardIDs : TArray<FName>();
 	RewardItemIDs = Encounter ? Encounter->RewardItemIDs : TArray<FName>();
 	SubmitLeaderboardProgressIfNeeded();
+	if (bBossClear && StageDefinition && StageDefinition->NextStageID.IsNone() && FloorIndex >= StageDefinition->BossFloor)
+	{
+		StatusText = FText::Format(
+			NSLOCTEXT("T66Deck.Gameplay", "FinalEnemyClearStatus", "Final boss cleared. Gained {0} gold."),
+			FText::AsNumber(Reward));
+		FinishRun(true);
+		return;
+	}
+
 	StatusText = FText::Format(
 		NSLOCTEXT("T66Deck.Gameplay", "EnemyClearStatus", "Room cleared. Gained {0} gold. Floor {1} begins."),
 		FText::AsNumber(Reward),
 		FText::AsNumber(FloorIndex));
 	ViewMode = EDeckViewMode::Reward;
 	SaveCurrentRunState();
+	ForceRebuildSlate();
+}
+
+void UT66DeckMainMenuScreen::FinishRun(const bool bWasVictory)
+{
+	bRunDefeated = !bWasVictory;
+	RewardCardIDs.Reset();
+	RewardItemIDs.Reset();
+	SubmitLeaderboardProgressIfNeeded();
+	ViewMode = EDeckViewMode::Summary;
+	SaveCurrentRunState();
+	bRunStarted = false;
 	ForceRebuildSlate();
 }
 
@@ -998,6 +1472,9 @@ bool UT66DeckMainMenuScreen::RestoreRunFromSave(const UT66DeckRunSaveGame* RunSa
 		break;
 	case static_cast<int32>(EDeckViewMode::Reward):
 		ViewMode = EDeckViewMode::Reward;
+		break;
+	case static_cast<int32>(EDeckViewMode::Summary):
+		ViewMode = EDeckViewMode::Summary;
 		break;
 	case static_cast<int32>(EDeckViewMode::HeroSelect):
 		ViewMode = EDeckViewMode::HeroSelect;
@@ -1411,10 +1888,9 @@ FReply UT66DeckMainMenuScreen::HandleEndTurnClicked()
 
 	if (PlayerHealth <= 0)
 	{
-		bRunDefeated = true;
-		SubmitLeaderboardProgressIfNeeded();
 		StatusText = NSLOCTEXT("T66Deck.Gameplay", "DefeatedStatus", "Defeated. Return to the menu and start another run.");
-		SaveCurrentRunState();
+		FinishRun(false);
+		return FReply::Handled();
 	}
 	else
 	{

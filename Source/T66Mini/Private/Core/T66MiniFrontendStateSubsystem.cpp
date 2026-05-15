@@ -62,6 +62,10 @@ void UT66MiniFrontendStateSubsystem::SeedFromRunSave(const UT66MiniRunSaveGame* 
 	SelectedCompanionID = RunSave->CompanionID;
 	SelectedDifficultyID = RunSave->DifficultyID;
 	SelectedIdolIDs = RunSave->EquippedIdolIDs;
+	if (SelectedIdolIDs.Num() > MaxIdolSlots)
+	{
+		SelectedIdolIDs.SetNum(MaxIdolSlots, EAllowShrinking::Yes);
+	}
 	CurrentShopOfferIDs = RunSave->CurrentShopOfferIDs;
 	LockedShopOfferIDs = RunSave->LockedShopOfferIDs;
 	PendingSaveSlot = RunSave->SaveSlotIndex;

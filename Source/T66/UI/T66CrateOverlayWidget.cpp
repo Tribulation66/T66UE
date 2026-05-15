@@ -225,10 +225,13 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 									.WidthOverride(ItemPreviewSize)
 									.HeightOverride(ItemPreviewSize)
 									[
-										FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+										FT66FlatStyle::AttachMetadata(
 											SNew(SImage)
 											.Image(Entry.IconBrush.IsValid() ? Entry.IconBrush.Get() : nullptr)
-											.ColorAndOpacity(FLinearColor::White)))
+											.ColorAndOpacity(FLinearColor::White),
+											FName(*FString::Printf(TEXT("CrateOverlay.ItemIcon.%02d"), i + 1)),
+											TEXT("Icon"),
+											ET66FlatState::Default)
 									]
 								]
 							]

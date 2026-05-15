@@ -81,7 +81,7 @@ class T66_API UT66PlayerSettingsSaveGame : public USaveGame
 public:
 	// Bump when adding/changing fields in a breaking way.
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 21;
+	int32 SchemaVersion = 23;
 
 	// ===== Settings UI =====
 	// Saved as an int so SettingsScreen doesn't need to include UI enums here.

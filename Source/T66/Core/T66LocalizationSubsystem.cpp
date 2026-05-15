@@ -1031,7 +1031,7 @@ FText UT66LocalizationSubsystem::GetText_ControlToggleTikTok() const
 
 FText UT66LocalizationSubsystem::GetText_ControlDash() const
 {
-	return NSLOCTEXT("T66.Settings.Fallback", "Dash", "Dash");
+	return NSLOCTEXT("T66.Settings.Fallback", "Roll", "Roll");
 }
 
 FText UT66LocalizationSubsystem::GetText_ControlUltimate() const

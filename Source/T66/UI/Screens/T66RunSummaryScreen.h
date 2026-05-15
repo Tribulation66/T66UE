@@ -6,15 +6,13 @@
 #include "UI/T66ScreenBase.h"
 #include "T66RunSummaryScreen.generated.h"
 
-class ASceneCapture2D;
-class UTextureRenderTarget2D;
-class AT66HeroPreviewStage;
-class AT66CompanionPreviewStage;
 class UT66LeaderboardRunSummarySaveGame;
+class UT66FrontendVideoPlayer;
 class ITableRow;
 class SEditableTextBox;
 class SMultiLineEditableTextBox;
 class STableViewBase;
+struct FSlateBrush;
 template<typename ItemType> class SListView;
 
 /**
@@ -89,8 +87,9 @@ private:
 	void RebuildLogItems();
 	TSharedRef<ITableRow> GenerateLogRow(TSharedPtr<FString> Item, const TSharedRef<STableViewBase>& OwnerTable);
 
-	void EnsurePreviewCaptures();
-	void DestroyPreviewCaptures();
+	void OpenRunSummaryPreviewVideo();
+	void CloseRunSummaryPreviewVideo();
+	const FSlateBrush* GetRunSummaryPreviewVideoBrush() const;
 	bool LoadSavedRunSummaryIfRequested();
 
 	// Event log is hidden by default; toggled by the "EVENT LOG" button.
@@ -161,29 +160,12 @@ private:
 	bool bReportPromptVisible = false;
 	TSharedPtr<SMultiLineEditableTextBox> ReportReasonTextBox;
 
-	// ===== 3D preview captures (runtime, no editor assets required) =====
+	// ===== Run Summary preview video =====
 	UPROPERTY(Transient)
-	TObjectPtr<UTextureRenderTarget2D> HeroPreviewRT;
-
-	UPROPERTY(Transient)
-	TObjectPtr<ASceneCapture2D> HeroCaptureActor;
-
-	/** Brushes for Slate image widgets (resource = render target). */
-	TSharedPtr<struct FSlateBrush> HeroPreviewBrush;
-	TSharedPtr<struct FSlateBrush> CompanionPreviewBrush;
+	TObjectPtr<UT66FrontendVideoPlayer> RunSummaryPreviewVideoPlayer;
 
 	/** Brushes for item/idol icon images (resource = UTexture2D). */
 	TArray<TSharedPtr<struct FSlateBrush>> InventoryItemIconBrushes;
 	TArray<TSharedPtr<struct FSlateBrush>> IdolIconBrushes;
 	TArray<TSharedPtr<struct FSlateBrush>> TemporaryBuffIconBrushes;
-
-	// ===== Preview stages (reuse same system as hero/companion selection) =====
-	UPROPERTY(Transient)
-	TObjectPtr<AT66HeroPreviewStage> HeroPreviewStage;
-
-	UPROPERTY(Transient)
-	TObjectPtr<AT66CompanionPreviewStage> CompanionPreviewStage;
-
-	bool bStoredHeroPreviewStageVisibility = false;
-	bool bHeroPreviewStageWasVisible = true;
 };

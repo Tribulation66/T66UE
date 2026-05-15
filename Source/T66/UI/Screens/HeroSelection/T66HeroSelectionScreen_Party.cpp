@@ -34,10 +34,6 @@ void UT66HeroSelectionScreen::OnDifficultyChanged(TSharedPtr<FString> NewValue, 
 			CommitLocalSelectionsToLobby(true);
 			RefreshDifficultyDropdownText();
 			RefreshHeroRecordRank();
-			if (UT66HeroSelectionPreviewController* HeroPreviewController = GetOrCreatePreviewController())
-			{
-				HeroPreviewController->ApplySelectionDifficultyToPreviewStages(SelectedDifficulty);
-			}
 		}
 	}
 }
@@ -71,13 +67,13 @@ void UT66HeroSelectionScreen::CommitLocalSelectionsToLobby(bool bResetReady)
 void UT66HeroSelectionScreen::HandlePartyStateChanged()
 {
 	SyncToSharedPartyScreen();
-	FT66Style::DeferRebuild(this);
+	RequestDeferredSlateRebuild();
 }
 
 void UT66HeroSelectionScreen::HandleSessionStateChanged()
 {
 	SyncToSharedPartyScreen();
-	FT66Style::DeferRebuild(this);
+	RequestDeferredSlateRebuild();
 }
 
 void UT66HeroSelectionScreen::SyncToSharedPartyScreen()
@@ -184,7 +180,7 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 	}
 	else if (bShouldWarmRebuild)
 	{
-		FT66Style::DeferRebuild(this);
+		RequestDeferredSlateRebuild();
 	}
 
 	if (UT66HeroSelectionPreviewController* HeroPreviewController = GetOrCreatePreviewController())
@@ -298,11 +294,6 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 			}
 		}
 	}
-	if (UT66HeroSelectionPreviewController* HeroPreviewController = GetOrCreatePreviewController())
-	{
-		HeroPreviewController->ApplySelectionDifficultyToPreviewStages(SelectedDifficulty);
-	}
-
 	CommitLocalSelectionsToLobby(false);
 	SyncToSharedPartyScreen();
 }
@@ -335,5 +326,5 @@ void UT66HeroSelectionScreen::RefreshCompanionList()
 
 void UT66HeroSelectionScreen::OnLanguageChanged(ET66Language NewLanguage)
 {
-	FT66Style::DeferRebuild(this);
+	RequestDeferredSlateRebuild();
 }

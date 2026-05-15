@@ -21,6 +21,15 @@
 - If the user changes scope, replace the working goal and discard stale assumptions.
 - The working goal must not override explicit user constraints, planning-only boundaries, or repository instructions.
 
+## Folder Instruction Discovery Rule
+
+- Before acting, infer which project folder owns the user's request. The user may describe the task by goal rather than by folder name.
+- Use task wording, repo search, paths, READMEs, and existing docs to identify the responsible folder.
+- Read that folder's `*_AGENTS.md` before editing files or running workflow commands.
+- If the task crosses folders, read each relevant folder agent file and follow the most specific applicable instructions.
+- Folder agent files are routers. They point to the required instruction files; they do not replace those files.
+- If no folder agent exists, read the nearest `README.md` and relevant instruction docs, proceed conservatively, and report the missing router as a documentation gap.
+
 ## Parallel Delegation Rule
 
 - When the current working goal can be completed faster by splitting independent work, use available sub-agent or delegation tools instead of doing every task serially.
@@ -40,9 +49,22 @@
 - Identify 3-5 plausible fixes, choose the smallest repo-appropriate solution, implement it, and report the options considered plus verification evidence.
 - Prefer official docs, engine/source references, issue trackers, and highly relevant forum threads over generic answers.
 
+## Pending Issues Tracking
+
+When making changes to the codebase, any problem you encounter that is out of scope for your current pass -- broken systems, schema redundancies, missing classes, hardcoded assumptions, design debt, etc. -- must be documented in a `pending_issues_<foldername>.md` file located in the same folder as the affected code or data.
+
+Format:
+- One section per issue with a heading
+- Severity tag: [Blocker] / [Major] / [Minor]
+- What's wrong: brief description with file references
+- Why it's out of scope now: reason
+- What fixing it would entail: scope estimate
+
+Before working in any folder, read its `pending_issues_*.md` file (if present) so you don't duplicate or contradict prior agents' decisions.
+
 ## UI Reference Fidelity Rule
 
-- When implementing or editing a UI screen from a reference image, follow the loop defined in `C:\UE\T66\UI\T66_UI_FIDELITY_LOOP.md`.
+- When implementing or editing a UI screen from a reference image, follow the loop defined in `C:\UE\T66\UI\Instructions\UI_FIDELITY_LOOP_INSTRUCTIONS.md`.
 - Specifically:
   1. Run Step 0 (legacy chrome cleanup) before any flat construction. The screen's reachable code must produce no matches against the validation regex in Section 5.1 of the loop doc.
   2. Tag every named element constructed via `FT66FlatStyle` helpers per the convention in Section 3.3 of the loop doc.

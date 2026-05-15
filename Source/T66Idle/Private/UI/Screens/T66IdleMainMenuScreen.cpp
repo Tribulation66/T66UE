@@ -9,15 +9,20 @@
 #include "Engine/Texture2D.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+#include "Misc/Paths.h"
 #include "Save/T66IdleSaveSubsystem.h"
 #include "Styling/CoreStyle.h"
+#include "Styling/SlateBrush.h"
 #include "UI/Components/T66MinigameMenuLayout.h"
 #include "UI/Style/T66FlatStyle.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
+#include "UObject/StrongObjectPtr.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Notifications/SProgressBar.h"
 #include "Widgets/SBoxPanel.h"
@@ -27,12 +32,12 @@ namespace
 {
 	const TCHAR* IdleMainMenuMockupPath()
 	{
-		return TEXT("/Game/UI/Minigames/Idle/Mockups/T_Idle_MainMenu_Mockup.T_Idle_MainMenu_Mockup");
+		return TEXT("SourceAssets/Idle/Backgrounds/Idle_MainMenu_Backdrop.png");
 	}
 
 	const TCHAR* IdleGameplayMockupPath()
 	{
-		return TEXT("/Game/UI/Minigames/Idle/Mockups/T_Idle_Gameplay_Mockup.T_Idle_Gameplay_Mockup");
+		return TEXT("SourceAssets/Idle/Backgrounds/Idle_Gameplay_Backdrop.png");
 	}
 
 	TAttribute<FText> MakeIdleTextAttribute(UT66IdleMainMenuScreen* Screen, FText (UT66IdleMainMenuScreen::*Getter)() const)
@@ -62,6 +67,73 @@ namespace
 	TSharedRef<SWidget> MakeIdleChromePanel(const TSharedRef<SWidget>& Content, const FMargin& Padding, const FLinearColor& Accent)
 	{
 		return FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, Padding, Content);
+	}
+
+	TSharedPtr<FSlateBrush> FindOrLoadIdleLooseBrush(const FString& RelativePath)
+	{
+		static TMap<FString, TSharedPtr<FSlateBrush>> Brushes;
+		static TArray<TStrongObjectPtr<UTexture2D>> RetainedTextures;
+
+		if (RelativePath.IsEmpty())
+		{
+			return nullptr;
+		}
+
+		if (const TSharedPtr<FSlateBrush>* ExistingBrush = Brushes.Find(RelativePath))
+		{
+			return *ExistingBrush;
+		}
+
+		for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+		{
+			if (!FPaths::FileExists(CandidatePath))
+			{
+				continue;
+			}
+
+			if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(CandidatePath, TextureFilter::TF_Trilinear, TEXT("IdleLooseTexture")))
+			{
+				RetainedTextures.Emplace(Texture);
+				TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+				Brush->SetResourceObject(Texture);
+				Brush->DrawAs = ESlateBrushDrawType::Image;
+				Brush->Tiling = ESlateBrushTileType::NoTile;
+				Brush->ImageSize = FVector2D(FMath::Max(1, Texture->GetSizeX()), FMath::Max(1, Texture->GetSizeY()));
+				Brushes.Add(RelativePath, Brush);
+				return Brush;
+			}
+		}
+
+		Brushes.Add(RelativePath, nullptr);
+		return nullptr;
+	}
+
+	TSharedRef<SWidget> MakeIdleLooseSprite(const FString& RelativePath, const FVector2D& Size, const FLinearColor& FallbackTint)
+	{
+		TSharedRef<SWidget> SpriteContent = SNew(SSpacer);
+		if (const TSharedPtr<FSlateBrush> Brush = FindOrLoadIdleLooseBrush(RelativePath))
+		{
+			SpriteContent = SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				[
+					SNew(SImage)
+					.Image(Brush.Get())
+					.ColorAndOpacity(FLinearColor::White)
+				];
+		}
+
+		return SNew(SBox)
+			.WidthOverride(Size.X)
+			.HeightOverride(Size.Y)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FallbackTint)
+				.Padding(FMargin(0.f))
+				[
+					SpriteContent
+				]
+			];
 	}
 }
 
@@ -113,6 +185,10 @@ void UT66IdleMainMenuScreen::NativeTick(const FGeometry& MyGeometry, const float
 TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildSlateUI()
 {
 	EnsureProfileLoaded();
+	if (ViewMode == EIdleViewMode::Summary)
+	{
+		return BuildSummaryUI();
+	}
 	return ViewMode == EIdleViewMode::Gameplay ? BuildGameplayUI() : BuildMainMenuUI();
 }
 
@@ -263,6 +339,10 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildMainMenuUI()
 
 TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildGameplayUI()
 {
+	const FString EnemySpritePath = FString::Printf(
+		TEXT("SourceAssets/Idle/Enemies/Singles/Idle_%s.png"),
+		*(CurrentEnemyID != NAME_None ? CurrentEnemyID.ToString() : FString(TEXT("Training_Dummy"))));
+
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
@@ -301,6 +381,10 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildGameplayUI()
 				[
 					MakeIdleChromePanel(
 						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 14.f)
+						[
+							MakeIdleLooseSprite(TEXT("SourceAssets/Idle/Heroes/Singles/Idle_Player.png"), FVector2D(116.f, 116.f), FLinearColor(0.28f, 0.18f, 0.10f, 0.72f))
+						]
 						+ SVerticalBox::Slot().AutoHeight()
 						[
 							SNew(STextBlock)
@@ -327,6 +411,10 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildGameplayUI()
 				[
 					MakeIdleChromePanel(
 						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 14.f)
+						[
+							MakeIdleLooseSprite(EnemySpritePath, FVector2D(128.f, 128.f), FLinearColor(0.34f, 0.10f, 0.08f, 0.72f))
+						]
 						+ SVerticalBox::Slot().AutoHeight()
 						[
 							SNew(STextBlock)
@@ -389,11 +477,103 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildGameplayUI()
 		];
 }
 
+TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildSummaryUI()
+{
+	const int32 FinalStage = FMath::Max(1, GetFinalStageIndex());
+	const int32 StageReached = FMath::Clamp(SummaryStageReached > 0 ? SummaryStageReached : CurrentStage, 1, FinalStage);
+	const double GoldBanked = SummaryGoldBanked > 0.0 ? SummaryGoldBanked : Gold;
+	const double LifetimeEarned = SummaryLifetimeGold > 0.0 ? SummaryLifetimeGold : LifetimeGold;
+	const int32 Bosses = SummaryBossesCleared > 0 ? SummaryBossesCleared : BossStagesCleared;
+	const FText Title = bLastRunVictory
+		? NSLOCTEXT("T66Idle.Summary", "VictoryTitle", "IDLE RUN CLEARED")
+		: NSLOCTEXT("T66Idle.Summary", "EndedTitle", "IDLE RUN ENDED");
+	const FText Body = bLastRunVictory
+		? NSLOCTEXT("T66Idle.Summary", "VictoryBody", "Stage 10 boss defeated. This closed-loop run is complete.")
+		: NSLOCTEXT("T66Idle.Summary", "EndedBody", "The run ended before the final boss.");
+
+	return SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			BuildMockupBackdrop(IdleGameplayMockupPath(), FLinearColor(0.015f, 0.017f, 0.020f, 1.0f))
+		]
+		+ SOverlay::Slot()
+		[
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.42f))
+		]
+		+ SOverlay::Slot().Padding(FMargin(170.f, 88.f, 170.f, 82.f))
+		[
+			MakeIdleChromePanel(
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(STextBlock)
+					.Text(Title)
+					.Font(FT66Style::MakeFont(TEXT("Black"), 30))
+					.ColorAndOpacity(bLastRunVictory ? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f) : FLinearColor(0.92f, 0.34f, 0.30f, 1.0f))
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 24.f)
+				[
+					SNew(STextBlock)
+					.Text(Body)
+					.Font(FT66Style::MakeFont(TEXT("Regular"), 15))
+					.ColorAndOpacity(FLinearColor(0.86f, 0.82f, 0.76f, 1.0f))
+					.AutoWrapText(true)
+				]
+				+ SVerticalBox::Slot().FillHeight(1.f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 14.f, 0.f)
+					[
+						MakeStatPanel(NSLOCTEXT("T66Idle.Summary", "StageLabel", "STAGE"), FText::Format(NSLOCTEXT("T66Idle.Summary", "StageValue", "{0}/{1}"), FText::AsNumber(StageReached), FText::AsNumber(FinalStage)), FLinearColor(0.42f, 0.84f, 0.42f, 1.0f))
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 14.f, 0.f)
+					[
+						MakeStatPanel(NSLOCTEXT("T66Idle.Summary", "GoldLabel", "GOLD"), FText::AsNumber(FMath::FloorToInt(GoldBanked)), FLinearColor(0.94f, 0.70f, 0.18f, 1.0f))
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 14.f, 0.f)
+					[
+						MakeStatPanel(NSLOCTEXT("T66Idle.Summary", "EarnedLabel", "EARNED"), FText::AsNumber(FMath::FloorToInt(LifetimeEarned)), FLinearColor(0.50f, 0.78f, 0.90f, 1.0f))
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f)
+					[
+						MakeStatPanel(NSLOCTEXT("T66Idle.Summary", "BossLabel", "BOSS"), FText::AsNumber(Bosses), FLinearColor(0.84f, 0.40f, 0.30f, 1.0f))
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 26.f, 0.f, 0.f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 14.f, 0.f)
+					[
+						MakeIdleButton(NSLOCTEXT("T66Idle.Summary", "NewRun", "NEW RUN"), FOnClicked::CreateUObject(this, &UT66IdleMainMenuScreen::HandlePlayClicked), 220.f, 56.f)
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						MakeIdleButton(NSLOCTEXT("T66Idle.Summary", "IdleMenu", "IDLE MENU"), FOnClicked::CreateUObject(this, &UT66IdleMainMenuScreen::HandleGameplayBackClicked), 220.f, 56.f)
+					]
+				],
+				FMargin(28.f),
+				bLastRunVictory ? FLinearColor(0.34f, 0.28f, 0.14f, 0.92f) : FLinearColor(0.40f, 0.14f, 0.16f, 0.92f))
+		];
+}
+
 TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildMockupBackdrop(const FString& SourceRelativePath, const FLinearColor& FallbackColor) const
 {
+	if (const TSharedPtr<FSlateBrush> Brush = FindOrLoadIdleLooseBrush(SourceRelativePath))
+	{
+		return SNew(SScaleBox)
+			.Stretch(EStretch::Fill)
+			[
+				SNew(SImage)
+				.Image(Brush.Get())
+				.ColorAndOpacity(FLinearColor::White)
+			];
+	}
+
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66FlatStyle::BackgroundColor());
+		.BorderBackgroundColor(FallbackColor);
 }
 
 TSharedRef<SWidget> UT66IdleMainMenuScreen::MakeIdleButton(const FText& Text, const FOnClicked& OnClicked, const float Width, const float Height) const
@@ -550,6 +730,7 @@ void UT66IdleMainMenuScreen::EnsureProfileLoaded()
 	if (ProfileSave)
 	{
 		CurrentStage = FMath::Max(Tuning.StartingStage, ProfileSave->Snapshot.CurrentStage > 0 ? ProfileSave->Snapshot.CurrentStage : ProfileSave->Snapshot.HighestStageReached);
+		CurrentStage = FMath::Clamp(CurrentStage, Tuning.StartingStage, GetFinalStageIndex());
 		Gold = FMath::Max(Tuning.StartingGold, ProfileSave->Snapshot.Gold);
 		LifetimeGold = FMath::Max(0.0, ProfileSave->Snapshot.LifetimeGold);
 		TapDamage = FMath::Max(Tuning.StartingTapDamage, ProfileSave->Snapshot.TapDamage);
@@ -568,7 +749,7 @@ void UT66IdleMainMenuScreen::EnsureProfileLoaded()
 	SpawnEnemyForCurrentStage();
 }
 
-void UT66IdleMainMenuScreen::SaveProfileState()
+void UT66IdleMainMenuScreen::SaveProfileState(const bool bSubmitLeaderboard)
 {
 	UT66IdleSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdleSaveSubsystem>() : nullptr;
 	UT66IdleProfileSaveGame* ProfileSave = SaveSubsystem ? SaveSubsystem->LoadOrCreateProfileSave() : nullptr;
@@ -598,13 +779,50 @@ void UT66IdleMainMenuScreen::SaveProfileState()
 	ProfileSave->Snapshot.TapDamage = TapDamage;
 	ProfileSave->Snapshot.PassiveDamagePerSecond = PassiveDamagePerSecond;
 	SaveSubsystem->SaveProfile(ProfileSave);
-	SubmitLeaderboardProgressIfNeeded();
+	if (bSubmitLeaderboard)
+	{
+		SubmitLeaderboardProgressIfNeeded();
+	}
+}
+
+void UT66IdleMainMenuScreen::ResetClosedLoopRunState()
+{
+	EnsureProfileLoaded();
+	const FT66IdleTuningDefinition& Tuning = GetIdleTuning();
+	CurrentStage = FMath::Clamp(Tuning.StartingStage, 1, GetFinalStageIndex());
+	Gold = FMath::Max(0.0, Tuning.StartingGold);
+	LifetimeGold = 0.0;
+	EngineProgress = 0.0;
+	UncollectedProgress = 0.0;
+	BossStagesCleared = 0;
+	LastSubmittedLeaderboardScore = INDEX_NONE;
+	CurrentStageID = NAME_None;
+	CurrentEnemyID = NAME_None;
+	bCurrentEnemyIsStageBoss = false;
+	bRunComplete = false;
+	bLastRunVictory = false;
+	SummaryStageReached = 0;
+	SummaryBossesCleared = 0;
+	SummaryGoldBanked = 0.0;
+	SummaryLifetimeGold = 0.0;
+
+	if (const UT66IdleSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdleSaveSubsystem>() : nullptr)
+	{
+		if (const UT66IdleProfileSaveGame* ProfileSave = SaveSubsystem->LoadOrCreateProfileSave())
+		{
+			RecalculatePowerFromOwned(ProfileSave);
+		}
+	}
+
+	SpawnEnemyForCurrentStage();
+	SaveProfileState(false);
 }
 
 void UT66IdleMainMenuScreen::StartPlayableRun()
 {
 	EnsureProfileLoaded();
 	bRunStarted = true;
+	bRunComplete = false;
 	if (UT66IdleFrontendStateSubsystem* FrontendState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdleFrontendStateSubsystem>() : nullptr)
 	{
 		if (!FrontendState->IsDailySession())
@@ -614,6 +832,33 @@ void UT66IdleMainMenuScreen::StartPlayableRun()
 		FrontendState->SelectHero(ResolveStartingHeroID(GetIdleDataSubsystem()));
 	}
 	ViewMode = EIdleViewMode::Gameplay;
+}
+
+void UT66IdleMainMenuScreen::FinishIdleRun(const bool bWasVictory)
+{
+	if (bRunComplete)
+	{
+		return;
+	}
+
+	if (UncollectedProgress > 0.0)
+	{
+		Gold += UncollectedProgress;
+		UncollectedProgress = 0.0;
+	}
+
+	bRunStarted = false;
+	bRunComplete = true;
+	bLastRunVictory = bWasVictory;
+	SummaryStageReached = CurrentStage;
+	SummaryBossesCleared = BossStagesCleared;
+	SummaryGoldBanked = Gold;
+	SummaryLifetimeGold = LifetimeGold;
+	ViewMode = EIdleViewMode::Summary;
+	SubmitLeaderboardProgressIfNeeded();
+	SaveProfileState();
+	IdleRunTickAccumulator = 0.f;
+	ForceRebuildSlate();
 }
 
 void UT66IdleMainMenuScreen::SubmitLeaderboardProgressIfNeeded()
@@ -696,7 +941,7 @@ void UT66IdleMainMenuScreen::SpawnEnemyForCurrentStage()
 	}
 }
 
-void UT66IdleMainMenuScreen::AwardEnemyClear()
+bool UT66IdleMainMenuScreen::AwardEnemyClear()
 {
 	const UT66IdleDataSubsystem* DataSubsystem = GetIdleDataSubsystem();
 	const FT66IdleZoneDefinition* Zone = DataSubsystem ? DataSubsystem->FindZoneForStage(CurrentStage) : nullptr;
@@ -716,7 +961,14 @@ void UT66IdleMainMenuScreen::AwardEnemyClear()
 	{
 		++BossStagesCleared;
 	}
+	if ((StageDefinition && StageDefinition->NextStageID.IsNone()) || CurrentStage >= GetFinalStageIndex())
+	{
+		FinishIdleRun(true);
+		return true;
+	}
+
 	++CurrentStage;
+	return false;
 }
 
 void UT66IdleMainMenuScreen::TickIdleRun(const float DeltaSeconds)
@@ -739,7 +991,10 @@ void UT66IdleMainMenuScreen::TickIdleRun(const float DeltaSeconds)
 
 	if (EnemyHealth <= 0.0)
 	{
-		AwardEnemyClear();
+		if (AwardEnemyClear())
+		{
+			return;
+		}
 		SpawnEnemyForCurrentStage();
 	}
 
@@ -886,6 +1141,22 @@ bool UT66IdleMainMenuScreen::TrySpendGold(const double Cost)
 	return true;
 }
 
+int32 UT66IdleMainMenuScreen::GetFinalStageIndex() const
+{
+	int32 FinalStageIndex = 10;
+	const UT66IdleDataSubsystem* DataSubsystem = GetIdleDataSubsystem();
+	if (!DataSubsystem)
+	{
+		return FinalStageIndex;
+	}
+
+	for (const FT66IdleStageDefinition& Stage : DataSubsystem->GetStages())
+	{
+		FinalStageIndex = FMath::Max(FinalStageIndex, Stage.StageIndex);
+	}
+	return FinalStageIndex;
+}
+
 const FT66IdleHeroDefinition* UT66IdleMainMenuScreen::FindNextPurchasableHero(const UT66IdleProfileSaveGame* ProfileSave) const
 {
 	const UT66IdleDataSubsystem* DataSubsystem = GetIdleDataSubsystem();
@@ -1023,6 +1294,7 @@ FReply UT66IdleMainMenuScreen::HandlePlayClicked()
 	{
 		FrontendState->BeginNewSession();
 	}
+	ResetClosedLoopRunState();
 	StartPlayableRun();
 	IdleRunTickAccumulator = 0.f;
 	ForceRebuildSlate();
@@ -1070,6 +1342,7 @@ FReply UT66IdleMainMenuScreen::HandleDailyClicked()
 		FrontendState->BeginDailySession(DifficultyID, ChallengeId, DailySeed);
 	}
 
+	ResetClosedLoopRunState();
 	StartPlayableRun();
 	IdleRunTickAccumulator = 0.f;
 	ForceRebuildSlate();
@@ -1107,7 +1380,10 @@ FReply UT66IdleMainMenuScreen::HandleTapClicked()
 	EnemyHealth -= TapDamage;
 	if (EnemyHealth <= 0.0)
 	{
-		AwardEnemyClear();
+		if (AwardEnemyClear())
+		{
+			return FReply::Handled();
+		}
 		SpawnEnemyForCurrentStage();
 	}
 	return FReply::Handled();

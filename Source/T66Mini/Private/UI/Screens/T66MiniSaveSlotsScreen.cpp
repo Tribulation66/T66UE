@@ -11,7 +11,6 @@
 #include "Save/T66MiniSaveSubsystem.h"
 #include "UI/Screens/T66MiniGeneratedScreenChrome.h"
 #include "UI/T66MiniUIStyle.h"
-#include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
@@ -240,12 +239,8 @@ FReply UT66MiniSaveSlotsScreen::HandleLoadSlotClicked(const int32 SlotIndex)
 			return FReply::Handled();
 		}
 
-		if (UIManager)
-		{
-			UIManager->HideAllUI();
-		}
-
-		SetStatus(FText::FromString(FString::Printf(TEXT("Loaded mini slot %d and launched the isolated mini battle runtime."), SlotIndex + 1)));
+		NavigateTo(ET66ScreenType::MiniBattle);
+		SetStatus(FText::FromString(FString::Printf(TEXT("Loaded mini slot %d into widget mini battle."), SlotIndex + 1)));
 	}
 	else
 	{

@@ -543,6 +543,11 @@ void AT66GameMode::PreloadStageCharacterVisuals()
 			if (!StageData.EnemyC.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyC);
 			if (!StageData.EnemyD.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyD);
 			if (!StageData.EnemyE.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyE);
+			if (!StageData.EnemyF.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyF);
+			if (!StageData.EnemyG.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyG);
+			if (!StageData.EnemyH.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyH);
+			if (!StageData.EnemyI.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyI);
+			if (!StageData.EnemyJ.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyJ);
 			if (!StageData.BossID.IsNone()) Visuals->PreloadCharacterVisual(StageData.BossID);
 
 			TArray<FT66BossEncounterMemberData> EncounterMembers;
@@ -557,10 +562,12 @@ void AT66GameMode::PreloadStageCharacterVisuals()
 					}
 				}
 			}
-			UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, EnemyD=%s, EnemyE=%s, Boss=%s, EncounterMembers=%d) in %.1fms"),
+			UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, EnemyD=%s, EnemyE=%s, EnemyF=%s, EnemyG=%s, EnemyH=%s, EnemyI=%s, EnemyJ=%s, Boss=%s, EncounterMembers=%d) in %.1fms"),
 				StageNum,
 				*StageData.EnemyA.ToString(), *StageData.EnemyB.ToString(), *StageData.EnemyC.ToString(),
 				*StageData.EnemyD.ToString(), *StageData.EnemyE.ToString(),
+				*StageData.EnemyF.ToString(), *StageData.EnemyG.ToString(), *StageData.EnemyH.ToString(),
+				*StageData.EnemyI.ToString(), *StageData.EnemyJ.ToString(),
 				*StageData.BossID.ToString(),
 				EncounterMembers.Num(),
 				(FPlatformTime::Seconds() - PreloadStart) * 1000.0);
@@ -571,11 +578,21 @@ void AT66GameMode::PreloadStageCharacterVisuals()
 		const FName FallbackC = FName(*FString::Printf(TEXT("Mob_Stage%02d_C"), RunState->GetCurrentStage()));
 		const FName FallbackD = FName(*FString::Printf(TEXT("Mob_Stage%02d_D"), RunState->GetCurrentStage()));
 		const FName FallbackE = FName(*FString::Printf(TEXT("Mob_Stage%02d_E"), RunState->GetCurrentStage()));
+		const FName FallbackF = FName(*FString::Printf(TEXT("Mob_Stage%02d_F"), RunState->GetCurrentStage()));
+		const FName FallbackG = FName(*FString::Printf(TEXT("Mob_Stage%02d_G"), RunState->GetCurrentStage()));
+		const FName FallbackH = FName(*FString::Printf(TEXT("Mob_Stage%02d_H"), RunState->GetCurrentStage()));
+		const FName FallbackI = FName(*FString::Printf(TEXT("Mob_Stage%02d_I"), RunState->GetCurrentStage()));
+		const FName FallbackJ = FName(*FString::Printf(TEXT("Mob_Stage%02d_J"), RunState->GetCurrentStage()));
 		Visuals->PreloadCharacterVisual(FallbackA);
 		Visuals->PreloadCharacterVisual(FallbackB);
 		Visuals->PreloadCharacterVisual(FallbackC);
 		Visuals->PreloadCharacterVisual(FallbackD);
 		Visuals->PreloadCharacterVisual(FallbackE);
+		Visuals->PreloadCharacterVisual(FallbackF);
+		Visuals->PreloadCharacterVisual(FallbackG);
+		Visuals->PreloadCharacterVisual(FallbackH);
+		Visuals->PreloadCharacterVisual(FallbackI);
+		Visuals->PreloadCharacterVisual(FallbackJ);
 	}
 
 	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: total preload time %.1fms"), (FPlatformTime::Seconds() - PreloadStart) * 1000.0);

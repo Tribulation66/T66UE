@@ -91,10 +91,11 @@ UTexture2D* UT66MiniVisualSubsystem::LoadTextureByAssetPath(const FString& Asset
 
 UTexture2D* UT66MiniVisualSubsystem::LoadBackgroundTexture()
 {
-	return LoadImportedOrLooseTexture(
+	return LoadLooseOrImportedTexture(
 		TEXT("Background"),
 		TEXT("/Game/Mini/Background.Background"),
-		TEXT("SourceAssets/Mini/Background.png"));
+		TEXT("SourceAssets/Mini/Background.png"),
+		TextureFilter::TF_Nearest);
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadHeroTexture(const FString& HeroDisplayName)
@@ -114,7 +115,8 @@ UTexture2D* UT66MiniVisualSubsystem::LoadHeroAnimationTexture(const FString& Her
 		{
 			FString::Printf(TEXT("SourceAssets/Mini/Heroes/AnimationSets/%s/%s_%s.png"), *VisualId, *VisualId, *FrameKey),
 			FString::Printf(TEXT("SourceAssets/Mini/Heroes/Singles/%s.png"), *VisualId)
-		});
+		},
+		TextureFilter::TF_Nearest);
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadHeroProjectileTexture(const FString& HeroDisplayName)
@@ -125,13 +127,7 @@ UTexture2D* UT66MiniVisualSubsystem::LoadHeroProjectileTexture(const FString& He
 		FString::Printf(TEXT("SourceAssets/Mini/Heroes/AnimationSets/%s/%s_PrimaryProjectile.png"), *VisualId, *VisualId)
 	};
 
-	if (VisualId.Equals(TEXT("Arthur"), ESearchCase::IgnoreCase))
-	{
-		CandidatePaths.Add(TEXT("SourceAssets/UI/HUDGenerated/arthur_ultimate_colossal_sword.png"));
-		CandidatePaths.Add(TEXT("SourceAssets/Import/VFX/ProjectileMeshPack/previews/Arthur_Sword.png"));
-	}
-
-	return LoadCachedTextureFromCandidates(FString::Printf(TEXT("HeroProjectile:%s"), *VisualId), CandidatePaths);
+	return LoadCachedTextureFromCandidates(FString::Printf(TEXT("HeroProjectile:%s"), *VisualId), CandidatePaths, TextureFilter::TF_Nearest);
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadCompanionTexture(const FString& CompanionVisualID)
@@ -161,7 +157,8 @@ UTexture2D* UT66MiniVisualSubsystem::LoadCompanionAnimationTexture(const FString
 		{
 			FString::Printf(TEXT("SourceAssets/Mini/Companions/AnimationSets/%s/%s_%s.png"), *VisualId, *VisualId, *FrameKey),
 			FString::Printf(TEXT("SourceAssets/Mini/Companions/Singles/%s.png"), *VisualId)
-		});
+		},
+		TextureFilter::TF_Nearest);
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadIdolEffectTexture(const FName IdolID)
@@ -174,34 +171,38 @@ UTexture2D* UT66MiniVisualSubsystem::LoadIdolEffectTexture(const FName IdolID)
 			FString::Printf(TEXT("SourceAssets/IdolSprites/%s_white.png"), *VisualId),
 			FString::Printf(TEXT("SourceAssets/IdolSprites/%s_yellow.png"), *VisualId),
 			FString::Printf(TEXT("SourceAssets/IdolSprites/%s_black.png"), *VisualId)
-		});
+		},
+		TextureFilter::TF_Nearest);
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadEnemyTexture(const FString& EnemyVisualID)
 {
 	const FString VisualId = T66MiniSanitizeVisualId(EnemyVisualID);
-	return LoadImportedOrLooseTexture(
+	return LoadLooseOrImportedTexture(
 		FString::Printf(TEXT("Enemy:%s"), *VisualId),
 		FString::Printf(TEXT("/Game/Mini/Sprites/Enemies/%s.%s"), *VisualId, *VisualId),
-		FString::Printf(TEXT("SourceAssets/Mini/Enemies/Singles/%s.png"), *VisualId));
+		FString::Printf(TEXT("SourceAssets/Mini/Enemies/Singles/%s.png"), *VisualId),
+		TextureFilter::TF_Nearest);
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadBossTexture(const FString& EnemyVisualID)
 {
 	const FString VisualId = T66MiniSanitizeVisualId(EnemyVisualID);
-	return LoadImportedOrLooseTexture(
+	return LoadLooseOrImportedTexture(
 		FString::Printf(TEXT("Boss:%s"), *VisualId),
 		FString::Printf(TEXT("/Game/Mini/Sprites/Bosses/%s_Boss.%s_Boss"), *VisualId, *VisualId),
-		FString::Printf(TEXT("SourceAssets/Mini/Bosses/Singles/%s_Boss.png"), *VisualId));
+		FString::Printf(TEXT("SourceAssets/Mini/Bosses/Singles/%s_Boss.png"), *VisualId),
+		TextureFilter::TF_Nearest);
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadInteractableTexture(const FString& InteractableVisualID)
 {
 	const FString VisualId = T66MiniSanitizeVisualId(InteractableVisualID);
-	return LoadImportedOrLooseTexture(
+	return LoadLooseOrImportedTexture(
 		FString::Printf(TEXT("Interactable:%s"), *VisualId),
 		FString::Printf(TEXT("/Game/Mini/Sprites/Interactables/%s.%s"), *VisualId, *VisualId),
-		FString::Printf(TEXT("SourceAssets/Mini/Interactables/Singles/%s.png"), *VisualId));
+		FString::Printf(TEXT("SourceAssets/Mini/Interactables/Singles/%s.png"), *VisualId),
+		TextureFilter::TF_Nearest);
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadEffectTexture(const FString& EffectName)
@@ -209,7 +210,8 @@ UTexture2D* UT66MiniVisualSubsystem::LoadEffectTexture(const FString& EffectName
 	const FString VisualId = T66MiniSanitizeVisualId(EffectName);
 	return LoadCachedTexture(
 		FString::Printf(TEXT("Effect:%s"), *VisualId),
-		FString::Printf(TEXT("SourceAssets/Mini/Effects/%s.png"), *VisualId));
+		FString::Printf(TEXT("SourceAssets/Mini/Effects/%s.png"), *VisualId),
+		TextureFilter::TF_Nearest);
 }
 
 UTexture2D* UT66MiniVisualSubsystem::LoadHudTexture(const FString& TextureName)
@@ -329,7 +331,28 @@ UTexture2D* UT66MiniVisualSubsystem::LoadImportedOrLooseTexture(const FString& C
 	return LoadCachedTexture(CacheKey, RelativePath);
 }
 
-UTexture2D* UT66MiniVisualSubsystem::LoadCachedTexture(const FString& CacheKey, const FString& RelativePath)
+UTexture2D* UT66MiniVisualSubsystem::LoadLooseOrImportedTexture(const FString& CacheKey, const FString& AssetPath, const FString& RelativePath, const TextureFilter Filter)
+{
+	if (TObjectPtr<UTexture2D>* ExistingTexture = CachedTextures.Find(CacheKey))
+	{
+		return ExistingTexture->Get();
+	}
+
+	if (FPaths::FileExists(BuildAbsoluteProjectPath(RelativePath)))
+	{
+		return LoadCachedTexture(CacheKey, RelativePath, Filter);
+	}
+
+	if (UTexture2D* ImportedTexture = LoadTextureByAssetPath(AssetPath))
+	{
+		CachedTextures.Add(CacheKey, ImportedTexture);
+		return ImportedTexture;
+	}
+
+	return LoadCachedTexture(CacheKey, RelativePath, Filter);
+}
+
+UTexture2D* UT66MiniVisualSubsystem::LoadCachedTexture(const FString& CacheKey, const FString& RelativePath, const TextureFilter Filter)
 {
 	if (TObjectPtr<UTexture2D>* ExistingTexture = CachedTextures.Find(CacheKey))
 	{
@@ -341,7 +364,7 @@ UTexture2D* UT66MiniVisualSubsystem::LoadCachedTexture(const FString& CacheKey, 
 	if (Texture)
 	{
 		Texture->SRGB = true;
-		Texture->Filter = TextureFilter::TF_Trilinear;
+		Texture->Filter = Filter;
 		Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
 		Texture->NeverStream = true;
 		CachedTextures.Add(CacheKey, Texture);
@@ -350,7 +373,7 @@ UTexture2D* UT66MiniVisualSubsystem::LoadCachedTexture(const FString& CacheKey, 
 	return Texture;
 }
 
-UTexture2D* UT66MiniVisualSubsystem::LoadCachedTextureFromCandidates(const FString& CacheKey, const TArray<FString>& RelativePaths)
+UTexture2D* UT66MiniVisualSubsystem::LoadCachedTextureFromCandidates(const FString& CacheKey, const TArray<FString>& RelativePaths, const TextureFilter Filter)
 {
 	if (TObjectPtr<UTexture2D>* ExistingTexture = CachedTextures.Find(CacheKey))
 	{
@@ -364,11 +387,11 @@ UTexture2D* UT66MiniVisualSubsystem::LoadCachedTextureFromCandidates(const FStri
 			continue;
 		}
 
-		if (UTexture2D* Texture = LoadCachedTexture(CacheKey, RelativePath))
+		if (UTexture2D* Texture = LoadCachedTexture(CacheKey, RelativePath, Filter))
 		{
 			return Texture;
 		}
 	}
 
-	return RelativePaths.Num() > 0 ? LoadCachedTexture(CacheKey, RelativePaths[0]) : nullptr;
+	return RelativePaths.Num() > 0 ? LoadCachedTexture(CacheKey, RelativePaths[0], Filter) : nullptr;
 }

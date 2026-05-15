@@ -238,7 +238,13 @@ TSharedRef<SWidget> UT66MiniPauseMenuWidget::RebuildWidget()
 		? (PlayerPawn->GetHeroDisplayName().IsEmpty() ? PlayerPawn->GetHeroID().ToString() : PlayerPawn->GetHeroDisplayName())
 		: FString(TEXT("Unknown"));
 	const FString DifficultyLabel = ActiveRun ? ActiveRun->DifficultyID.ToString() : FString(TEXT("Unknown"));
-	const FString WaveLabel = MiniGameState ? FString::Printf(TEXT("Wave %d / 5"), MiniGameState->WaveIndex) : FString(TEXT("Wave ?"));
+	const FName CurrentDifficultyID = MiniGameState && !MiniGameState->DifficultyID.IsNone()
+		? MiniGameState->DifficultyID
+		: (ActiveRun ? ActiveRun->DifficultyID : NAME_None);
+	const int32 MaxStageIndex = DataSubsystem && !CurrentDifficultyID.IsNone()
+		? FMath::Max(1, DataSubsystem->GetMaxStageIndexForDifficulty(CurrentDifficultyID))
+		: 10;
+	const FString WaveLabel = MiniGameState ? FString::Printf(TEXT("Wave %d / %d"), MiniGameState->WaveIndex, MaxStageIndex) : FString(TEXT("Wave ?"));
 	const FString HealthLabel = PlayerPawn ? FString::Printf(TEXT("%.0f / %.0f"), PlayerPawn->GetCurrentHealth(), PlayerPawn->GetMaxHealth()) : FString(TEXT("Unavailable"));
 	const FString EconomyLabel = PlayerPawn ? FString::Printf(TEXT("%d Gold   %d Materials   Lv %d"), PlayerPawn->GetGold(), PlayerPawn->GetMaterials(), PlayerPawn->GetHeroLevel()) : FString(TEXT("Unavailable"));
 	const FString TimerLabel = MiniGameState

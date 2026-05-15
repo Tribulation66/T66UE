@@ -6,8 +6,6 @@
 #include "UObject/Object.h"
 #include "T66HeroSelectionPreviewController.generated.h"
 
-class AT66HeroPreviewStage;
-class AT66CompanionPreviewStage;
 class UT66GameInstance;
 class UT66HeroSelectionScreen;
 class SBorder;
@@ -15,6 +13,7 @@ class SImage;
 class SScaleBox;
 class STextBlock;
 class SWidget;
+class UT66FrontendVideoPlayer;
 struct FSlateBrush;
 
 enum class ET66BodyType : uint8;
@@ -43,13 +42,13 @@ public:
 
 	void EnsureCompanionPreviewBrush();
 	void RefreshCompanionPreviewPanel(UT66GameInstance* GameInstance, FName PreviewedCompanionID, bool bShowingCompanionInfo);
-	void ApplySelectionDifficultyToPreviewStages(ET66Difficulty SelectedDifficulty) const;
-	void ApplyHeroPreviewStage(
+	void ApplyHeroPreviewVideo(
 		UT66GameInstance* GameInstance,
 		FName PreviewedHeroID,
 		FName PreviewedCompanionID,
 		ET66BodyType SelectedBodyType,
 		ET66Difficulty SelectedDifficulty,
+		bool bShowingCompanionInfo,
 		const FLinearColor& FallbackColor) const;
 
 	void ResetHeroPreviewStateForHeroSwitch();
@@ -69,16 +68,11 @@ public:
 
 	const FSlateBrush* GetHeroPreviewVideoBrush() const;
 	const FSlateBrush* GetCompanionInfoPortraitBrush() const;
-	AT66HeroPreviewStage* GetHeroPreviewStage() const;
 
 private:
-	AT66CompanionPreviewStage* GetCompanionPreviewStage() const;
-	void PositionPreviewCamera() const;
 	UT66HeroSelectionScreen* GetOwnerScreen() const;
 
 	TWeakObjectPtr<UT66HeroSelectionScreen> OwnerScreen;
-	mutable TWeakObjectPtr<AT66HeroPreviewStage> CachedHeroPreviewStage;
-	mutable TWeakObjectPtr<AT66CompanionPreviewStage> CachedCompanionPreviewStage;
 	TWeakPtr<SBorder> HeroPreviewColorBox;
 	TWeakPtr<SImage> HeroPreviewVideoImage;
 	TWeakPtr<STextBlock> HeroPreviewPlaceholderText;
@@ -86,6 +80,8 @@ private:
 	TWeakPtr<STextBlock> CompanionPreviewPlaceholderText;
 
 	TSharedPtr<FSlateBrush> CompanionInfoPortraitBrush;
+	UPROPERTY(Transient)
+	mutable TObjectPtr<UT66FrontendVideoPlayer> HeroPreviewVideoPlayer;
 	ET66HeroSelectionPreviewClip SelectedHeroPreviewClip = ET66HeroSelectionPreviewClip::Overview;
 	FName PreviewSkinIDOverride = NAME_None;
 	FName PreviewedCompanionSkinIDOverride = NAME_None;

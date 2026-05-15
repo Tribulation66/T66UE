@@ -324,6 +324,12 @@ def evaluate(items: list[ChecklistItem], dump: dict[str, Any], palette: dict[str
 
     results: list[Result] = []
     for item in items:
+        if item.prop == "tag_prefix_count":
+            count = sum(1 for tag in by_tag if tag.startswith(item.tag))
+            verdict, message = compare_value(count, item.expected, item.tolerance, palette)
+            results.append(Result(verdict, item, count, message, None))
+            continue
+
         widget = by_tag.get(item.tag)
         if widget is None:
             results.append(Result("FAIL", item, None, "tag not found", None))

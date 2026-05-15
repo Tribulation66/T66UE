@@ -58,10 +58,10 @@ After this audit, an unknown `-T66FrontendScreen=<name>` logs `Error` and reques
 |---|---|---|---|
 | `Saved\Codex\UI\HeroSelection\pass_log.md` pass 01-07 | HeroSelection | OK | Canonical. |
 | `Saved\Codex\UI\HeroSelection\pass_log.md` regression note | Overview | MISMATCH | Not accepted by resolver; caused false Overview regression capture. Use `AccountStatus` to open the Account screen, then add a dedicated account-tab automation flag if a specific Overview/History tab must be forced. |
-| `UI\T66_UI_FLAT_REDESIGN_PLAN.md` Stage 1 capture example | HeroSelection | OK | Canonical. |
+| `UI\Reference\UI_FLAT_REDESIGN_REFERENCE.md` Stage 1 capture example | HeroSelection | OK | Canonical. |
 | `Audit\Reference\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md` example | DailyDescent | OK | Canonical. |
-| `UI\SCREEN_WORKFLOW.md` placeholder | `<ScreenKey>` | Template | Must be replaced with one of the accepted canonical names above. |
-| `UI\T66_UI_FIDELITY_LOOP.md` placeholder | `<ScreenName>` | Template | Must be replaced with one of the accepted canonical names above. |
+| `UI\Instructions\UI_SCREEN_WORKFLOW_INSTRUCTIONS.md` placeholder | `<ScreenKey>` | Template | Must be replaced with one of the accepted canonical names above. |
+| `UI\Instructions\UI_FIDELITY_LOOP_INSTRUCTIONS.md` placeholder | `<ScreenName>` | Template | Must be replaced with one of the accepted canonical names above. |
 
 ## Master Plan Screen List Comparison
 

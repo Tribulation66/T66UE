@@ -169,7 +169,7 @@ Still needs work before Stage 2 scale:
 
 ### 1. Screen Name Resolver
 
-Detailed findings are saved at `C:\UE\T66\UI\stage2_capture_readiness.md`.
+Detailed findings are saved at `C:\UE\T66\UI\Reference\UI_STAGE2_CAPTURE_READINESS_REFERENCE.md`.
 
 Ready by resolver after pre-rollout cleanup:
 - `Overview` -> `AccountStatus` with Overview tab active.

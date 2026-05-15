@@ -170,6 +170,10 @@ UT66MiniRunSaveGame* UT66MiniSaveSubsystem::CreateSeededRunSave(const UT66MiniFr
 	RunSave->CompanionID = FrontendState->GetSelectedCompanionID();
 	RunSave->DifficultyID = FrontendState->GetSelectedDifficultyID();
 	RunSave->EquippedIdolIDs = FrontendState->GetSelectedIdolIDs();
+	if (RunSave->EquippedIdolIDs.Num() > UT66MiniFrontendStateSubsystem::MaxIdolSlots)
+	{
+		RunSave->EquippedIdolIDs.SetNum(UT66MiniFrontendStateSubsystem::MaxIdolSlots, EAllowShrinking::Yes);
+	}
 	RunSave->OwnedItemIDs.Reset();
 	RunSave->CurrentShopOfferIDs.Reset();
 	RunSave->LockedShopOfferIDs.Reset();

@@ -299,6 +299,13 @@ public:
 
 	bool HasCachedMyRank(const FString& Key) const;
 	bool GetCachedMyRank(const FString& Key, bool& bOutSuccess, int32& OutRank, int32& OutTotalEntries) const;
+	bool GetCachedMyRank(
+		const FString& Key,
+		bool& bOutSuccess,
+		int32& OutRank,
+		int32& OutTotalEntries,
+		int64& OutScore,
+		FString& OutEntryId) const;
 
 	UPROPERTY(BlueprintAssignable, Category = "Backend")
 	FOnMyRankResponse OnMyRankComplete;
@@ -495,6 +502,8 @@ private:
 		bool bSuccess = false;
 		int32 Rank = 0;
 		int32 TotalEntries = 0;
+		int64 Score = 0;
+		FString EntryId;
 	};
 
 	struct FPendingCoopSubmit

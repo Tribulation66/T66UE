@@ -39,9 +39,6 @@ class UInputAction;
 class UInputMappingContext;
 class UMaterialInterface;
 class UPrimitiveComponent;
-class ACameraActor;
-class AT66HeroPreviewStage;
-class AT66CompanionPreviewStage;
 struct FStreamableHandle;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FT66NearbyLootBagChanged);
@@ -98,15 +95,6 @@ public:
 	/** Initialize the UI system (call this if bAutoShowInitialScreen is false) */
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void InitializeUI();
-
-	/** Ensure local-only frontend preview actors exist when running as a network client. */
-	void EnsureLocalFrontendPreviewScene();
-
-	/** Position the local preview camera for the hero preview stage. */
-	void PositionLocalFrontendCameraForHeroPreview();
-
-	/** Position the local preview camera for the companion preview stage. */
-	void PositionLocalFrontendCameraForCompanionPreview();
 
 	/** Auto-load screen classes by convention paths */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
@@ -237,9 +225,8 @@ protected:
 	/** Handle scroll wheel zoom (game world only) */
 	void HandleZoom(float Value);
 
-	/** Handle dash modifier (default: LeftShift) */
-	void HandleDashPressed();
-	void HandleDashReleased();
+	/** Handle one-button forward roll (default: LeftShift) */
+	void HandleRollPressed();
 
 	/** Handle jump */
 	void HandleJumpPressed();
@@ -438,12 +425,6 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UT66LoadingScreenWidget> FrontendStartupOverlayWidget;
-
-	TWeakObjectPtr<AT66HeroPreviewStage> LocalFrontendHeroPreviewStage;
-
-	TWeakObjectPtr<AT66CompanionPreviewStage> LocalFrontendCompanionPreviewStage;
-
-	TWeakObjectPtr<ACameraActor> LocalFrontendPreviewCamera;
 
 	/** Last time Escape/Pause was handled (debounce rapid key repeat) */
 	float LastPauseToggleTime = 0.f;

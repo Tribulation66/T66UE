@@ -121,6 +121,7 @@ def texture_probe(texture):
     for prop_name in (
         "never_stream",
         "mip_gen_settings",
+        "filter",
         "power_of_two_mode",
         "virtual_texture_streaming",
         "max_texture_size",
@@ -159,6 +160,19 @@ def apply_character_texture_defaults(texture):
 
     _, lod_changed = set_first_editor_property(texture, ("lod_group",), character_group)
     changed = bool(lod_changed)
+
+    nearest_filter = enum_value(
+        "TextureFilter",
+        ("TF_NEAREST", "TF_Nearest"),
+    )
+    if nearest_filter is not None:
+        try:
+            current = texture.get_editor_property("filter")
+            if current != nearest_filter:
+                texture.set_editor_property("filter", nearest_filter)
+                changed = True
+        except Exception:
+            pass
 
     default_streaming_method = enum_value(
         "TextureStreamingMethod",
@@ -215,6 +229,7 @@ def apply_character_texture_defaults(texture):
         "CHARACTER" in result["after"]["lod_group"].upper()
         and result["after"].get("never_stream", "").upper() == "FALSE"
         and "NO_MIPMAPS" not in result["after"].get("mip_gen_settings", "").upper()
+        and (nearest_filter is None or "NEAREST" in result["after"].get("filter", "").upper())
     )
     return result
 
@@ -492,6 +507,9 @@ def apply_lod_ladder_to_mesh_path(mesh_path, subsystem=None):
 
 
 def is_quadretro_static_mesh_path(asset_path):
+    text = str(asset_path)
     leaf = str(asset_path).split("/", 1)[-1]
     asset_name = leaf.rsplit("/", 1)[-1].split(".", 1)[0]
-    return str(asset_path).startswith(CHARACTER_ROOT) and asset_name.startswith("SM_") and asset_name.endswith("_QuadRetro")
+    if text.startswith("/Game/Characters/Mobs/") and asset_name.startswith("SM_"):
+        return True
+    return text.startswith(CHARACTER_ROOT) and asset_name.startswith("SM_") and asset_name.endswith("_QuadRetro")

@@ -10,6 +10,7 @@
 #include "T66MainMenuScreen.generated.h"
 
 struct FSlateBrush;
+class ST66FlatLeaderboardPanel;
 class ST66LeaderboardPanel;
 class SBorder;
 class SBox;
@@ -19,6 +20,7 @@ class SImage;
 class STextBlock;
 class SVerticalBox;
 class UTexture2D;
+class UT66FrontendVideoPlayer;
 /**
  * Main Menu Screen
  * Left side: social / profile panel
@@ -118,8 +120,11 @@ private:
 	bool ShouldRebuildRetainedSlate() const;
 
 	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
+	TSharedPtr<ST66FlatLeaderboardPanel> FlatLeaderboardPanel;
 	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
 	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
+	UPROPERTY(Transient)
+	TObjectPtr<UT66FrontendVideoPlayer> MainMenuBackgroundVideoPlayer;
 	TSharedPtr<FSlateBrush> ForegroundOccluderBrush;
 	TStrongObjectPtr<UTexture2D> ForegroundOccluderTexture;
 	TSharedPtr<FSlateBrush> TitleLockupBrush;

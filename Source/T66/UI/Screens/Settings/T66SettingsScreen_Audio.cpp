@@ -245,28 +245,28 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatAudioSettingsUI()
 			ET66FlatState::Default));
 
 	AddN(0.000f, 0.095f, 1.000f, 0.905f, MakeMetadataRegion(DTag(TEXT("SettingsAudio.Root")), TEXT("Root")));
-	AddN(0.003f, 0.094f, 0.994f, 0.079f, MakeMetadataRegion(DTag(TEXT("SettingsAudio.SettingsTabs")), TEXT("ToggleGroup.SettingsTabs")));
+	AddN(0.003f, 0.123f, 0.994f, 0.079f, MakeMetadataRegion(DTag(TEXT("SettingsAudio.SettingsTabs")), TEXT("ToggleGroup.SettingsTabs")));
 
-	AddN(0.003f, 0.094f, 0.119f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.GameplayButton")), ET66SettingsTab::Gameplay, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGameplayFlatAudio", "GAMEPLAY"), 0.119f * CanvasW));
-	AddN(0.129f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.GraphicsButton")), ET66SettingsTab::Graphics, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGraphicsFlatAudio", "GRAPHICS"), 0.118f * CanvasW));
-	AddN(0.253f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.ControlsButton")), ET66SettingsTab::Controls, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabControlsFlatAudio", "CONTROLS"), 0.118f * CanvasW));
-	AddN(0.379f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.HUDButton")), ET66SettingsTab::HUD, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabHUDFlatAudio", "HUD"), 0.118f * CanvasW));
-	AddN(0.503f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatAudio", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
-	AddN(0.628f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabAudioFlatAudio", "AUDIO"), 0.118f * CanvasW));
-	AddN(0.754f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatAudio", "CRASHING"), 0.118f * CanvasW, 20));
-	AddN(0.879f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatAudio", "RETRO FX"), 0.118f * CanvasW, 20));
+	AddN(0.003f, 0.123f, 0.119f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.GameplayButton")), ET66SettingsTab::Gameplay, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGameplayFlatAudio", "GAMEPLAY"), 0.119f * CanvasW));
+	AddN(0.129f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.GraphicsButton")), ET66SettingsTab::Graphics, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGraphicsFlatAudio", "GRAPHICS"), 0.118f * CanvasW));
+	AddN(0.253f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.ControlsButton")), ET66SettingsTab::Controls, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabControlsFlatAudio", "CONTROLS"), 0.118f * CanvasW));
+	AddN(0.379f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.HUDButton")), ET66SettingsTab::HUD, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabHUDFlatAudio", "HUD"), 0.118f * CanvasW));
+	AddN(0.503f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatAudio", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
+	AddN(0.628f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabAudioFlatAudio", "AUDIO"), 0.118f * CanvasW));
+	AddN(0.754f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatAudio", "CRASHING"), 0.118f * CanvasW, 20));
+	AddN(0.879f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatAudio", "RETRO FX"), 0.118f * CanvasW, 20));
 
-	AddN(0.002f, 0.193f, 0.978f, 0.108f,
+	AddN(0.002f, 0.223f, 0.978f, 0.108f,
 		MakeSliderRow(DTag(TEXT("SettingsAudio.Rows.MasterVolume")), Loc ? Loc->GetText_MasterVolume() : NSLOCTEXT("T66.Settings.Fallback", "Master Volume Flat", "Master Volume"), [PS]() { return PS ? PS->GetMasterVolume() : 0.8f; }, [PS](float Value) { if (PS) PS->SetMasterVolume(Value); }));
-	AddN(0.002f, 0.313f, 0.978f, 0.108f,
+	AddN(0.002f, 0.343f, 0.978f, 0.108f,
 		MakeSliderRow(DTag(TEXT("SettingsAudio.Rows.MusicVolume")), Loc ? Loc->GetText_MusicVolume() : NSLOCTEXT("T66.Settings.Fallback", "Music Volume Flat", "Music Volume"), [PS]() { return PS ? PS->GetMusicVolume() : 0.6f; }, [PS](float Value) { if (PS) PS->SetMusicVolume(Value); }));
-	AddN(0.002f, 0.433f, 0.978f, 0.108f,
+	AddN(0.002f, 0.463f, 0.978f, 0.108f,
 		MakeSliderRow(DTag(TEXT("SettingsAudio.Rows.SFXVolume")), Loc ? Loc->GetText_SfxVolume() : NSLOCTEXT("T66.Settings.Fallback", "SFX Volume Flat", "SFX Volume"), [PS]() { return PS ? PS->GetSfxVolume() : 0.8f; }, [PS](float Value) { if (PS) PS->SetSfxVolume(Value); }));
-	AddN(0.002f, 0.567f, 0.978f, 0.092f,
+	AddN(0.002f, 0.597f, 0.978f, 0.092f,
 		MakeToggleRow(DTag(TEXT("SettingsAudio.Rows.MuteWhenUnfocused")), Loc ? Loc->GetText_MuteWhenUnfocused() : NSLOCTEXT("T66.Settings.Fallback", "Mute when unfocused Flat", "Mute when unfocused"), [PS]() { return PS ? PS->GetMuteWhenUnfocused() : false; }, [PS]() { if (PS) PS->SetMuteWhenUnfocused(!PS->GetMuteWhenUnfocused()); }));
-	AddN(0.002f, 0.672f, 0.978f, 0.120f,
+	AddN(0.002f, 0.702f, 0.978f, 0.120f,
 		MakeOutputRow(DTag(TEXT("SettingsAudio.Rows.OutputDevice"))));
-	AddN(0.002f, 0.802f, 0.978f, 0.092f,
+	AddN(0.002f, 0.832f, 0.978f, 0.092f,
 		MakeToggleRow(DTag(TEXT("SettingsAudio.Rows.SubtitlesAlwaysOn")), Loc ? Loc->GetText_SubtitlesAlwaysOn() : NSLOCTEXT("T66.Settings.Fallback", "Subtitles always on Flat", "Subtitles: always on"), [PS]() { return PS ? PS->GetSubtitlesAlwaysOn() : false; }, [PS]() { if (PS) PS->SetSubtitlesAlwaysOn(!PS->GetSubtitlesAlwaysOn()); }));
 
 	return SNew(SScaleBox)
@@ -373,7 +373,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 				return SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-						FT66Style::MakeDropdownOptionButton(
+						MakeSettingsDropdownOptionButton(
 							DefaultLabel,
 							FOnClicked::CreateLambda([PS, CurrentValueText, DefaultLabel]()
 							{

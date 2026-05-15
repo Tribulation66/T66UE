@@ -227,7 +227,8 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 				UAnimationAsset* WalkRaw = nullptr;
 				UAnimationAsset* RunRaw = nullptr;
 				UAnimationAsset* AlertRaw = nullptr;
-				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, RunRaw, AlertRaw);
+				UAnimationAsset* UnusedRollRaw = nullptr;
+				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, RunRaw, AlertRaw, UnusedRollRaw);
 				CachedWalkAnim = WalkRaw;
 				CachedRunAnim = RunRaw;
 				CachedAlertAnim = AlertRaw;

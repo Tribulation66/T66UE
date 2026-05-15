@@ -7,7 +7,7 @@ Copy this whole prompt into the target chat, then fill the target-specific field
 ```text
 T66 Reference UI Generation From Image
 
-Read C:\UE\T66\UI\Processes\SCREEN_MODAL_TASK.md first. Then read C:\UE\T66\UI\Processes\UI_GENERATION.md and follow it as the global authority. This master prompt is self-contained; if an older instruction conflicts with this prompt, follow this prompt for execution order and proof policy.
+Read C:\UE\T66\UI\Instructions\UI_SCREEN_MODAL_INSTRUCTIONS.md first. Then read C:\UE\T66\UI\Instructions\UI_GENERATION_INSTRUCTIONS.md and follow it as the global authority. This master prompt is self-contained; if an older instruction conflicts with this prompt, follow this prompt for execution order and proof policy.
 
 TARGET FIELDS TO FILL BEFORE STARTING
 
@@ -28,8 +28,8 @@ Protected/shared scope notes:
 NON-NEGOTIABLE EXECUTION CONTRACT
 
 Required preflight:
-- Confirm C:\UE\T66\UI\Processes\SCREEN_MODAL_TASK.md exists and read it.
-- Confirm C:\UE\T66\UI\Processes\UI_GENERATION.md exists and read it.
+- Confirm C:\UE\T66\UI\Instructions\UI_SCREEN_MODAL_INSTRUCTIONS.md exists and read it.
+- Confirm C:\UE\T66\UI\Instructions\UI_GENERATION_INSTRUCTIONS.md exists and read it.
 - Confirm C:\UE\T66\Scripts\CaptureT66UIScreen.ps1 exists.
 - Confirm C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe exists. If it is missing or stale after a runtime-facing change, refresh the staged standalone build before final visual proof.
 - Confirm the exact target reference image exists before imagegen or implementation.
@@ -97,7 +97,7 @@ Screen hierarchy, containment, and reference occupancy gate:
 - If the reference image is not exactly 1920x1080, record two rect sets for every element: native reference pixels and normalized 1920x1080 pixels. Use scaleX = 1920 / nativeWidth and scaleY = 1080 / nativeHeight. The implementation must target the normalized 1920x1080 rects, while the manifest must preserve native rect evidence.
 - Do not invent or estimate 1920x1080 coordinates without noting the native reference size and scale factors.
 - The 1920x1080 reference image is the source of truth for how much screen space each owned element occupies. The implementation must place each owned top-level panel, card, row, slot, and button in the same screen area as the reference.
-- Apply C:\UE\T66\UI\Processes\LAYOUT_AND_SIZING.md for runtime sizing. Top-bar screens must fill the viewport below the shared top bar; parent panels must grow, compact, stack, or scroll when children do not fit; do not use a fixed 1920x1080 shell as the runtime root.
+- Apply C:\UE\T66\UI\Instructions\UI_LAYOUT_AND_SIZING_INSTRUCTIONS.md for runtime sizing. Top-bar screens must fill the viewport below the shared top bar; parent panels must grow, compact, stack, or scroll when children do not fit; do not use a fixed 1920x1080 shell as the runtime root.
 - For every owned component, record a reference rect and intended implementation rect: name, role, parent, x, y, width, height, anchor, padding, spacing, resize contract, and whether it is fixed/3-slice/9-slice/tiled.
 - Top-level owned panels and footer/header bars should be within 12 px or 2 percent of the reference rect, whichever is larger. Buttons, slots, tabs, rows, and child controls should be within 8 px or 2 percent, whichever is larger. Intentional reference overlap must be named explicitly.
 - Every child must visually fit inside its designated parent. Buttons inside cards must stay inside the card. Rows inside panels must stay inside the panel. Icons and controls must not hang outside their intended shells unless the reference clearly shows intentional overlap.

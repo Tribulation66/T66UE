@@ -207,17 +207,16 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f)
 						[
-							FT66FlatStyle::AttachMetadata(
-								SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
-								[
-									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
-										SNew(SImage)
-										.Image(IconBrush.Get())
-										.ColorAndOpacity(FLinearColor::White)))
-								],
-								FName(*FString::Printf(TEXT("CollectorOverlay.ItemIcon.%02d"), CapturedCardIndex)),
-								TEXT("Icon"),
-								ET66FlatState::Default)
+							SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
+							[
+								FT66FlatStyle::AttachMetadata(
+									SNew(SImage)
+									.Image(IconBrush.Get())
+									.ColorAndOpacity(FLinearColor::White),
+									FName(*FString::Printf(TEXT("CollectorOverlay.ItemIcon.%02d"), CapturedCardIndex)),
+									TEXT("Icon"),
+									ET66FlatState::Default)
+							]
 						]
 						+ SHorizontalBox::Slot().FillWidth(1.f)
 						[
@@ -347,11 +346,11 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	{
 		static const TArray<FName> MobIDs =
 		{
-			FName(TEXT("Dungeon_Slime")),
-			FName(TEXT("Dungeon_WebSpider")),
-			FName(TEXT("Forest_Boar")),
-			FName(TEXT("Ocean_Jellyfish")),
-			FName(TEXT("Hell_Gargoyle")),
+			FName(TEXT("Slime")),
+			FName(TEXT("TombSpider")),
+			FName(TEXT("TuskerBoar")),
+			FName(TEXT("JellyHover")),
+			FName(TEXT("Gargoyle")),
 			FName(TEXT("GoblinThief")),
 			FName(TEXT("UniqueEnemy"))
 		};

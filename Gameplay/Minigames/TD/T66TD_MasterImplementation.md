@@ -61,6 +61,6 @@ Deferred to later passes:
 
 TD uses the shared minigame animation process for enemies, bosses, towers, and combat VFX:
 
-- [T66Minigame_CharacterAnimationProcess.md](C:/UE/T66/Gameplay/Minigames/T66Minigame_CharacterAnimationProcess.md)
+- [MINIGAME_CHARACTER_ANIMATION_INSTRUCTIONS.md](C:/UE/T66/Gameplay/Minigames/MINIGAME_CHARACTER_ANIMATION_INSTRUCTIONS.md)
 
 The default TD enemy target is simple and readable: a `bob-only` or `idle-only` loop is enough for many creeps, similar to BTD-style enemies where path movement supplies traversal. Full 8-direction sheets are only needed when the battle runtime actually needs directional facing.

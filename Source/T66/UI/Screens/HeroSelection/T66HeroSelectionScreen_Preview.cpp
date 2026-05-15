@@ -435,12 +435,13 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 
 	if (HeroPreviewController)
 	{
-		HeroPreviewController->ApplyHeroPreviewStage(
+		HeroPreviewController->ApplyHeroPreviewVideo(
 			T66GI,
 			PreviewedHeroID,
 			PreviewedCompanionID,
 			SelectedBodyType,
 			SelectedDifficulty,
+			bShowingCompanionInfo,
 			HeroPreviewFallbackColor);
 	}
 
@@ -452,8 +453,8 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 {
 	if (AllHeroIDs.Num() <= 0)
 	{
-		HeroCarouselSlotColors.Init(FLinearColor(0.2f, 0.2f, 0.25f, 1.0f), HeroSelectionCarouselVisibleSlots);
-		HeroCarouselSlotVisibility.Init(EVisibility::Collapsed, HeroSelectionCarouselVisibleSlots);
+		HeroCarouselSlotColors.Init(FLinearColor(0.2f, 0.2f, 0.25f, 1.0f), HeroSelectionHeroCarouselVisibleSlots);
+		HeroCarouselSlotVisibility.Init(EVisibility::Collapsed, HeroSelectionHeroCarouselVisibleSlots);
 		for (int32 Index = 0; Index < HeroCarouselPortraitBrushes.Num(); ++Index)
 		{
 			if (HeroCarouselPortraitBrushes[Index].IsValid())
@@ -468,9 +469,9 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 		return;
 	}
 
-	HeroCarouselPortraitBrushes.SetNum(HeroSelectionCarouselVisibleSlots);
-	HeroCarouselSlotColors.SetNum(HeroSelectionCarouselVisibleSlots);
-	HeroCarouselSlotVisibility.SetNum(HeroSelectionCarouselVisibleSlots);
+	HeroCarouselPortraitBrushes.SetNum(HeroSelectionHeroCarouselVisibleSlots);
+	HeroCarouselSlotColors.SetNum(HeroSelectionHeroCarouselVisibleSlots);
+	HeroCarouselSlotVisibility.SetNum(HeroSelectionHeroCarouselVisibleSlots);
 	for (int32 i = 0; i < HeroCarouselPortraitBrushes.Num(); ++i)
 	{
 		if (!HeroCarouselPortraitBrushes[i].IsValid())
@@ -484,9 +485,9 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
-		for (int32 Offset = -HeroSelectionCarouselCenterIndex; Offset <= HeroSelectionCarouselCenterIndex; ++Offset)
+		for (int32 Offset = -HeroSelectionHeroCarouselCenterIndex; Offset <= HeroSelectionHeroCarouselCenterIndex; ++Offset)
 		{
-			const int32 SlotIdx = Offset + HeroSelectionCarouselCenterIndex;
+			const int32 SlotIdx = Offset + HeroSelectionHeroCarouselCenterIndex;
 			if (!HeroCarouselPortraitBrushes.IsValidIndex(SlotIdx) || !HeroCarouselPortraitBrushes[SlotIdx].IsValid())
 			{
 				continue;

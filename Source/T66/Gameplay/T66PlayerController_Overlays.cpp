@@ -389,6 +389,44 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		return;
 	}
 
+	if (Mode == TEXT("heroqa") || Mode == TEXT("herovisualqa") || Mode == TEXT("playableheroqa"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetFullMapOpen(false);
+			GameplayHUDWidget->RefreshHUD();
+		}
+
+		if (APawn* ControlledPawn = GetPawn())
+		{
+			if (ACharacter* CharacterPawn = Cast<ACharacter>(ControlledPawn))
+			{
+				if (UCharacterMovementComponent* Movement = CharacterPawn->GetCharacterMovement())
+				{
+					Movement->StopMovementImmediately();
+				}
+			}
+
+			ControlledPawn->SetActorRotation(FRotator(0.f, 180.f, 0.f));
+			SetControlRotation(FRotator(-8.f, 180.f, 0.f));
+
+			if (AT66HeroBase* HeroPawn = Cast<AT66HeroBase>(ControlledPawn))
+			{
+				if (HeroPawn->CameraBoom)
+				{
+					HeroPawn->CameraBoom->TargetArmLength = 420.f;
+					HeroPawn->CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 95.f));
+					HeroPawn->CameraBoom->bDoCollisionTest = false;
+				}
+			}
+		}
+		return;
+	}
+
 	if (Mode == TEXT("inventory") || Mode == TEXT("inspect") || Mode == TEXT("inventoryinspect"))
 	{
 		SetInventoryInspectOpen(true);
@@ -514,6 +552,95 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		}
 		return;
 	}
+
+#if !UE_BUILD_SHIPPING
+	if (Mode == TEXT("mobvatqa") || Mode == TEXT("easymobvat") || Mode == TEXT("easymobvatqa"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetFullMapOpen(false);
+			GameplayHUDWidget->RefreshHUD();
+		}
+
+		if (UWorld* World = GetWorld())
+		{
+			const TArray<FName> EasyMobIDs = {
+				FName(TEXT("Slime")),
+				FName(TEXT("BoneWalker")),
+				FName(TEXT("RatPack")),
+				FName(TEXT("CaveBat")),
+				FName(TEXT("HexSlinger")),
+				FName(TEXT("TombSpider")),
+				FName(TEXT("StoneSentinel")),
+				FName(TEXT("MimicLure")),
+				FName(TEXT("BoneConjurer")),
+				FName(TEXT("CryptWraith"))
+			};
+			const TArray<FName> ClipNames = {
+				FName(TEXT("Idle")),
+				FName(TEXT("Move")),
+				FName(TEXT("AttackCue")),
+				FName(TEXT("HitReact")),
+				FName(TEXT("Death"))
+			};
+
+			const FVector Origin = GetPawn() ? GetPawn()->GetActorLocation() : FVector::ZeroVector;
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			for (int32 Index = 0; Index < EasyMobIDs.Num(); ++Index)
+			{
+				const int32 Row = Index / 5;
+				const int32 Col = Index % 5;
+				const FVector QAEnemyLocation = Origin + FVector(480.f + static_cast<float>(Row) * 300.f, (static_cast<float>(Col) - 4.f) * 220.f, 0.f);
+				FRotator QAEnemyRotation = (Origin - QAEnemyLocation).Rotation();
+				QAEnemyRotation.Pitch = 0.f;
+				QAEnemyRotation.Roll = 0.f;
+				SpawnParams.Name = FName(*FString::Printf(TEXT("T66MobVATQA_%s"), *EasyMobIDs[Index].ToString()));
+
+				AT66EnemyBase* Enemy = World->SpawnActor<AT66EnemyBase>(
+					AT66EnemyBase::StaticClass(),
+					QAEnemyLocation,
+					QAEnemyRotation,
+					SpawnParams);
+				if (!Enemy)
+				{
+					UE_LOG(LogTemp, Error, TEXT("Mob VAT QA failed to spawn %s"), *EasyMobIDs[Index].ToString());
+					continue;
+				}
+
+				Enemy->Tags.AddUnique(FName(TEXT("T66Automation_EasyMobVATQA")));
+				Enemy->SetActorEnableCollision(false);
+				Enemy->MaxHP = 20000;
+				Enemy->CurrentHP = 20000;
+				Enemy->TouchDamageHearts = 0;
+				Enemy->PointValue = 0;
+				Enemy->XPValue = 0;
+				Enemy->bDropsLoot = false;
+				Enemy->OwningDirector = nullptr;
+				Enemy->ConfigureAsMob(EasyMobIDs[Index]);
+				if (UCharacterMovementComponent* Movement = Enemy->GetCharacterMovement())
+				{
+					Movement->StopMovementImmediately();
+					Movement->DisableMovement();
+				}
+
+				const FName ClipName = ClipNames[Index % ClipNames.Num()];
+				Enemy->ForceMobVertexAnimationClipForAutomation(ClipName, 30.f);
+				UE_LOG(LogTemp, Display, TEXT("Mob VAT QA spawned %s clip=%s location=%s"),
+					*EasyMobIDs[Index].ToString(),
+					*ClipName.ToString(),
+					*QAEnemyLocation.ToCompactString());
+			}
+		}
+		return;
+	}
+#endif
 
 	if (Mode == TEXT("scopedsniper") || Mode == TEXT("sniperscope") || Mode == TEXT("scopeoverlay"))
 	{

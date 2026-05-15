@@ -470,19 +470,18 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 							.BorderBackgroundColor(FT66FlatStyle::DefaultBorder())
 							.Padding(4.f)
 							[
-								FT66FlatStyle::AttachMetadata(
-									SNew(SBox)
-									.WidthOverride(IdolIconSize)
-									.HeightOverride(IdolIconSize)
-									[
-										FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
-											SAssignNew(OfferIconImages[SlotIndex], SImage)
-											.Image(OfferIconBrushes[SlotIndex].Get())
-											.ColorAndOpacity(FLinearColor::White)))
-									],
-									FName(*FString::Printf(TEXT("IdolAltar.CardIcon.%d"), SlotIndex)),
-									TEXT("Icon"),
-									ET66FlatState::Default)
+								SNew(SBox)
+								.WidthOverride(IdolIconSize)
+								.HeightOverride(IdolIconSize)
+								[
+									FT66FlatStyle::AttachMetadata(
+										SAssignNew(OfferIconImages[SlotIndex], SImage)
+										.Image(OfferIconBrushes[SlotIndex].Get())
+										.ColorAndOpacity(FLinearColor::White),
+										FName(*FString::Printf(TEXT("IdolAltar.CardIcon.%d"), SlotIndex)),
+										TEXT("Icon"),
+										ET66FlatState::Default)
+								]
 							]
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)

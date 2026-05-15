@@ -2216,9 +2216,9 @@ void AT66GameMode::SpawnIdolVFXTestTargets()
 	SpawnLocations.Add(FrontCenter + SideDirection * TargetSideSpacing);
 
 	static const FName TargetIds[] = {
-		FName(TEXT("Dungeon_Slime")),
-		FName(TEXT("Dungeon_WebSpider")),
-		FName(TEXT("Dungeon_RabidRat"))
+		FName(TEXT("Slime")),
+		FName(TEXT("TombSpider")),
+		FName(TEXT("RatPack"))
 	};
 
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(TargetIds) && SpawnLocations.IsValidIndex(Index); ++Index)

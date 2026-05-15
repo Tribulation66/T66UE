@@ -18,9 +18,12 @@ public:
 	AT66MiniArena();
 
 	void InitializeArena(const FVector& InOrigin, float InHalfExtent, UTexture2D* InBackgroundTexture = nullptr);
+	void InitializeArena(const FVector& InOrigin, float InHalfExtentX, float InHalfExtentY, UTexture2D* InBackgroundTexture = nullptr);
 
 	FVector GetArenaOrigin() const { return ArenaOrigin; }
-	float GetArenaHalfExtent() const { return ArenaHalfExtent; }
+	float GetArenaHalfExtent() const { return FMath::Max(ArenaHalfExtentX, ArenaHalfExtentY); }
+	float GetArenaHalfExtentX() const { return ArenaHalfExtentX; }
+	float GetArenaHalfExtentY() const { return ArenaHalfExtentY; }
 
 private:
 	UPROPERTY(VisibleAnywhere)
@@ -36,5 +39,6 @@ private:
 	TArray<TObjectPtr<UStaticMeshComponent>> BorderMeshes;
 
 	FVector ArenaOrigin = FVector::ZeroVector;
-	float ArenaHalfExtent = 2200.f;
+	float ArenaHalfExtentX = 900.f;
+	float ArenaHalfExtentY = 1600.f;
 };

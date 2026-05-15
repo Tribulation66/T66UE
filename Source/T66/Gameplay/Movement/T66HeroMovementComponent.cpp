@@ -136,28 +136,6 @@ void UT66HeroMovementComponent::SetMoveInputAxes(const float ForwardValue, const
 	CachedForwardInput = ForwardValue;
 	CachedRightInput = RightValue;
 	UpdateAnimationStateBridge();
-
-	if (bDashModifierHeld && !bDashConsumedThisHold)
-	{
-		TryConsumeHeldDash();
-	}
-}
-
-void UT66HeroMovementComponent::SetDashModifierHeld(const bool bHeld)
-{
-	if (bDashModifierHeld == bHeld)
-	{
-		return;
-	}
-
-	bDashModifierHeld = bHeld;
-	if (!bDashModifierHeld)
-	{
-		bDashConsumedThisHold = false;
-		return;
-	}
-
-	TryConsumeHeldDash();
 }
 
 bool UT66HeroMovementComponent::TryJump()
@@ -184,63 +162,6 @@ void UT66HeroMovementComponent::StopJumping()
 bool UT66HeroMovementComponent::HasMovementInput() const
 {
 	return FMath::Abs(CachedForwardInput) > 0.1f || FMath::Abs(CachedRightInput) > 0.1f;
-}
-
-ET66DashDirection UT66HeroMovementComponent::GetCurrentDashDirection() const
-{
-	const FVector2D Input(CachedForwardInput, CachedRightInput);
-	if (Input.SizeSquared() <= FMath::Square(0.25f))
-	{
-		return ET66DashDirection::None;
-	}
-
-	const float AngleDegrees = FMath::RadiansToDegrees(FMath::Atan2(Input.Y, Input.X));
-	const int32 Octant = ((FMath::RoundToInt(AngleDegrees / 45.f) % 8) + 8) % 8;
-	switch (Octant)
-	{
-	case 0: return ET66DashDirection::North;
-	case 1: return ET66DashDirection::NorthEast;
-	case 2: return ET66DashDirection::East;
-	case 3: return ET66DashDirection::SouthEast;
-	case 4: return ET66DashDirection::South;
-	case 5: return ET66DashDirection::SouthWest;
-	case 6: return ET66DashDirection::West;
-	case 7: return ET66DashDirection::NorthWest;
-	default: return ET66DashDirection::None;
-	}
-}
-
-FVector UT66HeroMovementComponent::GetWorldMoveDirectionFromAxes() const
-{
-	if (!HasMovementInput())
-	{
-		return FVector::ZeroVector;
-	}
-
-	const AT66HeroBase* Hero = ResolveHero();
-	const AController* Controller = Hero ? Hero->GetController() : nullptr;
-	const FRotator ControlRot = Controller ? Controller->GetControlRotation() : FRotator::ZeroRotator;
-	const FRotator FlatRot(0.f, ControlRot.Yaw, 0.f);
-	const FVector ForwardDir = FRotationMatrix(FlatRot).GetUnitAxis(EAxis::X);
-	const FVector RightDir = FRotationMatrix(FlatRot).GetUnitAxis(EAxis::Y);
-
-	FVector MoveDir = (ForwardDir * CachedForwardInput) + (RightDir * CachedRightInput);
-	MoveDir.Z = 0.f;
-	MoveDir.Normalize();
-	return MoveDir;
-}
-
-FVector UT66HeroMovementComponent::GetQuantizedWorldDashDirection() const
-{
-	const FVector WorldMoveDir = GetWorldMoveDirectionFromAxes();
-	if (WorldMoveDir.IsNearlyZero())
-	{
-		return FVector::ZeroVector;
-	}
-
-	const float WorldYaw = FMath::RadiansToDegrees(FMath::Atan2(WorldMoveDir.Y, WorldMoveDir.X));
-	const float QuantizedYaw = FMath::RoundToFloat(WorldYaw / 45.f) * 45.f;
-	return FRotator(0.f, QuantizedYaw, 0.f).Vector();
 }
 
 bool UT66HeroMovementComponent::CanUseMovementAbilities() const
@@ -275,23 +196,10 @@ void UT66HeroMovementComponent::UpdateAnimationStateBridge() const
 	}
 }
 
-void UT66HeroMovementComponent::TryConsumeHeldDash()
+bool UT66HeroMovementComponent::TryRollForward()
 {
-	if (!bDashModifierHeld || bDashConsumedThisHold)
-	{
-		return;
-	}
-
-	const FVector DashDirection = GetQuantizedWorldDashDirection();
-	if (DashDirection.IsNearlyZero())
-	{
-		return;
-	}
-
-	if (TryDashInWorldDirection(DashDirection))
-	{
-		bDashConsumedThisHold = true;
-	}
+	const AT66HeroBase* Hero = ResolveHero();
+	return Hero ? TryDashInWorldDirection(Hero->GetActorForwardVector()) : false;
 }
 
 bool UT66HeroMovementComponent::TryDashInWorldDirection(const FVector& DesiredWorldDirection)

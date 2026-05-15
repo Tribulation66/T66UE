@@ -1,6 +1,6 @@
 # T66 UI Flat Redesign - Icon Manifest
 
-Stage 1 audit source: V3 screen references in `C:\UE\T66\UI\Screen References\` and per-screen specs in `C:\UE\T66\UI\T66_UI_FLAT_REDESIGN_PLAN.md` section 7.2.
+Stage 1 audit source: V3 screen references in `C:\UE\T66\UI\Screen References\` and per-screen specs in `C:\UE\T66\UI\Reference\UI_FLAT_REDESIGN_REFERENCE.md` section 7.2.
 
 Generated flat icons are monochrome transparent PNGs saved under `RuntimeDependencies\T66\UI\Icons\Flat\`. Existing branded/content artwork is preserved where the spec says not to redesign it.
 

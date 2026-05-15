@@ -202,6 +202,8 @@ private:
 	void RefreshCompanionList();
 	void RefreshHeroCarouselPortraits();
 	void RefreshCompanionCarouselPortraits();
+	FText GetPreviewedHeroTitleText() const;
+	FText GetPreviewedHeroSubtitleText() const;
 	void RefreshPanelSwitchers();
 	int32 GetLeftPanelWidgetIndex() const;
 	void RefreshTargetDropdownTexts();

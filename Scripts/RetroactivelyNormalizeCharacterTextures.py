@@ -41,9 +41,9 @@ SATURATION_BOOST = 1.0
 BLENDER_EXE = os.environ.get("T66_BLENDER_EXE", r"C:\Program Files\Blender Foundation\Blender 5.1\blender.exe")
 SYSTEM_PYTHON = os.environ.get("T66_SYSTEM_PYTHON", "python")
 VERIFY_ROWS = {
-    "Forest_MushroomBrute": "Forest Mushroom Brute",
+    "MushroomBrute": "Mushroom Brute",
     "Hell_GreatDragon": "Hell Great Dragon",
-    "Dungeon_Slime": "Dungeon Slime",
+    "Slime": "Slime",
 }
 LOG_PREFIX = "[RetroNormalizeCharacterTextures]"
 

@@ -1,6 +1,6 @@
 # Runtime Reference UI Assets
 
-This is the active runtime image root for the Reference UI pass.
+This is an archived copy of the old Reference UI asset notes. The active runtime root is `RuntimeDependencies/T66/UI/Reference`.
 
 ```text
 SourceAssets/UI/Reference/Screens/<ScreenName>/

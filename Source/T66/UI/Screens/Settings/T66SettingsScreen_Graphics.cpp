@@ -424,18 +424,18 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatGraphicsSettingsUI()
 			ET66FlatState::Default));
 
 	AddN(0.000f, 0.095f, 1.000f, 0.905f, MakeMetadataRegion(DTag(TEXT("SettingsGraphics.Root")), TEXT("Root")));
-	AddN(0.003f, 0.094f, 0.994f, 0.079f, MakeMetadataRegion(DTag(TEXT("SettingsGraphics.SettingsTabs")), TEXT("ToggleGroup.SettingsTabs")));
+	AddN(0.003f, 0.123f, 0.994f, 0.079f, MakeMetadataRegion(DTag(TEXT("SettingsGraphics.SettingsTabs")), TEXT("ToggleGroup.SettingsTabs")));
 
-	AddN(0.003f, 0.094f, 0.119f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.GameplayButton")), ET66SettingsTab::Gameplay, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGameplayFlatGraphics", "GAMEPLAY"), 0.119f * CanvasW));
-	AddN(0.129f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.GraphicsButton")), ET66SettingsTab::Graphics, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabGraphicsFlatGraphics", "GRAPHICS"), 0.118f * CanvasW));
-	AddN(0.253f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.ControlsButton")), ET66SettingsTab::Controls, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabControlsFlatGraphics", "CONTROLS"), 0.118f * CanvasW));
-	AddN(0.379f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.HUDButton")), ET66SettingsTab::HUD, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabHUDFlatGraphics", "HUD"), 0.118f * CanvasW));
-	AddN(0.503f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatGraphics", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
-	AddN(0.628f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatGraphics", "AUDIO"), 0.118f * CanvasW));
-	AddN(0.754f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatGraphics", "CRASHING"), 0.118f * CanvasW, 20));
-	AddN(0.879f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatGraphics", "RETRO FX"), 0.118f * CanvasW, 20));
+	AddN(0.003f, 0.123f, 0.119f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.GameplayButton")), ET66SettingsTab::Gameplay, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGameplayFlatGraphics", "GAMEPLAY"), 0.119f * CanvasW));
+	AddN(0.129f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.GraphicsButton")), ET66SettingsTab::Graphics, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabGraphicsFlatGraphics", "GRAPHICS"), 0.118f * CanvasW));
+	AddN(0.253f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.ControlsButton")), ET66SettingsTab::Controls, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabControlsFlatGraphics", "CONTROLS"), 0.118f * CanvasW));
+	AddN(0.379f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.HUDButton")), ET66SettingsTab::HUD, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabHUDFlatGraphics", "HUD"), 0.118f * CanvasW));
+	AddN(0.503f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatGraphics", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
+	AddN(0.628f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatGraphics", "AUDIO"), 0.118f * CanvasW));
+	AddN(0.754f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatGraphics", "CRASHING"), 0.118f * CanvasW, 20));
+	AddN(0.879f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatGraphics", "RETRO FX"), 0.118f * CanvasW, 20));
 
-	AddN(0.002f, 0.194f, 0.978f, 0.753f,
+	AddN(0.002f, 0.223f, 0.978f, 0.724f,
 		FT66FlatStyle::AttachMetadata(
 			SNew(SScrollBox)
 			.ScrollBarVisibility(EVisibility::Visible)
@@ -540,7 +540,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 						const int32 MonitorIdx = i;
 						Box->AddSlot().AutoHeight()
 						[
-							FT66Style::MakeDropdownOptionButton(
+							MakeSettingsDropdownOptionButton(
 								Label,
 								FOnClicked::CreateLambda([this, MonitorIdx, CurrentValueText, Loc]()
 								{
@@ -584,7 +584,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							FT66Style::MakeDropdownOptionButton(
+							MakeSettingsDropdownOptionButton(
 								ResToText(R),
 								FOnClicked::CreateLambda([this, R, CurrentValueText, ResToText]()
 								{
@@ -619,7 +619,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							FT66Style::MakeDropdownOptionButton(
+							MakeSettingsDropdownOptionButton(
 								WindowModeToText(Mode),
 								FOnClicked::CreateLambda([this, Mode, CurrentValueText, WindowModeToText]()
 								{
@@ -657,7 +657,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							FT66Style::MakeDropdownOptionButton(
+							MakeSettingsDropdownOptionButton(
 								DisplayModeToText(Mode),
 								FOnClicked::CreateLambda([this, Mode, CurrentValueText, DisplayModeToText]()
 								{
@@ -734,7 +734,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 8.0f, 0.0f, 0.0f)
 				[
-					MakeSettingsReferenceSlider(
+					MakeSettingsFlatSlider(
 						TAttribute<float>::CreateLambda([this]() -> float
 						{
 							return static_cast<float>(PendingGraphics.QualityNotch) / 3.0f;
@@ -763,7 +763,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							FT66Style::MakeDropdownOptionButton(
+							MakeSettingsDropdownOptionButton(
 								FpsCapToText(i),
 								FOnClicked::CreateLambda([this, i, CurrentValueText, FpsCapToText]()
 								{

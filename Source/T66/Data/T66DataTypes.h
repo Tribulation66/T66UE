@@ -11,6 +11,7 @@ class USkeletalMesh;
 class UStaticMesh;
 class UAnimationAsset;
 class UTexture2D;
+class UMaterialInterface;
 
 /**
  * Attack category (defines the fundamental behavior of a hero's primary attack and weapon branch).
@@ -1267,12 +1268,34 @@ struct T66_API FT66EnemyData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pipeline")
 	FName ModelStatus;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FName Archetype;  // Melee | Ranged | Rush | Flying | Exploder | Strafer | Stutterer | Turret | Burrower | Necromancer
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FName Feeling;  // MowDown | Pressure | DodgeThreat | MiniBossFeel | Disruptor | Specialist
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FName Rarity;  // Core | Rare | Late
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FName StageTag;  // Dungeon | Forest | Ocean | Martian | Hell
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FString PrimaryColor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FString SecondaryColor;
+
 	FT66EnemyData()
 		: EnemyID(NAME_None)
 		, FamilyID(TEXT("Melee"))
 		, RoleID(TEXT("MeleeA"))
 		, StatusEffectOnHit(NAME_None)
 		, ModelStatus(TEXT("PendingImage"))
+		, Archetype(TEXT("Melee"))
+		, Feeling(TEXT("MowDown"))
+		, Rarity(TEXT("Core"))
+		, StageTag(NAME_None)
 	{}
 };
 
@@ -1443,7 +1466,7 @@ struct T66_API FStageData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Effects")
 	float StageEffectStrength = 1.f;
 
-	/** Mob roster for this stage: 2 melee, 1 ranged, 1 rush, 1 flying. */
+	/** Mob roster for this stage. Empty slots are NAME_None. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
 	FName EnemyA;
 
@@ -1458,6 +1481,21 @@ struct T66_API FStageData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
 	FName EnemyE;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyF;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyG;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyH;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyI;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyJ;
 
 	FStageData()
 		: StageNumber(1)
@@ -1688,6 +1726,7 @@ struct T66_API FLoanSharkData : public FTableRowBase
  * - LoopingAnimation: walk animation (used when moving slowly)
  * - AlertAnimation: alert/stand animation (e.g. hero/companion selection preview)
  * - RunAnimation: run animation (used when moving fast); if unset, walk is used for all movement
+ * - RollAnimation: one-shot forward roll animation
  * - MeshRelative*: applied directly to the target component
  */
 USTRUCT(BlueprintType)
@@ -1719,6 +1758,10 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<UAnimationAsset> RunAnimation;
 
+	/** Roll animation (one-shot). Used when the player triggers forward roll. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UAnimationAsset> RollAnimation;
+
 	/** Relative location applied to the target mesh component. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	FVector MeshRelativeLocation = FVector(0.f, 0.f, -88.f);
@@ -1743,6 +1786,110 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 	bool bAutoGroundToActorOrigin = false;
 
 	FT66CharacterVisualRow() = default;
+};
+
+/**
+ * Static-mesh vertex-animation mapping for mob visuals.
+ *
+ * These rows intentionally live outside CharacterVisuals so the existing
+ * unanimated static rows remain the fallback while VAT assets are validated.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66MobVertexAnimationRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName EnemyID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UStaticMesh> StaticMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UMaterialInterface> Material;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UTexture2D> PixelatedTextureAssetPath;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT")
+	TSoftObjectPtr<UTexture2D> PositionTexture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT")
+	TSoftObjectPtr<UTexture2D> NormalTexture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FVector MeshRelativeLocation = FVector(0.f, 0.f, -88.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FRotator MeshRelativeRotation = FRotator(0.f, -90.f, 0.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FVector MeshRelativeScale = FVector(1.f, 1.f, 1.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT")
+	bool bEnabled = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT")
+	float SampleRate = 30.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT")
+	int32 NumFrames = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT")
+	int32 RowsPerFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT")
+	FVector MinBBox = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT")
+	FVector SizeBBox = FVector::OneVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	int32 IdleStartFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	int32 IdleEndFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	float IdlePlayRate = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	int32 MoveStartFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	int32 MoveEndFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	float MovePlayRate = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	int32 AttackCueStartFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	int32 AttackCueEndFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	float AttackCuePlayRate = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	int32 HitReactStartFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	int32 HitReactEndFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	float HitReactPlayRate = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	int32 DeathStartFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	int32 DeathEndFrame = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VAT|Clips")
+	float DeathPlayRate = 1.f;
+
+	FT66MobVertexAnimationRow() = default;
 };
 
 /**

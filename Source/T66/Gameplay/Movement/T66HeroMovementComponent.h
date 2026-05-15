@@ -25,16 +25,15 @@ public:
 	void SetHeroBaseWalkSpeed(float InBaseWalkSpeed);
 
 	void SetMoveInputAxes(float ForwardValue, float RightValue);
-	void SetDashModifierHeld(bool bHeld);
 
 	bool TryJump();
 	void StopJumping();
+	bool TryRollForward();
 	bool TryDashInWorldDirection(const FVector& DesiredWorldDirection);
 
 	bool HasMovementInput() const;
 	float GetForwardInputValue() const { return CachedForwardInput; }
 	float GetRightInputValue() const { return CachedRightInput; }
-	ET66DashDirection GetCurrentDashDirection() const;
 
 	const FT66HeroMovementTuning& GetMovementTuning() const { return MovementTuning; }
 
@@ -45,12 +44,9 @@ private:
 	AT66HeroBase* ResolveHero() const;
 	UCharacterMovementComponent* ResolveCharacterMovement() const;
 	float ResolveCurrentMaxWalkSpeed() const;
-	FVector GetWorldMoveDirectionFromAxes() const;
-	FVector GetQuantizedWorldDashDirection() const;
 	bool CanUseMovementAbilities() const;
 	float ResolveDashCooldownSeconds() const;
 	void UpdateAnimationStateBridge() const;
-	void TryConsumeHeldDash();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	FT66HeroMovementTuning MovementTuning;
@@ -68,6 +64,4 @@ private:
 	float CachedForwardInput = 0.f;
 	float CachedRightInput = 0.f;
 	float LastDashTime = -9999.f;
-	bool bDashModifierHeld = false;
-	bool bDashConsumedThisHold = false;
 };

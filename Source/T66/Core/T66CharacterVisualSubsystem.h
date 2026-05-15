@@ -15,6 +15,7 @@ class UStaticMeshComponent;
 class UAnimationAsset;
 class USceneComponent;
 class USkeleton;
+class UMaterialInstanceDynamic;
 struct FStreamableHandle;
 
 USTRUCT()
@@ -38,6 +39,10 @@ struct FT66ResolvedCharacterVisual
 	/** Optional run animation (gameplay; when moving fast). */
 	UPROPERTY()
 	TObjectPtr<UAnimationAsset> RunAnim = nullptr;
+
+	/** Optional one-shot roll animation. */
+	UPROPERTY()
+	TObjectPtr<UAnimationAsset> RollAnim = nullptr;
 
 	UPROPERTY()
 	FT66CharacterVisualRow Row;
@@ -94,23 +99,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
 	bool IsCharacterVisualReady(FName VisualID) const;
 
-	/** Get alert, walk, and run animations for a visual (for runtime animation state). OutRun/OutAlert may be null. */
+	/** Get walk, run/jump, alert/idle, and roll animations for a visual. OutRun/OutAlert/OutRoll may be null. */
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
-	void GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutRun, UAnimationAsset*& OutAlert);
+	void GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutRun, UAnimationAsset*& OutAlert, UAnimationAsset*& OutRoll);
 
 	/** Returns true when a visual row exists for this ID or its fallback ID. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
 	bool HasCharacterVisual(FName VisualID) const;
 
+	bool TryGetMobVertexAnimationRow(FName VisualID, FT66MobVertexAnimationRow& OutRow) const;
+	bool ApplyMobVertexAnimationVisual(FName VisualID, UStaticMeshComponent* TargetStaticMesh, UMaterialInstanceDynamic*& OutMID, FT66MobVertexAnimationRow& OutRow);
+
 private:
 	FT66ResolvedCharacterVisual ResolveVisual(FName VisualID);
 	UDataTable* GetVisualsDataTable() const;
+	UDataTable* GetMobVertexAnimationsDataTable() const;
 	UAnimationAsset* FindFallbackLoopingAnim(USkeleton* Skeleton) const;
 	const FT66CharacterVisualRow* FindVisualRow(FName VisualID, FName* OutResolvedVisualID = nullptr) const;
 	void HandleCharacterVisualPreloadCompleted(FName VisualID);
 
 	UPROPERTY(Transient)
 	mutable TObjectPtr<UDataTable> CachedVisualsDataTable;
+
+	UPROPERTY(Transient)
+	mutable TObjectPtr<UDataTable> CachedMobVertexAnimationsDataTable;
 
 	UPROPERTY(Transient)
 	mutable TMap<FName, FT66ResolvedCharacterVisual> ResolvedCache;

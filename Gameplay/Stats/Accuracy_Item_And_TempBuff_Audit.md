@@ -208,7 +208,7 @@ This is acceptable as a temporary placeholder but should not be treated as final
 
 Canonical workflow doc:
 
-- `C:\UE\T66\UI\Processes\UI_GENERATION.md`
+- `C:\UE\T66\UI\Instructions\UI_GENERATION_INSTRUCTIONS.md`
 
 The repo-standard workflow is:
 
@@ -222,7 +222,7 @@ The repo-standard workflow is:
 
 Canonical process:
 
-- follow `C:\UE\T66\UI\Processes\UI_GENERATION.md`
+- follow `C:\UE\T66\UI\Instructions\UI_GENERATION_INSTRUCTIONS.md`
 - save accepted generated assets under the relevant UI or item asset folder
 
 Recommended item generation path:
@@ -250,7 +250,7 @@ Old prompt references:
 - `C:\UE\T66\Docs\UI\Secondary_Buff_Icon_Index.csv`
 - `C:\UE\T66\Docs\UI\Secondary_Buff_Icon_Prompt_Pack.md`
 
-Those prompt artifacts were deleted with the old `Docs` cleanup. Recreate temp-buff prompts from the current runtime list and `UI\Processes\UI_GENERATION.md` if this art pass resumes.
+Those prompt artifacts were deleted with the old `Docs` cleanup. Recreate temp-buff prompts from the current runtime list and `UI\Instructions\UI_GENERATION_INSTRUCTIONS.md` if this art pass resumes.
 
 Current runtime source path for temp-buff icons:
 

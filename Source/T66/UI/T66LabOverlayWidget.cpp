@@ -172,11 +172,11 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	static const FName FountainID(TEXT("Fountain"));
 	static const TArray<FName> MobIDs =
 	{
-		FName(TEXT("Dungeon_Slime")),
-		FName(TEXT("Dungeon_WebSpider")),
-		FName(TEXT("Forest_Boar")),
-		FName(TEXT("Ocean_Jellyfish")),
-		FName(TEXT("Hell_Gargoyle")),
+		FName(TEXT("Slime")),
+		FName(TEXT("TombSpider")),
+		FName(TEXT("TuskerBoar")),
+		FName(TEXT("JellyHover")),
+		FName(TEXT("Gargoyle")),
 		FName(TEXT("GoblinThief")),
 		FName(TEXT("UniqueEnemy"))
 	};

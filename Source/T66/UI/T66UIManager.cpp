@@ -2,13 +2,21 @@
 
 #include "UI/T66UIManager.h"
 #include "Core/T66LagTrackerSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66RetroFXSubsystem.h"
 #include "UI/Screens/T66SettingsScreen.h"
+#include "UI/T66FrontendUIRootWidget.h"
 #include "UI/T66FrontendTopBarWidget.h"
 #include "UI/T66ScreenBase.h"
 #include "UI/Style/T66Style.h"
 #include "Core/T66BuffSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Blueprint/UserWidget.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+#include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66UIManager, Log, All);
 
@@ -23,6 +31,21 @@ namespace
 
 		return FString::Printf(TEXT("Screen_%d"), static_cast<int32>(ScreenType));
 	}
+
+	void ApplyFrontendCRTBypassIfRequested(FT66RetroFXSettings& Settings)
+	{
+		if (FParse::Param(FCommandLine::Get(), TEXT("T66DisableFrontendCRT")))
+		{
+			Settings.UIFullScreenCRTEnabled = false;
+			Settings.UICRTScanlineStrength = 0.0f;
+			Settings.UICRTPhosphorMaskStrength = 0.0f;
+			Settings.UICRTBloomStrength = 0.0f;
+			Settings.UICRTChromaticAberrationStrength = 0.0f;
+			Settings.UICRTBarrelDistortionStrength = 0.0f;
+			Settings.UICRTVignetteStrength = 0.0f;
+			Settings.UICRTColorQuantizationBits = 8;
+		}
+	}
 }
 
 UT66UIManager::UT66UIManager()
@@ -32,10 +55,12 @@ UT66UIManager::UT66UIManager()
 	CurrentModal = nullptr;
 	FrontendTopBar = nullptr;
 	RetroFXPreviewPopup = nullptr;
+	FrontendRoot = nullptr;
 }
 
 void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
 {
+	TearDownFrontendRoot();
 	OwningPlayer = InOwningPlayer;
 	NavigationHistory.Empty();
 	CurrentScreenType = ET66ScreenType::None;
@@ -49,6 +74,7 @@ void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
 		RetroFXPreviewPopup->RemoveFromParent();
 	}
 	RetroFXPreviewPopup = nullptr;
+	InitializeFrontendRootIfNeeded();
 }
 
 void UT66UIManager::RegisterScreenClass(ET66ScreenType ScreenType, TSubclassOf<UT66ScreenBase> WidgetClass)
@@ -129,7 +155,14 @@ bool UT66UIManager::SwitchToScreen(ET66ScreenType ScreenType, const bool bAddCur
 	if (CurrentScreen)
 	{
 		CurrentScreen->OnScreenDeactivated();
-		CurrentScreen->RemoveFromParent();
+		if (IsFrontendRootActive())
+		{
+			FrontendRoot->ClearMainScreen();
+		}
+		else
+		{
+			CurrentScreen->RemoveFromParent();
+		}
 	}
 
 	// Add current screen to history before switching (if valid)
@@ -150,9 +183,23 @@ bool UT66UIManager::SwitchToScreen(ET66ScreenType ScreenType, const bool bAddCur
 	// Force Hero Selection to rebuild so party-ready vs solo layout is correct on first paint. Otherwise cached tree from a previous show can display.
 	if (ScreenType == ET66ScreenType::HeroSelection)
 	{
-		FT66Style::DeferRebuild(CurrentScreen);
+		if (IsFrontendRootActive())
+		{
+			CurrentScreen->ReleaseSlateResources(true);
+		}
+		else
+		{
+			FT66Style::DeferRebuild(CurrentScreen);
+		}
 	}
-	CurrentScreen->AddToViewport(0);
+	if (IsFrontendRootActive())
+	{
+		FrontendRoot->SetMainScreen(CurrentScreen);
+	}
+	else
+	{
+		CurrentScreen->AddToViewport(0);
+	}
 	CurrentScreen->OnScreenActivated();
 	UpdateFrontendTopBar();
 
@@ -228,7 +275,14 @@ void UT66UIManager::ShowModal(ET66ScreenType ModalType)
 	{
 		NewModal->bIsModal = true;
 		CurrentModal = NewModal;
-		CurrentModal->AddToViewport(100); // Higher Z-order than main screen
+		if (IsFrontendRootActive())
+		{
+			FrontendRoot->SetModal(CurrentModal);
+		}
+		else
+		{
+			CurrentModal->AddToViewport(100); // Higher Z-order than main screen
+		}
 		CurrentModal->OnScreenActivated();
 		UpdateFrontendTopBar();
 	}
@@ -248,7 +302,14 @@ void UT66UIManager::CloseModal()
 	{
 		UT66ScreenBase* const ClosingModal = CurrentModal;
 		CurrentModal->OnScreenDeactivated();
-		CurrentModal->RemoveFromParent();
+		if (IsFrontendRootActive())
+		{
+			FrontendRoot->ClearModal();
+		}
+		else
+		{
+			CurrentModal->RemoveFromParent();
+		}
 		CurrentModal = nullptr;
 
 		// Refresh the underlying screen in case state changed while modal was open
@@ -293,6 +354,15 @@ bool UT66UIManager::HandleBackAction()
 void UT66UIManager::RebuildAllVisibleUI()
 {
 	// Always defer rebuilds so theme switches cannot tear down Slate trees mid-input event.
+	if (IsFrontendRootActive())
+	{
+		QueueFrontendRootLayerRefresh(CurrentScreen);
+		QueueFrontendRootLayerRefresh(CurrentModal);
+		QueueFrontendRootLayerRefresh(FrontendTopBar);
+		QueueFrontendRootLayerRefresh(RetroFXPreviewPopup);
+		return;
+	}
+
 	if (CurrentScreen && CurrentScreen->IsInViewport())
 	{
 		FT66Style::DeferRebuild(CurrentScreen, 0);
@@ -314,6 +384,28 @@ void UT66UIManager::RebuildAllVisibleUI()
 	}
 }
 
+bool UT66UIManager::RequestFrontendRootLayerRefresh(UUserWidget* Widget)
+{
+	if (!Widget || !IsFrontendRootActive())
+	{
+		return false;
+	}
+
+	QueueFrontendRootLayerRefresh(Widget);
+	return true;
+}
+
+bool UT66UIManager::RequestFrontendRootPaintRefresh()
+{
+	if (!IsFrontendRootActive())
+	{
+		return false;
+	}
+
+	FrontendRoot->RequestFrontendPaintRefresh();
+	return true;
+}
+
 void UT66UIManager::ShowRetroFXPreviewPopup()
 {
 	if (!OwningPlayer)
@@ -333,6 +425,20 @@ void UT66UIManager::ShowRetroFXPreviewPopup()
 	}
 
 	RetroFXPreviewPopup->ConfigureAsRetroFXPreviewPopup(this);
+	if (IsFrontendRootActive())
+	{
+		if (!FrontendRoot->IsPopupVisible())
+		{
+			FrontendRoot->SetPopup(RetroFXPreviewPopup);
+			RetroFXPreviewPopup->OnScreenActivated();
+		}
+		else
+		{
+			QueueFrontendRootLayerRefresh(RetroFXPreviewPopup);
+		}
+		return;
+	}
+
 	if (!RetroFXPreviewPopup->IsInViewport())
 	{
 		RetroFXPreviewPopup->AddToViewport(175);
@@ -351,6 +457,16 @@ void UT66UIManager::HideRetroFXPreviewPopup()
 		return;
 	}
 
+	if (IsFrontendRootActive())
+	{
+		if (FrontendRoot->IsPopupVisible())
+		{
+			RetroFXPreviewPopup->OnScreenDeactivated();
+			FrontendRoot->ClearPopup();
+		}
+		return;
+	}
+
 	if (RetroFXPreviewPopup->IsInViewport())
 	{
 		RetroFXPreviewPopup->OnScreenDeactivated();
@@ -360,6 +476,10 @@ void UT66UIManager::HideRetroFXPreviewPopup()
 
 bool UT66UIManager::IsRetroFXPreviewPopupVisible() const
 {
+	if (IsFrontendRootActive())
+	{
+		return FrontendRoot->IsPopupVisible();
+	}
 	return RetroFXPreviewPopup && RetroFXPreviewPopup->IsInViewport();
 }
 
@@ -371,7 +491,14 @@ void UT66UIManager::HideAllUI()
 	if (CurrentModal)
 	{
 		CurrentModal->OnScreenDeactivated();
-		CurrentModal->RemoveFromParent();
+		if (IsFrontendRootActive())
+		{
+			FrontendRoot->ClearModal();
+		}
+		else
+		{
+			CurrentModal->RemoveFromParent();
+		}
 		CurrentModal = nullptr;
 	}
 
@@ -379,19 +506,32 @@ void UT66UIManager::HideAllUI()
 	if (CurrentScreen)
 	{
 		CurrentScreen->OnScreenDeactivated();
-		CurrentScreen->RemoveFromParent();
+		if (IsFrontendRootActive())
+		{
+			FrontendRoot->ClearMainScreen();
+		}
+		else
+		{
+			CurrentScreen->RemoveFromParent();
+		}
 		CurrentScreen = nullptr;
 	}
 
 	ET66ScreenType OldScreenType = CurrentScreenType;
 	CurrentScreenType = ET66ScreenType::None;
 	UpdateFrontendTopBar();
+	TearDownFrontendRoot();
 
 	OnScreenChanged.Broadcast(OldScreenType, ET66ScreenType::None);
 }
 
 bool UT66UIManager::IsFrontendTopBarVisible() const
 {
+	if (IsFrontendRootActive())
+	{
+		return FrontendRoot->IsTopBarVisible();
+	}
+
 	return FrontendTopBar
 		&& FrontendTopBar->IsInViewport()
 		&& FrontendTopBar->GetCachedWidget().IsValid();
@@ -452,7 +592,11 @@ void UT66UIManager::UpdateFrontendTopBar()
 	const bool bShouldShow = ShouldShowFrontendTopBar(CurrentScreenType);
 	if (!bShouldShow)
 	{
-		if (FrontendTopBar && FrontendTopBar->IsInViewport())
+		if (IsFrontendRootActive())
+		{
+			FrontendRoot->ClearTopBar();
+		}
+		else if (FrontendTopBar && FrontendTopBar->IsInViewport())
 		{
 			FrontendTopBar->RemoveFromParent();
 		}
@@ -487,11 +631,151 @@ void UT66UIManager::UpdateFrontendTopBar()
 	}
 
 	FrontendTopBar->UIManager = this;
-	if (!FrontendTopBar->IsInViewport())
+	if (IsFrontendRootActive())
+	{
+		FrontendRoot->SetTopBar(FrontendTopBar);
+	}
+	else if (!FrontendTopBar->IsInViewport())
 	{
 		FrontendTopBar->AddToViewport(50);
 	}
 
 	FrontendTopBar->SetActiveSection(UT66FrontendTopBarWidget::ResolveFrontendSectionForScreen(CurrentScreenType));
 	FrontendTopBar->RefreshScreen();
+}
+
+bool UT66UIManager::ShouldUseFrontendRoot() const
+{
+	const AT66PlayerController* T66Player = Cast<AT66PlayerController>(OwningPlayer);
+	return T66Player && T66Player->IsFrontendLevel();
+}
+
+bool UT66UIManager::IsFrontendRootActive() const
+{
+	return FrontendRoot != nullptr && FrontendRoot->IsInViewport();
+}
+
+void UT66UIManager::InitializeFrontendRootIfNeeded()
+{
+	if (!ShouldUseFrontendRoot() || !OwningPlayer)
+	{
+		return;
+	}
+
+	if (!FrontendRoot)
+	{
+		FrontendRoot = CreateWidget<UT66FrontendUIRootWidget>(OwningPlayer, UT66FrontendUIRootWidget::StaticClass());
+		if (!FrontendRoot)
+		{
+			UE_LOG(LogT66UIManager, Warning, TEXT("Failed to create frontend UI root; falling back to direct viewport UI."));
+			return;
+		}
+	}
+
+	ApplyCurrentRetroFXSettingsToFrontendRoot();
+
+	if (!FrontendRoot->IsInViewport())
+	{
+		FrontendRoot->AddToViewport(0);
+	}
+
+	if (!RetroFXSettingsAppliedHandle.IsValid())
+	{
+		if (UGameInstance* GI = OwningPlayer->GetGameInstance())
+		{
+			if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
+			{
+				RetroFXSettingsAppliedHandle = RetroFX->OnSettingsApplied().AddUObject(this, &UT66UIManager::HandleRetroFXSettingsApplied);
+			}
+		}
+	}
+	ApplyCurrentRetroFXSettingsToFrontendRoot();
+}
+
+void UT66UIManager::TearDownFrontendRoot()
+{
+	if (RetroFXSettingsAppliedHandle.IsValid())
+	{
+		if (OwningPlayer)
+		{
+			if (UGameInstance* GI = OwningPlayer->GetGameInstance())
+			{
+				if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
+				{
+					RetroFX->OnSettingsApplied().Remove(RetroFXSettingsAppliedHandle);
+				}
+			}
+		}
+		RetroFXSettingsAppliedHandle.Reset();
+	}
+
+	if (FrontendRoot)
+	{
+		FrontendRoot->ClearPopup();
+		FrontendRoot->ClearLoading();
+		FrontendRoot->ClearModal();
+		FrontendRoot->ClearTopBar();
+		FrontendRoot->ClearMainScreen();
+		if (FrontendRoot->IsInViewport())
+		{
+			FrontendRoot->RemoveFromParent();
+		}
+		FrontendRoot = nullptr;
+	}
+}
+
+void UT66UIManager::ApplyCurrentRetroFXSettingsToFrontendRoot()
+{
+	if (!FrontendRoot || !OwningPlayer)
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = OwningPlayer->GetGameInstance())
+	{
+		if (UT66PlayerSettingsSubsystem* PlayerSettings = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+		{
+			FT66RetroFXSettings Settings = PlayerSettings->GetRetroFXSettings();
+			ApplyFrontendCRTBypassIfRequested(Settings);
+			FrontendRoot->ApplyRetroFXSettings(Settings);
+		}
+	}
+}
+
+void UT66UIManager::HandleRetroFXSettingsApplied(const FT66RetroFXSettings& Settings)
+{
+	if (IsFrontendRootActive())
+	{
+		FT66RetroFXSettings FrontendSettings = Settings;
+		ApplyFrontendCRTBypassIfRequested(FrontendSettings);
+		FrontendRoot->ApplyRetroFXSettings(FrontendSettings);
+	}
+}
+
+void UT66UIManager::QueueFrontendRootLayerRefresh(UUserWidget* Widget)
+{
+	if (!Widget || !IsFrontendRootActive() || !OwningPlayer)
+	{
+		return;
+	}
+
+	UWorld* World = OwningPlayer->GetWorld();
+	if (!World || World->bIsTearingDown)
+	{
+		return;
+	}
+
+	TWeakObjectPtr<UT66FrontendUIRootWidget> WeakRoot(FrontendRoot);
+	TWeakObjectPtr<UUserWidget> WeakWidget(Widget);
+	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([WeakRoot, WeakWidget]()
+	{
+		UT66FrontendUIRootWidget* Root = WeakRoot.Get();
+		UUserWidget* SafeWidget = WeakWidget.Get();
+		if (!Root || !SafeWidget)
+		{
+			return;
+		}
+
+		Root->RefreshLayerWidget(SafeWidget);
+	}));
 }

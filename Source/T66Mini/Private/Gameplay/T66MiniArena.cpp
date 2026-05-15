@@ -123,38 +123,47 @@ AT66MiniArena::AT66MiniArena()
 
 void AT66MiniArena::InitializeArena(const FVector& InOrigin, const float InHalfExtent, UTexture2D* InBackgroundTexture)
 {
+	InitializeArena(InOrigin, InHalfExtent, InHalfExtent, InBackgroundTexture);
+}
+
+void AT66MiniArena::InitializeArena(const FVector& InOrigin, const float InHalfExtentX, const float InHalfExtentY, UTexture2D* InBackgroundTexture)
+{
 	ArenaOrigin = InOrigin;
-	ArenaHalfExtent = InHalfExtent;
+	ArenaHalfExtentX = FMath::Max(320.f, InHalfExtentX);
+	ArenaHalfExtentY = FMath::Max(240.f, InHalfExtentY);
 	SetActorLocation(ArenaOrigin);
 
-	const float PlaneScale = ArenaHalfExtent / 50.f;
-	const float BackdropScale = (ArenaHalfExtent + 1150.f) / 50.f;
-	BackdropMesh->SetRelativeScale3D(FVector(BackdropScale, BackdropScale, 1.f));
-	BackdropMesh->SetRelativeLocation(FVector(0.f, 0.f, -12.f));
+	const float PlaneScaleX = ArenaHalfExtentX / 50.f;
+	const float PlaneScaleY = ArenaHalfExtentY / 50.f;
+	const float BackdropScaleX = (ArenaHalfExtentX + 180.f) / 50.f;
+	const float BackdropScaleY = (ArenaHalfExtentY + 180.f) / 50.f;
+	BackdropMesh->SetRelativeScale3D(FVector(BackdropScaleX, BackdropScaleY, 1.f));
+	BackdropMesh->SetRelativeLocation(FVector(ArenaHalfExtentX + 180.f, ArenaHalfExtentY + 180.f, -12.f));
 	T66MiniConfigureTexturedSurface(BackdropMesh, this, nullptr, FLinearColor(0.05f, 0.03f, 0.08f, 1.0f));
 
-	FloorMesh->SetRelativeScale3D(FVector(PlaneScale, PlaneScale, 1.f));
-	FloorMesh->SetRelativeLocation(FVector(0.f, 0.f, -4.f));
+	FloorMesh->SetRelativeScale3D(FVector(PlaneScaleX, PlaneScaleY, 1.f));
+	FloorMesh->SetRelativeLocation(FVector(ArenaHalfExtentX, ArenaHalfExtentY, -4.f));
 	T66MiniConfigureTexturedSurface(FloorMesh, this, InBackgroundTexture, FLinearColor::White);
 
-	const FVector BorderScale(ArenaHalfExtent / 50.f, 0.26f, 0.18f);
+	const FVector HorizontalBorderScale(ArenaHalfExtentX / 50.f, 0.26f, 0.18f);
+	const FVector VerticalBorderScale(ArenaHalfExtentY / 50.f, 0.26f, 0.18f);
 	if (BorderMeshes.Num() >= 4)
 	{
-		BorderMeshes[0]->SetRelativeLocation(FVector(0.f, ArenaHalfExtent, 8.f));
+		BorderMeshes[0]->SetRelativeLocation(FVector(0.f, ArenaHalfExtentY, 8.f));
 		BorderMeshes[0]->SetRelativeRotation(FRotator::ZeroRotator);
-		BorderMeshes[0]->SetRelativeScale3D(BorderScale);
+		BorderMeshes[0]->SetRelativeScale3D(HorizontalBorderScale);
 
-		BorderMeshes[1]->SetRelativeLocation(FVector(0.f, -ArenaHalfExtent, 8.f));
+		BorderMeshes[1]->SetRelativeLocation(FVector(0.f, -ArenaHalfExtentY, 8.f));
 		BorderMeshes[1]->SetRelativeRotation(FRotator::ZeroRotator);
-		BorderMeshes[1]->SetRelativeScale3D(BorderScale);
+		BorderMeshes[1]->SetRelativeScale3D(HorizontalBorderScale);
 
-		BorderMeshes[2]->SetRelativeLocation(FVector(ArenaHalfExtent, 0.f, 8.f));
+		BorderMeshes[2]->SetRelativeLocation(FVector(ArenaHalfExtentX, 0.f, 8.f));
 		BorderMeshes[2]->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
-		BorderMeshes[2]->SetRelativeScale3D(BorderScale);
+		BorderMeshes[2]->SetRelativeScale3D(VerticalBorderScale);
 
-		BorderMeshes[3]->SetRelativeLocation(FVector(-ArenaHalfExtent, 0.f, 8.f));
+		BorderMeshes[3]->SetRelativeLocation(FVector(-ArenaHalfExtentX, 0.f, 8.f));
 		BorderMeshes[3]->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
-		BorderMeshes[3]->SetRelativeScale3D(BorderScale);
+		BorderMeshes[3]->SetRelativeScale3D(VerticalBorderScale);
 	}
 
 	for (UStaticMeshComponent* BorderMesh : BorderMeshes)

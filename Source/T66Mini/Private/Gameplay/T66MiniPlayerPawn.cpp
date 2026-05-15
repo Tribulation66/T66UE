@@ -92,7 +92,7 @@ AT66MiniPlayerPawn::AT66MiniPlayerPawn()
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(SceneRoot);
-	CameraBoom->TargetArmLength = 1800.f;
+	CameraBoom->TargetArmLength = 0.f;
 	CameraBoom->SetUsingAbsoluteLocation(true);
 	CameraBoom->SetUsingAbsoluteRotation(true);
 	CameraBoom->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
@@ -586,6 +586,10 @@ void AT66MiniPlayerPawn::InitializeFromMiniRun()
 	HeroID = SeedRun ? SeedRun->HeroID : HeroID;
 	SelectedCompanionID = SeedRun ? SeedRun->CompanionID : SelectedCompanionID;
 	EquippedIdolIDs = SeedRun ? SeedRun->EquippedIdolIDs : EquippedIdolIDs;
+	if (EquippedIdolIDs.Num() > UT66MiniFrontendStateSubsystem::MaxIdolSlots)
+	{
+		EquippedIdolIDs.SetNum(UT66MiniFrontendStateSubsystem::MaxIdolSlots, EAllowShrinking::Yes);
+	}
 	OwnedItemIDs = SeedRun ? SeedRun->OwnedItemIDs : OwnedItemIDs;
 	HeroLevel = SeedRun ? FMath::Max(1, SeedRun->HeroLevel) : FMath::Max(1, HeroLevel);
 	Materials = SeedRun ? SeedRun->Materials : Materials;
@@ -911,23 +915,27 @@ void AT66MiniPlayerPawn::UpdateCameraAnchor()
 	FVector CameraAnchor = GetActorLocation();
 	if (AT66MiniGameMode* MiniGameMode = GetWorld() ? Cast<AT66MiniGameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
 	{
-		int32 ViewportX = 1920;
-		int32 ViewportY = 1080;
-		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		const FVector ArenaCenter = MiniGameMode->GetArenaOrigin();
+
+		float AspectRatio = 16.f / 9.f;
+		if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 		{
-			PlayerController->GetViewportSize(ViewportX, ViewportY);
+			int32 ViewportWidth = 0;
+			int32 ViewportHeight = 0;
+			PlayerController->GetViewportSize(ViewportWidth, ViewportHeight);
+			if (ViewportWidth > 0 && ViewportHeight > 0)
+			{
+				AspectRatio = static_cast<float>(ViewportWidth) / static_cast<float>(ViewportHeight);
+			}
 		}
 
-		const float AspectRatio = ViewportY > 0 ? (static_cast<float>(ViewportX) / static_cast<float>(ViewportY)) : (16.f / 9.f);
-		const float HalfViewWidth = CameraComponent->OrthoWidth * 0.5f;
-		const float HalfViewHeight = HalfViewWidth / FMath::Max(0.1f, AspectRatio);
-		const FVector ArenaCenter = MiniGameMode->GetArenaOrigin();
-		const float CameraClampX = FMath::Max(0.f, MiniGameMode->GetArenaHalfExtent() - HalfViewWidth);
-		const float CameraClampY = FMath::Max(0.f, MiniGameMode->GetArenaHalfExtent() - HalfViewHeight);
+		CameraComponent->OrthoWidth = FMath::Max(
+			MiniGameMode->GetArenaHalfExtentY() * 2.f,
+			MiniGameMode->GetArenaHalfExtentX() * 2.f * FMath::Max(0.1f, AspectRatio));
 
-		CameraAnchor.X = FMath::Clamp(GetActorLocation().X, ArenaCenter.X - CameraClampX, ArenaCenter.X + CameraClampX);
-		CameraAnchor.Y = FMath::Clamp(GetActorLocation().Y, ArenaCenter.Y - CameraClampY, ArenaCenter.Y + CameraClampY);
-		CameraAnchor.Z = ArenaCenter.Z + 20.f;
+		CameraAnchor.X = ArenaCenter.X;
+		CameraAnchor.Y = ArenaCenter.Y;
+		CameraAnchor.Z = ArenaCenter.Z + 2200.f;
 	}
 
 	CameraBoom->SetWorldLocation(CameraAnchor);

@@ -15,7 +15,6 @@
 #include "Styling/SlateBrush.h"
 #include "UI/Screens/T66MiniGeneratedScreenChrome.h"
 #include "UI/T66MiniUIStyle.h"
-#include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
@@ -159,7 +158,7 @@ TSharedRef<SWidget> UT66MiniIdolSelectScreen::BuildSlateUI()
 
 	if (CurrentStatusText.IsEmpty())
 	{
-		CurrentStatusText = NSLOCTEXT("T66Mini.IdolSelect", "DefaultStatus", "Select up to four idols, then continue into the run with the hero and difficulty you already locked in.");
+		CurrentStatusText = NSLOCTEXT("T66Mini.IdolSelect", "DefaultStatus", "Pick one idol for this run, then continue with the hero and difficulty you already locked in.");
 	}
 
 	const FLinearColor BackgroundFill = T66MiniUI::ScreenBackground();
@@ -560,7 +559,7 @@ FReply UT66MiniIdolSelectScreen::HandleTakeIdolClicked(const FName IdolID)
 	}
 	else
 	{
-		SetStatus(NSLOCTEXT("T66Mini.IdolSelect", "IdolRejected", "That idol is already equipped or all four slots are full."));
+		SetStatus(NSLOCTEXT("T66Mini.IdolSelect", "IdolRejected", "That idol is already equipped or your one idol slot is full."));
 	}
 
 	return FReply::Handled();
@@ -596,6 +595,10 @@ FReply UT66MiniIdolSelectScreen::HandleContinueClicked()
 		}
 
 		ActiveRun->EquippedIdolIDs = FrontendState->GetSelectedIdolIDs();
+		if (ActiveRun->EquippedIdolIDs.Num() > UT66MiniFrontendStateSubsystem::MaxIdolSlots)
+		{
+			ActiveRun->EquippedIdolIDs.SetNum(UT66MiniFrontendStateSubsystem::MaxIdolSlots, EAllowShrinking::Yes);
+		}
 		const int32 MaxStageIndex = DataSubsystem ? FMath::Max(1, DataSubsystem->GetMaxStageIndexForDifficulty(ActiveRun->DifficultyID)) : 5;
 		ActiveRun->WaveIndex = FMath::Clamp(ActiveRun->WaveIndex + 1, 1, MaxStageIndex);
 		if (DataSubsystem)
@@ -648,11 +651,7 @@ FReply UT66MiniIdolSelectScreen::HandleContinueClicked()
 		return FReply::Handled();
 	}
 
-	if (UIManager)
-	{
-		UIManager->HideAllUI();
-	}
-
+	NavigateTo(ET66ScreenType::MiniBattle);
 	return FReply::Handled();
 }
 

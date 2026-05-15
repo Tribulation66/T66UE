@@ -314,6 +314,32 @@ bool UT66BackendSubsystem::GetCachedMyRank(const FString& Key, bool& bOutSuccess
 	return false;
 }
 
+bool UT66BackendSubsystem::GetCachedMyRank(
+	const FString& Key,
+	bool& bOutSuccess,
+	int32& OutRank,
+	int32& OutTotalEntries,
+	int64& OutScore,
+	FString& OutEntryId) const
+{
+	if (const FCachedMyRank* Found = MyRankCache.Find(Key))
+	{
+		bOutSuccess = Found->bSuccess;
+		OutRank = Found->Rank;
+		OutTotalEntries = Found->TotalEntries;
+		OutScore = Found->Score;
+		OutEntryId = Found->EntryId;
+		return true;
+	}
+
+	bOutSuccess = false;
+	OutRank = 0;
+	OutTotalEntries = 0;
+	OutScore = 0;
+	OutEntryId.Reset();
+	return false;
+}
+
 void UT66BackendSubsystem::OnMyRankResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString RankKey)
 {
 	PendingMyRankFetches.Remove(RankKey);
@@ -339,10 +365,14 @@ void UT66BackendSubsystem::OnMyRankResponseReceived(FHttpRequestPtr Request, FHt
 
 	const int32 Rank = T66GetJsonIntOrDefault(Json, TEXT("rank"), 0);
 	const int32 Total = T66GetJsonIntOrDefault(Json, TEXT("total_entries"), 0);
+	const int64 Score = T66GetJsonInt64OrDefault(Json, TEXT("score"), 0);
+	const FString EntryId = T66GetJsonStringOrDefault(Json, TEXT("entry_id"));
 
 	Cached.bSuccess = true;
 	Cached.Rank = Rank;
 	Cached.TotalEntries = Total;
+	Cached.Score = Score;
+	Cached.EntryId = EntryId;
 	MyRankCache.Add(RankKey, Cached);
 
 	UE_LOG(LogT66Backend, Log, TEXT("Backend: my-rank = %d / %d"), Rank, Total);

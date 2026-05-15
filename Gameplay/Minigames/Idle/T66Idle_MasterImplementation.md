@@ -39,6 +39,6 @@ Backend authority can be evaluated later if ranked or competitive Idle state is 
 
 Idle uses the shared minigame animation process for stage enemies, bosses, heroes, companions, and impact VFX:
 
-- [T66Minigame_CharacterAnimationProcess.md](C:/UE/T66/Gameplay/Minigames/T66Minigame_CharacterAnimationProcess.md)
+- [MINIGAME_CHARACTER_ANIMATION_INSTRUCTIONS.md](C:/UE/T66/Gameplay/Minigames/MINIGAME_CHARACTER_ANIMATION_INSTRUCTIONS.md)
 
 Idle should default to compact loops first: `bob-only`, `idle-only`, `idle-hit`, or `idle-attack`. Full directional sheets are only useful if the eventual presentation layer needs facing-specific motion.

@@ -42,6 +42,12 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Enemy, Log, All);
 
 namespace
 {
+	const FName T66MobVATClip_Idle(TEXT("Idle"));
+	const FName T66MobVATClip_Move(TEXT("Move"));
+	const FName T66MobVATClip_AttackCue(TEXT("AttackCue"));
+	const FName T66MobVATClip_HitReact(TEXT("HitReact"));
+	const FName T66MobVATClip_Death(TEXT("Death"));
+
 	const TCHAR* T66EnemyFamilyAudioSuffix(const ET66EnemyFamily Family)
 	{
 		switch (Family)
@@ -423,6 +429,11 @@ void AT66EnemyBase::ConfigureAsMob(FName InMobID)
 	// Re-apply character visual for pooled (reused) actors whose BeginPlay already ran.
 	if (HasActorBegunPlay() && !CharacterVisualID.IsNone() && CharacterVisualID != FName(TEXT("RegularEnemy")))
 	{
+		if (TryApplyMobVertexAnimationVisual())
+		{
+			return;
+		}
+
 		if (UWorld* World = GetWorld())
 		{
 			if (UGameInstance* GI = World->GetGameInstance())
@@ -448,6 +459,158 @@ void AT66EnemyBase::ConfigureAsMob(FName InMobID)
 			}
 		}
 	}
+}
+
+bool AT66EnemyBase::TryApplyMobVertexAnimationVisual()
+{
+	bUsingMobVertexAnimation = false;
+	ActiveMobVertexAnimationMID = nullptr;
+	ActiveMobVertexAnimationClip = NAME_None;
+	MobVertexAnimationClipTime = 0.f;
+	MobVertexAnimationOverrideSecondsRemaining = 0.f;
+
+	if (CharacterVisualID.IsNone() || CharacterVisualID == FName(TEXT("RegularEnemy")) || !VisualMesh)
+	{
+		return false;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+			{
+				UMaterialInstanceDynamic* DynamicMaterial = nullptr;
+				FT66MobVertexAnimationRow Row;
+				if (Visuals->ApplyMobVertexAnimationVisual(CharacterVisualID, VisualMesh, DynamicMaterial, Row) && DynamicMaterial)
+				{
+					ActiveMobVertexAnimationRow = Row;
+					ActiveMobVertexAnimationMID = DynamicMaterial;
+					bUsingMobVertexAnimation = true;
+					bUsingCharacterVisual = false;
+					if (USkeletalMeshComponent* Skel = GetMesh())
+					{
+						Skel->SetHiddenInGame(true, true);
+						Skel->SetVisibility(false, true);
+					}
+					SetMobVertexAnimationClip(T66MobVATClip_Idle);
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+bool AT66EnemyBase::GetMobVertexAnimationClipRange(FName ClipName, int32& OutStartFrame, int32& OutEndFrame, float& OutPlayRate) const
+{
+	if (ClipName == T66MobVATClip_Move)
+	{
+		OutStartFrame = ActiveMobVertexAnimationRow.MoveStartFrame;
+		OutEndFrame = ActiveMobVertexAnimationRow.MoveEndFrame;
+		OutPlayRate = ActiveMobVertexAnimationRow.MovePlayRate;
+	}
+	else if (ClipName == T66MobVATClip_AttackCue)
+	{
+		OutStartFrame = ActiveMobVertexAnimationRow.AttackCueStartFrame;
+		OutEndFrame = ActiveMobVertexAnimationRow.AttackCueEndFrame;
+		OutPlayRate = ActiveMobVertexAnimationRow.AttackCuePlayRate;
+	}
+	else if (ClipName == T66MobVATClip_HitReact)
+	{
+		OutStartFrame = ActiveMobVertexAnimationRow.HitReactStartFrame;
+		OutEndFrame = ActiveMobVertexAnimationRow.HitReactEndFrame;
+		OutPlayRate = ActiveMobVertexAnimationRow.HitReactPlayRate;
+	}
+	else if (ClipName == T66MobVATClip_Death)
+	{
+		OutStartFrame = ActiveMobVertexAnimationRow.DeathStartFrame;
+		OutEndFrame = ActiveMobVertexAnimationRow.DeathEndFrame;
+		OutPlayRate = ActiveMobVertexAnimationRow.DeathPlayRate;
+	}
+	else
+	{
+		OutStartFrame = ActiveMobVertexAnimationRow.IdleStartFrame;
+		OutEndFrame = ActiveMobVertexAnimationRow.IdleEndFrame;
+		OutPlayRate = ActiveMobVertexAnimationRow.IdlePlayRate;
+	}
+
+	OutStartFrame = FMath::Max(0, OutStartFrame);
+	OutEndFrame = FMath::Max(OutStartFrame, OutEndFrame);
+	OutPlayRate = FMath::Max(0.01f, OutPlayRate);
+	return ActiveMobVertexAnimationRow.SampleRate > 0.f
+		&& ActiveMobVertexAnimationRow.RowsPerFrame > 0
+		&& OutEndFrame >= OutStartFrame;
+}
+
+void AT66EnemyBase::SetMobVertexAnimationClip(FName ClipName, float OverrideSeconds)
+{
+	if (!bUsingMobVertexAnimation || !ActiveMobVertexAnimationMID)
+	{
+		return;
+	}
+
+	int32 StartFrame = 0;
+	int32 EndFrame = 0;
+	float PlayRate = 1.f;
+	if (!GetMobVertexAnimationClipRange(ClipName, StartFrame, EndFrame, PlayRate))
+	{
+		return;
+	}
+
+	if (ActiveMobVertexAnimationClip != ClipName)
+	{
+		ActiveMobVertexAnimationClip = ClipName;
+		MobVertexAnimationClipTime = 0.f;
+		ActiveMobVertexAnimationMID->SetScalarParameterValue(TEXT("StartFrame"), static_cast<float>(StartFrame));
+		ActiveMobVertexAnimationMID->SetScalarParameterValue(TEXT("EndFrame"), static_cast<float>(EndFrame));
+	}
+
+	MobVertexAnimationOverrideSecondsRemaining = FMath::Max(MobVertexAnimationOverrideSecondsRemaining, OverrideSeconds);
+}
+
+#if !UE_BUILD_SHIPPING
+void AT66EnemyBase::ForceMobVertexAnimationClipForAutomation(FName ClipName, float OverrideSeconds)
+{
+	SetMobVertexAnimationClip(ClipName, OverrideSeconds);
+}
+#endif
+
+void AT66EnemyBase::TickMobVertexAnimationState(float DeltaSeconds)
+{
+	if (!bUsingMobVertexAnimation || !ActiveMobVertexAnimationMID)
+	{
+		return;
+	}
+
+	if (MobVertexAnimationOverrideSecondsRemaining > 0.f)
+	{
+		MobVertexAnimationOverrideSecondsRemaining = FMath::Max(0.f, MobVertexAnimationOverrideSecondsRemaining - DeltaSeconds);
+	}
+	else
+	{
+		const FVector Velocity = GetVelocity();
+		const FName DesiredClip = Velocity.SizeSquared2D() > FMath::Square(10.f) ? T66MobVATClip_Move : T66MobVATClip_Idle;
+		if (ActiveMobVertexAnimationClip != DesiredClip)
+		{
+			SetMobVertexAnimationClip(DesiredClip);
+		}
+	}
+
+	int32 StartFrame = 0;
+	int32 EndFrame = 0;
+	float PlayRate = 1.f;
+	if (!GetMobVertexAnimationClipRange(ActiveMobVertexAnimationClip, StartFrame, EndFrame, PlayRate))
+	{
+		return;
+	}
+
+	MobVertexAnimationClipTime += DeltaSeconds;
+	const int32 FrameCount = FMath::Max(1, EndFrame - StartFrame + 1);
+	const int32 ClipFrameOffset = FMath::FloorToInt(MobVertexAnimationClipTime * ActiveMobVertexAnimationRow.SampleRate * PlayRate) % FrameCount;
+	const int32 CurrentFrame = StartFrame + ClipFrameOffset;
+	ActiveMobVertexAnimationMID->SetScalarParameterValue(TEXT("Frame"), static_cast<float>(CurrentFrame));
 }
 
 void AT66EnemyBase::ApplyMiniBossMultipliers(float HPScalar, float DamageScalar, float ScaleScalar)
@@ -527,6 +690,19 @@ void AT66EnemyBase::BeginPlay()
 		{
 			++LoggedEnemies;
 			UE_LOG(LogT66Enemy, Verbose, TEXT("EnemyVisuals: %s VisualID=%s UsingPlaceholder=1"), *GetName(), *CharacterVisualID.ToString());
+		}
+#endif
+		return;
+	}
+
+	if (TryApplyMobVertexAnimationVisual())
+	{
+#if !UE_BUILD_SHIPPING
+		static int32 LoggedVATEnemies = 0;
+		if (LoggedVATEnemies < 12)
+		{
+			++LoggedVATEnemies;
+			UE_LOG(LogT66Enemy, Verbose, TEXT("EnemyVisuals: %s VisualID=%s UsingMobVAT=1"), *GetName(), *CharacterVisualID.ToString());
 		}
 #endif
 		return;
@@ -754,6 +930,11 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	ProgressionEnemyScalarApplied = 1.0f;
 	FinaleScalarApplied = 1.0f;
 	ResolvedScoreAward = 0;
+	bUsingMobVertexAnimation = false;
+	ActiveMobVertexAnimationMID = nullptr;
+	ActiveMobVertexAnimationClip = NAME_None;
+	MobVertexAnimationClipTime = 0.f;
+	MobVertexAnimationOverrideSecondsRemaining = 0.f;
 	SetActorScale3D(FVector::OneVector);
 	LastTouchDamageTime = -9999.f;
 	CachedPlayerPawn = nullptr;
@@ -876,6 +1057,7 @@ void AT66EnemyBase::TickFamilyBehavior(APawn* PlayerPawn, float DeltaSeconds, fl
 void AT66EnemyBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	TickMobVertexAnimationState(DeltaSeconds);
 	if (CurrentHP <= 0) return;
 
 	FLagScopedScope LagScope(GetWorld(), TEXT("EnemyBase::Tick"));
@@ -1144,6 +1326,7 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	if (Now - LastTouchDamageTime < TouchDamageCooldown) return;
 
 	LastTouchDamageTime = Now;
+	SetMobVertexAnimationClip(T66MobVATClip_AttackCue, 0.25f);
 	const int32 DamageHP = 20;
 	RunState->ApplyDamage(DamageHP, this);
 }
@@ -1198,11 +1381,13 @@ bool AT66EnemyBase::ApplyResolvedDamage(int32 Damage, const bool bCreditHeroKill
 		}
 
 		T66PlayEnemyAudioEvent(this, TEXT("Combat.Enemy.Death"), FName(TEXT("Combat.Enemy.Death")));
+		SetMobVertexAnimationClip(T66MobVATClip_Death, 0.45f);
 		OnDeath();
 		return true;
 	}
 
 	T66PlayEnemyAudioEvent(this, TEXT("Combat.Hit.Enemy"), FName(TEXT("Combat.Hit.Enemy")));
+	SetMobVertexAnimationClip(T66MobVATClip_HitReact, 0.16f);
 	return false;
 }
 

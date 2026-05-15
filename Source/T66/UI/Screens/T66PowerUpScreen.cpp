@@ -1345,6 +1345,36 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 	{
 		bShowingSingleUse = true;
 	}
+	else
+	{
+		FString RequestedPowerUpTab;
+		bool bHasRequestedPowerUpTab = false;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66PowerUpTab="), RequestedPowerUpTab))
+		{
+			bHasRequestedPowerUpTab = true;
+		}
+		else
+		{
+			FString RequestedFrontendScreen;
+			if (FParse::Value(FCommandLine::Get(), TEXT("T66FrontendScreen="), RequestedFrontendScreen)
+				&& (RequestedFrontendScreen.Equals(TEXT("Diplomas"), ESearchCase::IgnoreCase)
+					|| RequestedFrontendScreen.Equals(TEXT("Drugs"), ESearchCase::IgnoreCase)))
+			{
+				RequestedPowerUpTab = RequestedFrontendScreen;
+				bHasRequestedPowerUpTab = true;
+			}
+		}
+
+		if (bHasRequestedPowerUpTab)
+		{
+			bShowingSingleUse =
+				RequestedPowerUpTab.Equals(TEXT("SingleUse"), ESearchCase::IgnoreCase)
+				|| RequestedPowerUpTab.Equals(TEXT("Single"), ESearchCase::IgnoreCase)
+				|| RequestedPowerUpTab.Equals(TEXT("Temporary"), ESearchCase::IgnoreCase)
+				|| RequestedPowerUpTab.Equals(TEXT("Drugs"), ESearchCase::IgnoreCase)
+				|| RequestedPowerUpTab.Equals(TEXT("Drug"), ESearchCase::IgnoreCase);
+		}
+	}
 
 	const int32 SingleUsePercent = FMath::RoundToInt((UT66BuffSubsystem::SingleUseSecondaryBuffMultiplier - 1.f) * 100.f);
 	const FText PermanentTabText = NSLOCTEXT("T66.PowerUp", "PermanentTab", "DIPLOMAS (PERMANENT)");
@@ -1724,7 +1754,9 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				State,
 				TOptional<FLinearColor>(),
 				true,
-				ToggleGroup);
+				ToggleGroup,
+				false,
+				State != ET66FlatState::Disabled);
 		};
 
 		auto MakeGraduateButton = [&PlainText](const FName Tag, FOnClicked OnClicked, const float Width, const float Height) -> TSharedRef<SWidget>
@@ -1763,14 +1795,14 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 
 		AddN(0.031f, 0.158f, 0.936f, 0.749f, MakeMetadataRegion(DTag(TEXT("Diplomas.Root")), TEXT("Root")));
 		AddN(0.031f, 0.260f, 0.936f, 0.647f, MakeMetadataRegion(DTag(TEXT("Diplomas.MainOuterContainer")), TEXT("OuterContainer")));
-		AddN(0.181f, 0.158f, 0.611f, 0.068f, MakeMetadataRegion(DTag(TEXT("Diplomas.SubTabs")), TEXT("ToggleGroup.PowerUpTabs")));
+		AddN(0.148f, 0.123f, 0.690f, 0.060f, MakeMetadataRegion(DTag(TEXT("Diplomas.SubTabs")), TEXT("ToggleGroup.PowerUpTabs")));
 		AddN(0.072f, 0.260f, 0.851f, 0.610f, MakeMetadataRegion(DTag(TEXT("Diplomas.CardsRow")), TEXT("CardRow")));
 
 		AddN(
-			0.181f,
-			0.158f,
-			0.297f,
-			0.068f,
+			0.148f,
+			0.123f,
+			0.320f,
+			0.060f,
 			FT66FlatStyle::MakeFlatToggleGroupButton(
 				ET66FlatState::Selected,
 				SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -1779,16 +1811,16 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				],
 				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowPermanentClicked),
 				FMargin(0.f),
-				0.297f * DiplomasCanvasW,
-				0.068f * DiplomasCanvasH,
+				0.320f * DiplomasCanvasW,
+				0.060f * DiplomasCanvasH,
 				true,
 				DTag(TEXT("Diplomas.SubTabs.DiplomasButton")),
 				DTag(TEXT("PowerUpTabs"))));
 		AddN(
-			0.496f,
-			0.158f,
-			0.296f,
-			0.068f,
+			0.498f,
+			0.123f,
+			0.340f,
+			0.060f,
 			FT66FlatStyle::MakeFlatToggleGroupButton(
 				ET66FlatState::Default,
 				SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -1797,18 +1829,24 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				],
 				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowSingleUseClicked),
 				FMargin(0.f),
-				0.296f * DiplomasCanvasW,
-				0.068f * DiplomasCanvasH,
+				0.340f * DiplomasCanvasW,
+				0.060f * DiplomasCanvasH,
 				true,
 				DTag(TEXT("Diplomas.SubTabs.DrugsButton")),
 				DTag(TEXT("PowerUpTabs"))));
 
-		TSharedRef<SWidget> DiplomasInfoIcon = MakeIcon(DTag(TEXT("Diplomas.SubTabs.DiplomasInfoIcon")), InfoBrush, FVector2D(28.f, 28.f), FText::FromString(TEXT("i")), FT66FlatStyle::SelectedText());
-		DiplomasInfoIcon->SetToolTipText(PermanentHintText);
-		TSharedRef<SWidget> DrugsInfoIcon = MakeIcon(DTag(TEXT("Diplomas.SubTabs.DrugsInfoIcon")), InfoBrush, FVector2D(28.f, 28.f), FText::FromString(TEXT("i")), FT66FlatStyle::PurpleAccent());
-		DrugsInfoIcon->SetToolTipText(SingleUseHintText);
-		AddN(0.418f, 0.176f, 0.018f, 0.033f, DiplomasInfoIcon);
-		AddN(0.719f, 0.176f, 0.017f, 0.033f, DrugsInfoIcon);
+		AddN(0.438f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
+			ET66FlatState::Selected,
+			InfoBrush,
+			PermanentHintText,
+			FVector2D(31.f, 31.f),
+			DTag(TEXT("Diplomas.SubTabs.DiplomasInfoIcon"))));
+		AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
+			ET66FlatState::Default,
+			InfoBrush,
+			SingleUseHintText,
+			FVector2D(31.f, 31.f),
+			DTag(TEXT("Diplomas.SubTabs.DrugsInfoIcon"))));
 
 		AddN(
 			0.032f,
@@ -2251,41 +2289,47 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 
 		AddN(0.041f, 0.135f, 0.909f, 0.823f, MakeMetadataRegion(DrugTag(TEXT("Drugs.Root")), TEXT("Root")));
 		AddN(0.041f, 0.236f, 0.909f, 0.722f, MakePanelSurface(DrugTag(TEXT("Drugs.MainOuterContainer")), ET66FlatState::Default));
-		AddN(0.188f, 0.135f, 0.590f, 0.071f, MakeMetadataRegion(DrugTag(TEXT("Drugs.SubTabs")), TEXT("ToggleGroup.PowerUpTabs")));
+		AddN(0.148f, 0.123f, 0.690f, 0.060f, MakeMetadataRegion(DrugTag(TEXT("Drugs.SubTabs")), TEXT("ToggleGroup.PowerUpTabs")));
 		AddN(0.170f, 0.236f, 0.781f, 0.346f, MakeMetadataRegion(DrugTag(TEXT("Drugs.Row.Damage")), TEXT("CardRow")));
 		AddN(0.170f, 0.613f, 0.781f, 0.343f, MakeMetadataRegion(DrugTag(TEXT("Drugs.Row.AttackSpeed")), TEXT("CardRow")));
 
 		AddN(
-			0.188f,
-			0.135f,
-			0.285f,
-			0.071f,
+			0.148f,
+			0.123f,
+			0.320f,
+			0.060f,
 			MakeFlatTab(
 				DrugTag(TEXT("Drugs.SubTabs.DiplomasButton")),
 				PermanentTabText,
 				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowPermanentClicked),
 				ET66FlatState::Default,
-				0.285f * DrugsCanvasW,
-				0.071f * DrugsCanvasH));
+				0.320f * DrugsCanvasW,
+				0.060f * DrugsCanvasH));
 		AddN(
-			0.493f,
-			0.135f,
-			0.284f,
-			0.071f,
+			0.498f,
+			0.123f,
+			0.340f,
+			0.060f,
 			MakeFlatTab(
 				DrugTag(TEXT("Drugs.SubTabs.DrugsButton")),
 				SingleUseTabText,
 				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowSingleUseClicked),
 				ET66FlatState::Selected,
-				0.284f * DrugsCanvasW,
-				0.071f * DrugsCanvasH));
+				0.340f * DrugsCanvasW,
+				0.060f * DrugsCanvasH));
 
-		TSharedRef<SWidget> DiplomasInfoIcon = MakeIcon(DrugTag(TEXT("Drugs.SubTabs.DiplomasInfoIcon")), InfoBrush, FVector2D(28.f, 28.f), FText::FromString(TEXT("i")), FT66FlatStyle::PurpleAccent());
-		DiplomasInfoIcon->SetToolTipText(PermanentHintText);
-		TSharedRef<SWidget> DrugsInfoIcon = MakeIcon(DrugTag(TEXT("Drugs.SubTabs.DrugsInfoIcon")), InfoBrush, FVector2D(28.f, 28.f), FText::FromString(TEXT("i")), FT66FlatStyle::SelectedText());
-		DrugsInfoIcon->SetToolTipText(SingleUseHintText);
-		AddN(0.431f, 0.154f, 0.018f, 0.033f, DiplomasInfoIcon);
-		AddN(0.739f, 0.154f, 0.017f, 0.033f, DrugsInfoIcon);
+		AddN(0.438f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
+			ET66FlatState::Default,
+			InfoBrush,
+			PermanentHintText,
+			FVector2D(31.f, 31.f),
+			DrugTag(TEXT("Drugs.SubTabs.DiplomasInfoIcon"))));
+		AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
+			ET66FlatState::Selected,
+			InfoBrush,
+			SingleUseHintText,
+			FVector2D(31.f, 31.f),
+			DrugTag(TEXT("Drugs.SubTabs.DrugsInfoIcon"))));
 
 		AddN(0.041f, 0.236f, 0.108f, 0.346f, MakePanelSurface(DrugTag(TEXT("Drugs.Category.DamagePanel")), ET66FlatState::Selected));
 		AddN(0.075f, 0.291f, 0.038f, 0.065f, MakeIcon(DrugTag(TEXT("Drugs.Category.DamageIcon")), TargetBrush, FVector2D(72.f, 72.f), FText::FromString(TEXT("+")), FT66FlatStyle::SelectedText()));

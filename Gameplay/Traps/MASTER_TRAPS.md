@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-04-18
 **Scope:** Single-source handoff for environmental trap runtime, ownership, procedural spawning, damage routing, trap-family identity, and shipped trap VFX/mesh rules.
-**Companion docs:** `Release/Project Guidelines.md`, `Gameplay/World/MASTER_MAP_DESIGN.md`, `Gameplay/World/T66_Tower_Multi_Agent_Implementation_Plan.md`
+**Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md`, `Gameplay/World/T66_Tower_Multi_Agent_Implementation_Plan.md`
 **Maintenance rule:** Update this file after every material trap, trap-subsystem, trap-spawn, trap-damage, trap-VFX, or trap-map-integration change.
 
 ## 1. Executive Summary

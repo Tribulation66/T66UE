@@ -143,6 +143,7 @@ void UT66SettingsScreen::NativeDestruct()
 
 void UT66SettingsScreen::SwitchToTab(ET66SettingsTab Tab)
 {
+	const bool bChangedTab = CurrentTab != Tab;
 	CurrentTab = Tab;
 	OnTabChanged(Tab);
 	if (UT66PlayerSettingsSubsystem* PS = GetPlayerSettings())
@@ -153,6 +154,10 @@ void UT66SettingsScreen::SwitchToTab(ET66SettingsTab Tab)
 	if (ContentSwitcher.IsValid())
 	{
 		ContentSwitcher->SetActiveWidgetIndex(static_cast<int32>(Tab));
+	}
+	if (bChangedTab)
+	{
+		ForceRebuildSlate();
 	}
 }
 void UT66SettingsScreen::OnCloseClicked()

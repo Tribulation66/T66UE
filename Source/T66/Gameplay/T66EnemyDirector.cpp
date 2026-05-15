@@ -37,25 +37,48 @@ namespace
 
 	static void T66ResolveStageMobIDs(UGameInstance* GI, const int32 StageNum, TArray<FName>& OutMobIDs)
 	{
-		FName MobA = FName(*FString::Printf(TEXT("Mob_Stage%02d_A"), StageNum));
-		FName MobB = FName(*FString::Printf(TEXT("Mob_Stage%02d_B"), StageNum));
-		FName MobC = FName(*FString::Printf(TEXT("Mob_Stage%02d_C"), StageNum));
-		FName MobD = FName(*FString::Printf(TEXT("Mob_Stage%02d_D"), StageNum));
-		FName MobE = FName(*FString::Printf(TEXT("Mob_Stage%02d_E"), StageNum));
+		TArray<FName> StageMobIDs;
+		StageMobIDs.Reserve(10);
+
+		auto AddStageMob = [&StageMobIDs](const FName MobID)
+		{
+			if (!MobID.IsNone())
+			{
+				StageMobIDs.Add(MobID);
+			}
+		};
+
 		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 		{
 			FStageData StageData;
 			if (T66GI->GetStageData(StageNum, StageData))
 			{
-				if (!StageData.EnemyA.IsNone()) MobA = StageData.EnemyA;
-				if (!StageData.EnemyB.IsNone()) MobB = StageData.EnemyB;
-				if (!StageData.EnemyC.IsNone()) MobC = StageData.EnemyC;
-				if (!StageData.EnemyD.IsNone()) MobD = StageData.EnemyD;
-				if (!StageData.EnemyE.IsNone()) MobE = StageData.EnemyE;
+				AddStageMob(StageData.EnemyA);
+				AddStageMob(StageData.EnemyB);
+				AddStageMob(StageData.EnemyC);
+				AddStageMob(StageData.EnemyD);
+				AddStageMob(StageData.EnemyE);
+				AddStageMob(StageData.EnemyF);
+				AddStageMob(StageData.EnemyG);
+				AddStageMob(StageData.EnemyH);
+				AddStageMob(StageData.EnemyI);
+				AddStageMob(StageData.EnemyJ);
 			}
 		}
 
-		OutMobIDs = { MobA, MobB, MobC, MobD, MobE };
+		if (StageMobIDs.Num() > 0)
+		{
+			OutMobIDs = MoveTemp(StageMobIDs);
+			return;
+		}
+
+		OutMobIDs = {
+			FName(*FString::Printf(TEXT("Mob_Stage%02d_A"), StageNum)),
+			FName(*FString::Printf(TEXT("Mob_Stage%02d_B"), StageNum)),
+			FName(*FString::Printf(TEXT("Mob_Stage%02d_C"), StageNum)),
+			FName(*FString::Printf(TEXT("Mob_Stage%02d_D"), StageNum)),
+			FName(*FString::Printf(TEXT("Mob_Stage%02d_E"), StageNum))
+		};
 	}
 
 	static TSubclassOf<AT66EnemyBase> T66ResolveEnemyClassFromFamilyID(const FName FamilyID, TSubclassOf<AT66EnemyBase> FallbackClass)
@@ -699,23 +722,24 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		RegularClass = AT66MeleeEnemy::StaticClass();
 	}
 
-	// Stage mobs: pull exact roster from DT_Stages (EnemyA/B/C/D/E). Fallback is deterministic IDs.
+	// Stage mobs: pull exact non-empty roster from DT_Stages (EnemyA..EnemyJ). Fallback is deterministic IDs.
 	const int32 StageNum = RunState->GetCurrentStage();
 	TArray<FName> MobIDs;
 	T66ResolveStageMobIDs(GI, StageNum, MobIDs);
-	const FName MobA = MobIDs.IsValidIndex(0) ? MobIDs[0] : NAME_None;
-	const FName MobB = MobIDs.IsValidIndex(1) ? MobIDs[1] : NAME_None;
-	const FName MobC = MobIDs.IsValidIndex(2) ? MobIDs[2] : NAME_None;
-	const FName MobD = MobIDs.IsValidIndex(3) ? MobIDs[3] : NAME_None;
-	const FName MobE = MobIDs.IsValidIndex(4) ? MobIDs[4] : NAME_None;
 
 #if !UE_BUILD_SHIPPING
 	static int32 LoggedMobWaves = 0;
 	if (LoggedMobWaves < 3)
 	{
 		++LoggedMobWaves;
-		UE_LOG(LogT66EnemyDirector, Verbose, TEXT("[SPAWN] SpawnWave Stage=%d MobIDs: A=%s  B=%s  C=%s  D=%s  E=%s (generic fallback would be Mob_StageXX_X - if you see that, reimport DT_Stages)"),
-			StageNum, *MobA.ToString(), *MobB.ToString(), *MobC.ToString(), *MobD.ToString(), *MobE.ToString());
+		TArray<FString> MobDebugParts;
+		MobDebugParts.Reserve(MobIDs.Num());
+		for (int32 MobIndex = 0; MobIndex < MobIDs.Num(); ++MobIndex)
+		{
+			MobDebugParts.Add(FString::Printf(TEXT("%d=%s"), MobIndex + 1, *MobIDs[MobIndex].ToString()));
+		}
+		UE_LOG(LogT66EnemyDirector, Verbose, TEXT("[SPAWN] SpawnWave Stage=%d MobIDs: %s (generic fallback would be Mob_StageXX_X - if you see that, reimport DT_Stages)"),
+			StageNum, *FString::Join(MobDebugParts, TEXT("  ")));
 	}
 #endif
 

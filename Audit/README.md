@@ -16,6 +16,7 @@ This folder keeps audit material organized by action status.
 
 - `Finished/T66_ARCHIVE_ASSET_CLEANUP_LEDGER.md`: closed source-asset archive cleanup audit trail.
 - `Finished/T66_FULL_AUDIT_2026-05-04.md`: full current-source audit remediated through the 2026-05-05 closeout waves.
+- `Finished/INSTRUCTION_ROUTER_REFACTOR_PROPOSAL.md`: approved instruction-router refactor proposal and implementation record.
 - `Finished/T66_MASTER_OPTIMIZATION_AUDIT_V5.md`: optimization master remediated through the 2026-05-05 closeout waves.
 - `Finished/T66_PACKAGING_CLEANUP_TRACKER.md`: packaging/runtime asset-contract tracker closed with guard and fresh staged build validation.
 - `Finished/PERFORMANCE_AUDIT.md`: older performance audit verified closed against current source.

@@ -10,14 +10,14 @@
 #include "T66CompanionSelectionScreen.generated.h"
 
 class UT66LocalizationSubsystem;
-class AT66CompanionPreviewStage;
-class AT66HeroPreviewStage;
+class UT66FrontendVideoPlayer;
 class SImage;
 class UTexture2D;
+struct FSlateBrush;
 
 /**
  * Companion Selection Screen - Mirrors Hero Selection layout
- * Top: Companion grid button + carousel (colored tiles). Center: 3D preview or colored box.
+ * Top: Companion grid button + carousel (colored tiles). Center: video preview or colored box.
  * Left: Skins. Right: Companion info (name + LORE, passive, medals). No body type.
  */
 UCLASS(Blueprintable)
@@ -34,7 +34,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Companion Selection")
 	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
 
-	/** When set, 3D preview shows this skin instead of equipped (e.g. Beachgoer preview). */
+	/** When set, video preview shows this skin instead of equipped (e.g. Beachgoer preview). */
 	FName PreviewedCompanionSkinIDOverride = NAME_None;
 
 	UFUNCTION(BlueprintCallable, Category = "Companion Selection")
@@ -105,8 +105,6 @@ private:
 	TSharedPtr<struct FSlateBrush> ACBalanceIconBrush;
 	TStrongObjectPtr<UTexture2D> ACBalanceIconTexture;
 
-	AT66CompanionPreviewStage* GetCompanionPreviewStage() const;
-	AT66HeroPreviewStage* GetHeroPreviewStage() const;
 	TSharedRef<SWidget> CreateCompanionPreviewWidget(const FLinearColor& FallbackColor);
 
 	void RefreshCompanionList();
@@ -128,8 +126,8 @@ private:
 	TArray<TSharedPtr<struct FSlateBrush>> PartyHeroPortraitBrushes;
 	TArray<TSharedPtr<SImage>> PartyAvatarImageWidgets;
 	TArray<TSharedPtr<SImage>> PartyHeroPortraitImageWidgets;
-	mutable TWeakObjectPtr<AT66CompanionPreviewStage> CachedCompanionPreviewStage;
-	mutable TWeakObjectPtr<AT66HeroPreviewStage> CachedHeroPreviewStage;
+	UPROPERTY(Transient)
+	TObjectPtr<UT66FrontendVideoPlayer> CompanionPreviewVideoPlayer;
 	TArray<TSharedPtr<FString>> DifficultyOptions;
 	TSharedPtr<FString> CurrentDifficultyOption;
 	FString CompanionRecordRankRequestKey;
@@ -166,4 +164,5 @@ private:
 	void OnChallengesClicked();
 	void OnModsClicked();
 	void OpenCommunityContent(bool bOpenMods);
+	const FSlateBrush* GetCompanionPreviewVideoBrush() const;
 };

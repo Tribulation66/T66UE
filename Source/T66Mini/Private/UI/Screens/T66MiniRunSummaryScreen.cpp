@@ -120,7 +120,7 @@ TSharedRef<SWidget> UT66MiniRunSummaryScreen::BuildSlateUI()
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(HeroDisplayName)).Font(T66MiniUI::BoldFont(22)).ColorAndOpacity(FLinearColor::White)]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("Difficulty: %s"), *DifficultyDisplayName))).Font(T66MiniUI::BodyFont(17)).ColorAndOpacity(T66MiniUI::MutedText())]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("Wave reached: %d / 5"), Summary.WaveReached))).Font(T66MiniUI::BodyFont(17)).ColorAndOpacity(FLinearColor::White)]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("Wave reached: %d / 10"), Summary.WaveReached))).Font(T66MiniUI::BodyFont(17)).ColorAndOpacity(FLinearColor::White)]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("Materials banked: %d"), Summary.MaterialsCollected))).Font(T66MiniUI::BodyFont(17)).ColorAndOpacity(FLinearColor::White)]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)[SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("Run time: %.1fs"), Summary.RunSeconds))).Font(T66MiniUI::BodyFont(17)).ColorAndOpacity(FLinearColor::White)]
 						, FMargin(26.f, 22.f, 42.f, 26.f))
@@ -146,7 +146,7 @@ TSharedRef<SWidget> UT66MiniRunSummaryScreen::BuildSlateUI()
 					[
 						MakeSummaryChip(
 							NSLOCTEXT("T66Mini.RunSummary", "SummaryWave", "WAVE"),
-							FText::FromString(FString::Printf(TEXT("%d / 5"), Summary.WaveReached)),
+							FText::FromString(FString::Printf(TEXT("%d / 10"), Summary.WaveReached)),
 							FLinearColor::White)
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 12.f, 0.f)

@@ -387,14 +387,16 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 									SNew(SOverlay)
 									+ SOverlay::Slot()
 									[
-										FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+										FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 											SNew(SImage)
 											.Image_Lambda([this]() -> const FSlateBrush*
 											{
 												return ACBalanceIconBrush.IsValid() && ::IsValid(ACBalanceIconBrush->GetResourceObject())
 													? ACBalanceIconBrush.Get()
 													: nullptr;
-											})))
+											})),
+											FName(*FString::Printf(TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.%s.PriceIcon"), *SkinIDCopy.ToString())),
+											TEXT("Icon"))
 									]
 										+ SOverlay::Slot()
 										.HAlign(HAlign_Center)
@@ -466,14 +468,16 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 										SNew(SOverlay)
 										+ SOverlay::Slot()
 										[
-											FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+											FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 												SNew(SImage)
 												.Image_Lambda([this]() -> const FSlateBrush*
 												{
 													return ACBalanceIconBrush.IsValid() && ::IsValid(ACBalanceIconBrush->GetResourceObject())
 														? ACBalanceIconBrush.Get()
 														: nullptr;
-												})))
+												})),
+												FName(*FString::Printf(TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.%s.PriceIcon"), *SkinIDCopy.ToString())),
+												TEXT("Icon"))
 										]
 										+ SOverlay::Slot()
 										.HAlign(HAlign_Center)

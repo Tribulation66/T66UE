@@ -558,18 +558,18 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatGameplaySettingsUI()
 			ET66FlatState::Default));
 
 	AddN(0.000f, 0.095f, 1.000f, 0.905f, MakeMetadataRegion(DTag(TEXT("SettingsGameplay.Root")), TEXT("Root")));
-	AddN(0.003f, 0.094f, 0.994f, 0.079f, MakeMetadataRegion(DTag(TEXT("SettingsGameplay.SettingsTabs")), TEXT("ToggleGroup.SettingsTabs")));
+	AddN(0.003f, 0.123f, 0.994f, 0.079f, MakeMetadataRegion(DTag(TEXT("SettingsGameplay.SettingsTabs")), TEXT("ToggleGroup.SettingsTabs")));
 
-	AddN(0.003f, 0.094f, 0.119f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.GameplayButton")), ET66SettingsTab::Gameplay, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabGameplayFlatGameplay", "GAMEPLAY"), 0.119f * CanvasW));
-	AddN(0.129f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.GraphicsButton")), ET66SettingsTab::Graphics, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGraphicsFlatGameplay", "GRAPHICS"), 0.118f * CanvasW));
-	AddN(0.253f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.ControlsButton")), ET66SettingsTab::Controls, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabControlsFlatGameplay", "CONTROLS"), 0.118f * CanvasW));
-	AddN(0.379f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.HUDButton")), ET66SettingsTab::HUD, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabHUDFlatGameplay", "HUD"), 0.118f * CanvasW));
-	AddN(0.503f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatGameplay", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
-	AddN(0.628f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatGameplay", "AUDIO"), 0.118f * CanvasW));
-	AddN(0.754f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatGameplay", "CRASHING"), 0.118f * CanvasW, 20));
-	AddN(0.879f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatGameplay", "RETRO FX"), 0.118f * CanvasW, 20));
+	AddN(0.003f, 0.123f, 0.119f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.GameplayButton")), ET66SettingsTab::Gameplay, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabGameplayFlatGameplay", "GAMEPLAY"), 0.119f * CanvasW));
+	AddN(0.129f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.GraphicsButton")), ET66SettingsTab::Graphics, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGraphicsFlatGameplay", "GRAPHICS"), 0.118f * CanvasW));
+	AddN(0.253f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.ControlsButton")), ET66SettingsTab::Controls, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabControlsFlatGameplay", "CONTROLS"), 0.118f * CanvasW));
+	AddN(0.379f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.HUDButton")), ET66SettingsTab::HUD, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabHUDFlatGameplay", "HUD"), 0.118f * CanvasW));
+	AddN(0.503f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatGameplay", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
+	AddN(0.628f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatGameplay", "AUDIO"), 0.118f * CanvasW));
+	AddN(0.754f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatGameplay", "CRASHING"), 0.118f * CanvasW, 20));
+	AddN(0.879f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatGameplay", "RETRO FX"), 0.118f * CanvasW, 20));
 
-	AddN(0.002f, 0.194f, 0.978f, 0.753f,
+	AddN(0.002f, 0.223f, 0.978f, 0.724f,
 		FT66FlatStyle::AttachMetadata(
 			SNew(SScrollBox)
 			.ScrollBarVisibility(EVisibility::Visible)
@@ -609,7 +609,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 			{
 				Box->AddSlot().AutoHeight()
 				[
-					FT66Style::MakeDropdownOptionButton(
+					MakeSettingsDropdownOptionButton(
 						Label,
 						FOnClicked::CreateLambda([this, SetSelection, OptionSelection, GetCurrentValue, CurrentValueText]()
 						{
@@ -667,7 +667,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 	};
 
 	return SNew(SScrollBox)
-		.ScrollBarStyle(GetSettingsReferenceScrollBarStyle())
+		.ScrollBarStyle(GetSettingsFlatScrollBarStyle())
 		.ScrollBarVisibility(EVisibility::Visible)
 		.ScrollBarThickness(FVector2D(14.f, 14.f))
 		.ScrollBarPadding(FMargin(10.f, 0.f, 2.f, 0.f))

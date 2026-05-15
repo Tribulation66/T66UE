@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/T66DataTypes.h"
 #include "GameFramework/Character.h"
 #include "Gameplay/Enemies/T66EnemyFamilyTypes.h"
 #include "Gameplay/T66CombatTargetTypes.h"
@@ -13,6 +14,7 @@ class UStaticMeshComponent;
 class AT66EnemyDirector;
 class UT66CombatHitZoneComponent;
 class UPrimitiveComponent;
+class UMaterialInstanceDynamic;
 
 UCLASS(Blueprintable)
 class T66_API AT66EnemyBase : public ACharacter
@@ -184,7 +186,7 @@ public:
 	/** Apply difficulty tier (Tier 0 = 1.0x, Tier 1 = 1.1x, Tier 2 = 1.2x, ...). */
 	void ApplyDifficultyTier(int32 Tier);
 
-	/** Stage mob ID (data-driven via DT_Stages EnemyA/B/C/D/E). NAME_None means "not a stage mob". */
+	/** Stage mob ID (data-driven via DT_Stages EnemyA..EnemyJ). NAME_None means "not a stage mob". */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mob")
 	FName MobID;
 
@@ -195,6 +197,11 @@ public:
 	/** Configure placeholder visuals for a stage mob (shape + color). */
 	UFUNCTION(BlueprintCallable, Category = "Mob")
 	void ConfigureAsMob(FName InMobID);
+
+#if !UE_BUILD_SHIPPING
+	/** Automation-only hook for staged visual smoke tests. */
+	void ForceMobVertexAnimationClipForAutomation(FName ClipName, float OverrideSeconds = 30.f);
+#endif
 
 	/** Apply mini-boss multipliers (call after difficulty scaling). */
 	UFUNCTION(BlueprintCallable, Category = "Mob")
@@ -234,6 +241,10 @@ private:
 	APawn* ResolveCachedPlayerPawn(float DeltaSeconds);
 	void RebuildScaledCombatStats(bool bResetCurrentHPToMax);
 	void RefreshCombatHitZoneState();
+	bool TryApplyMobVertexAnimationVisual();
+	void SetMobVertexAnimationClip(FName ClipName, float OverrideSeconds = 0.f);
+	void TickMobVertexAnimationState(float DeltaSeconds);
+	bool GetMobVertexAnimationClipRange(FName ClipName, int32& OutStartFrame, int32& OutEndFrame, float& OutPlayRate) const;
 	ET66HitZoneType ResolveHitZoneType(const UPrimitiveComponent* HitComponent, ET66HitZoneType PreferredZone) const;
 	float GetHitZoneDamageMultiplier(ET66HitZoneType HitZoneType) const;
 
@@ -249,6 +260,14 @@ private:
 	float SafeZoneLoiterDirRefreshAccum = 0.f;
 	static constexpr float SafeZoneLoiterDirRefreshInterval = 0.85f;
 	static constexpr float SafeZoneLoiterMoveScale = 0.35f;
+
+	FT66MobVertexAnimationRow ActiveMobVertexAnimationRow;
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> ActiveMobVertexAnimationMID;
+	FName ActiveMobVertexAnimationClip = NAME_None;
+	float MobVertexAnimationClipTime = 0.f;
+	float MobVertexAnimationOverrideSecondsRemaining = 0.f;
+	bool bUsingMobVertexAnimation = false;
 
 	bool bBaseTuningInitialized = false;
 	bool bStageScalingApplied = false;

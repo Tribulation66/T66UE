@@ -3,59 +3,45 @@
 #include "UI/Screens/HeroSelection/T66HeroSelectionPreviewController.h"
 #include "UI/Screens/HeroSelection/T66HeroSelectionScreen_Private.h"
 
-#include "Core/T66CharacterVisualSubsystem.h"
-#include "Misc/CommandLine.h"
-#include "Misc/Parse.h"
-#include "TimerManager.h"
+#include "UI/T66FrontendVideoCatalog.h"
+#include "UI/T66FrontendVideoPlayer.h"
+#include "Widgets/Images/SImage.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/SOverlay.h"
 
 using namespace T66HeroSelectionPrivate;
 
 void UT66HeroSelectionPreviewController::Initialize(UT66HeroSelectionScreen* InOwnerScreen)
 {
 	OwnerScreen = InOwnerScreen;
-	CachedHeroPreviewStage.Reset();
-	CachedCompanionPreviewStage.Reset();
 }
 
 TSharedRef<SWidget> UT66HeroSelectionPreviewController::CreateHeroPreviewWidget(const FLinearColor& FallbackColor)
 {
-	if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
-	{
-		const TWeakObjectPtr<AT66HeroPreviewStage> WeakPreviewStage(PreviewStage);
-		return SNew(SBox)
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			[
-				SNew(ST66DragRotateStagePreview)
-				.DegreesPerPixel(0.28f)
-				.OnRotateYaw(FT66DragPreviewDeltaDelegate::CreateLambda([WeakPreviewStage](const float DeltaYaw)
-				{
-					if (AT66HeroPreviewStage* Stage = WeakPreviewStage.Get())
-					{
-						Stage->AddPreviewYaw(DeltaYaw);
-					}
-				}))
-				.OnZoom(FT66DragPreviewDeltaDelegate::CreateLambda([WeakPreviewStage](const float ZoomDelta)
-				{
-					if (AT66HeroPreviewStage* Stage = WeakPreviewStage.Get())
-					{
-						Stage->AddPreviewZoom(ZoomDelta);
-						T66PositionHeroPreviewCamera(Stage);
-					}
-				}))
-			];
-	}
-
 	TSharedPtr<SBorder> PreviewColorBoxWidget;
+	TSharedPtr<SImage> PreviewVideoImageWidget;
 	const TSharedRef<SBorder> PreviewColorBoxWidgetRef =
 		SAssignNew(PreviewColorBoxWidget, SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FallbackColor)
 		[
 			SNew(SBox)
-		];
+	];
+	const TSharedRef<SImage> PreviewVideoImageWidgetRef =
+		SAssignNew(PreviewVideoImageWidget, SImage)
+		.Image_UObject(this, &UT66HeroSelectionPreviewController::GetHeroPreviewVideoBrush);
 	HeroPreviewColorBox = PreviewColorBoxWidget;
-	return PreviewColorBoxWidgetRef;
+	HeroPreviewVideoImage = PreviewVideoImageWidget;
+	return SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			PreviewColorBoxWidgetRef
+		]
+		+ SOverlay::Slot()
+		[
+			PreviewVideoImageWidgetRef
+		];
 }
 
 void UT66HeroSelectionPreviewController::BindPreviewPanelWidgets(
@@ -151,118 +137,80 @@ void UT66HeroSelectionPreviewController::RefreshCompanionPreviewPanel(
 	}
 }
 
-void UT66HeroSelectionPreviewController::ApplySelectionDifficultyToPreviewStages(ET66Difficulty SelectedDifficulty) const
-{
-	if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
-	{
-		PreviewStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		PreviewStage->SetPreviewDifficulty(SelectedDifficulty);
-	}
-
-	if (GetOwnerScreen())
-	{
-		if (AT66CompanionPreviewStage* CompanionStage = GetCompanionPreviewStage())
-		{
-			CompanionStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-			CompanionStage->SetPreviewDifficulty(SelectedDifficulty);
-		}
-
-		PositionPreviewCamera();
-	}
-}
-
-void UT66HeroSelectionPreviewController::ApplyHeroPreviewStage(
+void UT66HeroSelectionPreviewController::ApplyHeroPreviewVideo(
 	UT66GameInstance* GameInstance,
 	FName PreviewedHeroID,
 	FName PreviewedCompanionID,
 	ET66BodyType SelectedBodyType,
 	ET66Difficulty SelectedDifficulty,
+	bool bShowingCompanionInfo,
 	const FLinearColor& FallbackColor) const
 {
-	if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
+	static_cast<void>(SelectedDifficulty);
+
+	bool bVideoOpened = false;
+	if (bShowingCompanionInfo && !PreviewedCompanionID.IsNone())
 	{
-		if (TSharedPtr<SBorder> PreviewColorBox = HeroPreviewColorBox.Pin())
+		FName EffectiveCompanionSkinID = ResolveEffectiveCompanionSkinID(GameInstance, PreviewedCompanionID);
+		if (EffectiveCompanionSkinID.IsNone())
 		{
-			PreviewColorBox->SetBorderBackgroundColor(FLinearColor::Transparent);
+			EffectiveCompanionSkinID = FName(TEXT("Default"));
 		}
 
+		FT66FrontendVideoAsset VideoAsset;
+		if (T66FrontendVideoCatalog::ResolveCompanionSelection(PreviewedCompanionID, EffectiveCompanionSkinID, VideoAsset))
+		{
+			if (!HeroPreviewVideoPlayer)
+			{
+				HeroPreviewVideoPlayer = NewObject<UT66FrontendVideoPlayer>(const_cast<UT66HeroSelectionPreviewController*>(this));
+			}
+			if (HeroPreviewVideoPlayer)
+			{
+				bVideoOpened = HeroPreviewVideoPlayer->OpenVideo(
+					VideoAsset,
+					FVector2D(712.f, 680.f),
+					FName(TEXT("HeroSelectionCompanionPreview")));
+			}
+		}
+	}
+	else if (!PreviewedHeroID.IsNone())
+	{
 		FName EffectiveSkinID = ResolveEffectiveHeroSkinID(GameInstance);
 		if (EffectiveSkinID.IsNone())
 		{
 			EffectiveSkinID = FName(TEXT("Default"));
 		}
 
-		const FName EffectiveCompanionSkinID = ResolveEffectiveCompanionSkinID(GameInstance, PreviewedCompanionID);
-		PreviewStage->SetPreviewStageMode(ET66PreviewStageMode::Selection);
-		PreviewStage->SetPreviewDifficulty(SelectedDifficulty);
-		UE_LOG(
-			LogT66HeroSelection,
-			Verbose,
-			TEXT("[BEACH] UpdateHeroDisplay: PreviewSkinIDOverride=%s, GI->SelectedHeroSkinID=%s, EffectiveSkinID=%s"),
-			*PreviewSkinIDOverride.ToString(),
-			GameInstance ? *GameInstance->SelectedHeroSkinID.ToString() : TEXT("(null GI)"),
-			*EffectiveSkinID.ToString());
-		UE_LOG(
-			LogT66HeroSelection,
-			Verbose,
-			TEXT("[BEACH] UpdateHeroDisplay: calling SetPreviewHero HeroID=%s BodyType=%d SkinID=%s"),
-			*PreviewedHeroID.ToString(),
-			static_cast<int32>(SelectedBodyType),
-			*EffectiveSkinID.ToString());
-		FString AutomationScreenshotPath;
-		if (FParse::Value(FCommandLine::Get(), TEXT("T66AutoScreenshot="), AutomationScreenshotPath))
+		FT66FrontendVideoAsset VideoAsset;
+		if (T66FrontendVideoCatalog::ResolveHeroSelection(PreviewedHeroID, EffectiveSkinID, SelectedBodyType, VideoAsset))
 		{
-			const FName HeroVisualID = UT66CharacterVisualSubsystem::GetHeroVisualID(PreviewedHeroID, SelectedBodyType, EffectiveSkinID);
-			if (!bPendingAutomationPreviewRefresh)
+			if (!HeroPreviewVideoPlayer)
 			{
-				if (UT66CharacterVisualSubsystem* Visuals = GameInstance ? GameInstance->GetSubsystem<UT66CharacterVisualSubsystem>() : nullptr)
-				{
-					if (!Visuals->IsCharacterVisualReady(HeroVisualID))
-					{
-						bPendingAutomationPreviewRefresh = true;
-						if (UWorld* World = GetOwnerScreen() ? GetOwnerScreen()->GetWorld() : nullptr)
-						{
-							FTimerHandle RetryHandle;
-							const TWeakObjectPtr<UT66HeroSelectionPreviewController> WeakThis(const_cast<UT66HeroSelectionPreviewController*>(this));
-							World->GetTimerManager().SetTimer(
-								RetryHandle,
-								FTimerDelegate::CreateLambda([
-									WeakThis,
-									GameInstance,
-									PreviewedHeroID,
-									PreviewedCompanionID,
-									SelectedBodyType,
-									SelectedDifficulty,
-									FallbackColor]()
-								{
-									if (UT66HeroSelectionPreviewController* Controller = WeakThis.Get())
-									{
-										Controller->bPendingAutomationPreviewRefresh = false;
-										Controller->ApplyHeroPreviewStage(
-											GameInstance,
-											PreviewedHeroID,
-											PreviewedCompanionID,
-											SelectedBodyType,
-											SelectedDifficulty,
-											FallbackColor);
-									}
-								}),
-								1.25f,
-								false);
-						}
-					}
-				}
+				HeroPreviewVideoPlayer = NewObject<UT66FrontendVideoPlayer>(const_cast<UT66HeroSelectionPreviewController*>(this));
 			}
-			PreviewStage->SetPreviewHero(NAME_None, SelectedBodyType, EffectiveSkinID, NAME_None, NAME_None);
+			if (HeroPreviewVideoPlayer)
+			{
+				bVideoOpened = HeroPreviewVideoPlayer->OpenVideo(
+					VideoAsset,
+					FVector2D(712.f, 680.f),
+					FName(TEXT("HeroSelectionHeroPreview")));
+			}
 		}
-		PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID, PreviewedCompanionID, EffectiveCompanionSkinID);
-		PositionPreviewCamera();
-		return;
+	}
+
+	if (!bVideoOpened && HeroPreviewVideoPlayer)
+	{
+		HeroPreviewVideoPlayer->CloseVideo();
 	}
 
 	if (TSharedPtr<SBorder> PreviewColorBox = HeroPreviewColorBox.Pin())
 	{
-		PreviewColorBox->SetBorderBackgroundColor(FallbackColor);
+		PreviewColorBox->SetBorderBackgroundColor(bVideoOpened ? FLinearColor::Transparent : FallbackColor);
+	}
+	if (TSharedPtr<SImage> PreviewVideoImage = HeroPreviewVideoImage.Pin())
+	{
+		PreviewVideoImage->SetImage(GetHeroPreviewVideoBrush());
+		PreviewVideoImage->Invalidate(EInvalidateWidgetReason::Paint);
 	}
 }
 
@@ -363,7 +311,9 @@ FName UT66HeroSelectionPreviewController::ResolveEffectiveCompanionSkinID(
 
 const FSlateBrush* UT66HeroSelectionPreviewController::GetHeroPreviewVideoBrush() const
 {
-	return nullptr;
+	return HeroPreviewVideoPlayer
+		? HeroPreviewVideoPlayer->GetVideoBrush()
+		: nullptr;
 }
 
 const FSlateBrush* UT66HeroSelectionPreviewController::GetCompanionInfoPortraitBrush() const
@@ -371,81 +321,6 @@ const FSlateBrush* UT66HeroSelectionPreviewController::GetCompanionInfoPortraitB
 	return CompanionInfoPortraitBrush.IsValid()
 		? CompanionInfoPortraitBrush.Get()
 		: nullptr;
-}
-
-AT66HeroPreviewStage* UT66HeroSelectionPreviewController::GetHeroPreviewStage() const
-{
-	if (AT66HeroPreviewStage* CachedStage = CachedHeroPreviewStage.Get())
-	{
-		return CachedStage;
-	}
-
-	UT66HeroSelectionScreen* Screen = GetOwnerScreen();
-	UWorld* World = Screen ? Screen->GetWorld() : nullptr;
-	if (!World)
-	{
-		return nullptr;
-	}
-
-	if (AT66PlayerController* PC = T66GetLocalFrontendHeroPlayerController(Screen))
-	{
-		PC->EnsureLocalFrontendPreviewScene();
-	}
-
-	if (AT66HeroPreviewStage* CachedStage = CachedHeroPreviewStage.Get())
-	{
-		return CachedStage;
-	}
-
-	// UI setup fallback: preview stages are spawned once by the frontend scene and
-	// cached here so repeated selection refreshes do not rescan the world.
-	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
-	{
-		CachedHeroPreviewStage = *It;
-		return CachedHeroPreviewStage.Get();
-	}
-	return nullptr;
-}
-
-AT66CompanionPreviewStage* UT66HeroSelectionPreviewController::GetCompanionPreviewStage() const
-{
-	if (AT66CompanionPreviewStage* CachedStage = CachedCompanionPreviewStage.Get())
-	{
-		return CachedStage;
-	}
-
-	UT66HeroSelectionScreen* Screen = GetOwnerScreen();
-	UWorld* World = Screen ? Screen->GetWorld() : nullptr;
-	if (!World)
-	{
-		return nullptr;
-	}
-
-	if (AT66PlayerController* PC = T66GetLocalFrontendHeroPlayerController(Screen))
-	{
-		PC->EnsureLocalFrontendPreviewScene();
-	}
-
-	if (AT66CompanionPreviewStage* CachedStage = CachedCompanionPreviewStage.Get())
-	{
-		return CachedStage;
-	}
-
-	// UI setup fallback: cached after first resolve for this controller.
-	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
-	{
-		CachedCompanionPreviewStage = *It;
-		return CachedCompanionPreviewStage.Get();
-	}
-	return nullptr;
-}
-
-void UT66HeroSelectionPreviewController::PositionPreviewCamera() const
-{
-	if (UT66HeroSelectionScreen* Screen = GetOwnerScreen())
-	{
-		T66PositionHeroPreviewCamera(Screen);
-	}
 }
 
 UT66HeroSelectionScreen* UT66HeroSelectionPreviewController::GetOwnerScreen() const

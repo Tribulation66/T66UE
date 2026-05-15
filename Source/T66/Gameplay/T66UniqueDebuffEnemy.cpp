@@ -47,7 +47,7 @@ AT66UniqueDebuffEnemy::AT66UniqueDebuffEnemy()
 {
 	EnemyFamily = ET66EnemyFamily::Special;
 
-	CharacterVisualID = FName(TEXT("Martian_PlasmaSpitter"));
+	CharacterVisualID = FName(TEXT("PlasmaSpitter"));
 
 	// Unique enemies do not drop loot or XP in the Bible.
 	bDropsLoot = false;

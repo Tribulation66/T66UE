@@ -15,11 +15,11 @@ static FName T66_GetGoblinThiefVisualIdForRarity(ET66Rarity R)
 {
 	switch (R)
 	{
-	case ET66Rarity::Black:  return FName(TEXT("Forest_ThornImp"));
-	case ET66Rarity::Red:    return FName(TEXT("Hell_Imp"));
-	case ET66Rarity::Yellow: return FName(TEXT("Martian_RocketLeaper"));
-	case ET66Rarity::White:  return FName(TEXT("Hell_Gargoyle"));
-	default:                 return FName(TEXT("Forest_ThornImp"));
+	case ET66Rarity::Black:  return FName(TEXT("ThornImp"));
+	case ET66Rarity::Red:    return FName(TEXT("PitImp"));
+	case ET66Rarity::Yellow: return FName(TEXT("RocketLeaper"));
+	case ET66Rarity::White:  return FName(TEXT("Gargoyle"));
+	default:                 return FName(TEXT("ThornImp"));
 	}
 }
 

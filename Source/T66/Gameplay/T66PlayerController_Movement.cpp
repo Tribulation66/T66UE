@@ -60,29 +60,16 @@ void AT66PlayerController::UpdateHeroMovementIntent()
 	HeroMovement->SetMoveInputAxes(AppliedForward, AppliedRight);
 }
 
-void AT66PlayerController::HandleDashPressed()
+void AT66PlayerController::HandleRollPressed()
 {
 	if (!IsGameplayLevel())
 	{
 		return;
 	}
 
-	if (UT66HeroMovementComponent* HeroMovement = T66ResolveHeroMovementComponent(GetPawn()))
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
 	{
-		HeroMovement->SetDashModifierHeld(true);
-	}
-}
-
-void AT66PlayerController::HandleDashReleased()
-{
-	if (!IsGameplayLevel())
-	{
-		return;
-	}
-
-	if (UT66HeroMovementComponent* HeroMovement = T66ResolveHeroMovementComponent(GetPawn()))
-	{
-		HeroMovement->SetDashModifierHeld(false);
+		Hero->RollForward();
 	}
 }
 

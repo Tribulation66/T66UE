@@ -147,7 +147,7 @@ struct FT66FlatTransparentRegionParams
  * - MakeFlatLabel / MakeFlatStatRow / MakeFlatStatsTable / MakeFlatProgressBar / MakeFlatDivider / MakeFlatPaginationIndicator
  * - MakeFlatPortraitSlot / MakeFlatRankingRow / MakeFlatTopBar / MakeFlatSlimTopBar
  *
- * These helpers draw axis-aligned Slate rectangles with solid fills and 2 px borders.
+ * These helpers draw axis-aligned Slate rectangles with solid fills and clean 2 px borders.
  * They intentionally do not call the PNG chrome path, M_UI_Glow, or ST66RetroUIRetainedSurface.
  */
 class T66_API FT66FlatStyle
@@ -300,6 +300,18 @@ public:
 		const FSlateBrush* Icon,
 		FOnClicked OnClicked,
 		const FVector2D& SizeHint = FVector2D(48.f, 48.f),
+		FName Tag = NAME_None);
+
+	static TSharedRef<SWidget> MakeFlatTooltipContent(
+		const FText& Text,
+		float Width = 360.f,
+		FName Tag = NAME_None);
+
+	static TSharedRef<SWidget> MakeFlatTooltipIcon(
+		ET66FlatState State,
+		const FSlateBrush* Icon,
+		const FText& TooltipText,
+		const FVector2D& SizeHint = FVector2D(31.f, 31.f),
 		FName Tag = NAME_None);
 
 	static TSharedRef<SWidget> MakeFlatTabButton(

@@ -152,6 +152,11 @@ void UT66ScreenBase::RequestDeferredSlateRebuild()
 		bSlateRebuildQueued = true;
 	}
 
+	if (UIManager && UIManager->RequestFrontendRootLayerRefresh(this))
+	{
+		return;
+	}
+
 	FT66Style::DeferRebuild(this, bIsModal ? 100 : 0);
 }
 

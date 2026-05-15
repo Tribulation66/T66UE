@@ -2,6 +2,9 @@
 
 #include "UI/Screens/T66MainMenuScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/T66FrontendVideoCatalog.h"
+#include "UI/T66FrontendVideoPlayer.h"
+#include "UI/Components/T66FlatLeaderboardPanel.h"
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Style/T66ReferenceLayout.h"
@@ -640,6 +643,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::RebuildWidget()
 
 TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 {
+	RequestBackgroundTexture();
+	RequestMainMenuChromeBrushes();
+	RequestCTAButtonBrushes();
+
 	CachedViewportSize = GetEffectiveFrontendViewportSize();
 	LastBuiltViewportSize = CachedViewportSize;
 	PendingViewportSize = CachedViewportSize;
@@ -648,6 +655,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
 	UT66PlayerSettingsSubsystem* PlayerSettings = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
 	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
@@ -1307,15 +1315,29 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			];
 	};
 
-	AddCanvasSlot(0.f, 0.f, 1920.f, 1080.f, MakeSpacerPanel(Tag(TEXT("MainMenu.BackgroundRegion"))));
+	AddCanvasSlot(
+		0.f,
+		0.f,
+		1920.f,
+		1080.f,
+		FT66FlatStyle::AttachMetadata(
+			BuildMainMenuBackgroundWidget(),
+			Tag(TEXT("MainMenu.BackgroundRegion")),
+			TEXT("BackgroundRegion"),
+			ET66FlatState::Default));
 	AddCanvasSlot(16.f, 148.f, 464.f, 884.f, MakeLeftPanel());
 	AddCanvasSlot(558.f, 350.f, 760.f, 265.f, MakeTitleRegion());
 	AddCanvasSlot(600.f, 650.f, 720.f, 346.f, MakeCtaStack());
-	AddCanvasSlot(1424.f, 148.f, 476.f, 884.f, MakeSpacerPanel(Tag(TEXT("MainMenu.Right.Panel"))));
-	AddCanvasSlot(1435.f, 149.f, 136.f, 72.f, MakeFilterButton(0, FText::FromString(TEXT("WORLD")), Tag(TEXT("MainMenu.Right.FilterWorldButton"))));
-	AddCanvasSlot(1585.f, 149.f, 136.f, 72.f, MakeFilterButton(1, FText::FromString(TEXT("FRIENDS")), Tag(TEXT("MainMenu.Right.FilterFriendsButton"))));
-	AddCanvasSlot(1735.f, 149.f, 136.f, 72.f, MakeFilterButton(2, FText::FromString(TEXT("STREAM")), Tag(TEXT("MainMenu.Right.FilterStreamersButton"))));
-	AddCanvasSlot(1442.f, 250.f, 440.f, 764.f, MakeRightPanel());
+	AddCanvasSlot(
+		1424.f,
+		148.f,
+		476.f,
+		884.f,
+		SAssignNew(FlatLeaderboardPanel, ST66FlatLeaderboardPanel)
+		.LocalizationSubsystem(Loc)
+		.LeaderboardSubsystem(LB)
+		.UIManager(UIManager)
+		.TagPrefix(TEXT("MainMenu.Right")));
 
 	const FVector2D MainMenuViewportSize = GetEffectiveFrontendViewportSize();
 	TSharedRef<SWidget> RootContent =
@@ -3011,6 +3033,10 @@ void UT66MainMenuScreen::OnScreenActivated_Implementation()
 	{
 		LeaderboardPanel->SetUIManager(UIManager);
 	}
+	if (FlatLeaderboardPanel.IsValid())
+	{
+		FlatLeaderboardPanel->SetUIManager(UIManager);
+	}
 
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
@@ -3081,11 +3107,21 @@ void UT66MainMenuScreen::RefreshScreen_Implementation()
 	{
 		LeaderboardPanel->SetUIManager(UIManager);
 	}
+	if (FlatLeaderboardPanel.IsValid())
+	{
+		FlatLeaderboardPanel->SetUIManager(UIManager);
+	}
 }
 
 void UT66MainMenuScreen::ReleaseRetainedSlateState()
 {
 	LeaderboardPanel.Reset();
+	FlatLeaderboardPanel.Reset();
+	if (MainMenuBackgroundVideoPlayer)
+	{
+		MainMenuBackgroundVideoPlayer->CloseVideo();
+		MainMenuBackgroundVideoPlayer = nullptr;
+	}
 	SkyBackgroundBrush.Reset();
 	SkyBackgroundTexture.Reset();
 	ForegroundOccluderBrush.Reset();
@@ -3157,6 +3193,10 @@ void UT66MainMenuScreen::OnLanguageChanged(ET66Language NewLanguage)
 	if (LeaderboardPanel.IsValid())
 	{
 		LeaderboardPanel->SetUIManager(UIManager);
+	}
+	if (FlatLeaderboardPanel.IsValid())
+	{
+		FlatLeaderboardPanel->SetUIManager(UIManager);
 	}
 }
 
@@ -3372,25 +3412,30 @@ void UT66MainMenuScreen::SyncToSharedPartyScreen()
 
 TSharedRef<SWidget> UT66MainMenuScreen::BuildMainMenuBackgroundWidget() const
 {
-	if (!SkyBackgroundBrush.IsValid() || !SkyBackgroundBrush->GetResourceObject())
+	const FSlateBrush* VideoBrush = MainMenuBackgroundVideoPlayer
+		? MainMenuBackgroundVideoPlayer->GetVideoBrush()
+		: nullptr;
+
+	if ((!SkyBackgroundBrush.IsValid() || !SkyBackgroundBrush->GetResourceObject()) && !VideoBrush)
 	{
-		return FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(
-			SNew(SImage).Image(SkyBackgroundBrush.Get())));
+		return SNew(SImage).Image(SkyBackgroundBrush.Get());
 	}
 
-	TSharedRef<SOverlay> Background = SNew(SOverlay)
-		+ SOverlay::Slot()
-		[
-			FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(
-				SNew(SImage).Image(SkyBackgroundBrush.Get())))
-		];
+	TSharedRef<SOverlay> Background = SNew(SOverlay);
 
-	if (ForegroundOccluderBrush.IsValid() && ForegroundOccluderBrush->GetResourceObject())
+	if (SkyBackgroundBrush.IsValid() && SkyBackgroundBrush->GetResourceObject())
 	{
 		Background->AddSlot()
 		[
-			FT66Style::MakeRetroUIBackgroundImage(StaticCastSharedRef<SWidget>(
-				SNew(SImage).Image(ForegroundOccluderBrush.Get())))
+			SNew(SImage).Image(SkyBackgroundBrush.Get())
+		];
+	}
+
+	if (VideoBrush)
+	{
+		Background->AddSlot()
+		[
+			SNew(SImage).Image(VideoBrush)
 		];
 	}
 
@@ -3399,7 +3444,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildMainMenuBackgroundWidget() const
 
 void UT66MainMenuScreen::RequestBackgroundTexture()
 {
-	const TCHAR* BackgroundPath = TEXT("SourceAssets/UI/Reference/Screens/MainMenu/ScreenArt/mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_clean_bloodyretro_1920.png");
+	const TCHAR* BackgroundPath = TEXT("RuntimeDependencies/T66/UI/Reference/Screens/MainMenu/ScreenArt/mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_clean_bloodyretro_1920.png");
 
 	SetupT66MainMenuRuntimeImageBrush(
 		SkyBackgroundBrush,
@@ -3408,12 +3453,24 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 		BackgroundPath,
 		FVector2D(T66MainMenuReferenceLayout::CanvasWidth, T66MainMenuReferenceLayout::CanvasHeight));
 
-	SetupT66MainMenuRuntimeImageBrush(
-		ForegroundOccluderBrush,
-		ForegroundOccluderTexture,
-		nullptr,
-		TEXT("SourceAssets/UI/Reference/Screens/MainMenu/ScreenArt/mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_foreground_occluder.png"),
-		FVector2D(T66MainMenuReferenceLayout::CanvasWidth, T66MainMenuReferenceLayout::CanvasHeight));
+	ForegroundOccluderBrush.Reset();
+	ForegroundOccluderTexture.Reset();
+
+	if (!MainMenuBackgroundVideoPlayer)
+	{
+		MainMenuBackgroundVideoPlayer = NewObject<UT66FrontendVideoPlayer>(this);
+	}
+	if (MainMenuBackgroundVideoPlayer)
+	{
+		FT66FrontendVideoAsset VideoAsset;
+		if (T66FrontendVideoCatalog::ResolveMainMenuBackground(VideoAsset))
+		{
+			MainMenuBackgroundVideoPlayer->OpenVideo(
+				VideoAsset,
+				FVector2D(T66MainMenuReferenceLayout::CanvasWidth, T66MainMenuReferenceLayout::CanvasHeight),
+				FName(TEXT("MainMenuBackground")));
+		}
+	}
 
 	SetupT66MainMenuRuntimeImageBrush(
 		TitleLockupBrush,

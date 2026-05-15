@@ -52,12 +52,41 @@ namespace
 			PlayerController->PlayerInput->ForceRebuildingKeyMaps(true);
 		}
 	}
+
+	FVector BuildMiniKeyboardMoveInput(const APlayerController* PlayerController)
+	{
+		if (!PlayerController)
+		{
+			return FVector::ZeroVector;
+		}
+
+		FVector MoveInput = FVector::ZeroVector;
+		if (PlayerController->IsInputKeyDown(EKeys::W) || PlayerController->IsInputKeyDown(EKeys::Up))
+		{
+			MoveInput.X += 1.f;
+		}
+		if (PlayerController->IsInputKeyDown(EKeys::S) || PlayerController->IsInputKeyDown(EKeys::Down))
+		{
+			MoveInput.X -= 1.f;
+		}
+		if (PlayerController->IsInputKeyDown(EKeys::D) || PlayerController->IsInputKeyDown(EKeys::Right))
+		{
+			MoveInput.Y += 1.f;
+		}
+		if (PlayerController->IsInputKeyDown(EKeys::A) || PlayerController->IsInputKeyDown(EKeys::Left))
+		{
+			MoveInput.Y -= 1.f;
+		}
+
+		return MoveInput.GetSafeNormal2D();
+	}
 }
 
 AT66MiniPlayerController::AT66MiniPlayerController()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bTickEvenWhenPaused = true;
+	bAutoManageActiveCameraTarget = false;
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
 }
@@ -66,6 +95,19 @@ void AT66MiniPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	ConfigureGameplayInputMode();
+	if (APawn* ControlledPawn = GetPawn())
+	{
+		SetViewTarget(ControlledPawn);
+	}
+}
+
+void AT66MiniPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	if (InPawn)
+	{
+		SetViewTarget(InPawn);
+	}
 }
 
 void AT66MiniPlayerController::Tick(float DeltaSeconds)
@@ -146,7 +188,9 @@ void AT66MiniPlayerController::SaveAndQuitToMiniMenuFromPause()
 
 void AT66MiniPlayerController::ConfigureGameplayInputMode()
 {
-	FInputModeGameOnly InputMode;
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(false);
 	SetInputMode(InputMode);
 	bShowMouseCursor = true;
 	CurrentMouseCursor = EMouseCursor::Crosshairs;
@@ -268,7 +312,17 @@ void AT66MiniPlayerController::UpdateMouseFollowTarget()
 	}
 
 	FVector CursorWorldLocation = FVector::ZeroVector;
-	if (ProjectCursorToGroundPlane(this, CursorWorldLocation))
+	const bool bHasCursorTarget = ProjectCursorToGroundPlane(this, CursorWorldLocation);
+	const FVector KeyboardMoveInput = BuildMiniKeyboardMoveInput(this);
+	if (!KeyboardMoveInput.IsNearlyZero())
+	{
+		const FVector KeyboardTarget = MiniPawn->GetActorLocation() + (KeyboardMoveInput * 100000.f);
+		MiniPawn->SetDesiredMoveLocation(KeyboardTarget);
+		MiniPawn->SetAimLocation(bHasCursorTarget ? CursorWorldLocation : KeyboardTarget);
+		return;
+	}
+
+	if (bHasCursorTarget)
 	{
 		MiniPawn->SetDesiredMoveLocation(CursorWorldLocation);
 		MiniPawn->SetAimLocation(CursorWorldLocation);

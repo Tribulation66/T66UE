@@ -11,10 +11,10 @@ Use that single master prompt for every screen, modal, and screen state. Fill in
 Supporting instructions:
 
 ```text
-C:\UE\T66\UI\Processes\LAYOUT_AND_SIZING.md
-C:\UE\T66\UI\Processes\SCREEN_MODAL_TASK.md
-C:\UE\T66\UI\Processes\UI_GENERATION.md
-C:\UE\T66\UI\SCREEN_WORKFLOW.md
+C:\UE\T66\UI\Instructions\UI_LAYOUT_AND_SIZING_INSTRUCTIONS.md
+C:\UE\T66\UI\Instructions\UI_SCREEN_MODAL_INSTRUCTIONS.md
+C:\UE\T66\UI\Instructions\UI_GENERATION_INSTRUCTIONS.md
+C:\UE\T66\UI\Instructions\UI_SCREEN_WORKFLOW_INSTRUCTIONS.md
 ```
 
 Reference screenshots and generated proof images are temporary review outputs. Keep accepted runtime art in `RuntimeDependencies`; do not recreate persistent `UI/generation`, `UI/screens`, `UI/Reference`, or `UI/archive` output roots.

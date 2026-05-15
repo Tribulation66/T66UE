@@ -40,7 +40,9 @@ public:
 	void SaveRunProgressNow(bool bMarkMidWaveSnapshot = true);
 	void RefreshAudioMix();
 	FVector GetArenaOrigin() const { return ArenaOrigin; }
-	float GetArenaHalfExtent() const { return ArenaHalfExtent; }
+	float GetArenaHalfExtent() const { return FMath::Max(ArenaHalfExtentX, ArenaHalfExtentY); }
+	float GetArenaHalfExtentX() const { return ArenaHalfExtentX; }
+	float GetArenaHalfExtentY() const { return ArenaHalfExtentY; }
 	bool HasBossTelegraphActive() const { return BossTelegraphRemaining > 0.f; }
 	float GetBossTelegraphRemaining() const { return BossTelegraphRemaining; }
 	FVector GetBossTelegraphLocation() const { return PendingBossSpawnLocation; }
@@ -116,8 +118,9 @@ private:
 	bool bRunFinalized = false;
 	FName PendingBossID = NAME_None;
 	FVector PendingBossSpawnLocation = FVector::ZeroVector;
-	FVector ArenaOrigin = FVector(450000.f, 450000.f, 1200.f);
-	float ArenaHalfExtent = 2200.f;
+	FVector ArenaOrigin = FVector::ZeroVector;
+	float ArenaHalfExtentX = 900.f;
+	float ArenaHalfExtentY = 1600.f;
 
 	UPROPERTY()
 	TObjectPtr<AT66MiniArena> MiniArenaActor;

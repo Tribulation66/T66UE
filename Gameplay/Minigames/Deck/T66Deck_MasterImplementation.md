@@ -33,6 +33,6 @@ This first pass is infrastructure only. It does not register shared screens, edi
 
 Deck uses the shared minigame animation process for combat idles, attacks, hit reactions, enemies, summons, and VFX:
 
-- [T66Minigame_CharacterAnimationProcess.md](C:/UE/T66/Gameplay/Minigames/T66Minigame_CharacterAnimationProcess.md)
+- [MINIGAME_CHARACTER_ANIMATION_INSTRUCTIONS.md](C:/UE/T66/Gameplay/Minigames/MINIGAME_CHARACTER_ANIMATION_INSTRUCTIONS.md)
 
 Deck does not need to start with full 8-direction sheets. Use the smallest scope that supports the battle read, usually `idle-only`, `idle-hit`, or `idle-attack`.

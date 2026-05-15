@@ -11,7 +11,7 @@
 - A selected run modifier already makes the run ineligible for ranked leaderboards:
   - `Source/T66/Gameplay/T66GameMode.cpp`
   - `Source/T66/Core/T66RunIntegritySubsystem.cpp`
-  - `Backend/Anti Cheat/MASTER_ANTI_CHEAT.md`
+  - `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`
 - The current backend stack already supports:
   - authenticated player submissions from UE through `UT66BackendSubsystem`
   - Postgres persistence through the backend repo in `C:\UE\Backend`

@@ -235,6 +235,22 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		bNeedsSave = true;
 	}
 
+	if (SettingsObj->SchemaVersion < 22)
+	{
+		SettingsObj->SchemaVersion = 22;
+		SettingsObj->RetroFXSettings = FT66RetroFXSettings();
+		SettingsObj->bRetroFXMasterEnabled = SettingsObj->RetroFXSettings.bEnableRetroFXMaster;
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < 23)
+	{
+		SettingsObj->SchemaVersion = 23;
+		SettingsObj->RetroFXSettings = FT66RetroFXSettings();
+		SettingsObj->bRetroFXMasterEnabled = SettingsObj->RetroFXSettings.bEnableRetroFXMaster;
+		bNeedsSave = true;
+	}
+
 	SettingsObj->RetroFXSettings.bEnableRetroFXMaster = SettingsObj->bRetroFXMasterEnabled;
 
 	const float SanitizedLockedChaseTurnSensitivityPercent = FMath::Clamp(SettingsObj->LockedChaseTurnSensitivityPercent, 0.0f, 100.0f);

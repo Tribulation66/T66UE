@@ -1,18 +1,18 @@
 # T66 Master Movement
 
-**Last updated:** 2026-04-17  
-**Scope:** Single-source handoff for player-hero movement runtime: input, locomotion, jump, dash, speed multipliers, velocity-affecting stage effects, and current movement blockers and overrides.  
-**Companion docs:** `Release/Project Guidelines.md`, `Gameplay/Combat/MASTER_COMBAT.md`  
-**Maintenance rule:** Update this file after every material change to hero movement input, locomotion tuning, jump or dash rules, stage-effect movement, movement-state gating, or run-state speed modifiers.
+**Last updated:** 2026-05-14  
+**Scope:** Single-source handoff for player-hero movement runtime: input, locomotion, jump, one-button forward roll, speed multipliers, velocity-affecting stage effects, and current movement blockers and overrides.  
+**Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Combat/MASTER_COMBAT.md`
+**Maintenance rule:** Update this file after every material change to hero movement input, locomotion tuning, jump or roll rules, stage-effect movement, movement-state gating, or run-state speed modifiers.
 
 ## 1. Executive Summary
 
 - `AT66PlayerController` currently owns raw movement input capture and still applies normal walking via `AddMovementInput`.
-- `UT66HeroMovementComponent` owns movement configuration, cached move intent, jump routing, dash routing, and final `MaxWalkSpeed` refreshes, but it is not yet the sole owner of locomotion.
+- `UT66HeroMovementComponent` owns movement configuration, cached move intent, jump routing, one-button forward roll routing, and final `MaxWalkSpeed` refreshes, but it is not yet the sole owner of locomotion.
 - `UCharacterMovementComponent` on `AT66HeroBase` remains the live movement authority for walking, falling, friction, rotation-to-movement, and impulse response.
-- Base walk speed starts at `1800`, then is overwritten with `InHeroData.MaxSpeed * 2.0f` only on the successful non-preview hero-initialize path, then multiplied by RunState-derived movement modifiers.
+- Base walk speed starts at `1800`, then is overwritten with `InHeroData.MaxSpeed` only on the successful non-preview hero-initialize path, then multiplied by RunState-derived movement modifiers.
 - Jump is currently single-jump only and uses standard forward carry from the live movement state; it is not currently suppressing forward movement on takeoff.
-- Dash is currently an 8-direction, held-shift directional burst that requires live movement input and only consumes the held input on a successful dash.
+- Roll is a one-button forward burst bound to `Roll`; it uses the hero actor's facing direction and does not require a movement-input chord.
 - Movement state is split:
   - actual movement comes from `AddMovementInput`, `CharacterMovement`, and `LaunchCharacter`
   - the Hero Speed subsystem only tracks binary move intent for visuals and companion state
@@ -47,7 +47,7 @@
   - move forward and back: `W` / `S` and `Gamepad_LeftY`
   - move right and left: `D` / `A` and `Gamepad_LeftX`
   - jump: `SpaceBar` and `Gamepad_FaceButton_Bottom`
-  - dash: `LeftShift`
+  - roll: `LeftShift` and `Gamepad_FaceButton_Right`
 - `AT66PlayerController` binds those actions and axes in `T66PlayerController_Input.cpp`.
 - Forward and right axis handlers in `T66PlayerController_Movement.cpp` currently do three separate jobs:
   - cache raw axis values in `RawMoveForwardValue` and `RawMoveRightValue`
@@ -108,7 +108,7 @@
 - The live base walk-speed variable is `UT66HeroMovementComponent::BaseWalkSpeed`, not `FT66HeroMovementTuning::DefaultWalkSpeed`.
 - `BaseWalkSpeed` starts at `1800`.
 - During `AT66HeroBase::InitializeHero()`, current runtime sets hero base walk speed with:
-  - `HeroMovementComponent->SetHeroBaseWalkSpeed(InHeroData.MaxSpeed * 2.0f)`
+  - `HeroMovementComponent->SetHeroBaseWalkSpeed(InHeroData.MaxSpeed)`
   - this currently happens only when character visual application succeeds and the hero is not in preview mode
 - `RefreshWalkSpeedFromRunState()` then computes live `MaxWalkSpeed` as:
   - `BaseWalkSpeed`
@@ -163,50 +163,40 @@
   - quick-revive downed state
 - World dialogue does not currently add a separate jump block in the movement component.
 
-## 5. Dash
+## 5. Roll
 
-### 5.1 Current player-facing dash behavior
+### 5.1 Current player-facing roll behavior
 
-- Dash is treated as a held modifier, not a press-and-fire action with its own stored direction.
-- `HandleDashPressed()` calls `SetDashModifierHeld(true)`.
-- `HandleDashReleased()` calls `SetDashModifierHeld(false)`.
-- While the modifier is held:
-  - dash can be consumed once
-  - releasing shift resets `bDashConsumedThisHold`
-  - changing move input while shift is still held can trigger dash if it has not yet been consumed for that hold
-  - failed dash attempts no longer consume the hold
+- Roll is a press-and-fire action, not a held modifier.
+- `Config/DefaultInput.ini` binds `Roll` to `LeftShift` and `Gamepad_FaceButton_Right`.
+- `AT66PlayerController::HandleRollPressed()` calls `AT66HeroBase::RollForward()` on the possessed hero.
+- There is no release handler and no two-button/chord consumption state.
 
-### 5.2 Dash direction rules
+### 5.2 Roll direction rules
 
-- The movement component caches forward and right input axes.
-- `HasMovementInput()` requires absolute axis magnitude greater than `0.1`.
-- `GetCurrentDashDirection()` converts the cached 2D input vector into 8 octants.
-- `GetWorldMoveDirectionFromAxes()` transforms those axes into world space using controller yaw only.
-- `GetQuantizedWorldDashDirection()` quantizes the world yaw to 45-degree increments.
-- Result: current player-input dash is an 8-direction world-space dash based on current move intent and controller yaw.
-- Neutral dash from the standard player input path does not currently exist:
-  - if there is no live move input, `TryConsumeHeldDash()` does nothing
-- There is also a direct helper path:
-  - `AT66HeroBase::DashForward()` calls `TryDashInWorldDirection(GetActorForwardVector())`
-  - this bypasses the "must have current move input" rule because it supplies a direction explicitly
+- Player roll ignores cached move-input axes.
+- `AT66HeroBase::RollForward()` delegates to `UT66HeroMovementComponent::TryRollForward()`.
+- `TryRollForward()` supplies `Hero->GetActorForwardVector()` as the desired roll direction.
+- Result: a neutral roll and a moving roll both travel in the direction the hero is facing.
 
-### 5.3 Dash execution rules
+### 5.3 Roll execution rules
 
-- `TryDashInWorldDirection()` requires:
+- Roll execution currently reuses the movement component's existing launch/cooldown helper:
   - valid hero
   - valid world
   - `CanUseMovementAbilities()`
   - a non-zero horizontal direction
 - Cooldown is:
   - base `0.7s`
-  - multiplied by `UT66RunStateSubsystem::GetDashCooldownMultiplier()`
+  - multiplied by `UT66RunStateSubsystem::GetDashCooldownMultiplier()` until the stat layer is renamed
   - clamped to `[0.05, 10.0]`
-- Successful dash execution uses:
-  - `Hero->LaunchCharacter(DashDirection * DashStrength, true, true)`
-- Current dash strength is resolved as the greater of:
+- Successful roll execution uses:
+  - `Hero->LaunchCharacter(RollDirection * RollStrength, true, true)`
+- Current roll strength is resolved as the greater of:
   - tuning floor `3200`
   - `CurrentMaxWalkSpeed * 1.6`
-- Because `LaunchCharacter()` is called with both override flags set to `true`, dash currently replaces existing XY and Z launch components rather than layering gently onto prior velocity.
+- Because `LaunchCharacter()` is called with both override flags set to `true`, roll currently replaces existing XY and Z launch components rather than layering gently onto prior velocity.
+- If the current visual has `RollAnimation`, `AT66HeroBase` plays it once and holds the movement animation state until the clip's play length elapses.
 
 ## 6. Velocity and Other Non-Input Movement Changes
 
@@ -218,7 +208,7 @@
 ### 6.2 LaunchCharacter paths
 
 - Current hero velocity can also be changed by direct launch impulses from:
-  - hero dash
+  - hero roll
   - hero enemy-touch bounce
   - shroom top bounce
   - shroom side knockback
@@ -268,6 +258,7 @@
 
 - Hero animation state is not driven solely by cached move input.
 - In `AT66HeroBase::Tick()` the current hero visual state is chosen as:
+  - `Roll` while a one-shot roll animation is active
   - `Jump` if `CharacterMovement->IsFalling()`
   - else `Walk` if any of these are true:
     - movement component says there is move input
@@ -299,7 +290,7 @@
 - World dialogue:
   - normal move intent is zeroed
   - normal walking input path early-returns
-  - dash cannot consume through the standard input path because there is no live move input
+  - roll still shares the movement-ability gate, but its direction does not depend on live move input
   - jump is not separately gated here
 
 ## 9. Current Live Numbers
@@ -320,10 +311,10 @@
 - Gravity scale: `4.5`
 - Falling lateral friction: `0.35`
 - Falling braking deceleration: `4096`
-- Dash cooldown base: `0.7`
-- Dash cooldown clamp: `0.05` to `10.0`
-- Dash strength floor: `3200`
-- Dash speed multiplier over current walk speed: `1.6`
+- Roll cooldown base: `0.7`
+- Roll cooldown clamp: `0.05` to `10.0`
+- Roll strength floor: `3200`
+- Roll speed multiplier over current walk speed: `1.6`
 - Rotation rate yaw: `1440`
 - Stage slide friction override: `0.15`
 - Stage slide braking friction factor: `0.05`
@@ -339,13 +330,13 @@
 - `UT66RunStateSubsystem::GetMovementSpeedSecondaryMultiplier()` advertises item-driven movement-speed secondary behavior but currently returns `1.0f`
 - Status-effect move-speed plumbing exists structurally, but current public status application functions are stubs
 - Hero Speed subsystem comments imply movement-speed ownership, but current live behavior is cosmetic or animation-facing only
-- Dash currently depends on live movement input for the standard player-input path.
-  - there is no neutral in-place dash or last-input dash memory
-- Jump and dash share the same movement-ability gate helper, but ordinary walking is blocked by separate controller and state-management logic rather than one central movement-state policy
+- Roll currently reuses dash-named tuning/stat internals (`DashCooldownSeconds`, `DashStrength`, `GetDashCooldownMultiplier()`).
+  - these names should be migrated when item/stat data contracts are ready for a broader rename
+- Jump and roll share the same movement-ability gate helper, but ordinary walking is blocked by separate controller and state-management logic rather than one central movement-state policy
 
 ## 11. Source-of-Truth Rules
 
 - If movement authority changes, update this file in the same change.
 - If walking is moved fully into `UT66HeroMovementComponent`, record the old split-controller model here as historical context and rewrite Sections 3, 5, and 10.
-- If dash, jump, or stage-effect velocity behavior changes, update both the runtime path description and the numeric tuning section.
+- If roll, jump, or stage-effect velocity behavior changes, update both the runtime path description and the numeric tuning section.
 - If movement-related RunState multipliers become live, remove the stale-hook notes and document the exact multiplier stack order here.

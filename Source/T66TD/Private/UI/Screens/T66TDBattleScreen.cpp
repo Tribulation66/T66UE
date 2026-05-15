@@ -1313,17 +1313,41 @@ namespace
 
 			if (MatchState == ET66TDMatchState::Victory || MatchState == ET66TDMatchState::Defeat)
 			{
-				DrawBoxAt(LocalSize * 0.5f, FVector2D(420.f, 120.f), FLinearColor(0.01f, 0.01f, 0.02f, 0.82f), PaintLayer + 11);
+				const FVector2D SummaryCenter = LocalSize * 0.5f;
+				const FVector2D SummarySize(520.f, 226.f);
+				DrawBoxAt(SummaryCenter, SummarySize, FLinearColor(0.01f, 0.01f, 0.02f, 0.86f), PaintLayer + 11);
 				FSlateDrawElement::MakeText(
 					OutDrawElements,
 					PaintLayer + 12,
 					AllottedGeometry.ToPaintGeometry(
-						FVector2f(360.f, 40.f),
-						FSlateLayoutTransform(FVector2f(static_cast<float>((LocalSize.X * 0.5f) - 140.f), static_cast<float>((LocalSize.Y * 0.5f) - 28.f)))),
+						FVector2f(420.f, 40.f),
+						FSlateLayoutTransform(FVector2f(static_cast<float>(SummaryCenter.X - 210.f), static_cast<float>(SummaryCenter.Y - 94.f)))),
 					MatchState == ET66TDMatchState::Victory ? TEXT("VICTORY") : TEXT("DEFEAT"),
 					FT66Style::MakeFont(TEXT("Black"), 28),
 					ESlateDrawEffect::None,
 					MatchState == ET66TDMatchState::Victory ? FLinearColor(0.98f, 0.90f, 0.46f, 1.0f) : FLinearColor(0.98f, 0.46f, 0.42f, 1.0f));
+
+				const TArray<FString> SummaryLines = {
+					FString::Printf(TEXT("Waves: %d / %d"), FMath::Clamp(CurrentWave, 0, FMath::Max(1, MapDefinition.BossWave)), FMath::Max(1, MapDefinition.BossWave)),
+					FString::Printf(TEXT("Hearts: %d"), Hearts),
+					FString::Printf(TEXT("Gold: %d"), Gold),
+					FString::Printf(TEXT("Materials: %d"), Materials),
+					FString::Printf(TEXT("Score: %d"), BuildStageScore())
+				};
+				for (int32 LineIndex = 0; LineIndex < SummaryLines.Num(); ++LineIndex)
+				{
+					const float LineY = static_cast<float>(SummaryCenter.Y - 42.f + (LineIndex * 26.f));
+					FSlateDrawElement::MakeText(
+						OutDrawElements,
+						PaintLayer + 12,
+						AllottedGeometry.ToPaintGeometry(
+							FVector2f(420.f, 24.f),
+							FSlateLayoutTransform(FVector2f(static_cast<float>(SummaryCenter.X - 210.f), LineY))),
+						SummaryLines[LineIndex],
+						FT66Style::MakeFont(TEXT("Bold"), 15),
+						ESlateDrawEffect::None,
+						FLinearColor(0.90f, 0.88f, 0.78f, 1.0f));
+				}
 			}
 
 			return PaintLayer + 12;

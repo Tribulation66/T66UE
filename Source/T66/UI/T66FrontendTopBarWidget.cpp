@@ -6,8 +6,6 @@
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66BuffSubsystem.h"
-#include "UI/ST66PulsingIcon.h"
-#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66ReferenceLayout.h"
@@ -89,23 +87,6 @@ namespace
 		return FMath::Max(
 			T66MainMenuReferenceLayout::TopBarSurfaceHeight,
 			GetTopBarReferenceReservedHeight());
-	}
-
-	bool IsBloodyRetroTopBarPreset()
-	{
-		return T66ScreenSlateHelpers::GetReferenceChromePreset() == T66ScreenSlateHelpers::ET66ReferenceChromePreset::BloodyRetro;
-	}
-
-	FLinearColor GetTopBarSurfaceFill()
-	{
-		return FLinearColor(0.f, 0.f, 0.f, 1.0f);
-	}
-
-	FLinearColor GetTopBarFrameAccent()
-	{
-		return IsBloodyRetroTopBarPreset()
-			? FLinearColor(0.64f, 0.035f, 0.030f, 1.0f)
-			: FLinearColor(0.82f, 0.10f, 1.0f, 1.0f);
 	}
 
 	TArray<FVector2D> MakeCirclePoints(const FVector2D& Center, float Radius, int32 Segments, float StartAngle = 0.f, float EndAngle = 2.f * PI)
@@ -528,341 +509,6 @@ namespace
 		FVector2D DesiredSize = FVector2D(56.f, 56.f);
 	};
 
-	class ST66TopBarSlicedBrushImage : public SLeafWidget
-	{
-	public:
-		SLATE_BEGIN_ARGS(ST66TopBarSlicedBrushImage)
-			: _Brush(nullptr)
-			, _DesiredSize(FVector2D(1.f, 1.f))
-			, _SourceCapFraction(0.245f)
-		{}
-			SLATE_ATTRIBUTE(const FSlateBrush*, Brush)
-			SLATE_ARGUMENT(FVector2D, DesiredSize)
-			SLATE_ARGUMENT(float, SourceCapFraction)
-		SLATE_END_ARGS()
-
-		void Construct(const FArguments& InArgs)
-		{
-			Brush = InArgs._Brush;
-			DesiredSize = InArgs._DesiredSize;
-			SourceCapFraction = InArgs._SourceCapFraction;
-		}
-
-		virtual FVector2D ComputeDesiredSize(float) const override
-		{
-			return DesiredSize;
-		}
-
-		virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
-			FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
-		{
-			const FSlateBrush* SourceBrush = Brush.Get();
-			if (!SourceBrush || SourceBrush == FCoreStyle::Get().GetBrush("NoBrush"))
-			{
-				return LayerId;
-			}
-
-			const FVector2D Size = AllottedGeometry.GetLocalSize();
-			const FVector2D SourceSize(
-				FMath::Max(1.f, SourceBrush->ImageSize.X),
-				FMath::Max(1.f, SourceBrush->ImageSize.Y));
-			if (Size.X <= 1.f || Size.Y <= 1.f || SourceSize.X <= 1.f || SourceSize.Y <= 1.f)
-			{
-				return LayerId;
-			}
-
-			const float CapU = FMath::Clamp(SourceCapFraction, 0.02f, 0.45f);
-			const float HeightScale = Size.Y / SourceSize.Y;
-			const float SourceCapWidth = SourceSize.X * CapU;
-			const float DestCapWidth = FMath::Clamp(SourceCapWidth * HeightScale, 1.f, Size.X * 0.42f);
-			const float DestCenterWidth = FMath::Max(0.f, Size.X - (DestCapWidth * 2.f));
-
-			auto DrawSlice = [&](const FVector2D& Pos, const FVector2D& SliceSize, float U0, float U1)
-			{
-				if (SliceSize.X <= 0.5f || SliceSize.Y <= 0.5f || U1 <= U0)
-				{
-					return;
-				}
-
-				FSlateBrush LocalBrush = *SourceBrush;
-				LocalBrush.DrawAs = ESlateBrushDrawType::Image;
-				LocalBrush.Tiling = ESlateBrushTileType::NoTile;
-				LocalBrush.Margin = FMargin(0.f);
-				LocalBrush.SetUVRegion(FBox2f(FVector2f(U0, 0.f), FVector2f(U1, 1.f)));
-
-				FSlateDrawElement::MakeBox(
-					OutDrawElements,
-					LayerId,
-					AllottedGeometry.ToPaintGeometry(
-						FVector2f(SliceSize),
-						FSlateLayoutTransform(FVector2f(Pos))),
-					&LocalBrush,
-					ESlateDrawEffect::None,
-					InWidgetStyle.GetColorAndOpacityTint());
-			};
-
-			DrawSlice(FVector2D(0.f, 0.f), FVector2D(DestCapWidth, Size.Y), 0.f, CapU);
-			DrawSlice(FVector2D(DestCapWidth, 0.f), FVector2D(DestCenterWidth, Size.Y), CapU, 1.f - CapU);
-			DrawSlice(FVector2D(Size.X - DestCapWidth, 0.f), FVector2D(DestCapWidth, Size.Y), 1.f - CapU, 1.f);
-
-			return LayerId + 1;
-		}
-
-	private:
-		TAttribute<const FSlateBrush*> Brush;
-		FVector2D DesiredSize = FVector2D(1.f, 1.f);
-		float SourceCapFraction = 0.245f;
-	};
-
-	// The shared transparent button styles do not surface hover or pressed states.
-	// This wrapper keeps the rendered plate visible and drives subtle state changes itself.
-	class ST66TopBarStatefulButton : public SCompoundWidget
-	{
-	public:
-		SLATE_BEGIN_ARGS(ST66TopBarStatefulButton)
-			: _NormalBrush(nullptr)
-			, _HoverBrush(nullptr)
-			, _PressedBrush(nullptr)
-			, _DisabledBrush(nullptr)
-			, _SelectedBrush(nullptr)
-			, _ButtonStyle(nullptr)
-			, _ContentPadding(FMargin(0.f))
-			, _IsSelected(false)
-			, _FallbackOuterColor(FLinearColor::White)
-			, _FallbackMidColor(FLinearColor::White)
-			, _FallbackInnerColor(FLinearColor::White)
-		{}
-			SLATE_ARGUMENT(const FSlateBrush*, NormalBrush)
-			SLATE_ARGUMENT(const FSlateBrush*, HoverBrush)
-			SLATE_ARGUMENT(const FSlateBrush*, PressedBrush)
-			SLATE_ARGUMENT(const FSlateBrush*, DisabledBrush)
-			SLATE_ARGUMENT(const FSlateBrush*, SelectedBrush)
-			SLATE_ARGUMENT(const FButtonStyle*, ButtonStyle)
-			SLATE_ARGUMENT(FMargin, ContentPadding)
-			SLATE_ARGUMENT(bool, IsSelected)
-			SLATE_ARGUMENT(FLinearColor, FallbackOuterColor)
-			SLATE_ARGUMENT(FLinearColor, FallbackMidColor)
-			SLATE_ARGUMENT(FLinearColor, FallbackInnerColor)
-			SLATE_ARGUMENT(FText, ToolTipText)
-			SLATE_EVENT(FOnClicked, OnClicked)
-			SLATE_DEFAULT_SLOT(FArguments, Content)
-		SLATE_END_ARGS()
-
-		void Construct(const FArguments& InArgs)
-		{
-			NormalBrush = InArgs._NormalBrush;
-			HoverBrush = InArgs._HoverBrush;
-			PressedBrush = InArgs._PressedBrush;
-			DisabledBrush = InArgs._DisabledBrush;
-			SelectedBrush = InArgs._SelectedBrush;
-			ContentPadding = InArgs._ContentPadding;
-			bIsSelected = InArgs._IsSelected;
-			FallbackOuterColor = InArgs._FallbackOuterColor;
-			FallbackMidColor = InArgs._FallbackMidColor;
-			FallbackInnerColor = InArgs._FallbackInnerColor;
-			ButtonStyle = InArgs._ButtonStyle
-				? *InArgs._ButtonStyle
-				: FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
-			ButtonStyle
-				.SetNormalPadding(FMargin(0.f))
-				.SetPressedPadding(FMargin(0.f));
-
-			ChildSlot
-			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(
-						InArgs._OnClicked,
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor::Transparent)
-					.Padding(0.f)
-					.Clipping(EWidgetClipping::ClipToBounds)
-					.RenderTransform(this, &ST66TopBarStatefulButton::GetVisualTransform)
-					.RenderTransformPivot(FVector2D(0.5f, 0.5f))
-					[
-						SNew(SOverlay)
-						.Clipping(EWidgetClipping::ClipToBounds)
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Fill)
-						.VAlign(VAlign_Fill)
-						[
-							BuildPlateWidget()
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Fill)
-						.VAlign(VAlign_Fill)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor::Transparent)
-							.ColorAndOpacity(this, &ST66TopBarStatefulButton::GetContentTint)
-							.Padding(ContentPadding)
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							[
-								InArgs._Content.Widget
-							]
-						]
-					])
-					.SetButtonStyle(&ButtonStyle)
-					.SetPadding(FMargin(0.f)),
-					&Button)
-			];
-			if (Button.IsValid())
-			{
-				Button->SetClipping(EWidgetClipping::ClipToBounds);
-				Button->SetToolTipText(InArgs._ToolTipText);
-			}
-		}
-
-	private:
-		static FLinearColor ScaleFallbackColor(const FLinearColor& Color, float Scalar)
-		{
-			return FLinearColor(
-				FMath::Clamp(Color.R * Scalar, 0.f, 1.f),
-				FMath::Clamp(Color.G * Scalar, 0.f, 1.f),
-				FMath::Clamp(Color.B * Scalar, 0.f, 1.f),
-				Color.A);
-		}
-
-		bool IsButtonHovered() const
-		{
-			return Button.IsValid() && Button->IsHovered();
-		}
-
-		bool IsButtonPressed() const
-		{
-			return Button.IsValid() && Button->IsPressed();
-		}
-
-		float GetPlateScalar() const
-		{
-			if (IsButtonPressed())
-			{
-				return 0.92f;
-			}
-
-			return IsButtonHovered() ? 1.05f : 1.f;
-		}
-
-		float GetContentScalar() const
-		{
-			if (IsButtonPressed())
-			{
-				return 0.95f;
-			}
-
-			return IsButtonHovered() ? 1.03f : 1.f;
-		}
-
-		FSlateColor GetPlateTint() const
-		{
-			const float Scalar = GetPlateScalar();
-			return FSlateColor(FLinearColor(Scalar, Scalar, Scalar, 1.f));
-		}
-
-		FLinearColor GetContentTint() const
-		{
-			const float Scalar = GetContentScalar();
-			return FLinearColor(Scalar, Scalar, Scalar, 1.f);
-		}
-
-		TOptional<FSlateRenderTransform> GetVisualTransform() const
-		{
-			if (IsButtonPressed())
-			{
-				return TOptional<FSlateRenderTransform>(FSlateRenderTransform(FVector2D(0.f, 2.f)));
-			}
-
-			if (IsButtonHovered())
-			{
-				return TOptional<FSlateRenderTransform>(FSlateRenderTransform(FVector2D(0.f, -1.f)));
-			}
-
-			return TOptional<FSlateRenderTransform>();
-		}
-
-		FSlateColor GetFallbackOuterColor() const
-		{
-			return FSlateColor(ScaleFallbackColor(FallbackOuterColor, GetPlateScalar()));
-		}
-
-		FSlateColor GetFallbackMidColor() const
-		{
-			return FSlateColor(ScaleFallbackColor(FallbackMidColor, GetPlateScalar()));
-		}
-
-		FSlateColor GetFallbackInnerColor() const
-		{
-			return FSlateColor(ScaleFallbackColor(FallbackInnerColor, GetPlateScalar()));
-		}
-
-		const FSlateBrush* GetCurrentBrush() const
-		{
-			if (!Button.IsValid() || !Button->IsEnabled())
-			{
-				return DisabledBrush ? DisabledBrush : (NormalBrush ? NormalBrush : nullptr);
-			}
-
-			if (Button->IsPressed() && PressedBrush)
-			{
-				return PressedBrush;
-			}
-
-			if (bIsSelected && SelectedBrush)
-			{
-				return SelectedBrush;
-			}
-
-			if (Button->IsHovered() && HoverBrush)
-			{
-				return HoverBrush;
-			}
-
-			return NormalBrush;
-		}
-
-		TSharedRef<SWidget> BuildPlateWidget()
-		{
-			if (NormalBrush || HoverBrush || PressedBrush || DisabledBrush || SelectedBrush)
-			{
-				return SNew(ST66TopBarSlicedBrushImage)
-					.Brush(this, &ST66TopBarStatefulButton::GetCurrentBrush)
-					.DesiredSize(FVector2D(1.f, 1.f))
-					.SourceCapFraction(0.245f);
-			}
-
-			return SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(this, &ST66TopBarStatefulButton::GetFallbackOuterColor)
-				.Padding(2.f)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(this, &ST66TopBarStatefulButton::GetFallbackMidColor)
-					.Padding(1.f)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(this, &ST66TopBarStatefulButton::GetFallbackInnerColor)
-					]
-				];
-		}
-
-		const FSlateBrush* NormalBrush = nullptr;
-		const FSlateBrush* HoverBrush = nullptr;
-		const FSlateBrush* PressedBrush = nullptr;
-		const FSlateBrush* DisabledBrush = nullptr;
-		const FSlateBrush* SelectedBrush = nullptr;
-		FButtonStyle ButtonStyle;
-		FMargin ContentPadding = FMargin(0.f);
-		bool bIsSelected = false;
-		FLinearColor FallbackOuterColor = FLinearColor::White;
-		FLinearColor FallbackMidColor = FLinearColor::White;
-		FLinearColor FallbackInnerColor = FLinearColor::White;
-		TSharedPtr<SButton> Button;
-	};
-
 	FVector2D GetEffectiveFrontendViewportSize()
 	{
 		int32 AutomationViewportWidth = 0;
@@ -911,95 +557,6 @@ namespace
 		return Texture;
 	}
 
-	FString ResolveTopBarAssetPath(const TCHAR* ImportedAssetPath, const FString& RelativePath)
-	{
-		if (ImportedAssetPath && *ImportedAssetPath)
-		{
-			return FString(ImportedAssetPath);
-		}
-
-		if (!RelativePath.StartsWith(TEXT("SourceAssets/"), ESearchCase::CaseSensitive)
-			|| !RelativePath.EndsWith(TEXT(".png"), ESearchCase::IgnoreCase))
-		{
-			return FString();
-		}
-
-		const FString NormalizedRelativePath = RelativePath.Replace(TEXT("\\"), TEXT("/"));
-		const FString PackagePath = FString::Printf(TEXT("/Game/%s"), *NormalizedRelativePath.LeftChop(4));
-		const FString AssetName = FPaths::GetBaseFilename(RelativePath);
-		return FString::Printf(TEXT("%s.%s"), *PackagePath, *AssetName);
-	}
-
-	void LoadBrushFromRelativePath(
-		const TCHAR* ImportedAssetPath,
-		const FString& RelativePath,
-		TSharedPtr<FSlateBrush>& Brush,
-		const FVector2D& DesiredSize = FVector2D::ZeroVector,
-		TextureFilter Filter = TextureFilter::TF_Trilinear)
-	{
-		if (Brush.IsValid())
-		{
-			return;
-		}
-
-		UTexture2D* Texture = nullptr;
-		const FString FullPath = T66RuntimeUITextureAccess::MakeProjectContentPath(RelativePath);
-		const bool bFileExists = IFileManager::Get().FileExists(*FullPath);
-		const FString AssetPath = ResolveTopBarAssetPath(ImportedAssetPath, RelativePath);
-		UE_LOG(
-			LogT66FrontendTopBar,
-			Verbose,
-			TEXT("[TopBarBrushLoad] Begin RelativePath='%s' FullPath='%s' FileExists=%s AssetPath='%s' DesiredSize=(%.1f, %.1f)"),
-			*RelativePath,
-			*FullPath,
-			bFileExists ? TEXT("true") : TEXT("false"),
-			AssetPath.IsEmpty() ? TEXT("<null>") : *AssetPath,
-			DesiredSize.X,
-			DesiredSize.Y);
-
-		if (!AssetPath.IsEmpty())
-		{
-			Texture = T66RuntimeUITextureAccess::LoadAssetTexture(*AssetPath, Filter, TEXT("FrontendTopBar"));
-		}
-
-		FString LoadedFrom = TEXT("none");
-		if (Texture)
-		{
-			LoadedFrom = TEXT("asset");
-		}
-
-		if (!Texture && bFileExists)
-		{
-			Texture = LoadTopBarFileTexture(FullPath, Filter);
-			if (Texture)
-			{
-				LoadedFrom = TEXT("file");
-			}
-		}
-
-		UE_LOG(
-			LogT66FrontendTopBar,
-			Verbose,
-			TEXT("[TopBarBrushLoad] Result RelativePath='%s' LoadedFrom=%s Texture=%s Resolution=%dx%d"),
-			*RelativePath,
-			*LoadedFrom,
-			Texture ? *Texture->GetName() : TEXT("<null>"),
-			Texture ? Texture->GetSizeX() : 0,
-			Texture ? Texture->GetSizeY() : 0);
-
-		if (Texture)
-		{
-			Brush = MakeShared<FSlateBrush>();
-			Brush->DrawAs = ESlateBrushDrawType::Image;
-			Brush->Tiling = ESlateBrushTileType::NoTile;
-			Brush->ImageSize = DesiredSize.IsNearlyZero()
-				? FVector2D(static_cast<float>(Texture->GetSizeX()), static_cast<float>(Texture->GetSizeY()))
-				: DesiredSize;
-			Brush->SetResourceObject(Texture);
-			Brush->TintColor = FSlateColor(FLinearColor::White);
-		}
-	}
-
 	void LoadLooseBrushFromRelativePath(
 		const FString& RelativePath,
 		TSharedPtr<FSlateBrush>& Brush,
@@ -1028,22 +585,6 @@ namespace
 					: DesiredSize;
 				Brush->SetResourceObject(Texture);
 				Brush->TintColor = FSlateColor(FLinearColor::White);
-				return;
-			}
-		}
-	}
-
-	void LoadBrushFromCandidatePaths(
-		const TArray<FString>& RelativePaths,
-		TSharedPtr<FSlateBrush>& Brush,
-		const FVector2D& DesiredSize = FVector2D::ZeroVector,
-		TextureFilter Filter = TextureFilter::TF_Trilinear)
-	{
-		for (const FString& RelativePath : RelativePaths)
-		{
-			LoadBrushFromRelativePath(nullptr, RelativePath, Brush, DesiredSize, Filter);
-			if (Brush.IsValid())
-			{
 				return;
 			}
 		}
@@ -1080,97 +621,6 @@ namespace
 		}
 	}
 
-	void CopyBrushAsButtonStateSet(
-		const TSharedPtr<FSlateBrush>& SourceBrush,
-		UT66FrontendTopBarWidget::FPlateBrushSet& OutSet)
-	{
-		OutSet.NormalBrush = SourceBrush;
-		OutSet.HoverBrush = SourceBrush;
-		OutSet.PressedBrush = SourceBrush;
-		OutSet.DisabledBrush = SourceBrush;
-		OutSet.SelectedBrush = SourceBrush;
-	}
-
-	void LoadButtonStateSetFromPaths(
-		const TArray<FString>& NormalPaths,
-		const TArray<FString>& HoverPaths,
-		const TArray<FString>& PressedPaths,
-		const TArray<FString>& DisabledPaths,
-		const TArray<FString>& SelectedPaths,
-		UT66FrontendTopBarWidget::FPlateBrushSet& OutSet,
-		const FVector2D& DesiredSize = FVector2D::ZeroVector,
-		const TextureFilter Filter = TextureFilter::TF_Nearest)
-	{
-		LoadLooseBrushFromCandidatePaths(NormalPaths, OutSet.NormalBrush, DesiredSize, Filter);
-		LoadLooseBrushFromCandidatePaths(HoverPaths, OutSet.HoverBrush, DesiredSize, Filter);
-		LoadLooseBrushFromCandidatePaths(PressedPaths, OutSet.PressedBrush, DesiredSize, Filter);
-		LoadLooseBrushFromCandidatePaths(DisabledPaths, OutSet.DisabledBrush, DesiredSize, Filter);
-		LoadLooseBrushFromCandidatePaths(SelectedPaths, OutSet.SelectedBrush, DesiredSize, Filter);
-
-		if (!OutSet.HoverBrush.IsValid())
-		{
-			OutSet.HoverBrush = OutSet.NormalBrush;
-		}
-
-		if (!OutSet.PressedBrush.IsValid())
-		{
-			OutSet.PressedBrush = OutSet.HoverBrush.IsValid() ? OutSet.HoverBrush : OutSet.NormalBrush;
-		}
-
-		if (!OutSet.DisabledBrush.IsValid())
-		{
-			OutSet.DisabledBrush = OutSet.NormalBrush;
-		}
-
-		if (!OutSet.SelectedBrush.IsValid())
-		{
-			OutSet.SelectedBrush = OutSet.PressedBrush.IsValid() ? OutSet.PressedBrush : OutSet.HoverBrush;
-		}
-	}
-
-	void ConfigureBoxBrush(const TSharedPtr<FSlateBrush>& Brush, const FMargin& Margin)
-	{
-		if (!Brush.IsValid())
-		{
-			return;
-		}
-
-		const bool bUseImageDraw =
-			FMath::IsNearlyZero(Margin.Left)
-			&& FMath::IsNearlyZero(Margin.Top)
-			&& FMath::IsNearlyZero(Margin.Right)
-			&& FMath::IsNearlyZero(Margin.Bottom);
-		Brush->DrawAs = bUseImageDraw ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
-		Brush->Margin = Margin;
-	}
-
-	void ConfigureBoxBrushSet(UT66FrontendTopBarWidget::FPlateBrushSet& BrushSet, const FMargin& Margin)
-	{
-		ConfigureBoxBrush(BrushSet.NormalBrush, Margin);
-		ConfigureBoxBrush(BrushSet.HoverBrush, Margin);
-		ConfigureBoxBrush(BrushSet.PressedBrush, Margin);
-		ConfigureBoxBrush(BrushSet.DisabledBrush, Margin);
-		ConfigureBoxBrush(BrushSet.SelectedBrush, Margin);
-	}
-
-	void ResetBrushSet(UT66FrontendTopBarWidget::FPlateBrushSet& BrushSet)
-	{
-		BrushSet.NormalBrush.Reset();
-		BrushSet.HoverBrush.Reset();
-		BrushSet.PressedBrush.Reset();
-		BrushSet.DisabledBrush.Reset();
-		BrushSet.SelectedBrush.Reset();
-	}
-
-	TSharedRef<SWidget> MakeWarmFallbackGlyph(const FText& Text, int32 FontSize)
-	{
-		return SNew(STextBlock)
-			.Text(Text)
-			.Font(FT66Style::MakeFont(TEXT("Bold"), FontSize))
-			.ColorAndOpacity(FLinearColor(0.98f, 0.96f, 1.0f, 1.0f))
-			.ShadowOffset(FVector2D(1.f, 1.f))
-			.ShadowColorAndOpacity(FLinearColor(0.02f, 0.0f, 0.04f, 0.95f));
-	}
 }
 
 UT66FrontendTopBarWidget::UT66FrontendTopBarWidget(const FObjectInitializer& ObjectInitializer)
@@ -1224,7 +674,10 @@ void UT66FrontendTopBarWidget::SetActiveSection(const EFrontendSection InActiveS
 	bHasActiveSectionOverride = true;
 	if (GetCachedWidget().IsValid())
 	{
-		FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
+		if (!UIManager || !UIManager->RequestFrontendRootLayerRefresh(this))
+		{
+			FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
+		}
 	}
 }
 
@@ -1239,7 +692,10 @@ void UT66FrontendTopBarWidget::ClearActiveSectionOverride()
 	ActiveSectionOverride = EFrontendSection::None;
 	if (GetCachedWidget().IsValid())
 	{
-		FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
+		if (!UIManager || !UIManager->RequestFrontendRootLayerRefresh(this))
+		{
+			FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
+		}
 	}
 }
 
@@ -1369,6 +825,12 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 		QuitIconBrush,
 		FVector2D(54.f, 54.f),
 		TextureFilter::TF_Nearest);
+
+	TrackTopBarBrushTexture(HomeIconBrush);
+	TrackTopBarBrushTexture(SettingsIconBrush);
+	TrackTopBarBrushTexture(SocialIconBrush);
+	TrackTopBarBrushTexture(CurrencyIconBrush);
+	TrackTopBarBrushTexture(QuitIconBrush);
 }
 
 void UT66FrontendTopBarWidget::ReleaseTopBarBrushes()
@@ -1381,42 +843,56 @@ void UT66FrontendTopBarWidget::ReleaseTopBarBrushes()
 			Brush.Reset();
 		}
 	};
-	auto ReleaseBrushSet = [&ReleaseBrush](UT66FrontendTopBarWidget::FPlateBrushSet& BrushSet)
-	{
-		ReleaseBrush(BrushSet.NormalBrush);
-		ReleaseBrush(BrushSet.HoverBrush);
-		ReleaseBrush(BrushSet.PressedBrush);
-		ReleaseBrush(BrushSet.DisabledBrush);
-		ReleaseBrush(BrushSet.SelectedBrush);
-	};
 
-	ReleaseBrush(TopBarBackdropBrush);
-	ReleaseBrush(TopBarFoliageLeftBrush);
-	ReleaseBrush(TopBarFoliageRightBrush);
-	ReleaseBrushSet(SettingsButtonBrushes);
-	ReleaseBrushSet(LanguageButtonBrushes);
-	ReleaseBrushSet(AccountButtonBrushes);
-	ReleaseBrushSet(HomeButtonBrushes);
-	ReleaseBrushSet(NavButtonBrushes);
-	ReleaseBrushSet(PowerUpButtonBrushes);
-	ReleaseBrushSet(AchievementsButtonBrushes);
-	ReleaseBrushSet(MiniGamesButtonBrushes);
-	ReleaseBrushSet(PortraitButtonBrushes);
-	ReleaseBrushSet(CouponButtonBrushes);
-	ReleaseBrushSet(QuitButtonBrushes);
-	ReleaseBrush(UtilityButtonBrush);
-	ReleaseBrush(AccountButtonBrush);
-	ReleaseBrush(AccountButtonActiveBrush);
-	ReleaseBrush(NavButtonBrush);
-	ReleaseBrush(NavButtonActiveBrush);
-	ReleaseBrush(HomeButtonBrush);
-	ReleaseBrush(HomeButtonActiveBrush);
-	ReleaseBrush(CurrencyButtonBrush);
 	ReleaseBrush(HomeIconBrush);
 	ReleaseBrush(SettingsIconBrush);
 	ReleaseBrush(SocialIconBrush);
 	ReleaseBrush(CurrencyIconBrush);
 	ReleaseBrush(QuitIconBrush);
+	ReleaseRootedTopBarTextures();
+}
+
+void UT66FrontendTopBarWidget::TrackTopBarBrushTexture(const TSharedPtr<FSlateBrush>& Brush)
+{
+	if (!Brush.IsValid())
+	{
+		return;
+	}
+
+	UTexture2D* Texture = Cast<UTexture2D>(Brush->GetResourceObject());
+	if (!Texture || !IsValid(Texture))
+	{
+		return;
+	}
+
+	for (const TWeakObjectPtr<UTexture2D>& RootedTexture : RootedTopBarTextures)
+	{
+		if (RootedTexture.Get() == Texture)
+		{
+			return;
+		}
+	}
+
+	if (!Texture->IsRooted())
+	{
+		Texture->AddToRoot();
+		RootedTopBarTextures.Add(Texture);
+	}
+}
+
+void UT66FrontendTopBarWidget::ReleaseRootedTopBarTextures()
+{
+	for (const TWeakObjectPtr<UTexture2D>& RootedTexture : RootedTopBarTextures)
+	{
+		if (UTexture2D* Texture = RootedTexture.Get())
+		{
+			if (IsValid(Texture) && Texture->IsRooted())
+			{
+				Texture->RemoveFromRoot();
+			}
+		}
+	}
+	RootedTopBarTextures.Reset();
 }
 
 void UT66FrontendTopBarWidget::RefreshScreen_Implementation()
@@ -1431,7 +907,10 @@ void UT66FrontendTopBarWidget::RefreshScreen_Implementation()
 		}
 	}
 
-	FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
+	if (!UIManager || !UIManager->RequestFrontendRootLayerRefresh(this))
+	{
+		FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
+	}
 }
 
 TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
@@ -1836,515 +1315,6 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			TEXT("TopBarRoot"),
 			ET66FlatState::Default);
 	}
-
-	CachedViewportSize = GetEffectiveFrontendViewportSize();
-	bViewportResponsiveRebuildQueued = false;
-	RequestTopBarAssets();
-	ensureMsgf(HomeButtonBrushes.NormalBrush.IsValid(), TEXT("Main menu top bar missing home button plate."));
-
-	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-	const ETopBarSection ActiveSection = GetActiveSection();
-
-	const FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.MainMenu", "Settings", "SETTINGS");
-	const FText LanguageText = Loc ? Loc->GetText_LangButton() : NSLOCTEXT("T66.LanguageSelect", "LangButton", "LANG");
-	const FText AccountText = Loc ? Loc->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT");
-	const FText HomeText = NSLOCTEXT("T66.MainMenu", "Home", "CHADPOCALYPSE");
-	const FText PowerUpText = NSLOCTEXT("T66.MainMenu", "PowerUp", "POWER UP");
-	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
-	const FText MiniGamesText = NSLOCTEXT("T66.MainMenu", "MiniGames", "MINIGAMES");
-	const FText BackToMainMenuText = NSLOCTEXT("T66.MainMenu", "BackToMainMenu", "BACK TO MAIN MENU");
-	const FText QuitTooltipText = Loc ? Loc->GetText_Quit() : NSLOCTEXT("T66.MainMenu", "Quit", "QUIT");
-	const FButtonStyle& FlatButtonStyle = FT66Style::Get().GetWidgetStyle<FButtonStyle>(TEXT("T66.Button.FlatTransparent"));
-	const float SurfaceWidth = T66MainMenuReferenceLayout::CanvasWidth;
-	const float SurfaceHeight = GetTopBarReferenceSurfaceHeight();
-	const float ReservedReferenceHeight = GetTopBarReferenceReservedHeight();
-	const float LabelShadowOffset = 1.f;
-	const FT66ReferenceRect& SettingsRect = T66MainMenuReferenceLayout::TopBar::ButtonSettings;
-	const FT66ReferenceRect& LanguageRect = T66MainMenuReferenceLayout::TopBar::ButtonChat;
-	const FT66ReferenceRect& AccountRect = T66MainMenuReferenceLayout::TopBar::TabAccount;
-	const FT66ReferenceRect& PortraitRect = T66MainMenuReferenceLayout::TopBar::BadgeProfile;
-	const FT66ReferenceRect& PowerUpRect = T66MainMenuReferenceLayout::TopBar::TabPowerUp;
-	const FT66ReferenceRect& AchievementsRect = T66MainMenuReferenceLayout::TopBar::TabAchievements;
-	const FT66ReferenceRect& MiniGamesRect = T66MainMenuReferenceLayout::TopBar::TabMinigames;
-	const FT66ReferenceRect& CouponRect = T66MainMenuReferenceLayout::TopBar::CurrencySlot;
-	const FT66ReferenceRect& QuitRect = T66MainMenuReferenceLayout::TopBar::ButtonPower;
-	const bool bDailyDescentTopBar = UIManager && UIManager->GetCurrentScreenType() == ET66ScreenType::DailyDescent;
-	const FT66ReferenceRect DailyBackRect(
-		PowerUpRect.X,
-		PowerUpRect.Y,
-		AchievementsRect.Right() - PowerUpRect.X,
-		PowerUpRect.Height);
-	FT66ReferenceRect StripRect(0.f, 0.f, SurfaceWidth, SurfaceHeight);
-	const float TopBarButtonHeight = FMath::Clamp(StripRect.Height - 22.f, 86.f, 96.f);
-	const float UtilityIconGlyphSize = FMath::FloorToFloat(TopBarButtonHeight * 0.62f);
-	const float CurrencyIconGlyphSize = FMath::FloorToFloat(TopBarButtonHeight * 0.58f);
-	const FVector2D UtilityIconSize = FVector2D(UtilityIconGlyphSize, UtilityIconGlyphSize);
-	const FVector2D CurrencyIconSize = FVector2D(CurrencyIconGlyphSize, CurrencyIconGlyphSize);
-
-	auto MakeTopBarControlOffset = [&StripRect, TopBarButtonHeight](const FT66ReferenceRect& Rect, const float Width = 0.f, const float Height = 0.f) -> FMargin
-	{
-		const float ResolvedWidth = Width > 0.f ? Width : Rect.Width;
-		const float ResolvedHeight = Height > 0.f ? Height : TopBarButtonHeight;
-		const float X = Rect.X + FMath::Max(0.f, Rect.Width - ResolvedWidth) * 0.5f;
-		const float Y = StripRect.Y + FMath::Max(0.f, StripRect.Height - ResolvedHeight) * 0.5f;
-		return FMargin(X, Y, ResolvedWidth, ResolvedHeight);
-	};
-
-	FSlateFontInfo NavFont = FT66Style::MakeFont(TEXT("Bold"), 34);
-	NavFont.LetterSpacing = 0;
-	FSlateFontInfo CurrencyFont = FT66Style::MakeFont(TEXT("Bold"), 34);
-	CurrencyFont.LetterSpacing = 0;
-
-	const FLinearColor LabelColor(0.98f, 0.96f, 1.0f, 1.0f);
-	const FLinearColor LabelShadowColor(0.02f, 0.0f, 0.04f, 0.98f);
-	const FLinearColor AccountOuter(0.82f, 0.10f, 1.0f, 1.0f);
-	const FLinearColor AccountMid(0.05f, 0.04f, 0.075f, 1.0f);
-	const FLinearColor AccountInner(0.08f, 0.06f, 0.12f, 1.0f);
-	const FLinearColor NavOuter(0.82f, 0.10f, 1.0f, 1.0f);
-	const FLinearColor NavMid(0.05f, 0.04f, 0.075f, 1.0f);
-	const FLinearColor NavInner(0.06f, 0.055f, 0.09f, 1.0f);
-	const FLinearColor HomeOuter(0.92f, 0.22f, 1.0f, 1.0f);
-	const FLinearColor HomeMid(0.08f, 0.035f, 0.12f, 1.0f);
-	const FLinearColor HomeInner(0.16f, 0.055f, 0.22f, 1.0f);
-	const FLinearColor CurrencyOuter(0.82f, 0.10f, 1.0f, 1.0f);
-	const FLinearColor CurrencyMid(0.05f, 0.04f, 0.075f, 1.0f);
-	const FLinearColor CurrencyInner(0.08f, 0.06f, 0.12f, 1.0f);
-	const FLinearColor TransparentPlate(0.f, 0.f, 0.f, 0.f);
-
-	auto MakeLabelWidget = [&NavFont, LabelColor, LabelShadowColor, LabelShadowOffset](const FText& Text) -> TSharedRef<SWidget>
-	{
-		return FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
-			.Text(Text)
-			.Font(NavFont)
-			.ColorAndOpacity(LabelColor)
-			.ShadowOffset(FVector2D(LabelShadowOffset, LabelShadowOffset))
-			.ShadowColorAndOpacity(LabelShadowColor)
-			.Justification(ETextJustify::Center)
-			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-			.Clipping(EWidgetClipping::ClipToBounds)));
-	};
-
-	auto MakeIconWidget = [](const TSharedPtr<FSlateBrush>& Brush, const FVector2D& Size, const TSharedRef<SWidget>& Fallback) -> TSharedRef<SWidget>
-	{
-		if (!Brush.IsValid())
-		{
-			return Fallback;
-		}
-
-		return SNew(SBox)
-			.WidthOverride(Size.X)
-			.HeightOverride(Size.Y)
-			[
-				FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
-					SNew(SImage)
-					.Image(Brush.Get())
-					.ColorAndOpacity(FLinearColor::White)))
-			];
-	};
-
-	auto MakePlateButton =
-		[this, &FlatButtonStyle](
-			const FPlateBrushSet& BrushSet,
-			float Width,
-			float Height,
-			const FText& TooltipText,
-			FReply (UT66FrontendTopBarWidget::*ClickFunc)(),
-			const TSharedRef<SWidget>& ContentWidget,
-			const FMargin& ContentPadding,
-			const bool bSelected,
-			const FLinearColor& OuterColor,
-			const FLinearColor& MidColor,
-			const FLinearColor& InnerColor) -> TSharedRef<SWidget>
-	{
-		return SNew(SBox)
-			.WidthOverride(Width)
-			.HeightOverride(Height)
-			.Clipping(EWidgetClipping::ClipToBounds)
-			[
-				SNew(ST66TopBarStatefulButton)
-				.ButtonStyle(&FlatButtonStyle)
-				.NormalBrush(BrushSet.NormalBrush.Get())
-				.HoverBrush(BrushSet.HoverBrush.Get())
-				.PressedBrush(BrushSet.PressedBrush.Get())
-				.DisabledBrush(BrushSet.DisabledBrush.Get())
-				.SelectedBrush(BrushSet.SelectedBrush.Get())
-				.IsSelected(bSelected)
-				.ToolTipText(TooltipText)
-				.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
-				.ContentPadding(ContentPadding)
-				.FallbackOuterColor(OuterColor)
-				.FallbackMidColor(MidColor)
-				.FallbackInnerColor(InnerColor)
-				[
-					ContentWidget
-				]
-			];
-	};
-
-	const TSharedRef<SWidget> SettingsIconWidget = MakeIconWidget(
-		SettingsIconBrush,
-		UtilityIconSize,
-		SNullWidget::NullWidget);
-	const TSharedRef<SWidget> LanguageIconWidget = MakeIconWidget(
-		SocialIconBrush,
-		UtilityIconSize,
-		SNullWidget::NullWidget);
-	const TSharedRef<SWidget> CurrencyIconWidget = MakeIconWidget(
-		CurrencyIconBrush,
-		CurrencyIconSize,
-		SNullWidget::NullWidget);
-	const TSharedRef<SWidget> QuitIconWidget = MakeIconWidget(
-		QuitIconBrush,
-		UtilityIconSize,
-		SNullWidget::NullWidget);
-	const TSharedPtr<SWidget> CurrencyNavIcon = TSharedPtr<SWidget>(CurrencyIconWidget);
-
-	auto MakeNavContent =
-		[](
-			const TSharedRef<SWidget>& LabelWidget,
-			const TSharedPtr<SWidget>& OptionalIconWidget,
-			float ButtonWidth) -> TSharedRef<SWidget>
-	{
-		if (!OptionalIconWidget.IsValid())
-		{
-			return LabelWidget;
-		}
-
-		const float ContentGap = FMath::Clamp(ButtonWidth * 0.045f, 8.f, 14.f);
-
-		return SNew(SBox)
-			.WidthOverride(ButtonWidth)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				[
-					OptionalIconWidget.ToSharedRef()
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				.Padding(FMargin(ContentGap, 0.f, 0.f, 0.f))
-				[
-					LabelWidget
-				]
-			];
-	};
-
-	const TSharedRef<SWidget> SettingsButtonWidget = MakePlateButton(
-		SettingsButtonBrushes,
-		SettingsRect.Width,
-		TopBarButtonHeight,
-		SettingsText,
-		&UT66FrontendTopBarWidget::HandleSettingsClicked,
-		SettingsIconWidget,
-		FMargin(0.f),
-		ActiveSection == ETopBarSection::Settings,
-		TransparentPlate,
-		TransparentPlate,
-		TransparentPlate);
-	const TSharedRef<SWidget> LanguageButtonWidget = MakePlateButton(
-		LanguageButtonBrushes,
-		LanguageRect.Width,
-		TopBarButtonHeight,
-		LanguageText,
-		&UT66FrontendTopBarWidget::HandleLanguageClicked,
-		LanguageIconWidget,
-		FMargin(0.f),
-		ActiveSection == ETopBarSection::Language,
-		TransparentPlate,
-		TransparentPlate,
-		TransparentPlate);
-	const TSharedRef<SWidget> AccountButtonWidget = MakePlateButton(
-		AccountButtonBrushes,
-		AccountRect.Width,
-		TopBarButtonHeight,
-		AccountText,
-		&UT66FrontendTopBarWidget::HandleAccountStatusClicked,
-		MakeLabelWidget(AccountText),
-		FMargin(0.f),
-		ActiveSection == ETopBarSection::AccountStatus,
-		AccountOuter,
-		AccountMid,
-		AccountInner);
-	const float HomeButtonSquareSize = TopBarButtonHeight;
-	const float HomeImageSize = FMath::FloorToFloat(TopBarButtonHeight * 0.78f);
-	const TSharedRef<SWidget> HomeImageWidget = MakeIconWidget(
-		HomeIconBrush,
-		FVector2D(HomeImageSize, HomeImageSize),
-		SNullWidget::NullWidget);
-	const TSharedRef<SWidget> HomeButtonWidget =
-		SNew(SBox)
-		.WidthOverride(PortraitRect.Width)
-		.HeightOverride(TopBarButtonHeight)
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
-		[
-			MakePlateButton(
-				HomeButtonBrushes,
-				HomeButtonSquareSize,
-				HomeButtonSquareSize,
-				HomeText,
-				&UT66FrontendTopBarWidget::HandleHomeClicked,
-				HomeImageWidget,
-				FMargin(0.f),
-				ActiveSection == ETopBarSection::Home,
-				HomeOuter,
-				HomeMid,
-				HomeInner)
-		];
-	const TSharedRef<SWidget> PowerUpButtonWidget = MakePlateButton(
-		PowerUpButtonBrushes,
-		PowerUpRect.Width,
-		TopBarButtonHeight,
-		PowerUpText,
-		&UT66FrontendTopBarWidget::HandlePowerUpClicked,
-		MakeLabelWidget(PowerUpText),
-		FMargin(0.f),
-		ActiveSection == ETopBarSection::PowerUp,
-		NavOuter,
-		NavMid,
-		NavInner);
-	const TSharedRef<SWidget> AchievementsButtonWidget = MakePlateButton(
-		AchievementsButtonBrushes,
-		AchievementsRect.Width,
-		TopBarButtonHeight,
-		AchievementsText,
-		&UT66FrontendTopBarWidget::HandleAchievementsClicked,
-		MakeLabelWidget(AchievementsText),
-		FMargin(0.f),
-		ActiveSection == ETopBarSection::Achievements,
-		NavOuter,
-		NavMid,
-		NavInner);
-	const TSharedRef<SWidget> MiniGamesButtonWidget = MakePlateButton(
-		MiniGamesButtonBrushes,
-		MiniGamesRect.Width,
-		TopBarButtonHeight,
-		MiniGamesText,
-		&UT66FrontendTopBarWidget::HandleMiniGamesClicked,
-		MakeLabelWidget(MiniGamesText),
-		FMargin(0.f),
-		ActiveSection == ETopBarSection::MiniGames,
-		NavOuter,
-		NavMid,
-		NavInner);
-	const TSharedRef<SWidget> BackToMainMenuButtonWidget = MakePlateButton(
-		NavButtonBrushes,
-		DailyBackRect.Width,
-		TopBarButtonHeight,
-		BackToMainMenuText,
-		&UT66FrontendTopBarWidget::HandleHomeClicked,
-		MakeLabelWidget(BackToMainMenuText),
-		FMargin(0.f),
-		ActiveSection == ETopBarSection::Home,
-		NavOuter,
-		NavMid,
-		NavInner);
-	const TSharedRef<SWidget> ChadCouponsWidget = MakePlateButton(
-		CouponButtonBrushes,
-		CouponRect.Width,
-		TopBarButtonHeight,
-		NSLOCTEXT("T66.PowerUp", "ChadCouponsBalanceTooltip", "Chad Coupons"),
-		&UT66FrontendTopBarWidget::HandlePowerUpClicked,
-		MakeNavContent(
-			FT66Style::MakeRetroUIText(StaticCastSharedRef<SWidget>(SNew(STextBlock)
-			.Text_Lambda([this]() -> FText
-			{
-				return GetChadCouponsValueText();
-			})
-			.Font(CurrencyFont)
-			.ColorAndOpacity(LabelColor)
-			.ShadowOffset(FVector2D(LabelShadowOffset, LabelShadowOffset))
-			.ShadowColorAndOpacity(LabelShadowColor))),
-			CurrencyNavIcon,
-			CouponRect.Width),
-		FMargin(0.f),
-		ActiveSection == ETopBarSection::PowerUp,
-		TransparentPlate,
-		TransparentPlate,
-		TransparentPlate);
-	const TSharedRef<SWidget> QuitButtonWidget = MakePlateButton(
-		QuitButtonBrushes,
-		QuitRect.Width,
-		TopBarButtonHeight,
-		QuitTooltipText,
-		&UT66FrontendTopBarWidget::HandleQuitClicked,
-		QuitIconWidget,
-		FMargin(0.f),
-		false,
-		TransparentPlate,
-		TransparentPlate,
-		TransparentPlate);
-
-	TSharedRef<SConstraintCanvas> ButtonsCanvas = SNew(SConstraintCanvas);
-	ButtonsCanvas->AddSlot()
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(MakeTopBarControlOffset(SettingsRect, SettingsRect.Width, TopBarButtonHeight))
-		[
-			SettingsButtonWidget
-		];
-	ButtonsCanvas->AddSlot()
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(MakeTopBarControlOffset(LanguageRect, LanguageRect.Width, TopBarButtonHeight))
-		[
-			LanguageButtonWidget
-		];
-	if (bDailyDescentTopBar)
-	{
-		ButtonsCanvas->AddSlot()
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(MakeTopBarControlOffset(DailyBackRect, DailyBackRect.Width, TopBarButtonHeight))
-			[
-				BackToMainMenuButtonWidget
-			];
-	}
-	else
-	{
-		ButtonsCanvas->AddSlot()
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(MakeTopBarControlOffset(AccountRect, AccountRect.Width, TopBarButtonHeight))
-			[
-				AccountButtonWidget
-			];
-		ButtonsCanvas->AddSlot()
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(MakeTopBarControlOffset(PortraitRect, PortraitRect.Width, TopBarButtonHeight))
-			[
-				HomeButtonWidget
-			];
-		ButtonsCanvas->AddSlot()
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(MakeTopBarControlOffset(PowerUpRect, PowerUpRect.Width, TopBarButtonHeight))
-			[
-				PowerUpButtonWidget
-			];
-		ButtonsCanvas->AddSlot()
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(MakeTopBarControlOffset(AchievementsRect, AchievementsRect.Width, TopBarButtonHeight))
-			[
-				AchievementsButtonWidget
-			];
-		ButtonsCanvas->AddSlot()
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(MakeTopBarControlOffset(MiniGamesRect, MiniGamesRect.Width, TopBarButtonHeight))
-			[
-				MiniGamesButtonWidget
-			];
-		ButtonsCanvas->AddSlot()
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(MakeTopBarControlOffset(CouponRect, CouponRect.Width, TopBarButtonHeight))
-			[
-				ChadCouponsWidget
-			];
-	}
-	ButtonsCanvas->AddSlot()
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(MakeTopBarControlOffset(QuitRect, QuitRect.Width, TopBarButtonHeight))
-		[
-			QuitButtonWidget
-		];
-
-	auto MakeSurfaceBackground = []() -> TSharedRef<SWidget>
-	{
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(GetTopBarFrameAccent())
-			.Padding(FMargin(3.f))
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(GetTopBarSurfaceFill())
-				.Padding(FMargin(0.f))
-			];
-	};
-
-	const TSharedRef<SWidget> Surface =
-		SNew(SBox)
-		.WidthOverride(SurfaceWidth)
-		.HeightOverride(SurfaceHeight)
-		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Left)
-			.VAlign(VAlign_Top)
-			.Padding(FMargin(StripRect.X, StripRect.Y, 0.f, 0.f))
-			[
-				SNew(SBox)
-				.WidthOverride(StripRect.Width)
-				.HeightOverride(StripRect.Height)
-				[
-					MakeSurfaceBackground()
-				]
-			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			[
-				ButtonsCanvas
-			]
-		];
-
-	const TSharedRef<SWidget> ReservedReferenceCanvas =
-		SNew(SBox)
-		.WidthOverride(T66MainMenuReferenceLayout::CanvasWidth)
-		.HeightOverride(ReservedReferenceHeight)
-	[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Top)
-			.Padding(FMargin(0.f, T66MainMenuReferenceLayout::TopBarSurfaceOffsetY, 0.f, 0.f))
-			[
-				Surface
-			]
-		];
-
-	const float ReservedHeight = GetReservedHeight();
-	const FVector2D ViewportSize = GetEffectiveFrontendViewportSize();
-
-	return SNew(SBox)
-		.WidthOverride(FMath::Max(1.f, ViewportSize.X))
-		.HeightOverride(FMath::Max(1.f, ViewportSize.Y))
-		[
-			SNew(SVerticalBox)
-			.Visibility(EVisibility::SelfHitTestInvisible)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			[
-				SNew(SBox)
-				.HeightOverride(ReservedHeight)
-			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Top)
-				[
-					SNew(SDPIScaler)
-						.DPIScale(TAttribute<float>::CreateLambda([]() -> float
-						{
-							return 1.f / FMath::Max(0.01f, FT66Style::GetEngineDPIScale());
-						}))
-						[
-							SNew(SScaleBox)
-							.Stretch(EStretch::ScaleToFitX)
-							.StretchDirection(EStretchDirection::Both)
-							[
-								ReservedReferenceCanvas
-							]
-						]
-					]
-				]
-			]
-			+ SVerticalBox::Slot()
-			.FillHeight(1.f)
-			[
-				SNullWidget::NullWidget
-			]
-		];
 }
 
 void UT66FrontendTopBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -2375,7 +1345,11 @@ void UT66FrontendTopBarWidget::NativeTick(const FGeometry& MyGeometry, float InD
 	{
 		CachedViewportSize = CurrentViewportSize;
 		bViewportResponsiveRebuildQueued = true;
-		FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
+		UT66UIManager* RuntimeUIManager = UIManager.Get();
+		if (!RuntimeUIManager || !RuntimeUIManager->RequestFrontendRootLayerRefresh(this))
+		{
+			FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
+		}
 	}
 }
 
@@ -2387,7 +1361,6 @@ void UT66FrontendTopBarWidget::NativeDestruct()
 
 void UT66FrontendTopBarWidget::ReleaseSlateResources(bool bReleaseChildren)
 {
-	ReleaseTopBarBrushes();
 	Super::ReleaseSlateResources(bReleaseChildren);
 }
 

@@ -21,12 +21,19 @@ namespace
 	{
 		return FT66FlatStyle::AttachMetadata(
 			SNew(SBox)
+			.Visibility(EVisibility::SelfHitTestInvisible)
 			[
 				Content
 			],
 			HSName(Tag),
 			Role,
 			ET66FlatState::Default);
+	}
+
+	TSharedRef<SConstraintCanvas> HSMakeCanvas()
+	{
+		return SNew(SConstraintCanvas)
+			.Visibility(EVisibility::SelfHitTestInvisible);
 	}
 
 	TSharedRef<SWidget> HSTaggedText(
@@ -134,17 +141,6 @@ namespace
 			];
 	}
 
-	FText HSHeroNameText(const FText& Source)
-	{
-		FString Value = Source.ToString();
-		Value.ToUpperInline();
-		if (Value.IsEmpty() || Value.Contains(TEXT("HERO_")) || Value.Equals(TEXT("HERO")) || Value.Equals(TEXT("HERO 1")))
-		{
-			Value = TEXT("ARTHUR");
-		}
-		return FText::FromString(Value);
-	}
-
 	TSharedRef<SWidget> HSMakePanel(
 		const TCHAR* Tag,
 		const ET66FlatState State,
@@ -158,6 +154,7 @@ namespace
 	{
 		return FT66FlatStyle::AttachMetadata(
 			SNew(SBorder)
+			.Visibility(EVisibility::HitTestInvisible)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			.BorderBackgroundColor(FT66FlatStyle::BackgroundColor())
 			.Clipping(EWidgetClipping::ClipToBounds)
@@ -217,16 +214,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	}
 	const int32 CurrentDiffIndex = Difficulties.IndexOfByKey(SelectedDifficulty);
 	CurrentDifficultyOption = DifficultyOptions.IsValidIndex(CurrentDiffIndex) ? DifficultyOptions[CurrentDiffIndex] : (DifficultyOptions.Num() > 0 ? DifficultyOptions[0] : nullptr);
-
-	FHeroData CurrentHeroData;
-	FLinearColor HeroPreviewColor(0.18f, 0.18f, 0.22f, 1.f);
-	FText HeroDisplayName = NSLOCTEXT("T66.HeroSelection", "FlatHeroArthur", "ARTHUR");
-	if (GetPreviewedHeroData(CurrentHeroData))
-	{
-		HeroPreviewColor = CurrentHeroData.PlaceholderColor;
-		HeroDisplayName = Loc ? Loc->GetHeroDisplayName(CurrentHeroData) : CurrentHeroData.DisplayName;
-	}
-	const FText HeroNameText = HSHeroNameText(HeroDisplayName);
 
 	if (!HeroUltimateIconBrush.IsValid())
 	{
@@ -326,7 +313,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		TFunction<void(const TSharedRef<SConstraintCanvas>&)> AddActions)
 	{
 		const ET66FlatState RowState = CurrentFlatSkinID == SkinID ? ET66FlatState::Selected : ET66FlatState::Default;
-		const TSharedRef<SConstraintCanvas> RowCanvas = SNew(SConstraintCanvas);
+		const TSharedRef<SConstraintCanvas> RowCanvas = HSMakeCanvas();
 		HSAddCanvasSlot(RowCanvas, 0.f, 0.f, 127.f, RowHeight,
 			FT66FlatStyle::MakeFlatPortraitSlot(RowState, Brush, nullptr, FVector2D(118.f, RowHeight - 8.f), HSName(PortraitTag)));
 		HSAddCanvasSlot(RowCanvas, 147.f, 20.f, 185.f, 34.f,
@@ -368,7 +355,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		const FString TagString(Tag);
 		const FName SteamAvatarTag(*FString::Printf(TEXT("%s.SteamAvatar"), *TagString));
 		const FName HeroPortraitTag(*FString::Printf(TEXT("%s.HeroPortrait"), *TagString));
-		const TSharedRef<SConstraintCanvas> SlotCanvas = SNew(SConstraintCanvas);
+		const TSharedRef<SConstraintCanvas> SlotCanvas = HSMakeCanvas();
 		HSAddCanvasSlot(SlotCanvas, 24.f, 18.f, 86.f, 86.f,
 			FT66FlatStyle::AttachMetadata(
 				SNew(SBox)
@@ -393,25 +380,41 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			HSName(Tag));
 	};
 
-	const TSharedRef<SConstraintCanvas> TopCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> TopCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(TopCanvas, 0.f, 2.f, 150.f, 54.f,
 		MakeButton(TEXT("HeroSelection.TopRow.BackButton"), NSLOCTEXT("T66.Common", "Back", "BACK"), ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackClicked), 150.f, 54.f, 22));
 
-	const TSharedRef<SConstraintCanvas> CarouselCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> CarouselCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(CarouselCanvas, 0.f, 0.f, 46.f, 70.f,
 		MakeButton(TEXT("HeroSelection.TopRow.HeroCarousel.LeftArrow"), FText::FromString(TEXT("<")), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandlePrevClicked), 46.f, 70.f, 24));
-	const FSlateBrush* CarouselBrushes[4] = { SkinDefaultBrush, SkinBeachBrush, SkinCrusaderBrush, SkinGoldBrush };
-	for (int32 Index = 0; Index < 7; ++Index)
+	HeroCarouselPortraitBrushes.SetNum(HeroSelectionHeroCarouselVisibleSlots);
+	HeroCarouselSlotVisibility.SetNum(HeroSelectionHeroCarouselVisibleSlots);
+	HeroCarouselImageWidgets.SetNum(HeroSelectionHeroCarouselVisibleSlots);
+	for (int32 Index = 0; Index < HeroSelectionHeroCarouselVisibleSlots; ++Index)
 	{
-		const bool bSelected = Index == 3;
+		if (!HeroCarouselPortraitBrushes[Index].IsValid())
+		{
+			HeroCarouselPortraitBrushes[Index] = MakeShared<FSlateBrush>();
+			HeroCarouselPortraitBrushes[Index]->DrawAs = ESlateBrushDrawType::Image;
+			HeroCarouselPortraitBrushes[Index]->Tiling = ESlateBrushTileType::NoTile;
+			HeroCarouselPortraitBrushes[Index]->TintColor = FSlateColor(FLinearColor::White);
+		}
+	}
+	RefreshHeroCarouselPortraits();
+	for (int32 Index = 0; Index < HeroSelectionHeroCarouselVisibleSlots; ++Index)
+	{
+		const bool bSelected = Index == HeroSelectionHeroCarouselCenterIndex;
 		const float X = 65.f + Index * 82.f;
 		const FString Tag = FString::Printf(TEXT("HeroSelection.TopRow.HeroCarousel.Portrait%02d"), Index + 1);
+		const TSharedPtr<FSlateBrush> PortraitBrush = HeroCarouselPortraitBrushes.IsValidIndex(Index)
+			? HeroCarouselPortraitBrushes[Index]
+			: nullptr;
 		HSAddCanvasSlot(CarouselCanvas, X, Index < 5 ? 1.f : 2.f, 67.f, Index < 5 ? 72.f : 71.f,
 			FT66FlatStyle::MakeFlatToggleGroupButton(
 				bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
 				FT66FlatStyle::MakeFlatPortraitSlot(
 					bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
-					CarouselBrushes[Index % 4],
+					PortraitBrush.IsValid() ? PortraitBrush.Get() : nullptr,
 					nullptr,
 					FVector2D(67.f, Index < 5 ? 72.f : 71.f)),
 				FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleHeroCarouselPortraitClicked, Index),
@@ -427,7 +430,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(TopCanvas, 570.f, 0.f, 688.f, 76.f,
 		HSTaggedBox(TEXT("HeroSelection.TopRow.HeroCarousel"), CarouselCanvas, TEXT("HeroCarousel")));
 
-	const TSharedRef<SConstraintCanvas> SkinsCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> SkinsCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(SkinsCanvas, 23.f, 17.f, 120.f, 32.f,
 		HSTaggedText(TEXT("HeroSelection.LeftColumn.SkinsPanel.Header"), NSLOCTEXT("T66.HeroSelection", "FlatSkins", "SKINS"), 25, FSlateColor(FT66FlatStyle::PrimaryText())));
 	HSAddCanvasSlot(SkinsCanvas, 413.f, 17.f, 48.f, 28.f,
@@ -497,7 +500,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					HSTextPanel(TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.GoldenPaladin.Cost"), FText::FromString(TEXT("150")), ET66FlatState::Default, 16, FMargin(8.f, 5.f)));
 			}));
 
-	const TSharedRef<SConstraintCanvas> DrugsCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> DrugsCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(DrugsCanvas, 23.f, 11.f, 121.f, 32.f,
 		HSTaggedText(TEXT("HeroSelection.LeftColumn.DrugsPanel.Header"), NSLOCTEXT("T66.HeroSelection", "FlatDrugs", "DRUGS"), 25, FSlateColor(FT66FlatStyle::PrimaryText())));
 	HSAddCanvasSlot(DrugsCanvas, 19.f, 45.f, 54.f, 49.f, MakeEmptyDrugSlot(TEXT("HeroSelection.LeftColumn.DrugsPanel.EquipSlot01")));
@@ -509,7 +512,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(DrugsCanvas, 421.f, 44.f, 92.f, 50.f,
 		MakeButton(TEXT("HeroSelection.LeftColumn.DrugsPanel.ClearButton"), NSLOCTEXT("T66.Common", "Clear", "CLEAR"), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleClearTemporaryBuffsClicked), 0.f, 50.f, 16));
 
-	const TSharedRef<SConstraintCanvas> LeftCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> LeftCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(LeftCanvas, 0.f, 0.f, 534.f, 574.f, HSMakePanel(TEXT("HeroSelection.LeftColumn.SkinsPanel"), ET66FlatState::Default, SkinsCanvas, FMargin(0.f)));
 	HSAddCanvasSlot(LeftCanvas, 0.f, 591.f, 534.f, 120.f, HSMakePanel(TEXT("HeroSelection.LeftColumn.DrugsPanel"), ET66FlatState::Default, DrugsCanvas, FMargin(0.f)));
 
@@ -530,7 +533,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			HSTaggedBox(TEXT("HeroSelection.MiddleColumn.CharacterRender"), CharacterPreviewHost.ToSharedRef(), TEXT("CharacterRender"))
 		];
 
-	const TSharedRef<SConstraintCanvas> RankCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> RankCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(RankCanvas, 13.f, 15.f, 25.f, 25.f,
 		FT66FlatStyle::MakeFlatPortraitSlot(ET66FlatState::Default, InfoBrush, nullptr, FVector2D(25.f, 25.f), HSName(TEXT("HeroSelection.RightColumn.RankPanel.InfoIcon"))));
 	HSAddCanvasSlot(RankCanvas, 51.f, 16.f, 68.f, 30.f,
@@ -540,7 +543,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(RankCanvas, 516.f, 16.f, 24.f, 30.f,
 		HSTaggedText(TEXT("HeroSelection.RightColumn.RankPanel.Value"), FText::FromString(TEXT("--")), 20, FSlateColor(FT66FlatStyle::PrimaryText()), ETextJustify::Right));
 
-	const TSharedRef<SConstraintCanvas> MasteryCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> MasteryCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(MasteryCanvas, 13.f, 16.f, 25.f, 25.f,
 		FT66FlatStyle::MakeFlatPortraitSlot(ET66FlatState::Default, InfoBrush, nullptr, FVector2D(25.f, 25.f), HSName(TEXT("HeroSelection.RightColumn.MasteryPanel.InfoIcon"))));
 	HSAddCanvasSlot(MasteryCanvas, 51.f, 16.f, 100.f, 30.f,
@@ -552,7 +555,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(MasteryCanvas, 479.f, 16.f, 92.f, 30.f,
 		HSTaggedText(TEXT("HeroSelection.RightColumn.MasteryPanel.XP"), FText::FromString(TEXT("0 / 100 XP")), 16, FSlateColor(FT66FlatStyle::SecondaryText()), ETextJustify::Right));
 
-	const TSharedRef<SConstraintCanvas> StatsCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> StatsCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(StatsCanvas, 223.f, 0.f, 115.f, 32.f,
 		HSTaggedText(TEXT("HeroSelection.RightColumn.StatsPanel.Header"), FText::FromString(TEXT("STATS")), 22, FSlateColor(FT66FlatStyle::PrimaryText()), ETextJustify::Center));
 	HSAddCanvasSlot(StatsCanvas, 27.f, 44.f, 198.f, 28.f, HSTaggedText(TEXT("HeroSelection.RightColumn.StatsPanel.Damage"), FText::FromString(TEXT("Damage 4/99")), 16, FSlateColor(FT66FlatStyle::PrimaryText())));
@@ -564,7 +567,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(StatsCanvas, 295.f, 128.f, 242.f, 28.f, HSTaggedText(TEXT("HeroSelection.RightColumn.StatsPanel.Luck"), FText::FromString(TEXT("Luck 2/99")), 16, FSlateColor(FT66FlatStyle::PrimaryText())));
 	HSAddCanvasSlot(StatsCanvas, 295.f, 168.f, 242.f, 28.f, HSTaggedText(TEXT("HeroSelection.RightColumn.StatsPanel.Speed"), FText::FromString(TEXT("Speed 2/99")), 16, FSlateColor(FT66FlatStyle::PrimaryText())));
 
-	const TSharedRef<SConstraintCanvas> WeaponUltimateCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> WeaponUltimateCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(WeaponUltimateCanvas, 2.f, 0.f, 275.f, 163.f,
 		FT66FlatStyle::AttachMetadata(SNew(SBox), HSName(TEXT("HeroSelection.RightColumn.WeaponUltimatePanel.WeaponColumn")), TEXT("WeaponColumn"), ET66FlatState::Default));
 	HSAddCanvasSlot(WeaponUltimateCanvas, 278.f, 0.f, 279.f, 163.f,
@@ -578,13 +581,21 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(WeaponUltimateCanvas, 368.f, 30.f, 146.f, 81.f,
 		FT66FlatStyle::MakeFlatPortraitSlot(ET66FlatState::Default, HeroUltimateIconBrush.Get(), nullptr, FVector2D(74.f, 74.f), HSName(TEXT("HeroSelection.RightColumn.WeaponUltimatePanel.UltimateIcon"))));
 
-	const TSharedRef<SConstraintCanvas> RightContent = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> RightContent = HSMakeCanvas();
 	HSAddCanvasSlot(RightContent, 31.f, 32.f, 186.f, 50.f,
-		FT66FlatStyle::MakeFlatLabel(HeroNameText, ET66FlatLabelRole::Title, ETextJustify::Left, HSName(TEXT("HeroSelection.RightColumn.HeaderRow.HeroName"))));
+		FT66FlatStyle::MakeFlatLabel(
+			TAttribute<FText>::Create(TAttribute<FText>::FGetter::CreateUObject(this, &UT66HeroSelectionScreen::GetPreviewedHeroTitleText)),
+			ET66FlatLabelRole::Title,
+			ETextJustify::Left,
+			HSName(TEXT("HeroSelection.RightColumn.HeaderRow.HeroName"))));
 	HSAddCanvasSlot(RightContent, 455.f, 24.f, 119.f, 50.f,
 		MakeButton(TEXT("HeroSelection.RightColumn.HeaderRow.LabButton"), NSLOCTEXT("T66.HeroSelection", "FlatLab", "LAB"), ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLabClicked), 119.f, 50.f, 22, MakeIconWidget(LabBrush, FVector2D(22.f, 22.f), FT66FlatStyle::PrimaryText())));
 	HSAddCanvasSlot(RightContent, 31.f, 97.f, 363.f, 24.f,
-		FT66FlatStyle::MakeFlatLabel(NSLOCTEXT("T66.HeroSelection", "FlatArthurSubtitle", "A KING. A CRUSADE. AN APOCALYPSE."), ET66FlatLabelRole::PurpleAccent, ETextJustify::Left, HSName(TEXT("HeroSelection.RightColumn.Subtitle"))));
+		FT66FlatStyle::MakeFlatLabel(
+			TAttribute<FText>::Create(TAttribute<FText>::FGetter::CreateUObject(this, &UT66HeroSelectionScreen::GetPreviewedHeroSubtitleText)),
+			ET66FlatLabelRole::PurpleAccent,
+			ETextJustify::Left,
+			HSName(TEXT("HeroSelection.RightColumn.Subtitle"))));
 	HSAddCanvasSlot(RightContent, 18.f, 154.f, 557.f, 56.f,
 		HSMakePanel(TEXT("HeroSelection.RightColumn.RankPanel"), ET66FlatState::Default, RankCanvas, FMargin(0.f)));
 	HSAddCanvasSlot(RightContent, 18.f, 225.f, 557.f, 60.f,
@@ -594,7 +605,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(RightContent, 16.f, 553.f, 559.f, 165.f,
 		HSMakePanel(TEXT("HeroSelection.RightColumn.WeaponUltimatePanel"), ET66FlatState::Default, WeaponUltimateCanvas, FMargin(0.f)));
 
-	const TSharedRef<SConstraintCanvas> MainBodyCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> MainBodyCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(MainBodyCanvas, 17.f, 92.f, 534.f, 711.f, HSTaggedBox(TEXT("HeroSelection.LeftColumn"), LeftCanvas, TEXT("Column")));
 	HSAddCanvasSlot(MainBodyCanvas, 576.f, 102.f, 712.f, 680.f,
 		HSTaggedBox(
@@ -618,7 +629,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		bLoggedSteamAvatarPlaceholder = true;
 	}
 
-	const TSharedRef<SConstraintCanvas> PartySlots = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> PartySlots = HSMakeCanvas();
 	HSAddCanvasSlot(PartySlots, 45.f, 13.f, 120.f, 30.f,
 		HSTaggedText(TEXT("HeroSelection.BottomRow.SteamPartyPanel.Slot01.ReadyBadge"), FText::FromString(TEXT("READY")), 18, FSlateColor(FT66FlatStyle::ReadyBorder()), ETextJustify::Center));
 	HSAddCanvasSlot(PartySlots, 23.f, 52.f, 146.f, 146.f,
@@ -630,7 +641,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(PartySlots, 504.f, 52.f, 146.f, 146.f,
 		MakePartySlot(TEXT("HeroSelection.BottomRow.SteamPartyPanel.Slot04"), ET66FlatState::Default, SkinDefaultBrush));
 
-	const TSharedRef<SConstraintCanvas> CompanionPanel = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> CompanionPanel = HSMakeCanvas();
 	FT66FlatToggleGroupParams GenderToggleParams;
 	GenderToggleParams.GroupName = GenderToggleGroup;
 	GenderToggleParams.bMutuallyExclusive = true;
@@ -703,7 +714,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			FT66FlatStyle::MakeFlatDropdown(ET66FlatState::Default, TAttribute<FText>(DifficultyText), MakeDifficultyMenu, false, 0.f, 56.f, 20, HSName(TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown")))
 		];
 
-	const TSharedRef<SConstraintCanvas> RightClusterCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> RightClusterCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(RightClusterCanvas, 21.f, 35.f, 156.f, 109.f,
 		HSMakePanel(TEXT("HeroSelection.BottomRow.DifficultyPanel"), ET66FlatState::Default, DifficultyPanel, FMargin(10.f)));
 	HSAddCanvasSlot(RightClusterCanvas, 209.f, 23.f, 204.f, 160.f,
@@ -713,13 +724,13 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(RightClusterCanvas, 440.f, 115.f, 192.f, 70.f,
 		MakeButton(TEXT("HeroSelection.BottomRow.ModsButton"), FText::FromString(TEXT("MODS")), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleModsClicked), 0.f, 70.f, 18));
 
-	const TSharedRef<SConstraintCanvas> BottomCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> BottomCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(BottomCanvas, 17.f, 0.f, 660.f, 216.f, HSMakePanel(TEXT("HeroSelection.BottomRow.SteamPartyPanel"), ET66FlatState::Default, PartySlots, FMargin(12.f)));
 	HSAddCanvasSlot(BottomCanvas, 710.f, 0.f, 511.f, 216.f, HSMakePanel(TEXT("HeroSelection.BottomRow.CompanionPanel"), ET66FlatState::Default, CompanionPanel, FMargin(12.f)));
 	HSAddCanvasSlot(BottomCanvas, 1249.f, 0.f, 655.f, 216.f, HSMakePanel(TEXT("HeroSelection.BottomRow.RightCluster"), ET66FlatState::Default, RightClusterCanvas, FMargin(0.f)));
 
-	const TSharedRef<SConstraintCanvas> RootCanvas = SNew(SConstraintCanvas);
-	const TSharedRef<SConstraintCanvas> BackdropCanvas = SNew(SConstraintCanvas);
+	const TSharedRef<SConstraintCanvas> RootCanvas = HSMakeCanvas();
+	const TSharedRef<SConstraintCanvas> BackdropCanvas = HSMakeCanvas();
 	HSAddCanvasSlot(BackdropCanvas, 0.f, 0.f, HeroSelectionCanvasW, 102.f, HSMakeBackdropSlab(TEXT("HeroSelection.Backdrop.Top")));
 	HSAddCanvasSlot(BackdropCanvas, 0.f, 102.f, 576.f, 680.f, HSMakeBackdropSlab(TEXT("HeroSelection.Backdrop.Left")));
 	HSAddCanvasSlot(BackdropCanvas, 1288.f, 102.f, 632.f, 680.f, HSMakeBackdropSlab(TEXT("HeroSelection.Backdrop.Right")));
@@ -748,43 +759,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		ET66FlatState::Default);
 
 	UpdateHeroDisplay();
-	if (UWorld* World = GetWorld())
-	{
-		const TWeakPtr<SBox> WeakCharacterPreviewHost = CharacterPreviewHost;
-		const TWeakObjectPtr<UT66HeroSelectionPreviewController> WeakPreviewController(HeroPreviewController);
-		auto SchedulePreviewRefresh = [this, World, WeakCharacterPreviewHost, WeakPreviewController, CharacterPreviewFallbackColor](const float DelaySeconds)
-		{
-			FTimerHandle PreviewRefreshHandle;
-			World->GetTimerManager().SetTimer(
-				PreviewRefreshHandle,
-				FTimerDelegate::CreateWeakLambda(this, [this, WeakCharacterPreviewHost, WeakPreviewController, CharacterPreviewFallbackColor]()
-				{
-					if (TSharedPtr<SBox> PreviewHost = WeakCharacterPreviewHost.Pin())
-					{
-						if (UT66HeroSelectionPreviewController* Controller = WeakPreviewController.Get())
-						{
-							PreviewHost->SetContent(Controller->CreateHeroPreviewWidget(CharacterPreviewFallbackColor));
-						}
-					}
-					UpdateHeroDisplay();
-				}),
-				DelaySeconds,
-				false);
-		};
-		SchedulePreviewRefresh(0.35f);
-		SchedulePreviewRefresh(1.25f);
-		SchedulePreviewRefresh(2.5f);
-
-		FTimerHandle PreviewCameraRefreshHandle;
-		World->GetTimerManager().SetTimer(
-			PreviewCameraRefreshHandle,
-			FTimerDelegate::CreateWeakLambda(this, [this]()
-			{
-				UpdateHeroDisplay();
-			}),
-			2.0f,
-			false);
-	}
 
 	return Root;
 }

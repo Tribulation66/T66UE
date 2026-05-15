@@ -178,7 +178,27 @@ function Copy-LooseRuntimeContentRoot {
     if ($SourceItem.PSIsContainer) {
         New-Item -ItemType Directory -Force -Path $DestinationPath | Out-Null
         foreach ($ChildItem in Get-ChildItem -LiteralPath $SourcePath -Force) {
-            Copy-Item -LiteralPath $ChildItem.FullName -Destination $DestinationPath -Recurse -Force
+            $ChildDestinationPath = Join-Path $DestinationPath $ChildItem.Name
+            if ($ChildItem.PSIsContainer) {
+                New-Item -ItemType Directory -Force -Path $ChildDestinationPath | Out-Null
+                foreach ($DescendantItem in Get-ChildItem -LiteralPath $ChildItem.FullName -Recurse -Force) {
+                    $RelativeDescendantPath = $DescendantItem.FullName.Substring($ChildItem.FullName.Length).TrimStart("\")
+                    if ([string]::IsNullOrWhiteSpace($RelativeDescendantPath)) {
+                        continue
+                    }
+
+                    $DescendantDestinationPath = Join-Path $ChildDestinationPath $RelativeDescendantPath
+                    if ($DescendantItem.PSIsContainer) {
+                        New-Item -ItemType Directory -Force -Path $DescendantDestinationPath | Out-Null
+                    } else {
+                        $DescendantDestinationParent = Split-Path -Parent $DescendantDestinationPath
+                        New-Item -ItemType Directory -Force -Path $DescendantDestinationParent | Out-Null
+                        Copy-Item -LiteralPath $DescendantItem.FullName -Destination $DescendantDestinationPath -Force
+                    }
+                }
+            } else {
+                Copy-Item -LiteralPath $ChildItem.FullName -Destination $ChildDestinationPath -Force
+            }
         }
 
         $FileCount = @(Get-ChildItem -LiteralPath $SourcePath -File -Recurse -Force).Count
@@ -340,7 +360,17 @@ foreach ($LooseRuntimeRoot in Get-LooseRuntimeContentRoots -ConfigPath $LooseRun
 }
 
 $ExpectedExe = Join-Path $StageRoot "Windows\T66\Binaries\Win64\T66.exe"
-if (Test-Path $ExpectedExe) {
+$ExpectedExeAvailable = $false
+for ($Attempt = 0; $Attempt -lt 10; ++$Attempt) {
+    if (Test-Path -LiteralPath $ExpectedExe) {
+        $ExpectedExeAvailable = $true
+        break
+    }
+
+    Start-Sleep -Milliseconds 500
+}
+
+if ($ExpectedExeAvailable) {
     Write-Host "Standalone build ready at '$ExpectedExe'."
     Set-StandaloneGameUserSettings -ExecutablePath $ExpectedExe
 

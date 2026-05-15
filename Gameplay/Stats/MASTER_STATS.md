@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-04-18  
 **Scope:** Single-source handoff for the T66 stat system: authored data, live runtime ownership, primary and secondary formulas, item and buff stacking, stat UI, persistence, and current deprecated or inert stat paths.  
-**Companion docs:** `Release/Project Guidelines.md`, `Gameplay/Combat/MASTER_COMBAT.md`, `Gameplay/Movement/MASTER_MOVEMENT.md`  
+**Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Combat/MASTER_COMBAT.md`, `Gameplay/Movement/MASTER_MOVEMENT.md`
 **Maintenance rule:** Update this file after every material change to hero stat schema, hero level curves, item stat rules, buff progression, stat UI, run-summary stat snapshots, or secondary-stat activation/deprecation.
 
 ## 1. Executive Summary

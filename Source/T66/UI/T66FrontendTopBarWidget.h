@@ -7,6 +7,7 @@
 #include "T66FrontendTopBarWidget.generated.h"
 
 class UT66LocalizationSubsystem;
+class UTexture2D;
 
 struct FSlateBrush;
 
@@ -39,15 +40,6 @@ public:
 	void ClearActiveSectionOverride();
 	EFrontendSection GetRenderedActiveSection() const;
 
-	struct FPlateBrushSet
-	{
-		TSharedPtr<FSlateBrush> NormalBrush;
-		TSharedPtr<FSlateBrush> HoverBrush;
-		TSharedPtr<FSlateBrush> PressedBrush;
-		TSharedPtr<FSlateBrush> DisabledBrush;
-		TSharedPtr<FSlateBrush> SelectedBrush;
-	};
-
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
@@ -63,6 +55,8 @@ private:
 	void NavigateWithTopBar(ET66ScreenType TargetScreen);
 	void RequestTopBarAssets();
 	void ReleaseTopBarBrushes();
+	void TrackTopBarBrushTexture(const TSharedPtr<FSlateBrush>& Brush);
+	void ReleaseRootedTopBarTextures();
 
 	FReply HandleSettingsClicked();
 	FReply HandleLanguageClicked();
@@ -73,33 +67,12 @@ private:
 	FReply HandleAccountStatusClicked();
 	FReply HandleQuitClicked();
 
-	TSharedPtr<FSlateBrush> TopBarBackdropBrush;
-	TSharedPtr<FSlateBrush> TopBarFoliageLeftBrush;
-	TSharedPtr<FSlateBrush> TopBarFoliageRightBrush;
-	FPlateBrushSet SettingsButtonBrushes;
-	FPlateBrushSet LanguageButtonBrushes;
-	FPlateBrushSet AccountButtonBrushes;
-	FPlateBrushSet HomeButtonBrushes;
-	FPlateBrushSet NavButtonBrushes;
-	FPlateBrushSet PowerUpButtonBrushes;
-	FPlateBrushSet AchievementsButtonBrushes;
-	FPlateBrushSet MiniGamesButtonBrushes;
-	FPlateBrushSet PortraitButtonBrushes;
-	FPlateBrushSet CouponButtonBrushes;
-	FPlateBrushSet QuitButtonBrushes;
-	TSharedPtr<FSlateBrush> UtilityButtonBrush;
-	TSharedPtr<FSlateBrush> AccountButtonBrush;
-	TSharedPtr<FSlateBrush> AccountButtonActiveBrush;
-	TSharedPtr<FSlateBrush> NavButtonBrush;
-	TSharedPtr<FSlateBrush> NavButtonActiveBrush;
-	TSharedPtr<FSlateBrush> HomeButtonBrush;
-	TSharedPtr<FSlateBrush> HomeButtonActiveBrush;
-	TSharedPtr<FSlateBrush> CurrencyButtonBrush;
 	TSharedPtr<FSlateBrush> HomeIconBrush;
 	TSharedPtr<FSlateBrush> SettingsIconBrush;
 	TSharedPtr<FSlateBrush> SocialIconBrush;
 	TSharedPtr<FSlateBrush> CurrencyIconBrush;
 	TSharedPtr<FSlateBrush> QuitIconBrush;
+	TArray<TWeakObjectPtr<UTexture2D>> RootedTopBarTextures;
 	EFrontendSection ActiveSectionOverride = EFrontendSection::None;
 	FVector2D CachedViewportSize = FVector2D::ZeroVector;
 	bool bHasActiveSectionOverride = false;

@@ -4,6 +4,8 @@ Source geometry: `C:\UE\T66\UI\Geometry\settings_retro_fx_reference_geometry.md`
 
 Top bar dependency: `C:\UE\T66\UI\Checklists\frontend_topbar_checklist.md`
 
+Session 2.5 simplification: Retro FX now intentionally exposes only two master toggles, Frontend Retro FX and Gameplay Retro FX. The old per-effect UI rows remain hidden for save compatibility and future advanced exposure.
+
 ## Structure
 
 - [ ] FrontendTopBar.Root | exists=true
@@ -20,30 +22,17 @@ Top bar dependency: `C:\UE\T66\UI\Checklists\frontend_topbar_checklist.md`
 - [ ] SettingsRetroFX.SettingsTabs.MediaViewerButton | exists=true
 - [ ] SettingsRetroFX.SettingsTabs.AudioButton | exists=true
 - [ ] SettingsRetroFX.SettingsTabs.RetroFXButton | exists=true
-- [ ] SettingsRetroFX.MasterPanel | exists=true
-- [ ] SettingsRetroFX.MasterPanel.Header | exists=true
-- [ ] SettingsRetroFX.MasterPanel.Description | exists=true
-- [ ] SettingsRetroFX.MasterPanel.StatusNote | exists=true
-- [ ] SettingsRetroFX.MasterPanel.Controls | exists=true
-- [ ] SettingsRetroFX.MasterPanel.OnButton | exists=true
-- [ ] SettingsRetroFX.MasterPanel.OffButton | exists=true
-- [ ] SettingsRetroFX.MasterPanel.ApplyButton | exists=true
-- [ ] SettingsRetroFX.UIPanel | exists=true
-- [ ] SettingsRetroFX.UIPanel.Header | exists=true
-- [ ] SettingsRetroFX.UIPanel.Description | exists=true
-- [ ] SettingsRetroFX.UIChromePanel | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.Header | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.Description | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.PixelationSubPanel | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Label | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Description | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Slider | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Caption | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.DitheringSubPanel | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Label | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Description | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Slider | exists=true
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Caption | exists=true
+- [ ] SettingsRetroFX.FrontendPanel | exists=true
+- [ ] SettingsRetroFX.FrontendPanel.Label | exists=true
+- [ ] SettingsRetroFX.FrontendPanel.OnButton | exists=true
+- [ ] SettingsRetroFX.FrontendPanel.OffButton | exists=true
+- [ ] SettingsRetroFX.GameplayPanel | exists=true
+- [ ] SettingsRetroFX.GameplayPanel.Label | exists=true
+- [ ] SettingsRetroFX.GameplayPanel.OnButton | exists=true
+- [ ] SettingsRetroFX.GameplayPanel.OffButton | exists=true
+- [ ] SettingsRetroFX.ResetButton | exists=true
+- [ ] SettingsRetroFX.CancelButton | exists=true
+- [ ] SettingsRetroFX.ApplyButton | exists=true
 
 ## Geometry
 
@@ -59,26 +48,28 @@ Top bar dependency: `C:\UE\T66\UI\Checklists\frontend_topbar_checklist.md`
 - [ ] SettingsRetroFX.SettingsTabs.GameplayButton | y=0.157 | 0.008
 - [ ] SettingsRetroFX.SettingsTabs.RetroFXButton | x=0.848 | 0.008
 - [ ] SettingsRetroFX.SettingsTabs.RetroFXButton | y=0.157 | 0.008
-- [ ] SettingsRetroFX.MasterPanel | x=0.013 | 0.010
-- [ ] SettingsRetroFX.MasterPanel | y=0.247 | 0.010
-- [ ] SettingsRetroFX.MasterPanel.OnButton | x=0.712 | 0.008
-- [ ] SettingsRetroFX.MasterPanel.OnButton | y=0.268 | 0.008
-- [ ] SettingsRetroFX.MasterPanel.OffButton | x=0.849 | 0.008
-- [ ] SettingsRetroFX.MasterPanel.OffButton | y=0.268 | 0.008
-- [ ] SettingsRetroFX.MasterPanel.ApplyButton | x=0.712 | 0.008
-- [ ] SettingsRetroFX.MasterPanel.ApplyButton | y=0.347 | 0.008
-- [ ] SettingsRetroFX.UIPanel | x=0.013 | 0.010
-- [ ] SettingsRetroFX.UIPanel | y=0.442 | 0.010
-- [ ] SettingsRetroFX.UIChromePanel | x=0.013 | 0.010
-- [ ] SettingsRetroFX.UIChromePanel | y=0.615 | 0.010
-- [ ] SettingsRetroFX.UIChromePanel.PixelationSubPanel | x=0.035 | 0.010
-- [ ] SettingsRetroFX.UIChromePanel.PixelationSubPanel | y=0.706 | 0.010
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Slider | x=0.374 | 0.012
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Slider | y=0.737 | 0.012
-- [ ] SettingsRetroFX.UIChromePanel.DitheringSubPanel | x=0.035 | 0.010
-- [ ] SettingsRetroFX.UIChromePanel.DitheringSubPanel | y=0.826 | 0.010
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Slider | x=0.374 | 0.012
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Slider | y=0.858 | 0.012
+- [ ] SettingsRetroFX.FrontendPanel | x=0.013 | 0.010
+- [ ] SettingsRetroFX.FrontendPanel | y=0.247 | 0.010
+- [ ] SettingsRetroFX.FrontendPanel | w=0.974 | 0.012
+- [ ] SettingsRetroFX.FrontendPanel | h=0.160 | 0.012
+- [ ] SettingsRetroFX.FrontendPanel.OnButton | x=0.598 | 0.010
+- [ ] SettingsRetroFX.FrontendPanel.OnButton | y=0.284 | 0.010
+- [ ] SettingsRetroFX.FrontendPanel.OffButton | x=0.774 | 0.010
+- [ ] SettingsRetroFX.FrontendPanel.OffButton | y=0.284 | 0.010
+- [ ] SettingsRetroFX.GameplayPanel | x=0.013 | 0.010
+- [ ] SettingsRetroFX.GameplayPanel | y=0.435 | 0.010
+- [ ] SettingsRetroFX.GameplayPanel | w=0.974 | 0.012
+- [ ] SettingsRetroFX.GameplayPanel | h=0.160 | 0.012
+- [ ] SettingsRetroFX.GameplayPanel.OnButton | x=0.598 | 0.010
+- [ ] SettingsRetroFX.GameplayPanel.OnButton | y=0.472 | 0.010
+- [ ] SettingsRetroFX.GameplayPanel.OffButton | x=0.774 | 0.010
+- [ ] SettingsRetroFX.GameplayPanel.OffButton | y=0.472 | 0.010
+- [ ] SettingsRetroFX.ResetButton | x=0.448 | 0.010
+- [ ] SettingsRetroFX.ResetButton | y=0.860 | 0.010
+- [ ] SettingsRetroFX.CancelButton | x=0.624 | 0.010
+- [ ] SettingsRetroFX.CancelButton | y=0.860 | 0.010
+- [ ] SettingsRetroFX.ApplyButton | x=0.800 | 0.010
+- [ ] SettingsRetroFX.ApplyButton | y=0.860 | 0.010
 
 ## Colors
 
@@ -92,51 +83,36 @@ Top bar dependency: `C:\UE\T66\UI\Checklists\frontend_topbar_checklist.md`
 - [ ] SettingsRetroFX.SettingsTabs.MediaViewerButton | button_state=Default
 - [ ] SettingsRetroFX.SettingsTabs.AudioButton | button_state=Default
 - [ ] SettingsRetroFX.SettingsTabs.RetroFXButton | button_state=Selected
-- [ ] SettingsRetroFX.MasterPanel.OnButton | button_state=Selected
-- [ ] SettingsRetroFX.MasterPanel.OffButton | button_state=Default
-- [ ] SettingsRetroFX.MasterPanel.ApplyButton | button_state=Selected
-- [ ] SettingsRetroFX.MasterPanel | border_color=DefaultBorder
-- [ ] SettingsRetroFX.UIPanel | border_color=DefaultBorder
-- [ ] SettingsRetroFX.UIChromePanel | border_color=DefaultBorder
-- [ ] SettingsRetroFX.UIChromePanel.PixelationSubPanel | border_color=DefaultBorder
-- [ ] SettingsRetroFX.UIChromePanel.DitheringSubPanel | border_color=DefaultBorder
+- [ ] SettingsRetroFX.FrontendPanel | border_color=DefaultBorder
+- [ ] SettingsRetroFX.FrontendPanel.OnButton | button_state=Selected
+- [ ] SettingsRetroFX.FrontendPanel.OffButton | button_state=Default
+- [ ] SettingsRetroFX.GameplayPanel | border_color=DefaultBorder
+- [ ] SettingsRetroFX.GameplayPanel.OnButton | button_state=Selected
+- [ ] SettingsRetroFX.GameplayPanel.OffButton | button_state=Default
+- [ ] SettingsRetroFX.ResetButton | button_state=Default
+- [ ] SettingsRetroFX.CancelButton | button_state=Default
+- [ ] SettingsRetroFX.ApplyButton | button_state=Selected
 
 ## Content
 
 - [ ] FrontendTopBar.TicketBadge.Value | text=any | # Dynamic ticket balance.
 - [ ] SettingsRetroFX.SettingsTabs.GameplayButton.Label | text=GAMEPLAY
-- [ ] SettingsRetroFX.SettingsTabs.GameplayButton.Label | is_label=true
 - [ ] SettingsRetroFX.SettingsTabs.GraphicsButton.Label | text=GRAPHICS
 - [ ] SettingsRetroFX.SettingsTabs.ControlsButton.Label | text=CONTROLS
 - [ ] SettingsRetroFX.SettingsTabs.MediaViewerButton.Label | text=MEDIA VIEWER
 - [ ] SettingsRetroFX.SettingsTabs.AudioButton.Label | text=AUDIO
 - [ ] SettingsRetroFX.SettingsTabs.RetroFXButton.Label | text=RETRO FX
-- [ ] SettingsRetroFX.SettingsTabs.RetroFXButton.Label | is_label=true
-- [ ] SettingsRetroFX.MasterPanel.Header | text=RETRO FX MASTER ENABLE
-- [ ] SettingsRetroFX.MasterPanel.Header | is_label=true
-- [ ] SettingsRetroFX.MasterPanel.Description | text=Turns the entire Retro FX stack on or off without changing the individual values below.
-- [ ] SettingsRetroFX.MasterPanel.Description | is_label=true
-- [ ] SettingsRetroFX.MasterPanel.StatusNote | text=Pending values match the saved Retro FX profile.
-- [ ] SettingsRetroFX.MasterPanel.StatusNote | is_label=true
-- [ ] SettingsRetroFX.MasterPanel.OnButton.Label | text=ON
-- [ ] SettingsRetroFX.MasterPanel.OffButton.Label | text=OFF
-- [ ] SettingsRetroFX.MasterPanel.ApplyButton.Label | text=APPLY
-- [ ] SettingsRetroFX.UIPanel.Header | text=UI
-- [ ] SettingsRetroFX.UIPanel.Header | is_label=true
-- [ ] SettingsRetroFX.UIChromePanel.Header | text=UI CHROME
-- [ ] SettingsRetroFX.UIChromePanel.Header | is_label=true
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Label | text=CHROME PIXELATION
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Label | is_label=true
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Description | text=Adds chunky pixel-cell breakup on non-text UI surfaces.
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Description | is_label=true
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Caption | text=Slide from 0 to 100.
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Caption | is_label=true
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Label | text=CHROME DITHERING
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Label | is_label=true
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Description | text=Adds a dotted dither mask over UI chrome.
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Description | is_label=true
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Caption | text=Slide from 0 to 100.
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Caption | is_label=true
+- [ ] SettingsRetroFX.FrontendPanel.Label | text=FRONTEND RETRO FX
+- [ ] SettingsRetroFX.FrontendPanel.OnButton.Label | text=ON
+- [ ] SettingsRetroFX.FrontendPanel.OffButton.Label | text=OFF
+- [ ] SettingsRetroFX.GameplayPanel.Label | text=GAMEPLAY RETRO FX
+- [ ] SettingsRetroFX.GameplayPanel.OnButton.Label | text=ON
+- [ ] SettingsRetroFX.GameplayPanel.OffButton.Label | text=OFF
+- [ ] SettingsRetroFX.ResetButton.Label | text=RESET
+- [ ] SettingsRetroFX.CancelButton.Label | text=CANCEL
+- [ ] SettingsRetroFX.ApplyButton.Label | text=APPLY
+- [ ] SettingsRetroFX.FrontendPanel.Label | is_label=true
+- [ ] SettingsRetroFX.GameplayPanel.Label | is_label=true
 
 ## Interactivity
 
@@ -164,15 +140,21 @@ Top bar dependency: `C:\UE\T66\UI\Checklists\frontend_topbar_checklist.md`
 - [ ] SettingsRetroFX.SettingsTabs.RetroFXButton | has_click_handler=true
 - [ ] SettingsRetroFX.SettingsTabs.RetroFXButton | hover_capable=true
 - [ ] SettingsRetroFX.SettingsTabs.RetroFXButton | toggle_group=SettingsTabs
-- [ ] SettingsRetroFX.MasterPanel.OnButton | has_click_handler=true
-- [ ] SettingsRetroFX.MasterPanel.OnButton | hover_capable=true
-- [ ] SettingsRetroFX.MasterPanel.OnButton | toggle_group=RetroFXMasterEnable
-- [ ] SettingsRetroFX.MasterPanel.OffButton | has_click_handler=true
-- [ ] SettingsRetroFX.MasterPanel.OffButton | hover_capable=true
-- [ ] SettingsRetroFX.MasterPanel.OffButton | toggle_group=RetroFXMasterEnable
-- [ ] SettingsRetroFX.MasterPanel.ApplyButton | has_click_handler=true
-- [ ] SettingsRetroFX.MasterPanel.ApplyButton | hover_capable=true
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Slider | has_click_handler=true
-- [ ] SettingsRetroFX.UIChromePanel.Pixelation.Slider | hover_capable=true
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Slider | has_click_handler=true
-- [ ] SettingsRetroFX.UIChromePanel.Dithering.Slider | hover_capable=true
+- [ ] SettingsRetroFX.FrontendPanel.OnButton | has_click_handler=true
+- [ ] SettingsRetroFX.FrontendPanel.OnButton | hover_capable=true
+- [ ] SettingsRetroFX.FrontendPanel.OnButton | toggle_group=RetroFXFrontendEnable
+- [ ] SettingsRetroFX.FrontendPanel.OffButton | has_click_handler=true
+- [ ] SettingsRetroFX.FrontendPanel.OffButton | hover_capable=true
+- [ ] SettingsRetroFX.FrontendPanel.OffButton | toggle_group=RetroFXFrontendEnable
+- [ ] SettingsRetroFX.GameplayPanel.OnButton | has_click_handler=true
+- [ ] SettingsRetroFX.GameplayPanel.OnButton | hover_capable=true
+- [ ] SettingsRetroFX.GameplayPanel.OnButton | toggle_group=RetroFXGameplayEnable
+- [ ] SettingsRetroFX.GameplayPanel.OffButton | has_click_handler=true
+- [ ] SettingsRetroFX.GameplayPanel.OffButton | hover_capable=true
+- [ ] SettingsRetroFX.GameplayPanel.OffButton | toggle_group=RetroFXGameplayEnable
+- [ ] SettingsRetroFX.ResetButton | has_click_handler=true
+- [ ] SettingsRetroFX.ResetButton | hover_capable=true
+- [ ] SettingsRetroFX.CancelButton | has_click_handler=true
+- [ ] SettingsRetroFX.CancelButton | hover_capable=true
+- [ ] SettingsRetroFX.ApplyButton | has_click_handler=true
+- [ ] SettingsRetroFX.ApplyButton | hover_capable=true

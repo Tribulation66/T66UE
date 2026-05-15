@@ -110,7 +110,50 @@ namespace
 
 	static float GetTargetResolutionHeight(float Value)
 	{
-		return PercentToInverseRange(Value, 1080.0f, 120.0f);
+		return FMath::Max(PercentToRange(Value, 0.0f, 840.0f), 120.0f);
+	}
+
+	static IConsoleVariable* FindRetroCVar(const TCHAR* Name)
+	{
+		return IConsoleManager::Get().FindConsoleVariable(Name);
+	}
+
+	static bool SetRetroCVarFloat(const TCHAR* Name, float Value)
+	{
+		if (IConsoleVariable* CVar = FindRetroCVar(Name))
+		{
+			CVar->Set(Value, ECVF_SetByGameSetting);
+			return true;
+		}
+		return false;
+	}
+
+	static bool SetRetroCVarInt(const TCHAR* Name, int32 Value)
+	{
+		if (IConsoleVariable* CVar = FindRetroCVar(Name))
+		{
+			CVar->Set(Value, ECVF_SetByGameSetting);
+			return true;
+		}
+		return false;
+	}
+
+	static float GetRetroCVarFloat(const TCHAR* Name, float FallbackValue = 0.0f)
+	{
+		if (IConsoleVariable* CVar = FindRetroCVar(Name))
+		{
+			return CVar->GetFloat();
+		}
+		return FallbackValue;
+	}
+
+	static int32 GetRetroCVarInt(const TCHAR* Name, int32 FallbackValue = 0)
+	{
+		if (IConsoleVariable* CVar = FindRetroCVar(Name))
+		{
+			return CVar->GetInt();
+		}
+		return FallbackValue;
 	}
 
 	enum ET66Ps1VariantBits : uint8
@@ -374,6 +417,14 @@ namespace
 		DisabledSettings.UIBackgroundImageVertexSnapResolutionPercent = 0.0f;
 		DisabledSettings.UIBackgroundImageScanlinePercent = 0.0f;
 		DisabledSettings.UIBackgroundImageChromaticAberrationPercent = 0.0f;
+		DisabledSettings.UIFullScreenCRTEnabled = false;
+		DisabledSettings.UICRTScanlineStrength = 0.0f;
+		DisabledSettings.UICRTPhosphorMaskStrength = 0.0f;
+		DisabledSettings.UICRTBloomStrength = 0.0f;
+		DisabledSettings.UICRTChromaticAberrationStrength = 0.0f;
+		DisabledSettings.UICRTBarrelDistortionStrength = 0.0f;
+		DisabledSettings.UICRTVignetteStrength = 0.0f;
+		DisabledSettings.UICRTColorQuantizationBits = 8;
 		DisabledSettings.bEnableWorldGeometry = false;
 		DisabledSettings.WorldVertexSnapPercent = 0.0f;
 		DisabledSettings.WorldVertexSnapResolutionPercent = 0.0f;
@@ -645,6 +696,11 @@ void UT66RetroFXSubsystem::ApplySettings(const FT66RetroFXSettings& Settings, UW
 			Pixelation->SetPixelationLevels(WorldPixelationLevel, CharacterPixelationLevel);
 		}
 	}
+
+	// World rendering consumes the effective settings above, but frontend UI
+	// needs the raw UI-only CRT flags so Frontend Retro FX stays independent
+	// from the Gameplay Retro FX master toggle.
+	SettingsApplied.Broadcast(Settings);
 }
 
 void UT66RetroFXSubsystem::EnsureBlendablesInWorld(UWorld* World)
@@ -883,12 +939,32 @@ void UT66RetroFXSubsystem::ApplyResolutionRuntime(const FT66RetroFXSettings& Set
 	const float TargetHeight = GetTargetResolutionHeight(Settings.TargetResolutionHeightPercent);
 	const float ScreenPercentage = FMath::Clamp((TargetHeight / ViewportHeight) * 100.0f, 5.0f, 100.0f);
 
-	ExecuteConsoleCommand(World, FString::Printf(TEXT("r.ScreenPercentage %.2f"), ScreenPercentage));
+	SetRetroCVarInt(TEXT("r.AntiAliasingMethod"), 0);
+	SetRetroCVarInt(TEXT("r.Upscale.Quality"), 1);
+	SetRetroCVarInt(TEXT("r.TemporalAA.Upsampling"), 0);
+	SetRetroCVarFloat(TEXT("r.SecondaryScreenPercentage.GameViewport"), 100.0f);
+
+	const bool bSetMinResolutionFraction = SetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolutionFraction"), 0.1f);
+	if (!bSetMinResolutionFraction)
+	{
+		SetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolution"), 0.0f);
+	}
+
+	SetRetroCVarFloat(TEXT("r.ScreenPercentage"), ScreenPercentage);
 	bResolutionRuntimeActive = true;
-	UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyResolutionRuntime: enabled real low resolution ViewportHeight=%.2f TargetHeight=%.2f ScreenPercentage=%.2f"),
+	const FString MinResolutionFractionText = bSetMinResolutionFraction
+		? FString::Printf(TEXT("%.3f"), GetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolutionFraction")))
+		: FString(TEXT("unavailable"));
+	UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyResolutionRuntime: enabled real low resolution ViewportHeight=%.2f TargetHeight=%.2f ScreenPercentage=%.2f AntiAliasingMethod=%d UpscaleQuality=%d TemporalAAUpsampling=%d MinResolutionFraction=%s MinResolution=%.2f SecondaryScreenPercentage=%.2f"),
 		ViewportHeight,
 		TargetHeight,
-		ScreenPercentage);
+		ScreenPercentage,
+		GetRetroCVarInt(TEXT("r.AntiAliasingMethod")),
+		GetRetroCVarInt(TEXT("r.Upscale.Quality")),
+		GetRetroCVarInt(TEXT("r.TemporalAA.Upsampling")),
+		*MinResolutionFractionText,
+		GetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolution")),
+		GetRetroCVarFloat(TEXT("r.SecondaryScreenPercentage.GameViewport")));
 }
 
 void UT66RetroFXSubsystem::ApplyGeometryCollection(const FT66RetroFXSettings& Settings, UWorld* World)
@@ -1715,6 +1791,23 @@ void UT66RetroFXSubsystem::CaptureResolutionRuntimeDefaults()
 	{
 		OriginalUpscaleQuality = UpscaleQuality->GetInt();
 	}
+	if (IConsoleVariable* AntiAliasingMethod = IConsoleManager::Get().FindConsoleVariable(TEXT("r.AntiAliasingMethod")))
+	{
+		OriginalAntiAliasingMethod = AntiAliasingMethod->GetInt();
+	}
+	if (IConsoleVariable* TemporalAAUpsampling = IConsoleManager::Get().FindConsoleVariable(TEXT("r.TemporalAA.Upsampling")))
+	{
+		OriginalTemporalAAUpsampling = TemporalAAUpsampling->GetInt();
+	}
+	if (IConsoleVariable* ScreenPercentageMinResolution = IConsoleManager::Get().FindConsoleVariable(TEXT("r.ScreenPercentage.MinResolution")))
+	{
+		OriginalScreenPercentageMinResolution = ScreenPercentageMinResolution->GetFloat();
+	}
+	if (IConsoleVariable* ScreenPercentageMinResolutionFraction = IConsoleManager::Get().FindConsoleVariable(TEXT("r.ScreenPercentage.MinResolutionFraction")))
+	{
+		OriginalScreenPercentageMinResolutionFraction = ScreenPercentageMinResolutionFraction->GetFloat();
+		bHasOriginalScreenPercentageMinResolutionFraction = true;
+	}
 
 	bResolutionRuntimeDefaultsCaptured = true;
 }
@@ -1726,10 +1819,16 @@ void UT66RetroFXSubsystem::RestoreResolutionRuntimeDefaults()
 		return;
 	}
 
-	UWorld* World = ResolveWorld(nullptr);
-	ExecuteConsoleCommand(World, FString::Printf(TEXT("r.Upscale.Quality %d"), OriginalUpscaleQuality));
-	ExecuteConsoleCommand(World, FString::Printf(TEXT("r.ScreenPercentage %.2f"), OriginalScreenPercentage));
-	ExecuteConsoleCommand(World, FString::Printf(TEXT("r.SecondaryScreenPercentage.GameViewport %.2f"), OriginalSecondaryScreenPercentage));
+	SetRetroCVarInt(TEXT("r.AntiAliasingMethod"), OriginalAntiAliasingMethod);
+	SetRetroCVarInt(TEXT("r.Upscale.Quality"), OriginalUpscaleQuality);
+	SetRetroCVarInt(TEXT("r.TemporalAA.Upsampling"), OriginalTemporalAAUpsampling);
+	SetRetroCVarFloat(TEXT("r.ScreenPercentage"), OriginalScreenPercentage);
+	SetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolution"), OriginalScreenPercentageMinResolution);
+	if (bHasOriginalScreenPercentageMinResolutionFraction)
+	{
+		SetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolutionFraction"), OriginalScreenPercentageMinResolutionFraction);
+	}
+	SetRetroCVarFloat(TEXT("r.SecondaryScreenPercentage.GameViewport"), OriginalSecondaryScreenPercentage);
 	bResolutionRuntimeActive = false;
 }
 

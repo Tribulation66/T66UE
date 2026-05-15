@@ -31,6 +31,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--height", type=float, default=3.0)
     parser.add_argument("--spacing", type=float, default=3.2)
+    parser.add_argument("--columns", type=int, default=0)
+    parser.add_argument("--row-spacing", type=float, default=3.8)
     parser.add_argument("--screenshot-dir", type=Path)
     parser.add_argument("--screenshot-size", type=int, default=1800)
     return parser.parse_args(argv)
@@ -60,7 +62,7 @@ def delete_default_cube() -> None:
             bpy.data.objects.remove(obj, do_unlink=True)
 
 
-def import_variant(glb_path: Path, label: str, x_location: float, target_height: float) -> dict[str, object]:
+def import_variant(glb_path: Path, label: str, location: Vector, target_height: float) -> dict[str, object]:
     before = set(bpy.context.scene.objects)
     bpy.ops.import_scene.gltf(filepath=str(glb_path))
     imported = [obj for obj in bpy.context.scene.objects if obj not in before]
@@ -79,13 +81,13 @@ def import_variant(glb_path: Path, label: str, x_location: float, target_height:
 
     min_v, max_v = bounds_for(meshes)
     center = (min_v + max_v) * 0.5
-    translation = Vector((x_location - center.x, 0.0 - center.y, 0.0 - min_v.z))
+    translation = Vector((location.x - center.x, location.y - center.y, 0.0 - min_v.z))
     for obj in meshes:
         obj.location = obj.location + translation
     bpy.context.view_layer.update()
 
     min_v, max_v = bounds_for(meshes)
-    add_label(label, x_location, max_v.z + 0.35)
+    add_label(label, location.x, location.y - 0.08, max_v.z + 0.35)
 
     return {
         "path": str(glb_path),
@@ -97,8 +99,8 @@ def import_variant(glb_path: Path, label: str, x_location: float, target_height:
     }
 
 
-def add_label(text: str, x_location: float, z_location: float) -> None:
-    bpy.ops.object.text_add(location=(x_location, -0.08, z_location), rotation=(math.radians(-90.0), 0.0, 0.0))
+def add_label(text: str, x_location: float, y_location: float, z_location: float) -> None:
+    bpy.ops.object.text_add(location=(x_location, y_location, z_location), rotation=(math.radians(90.0), 0.0, 0.0))
     obj = bpy.context.object
     obj.name = f"Label_{text.replace(' ', '_')}"
     obj.data.body = text
@@ -123,27 +125,29 @@ def look_at(obj: bpy.types.Object, target: Vector) -> None:
     obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
 
 
-def setup_camera(x_min: float, x_max: float, target_height: float) -> None:
+def setup_camera(x_min: float, x_max: float, y_min: float, y_max: float, target_height: float) -> None:
     center_x = (x_min + x_max) * 0.5
+    center_y = (y_min + y_max) * 0.5
     row_width = max(x_max - x_min, 1.0)
+    row_depth = max(y_max - y_min, 1.0)
     aspect = 1800 / round(1800 * 0.56)
     camera = bpy.data.objects.get("Camera")
     if camera is None:
         bpy.ops.object.camera_add()
         camera = bpy.context.object
-    camera.location = (center_x, max(10.0, row_width * 0.9), target_height * 1.35)
+    camera.location = (center_x, y_max + max(5.0, row_width * 0.25, row_depth * 0.7), target_height * 8.0)
     camera.data.type = "ORTHO"
-    camera.data.ortho_scale = max(target_height * 1.8, row_width * 1.75 / aspect)
-    look_at(camera, Vector((center_x, 0.0, target_height * 0.55)))
+    camera.data.ortho_scale = max(target_height * 3.0, row_width * 1.45 / aspect, row_depth * 1.35 + target_height * 1.25)
+    look_at(camera, Vector((center_x, center_y, target_height * 0.2)))
     bpy.context.scene.camera = camera
 
     light = bpy.data.objects.get("Light")
     if light is not None:
-        light.location = (center_x, 3.5, 6.0)
+        light.location = (center_x, y_max + 3.5, 6.0)
         light.data.energy = 600
 
 
-def save_screenshots(args: argparse.Namespace, x_min: float, x_max: float) -> None:
+def save_screenshots(args: argparse.Namespace, x_min: float, x_max: float, y_min: float, y_max: float) -> None:
     if args.screenshot_dir is None:
         return
 
@@ -161,17 +165,19 @@ def save_screenshots(args: argparse.Namespace, x_min: float, x_max: float) -> No
         scene.eevee.taa_render_samples = 16
 
     center_x = (x_min + x_max) * 0.5
+    center_y = (y_min + y_max) * 0.5
     row_width = max(x_max - x_min, 1.0)
+    row_depth = max(y_max - y_min, 1.0)
     camera = scene.camera
     shots = [
-        ("comparison_front.png", Vector((center_x, max(8.0, row_width * 0.95), args.height * 1.35))),
-        ("comparison_3q_left.png", Vector((center_x - row_width * 0.25, max(8.0, row_width * 0.88), args.height * 1.45))),
-        ("comparison_3q_right.png", Vector((center_x + row_width * 0.25, max(8.0, row_width * 0.88), args.height * 1.45))),
+        ("comparison_front.png", Vector((center_x, y_max + max(5.0, row_width * 0.25, row_depth * 0.7), args.height * 8.0))),
+        ("comparison_3q_left.png", Vector((center_x - row_width * 0.25, y_max + max(5.0, row_width * 0.28, row_depth * 0.85), args.height * 6.2))),
+        ("comparison_3q_right.png", Vector((center_x + row_width * 0.25, y_max + max(5.0, row_width * 0.28, row_depth * 0.85), args.height * 6.2))),
     ]
 
     for name, location in shots:
         camera.location = location
-        look_at(camera, Vector((center_x, 0.0, args.height * 0.55)))
+        look_at(camera, Vector((center_x, center_y, args.height * 0.2)))
         scene.render.filepath = str(args.screenshot_dir / name)
         if bpy.app.background:
             bpy.ops.render.render(write_still=True)
@@ -191,20 +197,27 @@ def main() -> int:
     delete_default_cube()
 
     count = len(args.inputs)
-    start_x = ((count - 1) * args.spacing) * 0.5
+    columns = args.columns if args.columns > 0 else count
+    columns = max(1, min(columns, count))
+    rows = math.ceil(count / columns)
+    x_positions = [((columns - 1) * args.spacing) * 0.5 - (index % columns) * args.spacing for index in range(count)]
+    y_positions = [((rows - 1) * args.row_spacing) * 0.5 - (index // columns) * args.row_spacing for index in range(count)]
     metadata = []
     for index, (path, label) in enumerate(zip(args.inputs, args.labels)):
         if not path.exists():
             raise FileNotFoundError(path)
-        metadata.append(import_variant(path, label, start_x - index * args.spacing, args.height))
+        metadata.append(import_variant(path, label, Vector((x_positions[index], y_positions[index], 0.0)), args.height))
 
-    x_min = -abs(start_x) - args.spacing * 0.5
-    x_max = abs(start_x) + args.spacing * 0.5
-    setup_camera(x_min, x_max, args.height)
+    x_min = min(x_positions) - args.spacing * 0.5
+    x_max = max(x_positions) + args.spacing * 0.5
+    y_min = min(y_positions) - args.row_spacing * 0.5
+    y_max = max(y_positions) + args.row_spacing * 0.5
+    setup_camera(x_min, x_max, y_min, y_max, args.height)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(args.output))
-    save_screenshots(args, x_min, x_max)
+    save_screenshots(args, x_min, x_max, y_min, y_max)
 
     print("Saved", args.output)
     for row in metadata:

@@ -36,7 +36,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildHUDTab()
 	UIScaleSliderParams.HelpText = NSLOCTEXT("T66.Settings", "UIScaleHelp", "Scales the entire HUD and menu UI on top of the automatic DPI scale.");
 
 	return SNew(SScrollBox)
-		.ScrollBarStyle(GetSettingsReferenceScrollBarStyle())
+		.ScrollBarStyle(GetSettingsFlatScrollBarStyle())
 		.ScrollBarVisibility(EVisibility::Visible)
 		.ScrollBarThickness(FVector2D(14.f, 14.f))
 		.ScrollBarPadding(FMargin(10.f, 0.f, 2.f, 0.f))
@@ -138,7 +138,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildMediaViewerTab()
 	}
 
 	return SNew(SScrollBox)
-		.ScrollBarStyle(GetSettingsReferenceScrollBarStyle())
+		.ScrollBarStyle(GetSettingsFlatScrollBarStyle())
 		.ScrollBarVisibility(EVisibility::Visible)
 		.ScrollBarThickness(FVector2D(14.f, 14.f))
 		.ScrollBarPadding(FMargin(10.f, 0.f, 2.f, 0.f))
@@ -182,6 +182,64 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildMediaViewerTab()
 					[
 						SourceButtons
 					])
+			]
+		];
+}
+
+TSharedRef<SWidget> UT66SettingsScreen::BuildFlatHUDSettingsUI()
+{
+	constexpr float CanvasW = 1920.f;
+	constexpr float CanvasH = 1080.f;
+
+	auto DTag = [](const TCHAR* Text) -> FName
+	{
+		return FName(Text);
+	};
+
+	auto MakeMetadataRegion = [](const FName Tag, const FString& Role) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::AttachMetadata(SNew(SBox), Tag, Role, ET66FlatState::Default);
+	};
+
+	TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
+	auto AddN = [&Canvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+	{
+		Canvas->AddSlot()
+		.Anchors(FAnchors(X, Y, X, Y))
+		.Alignment(FVector2D::ZeroVector)
+		.Offset(FMargin(0.f, 0.f, W * CanvasW, H * CanvasH))
+		[
+			Widget
+		];
+	};
+
+	AddN(0.000f, 0.000f, 1.000f, 1.000f,
+		FT66FlatStyle::AttachMetadata(
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor::Black),
+			DTag(TEXT("SettingsHUD.Background")),
+			TEXT("Background"),
+			ET66FlatState::Default));
+
+	AddN(0.000f, 0.095f, 1.000f, 0.905f, MakeMetadataRegion(DTag(TEXT("SettingsHUD.Root")), TEXT("Root")));
+	AddStableSettingsTabRow(Canvas, this, TEXT("SettingsHUD"), CurrentTab, CanvasW, CanvasH);
+	AddN(0.002f, 0.223f, 0.978f, 0.724f,
+		FT66FlatStyle::AttachMetadata(
+			BuildHUDTab(),
+			DTag(TEXT("SettingsHUD.ContentScroll")),
+			TEXT("ScrollBox"),
+			ET66FlatState::Default));
+
+	return SNew(SScaleBox)
+		.Stretch(EStretch::ScaleToFit)
+		.StretchDirection(EStretchDirection::Both)
+		[
+			SNew(SBox)
+			.WidthOverride(CanvasW)
+			.HeightOverride(CanvasH)
+			[
+				Canvas
 			]
 		];
 }
@@ -300,18 +358,18 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatMediaViewerSettingsUI()
 			ET66FlatState::Default));
 
 	AddN(0.000f, 0.095f, 1.000f, 0.905f, MakeMetadataRegion(DTag(TEXT("SettingsMediaViewer.Root")), TEXT("Root")));
-	AddN(0.003f, 0.094f, 0.994f, 0.079f, MakeMetadataRegion(DTag(TEXT("SettingsMediaViewer.SettingsTabs")), TEXT("ToggleGroup.SettingsTabs")));
+	AddN(0.003f, 0.123f, 0.994f, 0.079f, MakeMetadataRegion(DTag(TEXT("SettingsMediaViewer.SettingsTabs")), TEXT("ToggleGroup.SettingsTabs")));
 
-	AddN(0.003f, 0.094f, 0.119f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.GameplayButton")), ET66SettingsTab::Gameplay, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGameplayFlatMediaViewer", "GAMEPLAY"), 0.119f * CanvasW));
-	AddN(0.129f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.GraphicsButton")), ET66SettingsTab::Graphics, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGraphicsFlatMediaViewer", "GRAPHICS"), 0.118f * CanvasW));
-	AddN(0.253f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.ControlsButton")), ET66SettingsTab::Controls, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabControlsFlatMediaViewer", "CONTROLS"), 0.118f * CanvasW));
-	AddN(0.379f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.HUDButton")), ET66SettingsTab::HUD, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabHUDFlatMediaViewer", "HUD"), 0.118f * CanvasW));
-	AddN(0.503f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatMediaViewer", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
-	AddN(0.628f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatMediaViewer", "AUDIO"), 0.118f * CanvasW));
-	AddN(0.754f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatMediaViewer", "CRASHING"), 0.118f * CanvasW, 20));
-	AddN(0.879f, 0.094f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatMediaViewer", "RETRO FX"), 0.118f * CanvasW, 20));
+	AddN(0.003f, 0.123f, 0.119f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.GameplayButton")), ET66SettingsTab::Gameplay, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGameplayFlatMediaViewer", "GAMEPLAY"), 0.119f * CanvasW));
+	AddN(0.129f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.GraphicsButton")), ET66SettingsTab::Graphics, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabGraphicsFlatMediaViewer", "GRAPHICS"), 0.118f * CanvasW));
+	AddN(0.253f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.ControlsButton")), ET66SettingsTab::Controls, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabControlsFlatMediaViewer", "CONTROLS"), 0.118f * CanvasW));
+	AddN(0.379f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.HUDButton")), ET66SettingsTab::HUD, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabHUDFlatMediaViewer", "HUD"), 0.118f * CanvasW));
+	AddN(0.503f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatMediaViewer", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
+	AddN(0.628f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatMediaViewer", "AUDIO"), 0.118f * CanvasW));
+	AddN(0.754f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatMediaViewer", "CRASHING"), 0.118f * CanvasW, 20));
+	AddN(0.879f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatMediaViewer", "RETRO FX"), 0.118f * CanvasW, 20));
 
-	AddN(0.002f, 0.201f, 0.978f, 0.062f,
+	AddN(0.002f, 0.231f, 0.978f, 0.062f,
 		MakeLabel(
 			DTag(TEXT("SettingsMediaViewer.PrivacyBody")),
 			Loc ? Loc->GetText_SettingsMediaViewerPrivacyBody() : NSLOCTEXT("T66.Settings", "MediaViewerPrivacyBodyFlat", "The Media Viewer runs only on your computer. We do not receive or store the videos you watch or any data from TikTok, YouTube, or Instagram. Choose which feed opens here, then use the key bound to \"Toggle Media Viewer\" in the Controls tab."),
@@ -321,7 +379,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatMediaViewerSettingsUI()
 			ETextJustify::Left,
 			true));
 
-	AddN(0.002f, 0.292f, 0.978f, 0.096f,
+	AddN(0.002f, 0.322f, 0.978f, 0.096f,
 		FT66FlatStyle::MakeFlatSubPanel(
 			ET66FlatState::Default,
 			FMargin(32.f, 0.f),
@@ -341,7 +399,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatMediaViewerSettingsUI()
 			nullptr,
 			DTag(TEXT("SettingsMediaViewer.EnableRow"))));
 
-	AddN(0.002f, 0.399f, 0.978f, 0.126f,
+	AddN(0.002f, 0.429f, 0.978f, 0.126f,
 		FT66FlatStyle::MakeFlatSubPanel(
 			ET66FlatState::Default,
 			FMargin(36.f, 0.f),

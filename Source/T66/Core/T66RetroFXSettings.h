@@ -23,52 +23,52 @@ struct T66_API FT66RetroFXSettings
 	float PS1BlendPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float PS1DitheringPercent = 100.0f;
+	float PS1DitheringPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
 	float PS1BayerDitheringPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float PS1ColorLUTPercent = 100.0f;
+	float PS1ColorLUTPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float PS1ColorBoostPercent = 25.0f;
+	float PS1ColorBoostPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float PS1FogPercent = 100.0f;
+	float PS1FogPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float PS1FogDensityPercent = 35.0f;
+	float PS1FogDensityPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float PS1FogStartDistancePercent = 50.0f;
+	float PS1FogStartDistancePercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float PS1FogFallOffDistancePercent = 50.0f;
+	float PS1FogFallOffDistancePercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float PS1SceneDepthFogPercent = 100.0f;
+	float PS1SceneDepthFogPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	bool bUseRealLowResolution = false;
+	bool bUseRealLowResolution = true;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float FakeResolutionSwitchSizePercent = 100.0f;
+	float FakeResolutionSwitchSizePercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float FakeResolutionSwitchUVPercent = 100.0f;
+	float FakeResolutionSwitchUVPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float TargetResolutionHeightPercent = 60.0f;
+	float TargetResolutionHeightPercent = 40.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
 	float N64BlurBlendPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float N64BlurStepsPercent = 35.0f;
+	float N64BlurStepsPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float N64LowFakeResolutionPercent = 100.0f;
+	float N64LowFakeResolutionPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
 	bool bUseUE5RFXN64BlurReplaceTonemapper = false;
@@ -92,7 +92,7 @@ struct T66_API FT66RetroFXSettings
 	float CharacterPixelationPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Characters")
-	bool bEnableCharacterOutline = true;
+	bool bEnableCharacterOutline = false;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI")
 	float UIChromeTreatmentPercent = 0.0f;
@@ -157,6 +157,33 @@ struct T66_API FT66RetroFXSettings
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|Background Image")
 	float UIBackgroundImageChromaticAberrationPercent = 0.0f;
 
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT")
+	bool UIFullScreenCRTEnabled = true;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float UICRTScanlineStrength = 0.4f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float UICRTPhosphorMaskStrength = 0.3f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float UICRTBloomStrength = 0.2f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float UICRTChromaticAberrationStrength = 0.25f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float UICRTBarrelDistortionStrength = 0.15f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float UICRTVignetteStrength = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT", meta = (ClampMin = "4", ClampMax = "8"))
+	int32 UICRTColorQuantizationBits = 6;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT", meta = (ClampMin = "120", ClampMax = "4320"))
+	int32 UICRTReferenceResolutionHeight = 1080;
+
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
 	bool bEnableWorldGeometry = false;
 
@@ -164,7 +191,7 @@ struct T66_API FT66RetroFXSettings
 	float WorldVertexSnapPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
-	float WorldVertexSnapResolutionPercent = 50.0f;
+	float WorldVertexSnapResolutionPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
 	float WorldVertexNoisePercent = 0.0f;
@@ -173,13 +200,13 @@ struct T66_API FT66RetroFXSettings
 	float WorldAffineBlendPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
-	float WorldAffineDistance1Percent = 50.0f;
+	float WorldAffineDistance1Percent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
-	float WorldAffineDistance2Percent = 50.0f;
+	float WorldAffineDistance2Percent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
-	float WorldAffineDistance3Percent = 50.0f;
+	float WorldAffineDistance3Percent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
 	bool bEnableCharacterGeometry = false;
@@ -188,7 +215,7 @@ struct T66_API FT66RetroFXSettings
 	float CharacterVertexSnapPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
-	float CharacterVertexSnapResolutionPercent = 50.0f;
+	float CharacterVertexSnapResolutionPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
 	float CharacterVertexNoisePercent = 0.0f;
@@ -197,11 +224,11 @@ struct T66_API FT66RetroFXSettings
 	float CharacterAffineBlendPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
-	float CharacterAffineDistance1Percent = 50.0f;
+	float CharacterAffineDistance1Percent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
-	float CharacterAffineDistance2Percent = 50.0f;
+	float CharacterAffineDistance2Percent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
-	float CharacterAffineDistance3Percent = 50.0f;
+	float CharacterAffineDistance3Percent = 0.0f;
 };

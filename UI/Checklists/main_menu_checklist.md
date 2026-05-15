@@ -53,8 +53,9 @@ No-reference rule:
 - [ ] MainMenu.Right.RankHeader | exists=true
 - [ ] MainMenu.Right.NameHeader | exists=true
 - [ ] MainMenu.Right.ScoreHeader | exists=true
+- [ ] MainMenu.Right.LeaderboardRows | exists=true
 - [ ] MainMenu.Right.RankingRow01 | exists=true
-- [ ] MainMenu.Right.RankingRow08 | exists=true
+- [ ] MainMenu.Right.RankingRow10 | exists=true
 - [ ] MainMenu.Right.RankingRowLocal | exists=true
 - [ ] FrontendTopBar.OuterContainer | exists=true
 - [ ] FrontendTopBar.ProfileButton | exists=true
@@ -99,9 +100,6 @@ No-reference rule:
 - [ ] MainMenu.Right.FilterStreamersButton | x=0.904 | 0.020
 - [ ] MainMenu.Right.LeaderboardPanel | x=0.751 | 0.020
 - [ ] MainMenu.Right.LeaderboardPanel | y=0.231 | 0.020
-- [ ] MainMenu.Right.RankingRow01 | y=0.486 | 0.020
-- [ ] MainMenu.Right.RankingRow08 | y=0.804 | 0.020
-- [ ] MainMenu.Right.RankingRowLocal | y=0.902 | 0.020
 
 ## Colors
 
@@ -146,9 +144,6 @@ No-reference rule:
 - [ ] MainMenu.Right.RankHeader | text=RANK
 - [ ] MainMenu.Right.NameHeader | text=NAME
 - [ ] MainMenu.Right.ScoreHeader | text=SCORE
-- [ ] MainMenu.Right.RankingRow01 | text=#1 CROWNED CHAD 184250
-- [ ] MainMenu.Right.RankingRow08 | text=#8 STAGE SKIP 133910
-- [ ] MainMenu.Right.RankingRowLocal | text=#42 DOPRA 118700
 - [ ] FrontendTopBar.TicketBadge.Value | is_label=true
 
 ## Interactivity

@@ -2,8 +2,10 @@
 
 #include "Core/T66MiniRuntimeSubsystem.h"
 
+#include "Core/T66MiniRunStateSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Engine/World.h"
-#include "Kismet/GameplayStatics.h"
+#include "Save/T66MiniRunSaveGame.h"
 
 bool UT66MiniRuntimeSubsystem::LaunchMiniBattle(UObject* WorldContextObject, FString* OutFailureReason) const
 {
@@ -26,26 +28,35 @@ bool UT66MiniRuntimeSubsystem::LaunchMiniBattle(UObject* WorldContextObject, FSt
 		return false;
 	}
 
-	const FName BattleLevelName = GetMiniBattleLevelName();
-	if (BattleLevelName.IsNone())
+	UGameInstance* GameInstance = World->GetGameInstance();
+	if (!GameInstance)
 	{
 		if (OutFailureReason)
 		{
-			*OutFailureReason = TEXT("Mini launch failed: no battle level is configured.");
+			*OutFailureReason = TEXT("Mini launch failed: no game instance is available.");
 		}
 		return false;
 	}
 
-	UGameplayStatics::OpenLevel(WorldContextObject, BattleLevelName, true, GetMiniBattleTravelOptions());
+	const UT66MiniRunStateSubsystem* RunState = GameInstance->GetSubsystem<UT66MiniRunStateSubsystem>();
+	if (!RunState || !RunState->GetActiveRun())
+	{
+		if (OutFailureReason)
+		{
+			*OutFailureReason = TEXT("Mini launch failed: no active mini run is available.");
+		}
+		return false;
+	}
+
 	return true;
 }
 
 FName UT66MiniRuntimeSubsystem::GetMiniBattleLevelName() const
 {
-	return FName(TEXT("/Game/Mini/Maps/T66MiniBattleMap"));
+	return FName(TEXT("MiniBattleWidget"));
 }
 
 FString UT66MiniRuntimeSubsystem::GetMiniBattleTravelOptions() const
 {
-	return TEXT("game=/Script/T66Mini.T66MiniGameMode");
+	return FString();
 }

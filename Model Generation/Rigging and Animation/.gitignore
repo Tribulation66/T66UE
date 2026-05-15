@@ -1,0 +1,8 @@
+External/*
+!External/README.md
+
+Runs/*
+!Runs/README.md
+
+AssetInventory/*.json
+!AssetInventory/README.md

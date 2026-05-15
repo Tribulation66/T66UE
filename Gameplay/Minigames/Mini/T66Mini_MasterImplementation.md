@@ -26,7 +26,7 @@ The primary engineering goal is isolation. Mini-game work must be able to evolve
 - Shop sells items and supports rerolls/locks. Idols are not sold in the shop.
 - Idol selection is its own separate screen using mini-specific logic and data.
 - Movement is Brotato-style mouse-follow with auto-fire.
-- Presentation target is Brotato-like chibi readability, but with mini chad silhouettes rather than potato bodies.
+- Presentation target is ROTMG-like hard-pixel top-down readability for in-run gameplay, preserving mini chad silhouettes and current gameplay/data.
 - First build ships with all 16 heroes unlocked.
 - First build supports true mid-wave resume using a mini-specific save/profile system.
 - First build converts all current regular enemies and bosses into 2D mini variants.
@@ -450,7 +450,9 @@ Use Codex-native image generation for mini-game sprite generation.
 
 Do not use browser-automation generation tooling or legacy request manifests.
 
-For full character animation atlases, use the shared minigame process: [T66Minigame_CharacterAnimationProcess.md](C:/UE/T66/Gameplay/Minigames/T66Minigame_CharacterAnimationProcess.md).
+For the active in-run low-res pixel runtime pass, use [T66MINI_ROTMG_PIXEL_RUNTIME_INSTRUCTIONS.md](C:/UE/T66/Gameplay/Minigames/Mini/T66MINI_ROTMG_PIXEL_RUNTIME_INSTRUCTIONS.md).
+
+For full character animation atlases, use the shared minigame process: [MINIGAME_CHARACTER_ANIMATION_INSTRUCTIONS.md](C:/UE/T66/Gameplay/Minigames/MINIGAME_CHARACTER_ANIMATION_INSTRUCTIONS.md).
 
 Generation rule:
 

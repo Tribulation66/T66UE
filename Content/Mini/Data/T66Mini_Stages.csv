@@ -1,26 +1,51 @@
 StageID,DifficultyID,StageIndex,DisplayName,Description,WaveIndex,BossID,ClearGoldReward,ClearMaterialReward,ClearChadCoupons,NextStageID
-Mini_Easy_01,Easy,1,Easy Stage 1,First easy boss gate.,1,Boss_01,12,8,1,Mini_Easy_02
-Mini_Easy_02,Easy,2,Easy Stage 2,Second easy boss gate.,2,Boss_02,16,10,1,Mini_Easy_03
-Mini_Easy_03,Easy,3,Easy Stage 3,Third easy boss gate.,3,Boss_03,20,12,1,Mini_Easy_04
-Mini_Easy_04,Easy,4,Easy Stage 4,Fourth easy boss gate.,4,Boss_04,24,14,1,Mini_Easy_05
-Mini_Easy_05,Easy,5,Easy Stage 5,Final easy boss gate.,5,Boss_05,32,18,2,
-Mini_Medium_01,Medium,1,Medium Stage 1,First medium boss gate.,1,Boss_06,18,12,1,Mini_Medium_02
-Mini_Medium_02,Medium,2,Medium Stage 2,Second medium boss gate.,2,Boss_07,24,14,1,Mini_Medium_03
-Mini_Medium_03,Medium,3,Medium Stage 3,Third medium boss gate.,3,Boss_08,30,16,1,Mini_Medium_04
-Mini_Medium_04,Medium,4,Medium Stage 4,Fourth medium boss gate.,4,Boss_09,36,18,1,Mini_Medium_05
-Mini_Medium_05,Medium,5,Medium Stage 5,Final medium boss gate.,5,Boss_10,48,24,2,
-Mini_Hard_01,Hard,1,Hard Stage 1,First hard boss gate.,1,Boss_11,28,16,1,Mini_Hard_02
-Mini_Hard_02,Hard,2,Hard Stage 2,Second hard boss gate.,2,Boss_12,36,20,1,Mini_Hard_03
-Mini_Hard_03,Hard,3,Hard Stage 3,Third hard boss gate.,3,Boss_13,44,24,1,Mini_Hard_04
-Mini_Hard_04,Hard,4,Hard Stage 4,Fourth hard boss gate.,4,Boss_14,52,28,1,Mini_Hard_05
-Mini_Hard_05,Hard,5,Hard Stage 5,Final hard boss gate.,5,Boss_15,68,36,2,
-Mini_VeryHard_01,VeryHard,1,Very Hard Stage 1,First very hard boss gate.,1,Boss_16,40,22,1,Mini_VeryHard_02
-Mini_VeryHard_02,VeryHard,2,Very Hard Stage 2,Second very hard boss gate.,2,Boss_17,50,26,1,Mini_VeryHard_03
-Mini_VeryHard_03,VeryHard,3,Very Hard Stage 3,Third very hard boss gate.,3,Boss_18,60,30,1,Mini_VeryHard_04
-Mini_VeryHard_04,VeryHard,4,Very Hard Stage 4,Fourth very hard boss gate.,4,Boss_19,70,34,1,Mini_VeryHard_05
-Mini_VeryHard_05,VeryHard,5,Very Hard Stage 5,Final very hard boss gate.,5,Boss_20,90,44,2,
-Mini_Impossible_01,Impossible,1,Impossible Stage 1,First impossible boss gate.,1,Boss_21,56,30,1,Mini_Impossible_02
-Mini_Impossible_02,Impossible,2,Impossible Stage 2,Second impossible boss gate.,2,Boss_22,68,36,1,Mini_Impossible_03
-Mini_Impossible_03,Impossible,3,Impossible Stage 3,Third impossible boss gate.,3,Boss_23,80,42,1,Mini_Impossible_04
-Mini_Impossible_04,Impossible,4,Impossible Stage 4,Fourth impossible boss gate.,4,Boss_24,92,48,1,Mini_Impossible_05
-Mini_Impossible_05,Impossible,5,Impossible Stage 5,Final impossible boss gate.,5,Boss_25,120,60,2,
+Mini_Easy_01,Easy,1,Easy Stage 1,RotMG-style mob room.,1,,8,6,0,Mini_Easy_02
+Mini_Easy_02,Easy,2,Easy Stage 2,RotMG-style mob room.,2,,10,7,0,Mini_Easy_03
+Mini_Easy_03,Easy,3,Easy Stage 3,RotMG-style mob room.,3,,12,8,0,Mini_Easy_04
+Mini_Easy_04,Easy,4,Easy Stage 4,RotMG-style mob room.,4,,14,9,0,Mini_Easy_05
+Mini_Easy_05,Easy,5,Easy Stage 5,RotMG-style mob room.,5,,16,10,0,Mini_Easy_06
+Mini_Easy_06,Easy,6,Easy Stage 6,RotMG-style mob room.,6,,18,11,0,Mini_Easy_07
+Mini_Easy_07,Easy,7,Easy Stage 7,RotMG-style mob room.,7,,20,12,0,Mini_Easy_08
+Mini_Easy_08,Easy,8,Easy Stage 8,RotMG-style mob room.,8,,22,13,0,Mini_Easy_09
+Mini_Easy_09,Easy,9,Easy Stage 9,RotMG-style mob room.,9,,24,14,0,Mini_Easy_10
+Mini_Easy_10,Easy,10,Easy Boss Stage,Final easy boss gate.,10,Boss_05,40,22,2,
+Mini_Medium_01,Medium,1,Medium Stage 1,RotMG-style mob room.,1,,12,8,0,Mini_Medium_02
+Mini_Medium_02,Medium,2,Medium Stage 2,RotMG-style mob room.,2,,15,9,0,Mini_Medium_03
+Mini_Medium_03,Medium,3,Medium Stage 3,RotMG-style mob room.,3,,18,10,0,Mini_Medium_04
+Mini_Medium_04,Medium,4,Medium Stage 4,RotMG-style mob room.,4,,21,11,0,Mini_Medium_05
+Mini_Medium_05,Medium,5,Medium Stage 5,RotMG-style mob room.,5,,24,12,0,Mini_Medium_06
+Mini_Medium_06,Medium,6,Medium Stage 6,RotMG-style mob room.,6,,27,13,0,Mini_Medium_07
+Mini_Medium_07,Medium,7,Medium Stage 7,RotMG-style mob room.,7,,30,14,0,Mini_Medium_08
+Mini_Medium_08,Medium,8,Medium Stage 8,RotMG-style mob room.,8,,33,15,0,Mini_Medium_09
+Mini_Medium_09,Medium,9,Medium Stage 9,RotMG-style mob room.,9,,36,16,0,Mini_Medium_10
+Mini_Medium_10,Medium,10,Medium Boss Stage,Final medium boss gate.,10,Boss_10,60,30,2,
+Mini_Hard_01,Hard,1,Hard Stage 1,RotMG-style mob room.,1,,18,10,0,Mini_Hard_02
+Mini_Hard_02,Hard,2,Hard Stage 2,RotMG-style mob room.,2,,22,12,0,Mini_Hard_03
+Mini_Hard_03,Hard,3,Hard Stage 3,RotMG-style mob room.,3,,26,14,0,Mini_Hard_04
+Mini_Hard_04,Hard,4,Hard Stage 4,RotMG-style mob room.,4,,30,16,0,Mini_Hard_05
+Mini_Hard_05,Hard,5,Hard Stage 5,RotMG-style mob room.,5,,34,18,0,Mini_Hard_06
+Mini_Hard_06,Hard,6,Hard Stage 6,RotMG-style mob room.,6,,38,20,0,Mini_Hard_07
+Mini_Hard_07,Hard,7,Hard Stage 7,RotMG-style mob room.,7,,42,22,0,Mini_Hard_08
+Mini_Hard_08,Hard,8,Hard Stage 8,RotMG-style mob room.,8,,46,24,0,Mini_Hard_09
+Mini_Hard_09,Hard,9,Hard Stage 9,RotMG-style mob room.,9,,50,26,0,Mini_Hard_10
+Mini_Hard_10,Hard,10,Hard Boss Stage,Final hard boss gate.,10,Boss_15,82,42,2,
+Mini_VeryHard_01,VeryHard,1,Very Hard Stage 1,RotMG-style mob room.,1,,26,14,0,Mini_VeryHard_02
+Mini_VeryHard_02,VeryHard,2,Very Hard Stage 2,RotMG-style mob room.,2,,31,16,0,Mini_VeryHard_03
+Mini_VeryHard_03,VeryHard,3,Very Hard Stage 3,RotMG-style mob room.,3,,36,18,0,Mini_VeryHard_04
+Mini_VeryHard_04,VeryHard,4,Very Hard Stage 4,RotMG-style mob room.,4,,41,20,0,Mini_VeryHard_05
+Mini_VeryHard_05,VeryHard,5,Very Hard Stage 5,RotMG-style mob room.,5,,46,22,0,Mini_VeryHard_06
+Mini_VeryHard_06,VeryHard,6,Very Hard Stage 6,RotMG-style mob room.,6,,51,24,0,Mini_VeryHard_07
+Mini_VeryHard_07,VeryHard,7,Very Hard Stage 7,RotMG-style mob room.,7,,56,26,0,Mini_VeryHard_08
+Mini_VeryHard_08,VeryHard,8,Very Hard Stage 8,RotMG-style mob room.,8,,61,28,0,Mini_VeryHard_09
+Mini_VeryHard_09,VeryHard,9,Very Hard Stage 9,RotMG-style mob room.,9,,66,30,0,Mini_VeryHard_10
+Mini_VeryHard_10,VeryHard,10,Very Hard Boss Stage,Final very hard boss gate.,10,Boss_20,108,52,2,
+Mini_Impossible_01,Impossible,1,Impossible Stage 1,RotMG-style mob room.,1,,38,20,0,Mini_Impossible_02
+Mini_Impossible_02,Impossible,2,Impossible Stage 2,RotMG-style mob room.,2,,45,24,0,Mini_Impossible_03
+Mini_Impossible_03,Impossible,3,Impossible Stage 3,RotMG-style mob room.,3,,52,28,0,Mini_Impossible_04
+Mini_Impossible_04,Impossible,4,Impossible Stage 4,RotMG-style mob room.,4,,59,32,0,Mini_Impossible_05
+Mini_Impossible_05,Impossible,5,Impossible Stage 5,RotMG-style mob room.,5,,66,36,0,Mini_Impossible_06
+Mini_Impossible_06,Impossible,6,Impossible Stage 6,RotMG-style mob room.,6,,73,40,0,Mini_Impossible_07
+Mini_Impossible_07,Impossible,7,Impossible Stage 7,RotMG-style mob room.,7,,80,44,0,Mini_Impossible_08
+Mini_Impossible_08,Impossible,8,Impossible Stage 8,RotMG-style mob room.,8,,87,48,0,Mini_Impossible_09
+Mini_Impossible_09,Impossible,9,Impossible Stage 9,RotMG-style mob room.,9,,94,52,0,Mini_Impossible_10
+Mini_Impossible_10,Impossible,10,Impossible Boss Stage,Final impossible boss gate.,10,Boss_25,140,68,3,

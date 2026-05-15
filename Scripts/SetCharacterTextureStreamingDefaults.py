@@ -28,10 +28,9 @@ REPORT_PATH = os.path.join(
     "SetCharacterTextureStreamingDefaults.json",
 )
 SAMPLE_TEXTURE_PATH = (
-    "/Game/Characters/Enemies/Regular/Dungeon_Slime/QuadRetro/"
-    "Dungeon_Slime_QuadRetro/Textures/"
-    "Dungeon_Slime_QuadRetro_Pixelated_512."
-    "Dungeon_Slime_QuadRetro_Pixelated_512"
+    "/Game/Characters/Mobs/Slime/"
+    "T_Slime."
+    "T_Slime"
 )
 
 

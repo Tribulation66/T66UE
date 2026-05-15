@@ -2,6 +2,10 @@
 
 #include "UI/Screens/Settings/T66SettingsScreen_Private.h"
 
+#include "UI/Style/T66FlatStyle.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
+#include "Widgets/Layout/SScaleBox.h"
+
 using namespace T66SettingsScreenPrivate;
 TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 {
@@ -89,6 +93,65 @@ FReply UT66SettingsScreen::HandleSafeModeClicked()
 		PS->ApplySafeModeSettings();
 	}
 	return FReply::Handled();
+}
+
+TSharedRef<SWidget> UT66SettingsScreen::BuildFlatCrashingSettingsUI()
+{
+	constexpr float CanvasW = 1920.f;
+	constexpr float CanvasH = 1080.f;
+
+	auto DTag = [](const TCHAR* Text) -> FName
+	{
+		return FName(Text);
+	};
+
+	auto MakeMetadataRegion = [](const FName Tag, const FString& Role) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::AttachMetadata(SNew(SBox), Tag, Role, ET66FlatState::Default);
+	};
+
+	TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
+	auto AddN = [&Canvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+	{
+		Canvas->AddSlot()
+		.Anchors(FAnchors(X, Y, X, Y))
+		.Alignment(FVector2D::ZeroVector)
+		.Offset(FMargin(0.f, 0.f, W * CanvasW, H * CanvasH))
+		[
+			Widget
+		];
+	};
+
+	AddN(0.000f, 0.000f, 1.000f, 1.000f,
+		FT66FlatStyle::AttachMetadata(
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor::Black),
+			DTag(TEXT("SettingsCrashing.Background")),
+			TEXT("Background"),
+			ET66FlatState::Default));
+
+	AddN(0.000f, 0.095f, 1.000f, 0.905f, MakeMetadataRegion(DTag(TEXT("SettingsCrashing.Root")), TEXT("Root")));
+	AddStableSettingsTabRow(Canvas, this, TEXT("SettingsCrashing"), CurrentTab, CanvasW, CanvasH);
+	AddN(0.002f, 0.223f, 0.978f, 0.724f,
+		FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(34.f, 28.f),
+			BuildCrashingTab(),
+			nullptr,
+			DTag(TEXT("SettingsCrashing.ContentPanel"))));
+
+	return SNew(SScaleBox)
+		.Stretch(EStretch::ScaleToFit)
+		.StretchDirection(EStretchDirection::Both)
+		[
+			SNew(SBox)
+			.WidthOverride(CanvasW)
+			.HeightOverride(CanvasH)
+			[
+				Canvas
+			]
+		];
 }
 
 

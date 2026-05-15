@@ -25,7 +25,7 @@ Reusable core scripts should stay tight and parameterized. Batch scripts are tem
 
 ## Retired Scripts
 
-Legacy TypeA, Mike, Arthur, and dungeon-kit prototype scripts were deleted after their durable lessons were captured in `Instructions/06_RUN_HISTORY_AND_KNOWN_ISSUES.md`.
+Legacy TypeA, Mike, Arthur, and dungeon-kit prototype scripts were deleted after their durable lessons were captured in `Instructions/06_RUN_HISTORY_AND_KNOWN_ISSUES_REFERENCE.md`.
 
 ## Future Consolidation
 

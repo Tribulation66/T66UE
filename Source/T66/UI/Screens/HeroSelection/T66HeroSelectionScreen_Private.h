@@ -4,7 +4,6 @@
 
 #include "UI/Screens/T66HeroSelectionScreen.h"
 #include "UI/Screens/HeroSelection/T66HeroSelectionPreviewController.h"
-#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Screens/T66SelectionScreenUtils.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66GameInstance.h"
@@ -25,13 +24,8 @@
 #include "UI/Style/T66Style.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "Gameplay/T66CompanionBase.h"
-#include "Gameplay/T66PlayerController.h"
-#include "Gameplay/T66HeroPreviewStage.h"
-#include "Gameplay/T66CompanionPreviewStage.h"
-#include "Gameplay/T66FrontendGameMode.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Kismet/GameplayStatics.h"
-#include "EngineUtils.h"
 #include "GameFramework/GameStateBase.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -68,11 +62,8 @@ namespace T66HeroSelectionPrivate
 {
 	inline constexpr int32 HeroSelectionCarouselVisibleSlots = 5;
 	inline constexpr int32 HeroSelectionCarouselCenterIndex = HeroSelectionCarouselVisibleSlots / 2;
-
-	inline bool IsBloodyRetroSelectionPreset()
-	{
-		return T66ScreenSlateHelpers::GetReferenceChromePreset() == T66ScreenSlateHelpers::ET66ReferenceChromePreset::BloodyRetro;
-	}
+	inline constexpr int32 HeroSelectionHeroCarouselVisibleSlots = 7;
+	inline constexpr int32 HeroSelectionHeroCarouselCenterIndex = HeroSelectionHeroCarouselVisibleSlots / 2;
 
 	inline FLinearColor HeroSelectionChromeAccent(float Alpha = 1.0f)
 	{
@@ -285,33 +276,6 @@ namespace T66HeroSelectionPrivate
 		}
 
 		Brush->SetResourceObject(Texture.IsValid() ? Texture.Get() : nullptr);
-	}
-
-	inline AT66PlayerController* T66GetLocalFrontendHeroPlayerController(UObject* ContextObject)
-	{
-		return ContextObject ? Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(ContextObject, 0)) : nullptr;
-	}
-
-	inline void T66PositionHeroPreviewCamera(UObject* ContextObject)
-	{
-		if (!ContextObject)
-		{
-			return;
-		}
-
-		if (UWorld* World = ContextObject->GetWorld())
-		{
-			if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
-			{
-				GM->PositionCameraForHeroPreview();
-				return;
-			}
-		}
-
-		if (AT66PlayerController* PC = T66GetLocalFrontendHeroPlayerController(ContextObject))
-		{
-			PC->PositionLocalFrontendCameraForHeroPreview();
-		}
 	}
 
 	inline float GetHeroSelectionCarouselBoxSize(const int32 Offset)
@@ -929,132 +893,6 @@ namespace T66HeroSelectionPrivate
 			FMargin(0.20f, 0.18f, 0.20f, 0.18f));
 	}
 
-	class ST66HeroSelectionSpriteButton : public SCompoundWidget
-	{
-	public:
-		SLATE_BEGIN_ARGS(ST66HeroSelectionSpriteButton)
-			: _SpriteFamily(ET66HeroSpriteFamily::CompactNeutral)
-			, _MinWidth(0.f)
-			, _Height(0.f)
-			, _ContentPadding(FMargin(0.f))
-			, _IsEnabled(true)
-			, _Visibility(EVisibility::Visible)
-		{}
-			SLATE_ATTRIBUTE(ET66HeroSpriteFamily, SpriteFamily)
-			SLATE_ARGUMENT(float, MinWidth)
-			SLATE_ARGUMENT(float, Height)
-			SLATE_ARGUMENT(FMargin, ContentPadding)
-			SLATE_ARGUMENT(TAttribute<bool>, IsEnabled)
-			SLATE_ARGUMENT(TAttribute<EVisibility>, Visibility)
-			SLATE_EVENT(FOnClicked, OnClicked)
-			SLATE_DEFAULT_SLOT(FArguments, Content)
-		SLATE_END_ARGS()
-
-		void Construct(const FArguments& InArgs)
-		{
-			SpriteFamily = InArgs._SpriteFamily;
-			ContentPadding = InArgs._ContentPadding;
-			FButtonStyle ButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
-			ButtonStyle.SetNormalPadding(FMargin(0.f));
-			ButtonStyle.SetPressedPadding(FMargin(0.f));
-			OwnedButtonStyle = ButtonStyle;
-
-			ChildSlot
-			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(
-						InArgs._OnClicked,
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor_Lambda([this]()
-							{
-								if (!Button.IsValid() || !Button->IsEnabled())
-								{
-									return FT66FlatStyle::DisabledBorder();
-								}
-								if (Button->IsPressed() || Button->IsHovered())
-								{
-									return FT66FlatStyle::SelectedBorder();
-								}
-								return FT66FlatStyle::DefaultBorder();
-							})
-							.Padding(FT66FlatStyle::FlatStroke)
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor_Lambda([this]()
-								{
-									if (!Button.IsValid() || !Button->IsEnabled())
-									{
-										return FT66FlatStyle::DisabledFill();
-									}
-									return Button->IsPressed() || Button->IsHovered()
-										? FT66FlatStyle::SelectedFill()
-										: FT66FlatStyle::DefaultFill();
-								})
-							]
-						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Fill)
-						.VAlign(VAlign_Fill)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							.Padding(this, &ST66HeroSelectionSpriteButton::GetContentPadding)
-							[
-								InArgs._Content.Widget
-							]
-						])
-					.SetButtonStyle(&OwnedButtonStyle)
-					.SetPadding(FMargin(0.f))
-					.SetEnabled(InArgs._IsEnabled)
-					.SetMinWidth(T66ScreenSlateHelpers::NormalizeReferenceSlicedButtonMinWidth(InArgs._MinWidth, InArgs._Height))
-					.SetHeight(InArgs._Height)
-					.SetVisibility(InArgs._Visibility),
-					&Button)
-			];
-		}
-
-	private:
-		const FSlateBrush* GetCurrentBrush() const
-		{
-			if (!Button.IsValid() || !Button->IsEnabled())
-			{
-				return ResolveHeroSelectionDisabledButtonSpriteBrush();
-			}
-
-			const ET66HeroSpriteFamily Family = SpriteFamily.Get(ET66HeroSpriteFamily::CompactNeutral);
-			if (Button->IsPressed())
-			{
-				return ResolveHeroSelectionButtonSpriteBrush(Family, ET66ButtonBorderState::Pressed);
-			}
-			if (Button->IsHovered())
-			{
-				return ResolveHeroSelectionButtonSpriteBrush(Family, ET66ButtonBorderState::Hovered);
-			}
-			return ResolveHeroSelectionButtonSpriteBrush(Family, ET66ButtonBorderState::Normal);
-		}
-
-		FMargin GetContentPadding() const
-		{
-			if (Button.IsValid() && Button->IsPressed())
-			{
-				return FMargin(ContentPadding.Left, ContentPadding.Top + 1.f, ContentPadding.Right, FMath::Max(0.f, ContentPadding.Bottom - 1.f));
-			}
-			return ContentPadding;
-		}
-
-		TAttribute<ET66HeroSpriteFamily> SpriteFamily;
-		FMargin ContentPadding = FMargin(0.f);
-		FButtonStyle OwnedButtonStyle;
-		TSharedPtr<SButton> Button;
-	};
-
 	inline TSharedRef<SWidget> MakeHeroSelectionPanelShell(
 		const TSharedRef<SWidget>& Content,
 		const FMargin& Padding,
@@ -1134,21 +972,18 @@ namespace T66HeroSelectionPrivate
 				ButtonFontSize);
 		}
 
-		return FT66Style::MakeBareButton(
-			FT66BareButtonParams(
-				Params.OnClicked,
-				SNew(SBox)
-				.MinDesiredWidth(Params.MinWidth > 0.f ? FOptionalSize(Params.MinWidth) : FOptionalSize())
-				.HeightOverride(ButtonHeight > 0.f ? FOptionalSize(ButtonHeight) : FOptionalSize())
-				[
-					FT66FlatStyle::MakeFlatPanel(FlatState, ContentPadding, Params.CustomContent.ToSharedRef())
-				])
-			.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-			.SetPadding(FMargin(0.f))
-			.SetEnabled(Params.IsEnabled)
-			.SetVisibility(Params.Visibility)
-			.SetMinWidth(Params.MinWidth)
-			.SetHeight(ButtonHeight));
+		return SNew(SBox)
+			.Visibility(Params.Visibility)
+			[
+				FT66FlatStyle::MakeFlatToggleGroupButton(
+					FlatState,
+					Params.CustomContent.ToSharedRef(),
+					Params.OnClicked,
+					ContentPadding,
+					Params.MinWidth,
+					ButtonHeight,
+					Params.IsEnabled)
+			];
 	}
 
 	inline TSharedRef<SWidget> MakeHeroSelectionButton(const FT66ButtonParams& Params)
@@ -1198,7 +1033,7 @@ namespace T66HeroSelectionPrivate
 	{
 		static FComboButtonStyle FlatComboStyle = []()
 		{
-			FComboButtonStyle Style = FT66Style::GetDropdownComboButtonStyle();
+			FComboButtonStyle Style = FCoreStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton");
 			Style.ButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
 			return Style;
 		}();

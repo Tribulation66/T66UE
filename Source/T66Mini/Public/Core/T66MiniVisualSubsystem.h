@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/Texture.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "T66MiniVisualSubsystem.generated.h"
 
@@ -36,8 +37,9 @@ private:
 	static FString GetPackagePathFromObjectPath(const FString& AssetPath);
 	UTexture2D* LoadImportedTexture(const FString& AssetPath);
 	UTexture2D* LoadImportedOrLooseTexture(const FString& CacheKey, const FString& AssetPath, const FString& RelativePath);
-	UTexture2D* LoadCachedTexture(const FString& CacheKey, const FString& RelativePath);
-	UTexture2D* LoadCachedTextureFromCandidates(const FString& CacheKey, const TArray<FString>& RelativePaths);
+	UTexture2D* LoadLooseOrImportedTexture(const FString& CacheKey, const FString& AssetPath, const FString& RelativePath, TextureFilter Filter = TextureFilter::TF_Trilinear);
+	UTexture2D* LoadCachedTexture(const FString& CacheKey, const FString& RelativePath, TextureFilter Filter = TextureFilter::TF_Trilinear);
+	UTexture2D* LoadCachedTextureFromCandidates(const FString& CacheKey, const TArray<FString>& RelativePaths, TextureFilter Filter = TextureFilter::TF_Trilinear);
 
 	UPROPERTY()
 	TMap<FString, TObjectPtr<UTexture2D>> CachedTextures;

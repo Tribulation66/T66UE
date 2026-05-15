@@ -29,11 +29,13 @@ private:
 	enum class EIdleViewMode : uint8
 	{
 		MainMenu,
-		Gameplay
+		Gameplay,
+		Summary
 	};
 
 	TSharedRef<SWidget> BuildMainMenuUI();
 	TSharedRef<SWidget> BuildGameplayUI();
+	TSharedRef<SWidget> BuildSummaryUI();
 	TSharedRef<SWidget> BuildSharedMainMenuUI();
 	TArray<FT66MinigameDifficultyOption> BuildDifficultyOptions() const;
 	TArray<FT66MinigameLeaderboardEntry> BuildDailyLeaderboardEntries(FName DifficultyID) const;
@@ -47,11 +49,13 @@ private:
 	TSharedRef<SWidget> MakePurchaseButton(const FText& Label, const FText& Body, const FLinearColor& Accent, const FOnClicked& OnClicked) const;
 
 	void EnsureProfileLoaded();
-	void SaveProfileState();
+	void SaveProfileState(bool bSubmitLeaderboard = true);
+	void ResetClosedLoopRunState();
 	void StartPlayableRun();
+	void FinishIdleRun(bool bWasVictory);
 	void SubmitLeaderboardProgressIfNeeded();
 	void SpawnEnemyForCurrentStage();
-	void AwardEnemyClear();
+	bool AwardEnemyClear();
 	void TickIdleRun(float DeltaSeconds);
 	void RecalculatePowerFromOwned(const UT66IdleProfileSaveGame* ProfileSave);
 	UT66IdleDataSubsystem* GetIdleDataSubsystem() const;
@@ -60,6 +64,7 @@ private:
 	FName ResolveStartingHeroID(const UT66IdleDataSubsystem* DataSubsystem) const;
 	void EnsureStartingUnlocks(UT66IdleProfileSaveGame* ProfileSave, const UT66IdleDataSubsystem* DataSubsystem) const;
 	bool TrySpendGold(double Cost);
+	int32 GetFinalStageIndex() const;
 	const struct FT66IdleHeroDefinition* FindNextPurchasableHero(const UT66IdleProfileSaveGame* ProfileSave) const;
 	const struct FT66IdleCompanionDefinition* FindNextPurchasableCompanion(const UT66IdleProfileSaveGame* ProfileSave) const;
 	const struct FT66IdleItemDefinition* FindNextPurchasableItem(const UT66IdleProfileSaveGame* ProfileSave) const;
@@ -95,6 +100,8 @@ private:
 	bool bAppliedAutomationStart = false;
 	bool bProfileLoaded = false;
 	bool bRunStarted = false;
+	bool bRunComplete = false;
+	bool bLastRunVictory = false;
 	double Gold = 0.0;
 	double LifetimeGold = 0.0;
 	double TapDamage = 1.0;
@@ -107,6 +114,10 @@ private:
 	float IdleRunTickAccumulator = 0.f;
 	static constexpr float IdleRunTickIntervalSeconds = 1.f / 15.f;
 	int32 CurrentStage = 1;
+	int32 SummaryStageReached = 0;
+	int32 SummaryBossesCleared = 0;
+	double SummaryGoldBanked = 0.0;
+	double SummaryLifetimeGold = 0.0;
 	int32 BossStagesCleared = 0;
 	int32 LastSubmittedLeaderboardScore = INDEX_NONE;
 	FName CurrentStageID = NAME_None;

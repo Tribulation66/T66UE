@@ -58,6 +58,15 @@ Model Generation/Runs/**/*.mp4
 Model Generation/Runs/**/Raw/
 Model Generation/Runs/**/Renders/
 Model Generation/Runs/**/Exports/
+Model Generation/Runs/**/Logs/
+Model Generation/Runs/**/QA/
+Model Generation/Experiments/
+Model Generation/Production/
+Model Generation/Rigging and Animation/Runs/
+Model Generation/Rigging and Animation/External/
+*.blend
+*.blend1
+Video Generation/Runs/
 SourceAssets/Import/
 SourceAssets/UI/
 UI/archive/

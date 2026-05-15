@@ -96,8 +96,10 @@ private:
 	TSharedRef<SWidget> BuildFlatGameplaySettingsUI();
 	TSharedRef<SWidget> BuildFlatGraphicsSettingsUI();
 	TSharedRef<SWidget> BuildFlatControlsSettingsUI();
+	TSharedRef<SWidget> BuildFlatHUDSettingsUI();
 	TSharedRef<SWidget> BuildFlatMediaViewerSettingsUI();
 	TSharedRef<SWidget> BuildFlatAudioSettingsUI();
+	TSharedRef<SWidget> BuildFlatCrashingSettingsUI();
 	TSharedRef<SWidget> BuildGraphicsTab();
 	TSharedRef<SWidget> BuildControlsTab();
 	TSharedRef<SWidget> BuildHUDTab();

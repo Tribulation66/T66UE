@@ -9,8 +9,10 @@
 
 class UT66ScreenBase;
 class UT66SettingsScreen;
+class UT66FrontendUIRootWidget;
 class UT66FrontendTopBarWidget;
 class UUserWidget;
+struct FT66RetroFXSettings;
 
 /**
  * UI Manager for Tribulation 66
@@ -112,6 +114,10 @@ public:
 	/** Rebuild all visible UI widgets (current screen and current modal). */
 	void RebuildAllVisibleUI();
 
+	/** Queue a retained frontend-root layer refresh for a managed widget. Returns false when the frontend root is not active. */
+	bool RequestFrontendRootLayerRefresh(UUserWidget* Widget);
+	bool RequestFrontendRootPaintRefresh();
+
 	void ShowRetroFXPreviewPopup();
 	void HideRetroFXPreviewPopup();
 	bool IsRetroFXPreviewPopupVisible() const;
@@ -163,6 +169,10 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UT66SettingsScreen> RetroFXPreviewPopup;
 
+	/** Single retained frontend root that owns UIManager layers while in frontend worlds. */
+	UPROPERTY()
+	TObjectPtr<UT66FrontendUIRootWidget> FrontendRoot;
+
 	/** Navigation history stack for back navigation */
 	UPROPERTY()
 	TArray<ET66ScreenType> NavigationHistory;
@@ -173,5 +183,13 @@ protected:
 	bool SwitchToScreen(ET66ScreenType ScreenType, bool bAddCurrentToHistory);
 	bool ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const;
 	void UpdateFrontendTopBar();
+	bool ShouldUseFrontendRoot() const;
+	bool IsFrontendRootActive() const;
+	void InitializeFrontendRootIfNeeded();
+	void TearDownFrontendRoot();
+	void ApplyCurrentRetroFXSettingsToFrontendRoot();
+	void HandleRetroFXSettingsApplied(const FT66RetroFXSettings& Settings);
+	void QueueFrontendRootLayerRefresh(UUserWidget* Widget);
 
+	FDelegateHandle RetroFXSettingsAppliedHandle;
 };

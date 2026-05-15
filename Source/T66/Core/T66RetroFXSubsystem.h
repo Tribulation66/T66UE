@@ -15,6 +15,8 @@ class UMaterialParameterCollection;
 class UMeshComponent;
 struct FStreamableHandle;
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FT66OnRetroFXSettingsApplied, const FT66RetroFXSettings&);
+
 UENUM()
 enum class ET66RetroGeometryGroup : uint8
 {
@@ -80,6 +82,8 @@ public:
 
 	/** Apply a specific settings snapshot to the target world. */
 	void ApplySettings(const FT66RetroFXSettings& Settings, UWorld* World = nullptr);
+
+	FT66OnRetroFXSettingsApplied& OnSettingsApplied() { return SettingsApplied; }
 
 private:
 	void QueueRetroAssetPreloads();
@@ -187,6 +191,7 @@ private:
 
 	FDelegateHandle GeometrySpawnHandle;
 	TSharedPtr<FStreamableHandle> RetroAssetLoadHandle;
+	FT66OnRetroFXSettingsApplied SettingsApplied;
 	bool bWorldGeometryActive = false;
 	bool bCharacterGeometryActive = false;
 	bool bWorldPixelationStencilActive = false;
@@ -195,8 +200,13 @@ private:
 	bool bPixelationStencilFullScanComplete = false;
 	bool bResolutionRuntimeDefaultsCaptured = false;
 	bool bResolutionRuntimeActive = false;
+	bool bHasOriginalScreenPercentageMinResolutionFraction = false;
 	FString ActivePs1MaterialPath;
 	float OriginalScreenPercentage = 100.0f;
 	float OriginalSecondaryScreenPercentage = 100.0f;
+	float OriginalScreenPercentageMinResolution = 0.0f;
+	float OriginalScreenPercentageMinResolutionFraction = 0.0f;
 	int32 OriginalUpscaleQuality = 0;
+	int32 OriginalAntiAliasingMethod = 0;
+	int32 OriginalTemporalAAUpsampling = 0;
 };
